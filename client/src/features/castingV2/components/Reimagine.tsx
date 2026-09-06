@@ -36,16 +36,6 @@ import { trpc } from "@/lib/trpc";
 export const REIMAGINED_LINE = "Re-imagined from your words — press again for another idea.";
 export const REIMAGINE_UNDO_LABEL = "Undo";
 export const NOTHING_TO_OFFER_LINE = "Nothing to offer this time — your words stand.";
-/**
- * What the line says after a generated chip is tapped (#535 decision 12).
- *
- * Different from the press's line because a different thing happened: a press
- * returns a NEW IDEA, a tap keeps their brief and writes one direction into
- * it. Saying "re-imagined" over a tap would be the surface lying about the
- * smaller of the two acts — and his ruling (#144) is precisely that the edit
- * must be *written into* the brief, so the sentence names that.
- */
-export const DIRECTION_WRITTEN_LINE = "Written into your brief.";
 /** Decision 17: while a follow chip is up, the press is dimmed with this hover. */
 export const REIMAGINE_FOLLOW_HELD_TITLE = "Clear the follow to re-imagine";
 
@@ -53,32 +43,8 @@ export type ReimagineState = {
   /** The glyph is turning — the box should dim and refuse edits for the moment. */
   pending: boolean;
   /** The quiet line to draw under the box, or null. */
-  line: "idea" | "direction" | "nothing" | null;
+  line: "idea" | "nothing" | null;
   canUndo: boolean;
-  /**
-   * The direction whose fold is STANDING in the box right now, or null.
-   *
-   * ⚠ **It exists because `canUndo` was asked this question and cannot answer
-   * it** (review of PR #601, finding 1). `canUndo` is true after ANY
-   * successful write, so a chip tap that failed left its chip dimmed as
-   * "already folded in" — the fold that made `canUndo` true was an earlier
-   * press — and a press AFTER a successful tap left the chip dimmed although
-   * its direction had just been written over. This is set only by a tap that
-   * SUCCEEDED, on its own flight, and cleared by a press, an undo or a
-   * keystroke, so the strip's promise ("it comes back the moment its fold
-   * does not stand any more") is the same fact the box holds.
-   *
-   * ⚠ **Declared limit: ONE slot, so it names the LAST direction written and
-   * not every direction standing** (review of PR #601, round 2, non-blocking).
-   * Tap A then tap B and chip A goes back on offer while its words are still
-   * in the brief; tapping it again re-folds a direction already there. It
-   * costs nothing worth a set: the fold instruction changes only what the
-   * direction touches, so a re-fold is near-idempotent, and Undo covers it
-   * either way. A set would also have to answer "which of these still
-   * stands?" after a plain press rewrote the brief — a question no slot can
-   * answer honestly, and the reason this one is deliberately small.
-   */
-  written: string | null;
   /**
    * The box holds no words to press on — the glyph dims rather than firing
    * (review of PR #598, finding 4: an empty press met the schema's `min(1)`
@@ -89,12 +55,6 @@ export type ReimagineState = {
    */
   empty: boolean;
   press: () => void;
-  /**
-   * A generated chip was tapped (#535 decision 12) — the same author call
-   * with the direction attached, so the brief comes back with it written IN
-   * rather than appended (his ruling, Crew reply #144).
-   */
-  tap: (direction: string) => void;
   undo: () => void;
   /** Typing clears the line and spends the undo — call from the box's onChange. */
   typed: () => void;
@@ -109,8 +69,6 @@ export function useReimagine(input: {
 }): ReimagineState {
   const mutation = trpc.castingV2.reimagine.useMutation();
   const [line, setLine] = useState<ReimagineState["line"]>(null);
-  /* The direction standing in the box — see `ReimagineState.written`. */
-  const [written, setWritten] = useState<string | null>(null);
   /*
     One level of undo, a ref rather than state: it is read only inside
     handlers, and it must be captured at the press — the value the customer
@@ -127,30 +85,20 @@ export function useReimagine(input: {
 
   const empty = input.value.trim().length === 0;
 
-  /*
-    ONE road for both acts. A press and a chip tap differ in exactly two
-    things — whether a direction rides along, and which line the surface says
-    afterwards — so they share the flight guard, the undo capture and the
-    honest failure rather than growing a second copy of them (working law 4:
-    a second implementation shadowing this one would drift from it).
-  */
-  const send = (direction: string | null, said: "idea" | "direction") => {
+  const press = () => {
     if (mutation.isPending || !input.enabled || empty) return;
     const wasAt = ++flight.current;
     const was = input.value;
     mutation.mutate(
-      direction === null ? { briefText: was.trim() } : { briefText: was.trim(), direction },
+      { briefText: was.trim() },
       {
         onSuccess: (outcome) => {
           if (flight.current !== wasAt) return;
           if (outcome.kind === "idea") {
             prior.current = was;
             input.onValue(outcome.text);
-            setLine(said);
-            /* A press writes over whatever direction stood, so it clears it. */
-            setWritten(direction);
+            setLine("idea");
           } else {
-            /* Nothing was written, so nothing changed about what stands. */
             setLine("nothing");
           }
         },
@@ -163,35 +111,25 @@ export function useReimagine(input: {
     );
   };
 
-  const press = () => send(null, "idea");
-  const tap = (direction: string) => {
-    if (direction.trim().length === 0) return;
-    send(direction.trim(), "direction");
-  };
-
   const undo = () => {
     if (prior.current === null) return;
     input.onValue(prior.current);
     prior.current = null;
     setLine(null);
-    setWritten(null);
   };
 
   const typed = () => {
     flight.current += 1;
     prior.current = null;
     if (line !== null) setLine(null);
-    if (written !== null) setWritten(null);
   };
 
   return {
     pending: mutation.isPending,
     line,
     canUndo: prior.current !== null,
-    written,
     empty,
     press,
-    tap,
     undo,
     typed,
   };
@@ -242,12 +180,7 @@ export function ReimagineButton({
  */
 export function ReimagineLine({ state }: { state: ReimagineState }) {
   if (state.line === null) return null;
-  const said =
-    state.line === "idea"
-      ? REIMAGINED_LINE
-      : state.line === "direction"
-        ? DIRECTION_WRITTEN_LINE
-        : NOTHING_TO_OFFER_LINE;
+  const said = state.line === "idea" ? REIMAGINED_LINE : NOTHING_TO_OFFER_LINE;
   return (
     <p className="dpc-reim__line" role="status">
       {said}

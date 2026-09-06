@@ -174,10 +174,21 @@ surface:
   `HERITAGES` / `LOOK_KEYS` offerings on the author road (#180's ghost). The
   *"edited below, not cast yet"* mark survives. #534's box-rewrite mechanism
   survives — it is how the fold and the chips land in the box.
-- **Generated chips (decision 12)** — the author returns a few per-open-axis
+- ~~**Generated chips (decision 12)** — the author returns a few per-open-axis
   directions in the brief's register at roll time, stored on the roll;
   tapping one writes the phrase into the box. Suggestions beside the box,
-  never pickers on the sentence.
+  never pickers on the sentence.~~
+  ⚠ **RETIRED BY HIM, 2026-09-06 13:20Z — Crew reply #151, verbatim and
+  entire: *"remove suggestion chips they are not required and then close #535
+  and #534"*.** They were built (PR #601), he read them on his own sheet and
+  said *"good"* (reply #150, 12:50Z), and thirty minutes later he ruled them
+  out. The whole road is deleted rather than flagged off — surface, door, its
+  instruction and guards, its rate bucket, its stylesheet block, **and the
+  `direction` parameter on `castingV2.reimagine`, which existed only to carry
+  a tapped chip** (law 7's ruling sweep: what was bolted to the closing path
+  goes with it). **The press is untouched and is the whole feature now.**
+  Decision 11's fold road — the customer's own editing instruction typed into
+  the box — is also untouched; it never needed a chip to reach it.
 - **Tests** retire or move with their subjects (`imaginationMeter.test.ts`,
   the imagination arms of `rollProjection.test.ts`, `rollService.test.ts`,
   `authorModel.test.ts`, `creativeRegisterScope.test.ts`,

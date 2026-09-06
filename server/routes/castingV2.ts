@@ -44,7 +44,6 @@ import {
   captureCastingV2Enabled,
 } from "../castingV2/castingV2Scope";
 import { reimagineBrief } from "../castingV2/reimagine";
-import { briefChipsFor } from "../castingV2/briefChips";
 import { authorTextEngine } from "../castingV2/promptAuthor";
 import { CAST_STYLES } from "../../shared/castStyles";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
@@ -1375,16 +1374,6 @@ export const castingV2Router = router({
       z
         .object({
           briefText: z.string().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD),
-          /*
-            A GENERATED CHIP the customer tapped (#535 decision 12). Optional,
-            so this is an ADDITIVE input change and no in-flight bundle can be
-            rejected by it. Bounded well ABOVE a chip's own ten-word ceiling
-            (`BRIEF_CHIP_MAX_WORDS`, raised from eight when the drive found
-            eight throwing away a nine-word line), because it is words from a
-            list this server wrote — the bound is a shape check, not a trust
-            boundary.
-          */
-          direction: z.string().min(1).max(200).optional(),
         })
         .strict(),
     )
@@ -1405,55 +1394,10 @@ export const castingV2Router = router({
       const outcome = await reimagineBrief({
         engine,
         briefText: input.briefText,
-        direction: input.direction ?? null,
       });
       /* An explicit projection (invariant 8): the box gets the text and nothing else — no model, no latency, no refusal sentences. */
       if (outcome.kind === "idea") return { kind: "idea", text: outcome.text };
       return { kind: "nothing" };
-    }),
-
-  /**
-   * THE GENERATED CHIPS beside the brief box (#535 decision 12, verbatim:
-   * *"Generated chips replace the legacy look list … a few directions per
-   * OPEN axis, in the brief's own register, as qualities … tapping one writes
-   * the phrase into the dock box."*). `briefChips.ts` holds the instruction
-   * and the guards; this is the door.
-   *
-   * FREE to the customer, like the press beside it: one house text call, and
-   * the roll is still the only priced act. Its own rate bucket for the
-   * press's own reason — it spends house money with no charge path to pace
-   * it — and tighter, because nothing about this is a person pressing a
-   * button: the surface asks once per brief and TanStack caches the answer,
-   * so a high rate here is a loop and not a customer.
-   *
-   * A QUERY and not a mutation because it writes nothing anywhere: the chips
-   * are DERIVED from the brief the sheet was cast from, so the same sheet in
-   * the same session shows the same directions without a row to keep them in.
-   * ⚠ **His decision says "stored on the roll" and this is the one place this
-   * build reads him loosely — declared here rather than discovered later.**
-   * What storage would buy is the same list on a later day; what it costs is
-   * a column, a write on a read path, and a compile record mutated after the
-   * roll it records. A fresh list next week is not a defect the customer can
-   * even name, so the cheaper honest road ships and the card says so.
-   *
-   * An empty list is a STATE, not a failure — his own sentence: *"A brief
-   * that pins everything shows no taste chips."* A pinned brief, a refused
-   * draft and an author outage all return `[]`, because the customer's next
-   * act is identical in all three and the surface simply draws nothing.
-   */
-  briefChips: protectedProcedure
-    .input(z.object({ briefText: z.string().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD) }).strict())
-    .query(async ({ ctx, input }): Promise<{ chips: string[] }> => {
-      /* The flag first and NOT_FOUND, the press's own reasoning: outside the register scope there is no such capability. */
-      if (!captureCastingCreativeRegisterEnabled(ctx.user.id)) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "No such thing." });
-      }
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.briefChips);
-      const engine = authorTextEngine();
-      if (!engine) return { chips: [] };
-      const outcome = await briefChipsFor({ engine, briefText: input.briefText });
-      /* An explicit projection (invariant 8): the phrases and nothing else — no model, no latency, no dropped-chip reasons. */
-      return { chips: outcome.chips };
     }),
 
   /** The 2.5s poll. Per-candidate states, nothing provider-shaped (§J). */
