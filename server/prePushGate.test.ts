@@ -30,6 +30,23 @@ function drive(remoteRef: string, marker: string | undefined): number {
   const env = { ...process.env };
   delete env.DRAPE_DEPLOY_RITE;
   if (marker !== undefined) env.DRAPE_DEPLOY_RITE = marker;
+  /*
+    ⚠ ARM 2's freshness check is STUBBED here, and the arms below are about ARM
+    1 alone (#606, #519). ARM 2 runs `pnpm architecture:check && pnpm
+    capability:check` — ~10s of real generation — and every arm in this file
+    that pushes a branch other than `main` would pay it, which is exactly what
+    happened: two arms timed out at 5000ms the first time the hook grew this
+    arm. Stubbing keeps each arm measuring the one decision it names; ARM 2's
+    own decision is driven end to end, against real repositories and a real
+    remote, in `server/atlasPushGate.test.ts`.
+
+    The stub arrives through git's own env-config protocol rather than
+    `git config`, because this suite runs the hook in THIS repository and a
+    test must not write to the developer's config.
+  */
+  env.GIT_CONFIG_COUNT = "1";
+  env.GIT_CONFIG_KEY_0 = "drape.atlasCheck";
+  env.GIT_CONFIG_VALUE_0 = "true";
   try {
     execFileSync("sh", [HOOK], { input: refLine(remoteRef), env, encoding: "utf8", stdio: "pipe" });
     return 0;
@@ -63,7 +80,12 @@ describe("the pre-push gate", () => {
     expect(drive("refs/heads/main", "1")).toBe(0);
   });
 
-  it("leaves every other branch alone, marker or not", () => {
+  it("ARM 1 leaves every other branch alone, marker or not", () => {
+    /* ⚠ "alone" is ARM 1's claim and no longer the hook's: since #606/#519 a
+       BRANCH push meets the freshness arm, which refuses a stale map. The two
+       are independent — ARM 1 is about which ref deploys, ARM 2 about whether
+       the commits describe themselves — and this arm keeps naming only the
+       first, with the stub above holding the second still. */
     expect(drive("refs/heads/some-feature", undefined)).toBe(0);
     expect(drive("refs/heads/mainline", undefined)).toBe(0);
     expect(drive("refs/tags/v1", undefined)).toBe(0);

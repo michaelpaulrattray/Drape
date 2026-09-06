@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "2aceec210c4bbb1e"
+    "sourceFingerprint": "931f3edcc9fbbb3f"
   },
   "domains": [
     {
@@ -10985,6 +10985,10 @@
     {
       "id": "test:server/atlasMergeDriver.test.ts",
       "path": "server/atlasMergeDriver.test.ts"
+    },
+    {
+      "id": "test:server/atlasPushGate.test.ts",
+      "path": "server/atlasPushGate.test.ts"
     },
     {
       "id": "test:server/auditLog.test.ts",

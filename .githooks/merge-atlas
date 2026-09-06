@@ -19,10 +19,19 @@
 # file on disk is a placeholder, and the rite's freshness check refuses to
 # push one, so a placeholder cannot reach main.
 #
-# STATED LIMIT: `git rebase` and `git cherry-pick` call merge drivers too but
-# make their commits without pre-commit, so a placeholder can land in a
-# rebased commit; the marker survives and the NEXT `git commit` regenerates
-# and stages the map. The rite's freshness check is the backstop either way.
+# STATED LIMIT: `git rebase`, `git cherry-pick` and `git revert` call merge
+# drivers too but make their commits without pre-commit, so a placeholder can
+# land in a replayed or reverted commit; the marker survives and the NEXT
+# `git commit` regenerates and stages the map.
+#
+# ⚠ AND THE BACKSTOP THIS PARAGRAPH USED TO NAME COVERED ONLY HALF THE PUSHES
+# (cards #606, #519). It read "the rite's freshness check is the backstop either
+# way" — true of `main`, which only the rite pushes, and false of every shift
+# BRANCH, which never meets the rite. So a branch pushed a placeholder or a
+# stale map and learned about it from the gate, three and a half minutes later,
+# for a regenerate and a second seven-minute run. `.githooks/pre-push` ARM 2 now
+# runs the rite's own two checks before any branch push, so both halves have a
+# backstop and it is the same one.
 #
 # Arguments are git's: %O ancestor, %A ours (the result is written here),
 # %B theirs, %P the path. Registered per clone, like the hooks path:

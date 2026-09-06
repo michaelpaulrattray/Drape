@@ -58,6 +58,28 @@ const FLAGGED: Record<string, { door: boolean; why: string }> = {
       + "conformance, eye frames, the script guards, and — since #263 — pnpm check, "
       + "all over the commit being pushed.",
   },
+  ".githooks/pre-push": {
+    door: false,
+    why: "THE LOCK ITSELF, not a door — it is the hook every other entry here has to "
+      + "get past, and it spawns no push of its own. It arrived on this list when ARM "
+      + "2 (#606, #519) was added and its docblock came to name a real `git push`, in "
+      + "the sentence recording that `server/atlasPushGate.test.ts` drives it against "
+      + "a real bare remote rather than a mock. Its two arms: ARM 1 refuses any hand "
+      + "push to main without DRAPE_DEPLOY_RITE; ARM 2 refuses a BRANCH push whose "
+      + "generated maps are stale, which is the backstop main already had through the "
+      + "rite. Over-inclusion putting the lock on the list is the contract working, "
+      + "exactly as it is for `prMergeOrder.mts` above.",
+  },
+  "server/atlasPushGate.test.ts": {
+    door: false,
+    why: "The suite for the hook's ARM 2 (#606, #519). It DOES run a real `git push` — "
+      + "at a bare repository it creates under the OS temp directory, never at a "
+      + "remote — because a hook that decides whether a push may proceed cannot be "
+      + "proven against a mock, and because every allow-arm has to read the remote "
+      + "back to show the push actually landed. It has no path to `main`: the fixture "
+      + "branch is deliberately named `trunk`, since ARM 1 refuses `refs/heads/main` "
+      + "and would otherwise answer for ARM 2.",
+  },
   "scripts/lib/pushPaths.mts": {
     door: false,
     why: "The detector itself. Its docblock states the contract in prose ('contains a "
@@ -180,7 +202,13 @@ describe("the doors to main are enumerated (#263)", () => {
       "docs/HOWTO.md": "run `git push origin main` when you are done",
       "server/thing.ts": "const items = []; items.push(1);",
     }));
-    expect(reading.pushers).toEqual([ORIGIN_PUSHER]);
+    /* ⚠ `.githooks/pre-push` is in `baseline` and joined this list on
+       2026-09-07: ARM 2's docblock (#606, #519) names a real `git push` in the
+       sentence recording that its suite drives it against a bare remote rather
+       than a mock. That the hook held no such literal before was incidental,
+       not a designed property — the arm's subject is the DOC and the
+       `items.push(1)`, both of which it still excludes. */
+    expect(reading.pushers.sort()).toEqual([".githooks/pre-push", ORIGIN_PUSHER].sort());
   });
 
   it("REFUSES rather than reporting an empty list when the reader goes blind", () => {

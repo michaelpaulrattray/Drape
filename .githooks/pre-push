@@ -1,5 +1,10 @@
 #!/bin/sh
 #
+# TWO ARMS. ARM 1 — the rite is the only push path to production. ARM 2 — a
+# BRANCH push carries a fresh map, which until now only `main` did.
+#
+# ─────────────────────────────────────────────────────────── ARM 1
+#
 # THE RITE IS THE ONLY PUSH PATH TO PRODUCTION, BY CONSTRUCTION.
 #
 # Ordered fable-982 after the SECOND hand-push in the program's record. The
@@ -27,6 +32,144 @@
 # The rite refuses to run when that config is absent, so the guard cannot be
 # quietly uninstalled by the next person who clones.
 
+# ─────────────────────────────────────────────────────────── ARM 2
+#
+# A BRANCH PUSH GETS THE FRESHNESS BACKSTOP `main` ALREADY HAD (cards #606, #519).
+#
+# `.githooks/pre-commit` ARM 3 (#501) regenerates the generated maps on any
+# commit that could move them, so a branch normally pushes the map of its own
+# tree. **But git does not run `pre-commit` on every road to a commit.**
+# Measured here on git 2.55.0.windows.3, one scratch repository per road:
+#
+#     road                  pre-commit  prepare-commit-msg  post-commit  post-rewrite
+#     ordinary commit           yes           yes               yes           -
+#     git revert --no-edit      NO            yes               yes           -
+#     git cherry-pick           NO            yes               yes           -
+#     git rebase (replay)       NO            yes               yes          yes
+#     git commit --amend        yes           yes               yes          yes
+#
+# So three roads skip the regeneration, and every one of them is a road shifts
+# now walk on purpose: **under deploy-on-merge (#508) every rollback proof is a
+# revert.** #606 is that, caught on PR #605 — `git revert --no-edit` deleted a
+# module and the commit carried the old map, the gate's Architecture Atlas
+# freshness step went red at ~3½ minutes, and it cost a regenerate, a second
+# commit and a second seven-minute gate. #519 is the rebase half: the merge
+# driver leaves a PLACEHOLDER for `pre-commit` to replace, and on a replayed
+# commit nothing replaces it.
+#
+# ⚠ WHY NOT REPAIR IT AT THE COMMIT, WHICH IS WHAT BOTH CARDS FIRST PROPOSED.
+# `prepare-commit-msg` fires on all three roads, so it looks like the answer.
+# Driven instead of assumed: a `prepare-commit-msg` that writes and `git add`s a
+# file lands it in a cherry-pick and in a rebase — **and NOT in a revert**,
+# where the hook fires twice and the staged file is dropped. A repair that works
+# on two of the three roads and silently fails on the third — the common one —
+# is worse than no repair, because it reads as coverage. `post-commit` cannot
+# refuse (its exit code is ignored) and cannot amend safely mid-sequencer.
+#
+# So this is a GATE rather than a repair, and it is the same reading the rite
+# already performs before it pushes `main` — `merge-atlas`'s own stated limit
+# ends *"the rite's freshness check is the backstop either way"*, which was true
+# of `main` and false of every branch, because a branch push never meets the
+# rite. This closes that asymmetry with the rite's own two commands.
+#
+# ⚠ IT REFUSES ONLY WHEN ITS VERDICT IS TRUSTWORTHY. Both checks read the bytes
+# ON DISK, not the committed tree. With uncommitted work in a path the
+# generators read, "stale" may be true of the working tree and false of the
+# commit being pushed — so in that state it WARNS and lets the push through,
+# rather than blocking a legitimate push on a question it cannot answer. The
+# population is `.githooks/atlas-paths`, shared with the commit hook so the two
+# cannot drift about which files matter.
+#
+# ⚠ TWO STATED LIMITS, because a guard that half-declares one reads as coverage.
+#
+# 1. IT JUDGES THE CURRENT WORKING TREE, WHATEVER REF IS BEING PUSHED. `git push
+#    origin some-other-branch` from this checkout gets a verdict about THIS
+#    tree — wrong in both directions, and the false-ALLOW direction (tree fresh,
+#    pushed branch stale) is silent. That is the pre-existing status quo rather
+#    than something this arm introduced, and the gate remains the backstop for
+#    it; it is named here rather than left to be discovered.
+# 2. The `printf` of the dirty list is unquoted so each name prints on its own
+#    line. A filename holding a space splits, and a glob character expands. It
+#    is display only — the refusal decision never reads it — and the tradeoff is
+#    a legible list against a cosmetic edge nothing in this tree has.
+#
+# `drape.atlasCheck` overrides the check command; its only intended use is the
+# guard's own test, which drives real temporary repositories with no generator.
+# Driven by `server/atlasPushGate.test.ts`, against real repositories and a real
+# `git push` to a real bare remote.
+
+atlas_push_gate() {
+  # The rite runs these two itself before it pushes main — do not pay twice.
+  [ -n "$DRAPE_DEPLOY_RITE" ] && return 0
+
+  hooks_dir=$(dirname "$0")
+  . "$hooks_dir/atlas-paths" || {
+    echo "REFUSED — cannot read .githooks/atlas-paths, so map freshness cannot be judged." >&2
+    return 1
+  }
+
+  check=$(git config drape.atlasCheck 2>/dev/null)
+  [ -n "$check" ] || check="pnpm architecture:check && pnpm capability:check"
+
+  # stdin is git's ref list and the loop below is still reading it — a check
+  # command that consumed it would silently eat refs.
+  out=$(sh -c "$check" </dev/null 2>&1)
+  status=$?
+  [ "$status" -eq 0 ] && return 0
+
+  # Stale — but is the staleness the COMMIT's, or uncommitted work on disk?
+  #
+  # ⚠ THREE READS, AND THE MIDDLE ONE IS THE ONE THIS SHIPPED WITHOUT (review of
+  # PR #610, finding 5). `git diff` is worktree-vs-index (UNSTAGED only) and
+  # `ls-files --others` is UNTRACKED only, so a file that is STAGED but not
+  # committed fell through both: the check read it off disk and said stale, the
+  # dirty read came back empty, and the hook refused a legitimate push with
+  # "the working tree is clean" — a sentence that was false, above a remedy
+  # that was wrong. Commit, then `git add` the next task's file, then push, and
+  # it fires. The dirty read covering two of three dirty states is the same
+  # shape as the repair this hook exists to reject.
+  #
+  # `atlas-stage` reads only two of these ON PURPOSE and is not a sibling: there
+  # the staged files ARE the commit, so unstaged and untracked is exactly the
+  # population that can differ from it.
+  dirty=$( { git diff --name-only 2>/dev/null; \
+             git diff --cached --name-only 2>/dev/null; \
+             git ls-files --others --exclude-standard 2>/dev/null; } \
+    | grep -E "$WARN_MATCHES" | sort -u)
+  if [ -n "$dirty" ]; then
+    echo "" >&2
+    echo "atlas: ⚠ the generated maps read STALE, but these sources are uncommitted:" >&2
+    echo "" >&2
+    printf '  %s\n' $dirty >&2
+    echo "" >&2
+    echo "Both checks read the bytes on disk, so this may be true of your working tree" >&2
+    echo "and false of the commits being pushed. The push is allowed — but if the gate" >&2
+    echo "reddens on Architecture Atlas freshness, this is why." >&2
+    echo "" >&2
+    return 0
+  fi
+
+  echo "" >&2
+  echo "REFUSED — the working tree is clean and the generated maps are STALE, so these" >&2
+  echo "commits carry a map that does not describe them." >&2
+  echo "" >&2
+  printf '%s\n' "$out" | tail -n 5 >&2
+  echo "" >&2
+  echo "  pnpm architecture:generate && pnpm capability:generate" >&2
+  echo "" >&2
+  echo "then review the diff and commit it. git does not run pre-commit on a revert," >&2
+  echo "a cherry-pick or a replayed rebase commit, so the map was never rebuilt for" >&2
+  echo "this one. (cards #606, #519 — never --no-verify.)" >&2
+  echo "" >&2
+  return 1
+}
+
+# ⚠ THIS MUST STAY THE FIRST `case "$1" in` IN THE FILE (review of PR #610,
+# finding 2). `scripts/lib/pushPaths.mts:readProtectedRefs` parses the first one
+# to derive which refs the gate protects; put `deleting_ref` above it and the
+# reader silently returns an empty list — a gate that protects nothing, read as
+# a gate. `server/pushPathsToMain.test.ts` pins the answer to ["main"] and would
+# redden, but the coupling is invisible at the bytes, so it is written here.
 protected_ref() {
   case "$1" in
     refs/heads/main) return 0 ;;
@@ -34,7 +177,20 @@ protected_ref() {
   esac
 }
 
-while read -r _local_ref _local_sha remote_ref _remote_sha; do
+# Keep BELOW protected_ref — see the note above it.
+deleting_ref() {
+  # git sends the all-zero sha as the local side of a branch DELETION; there is
+  # no tree to judge, so the freshness arm must not fire on one.
+  case "$1" in
+    *[!0]*) return 1 ;;
+    "") return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+atlas_checked=0
+
+while read -r _local_ref local_sha remote_ref _remote_sha; do
   if protected_ref "$remote_ref"; then
     if [ -z "$DRAPE_DEPLOY_RITE" ]; then
       echo "" >&2
@@ -52,6 +208,12 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
       echo "" >&2
       exit 1
     fi
+  fi
+
+  # Once per push, whatever the ref count: the checks read one working tree.
+  if [ "$atlas_checked" = "0" ] && ! deleting_ref "$local_sha"; then
+    atlas_checked=1
+    atlas_push_gate || exit 1
   fi
 done
 

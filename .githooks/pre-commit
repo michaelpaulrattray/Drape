@@ -54,6 +54,25 @@
 #   ARM 0 stages them before ARM 2 runs. Said here rather than left as a
 #   difference between the two roads that nobody wrote down.
 #
+# ⚠ ALL THREE ARMS ARE SKIPPED ON THE SAME THREE ROADS, AND ONLY ONE HAS A
+# BACKSTOP (law-7 sweep of #606/#519, from PR #610's review). Measured on git
+# 2.55, one scratch repository per road: `git revert`, `git cherry-pick` and a
+# REPLAYED rebase commit do not run this hook at all. (`git commit --amend`
+# does, so the amend road is not on this list.) That is not a property of ARM 3
+# — it is a property of the HOOK, so every arm here is absent on those roads:
+#
+#   ARM 3, the stale map — BACKSTOPPED. `.githooks/pre-push` ARM 2 runs the
+#     rite's own freshness checks before any branch push (#606, #519).
+#   ARM 1, the shared-tree cross-commit (R3) — NOT backstopped, and it is the
+#     one that matters, because "under deploy-on-merge every rollback proof is a
+#     revert" makes this a road shifts walk on purpose. A `git revert` on a
+#     `team/*` branch from the MAIN working tree commits with no refusal, which
+#     is the R3 incident verbatim. Filed as issue #611 rather than fixed here.
+#   ARM 2, the control byte (R4) — NOT backstopped, and the exposure is small:
+#     a replayed commit's bytes were scanned when it was first created. It bites
+#     only on a cherry-pick of a commit made with --no-verify or authored
+#     outside this repository.
+#
 # THE ESCAPE IS FIXING THE COMMIT, NOT --no-verify. Driven by
 # server/preCommitGate.test.ts against real temporary repositories.
 #

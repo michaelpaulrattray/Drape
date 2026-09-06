@@ -156,12 +156,29 @@ action or a PAT secret rather than `git push` — it would contain neither
 pattern. The `contents: write` grant is what such an action needs from the
 default token, which is why the permissions arm is the load-bearing one.
 
-### 3 · The pre-push hook covers both deploying branches
+### 3 · The pre-push hook, and it now has two arms
 
-`.githooks/pre-push` refuses `refs/heads/main` **and** `refs/heads/local-migration`
-without the rite's marker. Both deploy production, so both must be in it; the
-suite reads the refs out of the hook's own `case` arm rather than restating
-them.
+⚠ **This section said the hook "covers both deploying branches" —
+`refs/heads/main` **and** `refs/heads/local-migration` — and that stopped being
+true when #508 deleted `local-migration`.** Corrected 2026-09-07 at the hook's
+own `case` arm, which names `main` alone; `server/prePushGate.test.ts` has an
+arm asserting the deleted ref is no longer guarded, so the code was right and
+this page was the bug.
+
+**ARM 1 — which ref may deploy.** `.githooks/pre-push` refuses `refs/heads/main`
+without the rite's marker. It is a lock, never a door: it spawns no push of its
+own, which is why `FLAGGED` carries it as `door: false`.
+
+**ARM 2 — whether the commits describe themselves (#606, #519, added
+2026-09-07).** A BRANCH push now runs the rite's own `architecture:check` and
+`capability:check`. It exists because git does not run `pre-commit` on a
+`revert`, a `cherry-pick` or a replayed `rebase` commit — measured, one scratch
+repository per road — so those commits carried a stale generated map and learned
+about it from the gate seven minutes later. `main` already had this backstop
+through the rite; every branch had none. It **skips when `DRAPE_DEPLOY_RITE` is
+set**, so the rite never pays twice, and it **warns rather than refuses** when
+uncommitted work in a generator-read path means its verdict would be about the
+working tree rather than the commits being pushed.
 
 ---
 

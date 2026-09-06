@@ -365,10 +365,14 @@ describe("the pre-commit atlas arm (#501)", { timeout: 60_000 }, () => {
       expect(roots.length).toBeGreaterThanOrEqual(4);
       expect(roots).toContain("server");
 
-      const hook = readFileSync(resolve(".githooks/atlas-stage"), "utf8");
+      /* The filters moved out of this hook and into `.githooks/atlas-paths`
+         when `pre-push` became their second consumer (#606, #519) — one owner,
+         per working law 4. This arm follows them rather than being relaxed;
+         `server/atlasPushGate.test.ts` holds both hooks to sourcing it. */
+      const hook = readFileSync(resolve(".githooks/atlas-paths"), "utf8");
       const declared = (name: string): RegExp => {
         const found = new RegExp(`\\n${name}='([^']+)'`).exec(hook);
-        expect(found, `atlas-stage no longer declares ${name}='…'`).not.toBeNull();
+        expect(found, `atlas-paths no longer declares ${name}='…'`).not.toBeNull();
         return new RegExp(found![1]!);
       };
       /* WARN_MATCHES is the one held to the generator: it is the population
