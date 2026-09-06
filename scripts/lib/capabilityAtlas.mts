@@ -301,24 +301,66 @@ export function declaredFlags(): string[] {
 const DOOR_MODULE_DIR = "server/castingV2";
 
 /**
+ * Resolve a RELATIVE import specifier against the importing file, to a
+ * repo-relative path with `.` and `..` collapsed.
+ *
+ * A bare specifier (a package) and one climbing above the repo root both return
+ * null: neither is a path in this tree, and neither may resolve to one.
+ */
+function resolveSpecifier(fromFile: string, specifier: string): string | null {
+  if (!specifier.startsWith("./") && !specifier.startsWith("../")) return null;
+  const parts = fromFile.split("/").slice(0, -1);
+  for (const part of specifier.split("/")) {
+    if (part === "" || part === ".") continue;
+    if (part === "..") {
+      if (parts.length === 0) return null;
+      parts.pop();
+      continue;
+    }
+    parts.push(part);
+  }
+  return parts.join("/");
+}
+
+/**
  * Does this test file REACH the module the doors are declared in — by living
  * there, or by importing from there?
  *
  * Kept beside `pinningTests` because it is that function's whole correction,
  * and separate from it because the arms drive it directly: a rule that can only
  * be exercised through a full atlas build is a rule nobody sabotages.
+ *
+ * ⚠ **THE IMPORT ARM RESOLVES THE SPECIFIER; IT DOES NOT SEARCH IT FOR A TOKEN
+ * (PR #615 review, finding 1).** The first shape asked whether the specifier
+ * merely CONTAINED `castingV2`, which credited `./db/castingV2Segments` and
+ * `../routes/castingV2` — files outside the door module whose NAMES carry the
+ * word. That is a substring standing in for a fact the path already states,
+ * which is the very class this function exists to fix, re-opened one level
+ * down: name a crew helper `castingV2Report.mts` and any stranger importing it
+ * may pin every door it happens to quote.
+ *
+ * ⚠ **TIGHTENING IT COSTS NOTHING, AND THAT WAS MEASURED RATHER THAN ASSUMED.**
+ * The review suggested declaring the looseness instead, on the ground that it
+ * was load-bearing for `server/segmentsOnFaceEndpoint.test.ts` (which imports
+ * `./db/castingV2Segments`). Read at the artifact: that file holds **no pins at
+ * all** — it never quotes a door id — so nothing rests on the substring. The
+ * exact rule keeps every real pin and the atlas is byte-identical.
  */
 export function reachesDoors(relPath: string, text: string): boolean {
   if (relPath.startsWith(`${DOOR_MODULE_DIR}/`)) return true;
   for (const match of text.matchAll(/\bfrom\s+["']([^"']+)["']/g)) {
-    if (match[1]!.includes("castingV2")) return true;
+    const resolved = resolveSpecifier(relPath, match[1]!);
+    if (resolved && resolved.startsWith(`${DOOR_MODULE_DIR}/`)) return true;
   }
   return false;
 }
 
 /**
- * Which test files name an id — as a QUOTED literal, so `busy` in prose does not
- * count as a pin. A refusal with no pin is a door nobody has proven can shut.
+ * THE PIN RULE AND WHY IT IS WHAT IT IS — the record for `reachesDoors` above
+ * and `pinCandidates` below, which apply it.
+ *
+ * A pin is a test proving a refusal door can shut, and a refusal with no pin is
+ * a door nobody has proven can shut.
  *
  * ⚠ **A FILE THAT MERELY SPELLS A DOOR ID IS NOT A PIN — #545 / #614.** Until
  * 2026-09-07 the only question asked was whether the quoted literal appeared
@@ -389,13 +431,21 @@ export function pinCandidates(
   */
   if (kept.length === 0) {
     throw new Error(
-      `pinningTests: no test file reaches ${DOOR_MODULE_DIR}. That is a broken resolver, ` +
+      `pinCandidates: no test file reaches ${DOOR_MODULE_DIR}. That is a broken resolver, ` +
       "not a product with no arms — refusing rather than reporting every door unpinned.",
     );
   }
   return kept;
 }
 
+/**
+ * Which test files name an id — as a QUOTED literal, so `busy` in prose does not
+ * count as a pin, and only among the files `pinCandidates` allows.
+ *
+ * A refusal with no pin is a door nobody has proven can shut. The reach rule
+ * that decides who may pin, and the measurements behind it, are documented on
+ * `pinCandidates` and `reachesDoors` above.
+ */
 export function pinningTests(ids: string[]): Map<string, string[]> {
   const tests = listFiles(path.join(repoRoot, "server"), (n) => n.endsWith(".test.ts"));
   const texts = pinCandidates(

@@ -157,6 +157,47 @@ describe("the static half reads what the source declares", () => {
     expect(reachesDoors("server/casting/geminiMigration.test.ts", '["empty", ""]')).toBe(false);
   });
 
+  it("⚠ the import arm RESOLVES the specifier — a filename carrying the token is not the module (review #615, finding 1)", () => {
+    /*
+      The first shape asked whether a specifier merely CONTAINED `castingV2`,
+      which is a substring standing in for a fact the path already states — the
+      very class this function exists to fix, one level down. A crew helper
+      named `castingV2Report.mts` would have let any stranger importing it pin
+      every door it happened to quote.
+
+      ⚠ The review proposed DECLARING the looseness instead, believing it was
+      load-bearing for `server/segmentsOnFaceEndpoint.test.ts`. Read at the
+      artifact: that file holds no pins at all, so nothing rested on it — which
+      is why the exact rule was taken and the atlas did not move.
+    */
+    const doorish = 'expect(x).toEqual({ kind: "unreadable" });';
+
+    /* Resolves INTO the door module — the real out-of-domain pin's shape. */
+    expect(reachesDoors("server/db/referenceReadDemand.test.ts", `from "../castingV2/makeupFromReference";\n${doorish}`)).toBe(true);
+
+    /* Names the token, resolves ELSEWHERE — credited before, refused now. */
+    expect(reachesDoors("server/segmentsOnFaceEndpoint.test.ts", `from "./db/castingV2Segments";\n${doorish}`)).toBe(false);
+    expect(reachesDoors("server/x.test.ts", `from "../routes/castingV2";\n${doorish}`)).toBe(false);
+    expect(reachesDoors("server/x.test.ts", `from "./crew/castingV2Report.mts";\n${doorish}`)).toBe(false);
+
+    /*
+      A bare package specifier is not a path in this tree and never resolves.
+      ⚠ The specifier here is deliberately `castingV2/refineDelta` and not the
+      bare `castingV2`: the shorter one is refused by the trailing slash on the
+      prefix whether the bare-specifier guard exists or not, so an arm using it
+      passes for the wrong reason and reddens under no sabotage. This one
+      resolves to `server/castingV2/refineDelta` the moment the guard is gone.
+    */
+    expect(reachesDoors("server/x.test.ts", `from "castingV2/refineDelta";\n${doorish}`)).toBe(false);
+    /*
+      Nor does one climbing above the repo root — and the shape is chosen the
+      same way. The specifier must be one that would land INSIDE the module if
+      `..` clamped at the root instead of refusing, or the arm is green whatever
+      the resolver does.
+    */
+    expect(reachesDoors("server/db/x.test.ts", `from "../../../server/castingV2/thing";\n${doorish}`)).toBe(false);
+  });
+
   it("POSITIVE CONTROL — the real specimens, read at this tree rather than at a fixture", () => {
     const pins = pinningTests(["unreadable", "empty", "wall_unfileable", "busy"]);
 
