@@ -29,10 +29,13 @@
  * nothing to the tree.
  */
 import { spawnSync } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 
 import {
   PREFLIGHT_CHECKS,
+  aliasPrefixes,
+  buildSubjectIndex,
   chunkVitestFiles,
   formatSeconds,
   isCollectedTest,
@@ -156,8 +159,64 @@ function repoTestFiles(): string[] {
   ].filter(isSuite);
 }
 
+/**
+ * Every file AND directory in the tracked tree — the set a path-shaped
+ * literal is resolved against. Derived from `git ls-files` rather than walked,
+ * so it cannot disagree with what is actually in the repository.
+ */
+/** A file's text, or "" — this whole block degrades rather than crashing. */
+function readIfPossible(file: string): string {
+  try {
+    return fs.readFileSync(file, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+function repoPaths(): Set<string> {
+  const paths = new Set<string>();
+  for (const file of [
+    ...lines(git(["ls-files"])),
+    ...lines(git(["ls-files", "--others", "--exclude-standard"])),
+  ]) {
+    const unix = file.replace(/\\/g, "/");
+    paths.add(unix);
+    const parts = unix.split("/");
+    for (let i = 1; i < parts.length; i += 1) paths.add(parts.slice(0, i).join("/"));
+  }
+  return paths;
+}
+
 const { files: changed, baseUsed } = changedFiles();
-const selection = selectDiffAdjacentTests(changed, repoTestFiles());
+const repoTests = repoTestFiles();
+/*
+  #565 — THE SUITES THAT ARE ABOUT THE CHANGE, NOT ONLY THE ONES BESIDE IT.
+  Reading all 764 collected suites costs ~85 ms measured, so there is no cache
+  to go stale: the index is rebuilt every run from the tree it is about to
+  check. A suite that cannot be read is skipped rather than throwing — this is
+  an ADDITIVE selection, and an unreadable file must not turn preflight into a
+  crash when the worst it can cost is the coverage preflight had yesterday.
+*/
+const subjects = buildSubjectIndex(
+  repoTests.flatMap((test) => {
+    try {
+      return [[test, fs.readFileSync(path.join(repoRoot, test), "utf8")] as const];
+    } catch {
+      return [];
+    }
+  }),
+  repoPaths(),
+  /*
+    ⚠ THE READ IS GUARDED, NOT ONLY THE PARSE (PR #616 review, finding 1).
+    `aliasPrefixes`' docblock promises that a tsconfig which cannot be read
+    yields no aliases — but only the parse half was implemented, so a missing or
+    unreadable file threw uncaught and killed preflight with exit 1, which this
+    script's own header defines as "a check went red". Losing the alias spelling
+    is the designed outcome; crashing is not.
+  */
+  aliasPrefixes(readIfPossible(path.join(repoRoot, "tsconfig.json"))),
+);
+const selection = selectDiffAdjacentTests(changed, repoTests, subjects);
 
 const checks: PreflightCheck[] = [...PREFLIGHT_CHECKS];
 if (runTests && selection.files.length > 0) {
@@ -184,6 +243,14 @@ console.log(`  base ${base}${baseUsed ? ` (merge-base ${baseUsed.slice(0, 8)})` 
 console.log(`  ${changed.length} changed file${changed.length === 1 ? "" : "s"}`);
 if (selection.directories.length > 0) {
   console.log(`  test directories: ${selection.directories.join(", ")}`);
+}
+if (selection.subjectFiles.length > 0) {
+  // Named rather than folded into the count: a suite selected because it is
+  // ABOUT the change reads as a surprise otherwise ("why is a foundation guard
+  // running for a casting diff?"), and the answer is the whole point of #565.
+  const shown = selection.subjectFiles.slice(0, 6).join(", ");
+  const more = selection.subjectFiles.length > 6 ? ` (+${selection.subjectFiles.length - 6} more)` : "";
+  console.log(`  guards ABOUT the changed trees: ${shown}${more}`);
 }
 if (selection.uncovered.length > 0) {
   // Named rather than silently dropped: "preflight ran no tests" and "preflight
