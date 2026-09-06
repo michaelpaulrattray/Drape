@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "586da67f16399e2a"
+    "sourceFingerprint": "2aceec210c4bbb1e"
   },
   "domains": [
     {
@@ -128,7 +128,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 51
+      "moduleCount": 52
     },
     {
       "id": "domain:staff",
@@ -5997,6 +5997,12 @@
     {
       "id": "module:shared/crewCardIntents.ts",
       "path": "shared/crewCardIntents.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewCardResolution.ts",
+      "path": "shared/crewCardResolution.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12603,6 +12609,10 @@
     {
       "id": "test:server/crewCardIntents.test.ts",
       "path": "server/crewCardIntents.test.ts"
+    },
+    {
+      "id": "test:server/crewCardResolution.test.ts",
+      "path": "server/crewCardResolution.test.ts"
     },
     {
       "id": "test:server/crewHeartbeat.test.ts",
