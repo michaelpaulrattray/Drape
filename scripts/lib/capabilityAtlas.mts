@@ -348,7 +348,27 @@ function resolveSpecifier(fromFile: string, specifier: string): string | null {
  */
 export function reachesDoors(relPath: string, text: string): boolean {
   if (relPath.startsWith(`${DOOR_MODULE_DIR}/`)) return true;
-  for (const match of text.matchAll(/\bfrom\s+["']([^"']+)["']/g)) {
+  /*
+    ⚠ A DYNAMIC IMPORT COUNTS, AND THIS REPOSITORY HAS ALREADY PAID ONCE FOR
+    ASSUMING OTHERWISE (PR #615 review, round 2). A static-`from`-only reader is
+    exactly the Architecture Atlas's blind spot at `d614320f`, where 65 modules
+    read as having no caller — both login routes among them, reached only by
+    `await import(…)` — and "no caller" is the reading that says safe to remove.
+    Here the direction is the safe one rather than the dangerous one, but it is
+    still wrong: **13 test suites outside `server/castingV2/` reach the module
+    ONLY dynamically**, so the day one of them adds a real pin the census would
+    refuse to credit it and keep `unpinned-refusal` firing on a door that has an
+    arm. None quotes a door id today, which is why the regenerated atlas does
+    not move.
+
+    `vi.mock("…")` is covered by the same alternation, because mocking a module
+    is naming it as the subject just as plainly as importing it.
+  */
+  const specifiers = [
+    ...text.matchAll(/\bfrom\s+["']([^"']+)["']/g),
+    ...text.matchAll(/\b(?:import|require|vi\.mock|vi\.doMock)\s*\(\s*["']([^"']+)["']/g),
+  ];
+  for (const match of specifiers) {
     const resolved = resolveSpecifier(relPath, match[1]!);
     if (resolved && resolved.startsWith(`${DOOR_MODULE_DIR}/`)) return true;
   }

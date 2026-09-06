@@ -189,6 +189,16 @@ describe("the static half reads what the source declares", () => {
       resolves to `server/castingV2/refineDelta` the moment the guard is gone.
     */
     expect(reachesDoors("server/x.test.ts", `from "castingV2/refineDelta";\n${doorish}`)).toBe(false);
+
+    /*
+      A DYNAMIC import counts — 13 suites outside the module reach it only that
+      way, and a static-only reader is the Atlas's own `d614320f` blind spot.
+      `vi.mock` too: naming a module to mock it is naming it as the subject.
+    */
+    expect(reachesDoors("server/y.test.ts", `await import("./castingV2/refineDelta");\n${doorish}`)).toBe(true);
+    expect(reachesDoors("server/y.test.ts", `vi.mock("./castingV2/refineDelta", () => ({}));\n${doorish}`)).toBe(true);
+    /* …and a dynamic import resolving ELSEWHERE still grants nothing. */
+    expect(reachesDoors("server/y.test.ts", `await import("./db/castingV2Segments");\n${doorish}`)).toBe(false);
     /*
       Nor does one climbing above the repo root — and the shape is chosen the
       same way. The specifier must be one that would land INSIDE the module if
