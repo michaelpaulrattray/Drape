@@ -1,11 +1,22 @@
 /**
- * #296 — NO DOCUMENT MAY TELL A SHIFT THAT A MERGE TO `main` DEPLOYS.
+ * #296 — NO DOCUMENT MAY TELL A SHIFT THE WRONG REF DEPLOYS.
  *
- * **Measured, not argued** (foreman-121, 2026-08-30): PR #294 squash-merged to
- * `main` at `09:46Z`; twenty-five minutes later production was still serving the
- * previous build, and Railway had created **no deployment at all** for the merge
- * commit — not failed, not building, never started. Railway watches
- * `local-migration`, and a squash merge only moves `main`.
+ * ⚠ **THE DEPLOYING REF FLIPPED ON 2026-09-06 (#508) AND THIS GUARD FLIPPED
+ * WITH IT — by derivation, not by edit.** Railway now watches `main`; a squash
+ * merge IS a deploy; `local-migration` is deleted. The false sentence a shift
+ * can read today is the OLD truth: *"Every push to `local-migration` triggers
+ * a Railway build"*, or *"a merged PR has not shipped anything"*. The ref is
+ * read from `DEPLOY_SOURCE_REF` (the constant the rite pushes to), so this
+ * suite's verdicts moved the day the constant did (working law 4); what the
+ * arms below assert is the shape of the guard, and the controls carry BOTH
+ * eras so a future flip back cannot pass unnoticed either.
+ *
+ * **The original incident, measured, not argued** (foreman-121, 2026-08-30):
+ * PR #294 squash-merged to `main` at `09:46Z`; twenty-five minutes later
+ * production was still serving the previous build, and Railway had created
+ * **no deployment at all** for the merge commit — not failed, not building,
+ * never started. Railway watched `local-migration` then, and a squash merge
+ * only moved `main`.
  *
  * The reason this is worth a guard rather than a one-line edit is the reading:
  * **every check a shift naturally reaches for agrees with the merge.**
@@ -13,7 +24,8 @@
  * `/api/health` returns `200` — from the OLD process. So a shift that merged,
  * saw green, and wrote "shipped" would have been wrong in exactly the way
  * working law 1 names: a deploy reporting success is a claim, the changed bytes
- * are the fact.
+ * are the fact. (That trap survives the flip; `/api/health` now carries the
+ * `build` sha and `deploy-verify` waits for it, which is the repair.)
  *
  * ⚠ **And the sentence had THREE copies.** `CLAUDE.md`'s *"Every push to `main`
  * deploys"* was the authority, but `scripts/lib/refineDriver.mts` and
@@ -24,14 +36,11 @@
  * # What this arm does, and the two things it deliberately does not
  *
  * It scans the prose a shift actually reads and refuses a sentence that names
- * **the wrong ref as the deploying one**. It is a DECLARATION test, not a
- * mention test (#360's class): a document may name `main`, may quote the
- * corrected sentence, and may explain the mistake at length — what it may not do
- * is assert that pushing or merging `main` ships anything.
- *
- * The deploying ref is **derived from `DEPLOY_SOURCE_REF`**, the constant the
- * rite itself pushes to, so this guard cannot drift into being a second source
- * of truth about which ref deploys (working law 4).
+ * **the wrong ref as the deploying one**, and — since the flip — the one
+ * sentence that denies the merge deploys at all. It is a DECLARATION test, not
+ * a mention test (#360's class): a document may name either ref, may quote the
+ * corrected sentence, and may explain the mistake at length — what it may not
+ * do is assert that pushing a non-deploying ref ships anything.
  */
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -114,7 +123,7 @@ function withoutQuotation(source: string, kind: SourceKind): string {
 }
 
 /**
- * A CLAIM that pushing or merging `main` deploys. Returns the ref named.
+ * A CLAIM that pushing or merging a named ref deploys. Returns the ref named.
  *
  * ⚠ **BOTH HALVES OF THIS PATTERN WERE WIDER IN THE FIRST DRAFT AND IT FOUND
  * TWO FALSE POSITIVES IN THE REAL TREE**, which is the reason they are narrow
@@ -122,8 +131,9 @@ function withoutQuotation(source: string, kind: SourceKind): string {
  *
  * - the REF was any word, so *"pushing to a branch that deploys production"*
  *   (`scripts/lib/pushPaths.mts`) read as a claim about a branch called "a".
- *   Only `main`, `origin/main` and a `main:<ref>` refspec are claims about our
- *   deploy trigger; anything else is ordinary prose.
+ *   Only the two refs this product has ever deployed from — `main`,
+ *   `origin/main`, `local-migration`, and a `main:<ref>` refspec — are claims
+ *   about our deploy trigger; anything else is ordinary prose.
  * - the VERB allowed `deploy` as well as `deploys`, so *"direct pushes to main
  *   are the deploy rite's alone"* (`CLAUDE.md`) matched on the NOUN in "deploy
  *   rite". The verb must be asserted — `deploys`, `ships`, `will deploy`,
@@ -131,11 +141,18 @@ function withoutQuotation(source: string, kind: SourceKind): string {
  *
  * The cost of that narrowing is stated rather than hidden: an exotic phrasing
  * of the same falsehood can slip past. This guard is a floor, not a proof, and
- * its real job is that the three sentences which actually shipped cannot come
- * back.
+ * its real job is that the sentences which actually shipped cannot come back.
  */
 const CLAIM =
-  /\b(?:every )?(?:push(?:es|ing)? to|merg(?:e|es|ing) (?:to|into))\s+`?((?:origin\/)?main(?::[\w-]+)?)`?[^.\n]{0,60}?\b(?:deploys|ships|will deploy|triggers a (?:railway )?(?:build|deploy))\b/gi;
+  /\b(?:every )?(?:push(?:es|ing)? to|merg(?:e|es|ing) (?:to|into))\s+`?((?:origin\/)?(?:main|local-migration)(?::[\w-]+)?)`?[^.\n]{0,60}?\b(?:deploys|ships|will deploy|triggers a (?:railway )?(?:build|deploy))\b/gi;
+
+/**
+ * The one DENIAL that was true for a week and is false now: a document that
+ * tells a shift its merged PR has not shipped sends it to run a rite that
+ * production no longer waits for. Flagged only while the deploying ref is
+ * `main`, because that is the only world in which the sentence is false.
+ */
+const MERGE_DENIAL = /\bmerged PR has not shipped\b/gi;
 
 /** The ref a claim may legally name — derived, never restated. */
 const DEPLOYING_REF = DEPLOY_SOURCE_REF;
@@ -143,17 +160,23 @@ const DEPLOYING_REF = DEPLOY_SOURCE_REF;
 /** Defaults to `code`, the STRICTER reading — a new caller cannot get the lax one by forgetting. */
 function wrongClaims(source: string, kind: SourceKind = "code"): Array<{ ref: string; sentence: string }> {
   const hits: Array<{ ref: string; sentence: string }> = [];
-  for (const match of withoutQuotation(source, kind).matchAll(CLAIM)) {
+  const scanned = withoutQuotation(source, kind);
+  for (const match of scanned.matchAll(CLAIM)) {
     const ref = match[1]!.replace(/`/g, "");
-    /* `main:local-migration` is the refspec the rite pushes — it lands on the
-       deploying ref, so a claim about it is true. */
-    const lands = ref.includes(":") ? ref.split(":")[1]! : ref;
+    /* A `local:remote` refspec lands on its remote half — a claim about
+       `main:<ref>` is a claim about `<ref>`. */
+    const lands = ref.includes(":") ? ref.split(":")[1]! : ref.replace(/^origin\//, "");
     if (lands !== DEPLOYING_REF) hits.push({ ref, sentence: match[0] });
+  }
+  if (DEPLOYING_REF === "main") {
+    for (const match of scanned.matchAll(MERGE_DENIAL)) {
+      hits.push({ ref: "main", sentence: match[0] });
+    }
   }
   return hits;
 }
 
-describe("#296 · nothing tells a shift that a merge to main deploys", () => {
+describe("#296 · nothing tells a shift the wrong ref deploys", () => {
   it("is looking at a real population, not an empty one", () => {
     const files = filesToScan();
     expect(files.length).toBeGreaterThan(10);
@@ -163,11 +186,13 @@ describe("#296 · nothing tells a shift that a merge to main deploys", () => {
 
   it("derives the deploying ref from the rite rather than restating it", () => {
     expect(DEPLOYING_REF).toBe(DEPLOY_SOURCE_REF);
-    /* If someone changes what production builds from, this guard follows. */
-    expect(DEPLOYING_REF).not.toBe("main");
+    /* If someone changes what production builds from, this guard follows —
+       and the controls below are written for both refs so the follow is
+       visible rather than silent. */
+    expect(["main", "local-migration"]).toContain(DEPLOYING_REF);
   });
 
-  it("finds no document claiming a push or merge of main deploys", () => {
+  it("finds no document claiming a non-deploying ref deploys, or denying the merge does", () => {
     const offenders: string[] = [];
     for (const file of filesToScan()) {
       const source = readListedSource(file);
@@ -185,17 +210,32 @@ describe("#296 · nothing tells a shift that a merge to main deploys", () => {
     and one that fires on any mention would forbid the correction from being
     written down — which is the #360 class this guard is most likely to fall
     into, because the corrected paragraph in CLAUDE.md quotes the old sentence.
+
+    Written for BOTH eras: `other` is whichever ref is not deploying today.
   */
-  it("catches each of the three sentences that actually shipped", () => {
-    expect(wrongClaims("Every push to `main` deploys, and the founder dogfoods paid rolls")).toHaveLength(1);
-    expect(wrongClaims("Every push to `main` deploys, and a deploy kills the process")).toHaveLength(1);
-    expect(wrongClaims("merging to main deploys production")).toHaveLength(1);
-    expect(wrongClaims("A merge into `main` triggers a Railway build")).toHaveLength(1);
+  const other = DEPLOYING_REF === "main" ? "local-migration" : "main";
+
+  it("catches a claim that the OTHER ref deploys — the sentences that shipped in each era", () => {
+    expect(wrongClaims(`Every push to \`${other}\` deploys, and the founder dogfoods paid rolls`)).toHaveLength(1);
+    expect(wrongClaims(`Every push to \`${other}\` triggers a Railway build + deploy`)).toHaveLength(1);
+    expect(wrongClaims(`merging to ${other} deploys production`)).toHaveLength(1);
+    expect(wrongClaims(`A merge into \`${other}\` triggers a Railway build`)).toHaveLength(1);
+    expect(wrongClaims(`Every push to \`main:${other}\` deploys production`)).toHaveLength(1);
   });
 
-  it("accepts the true claims, including the rite's own refspec", () => {
-    expect(wrongClaims("Every push to `local-migration` triggers a Railway build + deploy")).toEqual([]);
-    expect(wrongClaims("Every push to `main:local-migration` deploys production")).toEqual([]);
+  it("accepts the true claims about the deploying ref, including a refspec that lands on it", () => {
+    expect(wrongClaims(`Every push to \`${DEPLOYING_REF}\` triggers a Railway build + deploy`)).toEqual([]);
+    expect(wrongClaims(`Every push to \`main:${DEPLOYING_REF}\` deploys production`)).toEqual([]);
+    expect(wrongClaims(`merging to ${DEPLOYING_REF} deploys production`)).toEqual([]);
+  });
+
+  it("flags the merge denial only in the world where it is false", () => {
+    const denial = "A merged PR has not shipped anything; the rite is what deploys.";
+    if (DEPLOYING_REF === "main") {
+      expect(wrongClaims(denial)).toHaveLength(1);
+    } else {
+      expect(wrongClaims(denial)).toEqual([]);
+    }
   });
 
   /*
@@ -214,19 +254,18 @@ describe("#296 · nothing tells a shift that a merge to main deploys", () => {
 
   it("is a declaration test, so the correction may quote what it is correcting", () => {
     /* The shape CLAUDE.md's corrected paragraph actually uses — a mention. */
-    expect(wrongClaims('This sentence read "Every push to `main` deploys" until it was corrected', "md"))
+    expect(wrongClaims(`This sentence read "Every push to \`${other}\` deploys" until it was corrected`, "md"))
       .toEqual([]);
-    expect(wrongClaims("> Every push to `main` deploys, and the founder dogfoods paid rolls", "md")).toEqual([]);
-    expect(wrongClaims("```\nEvery push to `main` deploys\n```", "md")).toEqual([]);
+    expect(wrongClaims(`> Every push to \`${other}\` deploys, and the founder dogfoods paid rolls`, "md")).toEqual([]);
+    expect(wrongClaims(`\`\`\`\nEvery push to \`${other}\` deploys\n\`\`\``, "md")).toEqual([]);
 
     /* And the same words UNQUOTED are still a claim — the mention test must not
        have been bought by turning the guard off. */
-    expect(wrongClaims("Every push to `main` deploys, and the founder dogfoods paid rolls", "md"))
+    expect(wrongClaims(`Every push to \`${other}\` deploys, and the founder dogfoods paid rolls`, "md"))
       .toHaveLength(1);
 
-    expect(wrongClaims("A merged PR has not shipped anything; the rite is what deploys.")).toEqual([]);
-    expect(wrongClaims("Railway watches local-migration, and a squash merge only moves main.")).toEqual([]);
     expect(wrongClaims("Product code goes branch, PR, gate; then run the rite to deploy.")).toEqual([]);
+    expect(wrongClaims("Railway watched local-migration then, and a squash merge only moved main.")).toEqual([]);
   });
 
   /*
@@ -236,7 +275,7 @@ describe("#296 · nothing tells a shift that a merge to main deploys", () => {
     inside a string literal and pass as a quotation.
   */
   it("catches a false claim inside a code string literal, and still forgives it in prose", () => {
-    const inCode = 'say("Every push to `main` deploys — run the rite after merging");';
+    const inCode = `say("Every push to \`${other}\` deploys — run the rite after merging");`;
     expect(wrongClaims(inCode, "code")).toHaveLength(1);
     expect(wrongClaims(inCode, "md")).toEqual([]);
 

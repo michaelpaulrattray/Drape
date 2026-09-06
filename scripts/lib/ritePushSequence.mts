@@ -1,7 +1,15 @@
 /**
- * THE RITE PUSHES TWO REFS AND MUST STOP BETWEEN THEM (#317).
+ * THE RITE PUSHES ITS REFS IN ORDER AND MUST STOP AT THE FIRST FAILURE (#317).
  *
- * `scripts/deploy-rite.mts` pushes `main` and then `main:local-migration`.
+ * ⚠ **SINCE 2026-09-06 THERE IS ONE REF — `main` — AND PRODUCTION BUILDS FROM
+ * IT DIRECTLY** (deploy-on-merge, #508 D6/D7: Railway watches `main`, a merge
+ * is a deploy, and `local-migration` is deleted). The sequence machinery below
+ * is kept as written: a `BRANCHES` list of one still goes through it, the
+ * order guard still asserts production's ref is LAST, and the day a second ref
+ * returns nothing here has to be rediscovered. The history that follows is the
+ * two-ref era and is true of it.
+ *
+ * `scripts/deploy-rite.mts` pushed `main` and then `main:local-migration`.
  * **Production builds from `local-migration`** (the rite's own verify block
  * says so), so the two refs are not interchangeable: the one that ships is the
  * SECOND one. Until this module existed the loop had no early exit and could
@@ -56,8 +64,12 @@
  * fire without a network or a remote.
  */
 
-/** What production is built from. The rite pushes `main:local-migration`. */
-export const DEPLOY_SOURCE_REF = "local-migration";
+/**
+ * What production is built from. Railway watches this branch (flipped
+ * 2026-09-06, #508); the rite pushes it and every other reader derives the
+ * deploying ref from here (`server/deployTriggerClaims.test.ts`).
+ */
+export const DEPLOY_SOURCE_REF = "main";
 
 /** The remote ref a `local:remote` refspec lands on (`main` → `main`). */
 export const refOf = (branch: string): string =>
@@ -243,8 +255,9 @@ export function pushFailureMessage(sequence: PushSequence): string {
       `⚠ ALREADY PUSHED: ${shipped.join(", ")}.`,
       `${refOf(failed.branch) === DEPLOY_SOURCE_REF
         ? "That means production's own ref is the one that did NOT land, so production"
-          + "\nis still on its previous commit while main has moved ahead of it."
-        : "Production's ref is among them, so it is building a tree main does not carry."}`,
+          + "\nis still on its previous commit while the refs that landed have moved ahead."
+        : `Production's ref (${DEPLOY_SOURCE_REF}) is among them, so production is building this`
+          + "\ncommit; the ref that failed is not the one production builds from."}`,
       "",
     );
   }

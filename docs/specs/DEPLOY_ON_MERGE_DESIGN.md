@@ -195,5 +195,20 @@ needed a freeze against himself.
   own container, `nothing pending`, healthcheck green, `/api/health` uptime
   142 s = new process). Branch changed `local-migration` → `main`; Railway
   built main at `90e7fdca` (PR #592) with no rite, and `/api/health` answered
-  `build=90e7fdca` at uptime 70 s. `DEPLOY_ON_MERGE=live` set 07:27Z. This
-  paragraph is the step-6 proof merge.
+  `build=90e7fdca` at uptime 70 s. `DEPLOY_ON_MERGE=live` set 07:27Z.
+- **Step 6, both halves, driven the same evening.** Proof merge PR #595
+  squashed `619eb6cc` at 07:40:57Z; Railway built it unprompted; `/api/health`
+  answered `build=619eb6cc` at uptime 78 s; `deploy-verify` on that sha:
+  **success**. Rollback: PR #596 reverted it (`0f2cdb9f`), merged, and its
+  sha went live the same way with `deploy-verify` green — one revert commit,
+  as the bar demanded. Two of the night shift's own merges (`c17d8f42`,
+  `dfad6c2e`) went live under the new road in the same hour, verify green on
+  both, before either proof PR had merged.
+- **Step 7, PR-2 (this record's own PR):** `DEPLOY_SOURCE_REF` and `BRANCHES`
+  become `main` alone; `local-migration` is deleted at origin; the D7 sweep
+  along the dying branch — `.githooks/pre-push`, `CLAUDE.md`'s deploy
+  section, the `deploy-railway` skill, `AGENTS.md`, `scripts/lib/
+  ritePushSequence.mts` and its suite, `deployTriggerClaims.test.ts` (whose
+  guard now inverts: no document may say `local-migration` deploys or that a
+  merged PR has not shipped), `park-state.mts`, `pushPaths.mts`, `gate.yml`,
+  `PUSH_PATHS_TO_MAIN.md`. The design is done.

@@ -175,6 +175,10 @@ export const readPushPaths = (reader: TreeReader): PushPathReading => {
     the doc's door A (`read`, on 2026-09-03). If that default is ever flipped to
     write, a workflow that never says the word `write` gains it silently.
 
+    ⚠ 2026-09-06 (#508 PR-2): `local-migration` is DELETED — Railway builds
+    `main` directly, so the "both branches" reasoning below is the record of
+    the two-ref era and the binding question is now `main` alone.
+
     ⚠ The second half of that sentence used to read "and `local-migration` has
     no branch protection at all", which stopped being true on 2026-09-03 when the
     founder ruled *"protect it"* (#461). It is worth stating what changed and what

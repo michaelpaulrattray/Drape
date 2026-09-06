@@ -1,5 +1,11 @@
 # Every path that can reach `main` without a pull request
 
+> ⚠ **2026-09-06 (#508 PR-2): `local-migration` is deleted.** Railway builds
+> `main` directly, so every sentence below that says "both deploying branches"
+> or "`main` and `local-migration`" describes the two-ref era it was written in.
+> The live shape: `main` is the one deploying branch; the pre-push hook guards
+> it alone; a PR merge is now itself a deploy and carries the gate.
+
 **Card #263. Founder ruling, 2026-08-30, verbatim:**
 
 > *"The CI hole is the best find in the card. A gate that only runs on pull
