@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { PLAN_TIERS } from "../../../../drizzle/schema";
-import { PLAN_ORDER } from "../../../../server/stripe/stripeProducts";
+import { OFFERED_PLAN_ORDER } from "../../../../server/stripe/stripeProducts";
 import { readBurn, readCycle } from "./planMath";
 import { recommendPlan, type LadderPlan } from "./planLadder";
 
@@ -79,18 +79,20 @@ const DAY = 24 * 60 * 60 * 1000;
  * real allowance, which makes a future price edit surface here rather than in a
  * shift's frames.
  *
- * ⚠ **AND THE ORDER COMES FROM `PLAN_ORDER`, NOT FROM OBJECT KEYS** (PR #488
- * review, finding 1). `recommendPlan` walks the ladder by INDEX — *the first
- * rung above the current one that covers the burn* — so its answer is a
- * function of the order, and the surface gets its order from `plans.planOrder`
- * (`ChangePlanModal.tsx`), which is `PLAN_ORDER`. Building the fixture from
- * `Object.entries` insertion order agreed with it today and was tied to it by
- * nothing: a rung added out of insertion order would leave this file driving a
- * ladder no customer ever sees, while still reporting that items 3 and 4 are
- * built and correct. Working law 4, one layer under the one this file already
- * documents.
+ * ⚠ **AND THE ORDER COMES FROM `OFFERED_PLAN_ORDER`, NOT FROM OBJECT KEYS**
+ * (PR #488 review, finding 1; re-pointed by PR #583 round 2, finding 1).
+ * `recommendPlan` walks the ladder by INDEX — *the first rung above the
+ * current one that covers the burn* — so its answer is a function of the
+ * order, and the surface gets its order from `plans.planOrder`
+ * (`ChangePlanModal.tsx`), which since the #391 fold is `OFFERED_PLAN_ORDER`:
+ * the offered seven, WITHOUT the hidden rung. Building the fixture from
+ * `PLAN_ORDER` agreed with the wire until the fold split the two — after it,
+ * a top-of-ladder arm here would pass against `ultimate` while production
+ * answers `enterprise`, which is exactly this docblock's own warning about
+ * driving a ladder no customer ever sees. Working law 4, one layer under the
+ * one this file already documents.
  */
-const LADDER = PLAN_ORDER.map((id) => ({
+const LADDER = OFFERED_PLAN_ORDER.map((id) => ({
   id,
   name: PLAN_TIERS[id].name,
   priceInCents: PLAN_TIERS[id].price,

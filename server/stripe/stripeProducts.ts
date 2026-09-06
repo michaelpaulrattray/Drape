@@ -41,10 +41,14 @@ export const OFFERED_PLAN_ORDER: PlanTier[] = PLAN_ORDER.filter(
 );
 
 // The rungs a customer can put into a checkout — offered and paid. This is
-// what the three billing input enums parse against.
+// what the three billing input enums parse against. The tuple type is the
+// NARROW union on purpose (PR #583 round 2, finding 2): z.enum() hands it to
+// the tRPC client types, so a caller that typos the hidden rung fails at
+// compile time as well as at the parser.
+export type PurchasablePlanTier = Exclude<PlanTier, HiddenPlanTier | "free">;
 export const PURCHASABLE_PLANS = PAID_PLAN_ORDER.filter(
   (tier) => !isHiddenPlanTier(tier),
-) as [PlanTier, ...PlanTier[]];
+) as [PurchasablePlanTier, ...PurchasablePlanTier[]];
 
 /**
  * The offered tiers as an object — `billing.getPlans`'s explicit `tiers`
