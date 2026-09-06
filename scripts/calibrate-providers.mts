@@ -89,7 +89,35 @@ if (ARGS.flag("dry-run") && ARGS.flag("execute")) {
 
 const EXECUTE = ARGS.flag("execute");
 const PHASE = ARGS.value("phase") ?? "all";
-const CEILING_USD = Number(ARGS.value("ceiling") ?? 20);
+/*
+  ⚠ A NUMBER THAT IS NOT A NUMBER TURNS BOTH SPEND GUARDS OFF, SILENTLY (PR
+  #623 review, finding 1). `Number("1O")` — the digit one and the letter O —
+  is NaN, and every comparison against NaN is false: the plan-level refusal
+  below (`total > CEILING_USD`) stops refusing, and `SpendGuard.reserve` in
+  `scripts/calibration/run.mts` stops reserving. An `--execute` run would then
+  proceed with NO ceiling at all.
+
+  It is not new — `Number(flag("ceiling") ?? 20)` had the identical hole — but
+  it is exactly this card class wearing a different coat: an operator mistake
+  on a house-money script degrading quietly instead of refusing. The parser
+  owns the SHAPE of the line and says so; a value that must be a number is the
+  caller's to check, and this is the caller.
+
+  The remaining four sites of the class are #625, with the shared-accessor
+  recommendation the reviewer named.
+*/
+const numeric = (name: string, fallback: number): number => {
+  const raw = ARGS.value(name);
+  if (raw === null) return fallback;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) {
+    console.error(`REFUSING: --${name} must be a number, and "${raw}" is not.`);
+    process.exit(1);
+  }
+  return parsed;
+};
+
+const CEILING_USD = numeric("ceiling", 20);
 const OUT_DIR = path.resolve(ARGS.value("out") ?? ".calibration");
 /**
  * Founder decision 2026-07-30: images run through fal, which is the billing we
@@ -98,7 +126,7 @@ const OUT_DIR = path.resolve(ARGS.value("out") ?? ".calibration");
  */
 const IMAGES_VIA = (ARGS.value("images") ?? "fal") as "fal" | "openrouter";
 /** Measured, not assumed — this is how §H.8's default budget gets its number. */
-const CONCURRENCY = Number(ARGS.value("concurrency") ?? 8);
+const CONCURRENCY = numeric("concurrency", 8);
 
 /**
  * The §E.1 matrix: tight, loose and non-human briefs. The non-human ones are

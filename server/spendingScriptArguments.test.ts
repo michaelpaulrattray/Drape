@@ -520,6 +520,27 @@ describe("card 602 — the `=` pair and the declared positional", () => {
     expect(() => parseStrictArgs(["26"], SPEC)).not.toThrow(/bare word/);
   });
 
+  it("⚠ a numeric flag that is not a number REFUSES — a NaN ceiling removes the ceiling", () => {
+    /*
+      PR #623's REVIEW, FINDING 1. `Number("1O")` — the digit one and the letter
+      O — is NaN, and every comparison against NaN is false. So a NaN ceiling
+      does not raise the bound, it DELETES it: the plan refusal stops refusing
+      and `SpendGuard.reserve` stops reserving, and an `--execute` run proceeds
+      unbounded.
+
+      ⚠ THIS IS ASSERTED AT THE SOURCE RATHER THAN BY RUNNING THE SCRIPT,
+      because running it imports `dotenv` and three provider modules — but it is
+      asserted at what the code DOES, not at a comment: the coercion is gone and
+      a finite check stands in its place. The remaining four sites of this class
+      are #625, and this arm names them so the card cannot be quietly dropped.
+    */
+    const source = codeOf("scripts/calibrate-providers.mts");
+    expect(source, "the bare Number() coercion is back on the ceiling")
+      .not.toMatch(/Number\(ARGS\.value\("(ceiling|concurrency)"\)/);
+    expect(source, "nothing refuses a non-finite numeric flag").toContain("Number.isFinite");
+    expect(source, "the refusal does not say which flag").toMatch(/must be a number/);
+  });
+
   it("⚠ the two repaired scripts' own documented command lines still parse", () => {
     /*
       THE ARM THAT ACTUALLY CLOSES #602. The spec is read out of each script
