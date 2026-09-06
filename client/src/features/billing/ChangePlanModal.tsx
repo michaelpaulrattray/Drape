@@ -63,8 +63,12 @@
  *    differ, and it is in the footnote where §6d puts such things.
  * 4. **The unit price is inverted** to credits per dollar
  *    (`formatCreditsPerDollar`), whole numbers that ASCEND up the ladder.
- * 5. **§6c's blurb slot ships EMPTY and says so** — the frames line that was
- *    filling it is what the credits make and now sits in the credits block.
+ * 5. ~~**§6c's blurb slot ships EMPTY and says so**~~ — **THE SLOT IS FILLED
+ *    AS OF #404**, on his word, from `planBlurbs.ts`'s seven declared
+ *    placeholders. Item 5's real finding is untouched and still guarded: the
+ *    frames line is what the credits MAKE, it is not a positioning statement,
+ *    and it stays in the credits block. What changed is that the slot it was
+ *    misoccupying now has its own sentence.
  * 6. ~~**`.dp-plan__tab--inline`** replaces an inline style override.~~ The
  *    inline style is still forbidden and still guarded; the MODIFIER is gone
  *    with the tag it existed for (#487). `.dp-plan__tab` has one context
@@ -97,6 +101,7 @@ import {
   rolloverSentence,
   type LadderPlan,
 } from "@/features/settings/planLadder";
+import { blurbFor } from "@/features/settings/planBlurbs";
 
 type Interval = "monthly" | "annual";
 
@@ -411,6 +416,7 @@ export function ChangePlanModal({
               const isRecommended = plan.id === recommended?.id;
               const rollover = rolloverSentence(plan.rolloverPercent);
               const frames = framesFor(plan.credits, costPerFrame);
+              const blurb = blurbFor(plan.id);
               const planIndex = ladder.findIndex((entry) => entry.id === plan.id);
               return (
                 <article
@@ -447,19 +453,24 @@ export function ChangePlanModal({
                     <span className="dp-plan__interval">billed yearly</span>
                   ) : null}
                   {/*
-                    ⚠ **§6c'S BLURB SLOT IS DELIBERATELY EMPTY, AND THAT IS THE
-                    HONEST ANSWER RATHER THAN A GAP NOBODY NOTICED** (card 390
-                    item 5). It asks for *"one line, a positioning statement"*.
-                    There is no server field for one, and there never was —
-                    what filled the slot was `About N casting frames`, which is
-                    not a positioning statement but what the CREDITS make, so
-                    it has moved into the credits block below where §6c puts
-                    it. Writing marketing lines here would be inventing
-                    user-visible claims (the quotation-not-requirement law).
-                    #391 has folded the ladder to the offered seven, so the
-                    slot now wants six lines, not eleven — **still his to
-                    fill: carded (#404).**
+                    §6c'S BLURB SLOT, FILLED ON HIS WORD (#404). It asks for
+                    *"one line, a positioning statement"* saying who the rung
+                    is FOR, and it shipped empty from card 390 item 5 until
+                    now — what had been filling it was `About N casting
+                    frames`, which is what the credits MAKE, and that line is
+                    in the credits block below where §6c puts it.
+
+                    ⚠ **THE SEVEN LINES ARE DECLARED PLACEHOLDERS, NOT HIS
+                    VOICE**, written by the relay under his own order (*"can
+                    you just make it up for now"*) and approved by him for the
+                    build (*"Use the seven placeholder lines the relay posted
+                    on the card. Build to those."*). They live in one table in
+                    `planBlurbs.ts`, which is the file he edits and the only
+                    file that moves when he does. None of them claims a
+                    capability — they say who a plan is for — so none can be
+                    made false by the product changing.
                   */}
+                  {blurb ? <span className="dp-plan__blurb">{blurb}</span> : null}
                   {isCurrent ? (
                     /*
                       ⚠ **`Current`, NOT `ON THIS ONE`, AND IT IS NO LONGER A

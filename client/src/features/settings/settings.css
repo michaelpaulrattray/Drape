@@ -663,6 +663,17 @@
   font: 400 10.5px/1.4 var(--font-sans);
   color: var(--faint);
 }
+/* §6c's BLURB — *"one line, `400 11px/1.55`, `--metaStrong`"*, and those are
+   the brief's own numbers rather than a match to the line below it. It sits
+   between the price and the action, which is §6c's order.
+
+   ⚠ **It shares its type with `.dp-plan__makes` and is NOT merged with it.**
+   They read alike because the brief specs them alike; they are different
+   facts — one is who the rung is for, the other is what its credits buy — and
+   card 390 item 5 exists precisely because the second was standing in for the
+   first. One class per fact is what keeps that from happening again. */
+.dp-plan__blurb { font: 400 11px/1.55 var(--font-sans); color: var(--metaStrong); }
+
 /* §6c's credits block — *"credits + A MONTH; then what it makes; then what
    expires"* — three lines that belong together and read as one, against the
    card's own `--s-5` between its major parts. */

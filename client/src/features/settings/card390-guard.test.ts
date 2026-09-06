@@ -290,23 +290,64 @@ describe("card 390 items 1, 3, 5 and 6 — the form of a card", () => {
     expect(surface).toContain("the only differences are the ones shown above");
   });
 
-  it("⚠ §6c'S BLURB SLOT IS EMPTY AND THE FRAMES LINE IS IN THE CREDITS BLOCK", () => {
+  it("⚠ THE FRAMES LINE IS IN THE CREDITS BLOCK, AND THE BLURB SLOT IS NOT IT", () => {
     /*
-      Item 5: *"The blurb slot was quietly filled by the frames line."* There is
-      no server field for a positioning statement, so the slot ships empty and
-      says so; `About N casting frames` is what the CREDITS make and §6c puts it
-      inside the credits block.
+      Item 5: *"The blurb slot was quietly filled by the frames line."*
+
+      ⚠ **THIS ARM IS RE-AIMED, NOT WEAKENED (#404).** It used to prove item 5
+      by asserting the string `dp-plan__blurb` appeared NOWHERE — a fair proxy
+      while the slot was empty, and the wrong rule the moment the founder
+      ordered it filled. Read at what item 5 actually FOUND: the complaint was
+      never that a blurb existed, it was that `About N casting frames` — what
+      the credits MAKE — was standing in a slot §6c reserves for a positioning
+      statement. **That half is untouched by his order and is what this arm
+      holds now**: the frames line lives inside the credits block, and the
+      blurb slot draws the blurb and nothing derived from credits.
+
+      This repository has the precedent both ways round, one screen up in this
+      same file: *"an arm whose subject a founder ruling removes is not
+      weakened, it is re-aimed at what still holds; an arm quietly deleted is
+      how a reversal loses the part of itself that was right."*
+
+      ⚠ **A class-name absence was standing in for a behaviour**, which is the
+      shape #594 fixed in the publish guard eight days ago — membership decided
+      by a WORD rather than by what the code does.
     */
     const surface = code(read(MODAL));
     const css = code(read(join(HERE, "settings.css")));
-    expect(surface, "the frames line is back in the blurb slot").not.toContain("dp-plan__blurb");
-    expect(css, "the blurb class outlived its only consumer").not.toContain("dp-plan__blurb");
+
+    /* The slot is filled, and it is filled from the blurb map — not from
+       anything the credits produce. */
+    expect(surface, "the blurb slot lost its sentence").toContain("dp-plan__blurb");
+    expect(css, "the blurb slot has no type of its own").toContain(".dp-plan__blurb");
+    expect(
+      surface,
+      "the blurb is being computed from something other than the blurb map",
+    ).toContain("const blurb = blurbFor(plan.id)");
+
+    /* THE ORIGINAL FINDING, still held: the frames line is not what fills it.
+       Whatever sits between `dp-plan__blurb` and the end of its element must
+       not be the frames sentence or the call that builds it. */
+    const slotAt = surface.indexOf("dp-plan__blurb");
+    const slotEnd = surface.indexOf(String.fromCharCode(10), slotAt);
+    const slotLine = surface.slice(slotAt, slotEnd < 0 ? surface.length : slotEnd);
+    expect(slotLine, "the frames line is back in the blurb slot").not.toMatch(
+      /frames|casting frames/i,
+    );
+
+    /* And the frames line is where §6c puts it — inside the credits block. */
     expect(surface).toContain("dp-plan__makes");
     expect(css).toContain(".dp-plan__makes");
-    /* And it is inside the block rather than beside it. */
     const block = surface.indexOf("dp-plan__block");
     const makes = surface.indexOf("dp-plan__makes");
     expect(makes).toBeGreaterThan(block);
+
+    /* §6c's order: price → blurb → action. The slot is not merely present,
+       it is in the position the brief asks for. */
+    const price = surface.indexOf("dp-plan__price");
+    const action = surface.indexOf("dp-plan__here");
+    expect(slotAt, "the blurb is above the price").toBeGreaterThan(price);
+    expect(slotAt, "the blurb fell below the action").toBeLessThan(action);
   });
 
   it("⚠ NO INLINE STYLE WHERE A MODIFIER BELONGS", () => {
