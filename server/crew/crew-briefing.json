@@ -1,7 +1,7 @@
 {
-  "edition": 283,
-  "updatedAt": "2026-09-06T20:44:42.402Z",
-  "shift": "Foreman (Opus) - the safety net that guards your only publish path had stopped watching two of its own files, and a scare about the code reviewer turns out to be a measuring fault",
+  "edition": 284,
+  "updatedAt": "2026-09-06T22:07:37.564Z",
+  "shift": "Foreman (Opus) - your seven plan lines are live on the cards, and looking at them in the real app caught something 77 passing tests could not see",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T20:43:33.244Z",
+      "readAt": "2026-09-06T22:09:26.932Z",
       "items": [
         {
           "issueNumber": 16,
@@ -247,12 +247,39 @@
   },
   "needsYou": [
     {
+      "id": "free-blurb-promise-621",
+      "issueNumber": 621,
+      "title": "One of your seven plan lines makes promises the other six do not",
+      "productImpact": "Six of the seven lines you approved only say who a plan is FOR - \"For a team shooting a campaign a month.\" Nothing the product does can make a sentence like that untrue.\n\nThe Free line is the exception: \"Try the studio. A few casts a month, no card.\" That promises roughly how much someone gets, and that no card is needed. Both are true today.\n\nThe risk is narrow but it sits on a billing page. If you ever cut the free allowance or start asking for a card at signup, that line silently becomes a false claim to every visitor, and nothing in the product would warn us - no test can read English well enough to notice.\n\nIt has been left exactly as you approved it, because it is your copy and changing your words to suit a note of ours would be the worse mistake. Instead it is written down in two places, and the test now pins that line word for word so nobody quietly rewrites it without reading why.",
+      "workedExample": "Today:\n\n    Free\n    Try the studio. A few casts a month, no card.\n\nThe same line in the shape the other six use:\n\n    Free\n    For trying the studio out before you commit.\n\nThe credits block directly underneath already says exactly what they get, so nothing is lost by dropping the promise from the sentence.",
+      "options": [
+        {
+          "key": "a",
+          "label": "Leave it as it is",
+          "consequence": "True today. The risk stays, and it is written down in two places."
+        },
+        {
+          "key": "b",
+          "label": "Reword it like the other six",
+          "consequence": "One string changes. That surface stops having any line a pricing change could falsify."
+        },
+        {
+          "key": "c",
+          "label": "Keep the promise but tie it to the real number",
+          "consequence": "The allowance part can no longer drift from the actual figure. The \"no card\" half stays hand-maintained."
+        }
+      ],
+      "recommendation": "(b), whenever you next think about pricing - not now. It costs one string and loses nothing.",
+      "state": "open",
+      "filedAt": "2026-09-06"
+    },
+    {
       "id": "git-c-gate-574",
       "issueNumber": 574,
       "title": "A safety prompt on the six commands that can destroy work has a way around it - one minute of your hands",
       "productImpact": "Your settings file puts six git commands behind a confirmation prompt. They are the destructive family - the ones that can throw away work nothing can give back - and two of them act on whatever folder they are run in, including the working folder your own sessions share with the night shifts.\n\nThe prompt matches on how the command starts. There is a second, perfectly ordinary way to write those commands - naming the folder first - and written that way they match none of the six patterns, so they run with no prompt at all. A shift measured this after hitting it by accident doing something legitimate. Nothing has been lost. The point is that nothing would have stopped it.\n\nIt is on your desk rather than fixed because it lives in a file no shift may edit - and more to the point, a session editing the permission file that governs it is the one edit that should never be automatic.",
       "workedExample": "Measured, three ways of writing the same command:\n\n    git merge origin/main                -> asked (correct)\n    cd <folder>; git merge origin/main   -> asked (correct)\n    git -C <folder> merge origin/main    -> RAN, no prompt\n\nThe same shape is git -C <folder> reset --hard, which destroys uncommitted work in that folder. The fix is adding the second spelling of each of the six to the same list - about a minute. The card carries the exact lines.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-06T19:50:00.000Z",
       "options": [
         {
@@ -750,23 +777,18 @@
     {
       "id": "plan-blurb-404",
       "issueNumber": 404,
-      "title": "One line per plan, in your words - the thing this was waiting for has landed",
-      "productImpact": "This is back on your desk because the reason it was waiting is gone.\n\nYour plan cards have a slot for a one-line statement saying who each plan is FOR, sitting between the price and the button. It has never had one. When you last saw this card, the answer was to write them after the ladder folded from twelve rungs to seven - and that fold has now SHIPPED. There are seven rungs. Nothing gets thrown away by writing them now.\n\nA shift cannot write these for you: a positioning statement is a claim about your product in your voice, and inventing seven of them is the one thing the copy rules forbid.\n\nWorth knowing how it surfaced. The card was still labelled as waiting on the ladder a day after the ladder was done, so it sat in your NEXT UP queue pointing at finished work - and the queue would have gone on saying that. A shift found it by opening the code rather than trusting the label.",
-      "workedExample": "Seven lines, in ladder order, as short as you like - six to ten words each reads best at that size. The shape, not a suggestion of the words:\n\n    Studio                    3,145 CREDITS PER $1\n    $159 / month\n    For a team shooting a campaign a month.\n    [ Upgrade ]\n    500,000 A MONTH - About 1,428 casting frames.\n\nReply here with seven lines and the build is a small one.",
+      "title": "Your seven plan lines are live on the cards",
+      "productImpact": "You said \"use the seven placeholder lines the relay posted on the card. Build to those\", and they are live.\n\nEach plan card in Change plan now carries your line between the price and the button - Studio reads \"For a team shooting a campaign a month.\" They live in ONE small file. When you want to rewrite them in your own words, the words change and nothing else in the product moves.\n\nTwo things you should know rather than find out later.\n\nFIRST, looking at it in the running app caught a real problem that every test had passed. Two of the seven lines are long enough to run onto a second line on the card, and that pushed everything underneath - the button, the credits, the perks - seventeen pixels higher on the shorter card than on its neighbours. The three cards no longer lined up. It is fixed by reserving the space whether the line needs it or not, so it stays lined up for ANY words - which matters precisely because you are going to rewrite these.\n\nSECOND, and this is the one that may want your eye: six of the seven lines only say who a plan is FOR, which is safe because nothing about the product can make them untrue. The Free line is different - \"Try the studio. A few casts a month, no card.\" makes two actual promises: roughly how much you get, and that no card is needed. Both are true today. If either ever changes, that line quietly becomes false on a billing page and nothing would warn us. It has been left exactly as you approved it, because it is your copy and your call.",
+      "workedExample": "How the Studio card reads now:\n\n    Studio                    3,145 CREDITS PER $1\n    $159 / month\n    For a team shooting a campaign a month.\n    [ Current ]\n    500,000 A MONTH - About 1,428 casting frames.\n\nBoth frames are in your gallery below, dark and light.",
       "options": [
         {
           "key": "a",
-          "label": "Reply with seven lines",
-          "consequence": "The slot fills in your voice. Small build, one shift."
-        },
-        {
-          "key": "b",
-          "label": "Drop the slot from the design",
-          "consequence": "The cards already read well without it - price, value figure, credits and what they make. One less thing to write, and the card closes."
+          "label": "Nothing to do",
+          "consequence": "They are in and the cards look right in both themes."
         }
       ],
-      "recommendation": "(a) - but there is no hurry and nothing is blocked behind it. The empty slot is invisible: no gap, no placeholder, nothing looks broken. It is on your desk tonight because it was mislabelled as blocked, not because it has become urgent.",
-      "state": "open",
+      "recommendation": "Nothing needed. The one open question that came out of it is its own card below (the Free line).",
+      "state": "done",
       "filedAt": "2026-09-02"
     },
     {
@@ -1903,6 +1925,27 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "plan-blurb-404-frames",
+      "state": "open",
+      "cardId": "free-blurb-promise-621",
+      "issueNumber": 621,
+      "filedAt": "2026-09-06T22:07:37.564Z",
+      "title": "Your seven lines on the plan cards",
+      "question": "Do these read as yours - saying who each plan is for? And look at the Free card in particular: it is the one line that promises an amount and a no-card signup.",
+      "frames": [
+        {
+          "key": "crew-eye/c01ef843-86a2-4709-adb9-415b3204b38f.png",
+          "caption": "Change plan, dark. Studio, Business and Scale, each with your line between the price and the button. The three buttons sit on one level - before the fix the Studio card rode seventeen pixels high because its neighbours wrap onto two lines.",
+          "arm": "blurb-dark"
+        },
+        {
+          "key": "crew-eye/2c03904c-d207-4595-9474-df88b24e7f55.png",
+          "caption": "The same, light.",
+          "arm": "blurb-light"
+        }
+      ]
+    },
     {
       "id": "brief-chips-535-frames",
       "state": "done",
@@ -4079,6 +4122,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-619-plan-blurbs-404",
+      "title": "Your seven plan lines are live on the plan cards (#404)",
+      "status": "merged",
+      "prNumber": 619,
+      "note": "The plan cards in Change plan have always had an empty slot between the price and the button, meant for one line saying who that plan is for. It shipped empty because nobody may invent marketing claims on your behalf. You settled that by sending seven lines, and they are in.\n\nThe part worth telling you is what happened when we opened the real app and looked, which is a rule here rather than a courtesy. Every test passed - seventy-seven of them - and the cards were still wrong. Two of your seven lines are long enough to wrap onto a second line at that size, and because of how the cards stack, that shoved the button and everything below it seventeen pixels out of line on the shorter card. Tests cannot see that; they count characters, and a character count is not a width. Fixed by reserving the space always, so the cards stay aligned no matter what words you put there later - which is the point, since you intend to replace these.\n\nAlso worth knowing: the check that had been protecting this slot was written as \"the word must appear nowhere\", which was a fair rule while the slot was empty and the wrong rule the moment you asked for it filled. It was re-aimed at what it was actually protecting rather than deleted, because the thing it originally caught - a credits line masquerading as a positioning statement - is still worth catching.\n\nThe automatic reviewer passed it and raised three small points. All three were taken. One was real: an obscure way of asking for a plan that does not exist could have returned something that was not text and broken the card. It could not happen from the live site, but the test claimed more than it checked, so both were fixed."
+    },
+    {
       "id": "pr-617-class-guard-594",
       "title": "The check that keeps your publishes from failing had gone blind to two of its own files (#594)",
       "status": "merged",
@@ -5804,11 +5854,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0907-foreman",
-      "title": "The queue: 87 open, 2 carrying your word, nothing urgent, 1 unread for a week",
+      "id": "queue-shape-0907b-foreman",
+      "title": "The queue: 87 open, NEXT UP now clear of everything but your verdict",
       "severity": "info",
       "state": "open",
-      "detail": "Steady, and slightly smaller than last night (92 to 87). One card closed tonight (#594) and two others measured rather than built. NEXT UP still holds the same two and neither was takeable: the plan-card blurbs wait on seven lines only you can write, and the shift-process card waits on your verdict. Nothing carries the urgent label. One card (#257) has now gone a week with nobody re-reading it, unchanged from last night.\n\nOne piece of genuinely good news, found while checking something else. A card filed two nights ago warned that a change had gone through with NO automatic code review at all, and that we would not have known. That warning was measured the wrong way. It checked each change at its final state - but a review runs when the work is first put up, and any later edit moves the thing being pointed at, so the review becomes invisible to that check. Measured properly: 9 of the last 10 changes DID get a full code review. The one that did not is a single genuine case from 5 September, still open and now narrowed from three possible causes to one. The card has been corrected so the next person does not build an alarm on a faulty reading - it would have cried wolf on almost every change."
+      "detail": "Steady at 87. Your plan-card lines are built and closed tonight (#404), so the only thing left in NEXT UP is the shift-process card waiting on your verdict (#543). Nothing carries the urgent label.\n\nTwo cards were measured rather than built, deliberately. The stale switch-counts card (#618, your question this morning about the Bugs number still reading 18) is real and its diagnosis is right, but it is bigger than it looks - the counter is an eight-hundred-line script that exports nothing, so wiring it into the end of a shift is a refactor rather than a one-liner, and half of that card is a question for you about what the number should MEAN. It has been sized on the card so the next shift does not start it thinking it is small. In the meantime this shift ran the counter at both ends, so the figure you see now reflects what tonight actually closed.\n\nOne new card was filed (#620): the safety prompt you had added last night to the six commands that can destroy work covers \"git merge\" but not \"git pull\", which can do the same things. Found by walking into it - the end-of-shift step needs a merge, the prompt correctly stopped it, and there is nobody to answer a prompt at 8am. The recommendation is on the card and it is not simply \"add another line\", because that would leave shifts unable to finish."
     },
     {
       "id": "sweep-clock-broken-526",
@@ -6144,20 +6194,13 @@
     148,
     149,
     150,
-    151
+    151,
+    152,
+    153
   ],
   "nextUp": {
-    "readAt": "2026-09-06T20:43:32.272Z",
+    "readAt": "2026-09-06T22:09:25.971Z",
     "items": [
-      {
-        "issueNumber": 404,
-        "title": "The plan card's blurb slot is empty and the ladder has now folded — seven one-line positioning statements, in his words",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — seven one-line blurbs, one per plan. See \"What is actually needed from you\" at the foot of this card."
-        }
-      },
       {
         "issueNumber": 543,
         "title": "The shift never idles on a gate — preflight, a second worktree while the gate runs, merge-in-order, two review rounds max, and the two numbers that prove it (URGENT, his order)",
