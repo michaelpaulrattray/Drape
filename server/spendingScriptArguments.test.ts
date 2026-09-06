@@ -47,7 +47,8 @@ import { describe, expect, it } from "vitest";
 import { ArgumentError, parseStrictArgs } from "../scripts/lib/strictArgs.mts";
 import { readIfPresent, statIfPresent } from "../scripts/lib/listedEntry.mts";
 import {
-  drivesAPaidTransport, paidScriptsReadingFlagsByName, scriptFilesUnder, unguardedSpendGates,
+  drivesAPaidTransport, paidScriptsReadingFlagsByName, scriptFilesUnder,
+  spendWordsRefusedByTheirOwnParse, unguardedSpendGates,
 } from "../scripts/lib/stopline.mts";
 
 const REPO = join(__dirname, "..");
@@ -610,6 +611,53 @@ describe("no paid script reads its flags by name", () => {
         + '/* The reader here was `process.argv.indexOf("--" + name)`, which could not fail. */\n'
         + 'const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: [] });\n');
       expect(paidScriptsReadingFlagsByName(scratch, scratch)).toEqual([]);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+});
+
+/**
+ * A SCRIPT'S OWN STRICT PARSE MUST NOT REFUSE ITS OWN `--spend` (PR #603's
+ * review, round 2 — a regression this card introduced and nearly shipped).
+ *
+ * Both spend doors read `--spend` off `process.argv` through a default
+ * parameter, so a script that also parses strictly has TWO readers of one
+ * command line and the parse runs first. `composite-anchored-arm.mts` declared
+ * `boolean: []`, so its documented paid line — and the dry run's own *"re-run
+ * with --spend"* epilogue — both led into `REFUSING: unknown argument --spend`.
+ * Its only paint path was unreachable.
+ *
+ * ⚠ **No other arm in this file could have caught it.** The class arm bans
+ * argv reads OUTSIDE the parse and this one is inside `stopline.mts`; the
+ * vocabulary arms cover only the three named `DRIVERS`. It fails safe in money
+ * terms — nothing can spend — which is exactly why it is silent: no error, no
+ * spend, every suite green, and a documented command that simply does not work.
+ */
+describe("no script's strict parse refuses its own spend word", () => {
+  const SCRIPTS = join(REPO, "scripts");
+
+  it("every spend-gated script that parses strictly declares the word", () => {
+    expect(spendWordsRefusedByTheirOwnParse(SCRIPTS, REPO)).toEqual([]);
+  });
+
+  it("really sees a script that dropped it, and clears one that kept it", () => {
+    /* The positive control: the arm above is green over an empty sweep, which
+       is the shape that makes a source reader worthless. */
+    const scratch = mkdtempSync(join(tmpdir(), "spendword-"));
+    try {
+      const gate = 'const SPEND = fixtureSpendAuthorized(`paint the fixtures`);\n';
+      writeFileSync(join(scratch, "dropped.mts"),
+        'const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), { value: ["chains"], boolean: [] });\n' + gate);
+      writeFileSync(join(scratch, "declared.mts"),
+        'const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: ["spend"] });\n' + gate);
+      /* Not this defect: no strict parse at all, so nothing refuses the word. */
+      writeFileSync(join(scratch, "noparse.mts"), gate);
+      /* Not this defect either: it passes its own argv, so it chose its reader. */
+      writeFileSync(join(scratch, "ownargv.mts"),
+        'const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: [] });\n'
+        + 'const SPEND = spendAuthorized("x", myOwnArgv);\n');
+      expect(spendWordsRefusedByTheirOwnParse(scratch, scratch)).toEqual(["dropped.mts"]);
     } finally {
       rmSync(scratch, { recursive: true, force: true });
     }

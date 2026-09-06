@@ -354,6 +354,54 @@ export function drivesAPaidTransport(source: string): boolean {
 }
 
 /**
+ * EVERY SCRIPT WHOSE STRICT PARSE WOULD REFUSE ITS OWN `--spend` (PR #603's
+ * review, round 2 — a regression this card introduced and nearly shipped).
+ *
+ * Both spend doors take `argv` as a DEFAULT PARAMETER and read `--spend`
+ * themselves. So in a script that ALSO parses strictly there are two readers of
+ * one command line, and only one of them has been told the word exists: the
+ * parse runs first and refuses `--spend` as unknown before the gate is ever
+ * consulted. `composite-anchored-arm.mts` shipped exactly that — its documented
+ * paid line, and the dry run's own *"re-run with --spend"* epilogue, both led
+ * into `REFUSING: unknown argument --spend`.
+ *
+ * ⚠ **The class arm could not have caught it, which is why this exists.**
+ * `readsArgvOutsideTheStrictParse` bans argv reads *outside* the parse, and this
+ * read is INSIDE `stopline.mts`, through a default parameter — invisible to any
+ * per-file text rule. The vocabulary arms cover only the three named `DRIVERS`.
+ * A file failing this way is silent in every other instrument: nothing spends,
+ * nothing errors, and the suite is green.
+ *
+ * A script passing its own `argv` explicitly is not caught here and does not
+ * need to be — it has chosen where the word is read.
+ */
+export function spendWordsRefusedByTheirOwnParse(scriptsDir: string, repoRoot: string): string[] {
+  const broken: string[] = [];
+  const selfPath = fileURLToPath(import.meta.url);
+  for (const file of scriptFilesUnder(scriptsDir)) {
+    if (file === selfPath) continue; /* the door itself */
+    const source = readIfPresent(file);
+    if (source === null) continue; /* vanished between list and read (#589) */
+    const code = codeWithoutBlockComments(source);
+    if (!code.includes("parseStrictArgsOrRefuse(")) continue;
+    /* THE DEFAULT-PARAMETER FORM ONLY — a call passing an explicit argv has
+       chosen its own reader and is not this defect.
+
+       ⚠ The first shape of this test was `pendAuthorized\(\s*["'`]`, which
+       matched the explicit form too, since that also opens with a string. Its
+       own control caught it (`spendAuthorized("x", myOwnArgv)` was reported),
+       which is the whole reason the control writes a not-this-defect file
+       rather than only an offender. A single string or template argument
+       followed immediately by `)` is the default-parameter call; a second
+       argument puts a comma in the way. */
+    if (!/\b(?:fixtureS|s)pendAuthorized\(\s*(?:`[^`]*`|"[^"]*"|'[^']*')\s*\)/.test(code)) continue;
+    if (/boolean\s*:\s*\[[^\]]*["']spend["']/.test(code)) continue;
+    broken.push(file.replace(repoRoot, "").replace(/^[\\/]/, "").replace(/\\/g, "/"));
+  }
+  return broken;
+}
+
+/**
  * WHETHER A SCRIPT TOUCHES `process.argv` ANYWHERE BUT THE STRICT PARSE.
  *
  * The complement rule described above. Block comments are stripped first —
@@ -378,10 +426,16 @@ export function readsArgvOutsideTheStrictParse(source: string): boolean {
 /**
  * A source with its BLOCK comments removed.
  *
- * ⚠ Its limit, stated rather than discovered: `//` line comments are left
- * alone. Stripping to end-of-line would swallow anything after a `https://`
- * inside a string literal — a false NEGATIVE, which is the wrong direction
- * here.
+ * ⚠ TWO limits, both stated rather than discovered, and both false-NEGATIVE —
+ * this reader can go quiet, never loud.
+ *
+ *   1. `//` line comments are left alone. Stripping to end-of-line would
+ *      swallow anything after a `https://` inside a string literal.
+ *   2. It does not know about string literals, so a `/*` inside one — a glob
+ *      like `"src/[*]"`, a regex source — opens a "comment" that swallows real
+ *      code to the next close. An argv read after such a string is invisible to
+ *      the sweep (PR #603's review, round 2). No file in the tree does this
+ *      today; a real tokenizer is the fix if one ever does.
  */
 export function codeWithoutBlockComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, "");
