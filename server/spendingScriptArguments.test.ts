@@ -45,7 +45,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { ArgumentError, parseStrictArgs } from "../scripts/lib/strictArgs.mts";
-import { scriptFilesUnder, unguardedSpendGates } from "../scripts/lib/stopline.mts";
+import { readIfPresent, scriptFilesUnder, statIfPresent, unguardedSpendGates } from "../scripts/lib/stopline.mts";
 
 const REPO = join(__dirname, "..");
 
@@ -422,5 +422,42 @@ describe("and the lines an operator really types are still accepted", () => {
     expect(() => parseStrictArgs(["--fesh", "roll222"], spec)).toThrow(/unknown argument --fesh/);
     expect(() => parseStrictArgs(["--candidate", "--spend"], spec))
       .toThrow(/--candidate needs a value/);
+  });
+});
+
+/*
+  #589 — THE VANISH-RACE, both directions (#223's class in this module's own
+  walker). `scriptWorldGuard.test.ts` plants and unlinks a real file in the
+  real scripts directory while suites run in parallel; the walk above saw it at
+  readdir and threw at stat, which REFUSED the deploy rite on a clean tree
+  twice on 2026-09-06. The tolerance is ENOENT only — a helper that swallowed
+  EISDIR or EACCES would turn every sweep green by making it blind, so the
+  refusing direction is driven too.
+*/
+describe("a file that vanishes between list and read is skipped, and nothing else is", () => {
+  it("statIfPresent and readIfPresent answer null for a path that is gone", () => {
+    const gone = join(tmpdir(), `_589-never-existed-${process.pid}.mts`);
+    expect(statIfPresent(gone)).toBeNull();
+    expect(readIfPresent(gone)).toBeNull();
+  });
+
+  it("readIfPresent still THROWS on a directory — the tolerance is ENOENT only", () => {
+    const dir = mkdtempSync(join(tmpdir(), "_589-eisdir-"));
+    try {
+      expect(() => readIfPresent(dir)).toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("the walk still finds a real population — the tolerance did not blind it", () => {
+    const dir = mkdtempSync(join(tmpdir(), "_589-walk-"));
+    try {
+      writeFileSync(join(dir, "a.mts"), "export {};");
+      writeFileSync(join(dir, "b.ts"), "export {};");
+      expect(scriptFilesUnder(dir)).toHaveLength(2);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
