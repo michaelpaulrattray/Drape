@@ -293,7 +293,16 @@ const bareReadCount = (source: string): number =>
   alarm that gets a guard worked around at each site instead of fixed.
 */
 const readsThroughAHelper = (source: string): boolean =>
-  /\breadListedSource\s*\(/.test(source) || /\breadIfPresent\s*\(/.test(source);
+  /\breadListedSource\s*\(/.test(source)
+  || /\breadIfPresent\s*\(/.test(source)
+  /* ⚠ THE STAT SPELLING COUNTS TOO (PR #592 review, finding 4). A walker
+     that CLASSIFIES listed entries and never reads their bytes — every
+     touch correctly through `statIfPresent` — would otherwise be told by
+     the arm below to adopt a read helper it has no use for. Population is
+     zero today, and that is precisely when a false alarm is cheap to
+     prevent and expensive to meet: this file already records one shipping
+     and being met on the gate. */
+  || /\bstatIfPresent\s*\(/.test(source);
 
 describe("the class cannot come back through an eighth suite", () => {
   it("finds the walkers at all — a guard over an empty list is not a guard", () => {
@@ -319,6 +328,16 @@ describe("the class cannot come back through an eighth suite", () => {
     expect(walkers, "no scripts/lib walker is in the population — the #591 half is blind").not.toEqual([]);
     expect(walkers).toContain("scripts/lib/stopline.mts");
     expect(walkers).toContain("scripts/lib/productionMention.mts");
+    /*
+      ⚠ PINNED SEPARATELY BECAUSE ITS MEMBERSHIP HANGS ON PROSE (PR #592 review,
+      finding 2). `importerCountDiff.mts` walks `server`/`client`/`shared`; the
+      only reason `namesAScriptsRoot` matches it is a backticked `scripts/` in
+      its docblock and in the carve-out note beside its walk. Reword either
+      comment and it leaves the population silently — after which restoring its
+      bare `statSync` goes green again, which is the exact sabotage result this
+      change was written to close.
+    */
+    expect(walkers).toContain("scripts/lib/importerCountDiff.mts");
   });
 
   it("every suite that walks scripts/ reads its entries through the helper", () => {
@@ -391,6 +410,26 @@ describe("the class cannot come back through an eighth suite", () => {
       + " a clean tree (#223). Pass `{ throwIfNoEntry: false }` and skip the empty answer:\n"
       + offenders.map((row) => `  ${row}`).join("\n"),
     ).toEqual([]);
+  });
+
+  it("the helper rule accepts all three spellings and only those — DRIVEN DIRECTLY", () => {
+    /*
+      ⚠ THE STAT-ONLY CLAUSE HAS NO MEMBER TO DRIVE IT, SO IT IS DRIVEN HERE
+      (PR #592 review, finding 4). All three walkers in the population today
+      read bytes, so a sabotage that removes `statIfPresent` from the predicate
+      reddens NOTHING — an untested clause sitting inside a tested guard, which
+      is working law 3 exactly. Asserting the predicate against source strings
+      costs nothing and closes it.
+
+      The negative arm is the one that matters: `statSync` alone must NOT
+      satisfy this, or the guard would wave through the bare call it exists to
+      catch.
+    */
+    expect(readsThroughAHelper("const s = statIfPresent(full);")).toBe(true);
+    expect(readsThroughAHelper("const t = readIfPresent(file);")).toBe(true);
+    expect(readsThroughAHelper("const u = readListedSource(file);")).toBe(true);
+    expect(readsThroughAHelper("const v = statSync(full);")).toBe(false);
+    expect(readsThroughAHelper("const w = readFileSync(file, \"utf8\");")).toBe(false);
   });
 
   it("keeps every bare-read row honest — a file that stops matching must lose its row", () => {

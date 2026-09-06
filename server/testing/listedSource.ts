@@ -86,6 +86,21 @@
  * listing and its own `readdirSync` would still throw. That has not been
  * observed here — the litter is files, at the top level — and inventing a guard
  * for a population nobody has measured is the thing this repository does not do.
+ *
+ * # ⚠ THERE IS A SECOND COPY OF THIS RULE, AND IT IS DELIBERATE
+ *
+ * `scripts/lib/listedEntry.mts` is the scripts-side twin: the same ENOENT-only
+ * tolerance, spelled `statIfPresent` / `readIfPresent`, for the walkers under
+ * `scripts/` that cannot import anything from `server/`. **Any change to the
+ * bound here — widening what is swallowed, adding a helper, moving the limit
+ * above — belongs there in the same commit.**
+ *
+ * This pointer was missing when the twin was created (#591), and the PR that
+ * created it claimed in its own body that the pair could not drift. The
+ * protection existed in one direction only: the scripts side named this file,
+ * and this file named nothing. Caught by the reviewer at the bytes, which is
+ * the whole of law 7b — a true-sounding sentence about the tree is still a
+ * claim until somebody opens it.
  */
 import { readFileSync } from "node:fs";
 
