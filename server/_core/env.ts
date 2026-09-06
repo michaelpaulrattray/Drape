@@ -575,6 +575,22 @@ export function deploymentTag(): string {
   return "local";
 }
 
+/**
+ * The commit this process was built from — `RAILWAY_GIT_COMMIT_SHA`, stamped
+ * by the platform on every GitHub-triggered deploy; `null` anywhere else
+ * (a laptop, a test). Served on `/api/health` (#508) so anything — the rite,
+ * a shift, the deploy-verify workflow, the founder — can ask production
+ * "which tree are you?" without credentials. The whole #296 trap class
+ * ("health 200, so it shipped", read off the OLD process) existed because a
+ * 200 could not answer that question.
+ *
+ * Read fresh rather than frozen into ENV, for the same reason as
+ * `deploymentTag` above.
+ */
+export function deployedCommitSha(): string | null {
+  return process.env.RAILWAY_GIT_COMMIT_SHA || null;
+}
+
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
   cookieSecret: process.env.JWT_SECRET ?? "",

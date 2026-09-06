@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e213ae58738d4879"
+    "sourceFingerprint": "8b6d686b1fa47c81"
   },
   "domains": [
     {
@@ -9459,6 +9459,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:RAILWAY_GIT_COMMIT_SHA",
+      "name": "RAILWAY_GIT_COMMIT_SHA",
+      "valueRecorded": false
+    },
+    {
       "id": "env:RESEND_API_KEY",
       "name": "RESEND_API_KEY",
       "valueRecorded": false
@@ -12858,6 +12863,10 @@
     {
       "id": "test:server/prePushGate.test.ts",
       "path": "server/prePushGate.test.ts"
+    },
+    {
+      "id": "test:server/predeployVerdict.test.ts",
+      "path": "server/predeployVerdict.test.ts"
     },
     {
       "id": "test:server/preflight.test.ts",
@@ -29624,6 +29633,11 @@
     {
       "from": "module:server/db/wardrobe.ts",
       "to": "module:server/db/modelReferenceFence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/health.ts",
+      "to": "module:server/_core/env.ts",
       "kind": "imports"
     },
     {

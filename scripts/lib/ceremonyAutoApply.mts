@@ -65,6 +65,13 @@
  * declares a table and nothing in the repository creates it" is a finding.
  */
 
+import {
+  conformanceVerdict,
+  declaredIndexesFrom,
+  declaredSchemaFrom,
+  liveSchemaFrom,
+} from "./schemaConformance.mts";
+
 /** The three shapes that may run unattended. Anything else is refused. */
 export type StatementKind = "additive" | "destructive";
 
@@ -395,32 +402,47 @@ export async function applyPlan(
   execute: (sql: string) => Promise<void>,
   readBack: () => Promise<MissingObjects>,
 ): Promise<ApplyOutcome> {
-  const applied: ParsedStatement[] = [];
-  for (const statement of plan.apply) {
-    try {
-      await execute(statement.sql);
-      applied.push(statement);
-    } catch (cause) {
-      return {
-        applied,
-        failure: { statement, message: (cause as Error).message },
-        stillAbsent: [],
-      };
-    }
-  }
-  const after = await readBack();
   const wanted = new Set(plan.apply.flatMap((statement) => [
     ...statement.createsTables.map((table) => `table ${table}`),
     ...statement.addsColumns.map((column) => `column ${column}`),
     ...statement.createsIndexes.map((index) => `index ${index}`),
     ...statement.incidentalIndexes.map((index) => `index ${index}`),
   ]));
-  const stillAbsent = [
+  const absentOf = (after: MissingObjects): string[] => [
     ...after.tables.map((table) => `table ${table}`),
     ...after.columns.map((column) => `column ${column}`),
     ...after.indexes.map((index) => `index ${index}`),
   ].filter((object) => wanted.has(object));
-  return { applied, failure: null, stillAbsent };
+
+  const applied: ParsedStatement[] = [];
+  for (const statement of plan.apply) {
+    try {
+      await execute(statement.sql);
+      applied.push(statement);
+    } catch (cause) {
+      /*
+        A FAILURE STILL GETS ITS READ-BACK (review of #584 round 2, finding 1).
+        Two deploys minutes apart each plan the same gap; the first applies it,
+        the second's identical statement errors (duplicate table/column), and
+        without this read the second deploy would be ABORTED over a gap that is
+        already closed — production held on the older build by a race that
+        delivered exactly what was wanted. So the failure carries what is
+        still absent across the WHOLE plan: an empty list means a racer
+        finished the job and the error is benign; a non-empty one is a real
+        failed write. A read-back that itself throws reports every wanted
+        object as absent — unprovable is treated as absent, the closed
+        direction.
+      */
+      let stillAbsent: readonly string[] = [...wanted];
+      try { stillAbsent = absentOf(await readBack()); } catch { /* fail closed */ }
+      return {
+        applied,
+        failure: { statement, message: (cause as Error).message },
+        stillAbsent,
+      };
+    }
+  }
+  return { applied, failure: null, stillAbsent: absentOf(await readBack()) };
 }
 
 export type MigrationReport = {
@@ -428,8 +450,87 @@ export type MigrationReport = {
   readonly lines: readonly string[];
   /** Anything that costs the run its exit code. */
   readonly problems: readonly string[];
+  /**
+   * The subset of `problems` that mean the WRITE PATH itself failed — a
+   * statement that errored, or an object still absent after its statement ran.
+   * A REFUSED destructive statement and an unresolved declaration are problems
+   * but not blockers: they describe a ceremony that is waiting, not a write
+   * that went wrong. The pre-deploy road (#508) exits 1 only on these, because
+   * a waiting ceremony must not wedge every subsequent deploy while a failed
+   * write must never let the new build take traffic.
+   */
+  readonly blocking: readonly string[];
   readonly applied: number;
 };
+
+/**
+ * The bridge from a conformance verdict's field names to the planner's — the
+ * one mapping both deploy roads share (`table.index` on the way out of the
+ * verdict; bare on the way into the planner, because that is how the database
+ * names them). It existed inline in the rite; the pre-deploy command (#508)
+ * is a second caller, and two copies of a `.slice` like this drift
+ * (working law 4).
+ */
+export function missingObjectsFrom(verdict: {
+  readonly missingTables: readonly string[];
+  readonly missingColumns: readonly string[];
+  readonly missingIndexes: readonly string[];
+}): MissingObjects {
+  return {
+    tables: verdict.missingTables,
+    columns: verdict.missingColumns,
+    indexes: verdict.missingIndexes.map((name) => name.slice(name.indexOf(".") + 1)),
+  };
+}
+
+/**
+ * THE ONE READING BOTH DEPLOY ROADS PLAN THEIR WRITES FROM (review of #584,
+ * finding 1). The rite and the pre-deploy command each held their own copy of
+ * this closure — the two `information_schema` queries, the empty-COLUMNS
+ * guard, the raw-vs-tolerated verdict pair — and the copy that decided a
+ * production write was the newer one. Two copies of a reading drift (working
+ * law 4), so the reading lives here and the callers inject only how to run a
+ * query.
+ *
+ * The empty-COLUMNS refusal is working law 2, and since #322 this reader
+ * DECIDES A WRITE rather than only reporting: an empty result is the whole
+ * basis for deciding to CREATE, and it is also exactly what a wrong database
+ * or a silently failed query looks like.
+ *
+ * Two verdicts from one pair of queries, deliberately: `missing` comes from
+ * the RAW comparison (empty exception lists — an enumerated table is
+ * precisely the one the applier most needs to see), while `verdict` is the
+ * tolerated one the receipts print.
+ */
+export async function readSchemaGap(
+  schemaSource: string,
+  query: (sql: string) => Promise<any[]>,
+): Promise<{
+  verdict: ReturnType<typeof conformanceVerdict>;
+  missing: MissingObjects;
+  declaredIndexCount: number;
+}> {
+  const declared = declaredSchemaFrom(schemaSource);
+  const declaredIndexes = declaredIndexesFrom(schemaSource);
+  const rows = await query(
+    `SELECT TABLE_NAME AS t, COLUMN_NAME AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()`,
+  );
+  const indexRows = await query(
+    `SELECT DISTINCT INDEX_NAME AS n FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()`,
+  );
+  if (rows.length === 0) throw new Error("information_schema returned no columns at all");
+  const live = liveSchemaFrom(rows as Array<{ t: string; c: string }>);
+  const indexes = {
+    declared: declaredIndexes,
+    live: new Set((indexRows as Array<{ n: string }>).map((row) => row.n)),
+  };
+  const raw = conformanceVerdict(declared, live, indexes, {}, {});
+  return {
+    verdict: conformanceVerdict(declared, live, indexes),
+    missing: missingObjectsFrom(raw),
+    declaredIndexCount: declaredIndexes.size,
+  };
+}
 
 /** What a statement does, in one line, for the receipt. Never the whole DDL. */
 function summarise(statement: ParsedStatement): string {
@@ -466,7 +567,7 @@ export async function autoApplyMigrations(options: {
   const { missing, readBack, execute, listMigrations, dry } = options;
   const outstanding = missing.tables.length + missing.columns.length + missing.indexes.length;
   if (outstanding === 0) {
-    return { lines: ["nothing pending — the service holds everything the code declares"], problems: [], applied: 0 };
+    return { lines: ["nothing pending — the service holds everything the code declares"], problems: [], blocking: [], applied: 0 };
   }
 
   const files = listMigrations();
@@ -495,7 +596,7 @@ export async function autoApplyMigrations(options: {
 
   if (plan.apply.length === 0) {
     lines.push(`${outstanding} pending · 0 applied · ${plan.refuse.length} refused · ${plan.unresolved.length} unresolved`);
-    return { lines, problems, applied: 0 };
+    return { lines, problems, blocking: [], applied: 0 };
   }
 
   if (dry) {
@@ -504,25 +605,38 @@ export async function autoApplyMigrations(options: {
       `${outstanding} pending · ${plan.apply.length} would apply · ${plan.refuse.length} refused `
       + "(--dry: nothing was written)",
     );
-    return { lines, problems, applied: 0 };
+    return { lines, problems, blocking: [], applied: 0 };
   }
 
   const outcome = await applyPlan(plan, execute, readBack);
+  const blocking: string[] = [];
   for (const statement of outcome.applied) lines.push(`applied: ${statement.file} — ${summarise(statement)}`);
-  if (outcome.failure) {
-    problems.push(
+  if (outcome.failure && outcome.stillAbsent.length === 0) {
+    /* The race that is NOT a failure (review of #584 round 2, finding 1): the
+       statement errored, yet everything the plan wanted is present — a
+       concurrent deploy applied the same migration first. Said plainly and
+       not blocked on, or the newer of two quick merges would be aborted over
+       a gap that is already closed. */
+    lines.push(
+      `${outcome.failure.statement.file}: a statement errored (${outcome.failure.message}) but every object `
+      + "the plan wanted is PRESENT on read-back — a concurrent deploy applied the same migration; not blocking",
+    );
+  } else if (outcome.failure) {
+    blocking.push(
       `${outcome.failure.statement.file}: the migration FAILED — ${outcome.failure.message}. `
       + `${outcome.applied.length} statement(s) before it did land; nothing after it was attempted.`,
     );
+  } else {
+    for (const object of outcome.stillAbsent) {
+      blocking.push(`${object}: the statement creating it ran without error and the object is STILL ABSENT — stop and investigate`);
+    }
   }
-  for (const object of outcome.stillAbsent) {
-    problems.push(`${object}: the statement creating it ran without error and the object is STILL ABSENT — stop and investigate`);
-  }
+  problems.push(...blocking);
   lines.push(
     `${outstanding} pending · ${outcome.applied.length} applied · ${plan.refuse.length} refused `
     + `· ${plan.unresolved.length} unresolved · ${outcome.stillAbsent.length} still absent after the read-back`,
   );
-  return { lines, problems, applied: outcome.applied.length };
+  return { lines, problems, blocking, applied: outcome.applied.length };
 }
 
 /** The real `drizzle/` listing, in the order the applier must replay it. */
