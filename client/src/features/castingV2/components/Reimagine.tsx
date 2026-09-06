@@ -67,6 +67,16 @@ export type ReimagineState = {
    * SUCCEEDED, on its own flight, and cleared by a press, an undo or a
    * keystroke, so the strip's promise ("it comes back the moment its fold
    * does not stand any more") is the same fact the box holds.
+   *
+   * ⚠ **Declared limit: ONE slot, so it names the LAST direction written and
+   * not every direction standing** (review of PR #601, round 2, non-blocking).
+   * Tap A then tap B and chip A goes back on offer while its words are still
+   * in the brief; tapping it again re-folds a direction already there. It
+   * costs nothing worth a set: the fold instruction changes only what the
+   * direction touches, so a re-fold is near-idempotent, and Undo covers it
+   * either way. A set would also have to answer "which of these still
+   * stands?" after a plain press rewrote the brief — a question no slot can
+   * answer honestly, and the reason this one is deliberately small.
    */
   written: string | null;
   /**

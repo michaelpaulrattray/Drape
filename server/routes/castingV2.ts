@@ -1378,9 +1378,11 @@ export const castingV2Router = router({
           /*
             A GENERATED CHIP the customer tapped (#535 decision 12). Optional,
             so this is an ADDITIVE input change and no in-flight bundle can be
-            rejected by it. Bounded well under a chip's own eight-word
-            ceiling's worst case, because it is words from a list this server
-            wrote — the bound is a shape check, not a trust boundary.
+            rejected by it. Bounded well ABOVE a chip's own ten-word ceiling
+            (`BRIEF_CHIP_MAX_WORDS`, raised from eight when the drive found
+            eight throwing away a nine-word line), because it is words from a
+            list this server wrote — the bound is a shape check, not a trust
+            boundary.
           */
           direction: z.string().min(1).max(200).optional(),
         })
