@@ -315,12 +315,41 @@ export function paidScriptsReadingFlagsByName(
  * Read at the IMPORT rather than at a mention, for the reason
  * `routesThroughTheFreeze` above already carries: a docblock explaining that a
  * file is *not* a paid one would otherwise put it in the swept population.
+ *
+ * ⚠ **THIS IS A FLOOR, NOT A CEILING, AND THE FIRST DRAFT CLAIMED OTHERWISE**
+ * (PR #603's review, finding 2). The sentence *"a new paid driver joins the
+ * swept population by existing"* is true only of a driver importing one of the
+ * names below, directly and statically. Three ways a spender stays invisible,
+ * stated here rather than discovered later — the repo's own rule that a clean
+ * run is a floor and not coverage:
+ *
+ *   1. **ONE HOP.** A script importing a module that itself reaches a paid
+ *      engine is not matched. This is not hypothetical: `hair-arrangement-court`
+ *      imports `presentationState`, whose `capturePresentation` defaults to
+ *      `interpreterEngine()` and bills OpenRouter — it carried the very defect
+ *      this reader exists to find, and the reader could not see it. It is on the
+ *      list below BY NAME for that reason.
+ *   2. **A dynamic `await import(…)`** produces no match — the Atlas's own
+ *      documented blind spot, where 65 modules once read as having no callers.
+ *   3. The paid **text** transports were absent entirely from the first draft,
+ *      while `openrouterBalance` — which only READS the balance — was present.
+ *      Including the reader and excluding the spenders was the inverted half of
+ *      the same mistake this card corrected in `#345`'s own body.
+ *
+ * A grep-shaped guard is not going to resolve transitive imports, and it is not
+ * asked to. What it must not do is describe itself as complete.
  */
 export function drivesAPaidTransport(source: string): boolean {
   const code = codeWithoutBlockComments(source);
-  if (/\bfrom\s+["'][^"']*(falRegionReader|falImages|falQueue|falTransport|signEngine|openrouterBalance)["']/.test(code)) {
-    return true;
-  }
+  const transports = [
+    /* fal — images, queue, region reads, identity */
+    "falRegionReader", "falImages", "falQueue", "falTransport", "signEngine",
+    /* OpenRouter — the transports that SPEND, and the balance reader */
+    "openrouterText", "openrouterImages", "openrouterBalance",
+    /* one hop, named because it is a measured miss rather than a guess (1) */
+    "presentationState",
+  ].join("|");
+  if (new RegExp(`\\bfrom\\s+["'][^"']*(${transports})["']`).test(code)) return true;
   return /\b(?:fixtureS|s)pendAuthorized\s*\(/.test(code);
 }
 
@@ -333,6 +362,12 @@ export function drivesAPaidTransport(source: string): boolean {
  * in the docblock explaining why it is gone. A guard that cannot tell a
  * quotation from an occurrence forces the prose to go quiet about the very
  * thing it guards.
+ *
+ * ⚠ Its own limit, since the claim it replaced was too strong (PR #603's
+ * review, finding 3): this is a TEXT match on `process.argv`, so a destructured
+ * `const { argv } = process` reads past it. It cannot be outrun by another
+ * SPELLING of a flag read — which is what the complement rule buys — but it is
+ * not proof against a rewrite of how argv is reached.
  */
 export function readsArgvOutsideTheStrictParse(source: string): boolean {
   const code = codeWithoutBlockComments(source)
@@ -352,7 +387,16 @@ export function codeWithoutBlockComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-/** Every `.ts`/`.mts` under a directory. A clean sweep with no population is not a sweep. */
+/**
+ * Every `.ts`/`.mts` under a directory. A clean sweep with no population is not
+ * a sweep.
+ *
+ * ⚠ SORTED, because callers assert on the order (PR #603's review, finding 3).
+ * `readdirSync` returns filesystem order, which differs between Windows and the
+ * Linux gate — so an arm asserting an exact array was green here and on CI by
+ * luck rather than by construction. Sorting at the source fixes it for every
+ * caller instead of each one remembering.
+ */
 export function scriptFilesUnder(dir: string): string[] {
   const files: string[] = [];
   const walk = (at: string) => {
@@ -365,7 +409,7 @@ export function scriptFilesUnder(dir: string): string[] {
     }
   };
   walk(dir);
-  return files;
+  return files.sort();
 }
 
 /*

@@ -537,6 +537,24 @@ describe("no paid script reads its flags by name", () => {
     expect(paid.length).toBeGreaterThan(15);
   });
 
+  /**
+   * THE ONE-HOP SPECIMEN STAYS IN THE POPULATION (PR #603's review, finding 1).
+   *
+   * `hair-arrangement-court` reaches OpenRouter through `presentationState`
+   * rather than by importing a transport, so the first draft of the classifier
+   * could not see it — and it was carrying the defect. It is covered now only
+   * because `presentationState` is named in the transport list.
+   *
+   * ⚠ Without this arm, deleting that name would redden NOTHING: the file is
+   * repaired, so it is silent whether it is swept or not. The arm pins the
+   * membership rather than the symptom, which is the only way a fixed specimen
+   * can go on guarding the reader that found it.
+   */
+  it("keeps the one-hop specimen in the swept population", () => {
+    const source = sourceOf("scripts/calibration/hair-arrangement-court.mts");
+    expect(drivesAPaidTransport(source), "the one-hop spender fell out of the population").toBe(true);
+  });
+
   it("every paid script parses strictly", () => {
     expect(paidScriptsReadingFlagsByName(SCRIPTS, REPO, INTERFACE_EXEMPT)).toEqual([]);
   });
