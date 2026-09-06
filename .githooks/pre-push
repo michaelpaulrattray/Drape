@@ -80,6 +80,19 @@
 # population is `.githooks/atlas-paths`, shared with the commit hook so the two
 # cannot drift about which files matter.
 #
+# ⚠ TWO STATED LIMITS, because a guard that half-declares one reads as coverage.
+#
+# 1. IT JUDGES THE CURRENT WORKING TREE, WHATEVER REF IS BEING PUSHED. `git push
+#    origin some-other-branch` from this checkout gets a verdict about THIS
+#    tree — wrong in both directions, and the false-ALLOW direction (tree fresh,
+#    pushed branch stale) is silent. That is the pre-existing status quo rather
+#    than something this arm introduced, and the gate remains the backstop for
+#    it; it is named here rather than left to be discovered.
+# 2. The `printf` of the dirty list is unquoted so each name prints on its own
+#    line. A filename holding a space splits, and a glob character expands. It
+#    is display only — the refusal decision never reads it — and the tradeoff is
+#    a legible list against a cosmetic edge nothing in this tree has.
+#
 # `drape.atlasCheck` overrides the check command; its only intended use is the
 # guard's own test, which drives real temporary repositories with no generator.
 # Driven by `server/atlasPushGate.test.ts`, against real repositories and a real
@@ -105,7 +118,23 @@ atlas_push_gate() {
   [ "$status" -eq 0 ] && return 0
 
   # Stale — but is the staleness the COMMIT's, or uncommitted work on disk?
-  dirty=$( { git diff --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; } \
+  #
+  # ⚠ THREE READS, AND THE MIDDLE ONE IS THE ONE THIS SHIPPED WITHOUT (review of
+  # PR #610, finding 5). `git diff` is worktree-vs-index (UNSTAGED only) and
+  # `ls-files --others` is UNTRACKED only, so a file that is STAGED but not
+  # committed fell through both: the check read it off disk and said stale, the
+  # dirty read came back empty, and the hook refused a legitimate push with
+  # "the working tree is clean" — a sentence that was false, above a remedy
+  # that was wrong. Commit, then `git add` the next task's file, then push, and
+  # it fires. The dirty read covering two of three dirty states is the same
+  # shape as the repair this hook exists to reject.
+  #
+  # `atlas-stage` reads only two of these ON PURPOSE and is not a sibling: there
+  # the staged files ARE the commit, so unstaged and untracked is exactly the
+  # population that can differ from it.
+  dirty=$( { git diff --name-only 2>/dev/null; \
+             git diff --cached --name-only 2>/dev/null; \
+             git ls-files --others --exclude-standard 2>/dev/null; } \
     | grep -E "$WARN_MATCHES" | sort -u)
   if [ -n "$dirty" ]; then
     echo "" >&2

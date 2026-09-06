@@ -212,6 +212,32 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
     expect(remoteHead(remote)).toBe(git(work, "rev-parse", "HEAD").stdout.trim());
   });
 
+  /*
+    ⚠ THE LAW-7 SIBLING OF THE ARM ABOVE (review of PR #610, finding 5). Dirty
+    has THREE states, not two — unstaged, STAGED, untracked — and the first
+    version of this hook read only the outer two. Staged work therefore fell
+    through: the check saw the file on disk and said stale, the dirty read came
+    back empty, and a legitimate push was refused with "the working tree is
+    clean", which was false. This is the arm that would have caught it.
+  */
+  it("WARNS and allows when the staleness is STAGED work — the third dirty state", () => {
+    const { work, remote } = repoWithRemote();
+    expect(push(work).status).toBe(0);
+
+    commitSource(work, "b.ts");
+    /* Committed and fresh; then the next task's file is staged, not committed. */
+    writeFileSync(join(work, "server", "staged.ts"), "export const s = 1;\n");
+    git(work, "add", "server/staged.ts");
+    expect(git(work, "status", "--porcelain").stdout).toContain("A  server/staged.ts");
+
+    const result = push(work);
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stderr).toContain("uncommitted");
+    expect(result.stderr).toContain("server/staged.ts");
+    expect(result.stderr).not.toContain("REFUSED");
+    expect(remoteHead(remote)).toBe(git(work, "rev-parse", "HEAD").stdout.trim());
+  });
+
   it("does NOT pay twice on the rite's own push — the rite runs both checks itself", () => {
     const { work, remote } = repoWithRemote();
     expect(push(work).status).toBe(0);
@@ -259,7 +285,10 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
     /* A hooks directory holding pre-push and nothing else. */
     const lone = mkdtempSync(join(tmpdir(), "drape-atlas-lone-"));
     dirs.push(lone);
-    writeFileSync(join(lone, "pre-push"), readFileSync(join(HOOKS_DIR, "pre-push"), "utf8"));
+    /* ⚠ mode 0o755, or git cannot execute the copy and the push succeeds for
+       the wrong reason — which is what this arm did on Linux CI the first time
+       it ran: a green "REFUSES" arm over a hook that was never invoked. */
+    writeFileSync(join(lone, "pre-push"), readFileSync(join(HOOKS_DIR, "pre-push"), "utf8"), { mode: 0o755 });
     const result = spawnSync("git", [
       "-c", `core.hooksPath=${lone.replace(/\\/g, "/")}`,
       "-c", `drape.atlasCheck=${CHECK}`,
