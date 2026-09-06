@@ -32,7 +32,8 @@
  * door), which is the safe direction for a triage whose next step is deletion.
  */
 import { execSync } from "node:child_process";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync } from "node:fs";
+import { readIfPresent, statIfPresent } from "./listedEntry.mts";
 import { join, resolve } from "node:path";
 
 /**
@@ -175,19 +176,34 @@ function escapeForRegExp(text: string): string {
 }
 
 export function buildClassifier(repoRoot: string): (symbol: string) => Mention {
+  /*
+    ⚠ THE ENTRIES ARE READ THROUGH THE ENOENT-ONLY TOLERANCE (#591, PR #590
+    review finding 3). `CONSUMER_ROOTS` includes `scripts/`, where this tree
+    carries ~440 untracked disposables that can leave between the listing and
+    the read for reasons that have nothing to do with this sweep — #223's
+    class exactly. This module is keyboard-run and never under vitest, so it
+    cannot refuse the deploy rite the way #589 did; it is moved onto the same
+    tolerance so the bound is ENFORCED here rather than implied by that.
+  */
   const files: string[] = [];
   const walk = (dir: string): void => {
     for (const entry of readdirSync(dir)) {
       if (entry === "node_modules" || entry === "dist" || entry.startsWith(".")) continue;
       const full = join(dir, entry);
-      if (statSync(full).isDirectory()) walk(full);
+      const stat = statIfPresent(full);
+      if (stat === null) continue; /* vanished between list and stat (#589) */
+      if (stat.isDirectory()) walk(full);
       else if (/\.(ts|tsx|mts)$/.test(entry)) files.push(full);
     }
   };
   for (const root of CONSUMER_ROOTS) walk(join(repoRoot, root));
 
   const source = new Map<string, string>();
-  for (const file of files) source.set(file, withoutComments(readFileSync(file, "utf8")));
+  for (const file of files) {
+    const text = readIfPresent(file);
+    if (text === null) continue; /* left between the walk and the read (#589) */
+    source.set(file, withoutComments(text));
+  }
 
   /*
     A CONSUMER THIS REPOSITORY DOES NOT CONTAIN IS NOT A CONSUMER. Two hundred
