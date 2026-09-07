@@ -4,6 +4,11 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+/* `runHook` drives the GATE — it must distinguish "refused" from "never ran"
+   (#640). The bare `execFileSync` below reads repository state, where throwing
+   on any failure is the wanted behaviour and there is no verdict to confuse. */
+import { runHook } from "./testing/hookDriver";
+
 /**
  * THE PRE-COMMIT GATE, DRIVEN RATHER THAN READ.
  *
@@ -21,30 +26,32 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 const HOOKS_DIR = resolve(".githooks");
 const HOOK = join(HOOKS_DIR, "pre-commit");
 
+/*
+  ⚠ A `git` THAT NEVER STARTS THROWS HERE — it does not come back as a status
+  (#640's class). Eleven arms below assert refusal as `expect(status).not.toBe(0)`,
+  and the old driver's `-1` sentinel satisfies every one of them: they would have
+  reported "the gate refuses" over a git that never ran. Each happens to be
+  followed by a `stderr` assertion that a non-run would also fail, so none was
+  live — but that is a neighbour protecting them, not the driver, and it is one
+  edit from not being true.
+*/
 function git(cwd: string, ...args: string[]): { status: number; stderr: string } {
-  try {
-    execFileSync(
-      "git",
-      [
-        "-c",
-        `core.hooksPath=${HOOKS_DIR}`,
-        "-c",
-        "user.name=gate",
-        "-c",
-        "user.email=gate@example.invalid",
-        "-c",
-        "commit.gpgsign=false",
-        ...args,
-      ],
-      { cwd, encoding: "utf8", stdio: "pipe" },
-    );
-    return { status: 0, stderr: "" };
-  } catch (error: any) {
-    return {
-      status: typeof error?.status === "number" ? error.status : -1,
-      stderr: String(error?.stderr ?? ""),
-    };
-  }
+  const { status, stderr } = runHook(
+    "git",
+    [
+      "-c",
+      `core.hooksPath=${HOOKS_DIR}`,
+      "-c",
+      "user.name=gate",
+      "-c",
+      "user.email=gate@example.invalid",
+      "-c",
+      "commit.gpgsign=false",
+      ...args,
+    ],
+    { cwd },
+  );
+  return { status, stderr };
 }
 
 /** A fresh repository on `main` with one commit, so branches and worktrees can hang off it. */
