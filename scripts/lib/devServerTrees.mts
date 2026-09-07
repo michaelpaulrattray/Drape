@@ -135,7 +135,17 @@ function ancestorsOf(rows: readonly ProcessRow[], row: ProcessRow): ProcessRow[]
   for (;;) {
     const parent = index.get(child.parentPid);
     if (!parent || seen.has(parent.pid)) break;
-    if (parent.startedAt.getTime() > child.startedAt.getTime()) break;
+    /*
+      ⚠ AN UNREADABLE CREATION DATE STOPS THE WALK RATHER THAN PASSING IT —
+      PR #659 review, note 2. `NaN > x` is `false`, so a row whose date the
+      process table would not give up sailed through the guard below and could
+      adopt whatever now holds its parent's pid. Stopping costs an over-count
+      at worst, which is the direction this module fails in on purpose.
+    */
+    const parentAt = parent.startedAt.getTime();
+    const childAt = child.startedAt.getTime();
+    if (Number.isNaN(parentAt) || Number.isNaN(childAt)) break;
+    if (parentAt > childAt) break;
     seen.add(parent.pid);
     chain.push(parent);
     child = parent;
@@ -239,18 +249,38 @@ export function rootsToKill(
   const wrong: string[] = [];
   for (const pid of pids) {
     if (rootPids.has(pid)) continue;
-    const owner = trees.find((tree) => tree.childPids.includes(pid));
     const row = byPid.get(pid);
+    const owner = trees.find((tree) => tree.childPids.includes(pid))
+      /*
+        ⚠ AND A SHELL HOP IS INSIDE THE TREE TOO, though `childPids` cannot
+        show it — PR #659 review, note 1. `childPids` holds node processes, so
+        the `cmd.exe` between the two watchers was refused with *"not a
+        dev-server process at all"*, which is true of the LIST and false of the
+        machine: somebody reading that would reasonably go and kill it by hand,
+        orphaning the watcher below it. The ownership walk knows better, so it
+        is asked.
+      */
+      ?? (row ? trees.find((tree) => tree.rootPid === owningRoot(rows, row)?.pid) : undefined);
     if (!owner) {
       wrong.push(`${pid} is not a dev-server process at all.`);
       continue;
     }
-    /* Two ways to be inside a tree and neither of them is the pid to kill: the
-       server that holds the port, and — since #658 — the inner `tsx watch` the
-       root started through a shell. */
-    wrong.push(row && isDevServerRoot(row)
-      ? `${pid} is the inner watcher INSIDE dev server ${owner.rootPid}'s tree — ${owner.rootPid} started it and is the pid to kill.`
-      : `${pid} is a dev server's CHILD — its watcher ${owner.rootPid} would start another one. Kill ${owner.rootPid}.`);
+    /* Three ways to be inside a tree and none of them is the pid to kill: the
+       server that holds the port, the inner `tsx watch` the root started
+       through a shell, and the shell itself. */
+    if (row && isDevServerChild(row)) {
+      wrong.push(
+        `${pid} is a dev server's CHILD — its watcher ${owner.rootPid} would start another one. Kill ${owner.rootPid}.`,
+      );
+    } else if (row && isDevServerRoot(row)) {
+      wrong.push(
+        `${pid} is the inner watcher INSIDE dev server ${owner.rootPid}'s tree — ${owner.rootPid} started it and is the pid to kill.`,
+      );
+    } else {
+      wrong.push(
+        `${pid} is a shell inside dev server ${owner.rootPid}'s tree — killing it orphans the watcher below it. Kill ${owner.rootPid}.`,
+      );
+    }
   }
   if (wrong.length > 0) return { kind: "refused", reason: wrong.join("\n") };
   return { kind: "kill", rootPids: [...new Set(pids)] };

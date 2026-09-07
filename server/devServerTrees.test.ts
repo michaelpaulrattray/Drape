@@ -246,6 +246,42 @@ describe("⚠ one `pnpm dev` is ONE tree, whatever it is made of (#658)", () => 
     expect(rootsStartedAfter(PNPM_DEV, at("05:00"))).toHaveLength(1);
   });
 
+  it("⚠ refuses the SHELL between the two watchers, and says what killing it would do", () => {
+    /*
+      PR #659 review, note 1. The refusal held — a shell is not a root — but it
+      said *"not a dev-server process at all"*, which describes the child LIST
+      rather than the machine: `childPids` holds node processes, so the shell
+      is invisible to it. Somebody reading that would reasonably go kill it by
+      hand and orphan the watcher below it.
+    */
+    const verdict = rootsToKill(PNPM_DEV, [30356]);
+    expect(verdict.kind).toBe("refused");
+    expect(verdict.kind === "refused" && verdict.reason).toContain("29132");
+    expect(verdict.kind === "refused" && verdict.reason).not.toContain("not a dev-server process");
+  });
+
+  it("CONTROL — a pid in no tree at all is still refused as exactly that", () => {
+    /* The sentence above must not become the answer to everything: a process
+       that belongs to no dev server keeps the plain refusal. */
+    const stranger = rootsToKill(PNPM_DEV, [34936]);
+    expect(stranger.kind === "refused" && stranger.reason).toContain("not a dev-server process");
+  });
+
+  it("⚠ an unreadable creation date stops the walk instead of passing the guard", () => {
+    /*
+      PR #659 review, note 2: `NaN > x` is `false`, so a row whose date the
+      process table would not give up sailed through the recycled-pid guard.
+      Here the shell's date is unreadable, so the inner watcher can no longer
+      be attributed and reads as its own root — the over-count direction, which
+      is the one that leaves nothing running unseen.
+    */
+    const unreadable = PNPM_DEV.map((row) =>
+      row.pid === 30356 ? { ...row, startedAt: new Date("not a date") } : row);
+    expect(devServerTrees(unreadable).map((tree) => tree.rootPid).sort()).toEqual(
+      [29132, 32244].sort(),
+    );
+  });
+
   it("⚠ a recycled pid does not adopt a live server", () => {
     /*
       Windows reuses pids. A parent that started AFTER its child is not that
