@@ -1,7 +1,7 @@
 {
-  "edition": 290,
-  "updatedAt": "2026-09-07T10:53:25Z",
-  "shift": "Foreman (Opus) - a safety check on this machine had been reporting a verdict without ever running, and eighteen tools that write to your database stopped ignoring a mistyped word",
+  "edition": 291,
+  "updatedAt": "2026-09-07T12:45:00Z",
+  "shift": "Foreman (Opus) - the dock now says WHICH kept face the Sign will act on, a failed tile says the money came back at a glance, and a card you have answered that still needs you no longer disappears off your desk",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -137,7 +137,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-07T10:51:17.393Z",
+      "readAt": "2026-09-07T13:05:33.567Z",
       "items": [
         {
           "issueNumber": 16,
@@ -254,7 +254,7 @@
     {
       "id": "card-state-354",
       "issueNumber": 354,
-      "state": "open",
+      "state": "done",
       "title": "When you answer something and the next step is still yours, it leaves your desk",
       "productImpact": "This page sorts what you see into 'needs you' and 'already dealt with'. A card moves to 'already dealt with' the moment you REPLY to it.\n\nMost of the time those are the same thing. They come apart in one shape, and it is the worst possible one: you answer the question, and the remaining step is ALSO yours - you said yes, and now something needs you to flip a switch, run a thing, or look at a picture. At that exact moment the card leaves your desk and files itself under 'no action needed'.\n\nA WORKED EXAMPLE, and it is a real one: a card asked you to approve a shape. You did. Its remaining step was one command only you could run. It vanished off your desk into history the second you engaged with it, and it sat there.\n\nThe cheap half is already fixed - pictures put here for your eyes no longer disappear before you have looked. What is left is your call on the shape.\n\nTHE ASK: should a card you have answered, but that still needs an act from you, stay in 'needs you' as its own visibly different kind - or would you rather it went back to looking like a fresh ask? The first is more honest and adds a fourth kind of card to this page. The second is simpler and slightly blunter.\n\nRECOMMENDATION: the first. You should never have to go looking in 'already dealt with' for something that is waiting on you. Nothing is blocked by this - it had been sitting with nothing saying it needed you, which is the fault that turned it up tonight.",
       "workedExample": "A card asked you to approve a shape. You said yes. Its remaining step was one command only you could run - and the moment you replied, the card left 'What needs you' and filed itself under 'Already dealt with'. It sat there, looking finished, with the only person who could finish it never seeing it again.",
@@ -1976,6 +1976,28 @@
       "state": "done",
       "filedAt": "2026-09-05T00:20:00.000Z",
       "issueNumber": 129
+    },
+    {
+      "id": "casting-upkeep-switch-contradiction",
+      "issueNumber": null,
+      "state": "open",
+      "title": "Your Casting upkeep switch is ON, and the crew's own rulebook says that work is OFF - which one do you mean?",
+      "productImpact": "This is a ten-second question and it has been quietly costing shifts for a week.\n\nOn this page there is a panel of switches deciding what the night crew is allowed to pick up on its own. Casting upkeep is ON. But the crew's rulebook carries your instruction from the 4th - \"leave casting upkeep off for now then\" - and that says OFF.\n\nSo every night a shift arrives, reads both, and has to decide which of the two is you. Every one of them has correctly chosen your written words and left that work alone. But that is a judgement call about your intentions being made in the dark, at two in the morning, by a machine - which is exactly the thing this page exists to stop.\n\nNothing is broken and nothing is waiting on it. Seven jobs sit in that category and none of them is urgent. It just needs one of the two to be right.",
+      "workedExample": "Tonight was the sixth shift to hit it. Five before it resolved the contradiction silently and never mentioned it; the shift before mine wrote that down and asked for it to reach you, which is why it is here.",
+      "options": [
+        {
+          "key": "off",
+          "label": "Leave it off - flip the switch down",
+          "consequence": "Matches what you said on the 4th. The seven casting jobs keep waiting until you finish judging the casting studio, which is what you told the crew you wanted."
+        },
+        {
+          "key": "on",
+          "label": "You meant it on - the crew updates its rulebook",
+          "consequence": "The night crew starts picking up small casting tidying jobs on its own. None of them changes what a roll produces, so it would not disturb your judging."
+        }
+      ],
+      "recommendation": "Flip the switch off. Your written instruction is the more recent deliberate statement of what you wanted, and the switch was most likely turned on when you turned the whole panel on at once. Either answer takes one tap; leaving it as it is means every future shift keeps making the guess.",
+      "filedAt": "2026-09-07T12:45:00Z"
     }
   ],
   "eyeItems": [
@@ -4214,6 +4236,79 @@
           "arm": "narrow"
         }
       ]
+    },
+    {
+      "id": "sign-names-whom-556-frames",
+      "title": "Four kept, and which one does Sign mean?",
+      "question": "Your own question, answered in the dock. First frame is what you saw: \"4 kept\" beside \"Sign to roster\", four faces at equal weight. Second is now: \"4 kept - 05 selected\", the chosen face ringed and the others stepped back. Third is the case the review caught - five kept across two rolls, where the label has to name the roll as well, because \"03\" means a position inside one roll. Does the dock now say plainly enough that it signs one?",
+      "state": "open",
+      "filedAt": "2026-09-07T12:45:00Z",
+      "issueNumber": 556,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/689110ac-3239-450f-8751-410119461476.png",
+          "caption": "BEFORE, dark, 1440. Four kept faces at equal weight, \"4 kept\", and a button reading \"Sign to roster\". Nothing on the row says which face it means - the ring is there, and it is thin enough to lose against three equally bright neighbours.",
+          "arm": "before"
+        },
+        {
+          "key": "crew-eye/2e9f7d8c-8079-45b0-baac-b66e2842cb91.png",
+          "caption": "AFTER, dark, 1440. \"4 kept - 05 selected\". The chosen face is ringed harder and the other three sit back slightly. The button is untouched - it still reads \"Sign to roster\", per your 2 August ruling that the ring says who.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/ce687692-3c0e-4b03-9d9e-dff614bc84da.png",
+          "caption": "AFTER, light, 1440. The same, in the light theme - where the old ring was faintest against the white card.",
+          "arm": "after"
+        },
+        {
+          "key": "crew-eye/390f2679-0f24-4e5c-9fa6-f7801640d837.png",
+          "caption": "THE CASE THE REVIEW CAUGHT, dark, 1440. Five kept spanning two rolls. The strip draws four and a \"+1\", the face it is aiming at is drawn rather than hidden behind the +1, and the label reads \"5 kept - 03 from roll 02 selected\" - because roll 1 has an \"03\" too.",
+          "arm": "after"
+        }
+      ]
+    },
+    {
+      "id": "refunded-pill-553-frames",
+      "title": "REFUNDED on a failed tile - and the one tile that must not wear it",
+      "question": "Your ask from the 5th, built. Two failed tiles side by side: the left one was refused by the engine's filter and got the money back; the right one never started and was never charged. Only the left wears REFUNDED. Is the tag where you wanted it, and does it read quietly enough?",
+      "state": "open",
+      "filedAt": "2026-09-07T12:45:00Z",
+      "issueNumber": 553,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/e0ef4336-5170-41d9-9e8f-6d503b14aa4e.png",
+          "caption": "Dark, 1440. Left: CONTENT FILTER bottom-left, REFUNDED top-right, and the sentence beneath still says it in full. Right: NOT CHARGED, and no refund tag - that failure never took your money, so a REFUNDED tag there would contradict its own caption.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/01cf5537-8d65-4860-b892-abd318b65be1.png",
+          "caption": "Light, 1440. Same two tiles. The tags are ink on surface like every other pill on the sheet - a refund is a status, not good news to colour in.",
+          "arm": "light"
+        }
+      ]
+    },
+    {
+      "id": "waiting-card-354-frames",
+      "title": "The fourth kind of card, on your own desk",
+      "question": "Your word tonight was \"The first. Keep it on my desk until the act is done.\" This is what that looks like: the top card wears ANSWERED - STILL YOURS TO DO, the card below it is a fresh ask and wears nothing. Is the difference clear enough at a glance, and is the wording right?",
+      "state": "open",
+      "filedAt": "2026-09-07T12:45:00Z",
+      "issueNumber": 354,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/5ff59428-f1e3-4f5c-8c08-3ade0d6629cf.png",
+          "caption": "Dark, 1440, this page running. The small pill sits on the card's own title line, in the same quiet mono as every other machine fact here. It is deliberately not coloured: a job you already said yes to should not shout louder than a question you have not answered yet.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/9f41287f-660b-4b69-b2d7-71335943ea5a.png",
+          "caption": "Light, 1440. The same, and this frame is a demonstration - the two cards were put into those states locally to photograph the difference, then put back. No card on your real desk was moved.",
+          "arm": "light"
+        }
+      ]
     }
   ],
   "pipeline": [
@@ -4314,14 +4409,35 @@
       "status": "merged",
       "prNumber": 622,
       "note": "When somebody opens Change plan or Add credits, the top of the panel tells them how fast they are spending and when they will run out: \"At this rate you run out on the 9th... Studio covers the way you are actually working.\" Every one of those numbers was built by taking the credits an account has spent IN ITS ENTIRE LIFE and dividing that by the days elapsed in ONE month.\n\nThat is not just a wrong sentence. The same number decides which plan gets the one dark Upgrade button. Put in front of the real app on a test account - ten days into a month, 40,640 credits spent this month, 120,000 spent ever - the panel said Studio at $159 a month. The truthful reading says Pro at $68. It was recommending a plan $91 a month dearer than the customer needs, on the strength of a claim about their own usage that was not true.\n\nNobody has ever seen either number, and that is luck rather than design: the panel only draws once an account has a real billing period, and no account has one yet. It goes live silently the day somebody subscribes.\n\nThe fix adds the spend up from the ledger over the actual billing period - the same repair the Usage pane got in August after you spotted 115,695 used sitting next to of 5,000 this month. Both screens read one shared piece of code now, so they cannot drift apart and quote you two different figures for the same month.\n\nOne more thing was corrected on the way past: the small label above that figure said THIS MONTH over a number covering a billing period, which for most subscriptions is not a month. It says THIS BILLING PERIOD."
+    },
+    {
+      "id": "pr-645-sign-names-whom-556",
+      "title": "The dock says which kept face Sign will act on (#556)",
+      "status": "merged",
+      "prNumber": 645,
+      "note": "YOUR WORDS, on the 5th, with two frames: \"if i select multiple casts to keep somehow i can sign all of them at once? this makes no sense?\"\n\nYou were reading it exactly right. With four faces kept, the dock said \"4 kept\" and the button beside it said \"Sign to roster\" - and nothing anywhere said WHICH of the four it meant. It has only ever signed one: the highlighted face in the strip. The interface simply never told you that.\n\nIt now reads \"4 kept - 05 selected\", the chosen face is ringed more strongly, and the other three step back a little while a choice is live. Nothing about the money or the ceremony changed - the same one face, the same 450 credits, the same confirmation showing her picture before anything is spent.\n\nTWO THINGS THE CARD ASKED FOR WERE REFUSED, and both were your own earlier rulings. The card wanted the button to read \"Sign 08 to roster - 450 credits\". You ruled on 2 August that the button names no face because the ring already says who, and D-109 says a price never sits in button text. Both are guarded by tests, so the fix went where it belonged - into the sentence - rather than through two of your decisions.\n\nThe review then found something the fix had missed: with FIVE kept the strip only draws four, and the one it was aiming at was the hidden fifth. So the sentence named a face you could not see. Fixed and re-photographed at exactly that state, and the label now names the roll too when your kept faces span more than one - because \"03\" means a position within a roll, and on a twice-rolled sheet it names two different people."
+    },
+    {
+      "id": "pr-646-refunded-pill-553",
+      "title": "A failed tile says the money came back, at a glance (#553)",
+      "status": "merged",
+      "prNumber": 646,
+      "note": "YOUR WORDS, on the 5th, with a frame of a failed tile: \"on a failed generation it says content filter tag but maybe in the top right could it also say refunded or something as a tag also?\"\n\nDone - REFUNDED now sits top-right on a failed tile, opposite the tag saying why. The refund was already there, but only in the small sentence underneath, after the reason. On a sheet of eight where two failed, the first question is not why, it is whether that cost you anything.\n\nONE THING WAS CHANGED FROM WHAT THE CARD ASKED, and it matters because it is about money. The card said the tag should appear on every failed tile without exception. There is one kind of failure that was never charged in the first place - its own line reads \"Didn't start - not charged\". Putting REFUNDED on that tile would have been a claim about money contradicting the sentence directly beneath it. That tile wears no refund tag, and a test now holds every kind of failure to the sentence a customer actually reads, so the two can never drift apart."
+    },
+    {
+      "id": "pr-648-waiting-state-354",
+      "title": "A card you have answered that still needs you stays on your desk (#354)",
+      "status": "merged",
+      "prNumber": 648,
+      "note": "YOUR WORD, tonight: \"The first. Keep it on my desk until the act is done.\"\n\nBuilt the same night you said it. This page sorted everything into 'needs you' and 'already dealt with', and a card moved to 'already dealt with' the moment you REPLIED to it. Usually that is the same thing. It came apart in one shape and it was the worst one: you answer, and the remaining step is ALSO yours - and at that exact moment the card left your desk and filed itself under 'no action needed'.\n\nThere is now a fourth kind of card. It stays in 'What needs you' and wears a small line reading ANSWERED - STILL YOURS TO DO, so you can tell it apart at a glance from a fresh question. Nothing is guessed: a card only becomes that kind when a shift deliberately says so, and it leaves your desk on its own when the job it names is closed.\n\nEvery card that is on your desk today keeps exactly the meaning it has now."
     }
   ],
   "problems": [
     {
       "id": "queue-shape-0907f-foreman",
       "state": "open",
-      "title": "The queue: 83 open, one job was waiting on you with nothing saying so, and 13 have not been read in a week",
-      "detail": "83 open, down one. One closed tonight (#640) and one half-closed (#642 - its first and biggest slice landed, the rest is written down by name).\n\nTHE ONE WORTH KNOWING. A job on the list needed a decision from you and NOTHING said so - not a marker, not this page. To any shift reading the list it looked like ordinary work nobody had got to. That is the same fault we fixed two days ago, one job over, so the whole list was checked rather than just that one. Two more turned up. One of those two had been telling shifts to leave it alone because it was waiting on another job - and that other job was finished and closed on 30 August. It had been holding itself back for eight days for no reason.\n\nYou will see the first one on your desk below. Nothing else new needs you.\n\n13 open jobs have gone a week with nobody re-reading them. That is the honest number and it counts only real engagement, not tidying.",
+      "title": "The queue: 82 open, three closed tonight, and 13 nobody has re-read in a week",
+      "detail": "82 open, down one. Three closed tonight - the dock's Sign wording (#556), the REFUNDED tag (#553) and the card-state fix you ruled on an hour ago (#354) - and two new ones filed from sweeps, which is why the total only fell by one.\n\nWHAT IS ROTTING: 13 cards have had no comment, no close and no code touch them for a week. That figure is measured from what actually happened to a card, not from when it was last labelled - the old way of counting reset itself whenever a batch of labels was applied, and told you the debt had cleared when it had not.\n\nThe first new one is a small honest finding: five places in the code point a reader at a safety test that does not exist under that name. Nothing is broken by it, but a reader who follows a pointer and finds nothing concludes the safety net was never built - which is how this project has twice re-filed a live control as a dead one. Two of the five are about keeping your customers' casting recipes out of logs, so that one gets read first.\n\nThe second is the new card-state's own remainder: it is on your desk correctly, but three of the crew's own watchers do not yet watch it as closely as they watch an ordinary card. Nothing you would see - it is the crew keeping its own instruments honest.\n\nBugs sitting open: 12. Nothing on this list is waiting on you except the switch question above.",
       "severity": "info"
     },
     {
@@ -4630,10 +4746,11 @@
     155,
     156,
     157,
-    158
+    158,
+    159
   ],
   "nextUp": {
-    "readAt": "2026-09-07T10:51:16.511Z",
+    "readAt": "2026-09-07T13:05:32.672Z",
     "items": [
       {
         "issueNumber": 543,
