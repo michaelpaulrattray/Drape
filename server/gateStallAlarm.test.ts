@@ -172,6 +172,78 @@ describe("no run at all — the incident, and the window before it counts as one
   });
 });
 
+/**
+ * A CONFLICTING HEAD GETS NO CHECK SUITE, SO "NO RUN YET" IS NOT A STALL ON ONE
+ * (PR #631's review, finding 2 — the law-7 sibling of the defect #631 fixes).
+ *
+ * The class both halves share: *an absent-run reading taken without first
+ * asking whether the head can get a run at all.*
+ *
+ * ⚠ Measured, not reasoned. On PR #628, 2026-09-07, this reader answered
+ *
+ *     STALL — no gate run exists 10.5m after the push … Do not retry blindly.
+ *
+ * while the true state was CONFLICTING on the generated atlas fingerprint. The
+ * correct act was a sync, after which a run appeared in seconds — so the
+ * verdict sent a shift to write up a finding and move on, over a branch that
+ * needed one command.
+ */
+describe("a conflicting head cannot get a run, so the clock is the wrong reader", () => {
+  it("says CONFLICTING, not STALL, well past the finding line", () => {
+    const v = decideStall({
+      runs: [], pushedAt: at(40 * 60_000), now: NOW, conflicting: true,
+    });
+    expect(v.kind).toBe("conflicting");
+    expect(describeVerdict(v)).not.toContain("STALL");
+    /* The verdict must name the ACT, or it is a relabelled stall. */
+    expect(describeVerdict(v)).toMatch(/merge main in/);
+  });
+
+  it("says CONFLICTING even BELOW the finding line — it is not a clock question", () => {
+    /* The whole point: no elapsed time makes a conflicting head able to get a
+       run, so the answer must not depend on how long it has been. */
+    const v = decideStall({ runs: [], pushedAt: at(10_000), now: NOW, conflicting: true });
+    expect(v.kind).toBe("conflicting");
+  });
+
+  it("NEGATIVE CONTROL — a NON-conflicting head still stalls exactly as before", () => {
+    const v = decideStall({
+      runs: [], pushedAt: at(NO_SUITE_FINDING_MS), now: NOW, conflicting: false,
+    });
+    expect(v).toMatchObject({ kind: "stall" });
+    expect(describeVerdict(v)).toContain("STOP WAITING");
+  });
+
+  it("NEGATIVE CONTROL — an unread mergeability (null) behaves exactly as before", () => {
+    /* `conflicting` is optional so an older caller is unchanged, and UNKNOWN —
+       GitHub still computing — passes null rather than `false`, because `false`
+       would be a claim the caller has not earned. Both must reach the clock. */
+    for (const conflicting of [null, undefined]) {
+      const v = decideStall({ runs: [], pushedAt: at(NO_SUITE_FINDING_MS), now: NOW, conflicting });
+      expect(v.kind).toBe("stall");
+    }
+  });
+
+  it("a RUN THAT EXISTS still outranks it — a conflict does not erase a real run", () => {
+    /* Branch order is this module's contract: step 1 answers first. A branch
+       can be CONFLICTING with a run from before the base moved, and calling
+       that a conflict-with-no-run would hide a live gate. */
+    const v = decideStall({
+      runs: [{ status: "in_progress", conclusion: null, createdAt: at(60_000), updatedAt: at(60_000) }],
+      pushedAt: at(120_000), now: NOW, conflicting: true,
+    });
+    expect(v.kind).toBe("running");
+  });
+
+  it("an UNDATABLE push still refuses, rather than being rescued by the conflict", () => {
+    /* Below the unknown-push refusal on purpose: a conflict is a real fact, but
+       an undatable push means this reader cannot say anything at all, and
+       inventing a verdict over it is what that refusal exists to prevent. */
+    const v = decideStall({ runs: [], pushedAt: null, now: NOW, conflicting: true });
+    expect(v.kind).toBe("unknown-push");
+  });
+});
+
 describe("it refuses rather than guesses when the push cannot be dated", () => {
   it("no reference suite means NO VERDICT, not a stall and not a wait", () => {
     const v = decideStall({ runs: [], pushedAt: null, now: NOW });
