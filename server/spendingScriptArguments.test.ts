@@ -900,9 +900,17 @@ describe("a paid script never takes a number on trust", () => {
   it("every one of the five actually reads a number, so the arm above is not vacuous", () => {
     /* Without this, deleting the numeric flag from a script would leave the
        arm above green over a file with nothing to get wrong — the shape that
-       makes a guard look like coverage. */
+       makes a guard look like coverage.
+
+       ⚠ `codeOf`, NOT `sourceOf` (PR #627's review, finding 3): the clean arm
+       beside it reads comment-STRIPPED code, and two arms about one file that
+       disagree about what counts as the file is how one of them quietly stops
+       meaning anything. A future prose quotation carrying `ARGS.number(` would
+       otherwise satisfy this arm over a file that had stopped reading a number.
+       None of the five carries the paren in prose today — that is luck, and it
+       is the kind that runs out. */
     for (const relative of REPAIRED) {
-      expect(sourceOf(relative), `${relative} no longer reads a number at all`).toMatch(/ARGS\.number\(/);
+      expect(codeOf(relative), `${relative} no longer reads a number at all`).toMatch(/ARGS\.number\(/);
     }
   });
 

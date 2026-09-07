@@ -157,6 +157,26 @@ describe("a value that must be a number refuses when it is not one", () => {
     expect(parse(["--repeat", "0"]).number("repeat", 3)).toBe(0);
   });
 
+  it("⚠ refuses a QUOTED empty value, which `Number` reads as zero", () => {
+    /*
+      PR #627's review, finding 1. The PARSE catches `--ceiling` at the end of
+      the line and `--ceiling=`; a quoted empty is a token and reaches the
+      accessor, where `Number("")` is 0 and `Number.isFinite(0)` is true. The
+      way an operator actually types it is `--ceiling "$CEILING"` with the
+      variable unset.
+
+      ⚠ AND THE ARM DIRECTLY BELOW IS WHY THIS ONE IS NARROW: an explicit `0`
+      must still be accepted. "The operator asked for zero" and "the operator
+      asked for nothing" are different lines and the difference is the quote.
+    */
+    expect(() => parse(["--ceiling", ""]).number("ceiling", 20))
+      .toThrow(/--ceiling must be a number, and an empty value is not one/);
+    expect(() => parse(["--ceiling", " "]).number("ceiling", 20))
+      .toThrow(/an empty value is not one/);
+    /* The distinction, asserted rather than described. */
+    expect(parse(["--ceiling", "0"]).number("ceiling", 20)).toBe(0);
+  });
+
   it("accepts a negative and a decimal", () => {
     expect(parse(["--floor", "-1"]).number("floor", 0)).toBe(-1);
     expect(parse(["--floor", "0.5"]).number("floor", 0)).toBe(0.5);

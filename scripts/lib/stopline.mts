@@ -472,6 +472,26 @@ export function paidScriptsTakingANumberOnTrust(
  * is gone. A reader that could not tell a quotation from an occurrence would
  * force that prose to go quiet — the same property `paidScriptsReadingFlagsByName`
  * already has, and for the same reason.
+ *
+ * ⚠ **THE SHAPES IT DOES NOT SEE, NAMED RATHER THAN LEFT TO BE FOUND** (PR
+ * #627's review, finding 2 — the house style `drivesAPaidTransport` sets, whose
+ * own limits are about WHICH FILES are swept; these are about WHICH SHAPES).
+ * All three are false-NEGATIVE, so this reader can go quiet and never loud:
+ *
+ *   1. **The two-line form.** `const raw = ARGS.value("n"); Number(raw)` — the
+ *      coercion and the accessor are on different lines, and nothing here
+ *      follows a binding. This is the one a NEW paid script could join the
+ *      population wearing.
+ *   2. **Unary plus.** `+ARGS.value("n")` coerces exactly as `Number(…)` does
+ *      and matches nothing below.
+ *   3. **A destructured or renamed accessor.** `const { value } = ARGS;` then
+ *      `Number(value("n"))` has no `\w+\.` to match.
+ *
+ * The five repaired files are covered against all three regardless, by the
+ * by-name arm that pins each still reads through `ARGS.number(` — so a
+ * regression into any of these shapes reddens there. What is uncovered is a
+ * file that has never been repaired arriving in one of them. A real parser is
+ * the fix if that ever happens; until it does, this is a floor and says so.
  */
 export function coercesAParsedValueToNumber(source: string): boolean {
   const code = codeWithoutBlockComments(source);

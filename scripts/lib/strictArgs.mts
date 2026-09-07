@@ -198,6 +198,24 @@ export function parseStrictArgs(argv: readonly string[], spec: ArgSpec): StrictA
     number: <Fallback,>(name: string, fallback: Fallback): number | Fallback => {
       const raw = value(name);
       if (raw === null) return fallback;
+      /*
+        ⚠ AN EXPLICITLY QUOTED EMPTY VALUE IS NOT A ZERO (PR #627's review,
+        finding 1). The PARSE refuses `--ceiling` at the end of the line and
+        `--ceiling=`, but `--ceiling ""` and `--ceiling " "` are a token, so
+        they arrive here — and `Number("")` is `0`, which `Number.isFinite`
+        accepts. `--ceiling "$CEILING"` with the variable unset is the real
+        way an operator types it.
+
+        The direction is the MIRROR of the incident and costs no money — a
+        zero ceiling refuses every spend, and zero repeats runs nothing — so
+        this is a contract repair rather than a second hole: the accessor says
+        it refuses what is not a number, and an empty string is not one.
+        Checked BEFORE the coercion, because `Number` is precisely the reader
+        that disagrees.
+      */
+      if (raw.trim() === "") {
+        throw new ArgumentError(`--${name} must be a number, and an empty value is not one.`);
+      }
       const parsed = Number(raw);
       /* Not `!parsed` and not `isNaN` — `Number.isFinite` is the only one of
          the three that lets `0`, `-1` and `0.5` through and stops `Infinity`,
