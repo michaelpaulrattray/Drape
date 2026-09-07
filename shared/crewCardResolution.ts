@@ -235,9 +235,22 @@ export function planCardResolutions(
       (item) => item.cardId === card.id && item.state === "open",
     );
     if (orphanedEye) {
+      /* ⚠ THE ADVICE NAMES ONLY WHAT IS ACTUALLY OPEN TO THE SHIFT (review of
+         PR #628, finding 2). It used to offer *"settle the frames, or close
+         its issue"* — and in the shape that produced this fix, the card and
+         its frames sit on ONE issue which is already closed by construction,
+         so half the sentence was impossible in the instance it was written
+         for. The reason line is the one artifact a shift acts on, so it says
+         the thing that can be done, and names the other issue only when there
+         really is a second one. */
+      const sameIssue = orphanedEye.issueNumber === issueNumber;
       reasons.push(
         `eye item '${orphanedEye.id}' is still open and names this card (#133) — `
-        + `settle the frames, or close its issue, before the card can be marked done`,
+        + (sameIssue
+          ? `settle the frames before the card can be marked done (they share issue `
+            + `#${issueNumber}, so there is no second issue to close)`
+          : `settle the frames, or close their own issue #${orphanedEye.issueNumber}, `
+            + `before the card can be marked done`),
       );
     }
 

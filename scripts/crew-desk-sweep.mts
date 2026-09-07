@@ -561,8 +561,24 @@ if (WRITE) {
    RATHER THAN AN OVERSIGHT (review of PR #609, finding 3). The two look alike
    — both are the record disagreeing with his page — but a liar is a shape the
    briefing schema REFUSES at the parse, so a shift that ignores it cannot ship
-   at all; a hold is schema-valid, transient, and resolves itself the sweep
-   after its dependant is settled. Exiting 2 on it would spend the signal that
+   at all; a hold is schema-valid. Exiting 2 on it would spend the signal that
    currently means "you cannot ship this" on a state you can. It is printed
-   loudly instead, in its own block. */
+   loudly instead, in its own block.
+
+   ⚠ **AND THIS PARAGRAPH CARRIED THIS PR'S OWN DEFECT CLASS ONE SCREEN BELOW
+   THE BLOCK IT SPLIT (review of PR #628, finding 1).** It used to end *"a hold
+   is schema-valid, TRANSIENT, and resolves itself the sweep after its
+   dependant is settled"* — one sentence about all holds that is true of only
+   one kind, which is exactly why the report block above is now two.
+   **Schema-valid is the half that carries the exit code, and it is true of
+   both.** Self-resolving is not:
+
+     - a CARD hold clears itself the sweep after its dependant is settled,
+       because the schema forces the settling;
+     - an EYE-ITEM hold (#354) waits for a person, and reprints every run until
+       one acts.
+
+   A shift reasoning from the old sentence about a perpetually-reprinting frame
+   set would conclude it clears itself and stop chasing frames that will sit
+   unjudged for ever. Both still exit 0; both are printed loudly. */
 process.exit(liars.length > 0 ? 2 : 0);

@@ -177,6 +177,29 @@ describe("planCardResolutions — a promotion that would break his page is HELD 
     expect(plan.promote.map((p) => p.id)).toEqual(["a-card"]);
   });
 
+  it("the card's hold names only advice a shift can act on (one issue vs two)", () => {
+    /*
+      Review of PR #628, finding 2. In the shape that produced this fix the card
+      and its frames sit on ONE issue, already closed — so *"or close its
+      issue"* was impossible advice in the very instance it was written for. The
+      reason line is the one artifact a shift acts on.
+    */
+    const oneIssue = planCardResolutions({
+      needsYou: [card("a-card", "open", 100)],
+      eyeItems: [{ ...card("its-frames", "open", 100), cardId: "a-card" }],
+    }, reader({ 100: "CLOSED" }).read);
+    const cardHold = oneIssue.held.find((hold) => hold.id === "a-card");
+    expect(cardHold?.reason).toMatch(/no second issue to close/);
+
+    const twoIssues = planCardResolutions({
+      needsYou: [card("a-card", "open", 100)],
+      eyeItems: [{ ...card("its-frames", "open", 101), cardId: "a-card" }],
+    }, reader({ 100: "CLOSED", 101: "OPEN" }).read);
+    const split = twoIssues.held.find((hold) => hold.id === "a-card");
+    expect(split?.reason).toMatch(/close their own issue #101/);
+    expect(split?.reason, "it offered an option that does not exist").not.toMatch(/no second issue/);
+  });
+
   it("HOLDS a card a `waiting-founder` row still names (#291's refinement)", () => {
     const briefing: ResolvableBriefing = {
       needsYou: [card("a-card", "open", 100)],
