@@ -1,7 +1,7 @@
 {
-  "edition": 292,
-  "updatedAt": "2026-09-07T15:35:48.691Z",
-  "shift": "Foreman (Opus) - the crew's own test runs stopped going red at random, and five signposts that pointed at safety nets which do not exist now point at the ones that do",
+  "edition": 293,
+  "updatedAt": "2026-09-07T17:18:18.839Z",
+  "shift": "Foreman (Opus) - a check that cleaned up after itself stopped failing at random, the cards you have answered are watched everywhere, and 7.8 GB of leftovers came off your machine",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -137,7 +137,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-07T15:34:52.797Z",
+      "readAt": "2026-09-07T17:16:52.474Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4444,12 +4444,40 @@
       "status": "merged",
       "prNumber": 651,
       "note": "Small, and it goes to something this project has been burned by twice.\n\nAll through the code there are notes saying, in effect, 'the test that guards this is over there'. Five of them named a file that is not in the project. Nothing was broken by that - but somebody who follows one of those signposts, finds nothing, and concludes the safety net was never built has just written off a net that is actually there. That exact mistake has twice cost this project months.\n\nTHE ONE THAT MATTERED MOST, AND THE ANSWER IS GOOD NEWS. Two of the five sat on the code that keeps your customers' casting recipes - their words and their pictures - out of the logs. Nobody knew whether the guard existed under another name or had never been written. It exists, twice, and both were read at the actual test before anything was changed. The protection has been working the whole time; only the signpost was wrong.\n\nA check now reads every one of these signposts across the whole project and refuses any that names nothing. Where a note deliberately mentions a test that was DELETED - explaining what was removed and why - that is allowed and written down with the reason, because a note explaining that something died is worthless if it cannot name what died.\n\nThe job the card described was slightly wrong in two places and both were corrected against the code rather than followed: it counted six faults where there are five (the sixth is one of those deliberate mentions), and it asked for three exclusions that turned out not to be needed. The reviewer then caught me making the same class of mistake myself - a comment of mine explaining the exclusions was simply untrue about the project. That is corrected too, and the check now reads a quarter more of the project than it did."
+    },
+    {
+      "id": "pr-653-worktree-teardown-652",
+      "title": "The crew's pre-flight check stopped failing at random for the second reason (#652)",
+      "status": "merged",
+      "prNumber": 653,
+      "note": "Nothing a customer sees. This is the quick check every shift runs before it sends work anywhere - and last night's fix removed one reason it went red for no cause. There was a second.\n\nWHAT WAS WRONG. When the check runs, it makes a throwaway copy of the app in a temporary folder, tests against it, then clears it away. It then asked: is that folder gone? On Windows the answer is often no - the system refuses to delete a folder something is still holding, even after the copy has been properly cancelled. So about one run in three, a shift saw a red mark caused by nothing it had done.\n\nWHY THAT MATTERS MORE THAN IT SOUNDS. A check that goes red at random is a check people stop reading. It went red twice on a shift last night, on work that had nothing to do with it.\n\nWHAT IT ASKS NOW. The real question was never 'is the folder gone' - it was 'has the copy been properly cancelled', because a copy left registered breaks the NEXT run. Those two turned out to come apart: driven 120 times under load, 8 folders were left behind and ZERO copies stayed registered. So the check now asks the question it actually cares about, and that one has a reliable answer.\n\nWHAT IT FOUND ON THE WAY. Those leftover folders were real and they had been piling up - 7.8 GB of them on your machine, 32 complete copies of the app at about 275 MB each. Cleared tonight. The code that makes them is unchanged, so they will come back; that is now its own card with the measurement in it, rather than a test failing about it forever."
+    },
+    {
+      "id": "pr-656-waiting-watched-649",
+      "title": "The cards you have answered that still need you are now watched everywhere an open one is (#649)",
+      "status": "merged",
+      "prNumber": 656,
+      "note": "This is the follow-up to the change you asked for last week - 'keep it on my desk until the act is done'. That shipped; three loose ends came out of its own review, and two are now closed.\n\nTHE FIRST. There is an automatic sweep that catches a card you have answered which your page still shows as needing you - it exists because that once went unnoticed for three days. It could not see the new answered-but-still-yours cards at all, because the piece of it that reads them was in a folder the checker never looked in. It looks there now, and it proves it looked: if that folder ever falls out of range again, the check goes red instead of quietly passing.\n\nTHE SECOND, and this one is a limit rather than a fix. There is one gap left: if you reply a SECOND time on a card that is already in the answered-but-still-yours state, nothing watches that reply. The clean repair needs your page to record WHEN a card's state last changed, and it does not record that today - so rather than bolt on something that would flag every card wrongly, the gap is written down at the exact line, and a check now makes sure that written note cannot outlive the code it describes. Closing it properly is its own small card.\n\nWHAT IS STILL OPEN AND IS YOURS. The chip that says 'answered - still yours to do' appears on cards and not on picture sets in your gallery. Whether it belongs there is something to look at rather than reason about, so it was left alone for your eye."
     }
   ],
   "problems": [
     {
-      "id": "queue-shape-0908-foreman",
+      "id": "temp-leftovers-654",
       "state": "open",
+      "title": "7.8 GB of leftover copies of the app were sitting in your machine's temporary folder",
+      "severity": "info",
+      "detail": "Something you can actually see on your own computer, so it is here rather than only in the queue.\n\nWHAT IT IS. Several of the team's checks work by making a throwaway copy of the whole app in Windows' temporary folder, testing against it, then deleting it. When Windows refuses that delete - which it does fairly often, because something is still holding the folder for a moment - nothing tries again. Each abandoned copy is about 275 MB.\n\nWHAT WAS MEASURED. 32 of them were standing there tonight: 7.8 GB. For scale, the team's evidence folder that already has its own card is 6.5 GB, so this was the larger of the two piles and unlike that one none of it is worth keeping.\n\nWHAT HAPPENED. Cleared tonight, by hand. THE CODE IS UNCHANGED, so it will build up again at roughly one abandoned copy in every fifteen.\n\nWHY IT WAS NOT JUST FIXED ON THE SPOT. The obvious repair - delete the folder harder - is the exact thing that piece of code carries a warning against, because those copies contain a shortcut pointing back at the real app, and deleting through it can destroy the working copy on this machine. It needs a check that the shortcut is gone first, which is a small careful change rather than a one-liner, so it is #654 with the measurement in it."
+    },
+    {
+      "id": "queue-shape-0908b-foreman",
+      "state": "open",
+      "title": "The queue: 82 open, one closed tonight and two filed, and 14 nobody has re-read in a week",
+      "severity": "info",
+      "detail": "82 open - the same number as last night, because one card closed and two were filed from what turned up while working it.\n\nWHAT CLOSED: the random test failure (#652). What was filed: the leftover copies eating your disk (7.8 GB, cleared tonight, will come back until the code changes), and a question about a whole family of the team's own checks that may be looking at less than they claim to. The second one is filed honestly as a MEASUREMENT and not as a list of faults - the sweep counted 71 candidates and could not tell a real one from a false alarm, so it says so rather than handing anyone 71 things to fix.\n\nWHAT IS ROTTING: 14 cards have had no comment, no close and no code touch them for a week - one more than last night, and it moved because a card crossed the seven-day line rather than because anything got worse. None is a customer fault and none is waiting on you.\n\nSTILL ONLY ONE THING NEEDS YOU: #543, and it waits on a measurement due 12 September, not on a decision."
+    },
+    {
+      "id": "queue-shape-0908-foreman",
+      "state": "resolved",
       "title": "The queue: 81 open, two closed tonight, and 13 nobody has re-read in a week",
       "severity": "info",
       "detail": "81 open, down two. Two closed tonight - the random test failures (#548) and the five wrong signposts (#647) - and one new one filed from what turned up while doing them.\n\nWHAT IS ROTTING: 13 cards have had no comment, no close and no code touch them for a week. The same 13 as last night; nothing got worse and nothing got better, because tonight's work was on two of the newest cards rather than the oldest. None of them is a customer fault and none is waiting on you.\n\nThe one new card is a single test that fails about one run in three - not the fault fixed tonight, a different one wearing the same coat. It wants a small decision about what that test should promise, and I have written the three options and a recommendation into it rather than picking one quietly.\n\nALSO WORTH KNOWING, because it had been true for eight days without anybody noticing: a leftover file from an experiment back in August was making the whole test suite fail on every shift's machine - not on the servers, only locally, which is why nothing ever complained. A shift that cannot trust a clean starting point stops trusting the tests. Removed.\n\nBugs sitting open: 11. Nothing on this list is waiting on you except the switch question below."
@@ -4771,7 +4799,7 @@
     159
   ],
   "nextUp": {
-    "readAt": "2026-09-07T15:34:51.973Z",
+    "readAt": "2026-09-07T17:16:51.467Z",
     "items": [
       {
         "issueNumber": 543,
