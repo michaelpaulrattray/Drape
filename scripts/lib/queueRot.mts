@@ -68,10 +68,10 @@
  * that was commented on yesterday reads as never engaged with.
  */
 const ENGAGEMENT = [
-  { typename: "IssueComment", itemType: "ISSUE_COMMENT" },
-  { typename: "ClosedEvent", itemType: "CLOSED_EVENT" },
-  { typename: "ReopenedEvent", itemType: "REOPENED_EVENT" },
-  { typename: "ReferencedEvent", itemType: "REFERENCED_EVENT" },
+  { typename: "IssueComment", itemType: "ISSUE_COMMENT", plainWord: "comment" },
+  { typename: "ClosedEvent", itemType: "CLOSED_EVENT", plainWord: "close" },
+  { typename: "ReopenedEvent", itemType: "REOPENED_EVENT", plainWord: "reopen" },
+  { typename: "ReferencedEvent", itemType: "REFERENCED_EVENT", plainWord: "commit" },
 ] as const;
 
 /** `__typename` as it comes back on a timeline node. */
@@ -84,6 +84,31 @@ export const ENGAGEMENT_ITEM_TYPES: readonly string[] = ENGAGEMENT.map((kind) =>
 export const ENGAGEMENT_FRAGMENTS: string = ENGAGEMENT
   .map((kind) => `... on ${kind.typename} { createdAt }`)
   .join("\n            ");
+
+/**
+ * ⚠ AND THE FOURTH VIEW IS THE ENGLISH ONE — the review of PR #641 found this
+ * table already drifting into it, in the same commit that declared the table.
+ *
+ * `quietSentence` was hand-written as *"no comment, close or commit"* while the
+ * printed header three files away said *"no comment, close, reopen or commit"*.
+ * A card whose only in-window event is a REOPEN is cleared from the list, so
+ * the zero-case sentence — *"every one has a comment, close or commit inside
+ * the window"* — is a universal claim that card falsifies, and the count can
+ * read lower than its own stated predicate would count. **The hiding
+ * direction**, on the sentence whose entire job is to name what was measured.
+ *
+ * The docblock above says three lists of four things is three chances to drift,
+ * and then a fourth list was typed by hand twice with different contents. So it
+ * is derived like the other three, and an arm holds it to the table.
+ */
+export const ENGAGEMENT_WORDS: readonly string[] = ENGAGEMENT.map((kind) => kind.plainWord);
+
+/** "comment, close, reopen or commit" — the signals, as a person would list them. */
+export function engagementPhrase(): string {
+  const words = [...ENGAGEMENT_WORDS];
+  const last = words.pop()!;
+  return words.length === 0 ? last : `${words.join(", ")} or ${last}`;
+}
 
 export type TimelineEvent = { readonly type: string; readonly at: string };
 
@@ -113,6 +138,50 @@ export function eventsFrom(nodes: readonly unknown[]): TimelineEvent[] {
     events.push({ type: record.__typename, at: record.createdAt });
   }
   return events;
+}
+
+/**
+ * The most open cards this will page through before refusing to continue.
+ *
+ * Not a flag. See `refuseIfTruncated` — the operator has no basis for choosing
+ * a number here, and any number they chose would be wrong in the same way.
+ */
+export const PAGING_CEILING = 2000;
+
+/**
+ * REFUSE A TRUNCATED READ — an incomplete queue printed as a complete one
+ * (PR #641's review, finding 2).
+ *
+ * The first draft stopped paging at a `--limit` and printed what it had, above
+ * a line reading "N open" that looks like the whole queue — so a quiet card
+ * past the cutoff would be missing from a complete-looking figure. Same class
+ * as an empty read reported as a clean queue, and the same direction: hiding.
+ *
+ * ⚠ **AND THE FIRST FIX WAS WRONG IN A WAY ONLY DRIVING IT SHOWED.** Guarding
+ * the flag left the flag — and `--limit 10` against 85 open cards did NOT
+ * refuse and did NOT limit, because the query takes a page of 100 and the
+ * ceiling is only consulted between pages. A flag named `--limit` that does not
+ * limit is worse than no flag.
+ *
+ * So the operator decision is REMOVED rather than guarded. There is no answer
+ * to *"how much of the queue would you like this figure to be about?"* except
+ * *all of it*; what remains is a runaway ceiling nobody has to think about,
+ * and a read that would exceed it refuses rather than truncating.
+ *
+ * It refuses rather than warns because the answer goes straight into a sentence
+ * the founder reads: a warning printed above a number somebody copies is a
+ * warning that has already lost.
+ *
+ * ⚠ It lives HERE rather than inside the fetch loop so the arms can drive the
+ * decision without a `gh` subprocess — working law 3, a guard whose only test
+ * path is a child process is a guard nobody drives.
+ */
+export function refuseIfTruncated(cardsRead: number, hasNextPage: boolean): void {
+  if (!hasNextPage || cardsRead < PAGING_CEILING) return;
+  throw new Error(
+    `the queue has more than ${PAGING_CEILING} open cards, so this reading would be INCOMPLETE `
+    + `and its count would look like the whole queue. Raise PAGING_CEILING in scripts/lib/queueRot.mts.`,
+  );
 }
 
 export type RotReading = {
@@ -164,7 +233,8 @@ export function quietCards(
  * false. A reader of this sentence can tell what would have reset the clock.
  */
 export function quietSentence(count: number, windowDays: number): string {
+  const signals = engagementPhrase();
   return count === 0
-    ? `no open card has been silent for ${windowDays} days — every one has a comment, close or commit inside the window`
-    : `${count} open ${count === 1 ? "card has" : "cards have"} had no comment, close or commit for ${windowDays} days`;
+    ? `no open card has been silent for ${windowDays} days — every one has a ${signals} inside the window`
+    : `${count} open ${count === 1 ? "card has" : "cards have"} had no ${signals} for ${windowDays} days`;
 }

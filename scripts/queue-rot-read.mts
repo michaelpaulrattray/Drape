@@ -24,7 +24,7 @@
  * kinds that count, so ~85 open cards cost ONE request rather than 85. It reads
  * nothing else and writes nothing at all.
  *
- *     npx tsx scripts/queue-rot-read.mts [--days 7] [--limit 200] [--json]
+ *     npx tsx scripts/queue-rot-read.mts [--days 7] [--json]
  *
  * Needs `gh` authenticated. Exits 1 if the queue cannot be read — an empty
  * ranking from an unauthenticated `gh` looks exactly like a queue with nothing
@@ -34,17 +34,17 @@ import { execFileSync } from "node:child_process";
 
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 import {
-  ENGAGEMENT_FRAGMENTS, ENGAGEMENT_ITEM_TYPES, eventsFrom, quietCards, quietSentence,
-  type QueueCard,
+  ENGAGEMENT_FRAGMENTS, ENGAGEMENT_ITEM_TYPES, engagementPhrase, eventsFrom, quietCards,
+  quietSentence, refuseIfTruncated, type QueueCard,
 } from "./lib/queueRot.mts";
 
 const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
-  value: ["days", "limit"],
+  value: ["days"],
   boolean: ["json"],
 });
 
 const WINDOW_DAYS = args.number("days", 7);
-const LIMIT = args.number("limit", 200);
+
 
 /*
   The timeline is asked for `last:` rather than `first:`, because what this
@@ -106,7 +106,9 @@ function readQueue(): QueueCard[] {
       });
     }
     cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
-  } while (cursor !== null && cards.length < LIMIT);
+    /* The decision lives in the lib so it can be driven without a subprocess. */
+    refuseIfTruncated(cards.length, cursor !== null);
+  } while (cursor !== null);
   return cards;
 }
 
@@ -115,8 +117,11 @@ function main(): number {
   try {
     cards = readQueue();
   } catch (error) {
-    console.error("queue-rot-read: could not read the queue — is `gh` authenticated?");
-    console.error(String(error instanceof Error ? error.message : error));
+    /* The message goes FIRST and the hint second — the truncation refusal above
+       comes through here too, and "is `gh` authenticated?" is the wrong thing
+       to read first when the real answer is "raise the paging ceiling". */
+    console.error(`queue-rot-read REFUSING: ${String(error instanceof Error ? error.message : error)}`);
+    console.error("(if that reads like a transport failure rather than a refusal: is `gh` authenticated?)");
     return 1;
   }
   if (cards.length === 0) {
@@ -145,7 +150,9 @@ function main(): number {
     return 0;
   }
 
-  console.log("THE ROT READING — no comment, close, reopen or commit in the window");
+  /* The header names the signals from the same table the sentence does — it was
+     the fourth hand-written copy of that list, and it had already drifted. */
+  console.log(`THE ROT READING — no ${engagementPhrase()} in the window`);
   console.log(`read ${now.toISOString()} · ${cards.length} open · window ${WINDOW_DAYS}d\n`);
   console.log(`  FOR THE QUEUE LINE: ${quietSentence(quiet.length, WINDOW_DAYS)}\n`);
   for (const reading of quiet) {

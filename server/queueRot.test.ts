@@ -13,11 +13,16 @@
  * disagree — in OPPOSITE directions, which is what makes them a pair rather
  * than two examples of the same thing.
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
-  ENGAGEMENT_EVENTS, ENGAGEMENT_FRAGMENTS, ENGAGEMENT_ITEM_TYPES,
-  eventsFrom, lastEngagedAt, quietCards, quietSentence, type QueueCard,
+  ENGAGEMENT_EVENTS, ENGAGEMENT_FRAGMENTS, ENGAGEMENT_ITEM_TYPES, ENGAGEMENT_WORDS,
+  PAGING_CEILING, engagementPhrase, eventsFrom, lastEngagedAt, quietCards, quietSentence,
+  refuseIfTruncated,
+  type QueueCard,
 } from "../scripts/lib/queueRot.mts";
 
 const NOW = new Date("2026-09-07T08:00:00Z");
@@ -157,12 +162,39 @@ describe("the sentence names what was measured", () => {
     expect(quietSentence(0, 7)).not.toContain("untouched");
   });
 
-  it("says which signals would have reset the clock", () => {
+  it("⚠ names EVERY signal in the table — the fourth view, and it had already drifted", () => {
+    /*
+      PR #641's review, finding 1, and it is this module's own preached class
+      landing on the module: `quietSentence` was hand-written as "no comment,
+      close or commit" while the printed header said "no comment, close, reopen
+      or commit". A card whose only in-window event is a REOPEN is cleared from
+      the list, so the zero-case sentence — "every one has a comment, close or
+      commit inside the window" — is a universal claim that card falsifies.
+
+      The hiding direction, on the sentence whose whole job is to name what was
+      measured. The `.not.toContain("untouched")` arms below cannot see this
+      class: the sentence can be perfectly honest about the word it avoids and
+      still under-name the signals it counts. So the words are DERIVED from the
+      same table, and both sentence shapes are held to it here.
+    */
+    for (const word of ENGAGEMENT_WORDS) {
+      expect(quietSentence(15, 7), `the count sentence never says "${word}"`).toContain(word);
+      expect(quietSentence(0, 7), `the zero sentence never says "${word}"`).toContain(word);
+    }
+    expect(ENGAGEMENT_WORDS).toHaveLength(ENGAGEMENT_EVENTS.length);
+  });
+
+  it("says the window and the count too", () => {
     const sentence = quietSentence(15, 7);
-    expect(sentence).toContain("comment");
-    expect(sentence).toContain("commit");
     expect(sentence).toContain("7 days");
     expect(sentence).toContain("15");
+  });
+
+  it("the phrase reads as a list a person would write", () => {
+    /* An absence arm alone would pass over `engagementPhrase()` returning "" —
+       and then every `toContain` above would pass too, since "" is in
+       everything. This is that control. */
+    expect(engagementPhrase()).toBe("comment, close, reopen or commit");
   });
 
   it("reads as English at one, at none, and at many", () => {
@@ -197,6 +229,50 @@ describe("the three spellings of one event list stay one list", () => {
 
   it("the list is not empty — a derived view over nothing agrees with everything", () => {
     expect(ENGAGEMENT_EVENTS.length).toBeGreaterThan(3);
+  });
+});
+
+describe("a truncated read refuses rather than printing a partial queue as a whole one", () => {
+  /*
+    PR #641's review, finding 2. The fetch pages until `--limit`; stopping there
+    quietly would print the cards it had above a line reading "N open" that looks
+    like the whole queue, so a quiet card past the cutoff would be missing from a
+    complete-looking figure. Same class as an empty read reported as a clean
+    queue, and the same direction — hiding.
+  */
+  it("refuses when the ceiling is reached and there is another page", () => {
+    expect(() => refuseIfTruncated(PAGING_CEILING, true)).toThrow(/INCOMPLETE/);
+    expect(() => refuseIfTruncated(PAGING_CEILING + 1, true)).toThrow(/PAGING_CEILING/);
+  });
+
+  it("says nothing when the whole queue fits — the negative control", () => {
+    /* Without this arm the guard could refuse every run, which passes the arm
+       above just as happily and would make the command useless. */
+    expect(() => refuseIfTruncated(85, false)).not.toThrow();
+    expect(() => refuseIfTruncated(PAGING_CEILING, false)).not.toThrow();
+    expect(() => refuseIfTruncated(PAGING_CEILING - 1, true)).not.toThrow();
+  });
+
+  it("names the number in its own message", () => {
+    expect(() => refuseIfTruncated(PAGING_CEILING, true)).toThrow(new RegExp(String(PAGING_CEILING)));
+  });
+
+  it("⚠ the ceiling is not a flag, and that is the fix rather than an omission", () => {
+    /*
+      The first repair guarded a `--limit` flag and left the flag. Driven, that
+      was worse than the defect: `--limit 10` against 85 open cards neither
+      refused NOR limited, because the query takes a page of 100 and the ceiling
+      is only consulted between pages. A flag named `--limit` that does not
+      limit is a control an operator has no basis to set and cannot trust.
+
+      There is no answer to "how much of the queue should this figure be about?"
+      except all of it, so the decision is removed rather than explained.
+    */
+    const source = readFileSync(join(__dirname, "..", "scripts", "queue-rot-read.mts"), "utf8");
+    const spec = /parseStrictArgsOrRefuse\(\s*process\.argv\.slice\(2\),\s*\{([\s\S]*?)\}\s*\)/.exec(source);
+    expect(spec, "the reader stopped parsing strictly").not.toBeNull();
+    expect(spec![1], "a --limit flag came back").not.toContain("limit");
+    expect(PAGING_CEILING).toBeGreaterThan(100);
   });
 });
 
