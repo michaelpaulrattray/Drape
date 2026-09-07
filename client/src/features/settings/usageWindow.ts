@@ -48,9 +48,19 @@ export type DailyUsageRow = { date: string; creditsUsed: number };
  * filter keyed on the nominal start would have counted part of a day outside
  * the window it names; keyed on the first SEEDED day it drops cleanly.
  *
- * ⚠ **`days` IS BOTH WHAT WE ASK THE SERVER FOR AND WHAT THE SUM COVERS, AND
- * IT IS THE ONLY DIVISOR ANY RATE MAY USE — this returned a second, UNCAPPED
- * `elapsedDays` until PR #622's review caught what that costs.**
+ * ⚠ **`days` IS WHAT WE ASK THE SERVER FOR AND, TO WITHIN ONE DAY, WHAT THE SUM
+ * COVERS — AND IT IS THE ONLY DIVISOR ANY RATE MAY USE. This returned a second,
+ * UNCAPPED `elapsedDays` until PR #622's review caught what that costs.**
+ *
+ * ⚠ **"To within one day" is the honest wording and the first draft said the
+ * two "cannot disagree", which was too strong** (PR #622 review round 2,
+ * finding 1). `days` is `ceil(elapsed) + 1`, and when that ceiling crosses a
+ * UTC midnight it counts one day the clamp below then excludes: a period
+ * starting `2026-09-02 00:30Z`, read on the 12th, gives `days = 12` over 11 day
+ * keys — a burn understated by ~8%, shrinking as the cycle ages. It is the same
+ * class bounded at one day, it is a SIBLING OF #624 rather than a separate
+ * thing, and it dissolves with #624's server-side period-aware sum rather than
+ * by another client-side epicycle. Noted there.
  *
  * The cap bites on an annual plan. Read at the shipped functions: a subscriber
  * **200 days** into a 365-day period spending a steady 1,000/day sums 90,000
