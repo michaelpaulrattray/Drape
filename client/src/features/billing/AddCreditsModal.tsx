@@ -43,7 +43,7 @@ import "@/features/settings/settings.css";
 import {
   alignToPreview,
   annualPrice,
-  formatCentsPerCredit,
+  formatCreditsPerDollar,
   formatDollars,
   formatShortDate,
   monthsFree,
@@ -117,6 +117,15 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
   const burn = useMemo(() => (cycle ? readBurn(cycle) : null), [cycle]);
 
   const currentCredits = plans?.tiers[currentId as keyof typeof plans.tiers]?.monthlyCredits ?? 0;
+  /*
+    ⚠ A FREE PLAN HAS NO RATE TO BE BEATEN, so there is nothing to say "up
+    from" about — seen in the running app on a free account, where the sentence
+    read *"2,778 credits per $1, up from free"*. The old cents-per-credit
+    sentence had the same shape (*"down from free"*) and #403 is the commit
+    that rewrites it, so it is corrected here rather than filed. On a paid plan
+    the comparison is real and the clause is drawn.
+  */
+  const currentPrice = plans?.tiers[currentId as keyof typeof plans.tiers]?.price ?? 0;
   const delta = selected ? selected.credits - currentCredits : 0;
 
   const fullYear = selected ? selected.price * 12 : 0;
@@ -238,13 +247,19 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
             card and clipped on `overflow: hidden`, which is §3 rule 2's failure
             in a different guise. Seen in the running app before it shipped.
           */}
+          {/*
+            ⚠ ONE FACT, ONE UNIT, ON BOTH BILLING SURFACES (#403). Change plan
+            argues value as credits per dollar since card 390 item 4; this said
+            the same thing in cents per credit, so a customer opening both in
+            one session met one fact in two units — §6b's own rule about the
+            annual badge, in a different place.
+          */}
           {selected ? (
             <span className="dp-set__value">
-              {formatCentsPerCredit(selected.price, selected.credits)} a credit, down from{" "}
-              {formatCentsPerCredit(
-                plans?.tiers[currentId as keyof typeof plans.tiers]?.price ?? 0,
-                currentCredits,
-              )}
+              {formatCreditsPerDollar(selected.price, selected.credits)} credits per $1
+              {currentPrice > 0
+                ? `, up from ${formatCreditsPerDollar(currentPrice, currentCredits)}`
+                : null}
             </span>
           ) : null}
 

@@ -49,6 +49,9 @@ import {
 const HERE = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const CLIENT = join(HERE, "..", "..");
 const MODAL = join(CLIENT, "features", "billing", "ChangePlanModal.tsx");
+/** The other billing surface that argues value — #403's half of item 4. */
+const TOPUP = join(CLIENT, "features", "billing", "AddCreditsModal.tsx");
+const MATH = join(CLIENT, "features", "settings", "planMath.ts");
 
 const read = (path: string) => readFileSync(path, "utf8");
 const code = (text: string) =>
@@ -164,6 +167,44 @@ describe("card 390 item 4 — the unit price is inverted, and it still argues fo
     }
     /* The free rung has no dollar to divide by and must not print `Infinity`. */
     expect(formatCreditsPerDollar(0, PLAN_TIERS.free.monthlyCredits)).toBe("free");
+  });
+
+  it("⚠ BOTH BILLING SURFACES ARGUE VALUE IN THE SAME UNIT (card 403)", () => {
+    /*
+      Item 4 was written about Change plan, and Add credits went on saying the
+      same fact in cents per credit for a fortnight — *"0.036¢ a credit, down
+      from 0.041¢"* — so a customer who opened both in one session met one fact
+      in two units. §6b's own rule about the annual badge is *"use one framing
+      everywhere"*, and this is that rule in a second place.
+
+      Read at BOTH files rather than at the one his card named: an arm whose
+      population is the surface already fixed cannot see the next surface drift.
+    */
+    for (const path of [MODAL, TOPUP]) {
+      const surface = code(read(path));
+      expect(surface, `${path} stopped printing credits per dollar`).toContain(
+        "formatCreditsPerDollar",
+      );
+      expect(surface, `${path} is back on cents per credit`).not.toContain("formatCentsPerCredit");
+    }
+    /*
+      ⚠ `toContain` IS WEAKER THAN THE CLAIM, AND IT WAS MEASURED BEFORE THIS
+      LINE WAS WRITTEN. The top-up sentence prints TWO figures — the chosen rung
+      and the one being left — and with only the arms above, a sabotage that put
+      `formatDollars` on the FIRST of them stayed green: the import and the
+      second call kept the token in the file. So the sentence is pinned by its
+      shape rather than by a word appearing somewhere in the file.
+    */
+    const topup = code(read(TOPUP));
+    expect(
+      topup.match(/formatCreditsPerDollar\(/g)?.length ?? 0,
+      "the top-up sentence stopped reading the shared unit on both sides",
+    ).toBeGreaterThanOrEqual(2);
+    expect(topup, "a cents-per-credit figure is back on the top-up surface").not.toContain("¢");
+    /* And the formatter itself is gone, so there is nothing to drift back to. */
+    expect(code(read(MATH)), "the second unit's formatter is back in planMath").not.toContain(
+      "export function formatCentsPerCredit",
+    );
   });
 
   it("the surface prints the inverted figure and not the old one", () => {
