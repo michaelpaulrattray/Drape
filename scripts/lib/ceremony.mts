@@ -25,26 +25,76 @@
 import { readFile } from "node:fs/promises";
 
 import { openDatabase } from "./dbConnection.mts";
+import { ArgSpec, StrictArgs, parseStrictArgsOrRefuse } from "./strictArgs.mts";
 
 export type CeremonyWorld = {
   world: "dev" | "production";
   /** `host:port` — the only thing that tells the two apart. Safe to print. */
   where: string;
   connection: Awaited<ReturnType<typeof openDatabase>>;
+  /**
+   * The rest of the command line, parsed against the caller's own spec. Empty
+   * of everything but the two world flags unless the caller declared more.
+   */
+  args: StrictArgs;
 };
+
+/**
+ * The two words this reader owns. A caller's `extra` spec is merged with these,
+ * so a ceremony declaring `--limit` still accepts `--dev`, and nothing has to
+ * restate the world flags to keep them.
+ */
+const WORLD_FLAGS = ["dev", "production"] as const;
 
 /**
  * The world, named by the caller and never guessed.
  *
  * Refuses on: no `--dev`/`--production`; a missing URL for the world asked for;
  * and the two URLs being the same string, which is one world wearing two names.
+ *
+ * ⚠ **AND SINCE #642 IT REFUSES A WORD IT DOES NOT KNOW — the eighteen
+ * ceremonies get that from this one function.** It used to ask `argv.includes`
+ * twice and look at nothing else, which is #288's class exactly: *a reader that
+ * looks up the flags it wants and never looks at what it was actually given.*
+ *
+ * The failure it makes impossible is narrower than the class's usual one and
+ * that is worth being precise about, because the honest version is the reason
+ * this was the cheapest fix in #642 rather than the most urgent. **`--prod` was
+ * already safe**: neither world is named, so the old reader refused and stopped
+ * the run. What was NOT safe is a mistyped word sitting BESIDE a correct one —
+ * `--production --dry-run`, `--dev --limit 10`, `--production --exclude x` —
+ * where the world parses, the run proceeds, and the operator's other intention
+ * is silently discarded. Every ceremony here writes to a database.
+ *
+ * Read at the tree when this landed, all eighteen callers pass `process.argv`
+ * and read no flag of their own, so none needed an edit and none could be
+ * missed. `extra` exists for the nineteenth.
  */
-export async function openCeremonyWorld(argv: readonly string[]): Promise<CeremonyWorld> {
-  const world = argv.includes("--production")
+export async function openCeremonyWorld(
+  argv: readonly string[],
+  extra: ArgSpec = { value: [], boolean: [] },
+): Promise<CeremonyWorld> {
+  /*
+    `process.argv` arrives whole from every call site, so the node binary and
+    the script path are dropped here rather than at eighteen callers — a bare
+    word is refused by the parser, and those two would be the first two.
+  */
+  const spec: ArgSpec = {
+    value: extra.value,
+    boolean: [...WORLD_FLAGS, ...extra.boolean],
+    positional: extra.positional,
+  };
+  const args = parseStrictArgsOrRefuse(argv.slice(2), spec);
+
+  const world = args.flag("production")
     ? "production" as const
-    : argv.includes("--dev") ? "dev" as const : null;
+    : args.flag("dev") ? "dev" as const : null;
   if (world === null) {
     console.error("REFUSING: name the world — --dev or --production. This script does not guess.");
+    process.exit(1);
+  }
+  if (args.flag("production") && args.flag("dev")) {
+    console.error("REFUSING: --dev and --production were both named. Name one world.");
     process.exit(1);
   }
 
@@ -66,7 +116,7 @@ export async function openCeremonyWorld(argv: readonly string[]): Promise<Ceremo
   const parsed = new URL(url);
   const where = `${parsed.hostname}:${parsed.port || "3306"}`;
   console.log(`world: ${world.toUpperCase()} · ${where}`);
-  return { world, where, connection: await openDatabase(url) };
+  return { world, where, connection: await openDatabase(url), args };
 }
 
 /**
