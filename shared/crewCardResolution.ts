@@ -43,7 +43,41 @@
  * should become is a judgement about work, and guessing it is how a wrong state
  * gets laundered into a confident one"*).
  *
- * An eye item holds nothing up, so it never needs the guard.
+ * # ⚠ AND THE SENTENCE THAT USED TO END THIS PARAGRAPH WAS FALSE (#354)
+ *
+ * It read: *"An eye item holds nothing up, so it never needs the guard."* True
+ * of the SCHEMA, and that is the only place it was ever checked — which is why
+ * it survived. It is false of his PAGE.
+ *
+ * `CrewEyeGallery` renders `state === "open"` and nothing else
+ * (`client/src/features/admin/components/crew/CrewEyeGallery.tsx`, and it
+ * returns `null` outright when none is open). So promoting an OPEN eye item to
+ * `done` does not tidy a field — **it takes the frames off his screen.**
+ *
+ * Measured, not reasoned: on 2026-09-07 a shift ran the sweep in report mode
+ * before shipping an edition whose whole headline was about looking at
+ * something, and it answered `eyeItems cycle-spend-385-frames: open → done`.
+ * Two frames uploaded to the production bucket for his eyes would have
+ * rendered **nowhere at all**. The shift caught it by reading the report; the
+ * next one would not necessarily.
+ *
+ * ## What the rule is now, and why it splits where it does
+ *
+ *   - **`answered` → `done` still applies.** An `answered` eye item is already
+ *     invisible in the gallery, so the promotion changes nothing he can see.
+ *   - **`open` → `done` is HELD and reported.** Whether he still needs to see
+ *     the frames is a judgement about work — the issue closing says the WORK
+ *     finished, never that he LOOKED — and this file's own doctrine for pass 4
+ *     already says what to do with those: report, never guess.
+ *
+ * ⚠ **It fails toward the frames staying visible**, which is the cheap
+ * direction: a stale eye item costs him a glance, and a blanked one costs him
+ * the thing he was asked to look at, silently.
+ *
+ * ⚠ **A held eye item is NOT self-resolving, and that is the one way it
+ * differs from a held card.** A card's hold clears itself the sweep after its
+ * dependant is settled; this one waits for a shift to decide and say so. It is
+ * named in every report until then, which is the intended cost.
  *
  * # `shared/` BECAUSE IT IS A RULE, NOT A SCRIPT STEP
  *
@@ -152,19 +186,33 @@ export function planCardResolutions(
     return state === "CLOSED";
   };
 
-  /* Eye items first: whether one of them is closing decides whether the card it
-     names is safe to close, so the answer has to exist before the cards are
-     judged. Nothing depends on an eye item, so none of them is ever held. */
-  const eyeClosing = new Set<string>();
+  /*
+    Eye items first: whether one of them is closing decides whether the card it
+    names is safe to close, so the answer has to exist before the cards are
+    judged.
+
+    ⚠ AN OPEN ONE IS HELD (#354). The gallery renders `state === "open"` only,
+    so promoting an open eye item is not a tidy-up — it removes the frames from
+    his page. The issue closing proves the WORK finished; it says nothing about
+    whether he looked.
+  */
   for (const item of eyeItems) {
     if (!closing(item, "eyeItems")) continue;
-    eyeClosing.add(item.id);
-    promote.push({
-      list: "eyeItems",
-      id: item.id,
-      from: item.state,
-      issueNumber: item.issueNumber as number,
-    });
+    const issueNumber = item.issueNumber as number;
+
+    if (item.state === "open") {
+      held.push({
+        list: "eyeItems",
+        id: item.id,
+        issueNumber,
+        reason: "these frames are still on his page and marking them done would take them off it "
+          + "(#354) — the issue closing means the work finished, not that he looked; "
+          + "mark it `answered` once he has judged, or re-point it at an open card",
+      });
+      continue;
+    }
+
+    promote.push({ list: "eyeItems", id: item.id, from: item.state, issueNumber });
   }
 
   for (const card of cards) {
@@ -176,15 +224,33 @@ export function planCardResolutions(
        shift to settle it only to meet the other on the next sweep. */
     const reasons: string[] = [];
 
-    /* #133: an eye item that will STILL be open needs its card open. One that
-       is closing in this same plan is not a dependant — both land together. */
+    /* #133: an eye item that is still open needs its card open.
+       ⚠ THIS USED TO EXEMPT AN EYE ITEM CLOSING IN THE SAME PLAN — *"both land
+       together"* — and that exemption is gone with the road it stood on (#354):
+       an OPEN eye item is never promoted now, so there is no such case, and a
+       `!eyeClosing.has(…)` clause here would be a dead condition reading as a
+       live one. Both are held instead, and they are settled together by a hand
+       rather than by a guess. */
     const orphanedEye = eyeItems.find(
-      (item) => item.cardId === card.id && item.state === "open" && !eyeClosing.has(item.id),
+      (item) => item.cardId === card.id && item.state === "open",
     );
     if (orphanedEye) {
+      /* ⚠ THE ADVICE NAMES ONLY WHAT IS ACTUALLY OPEN TO THE SHIFT (review of
+         PR #628, finding 2). It used to offer *"settle the frames, or close
+         its issue"* — and in the shape that produced this fix, the card and
+         its frames sit on ONE issue which is already closed by construction,
+         so half the sentence was impossible in the instance it was written
+         for. The reason line is the one artifact a shift acts on, so it says
+         the thing that can be done, and names the other issue only when there
+         really is a second one. */
+      const sameIssue = orphanedEye.issueNumber === issueNumber;
       reasons.push(
         `eye item '${orphanedEye.id}' is still open and names this card (#133) — `
-        + `settle the frames, or close its issue, before the card can be marked done`,
+        + (sameIssue
+          ? `settle the frames before the card can be marked done (they share issue `
+            + `#${issueNumber}, so there is no second issue to close)`
+          : `settle the frames, or close their own issue #${orphanedEye.issueNumber}, `
+            + `before the card can be marked done`),
       );
     }
 

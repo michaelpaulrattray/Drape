@@ -68,15 +68,60 @@ describe("planCardResolutions — a card whose issue closed is finished (#604)",
     expect(planCardResolutions(briefing, reader({ 12: "CLOSED" }).read).promote).toEqual([]);
   });
 
-  it("promotes an `open` EYE ITEM on a closed issue — brief-chips-535-frames, set by hand", () => {
+  /**
+   * ⚠ REVERSED, AND THE OLD ARM IS QUOTED RATHER THAN DELETED (#354).
+   *
+   * It read *"promotes an `open` EYE ITEM on a closed issue"* and asserted
+   * exactly that. The belief under it — stated in `crewCardResolution.ts`'s own
+   * header as *"an eye item holds nothing up, so it never needs the guard"* —
+   * was true of the SCHEMA and false of his PAGE: `CrewEyeGallery` renders
+   * `state === "open"` and returns `null` when none is, so the promotion takes
+   * the frames off his screen.
+   *
+   * Measured 2026-09-07: a shift ran the sweep in report mode before shipping
+   * and it answered `eyeItems cycle-spend-385-frames: open → done`. Two frames
+   * already uploaded for his eyes would have rendered nowhere at all.
+   */
+  it("HOLDS an `open` eye item on a closed issue — the frames stay on his page", () => {
     const briefing: ResolvableBriefing = {
       eyeItems: [{ ...card("brief-chips-535-frames", "open", 535), cardId: null }],
     };
     const plan = planCardResolutions(briefing, reader({ 535: "CLOSED" }).read);
 
+    expect(plan.promote, "an open eye item was promoted and his frames went dark").toEqual([]);
+    expect(plan.held).toHaveLength(1);
+    expect(plan.held[0].list).toBe("eyeItems");
+    expect(plan.held[0].id).toBe("brief-chips-535-frames");
+    expect(plan.held[0].reason).toMatch(/not that he looked/);
+  });
+
+  it("still promotes an `answered` eye item — it renders nowhere either way", () => {
+    /* THE ARM THAT KEEPS THE RULE FROM BEING "never demote an eye item". The
+       gallery shows `open` only, so an `answered` one is already invisible and
+       promoting it changes nothing he can see. Without this the fix would
+       freeze every eye item on his page for ever. */
+    const briefing: ResolvableBriefing = {
+      eyeItems: [{ ...card("judged-frames", "answered", 535), cardId: null }],
+    };
+    const plan = planCardResolutions(briefing, reader({ 535: "CLOSED" }).read);
+
+    expect(plan.held).toEqual([]);
     expect(plan.promote).toEqual([
-      { list: "eyeItems", id: "brief-chips-535-frames", from: "open", issueNumber: 535 },
+      { list: "eyeItems", id: "judged-frames", from: "answered", issueNumber: 535 },
     ]);
+  });
+
+  it("leaves an open eye item alone while its issue is still OPEN — the negative control", () => {
+    /* Nothing is held here because nothing was closing: a hold reported over an
+       item the rule was never going to touch is noise on the one report a shift
+       reads before it ships. */
+    const briefing: ResolvableBriefing = {
+      eyeItems: [{ ...card("live-frames", "open", 535), cardId: null }],
+    };
+    const plan = planCardResolutions(briefing, reader({ 535: "OPEN" }).read);
+
+    expect(plan.promote).toEqual([]);
+    expect(plan.held).toEqual([]);
   });
 });
 
@@ -94,15 +139,32 @@ describe("planCardResolutions — a promotion that would break his page is HELD 
     expect(plan.held[0].reason).toContain("its-frames");
   });
 
-  it("promotes BOTH when the eye item is closing in the same plan — not a dependant", () => {
+  /**
+   * ⚠ REVERSED (#354), AND THIS IS THE MEASURED INSTANCE ITSELF.
+   *
+   * The old arm read *"promotes BOTH when the eye item is closing in the same
+   * plan — not a dependant"*, on the reasoning that both land together so
+   * neither orphans the other. That is exactly the fixture the sweep met on
+   * 2026-09-07: card `cycle-spend-385` and eye item `cycle-spend-385-frames`,
+   * both on #385, both promoted, and **the frames would have rendered nowhere**.
+   *
+   * They still land together — as a HOLD rather than as a promotion. The shift
+   * settles the frames and both close on the next sweep; nothing is guessed on
+   * his behalf, which is this file's doctrine for every other pass.
+   */
+  it("HOLDS BOTH when a card and its open frames close on one issue — the #385 instance", () => {
     const briefing: ResolvableBriefing = {
       needsYou: [card("a-card", "open", 100)],
       eyeItems: [{ ...card("its-frames", "open", 100), cardId: "a-card" }],
     };
     const plan = planCardResolutions(briefing, reader({ 100: "CLOSED" }).read);
 
-    expect(plan.held).toEqual([]);
-    expect(plan.promote.map((p) => p.id).sort()).toEqual(["a-card", "its-frames"]);
+    expect(plan.promote, "the frames went dark and the card followed them").toEqual([]);
+    expect(plan.held.map((hold) => hold.id).sort()).toEqual(["a-card", "its-frames"]);
+    /* Each is held for its OWN reason — a shift told only about the card would
+       settle it and meet the frames on the next sweep. */
+    expect(plan.held.find((hold) => hold.id === "its-frames")?.reason).toMatch(/not that he looked/);
+    expect(plan.held.find((hold) => hold.id === "a-card")?.reason).toMatch(/its-frames/);
   });
 
   it("does not hold on an eye item that is already `done`", () => {
@@ -113,6 +175,29 @@ describe("planCardResolutions — a promotion that would break his page is HELD 
     const plan = planCardResolutions(briefing, reader({ 100: "CLOSED", 101: "OPEN" }).read);
 
     expect(plan.promote.map((p) => p.id)).toEqual(["a-card"]);
+  });
+
+  it("the card's hold names only advice a shift can act on (one issue vs two)", () => {
+    /*
+      Review of PR #628, finding 2. In the shape that produced this fix the card
+      and its frames sit on ONE issue, already closed — so *"or close its
+      issue"* was impossible advice in the very instance it was written for. The
+      reason line is the one artifact a shift acts on.
+    */
+    const oneIssue = planCardResolutions({
+      needsYou: [card("a-card", "open", 100)],
+      eyeItems: [{ ...card("its-frames", "open", 100), cardId: "a-card" }],
+    }, reader({ 100: "CLOSED" }).read);
+    const cardHold = oneIssue.held.find((hold) => hold.id === "a-card");
+    expect(cardHold?.reason).toMatch(/no second issue to close/);
+
+    const twoIssues = planCardResolutions({
+      needsYou: [card("a-card", "open", 100)],
+      eyeItems: [{ ...card("its-frames", "open", 101), cardId: "a-card" }],
+    }, reader({ 100: "CLOSED", 101: "OPEN" }).read);
+    const split = twoIssues.held.find((hold) => hold.id === "a-card");
+    expect(split?.reason).toMatch(/close their own issue #101/);
+    expect(split?.reason, "it offered an option that does not exist").not.toMatch(/no second issue/);
   });
 
   it("HOLDS a card a `waiting-founder` row still names (#291's refinement)", () => {
