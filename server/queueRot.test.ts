@@ -190,6 +190,24 @@ describe("the sentence names what was measured", () => {
     expect(sentence).toContain("15");
   });
 
+  it("⚠ the zero case is true of a card the creation floor cleared", () => {
+    /*
+      PR #641's review, round 2 — round 1's finding one shape over, which law
+      7's sweep should have caught. A card filed inside the window with NO
+      events is cleared by the creation floor while carrying none of the four
+      signals, so a clause claiming "every one has a comment, close, reopen or
+      commit inside the window" is falsified by exactly that card.
+
+      Driven rather than asserted about the string: the same card that the
+      reading clears is the one the sentence must not lie about.
+    */
+    const justFiled = card({ createdAt: "2026-09-05T00:00:00Z", events: [] });
+    expect(quietCards([justFiled], NOW, 7)).toEqual([]);
+    const zero = quietSentence(0, 7);
+    expect(zero, "the zero clause still claims a signal this card has none of").toContain("created");
+    for (const word of ENGAGEMENT_WORDS) expect(zero).toContain(word);
+  });
+
   it("the phrase reads as a list a person would write", () => {
     /* An absence arm alone would pass over `engagementPhrase()` returning "" —
        and then every `toContain` above would pass too, since "" is in

@@ -234,7 +234,21 @@ export function quietCards(
  */
 export function quietSentence(count: number, windowDays: number): string {
   const signals = engagementPhrase();
+  /*
+    ⚠ THE ZERO CASE NAMES CREATION TOO — PR #641's review, round 2, and it is
+    the SIBLING of round 1's finding rather than a new one.
+
+    Round 1 fixed the clause for the missing "reopen" word; the same clause was
+    still a universal claim a card could falsify, one shape over. `lastEngagedAt`
+    treats CREATION as the floor on purpose — a card filed this morning has been
+    engaged with, somebody wrote it — so a card younger than the window with no
+    events at all is cleared from the list while carrying none of the four named
+    signals. The count is right; the explanatory clause overclaimed.
+
+    Law 7's sweep is what should have caught it at round 1: the class was named
+    verbatim in that finding and this instance was one function away.
+  */
   return count === 0
-    ? `no open card has been silent for ${windowDays} days — every one has a ${signals} inside the window`
+    ? `no open card has been silent for ${windowDays} days — every one was created, or had a ${signals}, inside the window`
     : `${count} open ${count === 1 ? "card has" : "cards have"} had no ${signals} for ${windowDays} days`;
 }
