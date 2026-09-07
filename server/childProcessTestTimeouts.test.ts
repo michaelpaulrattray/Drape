@@ -122,6 +122,27 @@ describe("the reading can be wrong in both directions, and is checked in both (#
     expect(stripped.match(/spawnSync\(|execFileSync\(|execSync\(/g)).toHaveLength(1);
   });
 
+  it("POSITIVE CONTROL — a quote-bearing regex literal does not swallow the code after it", () => {
+    /* ⚠ PR #650's review, finding 1, and it was a LIVE defect rather than a
+       hypothetical: the stripper has no regex-literal mode, so a quote inside
+       one flipped it into string mode and it consumed real code until the next
+       matching quote. Driven at this exact shape before the repair — the
+       `spawnSync` below vanished from the stripped output, which would have
+       dropped its whole file out of the population with nothing going red.
+
+       The repair does not try to parse regex literals (division makes that
+       genuinely hard); it bounds them, because an unescaped newline ends a
+       single- or double-quoted literal by JavaScript's own rule. */
+    const stripped = codeOnly(
+      [
+        'import { spawnSync } from "node:child_process";',
+        `const RE = /["']x/;`,
+        'spawnSync("git", ["status"]);',
+      ].join("\n"),
+    );
+    expect(stripped).toContain("spawnSync(");
+  });
+
   it("POSITIVE CONTROL — the escape inside a literal does not end it early", () => {
     /* A backslash-quote is how a naive stripper falls back into `code` mode
        mid-string and then reads the rest of the file as code. */
@@ -145,9 +166,28 @@ describe("the floor itself (#548)", () => {
        ⚠ Read at the file's BYTES, not at its name. The first draft of this arm
        tested the regex against `row.file` — a path — so it was green over every
        possible tree and proved nothing at all. */
-    const literal = new RegExp(`testTimeout:\\s*(?:${CHILD_PROCESS_TEST_TIMEOUT_MS}|30_000)\\b`);
+    /* ⚠ BOTH SPELLINGS, PER PR #650's REVIEW FINDING 2. This arm matched only
+       `testTimeout:` — but the hard-coding shape this tree actually uses is the
+       per-describe option, `describe(…, { timeout: 60_000 })`, which
+       `atlasCommitHook.test.ts` and its siblings carry. A suite hand-typing
+       `{ timeout: 30_000 }` would have written the class's figure without the
+       constant and walked past a drift arm guarding one of the two spellings
+       vitest accepts. */
+    /* ⚠ AND THE POSITIONAL SPELLING, PER THE SECOND REVIEW — vitest accepts
+       THREE, and the third is this tree's dominant per-arm style:
+       `it("…", () => {…}, 30_000)`. Closing only the two key forms would have
+       left the same evasion the previous round shut for `{ timeout: }`, one
+       step along. */
+    const figure = `(?:${CHILD_PROCESS_TEST_TIMEOUT_MS}|30_000)`;
+    const literal = new RegExp(
+      `\\b(?:testTimeout|timeout):\\s*${figure}\\b` + `|\\}\\s*,\\s*${figure}\\s*\\)`,
+    );
+    /* ⚠ AND IT READS STRIPPED CODE, NOT RAW BYTES — this arm indicted THIS FILE
+       the moment finding 2's own explanatory comment mentioned the shape it was
+       widened to catch. The subject is a suite hard-coding the figure, which is
+       a property of its CODE; prose about hard-coding is not hard-coding. */
     const hardCoded = childProcessSuites(ROOT)
-      .filter((row) => literal.test(readFileSync(join(ROOT, row.file), "utf8")))
+      .filter((row) => literal.test(codeOnly(readFileSync(join(ROOT, row.file), "utf8"))))
       .map((row) => row.file);
     expect(hardCoded).toEqual([]);
   });
