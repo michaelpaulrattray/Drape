@@ -153,8 +153,10 @@ export const CANDIDATE_FAILURE_LINES: Readonly<Record<CandidateFailureKind, stri
  *
  * ⚠ It is a second statement of something the LINES already imply, which is
  * working law 4's shape — so it is not left to agree by good intentions:
- * `candidateFailure.test.ts` holds every kind's boolean against its own line,
- * and a new kind that is added to one table and not the other reddens.
+ * `client/src/features/castingV2/refundedPill.test.ts` computes each kind's
+ * expected boolean FROM its own customer-facing line and holds this map to it,
+ * and a new kind added to one table and not the other reddens there and at
+ * `pnpm check`, since this is a `Record<CandidateFailureKind, boolean>`.
  */
 export const CANDIDATE_FAILURE_REFUNDED: Readonly<Record<CandidateFailureKind, boolean>> = {
   content_filter: true,
