@@ -36,6 +36,17 @@ import { readListedSource } from "./testing/listedSource";
 const REPO = resolve(import.meta.dirname, "..");
 const SCRIPTS = join(REPO, "scripts");
 
+/**
+ * Handing the WHOLE `process.argv` to the shared reader — with or without an
+ * `extra` spec after it, and across a line break.
+ *
+ * ⚠ `\s*[,)]` rather than a literal `)`: the second capture is the sanctioned
+ * road for a ceremony with its own flags, and the first version of this guard
+ * banned it (PR #644's review). `.slice` is deliberately NOT matched — the
+ * reader slices argv itself, so a pre-sliced caller silently loses two words.
+ */
+const SANCTIONED_HANDOFF = /openCeremonyWorld\(\s*process\.argv\s*[,)]/;
+
 /** `process.argv` as node builds it: the binary, the script, then the words. */
 const commandLine = (...words: string[]) => ["/node", "/script.mts", ...words];
 
@@ -209,8 +220,35 @@ describe("the nineteenth ceremony", () => {
     for (const { name, body } of callers) {
       const strayArgv = body
         .split("\n")
-        .filter((line) => line.includes("process.argv") && !line.includes("openCeremonyWorld(process.argv)"));
+        .filter((line) => line.includes("process.argv") && !SANCTIONED_HANDOFF.test(line));
       expect(strayArgv, `${name} reads process.argv outside the shared reader`).toEqual([]);
     }
+  });
+
+  it("the sanctioned `extra` shape is NOT read as a stray argv — the arm above must not ban its own advice", () => {
+    /*
+      ⚠ PR #644's review, finding 1, and it would have fired on the first
+      ceremony that followed this suite's own instructions. The filter was the
+      literal substring `openCeremonyWorld(process.argv)` — closing paren
+      included — so `openCeremonyWorld(process.argv, { value: ["limit"] })`, the
+      exact road the docblock and two arms above teach, read as a STRAY argv.
+
+      The nineteenth ceremony lands, the gate reddens on a file that did
+      everything right, and its author either believes the sanctioned road is
+      banned or weakens this guard under time pressure. Both are worse than the
+      defect the guard exists for.
+
+      `.slice` stays refused on purpose: the reader slices `argv` itself, so a
+      pre-sliced caller would lose two real words off the front of its line.
+    */
+    expect(SANCTIONED_HANDOFF.test("const world = await openCeremonyWorld(process.argv);")).toBe(true);
+    expect(SANCTIONED_HANDOFF.test('await openCeremonyWorld(process.argv, { value: ["limit"], boolean: [] });')).toBe(true);
+    expect(SANCTIONED_HANDOFF.test("await openCeremonyWorld(process.argv, {")).toBe(true);
+
+    /* And the shapes that must still redden — a guard that accepts everything
+       is the failure this arm's own class is about. */
+    expect(SANCTIONED_HANDOFF.test("openCeremonyWorld(process.argv.slice(2))")).toBe(false);
+    expect(SANCTIONED_HANDOFF.test('if (process.argv.includes("--production")) {')).toBe(false);
+    expect(SANCTIONED_HANDOFF.test("const world = process.argv[2];")).toBe(false);
   });
 });
