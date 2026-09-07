@@ -138,3 +138,28 @@ export const CANDIDATE_FAILURE_LINES: Readonly<Record<CandidateFailureKind, stri
   unpaid: "Didn't start · not charged",
   unknown: "Didn't arrive · refunded",
 };
+
+/**
+ * WHETHER THIS KIND GOT THE MONEY BACK — the fact, separated from the sentence
+ * that says it (#553).
+ *
+ * The tile grew a REFUNDED pill so the money is a GLANCE rather than a read,
+ * and a pill is a claim about money with no room to qualify itself. The card
+ * that asked for it said *"derived from `status`, never from the failure
+ * kind"* — and that rule, applied literally, puts **REFUNDED on `unpaid`**,
+ * the one kind the line table's own docblock says was NEVER CHARGED. A refund
+ * claimed on money that never moved is the worst small lie this sheet could
+ * tell, so the pill reads THIS map instead.
+ *
+ * ⚠ It is a second statement of something the LINES already imply, which is
+ * working law 4's shape — so it is not left to agree by good intentions:
+ * `candidateFailure.test.ts` holds every kind's boolean against its own line,
+ * and a new kind that is added to one table and not the other reddens.
+ */
+export const CANDIDATE_FAILURE_REFUNDED: Readonly<Record<CandidateFailureKind, boolean>> = {
+  content_filter: true,
+  render_fault: true,
+  engine: true,
+  unpaid: false,
+  unknown: true,
+};
