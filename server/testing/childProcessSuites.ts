@@ -49,6 +49,25 @@ const CHILD_PROCESS_CALLS = [
  * both. It is the same discipline `prosePointerDiscipline.test.ts` already
  * applies for the same reason.
  *
+ * ⚠ **IT HAS NO REGEX-LITERAL MODE, AND THAT LIMIT IS STATED HERE BECAUSE THE
+ * UNSTATED VERSION OF IT WAS A LIVE DEFECT** (PR #650's review, finding 1,
+ * confirmed by driving it rather than by reading the argument). A quote inside
+ * a regex literal — `` /["']x/ ``, which is this repository's house style for
+ * source guards — used to flip the stripper into string mode, where it then
+ * consumed REAL CODE until the next matching quote. Measured at the minimal
+ * shape: a `spawnSync` call one line below such a regex vanished from the
+ * stripped output entirely, so its file would have left the population with
+ * nothing going red. **That is the silent direction**, and on this module's own
+ * bytes the correct verdict hung on a single apostrophe in a docblock.
+ *
+ * Distinguishing a regex literal from division is genuinely hard and is NOT
+ * attempted. Instead the damage is BOUNDED: an unescaped newline ends a
+ * single- or double-quoted literal by JavaScript's own rule, so the stripper
+ * returns to code mode at the end of the line whatever the regex did. **A
+ * corrupted read can therefore cost one line and never a file.** What survives
+ * as a real remainder: a spawn call on the SAME line as, and after, a
+ * quote-bearing regex literal — which no arm here would see.
+ *
  * ⚠ **SAID PRECISELY, BECAUSE THE SABOTAGE RUN SHOWED THE LOOSER SENTENCE WAS
  * FLATTERING ITSELF: those two files are held out by the IMPORT half, not by
  * this stripper.** Neither imports `node:child_process` at all, so turning
@@ -105,6 +124,10 @@ export function codeOnly(source: string): string {
     }
     /* Inside a literal: honour the escape, then look for the closer. */
     if (source[i] === "\\") { i += 2; continue; }
+    /* ⚠ AN UNESCAPED NEWLINE ENDS A SINGLE- OR DOUBLE-QUOTED LITERAL, FULL
+       STOP — this is JavaScript's own rule, not a heuristic, and it is what
+       bounds the regex-literal blind spot below to a single line. */
+    if (source[i] === "\n" && mode !== "template") { mode = "code"; out += "\n"; i += 1; continue; }
     const closer = mode === "single" ? "'" : mode === "double" ? '"' : "`";
     if (source[i] === closer) { mode = "code"; }
     if (source[i] === "\n") out += "\n";

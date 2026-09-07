@@ -23,7 +23,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   type MergeContext,
@@ -54,6 +54,18 @@ import {
   reviewPresence,
   tallyRounds,
 } from "../scripts/lib/reviewRounds.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite drives a real child process (`pushPaths.mts` shells out to git),
+   so it declares the class's timeout rather than racing vitest's 5 s default
+   under a parallel run (#548).
+
+   ⚠ It was INVISIBLE to that population until PR #650's review: `pushPaths.mts`
+   declares a quote-bearing regex at line 98 and its `execFileSync` sits at
+   line 131, and the deriver's stripper — having no regex-literal mode — was
+   swallowing everything between. This file is the measured instance of that
+   defect rather than a hypothetical one. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const REPO_ROOT = join(__dirname, "..");
 const reviewYml = readFileSync(join(REPO_ROOT, REVIEWER_WORKFLOW_PATH), "utf8");
