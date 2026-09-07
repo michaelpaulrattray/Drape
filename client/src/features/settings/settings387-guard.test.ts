@@ -107,8 +107,10 @@ describe("card 387 item 2 — the window follows the account", () => {
     expect(w.over).toBe("this billing period");
   });
 
-  it("⚠ a window nobody has summed yet is NAMED AS NOTHING — PR #634's one review finding", () => {
+  it("⚠ a window nobody has summed yet is NAMED AS NOTHING — the PR review's one finding", () => {
     /*
+      PR #634's only review finding.
+
       The first draft defaulted a missing basis to `rolling30`, so a SUBSCRIBED
       account opening the pane read *"Usage in the last 30 days"* over the note
       *"61,000 credits left"* for one render beat before it flipped to the
