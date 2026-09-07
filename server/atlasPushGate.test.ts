@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { runHook } from "./testing/hookDriver";
+
 /**
  * ARM 2 OF THE PRE-PUSH GATE, DRIVEN RATHER THAN READ (cards #606, #519).
  *
@@ -56,12 +58,11 @@ function gitWith(config: string[], cwd: string, ...args: string[]): Result {
        what shifts actually meet when it is present. */
     "-c", `merge.atlas.driver=${HOOKS_DIR}/merge-atlas %O %A %B %P`,
   ];
-  const run = spawnSync("git", [...base, ...config, ...args], { cwd, encoding: "utf8" });
-  return {
-    status: typeof run.status === "number" ? run.status : -1,
-    stderr: String(run.stderr ?? ""),
-    stdout: String(run.stdout ?? ""),
-  };
+  /* A `git` that never starts THROWS rather than returning `-1` (#640). Five
+     arms below assert refusal as `not.toBe(0)`, which the old sentinel
+     satisfied — they would report "the stale map was refused" over a push gate
+     that never ran. */
+  return runHook("git", [...base, ...config, ...args], { cwd });
 }
 
 const git = (cwd: string, ...args: string[]) => gitWith([], cwd, ...args);

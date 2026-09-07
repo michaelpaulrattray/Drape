@@ -28,7 +28,7 @@ const HOOK = join(HOOKS_DIR, "pre-commit");
 
 /*
   ⚠ A `git` THAT NEVER STARTS THROWS HERE — it does not come back as a status
-  (#640's class). Eleven arms below assert refusal as `expect(status).not.toBe(0)`,
+  (#640's class). FOUR arms below assert refusal as `expect(status).not.toBe(0)`,
   and the old driver's `-1` sentinel satisfies every one of them: they would have
   reported "the gate refuses" over a git that never ran. Each happens to be
   followed by a `stderr` assertion that a non-run would also fail, so none was

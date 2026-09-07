@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { existsSync } from "node:fs";
 
@@ -36,66 +36,98 @@ import { existsSync } from "node:fs";
 export type HookRun = { status: number; stdout: string; stderr: string };
 
 /**
- * A spawn that never happened. Thrown — never returned — so no arm can read it
- * as a decision. It carries the executable because the fix for the only
- * instance found so far is "that binary is not on this PATH".
+ * A process that produced no exit code. Thrown — never returned — so no arm can
+ * read it as a decision. It carries the executable because the fix for the
+ * commonest instance is "that binary is not on this PATH".
+ *
+ * Two different events land here and the message says WHICH, because they want
+ * different repairs: a spawn that never happened (ENOENT, EACCES) and a child
+ * killed by a signal, which DID run.
  */
 export class SpawnFailure extends Error {
   constructor(
     readonly file: string,
     readonly reason: string,
+    /** Set when the child ran and was killed, rather than never starting. */
+    readonly signal?: NodeJS.Signals,
   ) {
     super(
-      `could not start "${file}": ${reason}. This is the DRIVER failing, not the hook — ` +
-        `no exit code was produced, so nothing here says what the hook would have decided.`,
+      signal
+        ? `"${file}" was killed by ${signal} and produced no exit code. It RAN — this is not a ` +
+          `missing binary — but nothing here says what it would have decided.`
+        : `could not start "${file}": ${reason}. This is the DRIVER failing, not the hook — ` +
+          `no exit code was produced, so nothing here says what the hook would have decided.`,
     );
     this.name = "SpawnFailure";
   }
 }
 
 /**
- * Node reports a failure to spawn with `error.code` (ENOENT, EACCES, …) and NO
- * numeric `status`; a process that ran and exited non-zero always carries a
- * numeric `status`. That is the whole discriminator, and it is Node's own
- * contract rather than a heuristic about messages.
- */
-function isSpawnFailure(error: unknown): boolean {
-  return typeof (error as { status?: unknown } | null)?.status !== "number";
-}
-
-/**
  * Run `file` with `args` and report what it did.
  *
- * @throws SpawnFailure when the process could not be started at all.
+ * ⚠ **`spawnSync`, NOT `execFileSync`, and the reason is a defect this
+ * repository has already caught in itself** (PR #643's review, finding 4;
+ * originally `server/atlasCommitHook.test.ts:47`). `execFileSync` returns
+ * stdout alone and surfaces stderr only by THROWING — so on a run that exits 0
+ * the stderr is the empty string, whatever the process actually said. The
+ * pre-commit hook's partial-stage path WARNS and allows, which is exactly that
+ * shape, and when this bit before, two positive arms failed honestly while a
+ * `not.toContain` passed over nothing at all (the absence-only-expect class).
+ *
+ * The first version of this helper hard-coded `stderr: ""` on success and did
+ * not say so. No arm read it, so nothing broke — but it is the shared
+ * instrument now, and an undeclared limitation in a shared instrument is the
+ * fidelity law's own shape. It captures both streams on both outcomes instead.
+ *
+ * @throws SpawnFailure when no exit code was produced — the process could not
+ *   be started, or it was killed by a signal.
  */
 export function runHook(
   file: string,
   args: string[],
-  options: { input?: string; cwd?: string; env?: NodeJS.ProcessEnv } = {},
+  options: {
+    input?: string;
+    cwd?: string;
+    env?: NodeJS.ProcessEnv;
+    /** Windows needs it for `npx`; it changes nothing about the discriminator. */
+    shell?: boolean;
+    /**
+     * Milliseconds after which the child is killed. On expiry `spawnSync`
+     * reports a SIGNAL and no status, which is the portable way to reach the
+     * killed-child branch below — Windows has no real signals, so
+     * `process.kill` on a child there produces an ordinary exit code.
+     */
+    timeout?: number;
+  } = {},
 ): HookRun {
-  try {
-    const stdout = execFileSync(file, args, {
-      ...options,
-      encoding: "utf8",
-      stdio: "pipe",
-    });
-    return { status: 0, stdout: String(stdout ?? ""), stderr: "" };
-  } catch (error: unknown) {
-    if (isSpawnFailure(error)) {
-      const reason = String(
-        (error as { code?: unknown; message?: unknown })?.code ??
-          (error as { message?: unknown })?.message ??
-          "no exit code was produced",
-      );
-      throw new SpawnFailure(file, reason);
-    }
-    const shaped = error as { status: number; stdout?: unknown; stderr?: unknown };
-    return {
-      status: shaped.status,
-      stdout: String(shaped.stdout ?? ""),
-      stderr: String(shaped.stderr ?? ""),
-    };
+  const run = spawnSync(file, args, { ...options, encoding: "utf8" });
+
+  /*
+    THE DISCRIMINATOR, and it is Node's own contract rather than a heuristic:
+    `signal` is set when the child ran and was killed; `error` is set when the
+    spawn itself failed; `status` is a number exactly when a process ran to
+    completion. Only the third is an answer to "what did the hook decide".
+
+    ⚠ SIGNAL IS TESTED FIRST, AND THE ORDER IS LOAD-BEARING. A timed-out child
+    carries BOTH `error` (ETIMEDOUT) and `signal` — so an `error`-first reading
+    calls a process that ran and was killed a missing binary, which is finding
+    5's wrong narration arriving by a second road. The arm below drives exactly
+    this case and reddened on the error-first ordering.
+  */
+  if (run.signal) throw new SpawnFailure(file, `killed by ${run.signal}`, run.signal);
+  if (run.error) {
+    const reason = String((run.error as NodeJS.ErrnoException).code ?? run.error.message);
+    throw new SpawnFailure(file, reason);
   }
+  if (typeof run.status !== "number") {
+    throw new SpawnFailure(file, "no exit code and no signal were reported");
+  }
+
+  return {
+    status: run.status,
+    stdout: String(run.stdout ?? ""),
+    stderr: String(run.stderr ?? ""),
+  };
 }
 
 /**

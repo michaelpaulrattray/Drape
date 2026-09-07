@@ -1,10 +1,11 @@
-import { spawnSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { readListedSource } from "./testing/listedSource";
+
+import { runHook } from "./testing/hookDriver";
 
 /**
  * THE PATROL-CLOCK READER, DRIVEN (card #505).
@@ -43,15 +44,10 @@ const REAL_LOGS = [
 type Result = { status: number; stdout: string; stderr: string };
 
 function run(...args: string[]): Result {
-  const proc = spawnSync("npx", ["tsx", SCRIPT, ...args], {
-    encoding: "utf8",
-    shell: process.platform === "win32",
-  });
-  return {
-    status: typeof proc.status === "number" ? proc.status : -1,
-    stdout: String(proc.stdout ?? ""),
-    stderr: String(proc.stderr ?? ""),
-  };
+  /* An `npx` that fails to start throws rather than reading as an exit code
+     (#640) — this suite asserts exit 1 for a REFUSAL, and a missing npx would
+     otherwise have to be told apart from one by eye. */
+  return runHook("npx", ["tsx", SCRIPT, ...args], { shell: process.platform === "win32" });
 }
 
 /** A log with a declared clock and one run heading, in the shape the real ones use. */
