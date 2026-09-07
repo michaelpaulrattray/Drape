@@ -32,33 +32,10 @@
  */
 import { readFile } from "node:fs/promises";
 
+import { openCeremonyWorld } from "./lib/ceremony.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
 
-const world = process.argv.includes("--production")
-  ? "production"
-  : process.argv.includes("--dev") ? "dev" : null;
-if (world === null) {
-  console.error("REFUSING: name the world — --dev or --production. This script does not guess.");
-  process.exit(1);
-}
-
-if (world === "dev") await import("dotenv/config");
-const url = world === "production" ? process.env.MYSQL_PUBLIC_URL : process.env.DATABASE_URL;
-if (!url) {
-  console.error(
-    world === "production"
-      ? "REFUSING: MYSQL_PUBLIC_URL is not set. Run under `railway.cmd run --service MySQL`."
-      : "REFUSING: DATABASE_URL is not set in .env.",
-  );
-  process.exit(1);
-}
-if (world === "production" && process.env.DATABASE_URL && process.env.DATABASE_URL === url) {
-  console.error("REFUSING: MYSQL_PUBLIC_URL and DATABASE_URL are the same string — that is one world, not two.");
-  process.exit(1);
-}
-
-const port = new URL(url).port || "3306";
-console.log(`world: ${world.toUpperCase()} · ${new URL(url).hostname}:${port}`);
+const { connection: conn } = await openCeremonyWorld(process.argv);
 
 const TABLE = "casting_reference_reads";
 const VALUE = "out_of_class";
@@ -71,7 +48,6 @@ async function readOutcomeValues(conn: Awaited<ReturnType<typeof openDatabase>>)
   return [...type.matchAll(/'([^']*)'/g)].map((match) => match[1]);
 }
 
-const conn = await openDatabase(url);
 try {
   /*
     THE READER IS PROVEN BEFORE ITS ANSWER IS BELIEVED (working law 2). An empty

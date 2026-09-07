@@ -52,10 +52,10 @@ const WORLD_FLAGS = ["dev", "production"] as const;
  * Refuses on: no `--dev`/`--production`; a missing URL for the world asked for;
  * and the two URLs being the same string, which is one world wearing two names.
  *
- * ⚠ **AND SINCE #642 IT REFUSES A WORD IT DOES NOT KNOW — the eighteen
- * ceremonies get that from this one function.** It used to ask `argv.includes`
- * twice and look at nothing else, which is #288's class exactly: *a reader that
- * looks up the flags it wants and never looks at what it was actually given.*
+ * ⚠ **AND SINCE #642 IT REFUSES A WORD IT DOES NOT KNOW — every ceremony gets
+ * that from this one function.** It used to ask `argv.includes` twice and look
+ * at nothing else, which is #288's class exactly: *a reader that looks up the
+ * flags it wants and never looks at what it was actually given.*
  *
  * The failure it makes impossible is narrower than the class's usual one and
  * that is worth being precise about, because the honest version is the reason
@@ -66,9 +66,18 @@ const WORLD_FLAGS = ["dev", "production"] as const;
  * where the world parses, the run proceeds, and the operator's other intention
  * is silently discarded. Every ceremony here writes to a database.
  *
- * Read at the tree when this landed, all eighteen callers pass `process.argv`
+ * Read at the tree when this landed, all eighteen callers passed `process.argv`
  * and read no flag of their own, so none needed an edit and none could be
- * missed. `extra` exists for the nineteenth.
+ * missed. `extra` exists for the ones that grow a flag.
+ *
+ * ⚠ **AND EIGHTEEN WAS NOT THE POPULATION — IT WAS THE ADOPTERS** (#642 slice
+ * 2, 2026-09-08). Twelve further `scripts/ceremony-*.mts` had each hand-copied
+ * this reader's world block and never called it, so they were outside both the
+ * fix and the guard that watched it — among them the two that built the
+ * founder's own switch panel. They call it now (thirty callers), and
+ * `server/ceremonyArguments.test.ts` gained a second derived arm keyed on the
+ * DIRECTORY rather than on adoption, which is the only kind that can see a
+ * thirteenth arrive.
  */
 export async function openCeremonyWorld(
   argv: readonly string[],
@@ -76,7 +85,7 @@ export async function openCeremonyWorld(
 ): Promise<CeremonyWorld> {
   /*
     `process.argv` arrives whole from every call site, so the node binary and
-    the script path are dropped here rather than at eighteen callers — a bare
+    the script path are dropped here rather than at thirty callers — a bare
     word is refused by the parser, and those two would be the first two.
   */
   const spec: ArgSpec = {
