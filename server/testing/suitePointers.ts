@@ -43,8 +43,27 @@ import { join } from "node:path";
  * are not claimed here — a clean reading over this one says nothing about them.
  */
 
-/** A backticked reference to a test file, e.g. a backticked <name>.test.ts. */
-const POINTER = /`([A-Za-z0-9_.-]+\.test\.tsx?)`/g;
+/**
+ * A backticked reference to a test file, bare or path-qualified — a backticked
+ * <name>.test.ts, or a backticked server/<name>.test.ts.
+ *
+ * ⚠ **THE PATH-QUALIFIED HALF WAS MISSING AND IT WAS A QUARTER OF THE
+ * POPULATION** (PR #651's review, findings 1 and 2). The first version matched
+ * `[A-Za-z0-9_.-]+`, which excludes `/`, so ~113 pointers written in the
+ * <dir>/<name> style were invisible — and the module's own comment explained
+ * their absence with a reason that was FALSE at the bytes, claiming those
+ * mentions were unbackticked when `preflight.test.ts` backticks all three.
+ * **A record disagreeing with the tree, inside the guard built to stop records
+ * disagreeing with the tree.**
+ *
+ * The gap is CLOSED here rather than declared, because the reviewer had already
+ * checked all ~113 against the tree and none dangled undeliberately — so
+ * widening costs nothing today and stops a dangling pointer written in path
+ * form from shipping green tomorrow. Resolution is still by BASENAME: the
+ * question this guard answers is whether a file by that name is tracked, and a
+ * path that has merely moved is a different, ambiguous question.
+ */
+const POINTER = /`((?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+\.test\.tsx?)`/g;
 
 export type PointerReading = {
   /** Repo-relative, forward-slashed, of the file doing the pointing. */
@@ -97,22 +116,43 @@ export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
       "pointer never resolved (#647) — the same self-documenting shape as planLadder. " +
       "The correction cannot be written without naming what was corrected.",
   },
+  "foo.test.ts": {
+    why:
+      "A worked example inside `preflight.test.ts`'s own comments, describing the " +
+      "selector shape that was silently green — 'server/foo.test.ts while server/bar.test.ts " +
+      "imports it'. Naming a file that does not exist is the whole point of an example.",
+  },
+  "bar.test.ts": {
+    why: "The second half of the same worked example in `preflight.test.ts`'s comments.",
+  },
+  "thing.test.ts": {
+    why:
+      "The third, at `preflight.test.ts:372` — 'a shift writes server/thing.test.ts'. Same " +
+      "example, same reason: it describes a file a shift is about to create.",
+  },
 };
 
 /*
-  ⚠ WHAT IS NOT IN THE LIST, AND WHY THE LIST IS THIS SHORT.
+  ⚠ THE `foo`/`bar`/`thing` ENTRIES CAME OFF THIS LIST AND WENT BACK ON, AND
+  THE ROUND TRIP IS THE LESSON RATHER THAN AN EMBARRASSMENT.
 
-  The card that ordered this guard named four `preflight.test.ts` fixtures
-  (`foo`, `bar`, `thing`) among its six false positives, and entries for them
-  were written here before the reading was taken. THE READING DOES NOT FIND
-  THEM: this reader keys on a BACKTICKED reference, and those fixtures are bare
-  strings inside that suite's own arms. Three dead entries would have sat here
-  excusing names nothing mentions — an allowlist that is longer than its
-  population is an allowlist nobody can audit, and every future reader would
-  have had to check whether those lines were load-bearing.
+  The card that ordered this guard named them among its false positives. They
+  were written here, then REMOVED when the first reading did not find them —
+  with a comment in this spot explaining that the reader keys on a backticked
+  reference and those fixtures are "bare strings".
 
-  They were removed rather than kept "just in case", which is the same reason
-  `KNOWN_DEBTS` may only shrink.
+  ⚠ **THAT EXPLANATION WAS FALSE AT THE BYTES, and PR #651's review read them.**
+  `preflight.test.ts:72` and `:372` backtick all three; they were invisible only
+  because they are PATH-QUALIFIED and the regex excluded `/`. So the guard built
+  to stop records disagreeing with the tree was carrying a record that
+  disagreed with the tree — about its own population, in a comment that read
+  like a measurement.
+
+  The regex is widened and the three are enumerated with the reason that is
+  actually true. **The rule that survives both directions: an entry earns its
+  place from a reading, and so does its absence — a removal justified by a
+  mechanism nobody drove is the same mistake as a dead entry kept just in
+  case.** The "still mentioned" arm is what now checks that continuously.
 */
 
 /** Every backticked suite pointer in the tracked `.ts`/`.tsx` population. */
@@ -150,7 +190,11 @@ export function suitePointers(repoRoot: string): PointerReading[] {
       POINTER.lastIndex = 0;
       let match: RegExpExecArray | null;
       while ((match = POINTER.exec(text))) {
-        readings.push({ file, names: match[1], line: index + 1, resolves: basenames.has(match[1]) });
+        /* A path-qualified pointer resolves on its LAST segment: this guard
+           answers "is a file by that name tracked", and a file that has merely
+           moved directory is the ambiguous question it deliberately avoids. */
+        const named = match[1].split("/").pop() ?? match[1];
+        readings.push({ file, names: named, line: index + 1, resolves: basenames.has(named) });
       }
     });
   }

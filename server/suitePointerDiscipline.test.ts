@@ -52,12 +52,33 @@ describe("every backticked suite pointer resolves (#647)", () => {
 });
 
 describe("the reading can be wrong in both directions (#647)", () => {
-  it("POSITIVE CONTROL — a fabricated pointer IS caught", () => {
-    /* The sweep that produced this card had no positive control and would have
-       reported all twelve of its raw hits. */
-    const rows = suitePointers(ROOT);
+  it("POSITIVE CONTROL — the reader DOES report a pointer that resolves to nothing", () => {
+    /* ⚠ RETITLED AND REWRITTEN, PR #651's review finding 3. The first version
+       was called a positive control and drove nothing: it asserted that an
+       invented name was ABSENT from the readings and the allowlist, which is
+       true of any string nobody typed. An arm whose title claims a drive its
+       body does not perform is the import-is-not-a-call-site shape, and the
+       sibling suite had already fixed exactly that in itself.
+
+       This drives the capability the guard depends on — that a real,
+       non-resolving pointer is SEEN and reported as unresolved — against live
+       bytes. Both halves in one breath, so a reader that stopped reading, and a
+       reader that resolved everything, each fail here. */
+    const seen = suitePointers(ROOT).filter((row) => row.names === "velocityLimits.test.ts");
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.every((row) => !row.resolves)).toBe(true);
+
+    /* And the other direction: a pointer at a suite that DOES exist resolves.
+       Without this, a reader answering "no" to everything passes the line
+       above. */
+    const real = suitePointers(ROOT).filter((row) => row.names === "prosePointerDiscipline.test.ts");
+    expect(real.length).toBeGreaterThan(0);
+    expect(real.every((row) => row.resolves)).toBe(true);
+
+    /* The fixture name itself is neither read nor allowlisted — kept because a
+       future allowlist typo is a real way this guard goes quiet. */
     const invented = "aSuiteThatHasNeverExisted.test.ts";
-    expect(rows.some((row) => row.names === invented)).toBe(false);
+    expect(suitePointers(ROOT).some((row) => row.names === invented)).toBe(false);
     expect(invented in DELIBERATELY_ABSENT).toBe(false);
   });
 
