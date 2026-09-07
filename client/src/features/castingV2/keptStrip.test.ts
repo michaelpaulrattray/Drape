@@ -272,12 +272,21 @@ describe("the strip's order with more than one keep in flight", () => {
   });
 
   /*
-   * The negative control, and it is the one that makes the arm above mean
-   * something: the order is NOT click order, and it is not the insertion order
-   * of `optimisticKept` either. Flipping which face was clicked first changes
-   * nothing at all — the same fixture with the clicks reversed gives the same
-   * list. An implementation that happened to honour click order would pass the
-   * arm above by accident and fail this one.
+   * The control, and what it adds is a DIRECTION the arm above cannot reach.
+   *
+   * ⚠ ITS FIRST COMMENT CLAIMED a click-order implementation "would pass the
+   * arm above by accident and fail this one", and that is inverted — caught in
+   * review, and refuted by this PR's own sabotage log, where ordering by click
+   * reddened BOTH arms. Arm 2's fixture clicks 08 then 03 while expecting tile
+   * order, so click ordering fails it directly.
+   *
+   * What this arm actually does: arm 2 pins ONE expected list, so it constrains
+   * the order in one direction only. This one holds the output invariant while
+   * the insertion order of `optimisticKept` is flipped underneath it — so any
+   * dependence on that map's key order is caught whichever way it leans, which
+   * a single expected list cannot do. Neither arm is redundant, and the reason
+   * is written here because reasoning from the earlier sentence would have
+   * justified deleting one of them.
    */
   it("is unmoved by which of the two was clicked first", () => {
     const clickedEightFirst = visibleShortlist({
@@ -309,7 +318,40 @@ describe("the strip's order with more than one keep in flight", () => {
 
     expect(source).toContain("NOT CLICK ORDER");
     expect(source).toContain("FIRST of several still in flight");
-    // The claim that was true of one keep and false of two does not come back.
-    expect(source).not.toContain("a face just kept is the newest, so it goes on the END");
+    /*
+      The claim that was true of one keep and false of two does not come back.
+      ⚠ WHITESPACE-COLLAPSED FIRST, and that is not tidiness: the retired
+      sentence is QUOTED a few lines above in the correction itself, and a raw
+      substring test passed only because that quotation happens to wrap across
+      a comment line break. It would have gone red on an innocent re-wrap and
+      green on a reintroduced claim that wrapped anywhere — a floor, and one
+      that fails in both directions. Reviewer's note on this PR.
+    */
+    const flat = source.replace(/\s*\*\s*/g, " ").replace(/\s+/g, " ");
+    const retired = "a face just kept is the newest, so it goes on the END";
+    // Positive control: the collapse really does find the sentence where it IS
+    // quoted, so `not.toContain` below is not green on a broken normaliser.
+    expect(flat).toContain(`"${retired}"`);
+    // And it appears ONLY as that quotation — never as the module's own rule.
+    expect(flat.split(retired).length - 1).toBe(1);
+  });
+
+  /*
+   * THE SWEEP THE FIX ITSELF MISSED. `signTarget.ts` carried the same retired
+   * claim — "newest keep first" — one module over, and `keptStrip.ts`'s
+   * corrected comment cites that module twice, so a reader following the
+   * citation landed on the sentence being retired. Found by the reviewer of
+   * this PR, not by its author's law-7 sweep; held here rather than left as a
+   * comment, because a comment is exactly what failed the first time.
+   */
+  it("the module that reverses this list states the same corrected rule", async () => {
+    const source = await readFile(new URL("./signTarget.ts", import.meta.url), "utf8");
+    const flat = source.replace(/\s*\*\s*/g, " ").replace(/\s+/g, " ");
+
+    expect(flat).toContain("FIRST of several still in flight");
+    // Positive control on the normaliser, as above.
+    expect(flat).toContain('"newest keep first"');
+    // The retired claim survives only inside that quotation.
+    expect(flat.split("newest keep first").length - 1).toBe(1);
   });
 });

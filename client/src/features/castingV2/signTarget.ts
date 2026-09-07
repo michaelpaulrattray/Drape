@@ -43,13 +43,26 @@ export function canBeSigned(entry: SignableEntry): boolean {
 }
 
 /**
- * The tray's faces in the order the dock offers them: **newest keep first**,
- * signed faces removed if one ever arrives.
+ * The tray's faces in the order the dock offers them — **the newest keep the
+ * server knows about, or the FIRST of several still in flight** — with signed
+ * faces removed if one ever arrives.
  *
  * The order is part of the rule rather than the caller's business — the last
  * thing you kept is almost always the one you mean, and a second caller
  * reversing it its own way is how the ring and the target come to disagree
  * again.
+ *
+ * ⚠ THAT FIRST SENTENCE SAID "newest keep first" UNTIL 2026-09-07 AND IT WAS
+ * TRUE OF ONE IN-FLIGHT KEEP AND FALSE OF TWO — the same claim card 0576
+ * retired in `keptStrip.ts`, sitting one module over, found by the reviewer of
+ * that fix rather than by its own law-7 sweep. This function reverses the list
+ * it is handed, so it inherits whatever order `visibleShortlist` built: with
+ * two keeps inside one round trip the additions arrive in TILE order, so the
+ * head offered here is the earlier tile, which may be the older click. Read
+ * `keptStrip.ts`'s header for why the code is deliberately left that way, and
+ * `keptStrip.test.ts` for the arms that prove it. Nothing can be signed by
+ * accident either way: `SignConfirm` shows her face, her label and the price
+ * first, and the server's `getSignableCandidate` never consults `keptAt`.
  */
 export function signTargets<T extends object>(shortlist: readonly T[]): T[] {
   /*
