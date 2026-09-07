@@ -44,19 +44,20 @@ import { openDatabase, resolveDatabaseUrl, utc, worldOf } from "./lib/dbConnecti
 import { fetchImageBytes } from "./lib/imageBytes.mjs";
 import { boxOutlineSvg } from "./lib/termsPalette.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-function flag(name: string): string | undefined {
-  const index = process.argv.indexOf(`--${name}`);
-  return index === -1 ? undefined : process.argv[index + 1];
-}
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["user", "candidate", "bucket", "out"],
+  boolean: [],
+});
 
-const userId = Number(flag("user") ?? 1);
+const userId = args.number("user", 1);
 if (!Number.isSafeInteger(userId) || userId <= 0) throw new Error("--user must be a positive integer");
-const candidatePublicId = flag("candidate") ?? null;
-const bucketFlag = flag("bucket");
+const candidatePublicId = args.value("candidate");
+const bucketFlag = args.value("bucket");
 const bucket = (bucketFlag ?? process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
 if (!bucket) throw new Error("no bucket — pass --bucket or set R2_PUBLIC_URL");
-const outDir = flag("out") ?? "output/refusals";
+const outDir = args.value("out") ?? "output/refusals";
 
 /*
   THIS INSTRUMENT READS TWO WORLDS AND THEY ARE SET BY DIFFERENT VARIABLES.

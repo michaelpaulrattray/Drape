@@ -15,6 +15,11 @@
  *
  *   npx tsx scripts/build-library-demo-pack.mts --user 1 [--candidate <publicId>]
  *                                               [--out output/founder-pack]
+ *                                               [--bucket <base url>] [--frame <key suffix>]
+ *
+ * The line above is now the WHOLE vocabulary, not a summary of it: since #345
+ * this script refuses a word it does not know rather than discarding it, so a
+ * flag missing from here is a flag an operator cannot discover.
  */
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -24,17 +29,18 @@ import sharp from "sharp";
 import { openDatabase, utc } from "./lib/dbConnection.mjs";
 import { fetchImageBytes } from "./lib/imageBytes.mjs";
 import { boxOutlineSvg } from "./lib/termsPalette.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-function flag(name: string): string | undefined {
-  const index = process.argv.indexOf(`--${name}`);
-  return index === -1 ? undefined : process.argv[index + 1];
-}
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["user", "candidate", "bucket", "out", "frame"],
+  boolean: [],
+});
 
-const userId = Number(flag("user") ?? 1);
-const candidatePublicId = flag("candidate") ?? null;
-const bucket = (flag("bucket") ?? process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
+const userId = args.number("user", 1);
+const candidatePublicId = args.value("candidate");
+const bucket = (args.value("bucket") ?? process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
 if (!bucket) throw new Error("no bucket — pass --bucket or set R2_PUBLIC_URL");
-const outDir = flag("out") ?? "output/founder-pack";
+const outDir = args.value("out") ?? "output/founder-pack";
 
 type Refusal = {
   slot: string;
@@ -87,7 +93,7 @@ try {
     beside the pictures would go on quoting the old numbers. A pack somebody has
     read is an artifact with a frame, not a query.
   */
-  const pinned = flag("frame");
+  const pinned = args.value("frame");
   const newest = pinned
     ? String(refusals.find((row) => String(row.frameKey).endsWith(pinned))?.frameKey
       ?? (() => { throw new Error(`no refusal on a frame ending "${pinned}"`); })())

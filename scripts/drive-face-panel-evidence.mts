@@ -13,7 +13,10 @@
  * Every check records what it SAW (D-235). An affirmative with no observation
  * behind it is not a reading.
  *
- *   npx tsx scripts/drive-face-panel-evidence.mts
+ *   npx tsx scripts/drive-face-panel-evidence.mts [--base http://localhost:3000]
+ *
+ * `--base` is the whole vocabulary: since #345 an unknown word is refused
+ * rather than discarded, so a flag missing from here cannot be discovered.
  *
  * Shots land in `output/panel-v2/`.
  *
@@ -55,13 +58,14 @@ import type { Page } from "puppeteer-core";
 
 import { openDrivenPage, createChecks } from "./lib/drivePage.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-function arg(name: string, fallback = ""): string {
-  const index = process.argv.indexOf(`--${name}`);
-  return index > -1 ? (process.argv[index + 1] ?? fallback) : fallback;
-}
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["base"],
+  boolean: [],
+});
 
-const BASE = arg("base", process.env.VERIFY_BASE_URL ?? "http://localhost:3000");
+const BASE = args.value("base") ?? process.env.VERIFY_BASE_URL ?? "http://localhost:3000";
 const OUT = path.resolve("output/panel-v2");
 const SESSION = "2df4aeab-daa0-4bab-8ce7-d1e2c969510d";
 const TILE = "01";

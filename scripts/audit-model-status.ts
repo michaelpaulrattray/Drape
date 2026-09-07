@@ -23,16 +23,17 @@
 import "dotenv/config";
 import mysql from "mysql2/promise";
 import { openDatabase } from "./lib/dbConnection.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const DRAFT_AUTO_NAME = "Draft Model";
 
-function argValue(flag: string): string | undefined {
-  const i = process.argv.indexOf(flag);
-  return i >= 0 ? process.argv[i + 1] : undefined;
-}
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["database-url"],
+  boolean: [],
+});
 
 async function main() {
-  const url = argValue("--database-url") ?? process.env.DATABASE_URL;
+  const url = args.value("database-url") ?? process.env.DATABASE_URL;
   if (!url) {
     console.error("No database URL. Pass --database-url or set DATABASE_URL.");
     process.exit(1);

@@ -350,6 +350,24 @@ export function drivesAPaidTransport(source: string): boolean {
     "presentationState",
   ].join("|");
   if (new RegExp(`\\bfrom\\s+["'][^"']*(${transports})["']`).test(code)) return true;
+  /*
+    ⚠ A FOURTH SPELLING OF "PAID", MEASURED ON #345'S SECOND HALF AND NOT
+    GUESSED: A SCRIPT THAT SPENDS BY DRIVING THE PRODUCT.
+
+    `drive-design-laws.mts --optimistic` clicks Follow in the running app, so
+    the credits come off the driven account exactly as a transport call would —
+    and it imports NONE of the module names above, because the spend happens
+    over HTTP inside a browser. The three misses this function's own docblock
+    already admits are all about resolution (one hop, a dynamic import, a
+    transport nobody listed); this one is different in kind, and reading only at
+    the transport list could never have found it.
+
+    Keyed on the LAW that spends rather than on the filename, so a second driver
+    that calls it joins the swept population by existing — the same reason
+    nothing here is a list of files. `designLaws.mts` itself matches, on its own
+    declaration, and that is correct: it is the module the spend lives in.
+  */
+  if (/\bassertOptimisticChrome\b/.test(code)) return true;
   return /\b(?:fixtureS|s)pendAuthorized\s*\(/.test(code);
 }
 
@@ -496,6 +514,66 @@ export function paidScriptsTakingANumberOnTrust(
 export function coercesAParsedValueToNumber(source: string): boolean {
   const code = codeWithoutBlockComments(source);
   return /(?:Number|parseInt|parseFloat)\(\s*\w+\.(?:value|positional)\(/.test(code);
+}
+
+/**
+ * EVERY SCRIPT THAT HAS ADOPTED THE STRICT PARSE AND STILL READS ARGV BY HAND
+ * (#345, the read-only reporters).
+ *
+ * # Why the population is "has adopted it" rather than a list of the converted
+ *
+ * `paidScriptsReadingFlagsByName` above sweeps the scripts that SPEND, because
+ * the card's own reasoning put money first. Its population cannot cover the
+ * reporters — a reporter imports no transport — and the tempting answer is a
+ * list of the eleven files this card converted. That list is the shape the
+ * repository has already been bitten by twice: a population keyed on the known
+ * instances stops watching them the moment they are fixed, which is exactly how
+ * eight calibration courts drove paid work past a green guard.
+ *
+ * So the population is DERIVED from adoption: a file that imports `strictArgs`
+ * has declared a vocabulary, and a hand-rolled argv read beside it is a HALF
+ * revert — the parse still refuses an unknown word while the hand read quietly
+ * accepts one, which is worse than never having converted, because the file
+ * now looks safe. Every script converted from here on joins by importing the
+ * module, with nothing to remember.
+ *
+ * # ⚠ It is a complement, and complements can be green over nothing
+ *
+ * The arm that drives it asserts the population is non-empty before believing
+ * the verdict. Read at the tree the day it landed: **33 adopters, 0 offenders.**
+ *
+ * # What it does NOT claim
+ *
+ * Nothing about a script that has not adopted the parse — a file still reading
+ * `process.argv.indexOf` and importing nothing is invisible here, by design.
+ * That is the remainder of #345, and it is counted on the card rather than
+ * silently covered by a guard that cannot see it.
+ *
+ * Disposables are excluded for the reason the card excludes them: written and
+ * thrown away in one sitting, with their author at the keyboard.
+ */
+export function strictParseAdoptersReadingArgvByHand(
+  scriptsDir: string,
+  repoRoot: string,
+): { adopters: string[]; offenders: string[] } {
+  const adopters: string[] = [];
+  const offenders: string[] = [];
+  const selfPath = fileURLToPath(import.meta.url);
+  for (const file of scriptFilesUnder(scriptsDir)) {
+    /* The freeze's own door reads raw argv on purpose — the same self-skip
+       `paidScriptsReadingFlagsByName` takes, and for the same reason. */
+    if (file === selfPath) continue;
+    const relative = file.replace(repoRoot, "").replace(/^[\\/]/, "").replace(/\\/g, "/");
+    if (relative.includes("disposable")) continue;
+    /* The parser itself declares no vocabulary — it IS the vocabulary. */
+    if (relative.endsWith("scripts/lib/strictArgs.mts")) continue;
+    const source = readIfPresent(file);
+    if (source === null) continue; /* vanished between list and read (#589) */
+    if (!/\bfrom\s+["'][^"']*strictArgs/.test(codeWithoutBlockComments(source))) continue;
+    adopters.push(relative);
+    if (readsArgvOutsideTheStrictParse(source)) offenders.push(relative);
+  }
+  return { adopters, offenders };
 }
 
 export function readsArgvOutsideTheStrictParse(source: string): boolean {
