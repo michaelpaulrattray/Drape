@@ -71,6 +71,7 @@
  */
 import { trpc } from "@/lib/trpc";
 
+import { sumWindow, windowStart } from "../usageWindow";
 import { Bar, SettingsGroup, StatCard } from "../parts";
 
 /** `1.2 GB` — bytes at the precision a storage line is read at. */
@@ -79,66 +80,6 @@ function formatBytes(bytes: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];
   const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
   return `${(bytes / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
-}
-
-/**
- * THE WINDOW, and the day it starts.
- *
- * `getDailyUsage` keys its rows on `new Date(createdAt).toISOString()` — UTC
- * days — so the window edge is computed in UTC too. Comparing a UTC row key
- * against a local-time boundary is how a day lands in the wrong month for ten
- * hours a day on this machine.
- *
- * ⚠ **`firstDay` IS THE FIRST DAY THE SERVER SEEDS, NEVER MERELY THE WINDOW'S
- * NOMINAL START.** `getDailyUsage(days)` selects from `now - days` but seeds its
- * map with the `days` days ENDING TODAY — so a transaction in the few hours
- * between those two edges arrives as an extra, earlier key that the seeding
- * never made room for. Measured on his rows at `days = 2`: the array came back
- * `[08-31, 09-01, 08-30]`, out of order, with a partial 3rd day on the end. A
- * filter keyed on the nominal start would have counted part of a day outside
- * the window it names; keyed on the first SEEDED day it drops cleanly.
- */
-export function windowStart(
-  periodStart: Date | null,
-  balance: number,
-  allowance: number,
-): { firstDay: string; label: string; days: number; elapsedDays: number; note?: string } {
-  const now = new Date();
-  const dayKey = (d: Date) => d.toISOString().slice(0, 10);
-
-  if (periodStart && periodStart.getTime() <= now.getTime()) {
-    const elapsedDays = Math.max(
-      1,
-      Math.ceil((now.getTime() - periodStart.getTime()) / 86_400_000) + 1,
-    );
-    /* `getDailyUsage` caps at 90; a period longer than that is an annual plan,
-       and the cap is stated rather than silently truncating the answer. */
-    const days = Math.min(90, elapsedDays);
-    const seededFirst = new Date(now.getTime() - (days - 1) * 86_400_000);
-    return {
-      /* The later of the two edges: the period's own start when the whole
-         period is seeded, the seeded edge when the 90-day cap has bitten. */
-      firstDay: dayKey(periodStart) > dayKey(seededFirst) ? dayKey(periodStart) : dayKey(seededFirst),
-      label: "this billing period",
-      days,
-      elapsedDays,
-      note: allowance > 0 ? `of ${allowance.toLocaleString()} this billing period` : undefined,
-    };
-  }
-
-  /*
-    NO BILLING PERIOD — so no period to report on, and no allowance that
-    renews. A fixed 30-day window is a real window that names itself, and the
-    only true thing to say beside it is what is actually left.
-  */
-  const days = 30;
-  return {
-    firstDay: dayKey(new Date(now.getTime() - (days - 1) * 86_400_000)),
-    label: "in the last 30 days",
-    days,
-    elapsedDays: days,
-    note: `${balance.toLocaleString()} credits left`,
-  };
 }
 
 export function UsageSection({
@@ -150,20 +91,26 @@ export function UsageSection({
   balance: number;
   periodStart: Date | null;
 }) {
-  const { firstDay, label, days, elapsedDays, note } = windowStart(periodStart, balance, allowance);
+  const { firstDay, label, days, note } = windowStart(periodStart, balance, allowance);
   const { data: daily } = trpc.usage.getDailyUsage.useQuery({ days });
   const { data: storage } = trpc.profile.storageInfo.useQuery();
 
-  const inWindow = (daily ?? []).filter((row) => row.date >= firstDay);
-  const creditsUsed = inWindow.reduce((sum, row) => sum + row.creditsUsed, 0);
+  const creditsUsed = sumWindow(daily, firstDay);
   /*
-    ⚠ THE DIVISOR IS DAYS ELAPSED, NOT ROWS RETURNED. The first draft divided by
-    `inWindow.length`, which is zero while the query is in flight and on the
-    first instant of a new period — and it rendered `across 0 days` under a
-    figure, which is the shape of nonsense this whole card is about. A window
-    that has begun is at least one day old.
+    ⚠ THE DIVISOR IS THE WINDOW'S OWN SPAN — NOT THE ROWS RETURNED, AND NOT THE
+    DAYS SINCE THE PERIOD BEGAN.
+
+    Two drafts got this wrong in two different directions. The first divided by
+    the number of ROWS inside the window, which is zero while the query is in
+    flight and rendered `across 0 days` under a figure. The second divided by
+    the days since `periodStart`, which is uncapped — so on an annual plan 200
+    days in, this printed a 90-day total *"averaged over 201 days"*, a figure
+    less than half the truth (PR #622 review, finding 1b).
+
+    `days` is what the server was asked for AND what the sum covers, so the two
+    cannot disagree. A window that has begun is at least one day old.
   */
-  const perDay = Math.round(creditsUsed / elapsedDays);
+  const perDay = Math.round(creditsUsed / days);
 
   const storageUsed = storage?.used ?? 0;
   const storageLimit = storage?.limit ?? 0;
@@ -181,7 +128,7 @@ export function UsageSection({
             {
               label: "Credits a day",
               value: perDay.toLocaleString(),
-              note: `averaged over ${elapsedDays} ${elapsedDays === 1 ? "day" : "days"}`,
+              note: `averaged over ${days} ${days === 1 ? "day" : "days"}`,
             },
           ]}
         />

@@ -102,6 +102,7 @@ import {
   type LadderPlan,
 } from "@/features/settings/planLadder";
 import { blurbFor } from "@/features/settings/planBlurbs";
+import { useCycleSpend } from "./useCycleSpend";
 
 type Interval = "monthly" | "annual";
 
@@ -240,7 +241,18 @@ export function ChangePlanModal({
   const currentName =
     ladder.find((plan) => plan.id === currentId)?.name ?? status?.planName ?? null;
 
-  const cycle = useMemo(() => readCycle(status), [status]);
+  /*
+    #385 — the cycle spend is SUMMED from the ledger, never taken off
+    `getStatus`, whose only spend field is a lifetime counter. It drives more
+    than the copy here: `projected` below feeds `recommendPlan`, so the wrong
+    figure chose which rung carried the one ink button.
+  */
+  const periodStart = status?.currentPeriodStart ? new Date(status.currentPeriodStart) : null;
+  const cycleSpend = useCycleSpend(periodStart);
+  const cycle = useMemo(
+    () => readCycle(status, cycleSpend),
+    [status, cycleSpend],
+  );
   const burn = useMemo(() => (cycle ? readBurn(cycle) : null), [cycle]);
   const projected = cycle && burn ? Math.round(burn.perDay * cycle.cycleLength) : 0;
   const recommended = useMemo(
@@ -343,7 +355,17 @@ export function ChangePlanModal({
               </p>
             </div>
             <div className="dp-plan__reasonstat">
-              <span className="dp-set__minilabel">THIS MONTH</span>
+              {/*
+                ⚠ IT SAID `THIS MONTH` UNTIL #385, OVER A FIGURE WHOSE WINDOW IS
+                THE BILLING PERIOD — the founder's own class, in his own words:
+                *"two different windows on one line."* Seen in the running app
+                the hour the spend below was corrected: the fixture's period
+                runs 27 Aug → 27 Sept and the sentence beside this stat already
+                names that renewal date, so the label was contradicting its own
+                paragraph. The Usage pane says *this billing period* for the
+                same window (#381), and one product says one thing.
+              */}
+              <span className="dp-set__minilabel">THIS BILLING PERIOD</span>
               <p className="dp-plan__credits">
                 {cycle.spent.toLocaleString()} / {(cycle.spent + cycle.remaining).toLocaleString()}
               </p>

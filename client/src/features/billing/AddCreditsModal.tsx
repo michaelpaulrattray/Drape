@@ -51,6 +51,7 @@ import {
   readCycle,
 } from "@/features/settings/planMath";
 import { framesFor } from "@/features/settings/planLadder";
+import { useCycleSpend } from "./useCycleSpend";
 
 export function AddCreditsModal({ onClose }: { onClose: () => void }) {
   const [annual, setAnnual] = useState(false);
@@ -98,7 +99,17 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     { enabled: hasSubscription && !!selectedId },
   );
 
-  const rawCycle = useMemo(() => readCycle(status), [status]);
+  /*
+    #385 — the cycle spend is SUMMED from the ledger, never taken off
+    `getStatus`, whose only spend field is a lifetime counter. `null` while it
+    loads, which `readCycle` carries through as no rate rather than a zero one.
+  */
+  const periodStart = status?.currentPeriodStart ? new Date(status.currentPeriodStart) : null;
+  const cycleSpend = useCycleSpend(periodStart);
+  const rawCycle = useMemo(
+    () => readCycle(status, cycleSpend),
+    [status, cycleSpend],
+  );
   const cycle = useMemo(
     () => (rawCycle ? alignToPreview(rawCycle, preview) : null),
     [rawCycle, preview],

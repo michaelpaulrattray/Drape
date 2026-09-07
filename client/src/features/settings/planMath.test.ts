@@ -74,6 +74,11 @@ const LADDER: LadderPlan[] = OFFERED.map((id) => ({
 
 const cycleOf = (over: Partial<BillingCycle> = {}): BillingCycle => ({
   spent: 4_760,
+  /* The span the sum covers, and the divisor every arm below quotes. It was
+     `cycleLength - daysLeft` (31 - 19 = 12) until PR #622 review finding 1;
+     the fixture keeps the same 12 so the arithmetic each arm states is still
+     the arithmetic that runs. */
+  spentOverDays: 12,
   remaining: 1_240,
   daysLeft: 19,
   cycleLength: 31,
@@ -86,11 +91,11 @@ describe("the four constants and what is derived from them", () => {
     const now = new Date("2026-07-24T00:00:00Z");
     const cycle = readCycle(
       {
-        creditsUsed: 4_760,
         balance: 1_240,
         currentPeriodStart: "2026-07-12T00:00:00Z",
         currentPeriodEnd: "2026-08-12T00:00:00Z",
       },
+      { spent: 4_760, days: 12 },
       now,
     );
     expect(cycle).not.toBeNull();
@@ -105,11 +110,12 @@ describe("the four constants and what is derived from them", () => {
       date — and the surfaces render a different sentence. Guessing "30 days"
       here would put a confident, wrong date in front of a customer.
     */
-    expect(readCycle({ creditsUsed: 10, balance: 5 })).toBeNull();
-    expect(readCycle(null)).toBeNull();
-    expect(readCycle(undefined)).toBeNull();
+    const spend = { spent: 10, days: 12 };
+    expect(readCycle({ balance: 5 }, spend)).toBeNull();
+    expect(readCycle(null, spend)).toBeNull();
+    expect(readCycle(undefined, spend)).toBeNull();
     expect(
-      readCycle({ currentPeriodStart: "not a date", currentPeriodEnd: "also not" }),
+      readCycle({ currentPeriodStart: "not a date", currentPeriodEnd: "also not" }, spend),
     ).toBeNull();
   });
 

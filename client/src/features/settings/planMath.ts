@@ -14,13 +14,16 @@
  * copy in `ChangePlanModal` and `AddCreditsModal` reads these fields and owns
  * no arithmetic of its own.
  *
- * ⚠ **THE FOUR CONSTANTS ARE READ OFF `billing.getStatus`, NOT INVENTED.**
- * `creditsUsed`, `balance`, `currentPeriodStart` and `currentPeriodEnd` are all
- * on that projection today (`server/routes/billing.ts`). A user with no
- * subscription row has no period at all, which is why every function here takes
- * the possibility of `null` and answers `null` rather than guessing a month —
- * a burn rate over an invented cycle is exactly the invented number the brief
- * bans.
+ * ⚠ **THE FOUR CONSTANTS ARE READ, NOT INVENTED — BUT THEY DO NOT ALL COME
+ * FROM ONE PLACE, AND #385 IS WHAT HAPPENS WHEN THEY ARE ASSUMED TO.**
+ * `balance`, `currentPeriodStart` and `currentPeriodEnd` are on
+ * `billing.getStatus` (`server/routes/billing.ts`). **CREDITS SPENT IS NOT** —
+ * that projection's only spend field is a lifetime counter, so the cycle's
+ * spend is summed from `usage.getDailyUsage` by the caller and passed in.
+ * A user with no subscription row has no period at all, which is why every
+ * function here takes the possibility of `null` and answers `null` rather than
+ * guessing a month — a burn rate over an invented cycle is exactly the
+ * invented number the brief bans.
  */
 
 /** Milliseconds in a day, named because `86_400_000` in a formula reads as noise. */
@@ -28,22 +31,45 @@ const DAY_MS = 86_400_000;
 
 export type BillingCycle = {
   /**
-   * ⚠ **THIS IS A LIFETIME FIGURE WEARING A CYCLE'S NAME — SEE #385.**
+   * Credits spent inside THIS cycle — and the caller supplies it, because this
+   * module cannot get it right on its own (#385, closed).
    *
-   * It reads `points.creditsUsed`, which is set to 0 when the row is created
-   * and only ever incremented (`server/db/credits.ts`); nothing resets it at a
-   * period boundary. This comment said *"Credits spent so far this cycle"* until
-   * #381's law-7 sweep, and that sentence is how the defect survived — the
-   * Usage pane had the identical bug and he caught it by eye
+   * ⚠ **IT USED TO READ `points.creditsUsed` AND THAT IS A LIFETIME COUNTER.**
+   * It is set to 0 when the row is created and only ever incremented
+   * (`server/db/credits.ts`); nothing resets it at a period boundary. This
+   * comment said *"Credits spent so far this cycle"* until #381's law-7 sweep,
+   * and that sentence is how the defect survived — the Usage pane had the
+   * identical bug and he caught it by eye
    * (`115,695 credits used · of 5,000 this month`).
    *
-   * **Measured on production the day it was found: ZERO rows can reach
-   * `readCycle` at all** — nobody has both `currentPeriodStart` and
-   * `currentPeriodEnd`, so no customer has ever been shown a number derived
-   * from this. It goes live the moment the first subscription exists, which is
-   * why it is carded rather than left as a comment.
+   * **Measured on production the day it was found: ZERO rows could reach
+   * `readCycle` at all** — nobody had both `currentPeriodStart` and
+   * `currentPeriodEnd`, so no customer was ever shown a number derived from
+   * it. It would have gone live the moment the first subscription existed.
+   *
+   * ⚠ **THE REPAIR IS A SIGNATURE, NOT A CORRECTED READ.** `readCycle` no
+   * longer looks at any spend field on `status`, so the wrong number is not
+   * merely unused here — it is unreachable, and a future caller cannot
+   * reintroduce it by passing the same projection. The cycle's real spend is
+   * summed from `usage.getDailyUsage` by
+   * `client/src/features/billing/useCycleSpend.ts`.
+   *
+   * A `null` spend (the sum not yet loaded) lands here as `0`, and `readBurn`
+   * answers no rate at all for a zero — so the surfaces hide the band rather
+   * than printing a rate off a figure nobody has.
    */
   spent: number;
+  /**
+   * ⚠ **HOW MANY DAYS `spent` COVERS, AND IT IS THE ONLY DIVISOR `readBurn`
+   * MAY USE** (PR #622 review, finding 1).
+   *
+   * The spend is summed over a window the server caps at 90 days; the days
+   * ELAPSED in the period can be 365. Dividing one by the other is #385's own
+   * defect surviving one window further out, and it understated an annual
+   * subscriber's burn by more than half. Carrying the span beside the sum
+   * means a caller cannot supply one without the other.
+   */
+  spentOverDays: number;
   /** Credits still on the balance. */
   remaining: number;
   /** Whole days between now and the renewal. Never negative. */
@@ -60,17 +86,32 @@ export type BillingCycle = {
  * `null` is a real answer and the surfaces must render it: a free account has
  * no Stripe period, so it has no burn rate, no empty date and no proration —
  * and the honest copy for that is a different sentence, not a zero.
+ *
+ * ⚠ **`spend` IS REQUIRED AND HAS NO DEFAULT — THAT IS THE FIX FOR #385.**
+ * The dates come off `status`; the SPEND cannot, because the only spend field
+ * on that projection is a lifetime counter (see `BillingCycle.spent`). Making
+ * it a second positional argument with no default means a caller must decide
+ * where its cycle spend comes from, and the old wrong read cannot come back by
+ * somebody passing the same object.
+ *
+ * ⚠ **AND IT CARRIES THE SPAN IT COVERS, not a bare number** (PR #622 review,
+ * finding 1). A sum whose window a caller can forget to mention is how the
+ * repair itself came to divide a 90-day total by 200 elapsed days.
+ *
+ * `null` means *not known yet* — the per-day sum is still loading — and lands
+ * as a spend of `0`, which `readBurn` turns into no rate rather than a zero
+ * rate.
  */
 export function readCycle(
   status:
     | {
-        creditsUsed?: number | null;
         balance?: number | null;
         currentPeriodStart?: Date | string | null;
         currentPeriodEnd?: Date | string | null;
       }
     | null
     | undefined,
+  spend: { spent: number; days: number } | null,
   now: Date = new Date(),
 ): BillingCycle | null {
   if (!status?.currentPeriodStart || !status?.currentPeriodEnd) return null;
@@ -80,7 +121,9 @@ export function readCycle(
   const cycleLength = Math.max(1, Math.round((end.getTime() - start.getTime()) / DAY_MS));
   const daysLeft = Math.max(0, Math.ceil((end.getTime() - now.getTime()) / DAY_MS));
   return {
-    spent: Math.max(0, status.creditsUsed ?? 0),
+    spent: Math.max(0, spend?.spent ?? 0),
+    /* At least 1: it is a divisor, and a window that has begun is a day old. */
+    spentOverDays: Math.max(1, spend?.days ?? 1),
     remaining: Math.max(0, status.balance ?? 0),
     daysLeft: Math.min(daysLeft, cycleLength),
     cycleLength,
@@ -110,13 +153,22 @@ export type BurnReading = {
  * at infinity — so `daysToEmpty` and `emptyOn` are `null` and the caller says
  * something else. The same guard covers the first day of a cycle, where the
  * days elapsed are zero and the division is undefined rather than merely large.
+ *
+ * ⚠ **THE GUARD AND THE DIVISOR ARE TWO DIFFERENT NUMBERS, DELIBERATELY** (PR
+ * #622 review, finding 1). *Has this cycle begun?* is answered by the days
+ * elapsed in the PERIOD — that is what stops a rate being printed for a cycle
+ * that has not started. *Over how many days was this spent?* is answered by
+ * the window the sum actually covers, which the server caps at 90. They agree
+ * on a monthly plan and differ by a factor of four on an annual one, and using
+ * the first for both is what understated an annual subscriber's burn to 450 a
+ * day against a real 1,000.
  */
 export function readBurn(cycle: BillingCycle, now: Date = new Date()): BurnReading {
   const elapsed = Math.max(0, cycle.cycleLength - cycle.daysLeft);
   if (elapsed <= 0 || cycle.spent <= 0) {
     return { perDay: 0, daysToEmpty: null, emptyOn: null, dryDays: 0 };
   }
-  const perDay = cycle.spent / elapsed;
+  const perDay = cycle.spent / cycle.spentOverDays;
   const daysToEmpty = cycle.remaining / perDay;
   const emptyOn = new Date(now.getTime() + daysToEmpty * DAY_MS);
   const dryDays = Math.max(0, Math.round(cycle.daysLeft - daysToEmpty));
