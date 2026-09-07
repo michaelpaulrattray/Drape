@@ -251,7 +251,9 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
     };
   }
 
-  // 3. The gate, before anything that costs a network round trip or a clock.
+  // 3. The gate, before anything that costs a network round trip or a clock —
+  //    but only the two states that are readings of THIS head. `absent` moved
+  //    below mergeability; see step 4.5 for the measurement that moved it.
   if (pr.gate === "running") {
     return { kind: "wait", reason: "gate-checks is running" };
   }
@@ -263,16 +265,6 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
         "read the run, fix it, push. `pnpm preflight` catches the cheap causes before the push.",
     };
   }
-  if (pr.gate === "absent") {
-    return {
-      kind: "wait",
-      reason:
-        "no gate-checks run on this head commit yet. " +
-        `\`gate-stall-check --pr ${pr.number} --watch\` is the reading that tells a slow ` +
-        "start from one that will never arrive (#368).",
-    };
-  }
-
   // 4. The reviewer. Green is not a pass (#219): a verdict exists to be READ,
   //    and reading it is the one thing here that is not mechanical.
   //
@@ -357,6 +349,44 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
   }
   if (pr.mergeStateStatus === "BEHIND") {
     return syncOrStop(pr, "it is BEHIND main and the branch must be updated before it merges");
+  }
+
+  /*
+    4.5 · ⚠ AN ABSENT GATE IS READ **HERE**, AFTER THE CONFLICT, AND NOT UP AT
+    STEP 3 — BECAUSE A CONFLICTING PR NEVER GETS A GATE RUN AT ALL.
+
+    Measured 2026-09-07, on the very case this tool was built for. PR #627
+    merged; #628 went CONFLICTING on the generated atlas fingerprint seconds
+    later — the collision this module's own header calls *"nearly always
+    non-empty in this repository"* — and GitHub therefore created no check
+    suite for it. With the `absent` wait at step 3 the tool printed
+
+        #628 WAIT — no gate-checks run on this head commit yet.
+
+    every 32 seconds, for ever, **while holding the one action that would have
+    produced a gate run.** The sync road at step 5 is the reason this tool
+    exists, and it was unreachable in the commonest case of the exact scenario
+    it was written for: a later PR sharing the maps with an earlier one.
+
+    ⚠ **ONLY `absent` MOVED, AND THAT IS THE WHOLE CARE IN THIS FIX.**
+    `running` and `red` stay at step 3, because each is a real reading of the
+    head this branch has NOW: syncing past a red would look exactly like the
+    gate retry this tool refuses to perform, and syncing past a running one
+    would throw away a run that is about to answer. `absent` is the only gate
+    state a conflict can CAUSE, so it is the only one whose meaning depends on
+    a question asked further down.
+
+    Below here the branch is mergeable, so an absent gate is the genuine stall
+    (#368) and the sentence is unchanged.
+  */
+  if (pr.gate === "absent") {
+    return {
+      kind: "wait",
+      reason:
+        "no gate-checks run on this head commit yet. " +
+        `\`gate-stall-check --pr ${pr.number} --watch\` is the reading that tells a slow ` +
+        "start from one that will never arrive (#368).",
+    };
   }
   // ⚠ UNSTABLE is deliberately NOT a hold, and the reason is written down
   //    because the #558 review raised it as the thing that failed to rescue

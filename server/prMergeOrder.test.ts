@@ -268,6 +268,71 @@ describe("decideMergeAction — the branch order is the contract", () => {
     expect(a.kind === "stop" && a.reason).toMatch(/shift-worktree\.mts add 551-thing/);
   });
 
+  /**
+   * ⚠ THE COMBINATION EVERY ARM IN THIS BLOCK MISSED, AND IT IS THE COMMONEST
+   * ONE THIS TOOL MEETS (measured 2026-09-07).
+   *
+   * Every conflict arm above takes the fixture's default `gate: "green"` — so
+   * all of them passed while the real case hung for ever. **A CONFLICTING PR
+   * gets no gate run at all**: GitHub creates no check suite for it, so the
+   * gate reads `absent`, and the `absent` wait used to sit ABOVE the sync.
+   *
+   * The instance: #627 merged, #628 went CONFLICTING on the generated atlas
+   * fingerprint seconds later — the collision this module's header calls
+   * *"nearly always non-empty in this repository"* — and the tool printed
+   * `WAIT — no gate-checks run on this head commit yet` every 32 seconds while
+   * holding the one action that would have produced a gate run. The sync road
+   * is why this tool exists, and it was unreachable in the exact scenario it
+   * was written for.
+   *
+   * A green fixture cannot see an ordering bug between two branches when it
+   * only ever exercises one of them.
+   */
+  it("⚠ syncs a CONFLICTING branch whose gate is ABSENT — a conflict gets no gate run", () => {
+    const a = decideMergeAction(pr({ mergeable: "CONFLICTING", mergeStateStatus: "DIRTY", gate: "absent" }), ctx);
+    expect(a.kind, "it waited for a gate run a conflicting PR can never get").toBe("sync-main");
+  });
+
+  it("syncs a BEHIND branch whose gate is ABSENT, for the same reason", () => {
+    expect(decideMergeAction(pr({ mergeStateStatus: "BEHIND", gate: "absent" }), ctx).kind).toBe("sync-main");
+  });
+
+  it("still WAITS on an absent gate when the branch is CLEAN — the stall reading is intact", () => {
+    /* THE NEGATIVE CONTROL, and it is the one that matters: the repair must not
+       turn every slow gate start into a sync. Below the conflict branches an
+       absent gate is the genuine #368 stall. */
+    const a = decideMergeAction(pr({ gate: "absent" }), ctx);
+    expect(a.kind).toBe("wait");
+    expect(a.kind === "wait" && a.reason).toMatch(/gate-stall-check/);
+  });
+
+  it("does NOT sync past a RED gate — that would be the retry this tool refuses", () => {
+    /* Only `absent` moved. A red gate is a real reading of the head the branch
+       has NOW, and syncing it would produce a fresh run over a known failure —
+       indistinguishable from the gate retry this tool exists not to perform. */
+    const a = decideMergeAction(pr({ mergeable: "CONFLICTING", gate: "red" }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/never retries a gate/);
+  });
+
+  it("does NOT sync past a RUNNING gate — the run is about to answer", () => {
+    const a = decideMergeAction(pr({ mergeable: "CONFLICTING", gate: "running" }), ctx);
+    expect(a.kind).toBe("wait");
+    expect(a.kind === "wait" && a.reason).toMatch(/gate-checks is running/);
+  });
+
+  it("an unacknowledged verdict STILL outranks a conflict with an absent gate", () => {
+    /* The reviewer read is above both, and moving `absent` must not have
+       reordered it: a shift must still read the verdict before anything is
+       pushed to the branch. */
+    const a = decideMergeAction(
+      pr({ review: "verdict", verdictCount: 1, mergeable: "CONFLICTING", gate: "absent" }),
+      ctx,
+    );
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/has not been acknowledged/);
+  });
+
   it("WAITS on mergeable=UNKNOWN rather than reading it as clean", () => {
     // The seconds after an earlier PR lands are exactly when this is UNKNOWN,
     // and treating it as clean is how a tool merges a conflict.
