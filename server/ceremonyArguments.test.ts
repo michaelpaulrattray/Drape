@@ -1,11 +1,27 @@
 /**
  * THE CEREMONY READER REFUSES A WORD IT DOES NOT KNOW (#642, #345's remainder).
  *
- * Eighteen ceremonies hand `process.argv` to one function, `openCeremonyWorld`,
- * and until now that function asked `argv.includes("--production")`,
+ * The ceremonies hand `process.argv` to one function, `openCeremonyWorld`, and
+ * until #644 that function asked `argv.includes("--production")`,
  * `argv.includes("--dev")`, and looked at nothing else. That is #288's class:
  * *a reader that looks up the flags it wants and never looks at what it was
  * actually given.*
+ *
+ * ⚠ **AND THE FIRST VERSION OF THIS SUITE COULD NOT SEE TWELVE CEREMONIES THAT
+ * WERE STILL DOING IT** (PR #644's review, finding 2; fixed in #642 slice 2).
+ * Its derived arm walks the CALLERS of the shared reader, so a
+ * `scripts/ceremony-*.mts` that had never called it sat outside the population
+ * BY CONSTRUCTION — and twelve did, among them `ceremony-crew-work-switches`
+ * and `ceremony-crew-shift-runs`, the two that built the founder's own switch
+ * panel, both of which can be pointed at production. **A guard keyed on
+ * adoption cannot see what has not adopted**, and every one of the twelve was
+ * inside the eighteen's own headline as "the ceremonies now refuse a word they
+ * do not know" — the most confusable members of the class, wearing its prefix.
+ *
+ * So there are TWO derived arms below and they must not be collapsed into one:
+ * the adoption arm asks *does an adopter still read argv beside the reader*,
+ * and the DIRECTORY arm asks *does any ceremony at all still pick its world out
+ * of a raw argv read*. Only the second can see a thirteenth arriving.
  *
  * ⚠ BE PRECISE ABOUT WHAT WAS AND WAS NOT AT RISK, because the honest version
  * is why this was the CHEAPEST fix in #642 rather than the most urgent, and a
@@ -31,6 +47,8 @@ import { readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { openCeremonyWorld } from "../scripts/lib/ceremony.mts";
+import { codeWithoutBlockComments } from "../scripts/lib/stopline.mts";
+import { parseFounderEvidenceCeremonyArgs } from "./casting/evidence/founderEvidenceCeremony";
 import { readListedSource } from "./testing/listedSource";
 
 const REPO = resolve(import.meta.dirname, "..");
@@ -46,6 +64,28 @@ const SCRIPTS = join(REPO, "scripts");
  * reader slices argv itself, so a pre-sliced caller silently loses two words.
  */
 const SANCTIONED_HANDOFF = /openCeremonyWorld\(\s*process\.argv\s*[,)]/;
+
+/**
+ * A file that names one of the two worlds in words it took out of `process.argv`
+ * itself — `includes`, `indexOf`, an index, a pre-slice, any of them.
+ *
+ * ⚠ Bounded to a SINGLE LINE (`[^\n]`) rather than a lazy `[\s\S]`, so a
+ * sanctioned `openCeremonyWorld(process.argv)` cannot reach forward across a
+ * blank line to some unrelated `"--dev"` and be read as an offence.
+ *
+ * ⚠ **The block-comment strip is DEFENSIVE AND NOT LOAD-BEARING, and that was
+ * measured rather than assumed.** Every one of these scripts documents its own
+ * command line in its docblock, so the strip looks essential; driven over the
+ * real directory it changes nothing — **35 ceremonies, 0 offenders with the
+ * strip and 0 without**, because those docblock lines name the flags without
+ * naming `process.argv` on the same line. It stays for the case that costs
+ * nothing to cover: a docblock QUOTING the banned form to explain it, which is
+ * how this repository writes about its own defects.
+ */
+export function choosesItsOwnWorld(source: string): boolean {
+  return /process\.argv[^\n]{0,60}?["'`]--(?:dev|production)\b/
+    .test(codeWithoutBlockComments(source));
+}
 
 /** `process.argv` as node builds it: the binary, the script, then the words. */
 const commandLine = (...words: string[]) => ["/node", "/script.mts", ...words];
@@ -201,8 +241,13 @@ describe("the nineteenth ceremony", () => {
 
       A ceremony that grows its own flag reads it through `world.args` or
       declares it in `extra`. One that goes back to `process.argv.includes` is
-      exactly what this reddens, and it is the only way the eighteen quietly
-      become seventeen.
+      exactly what this reddens.
+
+      ⚠ THIS ARM'S POPULATION IS ADOPTION, AND ADOPTION IS NOT THE CLASS. A
+      ceremony that never calls the reader is invisible here however badly it
+      reads its own command line — twelve were, for as long as this arm was the
+      only one. The directory arm below is the half that can see them; keep
+      both.
     */
     /* ⚠ `readListedSource`, never a bare `readFileSync` — this walks the REAL
        `scripts/` directory, which carries hundreds of untracked disposables and
@@ -215,7 +260,12 @@ describe("the nineteenth ceremony", () => {
       .filter((entry): entry is { name: string; body: string } =>
         entry.body !== null && entry.body.includes("openCeremonyWorld("));
 
-    expect(callers.length, "no ceremony found — the reader itself is the bug").toBeGreaterThanOrEqual(18);
+    /* ⚠ A FLOOR, and it moved 18 → 30 when #642's twelve landed. It is
+       deliberately not the exact count — a new ceremony must never redden this
+       — but it is the only thing here that notices a converted file being
+       reverted WHOLE, because such a file leaves the population rather than
+       failing inside it. */
+    expect(callers.length, "no ceremony found — the reader itself is the bug").toBeGreaterThanOrEqual(30);
 
     for (const { name, body } of callers) {
       const strayArgv = body
@@ -223,6 +273,86 @@ describe("the nineteenth ceremony", () => {
         .filter((line) => line.includes("process.argv") && !SANCTIONED_HANDOFF.test(line));
       expect(strayArgv, `${name} reads process.argv outside the shared reader`).toEqual([]);
     }
+  });
+
+  it("DERIVED — no ceremony in the directory picks its world out of a raw argv read", () => {
+    /*
+      THE HALF THE ADOPTION ARM CANNOT DO (#642 slice 2). Its population is
+      `scripts/ceremony-*.mts` — the DIRECTORY, not the callers — so a ceremony
+      that has never heard of `openCeremonyWorld` is inside it, which is exactly
+      the twelve this commit converted and exactly where a thirteenth would
+      land.
+
+      It asks the one question that decides the defect rather than the one that
+      is easy to grep: does this file choose between dev and production from
+      words it read out of `process.argv` itself? That is the choice the shared
+      reader exists to own, and owning it is what makes `--production
+      --dry-run` a refusal instead of a silent half-obeyed command.
+
+      ⚠ IT DOES NOT DEMAND THAT EVERY CEREMONY CALL THE READER, and that is not
+      laziness. Read at the tree: 35 ceremonies, 30 of them callers. The five
+      that are not divide cleanly — FOUR (`add-diagnostic-batch-kind`,
+      `cast-segments`, `reference-library`, `segment-store`) mention
+      `process.argv` nowhere at all and read `MYSQL_PUBLIC_URL` directly:
+      production-only by construction, with no world to choose and no word to
+      swallow. The fifth, `ceremony-r7-founder-evidence`, takes an explicit
+      `--database-url` through its own parser, which refuses an unknown
+      argument — DRIVEN in the arm below rather than asserted here, because a
+      docblock is the one claim a guard can never check. Forcing any of the five
+      onto this reader would be a change to what they DO, made by a guard, which
+      is not what a guard is for.
+    */
+    const ceremonies = readdirSync(SCRIPTS)
+      .filter((name) => name.startsWith("ceremony-") && name.endsWith(".mts"))
+      .map((name) => ({ name, body: readListedSource(join(SCRIPTS, name)) }))
+      .filter((entry): entry is { name: string; body: string } => entry.body !== null);
+
+    expect(ceremonies.length, "no ceremony found — the directory read is the bug")
+      .toBeGreaterThanOrEqual(30);
+
+    const handRolled = ceremonies
+      .filter(({ body }) => choosesItsOwnWorld(body))
+      .map(({ name }) => name);
+
+    expect(
+      handRolled,
+      "these ceremonies choose their world from a raw argv read — hand the whole line to `openCeremonyWorld` instead",
+    ).toEqual([]);
+  });
+
+  it("the directory arm can FAIL — the hand-rolled shape it was written for still reddens it", () => {
+    /*
+      A complement that is green over nothing is the failure this repository
+      keeps meeting, so the predicate is driven both ways against real text: the
+      exact block the twelve carried before this commit, and the sanctioned
+      road that replaced it.
+    */
+    expect(choosesItsOwnWorld(
+      'const world = process.argv.includes("--production")\n'
+      + '  ? "production"\n'
+      + '  : process.argv.includes("--dev") ? "dev" : null;',
+    )).toBe(true);
+    expect(choosesItsOwnWorld('if (process.argv.indexOf("--dev") !== -1) {')).toBe(true);
+    expect(choosesItsOwnWorld("const world = process.argv.slice(2).includes('--production');")).toBe(true);
+
+    expect(choosesItsOwnWorld(
+      "const { world, connection: conn } = await openCeremonyWorld(process.argv);",
+    )).toBe(false);
+    /* The reader's OWN spelling of the two words must not read as an offence —
+       it declares them, which is the whole point. */
+    expect(choosesItsOwnWorld('const WORLD_FLAGS = ["dev", "production"] as const;')).toBe(false);
+  });
+
+  it("the one ceremony outside this reader refuses an unknown word by its own parse", () => {
+    /*
+      ⚠ THE EXEMPTION ABOVE IS PROVEN, NOT GRANTED. `ceremony-r7-founder-evidence`
+      is excused from the directory arm because it parses its own command line
+      strictly — so that claim is driven here rather than left as a sentence in
+      a docblock, which is the one kind of claim a guard can never check
+      (2026-09-07's own finding, twice over).
+    */
+    expect(() => parseFounderEvidenceCeremonyArgs(["--stage", "--dry-run"]))
+      .toThrow(/Unknown ceremony argument/);
   });
 
   it("the sanctioned `extra` shape is NOT read as a stray argv — the arm above must not ban its own advice", () => {
