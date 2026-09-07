@@ -12,6 +12,7 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { CREW_CARD_STATES, crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import {
   GENERAL_FOLD_VISIBLE,
   foldTimeline,
@@ -25,6 +26,9 @@ import {
 
 const CARDS = [
   { id: "open-card", state: "open" },
+  /* #354's state, added by #649 finding 2: the fixture claimed to be
+     exhaustive over card states and had never held this one. */
+  { id: "waiting-card", state: "waiting" },
   { id: "answered-card", state: "answered" },
   { id: "done-card", state: "done" },
 ] as const;
@@ -47,16 +51,45 @@ describe("where a reply renders", () => {
     expect(replyFallsToGeneral("a-card-no-briefing-holds", CARDS)).toBe(true);
   });
 
+  it("a reply on a WAITING card keeps its thread — he answered it and it is still his", () => {
+    /* #354: `waiting` is a card he has answered that still needs an act of his,
+       and it renders on his desk WITH its reply box. A reply on it must stay
+       under the card, exactly as an open one does. */
+    expect(replyFallsToGeneral("waiting-card", CARDS)).toBe(false);
+  });
+
+  it("the fixture holds every card state — the arm below is only exhaustive if it does", () => {
+    /*
+      ⚠ THIS IS THE ARM #649 FINDING 2 IS REALLY ABOUT. The one below has been
+      titled "exhaustive" since it was written and was exhaustive over the
+      FIXTURE, never over the states — so `waiting` was added to the product
+      and this file went on passing without it. Derived from the enum, so a
+      fifth state reddens here rather than being quietly untested.
+    */
+    expect([...CARDS].map((card) => card.state).sort())
+      .toEqual([...CREW_CARD_STATES].sort());
+  });
+
   it("exhaustive: every card state routes every reply somewhere", () => {
-    /* The invariant itself: for ANY cardId, the reply renders in the General box
-       OR under an open card's thread — never neither. */
+    /*
+      The invariant itself: for ANY cardId, the reply renders in the General box
+      OR under a thread — never neither, never both.
+
+      ⚠ THE MIRROR AT `inThread` USED TO READ `card.state === "open"` AND THAT
+      WAS THE TRAP (#649 finding 2): adding a `waiting` card to the fixture
+      without moving it makes this arm fail WRONGLY — the reply renders under
+      its thread and the mirror insists it does not. It reads the shared
+      predicate now, which does make the two sides one function; what this arm
+      still owns is TOTALITY over every id, and the exhaustiveness it is named
+      for is guarded by the arm above rather than restated here.
+    */
     const everyCardId = [null, ...CARDS.map((card) => card.id), "gone-card"];
     for (const cardId of everyCardId) {
       const inGeneral = replyFallsToGeneral(cardId, CARDS);
-      const inOpenThread =
-        cardId !== null && CARDS.some((card) => card.id === cardId && card.state === "open");
-      expect(inGeneral || inOpenThread, `a reply on ${String(cardId)} renders nowhere`).toBe(true);
-      expect(inGeneral && inOpenThread, `a reply on ${String(cardId)} renders twice`).toBe(false);
+      const inThread =
+        cardId !== null && CARDS.some((card) => card.id === cardId && crewCardNeedsHim(card.state));
+      expect(inGeneral || inThread, `a reply on ${String(cardId)} renders nowhere`).toBe(true);
+      expect(inGeneral && inThread, `a reply on ${String(cardId)} renders twice`).toBe(false);
     }
   });
 });

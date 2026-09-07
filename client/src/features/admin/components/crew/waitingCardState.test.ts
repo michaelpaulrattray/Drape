@@ -1,11 +1,43 @@
 import { readFile, readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
 import { CREW_CARD_STATES, crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { nextUpRows, replyFallsToGeneral } from "./crewTypes";
+
+const base = (rel: string) => basename(rel);
+
+/**
+ * THE ONE ACCEPTED LITERAL ON THE DESK'S SURFACE, AND IT IS A DIFFERENT
+ * QUESTION (#649 finding 1).
+ *
+ * `staleOpenHosts` asks *has he replied to something the page still calls
+ * open* — the shift-96 incident. It is not asking *does this still need him*,
+ * so `crewCardNeedsHim` is the wrong predicate there: widening it would name
+ * every `waiting` card at its FIRST reply, and the reply that moved it to
+ * `waiting` is exactly that first reply. The instrument would report its own
+ * successes.
+ *
+ * ⚠ **The gap it leaves is real and is written down rather than closed**: a
+ * reply landing on an ALREADY-`waiting` card — *"I've run the command, close
+ * it"* — is watched by nothing, and it self-heals only when the issue closes.
+ * The clean repair the card proposed (*an acknowledged reply newer than the
+ * card's state change*) **is not buildable today**: read at
+ * `server/crew/crewBriefing.ts`, a `needsYou` row carries `filedAt` and no
+ * record of when its state last moved, so "newer than its state change" has
+ * nothing to compare against. The nearest buildable version — flagging a
+ * `waiting` card carrying a SECOND acknowledged reply — carries a live false
+ * positive (two replies landing between editions, both handled correctly),
+ * and a reconciliation instrument whose flags are wrong is one nobody reads.
+ *
+ * Closing it properly means recording `stateChangedAt` on a host row, which is
+ * a change to what his page stores; that is a card, not a line.
+ */
+const ACCEPTED = new Set([
+  'lib/replyHosts.mts: host.state !== "open"',
+]);
 
 /**
  * A CARD HE HAS ANSWERED THAT STILL NEEDS AN ACT OF HIS STAYS ON HIS DESK
@@ -91,21 +123,46 @@ describe("the waiting state", () => {
       source file on the desk's surface, and the arm fails on the literal
       wherever it appears.
     */
+    /*
+      ⚠ AND THE POPULATION WAS STILL NARROWER THAN THE SENTENCE ABOVE — #649
+      finding 2, from this suite's own round-two review.
+
+      "Every source file on the desk's surface" was true of four DIRECTORIES
+      and the `readdir` above was NOT recursive, so `scripts/lib/` — where
+      `replyHosts.mts` and `liveBriefing.mts` live, the desk reader's own
+      helpers — was invisible to it. Which is this arm's own lesson arriving
+      one level down: the population was the shape of the fix, not the shape
+      of the question.
+
+      The walk is recursive now and the roots declare what they admit, so a
+      new desk file in a subdirectory is scanned the day it is written rather
+      than the day somebody remembers this list.
+    */
     const roots = [
-      new URL("./", import.meta.url),
-      new URL("../../../../../../server/crew/", import.meta.url),
-      new URL("../../../../../../shared/", import.meta.url),
-      new URL("../../../../../../scripts/", import.meta.url),
+      { url: new URL("./", import.meta.url), admits: () => true },
+      { url: new URL("../../../../../../server/crew/", import.meta.url), admits: () => true },
+      { url: new URL("../../../../../../shared/", import.meta.url), admits: (rel: string) => base(rel).startsWith("crew") },
+      {
+        url: new URL("../../../../../../scripts/", import.meta.url),
+        /* `crew-*` at the root as before, plus ALL of `scripts/lib/` — the
+           helpers the desk tools read him through. `scripts/calibration/` is
+           a paid bench and has no notion of his desk. */
+        admits: (rel: string) => base(rel).startsWith("crew-") || rel.startsWith("lib/"),
+      },
     ];
     const offenders: string[] = [];
+    const scanned: string[] = [];
+    const acceptedSeen = new Set<string>();
     for (const root of roots) {
-      const dir = fileURLToPath(root);
-      for (const name of await readdir(dir)) {
+      const dir = fileURLToPath(root.url);
+      for (const entry of await readdir(dir, { recursive: true })) {
+        const rel = entry.split(sep).join("/");
+        const name = base(rel);
         if (!/\.(ts|tsx|mts)$/.test(name)) continue;
         if (/\.test\.(ts|tsx)$/.test(name)) continue;
-        if (root.href.endsWith("/shared/") && !name.startsWith("crew")) continue;
-        if (root.href.endsWith("/scripts/") && !name.startsWith("crew-")) continue;
-        const src = await readFile(join(dir, name), "utf8");
+        if (!root.admits(rel)) continue;
+        const src = await readFile(join(dir, rel), "utf8");
+        scanned.push(rel);
         /* CODE ONLY — a docblock may quote the retired literal, and several
            deliberately do to explain what changed. Comments are stripped first
            so quoting the defect is never mistaken for committing it. */
@@ -114,11 +171,26 @@ describe("the waiting state", () => {
           /* `problem.state` is a different field with three states of its own
              and no notion of him — it is not this question. */
           if (m[1] === "problem") continue;
-          offenders.push(`${name}: ${m[0]}`);
+          const found = `${rel}: ${m[0]}`;
+          if (ACCEPTED.has(found)) { acceptedSeen.add(found); continue; }
+          offenders.push(found);
         }
       }
     }
     expect(offenders, "these ask 'does this still need him' with a literal").toEqual([]);
+
+    /* ⚠ THE WIDENING PROVES ITSELF, OR IT REVERTS IN SILENCE. A wrong `admits`
+       predicate empties the new half of the population and leaves this arm
+       green — which is the exact failure the recursive walk was written to
+       end. So the file the widening exists for is named. */
+    expect(scanned, "the walk reaches scripts/lib — the reason it became recursive")
+      .toContain("lib/replyHosts.mts");
+    expect(scanned.length).toBeGreaterThan(10);
+
+    /* An accepted literal that no longer exists is a hole kept open for a line
+       that has gone. Each must be MET on this run to keep its exemption. */
+    expect([...acceptedSeen].sort(), "an accepted literal that was not found has stopped earning its exemption")
+      .toEqual([...ACCEPTED].sort());
 
     /* ⚠ TWO POSITIVE CONTROLS, because an empty `offenders` is a claim about a
        checker (working law 2, and the review of this PR asked for the second).
