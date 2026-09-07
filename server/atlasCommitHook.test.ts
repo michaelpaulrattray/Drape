@@ -1,8 +1,9 @@
-import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { runHook } from "./testing/hookDriver";
 
 /**
  * ARM 3 OF THE PRE-COMMIT GATE, DRIVEN RATHER THAN READ (card #501).
@@ -51,12 +52,11 @@ function gitWith(config: string[], cwd: string, ...args: string[]): Result {
      `not.toContain("regenerating")` was passing over nothing at all, which is
      the absence-only-expect class. The hook says what it did on stderr whether
      it succeeds or fails, so the reading must be able to see both. */
-  const run = spawnSync("git", [...base, ...config, ...args], { cwd, encoding: "utf8" });
-  return {
-    status: typeof run.status === "number" ? run.status : -1,
-    stderr: String(run.stderr ?? ""),
-    stdout: String(run.stdout ?? ""),
-  };
+  /* `runHook` keeps the stderr-on-success property this comment demands — it
+     spawns rather than exec'ing for exactly the reason recorded above — and
+     adds the #640 discriminator: a `git` that never started throws instead of
+     coming back as `-1`. */
+  return runHook("git", [...base, ...config, ...args], { cwd });
 }
 
 /** git with a generator that works. */

@@ -1,8 +1,9 @@
-import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { runHook } from "./testing/hookDriver";
 
 /**
  * THE AUTO-ESCALATION GATE, DRIVEN (card #541, founder-ordered and urgent).
@@ -67,16 +68,15 @@ function statePath(name: string): string {
 }
 
 function run(...args: string[]): Result {
-  const proc = spawnSync("npx", ["tsx", SCRIPT, ...args], {
-    encoding: "utf8",
-    shell: process.platform === "win32",
-  });
-  const stdout = String(proc.stdout ?? "");
+  /* An `npx` that fails to start throws rather than reading as an exit code
+     (#640) — this suite asserts specific exit codes as VERDICTS. */
+  const proc = runHook("npx", ["tsx", SCRIPT, ...args], { shell: process.platform === "win32" });
+  const stdout = proc.stdout;
   const lines = stdout.split(/\r?\n/).filter((line) => line.trim().length > 0);
   return {
-    status: typeof proc.status === "number" ? proc.status : -1,
+    status: proc.status,
     stdout,
-    stderr: String(proc.stderr ?? ""),
+    stderr: proc.stderr,
     last: lines.length === 0 ? "" : lines[lines.length - 1],
   };
 }
