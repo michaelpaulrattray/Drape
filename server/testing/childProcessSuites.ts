@@ -61,9 +61,13 @@ const CHILD_PROCESS_CALLS = [
  *
  * ⚠ **AND THE THIRD FILE I EXPECTED TO SIT HERE DOES NOT — THE DERIVER SAID SO
  * AND IT WAS RIGHT.** `server/pushPathsToMain.test.ts` also carries a spawn
- * call inside a string (a fake file's content, `'execFileSync("git", ["push",
- * …])'`), so it was written down as a third negative control before the reading
- * was taken. It is a genuine MEMBER: it imports `scripts/lib/scriptGuards.mts`,
+ * call inside a string — a fake file's content, an `execFileSync` invocation
+ * spelled out as a literal — so it was written down as a third negative control
+ * before the reading was taken. (The invocation is not quoted here on purpose:
+ * that suite flags any file naming a push command, even in a comment, and
+ * quoting its fixture would put this module on an enumeration of doors to main
+ * for no reason but a docblock.) It is a genuine MEMBER: it imports
+ * `scripts/lib/scriptGuards.mts`,
  * which spawns. Stripping keeps it out of the population for the wrong reason
  * and the hop puts it back for the right one — recorded because a control that
  * was never checked against the artifact is how a guard comes to assert

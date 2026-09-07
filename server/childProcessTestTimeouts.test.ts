@@ -1,9 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { childProcessSuites, codeOnly, declaresTheTimeout } from "./testing/childProcessSuites";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* ⚠ THIS SUITE IS IN ITS OWN POPULATION, AND IT SAID SO ITSELF. Each arm runs
+   `git ls-files` over the tree — measured at ~450 ms apiece under load — so it
+   spawns a real process exactly like the suites it polices, and the deriver
+   put it on the list the moment the file became tracked. It was green while
+   untracked and red on the next run, which is worth knowing about this reader:
+   `git ls-files` cannot see a suite that has not been committed yet. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * EVERY SUITE THAT DRIVES A REAL CHILD PROCESS DECLARES THE CLASS'S TIMEOUT
