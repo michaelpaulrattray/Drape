@@ -74,21 +74,62 @@ describe("card 404 — the plan blurb map cannot drift from the ladder", () => {
     }
   });
 
-  it("⚠ the FREE line is the one that makes product claims, and it is named not hidden", () => {
+  /* The card number stays in this comment rather than the title: `#621` is a
+     valid three-digit hex and the token guard reads titles as code, which it
+     says in its own refusal. Card 621. */
+  it("⚠ the FREE line makes no product claim either — the exception he closed", () => {
     /*
-      PR #619 review, finding 2. The module used to say every line was free of
-      capability claims; six are, and *"Try the studio. A few casts a month, no
-      card."* is not — it carries a volume and a signup fact, both true today
-      and both changeable by a product decision.
+      ⚠ **THIS ARM DID ITS JOB AND IS RE-AIMED, NOT DELETED, AND THE OLD ONE IS
+      QUOTED BECAUSE THE MECHANISM IS THE POINT.**
 
-      ⚠ **It is NOT rewritten.** He named these seven and said *"Build to
-      those"*; editing his approved copy to make a docblock of mine true would
-      be the worse error. This arm exists so the exception is a FACT IN THE
-      SUITE rather than a sentence in a comment — if a later shift softens the
-      free line into the who-it-is-for shape the other six use, this arm goes
-      red and makes them read this paragraph first.
+      It used to read `expect(PLAN_BLURBS.free).toBe("Try the studio. A few
+      casts a month, no card.")`, and its own comment said why:
+
+        *"if a later shift softens the free line into the who-it-is-for shape
+        the other six use, this arm goes red and makes them read this paragraph
+        first."*
+
+      That is exactly what happened, and it worked — the shift making the change
+      hit this arm and read the paragraph. What the paragraph could not know is
+      that the answer would come from HIM: the card put three options up and his
+      reply was, verbatim, ***"(b), use the safer line."***
+
+      So the guard is re-aimed at what it was always protecting — that the free
+      line does not make a claim a pricing decision can falsify — rather than at
+      the particular words that used to break that rule. Pinning the old string
+      would now pin the defect.
+
+      ⚠ It asserts the SHAPE and not the new sentence, so his voice can replace
+      these placeholders without a suite edit. The two claims that were actually
+      there are named individually, because those are the two a well-meaning
+      rewrite would put back.
+
+      ⚠ **THAT "WITHOUT A SUITE EDIT" IS NARROWER THAN IT SOUNDS, AND SAYING SO
+      IS THE POINT** (PR #633's review, note 1). His future copy must still
+      begin "For " and avoid `free` and `cast`, so *"Free forever, try before
+      you buy"* would redden two of these three. That is the mechanism working
+      — it fires before a promise ships and makes someone read this paragraph,
+      exactly as its predecessor did tonight — but the freedom on offer is
+      "any line of that shape", not "any line at all".
     */
-    expect(PLAN_BLURBS.free).toBe("Try the studio. A few casts a month, no card.");
+    const free = PLAN_BLURBS.free;
+    expect(free, "the free line stopped saying who the rung is for").toMatch(/^For /);
+    expect(free, "the volume promise is back — a pricing change would falsify it")
+      .not.toMatch(/\bcasts?\b|\ba few\b/i);
+    expect(free, "the signup promise is back — asking for a card would falsify it")
+      .not.toMatch(/\bno card\b|\bfree\b/i);
+  });
+
+  it("⚠ ALL SEVEN say who the rung is for — the claim the module now makes with no exception", () => {
+    /*
+      Until #621 this was true of six of the seven, and the module said so. The
+      free line joining them is what makes the docblock's claim true as written,
+      so the claim is asserted rather than described — that is the whole
+      difference between a rule and a sentence.
+    */
+    for (const [id, line] of Object.entries(PLAN_BLURBS)) {
+      expect(line, `${id}'s blurb no longer says who the rung is for`).toMatch(/^For /);
+    }
   });
 
   it("⚠ no line claims a CAPABILITY — that is what makes a placeholder safe to ship", () => {
