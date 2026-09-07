@@ -324,7 +324,12 @@ export function monthlyEquivalent(monthlyInCents: number): number {
  * `AddCreditsModal` sells credit PACKS with it"* — true when written, and the
  * reason it did not last is the one card 390 left open: two billing surfaces
  * arguing one fact in two units. Add credits reads this function too, and its
- * sentence now runs *"2,778 credits per $1, up from 2,439"*.
+ * sentence now runs *"2,941 credits per $1, up from 2,778"* — the real
+ * Starter → Pro pair, read off `PLAN_TIERS` and seen in the running app. **The
+ * first draft of this line quoted `up from 2,439`, which no rung on this
+ * ladder can produce** (it runs 2,778 → 2,941 → 3,145 → 3,571 → 4,167 →
+ * 5,000); the PR #660 reviewer caught it. A comment cannot fail a test, so an
+ * invented figure in one survives until somebody quotes it.
  */
 export function creditsPerDollar(priceInCents: number, credits: number): number {
   if (priceInCents <= 0) return 0;
