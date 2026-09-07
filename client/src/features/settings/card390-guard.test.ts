@@ -516,17 +516,52 @@ describe("card 661 — the rate is computed from the price standing beside it", 
     const wanted: Record<string, number> = { [MODAL]: 2, [TOPUP]: 2 };
     for (const path of [MODAL, TOPUP]) {
       const surface = code(read(path));
-      const calls = [...surface.matchAll(/formatCreditsPerDollar\(\s*([A-Za-z0-9_.]+)/g)];
+      const calls = [
+        ...surface.matchAll(/formatCreditsPerDollar\(\s*([A-Za-z0-9_.]+)\(([^)]*)\)/g),
+      ];
       expect(
         calls.length,
-        `${path}: expected ${wanted[path]} printed rates, found ${calls.length}`,
+        `${path}: expected ${wanted[path]} printed rates through a helper, found ${calls.length}`,
       ).toBe(wanted[path]);
-      for (const call of calls) {
+      for (const [, callee, args] of calls) {
         expect(
-          call[1],
-          `${path}: a rate is computed from \`${call[1]}\`, which does not follow the billing interval`,
+          callee,
+          `${path}: a rate is computed from \`${callee}\`, which does not follow the billing interval`,
         ).toMatch(/^(priceAMonth|priceOf)$/);
+        /*
+          ⚠ **AND THE SECOND ARGUMENT IS READ, NOT ONLY THE CALLEE — the PR
+          #662 reviewer's own finding, taken rather than noted.** The arm above
+          this line proved the rate goes THROUGH the shared expression and
+          stopped there, so `priceAMonth(selected.price, false)` — the interval
+          hard-wired off — would have passed it while printing the monthly rate
+          under an annual charge, which is the defect verbatim. `priceOf` needs
+          no second argument because it closes over the interval, and its own
+          definition is held below.
+        */
+        if (callee === "priceAMonth") {
+          const second = args.split(",")[1]?.trim();
+          expect(
+            second,
+            `${path}: \`priceAMonth\` is called with \`${second}\` instead of the live toggle`,
+          ).toBe("annual");
+        }
       }
+      /*
+        `priceOf` is a HOP, and an unchecked hop is a hole in the arm above: a
+        `priceOf` that stopped reading the interval would leave every call site
+        above looking correct. Every declaration of it must pass the interval
+        through.
+      */
+      for (const decl of surface.matchAll(/const priceOf = \([^)]*\) =>\s*([^;]+);/g)) {
+        expect(
+          decl[1].replace(/\s+/g, " "),
+          `${path}: a \`priceOf\` stopped passing the interval to the shared expression`,
+        ).toMatch(/priceAMonth\([^,]+, interval === "annual"\)/);
+      }
+      expect(
+        [...surface.matchAll(/const priceOf = /g)].length,
+        `${path}: no \`priceOf\` declaration found, so the hop above is unchecked`,
+      ).toBeGreaterThanOrEqual(path === MODAL ? 2 : 0);
     }
     /*
       And the interval expression exists ONCE, in `planMath` — working law 4.
