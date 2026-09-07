@@ -341,13 +341,13 @@ describe("card 385 — the window and the sum, which both surfaces now share", (
       different span from the number.
     */
     const copy = spendWindowCopy("period", 0, 0);
-    expect(copy.label).toBe("this billing period");
-    expect(spendWindowCopy("rolling30", 0, 0).label).toBe("in the last 30 days");
+    expect(copy.heading).toBe("Usage this billing period");
+    expect(spendWindowCopy("rolling30", 0, 0).heading).toBe("Usage in the last 30 days");
 
     const pane = code(read(join(HERE, "sections", "UsageSection.tsx")));
     const hook = code(read(join(BILLING, "useCycleSpend.ts")));
     expect(pane, "the Usage pane grew its own reading again").toContain("useSpendWindow");
-    expect(pane, "the pane names a window the server did not sum").toContain("spend?.basis");
+    expect(pane, "the pane names a window the server did not sum").toContain("spend?.basis ?? null");
     expect(hook, "the shared hook stopped calling the one procedure").toContain(
       "trpc.usage.getCycleSpend",
     );

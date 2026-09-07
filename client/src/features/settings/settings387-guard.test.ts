@@ -78,8 +78,8 @@ describe("card 387 item 2 — the window follows the account", () => {
       can tell the two failures apart.
     */
     const w = spendWindowCopy("rolling30", 24_535, 5_000);
-    expect(w.label).toBe("in the last 30 days");
-    expect(w.label, "the window is claiming a month again").not.toMatch(/month/i);
+    expect(w.heading).toBe("Usage in the last 30 days");
+    expect(w.heading, "the window is claiming a month again").not.toMatch(/month/i);
     expect(w.over, "the phrase under a RATE claims a month").not.toMatch(/month/i);
   });
 
@@ -98,13 +98,38 @@ describe("card 387 item 2 — the window follows the account", () => {
 
   it("a billing period keeps its period and its allowance — both true there", () => {
     const w = spendWindowCopy("period", 12_000, 75_000);
-    expect(w.label).toBe("this billing period");
+    expect(w.heading).toBe("Usage this billing period");
     expect(w.note).toBe("of 75,000 this billing period");
     /* ⚠ TWO PHRASINGS, ONE WINDOW. A group heading and a note under a rate need
        different English (*"averaged over in the last 30 days"* is what one
        string for both produces), and a surface writing its own second one is
        how two labels come apart. Both are here. */
     expect(w.over).toBe("this billing period");
+  });
+
+  it("⚠ a window nobody has summed yet is NAMED AS NOTHING — PR #634's one review finding", () => {
+    /*
+      The first draft defaulted a missing basis to `rolling30`, so a SUBSCRIBED
+      account opening the pane read *"Usage in the last 30 days"* over the note
+      *"61,000 credits left"* for one render beat before it flipped to the
+      period. The figures were honestly em-dashed; the WORDS were not, and they
+      are the half a customer reads first — real data attached to a claim about
+      a window that had not been summed.
+
+      ⚠ Driven as three separate assertions rather than one object equality,
+      because each is a different way of claiming a window: the heading, the
+      note, and the span under the rate.
+    */
+    const loading = spendWindowCopy(null, 24_535, 5_000);
+    expect(loading.heading, "the loading heading names a window").toBe("Usage");
+    expect(loading.note, "a note was attached to a window nobody summed").toBeUndefined();
+    expect(loading.over, "a span was claimed under a rate nobody has").toBeNull();
+
+    /* And the pane passes the absence through rather than defaulting it. */
+    const pane = code(read(join(HERE, "sections", "UsageSection.tsx")));
+    expect(pane, "the pane defaults a missing basis to a real window again").not.toContain(
+      '?? "rolling30"',
+    );
   });
 
   it("⚠ the 90-day cap and the future-period fallback are the SERVER's arms now", () => {

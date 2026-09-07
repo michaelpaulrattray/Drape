@@ -105,7 +105,11 @@ export function UsageSection({
     the exact elapsed time of the sum.
   */
   const spend = useSpendWindow();
-  const { label, over, note } = spendWindowCopy(spend?.basis ?? "rolling30", balance, allowance);
+  /* ⚠ `spend?.basis ?? "rolling30"` HERE WAS THE ONE REVIEW FINDING ON PR #634:
+     it printed the free-tier words over a subscriber's pane for a render beat.
+     The basis is passed through as `null` and the copy names no window until
+     the server has said which one it summed. */
+  const { heading, over, note } = spendWindowCopy(spend?.basis ?? null, balance, allowance);
   const { data: storage } = trpc.profile.storageInfo.useQuery();
 
   /*
@@ -124,7 +128,7 @@ export function UsageSection({
 
   return (
     <>
-      <SettingsGroup title={`Usage ${label}`}>
+      <SettingsGroup title={heading}>
         <StatCard
           stats={[
             {
@@ -144,7 +148,7 @@ export function UsageSection({
                 time of the period), so any whole number printed beside it would
                 be a rounding of the arithmetic rather than the arithmetic.
               */
-              note: `averaged over ${over}`,
+              note: over ? `averaged over ${over}` : undefined,
             },
           ]}
         />

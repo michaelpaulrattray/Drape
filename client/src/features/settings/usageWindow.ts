@@ -43,15 +43,32 @@ export type SpendBasis = "period" | "rolling30";
  * reached for the free tier, so *"of 5,000 this month"* promised a refill that
  * never arrives. The only true figure beside a pool that does not refill is
  * the pool itself.
+ *
+ * ⚠ **A `null` BASIS IS "NOT KNOWN YET", AND IT GETS NO WINDOW WORDS AT ALL**
+ * (PR #634 review, the one finding). The first draft defaulted a missing basis
+ * to `rolling30`, so a SUBSCRIBED account opening the pane read *"Usage in the
+ * last 30 days"* and *"61,000 credits left"* for one render beat before it
+ * flipped — real data attached to a claim about a window nobody had summed,
+ * which is this module's own docblock warning inverted. The figures were
+ * honestly em-dashed while the words were not, and the words are the half a
+ * customer reads first.
+ *
+ * So there is no default: the window is named only once the server has said
+ * which one it summed, and until then the heading is the bare noun.
  */
 export function spendWindowCopy(
-  basis: SpendBasis,
+  basis: SpendBasis | null,
   balance: number,
   allowance: number,
-): { label: string; over: string; note?: string } {
+): { heading: string; over: string | null; note?: string } {
+  if (basis === null) {
+    /* The honest loading state: a title that claims nothing, no note, and no
+       span under the rate — the values are em dashes beside it. */
+    return { heading: "Usage", over: null };
+  }
   if (basis === "period") {
     return {
-      label: "this billing period",
+      heading: "Usage this billing period",
       /* ⚠ TWO PHRASINGS OF ONE WINDOW, because English needs both and a
          surface writing its own second one is how the two came apart before:
          `Usage this billing period` heads the group, `averaged over this
@@ -62,7 +79,7 @@ export function spendWindowCopy(
     };
   }
   return {
-    label: "in the last 30 days",
+    heading: "Usage in the last 30 days",
     over: "the last 30 days",
     note: `${balance.toLocaleString()} credits left`,
   };
