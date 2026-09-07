@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
@@ -16,6 +16,19 @@ vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
  * that lands it: HEAD green, and a commit carrying a breaching script red.
  */
 const ROOT = path.resolve(import.meta.dirname, "..");
+
+/**
+ * The worktrees git currently knows about, resolved, read from the repository
+ * rather than from the file system. This is the property the teardown really
+ * owes (#652): a leaked REGISTRATION makes every later `git worktree add`
+ * pick a fresh admin name and leaves the repository carrying a tree that is
+ * not there, which is what breaks a subsequent run.
+ */
+const registeredWorktrees = (): string[] =>
+  execFileSync("git", ["worktree", "list", "--porcelain"], { cwd: ROOT, encoding: "utf8" })
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith("worktree "))
+    .map((line) => path.resolve(line.slice("worktree ".length)));
 
 describe("the script-guard suite list is derived from the suites", () => {
   it("finds the origin case at the real tree, and more than it alone", () => {
@@ -66,9 +79,12 @@ describe("the script-guard suite list is derived from the suites", () => {
 
 describe("the verdict is the runner's exit status on the pushed tree", () => {
   it("runs the suites in a detached worktree of the commit, and tears it down on both arms", () => {
-    const seen: { cwd: string; suites: string[] }[] = [];
+    const seen: { cwd: string; suites: string[]; registeredDuring: boolean }[] = [];
     const vitest = (status: number) => (cwd: string, suites: string[]) => {
-      seen.push({ cwd, suites });
+      /* Read INSIDE the body, which is the only moment the tree is supposed to
+         exist. Without this the absence assertion below is green on nothing —
+         a runner that never made a worktree would satisfy it too. */
+      seen.push({ cwd, suites, registeredDuring: registeredWorktrees().includes(path.resolve(cwd)) });
       return { status, output: "line 1\n\nline 2\n" };
     };
     const green = runScriptGuardsOnCommit(ROOT, "HEAD", { suites: [ORIGIN_SUITE], vitest: vitest(0) });
@@ -76,14 +92,44 @@ describe("the verdict is the runner's exit status on the pushed tree", () => {
     const red = runScriptGuardsOnCommit(ROOT, "HEAD", { suites: [ORIGIN_SUITE], vitest: vitest(1) });
     expect(red.ok).toBe(false);
     expect(red.printed).toBe("line 1\nline 2");
-    /* The runner was handed a tree that is NOT the working directory, and that
-       tree is gone afterwards — a leftover worktree is the litter class. */
+    /* The runner was handed a tree that is NOT the working directory, and it
+       was a real registered worktree while it ran. */
     expect(seen).toHaveLength(2);
     for (const call of seen) {
       expect(path.resolve(call.cwd)).not.toBe(ROOT);
       expect(call.suites).toEqual([ORIGIN_SUITE]);
+      expect(call.registeredDuring, "the body ran inside a real worktree of this repository").toBe(true);
     }
-    expect(seen.some((call) => existsSync(call.cwd))).toBe(false);
+    /*
+      THE PROMISE IS THE REGISTRATION, NOT THE DIRECTORY (#652).
+
+      This line used to be `expect(seen.some((call) => existsSync(call.cwd)))
+      .toBe(false)` and it failed roughly one run in three when the five
+      worktree-creating suites ran together — an assertion failure at ~6s, not
+      a timeout, so #548's clock fix could never have touched it. A guard that
+      reddens at random on a branch that did not touch it is a guard a shift
+      learns to ignore, and it reddened two `pnpm preflight` runs the night it
+      was filed.
+
+      It was asserting a stronger property than this platform gives. Driven
+      before the assertion moved, five concurrent probes of `inWorktreeOf`,
+      58 trees: DIRECTORY left behind **4**, REGISTRATION left behind **0** —
+      and all four leftovers read `registered=false`. The mechanism is visible
+      in git's own stderr: a concurrent `git worktree prune` from a sibling
+      suite unregisters a tree whose directory is still there, so this
+      teardown's own `git worktree remove --force` then says *"is not a working
+      tree"*, throws into the swallowing `catch`, and leaves the directory.
+      The registration was gone either way.
+
+      So the two properties genuinely come apart, and only one of them is this
+      guard's business: a leaked registration breaks the next run, a leftover
+      temp directory is litter. The litter is real — 24 `drape-rite-*` trees
+      were standing in `%TEMP%` when this was measured — and it is filed as
+      its own card rather than asserted here, because a test cannot fix a
+      teardown by failing about it.
+    */
+    expect(registeredWorktrees()).not.toContain(path.resolve(seen[0].cwd));
+    expect(registeredWorktrees()).not.toContain(path.resolve(seen[1].cwd));
     /*
       SIXTY SECONDS, BECAUSE THE SUBJECT IS REAL GIT (#216, second finding).
       This `it()` checks out TWO detached worktrees of HEAD and tears them down.
