@@ -43,25 +43,90 @@ import path from "node:path";
 import { estimateCandidateCostUsd } from "../server/providers/openrouterImages";
 import { FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE } from "../server/providers/falImages";
 import { NANO_BANANA_PRO_USD_PER_IMAGE } from "../server/providers/falQueue";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 /* ------------------------------------------------------------------ config */
 
-const args = new Set(process.argv.slice(2));
-const flag = (name: string): string | undefined =>
-  process.argv.slice(2).find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
+/*
+  ⚠ THE COMMAND LINE REFUSES WHAT IT DOES NOT UNDERSTAND (#345's remainder,
+  closed by #602). It read its flags by NAME until now — `find(a =>
+  a.startsWith("--phase="))` — which is the class #288 named: a reader that
+  looks up the flags it wants and never looks at what it was given. A mistyped
+  `--exceute` was silently discarded and this script ran its full plan.
 
-const EXECUTE = args.has("--execute");
-const PHASE = flag("phase") ?? "all";
-const CEILING_USD = Number(flag("ceiling") ?? 20);
-const OUT_DIR = path.resolve(flag("out") ?? ".calibration");
+  It sat outside #345's sweep for a stated reason rather than an oversight: the
+  parser did not speak `--phase=gate`, and the four lines in this file's own
+  header are what an operator types. The parser speaks it now, so the
+  documented command lines above are unchanged — which is the whole point of
+  having taught the parser instead of converting the script.
+*/
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  /* ⚠ SIX WORDS, NOT THE TWO #602 CARDED. The card named --phase and
+     --ceiling from this file own header; the code also reads --images and
+     --concurrency, which the header never documents. Read at the source, not
+     at the card (law 7c) — declaring only the carded pair would have turned
+     two working flags into refusals. */
+  value: ["phase", "ceiling", "out", "images", "concurrency"],
+  boolean: ["execute", "dry-run"],
+});
+
+/*
+  ⚠ `--dry-run` IS DECLARED BECAUSE THIS FILE'S OWN HEADER DOCUMENTS IT, AND IT
+  NEVER EXISTED. Line 16 above reads *"`--dry-run` (the default)"*, so an
+  operator following the instructions types a word the old reader silently
+  discarded — harmlessly, because a dry run is what it would have done anyway.
+  Under a strict parser that word would have become a REFUSAL instead, which is
+  a documented command line breaking on the day this card claimed none would.
+
+  So it is accepted, and it is given the one meaning it can honestly have:
+  saying it OUT LOUD beside `--execute` is a contradiction, and a contradiction
+  on a script that spends house money is refused rather than resolved.
+*/
+if (ARGS.flag("dry-run") && ARGS.flag("execute")) {
+  console.error("REFUSING: --dry-run and --execute are opposites. Pass one.");
+  process.exit(1);
+}
+
+const EXECUTE = ARGS.flag("execute");
+const PHASE = ARGS.value("phase") ?? "all";
+/*
+  ⚠ A NUMBER THAT IS NOT A NUMBER TURNS BOTH SPEND GUARDS OFF, SILENTLY (PR
+  #623 review, finding 1). `Number("1O")` — the digit one and the letter O —
+  is NaN, and every comparison against NaN is false: the plan-level refusal
+  below (`total > CEILING_USD`) stops refusing, and `SpendGuard.reserve` in
+  `scripts/calibration/run.mts` stops reserving. An `--execute` run would then
+  proceed with NO ceiling at all.
+
+  It is not new — `Number(flag("ceiling") ?? 20)` had the identical hole — but
+  it is exactly this card class wearing a different coat: an operator mistake
+  on a house-money script degrading quietly instead of refusing. The parser
+  owns the SHAPE of the line and says so; a value that must be a number is the
+  caller's to check, and this is the caller.
+
+  The remaining four sites of the class are #625, with the shared-accessor
+  recommendation the reviewer named.
+*/
+const numeric = (name: string, fallback: number): number => {
+  const raw = ARGS.value(name);
+  if (raw === null) return fallback;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) {
+    console.error(`REFUSING: --${name} must be a number, and "${raw}" is not.`);
+    process.exit(1);
+  }
+  return parsed;
+};
+
+const CEILING_USD = numeric("ceiling", 20);
+const OUT_DIR = path.resolve(ARGS.value("out") ?? ".calibration");
 /**
  * Founder decision 2026-07-30: images run through fal, which is the billing we
  * can top up. §H.9 already sanctioned this as the single-transport variant.
  * OpenRouter remains the text transport and the image fallback.
  */
-const IMAGES_VIA = (flag("images") ?? "fal") as "fal" | "openrouter";
+const IMAGES_VIA = (ARGS.value("images") ?? "fal") as "fal" | "openrouter";
 /** Measured, not assumed — this is how §H.8's default budget gets its number. */
-const CONCURRENCY = Number(flag("concurrency") ?? 8);
+const CONCURRENCY = numeric("concurrency", 8);
 
 /**
  * The §E.1 matrix: tight, loose and non-human briefs. The non-human ones are
