@@ -120,10 +120,19 @@ describe("the waiting state", () => {
     }
     expect(offenders, "these ask 'does this still need him' with a literal").toEqual([]);
 
-    /* The positive control on the scanner: it must actually be reading files
-       and finding the predicate, or an empty `offenders` proves nothing. */
+    /* ⚠ TWO POSITIVE CONTROLS, because an empty `offenders` is a claim about a
+       checker (working law 2, and the review of this PR asked for the second).
+
+       The first proves the scanner READ something. The second proves the
+       PATTERN can still match an offender — a lost escape or a stray `=` in a
+       future edit would empty `offenders` forever and leave this arm green,
+       which is the checker that cannot fail. */
     const needsYou = await readFile(new URL("./CrewNeedsYou.tsx", import.meta.url), "utf8");
     expect(needsYou).toContain("crewCardNeedsHim(card.state)");
+    expect('const x = card.state === "open";'.match(/(\w+)\.state\s*[!=]==\s*"open"/))
+      .not.toBeNull();
+    expect('if (item.state !== "open") return;'.match(/(\w+)\.state\s*[!=]==\s*"open"/))
+      .not.toBeNull();
   });
 
   it("the render says which kind it is, in his words rather than the field's", async () => {

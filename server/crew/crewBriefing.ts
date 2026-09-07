@@ -418,7 +418,7 @@ export const crewBriefingSchema = z.object({
          the whole briefing for the truthful shape. */
       return !crewCardNeedsHim(item.state) || crewCardNeedsHim(card.state);
     }),
-  "an eye item's cardId must name a needsYou card, and an open eye item needs an open card (#133)",
+  "an eye item's cardId must name a needsYou card, and an eye item that still needs him needs a card that still needs him (#133)",
 ).refine(
   /*
     A PIPELINE ROW MAY NOT CLAIM HE IS BLOCKING IT UNLESS HIS DESK AGREES (#291).
@@ -448,7 +448,7 @@ export const crewBriefingSchema = z.object({
         (card) => card.id === item.cardId && crewCardNeedsHim(card.state),
       );
     }),
-  "a waiting-founder pipeline row must name an OPEN needsYou card, and only such a row may carry cardId (#291)",
+  "a waiting-founder pipeline row must name a needsYou card that still needs him, and only such a row may carry cardId (#291)",
 ).refine(
   /*
     A LADDER CARD'S RUNG MUST BE A RUNG THE LADDER HOLDS (#493). A `rung:N9`
