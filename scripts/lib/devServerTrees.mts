@@ -20,6 +20,24 @@
  * below is a pure function of a process table, so *"kill the roots, never the
  * listeners"* is a thing the code does rather than a thing somebody remembers.
  *
+ * # ⚠ ONE `pnpm dev` IS NOT TWO PROCESSES — IT IS NINE, AND TWO OF THEM ARE
+ * # SHELLS (#658)
+ *
+ * The paragraph above is true and was not the whole truth. `pnpm dev` runs
+ * `cross-env`, which starts the watcher **through a `cmd.exe`**, and the
+ * `cross-env` process carries the watch command as its own arguments — so ONE
+ * server holds TWO processes that every command-line test calls a watcher,
+ * with a shell between them. A process table filtered to `node.exe` cannot see
+ * that shell, so the inner watcher looked parentless and was promoted to a root
+ * of its own: **one server, two rows.** On 2026-09-07 the reader said eleven
+ * where seven were running.
+ *
+ * The repair is in `owningRoot`, which carries the measured chain: read the
+ * WHOLE table, walk the ancestry through anything, and let the outermost
+ * watcher own everything beneath it. `isNodeProcess` is the other half — a
+ * `cmd.exe` repeats the command line it was given, so once the whole table is
+ * in hand the shells match the watcher predicates too.
+ *
  * # And the second half: whose is it?
  *
  * The founder runs his own dev server on this machine and it must never be
@@ -36,6 +54,8 @@ export type ProcessRow = {
   readonly parentPid: number;
   /** When it was created. */
   readonly startedAt: Date;
+  /** The executable, e.g. `node.exe` or `cmd.exe` — see `ONE `pnpm dev`` above. */
+  readonly name: string;
   readonly commandLine: string;
 };
 
@@ -49,13 +69,34 @@ export type DevServerTree = {
 };
 
 /**
- * Is this row the `tsx watch` that owns a dev server?
+ * A node process, and nothing else.
+ *
+ * ⚠ It is a real gate rather than a tidiness one (#658). Every `cmd.exe` hop
+ * in the chain above carries the whole command line as its own — measured:
+ * `cmd.exe /d /s /c "tsx ^^^"watch^^^" ^^^"server/_core/index.ts^^^""` — so the
+ * command-line predicates below match a shell as readily as the process it
+ * started. Read a table of node processes only and this never came up; read the
+ * whole table, which the ancestry walk needs, and without this every dev server
+ * grows two more roots.
+ */
+function isNodeProcess(row: ProcessRow): boolean {
+  return /^node(\.exe)?$/i.test(row.name.trim());
+}
+
+/**
+ * Is this row a `tsx watch` invocation of the dev server?
  *
  * Matched on the WATCH verb and the entrypoint together. `tsx` alone would
  * match every disposable script in this repository, and the entrypoint alone
  * would match the child — which is the whole thing being told apart.
+ *
+ * ⚠ It answers *is this a watcher*, NOT *is this a tree's root* — one
+ * `pnpm dev` satisfies it TWICE (the `cross-env` process carries the watch
+ * command as its arguments). `devServerTrees` decides which of them is a root;
+ * see `owningRoot`.
  */
 export function isDevServerRoot(row: ProcessRow): boolean {
+  if (!isNodeProcess(row)) return false;
   const line = row.commandLine.replace(/\\/g, "/");
   return /\btsx\b/.test(line)
     && /(^|["'\s])watch(["'\s]|$)/.test(line)
@@ -70,23 +111,97 @@ export function isDevServerRoot(row: ProcessRow): boolean {
  * only difference between the two in a process table.
  */
 export function isDevServerChild(row: ProcessRow): boolean {
-  return !isDevServerRoot(row) && /server\/_core\/index\.ts/.test(row.commandLine.replace(/\\/g, "/"));
+  return isNodeProcess(row)
+    && !isDevServerRoot(row)
+    && /server\/_core\/index\.ts/.test(row.commandLine.replace(/\\/g, "/"));
 }
 
-/** Every dev-server tree in this table, oldest root first. */
+/**
+ * Every process between this one and the top of the table, nearest first.
+ *
+ * It walks through processes of ANY kind, which is the repair: the hops between
+ * a dev server's own processes are `cmd.exe`, and a walk that can only see node
+ * loses the chain at the first of them.
+ *
+ * ⚠ **A parent that started AFTER its child is not that child's parent** — it
+ * is a recycled pid, and Windows recycles them freely. The walk stops there
+ * rather than attributing a live server to whatever now holds the number.
+ */
+function ancestorsOf(rows: readonly ProcessRow[], row: ProcessRow): ProcessRow[] {
+  const index = new Map(rows.map((one) => [one.pid, one]));
+  const chain: ProcessRow[] = [];
+  const seen = new Set<number>([row.pid]);
+  let child = row;
+  for (;;) {
+    const parent = index.get(child.parentPid);
+    if (!parent || seen.has(parent.pid)) break;
+    if (parent.startedAt.getTime() > child.startedAt.getTime()) break;
+    seen.add(parent.pid);
+    chain.push(parent);
+    child = parent;
+  }
+  return chain;
+}
+
+/**
+ * ⚠ WHICH TREE A PROCESS BELONGS TO — the answer #658 was filed for.
+ *
+ * `pnpm dev` is `cross-env NODE_ENV=development tsx watch server/_core/index.ts`,
+ * and the chain that produces on this machine is nine deep. Measured, one dev
+ * server, 2026-09-08:
+ *
+ *     node  cross-env.js NODE_ENV=development tsx watch server/_core/index.ts
+ *       └ cmd.exe  /c "tsx ^"watch^" ^"server/_core/index.ts^""
+ *           └ node  tsx/dist/cli.mjs "watch" "server/_core/index.ts"
+ *               └ node  --require tsx/dist/preflight.cjs server/_core/index.ts   ← the port
+ *
+ * **Two of those four are watchers by every command-line test there is**, and
+ * the `cmd.exe` between them hid the relationship from a node-only table: the
+ * inner watcher's parent appeared not to exist, so it was promoted to a root
+ * beside the process that started it. **One server read as two trees** — the
+ * night of 2026-09-07 it reported ELEVEN where seven were running, and killing
+ * seven roots ended all eleven rows.
+ *
+ * So the outermost watcher in a process's ancestry owns it, and anything with
+ * a watcher above it is not a root. Returns the row itself when it is a watcher
+ * with no watcher above it, and null when the row belongs to no tree at all.
+ */
+export function owningRoot(rows: readonly ProcessRow[], row: ProcessRow): ProcessRow | null {
+  const watchersAbove = ancestorsOf(rows, row).filter(isDevServerRoot);
+  if (watchersAbove.length > 0) return watchersAbove[watchersAbove.length - 1];
+  return isDevServerRoot(row) ? row : null;
+}
+
+/**
+ * Every dev-server tree in this table, oldest root first.
+ *
+ * `childPids` holds everything the root owns — the nested watcher as well as
+ * the server child that holds the port — because the whole point of naming a
+ * root is that killing it takes ALL of them, and a listing that hid the middle
+ * of the tree is what made a hand count unreliable.
+ */
 export function devServerTrees(rows: readonly ProcessRow[]): DevServerTree[] {
-  const roots = rows.filter(isDevServerRoot);
-  const children = rows.filter(isDevServerChild);
-  return roots
+  const owners = new Map<ProcessRow, ProcessRow | null>();
+  const ownerOf = (row: ProcessRow) => {
+    if (!owners.has(row)) owners.set(row, owningRoot(rows, row));
+    return owners.get(row) ?? null;
+  };
+  const oldestFirst = (a: { startedAt: Date }, b: { startedAt: Date }) =>
+    a.startedAt.getTime() - b.startedAt.getTime();
+
+  return rows
+    .filter((row) => isDevServerRoot(row) && ownerOf(row) === row)
     .map((root) => ({
       rootPid: root.pid,
       startedAt: root.startedAt,
-      childPids: children
-        .filter((child) => child.parentPid === root.pid)
-        .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime())
-        .map((child) => child.pid),
+      childPids: rows
+        .filter((row) => row !== root
+          && (isDevServerRoot(row) || isDevServerChild(row))
+          && ownerOf(row) === root)
+        .sort(oldestFirst)
+        .map((row) => row.pid),
     }))
-    .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
+    .sort(oldestFirst);
 }
 
 /**
@@ -120,13 +235,22 @@ export function rootsToKill(
 ): { kind: "kill"; rootPids: number[] } | { kind: "refused"; reason: string } {
   const trees = devServerTrees(rows);
   const rootPids = new Set(trees.map((tree) => tree.rootPid));
+  const byPid = new Map(rows.map((row) => [row.pid, row]));
   const wrong: string[] = [];
   for (const pid of pids) {
     if (rootPids.has(pid)) continue;
     const owner = trees.find((tree) => tree.childPids.includes(pid));
-    wrong.push(owner
-      ? `${pid} is a dev server's CHILD — its watcher ${owner.rootPid} would start another one. Kill ${owner.rootPid}.`
-      : `${pid} is not a dev-server process at all.`);
+    const row = byPid.get(pid);
+    if (!owner) {
+      wrong.push(`${pid} is not a dev-server process at all.`);
+      continue;
+    }
+    /* Two ways to be inside a tree and neither of them is the pid to kill: the
+       server that holds the port, and — since #658 — the inner `tsx watch` the
+       root started through a shell. */
+    wrong.push(row && isDevServerRoot(row)
+      ? `${pid} is the inner watcher INSIDE dev server ${owner.rootPid}'s tree — ${owner.rootPid} started it and is the pid to kill.`
+      : `${pid} is a dev server's CHILD — its watcher ${owner.rootPid} would start another one. Kill ${owner.rootPid}.`);
   }
   if (wrong.length > 0) return { kind: "refused", reason: wrong.join("\n") };
   return { kind: "kill", rootPids: [...new Set(pids)] };

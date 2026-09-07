@@ -36,24 +36,28 @@ const TABLE: ProcessRow[] = [
   {
     pid: 14660,
     parentPid: 1492,
+    name: "node.exe",
     startedAt: at("07:49"),
     commandLine: 'node "C:\\Users\\Admin\\Drape\\node_modules\\.bin\\..\\.pnpm\\tsx@4.20.6\\node_modules\\tsx\\dist\\cli.mjs" "watch" "server/_core/index.ts"',
   },
   {
     pid: 12316,
     parentPid: 14660,
+    name: "node.exe",
     startedAt: at("13:42"),
     commandLine: '"C:\\Program Files\\nodejs\\node.exe" --require C:/Users/Admin/Drape/node_modules/.pnpm/tsx@4.20.6/node_modules/tsx/dist/preflight.cjs server/_core/index.ts',
   },
   {
     pid: 22316,
     parentPid: 14784,
+    name: "node.exe",
     startedAt: at("13:51"),
     commandLine: 'node "C:\\Users\\Admin\\Drape\\node_modules\\.pnpm\\tsx@4.20.6\\node_modules\\tsx\\dist\\cli.mjs" "watch" "server/_core/index.ts"',
   },
   {
     pid: 21752,
     parentPid: 22316,
+    name: "node.exe",
     startedAt: at("13:52"),
     commandLine: '"C:\\Program Files\\nodejs\\node.exe" --require C:/Users/Admin/Drape/node_modules/.pnpm/tsx@4.20.6/node_modules/tsx/dist/preflight.cjs server/_core/index.ts',
   },
@@ -61,6 +65,7 @@ const TABLE: ProcessRow[] = [
   {
     pid: 9001,
     parentPid: 4000,
+    name: "node.exe",
     startedAt: at("14:10"),
     commandLine: 'node "C:\\Users\\Admin\\Drape\\node_modules\\.pnpm\\tsx@4.20.6\\node_modules\\tsx\\dist\\cli.mjs" "scripts/_court-glossary-disposable.mts"',
   },
@@ -116,6 +121,141 @@ describe("⚠ the refusal, which is the whole point", () => {
     /* A partial kill is the worst outcome: some trees gone, one respawning,
        and a report saying the cleanup ran. */
     expect(rootsToKill(TABLE, [22316, 21752]).kind).toBe("refused");
+  });
+});
+
+/**
+ * ⚠ ONE `pnpm dev`, READ OFF THIS MACHINE — #658.
+ *
+ * Not a shape reasoned about: a dev server was started 2026-09-08 05:13 and its
+ * ancestry walked with `Get-CimInstance Win32_Process`, pids and command lines
+ * verbatim below. `pnpm dev` is `cross-env NODE_ENV=development tsx watch …`,
+ * and `cross-env` starts the watcher through a **`cmd.exe`** — so the table
+ * holds two node processes that every command-line test calls a watcher, with
+ * a shell between them that a `Name='node.exe'` filter cannot see.
+ *
+ * Before the fix the reader printed this as TWO trees (`root 29132 … children
+ * [none]` beside `root 32244 … children [28220] :3000`), and killing 29132
+ * alone left NOTHING behind — which is what says 29132 is the root and 32244 is
+ * not.
+ *
+ * The two shells are in the fixture on purpose. They are what makes the walk
+ * possible, and they are also why `isNodeProcess` exists: `cmd.exe` repeats the
+ * command line it was handed, so without that gate the same server would grow
+ * two MORE roots the moment the whole table came into view.
+ */
+const PNPM_DEV: ProcessRow[] = [
+  {
+    pid: 34936,
+    parentPid: 27076,
+    name: "node.exe",
+    startedAt: at("05:13"),
+    commandLine: 'node   "C:\\Users\\Admin\\AppData\\Local\\pnpm\\.tools\\pnpm\\10.28.2\\bin\\\\..\\node_modules\\pnpm\\bin\\pnpm.cjs" "dev"',
+  },
+  {
+    pid: 6240,
+    parentPid: 34936,
+    name: "cmd.exe",
+    startedAt: at("05:13"),
+    commandLine: "C:\\Windows\\system32\\cmd.exe /d /s /c cross-env NODE_ENV=development tsx watch server/_core/index.ts",
+  },
+  {
+    pid: 29132,
+    parentPid: 6240,
+    name: "node.exe",
+    startedAt: at("05:13"),
+    commandLine: 'node   "C:\\Users\\Admin\\Drape\\node_modules\\.bin\\\\..\\cross-env\\dist\\bin\\cross-env.js" NODE_ENV=development tsx watch server/_core/index.ts',
+  },
+  {
+    pid: 30356,
+    parentPid: 29132,
+    name: "cmd.exe",
+    startedAt: at("05:13"),
+    commandLine: 'C:\\Windows\\system32\\cmd.exe /d /s /c "tsx ^^^"watch^^^" ^^^"server/_core/index.ts^^^""',
+  },
+  {
+    pid: 32244,
+    parentPid: 30356,
+    name: "node.exe",
+    startedAt: at("05:13"),
+    commandLine: 'node   "C:\\Users\\Admin\\Drape\\node_modules\\.bin\\\\..\\tsx\\dist\\cli.mjs" "watch" "server/_core/index.ts"',
+  },
+  {
+    pid: 28220,
+    parentPid: 32244,
+    name: "node.exe",
+    startedAt: at("05:14"),
+    commandLine: '"C:\\Program Files\\nodejs\\node.exe" --require C:\\Users\\Admin\\Drape\\node_modules\\.pnpm\\tsx@4.20.6\\node_modules\\tsx\\dist\\loader.mjs server/_core/index.ts',
+  },
+];
+
+describe("⚠ one `pnpm dev` is ONE tree, whatever it is made of (#658)", () => {
+  it("reads the measured chain as a single tree rooted at cross-env", () => {
+    expect(devServerTrees(PNPM_DEV)).toEqual([
+      { rootPid: 29132, startedAt: at("05:13"), childPids: [32244, 28220] },
+    ]);
+  });
+
+  it("⚠ NEGATIVE CONTROL — a watcher with no watcher above it is still its own root", () => {
+    /*
+      #561's 4 September rows were tsx-only, with no cross-env process visible
+      at all, and the two shapes sat in ONE listing. A fix that attributed every
+      watcher to something would have traded an over-count for an under-count —
+      and an under-count is the direction that leaves servers on his machine.
+    */
+    expect(devServerTrees(TABLE).map((tree) => tree.rootPid)).toEqual([14660, 22316]);
+  });
+
+  it("⚠ CONTROL — the two shapes in one table stay two trees, not one and not three", () => {
+    const mixed = [...TABLE, ...PNPM_DEV];
+    expect(devServerTrees(mixed).map((tree) => tree.rootPid).sort()).toEqual([14660, 22316, 29132].sort());
+  });
+
+  it("CONTROL — an empty table is no trees, and one server is one tree", () => {
+    /* Without this the arms above pass on a reader that has stopped reading. */
+    expect(devServerTrees([])).toEqual([]);
+    expect(devServerTrees(PNPM_DEV)).toHaveLength(1);
+  });
+
+  it("a `cmd.exe` repeating the watch command is NOT a watcher", () => {
+    const shells = PNPM_DEV.filter((row) => row.name === "cmd.exe");
+    expect(shells).toHaveLength(2);
+    for (const shell of shells) {
+      expect(isDevServerRoot(shell)).toBe(false);
+      expect(isDevServerChild(shell)).toBe(false);
+    }
+  });
+
+  it("names the inner watcher as the root's, and refuses it as a kill target", () => {
+    const verdict = rootsToKill(PNPM_DEV, [32244]);
+    expect(verdict.kind).toBe("refused");
+    expect(verdict.kind === "refused" && verdict.reason).toContain("29132");
+    /* CONTROL, so the refusal cannot be a constant: the real root is accepted. */
+    expect(rootsToKill(PNPM_DEV, [29132])).toEqual({ kind: "kill", rootPids: [29132] });
+  });
+
+  it("still refuses the pid `netstat` hands you, which is the port holder", () => {
+    const verdict = rootsToKill(PNPM_DEV, [28220]);
+    expect(verdict.kind).toBe("refused");
+    expect(verdict.kind === "refused" && verdict.reason).toContain("29132");
+  });
+
+  it("counts one shift's own dev server ONCE, which is what the hygiene rule reads", () => {
+    /* The 2026-09-07 sweep read eleven trees where seven were running: the
+       number a shift acts on, wrong by 57% before anyone had to be careless. */
+    expect(rootsStartedAfter(PNPM_DEV, at("05:00"))).toHaveLength(1);
+  });
+
+  it("⚠ a recycled pid does not adopt a live server", () => {
+    /*
+      Windows reuses pids. A parent that started AFTER its child is not that
+      child's parent, and treating it as one would hide a running server inside
+      an unrelated tree — the under-count direction again.
+    */
+    const recycled = PNPM_DEV.map((row) =>
+      row.pid === 29132 ? { ...row, startedAt: at("06:00") } : row);
+    const roots = devServerTrees(recycled).map((tree) => tree.rootPid).sort();
+    expect(roots).toEqual([29132, 32244].sort());
   });
 });
 
