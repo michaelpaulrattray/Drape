@@ -1,7 +1,7 @@
 {
-  "edition": 293,
-  "updatedAt": "2026-09-07T17:18:18.839Z",
-  "shift": "Foreman (Opus) - a check that cleaned up after itself stopped failing at random, the cards you have answered are watched everywhere, and 7.8 GB of leftovers came off your machine",
+  "edition": 294,
+  "updatedAt": "2026-09-07T18:08:13.985Z",
+  "shift": "Foreman (Opus) - eleven leftover copies of the dev server were running on your machine, and the scripts that can touch your live database now refuse a mistyped word",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,28 +116,33 @@
     ],
     "chips": [
       {
-        "label": "The warning was about you",
+        "label": "Your machine is clear",
         "tone": "good",
-        "source": "The Moderation badge's one flagged account is yours. Named tonight; repair is #638."
-      },
-      {
-        "label": "Today's charges balance exactly",
-        "tone": "good",
-        "source": "58,740 charged against 58,740 recorded. The gap is historical and does not grow."
-      },
-      {
-        "label": "Check-ups all current",
-        "tone": "good",
-        "source": "All four seats are inside their own clock. The Janitor is due tomorrow."
+        "source": "Eleven leftover dev servers were running, oldest 4 Sep. All stopped; none left."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "84 open, 1 is yours (#543, waiting on 12 Sep), none urgent. 2 closed, 1 filed. 1 unread a week."
+        "source": "82 open, 1 yours (#543, waits on 12 Sep), none urgent. 1 closed, 1 filed, 14 stale."
+      },
+      {
+        "label": "Check-ups",
+        "tone": "neutral",
+        "source": "Nothing overdue. The Janitor's is due today and goes to the next shift."
+      },
+      {
+        "label": "The warning was about you",
+        "tone": "good",
+        "source": "The Moderation badge's one flagged account is yours. Repair is #638, still open."
+      },
+      {
+        "label": "Charges balanced at the last read",
+        "tone": "good",
+        "source": "58,740 charged against 58,740 recorded, read 6 Sep. Not re-taken tonight."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-07T17:16:52.474Z",
+      "readAt": "2026-09-07T18:17:45.755Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4313,6 +4318,22 @@
   ],
   "pipeline": [
     {
+      "id": "pr-657-ceremony-world-642",
+      "title": "Twelve more scripts that can be pointed at your live database now refuse a mistyped word (#642)",
+      "status": "merged",
+      "prNumber": 657,
+      "note": "Nothing a customer sees. These are the scripts the team runs by hand against the database - the ones that create a table, or read your switch panel - and they each take one word telling them WHICH database: your live one, or the development copy.\n\nWHAT WAS WRONG. Last night eighteen of them were taught to stop and say so when they are handed a word they do not recognise. Twelve MORE had quietly written out their own copy of that same instruction long ago - so they never got the lesson, and nothing noticed, because the check written to watch for this only looked at scripts that were using the shared version. A check that watches the ones that signed up cannot see the ones that never did.\n\nTwo of those twelve are the scripts that built the switch panel on this page.\n\nWHAT IT COST IN PRACTICE. Less than it sounds, and worth saying plainly: a script handed only a MISSPELT database name already stopped - it could not tell which world you meant, so it refused. What it did NOT catch was a good word with a bad one beside it. Type 'live database, and only pretend to do it' and it heard the first half, ignored the second, and did the thing for real.\n\nWHAT IT IS NOW. All thirty read the same one instruction, and a second check watches the whole folder rather than only the scripts that opted in - so the thirty-first cannot slip through the same gap.\n\nTHE PART WORTH YOUR TIME. The reviewer found that the new watcher could still be walked around by writing the same mistake across two lines instead of one. That is now closed rather than written down as a known weakness, and the walk-around is kept as a test so it cannot come back.",
+      "cardId": null
+    },
+    {
+      "id": "devservers-swept-561",
+      "title": "Eleven leftover copies of the dev server were running on your machine, some since 4 September (#561)",
+      "status": "merged",
+      "prNumber": null,
+      "note": "Something on your own computer, so it is here rather than only in the queue.\n\nWHAT WAS THERE. Every time someone looks at the app locally it starts a small server. It is supposed to be stopped afterwards. Eleven of them were still running tonight - the oldest from 4 September, four days ago - and two of them were holding the two doors (ports 3000 and 3001) that the team needs to open the app at all.\n\nA card was filed about three of them on 5 September and correctly did not kill them, because it could not tell whether one was under your hand at the time. Three days later there were eleven, and nothing was running but this shift. All cleared. Your machine now reports none.\n\nTHE PART WORTH YOUR TIME. The tool that counts them was over-reporting. Starting the app is really TWO small programs, one starting the other - and because a Windows command window sits between them, the counter could not see they were related and listed both. Eleven rows were seven servers. Proved rather than reasoned: stopping seven of them ended all eleven. Filed as its own card with the measurement.\n\nAlso cleared: two empty folders left behind by an earlier tidy-up that Windows had refused to finish.",
+      "cardId": null
+    },
+    {
       "id": "pr-643-hook-driver-640",
       "title": "A safety check was reporting a verdict without ever running (#640)",
       "status": "merged",
@@ -4799,7 +4820,7 @@
     159
   ],
   "nextUp": {
-    "readAt": "2026-09-07T17:16:51.467Z",
+    "readAt": "2026-09-07T18:17:44.807Z",
     "items": [
       {
         "issueNumber": 543,
