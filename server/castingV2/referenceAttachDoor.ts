@@ -131,8 +131,15 @@ export function referenceAttachmentKey(format: InkDesignFormat): string {
  * around it is not**, because the prose is about what else exists there.
  *
  * So it now says only what is true today. The customer-facing DETACH is filed
- * as its own chunk (fable-1173 §2); when it lands, this sentence names it, and
- * `referenceAttachDoor.test.ts` is where the two are kept in step.
+ * as its own chunk (fable-1173 §2); when it lands, this sentence names it.
+ *
+ * ⚠ This paragraph used to end "…and `referenceAttachDoor.test.ts` is where the
+ * two are kept in step", present tense, about a file that has never existed
+ * (#647). The refusal string above is driven TODAY by
+ * `inkReferenceMint.test.ts`, which is the only suite that reads it. A reader
+ * who follows a pointer, finds nothing, and concludes the guard was never
+ * written has just re-filed a live control as a dead one — the wrong-road class
+ * `CLAUDE.md`'s law-7 section is about.
  */
 export const REFERENCE_PICTURES_PER_CANDIDATE_REFUSAL =
   `This Cast is holding all ${REFERENCE_PICTURES_PER_CANDIDATE} pictures it can hold. `

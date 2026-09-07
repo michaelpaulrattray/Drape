@@ -851,7 +851,9 @@ export async function carriedInkCrops(
     docblock rather than in an empty array.
 
     SLOTS AND CROP IDS ONLY. The words and the pictures are the customer's
-    creative content and never reach a log (`signServicePrivacy.test.ts`).
+    creative content and never reach a log — `signInkCrops.test.ts` drives it,
+    in "puts NO picture and NO word of hers in the log", which reads THIS line
+    back out of a mocked logger.
   */
   log.info(
     { operationId: input.operationId, dispositions },
@@ -1083,7 +1085,8 @@ export async function carriedInkPlates(
  * The library's words are the customer's creative content — the class the access
  * grid keeps out of every staff surface. They ride to the ENGINE, which is where
  * every render already goes, and to nothing else. This line says WHICH features
- * rode and why the others did not; `signServicePrivacy.test.ts` drives it.
+ * rode and why the others did not; `signFeatureWords.test.ts` drives it, in
+ * "the log line names the SLOT and never the words".
  *
  * **Exported to be driven** (working law 3): every refusal here is reachable
  * only through a whole Sign.

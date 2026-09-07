@@ -111,7 +111,8 @@ const CLOSED_NOUNS: ReadonlyMap<string, FreeSubject> = (() => {
     for (const noun of SUBJECT_NOUNS[subject]) {
       const folded = foldNoun(noun);
       /* First writer wins, and a duplicate is a fault rather than a preference —
-         `refineSubjects.test.ts` fails the build on one, so this branch is
+         `openLaneKind.test.ts` fails the build on one ("a duplicate makes the
+         collision check's answer depend on iteration order"), so this branch is
          unreachable in a green tree and is here so it cannot become silent. */
       if (!map.has(folded)) map.set(folded, subject);
     }

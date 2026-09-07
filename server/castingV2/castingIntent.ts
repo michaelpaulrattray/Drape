@@ -601,8 +601,8 @@ export const NOTES_MAX = 180;
  * ⚠ **A bound that can no longer ration also can no longer NOTICE.** The thing
  * 180 used to catch — a reply far longer than it should be — is now asserted
  * directly instead: a summary LONGER THAN THE BRIEF IT SUMMARISES is a defect
- * wearing length, and `interpreter.test.ts` holds that arm independently of
- * either cap.
+ * wearing length, and `briefFidelityScope.test.ts` holds that arm independently
+ * of either cap.
  */
 export const NOTES_MAX_FIDELITY = 2000;
 
