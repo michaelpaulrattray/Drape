@@ -89,7 +89,24 @@ export function runHook(
     input?: string;
     cwd?: string;
     env?: NodeJS.ProcessEnv;
-    /** Windows needs it for `npx`; it changes nothing about the discriminator. */
+    /**
+     * Windows needs it for `npx`.
+     *
+     * ⚠ **AND IT IS THE ONE ROAD WHERE THE THROW-ON-NON-START PROMISE DOES NOT
+     * HOLD** (PR #643's round-2 finding 3; this said *"it changes nothing about
+     * the discriminator"*, which was true of the logic and false of the
+     * guarantee). Through a shell the SHELL is the process that starts, and it
+     * starts fine — a missing target binary becomes the shell's own exit code,
+     * `9009` on cmd or `127` on POSIX, so `runHook` returns a STATUS for a
+     * command that never ran.
+     *
+     * Stated rather than fixed, because it cannot be fixed here: reading a
+     * shell's 127 as a non-start would misread a hook that legitimately exited
+     * 127. **What keeps it honest is at the caller** — both `shell: true`
+     * consumers assert exact codes (`toBe(0)` / `toBe(1)`), which 9009 and 127
+     * fail loudly. A `not.toBe(0)` refusal arm on this road would be the class
+     * again, and this sentence is here so the next one meets it first.
+     */
     shell?: boolean;
     /**
      * Milliseconds after which the child is killed. On expiry `spawnSync`

@@ -1,7 +1,11 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { HookRun, SpawnFailure, requireShell, resolveShell, runHook } from "./hookDriver";
+import { readListedSource } from "./listedSource";
+
+const REPO = resolve(import.meta.dirname, "..", "..");
 
 /**
  * THE HOOK DRIVER'S OWN ARMS (#640).
@@ -181,6 +185,67 @@ describe("a child that RAN and produced no exit code is not a missing binary", (
     expect(failure.message).toContain("It RAN");
     /* The negative half: it must NOT tell the reader the binary is missing. */
     expect(failure.message).not.toContain("could not start");
+  });
+});
+
+describe("the class is keyed on the SHAPE now, because three greps were keyed on spellings", () => {
+  /*
+    ⚠ THE REVIEWER'S OWN CLOSING SENTENCE, MADE MECHANICAL (PR #643, round 2):
+    *"The durable sweep key is any status read from a bare child_process call in
+    a suite that asserts a verdict, not any particular catch idiom."*
+
+    Three sweeps, three misses, each for the same reason:
+      1. the original grep keyed on `? error.status : -1` — the execFileSync
+         spelling — and missed FOUR spawnSync drivers;
+      2. round 1 keyed on the sentinel — and missed TWO inline calls that have
+         no sentinel at all, where a raw `null` flows into the assertion;
+      3. and a `not.toBe(0)` refusal arm on either of those would have reported
+         a control blocking over a process that never started.
+
+    So the population is pinned rather than swept again. A new test file that
+    drives a child process and reads its status must be added to this list
+    deliberately, with a reason — which is the point at which somebody asks
+    whether it should be on `runHook` instead.
+  */
+  const DECLARED: Record<string, string> = {
+    "server/atlasMergeDriver.test.ts":
+      "its VERDICT driver is runHook; the bare call is the declared repository-state read (git check-attr), where throwing on any failure is wanted",
+    "server/preCommitGate.test.ts":
+      "same shape — the bare call is `git ls-files` reading index modes, not a gate decision",
+    "server/batchB-drive-guards.test.ts":
+      "DECLARED REMAINDER: asserts EXACT codes (toBe(2)), so a non-run fails loudly rather than passing — the loud half of the class, worth migrating but not silent",
+    "server/shiftWorktree.test.ts":
+      "DECLARED REMAINDER: asserts EXACT codes (toBe(0)) on filesystem helpers (mklink, rm) rather than on a gate's verdict — same loud half",
+  };
+
+  it("no suite drives a child process and reads its status outside the declared list", () => {
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) return entry.name === "node_modules" ? [] : walk(full);
+        return entry.name.endsWith(".test.ts") ? [full] : [];
+      });
+
+    const found = walk(join(REPO, "server"))
+      .filter((file) => {
+        const body = readListedSource(file);
+        if (body === null) return false;
+        /* Both halves must hold: it spawns something AND it reads a status.
+           A suite that only spawns is not asserting a verdict from one. */
+        return /\b(spawnSync|execFileSync|execSync)\(/.test(body) && /\.status\b/.test(body);
+      })
+      .map((file) => file.slice(REPO.length + 1).replace(/\\/g, "/"))
+      .sort();
+
+    /* The positive control: an empty population would pass an `every` and prove
+       nothing — this suite's own subject guarantees at least two members. */
+    expect(found.length, "the reader found nothing — it cannot say yes").toBeGreaterThanOrEqual(2);
+
+    const undeclared = found.filter((file) => !(file in DECLARED));
+    expect(
+      undeclared,
+      "a new suite reads a child process's status directly — put it on runHook, or declare it here with why",
+    ).toEqual([]);
   });
 });
 
