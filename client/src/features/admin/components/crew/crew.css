@@ -137,6 +137,30 @@
   color: var(--ink);
 }
 
+/*
+  THE CARD THAT IS STILL HIS (#354, his reply #159: "Keep it on my desk until
+  the act is done").
+
+  A quiet mono pill on the title line, in the same grammar as every other
+  machine fact on this page — muted, outlined, no fill. It must read as a
+  QUALIFIER on a card he is already looking at, never as an alarm: the card is
+  not a problem, it is one he has already engaged with and that is not finished.
+  Colouring it would put it above the fresh asks beside it, which is the wrong
+  way round — a new question outranks a chore he already said yes to.
+*/
+.dp-crew__waitchip {
+  margin-left: var(--s-3);
+  padding: 1px 6px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font: 400 9.5px var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+
 .dp-crew__mission {
   font: 400 14px/1.65 var(--font-sans);
   color: var(--ink);

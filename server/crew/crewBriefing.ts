@@ -59,6 +59,7 @@
  */
 import { z } from "zod";
 
+import { CREW_CARD_STATES } from "../../shared/crewCardState.js";
 import { CREW_HELD_STATES, CREW_HOLD_REASON_MAX } from "../../shared/crewNextUpHold.js";
 import { CREW_LADDER_GROUP_KEYS, onePlaceViolations } from "../../shared/crewPipelineGroups.js";
 
@@ -195,7 +196,9 @@ const needsYouSchema = z.object({
   }).strict()),
   /** Stated FIRST when options exist — his standing order again. */
   recommendation: z.string().nullable(),
-  state: z.enum(["open", "answered", "done"]),
+  /* Derived from `CREW_CARD_STATES` (#354): the enum and the predicate that
+     reads it must never be two lists. */
+  state: z.enum(CREW_CARD_STATES),
   filedAt: isoDateTime,
   issueNumber: z.number().int().positive().nullable(),
 }).strict();
@@ -313,7 +316,9 @@ const eyeItemSchema = z.object({
   title: z.string(),
   /** What he is judging — the question, never just the picture. */
   question: z.string(),
-  state: z.enum(["open", "answered", "done"]),
+  /* Derived from `CREW_CARD_STATES` (#354): the enum and the predicate that
+     reads it must never be two lists. */
+  state: z.enum(CREW_CARD_STATES),
   filedAt: isoDateTime,
   issueNumber: z.number().int().positive().nullable(),
   frames: z.array(eyeFrameSchema).min(1).max(24),

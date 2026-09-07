@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "2e8c02e615783d6a"
+    "sourceFingerprint": "06ac7098d8a93bba"
   },
   "domains": [
     {
@@ -128,7 +128,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 52
+      "moduleCount": 53
     },
     {
       "id": "domain:staff",
@@ -6031,6 +6031,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/crewCardState.ts",
+      "path": "shared/crewCardState.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/crewNextUpHold.ts",
       "path": "shared/crewNextUpHold.ts",
       "domain": "shared",
@@ -10614,6 +10620,10 @@
       "path": "client/src/features/admin/components/crew/section08-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/admin/components/crew/waitingCardState.test.ts",
+      "path": "client/src/features/admin/components/crew/waitingCardState.test.ts"
+    },
+    {
       "id": "test:client/src/features/admin/overview/section07-guard.test.ts",
       "path": "client/src/features/admin/overview/section07-guard.test.ts"
     },
@@ -14639,6 +14649,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "to": "module:shared/crewCardState.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
@@ -14736,6 +14751,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "to": "module:server/routers.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "to": "module:shared/crewCardState.ts",
       "kind": "imports"
     },
     {
@@ -28256,6 +28276,11 @@
     {
       "from": "module:server/castingV2/zoneScope.ts",
       "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/crewBriefing.ts",
+      "to": "module:shared/crewCardState.ts",
       "kind": "imports"
     },
     {

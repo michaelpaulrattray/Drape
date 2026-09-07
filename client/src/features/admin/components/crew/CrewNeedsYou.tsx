@@ -33,6 +33,7 @@
  */
 import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
+import { crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { shortDate } from "./CrewProgramBanner";
 import { TableHead } from "@/foundation";
 import type { CrewNeedsYouCard, CrewReplyView } from "./crewTypes";
@@ -50,7 +51,17 @@ export function CrewNeedsYou({
   sending: boolean;
   onSend: (input: { cardId: string | null; body: string }) => Promise<unknown>;
 }) {
-  const open = cards.filter((card) => card.state === "open");
+  /*
+    ⚠ HIS RULING, Crew reply #159 (#354): *"The first. Keep it on my desk until
+    the act is done."*
+
+    `state === "open"` used to mean BOTH "he has not replied" and "this still
+    wants something from him", and the moment those came apart — he answers,
+    and the remaining step is another act of HIS — the card left this section
+    for *already dealt with*, which means no action needed. A `waiting` card
+    stays here and says why.
+  */
+  const open = cards.filter((card) => crewCardNeedsHim(card.state));
 
   return (
     <section className="dp-crew__section">
@@ -72,7 +83,19 @@ export function CrewNeedsYou({
              move 3) — the card's stable slug, the same id replies point at. */
           <article key={card.id} id={`crew-card-${card.id}`} className="dp-crew__card">
             <div className="dp-crew__cardhead">
-              <h3 className="dp-crew__title">{card.title}</h3>
+              <h3 className="dp-crew__title">
+                {card.title}
+                {/*
+                  THE VISIBLY DISTINCT KIND (#354). It says the two facts that
+                  make this card different from the one above it — you already
+                  answered, and it is still yours — in his words rather than in
+                  the field's name. A card wearing nothing is a fresh ask, which
+                  is what every card on this page meant until tonight.
+                */}
+                {card.state === "waiting" && (
+                  <span className="dp-crew__waitchip">Answered · still yours to do</span>
+                )}
+              </h3>
               <span className="dp-crew__ref">
                 {card.issueNumber !== null && <>#{card.issueNumber} · </>}
                 filed {shortDate(card.filedAt)}

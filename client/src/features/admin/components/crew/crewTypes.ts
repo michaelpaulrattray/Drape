@@ -8,6 +8,7 @@
  */
 import type { inferRouterOutputs } from "@trpc/server";
 
+import { crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { resolveHold, type CrewHold } from "../../../../../../shared/crewNextUpHold";
 import type { AppRouter } from "../../../../../../server/routers";
 
@@ -32,20 +33,26 @@ export type CrewThreadHost = Pick<CrewNeedsYouCard, "id" | "state" | "title">;
  * Whether a reply renders in the GENERAL box rather than under a needs-you card.
  *
  * The rule is "does a thread render for its card", not "does the briefing
- * mention its card": Needs You shows reply threads under OPEN cards only, so a
- * reply on an answered/done card (listed in the recent-history block since
- * #292) must fall through here or it renders NOWHERE — the vanishing the
+ * mention its card": Needs You shows reply threads under the cards that STILL
+ * NEED HIM only, so a reply on an answered/done card (listed in the
+ * recent-history block since #292) must fall through here or it renders NOWHERE — the vanishing the
  * design forbids, caught live by the PR #72 gate review. Pure, and tested
  * directly.
  *
  * ⚠ It was named for the journal until #293 removed it; the RULE is unchanged
  * and the box it falls to is the General one now.
+ *
+ * ⚠ AND IT ASKS `crewCardNeedsHim` RATHER THAN `state === "open"` (#354). A
+ * `waiting` card renders on his desk WITH its thread, so a literal here would
+ * have sent replies to a card he can see straight past it into the General box
+ * — a silent split between two views of one question, which is why the
+ * question has one owner now.
  */
 export function replyFallsToGeneral(
   cardId: string | null,
   cards: readonly Pick<CrewNeedsYouCard, "id" | "state">[],
 ): boolean {
-  return cardId === null || !cards.some((card) => card.id === cardId && card.state === "open");
+  return cardId === null || !cards.some((card) => card.id === cardId && crewCardNeedsHim(card.state));
 }
 
 /* ─── #74: the Desk's information design, as derivations over what the
@@ -179,7 +186,7 @@ export function nextUpRows(
 ): CrewNextUpRow[] {
   const askingHim = new Map(
     cards
-      .filter((card) => card.state === "open" && card.issueNumber !== null)
+      .filter((card) => crewCardNeedsHim(card.state) && card.issueNumber !== null)
       .map((card) => [card.issueNumber as number, card.id]),
   );
   return nextUp.items.map((item) => {
