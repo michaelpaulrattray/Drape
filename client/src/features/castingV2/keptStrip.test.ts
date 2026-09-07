@@ -223,3 +223,135 @@ describe("the derivation is wired, not merely present", () => {
     expect(sheet).not.toMatch(/\{shortlist\.length\} kept/);
   });
 });
+
+/*
+ * THE TWO-KEEP ORDERING EDGE, PINNED AS THE BEHAVIOUR IT IS.
+ *
+ * (Card 0576, from the PR that fixed 0554.) The module's stated rule was "a
+ * face just kept is the newest, so it goes on the END" — true of ONE in-flight
+ * keep and false of two, because the additions inherit `candidates` order,
+ * which is TILE order on the sheet rather than click order.
+ *
+ * The card's recommendation was to correct the sentence rather than the code:
+ * ordering by click needs `optimisticKept` to carry a timestamp instead of a
+ * boolean, which touches every optimistic-keep reader, for a window of one
+ * round trip that needs two keeps inside it. These arms are what makes that
+ * decision honest — the corrected sentence is now DRIVEN, so the rule and the
+ * code cannot drift apart again in silence, which is the only thing the card
+ * actually complained about.
+ */
+describe("the strip's order with more than one keep in flight", () => {
+  it("appends a single in-flight keep last, which is the rule that always held", () => {
+    const strip = visibleShortlist({
+      shortlist: [entry("c-01", "01")],
+      candidates: [candidate("c-03", "03"), candidate("c-08", "08")],
+      rollIndex: 1,
+      optimisticKept: { "c-08": true },
+      optimisticDiscarded: {},
+    });
+
+    expect(strip.map((e) => e.candidateId)).toEqual(["c-01", "c-08"]);
+  });
+
+  /*
+   * The clicks are 08 THEN 03. The stated rule would put 03 last and aim the
+   * dock at it; tile order puts 03 first among the additions, so 08 lands last
+   * and takes the aim. `signTargets` reverses the list, so LAST is the face the
+   * Sign button offers.
+   */
+  it("orders two in-flight keeps by TILE position, so the earlier tile takes the aim", () => {
+    const strip = visibleShortlist({
+      shortlist: [entry("c-01", "01")],
+      candidates: [candidate("c-03", "03"), candidate("c-08", "08")],
+      rollIndex: 1,
+      optimisticKept: { "c-08": true, "c-03": true },
+      optimisticDiscarded: {},
+    });
+
+    expect(strip.map((e) => e.candidateId)).toEqual(["c-01", "c-03", "c-08"]);
+  });
+
+  /*
+   * The control, and what it adds is a DIRECTION the arm above cannot reach.
+   *
+   * ⚠ ITS FIRST COMMENT CLAIMED a click-order implementation "would pass the
+   * arm above by accident and fail this one", and that is inverted — caught in
+   * review, and refuted by this PR's own sabotage log, where ordering by click
+   * reddened BOTH arms. Arm 2's fixture clicks 08 then 03 while expecting tile
+   * order, so click ordering fails it directly.
+   *
+   * What this arm actually does: arm 2 pins ONE expected list, so it constrains
+   * the order in one direction only. This one holds the output invariant while
+   * the insertion order of `optimisticKept` is flipped underneath it — so any
+   * dependence on that map's key order is caught whichever way it leans, which
+   * a single expected list cannot do. Neither arm is redundant, and the reason
+   * is written here because reasoning from the earlier sentence would have
+   * justified deleting one of them.
+   */
+  it("is unmoved by which of the two was clicked first", () => {
+    const clickedEightFirst = visibleShortlist({
+      shortlist: [entry("c-01", "01")],
+      candidates: [candidate("c-03", "03"), candidate("c-08", "08")],
+      rollIndex: 1,
+      optimisticKept: { "c-08": true, "c-03": true },
+      optimisticDiscarded: {},
+    });
+    const clickedThreeFirst = visibleShortlist({
+      shortlist: [entry("c-01", "01")],
+      candidates: [candidate("c-03", "03"), candidate("c-08", "08")],
+      rollIndex: 1,
+      optimisticKept: { "c-03": true, "c-08": true },
+      optimisticDiscarded: {},
+    });
+
+    expect(clickedThreeFirst.map((e) => e.candidateId))
+      .toEqual(clickedEightFirst.map((e) => e.candidateId));
+  });
+
+  /*
+   * AND THE SENTENCE IS HELD TO THE ARMS. A comment is the thing this card
+   * settled on instead of a code change, so a comment quietly reverting to the
+   * simpler claim is exactly the drift being guarded against.
+   */
+  it("the module still states the rule the arms above prove", async () => {
+    const source = await readFile(new URL("./keptStrip.ts", import.meta.url), "utf8");
+
+    expect(source).toContain("NOT CLICK ORDER");
+    expect(source).toContain("FIRST of several still in flight");
+    /*
+      The claim that was true of one keep and false of two does not come back.
+      ⚠ WHITESPACE-COLLAPSED FIRST, and that is not tidiness: the retired
+      sentence is QUOTED a few lines above in the correction itself, and a raw
+      substring test passed only because that quotation happens to wrap across
+      a comment line break. It would have gone red on an innocent re-wrap and
+      green on a reintroduced claim that wrapped anywhere — a floor, and one
+      that fails in both directions. Reviewer's note on this PR.
+    */
+    const flat = source.replace(/\s*\*\s*/g, " ").replace(/\s+/g, " ");
+    const retired = "a face just kept is the newest, so it goes on the END";
+    // Positive control: the collapse really does find the sentence where it IS
+    // quoted, so `not.toContain` below is not green on a broken normaliser.
+    expect(flat).toContain(`"${retired}"`);
+    // And it appears ONLY as that quotation — never as the module's own rule.
+    expect(flat.split(retired).length - 1).toBe(1);
+  });
+
+  /*
+   * THE SWEEP THE FIX ITSELF MISSED. `signTarget.ts` carried the same retired
+   * claim — "newest keep first" — one module over, and `keptStrip.ts`'s
+   * corrected comment cites that module twice, so a reader following the
+   * citation landed on the sentence being retired. Found by the reviewer of
+   * this PR, not by its author's law-7 sweep; held here rather than left as a
+   * comment, because a comment is exactly what failed the first time.
+   */
+  it("the module that reverses this list states the same corrected rule", async () => {
+    const source = await readFile(new URL("./signTarget.ts", import.meta.url), "utf8");
+    const flat = source.replace(/\s*\*\s*/g, " ").replace(/\s+/g, " ");
+
+    expect(flat).toContain("FIRST of several still in flight");
+    // Positive control on the normaliser, as above.
+    expect(flat).toContain('"newest keep first"');
+    // The retired claim survives only inside that quotation.
+    expect(flat.split("newest keep first").length - 1).toBe(1);
+  });
+});
