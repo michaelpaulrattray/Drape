@@ -371,6 +371,22 @@ work is either one of its shifts or must behave like one. The binding pieces:
   artifact, the last 100 review runs are 46 success, 45 skipped, 8 failure and
   ONE cancelled. The 45 skipped are the design working**; #502's "27 of the
   last 60 were skipped" counts the reviewer doing its job, not the bug.
+  ⚠ **AND ALL THREE READINGS ABOVE ASSUME THE CHECK IS THERE — THERE IS A
+  FOURTH STATE AND IT IS AN ABSENT CHECK (#566, 2026-09-07).** A trigger event
+  GitHub never turns into a run leaves no check to read at all, which looks
+  exactly like a repository with no reviewer and is the one shape that cannot
+  be misread as a verdict — it is silently skipped instead. **Measured over
+  the 100 newest review runs: 50 trigger events, 49 produced a run, ONE did
+  not**, and PR #610 is the control that puts the cause OUTSIDE `review.yml` —
+  the same `needs-fable` label, the same head `6dfb8842`, removed and re-added
+  fourteen minutes later, produced a run two seconds after an identical event
+  produced none. So it is not narrated by the review job (nothing runs to
+  narrate it); it is named by `pr-merge-in-order`, which now separates
+  `declined` (triage LOOKED and said no — the design working) from `absent`
+  (nothing ran) and **says the second one out loud on the line it prints as it
+  merges.** The remedy is a `needs-fable` remove-and-re-add BEFORE merging, not
+  a hunt for a `skip-review` label nobody applied — which is what the tool used
+  to tell you.
 - **The founder steers from the Desk** (a claude.ai artifact page): his
   replies and journal entries there are rulings — quoted verbatim when acted
   on. Desk cards lead with product impact and a worked example, flags second.
