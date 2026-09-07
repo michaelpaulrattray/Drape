@@ -540,6 +540,34 @@ describe("#566 · an ABSENT review is held exactly as hard as a declined one, an
     expect(describeAction(pr({ review: "declined" }), a)).not.toMatch(/⚠/);
   });
 
+  it("⚠ an ACKNOWLEDGED money PR with no review run reaches merge — the road finding 2 found", () => {
+    // The 4b hold is `!acknowledged`, so a shift that hand-reviews a money/auth
+    // diff whose review never ran clears it and arrives at the merge. This arm
+    // exists because there was none, and its absence is what let the notice
+    // claim "non-money diff" on a road where both halves of that were false.
+    const a = decideMergeAction(
+      pr({ review: "absent", files: ["server/routes/billing.ts"], acknowledgedAtVerdictCount: 0 }),
+      ctx,
+    );
+    expect(a.kind).toBe("merge");
+    const notice = a.kind === "merge" ? (a.notice ?? "") : "";
+    expect(notice).toMatch(/NO Fable review run was ever created/);
+    // ⚠ IT MUST NOT NARRATE THE BASIS. `mergeNotice` cannot see the files or
+    //    the acknowledgement, so any sentence about either is a guess.
+    expect(notice).not.toMatch(/non-money/);
+    expect(notice).not.toMatch(/gate alone/);
+  });
+
+  it("the notice's PR #610 timings match the record the docblock and CLAUDE.md carry", () => {
+    // Finding 1: the first wording said "five seconds", which is the
+    // remove -> re-add gap and pairs with neither clause of the sentence it
+    // sat in. A number in a line built to be trusted is worth an arm.
+    const notice = mergeNotice(pr({ review: "absent" })) ?? "";
+    expect(notice).toMatch(/two\s+seconds later/);
+    expect(notice).toMatch(/fourteen minutes/);
+    expect(notice).not.toMatch(/five\s+seconds/);
+  });
+
   it("mergeNotice is silent on every state that is not an absence", () => {
     for (const review of ["verdict", "no-verdict", "declined", "pending"] as const) {
       expect(mergeNotice(pr({ review }))).toBeNull();

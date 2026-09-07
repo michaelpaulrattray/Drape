@@ -237,20 +237,6 @@ export type MergeContext = {
 };
 
 /**
- * WHY THERE IS NO VERDICT, in the words a shift can act on (#566).
- *
- * The two absences read identically on the checks page and want opposite next
- * moves: `declined` means the reviewer LOOKED and this diff did not earn a
- * look, so the remedy is a label; `absent` means nothing ran, so the remedy is
- * to make something run — and the old wording sent a shift hunting a
- * `skip-review` label that was never applied.
- *
- * ⚠ IT RETURNS A CLAUSE, NOT A SENTENCE, and it is deliberately EMPTY for
- * `no-verdict` and for the two live states. A caller appends it inside its own
- * reason and owns the full stop; a helper that guessed at punctuation would be
- * a second place that knows how these sentences are built.
- */
-/**
  * THE ABSENCE SAID OUT LOUD ON THE MERGE ITSELF — #566's second half, and the
  * whole of what that card asked for: *"a shift should not have to query the
  * API to learn there is no reviewer."*
@@ -268,21 +254,46 @@ export type MergeContext = {
  * `declined` earns no notice. It is the design working — a docs-only or
  * sub-50-line diff is SUPPOSED not to be reviewed, and a line about it on
  * every such merge is noise that would teach shifts to skip reading these.
+ *
+ * ⚠ AND IT STATES THE FACT, NEVER THE BASIS OF THE MERGE (PR #665's review,
+ * finding 2). The first wording said this was *"merging on the gate alone,
+ * which the standing orders permit for a non-money diff"* — and that is FALSE
+ * on a road this function is reachable from: a money/auth PR whose review is
+ * absent is held at 4b, and a shift that hand-reviews it and re-runs with
+ * `--acknowledge` clears that hold and arrives here. Both halves would then
+ * be wrong — it IS a money diff, and it merged on the gate PLUS a hand review.
+ * **`mergeNotice` cannot see whether the caller acknowledged or which files
+ * moved, so it must not narrate either.** That is the same
+ * confident-wrong-diagnosis shape as the `skip-review` sentence this PR
+ * retires, which is why it was worth a push rather than a note.
  */
 export function mergeNotice(pr: PrReading): string | null {
   if (pr.review === "absent") {
     return (
-      `NO Fable review run was ever created for #${pr.number} — merging on the gate alone, ` +
-      "which the standing orders permit for a non-money diff. This is the FOURTH state and " +
-      "#219's paragraph does not name it: an absent check is not a verdict, not a refusal " +
-      "and not a cancellation. If this PR wanted a look, remove and re-add `needs-fable` " +
-      "(#368) BEFORE merging — the same re-add is what produced a run on PR #610 five " +
-      "seconds after an identical label event produced none."
+      `NO Fable review run was ever created for #${pr.number}. This is the FOURTH state ` +
+      "and #219's paragraph does not name it: an absent check is not a verdict, not a " +
+      "refusal and not a cancellation. If this PR wanted a look, remove and re-add " +
+      "`needs-fable` (#368) BEFORE merging — on PR #610 the re-add produced a run two " +
+      "seconds later, fourteen minutes after an identical label event had produced none."
     );
   }
   return null;
 }
 
+/**
+ * WHY THERE IS NO VERDICT, in the words a shift can act on (#566).
+ *
+ * The two absences read identically on the checks page and want opposite next
+ * moves: `declined` means the reviewer LOOKED and this diff did not earn a
+ * look, so the remedy is a label; `absent` means nothing ran, so the remedy is
+ * to make something run — and the old wording sent a shift hunting a
+ * `skip-review` label that was never applied.
+ *
+ * ⚠ IT RETURNS A CLAUSE, NOT A SENTENCE, and it is deliberately EMPTY for
+ * `no-verdict` and for the two live states. A caller appends it inside its own
+ * reason and owns the full stop; a helper that guessed at punctuation would be
+ * a second place that knows how these sentences are built.
+ */
 export function reviewAbsenceClause(review: ReviewPresence): string {
   switch (review) {
     case "declined":
