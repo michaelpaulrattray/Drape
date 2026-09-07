@@ -1,7 +1,7 @@
 {
-  "edition": 285,
-  "updatedAt": "2026-09-07T00:41:21.275Z",
-  "shift": "Foreman (Opus) - two money-surface numbers were about to be wrong on your first real subscription, and the reviewer caught the fix carrying its own version of the same fault",
+  "edition": 286,
+  "updatedAt": "2026-09-07T03:45:00.000Z",
+  "shift": "Foreman (Opus) - four fixes, two of them yours, and the tool that lands the team's work could not do its own job",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-07T00:44:22.935Z",
+      "readAt": "2026-09-07T03:45:37.376Z",
       "items": [
         {
           "issueNumber": 16,
@@ -270,7 +270,7 @@
         }
       ],
       "recommendation": "(a), but not urgently - it is the last member of a family that has now produced three separate wrong numbers on your money screens, and closing it removes the whole shape rather than another instance. The frames below need thirty seconds of your eye whatever you choose, because that panel is the last thing somebody sees before they pay us.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-07"
     },
     {
@@ -297,7 +297,7 @@
         }
       ],
       "recommendation": "(b), whenever you next think about pricing - not now. It costs one string and loses nothing.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-06"
     },
     {
@@ -1953,8 +1953,29 @@
   ],
   "eyeItems": [
     {
-      "id": "cycle-spend-385-frames",
+      "id": "free-blurb-621-frames",
+      "title": "The Free plan line you chose, on the real card",
+      "question": "You picked (b) - the safer line. This is it in the running app, both themes: \"For trying the studio out before you commit.\" The credits line under it still says what they get. Does it read right to you?",
       "state": "open",
+      "filedAt": "2026-09-07T03:45:00.000Z",
+      "issueNumber": 621,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/26870896-c440-4dee-b9c5-2efdc8f1c3d7.png",
+          "caption": "Dark, 1440. \"For trying the studio out before you commit.\" All three cards now say who the plan is for. The 5,000 a month and \"About 14 casting frames\" underneath are unchanged - nothing was lost by dropping the promise.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/61c0ae39-2c88-4f60-ab61-4931d5b9d218.png",
+          "caption": "Light, 1440. Same line, same alignment: all three lines sit on one edge, so the cards' buttons still line up.",
+          "arm": "light"
+        }
+      ]
+    },
+    {
+      "id": "cycle-spend-385-frames",
+      "state": "answered",
       "cardId": "cycle-spend-385",
       "issueNumber": 624,
       "filedAt": "2026-09-07T00:41:21.275Z",
@@ -1975,7 +1996,7 @@
     },
     {
       "id": "plan-blurb-404-frames",
-      "state": "open",
+      "state": "done",
       "cardId": "free-blurb-promise-621",
       "issueNumber": 621,
       "filedAt": "2026-09-06T22:07:37.564Z",
@@ -4170,6 +4191,34 @@
   ],
   "pipeline": [
     {
+      "id": "pr-633-free-blurb-621",
+      "title": "Your Free plan line no longer makes a promise a price change could break (#621)",
+      "status": "merged",
+      "prNumber": 633,
+      "note": "You chose (b), the safer line. Six of your seven lines say who a plan is FOR. The Free one also promised \"a few casts a month, no card\" - both true today, and both something a pricing decision could quietly turn into a lie, on the screen where people pay you. It now reads \"For trying the studio out before you commit.\" Nothing is lost: the line directly underneath still says 5,000 a month, about 14 casting frames. Frames are in your gallery."
+    },
+    {
+      "id": "pr-627-args-number-625",
+      "title": "A mistyped spending limit could switch the limit OFF instead of setting it (#625)",
+      "status": "merged",
+      "prNumber": 627,
+      "note": "This is house money, not yours, and nothing has been overspent. Our own measuring scripts take a spending ceiling on the command line - and if somebody typed the letter O instead of a zero, the ceiling did not become wrong, it stopped existing: every check against it silently passed. Five scripts read numbers that way. They now share one reader that refuses a value that is not a number, and any future script joins that protection automatically rather than by somebody remembering."
+    },
+    {
+      "id": "pr-628-eyeitem-354",
+      "title": "Pictures put here for you could vanish off this page before you had looked (#354)",
+      "status": "merged",
+      "prNumber": 628,
+      "note": "Nearly happened last night. This gallery only shows items marked \"open\", and a nightly tidy-up marked them finished as soon as the underlying job closed - so two pictures uploaded for your eyes would have appeared nowhere at all, on the very edition asking you to look at something. A job finishing means the WORK is done; it does not mean you looked. Pictures now stay until somebody says you have seen them."
+    },
+    {
+      "id": "pr-631-merge-tool-630",
+      "title": "The tool that lands the team's work could not do the one job it was built for (#630)",
+      "status": "merged",
+      "prNumber": 631,
+      "note": "You asked in September for the nights to stop idling while they wait. Part of that answer was a tool that tidies up when two jobs collide - and tonight it sat repeating \"waiting\" every thirty seconds, for over an hour, while holding the very action that would have unblocked it. It has been that way since it was built, because every test of it was run against the one situation where the fault cannot show. Fixed, and proved by watching it unblock and land the job it had been stuck on."
+    },
+    {
       "id": "pr-626-strictargs-602",
       "title": "The last two money-spending scripts now refuse a word they do not recognise (#602)",
       "status": "merged",
@@ -5923,10 +5972,17 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0907c-foreman",
+      "title": "The queue: 85 open, and nothing is waiting on you except one verdict",
+      "severity": "info",
+      "state": "open",
+      "detail": "Four closed tonight (#625, #354's first half, #630, and #621 - yours), one new one filed and closed the same shift. NEXT UP still holds only #543, which is waiting on your word about two numbers rather than on any work; those numbers come from the next performance check-up on 12 September, as you asked.\n\nNothing is rotting: no open card has sat a week without being re-read. Your other ruling tonight - (a) on the spend figure - is recorded on its card as approved and not urgent, sized at half a shift, so a future night picks it up without asking you again."
+    },
+    {
       "id": "queue-shape-0907b-foreman",
       "title": "The queue: 87 open, NEXT UP now clear of everything but your verdict",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "detail": "Steady at 87. Your plan-card lines are built and closed tonight (#404), so the only thing left in NEXT UP is the shift-process card waiting on your verdict (#543). Nothing carries the urgent label.\n\nTwo cards were measured rather than built, deliberately. The stale switch-counts card (#618, your question this morning about the Bugs number still reading 18) is real and its diagnosis is right, but it is bigger than it looks - the counter is an eight-hundred-line script that exports nothing, so wiring it into the end of a shift is a refactor rather than a one-liner, and half of that card is a question for you about what the number should MEAN. It has been sized on the card so the next shift does not start it thinking it is small. In the meantime this shift ran the counter at both ends, so the figure you see now reflects what tonight actually closed.\n\nOne new card was filed (#620): the safety prompt you had added last night to the six commands that can destroy work covers \"git merge\" but not \"git pull\", which can do the same things. Found by walking into it - the end-of-shift step needs a merge, the prompt correctly stopped it, and there is nobody to answer a prompt at 8am. The recommendation is on the card and it is not simply \"add another line\", because that would leave shifts unable to finish."
     },
     {
@@ -6265,10 +6321,14 @@
     150,
     151,
     152,
-    153
+    153,
+    154,
+    155,
+    156,
+    157
   ],
   "nextUp": {
-    "readAt": "2026-09-07T00:44:22.121Z",
+    "readAt": "2026-09-07T03:45:36.562Z",
     "items": [
       {
         "issueNumber": 543,
