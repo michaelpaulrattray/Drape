@@ -4,6 +4,11 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+/* `runHook` drives the GATE — it must distinguish "refused" from "never ran"
+   (#640). The bare `execFileSync` below reads repository state, where throwing
+   on any failure is the wanted behaviour and there is no verdict to confuse. */
+import { runHook } from "./testing/hookDriver";
+
 /**
  * THE ATLAS MERGE DRIVER, DRIVEN RATHER THAN READ (Retro guard R1,
  * docs/RETRO_LOG.md; card #100).
@@ -39,16 +44,10 @@ function gitWith(config: string[], cwd: string, ...args: string[]): Result {
     "-c", "user.email=gate@example.invalid",
     "-c", "commit.gpgsign=false",
   ];
-  try {
-    const stdout = execFileSync("git", [...base, ...config, ...args], { cwd, encoding: "utf8", stdio: "pipe" });
-    return { status: 0, stderr: "", stdout };
-  } catch (error: any) {
-    return {
-      status: typeof error?.status === "number" ? error.status : -1,
-      stderr: String(error?.stderr ?? ""),
-      stdout: String(error?.stdout ?? ""),
-    };
-  }
+  /* A `git` that never starts throws rather than returning `-1` — see
+     `server/testing/hookDriver.ts` and #640. Five arms here assert refusal as
+     `not.toBe(0)`, which the old sentinel satisfied. */
+  return runHook("git", [...base, ...config, ...args], { cwd });
 }
 
 /** git with the driver registered and the stand-in generator. */

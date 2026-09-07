@@ -1,8 +1,9 @@
-import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { runHook } from "./testing/hookDriver";
 
 /**
  * ARM 2 OF THE PRE-PUSH GATE, DRIVEN RATHER THAN READ (cards #606, #519).
@@ -56,12 +57,11 @@ function gitWith(config: string[], cwd: string, ...args: string[]): Result {
        what shifts actually meet when it is present. */
     "-c", `merge.atlas.driver=${HOOKS_DIR}/merge-atlas %O %A %B %P`,
   ];
-  const run = spawnSync("git", [...base, ...config, ...args], { cwd, encoding: "utf8" });
-  return {
-    status: typeof run.status === "number" ? run.status : -1,
-    stderr: String(run.stderr ?? ""),
-    stdout: String(run.stdout ?? ""),
-  };
+  /* A `git` that never starts THROWS rather than returning `-1` (#640). Five
+     arms below assert refusal as `not.toBe(0)`, which the old sentinel
+     satisfied — they would report "the stale map was refused" over a push gate
+     that never ran. */
+  return runHook("git", [...base, ...config, ...args], { cwd });
 }
 
 const git = (cwd: string, ...args: string[]) => gitWith([], cwd, ...args);
@@ -246,14 +246,14 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
     expect(git(work, "commit", "-q", "--no-verify", "-m", "stale").status).toBe(0);
 
     /* Same commit the arm above refuses — allowed here only by the marker. */
-    const run = spawnSync("git", [
+    const run = runHook("git", [
       "-c", "core.autocrlf=false",
       "-c", `core.hooksPath=${HOOKS_DIR}`,
       "-c", "user.name=gate",
       "-c", "user.email=gate@example.invalid",
       "-c", `drape.atlasCheck=${CHECK}`,
       "push", "origin", "trunk",
-    ], { cwd: work, encoding: "utf8", env: { ...process.env, DRAPE_DEPLOY_RITE: "1" } });
+    ], { cwd: work, env: { ...process.env, DRAPE_DEPLOY_RITE: "1" } });
 
     expect(run.status, String(run.stderr)).toBe(0);
     expect(String(run.stderr)).not.toContain("REFUSED");
@@ -289,11 +289,19 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
        the wrong reason — which is what this arm did on Linux CI the first time
        it ran: a green "REFUSES" arm over a hook that was never invoked. */
     writeFileSync(join(lone, "pre-push"), readFileSync(join(HOOKS_DIR, "pre-push"), "utf8"), { mode: 0o755 });
-    const result = spawnSync("git", [
+    /* ⚠ `runHook`, not a bare `spawnSync` — PR #643's round-2 finding 1, and it
+       is THIS arm precisely. `spawnSync` reports `status: null` for a git that
+       never starts, `null !== 0` PASSES the refusal assertion below, and this
+       arm would then report "the control refuses when its dependency is
+       missing" — invariant 7's proof-of-blocking — over a git that never ran.
+       It survived only because the `atlas-paths` assertion beside it would also
+       have failed, which is the neighbour-protecting-it state this suite's
+       driver was changed to end. */
+    const result = runHook("git", [
       "-c", `core.hooksPath=${lone.replace(/\\/g, "/")}`,
       "-c", `drape.atlasCheck=${CHECK}`,
       "push", "origin", "trunk",
-    ], { cwd: work, encoding: "utf8" });
+    ], { cwd: work });
 
     expect(result.status).not.toBe(0);
     expect(String(result.stderr)).toContain("atlas-paths");
