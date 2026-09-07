@@ -69,22 +69,52 @@ const SANCTIONED_HANDOFF = /openCeremonyWorld\(\s*process\.argv\s*[,)]/;
  * A file that names one of the two worlds in words it took out of `process.argv`
  * itself — `includes`, `indexOf`, an index, a pre-slice, any of them.
  *
- * ⚠ Bounded to a SINGLE LINE (`[^\n]`) rather than a lazy `[\s\S]`, so a
- * sanctioned `openCeremonyWorld(process.argv)` cannot reach forward across a
- * blank line to some unrelated `"--dev"` and be read as an offence.
+ * ⚠ **IT ASKS TWO QUESTIONS OF THE WHOLE FILE RATHER THAN ONE OF A LINE, AND
+ * THAT IS THE REVIEW'S FINDING ON PR #657.** The first form required
+ * `process.argv` and the world word within 60 characters of each other on ONE
+ * line, which is tight against a false POSITIVE and quietly open the other way:
+ *
+ *     const args = process.argv.slice(2);
+ *     const world = args.includes("--production") ? "production" : "dev";
+ *
+ * is the same defect through an alias, and a prettier-wrapped
+ * `process.argv\n  .includes("--production")` is the same defect through a line
+ * break. Both are non-adopters, so the adoption arm cannot see them either —
+ * which is this suite's own thesis failing on its own new arm.
+ *
+ * So: an **unsanctioned `process.argv` read anywhere in the file**, AND a
+ * `--dev`/`--production` **literal anywhere in its code**. The `unsanctioned`
+ * half is what protects a legitimate caller — a ceremony that hands the whole
+ * line over and merely mentions `--production` in a hint string has no
+ * unsanctioned argv read, so it stays clean. Measured over the real directory:
+ * **35 ceremonies, 0 offenders**, and `ceremony-r7-founder-evidence` falls out
+ * on the second question by itself rather than by an exemption — it reads argv,
+ * but the words it names are its own (`--database-url`), never a world.
+ *
+ * ⚠ **Its remaining quiet direction, stated rather than discovered** (the house
+ * convention, `codeWithoutBlockComments` in `scripts/lib/stopline.mts`): a
+ * ceremony that reads argv by hand and never spells a world word in its own
+ * source — assembling it, importing it as a constant, or reading it from an
+ * env var — passes. Nothing in the tree does this, it is not a shape anyone
+ * writes by accident, and the alternative is a real parser. **This reader can
+ * go quiet, never loud.**
  *
  * ⚠ **The block-comment strip is DEFENSIVE AND NOT LOAD-BEARING, and that was
  * measured rather than assumed.** Every one of these scripts documents its own
  * command line in its docblock, so the strip looks essential; driven over the
- * real directory it changes nothing — **35 ceremonies, 0 offenders with the
- * strip and 0 without**, because those docblock lines name the flags without
- * naming `process.argv` on the same line. It stays for the case that costs
- * nothing to cover: a docblock QUOTING the banned form to explain it, which is
- * how this repository writes about its own defects.
+ * real directory it changes nothing — **0 offenders with the strip and 0
+ * without**. It stays for the case that costs nothing to cover: a docblock
+ * QUOTING the banned form to explain it, which is how this repository writes
+ * about its own defects — and under the whole-file predicate that case is no
+ * longer hypothetical, since a quoted `--production` and a real argv read no
+ * longer have to share a line to meet.
  */
 export function choosesItsOwnWorld(source: string): boolean {
-  return /process\.argv[^\n]{0,60}?["'`]--(?:dev|production)\b/
-    .test(codeWithoutBlockComments(source));
+  const code = codeWithoutBlockComments(source);
+  const readsArgvByHand = code
+    .split("\n")
+    .some((line) => line.includes("process.argv") && !SANCTIONED_HANDOFF.test(line));
+  return readsArgvByHand && /["'`]--(?:dev|production)\b/.test(code);
 }
 
 /** `process.argv` as node builds it: the binary, the script, then the words. */
@@ -335,8 +365,36 @@ describe("the nineteenth ceremony", () => {
     expect(choosesItsOwnWorld('if (process.argv.indexOf("--dev") !== -1) {')).toBe(true);
     expect(choosesItsOwnWorld("const world = process.argv.slice(2).includes('--production');")).toBe(true);
 
+    /*
+      ⚠ THE TWO SHAPES PR #657'S REVIEW FOUND, and they are the reason the
+      predicate reads the whole file rather than one line. Both are the identical
+      defect with the argv read and the world word on DIFFERENT lines — an alias
+      and a wrapped chain — and both are non-adopters, so the adoption arm above
+      is blind to them by construction. If this arm ever goes green on these two,
+      the directory arm has quietly become the thing it replaced.
+    */
+    expect(choosesItsOwnWorld(
+      "const args = process.argv.slice(2);\n"
+      + 'const world = args.includes("--production") ? "production" : "dev";',
+    )).toBe(true);
+    expect(choosesItsOwnWorld(
+      "const world = process.argv\n"
+      + '  .includes("--production");',
+    )).toBe(true);
+
     expect(choosesItsOwnWorld(
       "const { world, connection: conn } = await openCeremonyWorld(process.argv);",
+    )).toBe(false);
+    /*
+      ⚠ AND THE FALSE POSITIVE THE WIDENING COULD HAVE BOUGHT. A legitimate
+      caller that merely NAMES a world in a hint string must stay clean — it is
+      the `unsanctioned` half of the predicate that keeps it so, not luck, and a
+      predicate that only asked "does this file mention both" would fail here and
+      be weakened by the first person it stopped.
+    */
+    expect(choosesItsOwnWorld(
+      "const { connection: conn } = await openCeremonyWorld(process.argv);\n"
+      + 'console.error("run it with --production under railway");',
     )).toBe(false);
     /* The reader's OWN spelling of the two words must not read as an offence —
        it declares them, which is the whole point. */
