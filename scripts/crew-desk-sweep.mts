@@ -76,6 +76,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { crewCardNeedsHim } from "../shared/crewCardState.js";
 import {
   type ResolvableBriefing,
   planCardResolutions,
@@ -222,7 +223,15 @@ if (ordered === null) {
       body: String(row.body ?? ""),
     })),
     deskOpen: ((briefing.needsYou ?? []) as Json[])
-      .filter((card) => card.state === "open" && typeof card.issueNumber === "number")
+      /* ⚠ `crewCardNeedsHim`, NEVER a literal (#354, review of PR #648 finding 1).
+         A `waiting` card is one he answered whose remaining act is still HIS —
+         so its issue must carry the `blocked` label exactly as an open card's
+         does. The escalation gate reads holds from LABELS ONLY and cannot see
+         his desk (`shared/crewNextUpHold.ts`), so a literal here would let a
+         shift launch onto work whose one remaining step is his, while this very
+         page rendered "waiting on you" beside it. That is #586's measured
+         incident re-created for the new state. */
+      .filter((card) => crewCardNeedsHim(String(card.state)) && typeof card.issueNumber === "number")
       .map((card) => ({ issueNumber: Number(card.issueNumber), cardId: String(card.id) })),
   });
 
@@ -455,7 +464,10 @@ for (const item of resolution.unreadable) {
 
 const openCardIds = new Set(
   ((briefing.needsYou ?? []) as Json[])
-    .filter((card) => card.state === "open")
+    /* Same question, same owner (#354). A `waiting` card still holds its
+       `waiting-founder` row, so reporting that row as a liar would be the
+       opposite error. */
+    .filter((card) => crewCardNeedsHim(String(card.state)))
     .map((card) => String(card.id)),
 );
 const liars = ((briefing.pipeline ?? []) as Json[]).filter(

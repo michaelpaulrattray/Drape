@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c1524a15b473ad95"
+    "sourceFingerprint": "a2938b4b8e54865d"
   },
   "domains": [
     {
@@ -14586,6 +14586,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:shared/crewCardState.ts",
       "kind": "imports"
     },
     {
@@ -33346,6 +33351,11 @@
     {
       "from": "module:shared/castingRealization.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewCardResolution.ts",
+      "to": "module:shared/crewCardState.ts",
       "kind": "imports"
     },
     {

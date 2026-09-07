@@ -1,4 +1,6 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
@@ -71,20 +73,57 @@ describe("the waiting state", () => {
     expect(rows[0]?.blockedOnYou).toBe(false);
   });
 
-  it("the three consumers ask ONE question — none of them compares to a literal", async () => {
+  it("NOBODY asks the question with a literal — the population is derived, not listed", async () => {
     /*
-      Working law 4, held at the bytes. Three places decided "does this still
-      need him" before #354, and a fourth state added to two of three would
-      have failed silently in the two directions the arms above describe.
-    */
-    const dir = new URL("./", import.meta.url);
-    const needsYou = await readFile(new URL("CrewNeedsYou.tsx", dir), "utf8");
-    const types = await readFile(new URL("crewTypes.ts", dir), "utf8");
+      ⚠ THIS ARM REPLACES ONE THAT NAMED THREE FILES, AND THE REVIEW OF PR #648
+      IS WHY.
 
+      The first version scanned `CrewNeedsYou.tsx` and `crewTypes.ts` — the two
+      the fix had touched — so it pinned the consumers that were ALREADY right
+      and could not see the ones that were not. There were six more: the desk
+      sweep's hold label (the severe one: the escalation gate reads labels only,
+      so a `waiting` card would have looked takeable while this page said
+      otherwise), the sweep's waiting-founder report, BOTH briefing refinements,
+      the eye gallery, and two in the resolution planner.
+
+      A guard whose population is the set of files you already fixed stops
+      watching the moment you fix one. So the population is derived: every
+      source file on the desk's surface, and the arm fails on the literal
+      wherever it appears.
+    */
+    const roots = [
+      new URL("./", import.meta.url),
+      new URL("../../../../../../server/crew/", import.meta.url),
+      new URL("../../../../../../shared/", import.meta.url),
+      new URL("../../../../../../scripts/", import.meta.url),
+    ];
+    const offenders: string[] = [];
+    for (const root of roots) {
+      const dir = fileURLToPath(root);
+      for (const name of await readdir(dir)) {
+        if (!/\.(ts|tsx|mts)$/.test(name)) continue;
+        if (/\.test\.(ts|tsx)$/.test(name)) continue;
+        if (root.href.endsWith("/shared/") && !name.startsWith("crew")) continue;
+        if (root.href.endsWith("/scripts/") && !name.startsWith("crew-")) continue;
+        const src = await readFile(join(dir, name), "utf8");
+        /* CODE ONLY — a docblock may quote the retired literal, and several
+           deliberately do to explain what changed. Comments are stripped first
+           so quoting the defect is never mistaken for committing it. */
+        const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+        for (const m of code.matchAll(/(\w+)\.state\s*[!=]==\s*"open"/g)) {
+          /* `problem.state` is a different field with three states of its own
+             and no notion of him — it is not this question. */
+          if (m[1] === "problem") continue;
+          offenders.push(`${name}: ${m[0]}`);
+        }
+      }
+    }
+    expect(offenders, "these ask 'does this still need him' with a literal").toEqual([]);
+
+    /* The positive control on the scanner: it must actually be reading files
+       and finding the predicate, or an empty `offenders` proves nothing. */
+    const needsYou = await readFile(new URL("./CrewNeedsYou.tsx", import.meta.url), "utf8");
     expect(needsYou).toContain("crewCardNeedsHim(card.state)");
-    expect(needsYou).not.toMatch(/card\.state === "open"/);
-    expect(types).not.toMatch(/card\.state === "open"/);
-    expect((types.match(/crewCardNeedsHim\(/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
   it("the render says which kind it is, in his words rather than the field's", async () => {

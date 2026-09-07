@@ -32,7 +32,7 @@
  * # ⚠ AND THERE IS NO KEPT TILE, BECAUSE THERE IS NO KEPT ITEM
  *
  * §6 asks for the casting keeper grammar — a `3px --accentSolid` underline plus
- * a pill when kept. This gallery renders `state === "open"` only; #292 moved
+ * a pill when kept. This gallery renders what still needs him; #292 moved
  * every judged item into the history block, which was his own ruling. So a kept
  * tile cannot occur here, and styling one would be a dead state that reads as
  * tested. What ships is the other half of the same sentence: dashed while
@@ -40,6 +40,7 @@
  * `NeedsHuman`'s cards are dashed one surface over.
  */
 import { useState } from "react";
+import { crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { CrewEyeViewer } from "./CrewEyeViewer";
 import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
@@ -66,7 +67,12 @@ export function CrewEyeGallery({
      are compared against each other, never against another item's. */
   const [viewing, setViewing] = useState<{ itemId: string; index: number } | null>(null);
 
-  const open = items.filter((item) => item.state === "open");
+  /* ⚠ `crewCardNeedsHim` (#354, review of PR #648 finding 4). Deriving the
+     schema's enum from `CREW_CARD_STATES` made `waiting` writable here, and
+     the history block was deleted in #438 — so a `waiting` eye item rendered
+     NOWHERE, silently. That is "the vanishing the design forbids", in this
+     feature's own words, created by the fix for its own class. */
+  const open = items.filter((item) => crewCardNeedsHim(item.state));
   const viewedItem = viewing ? items.find((item) => item.id === viewing.itemId) : undefined;
 
   /* Nothing OPEN means nothing to judge: an empty gallery frame would be

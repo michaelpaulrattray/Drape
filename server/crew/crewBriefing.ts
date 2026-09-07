@@ -59,7 +59,7 @@
  */
 import { z } from "zod";
 
-import { CREW_CARD_STATES } from "../../shared/crewCardState.js";
+import { CREW_CARD_STATES, crewCardNeedsHim } from "../../shared/crewCardState.js";
 import { CREW_HELD_STATES, CREW_HOLD_REASON_MAX } from "../../shared/crewNextUpHold.js";
 import { CREW_LADDER_GROUP_KEYS, onePlaceViolations } from "../../shared/crewPipelineGroups.js";
 
@@ -411,7 +411,12 @@ export const crewBriefingSchema = z.object({
       if (item.cardId == null) return true;
       const card = briefing.needsYou.find((candidate) => candidate.id === item.cardId);
       if (!card) return false;
-      return item.state !== "open" || card.state === "open";
+      /* ⚠ A `waiting` CARD KEEPS ITS OPEN FRAMES (#354, review of PR #648
+         finding 3). "Look at a picture" is one of the three shapes a `waiting`
+         card exists for, so a card marked waiting BECAUSE he must still judge
+         frames must be able to keep those frames open — a literal here refuses
+         the whole briefing for the truthful shape. */
+      return !crewCardNeedsHim(item.state) || crewCardNeedsHim(card.state);
     }),
   "an eye item's cardId must name a needsYou card, and an open eye item needs an open card (#133)",
 ).refine(
@@ -435,7 +440,12 @@ export const crewBriefingSchema = z.object({
       if (item.status !== "waiting-founder") return item.cardId == null;
       if (item.cardId == null) return false;
       return briefing.needsYou.some(
-        (card) => card.id === item.cardId && card.state === "open",
+        /* ⚠ Same, for the row that says he is blocking something (#354,
+           finding 2). A card he answered whose remaining act is his is STILL
+           blocking its pipeline row on him — row `waiting-founder` beside card
+           `waiting` is the truthful pair, and a literal made it
+           unrepresentable. */
+        (card) => card.id === item.cardId && crewCardNeedsHim(card.state),
       );
     }),
   "a waiting-founder pipeline row must name an OPEN needsYou card, and only such a row may carry cardId (#291)",

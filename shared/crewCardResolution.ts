@@ -49,7 +49,7 @@
  * of the SCHEMA, and that is the only place it was ever checked — which is why
  * it survived. It is false of his PAGE.
  *
- * `CrewEyeGallery` renders `state === "open"` and nothing else
+ * `CrewEyeGallery` renders what still needs him and nothing else
  * (`client/src/features/admin/components/crew/CrewEyeGallery.tsx`, and it
  * returns `null` outright when none is open). So promoting an OPEN eye item to
  * `done` does not tidy a field — **it takes the frames off his screen.**
@@ -87,6 +87,8 @@
  */
 
 /** OPEN | CLOSED | null when the record could not be read. */
+import { crewCardNeedsHim } from "./crewCardState.js";
+
 export type IssueState = "OPEN" | "CLOSED" | null;
 
 export type ResolvableCard = {
@@ -200,16 +202,16 @@ export function planCardResolutions(
     names is safe to close, so the answer has to exist before the cards are
     judged.
 
-    ⚠ AN OPEN ONE IS HELD (#354). The gallery renders `state === "open"` only,
-    so promoting an open eye item is not a tidy-up — it removes the frames from
-    his page. The issue closing proves the WORK finished; it says nothing about
+    ⚠ ONE THAT STILL NEEDS HIM IS HELD (#354). The gallery renders exactly
+    those, so promoting one is not a tidy-up — it removes the frames from his
+    page. The issue closing proves the WORK finished; it says nothing about
     whether he looked.
   */
   for (const item of eyeItems) {
     if (!closing(item, "eyeItems")) continue;
     const issueNumber = item.issueNumber as number;
 
-    if (item.state === "open") {
+    if (crewCardNeedsHim(item.state)) {
       held.push({
         list: "eyeItems",
         id: item.id,
@@ -241,7 +243,7 @@ export function planCardResolutions(
        live one. Both are held instead, and they are settled together by a hand
        rather than by a guess. */
     const orphanedEye = eyeItems.find(
-      (item) => item.cardId === card.id && item.state === "open",
+      (item) => item.cardId === card.id && crewCardNeedsHim(item.state),
     );
     if (orphanedEye) {
       /* ⚠ THE ADVICE NAMES ONLY WHAT IS ACTUALLY OPEN TO THE SHIFT (review of
