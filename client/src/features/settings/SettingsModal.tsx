@@ -77,7 +77,6 @@ export function SettingsModal({
   planPriceInCents,
   allowance,
   balance,
-  periodStart,
   renewsAt,
 }: {
   section: SettingsSection;
@@ -93,13 +92,12 @@ export function SettingsModal({
   planPriceInCents: number;
   allowance: number;
   balance: number;
-  periodStart: Date | null;
   renewsAt: Date | null;
 }) {
   const pane = useMemo(() => {
     switch (section) {
       case "usage":
-        return <UsageSection allowance={allowance} balance={balance} periodStart={periodStart} />;
+        return <UsageSection allowance={allowance} balance={balance} />;
       case "billing":
         return (
           <BillingSection
@@ -127,7 +125,6 @@ export function SettingsModal({
   }, [
     section,
     allowance,
-    periodStart,
     planName,
     planPriceInCents,
     balance,

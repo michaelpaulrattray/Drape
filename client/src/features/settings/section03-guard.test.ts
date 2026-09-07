@@ -328,13 +328,27 @@ describe("section 03 — five modals became three surfaces", () => {
     expect(surfaces, "the lifetime counter is being passed into Settings again").not.toContain(
       "creditsUsed",
     );
-    expect(surfaces, "the period the window is scoped to is not passed").toContain("periodStart");
 
     const usage = code(read(join(SECTIONS_DIR, "UsageSection.tsx")));
     expect(usage, "Usage takes a credits figure it cannot scope to a window").not.toMatch(
       /creditsUsed:\s*number/,
     );
-    expect(usage, "Usage no longer sums a real per-day window").toContain("getDailyUsage");
+    /*
+      ⚠ THE SECOND HALF OF THIS ARM CHANGED SHAPE IN #624 AND THE CLAIM DID NOT.
+      It used to require the pane to contain `getDailyUsage` and
+      `AccountSurfaces` to hand it a `periodStart` — the wire of a window
+      computed on the CLIENT out of whole-UTC-day buckets. That road could not
+      see a billing period that begins mid-day, so it is gone: the window and
+      its sum are `usage.getCycleSpend` on the server, and the pane is handed no
+      window at all, which is why the prop went with it.
+
+      The claim being defended is unchanged and is the only one that ever
+      mattered here — the figure beside a monthly allowance is scoped to a
+      window rather than being the account's whole life.
+    */
+    expect(usage, "Usage renders a figure that is not scoped to a window").toContain(
+      "useSpendWindow",
+    );
   });
 
   it("card 381 — the one-bar chart is gone, and it is gone because it was measured", () => {

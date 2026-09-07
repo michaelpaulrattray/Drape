@@ -158,7 +158,6 @@ export function AccountSurfaces({
           planPriceInCents={planPriceInCents}
           allowance={allowance}
           balance={status?.balance ?? 0}
-          periodStart={status?.currentPeriodStart ? new Date(status.currentPeriodStart) : null}
           renewsAt={renewsAt}
         />
       ) : null}

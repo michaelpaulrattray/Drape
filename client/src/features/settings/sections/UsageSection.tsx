@@ -71,7 +71,9 @@
  */
 import { trpc } from "@/lib/trpc";
 
-import { sumWindow, windowStart } from "../usageWindow";
+import { useSpendWindow } from "@/features/billing/useCycleSpend";
+
+import { spendWindowCopy } from "../usageWindow";
 import { Bar, SettingsGroup, StatCard } from "../parts";
 
 /** `1.2 GB` — bytes at the precision a storage line is read at. */
@@ -85,32 +87,37 @@ function formatBytes(bytes: number): string {
 export function UsageSection({
   allowance,
   balance,
-  periodStart,
 }: {
   allowance: number;
   balance: number;
-  periodStart: Date | null;
 }) {
-  const { firstDay, label, days, note } = windowStart(periodStart, balance, allowance);
-  const { data: daily } = trpc.usage.getDailyUsage.useQuery({ days });
+  /*
+    ⚠ THE WINDOW AND ITS SUM ARE THE SERVER'S, AND ITS LABEL IS DERIVED FROM
+    THE WINDOW IT ACTUALLY SUMMED (#624).
+
+    This pane used to ask `usage.getDailyUsage` for whole UTC days and add the
+    ones inside a window it computed itself. Three drafts got the divisor wrong
+    in three different directions — the rows returned (zero while loading), the
+    days since `periodStart` (uncapped, so an annual plan printed a 90-day total
+    *"averaged over 201 days"*), and finally the day-keyed window itself, which
+    could not see that a real billing period begins mid-day. There is one
+    reading now, it is the same one the two money modals quote, and its span is
+    the exact elapsed time of the sum.
+  */
+  const spend = useSpendWindow();
+  const { label, over, note } = spendWindowCopy(spend?.basis ?? "rolling30", balance, allowance);
   const { data: storage } = trpc.profile.storageInfo.useQuery();
 
-  const creditsUsed = sumWindow(daily, firstDay);
   /*
-    ⚠ THE DIVISOR IS THE WINDOW'S OWN SPAN — NOT THE ROWS RETURNED, AND NOT THE
-    DAYS SINCE THE PERIOD BEGAN.
-
-    Two drafts got this wrong in two different directions. The first divided by
-    the number of ROWS inside the window, which is zero while the query is in
-    flight and rendered `across 0 days` under a figure. The second divided by
-    the days since `periodStart`, which is uncapped — so on an annual plan 200
-    days in, this printed a 90-day total *"averaged over 201 days"*, a figure
-    less than half the truth (PR #622 review, finding 1b).
-
-    `days` is what the server was asked for AND what the sum covers, so the two
-    cannot disagree. A window that has begun is at least one day old.
+    ⚠ NOT KNOWN YET IS NOT ZERO, AND THIS PANE USED TO PRINT THE ZERO. An
+    absent sum rendered as `0 credits used` for a beat — a confident wrong
+    number, and the same class the burn band already refuses to draw. An em
+    dash says the honest thing and costs one character.
   */
-  const perDay = Math.round(creditsUsed / days);
+  const creditsUsed = spend ? spend.spent.toLocaleString() : "—";
+  /* A window an hour old has a real spend and no meaningful rate: the divisor
+     is clamped at a day, exactly as `readCycle` clamps it for the modals. */
+  const perDay = spend ? Math.round(spend.spent / Math.max(1, spend.days)).toLocaleString() : "—";
 
   const storageUsed = storage?.used ?? 0;
   const storageLimit = storage?.limit ?? 0;
@@ -122,13 +129,22 @@ export function UsageSection({
           stats={[
             {
               label: "Credits used",
-              value: creditsUsed.toLocaleString(),
+              value: creditsUsed,
               note,
             },
             {
               label: "Credits a day",
-              value: perDay.toLocaleString(),
-              note: `averaged over ${days} ${days === 1 ? "day" : "days"}`,
+              value: perDay,
+              /*
+                ⚠ THE WINDOW IS NAMED, NOT COUNTED. It read `averaged over 201
+                days` under a figure that covered 90 of them — and the count was
+                only ever there to say which span the average was over, which
+                the window's own name says without a second number to disagree
+                with the first. The divisor is now fractional (the exact elapsed
+                time of the period), so any whole number printed beside it would
+                be a rounding of the arithmetic rather than the arithmetic.
+              */
+              note: `averaged over ${over}`,
             },
           ]}
         />

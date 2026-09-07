@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { readBurn, readCycle } from "./planMath";
 import { recommendPlan, type LadderPlan } from "./planLadder";
-import { sumWindow, windowStart } from "./usageWindow";
+import { spendWindowCopy } from "./usageWindow";
 
 /**
  * #385 — the burn rate on Change plan and Add credits divided a LIFETIME spend
@@ -238,14 +238,24 @@ describe("⚠ card 385 — the ANNUAL period, where the sum's window and the cyc
     expect(recommendPlan(LADDER, "starter" as never, understated)!.id).toBe("pro");
   });
 
-  it("⚠ the window itself no longer offers a second, uncapped number to divide by", () => {
-    /* The wire for this finding: `windowStart` returned BOTH a capped `days`
-       and an uncapped `elapsedDays`, and every caller that reached for the
-       second one was wrong. It is gone rather than documented. */
-    const w = windowStart(new Date(ANNUAL_NOW.getTime() - 200 * DAY), 50_000, 75_000);
-    expect(w.days).toBe(90);
-    expect(Object.keys(w)).not.toContain("elapsedDays");
-    expect(Object.keys(w).sort()).toEqual(["days", "firstDay", "label", "note"]);
+  it("⚠ there is still exactly ONE span beside the sum, and no second one to reach for", () => {
+    /*
+      The wire for this finding, re-aimed at the property in #624 rather than
+      at the old shape. `windowStart` used to return BOTH a capped `days` and an
+      uncapped `elapsedDays`, and every caller that reached for the second one
+      was wrong; the span now travels from the server beside the sum it belongs
+      to. What must never come back is a SECOND number a caller can divide by.
+
+      ⚠ Read at the hook rather than at a fixture, because the defect was never
+      a wrong value — it was a second field existing at all.
+    */
+    const hook = code(read(join(BILLING, "useCycleSpend.ts")));
+    expect(hook, "the hook stopped carrying the span beside the sum").toContain("days: spend.days");
+    expect(hook, "a second, separately-derived span came back").not.toContain("elapsedDays");
+
+    /* And the pane divides by the span it was given, not by one of its own. */
+    const pane = code(read(join(HERE, "sections", "UsageSection.tsx")));
+    expect(pane, "the pane derives its own divisor again").toContain("spend.days");
   });
 
   it("⚠ a cycle that has NOT begun still prints no rate — the two numbers do different jobs", () => {
@@ -268,53 +278,100 @@ describe("⚠ card 385 — the ANNUAL period, where the sum's window and the cyc
 });
 
 describe("card 385 — the window and the sum, which both surfaces now share", () => {
-  it("⚠ a row before the window's first day does not count, and one on it does", () => {
+  /*
+    ⚠ THIS BLOCK'S SUBJECT MOVED TO THE SERVER IN #624 AND THE ARMS MOVED WITH
+    IT, WHICH IS WHY THREE OF THEM READ DIFFERENTLY NOW.
+
+    They used to drive `sumWindow` — a client-side fold over
+    `usage.getDailyUsage`'s whole-UTC-day buckets — and its negative control
+    (a row before the window's first day must not count) was the arm that
+    mattered most here. That fold cannot answer the question at all: a real
+    billing period begins at a mid-day INSTANT and a day bucket has no edge
+    inside it. The boundary is now a `>=` in a WHERE clause, and a predicate is
+    proved by running it: `server/cycleSpend-db.test.ts` puts 9,000 credits an
+    hour before a 14:00 renewal and 1,000 an hour after it into a real
+    `point_transactions` table and asserts the answer is 1,000 — with the OLD
+    day-keyed window run against the same rows in the same arm, answering
+    10,000, so the two are shown to disagree rather than claimed to.
+
+    What stays here is what is still the client's: that the two money modals
+    and the Usage pane quote ONE reading, and that a reading nobody has yet is
+    not a spend of zero.
+  */
+
+  it("⚠ the boundary's negative control is DRIVEN, and this says where", () => {
     /*
-      THE NEGATIVE CONTROL, and it is the arm that matters. A sum that counted
-      everything would pass every "the total is right" assertion on a fixture
-      whose rows all sit inside the window — which is how a lifetime figure
-      passes for a cycle figure in the first place.
+      An arm that vanishes reads exactly like an arm nobody replaced, so the
+      pointer is an assertion rather than a comment: if the driven suite is
+      deleted or renamed, this goes red and somebody reads this paragraph.
     */
-    const rows = [
-      { date: "2026-08-27", creditsUsed: 99_999 },
-      { date: "2026-08-28", creditsUsed: 1_000 },
-      { date: "2026-09-02", creditsUsed: 500 },
-    ];
-    expect(sumWindow(rows, "2026-08-28"), "a row outside the window was counted").toBe(1_500);
-    expect(sumWindow(rows, "2026-09-02"), "the boundary day itself was dropped").toBe(500);
-    expect(sumWindow(rows, "2026-12-01"), "rows after the window's end leaked in").toBe(0);
+    const driven = code(read(join(HERE, "..", "..", "..", "..", "server", "cycleSpend-db.test.ts")));
+    expect(driven, "the mid-day boundary is no longer driven against real rows").toContain(
+      "the pre-renewal spend is dropped and the post-renewal spend is kept",
+    );
+    expect(driven, "the old road is no longer run beside the new one").toContain(
+      "THE OLD ROAD WOULD HAVE ANSWERED 10,000",
+    );
   });
 
-  it("⚠ an absent row set sums to zero, and the hook is what must not render it", () => {
-    /* Stated as an arm because the two callers differ: the Usage pane renders
-       the zero (it is a total, and zero is a true total of nothing yet), and
-       `useCycleSpend` refuses to, because a RATE off an unknown spend is a
-       confident wrong number. */
-    expect(sumWindow(undefined, "2026-09-01")).toBe(0);
-    expect(sumWindow(null, "2026-09-01")).toBe(0);
-
+  it("⚠ an unknown reading is NOT a spend of zero, and the hook is what must not render it", () => {
+    /*
+      Unchanged in substance and re-aimed at the shipped line. The Usage pane
+      renders `—` for a reading it does not have (it used to render `0`, which
+      is a confident wrong number), and `useCycleSpend` answers `null`, which
+      `readBurn` turns into no rate at all rather than a zero rate.
+    */
     const hook = code(read(join(BILLING, "useCycleSpend.ts")));
     expect(hook, "the hook stopped distinguishing 'not loaded' from 'spent nothing'")
-      .toContain("if (!daily) return null;");
+      .toContain("if (!spend) return null;");
+
+    const pane = code(read(join(HERE, "sections", "UsageSection.tsx")));
+    expect(pane, "the pane prints a zero for a figure it does not have again").toContain(
+      'spend ? spend.spent.toLocaleString() : "—"',
+    );
   });
 
-  it("⚠ the modals' window is the SAME reading the Usage pane uses", () => {
+  it("⚠ the modals' reading is the SAME reading the Usage pane uses", () => {
     /*
       Working law 4 — derive, never mirror. Two windows over one ledger would
       drift, and the drift would show as two surfaces quoting different spends
-      for the same cycle with nothing looking wrong on either.
+      for the same cycle with nothing looking wrong on either. There is one
+      procedure and one module that calls it; the pane's own label is derived
+      from the window the SERVER says it summed, so the words cannot describe a
+      different span from the number.
     */
-    const periodStart = new Date(NOW.getTime() - 10 * DAY);
-    const w = windowStart(periodStart, 0, 0);
-    expect(w.label).toBe("this billing period");
-    expect(w.days).toBeGreaterThan(0);
+    const copy = spendWindowCopy("period", 0, 0);
+    expect(copy.label).toBe("this billing period");
+    expect(spendWindowCopy("rolling30", 0, 0).label).toBe("in the last 30 days");
 
     const pane = code(read(join(HERE, "sections", "UsageSection.tsx")));
     const hook = code(read(join(BILLING, "useCycleSpend.ts")));
-    for (const [name, source] of [["the Usage pane", pane], ["the modals' hook", hook]] as const) {
-      expect(source, `${name} no longer reads the shared window`).toContain("windowStart");
-    }
-    expect(pane, "the Usage pane grew its own copy of the sum again").toContain("sumWindow");
-    expect(hook, "the hook grew its own copy of the sum again").toContain("sumWindow");
+    expect(pane, "the Usage pane grew its own reading again").toContain("useSpendWindow");
+    expect(pane, "the pane names a window the server did not sum").toContain("spend?.basis");
+    expect(hook, "the shared hook stopped calling the one procedure").toContain(
+      "trpc.usage.getCycleSpend",
+    );
+
+    /*
+      ONE call site, and the population is DERIVED rather than listed — a list
+      of four files cannot see a fifth, which is the whole failure mode this
+      arm is about. Every `.ts`/`.tsx` under `client/src` is read.
+    */
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+        entry.isDirectory()
+          ? walk(join(dir, entry.name))
+          : /\.tsx?$/.test(entry.name)
+            ? [join(dir, entry.name)]
+            : [],
+      );
+    const clientRoot = join(HERE, "..", "..");
+    const callers = walk(clientRoot).filter(
+      (file) => !file.endsWith(".test.ts") && code(read(file)).includes("usage.getCycleSpend"),
+    );
+    expect(
+      callers.map((file) => file.slice(clientRoot.length)),
+      "the procedure is called from more than one place — a second reading will drift",
+    ).toHaveLength(1);
   });
 });
