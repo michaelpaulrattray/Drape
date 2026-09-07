@@ -194,29 +194,19 @@ export function prorationFactor(cycle: BillingCycle): number {
   return Math.min(1, Math.max(0, cycle.daysLeft / cycle.cycleLength));
 }
 
-/** Cost per credit in cents, the value argument the ladder is sold on. */
-export function centsPerCredit(priceInCents: number, credits: number): number {
-  if (credits <= 0) return 0;
-  return priceInCents / credits;
-}
+/*
+  ⚠ `centsPerCredit` AND `formatCentsPerCredit` ARE GONE (#403, and card 390
+  item 4 before it). The product argued one fact in two units — cents per credit
+  on Add credits, credits per dollar on Change plan — and a customer who opened
+  both in one session met both. There is now ONE unit, below, and no second
+  formatter for a future surface to reach for by accident.
 
-/**
- * Cost per credit, rendered at the precision that actually separates our tiers.
- *
- * ⚠ **THE BRIEF'S OWN FIGURES ARE THE MOCKUP'S, NOT OURS, AND TWO DECIMALS
- * COLLAPSES OUR LADDER TO ONE NUMBER.** It quotes *"2.79¢ / 2.63¢ / 2.48¢ /
- * 2.33¢ / 1.87¢"*; our real ladder is `PLAN_TIERS` in `drizzle/schema.ts` —
- * Starter $27 for 75,000 credits is **0.036¢** a credit, and Enterprise, the
- * offered top since #391, is 0.02¢. At the brief's two decimals our tiers
- * print `0.04¢`, `0.03¢` or `0.02¢` and the descent it exists to show
- * disappears. Three decimals is the smallest precision at which every
- * adjacent pair differs, which is the only thing the number has to do.
- */
-export function formatCentsPerCredit(priceInCents: number, credits: number): string {
-  const cents = centsPerCredit(priceInCents, credits);
-  if (cents <= 0) return "free";
-  return `${cents.toFixed(3)}¢`;
-}
+  What was lost with them: three-decimal cents were the smallest precision at
+  which adjacent rungs differed at all, which was the whole argument for the
+  unit and against it. `card390-guard.test.ts` makes the same two claims of the
+  surviving unit against `PLAN_TIERS` itself — every rung improves, every rung
+  prints a distinct figure — so no assertion left the tree with the functions.
+*/
 
 /** `12 Aug` — the short form every date in these three surfaces uses. */
 export function formatShortDate(date: Date): string {
@@ -329,10 +319,17 @@ export function monthlyEquivalent(monthlyInCents: number): number {
  * `planMath.test.ts` asserts it against `PLAN_TIERS` itself rather than a
  * fixture, so a future price edit that breaks the argument still goes red.
  *
- * `centsPerCredit` stays, and is not dead: `AddCreditsModal` sells credit PACKS
- * with it in a two-value sentence (*"0.036¢ a credit, down from 0.041¢"*) where
- * the descent is stated in words rather than read off a ladder. That surface is
- * outside this card and is filed rather than swept.
+ * ⚠ **AND THE SURFACE THAT WAS FILED RATHER THAN SWEPT IS SWEPT NOW (#403).**
+ * This paragraph used to end *"`centsPerCredit` stays, and is not dead:
+ * `AddCreditsModal` sells credit PACKS with it"* — true when written, and the
+ * reason it did not last is the one card 390 left open: two billing surfaces
+ * arguing one fact in two units. Add credits reads this function too, and its
+ * sentence now runs *"2,941 credits per $1, up from 2,778"* — the real
+ * Starter → Pro pair, read off `PLAN_TIERS` and seen in the running app. **The
+ * first draft of this line quoted `up from 2,439`, which no rung on this
+ * ladder can produce** (it runs 2,778 → 2,941 → 3,145 → 3,571 → 4,167 →
+ * 5,000); the PR #660 reviewer caught it. A comment cannot fail a test, so an
+ * invented figure in one survives until somebody quotes it.
  */
 export function creditsPerDollar(priceInCents: number, credits: number): number {
   if (priceInCents <= 0) return 0;
