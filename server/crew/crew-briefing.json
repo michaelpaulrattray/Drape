@@ -1,7 +1,7 @@
 {
-  "edition": 294,
-  "updatedAt": "2026-09-07T18:08:13.985Z",
-  "shift": "Foreman (Opus) - eleven leftover copies of the dev server were running on your machine, and the scripts that can touch your live database now refuse a mistyped word",
+  "edition": 295,
+  "updatedAt": "2026-09-07T20:40:00.000Z",
+  "shift": "Foreman (Opus) - your Add credits panel stopped selling in a unit nobody can read, and the tool that finds leftover dev servers stopped seeing double",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-07T18:17:45.755Z",
+      "readAt": "2026-09-07T20:25:06.416Z",
       "items": [
         {
           "issueNumber": 16,
@@ -256,6 +256,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "waiting-eye-chip-649",
+      "issueNumber": 649,
+      "state": "open",
+      "filedAt": "2026-09-07T20:40:00Z",
+      "title": "A picture you have answered but not finished with: should it wear the same badge a card does?",
+      "productImpact": "A small look-and-feel question, and it is yours because it is about pictures.\n\nWhen you answer a card on this page but the job is not finished, it keeps a badge - ANSWERED, STILL YOURS TO DO - so it stays in front of you instead of quietly disappearing. That was your own instruction: keep it on your desk until the act is done.\n\nThe same state can now apply to a set of FRAMES in your gallery, and there the badge is not drawn. So a picture you have already ruled on looks exactly like a fresh one waiting for you.\n\nThe cheap answer is to put the same badge on the gallery. The reason nobody has just done it: frames are judged by looking, and a badge sitting on top of a picture may read as clutter where the same badge on a card reads as information. That is a taste call, not an engineering one.\n\nWHAT WE WOULD DO IF YOU SAY NOTHING: leave the gallery alone. It is the smaller risk - a gallery item you have answered still shows your reply underneath it, so nothing is lost, and a picture stays a picture.\n\nEverything else on that card is built and merged; this is all that is left of it.",
+      "workedExample": "You open the gallery in the morning. Two sets of frames sit there. One you looked at last night and ruled on - the answer is recorded, but the change it asks for has not landed yet, so it is still technically yours. The other you have never seen.\n\nToday they look identical. You have to open the first one and read your own reply underneath it to remember that you already dealt with it.\n\nOn the CARDS above, that same situation is labelled: a small badge reading ANSWERED, STILL YOURS TO DO. The question is only whether a picture wants the same badge or is better left clean.",
+      "options": [
+        {
+          "key": "same-badge",
+          "label": "Put the same badge on gallery items - one rule, both places",
+          "consequence": "One rule in both places, so nothing you have ruled on can look fresh again. The cost is a small label sitting on top of a picture you are being asked to judge by eye."
+        },
+        {
+          "key": "leave-it",
+          "label": "Leave the gallery clean - a picture is judged by looking at it",
+          "consequence": "The gallery stays as clean as it is now. Your reply is still shown under each set of frames, so nothing is hidden - you just have to read it to remember you answered."
+        }
+      ],
+      "recommendation": "Leave it, unless it has already annoyed you. The badge earns its place on a card because a card is a wall of words and the badge is how you find your place in it. A frame is a picture, and anything printed over it competes with the thing you are being asked to look at. Your reply is already shown underneath each set of frames, so nothing is actually hidden today.\n\nOne word either way closes it."
+    },
     {
       "id": "card-state-354",
       "issueNumber": 354,
@@ -2006,6 +2028,27 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "credits-unit-403-frames",
+      "title": "Add credits, saying it the way Change plan says it",
+      "question": "Both panels now argue value the same way: credits per dollar, whole numbers. First frame is a paid account - \"2,941 credits per $1, up from 2,778\". Second is a free account, where there is no rate to be beaten, so the comparison is dropped rather than reading \"up from free\". Does the top line carry its weight, or would you rather the value argument sat somewhere else on this card?",
+      "state": "open",
+      "filedAt": "2026-09-07T20:40:00Z",
+      "issueNumber": 403,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/40943e18-775a-4dc6-b729-9f5a3f88ed54.png",
+          "caption": "PAID ACCOUNT, dark, 1440. Under the $68.00 charge: \"2,941 credits per $1, up from 2,778\". Before this it read \"0.036 cents a credit, down from 0.041 cents\".",
+          "arm": "PAID ACCOUNT"
+        },
+        {
+          "key": "crew-eye/b63e231e-beee-419b-8bd4-e702521ed66d.png",
+          "caption": "FREE ACCOUNT, light, 1440. \"2,778 credits per $1\" and nothing after it - there is no earlier rate to compare against, so the clause is not drawn.",
+          "arm": "FREE ACCOUNT"
+        }
+      ]
+    },
     {
       "id": "free-blurb-621-frames",
       "title": "The Free plan line you chose, on the real card",
@@ -4318,6 +4361,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-659-dev-server-reader-658",
+      "title": "The tool that counts leftover copies of the app on your machine was seeing double (#658)",
+      "status": "merged",
+      "prNumber": 659,
+      "note": "Nothing a customer sees - this is the crew's own housekeeping tool, and it is the one your rule about leaving processes running on your machine is enforced with.\n\nWHAT WAS WRONG. When the app runs in development it is not one program but a small chain of them, and two links in that chain are Windows command shells. The tool only ever looked at one kind of program, so the shells were invisible - and with the chain broken in the middle, one running copy of the app was counted as two. Last night it reported eleven where seven were actually running.\n\nWHY IT MATTERS. A shift reading eleven cannot tell its own leftovers from a double count, so it either leaves something running on your machine or spends time chasing a process that never existed.\n\nWHAT IT DOES NOW. It reads the whole picture, follows the chain through the shells, and reports one running copy as one. Proved on this machine rather than argued: with one copy running, the old tool printed two and the new one printed one, and ending the one it names ends everything."
+    },
+    {
+      "id": "pr-660-credits-unit-403",
+      "title": "Add credits was arguing value in a unit nobody can read - it now matches Change plan (#403)",
+      "status": "merged",
+      "prNumber": 660,
+      "note": "WHAT YOU WOULD HAVE SEEN. Open Change plan and each rung argues its value as \"3,145 CREDITS PER $1\". Open Add credits and the same fact was written the old way: \"0.036 cents a credit, down from 0.041 cents\" - the figure you yourself called unreadable, because at that size the plans only differ in the third decimal.\n\nOne fact, two units, two panels. Anyone who opened both in one sitting met it twice in two shapes.\n\nWHAT IT SAYS NOW. \"2,941 credits per $1, up from 2,778\" - the same sentence Change plan makes, in the same unit.\n\nAND ONE THING FOUND BY LOOKING. On a free account the new sentence first read \"2,778 credits per $1, up from free\", which is not a comparison anybody can make - free is not a rate. The old sentence had exactly the same flaw and nobody had noticed. On a free plan the panel now simply says what you get, with nothing dangling on the end.\n\nThe frames are in your gallery below."
+    },
+    {
       "id": "pr-657-ceremony-world-642",
       "title": "Twelve more scripts that can be pointed at your live database now refuse a mistyped word (#642)",
       "status": "merged",
@@ -4820,7 +4877,7 @@
     159
   ],
   "nextUp": {
-    "readAt": "2026-09-07T18:17:44.807Z",
+    "readAt": "2026-09-07T20:25:05.593Z",
     "items": [
       {
         "issueNumber": 543,
