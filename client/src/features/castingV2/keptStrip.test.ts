@@ -223,3 +223,93 @@ describe("the derivation is wired, not merely present", () => {
     expect(sheet).not.toMatch(/\{shortlist\.length\} kept/);
   });
 });
+
+/*
+ * THE TWO-KEEP ORDERING EDGE, PINNED AS THE BEHAVIOUR IT IS.
+ *
+ * (Card 0576, from the PR that fixed 0554.) The module's stated rule was "a
+ * face just kept is the newest, so it goes on the END" — true of ONE in-flight
+ * keep and false of two, because the additions inherit `candidates` order,
+ * which is TILE order on the sheet rather than click order.
+ *
+ * The card's recommendation was to correct the sentence rather than the code:
+ * ordering by click needs `optimisticKept` to carry a timestamp instead of a
+ * boolean, which touches every optimistic-keep reader, for a window of one
+ * round trip that needs two keeps inside it. These arms are what makes that
+ * decision honest — the corrected sentence is now DRIVEN, so the rule and the
+ * code cannot drift apart again in silence, which is the only thing the card
+ * actually complained about.
+ */
+describe("the strip's order with more than one keep in flight", () => {
+  it("appends a single in-flight keep last, which is the rule that always held", () => {
+    const strip = visibleShortlist({
+      shortlist: [entry("c-01", "01")],
+      candidates: [candidate("c-03", "03"), candidate("c-08", "08")],
+      rollIndex: 1,
+      optimisticKept: { "c-08": true },
+      optimisticDiscarded: {},
+    });
+
+    expect(strip.map((e) => e.candidateId)).toEqual(["c-01", "c-08"]);
+  });
+
+  /*
+   * The clicks are 08 THEN 03. The stated rule would put 03 last and aim the
+   * dock at it; tile order puts 03 first among the additions, so 08 lands last
+   * and takes the aim. `signTargets` reverses the list, so LAST is the face the
+   * Sign button offers.
+   */
+  it("orders two in-flight keeps by TILE position, so the earlier tile takes the aim", () => {
+    const strip = visibleShortlist({
+      shortlist: [entry("c-01", "01")],
+      candidates: [candidate("c-03", "03"), candidate("c-08", "08")],
+      rollIndex: 1,
+      optimisticKept: { "c-08": true, "c-03": true },
+      optimisticDiscarded: {},
+    });
+
+    expect(strip.map((e) => e.candidateId)).toEqual(["c-01", "c-03", "c-08"]);
+  });
+
+  /*
+   * The negative control, and it is the one that makes the arm above mean
+   * something: the order is NOT click order, and it is not the insertion order
+   * of `optimisticKept` either. Flipping which face was clicked first changes
+   * nothing at all — the same fixture with the clicks reversed gives the same
+   * list. An implementation that happened to honour click order would pass the
+   * arm above by accident and fail this one.
+   */
+  it("is unmoved by which of the two was clicked first", () => {
+    const clickedEightFirst = visibleShortlist({
+      shortlist: [entry("c-01", "01")],
+      candidates: [candidate("c-03", "03"), candidate("c-08", "08")],
+      rollIndex: 1,
+      optimisticKept: { "c-08": true, "c-03": true },
+      optimisticDiscarded: {},
+    });
+    const clickedThreeFirst = visibleShortlist({
+      shortlist: [entry("c-01", "01")],
+      candidates: [candidate("c-03", "03"), candidate("c-08", "08")],
+      rollIndex: 1,
+      optimisticKept: { "c-03": true, "c-08": true },
+      optimisticDiscarded: {},
+    });
+
+    expect(clickedThreeFirst.map((e) => e.candidateId))
+      .toEqual(clickedEightFirst.map((e) => e.candidateId));
+  });
+
+  /*
+   * AND THE SENTENCE IS HELD TO THE ARMS. A comment is the thing this card
+   * settled on instead of a code change, so a comment quietly reverting to the
+   * simpler claim is exactly the drift being guarded against.
+   */
+  it("the module still states the rule the arms above prove", async () => {
+    const source = await readFile(new URL("./keptStrip.ts", import.meta.url), "utf8");
+
+    expect(source).toContain("NOT CLICK ORDER");
+    expect(source).toContain("FIRST of several still in flight");
+    // The claim that was true of one keep and false of two does not come back.
+    expect(source).not.toContain("a face just kept is the newest, so it goes on the END");
+  });
+});

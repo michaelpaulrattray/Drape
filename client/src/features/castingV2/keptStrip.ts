@@ -63,11 +63,28 @@ export type VisibleShortlistInput = {
  * The tray's faces as the user believes them to be, oldest keep first.
  *
  * Order matters and is inherited rather than invented: the server sends oldest
- * keep first, and a face just kept is the newest, so it goes on the END.
- * `signTargets` reverses this list to aim the dock, so appending is what makes
- * the face you just kept the one the Sign button offers — which is the rule
- * that module already states ("the last thing you kept is almost always the one
- * you mean").
+ * keep first, and the additions go on the END. `signTargets` reverses this list
+ * to aim the dock, so appending is what makes the face you just kept the one the
+ * Sign button offers — the rule that module already states ("the last thing you
+ * kept is almost always the one you mean").
+ *
+ * ⚠ THE ADDITIONS' ORDER IS `candidates` ORDER, WHICH IS TILE ORDER ON THE
+ * SHEET — NOT CLICK ORDER. This sentence used to say "a face just kept is the
+ * newest, so it goes on the END", which is true of ONE in-flight keep and false
+ * of two: keep 08 and then 03 inside the same round trip and 03 sits earlier in
+ * the grid, so it lands last and takes the aim from the face clicked later. The
+ * honest rule is therefore "the newest keep the server knows about, or the
+ * FIRST of several still in flight".
+ *
+ * It is left that way on purpose rather than left unnoticed. Ordering by click
+ * would mean `optimisticKept` storing a timestamp instead of a boolean — the
+ * shape `retrying` already uses — which touches every optimistic-keep reader,
+ * and the window is one round trip needing two keeps inside it. Nothing can be
+ * signed by accident either way: `SignConfirm` shows her face, her label and
+ * the price before any money moves, and the server's `getSignableCandidate`
+ * never consults `keptAt`, so a surprising aim is refused for free. The
+ * comment is corrected instead of the code so the stated rule and the code
+ * cannot quietly disagree later, which is what the card was filed about.
  */
 export function visibleShortlist(input: VisibleShortlistInput): StripEntry[] {
   const { shortlist, candidates, rollIndex, optimisticKept, optimisticDiscarded } = input;
