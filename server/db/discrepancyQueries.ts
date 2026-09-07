@@ -34,15 +34,101 @@
  * so a rows-only formula climbs 200 per Sign for ever — #119's own defect
  * class, a premise that drifts with ordinary use (measured before this was
  * chosen: rows-only read 150 on the founder's account, operation-authoritative
- * 5,160, this hybrid 1,050). Why rows still count where the operation
- * recorded nothing: the parked July evidence family (#6) charged under
- * legacy references and left its operations at `chargedCredits: 0`.
+ * 5,160, this hybrid 1,050 — ⚠ ALL THREE ARE READINGS FROM THE 2026-08-26
+ * SESSION WHOSE 1,050 IS DISPUTED BELOW, and none of them has been re-taken;
+ * the CHOICE between the three formulas does not rest on their absolute
+ * values and is untouched, but do not quote the figures as current). Why rows
+ * still count where the operation recorded nothing: the parked July evidence
+ * family (#6) charged under legacy references and left its operations at
+ * `chargedCredits: 0`.
  *
- * What the 1,050 residual on the founder's account IS, named rather than
- * hidden: five `evidence_package_sync` operations from 2026-07-29 that
- * charged 300 each and wrote two 300 audit rows apiece — the parked evidence
- * composer's data, one account, no live road. Every other production account
- * reads 0 under this formula.
+ * ⚠ AND THAT LAST SENTENCE IS FALSE AT THE ROWS — the fourth reading from
+ * that session, found by the law-7 sweep of the correction below (#462) after
+ * the reviewer of #636 named the first three. The evidence family's operations
+ * did NOT leave `chargedCredits` at zero: on production 2026-09-07 they carry
+ * 9,300 between them (46 `evidence_candidate_generate` at 7,500, 6
+ * `evidence_package_sync` at 1,800). So the clause justifying the fallback
+ * describes a shape the family does not have — and it is the same family whose
+ * unlinked rows are the whole residual below. The fallback branch itself is
+ * unchanged and still correct for an operation that genuinely recorded no
+ * charge; what is wrong is the example given for why it exists.
+ *
+ * ⚠ THAT PARAGRAPH SAID "+1,050" UNTIL 2026-09-07 AND IT WAS WRONG ABOUT
+ * BOTH THE NUMBER AND THE MECHANISM (#462). The reading it recorded — five
+ * `evidence_package_sync` operations charging 300 each and writing two 300
+ * audit rows apiece — is not what the rows say today and does not reproduce.
+ * The formula has not changed since it was written (one commit, `127de613`,
+ * carried the arithmetic and that sentence together), so ONE OF TWO THINGS IS
+ * TRUE and this docblock does not pretend to know which: either the rows moved
+ * between 2026-08-26 and now, or every reading taken that session shared an
+ * error.
+ *
+ * ⚠ THE FIRST DRAFT OF THIS PARAGRAPH SAID "MISMEASURED, NOT DRIFTED" AND
+ * THAT WAS OVER-CLAIMED — caught in review of #636, and the correction is
+ * worth more than the original. The 1,050 was NOT a lone sentence: it was read
+ * twice that day, by the scan and by raw SQL independently (line ~341), which
+ * is exactly the second reader a measurement is supposed to have. Two readings
+ * agreeing is real evidence, and calling it a mismeasurement anyway would have
+ * been the same confidence that produced the error being corrected.
+ *
+ * What CAN be said is the useful half: the 1,050 recorded a conclusion and
+ * none of its inputs, so it cannot be re-derived at all, in either direction.
+ * That is the failure — working law 2, a measurement with nothing re-taking it
+ * and nothing to re-take it FROM, standing for twelve days. The decomposition
+ * below exists so its successor cannot fail the same way.
+ *
+ * WHAT THE RESIDUAL ACTUALLY IS, driven at the production rows 2026-09-07 and
+ * decomposed so every term can be argued at:
+ *
+ *   gross 117,890  −  (unlinked 70,750 + operation 58,740)  =  − 11,600
+ *
+ * Split by era, the live road is exactly clean and the whole residual is
+ * historical:
+ *
+ *   v2 (an `op:<uuid>:charge` reference)   gross 58,740  vs  operations 58,740
+ *   legacy (every other reference)         gross 59,150  vs  unlinked   70,750
+ *
+ * ⚠ AND THE LEGACY GAP IS ONE THING: 45 `evidenceCandidate` rows, 11,450
+ * credits, EVERY ONE OF THEM `operationId IS NULL`. Take them out and the
+ * account reads −150. The evidence operations that did the work charged
+ * 9,300 (46 `evidence_candidate_generate` at 7,500 + 6 `evidence_package_sync`
+ * at 1,800, the latter refunded in full) and own ZERO rows between them — so
+ * the same work is counted TWICE: once through the operation that charged for
+ * it, and again through the rows it left unlinked.
+ *
+ * ⚠ THAT IS #119'S OWN DEFECT CLASS, ONE DOOR OVER, AND IT IS WHY THIS IS
+ * WORTH THE WORDS. The rule above makes an operation's own charge authoritative
+ * precisely so a Sign's five audit rows cannot be added to the 450 it charged.
+ * That guard keys on the row NAMING its operation. A row that never recorded
+ * its `operationId` walks straight past it and is added anyway — the rule
+ * defeated by a shape it did not anticipate rather than by a wrong premise.
+ *
+ * The lead this was filed on — that FAILED generations are counted into
+ * `expected` and never charged — is REFUTED at the rows, and the negative
+ * result is kept because it is the cheaper mistake to make twice: failed
+ * legacy rows outside the evidence family are 2,500, and the one failed row
+ * whose deduction can be matched at all (`referenceId` = `gen-<id>`) was
+ * charged 350 against a recorded 350. Failed rows are not the mechanism; 11
+ * of the 45 evidence rows are `completed`.
+ *
+ * ⚠ NO ROW-LEVEL RECONCILIATION IS POSSIBLE ON THE LEGACY ERA, which is
+ * what makes that an investigation dead end rather than an unfinished one.
+ * `referenceId` on a legacy deduction holds `casting-image-<modelId>-<uuid>`,
+ * `mint-<id>-<uuid>`, `upscale-<uuid>`, `pending-<epoch>` and a handful of
+ * `gen-<id>`; only the last names a `generations` row, and there are 33 of
+ * them. A join on the rest cannot distinguish "never charged" from "charged
+ * under a reference that does not name me" — it reports every unlinked row as
+ * uncharged, completed ones included, which is a reader that always agrees
+ * with whoever runs it.
+ *
+ * The repair is NOT made here: this is a money-adjacent instrument and the
+ * choice between excluding the parked family, linking its rows, and narrowing
+ * `unlinkedCost` is filed rather than taken on a shift's judgement. It is
+ * card 0638, which carries the three roads and the recommendation; #462
+ * measured the cause and closed.
+ * `server/discrepancyFlagging.test.ts` pins the double-count as CURRENT
+ * behaviour with the production shape, so the repair has to change an arm that
+ * states what it is changing.
  *
  * Refunds are no longer part of the discrepancy. They are written only by
  * the product or by staff (a failure refund, a per-slice refund, an admin
@@ -282,7 +368,10 @@ export function attachUserInfoToFlagged(
  * version — `${generations.operationId} = ${generationOperations.id}` —
  * became `WHERE operationId = id`, and inside the subquery BOTH names bound
  * to `generations` (which has its own `id`): never true, fallback always 0,
- * and the scan read 5,160 on production where the raw SQL read 1,050. Caught
+ * and the scan read 5,160 on production where the raw SQL read 1,050 (⚠ both
+ * figures are from the 2026-08-26 session the header disputes, and the QUALIFIER
+ * bug this guard pins is proven by the generated TEXT, not by either number).
+ * Caught
  * by driving the module against the real database before it was believed
  * (working law 2); `server/discrepancyOperationCostSql.test.ts` pins the
  * generated text so the qualifier cannot quietly drop out again.

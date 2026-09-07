@@ -475,3 +475,116 @@ describe("Credit Discrepancy Flagging", () => {
     expect(result.users[0].discrepancy).toBe(-25);
   });
 });
+
+/*
+ * THE PRODUCTION RESIDUAL ON THE FOUNDER'S ACCOUNT, PINNED AT ITS OWN SHAPE.
+ *
+ * (Card 0462.) The scan flags account 1 at −11,600 and puts a `1` on his
+ * account menu's Moderation badge. These arms exist so that number is a
+ * REPRODUCIBLE consequence of the formula rather than a sentence in a
+ * docblock — which is precisely how the previous reading of this account
+ * ("+1,050") survived twelve days while being unreproducible.
+ *
+ * Every figure below was read at the production rows on 2026-09-07 and is
+ * quoted in the header of `server/db/discrepancyQueries.ts` with its
+ * decomposition. They are pinned as CURRENT BEHAVIOUR, not as correct
+ * behaviour: the double-count these arms exhibit is the open defect, and a
+ * repair has to come here and change an arm that says what it is changing.
+ * That repair is card 0638, which carries the three roads and the
+ * recommendation; 0462 measured the cause and closed.
+ */
+describe("the founder's account: what the residual is made of", () => {
+  /** Read at production 2026-09-07 — the three aggregations for user 1. */
+  const GROSS = 117_890;
+  const UNLINKED = 70_750;
+  const OPERATION = 58_740;
+  /** The 45 `evidenceCandidate` rows, every one with `operationId IS NULL`. */
+  const EVIDENCE_UNLINKED = 11_450;
+
+  const users = [{ id: 1, name: "founder", email: "f@example.com" }];
+
+  function reading(unlinkedCost: number, failedCost = 11_110) {
+    return computeDiscrepancies(
+      [{ userId: 1, grossDeductions: GROSS, totalRefunds: 10_230 }],
+      [{
+        userId: 1,
+        completedCost: 97_030,
+        pendingCost: 350,
+        failedCost,
+        unlinkedCost,
+        totalGenerations: 2_145,
+        failedGenerations: 82,
+      }],
+      [{ userId: 1, operationCost: OPERATION }],
+      users,
+      50,
+    );
+  }
+
+  it("reproduces the -11,600 the live scan reports, from the production aggregations", () => {
+    const result = reading(UNLINKED);
+
+    expect(result.users).toHaveLength(1);
+    expect(result.users[0].discrepancy).toBe(-11_600);
+    // And it is what puts a 1 on his Moderation badge: one account, flagged.
+    expect(result.scannedCount).toBe(1);
+  });
+
+  /*
+   * THE DEFECT SHOWN RATHER THAN ASSERTED. The 45 evidence rows are the work
+   * of operations that charged 9,300 and own no rows at all, so the same work
+   * enters `expected` twice. This arm runs the counterfactual — the identical
+   * account with those rows attributed to their operations instead of counted
+   * again — and the two readings are made to disagree by exactly their cost.
+   *
+   * `operationCost` is deliberately UNCHANGED between the two: linking a row
+   * to an operation that already recorded a charge adds nothing, because the
+   * operation's own charge is authoritative where it exists. That is the whole
+   * rule the unlinked road walks past.
+   */
+  it("attributing the evidence rows to the operations that charged for them leaves -150", () => {
+    const asShipped = reading(UNLINKED).users[0].discrepancy;
+    const ifLinked = reading(UNLINKED - EVIDENCE_UNLINKED).users[0].discrepancy;
+
+    expect(asShipped).toBe(-11_600);
+    expect(ifLinked).toBe(-150);
+    expect(ifLinked - asShipped).toBe(EVIDENCE_UNLINKED);
+  });
+
+  /*
+   * THE REFUTED LEAD, KEPT. The card was filed on the theory that FAILED
+   * generations are counted into `expected` and never charged. Failure status
+   * is not an input to the discrepancy at all: it is reported, never summed.
+   * A reading that differs only in `failedCost` — here, every failed credit on
+   * the account against none of them — gives the same number.
+   */
+  it("failure status does not move the discrepancy, so failed rows are not the mechanism", () => {
+    const withFailures = reading(UNLINKED, 11_110);
+    const withNone = reading(UNLINKED, 0);
+
+    expect(withFailures.users[0].discrepancy).toBe(withNone.users[0].discrepancy);
+    expect(withFailures.users[0].discrepancy).toBe(-11_600);
+    // It is reported instead, net of refunds — the ruled outcome, shown, never flagged.
+    expect(withFailures.users[0].failedCost).toBe(11_110);
+  });
+
+  /*
+   * THE LIVE ROAD IS CLEAN, and this is the arm that says the residual is
+   * historical rather than growing. On production the V2 side balances to the
+   * credit on every account that has one — 58,740 charged against 58,740
+   * recorded here, 3,750 against 3,750 on the other — so an account whose
+   * charges all travel the operation road reads zero however much it rolls.
+   */
+  it("an account whose charges all travel the operation road reads zero", () => {
+    const result = computeDiscrepancies(
+      [{ userId: 17_603, grossDeductions: 3_750, totalRefunds: 0 }],
+      [],
+      [{ userId: 17_603, operationCost: 3_750 }],
+      [{ id: 17_603, name: "a customer", email: "c@example.com" }],
+      1,
+    );
+
+    expect(result.scannedCount).toBe(1);
+    expect(result.users).toHaveLength(0);
+  });
+});

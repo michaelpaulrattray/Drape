@@ -5,8 +5,11 @@
  * correlated subquery written from column references became
  * `WHERE operationId = id` — both names bound to the subquery's own table,
  * the fallback branch always 0, and the discrepancy scan read 5,160 on
- * production against 1,050 in raw SQL (2026-08-26, #119). This arm pins the
- * generated text; the reading itself is proven by driving the module.
+ * production against 1,050 in raw SQL (2026-08-26, #119). ⚠ BOTH FIGURES ARE
+ * FROM THE SESSION WHOSE 1,050 THE HEADER OF `db/discrepancyQueries.ts` NOW
+ * DISPUTES — quote them as that session's readings, never as current. This
+ * arm is untouched by the dispute: it pins the generated SQL TEXT, and the
+ * qualifier bug is real whatever the absolute numbers were.
  */
 import { describe, expect, it } from "vitest";
 import { drizzle } from "drizzle-orm/mysql2";
