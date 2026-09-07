@@ -1,17 +1,28 @@
 /**
  * Internal R7-5D cleanup runner. Read-only health is the default.
  * Mutating modes require --execute and explicit target arguments.
+ *
+ *   npx tsx scripts/run-storage-cleanup.mts --database-url mysql://… --app-id <id>
+ *     [--execute --requeue-batch <uuid>]
+ *     [--allow-production-execute] [--allow-production-read-only]
+ *
+ * ⚠ Since #345 the line above is the WHOLE vocabulary and anything outside it
+ * is refused. This script already failed safe on a swallowed word — every
+ * mutating mode needs `--execute` AND a named target, so a typo left it
+ * read-only — but "the typo happened to point the safe way" is not a control,
+ * and the operator was never told the word had been dropped.
  */
 import "dotenv/config";
 import { isProductionAppId } from "../server/casting/deletionAudit";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-function value(flag: string): string | undefined {
-  const index = process.argv.indexOf(flag);
-  return index >= 0 ? process.argv[index + 1] : undefined;
-}
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["database-url", "app-id", "requeue-batch"],
+  boolean: ["execute", "allow-production-execute", "allow-production-read-only"],
+});
 
-const databaseUrl = value("--database-url")?.trim();
-const appId = value("--app-id")?.trim();
+const databaseUrl = args.value("database-url")?.trim();
+const appId = args.value("app-id")?.trim();
 if (!databaseUrl || !appId) {
   throw new Error("Pass --database-url mysql://... and --app-id <app-id> explicitly");
 }
@@ -19,11 +30,11 @@ const parsed = new URL(databaseUrl);
 if (parsed.protocol !== "mysql:" || !parsed.hostname || parsed.pathname === "/") {
   throw new Error("--database-url must identify an explicit MySQL database");
 }
-const execute = process.argv.includes("--execute");
-if (execute && isProductionAppId(appId) && !process.argv.includes("--allow-production-execute")) {
+const execute = args.flag("execute");
+if (execute && isProductionAppId(appId) && !args.flag("allow-production-execute")) {
   throw new Error("Production mutation refused without --allow-production-execute");
 }
-if (!execute && isProductionAppId(appId) && !process.argv.includes("--allow-production-read-only")) {
+if (!execute && isProductionAppId(appId) && !args.flag("allow-production-read-only")) {
   throw new Error("Production inspection refused without --allow-production-read-only");
 }
 process.env.DATABASE_URL = databaseUrl;
@@ -36,7 +47,7 @@ if (!execute) {
   ]);
   process.stdout.write(`${JSON.stringify({ mode: "dry-run", health, reconciliation })}\n`);
 } else {
-  const batchId = value("--requeue-batch");
+  const batchId = args.value("requeue-batch");
   if (!batchId || !/^[0-9a-f-]{36}$/i.test(batchId)) {
     throw new Error("Mutating repair requires --requeue-batch <uuid>");
   }

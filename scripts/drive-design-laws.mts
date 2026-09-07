@@ -41,21 +41,31 @@ import { runControls } from "./lib/designLawControls.mts";
 import { assertOptimisticChrome, LawLog, runLaws, type Observation } from "./lib/designLaws.mts";
 import { planSurfaces, type Fixtures } from "./lib/designLawSurfaces.mts";
 import { resolveBrowser } from "./lib/systemBrowser.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-function arg(name: string, fallback = ""): string {
-  const index = process.argv.indexOf(`--${name}`);
-  return index > -1 ? (process.argv[index + 1] ?? fallback) : fallback;
-}
+/*
+  ⚠ THIS SCRIPT SPENDS, AND NOT THROUGH A TRANSPORT IMPORT (#345).
 
-const CONTROLS_ONLY = process.argv.includes("--controls");
-const BASE = arg("base", "http://localhost:3000");
-const TOKEN = arg("token");
+  `--optimistic` clicks Follow in the real product, so the credits come off the
+  driven account. `drivesAPaidTransport` reads at the IMPORT — the fal and
+  OpenRouter modules and the two spend doors — and this file imports none of
+  them, so the paid sweep could not see it. It is named there instead, the way
+  the one-hop specimen already is, and the reason is on the list beside it.
+*/
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["base", "token", "only", "theme", "session", "cast", "board"],
+  boolean: ["controls", "optimistic"],
+});
+
+const CONTROLS_ONLY = args.flag("controls");
+const BASE = args.value("base") ?? "http://localhost:3000";
+const TOKEN = args.value("token") ?? "";
 /** Law 9 clicks Follow for real, which costs credits. Opt in deliberately. */
-const OPTIMISTIC = process.argv.includes("--optimistic");
+const OPTIMISTIC = args.flag("optimistic");
 /** Narrow the walk to one router path, for iterating on a single surface. */
-const ONLY = arg("only");
+const ONLY = args.value("only") ?? "";
 /** One theme instead of both, for the same reason. */
-const THEME = arg("theme");
+const THEME = args.value("theme") ?? "";
 
 const executablePath = resolveBrowser();
 if (!executablePath) {
@@ -97,9 +107,9 @@ if (CONTROLS_ONLY) {
 if (!TOKEN) throw new Error("--token <app_session_id JWT for an ADMIN account> is required");
 
 const fixtures: Fixtures = {
-  session: arg("session") || undefined,
-  cast: arg("cast") || undefined,
-  board: arg("board") || undefined,
+  session: args.value("session") ?? undefined,
+  cast: args.value("cast") ?? undefined,
+  board: args.value("board") ?? undefined,
 };
 
 const plan = planSurfaces(BASE, fixtures);

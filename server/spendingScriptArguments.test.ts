@@ -51,7 +51,7 @@ import {
   drivesAPaidTransport, paidScriptsReadingFlagsByName,
   paidScriptsTakingANumberOnTrust, readsArgvOutsideTheStrictParse,
   scriptFilesUnder,
-  spendWordsRefusedByTheirOwnParse, unguardedSpendGates,
+  spendWordsRefusedByTheirOwnParse, strictParseAdoptersReadingArgvByHand, unguardedSpendGates,
 } from "../scripts/lib/stopline.mts";
 
 const REPO = join(__dirname, "..");
@@ -130,7 +130,12 @@ function specIn(source: string): Spec {
 function flagsRead(source: string): string[] {
   const asked = new Set<string>();
   for (const match of source.matchAll(/\barg\("([a-zA-Z][\w-]*)"/g)) asked.add(match[1]!);
-  for (const match of source.matchAll(/\bARGS\.(?:value|flag)\("([a-zA-Z][\w-]*)"/g)) asked.add(match[1]!);
+  /* ⚠ ANY binding, not `ARGS` alone (#345's reporters). The eleven repaired
+     reporters bind the parse as `args`, and a reader keyed on one file's
+     chosen identifier would have read every one of them as asking for NOTHING
+     — an extractor that agrees with whatever it is pointed at, which is the
+     failure this suite's own docblock warns about two screens up. */
+  for (const match of source.matchAll(/\b\w+\.(?:value|flag|number)\("([a-zA-Z][\w-]*)"/g)) asked.add(match[1]!);
   return [...asked].sort();
 }
 
@@ -949,5 +954,189 @@ describe("a paid script never takes a number on trust", () => {
     } finally {
       rmSync(scratch, { recursive: true, force: true });
     }
+  });
+});
+
+/**
+ * THE READ-ONLY REPORTERS REFUSE A WORD THEY DO NOT KNOW (#345, second half).
+ *
+ * The card's own order put the spenders first and its reasoning for doing the
+ * reporters second still stands: a swallowed flag here buys a WRONG REPORT
+ * rather than a render. That is not nothing — `call-census-report`'s `--since`
+ * is the window the founder's latency-and-cost program is read over, and a
+ * dropped one silently answers about the last seven days while the console line
+ * above it names the date the operator typed.
+ *
+ * # ⚠ AND ONE OF THE ELEVEN WAS NEVER A REPORTER
+ *
+ * `drive-design-laws.mts --optimistic` clicks Follow in the running product, so
+ * it SPENDS — and `drivesAPaidTransport` could not see it, because it imports
+ * no transport: the spend goes over HTTP inside a browser. Three of that
+ * reader's admitted misses are about resolution (one hop, a dynamic import, an
+ * unlisted transport); this is a fourth spelling of PAID, and reading at the
+ * import list could never have found it. It is keyed on the law that spends,
+ * and pinned by name below for the reason the one-hop specimen is: a repaired
+ * file is silent whether it is swept or not.
+ */
+describe("the read-only reporters declare a vocabulary, and it is the one they read", () => {
+  const SCRIPTS = join(REPO, "scripts");
+
+  /**
+   * ⚠ NAMED, AND THE NAMING IS THE POINT — `fix-drops-subject-from-guard`.
+   *
+   * The class arm below derives its population from ADOPTION, so it grows by
+   * itself; but a repaired file is invisible to it, exactly as the one-hop
+   * specimen is invisible to the paid sweep. These eleven are pinned by name so
+   * that a half-revert on any one of them names the file rather than moving a
+   * count. Both readings are kept: the derived one to catch what nobody
+   * remembered, the named one to keep watching what was fixed.
+   */
+  const REPORTERS = [
+    "scripts/audit-credit-reference-duplicates.mts",
+    "scripts/audit-generation-operation-locks.mts",
+    "scripts/audit-model-status.ts",
+    "scripts/build-library-demo-pack.mts",
+    "scripts/call-census-report.mts",
+    "scripts/diff-importer-count-across-time.mts",
+    "scripts/drive-design-laws.mts",
+    "scripts/drive-face-panel-evidence.mts",
+    "scripts/drive-face-scan-evidence.mts",
+    "scripts/open-refused-crops.mts",
+    "scripts/run-storage-cleanup.mts",
+  ] as const;
+
+  it.each(REPORTERS)("%s parses strictly and never by name", (path) => {
+    expect(sourceOf(path)).toContain("parseStrictArgsOrRefuse");
+    /* At the CODE, so the docblocks stay free to quote the shape they replaced
+       — #360's class, and several of these files do exactly that. */
+    expect(codeOf(path)).not.toMatch(/process\.argv\.indexOf\(/);
+    expect(codeOf(path)).not.toMatch(/process\.argv\.includes\(/);
+  });
+
+  it.each(REPORTERS)("%s declares every flag it actually asks for", (path) => {
+    const spec = specIn(sourceOf(path));
+    const declared = new Set([...spec.value, ...spec.boolean]);
+    const missing = flagsRead(codeOf(path)).filter((name) => !declared.has(name));
+    /*
+      This is the direction that costs an operator a working command: a flag the
+      file READS and the spec does not NAME is refused at the keyboard on a line
+      that used to work. Asserted per file, so the failure says which one.
+    */
+    expect(missing, `${path} reads flags it does not declare`).toEqual([]);
+  });
+
+  it("the vocabulary reader really finds flags — the extractor's own control", () => {
+    /*
+      An extractor that quietly returns nothing agrees with every expectation
+      ever written about it, and the arm above is an ABSENCE check: it passes
+      just as happily over a reader that found no flags at all. So the reader is
+      driven against a real file with a known answer first.
+    */
+    expect(flagsRead(codeOf("scripts/drive-design-laws.mts"))).toEqual(
+      ["base", "board", "cast", "controls", "only", "optimistic", "session", "theme", "token"],
+    );
+    expect(flagsRead('const x = args.value("since");')).toEqual(["since"]);
+    expect(flagsRead("const x = 1;")).toEqual([]);
+  });
+
+  it("⚠ the browser-driven spender is IN the paid population", () => {
+    /*
+      `drive-design-laws.mts` spends customer credits under `--optimistic` and
+      imports no transport. Without the `assertOptimisticChrome` key it drops
+      out of `paidScriptsReadingFlagsByName` entirely — and, being repaired,
+      would drop out SILENTLY. This arm pins the membership, not the symptom.
+    */
+    expect(
+      drivesAPaidTransport(sourceOf("scripts/drive-design-laws.mts")),
+      "the browser-driven spender left the swept population",
+    ).toBe(true);
+    /* And the module the spend lives in, for the same reason. */
+    expect(drivesAPaidTransport(sourceOf("scripts/lib/designLaws.mts"))).toBe(true);
+  });
+
+  it("sweeps a real population of adopters — a clean answer over no files is not an answer", () => {
+    const { adopters, offenders } = strictParseAdoptersReadingArgvByHand(SCRIPTS, REPO);
+    expect(adopters.length, "nothing imports the strict parser — the check below is vacuous").toBeGreaterThan(25);
+    expect(offenders, "a script declares a vocabulary and still reads argv by hand").toEqual([]);
+  });
+
+  it("really reports a HALF revert, and clears a whole one", () => {
+    /*
+      THE POSITIVE CONTROL, and the shape it models is the one that matters:
+      not a file that never adopted the parser, but one that adopted it AND
+      kept a hand read beside it. That file looks safe — it declares a
+      vocabulary and refuses an unknown word at the parse — while the second
+      reader quietly accepts whatever it is given.
+    */
+    const scratch = mkdtempSync(join(tmpdir(), "adopters-"));
+    try {
+      const imports = 'import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";\n';
+      const parse = 'const args = parseStrictArgsOrRefuse(process.argv.slice(2), { value: ["n"], boolean: [] });\n';
+      writeFileSync(join(scratch, "half.mts"), imports + parse + 'const at = process.argv.indexOf("--other");\n');
+      writeFileSync(join(scratch, "whole.mts"), imports + parse);
+      /* A file reading argv by name that never adopted the parser is NOT this
+         arm's business — #345's remainder, counted on the card rather than
+         smuggled in under a guard that was not asked the question. */
+      writeFileSync(join(scratch, "unconverted.mts"), 'const at = process.argv.indexOf("--n");\n');
+      const { adopters, offenders } = strictParseAdoptersReadingArgvByHand(scratch, scratch);
+      expect(adopters).toEqual(["half.mts", "whole.mts"]);
+      expect(offenders).toEqual(["half.mts"]);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
+  it("the lines an operator really types are still accepted", () => {
+    /*
+      Tightening a parser is only safe if the declared vocabulary really is
+      every flag the file reads — the one way this fix costs more than it saves
+      is a documented, working command line that now refuses. Each of these is
+      read out of the script's own docblock.
+    */
+    const accepts = (relative: string, argv: string[]) =>
+      expect(() => parseStrictArgs(argv, specIn(sourceOf(relative))), `${relative} refused its own line`).not.toThrow();
+
+    accepts("scripts/audit-model-status.ts", ["--database-url", "mysql://u:p@h/db"]);
+    accepts("scripts/audit-credit-reference-duplicates.mts", []);
+    accepts("scripts/audit-generation-operation-locks.mts", ["--database-url", "mysql://u:p@h/db"]);
+    accepts("scripts/call-census-report.mts", ["--since", "2026-08-14T00:00:00Z", "--user", "1"]);
+    accepts("scripts/open-refused-crops.mts",
+      ["--user", "1", "--candidate", "abc", "--bucket", "https://pub.r2.dev", "--out", "output/refusals"]);
+    accepts("scripts/build-library-demo-pack.mts",
+      ["--user", "1", "--candidate", "abc", "--out", "output/founder-pack", "--frame", "-x.png"]);
+    accepts("scripts/drive-design-laws.mts", ["--controls"]);
+    accepts("scripts/drive-design-laws.mts",
+      ["--base", "http://localhost:3000", "--token", "jwt", "--session", "s", "--cast", "c",
+        "--board", "1", "--only", "/admin/users", "--theme", "dark", "--optimistic"]);
+    accepts("scripts/drive-face-scan-evidence.mts", ["--base", "http://localhost:3000", "--tile", "01"]);
+    accepts("scripts/drive-face-panel-evidence.mts", ["--base", "http://localhost:3000"]);
+    accepts("scripts/run-storage-cleanup.mts",
+      ["--database-url", "mysql://u:p@h/db", "--app-id", "x", "--execute",
+        "--requeue-batch", "0f7a1c2e-0000-4000-8000-000000000000", "--allow-production-execute"]);
+    /* Two bare words AND a flag, in both orders — see the ordering arm below. */
+    accepts("scripts/diff-importer-count-across-time.mts", ["HEAD~500", "HEAD", "--controls", "february"]);
+    accepts("scripts/diff-importer-count-across-time.mts", ["--controls", "february", "HEAD~500", "HEAD"]);
+  });
+
+  it("⚠ and the ordering bug the positional repair fixed is really gone", () => {
+    /*
+      `--controls february HEAD~500 HEAD` used to destructure `process.argv
+      .slice(2)` into the first two words — so the OLD reader took `--controls`
+      and `february` as the two trees and diffed nothing, silently. The arm
+      above proves the line parses; this proves it parses to the right thing,
+      which is the half a "does not throw" cannot see.
+    */
+    const spec = specIn(sourceOf("scripts/diff-importer-count-across-time.mts"));
+    const parsed = parseStrictArgs(["--controls", "february", "HEAD~500", "HEAD"], spec);
+    expect(parsed.positional(0)).toBe("HEAD~500");
+    expect(parsed.positional(1)).toBe("HEAD");
+    expect(parsed.value("controls")).toBe("february");
+  });
+
+  it("a near-miss on the flag that decides what gets reported is refused", () => {
+    /* The whole point, stated as the operator meets it. */
+    const spec = specIn(sourceOf("scripts/call-census-report.mts"));
+    expect(() => parseStrictArgs(["--sinse", "2026-08-14"], spec)).toThrow(ArgumentError);
+    expect(() => parseStrictArgs(["--since", "2026-08-14", "--dry-run"], spec)).toThrow(ArgumentError);
   });
 });

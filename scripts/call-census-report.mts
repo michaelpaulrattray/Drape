@@ -32,19 +32,20 @@
 import "dotenv/config";
 
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mjs";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-const arg = (name: string): string | undefined => {
-  const index = process.argv.indexOf(`--${name}`);
-  return index === -1 ? undefined : process.argv[index + 1];
-};
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["since", "user"],
+  boolean: [],
+});
 
-const sinceRaw = arg("since");
+const sinceRaw = args.value("since");
 const since = sinceRaw ? new Date(sinceRaw) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 if (Number.isNaN(since.getTime())) {
   console.error(`--since is not a date: ${sinceRaw}`);
   process.exit(1);
 }
-const userId = arg("user");
+const userId = args.value("user");
 
 const databaseUrl = resolveDatabaseUrl();
 const db = await openDatabase(databaseUrl);
