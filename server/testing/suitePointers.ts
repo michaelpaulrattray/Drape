@@ -6,8 +6,16 @@ import { join } from "node:path";
  * A DOCBLOCK THAT NAMES ITS OWN GUARD IS A CLAIM, AND IT IS ONE OF THE FEW A
  * MACHINE CAN SETTLE COMPLETELY (#647).
  *
- * *"`foo.test.ts` drives it"* is either true or it is not: a file by that name
- * is tracked, or it is not. No line numbers, no judgement.
+ * *"<something>.test.ts drives it"* is either true or it is not: a file by that
+ * name is tracked, or it is not. No line numbers, no judgement.
+ *
+ * ⚠ **NOTE THE ANGLE BRACKETS, BECAUSE THIS READER CAUGHT ITS OWN AUTHOR.** The
+ * first draft of this docblock used a backticked example filename, and the arm
+ * below correctly reported it — a backticked name in prose is a pointer, and
+ * nothing in the bytes distinguishes an illustration from a claim. **So the
+ * rule for writing ABOUT pointers is: do not backtick an example.** Exempting
+ * them instead would have punched a hole in the reader for the sake of a
+ * comment.
  *
  * ⚠ **THE HARM IS NOT UNTIDINESS, AND THIS REPOSITORY HAS PAID FOR IT TWICE.**
  * A reader who follows the pointer, finds nothing, and concludes *the guard was
@@ -35,7 +43,7 @@ import { join } from "node:path";
  * are not claimed here — a clean reading over this one says nothing about them.
  */
 
-/** A backticked reference to a test file, e.g. `` `refineSubjects.test.ts` ``. */
+/** A backticked reference to a test file, e.g. a backticked <name>.test.ts. */
 const POINTER = /`([A-Za-z0-9_.-]+\.test\.tsx?)`/g;
 
 export type PointerReading = {
@@ -150,9 +158,16 @@ export function suitePointers(repoRoot: string): PointerReading[] {
   return readings;
 }
 
-/** The pointers that name nothing and are not enumerated above. */
-export function danglingPointers(repoRoot: string): PointerReading[] {
-  return suitePointers(repoRoot).filter(
-    (row) => !row.resolves && !(row.names in DELIBERATELY_ABSENT),
-  );
-}
+/*
+  ⚠ THERE IS NO `danglingPointers` HELPER HERE, AND THAT IS THE GATE'S DOING
+  RATHER THAN AN OVERSIGHT. One was written — `suitePointers` filtered by
+  `!resolves && !(names in DELIBERATELY_ABSENT)` — and `pnpm check`'s
+  uncalled-export arm refused the commit: its only consumer was the suite that
+  drives it, which that reader does not count. An export nothing in the product
+  calls is a control that does not exist, and this repository's own
+  "currently not enforced" list is that mistake four times over.
+
+  So the two facts a caller needs are exported and the one-line join that
+  combines them lives in `suitePointerDiscipline.test.ts`, which is the only
+  place that ever wanted it.
+*/

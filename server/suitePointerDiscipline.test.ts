@@ -2,15 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 import { resolve } from "node:path";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
-import { DELIBERATELY_ABSENT, danglingPointers, suitePointers } from "./testing/suitePointers";
+import { DELIBERATELY_ABSENT, suitePointers } from "./testing/suitePointers";
 
 /**
  * A DOCBLOCK THAT NAMES ITS OWN GUARD MUST NAME ONE THAT EXISTS (#647).
  *
- * The harm this closes is not untidiness. A reader who follows *"`foo.test.ts`
- * drives it"*, finds nothing, and concludes the guard was never written has
+ * The harm this closes is not untidiness. A reader who follows a docblock's
+ * pointer, finds nothing, and concludes the guard was never written has
  * re-filed a LIVE control as a dead one — the wrong-road class `CLAUDE.md`'s
  * law-7 section is about, which has cost this repository months twice.
+ *
+ * ⚠ No example filename is backticked anywhere in this file, and that is the
+ * rule rather than a stylistic choice: a backticked name in prose IS a pointer
+ * to this reader, and it caught this suite's own first draft.
  *
  * The reasoning for a basename rather than a line-number resolver, and the
  * stated scope, are in `testing/suitePointers.ts`.
@@ -21,6 +25,11 @@ import { DELIBERATELY_ABSENT, danglingPointers, suitePointers } from "./testing/
 vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const ROOT = resolve(import.meta.dirname, "..");
+
+/** Pointers that name nothing and are not enumerated. See suitePointers.ts on
+    why this join lives here and not beside the data. */
+const danglingPointers = (root: string) =>
+  suitePointers(root).filter((row) => !row.resolves && !(row.names in DELIBERATELY_ABSENT));
 
 describe("every backticked suite pointer resolves (#647)", () => {
   it("sweeps a real population — a clean answer over no pointers is not an answer", () => {
