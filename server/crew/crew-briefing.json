@@ -1,7 +1,7 @@
 {
-  "edition": 286,
-  "updatedAt": "2026-09-07T03:45:00.000Z",
-  "shift": "Foreman (Opus) - four fixes, two of them yours, and the tool that lands the team's work could not do its own job",
+  "edition": 287,
+  "updatedAt": "2026-09-07T05:40:00.000Z",
+  "shift": "Foreman (Opus) - the one imprecision left in your plan panel is closed, and it was the number that picks which plan we offer you",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,7 +132,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-07T03:45:37.376Z",
+      "readAt": "2026-09-07T05:36:50.668Z",
       "items": [
         {
           "issueNumber": 16,
@@ -270,7 +270,7 @@
         }
       ],
       "recommendation": "(a), but not urgently - it is the last member of a family that has now produced three separate wrong numbers on your money screens, and closing it removes the whole shape rather than another instance. The frames below need thirty seconds of your eye whatever you choose, because that panel is the last thing somebody sees before they pay us.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-07"
     },
     {
@@ -1975,7 +1975,7 @@
     },
     {
       "id": "cycle-spend-385-frames",
-      "state": "answered",
+      "state": "done",
       "cardId": "cycle-spend-385",
       "issueNumber": 624,
       "filedAt": "2026-09-07T00:41:21.275Z",
@@ -4191,6 +4191,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-634-cycle-spend-624",
+      "title": "Your spend 'this cycle' was counting money from the cycle before (#624)",
+      "status": "merged",
+      "prNumber": 634,
+      "note": "You said \"(a), fix it, not urgent\" - this is (a), built and live.\n\nA billing period starts at the moment somebody pays, so it starts in the middle of a day. We were adding up spend in whole DAYS, from the start of whichever day the period began on - so everything a customer spent that morning, before their renewal, was being counted as this cycle's. Worked example: renewal at 2pm, 9,000 credits spent that morning and 1,000 after it. Change plan said 10,000 spent. It should say 1,000.\n\nThat matters more than it sounds, because on day one or two of a cycle that figure is divided by a very small number of days to work out how fast somebody is burning credits - and THAT is what decides which plan the one highlighted button offers them. A wrong number there sells the wrong plan.\n\nThe studio now asks the ledger the question directly - what has this account spent since the exact minute their period began - instead of reassembling it out of a daily chart. Two other things fall out of the same change: a 90-day limit that meant an annual subscriber's spend could never be added up properly is gone, and the Usage pane and the two money windows now quote ONE figure instead of each working it out separately.\n\nProved on a real database, not just in theory: the 9,000 and the 1,000 above are actual rows, and the old method is run against the same rows in the same test so the two answers are shown to differ rather than claimed to."
+    },
+    {
       "id": "pr-633-free-blurb-621",
       "title": "Your Free plan line no longer makes a promise a price change could break (#621)",
       "status": "merged",
@@ -5972,10 +5979,17 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0907d-foreman",
+      "title": "The queue: 85 open, nothing rotting that matters, and still only your one verdict waiting",
+      "severity": "info",
+      "state": "open",
+      "detail": "Steady at 85. One closed tonight (#624 - the plan-panel number, yours) and one new one filed (#635, below). NEXT UP is still the single card waiting on your word about the shift-speed work, and its own answer is pinned to the speed check-up on 12 September, so nothing is stuck behind you.\n\nRotting - open a week and never re-read - is THREE, down from a peak of 27 last week. Bugs are 13.\n\nThe new card is housekeeping and it came out of tonight's work rather than from a sweep: two internal data endpoints now have nothing calling them at all, because tonight's change was the last thing that used them. One of them is the endpoint behind three of your billing-number faults. Nobody is affected either way - they are filed rather than deleted on the spot, because deleting things is the one kind of change a test cannot give back."
+    },
+    {
       "id": "queue-shape-0907c-foreman",
       "title": "The queue: 85 open, and nothing is waiting on you except one verdict",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "detail": "Four closed tonight (#625, #354's first half, #630, and #621 - yours), one new one filed and closed the same shift. NEXT UP still holds only #543, which is waiting on your word about two numbers rather than on any work; those numbers come from the next performance check-up on 12 September, as you asked.\n\nNothing is rotting: no open card has sat a week without being re-read. Your other ruling tonight - (a) on the spend figure - is recorded on its card as approved and not urgent, sized at half a shift, so a future night picks it up without asking you again."
     },
     {
@@ -6328,7 +6342,7 @@
     157
   ],
   "nextUp": {
-    "readAt": "2026-09-07T03:45:36.562Z",
+    "readAt": "2026-09-07T05:36:49.463Z",
     "items": [
       {
         "issueNumber": 543,
