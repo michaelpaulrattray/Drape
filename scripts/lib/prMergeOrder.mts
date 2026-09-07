@@ -253,7 +253,7 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
 
   // 3. The gate, before anything that costs a network round trip or a clock —
   //    but only the two states that are readings of THIS head. `absent` moved
-  //    below mergeability; see step 4.5 for the measurement that moved it.
+  //    below mergeability; see step 5.5 for the measurement that moved it.
   if (pr.gate === "running") {
     return { kind: "wait", reason: "gate-checks is running" };
   }
@@ -331,7 +331,23 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
           (pr.review === "none" ? " (triage declined it — check for a stale `skip-review` label)" : "") +
           ". The standing orders merge an ordinary PR on the gate alone when the reviewer is " +
           "down, and hold a money/auth one. Get a verdict (remove then re-add `needs-fable`, " +
-          `#368) or hand-review it and re-run with --acknowledge ${pr.number}.`,
+          `#368) or hand-review it and re-run with --acknowledge ${pr.number}.` +
+          /*
+            ⚠ ONE OF THOSE TWO REMEDIES CANNOT FIRE ON A CONFLICTING HEAD, AND
+            SAYING SO IS THIS FIX'S OWN PREMISE TURNED ON ITSELF (PR #631's
+            review, finding 1). Moving the absent-gate wait DOWN made this stop
+            reachable on a conflicting PR for the first time — an improvement,
+            since before it hung above here for ever. But GitHub creates no
+            check suite for a conflicting head, which is exactly why the gate
+            reads `absent`, and the reviewer runs on that same machinery: a
+            re-added `needs-fable` produces nothing to wait for. Only the
+            hand-review road works, and a re-run then reaches the sync below.
+          */
+          (pr.mergeable === "CONFLICTING" || pr.mergeStateStatus === "DIRTY"
+            ? " ⚠ This PR is also CONFLICTING, and a conflicting head gets no workflow run at " +
+              "all — so re-adding `needs-fable` will produce nothing to wait for. Hand-review " +
+              "it and re-run; the sync happens after the acknowledgement."
+            : ""),
       };
     }
   }
@@ -352,7 +368,7 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
   }
 
   /*
-    4.5 · ⚠ AN ABSENT GATE IS READ **HERE**, AFTER THE CONFLICT, AND NOT UP AT
+    5.5 · ⚠ AN ABSENT GATE IS READ **HERE**, AFTER THE CONFLICT, AND NOT UP AT
     STEP 3 — BECAUSE A CONFLICTING PR NEVER GETS A GATE RUN AT ALL.
 
     Measured 2026-09-07, on the very case this tool was built for. PR #627
