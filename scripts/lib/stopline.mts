@@ -417,6 +417,87 @@ export function spendWordsRefusedByTheirOwnParse(scriptsDir: string, repoRoot: s
  * SPELLING of a flag read — which is what the complement rule buys — but it is
  * not proof against a rewrite of how argv is reached.
  */
+/**
+ * PAID SCRIPTS THAT COERCE A FLAG'S VALUE TO A NUMBER WITHOUT JUDGING IT (#625).
+ *
+ * `paidScriptsReadingFlagsByName` above asks whether a spender READ its command
+ * line loosely. This asks the next question down, and it is the one that turned
+ * out to matter more: a script can parse strictly, be handed exactly the flag it
+ * declared, and still take the VALUE on trust.
+ *
+ * `Number("1O")` — the digit one and the letter O, one keystroke apart — is
+ * NaN, and every comparison against NaN is false. So a NaN ceiling does not
+ * narrow a bound, it REMOVES it: `total > CEILING_USD` stops refusing and
+ * `SpendGuard.reserve` stops reserving, and an `--execute` run proceeds with no
+ * bound at all. Five sites carried this; `ARGS.number` in `strictArgs.mts` is
+ * the one implementation they now share.
+ *
+ * ⚠ **THE POPULATION IS DERIVED, NOT LISTED, AND THAT IS THE WHOLE POINT.**
+ * A guard keyed on the five known files stops watching the moment each is
+ * fixed — the memory is *fix drops subject from guard*, and #345's own second
+ * pass is this repository's worked example (a list of three files went green
+ * over twelve more). Every paid script joins this sweep by BEING one, so the
+ * next numeric flag on a spender is caught by existing rather than by somebody
+ * remembering this card.
+ *
+ * ⚠ **Its limits are `drivesAPaidTransport`'s limits** — one hop, dynamic
+ * imports, and a transport not on that list are all invisible here too, for
+ * the same reasons stated on that function. A clean run is a floor.
+ */
+export function paidScriptsTakingANumberOnTrust(
+  scriptsDir: string,
+  repoRoot: string,
+): string[] {
+  const offenders: string[] = [];
+  const selfPath = fileURLToPath(import.meta.url);
+  for (const file of scriptFilesUnder(scriptsDir)) {
+    if (file === selfPath) continue;
+    const relative = file.replace(repoRoot, "").replace(/^[\\/]/, "").replace(/\\/g, "/");
+    if (relative.includes("disposable")) continue;
+    const source = readIfPresent(file);
+    if (source === null) continue; /* vanished between list and read (#589) */
+    if (!drivesAPaidTransport(source)) continue;
+    if (coercesAParsedValueToNumber(source)) offenders.push(relative);
+  }
+  return offenders;
+}
+
+/**
+ * Whether a source turns a parsed flag's value into a number without judging
+ * it — `Number(ARGS.value("n"))`, `parseInt(args.value(…))` and the same shape
+ * over a positional.
+ *
+ * Read on the comment-stripped code, because every one of the five files
+ * repaired under this card QUOTES the old shape in the prose explaining why it
+ * is gone. A reader that could not tell a quotation from an occurrence would
+ * force that prose to go quiet — the same property `paidScriptsReadingFlagsByName`
+ * already has, and for the same reason.
+ *
+ * ⚠ **THE SHAPES IT DOES NOT SEE, NAMED RATHER THAN LEFT TO BE FOUND** (PR
+ * #627's review, finding 2 — the house style `drivesAPaidTransport` sets, whose
+ * own limits are about WHICH FILES are swept; these are about WHICH SHAPES).
+ * All three are false-NEGATIVE, so this reader can go quiet and never loud:
+ *
+ *   1. **The two-line form.** `const raw = ARGS.value("n"); Number(raw)` — the
+ *      coercion and the accessor are on different lines, and nothing here
+ *      follows a binding. This is the one a NEW paid script could join the
+ *      population wearing.
+ *   2. **Unary plus.** `+ARGS.value("n")` coerces exactly as `Number(…)` does
+ *      and matches nothing below.
+ *   3. **A destructured or renamed accessor.** `const { value } = ARGS;` then
+ *      `Number(value("n"))` has no `\w+\.` to match.
+ *
+ * The five repaired files are covered against all three regardless, by the
+ * by-name arm that pins each still reads through `ARGS.number(` — so a
+ * regression into any of these shapes reddens there. What is uncovered is a
+ * file that has never been repaired arriving in one of them. A real parser is
+ * the fix if that ever happens; until it does, this is a floor and says so.
+ */
+export function coercesAParsedValueToNumber(source: string): boolean {
+  const code = codeWithoutBlockComments(source);
+  return /(?:Number|parseInt|parseFloat)\(\s*\w+\.(?:value|positional)\(/.test(code);
+}
+
 export function readsArgvOutsideTheStrictParse(source: string): boolean {
   const code = codeWithoutBlockComments(source)
     .replace(/parseStrictArgsOrRefuse\(\s*process\.argv\.slice\(2\)/g, "parseStrictArgsOrRefuse(");

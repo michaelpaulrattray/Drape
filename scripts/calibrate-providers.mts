@@ -97,27 +97,15 @@ const PHASE = ARGS.value("phase") ?? "all";
   `scripts/calibration/run.mts` stops reserving. An `--execute` run would then
   proceed with NO ceiling at all.
 
-  It is not new — `Number(flag("ceiling") ?? 20)` had the identical hole — but
-  it is exactly this card class wearing a different coat: an operator mistake
-  on a house-money script degrading quietly instead of refusing. The parser
-  owns the SHAPE of the line and says so; a value that must be a number is the
-  caller's to check, and this is the caller.
-
-  The remaining four sites of the class are #625, with the shared-accessor
-  recommendation the reviewer named.
+  ⚠ **THE LOCAL `numeric()` HELPER THAT USED TO SIT HERE IS GONE (#625).** It
+  was written deliberately local, inside a capped review round, rather than
+  widening the shared parser's surface in a fix — and a second implementation
+  left standing beside the shared one is working law 4, which is why the card
+  that generalised it deleted this one in the same commit. `ARGS.number` is
+  that helper, carrying this file's own refusal sentence unchanged, and the
+  other four sites of the class now read the same line.
 */
-const numeric = (name: string, fallback: number): number => {
-  const raw = ARGS.value(name);
-  if (raw === null) return fallback;
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) {
-    console.error(`REFUSING: --${name} must be a number, and "${raw}" is not.`);
-    process.exit(1);
-  }
-  return parsed;
-};
-
-const CEILING_USD = numeric("ceiling", 20);
+const CEILING_USD = ARGS.number("ceiling", 20);
 const OUT_DIR = path.resolve(ARGS.value("out") ?? ".calibration");
 /**
  * Founder decision 2026-07-30: images run through fal, which is the billing we
@@ -126,7 +114,7 @@ const OUT_DIR = path.resolve(ARGS.value("out") ?? ".calibration");
  */
 const IMAGES_VIA = (ARGS.value("images") ?? "fal") as "fal" | "openrouter";
 /** Measured, not assumed — this is how §H.8's default budget gets its number. */
-const CONCURRENCY = numeric("concurrency", 8);
+const CONCURRENCY = ARGS.number("concurrency", 8);
 
 /**
  * The §E.1 matrix: tight, loose and non-human briefs. The non-human ones are

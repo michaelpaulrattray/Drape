@@ -45,6 +45,26 @@
  * and is refused by the caller against its own closed vocabulary, where the
  * list of legal outcomes actually lives. This reader is about the SHAPE of the
  * line; the caller owns its meaning.
+ *
+ * # ⚠ WITH ONE EXCEPTION, AND IT IS A HOUSE-MONEY ONE: `number()` (#625)
+ *
+ * The sentence above is still the rule, and `number()` is the one place it
+ * bends, because *a number that is not a number does not narrow a bound — it
+ * REMOVES it.* `Number("1O")` — the digit one and the letter O, one keystroke
+ * apart — is NaN, and every comparison against NaN is false: `total >
+ * CEILING_USD` stops refusing and `SpendGuard.reserve` stops reserving, so an
+ * `--execute` run proceeds with no ceiling at all. That is #602's own class
+ * wearing a different coat: an operator mistake on a script that spends house
+ * money degrading QUIETLY instead of refusing.
+ *
+ * It is here rather than in five callers for the reason the whole module is
+ * here — working law 4. Five copies of one check is how one of them quietly
+ * stops checking, and the local helper #623 wrote under a capped review round
+ * is deleted in the same commit that this lands, not left standing beside it.
+ *
+ * The test is `Number.isFinite`, never truthiness: `0`, a negative and a
+ * decimal are all legitimate values a caller may want, and a refusal that
+ * fired on them would be a new defect rather than a guard.
  */
 
 /** What a script accepts. Anything outside these lists is refused. */
@@ -75,6 +95,24 @@ export type StrictArgs = {
   flag(name: string): boolean;
   /** The nth bare word, or null when it was not passed. */
   positional(index: number): string | null;
+  /**
+   * The value passed for `--name` read as a number, or `fallback` when it was
+   * not passed — REFUSING anything that is not finite. See the docblock above
+   * for why this one accessor judges content.
+   *
+   * `fallback` is the caller's own constant and is returned unexamined: it is
+   * not operator input, and checking it here would mean a script could refuse
+   * to start over a line nobody typed.
+   *
+   * ⚠ **AND THAT IS WHY THE FALLBACK IS GENERIC RATHER THAN `number`** — caught
+   * by preflight on this card's own first push. `born-worn-court.mts` passes
+   * `subject.floor`, which is `number | null` for a class nobody has measured
+   * yet, and prints *"has no measured floor — pass one to try it"* on the very
+   * next line. A `fallback: number` signature would have forced that call site
+   * to invent a `?? NaN`, i.e. to put back the exact value this card exists to
+   * make unreachable. The type says what the contract already said.
+   */
+  number<Fallback>(name: string, fallback: Fallback): number | Fallback;
 };
 
 export class ArgumentError extends Error {}
@@ -152,10 +190,41 @@ export function parseStrictArgs(argv: readonly string[], spec: ArgSpec): StrictA
     );
   }
 
+  const value = (name: string): string | null => values.get(`--${name}`) ?? null;
   return {
-    value: (name) => values.get(`--${name}`) ?? null,
+    value,
     flag: (name) => flags.has(`--${name}`),
     positional: (index) => positionals[index] ?? null,
+    number: <Fallback,>(name: string, fallback: Fallback): number | Fallback => {
+      const raw = value(name);
+      if (raw === null) return fallback;
+      /*
+        ⚠ AN EXPLICITLY QUOTED EMPTY VALUE IS NOT A ZERO (PR #627's review,
+        finding 1). The PARSE refuses `--ceiling` at the end of the line and
+        `--ceiling=`, but `--ceiling ""` and `--ceiling " "` are a token, so
+        they arrive here — and `Number("")` is `0`, which `Number.isFinite`
+        accepts. `--ceiling "$CEILING"` with the variable unset is the real
+        way an operator types it.
+
+        The direction is the MIRROR of the incident and costs no money — a
+        zero ceiling refuses every spend, and zero repeats runs nothing — so
+        this is a contract repair rather than a second hole: the accessor says
+        it refuses what is not a number, and an empty string is not one.
+        Checked BEFORE the coercion, because `Number` is precisely the reader
+        that disagrees.
+      */
+      if (raw.trim() === "") {
+        throw new ArgumentError(`--${name} must be a number, and an empty value is not one.`);
+      }
+      const parsed = Number(raw);
+      /* Not `!parsed` and not `isNaN` — `Number.isFinite` is the only one of
+         the three that lets `0`, `-1` and `0.5` through and stops `Infinity`,
+         which is a ceiling that does not bound either. */
+      if (!Number.isFinite(parsed)) {
+        throw new ArgumentError(`--${name} must be a number, and "${raw}" is not.`);
+      }
+      return parsed;
+    },
   };
 }
 
@@ -182,7 +251,27 @@ export function known(spec: ArgSpec): string {
  */
 export function parseStrictArgsOrRefuse(argv: readonly string[], spec: ArgSpec): StrictArgs {
   try {
-    return parseStrictArgs(argv, spec);
+    const parsed = parseStrictArgs(argv, spec);
+    /*
+      `number()` is read LATER than the parse, at the caller's own line, so its
+      refusal cannot ride the try/catch above — it needs the same wrapper here
+      or an operator's `--ceiling 1O` would reach a script as an unhandled
+      stack trace instead of one `REFUSING:` sentence. Same split as the rest
+      of the module: `parseStrictArgs` throws so the arms can drive it, and
+      this form is what call sites want.
+    */
+    return {
+      ...parsed,
+      number: <Fallback,>(name: string, fallback: Fallback): number | Fallback => {
+        try {
+          return parsed.number(name, fallback);
+        } catch (cause) {
+          if (!(cause instanceof ArgumentError)) throw cause;
+          console.error(`REFUSING: ${cause.message}`);
+          process.exit(1);
+        }
+      },
+    };
   } catch (cause) {
     if (!(cause instanceof ArgumentError)) throw cause;
     console.error(`REFUSING: ${cause.message}`);

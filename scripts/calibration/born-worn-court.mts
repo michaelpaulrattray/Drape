@@ -91,7 +91,7 @@ const subject = armed[0];
   where the two populations actually sit before anybody writes a number into
   the catalogue.
 */
-const floorArg = ARGS.value("floor") !== null ? Number(ARGS.value("floor")) : subject.floor;
+const floorArg = ARGS.number("floor", subject.floor);
 if (typeof floorArg !== "number" || !Number.isFinite(floorArg)) {
   console.error(`"${only}" has no measured floor — pass one to try it: --floor 0.001`);
   process.exit(1);

@@ -70,7 +70,16 @@ const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
   value: ["repeat", "public-base"],
   boolean: ["collect", "try"],
 });
-const repeat = Number(ARGS.value("repeat")) || 3;
+/*
+  ⚠ ONE BEHAVIOUR CHANGED HERE AND IT IS NOT THE REFUSAL (#625). The old read
+  was `Number(ARGS.value("repeat")) || 3` — a truthiness fallback, so
+  `--repeat 0` was silently read as THREE. `ARGS.number` returns what the
+  operator typed, so a zero now runs zero repeats. That is the direction this
+  card exists to move in: honouring the line rather than quietly overruling
+  it, and zero repeats on a paid court spends nothing, which is the safe half
+  of the change to get wrong.
+*/
+const repeat = ARGS.number("repeat", 3);
 
 type Master = { candidate: string; candidateId: number; file: string; url: string; note: string };
 
