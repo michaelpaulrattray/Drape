@@ -34,6 +34,13 @@ const base = (rel: string) => basename(rel);
  *
  * Closing it properly means recording `stateChangedAt` on a host row, which is
  * a change to what his page stores; that is a card, not a line.
+ *
+ * ⚠ **ONE OCCURRENCE, NOT ONE SPELLING** (PR #656 review, finding 1). The
+ * register is keyed on file-plus-expression, so a SECOND identical literal
+ * added to the same file would collapse onto the same key and inherit an
+ * exemption written for a line it is not — a genuine new offender, silently
+ * cleared by the guard built to catch it. Each entry therefore earns exactly
+ * one match: the first is exempt, a second is an offender by name.
  */
 const ACCEPTED = new Set([
   'lib/replyHosts.mts: host.state !== "open"',
@@ -144,22 +151,30 @@ describe("the waiting state", () => {
       { url: new URL("../../../../../../shared/", import.meta.url), admits: (rel: string) => base(rel).startsWith("crew") },
       {
         url: new URL("../../../../../../scripts/", import.meta.url),
-        /* `crew-*` at the root as before, plus ALL of `scripts/lib/` — the
-           helpers the desk tools read him through. `scripts/calibration/` is
-           a paid bench and has no notion of his desk. */
-        admits: (rel: string) => base(rel).startsWith("crew-") || rel.startsWith("lib/"),
+        /* `crew-*` AT THE ROOT, as before — the depth is part of the rule and
+           the predicate says so (PR #656 review, finding 2: `startsWith` alone
+           admitted a `crew-*` basename at any depth while this sentence said
+           root, and prose drifting from its predicate is the class this
+           repository keeps being bitten by). Plus ALL of `scripts/lib/` — the
+           helpers the desk tools read him through. `scripts/calibration/` is a
+           paid bench with no notion of his desk and is admitted by neither. */
+        admits: (rel: string) => (!rel.includes("/") && base(rel).startsWith("crew-")) || rel.startsWith("lib/"),
       },
     ];
     const offenders: string[] = [];
     const scanned: string[] = [];
-    const acceptedSeen = new Set<string>();
+    const acceptedSeen = new Map<string, number>();
     for (const root of roots) {
       const dir = fileURLToPath(root.url);
       for (const entry of await readdir(dir, { recursive: true })) {
         const rel = entry.split(sep).join("/");
         const name = base(rel);
         if (!/\.(ts|tsx|mts)$/.test(name)) continue;
-        if (/\.test\.(ts|tsx)$/.test(name)) continue;
+        /* `.mts` is in the extension list above, so it is in the test-file
+           exclusion too — none exists today and the cost of the omission
+           would only ever be a loud false red, but a list that admits an
+           extension and forgets it one line later is how they drift. */
+        if (/\.test\.(ts|tsx|mts)$/.test(name)) continue;
         if (!root.admits(rel)) continue;
         const src = await readFile(join(dir, rel), "utf8");
         scanned.push(rel);
@@ -172,7 +187,15 @@ describe("the waiting state", () => {
              and no notion of him — it is not this question. */
           if (m[1] === "problem") continue;
           const found = `${rel}: ${m[0]}`;
-          if (ACCEPTED.has(found)) { acceptedSeen.add(found); continue; }
+          if (ACCEPTED.has(found)) {
+            const nth = (acceptedSeen.get(found) ?? 0) + 1;
+            acceptedSeen.set(found, nth);
+            /* The exemption is for ONE line. A second occurrence of the same
+               text in the same file is a different line wearing it. */
+            if (nth === 1) continue;
+            offenders.push(`${found}  [occurrence ${nth} — the exemption covers one]`);
+            continue;
+          }
           offenders.push(found);
         }
       }
@@ -188,9 +211,12 @@ describe("the waiting state", () => {
     expect(scanned.length).toBeGreaterThan(10);
 
     /* An accepted literal that no longer exists is a hole kept open for a line
-       that has gone. Each must be MET on this run to keep its exemption. */
-    expect([...acceptedSeen].sort(), "an accepted literal that was not found has stopped earning its exemption")
-      .toEqual([...ACCEPTED].sort());
+       that has gone, and one matching TWICE is an exemption covering a line it
+       was never written for. Each must be met EXACTLY ONCE on this run. */
+    expect(
+      Object.fromEntries([...acceptedSeen].sort()),
+      "each accepted literal earns its exemption by being found exactly once",
+    ).toEqual(Object.fromEntries([...ACCEPTED].sort().map((entry) => [entry, 1])));
 
     /* ⚠ TWO POSITIVE CONTROLS, because an empty `offenders` is a claim about a
        checker (working law 2, and the review of this PR asked for the second).
