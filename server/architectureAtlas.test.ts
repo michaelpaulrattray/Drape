@@ -2,10 +2,15 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { atlasSourcePaths, checkArchitecture } from "../scripts/check-architecture.mts";
 import { buildAtlas, sourceText } from "../scripts/generate-architecture.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite drives a real child process, so it declares the class's timeout
+   rather than racing vitest's 5 s default under a parallel run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const repoRoot = path.resolve(__dirname, "..");
 

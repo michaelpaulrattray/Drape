@@ -47,7 +47,12 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite drives a real child process, so it declares the class's timeout
+   rather than racing vitest's 5 s default under a parallel run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 

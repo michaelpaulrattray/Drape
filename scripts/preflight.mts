@@ -333,15 +333,21 @@ if (firstRed) {
   }
   if (firstRed.check.id.startsWith("diff-tests")) {
     // ⚠ SAID OUT LOUD BECAUSE A TOOL THAT REDDENS AT RANDOM IS A TOOL A SHIFT
-    // LEARNS TO IGNORE (#548, found by this script on its own branch). A few
-    // suites drive real child processes inside vitest's 5s default timeout;
-    // under the parallel load of a large selection they lose the race and fail
-    // with `Test timed out in 5000ms` — a different set each run. Naming the
-    // one command that tells the two apart costs a line and saves the trust.
+    // LEARNS TO IGNORE (#548, found by this script on its own branch).
+    //
+    // ⚠ #548 IS FIXED, AND THIS NOTE NARROWED RATHER THAN DISAPPEARING. Every
+    // suite that drives a real child process now declares a 30 s timeout, and
+    // `server/childProcessTestTimeouts.test.ts` derives that population from
+    // the tree so a new one cannot be added without it. What that guard CANNOT
+    // see is stated in its own docblock and is why the diagnosis stays here: it
+    // resolves exactly ONE hop, so a suite reaching a spawner two modules deep
+    // is still on the old 5 s default and can still lose this race.
     console.log("");
-    console.log("If a named suite passes when you run it ALONE, that red is #548 — a");
-    console.log("load-sensitive timeout in a suite that spawns child processes, not your");
-    console.log("change. Check with:  node node_modules/vitest/vitest.mjs run <that file>");
+    console.log("If a named suite passes when you run it ALONE, this is a load-sensitive");
+    console.log("timeout rather than your change (#548's class). Check with:");
+    console.log("  node node_modules/vitest/vitest.mjs run <that file>");
+    console.log("If it spawns a process, it belongs in the population — declare");
+    console.log("CHILD_PROCESS_TEST_TIMEOUT_MS in it and say why the deriver missed it.");
   }
   process.exit(1);
 }

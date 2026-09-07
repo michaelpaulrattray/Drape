@@ -1,5 +1,10 @@
 import { execFileSync } from "node:child_process";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "../testing/childProcessTimeout";
+
+/* This suite drives a real child process, so it declares the class's timeout
+   rather than racing vitest's 5 s default under a parallel run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * The casting-V2 test tree must typecheck, and it must do so WITHOUT anyone

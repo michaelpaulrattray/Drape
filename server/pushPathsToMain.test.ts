@@ -20,7 +20,7 @@
  * broken as well as when the tree is clean. Working law 2: verify the
  * instrument before believing its finding.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import path from "node:path";
 import {
   gitTreeReader,
@@ -30,6 +30,11 @@ import {
   type TreeReader,
 } from "../scripts/lib/pushPaths.mts";
 import { listScriptGuardSuites, ORIGIN_SUITE, PUSH_PATH_SUITES } from "../scripts/lib/scriptGuards.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite drives a real child process, so it declares the class's timeout
+   rather than racing vitest's 5 s default under a parallel run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 

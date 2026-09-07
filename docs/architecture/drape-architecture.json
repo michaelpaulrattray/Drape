@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d3bfa8a23b3c7388"
+    "sourceFingerprint": "1555726ad56b2f92"
   },
   "domains": [
     {
@@ -153,7 +153,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 35
+      "moduleCount": 37
     },
     {
       "id": "domain:wardrobe",
@@ -5800,6 +5800,18 @@
       "id": "module:server/stripe/webhooks.ts",
       "path": "server/stripe/webhooks.ts",
       "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/childProcessSuites.ts",
+      "path": "server/testing/childProcessSuites.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/childProcessTimeout.ts",
+      "path": "server/testing/childProcessTimeout.ts",
+      "domain": "unassigned",
       "lifecycle": "active"
     },
     {
@@ -12634,6 +12646,10 @@
     {
       "id": "test:server/changeRequests.test.ts",
       "path": "server/changeRequests.test.ts"
+    },
+    {
+      "id": "test:server/childProcessTestTimeouts.test.ts",
+      "path": "server/childProcessTestTimeouts.test.ts"
     },
     {
       "id": "test:server/claudeMdFlagEnumeration.test.ts",

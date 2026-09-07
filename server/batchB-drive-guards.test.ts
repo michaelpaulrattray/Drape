@@ -10,10 +10,15 @@
  * exactly the shape a one-off production `DATABASE_URL` override would have —
  * with fake credentials pointing at an address that is never dialed.
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite drives a real child process, so it declares the class's timeout
+   rather than racing vitest's 5 s default under a parallel run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const repoRoot = join(__dirname, "..");
 const script = join("scripts", "drive-batchB-status.mts");

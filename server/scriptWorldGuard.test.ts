@@ -2,9 +2,14 @@ import { execFileSync } from "node:child_process";
 import { readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { readListedSource } from "./testing/listedSource";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite drives a real child process, so it declares the class's timeout
+   rather than racing vitest's 5 s default under a parallel run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * A SCRIPT THAT READS THE APP'S DATABASE DECLARES WHICH WORLD IT IS IN.
