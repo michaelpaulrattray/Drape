@@ -1,7 +1,7 @@
 {
-  "edition": 287,
-  "updatedAt": "2026-09-07T05:40:00.000Z",
-  "shift": "Foreman (Opus) - the one imprecision left in your plan panel is closed, and it was the number that picks which plan we offer you",
+  "edition": 288,
+  "updatedAt": "2026-09-07T07:15:00.000Z",
+  "shift": "Foreman (Opus) - the badge that flags a customer's account was flagging YOURS, and the number turns out to be one old thing counted twice",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,23 +116,28 @@
     ],
     "chips": [
       {
+        "label": "The warning was about you",
+        "tone": "good",
+        "source": "The Moderation badge's one flagged account is yours. Named tonight; repair is #638."
+      },
+      {
+        "label": "Today's charges balance exactly",
+        "tone": "good",
+        "source": "58,740 charged against 58,740 recorded. The gap is historical and does not grow."
+      },
+      {
         "label": "Check-ups all current",
         "tone": "good",
         "source": "All four seats are inside their own clock. The Janitor is due tomorrow."
       },
       {
-        "label": "The wrong plan, caught before launch",
-        "tone": "good",
-        "source": "The burn rate and the plan recommendation on Change plan. Nobody was ever shown either."
-      },
-      {
         "label": "The queue",
         "tone": "neutral",
-        "source": "89 open, 1 carrying your word, none urgent. 2 closed tonight, 3 filed. Nothing a week unread."
+        "source": "84 open, 1 is yours (#543, waiting on 12 Sep), none urgent. 2 closed, 1 filed. 1 unread a week."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-07T05:36:50.668Z",
+      "readAt": "2026-09-07T07:03:10.009Z",
       "items": [
         {
           "issueNumber": 16,
@@ -1956,7 +1961,7 @@
       "id": "free-blurb-621-frames",
       "title": "The Free plan line you chose, on the real card",
       "question": "You picked (b) - the safer line. This is it in the running app, both themes: \"For trying the studio out before you commit.\" The credits line under it still says what they get. Does it read right to you?",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-07T03:45:00.000Z",
       "issueNumber": 621,
       "cardId": null,
@@ -4191,6 +4196,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-636-discrepancy-462",
+      "title": "The warning badge on your own account: what the -11,600 actually is (#462)",
+      "status": "merged",
+      "prNumber": 636,
+      "note": "Your account menu has a Moderation badge. It reads 1, and the one account it is counting is YOURS - flagged by the reconciliation scan at minus 11,600 credits. Nothing is at risk: that scan has been list-only since February and freezes nobody. But a warning light whose only warning is a false one is a warning light you stop looking at, so tonight was spent finding out what the number is.\n\nTHE GOOD NEWS FIRST, because it is the bigger half. Split the account in two - everything charged the modern way (a roll, a refine, a sign) against everything from the old studio - and the modern side balances EXACTLY: 58,740 credits taken, 58,740 credits accounted for. The other account with modern charges balances exactly too. So every roll you do today lands on the clean side, and this number does not grow.\n\nThe whole gap is one old thing. Back in late July the parked evidence composer wrote 45 records worth 11,450 credits. The jobs that did that work charged 9,300 and were separately refunded - but those 45 records never noted which job they belonged to, so the scan counts the same work twice: once through the job that charged for it, and again through the records left loose. Take those 45 out and your account reads minus 150 instead of minus 11,600.\n\nThe card was filed on a different theory - that FAILED pictures were being counted but never charged - and that turned out to be wrong, which is worth saying because the wrong theory is the cheaper mistake to make twice.\n\nThe fix itself is deliberately NOT done here. Correcting a money-adjacent instrument on a night shift's judgement is exactly what the rules say not to do, and there are three sensible ways to do it. It is card #638 with the three roads and a recommendation. What landed tonight is the diagnosis, written into the code where the wrong explanation used to be, and four tests that hold today's wrong answer in place so whoever fixes it has to say what they are changing.\n\nOne thing worth knowing about how we work: the note in that file used to say the number was PLUS 1,050 and explained why. It had been there twelve days, nothing had re-checked it, and it is not what the rows say. My first draft called that a mistake - the automatic reviewer caught me over-claiming, because that figure had actually been measured twice on the day. So the file now says what is true (the old reading recorded a conclusion and none of its workings, so nobody can tell) instead of what was tidier."
+    },
+    {
+      "id": "pr-637-kept-order-576",
+      "title": "The Sign button's aim, when you keep two faces in the same two seconds (#576)",
+      "status": "merged",
+      "prNumber": 637,
+      "note": "A small one, and nothing you can hit changes. When you keep a face, the dock's Sign button points at the last one you kept. The code's own note said so. It is true if you keep one face - and not quite true if you keep two inside the same couple of seconds, because in that window they arrive in the order they sit on the SHEET rather than the order you clicked. Keep 08 then 03, and the button aims at 08.\n\nIt is left working exactly as it does, on purpose: fixing it properly means changing something every part of the keep machinery reads, which is a lot of risk for a two-click window - and nothing can be signed by accident anyway, because the confirm step shows you her face, her name and the price before any credits move.\n\nWhat changed is that the sentence now has tests standing behind it, so the note and the behaviour cannot quietly drift apart again - which is the only thing the card was actually complaining about. The reviewer then found the same retired sentence sitting in the NEXT file along, which our own sweep had missed; that is corrected and held by a test too."
+    },
+    {
       "id": "pr-634-cycle-spend-624",
       "title": "Your spend 'this cycle' was counting money from the cycle before (#624)",
       "status": "merged",
@@ -6339,10 +6358,11 @@
     154,
     155,
     156,
-    157
+    157,
+    158
   ],
   "nextUp": {
-    "readAt": "2026-09-07T05:36:49.463Z",
+    "readAt": "2026-09-07T07:03:09.143Z",
     "items": [
       {
         "issueNumber": 543,
