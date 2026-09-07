@@ -5,6 +5,7 @@
 import "dotenv/config";
 import mysql, { type RowDataPacket } from "mysql2/promise";
 import { openDatabase } from "./lib/dbConnection.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 interface StaleLock extends RowDataPacket {
   lockKey: string;
@@ -16,13 +17,13 @@ interface StaleLock extends RowDataPacket {
   updatedAt: Date | null;
 }
 
-function argValue(flag: string): string | undefined {
-  const index = process.argv.indexOf(flag);
-  return index >= 0 ? process.argv[index + 1] : undefined;
-}
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["database-url"],
+  boolean: [],
+});
 
 async function main() {
-  const url = argValue("--database-url") ?? process.env.DATABASE_URL;
+  const url = args.value("database-url") ?? process.env.DATABASE_URL;
   if (!url) throw new Error("No database URL. Pass --database-url or set DATABASE_URL.");
   const parsed = new URL(url);
   console.log(`[generation-lock-audit] READ ONLY against ${parsed.host}`);

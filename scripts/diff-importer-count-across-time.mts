@@ -176,11 +176,22 @@
  * a non-transforming writer are the fix; vigilance is not.
  */
 import { importerCount, readTree, unwiredBetween } from "./lib/importerCountDiff.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-const [oldTree, newTree] = process.argv.slice(2);
-const controlSet = process.argv.includes("--controls")
-  ? process.argv[process.argv.indexOf("--controls") + 1]
-  : "none";
+/*
+  TWO BARE WORDS AND ONE FLAG (#345). The trees are positional and the strict
+  parser is told so, which also repairs a real ordering bug the old reader had:
+  `--controls february <old> <new>` destructured `--controls` and `february`
+  into the two trees and then read the diff of nothing, silently.
+*/
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["controls"],
+  boolean: [],
+  positional: 2,
+});
+const oldTree = args.positional(0);
+const newTree = args.positional(1);
+const controlSet = args.value("controls") ?? "none";
 
 if (!oldTree || !newTree) {
   console.error("usage: diff-importer-count-across-time.mts <old-tree> <new-tree> [--controls february]");
