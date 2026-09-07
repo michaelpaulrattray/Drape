@@ -1,6 +1,7 @@
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+
+import { requireShell, runHook } from "./testing/hookDriver";
 
 /**
  * THE PRE-PUSH GATE, DRIVEN RATHER THAN READ.
@@ -18,6 +19,17 @@ import { describe, expect, it } from "vitest";
  *
  * It does NOT mock `sh`. A test that models the shell would be testing the
  * model; the point is that the file git executes does what it says.
+ *
+ * ⚠ IT DOES, SINCE #640, HAVE TO FIND `sh` RATHER THAN ASSUME IT. Under Git
+ * Bash the name resolves off PATH; under PowerShell — which is how a shift runs
+ * `pnpm preflight` — it does not, so every arm here returned the old driver's
+ * `-1` sentinel and read it as the hook's exit code. The suite's verdict
+ * therefore depended on which shell launched vitest, on the same commit, in the
+ * same minute. `requireShell()` resolves git's own bundled shell and REFUSES
+ * with a message naming the problem when there is none; `runHook` throws rather
+ * than returning a number when the spawn itself fails. Between them, an
+ * unrunnable instrument now says it could not run instead of reporting a
+ * verdict. Their own arms are `server/testing/hookDriver.test.ts`.
  */
 
 const HOOK = ".githooks/pre-push";
@@ -47,12 +59,11 @@ function drive(remoteRef: string, marker: string | undefined): number {
   env.GIT_CONFIG_COUNT = "1";
   env.GIT_CONFIG_KEY_0 = "drape.atlasCheck";
   env.GIT_CONFIG_VALUE_0 = "true";
-  try {
-    execFileSync("sh", [HOOK], { input: refLine(remoteRef), env, encoding: "utf8", stdio: "pipe" });
-    return 0;
-  } catch (error: any) {
-    return typeof error?.status === "number" ? error.status : -1;
-  }
+  /* `requireShell()` THROWS when no shell exists, and `runHook` throws when the
+     spawn fails for any other reason. Neither ever hands back a number — a
+     driver that could not run the hook must not answer the question the arms
+     are asking (#640). */
+  return runHook(requireShell(), [HOOK], { input: refLine(remoteRef), env }).status;
 }
 
 describe("the pre-push gate", () => {
