@@ -5,8 +5,8 @@ import { OFFERED_PLAN_ORDER } from "../../../../server/stripe/stripeProducts";
 import {
   alignToPreview,
   annualPrice,
-  centsPerCredit,
-  formatCentsPerCredit,
+  creditsPerDollar,
+  formatCreditsPerDollar,
   monthsFree,
   prorationFactor,
   readBurn,
@@ -185,42 +185,63 @@ describe("the four constants and what is derived from them", () => {
 });
 
 describe("the ladder, against the product's real price table", () => {
-  it("⚠ COST PER CREDIT DESCENDS AT EVERY RUNG — the value argument the cards are sold on", () => {
+  it("⚠ THE VALUE ARGUMENT IMPROVES AT EVERY RUNG — now read in the one unit both surfaces use", () => {
     /*
       §6c: *"Cost per credit is on every card, and it must descend monotonically
       up the ladder … a ladder that argues against itself cannot be sold."* His
       prototype had Starter beating Pro and needed a data fix; ours does not,
       and this arm is what keeps it that way through the next price change.
+
+      ⚠ **THE CLAIM IS UNCHANGED AND ITS UNIT IS INVERTED (#403).** Cost per
+      credit had to DESCEND; credits per dollar must ASCEND. It is the same
+      sentence — *the figure must improve at every rung* — read against the same
+      real table.
+
+      This suite's population is the OFFERED ladder, which is why the arm stays
+      here rather than folding into `card390-guard.test.ts`: that one reads
+      every PAID tier, including the hidden top rung no customer is shown.
     */
     const paid = LADDER.filter((plan) => plan.priceInCents > 0);
     expect(paid.length, "no paid plans found — the reader is broken").toBeGreaterThan(5);
     for (let index = 1; index < paid.length; index += 1) {
-      const before = centsPerCredit(paid[index - 1].priceInCents, paid[index - 1].credits);
-      const after = centsPerCredit(paid[index].priceInCents, paid[index].credits);
+      const before = creditsPerDollar(paid[index - 1].priceInCents, paid[index - 1].credits);
+      const after = creditsPerDollar(paid[index].priceInCents, paid[index].credits);
       expect(
         after,
-        `${paid[index].name} is worse value per credit than ${paid[index - 1].name}`,
-      ).toBeLessThan(before);
+        `${paid[index].name} buys fewer credits per dollar than ${paid[index - 1].name}`,
+      ).toBeGreaterThan(before);
     }
   });
 
-  it("⚠ AND THE PRINTED FIGURE SEPARATES THEM — two decimals collapses our whole ladder", () => {
+  it("⚠ AND THE CHECKER CAN FAIL — a rung made worse is caught", () => {
     /*
-      The brief quotes `2.79¢ … 1.87¢`, which is the mockup's five-plan world.
-      Ours runs 0.036¢ to 0.016¢, and at two decimals every rung prints the same
-      thing. This arm is the reason `formatCentsPerCredit` uses three: a number
-      whose only job is to show a descent must actually show one.
+      Working law 2, and it is why the arm above may be re-expressed rather than
+      merely deleted with the unit it used to read: a green comparison proves
+      nothing until the same comparison has been seen to go red.
     */
     const paid = LADDER.filter((plan) => plan.priceInCents > 0);
-    const printed = paid.map((plan) => formatCentsPerCredit(plan.priceInCents, plan.credits));
-    expect(new Set(printed).size, `two rungs print the same unit price: ${printed.join(" ")}`)
-      .toBe(printed.length);
+    const sabotaged = paid.map((plan, index) =>
+      index === 3 ? { ...plan, credits: Math.round(plan.credits / 4) } : plan);
+    const ascends = sabotaged.every((plan, index) =>
+      index === 0
+      || creditsPerDollar(plan.priceInCents, plan.credits)
+        > creditsPerDollar(sabotaged[index - 1].priceInCents, sabotaged[index - 1].credits));
+    expect(ascends, "the monotonic check passed a ladder that argues against itself").toBe(false);
+  });
 
-    /* The control: at the brief's own precision they would NOT be distinct. */
-    const atTwo = paid.map((plan) =>
-      centsPerCredit(plan.priceInCents, plan.credits).toFixed(2),
-    );
-    expect(new Set(atTwo).size).toBeLessThan(atTwo.length);
+  it("⚠ AND EVERY OFFERED RUNG PRINTS A DISTINCT FIGURE", () => {
+    /*
+      The claim the deleted three-decimal arm carried, in the surviving unit:
+      whole credits per dollar run into the thousands and every adjacent pair
+      differs by hundreds, which is the whole reason card 390 inverted it.
+    */
+    const paid = LADDER.filter((plan) => plan.priceInCents > 0);
+    const printed = paid.map((plan) => formatCreditsPerDollar(plan.priceInCents, plan.credits));
+    expect(new Set(printed).size, `two rungs print the same figure: ${printed.join(" ")}`)
+      .toBe(printed.length);
+    for (const figure of printed) {
+      expect(figure, `\`${figure}\` is not a whole number of credits`).toMatch(/^[\d,]+$/);
+    }
   });
 
   it("recommends the cheapest plan that covers the PROJECTED spend, or nothing", () => {
