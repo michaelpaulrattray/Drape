@@ -8,6 +8,7 @@ import {
   creditsPerDollar,
   formatCreditsPerDollar,
   monthlyEquivalent,
+  priceAMonth,
 } from "./planMath";
 
 /**
@@ -442,5 +443,102 @@ describe("card 390 items 1, 3, 5 and 6 — the form of a card", () => {
     expect(surface, "the tag was removed from the plan cards too — he ruled on the table only")
       .toContain("FITS YOUR USE");
     expect(compareHead, "`YOU ARE HERE` went with it").toContain("YOU ARE HERE");
+  });
+});
+
+describe("#661 — the rate is computed from the price standing beside it", () => {
+  /**
+   * ⚠ **THE DEFECT A CUSTOMER COULD CHECK AND FIND WRONG.** With Annual on, a
+   * Change plan card printed `2,778 CREDITS PER $1` directly above
+   * `$132 / month`: the price went through `monthlyEquivalent`, the rate went
+   * on dividing by `$159`. The compare table said the same two things four
+   * rows apart. Add credits — the surface #661 was actually filed about —
+   * quoted the monthly rate under a year's charge, understating what was
+   * being bought.
+   *
+   * These arms are here rather than in `planMath.test.ts` because the claim is
+   * about the SURFACES: the arithmetic was never wrong, the pairing was.
+   */
+
+  it("⚠ THE ANNUAL RATE REPRODUCES FROM THE MONEY WE ACTUALLY CHARGE FOR A YEAR", () => {
+    /*
+      This is the arm that would have caught it. Credits per dollar is
+      scale-invariant — a year's credits over a year's dollars is the same
+      number as a month's over a month's — so the annual figure MUST equal the
+      year's credits divided by `annualPrice`. A rate taken from the monthly
+      price fails this by exactly the discount.
+    */
+    for (const tier of PAID) {
+      const shown = creditsPerDollar(priceAMonth(tier.price, true), tier.monthlyCredits);
+      const overAWholeYear = (tier.monthlyCredits * 12) / (annualPrice(tier.price) / 100);
+      expect(
+        Math.abs(shown - overAWholeYear) / overAWholeYear,
+        `${tier.name}: the annual rate does not reproduce from the year we charge`,
+      ).toBeLessThan(0.001);
+      /* And the monthly reading is untouched — this changed no monthly figure. */
+      expect(priceAMonth(tier.price, false)).toBe(tier.price);
+    }
+  });
+
+  it("⚠ TURNING ANNUAL ON IMPROVES THE FIGURE, ON EVERY RUNG", () => {
+    /*
+      The toggle's whole claim is a saving. Before #661 the one line that
+      argues value did not move when it was pressed, so the control that
+      claims a discount left the value argument flat — §6b's complaint about
+      the badge, in the sentence beside it.
+    */
+    for (const tier of PAID) {
+      const monthly = creditsPerDollar(priceAMonth(tier.price, false), tier.monthlyCredits);
+      const annual = creditsPerDollar(priceAMonth(tier.price, true), tier.monthlyCredits);
+      expect(annual, `${tier.name}: annual buys no more per dollar than monthly`).toBeGreaterThan(
+        monthly,
+      );
+    }
+    /* And the ladder still ascends at the annual interval — item 4's monotonic
+       claim is a claim about BOTH intervals, not just the one it was written
+       for. */
+    for (let index = 1; index < PAID.length; index += 1) {
+      const before = creditsPerDollar(priceAMonth(PAID[index - 1].price, true), PAID[index - 1].monthlyCredits);
+      const after = creditsPerDollar(priceAMonth(PAID[index].price, true), PAID[index].monthlyCredits);
+      expect(after, `${PAID[index].name} is worse value than ${PAID[index - 1].name} on annual`).toBeGreaterThan(before);
+    }
+  });
+
+  it("⚠ EVERY PRINTED RATE ON BOTH SURFACES READS AN INTERVAL-AWARE PRICE", () => {
+    /*
+      ⚠ **A `toContain` ARM WOULD PASS A HALF-REVERTED SURFACE, MEASURED LAST
+      NIGHT ON THIS VERY SUITE.** The top-up sentence has two calls and the
+      compare grid has one beside the card's one; a sabotage restoring the raw
+      price on ONE of them leaves every token in the file. So each CALL is read
+      and its first argument checked, and the population is derived from the
+      calls found rather than from a number typed here.
+    */
+    const wanted: Record<string, number> = { [MODAL]: 2, [TOPUP]: 2 };
+    for (const path of [MODAL, TOPUP]) {
+      const surface = code(read(path));
+      const calls = [...surface.matchAll(/formatCreditsPerDollar\(\s*([A-Za-z0-9_.]+)/g)];
+      expect(
+        calls.length,
+        `${path}: expected ${wanted[path]} printed rates, found ${calls.length}`,
+      ).toBe(wanted[path]);
+      for (const call of calls) {
+        expect(
+          call[1],
+          `${path}: a rate is computed from \`${call[1]}\`, which does not follow the billing interval`,
+        ).toMatch(/^(priceAMonth|priceOf)$/);
+      }
+    }
+    /*
+      And the interval expression exists ONCE, in `planMath` — working law 4.
+      Both modals used to carry their own `interval === "annual" ? ... : ...`,
+      which is how the price and the rate came to disagree in the first place.
+    */
+    for (const path of [MODAL, TOPUP]) {
+      expect(
+        code(read(path)),
+        `${path} computes the annual price itself instead of reading the shared expression`,
+      ).not.toContain("monthlyEquivalent(");
+    }
+    expect(code(read(MATH))).toContain("export function priceAMonth");
   });
 });

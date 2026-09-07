@@ -47,6 +47,7 @@ import {
   formatDollars,
   formatShortDate,
   monthsFree,
+  priceAMonth,
   readBurn,
   readCycle,
 } from "@/features/settings/planMath";
@@ -254,11 +255,37 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
             one session met one fact in two units — §6b's own rule about the
             annual badge, in a different place.
           */}
+          {/*
+            ⚠ **THE RATE FOLLOWS THE TOGGLE, BECAUSE THE PRICE ABOVE IT DOES**
+            (#661). Turning Annual on changed the charge and left this sentence
+            quoting the monthly rate, so the line UNDERSTATED what was being
+            bought — two of the twelve months are free, which is precisely a
+            better credits-per-dollar rate, and the one line that exists to say
+            so did not say it.
+
+            ⚠ **BOTH SIDES MOVE, OR THE COMPARISON LIES THE OTHER WAY.** An
+            annual figure held up against a monthly one would OVERSTATE the
+            gain by the discount, which is the direction that misleads. This
+            reads the ladder at the interval the customer is looking at — a
+            like-for-like rung comparison, not a claim about how they are
+            billed today, which this surface does not know.
+
+            ⚠ **AND IT DOES REPRODUCE FROM THE YEAR'S CHARGE ABOVE, WHICH IS
+            THE OBVIOUS OBJECTION.** The big figure here is a YEAR (`due
+            today`), while the rate is per month — but credits per dollar is
+            the same number over either period as long as both sides use one:
+            a year's credits over a year's dollars is `credits × 12` over
+            `annualPrice / 100`, which is exactly `credits` over
+            `monthlyEquivalent / 100`. That scale-invariance is why this unit
+            can sit on a yearly confirm step and a monthly plan card and mean
+            the same thing on both.
+          */}
           {selected ? (
             <span className="dp-set__value">
-              {formatCreditsPerDollar(selected.price, selected.credits)} credits per $1
+              {formatCreditsPerDollar(priceAMonth(selected.price, annual), selected.credits)}{" "}
+              credits per $1
               {currentPrice > 0
-                ? `, up from ${formatCreditsPerDollar(currentPrice, currentCredits)}`
+                ? `, up from ${formatCreditsPerDollar(priceAMonth(currentPrice, annual), currentCredits)}`
                 : null}
             </span>
           ) : null}

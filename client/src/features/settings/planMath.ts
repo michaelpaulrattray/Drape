@@ -301,6 +301,30 @@ export function monthlyEquivalent(monthlyInCents: number): number {
 }
 
 /**
+ * THE PRICE A MONTH AT THE SELECTED INTERVAL — the ONE expression, so the rate
+ * and the price beside it cannot disagree (#661).
+ *
+ * ⚠ **A CUSTOMER COULD CHECK OUR ARITHMETIC AND FIND IT WRONG.** With Annual
+ * on, a Change plan card read `2,778 CREDITS PER $1` directly above
+ * `$132 / month` — because the price went through `monthlyEquivalent` and the
+ * rate went on dividing by the monthly `$159`. Two numbers in one card, and
+ * the stated rate does not reproduce from the stated price. Add credits had
+ * the same shape a line apart, which is what #661 was filed about.
+ *
+ * The fix is not a second calculation, it is the REMOVAL of one: every surface
+ * that shows a price and a rate now derives BOTH from this call, so a future
+ * interval change moves them together or moves neither. Working law 4 — the
+ * three call sites this replaced were a mirror, and mirrors drift.
+ *
+ * ⚠ **IT DOES NOT CHANGE WHAT ANYONE IS CHARGED.** `annualPrice` is still what
+ * the year costs and still what the confirm step shows; this is the same money
+ * said by the month, which is card 390 item 2's rule for every plan surface.
+ */
+export function priceAMonth(monthlyInCents: number, annual: boolean): number {
+  return annual ? monthlyEquivalent(monthlyInCents) : monthlyInCents;
+}
+
+/**
  * Credits per dollar — the value argument, the right way up (card 390 item 4).
  *
  * ⚠ **`0.036¢ A CREDIT` IS NOT A VALUE ARGUMENT.** His agent's reading, and it

@@ -88,8 +88,8 @@ import {
   formatShortDate,
   formatWholeDollars,
   formatCreditsPerDollar,
-  monthlyEquivalent,
   monthsFree,
+  priceAMonth,
   readBurn,
   readCycle,
 } from "@/features/settings/planMath";
@@ -276,8 +276,7 @@ export function ChangePlanModal({
     against. The interval now changes the RATE, not the unit, and the year's
     total is shown at the confirm step, which is where it is charged.
   */
-  const priceOf = (plan: LadderPlan) =>
-    interval === "annual" ? monthlyEquivalent(plan.priceInCents) : plan.priceInCents;
+  const priceOf = (plan: LadderPlan) => priceAMonth(plan.priceInCents, interval === "annual");
 
   const act = (plan: LadderPlan) => {
     setPending(plan.id);
@@ -464,7 +463,16 @@ export function ChangePlanModal({
                         to name one. The old figure was hard to read; a nounless
                         one is not readable at all.
                       */}
-                      {formatCreditsPerDollar(plan.priceInCents, plan.credits)} CREDITS PER $1
+                      {/*
+                        ⚠ **THE RATE READS `priceOf`, WHICH IS THE PRICE
+                        PRINTED THREE LINES DOWN** (#661). With Annual on it
+                        used to divide by the MONTHLY price while the card
+                        showed the monthly EQUIVALENT — `2,778 CREDITS PER $1`
+                        standing over `$132 / month`, an arithmetic a customer
+                        can do and find wrong. One expression now, so the two
+                        move together or neither moves.
+                      */}
+                      {formatCreditsPerDollar(priceOf(plan), plan.credits)} CREDITS PER $1
                     </span>
                   </span>
                   <span className="dp-plan__price">
@@ -710,6 +718,10 @@ function CompareGrid({
   pending: string | null;
   onAct: (plan: LadderPlan) => void;
 }) {
+  /* The same one expression the cards read — `Price a month` and `Credits per
+     dollar` are two readings of ONE number and must not be computed twice. */
+  const priceOf = (plan: LadderPlan) => priceAMonth(plan.priceInCents, interval === "annual");
+
   const cellClass = (plan: LadderPlan, extra?: string) =>
     [
       "dp-plan__cell",
@@ -734,9 +746,15 @@ function CompareGrid({
             : "—",
       },
       {
+        /*
+          ⚠ **THIS ROW AND `Price a month` FOUR ROWS DOWN ARE THE SAME NUMBER
+          TWICE** (#661), so they read one `priceOf`. Before, the annual column
+          showed `$132` here and a rate divided from `$159` there — the two
+          rows contradicted each other inside one table.
+        */
         label: "Credits per dollar",
         mono: true,
-        read: (plan) => formatCreditsPerDollar(plan.priceInCents, plan.credits),
+        read: (plan) => formatCreditsPerDollar(priceOf(plan), plan.credits),
       },
       {
         label: "Unspent credits",
@@ -752,10 +770,7 @@ function CompareGrid({
         label: "Price a month",
         mono: true,
         price: true,
-        read: (plan) =>
-          formatWholeDollars(
-            interval === "annual" ? monthlyEquivalent(plan.priceInCents) : plan.priceInCents,
-          ),
+        read: (plan) => formatWholeDollars(priceOf(plan)),
       },
     ];
 
