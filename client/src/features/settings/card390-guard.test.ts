@@ -446,7 +446,7 @@ describe("card 390 items 1, 3, 5 and 6 — the form of a card", () => {
   });
 });
 
-describe("#661 — the rate is computed from the price standing beside it", () => {
+describe("card 661 — the rate is computed from the price standing beside it", () => {
   /**
    * ⚠ **THE DEFECT A CUSTOMER COULD CHECK AND FIND WRONG.** With Annual on, a
    * Change plan card printed `2,778 CREDITS PER $1` directly above
