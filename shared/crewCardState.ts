@@ -62,18 +62,16 @@ export type CrewCardState = (typeof CREW_CARD_STATES)[number];
  * The single question the desk's three consumers ask. `waiting` is true here
  * and false in every "has he replied" sense — which is the whole point of the
  * split, and why no caller may ask it by comparing to a literal.
+ *
+ * ⚠ THERE IS DELIBERATELY NO `crewCardAnsweredByHim` BESIDE IT. One was
+ * written — the other half of the old word, for a reader asking "has he
+ * replied" — and the uncalled-export gate refused the commit, correctly: it
+ * had no consumer. An export with no caller is a control that does not exist
+ * (invariant 7), and the fact it was meant to carry is stated here instead,
+ * where it costs nothing: **`waiting` is TRUE of both questions.** He has
+ * replied, and it is still his. A future reader who needs the other half
+ * writes it with its call site.
  */
 export function crewCardNeedsHim(state: string): boolean {
   return state === "open" || state === "waiting";
-}
-
-/**
- * Whether he has already replied to this card.
- *
- * The OTHER half of the old `answered`, stated so that a future reader asking
- * "has he answered" has somewhere honest to go rather than reaching for
- * `state !== "open"`, which is now wrong.
- */
-export function crewCardAnsweredByHim(state: string): boolean {
-  return state === "waiting" || state === "answered";
 }

@@ -2,11 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  CREW_CARD_STATES,
-  crewCardAnsweredByHim,
-  crewCardNeedsHim,
-} from "../../../../../../shared/crewCardState";
+import { CREW_CARD_STATES, crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { nextUpRows, replyFallsToGeneral } from "./crewTypes";
 
 /**
@@ -29,15 +25,6 @@ describe("the waiting state", () => {
     /* And the negative one — without this the predicate could be `() => true`. */
     expect(crewCardNeedsHim("answered")).toBe(false);
     expect(crewCardNeedsHim("done")).toBe(false);
-  });
-
-  it("counts as answered, which is the half that must NOT change", () => {
-    /* `waiting` splits one word into two facts. It is true of both — he
-       replied, AND it is still his — and a reader who only knows the old
-       meaning must not be told he has not replied. */
-    expect(crewCardAnsweredByHim("waiting")).toBe(true);
-    expect(crewCardAnsweredByHim("answered")).toBe(true);
-    expect(crewCardAnsweredByHim("open")).toBe(false);
   });
 
   it("keeps his reply under the card instead of dropping it in the General box", () => {
