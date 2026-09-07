@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
-import { visibleShortlist, type StripCandidate, type StripEntry } from "./keptStrip";
+import { restingTray, visibleShortlist, type StripCandidate, type StripEntry } from "./keptStrip";
 
 /**
  * #554 — THE TILE PAINTED AND THE DOCK DID NOT.
@@ -353,5 +353,61 @@ describe("the strip's order with more than one keep in flight", () => {
     expect(flat).toContain('"newest keep first"');
     // The retired claim survives only inside that quotation.
     expect(flat.split("newest keep first").length - 1).toBe(1);
+  });
+});
+
+/**
+ * THE COLLAPSED TRAY MUST CONTAIN THE FACE THE DOCK IS AIMING AT (#645 review).
+ *
+ * The strip drew the FIRST four keeps; `signTargets` reverses the same list and
+ * offers the LAST. Identical while there are four or fewer — which is exactly
+ * the fixture #556 was rendered on — and divergent on the fifth, where the
+ * aimed face hides behind "+1" and the dock names someone who is not drawn.
+ */
+describe("which kept faces the resting tray draws", () => {
+  const face = (candidateId: string) => ({ candidateId });
+
+  it("is the plain head while everything fits", () => {
+    const list = [face("a"), face("b"), face("c"), face("d")];
+    expect(restingTray(list, "d", 4).map((e) => e.candidateId)).toEqual(["a", "b", "c", "d"]);
+  });
+
+  it("draws the selection when she is past the resting count — the defect", () => {
+    const list = [face("a"), face("b"), face("c"), face("d"), face("e")];
+    /* The default target is the NEWEST keep, which is the last entry. */
+    expect(restingTray(list, "e", 4).map((e) => e.candidateId)).toEqual(["a", "b", "c", "e"]);
+  });
+
+  it("keeps chronological order — she takes the LAST place, nearest Sign", () => {
+    const list = [face("a"), face("b"), face("c"), face("d"), face("e"), face("f")];
+    const shown = restingTray(list, "f", 4).map((e) => e.candidateId);
+    expect(shown[shown.length - 1]).toBe("f");
+    expect(shown.slice(0, 3)).toEqual(["a", "b", "c"]);
+  });
+
+  it("leaves a visible selection exactly where it was", () => {
+    const list = [face("a"), face("b"), face("c"), face("d"), face("e")];
+    expect(restingTray(list, "b", 4).map((e) => e.candidateId)).toEqual(["a", "b", "c", "d"]);
+  });
+
+  it("falls back to the head when nothing is selected, or the id is a stranger", () => {
+    const list = [face("a"), face("b"), face("c"), face("d"), face("e")];
+    expect(restingTray(list, null, 4).map((e) => e.candidateId)).toEqual(["a", "b", "c", "d"]);
+    expect(restingTray(list, "zzz", 4).map((e) => e.candidateId)).toEqual(["a", "b", "c", "d"]);
+  });
+
+  it("never returns more than the resting count", () => {
+    const list = Array.from({ length: 9 }, (_, i) => face(String(i)));
+    for (const selected of ["0", "4", "8"]) {
+      expect(restingTray(list, selected, 4)).toHaveLength(4);
+    }
+  });
+
+  it("the tray asks this module rather than slicing for itself", async () => {
+    /* Working law 4: the moment two places decide who is drawn, they drift —
+       and the drift is invisible until the fifth keep. */
+    const tray = await readFile(new URL("./components/KeptTray.tsx", import.meta.url), "utf8");
+    expect(tray).toContain("restingTray(shortlist, selectedId, RESTING)");
+    expect(tray).not.toContain("shortlist.slice(0, RESTING)");
   });
 });

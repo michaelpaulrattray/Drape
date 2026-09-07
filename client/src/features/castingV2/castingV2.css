@@ -808,7 +808,32 @@
   transform: translateY(-3px);
   z-index: 2;
   position: relative;
-  box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3.5px var(--accentSolid);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 5px var(--accentSolid);
+}
+
+/*
+  ⚠ AND THE UNCHOSEN FACES STEP BACK WHILE A CHOICE EXISTS (#556).
+
+  The ruling above rests on a premise — "the ring already says who" — and the
+  founder's own frame is that premise failing: four kept, every face at full
+  strength, one of them wearing a 2px ring inside a stack that overlaps by
+  12px. A ring competing with three equally bright neighbours is not a
+  statement, it is a detail.
+
+  So the contrast comes from BOTH sides: the ring thickens, and the faces that
+  are not about to be signed dim slightly. It is the same grammar the tray
+  already uses for a signed face — the eye reads "not one of these" before the
+  hand moves — held well clear of that treatment's depth (0.42) so the two
+  never read as the same fact. Nothing is hidden and nothing moves: every kept
+  face stays clickable, and clicking one brings it forward.
+*/
+.dpc-keptstack:has(.is-selected) .dpc-keptstack__chip--open:not(.is-selected):not(.is-signed) > img {
+  opacity: 0.78;
+}
+
+.dpc-keptstack:has(.is-selected) .dpc-keptstack__chip--open:not(.is-selected):not(.is-signed):hover > img,
+.dpc-keptstack:has(.is-selected) .dpc-keptstack__chip--open:not(.is-selected):not(.is-signed):focus-visible > img {
+  opacity: 1;
 }
 
 .dpc-keptstack__ring { display: none; }

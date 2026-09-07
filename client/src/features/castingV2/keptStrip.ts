@@ -142,3 +142,34 @@ export function visibleShortlist(input: VisibleShortlistInput): StripEntry[] {
 
   return [...base, ...added];
 }
+
+/**
+ * WHICH KEPT FACES THE COLLAPSED TRAY DRAWS (#645 review, finding 1).
+ *
+ * The dock has finite width, so the resting strip shows only the first few and
+ * a "+N" chip opens the rest. That was `shortlist.slice(0, resting)` — and the
+ * SIGN TARGET is the other end of the same list, because `signTargets` reverses
+ * it to offer the newest keep first.
+ *
+ * Those two rules agree exactly while there are `resting` keeps or fewer, and
+ * part company on the next one: the aimed face sits behind the "+1", so nothing
+ * in the DOM carries `is-selected` — no ring, no dim of her neighbours — while
+ * the dock's sentence names her. A sentence about a face you cannot see is the
+ * defect #556 was filed for, one keep further along.
+ *
+ * So the selection displaces the LAST resting place when she is not already
+ * among them. Chronological order survives (she is later than every face she
+ * joins), she lands nearest the Sign button, and a selection already visible —
+ * the common case, and every case at or below `resting` — is untouched.
+ */
+export function restingTray<T extends { candidateId: string }>(
+  shortlist: readonly T[],
+  selectedId: string | null | undefined,
+  resting: number,
+): T[] {
+  const head = shortlist.slice(0, resting);
+  if (!selectedId || resting < 1) return head;
+  const selected = shortlist.find((entry) => entry.candidateId === selectedId);
+  if (!selected || head.includes(selected)) return head;
+  return [...head.slice(0, resting - 1), selected];
+}
