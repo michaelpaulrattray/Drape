@@ -38,11 +38,67 @@
  * recorded nothing: the parked July evidence family (#6) charged under
  * legacy references and left its operations at `chargedCredits: 0`.
  *
- * What the 1,050 residual on the founder's account IS, named rather than
- * hidden: five `evidence_package_sync` operations from 2026-07-29 that
- * charged 300 each and wrote two 300 audit rows apiece — the parked evidence
- * composer's data, one account, no live road. Every other production account
- * reads 0 under this formula.
+ * ⚠ THAT PARAGRAPH SAID "+1,050" UNTIL 2026-09-07 AND IT WAS WRONG ABOUT
+ * BOTH THE NUMBER AND THE MECHANISM (#462). The reading it recorded — five
+ * `evidence_package_sync` operations charging 300 each and writing two 300
+ * audit rows apiece — is not what the rows say and is not reproducible: the
+ * formula has not changed since it was written (one commit, `127de613`, which
+ * carried the arithmetic and that sentence together), so a number that no
+ * longer reproduces under an unchanged formula was mismeasured, not drifted.
+ * It recorded a conclusion and none of its inputs, which is why it cannot be
+ * re-derived. Working law 2 is what it failed: a measurement filed as a
+ * sentence, with nothing re-taking it, stood for twelve days.
+ *
+ * WHAT THE RESIDUAL ACTUALLY IS, driven at the production rows 2026-09-07 and
+ * decomposed so every term can be argued at:
+ *
+ *   gross 117,890  −  (unlinked 70,750 + operation 58,740)  =  − 11,600
+ *
+ * Split by era, the live road is exactly clean and the whole residual is
+ * historical:
+ *
+ *   v2 (an `op:<uuid>:charge` reference)   gross 58,740  vs  operations 58,740
+ *   legacy (every other reference)         gross 59,150  vs  unlinked   70,750
+ *
+ * ⚠ AND THE LEGACY GAP IS ONE THING: 45 `evidenceCandidate` rows, 11,450
+ * credits, EVERY ONE OF THEM `operationId IS NULL`. Take them out and the
+ * account reads −150. The evidence operations that did the work charged
+ * 9,300 (46 `evidence_candidate_generate` at 7,500 + 6 `evidence_package_sync`
+ * at 1,800, the latter refunded in full) and own ZERO rows between them — so
+ * the same work is counted TWICE: once through the operation that charged for
+ * it, and again through the rows it left unlinked.
+ *
+ * ⚠ THAT IS #119'S OWN DEFECT CLASS, ONE DOOR OVER, AND IT IS WHY THIS IS
+ * WORTH THE WORDS. The rule above makes an operation's own charge authoritative
+ * precisely so a Sign's five audit rows cannot be added to the 450 it charged.
+ * That guard keys on the row NAMING its operation. A row that never recorded
+ * its `operationId` walks straight past it and is added anyway — the rule
+ * defeated by a shape it did not anticipate rather than by a wrong premise.
+ *
+ * The lead this was filed on — that FAILED generations are counted into
+ * `expected` and never charged — is REFUTED at the rows, and the negative
+ * result is kept because it is the cheaper mistake to make twice: failed
+ * legacy rows outside the evidence family are 2,500, and the one failed row
+ * whose deduction can be matched at all (`referenceId` = `gen-<id>`) was
+ * charged 350 against a recorded 350. Failed rows are not the mechanism; 11
+ * of the 45 evidence rows are `completed`.
+ *
+ * ⚠ NO ROW-LEVEL RECONCILIATION IS POSSIBLE ON THE LEGACY ERA, which is
+ * what makes that an investigation dead end rather than an unfinished one.
+ * `referenceId` on a legacy deduction holds `casting-image-<modelId>-<uuid>`,
+ * `mint-<id>-<uuid>`, `upscale-<uuid>`, `pending-<epoch>` and a handful of
+ * `gen-<id>`; only the last names a `generations` row, and there are 33 of
+ * them. A join on the rest cannot distinguish "never charged" from "charged
+ * under a reference that does not name me" — it reports every unlinked row as
+ * uncharged, completed ones included, which is a reader that always agrees
+ * with whoever runs it.
+ *
+ * The repair is NOT made here: this is a money-adjacent instrument and the
+ * choice between excluding the parked family, linking its rows, and narrowing
+ * `unlinkedCost` is filed rather than taken on a shift's judgement (#462).
+ * `server/discrepancyFlagging.test.ts` pins the double-count as CURRENT
+ * behaviour with the production shape, so the repair has to change an arm that
+ * states what it is changing.
  *
  * Refunds are no longer part of the discrepancy. They are written only by
  * the product or by staff (a failure refund, a per-slice refund, an admin
