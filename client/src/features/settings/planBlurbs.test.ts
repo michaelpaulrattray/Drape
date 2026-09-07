@@ -103,6 +103,14 @@ describe("card 404 — the plan blurb map cannot drift from the ladder", () => {
       these placeholders without a suite edit. The two claims that were actually
       there are named individually, because those are the two a well-meaning
       rewrite would put back.
+
+      ⚠ **THAT "WITHOUT A SUITE EDIT" IS NARROWER THAN IT SOUNDS, AND SAYING SO
+      IS THE POINT** (PR #633's review, note 1). His future copy must still
+      begin "For " and avoid `free` and `cast`, so *"Free forever, try before
+      you buy"* would redden two of these three. That is the mechanism working
+      — it fires before a promise ships and makes someone read this paragraph,
+      exactly as its predecessor did tonight — but the freedom on offer is
+      "any line of that shape", not "any line at all".
     */
     const free = PLAN_BLURBS.free;
     expect(free, "the free line stopped saying who the rung is for").toMatch(/^For /);

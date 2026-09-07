@@ -42,10 +42,15 @@
  *
  * ⚠ **A shift could NOT fix it, and did not: it was his copy.** The card put
  * three options to him and his answer was, verbatim, ***"(b), use the safer
- * line."*** — option (b) being *"Reword it like the other six"*. So the line is
- * now `"For trying the studio out before you commit."`, and **all seven say who a rung
+ * line."*** — option (b) being *"Reword it like the other six"*. So the free
+ * line now has the same shape as the other six, and **all seven say who a rung
  * is FOR and claim no capability.** The sentence above is true of every line
  * with no exception, for the first time.
+ *
+ * ⚠ The line itself is deliberately NOT quoted here (PR #633's review, note 2):
+ * it lives thirty-five lines below, and a comment restating a literal is
+ * working law 4 — it drifts the moment he edits the table, which is the one
+ * thing this module is built to make easy.
  *
  * The credits block directly under the card still tells a customer exactly what
  * they get, so nothing was lost by dropping the promise — which was the
