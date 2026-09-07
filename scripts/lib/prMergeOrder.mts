@@ -74,8 +74,15 @@ export type PrReading = {
 };
 
 export type MergeAction =
-  /** Squash-merge it now. */
-  | { kind: "merge" }
+  /**
+   * Squash-merge it now.
+   *
+   * `notice` is a line the caller MUST print when it merges — something true
+   * about this merge that the shift would otherwise have to query the API to
+   * learn. It is not a hold and it is not a warning: everything that holds a
+   * PR is a `stop` or a `wait` above. `null` when there is nothing to say.
+   */
+  | { kind: "merge"; notice: string | null }
   /** Nothing to do here; move to the next PR. */
   | { kind: "skip"; reason: string }
   /** Poll again; something is legitimately in flight. */
@@ -230,6 +237,67 @@ export type MergeContext = {
 };
 
 /**
+ * WHY THERE IS NO VERDICT, in the words a shift can act on (#566).
+ *
+ * The two absences read identically on the checks page and want opposite next
+ * moves: `declined` means the reviewer LOOKED and this diff did not earn a
+ * look, so the remedy is a label; `absent` means nothing ran, so the remedy is
+ * to make something run — and the old wording sent a shift hunting a
+ * `skip-review` label that was never applied.
+ *
+ * ⚠ IT RETURNS A CLAUSE, NOT A SENTENCE, and it is deliberately EMPTY for
+ * `no-verdict` and for the two live states. A caller appends it inside its own
+ * reason and owns the full stop; a helper that guessed at punctuation would be
+ * a second place that knows how these sentences are built.
+ */
+/**
+ * THE ABSENCE SAID OUT LOUD ON THE MERGE ITSELF — #566's second half, and the
+ * whole of what that card asked for: *"a shift should not have to query the
+ * API to learn there is no reviewer."*
+ *
+ * ⚠ A NOTICE IS NOT A HOLD, AND KEEPING THOSE TWO APART IS THE DESIGN
+ * DECISION HERE. The standing orders merge an ordinary PR on the gate alone
+ * when the reviewer is down, and this does not change that by one PR — every
+ * refusal still lives in a `stop` or a `wait` above, and a money/auth diff is
+ * already held whichever absence it carries. What changes is that the merge
+ * says WHICH of the two happened, at the moment it happens, in the shift's own
+ * log. Silence was the defect: PR #563 merged on its gate with no reviewer,
+ * correctly by the orders and unknowably by the transcript, and it took a hand
+ * query at the API a day later to find out.
+ *
+ * `declined` earns no notice. It is the design working — a docs-only or
+ * sub-50-line diff is SUPPOSED not to be reviewed, and a line about it on
+ * every such merge is noise that would teach shifts to skip reading these.
+ */
+export function mergeNotice(pr: PrReading): string | null {
+  if (pr.review === "absent") {
+    return (
+      `NO Fable review run was ever created for #${pr.number} — merging on the gate alone, ` +
+      "which the standing orders permit for a non-money diff. This is the FOURTH state and " +
+      "#219's paragraph does not name it: an absent check is not a verdict, not a refusal " +
+      "and not a cancellation. If this PR wanted a look, remove and re-add `needs-fable` " +
+      "(#368) BEFORE merging — the same re-add is what produced a run on PR #610 five " +
+      "seconds after an identical label event produced none."
+    );
+  }
+  return null;
+}
+
+export function reviewAbsenceClause(review: ReviewPresence): string {
+  switch (review) {
+    case "declined":
+      return " (a review ran and triage DECLINED it — check for a stale `skip-review` label)";
+    case "absent":
+      return (
+        " (NO review run exists for this PR at all — not a declined one, not a failed one: " +
+        "nothing was ever created. Measured at ~1 trigger event in 50, cause not in `review.yml`, #566)"
+      );
+    default:
+      return "";
+  }
+}
+
+/**
  * THE DECISION. Branch order is the contract — read the module header.
  */
 export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction {
@@ -298,22 +366,26 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
     }
   }
   // 4b. No verdict at all. Two populations are held rather than merged, and
-  //     the second of them keys on `none` as well as on `no-verdict`: triage
-  //     honours a `skip-review` label BEFORE it tests the money pattern, so a
-  //     stale label on a PR that later gains a money file produces a money
-  //     diff with a DECLINED review and no verdict anywhere (#558 review,
-  //     finding 5). Where a human used to click merge, this tool now does.
-  if (pr.review === "no-verdict" || pr.review === "none") {
+  //     the second of them keys on `declined` and `absent` as well as on
+  //     `no-verdict`: triage honours a `skip-review` label BEFORE it tests the
+  //     money pattern, so a stale label on a PR that later gains a money file
+  //     produces a money diff with a DECLINED review and no verdict anywhere
+  //     (#558 review, finding 5). Where a human used to click merge, this tool
+  //     now does.
+  if (pr.review === "no-verdict" || pr.review === "declined" || pr.review === "absent") {
     const acknowledged = pr.acknowledgedAtVerdictCount !== null;
-    // ⚠ THIS STOP COVERS `none` AS WELL AS `no-verdict`, and the round-three
-    //    review of #558 is why: the round-two fix taught the MONEY hold that
-    //    lesson and left its sibling one clause away — working law 7's own
-    //    shape, a class fixed at one of its two members. Two roads reach a
-    //    `review.yml` PR with presence `none`: a stale `skip-review` label
-    //    (triage honours it BEFORE the self-skip check), and a triage-job
-    //    outage, which skips the review job through unmet `needs` and requires
-    //    no label at all. Either one would have merged the reviewer's own
-    //    workflow with no verdict and no hand review.
+    // ⚠ THIS STOP COVERS `declined` AND `absent` AS WELL AS `no-verdict`, and
+    //    the round-three review of #558 is why: the round-two fix taught the
+    //    MONEY hold that lesson and left its sibling one clause away — working
+    //    law 7's own shape, a class fixed at one of its two members. THREE
+    //    roads now reach a `review.yml` PR with no verdict: a stale
+    //    `skip-review` label (triage honours it BEFORE the self-skip check)
+    //    and a triage-job outage, both of which leave a run that DECLINED;
+    //    and — #566 — a trigger event GitHub never turned into a run at all,
+    //    which leaves nothing. Every one of them would have merged the
+    //    reviewer's own workflow with no verdict and no hand review, so the
+    //    #566 split changes what is SAID here and deliberately not what is
+    //    HELD: an absence is at least as bad as a decision, never less.
     if (touchesReviewerWorkflow(pr.files) && !acknowledged) {
       return {
         kind: "stop",
@@ -328,7 +400,7 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
         kind: "stop",
         reason:
           "it touches a money/auth surface and NO reviewer verdict exists" +
-          (pr.review === "none" ? " (triage declined it — check for a stale `skip-review` label)" : "") +
+          reviewAbsenceClause(pr.review) +
           ". The standing orders merge an ordinary PR on the gate alone when the reviewer is " +
           "down, and hold a money/auth one. Get a verdict (remove then re-add `needs-fable`, " +
           `#368) or hand-review it and re-run with --acknowledge ${pr.number}.` +
@@ -428,7 +500,7 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
     };
   }
 
-  return { kind: "merge" };
+  return { kind: "merge", notice: mergeNotice(pr) };
 }
 
 function syncOrStop(pr: PrReading, why: string): MergeAction {
@@ -529,7 +601,17 @@ export function classifyMergeOutcome(input: {
 export function describeAction(pr: PrReading, action: MergeAction): string {
   switch (action.kind) {
     case "merge":
-      return `#${pr.number} MERGE — gate green, nothing unread, mergeable.`;
+      // ⚠ THE NOTICE RIDES THE SAME LINE THE MERGE ALREADY PRINTS (#566), so
+      //    it lands in the shift's log without a second call site to forget.
+      //    `describeAction` is the ONE printer the CLI uses for every action,
+      //    which is why the notice is attached here and not beside `mergePr`:
+      //    a shift's transcript is the artifact that was silent, and this is
+      //    the line that was in it.
+      return (
+        `#${pr.number} MERGE — gate green, nothing unread, mergeable.` +
+        (action.notice === null ? "" : `
+    ⚠ ${action.notice}`)
+      );
     case "skip":
       return `#${pr.number} SKIP — ${action.reason}.`;
     case "wait":

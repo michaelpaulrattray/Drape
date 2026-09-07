@@ -179,11 +179,40 @@ export function tallyRounds(runs: readonly ReviewRunReading[], pr: PrIdentity): 
  *                 standing orders this does NOT hold a PR whose gate is
  *                 green — EXCEPT on a money/auth diff, and the caller owns
  *                 that half because it is the caller that knows the files.
- *   "none"        triage declined, or the reviewer was never invoked. The
- *                 four mechanical checks are the whole bar.
+ *   "declined"    triage LOOKED and said no — a run exists and its `review`
+ *                 job is `skipped`. A docs-only diff, a sub-50-line diff, a
+ *                 `skip-review` label. The four mechanical checks are the
+ *                 whole bar, and that is the design working.
+ *   "absent"      NOTHING RAN. No `review.yml` run exists for this pull
+ *                 request at all. The four mechanical checks are the whole
+ *                 bar here too — but for a different reason, and the caller
+ *                 is told so rather than left to infer a decision that was
+ *                 never made.
  *   "pending"     a review is IN FLIGHT. Not a verdict, and emphatically not
  *                 its absence — the caller waits, exactly as it waits on a
  *                 running gate.
+ *
+ * ⚠ `declined` AND `absent` WERE ONE STATE CALLED `none` UNTIL #566, AND THE
+ * CONFLATION MADE THIS TOOL SAY A CONFIDENT WRONG THING. Its money hold read
+ * `none` and printed *"triage declined it — check for a stale `skip-review`
+ * label"* — a specific diagnosis pointing at a label that is not there,
+ * whenever the truth was that no run had ever been created. #219's paragraph
+ * teaches three readings of a `review` CHECK (green = a verdict exists, red =
+ * no verdict, cancelled = superseded) and **all three assume a check is
+ * THERE**; an absent one is the fourth state and it is the only one that
+ * cannot be misread as a verdict, because it is silently skipped instead.
+ *
+ * Measured at the artifacts 2026-09-07, over the 100 newest `review.yml` runs
+ * (2026-09-06T06:50Z → 2026-09-07T21:20Z): **50 trigger events, 49 produced a
+ * run, 1 produced nothing** — PR #610's first `needs-fable` label at 15:41:54Z.
+ * Plus both of PR #563's, checked against that whole day's 49 runs. **The
+ * cause is NOT in `review.yml` and #610 is the control that proves it**: the
+ * label was removed at 15:55:24Z and re-added at 15:55:29Z, and that second
+ * event produced a run two seconds later — same PR, same head `6dfb8842`, same
+ * workflow, same conditions, fourteen minutes apart, one fired and one did
+ * not. What is left is GitHub's own event delivery, which is not observable
+ * from this side of the API. So this module does not try to name it; it makes
+ * the state SAYABLE, which is what #566 asked for either way.
  *
  * ⚠ THE ORDER OF THESE TESTS MATTERS AND `pending` OUTRANKS EVERYTHING,
  * INCLUDING AN EXISTING VERDICT. Three cases, and it is right in all three:
@@ -196,13 +225,21 @@ export function tallyRounds(runs: readonly ReviewRunReading[], pr: PrIdentity): 
  * order is a wait the shift could have spent reading the first verdict. The
  * cost of the loose one is a merge past a review.
  */
-export type ReviewPresence = "verdict" | "no-verdict" | "none" | "pending";
+export type ReviewPresence = "verdict" | "no-verdict" | "declined" | "absent" | "pending";
 
+/**
+ * ⚠ THE `declined` TEST READS THE TALLY'S OWN BUCKET, WHICH ALREADY EXISTED.
+ * `tallyRounds` has separated declined runs from everything else since it was
+ * written; only this function collapsed them back together. So the negative
+ * control #566 asks for by name — *a head that DOES have a skipped review must
+ * not be reported as missing* — is a bucket read, not a new inference.
+ */
 export function reviewPresence(tally: RoundTally): ReviewPresence {
   if (tally.pending.length > 0) return "pending";
   if (tally.verdicts.length > 0) return "verdict";
   if (tally.noVerdicts.length > 0) return "no-verdict";
-  return "none";
+  if (tally.declined.length > 0) return "declined";
+  return "absent";
 }
 
 /**
