@@ -123,8 +123,12 @@ type Suite = { created_at: string; app: { slug: string; name: string } | null };
 
 function read(): { verdict: StallVerdict; sha: string; suites: Suite[]; runs: GateRun[] } {
   const head = JSON.parse(
-    gh(["pr", "view", String(pr), "--json", "headRefOid,headRefName,isDraft,state"]),
-  ) as { headRefOid: string; headRefName: string; isDraft: boolean; state: string };
+    gh(["pr", "view", String(pr), "--json",
+      "headRefOid,headRefName,isDraft,state,mergeable,mergeStateStatus"]),
+  ) as {
+    headRefOid: string; headRefName: string; isDraft: boolean; state: string;
+    mergeable: string; mergeStateStatus: string;
+  };
   const sha = head.headRefOid;
 
   const runs = api<{
@@ -158,7 +162,25 @@ function read(): { verdict: StallVerdict; sha: string; suites: Suite[]; runs: Ga
   const pushedAt = others.length > 0 ? new Date(others[0]!).toISOString() : null;
 
   return {
-    verdict: decideStall({ runs, pushedAt, now: new Date().toISOString() }),
+    /*
+      ⚠ MERGEABILITY IS READ AND PASSED, because "no run yet" on a CONFLICTING
+      head is not a stall — GitHub creates no check suite for one at all, so
+      the clock can never be the right reader of it (PR #631's review, finding
+      2, measured on PR #628 the same night). UNKNOWN is GitHub still computing
+      and is deliberately NOT read as conflicting: `false` would be a claim
+      this reader has not earned, so it passes `null` and the clock decides as
+      it always did.
+    */
+    verdict: decideStall({
+      runs,
+      pushedAt,
+      now: new Date().toISOString(),
+      conflicting: head.mergeable === "CONFLICTING" || head.mergeStateStatus === "DIRTY"
+        ? true
+        : head.mergeable === "UNKNOWN" || head.mergeStateStatus === "UNKNOWN"
+          ? null
+          : false,
+    }),
     sha,
     suites,
     runs,

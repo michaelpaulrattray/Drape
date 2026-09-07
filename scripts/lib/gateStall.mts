@@ -119,6 +119,16 @@ export type StallInput = {
   /** Every Gate-workflow run GitHub holds for the PR's CURRENT head commit. */
   runs: readonly GateRun[];
   /**
+   * Whether GitHub says the branch CONFLICTS with its base.
+   *
+   * ⚠ **A CONFLICTING HEAD GETS NO CHECK SUITE AT ALL**, so "no run yet" is not
+   * a stall on one — it is a consequence, and the answer is a sync rather than
+   * a finding. `null` when the caller did not read it (the pure function must
+   * never invent the answer); an old caller therefore behaves exactly as
+   * before. See `decideStall` step 2.5.
+   */
+  conflicting?: boolean | null;
+  /**
    * When the head commit was pushed, ISO. Dated the way the measurement dated
    * it: the earliest check suite on the commit from an app that is not GitHub
    * Actions. `null` when no such suite exists — see `pushKnown` below.
@@ -133,6 +143,7 @@ export type StallVerdict =
   | { kind: "running"; ageMs: number; beyondP99: boolean }
   | { kind: "waiting"; sincePushMs: number; findingAtMs: number }
   | { kind: "stall"; sincePushMs: number; findingAtMs: number }
+  | { kind: "conflicting"; sincePushMs: number }
   | { kind: "unknown-push"; reason: string };
 
 const ms = (a: string, b: string) => new Date(b).getTime() - new Date(a).getTime();
@@ -147,7 +158,7 @@ const ms = (a: string, b: string) => new Date(b).getTime() - new Date(a).getTime
  * elapsed time can turn a live run into a stall.
  */
 export function decideStall(input: StallInput): StallVerdict {
-  const { runs, pushedAt, now } = input;
+  const { runs, pushedAt, now, conflicting = null } = input;
 
   // 1. A run exists. Whatever the clock says, this is not a stall — the suite
   //    arrived, which is the only thing this alarm is about.
@@ -179,6 +190,31 @@ export function decideStall(input: StallInput): StallVerdict {
     };
   }
 
+  /*
+    2.5 · ⚠ NO RUN BECAUSE THE BRANCH CONFLICTS — NOT A STALL, AND THE CLOCK
+    MUST NOT BE CONSULTED (PR #631's review, finding 2: the law-7 sibling of
+    the defect that PR fixes, and it is not hypothetical).
+
+    Measured 2026-09-07 on PR #628: this reader answered
+
+        STALL — no gate run exists 10.5m after the push … Do not retry blindly.
+
+    while the true state was CONFLICTING on the generated atlas fingerprint,
+    where the correct act is a sync, after which a run appears within seconds.
+    The class both halves share is *an absent-run reading taken without first
+    asking whether the head can get a run at all*; #631 closed the road through
+    the merge tool, and this reader is also run standalone, which is how a shift
+    met it.
+
+    It is BELOW the unknown-push refusal on purpose: a conflict is a real fact
+    about the branch, but an undatable push means this reader cannot say
+    anything at all, and inventing a verdict over it is the thing that refusal
+    exists to prevent.
+  */
+  if (conflicting === true) {
+    return { kind: "conflicting", sincePushMs: ms(pushedAt, now) };
+  }
+
   // 3. No run, push datable. The clock decides, and only here.
   const sincePushMs = ms(pushedAt, now);
   if (sincePushMs >= NO_SUITE_FINDING_MS) {
@@ -199,6 +235,11 @@ export function describeVerdict(v: StallVerdict): string {
         : `RUNNING — ${mins(v.ageMs)} old, inside the measured spread (p50 ${mins(GATE_DURATION.p50Ms)}, p99 ${mins(GATE_DURATION.p99Ms)}). Keep waiting.`;
     case "waiting":
       return `WAITING — no gate run yet, ${mins(v.sincePushMs)} since the push. Normal below ${mins(v.findingAtMs)}.`;
+    case "conflicting":
+      return `CONFLICTING — no gate run exists ${mins(v.sincePushMs)} after the push, and there `
+        + `will not be one: GitHub creates no check suite for a conflicting head. This is NOT a `
+        + `stall and NOT a retry — merge main in (the generated maps resolve on the merged tree, `
+        + `#100/#501), push, and the run appears.`;
     case "stall":
       return `STALL — no gate run exists ${mins(v.sincePushMs)} after the push, past the ${mins(v.findingAtMs)} finding line. STOP WAITING: write it to the mailbox and as a briefing problem, and move to other work. Do not retry blindly.`;
     case "unknown-push":
