@@ -59,7 +59,7 @@ export type ReplyHost = {
   title: string;
   /** How it is drawn on his page — the word a shift needs to say it back. */
   kind: "card" | "eye item";
-  /** `open` | `answered` | `done`, or null in a briefing that omits it. */
+  /** One of `CREW_CARD_STATES`, or null in a briefing that omits it. */
   state: string | null;
 };
 

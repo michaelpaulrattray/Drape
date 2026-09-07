@@ -80,7 +80,9 @@ describe("the briefing file", () => {
         needsYou: valid.needsYou.map((c: { id: string }) => (c.id === card.id ? { ...c, state: "answered" } : c)),
         eyeItems: valid.eyeItems.map((item: { id: string }) => (item.id === eye.id ? { ...item, state: "open" } : item)),
       }),
-    ).toThrow(/open eye item needs an open card/);
+    /* The message moved with the rule (#354): a WAITING card is a card that
+       still needs him, so the sentence a shift reads had to stop saying OPEN. */
+    ).toThrow(/an eye item that still needs him needs a card that still needs him/);
     // A cardId naming no card is a typo, refused.
     expect(() =>
       crewBriefingSchema.parse({

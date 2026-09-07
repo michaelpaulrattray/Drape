@@ -49,7 +49,7 @@
  * of the SCHEMA, and that is the only place it was ever checked — which is why
  * it survived. It is false of his PAGE.
  *
- * `CrewEyeGallery` renders `state === "open"` and nothing else
+ * `CrewEyeGallery` renders what still needs him and nothing else
  * (`client/src/features/admin/components/crew/CrewEyeGallery.tsx`, and it
  * returns `null` outright when none is open). So promoting an OPEN eye item to
  * `done` does not tidy a field — **it takes the frames off his screen.**
@@ -87,6 +87,8 @@
  */
 
 /** OPEN | CLOSED | null when the record could not be read. */
+import { crewCardNeedsHim } from "./crewCardState.js";
+
 export type IssueState = "OPEN" | "CLOSED" | null;
 
 export type ResolvableCard = {
@@ -145,8 +147,17 @@ export type ResolutionPlan = {
   unreadable: Unreadable[];
 };
 
-/** The two states that can still be promoted; `done` is already the end. */
-const PROMOTABLE = new Set(["open", "answered"]);
+/**
+ * The states that can still be promoted; `done` is already the end.
+ *
+ * ⚠ `waiting` IS ON THIS LIST AND ITS PRESENCE IS THE POINT (#354). A `waiting`
+ * card is one he has answered whose remaining act is still his — so the ONE
+ * signal that it is finished is exactly the signal this sweep reads: the issue
+ * closing. Leaving it off would have made the new state a one-way door, sitting
+ * on his desk after the work it names was done — the same defect as #604's
+ * `deploy-flip-508`, re-created by the fix for its opposite.
+ */
+const PROMOTABLE = new Set(["open", "waiting", "answered"]);
 
 /**
  * Plan every `open`/`answered` card and eye item whose issue has CLOSED.
@@ -191,16 +202,16 @@ export function planCardResolutions(
     names is safe to close, so the answer has to exist before the cards are
     judged.
 
-    ⚠ AN OPEN ONE IS HELD (#354). The gallery renders `state === "open"` only,
-    so promoting an open eye item is not a tidy-up — it removes the frames from
-    his page. The issue closing proves the WORK finished; it says nothing about
+    ⚠ ONE THAT STILL NEEDS HIM IS HELD (#354). The gallery renders exactly
+    those, so promoting one is not a tidy-up — it removes the frames from his
+    page. The issue closing proves the WORK finished; it says nothing about
     whether he looked.
   */
   for (const item of eyeItems) {
     if (!closing(item, "eyeItems")) continue;
     const issueNumber = item.issueNumber as number;
 
-    if (item.state === "open") {
+    if (crewCardNeedsHim(item.state)) {
       held.push({
         list: "eyeItems",
         id: item.id,
@@ -232,7 +243,7 @@ export function planCardResolutions(
        live one. Both are held instead, and they are settled together by a hand
        rather than by a guess. */
     const orphanedEye = eyeItems.find(
-      (item) => item.cardId === card.id && item.state === "open",
+      (item) => item.cardId === card.id && crewCardNeedsHim(item.state),
     );
     if (orphanedEye) {
       /* ⚠ THE ADVICE NAMES ONLY WHAT IS ACTUALLY OPEN TO THE SHIFT (review of
@@ -282,8 +293,15 @@ export function planCardResolutions(
 
 /** The sentence his shift reads in the sweep's report, per promotion. */
 export function promotionLine(promotion: Promotion): string {
-  return promotion.from === "answered"
-    ? `${promotion.list} ${promotion.id}: answered → done (#${promotion.issueNumber} is closed)`
-    : `${promotion.list} ${promotion.id}: open → done — resolved by the card's issue closing `
-      + `(#${promotion.issueNumber})`;
+  if (promotion.from === "answered") {
+    return `${promotion.list} ${promotion.id}: answered → done (#${promotion.issueNumber} is closed)`;
+  }
+  /* #354: a `waiting` card was on his desk because an act of HIS was outstanding,
+     so the sentence says the act landed rather than that a card was resolved. */
+  if (promotion.from === "waiting") {
+    return `${promotion.list} ${promotion.id}: waiting → done — the act he was holding is `
+      + `done (#${promotion.issueNumber} is closed)`;
+  }
+  return `${promotion.list} ${promotion.id}: open → done — resolved by the card's issue closing `
+    + `(#${promotion.issueNumber})`;
 }
