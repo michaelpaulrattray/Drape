@@ -1,7 +1,7 @@
 {
-  "edition": 284,
-  "updatedAt": "2026-09-06T22:07:37.564Z",
-  "shift": "Foreman (Opus) - your seven plan lines are live on the cards, and looking at them in the real app caught something 77 passing tests could not see",
+  "edition": 285,
+  "updatedAt": "2026-09-07T00:41:21.275Z",
+  "shift": "Foreman (Opus) - two money-surface numbers were about to be wrong on your first real subscription, and the reviewer caught the fix carrying its own version of the same fault",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -118,21 +118,21 @@
       {
         "label": "Check-ups all current",
         "tone": "good",
-        "source": "All four seats have run inside their own clock. None is overdue."
+        "source": "All four seats are inside their own clock. The Janitor is due tomorrow."
       },
       {
-        "label": "The sheet answers faster",
+        "label": "The wrong plan, caught before launch",
         "tone": "good",
-        "source": "Retry and Keep both used to sit still for seconds after a click. Both paint immediately now."
+        "source": "The burn rate and the plan recommendation on Change plan. Nobody was ever shown either."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "91 open · 2 carrying your word · none urgent. 14 closed today, 2 tonight. 1 unread a week."
+        "source": "89 open, 1 carrying your word, none urgent. 2 closed tonight, 3 filed. Nothing a week unread."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-06T22:09:26.932Z",
+      "readAt": "2026-09-07T00:44:22.935Z",
       "items": [
         {
           "issueNumber": 16,
@@ -246,6 +246,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "cycle-spend-385",
+      "issueNumber": 624,
+      "title": "The plan panel: the wrong-plan fault is fixed, and one imprecision is left",
+      "productImpact": "Change plan tells somebody how fast they are spending, when they will run out, and which plan fits them. Until tonight all three came from the credits an account has spent IN ITS WHOLE LIFE, divided by the days elapsed in ONE month.\n\nThat was not only a wrong sentence. The same number picks which plan gets the single dark Upgrade button. On a test account ten days into a month it chose Studio at $159 where the truthful reading chooses Pro at $68 - a $91-a-month upsell built on a claim about the customer's own usage that was not true. Nobody was ever shown it, and that is luck rather than design: the panel only draws once an account has a real billing period, and none has one yet. It would have gone live silently on your first subscription.\n\nThat is fixed and merged. What is left is smaller and is why this card is open: a billing period starts at a TIME OF DAY, and the usage figures the panel adds up are kept in whole days. So the first day of a cycle can carry a few hours of the previous one - the spend reads slightly high, and on day two of a cycle that is most of the figure. It is bounded, it needs a change on the server rather than on the screen, and it is written down as its own job.",
+      "workedExample": "Same account, same moment, ten days into a 30-day cycle with 20,000 credits left.\n\nBefore tonight:\n\n    At this rate you run out on 9 Sept.\n    120,000 of 140,000 spent... Studio covers the way you are actually working.\n    [ the dark Upgrade button on Studio, $159 / month ]\n\nNow:\n\n    At this rate you run out on 13 Sept.\n    40,640 of 60,640 spent... Pro covers the way you are actually working.\n    [ the dark Upgrade button on Pro, $68 / month ]\n\nBoth pictures are in your gallery below. The remaining imprecision would move that 40,640 by at most one day's spending.",
+      "options": [
+        {
+          "key": "a",
+          "label": "Fix the remainder properly - ask the server for the period's spend",
+          "consequence": "One new read on the server, at the exact times rather than in whole days. Removes this and a related 90-day limit at once. Half a shift."
+        },
+        {
+          "key": "b",
+          "label": "Leave it - it is at most one day out",
+          "consequence": "Nothing to build. The panel stays slightly generous about spend on the first day or two of a cycle, and the note stays on the record."
+        },
+        {
+          "key": "c",
+          "label": "Nothing tonight, and take the frames as read",
+          "consequence": "The card waits. The merged fix is live either way."
+        }
+      ],
+      "recommendation": "(a), but not urgently - it is the last member of a family that has now produced three separate wrong numbers on your money screens, and closing it removes the whole shape rather than another instance. The frames below need thirty seconds of your eye whatever you choose, because that panel is the last thing somebody sees before they pay us.",
+      "state": "open",
+      "filedAt": "2026-09-07"
+    },
     {
       "id": "free-blurb-promise-621",
       "issueNumber": 621,
@@ -1925,6 +1952,27 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "cycle-spend-385-frames",
+      "state": "open",
+      "cardId": "cycle-spend-385",
+      "issueNumber": 624,
+      "filedAt": "2026-09-07T00:41:21.275Z",
+      "title": "The plan panel, before and after - and the plan it was selling",
+      "question": "This is the one thing worth your eye tonight, and it is a before-and-after rather than a question about taste. Two pictures of the SAME test account, ten days into a month, 20,000 credits left. Look at three things: the run-out date, the sentence naming a plan, and which card carries the dark Upgrade button. A real customer opening this yesterday would have been shown the first picture. Nothing here needs a decision from you - it is merged - but if the second one still reads wrong, say so, because this panel is the last thing somebody sees before they pay us.",
+      "frames": [
+        {
+          "key": "crew-eye/97836bb1-2556-4e6b-bb42-ca4b4f90c676.png",
+          "caption": "BEFORE. \"You run out on 9 Sept... 120,000 of 140,000 spent... Studio covers the way you are actually working.\" The dark button is on Studio, $159 a month. That 120,000 is everything the account has ever spent, not what it spent this month.",
+          "arm": "cycle-spend-before"
+        },
+        {
+          "key": "crew-eye/8338dd6d-648a-43c6-8866-8ace89fc3b6a.png",
+          "caption": "AFTER. Same account, same moment. \"You run out on 13 Sept... 40,640 of 60,640 spent... Pro covers the way you are actually working.\" The dark button moved to Pro, $68. The label at the top right also changed from THIS MONTH to THIS BILLING PERIOD, which is what the number was always measuring.",
+          "arm": "cycle-spend-after"
+        }
+      ]
+    },
     {
       "id": "plan-blurb-404-frames",
       "state": "open",
@@ -4122,6 +4170,27 @@
   ],
   "pipeline": [
     {
+      "id": "pr-626-strictargs-602",
+      "title": "The last two money-spending scripts now refuse a word they do not recognise (#602)",
+      "status": "merged",
+      "prNumber": 626,
+      "note": "Housekeeping on the team's own tools, and it closes a job left half done in August.\n\nThe scripts that spend our money on test renders used to read their instructions by looking only for the words they expected, and quietly throwing away anything else. So a typo went unnoticed and the script did the expensive thing on its defaults. Twelve were repaired; two were left out for a stated reason - their published instructions use a slightly different style of wording that the checker did not understand, and rewriting the instructions people follow is a different decision from tightening a checker. The checker understands both styles now, so nothing anybody types has changed and both scripts are covered.\n\nThe reviewer then found a related hole in the same script, older than any of this: the spending CEILING is a number, and typing it with a letter O instead of a zero made it not-a-number - which does not raise the ceiling, it removes it entirely, because every comparison against not-a-number quietly answers no. A run could have gone ahead with no spending limit at all. It refuses by name now, proven both ways at the keyboard. Four more places with the same shape are written down as their own job rather than swept in beside this one."
+    },
+    {
+      "id": "pr-622-review-annual",
+      "title": "The automatic reviewer caught the fix carrying the same fault, one step further out",
+      "status": "merged",
+      "prNumber": 622,
+      "note": "Worth telling you, because it is the review paying for itself and because it is the same story twice.\n\nThe repair adds your spend up over a window - and the report it adds from only ever goes back 90 days. On a MONTHLY plan that is fine, since a month sits well inside 90 days. On an ANNUAL plan it is not: the sum covered three months while the division still used the ten or eleven months the year had run. Traced on the reviewer's own example - somebody 200 days into an annual year spending a steady 1,000 credits a day - the panel would have said 450 a day, put the run-out date two months late, and recommended a plan BELOW what they actually use.\n\nSo the first fix would have oversold monthly customers and undersold annual ones. That is the identical mistake pointing the opposite way: a figure and a stretch of days that do not describe the same thing.\n\nIt is closed by making it impossible rather than by correcting the arithmetic - the spend and the number of days it covers now travel together, so no piece of code can be handed one without the other. Six deliberate acts of sabotage were run to prove every test involved can actually go red.\n\nOne related thing is written down and NOT fixed, because it needs a change on the server rather than on the screen: a billing period starts at a time of day and the usage report only speaks in whole days, so the first day of a cycle can carry a few hours of the previous one. Small, bounded, and filed as its own job."
+    },
+    {
+      "id": "pr-622-cycle-spend-385",
+      "title": "Change plan was about to sell the wrong plan to your first paying customer (#385)",
+      "status": "merged",
+      "prNumber": 622,
+      "note": "When somebody opens Change plan or Add credits, the top of the panel tells them how fast they are spending and when they will run out: \"At this rate you run out on the 9th... Studio covers the way you are actually working.\" Every one of those numbers was built by taking the credits an account has spent IN ITS ENTIRE LIFE and dividing that by the days elapsed in ONE month.\n\nThat is not just a wrong sentence. The same number decides which plan gets the one dark Upgrade button. Put in front of the real app on a test account - ten days into a month, 40,640 credits spent this month, 120,000 spent ever - the panel said Studio at $159 a month. The truthful reading says Pro at $68. It was recommending a plan $91 a month dearer than the customer needs, on the strength of a claim about their own usage that was not true.\n\nNobody has ever seen either number, and that is luck rather than design: the panel only draws once an account has a real billing period, and no account has one yet. It goes live silently the day somebody subscribes.\n\nThe fix adds the spend up from the ledger over the actual billing period - the same repair the Usage pane got in August after you spotted 115,695 used sitting next to of 5,000 this month. Both screens read one shared piece of code now, so they cannot drift apart and quote you two different figures for the same month.\n\nOne more thing was corrected on the way past: the small label above that figure said THIS MONTH over a number covering a billing period, which for most subscriptions is not a month. It says THIS BILLING PERIOD."
+    },
+    {
       "id": "pr-619-plan-blurbs-404",
       "title": "Your seven plan lines are live on the plan cards (#404)",
       "status": "merged",
@@ -6199,7 +6268,7 @@
     153
   ],
   "nextUp": {
-    "readAt": "2026-09-06T22:09:25.971Z",
+    "readAt": "2026-09-07T00:44:22.121Z",
     "items": [
       {
         "issueNumber": 543,
