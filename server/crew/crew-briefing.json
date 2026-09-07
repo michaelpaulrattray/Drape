@@ -1,7 +1,7 @@
 {
-  "edition": 288,
-  "updatedAt": "2026-09-07T07:15:00.000Z",
-  "shift": "Foreman (Opus) - the badge that flags a customer's account was flagging YOURS, and the number turns out to be one old thing counted twice",
+  "edition": 289,
+  "updatedAt": "2026-09-07T09:10:00.000Z",
+  "shift": "Foreman (Opus) - a mistyped word could quietly change what an internal tool did, and the number telling you what nobody has looked at was resetting itself",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -137,7 +137,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-07T07:03:10.009Z",
+      "readAt": "2026-09-07T09:02:35.616Z",
       "items": [
         {
           "issueNumber": 16,
@@ -1961,7 +1961,7 @@
       "id": "free-blurb-621-frames",
       "title": "The Free plan line you chose, on the real card",
       "question": "You picked (b) - the safer line. This is it in the running app, both themes: \"For trying the studio out before you commit.\" The credits line under it still says what they get. Does it read right to you?",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-07T03:45:00.000Z",
       "issueNumber": 621,
       "cardId": null,
@@ -4196,6 +4196,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-639-strict-args-345",
+      "title": "Eleven internal tools stop silently ignoring a word you typed wrong (#345)",
+      "status": "merged",
+      "prNumber": 639,
+      "note": "None of this is anything a customer sees - it is the tools the team runs against your data and your app. But it is the kind of quiet fault that eventually costs you a wrong answer, so it is worth two minutes.\n\nWHAT WAS WRONG. Eleven of these tools read the words you type after the command by looking only for the ones they expect. Anything else was thrown away without a word. So typing `--sinse` instead of `--since` did not produce an error - it produced a confident report about the last seven days, with the date actually typed nowhere in it. The same shape has already cost this project three times, once on the live site.\n\nAll eleven now refuse a word they do not know and print the words they do know. That is the whole change.\n\nTHE PART THAT WAS NOT EXPECTED. One of the eleven was on the list as harmless - it only reads and reports. It does not: run with one particular word and it clicks Follow in the real app, which spends credits. The check that is supposed to find every tool that can spend money could not see it, because that check looks at which billing code a tool imports, and this one spends by driving the app through a browser instead. It is now found by what it does rather than by what it imports, so the next tool that spends this way is covered without anyone remembering.\n\nAND ONE REAL BUG FELL OUT OF IT. A tool that compares the codebase at two points in time took its two dates positionally. Put the optional setting first and it read the setting's name as one of the dates - and then reported a comparison of nothing at all, with no error. That is fixed, and the test checks it produces the right dates rather than merely that it does not crash.\n\nThe class is not finished and the card says so rather than closing quietly: 51 tools still read words this way, 18 of them through a single shared piece of code - so one fix covers eighteen. That is #642."
+    },
+    {
+      "id": "pr-641-queue-rot-516",
+      "title": "The number telling you what nobody has looked at was resetting itself (#516)",
+      "status": "merged",
+      "prNumber": 641,
+      "note": "Every night this page tells you how many jobs have gone a week with nobody looking at them. On 3 September that said NINE. The next night it said ZERO - and nobody had read a single one of those nine.\n\nWHAT HAPPENED. The count asked GitHub 'when was this last touched?', and GitHub moves that date when ANYTHING changes on a job, including a label. The night before, a tidy-up had put labels on all nine at once. So the clock reset on the whole set, and the page told you the backlog had cleared itself.\n\nThat is the worst direction for a number like this to be wrong in: it hides work, and nothing looks broken while it does.\n\nIt now reads the job's actual history and counts only somebody commenting, closing, reopening, or a piece of work referencing it. Labels and filing do not count.\n\nTHE HONEST NEW NUMBER IS 14, NOT 1. And it disagrees with the old one in both directions, which is how I know it is measuring something real rather than just measuring differently. One job the old count called fresh had nothing on it but two labels - eleven days quiet. And the single job last night's report called rotten had actual work referencing it two days earlier - it was never rotten at all.\n\nThe sentence changed with it. It no longer says 'untouched', because that word is a claim nothing can support; it says what was actually measured, so a label can never make it false again.\n\nThe review found two faults in my first version and a third in my second, all taken. The sharpest: my own fix for the second one did not work. I had put a guard on a setting that limited how much of the queue got read - but tested against the real queue, that setting neither refused nor limited, because of how the data arrives in pages. A setting named 'limit' that does not limit is worse than not having it, so it is gone rather than guarded. There was never a sensible answer to 'how much of the queue should this number be about?' other than all of it."
+    },
+    {
       "id": "pr-636-discrepancy-462",
       "title": "The warning badge on your own account: what the -11,600 actually is (#462)",
       "status": "merged",
@@ -5998,6 +6012,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0907e-foreman",
+      "title": "The queue: 84 open - and the 'nobody has looked at this' number was wrong, so tonight it goes from 1 to 14",
+      "severity": "info",
+      "state": "open",
+      "detail": "84 open, down one. Two closed tonight (#345 and #516, both the team's own tooling), three filed (#640, #642, and #638 from last night).\n\nThe number worth your attention is the rotting one, and it is worth it because it was wrong. This line has been saying ONE. Read properly it is FOURTEEN. Nothing got worse tonight - the count was resetting itself whenever a tidy-up put labels on a batch of jobs, so it kept reporting a backlog that had cleared when it had not. That is fixed and the fix is in the list above.\n\nWhat the fourteen actually are: old design cards and cleanup notes, the oldest thirteen days. None of them is a customer fault and none of them is waiting on you. I am not proposing to work them - that would be the team picking its own next feature, which it does not do. It is here so the number on your page is true.\n\nNEXT UP is still the single card waiting on your word about the shift-speed work, and its own answer is pinned to the speed check-up on 12 September. Bugs are 13."
+    },
+    {
       "id": "queue-shape-0907d-foreman",
       "title": "The queue: 85 open, nothing rotting that matters, and still only your one verdict waiting",
       "severity": "info",
@@ -6362,7 +6383,7 @@
     158
   ],
   "nextUp": {
-    "readAt": "2026-09-07T07:03:09.143Z",
+    "readAt": "2026-09-07T09:02:34.554Z",
     "items": [
       {
         "issueNumber": 543,
