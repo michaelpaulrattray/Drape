@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8b56cebb54e89c63"
+    "sourceFingerprint": "bb00f9d177b1d073"
   },
   "domains": [
     {
@@ -13005,6 +13005,10 @@
     {
       "id": "test:server/queueOrdinalDiscipline.test.ts",
       "path": "server/queueOrdinalDiscipline.test.ts"
+    },
+    {
+      "id": "test:server/queueRot.test.ts",
+      "path": "server/queueRot.test.ts"
     },
     {
       "id": "test:server/quietEdition.test.ts",
