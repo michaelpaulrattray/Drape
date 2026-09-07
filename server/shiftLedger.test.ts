@@ -11,7 +11,7 @@
  * the open run, the overlapping windows, and the empty window that must never
  * report a met target.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   type MergedPrReading,
@@ -23,6 +23,11 @@ import {
   summarise,
 } from "../scripts/lib/shiftLedger.mts";
 import { type GhRunner, readMergedPrs } from "../scripts/lib/mergedPrGateTime.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite drives a real child process, so it declares the class's timeout
+   rather than racing vitest's 5 s default under a parallel run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const run = (over: Partial<ShiftRunReading> = {}): ShiftRunReading => ({
   id: 1,

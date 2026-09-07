@@ -19,9 +19,14 @@
  * byte-identical to a run that passed quietly — the shape that reported 0/7 on
  * a driver the night before this landed (#11).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import path from "node:path";
 import { readCheckRun, runTypecheckOnCommit } from "../scripts/lib/typecheckOnCommit.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite drives a real child process, so it declares the class's timeout
+   rather than racing vitest's 5 s default under a parallel run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 

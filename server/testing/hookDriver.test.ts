@@ -1,9 +1,14 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { HookRun, SpawnFailure, requireShell, resolveShell, runHook } from "./hookDriver";
 import { readListedSource } from "./listedSource";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./childProcessTimeout";
+
+/* This suite drives a real child process, so it declares the class's timeout
+   rather than racing vitest's 5 s default under a parallel run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const REPO = resolve(import.meta.dirname, "..", "..");
 

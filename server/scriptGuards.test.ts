@@ -1,9 +1,14 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { listScriptGuardSuites, ORIGIN_SUITE, PUSH_PATH_SUITES, runScriptGuardsOnCommit } from "../scripts/lib/scriptGuards.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite drives a real child process, so it declares the class's timeout
+   rather than racing vitest's 5 s default under a parallel run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * The rite's script-guard step (#152) — the derivation and the verdict, driven

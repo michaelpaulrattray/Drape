@@ -39,7 +39,7 @@ function toPosix(p: string): string {
   return p.split("\\").join("/");
 }
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   decideRemoval,
@@ -49,6 +49,11 @@ import {
   validateSlug,
   type RemovalState,
 } from "../scripts/lib/shiftWorktree.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite drives a real child process, so it declares the class's timeout
+   rather than racing vitest's 5 s default under a parallel run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const clean: RemovalState = {
   unpushedCommits: 0,

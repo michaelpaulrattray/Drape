@@ -2,12 +2,17 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 /* `runHook` drives the GATE — it must distinguish "refused" from "never ran"
    (#640). The bare `execFileSync` below reads repository state, where throwing
    on any failure is the wanted behaviour and there is no verdict to confuse. */
 import { runHook } from "./testing/hookDriver";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite drives a real child process, so it declares the class's timeout
+   rather than racing vitest's 5 s default under a parallel run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * THE ATLAS MERGE DRIVER, DRIVEN RATHER THAN READ (Retro guard R1,
