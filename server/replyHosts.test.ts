@@ -90,6 +90,37 @@ describe("staleOpenHosts", () => {
       .not.toContain("portrait-crop-198");
   });
 
+  it("a WAITING card is not swept — the reply that moved it there is the one that would flag it", () => {
+    /*
+      ⚠ #649 FINDING 1'S DECISION, PINNED WHERE THE FUNCTION IS DRIVEN rather
+      than only in the scanner that reads the source line (PR #656 review,
+      finding 3 — working law 3's shape: a guard whose only test runs through
+      text-matching is a guard on the text, not on the behaviour).
+
+      `waiting` (#354) still needs him, so `crewCardNeedsHim` would return true
+      for it — and that is exactly why widening the predicate here is wrong. A
+      shift moves a card to `waiting` BECAUSE he replied and the reply was
+      acknowledged, so every correctly-handled card would be reported. The
+      accepted gap this leaves — a reply landing on an already-`waiting` card —
+      is written at `replyHosts.mts` and cannot be closed without a record of
+      when a state moved, which no briefing row carries.
+    */
+    const withWaiting: BriefingFacts = {
+      ...EDITION_99,
+      needsYou: [...EDITION_99.needsYou, { id: "icon-set-262", title: "Answered, and still yours to do", state: "waiting" }],
+    };
+    const replies: ReplyRow[] = [{ id: 23, cardId: "icon-set-262" }];
+    expect(staleOpenHosts(withWaiting, replies)).toEqual([]);
+    /* The control on that arm: the SAME reply on the SAME card is swept while
+       the card still reads `open`, so the arm above is about the state and not
+       about the fixture being unreachable. */
+    const stillOpen: BriefingFacts = {
+      ...EDITION_99,
+      needsYou: [...EDITION_99.needsYou, { id: "icon-set-262", title: "Answered, and still yours to do", state: "open" }],
+    };
+    expect(staleOpenHosts(stillOpen, replies).map((entry) => entry.host.id)).toEqual(["icon-set-262"]);
+  });
+
   it("an UNACKNOWLEDGED reply is not swept — the default read already prints it in full", () => {
     const unread: BriefingFacts = { ...EDITION_99, acknowledgedReplyIds: [28] };
     expect(staleOpenHosts(unread, REPLIES)).toEqual([]);

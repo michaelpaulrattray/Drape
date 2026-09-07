@@ -116,6 +116,31 @@ export function staleOpenHosts(facts: BriefingFacts | null, replies: readonly Re
   for (const reply of replies) {
     if (reply.cardId == null || !acknowledged.has(reply.id)) continue;
     const host = index.get(reply.cardId);
+    /*
+      ⚠ THE LITERAL IS DELIBERATE AND THE GAP IT LEAVES IS ACCEPTED — #649
+      finding 1, and it is written here because this is where the next reader
+      will ask.
+
+      `crewCardNeedsHim` is the WRONG predicate here even though `waiting` is a
+      state that still needs him. This asks *has he answered something the page
+      still calls open*; a `waiting` card is one a shift already moved, and the
+      reply that moved it is the very reply that would then flag it. The
+      instrument would report its own successes on every run.
+
+      What is genuinely unwatched: a reply landing on an ALREADY-`waiting` card
+      (*"I've run the command, close it"*), acknowledged and then not acted on.
+      It self-heals when the issue closes, which is downstream of the act that
+      went missing. Telling that reply from the one that moved the card needs a
+      record of WHEN the state moved, and a `needsYou` row carries `filedAt`
+      and nothing else — see `crewBriefing.ts`. Closing it means storing
+      `stateChangedAt`, which is a change to his page's record, so it is a card
+      and not a line.
+
+      The exemption is enforced rather than promised: the desk-surface scanner
+      in `waitingCardState.test.ts` reads `scripts/lib/` and holds this exact
+      expression in its `ACCEPTED` register — and reddens if the line ever
+      stops existing, so the hole cannot outlive the reason for it.
+    */
     if (!host || host.state !== "open") continue;
     const existing = byHost.get(host.id);
     if (existing) existing.replyIds.push(reply.id);
