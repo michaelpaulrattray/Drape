@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1555726ad56b2f92"
+    "sourceFingerprint": "7a456e0c5f92ae5b"
   },
   "domains": [
     {
@@ -153,7 +153,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 37
+      "moduleCount": 38
     },
     {
       "id": "domain:wardrobe",
@@ -5841,6 +5841,12 @@
     {
       "id": "module:server/testing/suiteClocks.ts",
       "path": "server/testing/suiteClocks.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/suitePointers.ts",
+      "path": "server/testing/suitePointers.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -13610,6 +13616,10 @@
     {
       "id": "test:server/suiteLine.test.ts",
       "path": "server/suiteLine.test.ts"
+    },
+    {
+      "id": "test:server/suitePointerDiscipline.test.ts",
+      "path": "server/suitePointerDiscipline.test.ts"
     },
     {
       "id": "test:server/testing/fetchablePort.test.ts",
