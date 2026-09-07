@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "386349d47648c781"
+    "sourceFingerprint": "2e8c02e615783d6a"
   },
   "domains": [
     {
@@ -10752,6 +10752,10 @@
     {
       "id": "test:client/src/features/castingV2/refineWait.test.ts",
       "path": "client/src/features/castingV2/refineWait.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/refundedPill.test.ts",
+      "path": "client/src/features/castingV2/refundedPill.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/retentionCopy.test.ts",

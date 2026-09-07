@@ -989,6 +989,22 @@
 }
 
 /*
+  THE REFUND, AT THE OPPOSITE CORNER (#553) — his own placement: *"maybe in the
+  top right could it also say refunded or something as a tag also?"*
+
+  Diagonally opposite the reason chip on purpose, so the two never collide and
+  never read as one badge that grew. Same pill grammar, same ink-on-surface: a
+  refund is a status, and colouring it green would make the failure look like
+  good news while breaking the sheet's monochrome rule.
+*/
+.dpc-tile__chip--refunded {
+  left: auto;
+  bottom: auto;
+  right: 8px;
+  top: 8px;
+}
+
+/*
   The standalone shortlist tray that used to live here is gone. It was never
   in the prototype, and being a full section below the grid it pushed the dock
   off-screen — which is what made Roll again unreachable without scrolling.

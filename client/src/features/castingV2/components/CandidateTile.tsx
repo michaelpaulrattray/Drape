@@ -5,6 +5,7 @@ import { Button, Skeleton } from "@/foundation";
 import {
   CANDIDATE_FAILURE_CHIPS,
   CANDIDATE_FAILURE_LINES,
+  CANDIDATE_FAILURE_REFUNDED,
   isRetryableFailure,
   type CandidateFailureKind,
 } from "@shared/candidateFailure";
@@ -281,6 +282,37 @@ export function CandidateTile({
             <span className="dpc-tile__chip" data-kind={failure.kind}>
               {CANDIDATE_FAILURE_CHIPS[failure.kind]}
             </span>
+          ) : null}
+          {/*
+            THE MONEY, AT A GLANCE (#553). The founder, with a frame of a failed
+            tile: *"on a failed generation it says content filter tag but maybe
+            in the top right could it also say refunded or something as a tag
+            also?"*
+
+            The refund was already on the tile — in the CAPTION, in a sentence,
+            after the reason. A sentence is read; a chip is glanced. On a sheet
+            of eight where two failed, the question is not *why* first, it is
+            *did that cost me anything*.
+
+            A cancelled tile wears it, and a tile whose reason we never learned
+            (`unknown`, no chip at all bottom-left) wears it ALONE — which is
+            exactly the tile most in need of it.
+
+            ⚠ AND IT IS NOT UNCONDITIONAL, WHICH IS THE ONE THING THE CARD GOT
+            WRONG. The card said *"derived from `status`, never from the failure
+            kind"* — and `unpaid` is a `failed-refunded` tile that was NEVER
+            CHARGED (`candidateFailure.ts`: *"the one kind that was never
+            charged, so it must not claim a refund it never made"*, and its line
+            reads "Didn't start · not charged"). A REFUNDED pill over that
+            sentence is a claim about money contradicting the caption beneath
+            it. So the pill reads `CANDIDATE_FAILURE_REFUNDED`, the same fact
+            the line is written from, and the two are held together by an arm.
+
+            Monochrome, like every other pill on this sheet: a refund is a
+            status, not good news to be coloured in.
+          */}
+          {CANDIDATE_FAILURE_REFUNDED[failure?.kind ?? "unknown"] ? (
+            <span className="dpc-tile__chip dpc-tile__chip--refunded">Refunded</span>
           ) : null}
         </div>
         <span className="dp-metadata">{line}</span>
