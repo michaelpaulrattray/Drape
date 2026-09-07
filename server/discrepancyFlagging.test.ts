@@ -490,6 +490,8 @@ describe("Credit Discrepancy Flagging", () => {
  * decomposition. They are pinned as CURRENT BEHAVIOUR, not as correct
  * behaviour: the double-count these arms exhibit is the open defect, and a
  * repair has to come here and change an arm that says what it is changing.
+ * That repair is card 0638, which carries the three roads and the
+ * recommendation; 0462 measured the cause and closed.
  */
 describe("the founder's account: what the residual is made of", () => {
   /** Read at production 2026-09-07 — the three aggregations for user 1. */
