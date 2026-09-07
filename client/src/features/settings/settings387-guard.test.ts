@@ -2,9 +2,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-/* #385 moved `windowStart` out of the pane and into a module both the pane
-   and the two money modals read, so the window cannot mean two things. */
-import { windowStart } from "./usageWindow";
+/* #385 moved the window out of the pane and into a module both the pane and
+   the two money modals read, so the window cannot mean two things. ⚠ #624 then
+   moved the window itself to the SERVER — a day-keyed reassembly cannot see a
+   period that begins mid-day — and what stayed on the client is the COPY. The
+   window's own arms live in `server/cycleSpend.test.ts`; these are the arms
+   about what the pane SAYS, which is what card 387 was about. */
+import { spendWindowCopy } from "./usageWindow";
 
 /**
  * #387 — his five corrections to the built Settings panes, held where each one
@@ -43,17 +47,27 @@ describe("card 387 item 2 — the window follows the account", () => {
   */
   const HIS_LAST_SPEND = "2026-08-30";
 
-  it("a free account's window reaches back past his last roll — the actual complaint", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-09-01T10:32:00Z"));
+  it("⚠ the window that reaches back past his last roll is the SERVER's, and this says where", () => {
+    /*
+      ⚠ THIS ARM MOVED RATHER THAN DIED (#624). It used to call `windowStart`
+      and read a first UTC day; the window is now `spendWindow` in
+      `server/db/billing.ts`, driven there against his own dates — a rolling 30
+      days in real time, which reaches ${HIS_LAST_SPEND} from 1 September just
+      as the day-keyed one did.
 
-    const w = windowStart(null, 24_535, 5_000);
-
-    expect(
-      w.firstDay <= HIS_LAST_SPEND,
-      `the window starts ${w.firstDay}, after his last spend on ${HIS_LAST_SPEND} — this is the zero he reported`,
-    ).toBe(true);
-    expect(w.days).toBe(30);
+      What is kept HERE is the pointer, because a reader arriving at card 387's
+      complaint must be able to find the thing that answers it. A grep for the
+      symbol is the cheapest form of that and it goes red if the window is
+      renamed or moved again.
+    */
+    const server = code(read(join(REPO, "server", "db", "billing.ts")));
+    expect(server, "the spend window is no longer in the billing reader").toContain(
+      "export function spendWindow",
+    );
+    expect(server, "the rolling fallback his complaint depends on is gone").toContain(
+      "ROLLING_DAYS = 30",
+    );
+    expect(HIS_LAST_SPEND, "his date is quoted so the arm above stays legible").toBe("2026-08-30");
   });
 
   it("and it does not call itself a month, because no month is being measured", () => {
@@ -63,11 +77,10 @@ describe("card 387 item 2 — the window follows the account", () => {
       still promises a monthly cycle nothing runs. Split so the negative control
       can tell the two failures apart.
     */
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-09-01T10:32:00Z"));
-    const w = windowStart(null, 24_535, 5_000);
-    expect(w.label).toBe("in the last 30 days");
-    expect(w.label, "the window is claiming a month again").not.toMatch(/month/i);
+    const w = spendWindowCopy("rolling30", 24_535, 5_000);
+    expect(w.heading).toBe("Usage in the last 30 days");
+    expect(w.heading, "the window is claiming a month again").not.toMatch(/month/i);
+    expect(w.over, "the phrase under a RATE claims a month").not.toMatch(/month/i);
   });
 
   it("no billing period means NO monthly-allowance claim — it says what is left", () => {
@@ -77,65 +90,71 @@ describe("card 387 item 2 — the window follows the account", () => {
       arrives. The only true figure beside a pool that does not refill is the
       pool.
     */
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-09-01T10:32:00Z"));
-
-    const w = windowStart(null, 24_535, 5_000);
+    const w = spendWindowCopy("rolling30", 24_535, 5_000);
     expect(w.note).toBe("24,535 credits left");
     expect(w.note, "the allowance that never renews is being claimed again").not.toContain("5,000");
     expect(w.note).not.toMatch(/month/i);
   });
 
   it("a billing period keeps its period and its allowance — both true there", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-09-15T00:00:00Z"));
-
-    const w = windowStart(new Date("2026-09-04T00:00:00Z"), 12_000, 75_000);
-    expect(w.label).toBe("this billing period");
+    const w = spendWindowCopy("period", 12_000, 75_000);
+    expect(w.heading).toBe("Usage this billing period");
     expect(w.note).toBe("of 75,000 this billing period");
-    expect(w.firstDay).toBe("2026-09-04");
+    /* ⚠ TWO PHRASINGS, ONE WINDOW. A group heading and a note under a rate need
+       different English (*"averaged over in the last 30 days"* is what one
+       string for both produces), and a surface writing its own second one is
+       how two labels come apart. Both are here. */
+    expect(w.over).toBe("this billing period");
   });
 
-  it("a period longer than the 90-day cap reports the SEEDED edge, not the period's", () => {
+  it("⚠ a window nobody has summed yet is NAMED AS NOTHING — the PR review's one finding", () => {
     /*
-      ⚠ `firstDay` filters rows the server seeded, and the server seeds `days`
-      days ENDING TODAY with `days` capped at 90. On an annual plan the period
-      start is outside that; filtering on it would keep a stray partial day the
-      window does not name.
-    */
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-09-15T00:00:00Z"));
+      PR #634's only review finding.
 
-    const w = windowStart(new Date("2026-01-01T00:00:00Z"), 12_000, 75_000);
-    expect(w.days).toBe(90);
-    expect(w.firstDay).toBe("2026-06-18");
-    /*
-      ⚠ THIS ARM SAID THE OPPOSITE UNTIL PR #622's REVIEW, AND IT IS RE-AIMED
-      RATHER THAN DELETED. It read `expect(w.elapsedDays).toBeGreaterThan(90)`
-      with the reason *"the average must still be over the real period"* — a
-      belief that is simply wrong once you ask what the sum contains. The sum
-      is 90 days of rows, because that is all the server will seed; dividing it
-      by the 258 days since 1 January is arithmetic nobody can defend, and it
-      is #385's own defect (a figure and a window that disagree) one window
-      further out. There is one number now and no second one to reach for.
+      The first draft defaulted a missing basis to `rolling30`, so a SUBSCRIBED
+      account opening the pane read *"Usage in the last 30 days"* over the note
+      *"61,000 credits left"* for one render beat before it flipped to the
+      period. The figures were honestly em-dashed; the WORDS were not, and they
+      are the half a customer reads first — real data attached to a claim about
+      a window that had not been summed.
+
+      ⚠ Driven as three separate assertions rather than one object equality,
+      because each is a different way of claiming a window: the heading, the
+      note, and the span under the rate.
     */
-    expect(Object.keys(w), "an uncapped elapsed count came back").not.toContain("elapsedDays");
+    const loading = spendWindowCopy(null, 24_535, 5_000);
+    expect(loading.heading, "the loading heading names a window").toBe("Usage");
+    expect(loading.note, "a note was attached to a window nobody summed").toBeUndefined();
+    expect(loading.over, "a span was claimed under a rate nobody has").toBeNull();
+
+    /* And the pane passes the absence through rather than defaulting it. */
+    const pane = code(read(join(HERE, "sections", "UsageSection.tsx")));
+    expect(pane, "the pane defaults a missing basis to a real window again").not.toContain(
+      '?? "rolling30"',
+    );
   });
 
-  it("a period start in the FUTURE falls back rather than reporting a negative window", () => {
+  it("⚠ the 90-day cap and the future-period fallback are the SERVER's arms now", () => {
     /*
-      ⚠ ASSERTED AS AN EQUIVALENCE, NOT BY THE FALLBACK'S LABEL. The claim is
-      *branch selection* — a period that has not begun is no period — so it is
-      proved by the two calls agreeing, which stays true however the free branch
-      is later worded. The first draft read the label instead, and the negative
-      control caught it immediately: a sabotage aimed at the free branch's NAME
-      reddened this arm too, which would have made a naming regression look like
-      a branching one.
+      ⚠ TWO ARMS LEFT THIS FILE IN #624 AND THIS ONE SAYS WHERE THEY WENT,
+      because an arm that vanishes reads exactly like an arm nobody replaced.
+
+      They were *"a period longer than the 90-day cap reports the SEEDED edge"*
+      and *"a period start in the FUTURE falls back"*. Both were about the
+      WINDOW, and the window is `spendWindow` in `server/db/billing.ts` now.
+      The first has also changed its verdict rather than moved unchanged: there
+      IS no 90-day cap any more — it belonged to `usage.getDailyUsage`, the
+      chart endpoint the surfaces no longer reassemble — so an annual period is
+      summed from its own start, which is what `server/cycleSpend.test.ts`
+      asserts. Keeping a client arm that still demanded the seeded edge would
+      have pinned the workaround as though it were the rule.
     */
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-09-01T10:32:00Z"));
-    expect(windowStart(new Date("2026-10-01T00:00:00Z"), 24_535, 5_000)).toEqual(
-      windowStart(null, 24_535, 5_000),
+    const server = code(read(join(REPO, "server", "cycleSpend.test.ts")));
+    expect(server, "the annual-period arm did not arrive with the window").toContain(
+      "there is no 90-day edge left",
+    );
+    expect(server, "the future-period arm did not arrive with the window").toContain(
+      "a period start in the FUTURE falls back",
     );
   });
 });

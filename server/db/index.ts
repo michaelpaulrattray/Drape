@@ -112,6 +112,8 @@ export {
   getCreditHistory,
   getUsageStats,
   getDailyUsage,
+  getCycleSpend,
+  spendWindow,
 } from "./billing";
 
 // Waitlist

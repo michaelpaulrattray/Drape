@@ -19,7 +19,9 @@
  * `balance`, `currentPeriodStart` and `currentPeriodEnd` are on
  * `billing.getStatus` (`server/routes/billing.ts`). **CREDITS SPENT IS NOT** —
  * that projection's only spend field is a lifetime counter, so the cycle's
- * spend is summed from `usage.getDailyUsage` by the caller and passed in.
+ * spend is READ SEPARATELY, from `usage.getCycleSpend`, and passed in. (It was
+ * summed on the client from `usage.getDailyUsage`'s day buckets until #624 —
+ * which could not see a period that begins mid-day, and every real one does.)
  * A user with no subscription row has no period at all, which is why every
  * function here takes the possibility of `null` and answers `null` rather than
  * guessing a month — a burn rate over an invented cycle is exactly the
@@ -50,8 +52,8 @@ export type BillingCycle = {
    * ⚠ **THE REPAIR IS A SIGNATURE, NOT A CORRECTED READ.** `readCycle` no
    * longer looks at any spend field on `status`, so the wrong number is not
    * merely unused here — it is unreachable, and a future caller cannot
-   * reintroduce it by passing the same projection. The cycle's real spend is
-   * summed from `usage.getDailyUsage` by
+   * reintroduce it by passing the same projection. The cycle's real spend
+   * comes from `usage.getCycleSpend` via
    * `client/src/features/billing/useCycleSpend.ts`.
    *
    * A `null` spend (the sum not yet loaded) lands here as `0`, and `readBurn`
@@ -63,11 +65,17 @@ export type BillingCycle = {
    * ⚠ **HOW MANY DAYS `spent` COVERS, AND IT IS THE ONLY DIVISOR `readBurn`
    * MAY USE** (PR #622 review, finding 1).
    *
-   * The spend is summed over a window the server caps at 90 days; the days
-   * ELAPSED in the period can be 365. Dividing one by the other is #385's own
-   * defect surviving one window further out, and it understated an annual
-   * subscriber's burn by more than half. Carrying the span beside the sum
-   * means a caller cannot supply one without the other.
+   * ⚠ **THE CAP IS GONE AND THE PRINCIPLE IS NOT (#624).** The spend used to
+   * be summed over a window the server capped at 90 days while the days ELAPSED
+   * in the period could be 365 — dividing one by the other understated an
+   * annual subscriber's burn by more than half. `usage.getCycleSpend` sums the
+   * whole period at timestamp precision, so the two now agree by construction;
+   * carrying the span beside the sum is what keeps them agreeing when the
+   * window changes again, because a caller cannot supply one without the other.
+   *
+   * It is FRACTIONAL — the exact elapsed time of the window that was summed —
+   * and `readCycle` clamps it at a day, because an hour-old cycle has a real
+   * spend and no meaningful rate.
    */
   spentOverDays: number;
   /** Credits still on the balance. */

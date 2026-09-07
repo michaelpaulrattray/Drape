@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "93d6c05f68db3496"
+    "sourceFingerprint": "25bca09b945e1d6a"
   },
   "domains": [
     {
@@ -8647,6 +8647,16 @@
       "file": "server/_core/systemRouter.ts"
     },
     {
+      "id": "route:usage.getCycleSpend",
+      "namespace": "usage",
+      "name": "getCycleSpend",
+      "type": "query",
+      "auth": "protected",
+      "input": "none",
+      "rateLimited": false,
+      "file": "server/routes/usage.ts"
+    },
+    {
       "id": "route:usage.getDailyUsage",
       "namespace": "usage",
       "name": "getDailyUsage",
@@ -12695,6 +12705,14 @@
     {
       "id": "test:server/crewWorkSwitches.test.ts",
       "path": "server/crewWorkSwitches.test.ts"
+    },
+    {
+      "id": "test:server/cycleSpend-db.test.ts",
+      "path": "server/cycleSpend-db.test.ts"
+    },
+    {
+      "id": "test:server/cycleSpend.test.ts",
+      "path": "server/cycleSpend.test.ts"
     },
     {
       "id": "test:server/db/castingV2InkDeliveryCrops.test.ts",
@@ -17771,6 +17789,11 @@
     {
       "from": "module:client/src/features/settings/sections/SecuritySection.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/UsageSection.tsx",
+      "to": "module:client/src/features/billing/useCycleSpend.ts",
       "kind": "imports"
     },
     {
