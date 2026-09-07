@@ -74,7 +74,10 @@ describe("card 404 — the plan blurb map cannot drift from the ladder", () => {
     }
   });
 
-  it("⚠ the FREE line makes no product claim either — the exception he closed (#621)", () => {
+  /* The card number stays in this comment rather than the title: `#621` is a
+     valid three-digit hex and the token guard reads titles as code, which it
+     says in its own refusal. Card 621. */
+  it("⚠ the FREE line makes no product claim either — the exception he closed", () => {
     /*
       ⚠ **THIS ARM DID ITS JOB AND IS RE-AIMED, NOT DELETED, AND THE OLD ONE IS
       QUOTED BECAUSE THE MECHANISM IS THE POINT.**
