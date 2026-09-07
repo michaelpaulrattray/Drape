@@ -30,19 +30,26 @@
  * That is what makes them safe in front of paying customers while they wait for
  * his voice.
  *
- * ⚠ **THE FREE LINE IS THE EXCEPTION AND IT IS NAMED HERE RATHER THAN COVERED
- * OVER** (PR #619 review, finding 2 — this paragraph claimed "every line" and
- * that was overstated by exactly one). *"Try the studio. A few casts a month,
- * no card."* makes TWO product claims: a volume (*"a few casts a month"*, which
- * tracks the free tier's 5,000 monthly credits) and a signup fact (*"no
- * card"*). Both are true today and **both can be made false by a product
- * decision** — cutting the free allowance, or asking for a card at signup —
- * and neither the regex arm nor anything else would redden if that happened.
+ * ✅ **THE EXCEPTION IS CLOSED, AND IT WAS CLOSED BY HIM (#621, 2026-09-07).**
+ * The free line WAS the one that broke the rule above, and this paragraph is
+ * kept as the reason rather than deleted.
  *
- * **It is left exactly as he approved it**, because he named these seven and
- * *"Build to those"* is the instruction; silently rewriting his copy to satisfy
- * a docblock of mine would be the worse error. What changes is that the claim
- * above is now true as written, and the exception is on the card for him.
+ * It read *"Try the studio. A few casts a month, no card."* and made TWO
+ * product claims: a volume (*"a few casts a month"*, tracking the free tier's
+ * 5,000 monthly credits) and a signup fact (*"no card"*). Both were true, and
+ * **both could be made false by a pricing decision** — cutting the free
+ * allowance, or asking for a card at signup — with nothing reddening.
+ *
+ * ⚠ **A shift could NOT fix it, and did not: it was his copy.** The card put
+ * three options to him and his answer was, verbatim, ***"(b), use the safer
+ * line."*** — option (b) being *"Reword it like the other six"*. So the line is
+ * now `"For trying the studio out before you commit."`, and **all seven say who a rung
+ * is FOR and claim no capability.** The sentence above is true of every line
+ * with no exception, for the first time.
+ *
+ * The credits block directly under the card still tells a customer exactly what
+ * they get, so nothing was lost by dropping the promise — which was the
+ * card's own argument for (b).
  *
  * ## Why a client-side map and not a server field
  *
@@ -71,7 +78,7 @@
  * not seven literals in the JSX.
  */
 export const PLAN_BLURBS: Record<string, string> = {
-  free: "Try the studio. A few casts a month, no card.",
+  free: "For trying the studio out before you commit.",
   starter: "For one creator casting a handful of faces a month.",
   pro: "For a creator posting weekly and building a roster.",
   studio: "For a team shooting a campaign a month.",
