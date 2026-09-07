@@ -1,7 +1,7 @@
 {
-  "edition": 296,
-  "updatedAt": "2026-09-07T21:45:00.000Z",
-  "shift": "Foreman (Opus) - your plan page showed a rate and a price that did not add up, and your switch panel's number is answering a different question than the one you asked",
+  "edition": 297,
+  "updatedAt": "2026-09-07T23:10:00.000Z",
+  "shift": "Foreman (Opus) - your reviewer went missing on a change that merged anyway, and nothing in the log said so",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-07T20:25:06.416Z",
+      "readAt": "2026-09-07T23:01:12.104Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4383,6 +4383,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-665-review-absent-566",
+      "title": "A change merged with your Fable reviewer never having looked at it - and the tool told the shift the wrong reason (#566)",
+      "status": "merged",
+      "prNumber": 665,
+      "note": "WHAT THIS IS ABOUT. Every change the team makes goes past two checks before it merges: the machine gate (types, tests, the maps) and your Fable reviewer, which reads the change the way a senior engineer would. The gate is ours. The reviewer is yours - it runs on your Claude subscription and it is the one that catches judgement mistakes a test cannot.\n\nWHAT WENT WRONG. On 5 September a change merged without the reviewer ever having run on it. That is allowed when the reviewer is down - the standing rules say an ordinary change may merge on the gate alone - but nobody knew it had happened. The shift's own log said nothing. It was only found a day later by someone querying GitHub by hand.\n\nAND THE TOOL SAID SOMETHING WORSE THAN NOTHING. When a change touches money or logins, the merge tool holds it and prints why. Until tonight it printed: \"no reviewer verdict exists (the reviewer looked at it and declined - check for a stale skip-review label)\". That sentence is a confident diagnosis of a decision nobody made. There was no label. The reviewer had not declined anything; it had never run. A shift reading that goes hunting for something that is not there.\n\nHOW OFTEN. I measured it rather than guessing: over the last 100 reviewer runs, 50 things happened that should have started a review, and 49 of them did. One did not.\n\nWHERE THE FAULT IS - AND IT IS NOT OURS. One case gave a clean answer. On another change, the same label was applied, produced nothing, was removed fourteen minutes later, re-applied, and produced a review two seconds after that. Same change, same commit, same settings, same label - one worked and one did not. Nothing on our side differed between them, so the miss is inside GitHub's own delivery of the event, which we cannot see from here. I have written that down as the finding rather than inventing a cause that sounds plausible.\n\nWHAT IS DIFFERENT NOW. The team's merge tool tells two things apart that it used to call by one name: the reviewer LOOKED and decided this change did not need a full read (normal, and it stays silent), versus NOTHING RAN AT ALL. The second one is now printed on the line the tool writes as it merges, so it lands in the shift's log at the moment it happens. The remedy is named in that line too.\n\nWHAT DELIBERATELY DID NOT CHANGE. A missing reviewer still does not BLOCK an ordinary change - the rules already say merge on the gate alone when the reviewer is down, and changing that is your call, not a bug fix. Money and login changes are held exactly as hard as before, whichever kind of absence it is.\n\nYOUR REVIEWER FOUND THREE THINGS IN THIS VERY CHANGE, and they are worth mentioning because two of them were in the new sentences. One was a wrong number I had put in the message. The other was sharper: my new line said the change was \"merging on the gate alone, for a non-money change\" - and it turns out a money change that a shift has hand-reviewed reaches that same line, where both halves of that sentence would be false. So the message now states the fact and never the reason. That is the exact mistake this whole change exists to stop, caught inside the fix for it."
+    },
+    {
       "id": "pr-662-annual-rate-661",
       "title": "Press Annual and the value line stayed on the monthly rate - the two numbers in one card did not add up (#661)",
       "status": "merged",
@@ -4568,6 +4575,13 @@
     }
   ],
   "problems": [
+    {
+      "id": "queue-shape-0908c-foreman",
+      "state": "open",
+      "title": "The queue: 81 open, one closed tonight, and 14 nobody has re-read in a week",
+      "severity": "info",
+      "detail": "81 open. One closed tonight (#566). Nothing new filed - a rarity, and a good one.\n\n14 cards have had no comment, no close and no commit against them for seven days. That number is read by a command now rather than by a throwaway, so it counts real engagement instead of any stray edit.\n\nWORTH SAYING PLAINLY, because it is the shape of the queue and not a backlog being ignored: the bug list is now largely cards whose remaining step is a DECISION of yours rather than a diff. Tonight I re-read four of them at the code and every one held - a refund calculation that needs a call on where the number comes from, a deletion job on your own machine, a guard whose repair is a choice between two hooks, and one whose own filing says \"leave it until someone actually reports it\". None of those is a shift being lazy; each is waiting on a person."
+    },
     {
       "id": "temp-leftovers-654",
       "state": "open",
@@ -4906,7 +4920,7 @@
     159
   ],
   "nextUp": {
-    "readAt": "2026-09-07T20:25:05.593Z",
+    "readAt": "2026-09-07T23:01:11.320Z",
     "items": [
       {
         "issueNumber": 543,
