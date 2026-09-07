@@ -476,13 +476,39 @@ if (skipped.length > 0) {
   for (const line of skipped) console.log(`  ! ${line}`);
 }
 
-if (heldCards.length > 0) {
+/*
+  ⚠ TWO KINDS OF HOLD, PRINTED APART, BECAUSE ONE SENTENCE WAS TRUE OF ONLY ONE
+  OF THEM (#354). This block used to say, of everything held: *"marking them
+  would orphan something the briefing schema then refuses at the parse"*. That
+  is the CARD hold, and it is why a card hold is transient — the schema forces
+  the settling. An EYE-ITEM hold is schema-valid and does not self-resolve: it
+  is held because promoting it would take frames off his page, and only a
+  person can say whether he still needs to see them. Filing both under the
+  card's sentence would tell a shift its eye-item hold clears itself, which is
+  the shape this whole script exists to kill.
+*/
+const heldEyeItems = heldCards.filter((hold) => hold.list === "eyeItems");
+const heldNeedsYou = heldCards.filter((hold) => hold.list !== "eyeItems");
+
+if (heldNeedsYou.length > 0) {
   console.log("");
-  console.log(`⚠ ${heldCards.length} card(s) are finished by their issue but cannot be marked done yet.`);
+  console.log(`⚠ ${heldNeedsYou.length} card(s) are finished by their issue but cannot be marked done yet.`);
   console.log("  Marking them would orphan something the briefing schema then refuses at the");
   console.log("  parse, so each is left alone and named instead (#604):");
-  for (const hold of heldCards) {
+  for (const hold of heldNeedsYou) {
     console.log(`  ! ${hold.list} ${hold.id} (#${hold.issueNumber}) — ${hold.reason}`);
+  }
+}
+
+if (heldEyeItems.length > 0) {
+  console.log("");
+  console.log(`⚠ ${heldEyeItems.length} set(s) of frames would have LEFT HIS PAGE, and did not.`);
+  console.log("  The gallery renders `open` only, so marking these done removes them from his");
+  console.log("  screen. Their issue closing means the work finished, not that he looked — so");
+  console.log("  each is left visible and named instead (#354). This does NOT clear itself:");
+  console.log("  mark it `answered` once he has judged, or re-point it at a card still open.");
+  for (const hold of heldEyeItems) {
+    console.log(`  ! ${hold.id} (#${hold.issueNumber}) — ${hold.reason}`);
   }
 }
 
