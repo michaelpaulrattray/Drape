@@ -1147,6 +1147,28 @@ export default function CastingSheet() {
     keptTiles.find((entry) => entry.candidateId === signSelectionId) ?? keptTiles[0] ?? null;
 
   /*
+    WHAT THE DOCK CALLS HER, AND WHY IT IS NOT ALWAYS THE NUMBER (#645 review,
+    finding 2).
+
+    `indexLabel` is a face's POSITION IN HER OWN ROLL (`rollProjection.ts`:
+    `String(candidate.position + 1).padStart(2, "0")`), and the tray CROSSES
+    ROLLS — so on a sheet that has rolled twice, "03" names two different women
+    and the sentence meant to end the confusion would be a second one.
+
+    The tray already knew this and never says a label naked: its own aria-label
+    is "Sign 03 from ROLL 02", and `labelFor`'s comment gives the reason. The
+    dock now speaks the same way, but only WHEN it has to — a shortlist inside
+    one roll keeps the short sentence, because a qualifier nobody needs is
+    exactly the clutter this line is trying to remove.
+  */
+  const keptSpansRolls = new Set(keptStrip.map((entry) => entry.sourceRollIndex)).size > 1;
+  const keptSelectionLabel = signTarget
+    ? keptSpansRolls
+      ? `${signTarget.indexLabel} from roll ${String(signTarget.sourceRollIndex).padStart(2, "0")}`
+      : signTarget.indexLabel
+    : null;
+
+  /*
     THE VIEWER LIVES HERE, not on the tile (founder ruling, 2026-08-02 — one
     image grammar, arrows walk the set).
 
@@ -3051,7 +3073,7 @@ export default function CastingSheet() {
               */
               <span className="dp-small" style={{ marginLeft: 12 }}>
                 {keptStrip.length} kept
-                {signTarget ? ` · ${signTarget.indexLabel} selected` : ""}
+                {signTarget ? ` · ${keptSelectionLabel} selected` : ""}
               </span>
             ) : (
               <Instruction>Keep the ones worth a second look</Instruction>

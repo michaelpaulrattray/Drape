@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { CandidateViewer, type ViewerFrame } from "./CandidateViewer";
+import { restingTray } from "../keptStrip";
 import { canBeSigned } from "../signTarget";
 
 /**
@@ -104,7 +105,24 @@ export function KeptTray({
 
   if (shortlist.length === 0) return null;
 
-  const shown = expanded ? shortlist : shortlist.slice(0, RESTING);
+  /*
+    ⚠ THE AIMED FACE IS ALWAYS DRAWN, EVEN COLLAPSED (#645 review, finding 1).
+
+    The resting strip showed the FIRST four keeps; the dock's default target is
+    the LAST — `signTargets` reverses and takes the head, because the newest
+    keep is almost always the one you mean. Those two rules agree exactly while
+    there are four keeps or fewer, which is where #556 was rendered, and part
+    company on the fifth: the aimed face sits behind the "+1" chip, so no
+    `is-selected` exists in the DOM at all — no ring, no dim, and a dock
+    sentence naming a face that is not on screen. That is #556's own confusion
+    wearing new words.
+
+    So when the selection is not among the resting faces, she takes the last
+    resting place. Chronological order is kept (she is later than all of them),
+    which puts her nearest the Sign button she is about to be spent on, and the
+    common case — a selection already visible — is untouched.
+  */
+  const shown = expanded ? shortlist : restingTray(shortlist, selectedId, RESTING);
   const hidden = shortlist.length - shown.length;
 
   /*
@@ -167,7 +185,21 @@ export function KeptTray({
               {selected && aimable ? <span className="dpc-keptstack__ring" aria-hidden="true" /> : null}
             </button>
           ) : (
-            <span key={entry.candidateId} className="dpc-keptstack__chip" />
+            /*
+              No picture yet — and she may still be the aimed face, so she keeps
+              the ring (#645 review, finding 2's edge case). A selected entry
+              that dropped its selection styling because its thumbnail had not
+              landed would put the dock's sentence and the strip back into
+              disagreement for exactly as long as the image took.
+            */
+            <span
+              key={entry.candidateId}
+              className={
+                selected && aimable
+                  ? "dpc-keptstack__chip is-selected"
+                  : "dpc-keptstack__chip"
+              }
+            />
           );
         })}
         {hidden > 0 ? (

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "58079415e201188f"
+    "sourceFingerprint": "386349d47648c781"
   },
   "domains": [
     {
@@ -16792,6 +16792,11 @@
     {
       "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
+      "to": "module:client/src/features/castingV2/keptStrip.ts",
       "kind": "imports"
     },
     {

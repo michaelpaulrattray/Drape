@@ -154,10 +154,23 @@ describe("the sheet dock commits to one candidate", () => {
     */
     const sheet = await readFile(SHEET, "utf8");
     expect(sheet).toContain("{keptStrip.length} kept");
-    expect(sheet).toContain("${signTarget.indexLabel} selected");
+    expect(sheet).toContain("${keptSelectionLabel} selected");
     // Still no face and still no price on the button itself.
     expect(sheet).not.toMatch(/Sign \$\{[^}]*indexLabel[^}]*\} to roster/);
     expect(sheet).toContain("Sign to roster");
+
+    /*
+      ⚠ AND THE LABEL IS QUALIFIED WHEN IT HAS TO BE (#645 review, finding 2).
+      `indexLabel` is a position within ONE roll, and the tray crosses rolls —
+      so on a sheet that has rolled twice, "03" names two different women and
+      the sentence written to end the confusion would start a second one. The
+      tray never speaks a label naked for exactly this reason ("Sign 03 from
+      ROLL 02"); the dock now matches it, and only when the shortlist actually
+      spans rolls, so the common sentence stays short.
+    */
+    expect(sheet).toContain("keptSpansRolls");
+    expect(sheet).toContain("new Set(keptStrip.map((entry) => entry.sourceRollIndex)).size > 1");
+    expect(sheet).toMatch(/\$\{signTarget\.indexLabel\} from roll \$\{/);
 
     /*
       And the ring's premise is held up rather than assumed. "The button names
