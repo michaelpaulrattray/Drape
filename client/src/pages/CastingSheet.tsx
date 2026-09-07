@@ -1147,6 +1147,28 @@ export default function CastingSheet() {
     keptTiles.find((entry) => entry.candidateId === signSelectionId) ?? keptTiles[0] ?? null;
 
   /*
+    WHAT THE DOCK CALLS HER, AND WHY IT IS NOT ALWAYS THE NUMBER (#645 review,
+    finding 2).
+
+    `indexLabel` is a face's POSITION IN HER OWN ROLL (`rollProjection.ts`:
+    `String(candidate.position + 1).padStart(2, "0")`), and the tray CROSSES
+    ROLLS — so on a sheet that has rolled twice, "03" names two different women
+    and the sentence meant to end the confusion would be a second one.
+
+    The tray already knew this and never says a label naked: its own aria-label
+    is "Sign 03 from ROLL 02", and `labelFor`'s comment gives the reason. The
+    dock now speaks the same way, but only WHEN it has to — a shortlist inside
+    one roll keeps the short sentence, because a qualifier nobody needs is
+    exactly the clutter this line is trying to remove.
+  */
+  const keptSpansRolls = new Set(keptStrip.map((entry) => entry.sourceRollIndex)).size > 1;
+  const keptSelectionLabel = signTarget
+    ? keptSpansRolls
+      ? `${signTarget.indexLabel} from roll ${String(signTarget.sourceRollIndex).padStart(2, "0")}`
+      : signTarget.indexLabel
+    : null;
+
+  /*
     THE VIEWER LIVES HERE, not on the tile (founder ruling, 2026-08-02 — one
     image grammar, arrows walk the set).
 
@@ -3033,9 +3055,25 @@ export default function CastingSheet() {
                 The count reads the same list the strip draws (#554). It said
                 "1 kept" beside two thumbnails for as long as a mutation was in
                 the air, which is the two-views defect at its most obvious.
+
+                ⚠ AND IT NAMES WHO IS SELECTED (#556). The founder, with four
+                kept: *"if i select multiple casts to keep somehow i can sign
+                all of them at once? this makes no sense?"* — "4 kept" beside a
+                button reading "Sign to roster" says *sign the four*, and
+                nothing in words said otherwise. The ceremony has always been
+                single (F2); the dock simply never said whom.
+
+                It is said HERE rather than on the button on purpose, and the
+                two prior rulings that decide it are both pinned by
+                `dockAnatomy.test.ts`: the button may not name the face (the
+                ring is what says who — founder ruling, 2026-08-02) and may not
+                carry the price (D-109, cost is metadata and never button
+                text). So the sentence that was missing goes in the sentence
+                line, which is what a count line is for.
               */
               <span className="dp-small" style={{ marginLeft: 12 }}>
                 {keptStrip.length} kept
+                {signTarget ? ` · ${keptSelectionLabel} selected` : ""}
               </span>
             ) : (
               <Instruction>Keep the ones worth a second look</Instruction>

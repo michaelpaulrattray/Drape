@@ -139,6 +139,54 @@ describe("the sheet dock commits to one candidate", () => {
     expect(css).toContain("--accentSolid");
   });
 
+  it("says in words which kept face the Sign will act on", async () => {
+    /*
+      #556, and it is the OTHER half of the two arms above rather than a new
+      idea. The founder, with four kept: *"if i select multiple casts to keep
+      somehow i can sign all of them at once? this makes no sense?"*
+
+      Those arms forbid the two things the card proposed — the face's number on
+      the button (the ring's job) and the price on it (D-109). Both hold, and
+      they are checked here as NEGATIVE controls so that a later reading of
+      this card cannot satisfy it by breaking them. What was genuinely missing
+      is that nothing on the dock said "one of these", in words, anywhere: the
+      count line says it now, beside the count that caused the confusion.
+    */
+    const sheet = await readFile(SHEET, "utf8");
+    expect(sheet).toContain("{keptStrip.length} kept");
+    expect(sheet).toContain("${keptSelectionLabel} selected");
+    // Still no face and still no price on the button itself.
+    expect(sheet).not.toMatch(/Sign \$\{[^}]*indexLabel[^}]*\} to roster/);
+    expect(sheet).toContain("Sign to roster");
+
+    /*
+      ⚠ AND THE LABEL IS QUALIFIED WHEN IT HAS TO BE (#645 review, finding 2).
+      `indexLabel` is a position within ONE roll, and the tray crosses rolls —
+      so on a sheet that has rolled twice, "03" names two different women and
+      the sentence written to end the confusion would start a second one. The
+      tray never speaks a label naked for exactly this reason ("Sign 03 from
+      ROLL 02"); the dock now matches it, and only when the shortlist actually
+      spans rolls, so the common sentence stays short.
+    */
+    expect(sheet).toContain("keptSpansRolls");
+    expect(sheet).toContain("new Set(keptStrip.map((entry) => entry.sourceRollIndex)).size > 1");
+    expect(sheet).toMatch(/\$\{signTarget\.indexLabel\} from roll \$\{/);
+
+    /*
+      And the ring's premise is held up rather than assumed. "The button names
+      no number because the ring already says who" is only true while the ring
+      is legible in a stack that overlaps by 12px — his frame is that premise
+      failing. So the unchosen faces step back while a choice exists, and a
+      SIGNED face is excluded from that treatment: she already has a dimming of
+      her own (0.42) which means something else entirely, and one rule
+      overriding the other would have made two facts look like one.
+    */
+    const css = await readFile(CSS, "utf8");
+    expect(css).toContain(".dpc-keptstack:has(.is-selected)");
+    expect(css).toMatch(/:not\(\.is-selected\):not\(\.is-signed\) > img \{\s*opacity: 0\.78/);
+    expect(css).toContain(".dpc-keptstack__chip.is-signed > img");
+  });
+
   it("lets a shortlist be browsed at scale", async () => {
     const tray = await readFile(TRAY, "utf8");
     // Ten keeps and no way to pick one was the founder's report. Clicking
