@@ -27,10 +27,11 @@
  * observable instead of killing the runner.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { openCeremonyWorld } from "../scripts/lib/ceremony.mts";
+import { readListedSource } from "./testing/listedSource";
 
 const REPO = resolve(import.meta.dirname, "..");
 const SCRIPTS = join(REPO, "scripts");
@@ -192,10 +193,16 @@ describe("the nineteenth ceremony", () => {
       exactly what this reddens, and it is the only way the eighteen quietly
       become seventeen.
     */
+    /* ⚠ `readListedSource`, never a bare `readFileSync` — this walks the REAL
+       `scripts/` directory, which carries hundreds of untracked disposables and
+       is shared by parallel suites, so a file can leave between the listing and
+       the read (#223). Caught by `listedSource`'s own guard on this change's
+       first preflight, which is that guard doing exactly its job. */
     const callers = readdirSync(SCRIPTS)
       .filter((name) => name.endsWith(".mts") && !name.includes("disposable"))
-      .map((name) => ({ name, body: readFileSync(join(SCRIPTS, name), "utf8") }))
-      .filter(({ body }) => body.includes("openCeremonyWorld("));
+      .map((name) => ({ name, body: readListedSource(join(SCRIPTS, name)) }))
+      .filter((entry): entry is { name: string; body: string } =>
+        entry.body !== null && entry.body.includes("openCeremonyWorld("));
 
     expect(callers.length, "no ceremony found — the reader itself is the bug").toBeGreaterThanOrEqual(18);
 
