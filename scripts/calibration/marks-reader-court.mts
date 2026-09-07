@@ -280,7 +280,7 @@ async function ask(
   return { verified: check.verified ?? null, saw: String(check.saw ?? "") };
 }
 
-const REPEAT = ARGS.value("repeat") !== null ? Number(ARGS.value("repeat")) : 5;
+const REPEAT = ARGS.number("repeat", 5);
 if (!Number.isInteger(REPEAT) || REPEAT < 1) throw new Error("--repeat needs a whole number of readings");
 
 /**

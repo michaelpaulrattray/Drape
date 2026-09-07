@@ -96,7 +96,7 @@ const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
   value: ["n"],
   boolean: ["dry"],
 });
-const N = Number(ARGS.value("n") ?? "5");
+const N = ARGS.number("n", 5);
 const DRY = ARGS.flag("dry");
 
 const apiKey = process.env.FAL_KEY;

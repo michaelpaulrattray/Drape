@@ -47,7 +47,9 @@ import { describe, expect, it } from "vitest";
 import { ArgumentError, parseStrictArgs } from "../scripts/lib/strictArgs.mts";
 import { readIfPresent, statIfPresent } from "../scripts/lib/listedEntry.mts";
 import {
-  drivesAPaidTransport, paidScriptsReadingFlagsByName, readsArgvOutsideTheStrictParse,
+  coercesAParsedValueToNumber,
+  drivesAPaidTransport, paidScriptsReadingFlagsByName,
+  paidScriptsTakingANumberOnTrust, readsArgvOutsideTheStrictParse,
   scriptFilesUnder,
   spendWordsRefusedByTheirOwnParse, unguardedSpendGates,
 } from "../scripts/lib/stopline.mts";
@@ -530,15 +532,33 @@ describe("card 602 — the `=` pair and the declared positional", () => {
 
       ⚠ THIS IS ASSERTED AT THE SOURCE RATHER THAN BY RUNNING THE SCRIPT,
       because running it imports `dotenv` and three provider modules — but it is
-      asserted at what the code DOES, not at a comment: the coercion is gone and
-      a finite check stands in its place. The remaining four sites of this class
-      are #625, and this arm names them so the card cannot be quietly dropped.
+      asserted at what the code DOES, not at a comment.
+
+      ⚠ **RE-AIMED, NOT RELAXED (#625) — AND THE BELIEF THAT MOVED IS WORTH
+      MORE THAN THE EDIT.** This arm used to require `Number.isFinite` IN
+      `calibrate-providers.mts`, which was true of the local helper #623 wrote
+      under a capped review round and is exactly the sentence #625 exists to
+      make false: five copies of one check is working law 4, so the check moved
+      into `ARGS.number` and the local helper was deleted. A guard that pinned
+      the check's ADDRESS would have had to be deleted with it — the shape that
+      loses a control to a correct change. It is pinned to the PROPERTY instead:
+      this file must not coerce, it must read its numbers through the accessor,
+      and the accessor must be the thing that refuses. Sabotage any one of the
+      three and this reddens.
     */
     const source = codeOf("scripts/calibrate-providers.mts");
     expect(source, "the bare Number() coercion is back on the ceiling")
       .not.toMatch(/Number\(ARGS\.value\("(ceiling|concurrency)"\)/);
-    expect(source, "nothing refuses a non-finite numeric flag").toContain("Number.isFinite");
-    expect(source, "the refusal does not say which flag").toMatch(/must be a number/);
+    expect(source, "the ceiling stopped going through the refusing accessor")
+      .toMatch(/ARGS\.number\("ceiling"/);
+    expect(source, "the concurrency stopped going through the refusing accessor")
+      .toMatch(/ARGS\.number\("concurrency"/);
+    /* And the accessor it now leans on really does refuse — without this the
+       two assertions above are satisfied by an `ARGS.number` that returns NaN.
+       Driven end to end, with a real argv, in `server/crewShiftArguments.test.ts`. */
+    const parser = codeOf("scripts/lib/strictArgs.mts");
+    expect(parser, "nothing refuses a non-finite numeric flag").toContain("Number.isFinite");
+    expect(parser, "the refusal does not say which flag").toMatch(/must be a number/);
   });
 
   it("⚠ the two repaired scripts' own documented command lines still parse", () => {
@@ -815,6 +835,109 @@ describe("no script's strict parse refuses its own spend word", () => {
         'const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: [] });\n'
         + 'const SPEND = spendAuthorized("x", myOwnArgv);\n');
       expect(spendWordsRefusedByTheirOwnParse(scratch, scratch)).toEqual(["dropped.mts"]);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+});
+
+
+/**
+ * AND THE NEXT QUESTION DOWN: A SPENDER THAT PARSES STRICTLY AND STILL TAKES
+ * THE VALUE ON TRUST (#625, the law-7 remainder of #602/#623).
+ *
+ * Every arm above asks whether a paid script READ its command line properly.
+ * All of them were green on `calibrate-providers.mts` while
+ * `Number(ARGS.value("ceiling"))` sat in it — the flag was declared, the parse
+ * refused every unknown word, and `--ceiling 1O` still produced NaN. **A NaN
+ * ceiling does not narrow the bound, it removes it**: every comparison against
+ * NaN is false, so the plan-level refusal stops refusing and
+ * `SpendGuard.reserve` stops reserving, and an `--execute` run proceeds
+ * unbounded.
+ *
+ * Five sites carried it. `ARGS.number` in `strictArgs.mts` is now the one
+ * implementation, driven directly in `server/crewShiftArguments.test.ts`; this
+ * describe block is about the POPULATION, so the next paid script reading a
+ * number joins by existing rather than by somebody remembering this card.
+ */
+describe("a paid script never takes a number on trust", () => {
+  const SCRIPTS = join(REPO, "scripts");
+
+  it("no paid script coerces a parsed value to a number itself", () => {
+    expect(paidScriptsTakingANumberOnTrust(SCRIPTS, REPO)).toEqual([]);
+  });
+
+  it("sweeps a real population — a clean answer over no files is not an answer", () => {
+    /* The same floor the sibling sweep asserts, for the same reason: the arm
+       above passes just as happily on a reader that has stopped looking. */
+    const paid = scriptFilesUnder(SCRIPTS).filter((file) => drivesAPaidTransport(readFileSync(file, "utf8")));
+    expect(paid.length).toBeGreaterThan(15);
+  });
+
+  /**
+   * ⚠ THE FIVE REPAIRED FILES, WATCHED BY NAME — because a population keyed on
+   * the DEFECT stops watching each file you fix. The sweep above is silent on
+   * them now whether they are swept or not; these two assertions say they are
+   * still IN the population and still clean, so sabotaging either half goes red
+   * and names the file rather than moving a count.
+   */
+  const REPAIRED = [
+    "scripts/calibrate-providers.mts",
+    "scripts/calibration/accessory-instance-cell.mts",
+    "scripts/calibration/born-worn-court.mts",
+    "scripts/calibration/hair-arrangement-court.mts",
+    "scripts/calibration/marks-reader-court.mts",
+  ] as const;
+
+  it("keeps the five repaired sites in the swept population, and clean", () => {
+    for (const relative of REPAIRED) {
+      const source = sourceOf(relative);
+      expect(drivesAPaidTransport(source), `${relative} left the swept population`).toBe(true);
+      expect(coercesAParsedValueToNumber(source), `${relative} takes a number on trust again`).toBe(false);
+    }
+  });
+
+  it("every one of the five actually reads a number, so the arm above is not vacuous", () => {
+    /* Without this, deleting the numeric flag from a script would leave the
+       arm above green over a file with nothing to get wrong — the shape that
+       makes a guard look like coverage. */
+    for (const relative of REPAIRED) {
+      expect(sourceOf(relative), `${relative} no longer reads a number at all`).toMatch(/ARGS\.number\(/);
+    }
+  });
+
+  it("really sees the shapes, and clears one that judges the value", () => {
+    const scratch = mkdtempSync(join(tmpdir(), "paidnumber-"));
+    try {
+      const paid = 'import { createFalRegionReader } from "../../server/castingV2/falRegionReader";\n';
+      writeFileSync(join(scratch, "bynumber.mts"), paid + 'const n = Number(ARGS.value("n") ?? "5");\n');
+      writeFileSync(join(scratch, "byparseint.mts"), paid + 'const n = parseInt(args.value("n"), 10);\n');
+      writeFileSync(join(scratch, "bypositional.mts"), paid + 'const n = Number(ARGS.positional(0));\n');
+      /* The repaired shape, and a NON-paid file carrying the defect — the sweep
+         is about spenders, and one that flagged every reporter would be a
+         different and much noisier control than the one claimed. */
+      writeFileSync(join(scratch, "strict.mts"), paid + 'const n = ARGS.number("n", 5);\n');
+      writeFileSync(join(scratch, "unpaid.mts"), 'const n = Number(ARGS.value("n"));\n');
+      expect(paidScriptsTakingANumberOnTrust(scratch, scratch)).toEqual([
+        "bynumber.mts", "byparseint.mts", "bypositional.mts",
+      ]);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
+  it("reads the CODE, so a docblock may quote the shape it replaced", () => {
+    /* Load-bearing rather than hypothetical: `hair-arrangement-court.mts` now
+       carries `Number(ARGS.value("repeat")) || 3` in the prose explaining that
+       `--repeat 0` used to be silently read as three. A guard that could not
+       tell a quotation from an occurrence would force that paragraph out. */
+    const scratch = mkdtempSync(join(tmpdir(), "paidnumberquote-"));
+    try {
+      writeFileSync(join(scratch, "quoting.mts"),
+        'import { createFalRegionReader } from "../../server/castingV2/falRegionReader";\n'
+        + '/* The read here was `Number(ARGS.value("repeat")) || 3`, where 0 became 3. */\n'
+        + 'const n = ARGS.number("repeat", 3);\n');
+      expect(paidScriptsTakingANumberOnTrust(scratch, scratch)).toEqual([]);
     } finally {
       rmSync(scratch, { recursive: true, force: true });
     }

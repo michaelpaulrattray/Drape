@@ -105,6 +105,90 @@ describe("the argument reader refuses what it was not asked about", () => {
   });
 });
 
+/**
+ * A FLAG'S VALUE READ AS A NUMBER — the one place this parser judges CONTENT
+ * (#625, the law-7 remainder of #602/#623).
+ *
+ * `Number("1O")` — the digit one and the letter O, one keystroke apart — is
+ * NaN, and every comparison against NaN is false. So a NaN ceiling on a
+ * house-money script does not narrow the bound, it REMOVES it: the plan-level
+ * refusal in `calibrate-providers.mts` stops refusing and `SpendGuard.reserve`
+ * stops reserving, and an `--execute` run proceeds unbounded.
+ *
+ * ⚠ **THE ARMS THAT MATTER HERE ARE THE ACCEPTING ONES.** A guard that refused
+ * every value would pass every refusal arm below and turn a legitimate
+ * `--floor 0` into a dead script. `0`, a negative and a decimal are all values
+ * a caller may genuinely want, which is why the test is `Number.isFinite` and
+ * not truthiness — the exact mistake `hair-arrangement-court` was carrying
+ * (`Number(…) || 3`, where `--repeat 0` silently became three).
+ */
+describe("a value that must be a number refuses when it is not one", () => {
+  const SPEC = { value: ["ceiling", "repeat", "floor"], boolean: ["execute"] } as const;
+  const parse = (argv: readonly string[]) => parseStrictArgs(argv, SPEC);
+
+  it("refuses the keystroke this card is named for, and quotes what was typed", () => {
+    /* `--ceiling 1O` — the incident shape. The refusal must name the flag AND
+       the value, because an operator who cannot see `1O` on their own screen
+       is exactly the operator who typed it. */
+    expect(() => parse(["--ceiling", "1O"]).number("ceiling", 20))
+      .toThrow(/--ceiling must be a number, and "1O" is not/);
+  });
+
+  it("refuses a word, and refuses it as an ArgumentError so the caller can catch it", () => {
+    try {
+      parse(["--repeat", "twice"]).number("repeat", 3);
+      throw new Error("it accepted a word as a number");
+    } catch (cause) {
+      expect(cause).toBeInstanceOf(ArgumentError);
+    }
+  });
+
+  it("refuses Infinity — a ceiling that does not bound is the defect, not a large one", () => {
+    /* `Number("Infinity")` is finite-shaped to `isNaN` and passes `!!x`, so
+       this arm is what distinguishes `Number.isFinite` from the two checks a
+       reader reaches for first. `total > Infinity` is false for every total. */
+    expect(() => parse(["--ceiling", "Infinity"]).number("ceiling", 20))
+      .toThrow(/--ceiling must be a number/);
+    expect(() => parse(["--ceiling", "-Infinity"]).number("ceiling", 20))
+      .toThrow(/--ceiling must be a number/);
+  });
+
+  it("accepts zero — the negative control, and the one a truthiness check fails", () => {
+    expect(parse(["--repeat", "0"]).number("repeat", 3)).toBe(0);
+  });
+
+  it("accepts a negative and a decimal", () => {
+    expect(parse(["--floor", "-1"]).number("floor", 0)).toBe(-1);
+    expect(parse(["--floor", "0.5"]).number("floor", 0)).toBe(0.5);
+  });
+
+  it("returns the caller's fallback when the flag was not passed, unexamined", () => {
+    /* The fallback is the script's own constant, never operator input. A guard
+       that judged it could refuse to start over a line nobody typed. */
+    expect(parse([]).number("ceiling", 20)).toBe(20);
+    expect(parse([]).number("ceiling", Number.NaN)).toBeNaN();
+    /* And a NON-numeric fallback passes through with its type — the shape
+       `born-worn-court.mts` really uses: `subject.floor` is null for a class
+       nobody has measured, and the script says so in its own words one line
+       later. Preflight found this on the first push; without it the call site
+       would have had to write `?? NaN` and put the defect back. */
+    expect(parse([]).number("floor", null)).toBeNull();
+  });
+
+  it("reads the `=` spelling too, so the two forms cannot disagree", () => {
+    expect(parse(["--ceiling=12.5"]).number("ceiling", 20)).toBe(12.5);
+    expect(() => parse(["--ceiling=1O"]).number("ceiling", 20)).toThrow(/must be a number/);
+  });
+
+  it("still refuses an EMPTY value at the parse, before content is ever judged", () => {
+    /* `--ceiling` at the end of the line is the #288 shape and belongs to the
+       parse; without this arm a reader could "fix" it by having `number()`
+       return the fallback for a missing value, which is how `--ceiling`
+       becomes *the default ceiling* silently. */
+    expect(() => parse(["--ceiling"])).toThrow(/--ceiling needs a value/);
+  });
+});
+
 describe("and it still accepts the lines a shift actually types", () => {
   /* THE POSITIVE CONTROL. A parser that refused everything would pass every arm
      above; these are the commands the standing orders prescribe. */
