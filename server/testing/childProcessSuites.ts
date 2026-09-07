@@ -68,6 +68,16 @@ const CHILD_PROCESS_CALLS = [
  * as a real remainder: a spawn call on the SAME line as, and after, a
  * quote-bearing regex literal — which no arm here would see.
  *
+ * ⚠ **AND A SECOND REMAINDER, STATED BECAUSE THE SECOND REVIEW FOUND THE
+ * ACCOUNTING ABOVE INCOMPLETE RATHER THAN WRONG: a template literal is
+ * stripped WHOLE, interpolations included.** A spawn call inside `${…}` —
+ * `` `x ${execFileSync("git")} y` `` — vanishes from the stripped code and
+ * takes its file out of the population, which is again the silent direction.
+ * Grepped at the tree: **no live instance today**, so this is a limit rather
+ * than a defect. It is written down because the whole discipline of this
+ * module is that a floor is DECLARED, not discovered — an unstated limit is
+ * the fidelity law's silent shortcut, and stating it is the cheap half.
+ *
  * ⚠ **SAID PRECISELY, BECAUSE THE SABOTAGE RUN SHOWED THE LOOSER SENTENCE WAS
  * FLATTERING ITSELF: those two files are held out by the IMPORT half, not by
  * this stripper.** Neither imports `node:child_process` at all, so turning

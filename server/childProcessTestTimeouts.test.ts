@@ -173,8 +173,14 @@ describe("the floor itself (#548)", () => {
        `{ timeout: 30_000 }` would have written the class's figure without the
        constant and walked past a drift arm guarding one of the two spellings
        vitest accepts. */
+    /* ⚠ AND THE POSITIONAL SPELLING, PER THE SECOND REVIEW — vitest accepts
+       THREE, and the third is this tree's dominant per-arm style:
+       `it("…", () => {…}, 30_000)`. Closing only the two key forms would have
+       left the same evasion the previous round shut for `{ timeout: }`, one
+       step along. */
+    const figure = `(?:${CHILD_PROCESS_TEST_TIMEOUT_MS}|30_000)`;
     const literal = new RegExp(
-      `\\b(?:testTimeout|timeout):\\s*(?:${CHILD_PROCESS_TEST_TIMEOUT_MS}|30_000)\\b`,
+      `\\b(?:testTimeout|timeout):\\s*${figure}\\b` + `|\\}\\s*,\\s*${figure}\\s*\\)`,
     );
     /* ⚠ AND IT READS STRIPPED CODE, NOT RAW BYTES — this arm indicted THIS FILE
        the moment finding 2's own explanatory comment mentioned the shape it was
