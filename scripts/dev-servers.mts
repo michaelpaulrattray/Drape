@@ -35,20 +35,29 @@ function powershell(command: string): string {
   });
 }
 
-/** Every node process, as rows this module can reason about. */
+/**
+ * EVERY process on the machine, as rows this module can reason about.
+ *
+ * ⚠ **Not `-Filter "Name='node.exe'"`, and that is the #658 fix.** `pnpm dev`
+ * starts its watcher through a `cmd.exe`, so a node-only table loses the link
+ * between the two halves of one server and reports each as a tree of its own.
+ * The ancestry walk needs the shells, so the filter comes off; a row whose
+ * command line is unreadable (another user's, a system process) still carries
+ * its pid and parent, which is all the walk asks of it.
+ */
 function processTable(): ProcessRow[] {
   const raw = powershell(
-    "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" "
-    + "| Select-Object ProcessId,ParentProcessId,CreationDate,CommandLine | ConvertTo-Json -Depth 3",
+    "Get-CimInstance Win32_Process "
+    + "| Select-Object ProcessId,ParentProcessId,Name,CreationDate,CommandLine | ConvertTo-Json -Depth 3",
   ).trim();
   if (!raw) return [];
   const parsed = JSON.parse(raw);
   const rows = Array.isArray(parsed) ? parsed : [parsed];
   return rows
-    .filter((row: Record<string, unknown>) => typeof row.CommandLine === "string")
     .map((row: Record<string, unknown>) => ({
       pid: Number(row.ProcessId),
       parentPid: Number(row.ParentProcessId),
+      name: typeof row.Name === "string" ? row.Name : "",
       /* PowerShell's JSON renders a CIM date as `/Date(1787…)/`; anything else
          is passed to Date as written rather than guessed at. */
       startedAt: new Date(
@@ -56,7 +65,9 @@ function processTable(): ProcessRow[] {
           ? Number(/\/Date\((\d+)/.exec(row.CreationDate)![1])
           : String(row.CreationDate),
       ),
-      commandLine: String(row.CommandLine),
+      /* Empty, never the string "null": a process whose command line this
+         account cannot read is a hop in the walk, not a candidate watcher. */
+      commandLine: typeof row.CommandLine === "string" ? row.CommandLine : "",
     }));
 }
 
