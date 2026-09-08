@@ -360,9 +360,48 @@ describe("brief 11 §8 — what the PR was told not to do", () => {
     }
   });
 
-  it("ChangeRequestConstants' Title Case was not lowercased in this PR", () => {
+  /*
+    ⚠ THIS ARM WAS THE OTHER WAY ROUND UNTIL #428 AND THE INVERSION IS THE
+    POINT. It read *"ChangeRequestConstants' Title Case was not lowercased in
+    this PR"* and asserted `toContain("Approve Refund")` — pinning the Title
+    Case as CURRENT BEHAVIOUR so that a modals PR could not quietly repaint a
+    list surface brief 06 had already shipped. That was right, and the boundary
+    it defended held: the copy change arrived as its own card with both
+    consumers read first.
+
+    Now that the constants ARE sentence case, an arm asserting they are not
+    would defend the defect. So it asserts the rule instead — and it DERIVES
+    the population out of the module rather than transcribing the strings,
+    because a transcription of thirty-seven labels is a second copy of them
+    (working law 4) and would go green on a typo in either list.
+
+    The proper nouns are the only enumerated part, and they are enumerated
+    because the rule cannot know them: `Slack` and `Stripe` are companies and
+    `IP` is an initialism. Sentence case means the first word is capitalised
+    and the rest are not — it does not mean lowercase.
+  */
+  it("every label in ChangeRequestConstants is sentence case", () => {
     const constants = read(path.resolve(ADMIN, "ChangeRequestConstants.tsx"));
-    expect(constants, "nineteen strings feeding a shipped surface is a copy change, not a modal change")
-      .toContain("Approve Refund");
+    /* Every user-visible string in the module: the five label/title keys plus
+       the two button labels. Derived by key name, so a label added tomorrow is
+       in the population without anyone remembering to add it here. */
+    const labels = [...constants.matchAll(
+      /\b(?:label|approveLabel|denyLabel|modalApproveTitle|modalDenyTitle):\s*"([^"]+)"/g,
+    )].map((m) => m[1]);
+
+    /* THE POSITIVE CONTROL. A regex that matched nothing would pass this whole
+       arm silently, which is how an absence-only expectation goes green on an
+       empty population. */
+    expect(labels.length, "the label reader found nothing — the shape moved").toBeGreaterThan(30);
+
+    const PROPER_NOUNS = new Set(["Slack", "Stripe", "IP"]);
+    const offenders = labels.filter((label) =>
+      label
+        .split(" ")
+        .slice(1)
+        .some((word) => /^[A-Z]/.test(word) && !PROPER_NOUNS.has(word)),
+    );
+    expect(offenders, `Title Case labels: ${offenders.join(", ")} — brief 05 asks for sentence case`)
+      .toEqual([]);
   });
 });

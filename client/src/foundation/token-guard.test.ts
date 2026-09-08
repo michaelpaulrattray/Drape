@@ -122,17 +122,10 @@ const GUARDED_PATHS = [
     left the change request modal outside every guard until the founder opened
     it. The admin rows stay: that directory still holds a file no brief owns.
   */
-  "features/admin/UserTable.tsx",
-  "features/admin/UserFilters.tsx",
-  "features/admin/AuditLogTable.tsx",
-  "features/admin/AuditLogsFilters.tsx",
-  "features/admin/BlockedIPsTab.tsx",
-  "features/admin/ChangeRequestList.tsx",
   "pages/AdminAuditLogs.tsx",
   "pages/AdminBugReports.tsx",
   "pages/AdminChangeRequests.tsx",
   "pages/AdminInviteCodes.tsx",
-  "features/admin/UserStatsCards.tsx",
 
   /*
     Brief 07 §11, the founder's own bar: *"Zero greens, zero blues, zero
@@ -151,16 +144,6 @@ const GUARDED_PATHS = [
     dark. A guard that covered the components and not their colour source would
     have missed the actual defect.
   */
-  "features/admin/overview/AlertsFeed.tsx",
-  "features/admin/overview/BannerManagement.tsx",
-  "features/admin/overview/CreditEconomyCard.tsx",
-  "features/admin/overview/GovernanceCard.tsx",
-  "features/admin/overview/HealthMetrics.tsx",
-  "features/admin/overview/NeedsHuman.tsx",
-  "features/admin/overview/SystemStatusCard.tsx",
-  "features/admin/overview/UserGrowthCard.tsx",
-  "features/admin/overview/chartTokens.ts",
-  "features/admin/overview/overview.css",
   "pages/AdminOverview.tsx",
 
   /*
@@ -179,7 +162,6 @@ const GUARDED_PATHS = [
     briefing. Guarding the directory and leaving the page that mounts it is
     how a surface reads as clean while its worst-case screens do not.
   */
-  "features/admin/components/crew",
   "pages/AdminCrew.tsx",
 
   /*
@@ -232,10 +214,32 @@ const GUARDED_PATHS = [
     plus seven Tailwind tints deleted with `UserBadges`'s two orphaned badges.
   */
   "features/moderator",
-  "features/admin/UserActionModals.tsx",
-  "features/admin/AuditActionModals.tsx",
-  "features/admin/ReviewModal.tsx",
-  "features/admin/UserBadges.tsx",
+
+  /*
+    #428, the declared remainder of #421 — and the LAST admin file steps inside.
+
+    ⚠ **THE DIRECTORY NOW, AND IT COLLAPSES TWENTY-TWO FILE ROWS.** Briefs 06,
+    07, 08, 09 and #421 each enrolled a slice of `features/admin/` by name, and
+    every one of those narrownesses was right on its day: a directory row would
+    have meant restyling files the brief in hand did not describe. The blocks
+    above are kept because they are that history.
+
+    What has changed is that there is no longer a remainder to route around.
+    `ChangeRequestAttachments.tsx` was the last file under here holding a hex
+    literal — a detail-row component that fell between the lists brief 06 owned,
+    the modals #421 owned and the moderator directory brief 09 owned. Sixteen
+    literals, and **nothing was red**, because an unenrolled file is not failing
+    a guard, it is outside one. That is precisely the shape that let the founder
+    find the change request modal before a guard did.
+
+    Same move as `features/moderator` one block up, same effect: **nothing
+    stopped being guarded** — every row removed sits inside this one. And the
+    three files that were never on any list (`ChangeRequestConstants.tsx`,
+    `adminConstants.ts`, `index.ts`, all measured at zero) are now watched
+    without anybody having remembered them, which is the whole argument for a
+    directory over a list.
+  */
+  "features/admin",
   "pages/AdminUserManagement.tsx",
 ];
 
@@ -270,6 +274,28 @@ const HEX_CARVE_OUTS: Record<string, string> = {
   */
   "features/staff/section05-guard.test.ts":
     "brief 05's own positive control — it bans `bg-[#EBEBEB]` and so must contain it",
+  /*
+    THE THIRD OF THE SAME SHAPE, arriving with the `features/admin` DIRECTORY
+    row (#428). Brief 07's guard asserts the alerts row pushes its time with a
+    spacer rather than `ml-auto`, and its POSITIVE CONTROL quotes the span that
+    used to be there verbatim — `<span className="text-[10px] text-[#bbb]
+    ml-auto flex-shrink-0">`. One string, one arbitrary-value colour, and it is
+    the only offender the whole directory row turned up.
+
+    ⚠ **The alternative was to edit the specimen, and that is why it was not
+    taken.** The control's worth is that it quotes the removed markup exactly;
+    trimming a colour out of it to satisfy a neighbouring guard would weaken a
+    working control to make a second one green — the same trade the two rows
+    above refuse, in the same words.
+
+    Narrow for the same stated reason: a TEST file that renders nothing. A
+    carve-out for a component would be a different decision, and the rest of
+    `features/admin` is guarded by directory, so a new component under it is
+    measured the moment it exists. The honesty arm below deletes this row for
+    us the day that specimen goes.
+  */
+  "features/admin/overview/section07-guard.test.ts":
+    "brief 07's own positive control — it quotes the `text-[#bbb]` span it proves was removed",
   /*
     ⚠ **THE TRAP THIS FILE'S OWN DOCBLOCK PREDICTS, MET IN THE WILD (#398).**
     Enrolling `features/admin/components/crew` caught SIX offenders and every
