@@ -313,7 +313,11 @@ export const moderatorRouter = router({
 
         const { getCreditTransactionByRef } = await import("../db");
         const ledgerRow = await getCreditTransactionByRef(input.targetUserId, input.stripeSessionId);
-        if (!ledgerRow || ledgerRow.amount <= 0) {
+        // `type === "topup"` is the server-side twin of the client button's own
+        // gate: this door refunds top-up purchases, and a positive row of any
+        // other kind that happens to carry a session id must not walk through
+        // it (PR #704 review, finding 2).
+        if (!ledgerRow || ledgerRow.type !== "topup" || ledgerRow.amount <= 0) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "No credit purchase matches that Stripe session for this user — check the session ID against the customer's credit history" });
         }
         derivedOriginalCredits = ledgerRow.amount;

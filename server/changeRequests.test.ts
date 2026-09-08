@@ -480,9 +480,23 @@ describe("Change Request - Types & Validation (DRIVEN and DERIVED)", () => {
       message: expect.stringContaining("No credit purchase matches"),
     });
 
-    // Ledger row present but Stripe cannot say what was charged → refused.
+    // A positive row of another KIND carrying that session id refuses the
+    // same way — this door refunds TOP-UPS, and the type clause is the
+    // server-side twin of the client button's own `tx.type === "topup"` gate
+    // (PR #704 review, finding 2).
     const { getCreditTransactionByRef } = await import("./db");
-    vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({ amount: 5000 } as never);
+    vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({ amount: 5000, type: "subscription" } as never);
+    await expect(
+      modCaller().createChangeRequest(
+        validCreateInput({ type: "stripe_refund", stripeSessionId: "cs_x", refundType: "full" }) as never,
+      ),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringContaining("No credit purchase matches"),
+    });
+
+    // Ledger row present but Stripe cannot say what was charged → refused.
+    vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({ amount: 5000, type: "topup" } as never);
     stripeService.getSessionChargedAmountCents.mockResolvedValueOnce(null);
     await expect(
       modCaller().createChangeRequest(
@@ -500,7 +514,7 @@ describe("Change Request - Types & Validation (DRIVEN and DERIVED)", () => {
     // FULL refund: the preview stored for admin review is the ledger's
     // credits and the session's charged amount — not the 7 cents the old
     // client field would have put there.
-    vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({ amount: 5000 } as never);
+    vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({ amount: 5000, type: "topup" } as never);
     vi.mocked(createChangeRequest).mockClear();
     await modCaller().createChangeRequest(
       validCreateInput({
@@ -518,7 +532,7 @@ describe("Change Request - Types & Validation (DRIVEN and DERIVED)", () => {
     // PROPORTIONAL: the credits are stored, the amount deliberately is not —
     // it depends on the balance at execution and is read from Stripe then.
     // (The full arm above is the positive control for this absence.)
-    vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({ amount: 5000 } as never);
+    vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({ amount: 5000, type: "topup" } as never);
     vi.mocked(createChangeRequest).mockClear();
     await modCaller().createChangeRequest(
       validCreateInput({ type: "stripe_refund", stripeSessionId: "cs_x", refundType: "proportional" }) as never,

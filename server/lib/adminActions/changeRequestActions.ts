@@ -284,6 +284,15 @@ export async function executeChangeRequestAction(
         creditsToDeduct = calc.creditsToDeduct;
       }
 
+      // ⚠ A zero here is NOT "refund nothing" one layer down: issueStripeRefund
+      // omits a falsy amount and Stripe then refunds the ENTIRE charge — a
+      // spent-out balance would get all its money back and keep what it spent
+      // (PR #704 review, finding 1). Nothing to claw back means nothing to
+      // refund, said out loud, before any money moves.
+      if (!Number.isFinite(refundAmountCents) || refundAmountCents <= 0) {
+        throw new Error(`Nothing to refund proportionally — the customer's balance is ${currentBalance} and the calculated refund is ${refundAmountCents} cents. Use a full refund if this is goodwill.`);
+      }
+
       const refundResult = await issueStripeRefund(stripeSessionId, refundAmountCents, `Change request #${changeRequestId}`);
       if (!refundResult.success) {
         throw new Error(`Stripe refund failed: ${refundResult.error}`);

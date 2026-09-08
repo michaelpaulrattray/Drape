@@ -323,6 +323,19 @@ describe("cr_stripeRefund", () => {
     expect(stripe.issueStripeRefund.mock.calls[0][1]).toBe(1000);
   });
 
+  it("PR #704 finding 1 — a proportional refund with nothing to claw back REFUSES; zero must never become 'refund everything'", async () => {
+    // A spent-out balance yields refundAmountCents 0. Passing that 0 onward
+    // would have it OMITTED at the Stripe layer, and an omitted amount means
+    // FULL refund — the customer gets the whole charge back and keeps every
+    // credit they spent. The executor must refuse before money moves.
+    db.getUserCredits.mockResolvedValue({ balance: 0 });
+    stripe.calculateProportionalRefund.mockReturnValue({ refundAmountCents: 0, creditsToDeduct: 0 });
+    await expect(runCr("cr_stripeRefund", PURCHASE)).rejects.toThrow("Nothing to refund proportionally");
+    expect(stripe.issueStripeRefund).not.toHaveBeenCalled();
+    expect(db.adjustUserCredits).not.toHaveBeenCalled();
+    expect(db.updateChangeRequestStatus).not.toHaveBeenCalled();
+  });
+
   it("refuses, and moves NOTHING, when the charge cannot be read from Stripe", async () => {
     stripe.getSessionChargedAmountCents.mockResolvedValue(null);
     await expect(runCr("cr_stripeRefund", PURCHASE)).rejects.toThrow(

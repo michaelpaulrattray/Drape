@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateProportionalRefund } from "./stripeService";
+import { calculateProportionalRefund, issueStripeRefund } from "./stripeService";
 
 describe("Stripe Refund", () => {
   describe("calculateProportionalRefund", () => {
@@ -86,6 +86,24 @@ describe("Stripe Refund", () => {
       expect(result.refundAmountCents).toBe(0);
       expect(result.creditsToDeduct).toBe(0);
       expect(result.creditsUsed).toBe(0);
+    });
+  });
+
+  describe("issueStripeRefund — the explicit-amount guard (PR #704, finding 1)", () => {
+    /*
+     * Driven against the REAL function with no doubles: the guard sits before
+     * any Stripe call, so a refused amount touches no network. Without it, a
+     * caller-computed 0 fell into the falsy "omit the amount" branch and an
+     * omitted amount means FULL refund to Stripe — zero silently upgraded to
+     * everything. Omitting the parameter on purpose still means full, and that
+     * road is exercised through the executor suite, not here.
+     */
+    it("refuses an EXPLICIT non-positive or non-finite amount instead of upgrading it to a full refund", async () => {
+      for (const amount of [0, -5, NaN]) {
+        const result = await issueStripeRefund("cs_guard_test", amount);
+        expect(result.success).toBe(false);
+        expect(result.error).toContain("positive");
+      }
     });
   });
 });

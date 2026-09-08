@@ -592,6 +592,13 @@ export async function issueStripeRefund(
   amountCents?: number,
   reason?: string
 ): Promise<{ success: boolean; refundId?: string; status?: string; error?: string }> {
+  // An EXPLICIT non-positive amount is refused, never silently upgraded: the
+  // falsy-check below turns 0 into "omit the amount", and an omitted amount
+  // means FULL refund to Stripe. A caller that computed zero meant zero
+  // (PR #704 review, finding 1). Omitting the parameter still means full.
+  if (amountCents !== undefined && !(Number.isFinite(amountCents) && amountCents > 0)) {
+    return { success: false, error: `Refund amount must be a positive number of cents (got ${amountCents}) — omit it entirely for a full refund` };
+  }
   try {
     const paymentIntentId = await getPaymentIntentFromSession(sessionId);
     if (!paymentIntentId) {
