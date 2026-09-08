@@ -136,14 +136,8 @@ const DECLARING_FILES = [
  * Taking the exemptions as an ARGUMENT is what lets the positive control drive
  * this same walk with none of them and prove it can see anything at all.
  */
-function literalSpellings(exempt: readonly string[]): string[] {
-  /* `evidenceComposerSchema.ts` carries the column's DDL as one string, which
-     is a copy of the SCHEMA rather than of the name, and is checked against the
-     live column by its own contract suite. Named so the exemption is a decision
-     on the record rather than a regex nobody can read. */
-  const skip = new Set([...exempt, "server/casting/evidence/evidenceComposerSchema.ts"]);
-  const offenders: string[] = [];
-
+function sourceFilesUnderRoots(): string[] {
+  const files: string[] = [];
   const walk = (dir: string) => {
     for (const entry of readdirSync(resolve(REPO_ROOT, dir), { withFileTypes: true })) {
       const rel = `${dir}/${entry.name}`;
@@ -152,18 +146,66 @@ function literalSpellings(exempt: readonly string[]): string[] {
         continue;
       }
       if (!entry.name.endsWith(".ts") || entry.name.endsWith(".test.ts")) continue;
-      if (skip.has(rel)) continue;
-      const source = readFileSync(resolve(REPO_ROOT, rel), "utf8");
-      if (source.includes(`"${EVIDENCE_CANDIDATE_GENERATION_TYPE}"`)
-        || source.includes(`'${EVIDENCE_CANDIDATE_GENERATION_TYPE}'`)) {
-        offenders.push(rel);
-      }
+      files.push(rel);
     }
   };
   walk("server");
   walk("shared");
   walk("drizzle");
-  return offenders;
+  return files;
+}
+
+/**
+ * Every non-test module that WRITES the family — derived, not enumerated.
+ *
+ * ⚠ THIS LIST WAS TWO HARDCODED PATHS AND THE PR #690 REVIEW CAUGHT IT AS THE
+ * SAME SHAPE THE COMMIT ABOVE HAD JUST FIXED. The "exclusion cannot grow"
+ * claim rests on EVERY writer setting `operationId`; a third writer added later
+ * would use the constant (so the literal sweep is blind to it by design) and an
+ * enumerated arm would never walk to it. Its rows would then be dropped from
+ * the reconciliation with every arm green.
+ */
+function evidenceWriters(): Array<{ rel: string; source: string }> {
+  return sourceFilesUnderRoots()
+    .map((rel) => ({ rel, source: readFileSync(resolve(REPO_ROOT, rel), "utf8") }))
+    .filter(({ source }) => /type:\s*EVIDENCE_CANDIDATE_GENERATION_TYPE/.test(source));
+}
+
+/**
+ * `block` with every balanced `{...}` removed, so a property found in it is one
+ * of the object's OWN.
+ *
+ * Raised as a nit by the review: `enclosingObjectStart` finds the right values
+ * literal, but an `operationId:` inside a NESTED object before `type:` would
+ * have satisfied the check while the insert column itself was absent. Contrived
+ * against today's two flat writers, and worth closing because the arm's whole
+ * claim is about window errors.
+ */
+function withoutNestedObjects(block: string): string {
+  let out = "";
+  let depth = 0;
+  for (const ch of block) {
+    if (ch === "{") depth += 1;
+    else if (ch === "}") depth = Math.max(0, depth - 1);
+    else if (depth === 0) out += ch;
+  }
+  return out;
+}
+
+function literalSpellings(exempt: readonly string[]): string[] {
+  /* `evidenceComposerSchema.ts` carries the column's DDL as one string, which
+     is a copy of the SCHEMA rather than of the name, and is checked against the
+     live column by its own contract suite. Named so the exemption is a decision
+     on the record rather than a regex nobody can read. */
+  const skip = new Set([...exempt, "server/casting/evidence/evidenceComposerSchema.ts"]);
+
+  return sourceFilesUnderRoots()
+    .filter((rel) => !skip.has(rel))
+    .filter((rel) => {
+      const source = readFileSync(resolve(REPO_ROOT, rel), "utf8");
+      return source.includes(`"${EVIDENCE_CANDIDATE_GENERATION_TYPE}"`)
+        || source.includes(`'${EVIDENCE_CANDIDATE_GENERATION_TYPE}'`);
+    });
 }
 
 // ── Tests ──
@@ -701,15 +743,17 @@ describe("the founder's account: what the residual is made of", () => {
    * setting `operationId` would reopen the exemption with nothing going red,
    * which is the shape this repair's whole narrowness rests on.
    */
-  it("both live writers of the evidence type set operationId, so the exclusion cannot grow", () => {
-    const writers = [
-      "server/db/inkAddCandidates.ts",
+  it("every writer of the evidence type sets operationId, so the exclusion cannot grow", () => {
+    const writers = evidenceWriters();
+
+    /* The positive control, on the same walk: a blinded population would make
+       the loop below vacuous and pass. These two are the writers today. */
+    expect(writers.map((w) => w.rel).sort()).toEqual([
       "server/casting/evidence/evidenceFork.ts",
-    ];
+      "server/db/inkAddCandidates.ts",
+    ]);
 
-    for (const rel of writers) {
-      const source = readFileSync(resolve(REPO_ROOT, rel), "utf8");
-
+    for (const { rel, source } of writers) {
       // It names the family through the shared constant, never a re-typed literal.
       expect(source, rel).not.toContain('"evidenceCandidate"');
 
@@ -720,14 +764,15 @@ describe("the founder's account: what the residual is made of", () => {
          The window is bounded by the nearest enclosing `{` walked back with a
          brace counter, rather than by a property name that happens to come
          first — anchoring on `userId:` assumed an ordering neither writer
-         promises, and a slice that ran past an object boundary would have
-         found the PREVIOUS insert's `operationId:` and passed. (Raised as a
-         robustness note by the PR #690 review.) */
+         promises. Nested objects are then stripped, so a metadata sub-object's
+         own `operationId:` cannot stand in for the insert column. */
       for (const use of uses) {
         const start = enclosingObjectStart(source, use.index);
         expect(start, `${rel}: an object literal encloses the type`).toBeGreaterThan(-1);
-        const block = source.slice(start, use.index);
-        expect(block, `${rel}: operationId in the same values object as the type`)
+        /* `start + 1` skips the enclosing brace itself — including it would
+           make the whole body read as nested and strip everything. */
+        const own = withoutNestedObjects(source.slice(start + 1, use.index));
+        expect(own, `${rel}: operationId in the same values object as the type`)
           .toContain("operationId:");
       }
     }

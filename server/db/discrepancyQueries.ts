@@ -211,7 +211,12 @@ export interface FlaggedUserDiscrepancy {
   completedCost: number;
   pendingCost: number;
   failedCost: number;
-  /** Cost recorded by `generations` rows that belong to no operation. */
+  /**
+   * Cost recorded by `generations` rows that belong to no operation — EXCEPT
+   * the parked evidence family, whose operations already recorded the charge
+   * (#638). `UNLINKED_ROW_SQL` is the predicate; this sentence used to be the
+   * whole rule and is now half of it.
+   */
   unlinkedCost: number;
   /** Cost recorded by operations (their own charge, or their rows where they recorded none). */
   operationCost: number;
@@ -468,7 +473,8 @@ export async function getUsersWithDiscrepancies(
     .from(creditTransactions)
     .groupBy(creditTransactions.userId);
 
-  // Step 2: Aggregate `generations` rows per user by status, and the cost of the rows no operation owns
+  // Step 2: Aggregate `generations` rows per user by status, and the cost of
+  // the rows no operation owns — see `UNLINKED_ROW_SQL` for what that excludes.
   const genAgg = await db
     .select({
       userId: generations.userId,
