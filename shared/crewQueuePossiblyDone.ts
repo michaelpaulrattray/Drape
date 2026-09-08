@@ -20,7 +20,7 @@
  * This is the one line that separates it from an exclusion, and his card says
  * it in as many words: *"No card closes from this instrument; closing stays a
  * shift's act with a receipt, by hand."* A flagged card is still OFFERED and is
- * still inside `openCount` — the panel reads **`Bugs (14, 2 possibly fixed)`**,
+ * still inside `openCount` — the panel reads **`Bugs (14 on offer, 2 possibly fixed)`**,
  * where the 2 are two of the 14 rather than two taken out of them. The shift's
  * standing order (re-read a background card at the code before taking it) is
  * the control; this only says which ones to re-read FIRST.
