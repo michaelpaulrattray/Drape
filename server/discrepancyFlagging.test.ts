@@ -19,7 +19,7 @@
  * reported as `unrefundedFailureCost` rather than flagged.
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
@@ -95,6 +95,75 @@ function computeDiscrepancies(
     threshold,
   );
   return { users: attachUserInfoToFlagged(flagged, userInfo), scannedCount };
+}
+
+
+/**
+ * The index of the `{` that opens the object literal containing `index`.
+ *
+ * Walks back with a depth counter, so a nested object between the property and
+ * the opening brace cannot make it stop early, and a preceding sibling object
+ * cannot make it stop late. Returns -1 when no enclosing brace is found.
+ */
+function enclosingObjectStart(source: string, index: number): number {
+  let depth = 0;
+  for (let i = index - 1; i >= 0; i -= 1) {
+    const ch = source[i];
+    if (ch === "}") depth += 1;
+    else if (ch === "{") {
+      if (depth === 0) return i;
+      depth -= 1;
+    }
+  }
+  return -1;
+}
+
+
+/**
+ * The two files allowed to spell the family's name, because both DECLARE it
+ * rather than use it: the drizzle column (the enum the constant must be a
+ * member of) and the contract module (the constant itself).
+ */
+const DECLARING_FILES = [
+  "drizzle/schema.ts",
+  "server/casting/evidence/evidenceCandidateContract.ts",
+];
+
+/**
+ * Every non-test source file under `server/`, `shared/` and `drizzle/` that
+ * spells `evidenceCandidate` as a string literal, minus the exempt list.
+ *
+ * Taking the exemptions as an ARGUMENT is what lets the positive control drive
+ * this same walk with none of them and prove it can see anything at all.
+ */
+function literalSpellings(exempt: readonly string[]): string[] {
+  /* `evidenceComposerSchema.ts` carries the column's DDL as one string, which
+     is a copy of the SCHEMA rather than of the name, and is checked against the
+     live column by its own contract suite. Named so the exemption is a decision
+     on the record rather than a regex nobody can read. */
+  const skip = new Set([...exempt, "server/casting/evidence/evidenceComposerSchema.ts"]);
+  const offenders: string[] = [];
+
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(resolve(REPO_ROOT, dir), { withFileTypes: true })) {
+      const rel = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (entry.name !== "node_modules") walk(rel);
+        continue;
+      }
+      if (!entry.name.endsWith(".ts") || entry.name.endsWith(".test.ts")) continue;
+      if (skip.has(rel)) continue;
+      const source = readFileSync(resolve(REPO_ROOT, rel), "utf8");
+      if (source.includes(`"${EVIDENCE_CANDIDATE_GENERATION_TYPE}"`)
+        || source.includes(`'${EVIDENCE_CANDIDATE_GENERATION_TYPE}'`)) {
+        offenders.push(rel);
+      }
+    }
+  };
+  walk("server");
+  walk("shared");
+  walk("drizzle");
+  return offenders;
 }
 
 // ── Tests ──
@@ -581,6 +650,47 @@ describe("the founder's account: what the residual is made of", () => {
   });
 
   /*
+   * ⚠ THE CLASS, NOT THE FOUR INSTANCES — and it took a review to find that the
+   * sweep had stopped at the sites the card happened to name (PR #690).
+   *
+   * The card's class was "the family's name re-typed as a literal", and after
+   * the four named sites were collapsed, `server/db/dailyQuota.ts` still held
+   * three more — two of them inside RAW SQL, which is the one spelling
+   * TypeScript cannot hold to the enum. A rename would have updated the
+   * constant and the column and left the quota reader matching nothing, so
+   * evidence candidates would stop counting toward the daily limit with
+   * everything green.
+   *
+   * So the guard is derived over the tree rather than written per file: the
+   * next instance of this class reddens without anybody remembering to sweep.
+   *
+   * Two files are allowed to spell it, and both DECLARE rather than use it:
+   * the drizzle column (the enum this constant must be a member of — the arm
+   * above reads it) and the contract module (the constant itself).
+   */
+  it("no server module spells the family's name as a literal — only its two declaring files", () => {
+    expect(literalSpellings(DECLARING_FILES)).toEqual([]);
+  });
+
+  /*
+   * ⚠ THE POSITIVE CONTROL, AND THE FIRST ONE WRITTEN HERE WAS NOT ONE.
+   *
+   * It read the two declaring files with `readFileSync` and asserted they hold
+   * the literal — which never touches the WALK. Blinding the walk so it matched
+   * no file at all left both arms green: the guard would have reported "no
+   * offenders" over a population of nothing, which is the exact shape it exists
+   * to catch one level down.
+   *
+   * So the control drives the SAME walk with the exemptions removed, where the
+   * two declaring files must appear. One mechanism, exercised both ways.
+   */
+  it("that sweep is actually looking — with nothing exempt it finds the declaring files", () => {
+    const found = literalSpellings([]);
+
+    for (const rel of DECLARING_FILES) expect(found).toContain(rel);
+  });
+
+  /*
    * ⚠ THE POPULATION CANNOT GROW, AND THAT IS THE WHOLE CASE FOR AN EXCLUSION
    * KEYED ON A `type` VALUE BEING NARROW RATHER THAN AN OPEN EXEMPTION.
    *
@@ -606,12 +716,19 @@ describe("the founder's account: what the residual is made of", () => {
       const uses = [...source.matchAll(/type:\s*EVIDENCE_CANDIDATE_GENERATION_TYPE/g)];
       expect(uses.length, `${rel} writes the family`).toBeGreaterThan(0);
 
-      // Every insert of it carries an operationId in the same values object.
+      /* Every insert of it carries an operationId in the SAME values object.
+         The window is bounded by the nearest enclosing `{` walked back with a
+         brace counter, rather than by a property name that happens to come
+         first — anchoring on `userId:` assumed an ordering neither writer
+         promises, and a slice that ran past an object boundary would have
+         found the PREVIOUS insert's `operationId:` and passed. (Raised as a
+         robustness note by the PR #690 review.) */
       for (const use of uses) {
-        const valuesBlockStart = source.lastIndexOf("userId:", use.index);
-        expect(valuesBlockStart, `${rel}: a values object above the type`).toBeGreaterThan(-1);
-        const block = source.slice(valuesBlockStart, use.index);
-        expect(block, `${rel}: operationId beside the type it writes`).toContain("operationId:");
+        const start = enclosingObjectStart(source, use.index);
+        expect(start, `${rel}: an object literal encloses the type`).toBeGreaterThan(-1);
+        const block = source.slice(start, use.index);
+        expect(block, `${rel}: operationId in the same values object as the type`)
+          .toContain("operationId:");
       }
     }
   });

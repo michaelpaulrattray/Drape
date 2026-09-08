@@ -65,6 +65,7 @@ vi.mock("./auditLog", () => ({
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+import { EVIDENCE_CANDIDATE_GENERATION_TYPE } from "./casting/evidence/evidenceCandidateContract";
 import { computeDiscrepancy, type DiscrepancyInputs } from "./db/discrepancyQueries";
 import { buildSummary } from "./routes/moderatorReconciliation";
 
@@ -133,12 +134,21 @@ function buildGenData(
  * The route reads its rows out of two query helpers and hands the totals to
  * `computeDiscrepancy`; these fixtures hold rows, so something has to fold
  * them into `DiscrepancyInputs`. That fold is bookkeeping — summing a column,
- * counting a status — and it decides NOTHING: no threshold, no direction, no
- * subtraction that the discrepancy depends on. The rule itself (what counts as
- * a record, what a refund does, whether a failure is a discrepancy) is
- * `computeDiscrepancy`, imported above and never restated here. `operationCost`
- * is passed in because in production it comes from a SQL aggregate over
- * `generation_operations`, which a row fixture cannot stand in for.
+ * counting a status. The rule itself (what counts as a record, what a refund
+ * does, whether a failure is a discrepancy) is `computeDiscrepancy`, imported
+ * above and never restated here. `operationCost` is passed in because in
+ * production it comes from a SQL aggregate over `generation_operations`, which
+ * a row fixture cannot stand in for.
+ *
+ * ⚠ THIS DOCBLOCK USED TO SAY THE FOLD "decides NOTHING", AND #638 MADE THAT
+ * FALSE (found by the PR #690 review). It was true while unlinked-ness was
+ * `operationId IS NULL` alone; now WHICH ROWS COUNT AS UNLINKED is part of the
+ * rule, and this fold was holding the old half of it — a third copy of the very
+ * predicate that PR collapsed from two into one, one file over, in its
+ * pre-#638 form. Inert at the time (no fixture held an `evidenceCandidate`
+ * row), which is exactly how a drifted mirror waits: green either way until a
+ * fixture makes it lie. It mirrors `UNLINKED_ROW_SQL` deliberately now, and the
+ * arms at the foot of this file are what hold it there.
  */
 function fold(
   creditData: ReturnType<typeof buildCreditData>,
@@ -171,7 +181,10 @@ function fold(
       pendingCount++;
       pendingCost += gen.pointsCost;
     }
-    if (gen.operationId === null) unlinkedCost += gen.pointsCost;
+    /* The same two conditions `UNLINKED_ROW_SQL` applies, in the same order. */
+    if (gen.operationId === null && gen.type !== EVIDENCE_CANDIDATE_GENERATION_TYPE) {
+      unlinkedCost += gen.pointsCost;
+    }
   }
 
   return {
@@ -576,5 +589,54 @@ describe("Credit Reconciliation Logic", () => {
     expect(windowed).not.toContain("ever made");
     const allTime = buildSummary({ reading, failedCount: 0, pendingCount: 0 });
     expect(allTime).toContain("ever made");
+  });
+});
+
+/**
+ * ⚠ THE FIXTURE THE FOLD WAS SILENTLY WRONG ABOUT (#638, PR #690 review).
+ *
+ * No fixture in this file held an `evidenceCandidate` row, so the fold's
+ * pre-#638 predicate was inert and green. This is that fixture: without it the
+ * repair to `fold` is a change nothing can observe, which is the weaker half of
+ * fixing a drifted mirror.
+ */
+describe("the fold excludes the parked evidence family, as the real predicate does", () => {
+  it("an unlinked evidence row adds nothing to unlinkedCost, and an ordinary one does", () => {
+    const credits = buildCreditData([{ amount: -350, type: "generation" }]);
+
+    const withEvidence = fold(credits, buildGenData([
+      { status: "completed", type: EVIDENCE_CANDIDATE_GENERATION_TYPE, pointsCost: 350 },
+    ]));
+    const withOrdinary = fold(credits, buildGenData([
+      { status: "completed", type: "castingImage", pointsCost: 350 },
+    ]));
+
+    expect(withEvidence.inputs.unlinkedCost).toBe(0);
+    expect(withOrdinary.inputs.unlinkedCost).toBe(350);
+
+    /* And the consequence, in the shape production actually has: the evidence
+       charge is explained by the OPERATION that recorded it, not by the row.
+       Supply that side and the account reconciles exactly — which is the whole
+       argument for excluding the row rather than counting it twice. */
+    const explained = fold(credits, buildGenData([
+      { status: "completed", type: EVIDENCE_CANDIDATE_GENERATION_TYPE, pointsCost: 350 },
+    ]), 350);
+    expect(computeDiscrepancy(explained.inputs).discrepancy).toBe(0);
+
+    /* Counting BOTH — the pre-#638 behaviour — is the double-count itself, and
+       it reads negative by exactly the row's cost. */
+    const doubleCounted = computeDiscrepancy({ ...explained.inputs, unlinkedCost: 350 });
+    expect(doubleCounted.discrepancy).toBe(-350);
+
+    expect(computeDiscrepancy(withOrdinary.inputs).discrepancy).toBe(0);
+  });
+
+  it("a LINKED evidence row is not unlinked either way — the exclusion is not what does that", () => {
+    const credits = buildCreditData([{ amount: -350, type: "generation" }]);
+    const linked = fold(credits, buildGenData([
+      { status: "completed", type: EVIDENCE_CANDIDATE_GENERATION_TYPE, pointsCost: 350, operationId: 7 },
+    ]), 350);
+
+    expect(linked.inputs.unlinkedCost).toBe(0);
   });
 });

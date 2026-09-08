@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9eac5b5c9fe5497c"
+    "sourceFingerprint": "e1799e6f1200cf94"
   },
   "domains": [
     {
@@ -29040,6 +29040,11 @@
     },
     {
       "from": "module:server/db/dailyQuota.ts",
+      "to": "module:server/casting/evidence/evidenceCandidateContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/dailyQuota.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -34096,7 +34101,7 @@
       "severity": "info",
       "kind": "retired-module-has-callers",
       "subject": "module:server/casting/evidence/evidenceCandidateContract.ts",
-      "message": "Marked retire but still imported by 24 module(s). Not removable yet."
+      "message": "Marked retire but still imported by 25 module(s). Not removable yet."
     },
     {
       "id": "finding:live-caller:module:server/casting/evidence/evidenceComposerSchema.ts",
