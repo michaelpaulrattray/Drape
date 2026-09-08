@@ -13,20 +13,44 @@ import {
   Timer,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  CHANGE_REQUEST_TYPES,
+  CHANGE_REQUEST_TYPE_LABELS,
+  type ChangeRequestType,
+} from "@shared/changeRequestLabels";
 
 // ─── Type Config ─────────────────────────────────────────────────────────────
 
-export const TYPE_CONFIG: Record<string, { label: string; icon: typeof Coins; color: string }> = {
-  refund_credits: { label: "Refund credits", icon: Coins, color: "text-amber-600" },
-  add_credits: { label: "Add credits", icon: Coins, color: "text-emerald-600" },
-  flag_account: { label: "Flag account", icon: Flag, color: "text-orange-600" },
-  note_incident: { label: "Note incident", icon: FileText, color: "text-blue-600" },
-  suspend_user: { label: "Suspend user", icon: Ban, color: "text-red-600" },
-  unsuspend_user: { label: "Unsuspend user", icon: UserCheck, color: "text-green-600" },
-  block_ip: { label: "Block IP", icon: Globe, color: "text-red-600" },
-  stripe_refund: { label: "Stripe refund", icon: CreditCard, color: "text-violet-600" },
-  other: { label: "Other", icon: HelpCircle, color: "text-gray-500" },
+/**
+ * What each type LOOKS like. What it is CALLED lives in
+ * `shared/changeRequestLabels.ts` and is imported below (#679) -- the wording
+ * was typed out seven times across the client and the server, and two of the
+ * copies had already drifted.
+ *
+ * This map is keyed on `ChangeRequestType` rather than on `string`, which is
+ * the point: adding a type to the shared list without choosing an icon and a
+ * colour for it is a typecheck failure here, in the file that owns that
+ * decision, rather than a missing glyph somebody notices later.
+ */
+const TYPE_PRESENTATION: Record<ChangeRequestType, { icon: typeof Coins; color: string }> = {
+  refund_credits: { icon: Coins, color: "text-amber-600" },
+  add_credits: { icon: Coins, color: "text-emerald-600" },
+  flag_account: { icon: Flag, color: "text-orange-600" },
+  note_incident: { icon: FileText, color: "text-blue-600" },
+  suspend_user: { icon: Ban, color: "text-red-600" },
+  unsuspend_user: { icon: UserCheck, color: "text-green-600" },
+  block_ip: { icon: Globe, color: "text-red-600" },
+  stripe_refund: { icon: CreditCard, color: "text-violet-600" },
+  other: { icon: HelpCircle, color: "text-gray-500" },
 };
+
+export const TYPE_CONFIG: Record<string, { label: string; icon: typeof Coins; color: string }> =
+  Object.fromEntries(
+    CHANGE_REQUEST_TYPES.map((type) => [
+      type,
+      { label: CHANGE_REQUEST_TYPE_LABELS[type], ...TYPE_PRESENTATION[type] },
+    ]),
+  );
 
 export const STATUS_CONFIG: Record<string, { label: string; className: string; icon: typeof Clock }> = {
   pending: { label: "Pending", className: "bg-amber-50 text-amber-700 border-amber-200", icon: Clock },
@@ -44,7 +68,18 @@ export const PRIORITY_CONFIG: Record<string, { label: string; className: string 
   urgent: { label: "Urgent", className: "bg-red-50 text-red-700 border-red-200" },
 };
 
-export const ALL_TYPES = [
+/**
+ * The admin filter's own ORDER -- money types first, which is a deliberate
+ * choice and is why this is not simply `CHANGE_REQUEST_TYPES`.
+ *
+ * It is typed `ChangeRequestType[]`, so a name that is not a real type is a
+ * typecheck failure, and `changeRequestLabels.test.ts` asserts it holds the
+ * same SET as the shared declaration. Without that pair a tenth type would be
+ * added to the shared map, the wire and the icon table -- all three forced by
+ * the compiler -- and silently never appear in this filter, which is the
+ * one-list-not-visited class this whole change is about, one shape over.
+ */
+export const ALL_TYPES: ChangeRequestType[] = [
   "refund_credits", "add_credits", "stripe_refund", "flag_account", "note_incident",
   "suspend_user", "unsuspend_user", "block_ip", "other",
 ];

@@ -81,16 +81,15 @@ export function formatAction(action: string): string {
 
 // ── Change Request Types ──
 
-export type ChangeRequestType =
-  | "refund_credits"
-  | "add_credits"
-  | "flag_account"
-  | "note_incident"
-  | "suspend_user"
-  | "unsuspend_user"
-  | "block_ip"
-  | "stripe_refund"
-  | "other";
+/**
+ * Re-exported from the one declaration (#679) rather than spelled out again.
+ * This union was a hand-typed copy of the same nine keys; it agreed with the
+ * shared list when it was written, which is exactly what the copies that had
+ * drifted also did.
+ */
+import type { ChangeRequestType } from "@shared/changeRequestLabels";
+
+export type { ChangeRequestType };
 
 export type ChangeRequestPriority = "low" | "normal" | "high" | "urgent";
 

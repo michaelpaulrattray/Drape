@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { moderatorRouter } from "./routes/moderator";
 import { changeRequestsRouter } from "./routes/admin/changeRequests";
 import { CHANGE_REQUEST_ACTION_BY_TYPE } from "./lib/adminActions";
+import { CHANGE_REQUEST_TYPES } from "@shared/changeRequestLabels";
 
 // Mock the slackNotification module
 vi.mock("./slack/slackNotification", () => ({
@@ -251,16 +252,21 @@ vi.mock("./db", () => ({
 // Change Request Types & Validation
 // ============================================================
 describe("Change Request - Types & Validation", () => {
-  it("should support all 8 change request types", () => {
-    const validTypes = [
-      "refund_credits", "add_credits", "flag_account", "note_incident",
-      "suspend_user", "unsuspend_user", "block_ip", "other",
-    ];
-    expect(validTypes).toHaveLength(8);
-    validTypes.forEach(type => {
+  /**
+   * This arm used to hand-type EIGHT types and then assert its own list was
+   * eight long (#679). The product accepts nine; `stripe_refund` was never
+   * added here. It was green throughout, because nothing in it referred to the
+   * product at all -- and a later shift, finding the same drift, added a
+   * corrective arm further down this file rather than removing the wrong one,
+   * so the suite stated both numbers at once.
+   */
+  it("names every type the product accepts, derived from the shared declaration", () => {
+    expect(CHANGE_REQUEST_TYPES).toContain("stripe_refund");
+    expect(CHANGE_REQUEST_TYPES).toHaveLength(9);
+    for (const type of CHANGE_REQUEST_TYPES) {
       expect(typeof type).toBe("string");
       expect(type.length).toBeGreaterThan(0);
-    });
+    }
   });
 
   it("should support all 6 status values including pending_execution", () => {
@@ -647,22 +653,44 @@ describe("Change Request - Moderator Procedures", () => {
       );
     });
 
-    it("should map request types to readable labels", () => {
-      const TYPE_LABELS: Record<string, string> = {
-        refund_credits: "Refund Credits",
-        add_credits: "Add Credits",
-        flag_account: "Flag Account",
-        note_incident: "Note Incident",
-        suspend_user: "Suspend User",
-        unsuspend_user: "Unsuspend User",
-        block_ip: "Block IP",
-        other: "Other",
-      };
+    /**
+     * ## This arm used to declare its own map and then assert about it (#679)
+     *
+     * It held eight pairs in Title Case, checked three of them against the
+     * literals two lines above, and asserted the length was 8. Every one of
+     * those statements was true of the arm's own declaration and NONE of them
+     * touched the product: the route's map had NINE entries, and this one was
+     * missing `stripe_refund`. It was green while the thing it named had
+     * drifted -- a scripted reader agreeing with itself.
+     *
+     * It reads the real declaration now, so it can fail.
+     */
+    it("names every request type from the one shared declaration", async () => {
+      const { CHANGE_REQUEST_TYPE_LABELS, changeRequestTypeLabel } = await import(
+        "@shared/changeRequestLabels"
+      );
 
-      expect(TYPE_LABELS["refund_credits"]).toBe("Refund Credits");
-      expect(TYPE_LABELS["block_ip"]).toBe("Block IP");
-      expect(TYPE_LABELS["other"]).toBe("Other");
-      expect(Object.keys(TYPE_LABELS)).toHaveLength(8);
+      // The population the route can actually be handed: the create
+      // procedure's own enum, derived rather than re-typed here.
+      const declared = Object.keys(CHANGE_REQUEST_TYPE_LABELS);
+      expect(declared).toContain("stripe_refund");
+      expect(declared).toHaveLength(9);
+
+      // Every type has a label that is not just its key echoed back.
+      for (const type of declared) {
+        expect(changeRequestTypeLabel(type)).not.toBe(type);
+        expect(changeRequestTypeLabel(type).length).toBeGreaterThan(0);
+      }
+
+      // House voice: sentence case, with `IP` kept as an initialism.
+      expect(changeRequestTypeLabel("refund_credits")).toBe("Refund credits");
+      expect(changeRequestTypeLabel("block_ip")).toBe("Block IP");
+
+      // POSITIVE CONTROL for the fallback: an unknown key comes back as
+      // itself, which is what every call site relied on before this map
+      // existed -- and is the behaviour that made the drift show as a raw
+      // `stripe_refund` on the moderator's own list.
+      expect(changeRequestTypeLabel("no_such_type")).toBe("no_such_type");
     });
 
     it("should include credit fields in Slack notification for credit types", () => {

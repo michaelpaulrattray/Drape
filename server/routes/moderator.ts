@@ -1,4 +1,5 @@
 import { moderatorProcedure, router } from "../_core/trpc";
+import { changeRequestTypeLabel } from "@shared/changeRequestLabels";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
@@ -299,18 +300,6 @@ export const moderatorRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error || "Failed to create change request" });
       }
 
-      // Type labels for Slack messages
-      const typeLabels: Record<string, string> = {
-        refund_credits: "Refund Credits",
-        add_credits: "Add Credits",
-        flag_account: "Flag Account",
-        note_incident: "Note Incident",
-        suspend_user: "Suspend User",
-        unsuspend_user: "Unsuspend User",
-         block_ip: "Block IP",
-        stripe_refund: "Stripe Refund",
-        other: "Other",
-      };
       const priorityEmoji: Record<string, string> = {
         low: "\u2b1c",
         normal: "\ud83d\udfe6",
@@ -321,7 +310,7 @@ export const moderatorRouter = router({
       // Send notification to #admin-actions
       const fields: Array<{ title: string; value: string; short?: boolean }> = [
         { title: "Request ID", value: `#${result.requestId}`, short: true },
-        { title: "Type", value: typeLabels[input.type] || input.type, short: true },
+        { title: "Type", value: changeRequestTypeLabel(input.type), short: true },
         { title: "Priority", value: `${priorityEmoji[input.priority] || ""} ${input.priority.charAt(0).toUpperCase() + input.priority.slice(1)}`, short: true },
         { title: "Submitted By", value: `${moderatorName} (Moderator)`, short: true },
         { title: "Target User", value: input.targetUserName ? `${input.targetUserName} (ID: ${input.targetUserId})` : `User ID: ${input.targetUserId}`, short: true },
@@ -342,7 +331,7 @@ export const moderatorRouter = router({
       const slackSeverity = input.priority === "urgent" ? "critical" as const : input.priority === "high" ? "warning" as const : "info" as const;
 
       const slackSent = await sendAdminActionNotification({
-        title: `\ud83d\udccb New Change Request #${result.requestId}: ${typeLabels[input.type]}`,
+        title: `\ud83d\udccb New Change Request #${result.requestId}: ${changeRequestTypeLabel(input.type)}`,
         description: `*${moderatorName}* submitted a change request requiring admin review.\n\n*${input.title}*`,
         severity: slackSeverity,
         fields,
@@ -351,10 +340,10 @@ export const moderatorRouter = router({
       // Log to #audit-log
       await sendAuditLogEntry({
         title: "Change Request Created",
-        description: `${moderatorName} created change request #${result.requestId}: ${typeLabels[input.type]} for user ${input.targetUserId}`,
+        description: `${moderatorName} created change request #${result.requestId}: ${changeRequestTypeLabel(input.type)} for user ${input.targetUserId}`,
         fields: [
           { title: "Request ID", value: `#${result.requestId}`, short: true },
-          { title: "Type", value: typeLabels[input.type], short: true },
+          { title: "Type", value: changeRequestTypeLabel(input.type), short: true },
           { title: "Moderator", value: moderatorName, short: true },
           { title: "Target User", value: String(input.targetUserId), short: true },
         ],

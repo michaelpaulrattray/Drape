@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f007de73f512f018"
+    "sourceFingerprint": "85c174adb8670867"
   },
   "domains": [
     {
@@ -128,7 +128,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 53
+      "moduleCount": 54
     },
     {
       "id": "domain:staff",
@@ -6021,6 +6021,12 @@
     {
       "id": "module:shared/castingVocabularies.ts",
       "path": "shared/castingVocabularies.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/changeRequestLabels.ts",
+      "path": "shared/changeRequestLabels.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12650,6 +12656,10 @@
       "path": "server/ceremonySkeleton.test.ts"
     },
     {
+      "id": "test:server/changeRequestLabels.test.ts",
+      "path": "server/changeRequestLabels.test.ts"
+    },
+    {
       "id": "test:server/changeRequests.test.ts",
       "path": "server/changeRequests.test.ts"
     },
@@ -14504,6 +14514,11 @@
     {
       "from": "module:client/src/features/admin/ChangeRequestConstants.tsx",
       "to": "module:client/src/components/ui/badge.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/ChangeRequestConstants.tsx",
+      "to": "module:shared/changeRequestLabels.ts",
       "kind": "imports"
     },
     {
@@ -17387,6 +17402,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/ChangeRequestModal.tsx",
+      "to": "module:shared/changeRequestLabels.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/features/moderator/figures.ts",
       "kind": "imports"
@@ -17517,6 +17537,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/moderatorConstants.ts",
+      "to": "module:shared/changeRequestLabels.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
       "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
@@ -17524,6 +17549,11 @@
     {
       "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
+      "to": "module:shared/changeRequestLabels.ts",
       "kind": "imports"
     },
     {
@@ -30627,6 +30657,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/admin/changeRequests.ts",
+      "to": "module:shared/changeRequestLabels.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/admin/index.ts",
       "to": "module:server/_core/trpc.ts",
       "kind": "imports"
@@ -32474,6 +32509,11 @@
     {
       "from": "module:server/routes/moderator.ts",
       "to": "module:server/slack/slackNotification.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderator.ts",
+      "to": "module:shared/changeRequestLabels.ts",
       "kind": "imports"
     },
     {
