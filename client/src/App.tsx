@@ -138,7 +138,11 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
+      {/* No `defaultTheme` here on purpose: the cold-start theme is
+          `DEFAULT_THEME` in `foundation/theme.ts` (light — his 2026-07-30
+          decision, re-stated 2026-09-08, #686). A prop here shadowed it with
+          "dark" for six weeks; `themeDefault.test.ts` refuses a second one. */}
+      <ThemeProvider>
         <TooltipProvider>
           <Toaster />
           <GenerationOperationBridge />

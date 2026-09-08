@@ -554,7 +554,7 @@ Most of these followed the same path: helper or rule written, docs written, todo
 ## Design system conventions
 
 - Design tokens in `client/src/styles/tokens.css`: monochrome palette (black `#0A0A0A`, surface `#EBEBEB`, white), 4px spacing grid, Inter font. Reference via `var(--token-name)`; don't hardcode colors/spacing.
-- Dark theme is the default (`ThemeProvider defaultTheme="dark"` in `App.tsx`).
+- **Light is the default theme** (founder, 2026-07-30, re-stated 2026-09-08 — #686): `DEFAULT_THEME` in `client/src/foundation/theme.ts` is the one place it is declared, and `App.tsx` passes `ThemeProvider` no `defaultTheme` override. ⚠ This line read *"Dark theme is the default"* until 2026-09-08 because `App.tsx` carried `defaultTheme="dark"` over the foundation's `light` for six weeks; `client/src/foundation/themeDefault.test.ts` refuses the override coming back. The sign-in and landing pages stay fixed-light on his word (#678).
 - App UI (studio, admin, boards): shadcn/ui primitives from `@/components/ui`, composed inside `features/<domain>/components`.
 - Marketing/home pages: use `@/components/design-system` (Section, Card, Button, Typography, Grid) — these encode the Home.tsx look.
 - Icons: lucide-react. Toasts: sonner. Class merging: `cn()` from `@/lib/utils`.
