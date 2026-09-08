@@ -3,18 +3,27 @@
  * spread of a database row, driven through the REAL `usersRouter`.
  *
  * ⚠ WHY A NEW FILE RATHER THAN AN ARM IN `adminUserManagement.test.ts`:
- * that file is a live instance of #681's shape 2. It mocks `./db`, then calls
- * the mock ITSELF and asserts its own fixture —
+ * its READ arms are #681's shape 2. They mock `./db`, then call the mock
+ * ITSELF and assert their own fixture —
  *
  *     vi.mocked(getUserFullDetails).mockResolvedValue({ user: { id: 1, … } });
  *     const result = await getUserFullDetails(1);
  *     expect(result?.user.id).toBe(1);
  *
- * No line of `usersRouter` runs in that, so the admin projection has never
- * been exercised anywhere in this repository. Delete the procedure and those
- * arms stay green. They are left alone here (that file is #697's population,
- * and this shift is not rewriting it) — but nothing in it can stand as this
- * fix's proof, so the proof is written where it can fail.
+ * No line of `usersRouter` runs in that, so the two admin READ projections
+ * have never been exercised anywhere in this repository. Delete either
+ * procedure and those arms stay green. They are left alone here (that file is
+ * #697's population, and this shift is not rewriting it) — but nothing in it
+ * can stand as this fix's proof, so the proof is written where it can fail.
+ *
+ * ⚠ THAT IS A CLAIM ABOUT ITS READ ARMS, NOT ABOUT THE FILE. This header said
+ * "that file is a live instance" until the PR #701 review read it at the
+ * artifact (law 7b). `adminUserManagement.test.ts:397-459` DRIVES
+ * `usersRouter.adjustCredits` through a real `createCaller` — the moderator
+ * refusal, NOT_FOUND, the declared bounds and a positive control — and its own
+ * comment at `:383-396` records that it is the repair of a shape-2 arm on a
+ * money procedure. A file-level verdict would have become the next stale
+ * document, in a header future shifts cite.
  *
  * THE FIXTURE SEEDS THE FORBIDDEN SIX ON PURPOSE. An assertion that a staff
  * wire omits `passwordHash` is worthless over a row that never held one — the
@@ -58,7 +67,11 @@ vi.mock("./db", () => ({
         role: "user",
         suspendedAt: null,
         suspendedReason: null,
-        frozenAt: null,
+        /* Seeded NON-NULL on purpose (PR #701 review, finding 3): THIS surface
+           converts `frozenAt` to ISO while the moderator twin passes it raw,
+           and at `null` those two are indistinguishable — so neither the
+           divergence nor a silent convergence could redden anything. */
+        frozenAt: new Date("2026-02-01"),
         lockedUntil: null,
         createdAt: new Date("2025-06-01"),
         lastSignedIn: new Date("2026-01-15"),
@@ -89,7 +102,7 @@ vi.mock("./db", () => ({
       suspendedAt: null,
       suspendedReason: null,
       suspendedBy: null,
-      frozenAt: null,
+      frozenAt: new Date("2026-02-01"),
       frozenReason: null,
       frozenBy: null,
       lockedUntil: null,
@@ -141,7 +154,11 @@ describe("#700 — the admin user reads project explicitly", () => {
       role: "user",
       suspendedReason: null,
       suspendedAt: null,
-      frozenAt: null,
+      /* ISO — the admin wire converts this column; the moderator wire does
+         not. Asserted as a STRING here and as a Date in
+         `server/moderator.test.ts`, which is the pair that pins the
+         divergence this PR deliberately preserves. */
+      frozenAt: "2026-02-01T00:00:00.000Z",
       lockedUntil: null,
       createdAt: "2025-06-01T00:00:00.000Z",
       lastSignedIn: "2026-01-15T00:00:00.000Z",
@@ -170,7 +187,7 @@ describe("#700 — the admin user reads project explicitly", () => {
       frozenBy: null,
       failedLoginAttempts: 0,
       suspendedAt: null,
-      frozenAt: null,
+      frozenAt: "2026-02-01T00:00:00.000Z", // ISO here, raw Date on the moderator twin
       lockedUntil: null,
       createdAt: "2025-06-01T00:00:00.000Z",
       lastSignedIn: "2026-01-15T00:00:00.000Z",

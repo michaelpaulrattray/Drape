@@ -199,7 +199,11 @@ vi.mock("./db", () => ({
         role: "user",
         suspendedAt: null,
         suspendedReason: null,
-        frozenAt: null,
+        /* Seeded NON-NULL on purpose (PR #701 review, finding 3): this surface
+           passes `frozenAt` through RAW while the admin one converts it to ISO,
+           and at `null` those two are the same value — so the divergence, and
+           any silent convergence, would have been invisible to every arm. */
+        frozenAt: new Date("2026-02-01"),
         lockedUntil: null,
         createdAt: new Date("2025-06-01"),
         lastSignedIn: new Date("2026-01-15"),
@@ -230,7 +234,7 @@ vi.mock("./db", () => ({
       suspendedAt: null,
       suspendedReason: null,
       suspendedBy: null,
-      frozenAt: null,
+      frozenAt: new Date("2026-02-01"),
       frozenReason: null,
       frozenBy: null,
       lockedUntil: null,
@@ -495,7 +499,12 @@ describe("Moderator Role — the read surface, DRIVEN through the router", () =>
         role: "user",
         suspendedAt: null,
         suspendedReason: null,
-        frozenAt: null,
+        /* RAW Date, not ISO — this is what the moderator wire actually carries
+           today, and the admin twin carries the same column as a STRING. The
+           divergence is preserved deliberately (converging it is a wire-type
+           change, filed separately); pinning it here is what makes either
+           state provable instead of invisible. */
+        frozenAt: new Date("2026-02-01"),
         lockedUntil: null,
         createdAt: "2025-06-01T00:00:00.000Z",
         lastSignedIn: "2026-01-15T00:00:00.000Z",
@@ -560,7 +569,7 @@ describe("Moderator Role — the read surface, DRIVEN through the router", () =>
         suspendedAt: null,
         suspendedReason: null,
         suspendedBy: null,
-        frozenAt: null,
+        frozenAt: new Date("2026-02-01"), // raw here, ISO on the admin twin
         frozenReason: null,
         frozenBy: null,
         lockedUntil: null,

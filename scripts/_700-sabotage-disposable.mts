@@ -119,6 +119,33 @@ const SABOTAGES: Sabotage[] = [
     ].sort(),
   },
 
+  /* ── The wire-type divergence this PR deliberately PRESERVES ───────────────
+   * PR #701 review, finding 3. `frozenAt` crosses the moderator wire as a raw
+   * Date and the admin wire as an ISO string — same column, same helper, two
+   * staff surfaces. Converging them is a wire-type change and is filed
+   * separately rather than smuggled into a no-behaviour-change PR. Until the
+   * fixtures seeded it NON-NULL these two sabotages reddened NOTHING, because
+   * `null` is the one value where raw and ISO are indistinguishable. */
+  {
+    name: "MODERATOR frozenAt silently converges to ISO (the follow-up landing unannounced)",
+    file: MOD,
+    /* Anchored on its NEIGHBOURS, not on the line alone: the bare line also
+       appears in `getUserDetails`, a third moderator read that passes the same
+       column raw. The driver REFUSED the two-match anchor rather than patching
+       whichever came first — without that refusal this arm would have
+       sabotaged the wrong procedure and read the result as a pass. */
+    find: "          suspendedReason: user.suspendedReason,\n          frozenAt: user.frozenAt,",
+    replace: "          suspendedReason: user.suspendedReason,\n          frozenAt: user.frozenAt?.toISOString() || null,",
+    expect: [MOD_LIST],
+  },
+  {
+    name: "ADMIN frozenAt silently converges to a raw Date (the divergence moving the other way)",
+    file: ADMIN,
+    find: "          frozenAt: user.frozenAt?.toISOString() || null,",
+    replace: "          frozenAt: user.frozenAt,",
+    expect: [ADM_LIST],
+  },
+
   /* ── The middleware under the admin reads ──────────────────────────────── */
   {
     name: "adminProcedure stops refusing an unauthenticated caller",
@@ -151,6 +178,8 @@ function runSuites(): { failed: string[]; total: number } {
     total: arms.length,
   };
 }
+
+let EXIT_CODE = 0;
 
 function main(): void {
   console.log("=== BASELINE: both suites must be GREEN before any sabotage ===");
@@ -198,8 +227,13 @@ function main(): void {
   if (findings.length > 0) {
     console.log("\nFINDINGS:");
     for (const f of findings) console.log(`  - ${f}`);
+    EXIT_CODE = 1;
   }
 }
 
 main();
-process.exit(0);
+/* PR #701 review, finding 1 - working law 2 pointed at this driver itself.
+   An unconditional exit(0) meant a run whose arms MISBEHAVED still read as
+   success to any wrapper, CI step or && chain: the instrument could print
+   FINDINGS and pass. Only a red BASELINE used to exit non-zero. */
+process.exit(EXIT_CODE);
