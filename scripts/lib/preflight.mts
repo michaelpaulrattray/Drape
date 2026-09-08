@@ -123,6 +123,12 @@ export const EXCUSED_GATE_STEPS: ReadonlyArray<{
     reason:
       "drives a browser against a built app; minutes and a dev server, so it belongs to the gate and to a UI shift's own law-6 pass.",
   },
+  {
+    gateRun: "scripts/check-closing-keyword.mts",
+    match: "token",
+    reason:
+      "the closing-keyword check (#376) reads a PULL REQUEST's title and body, and preflight runs BEFORE the first push — there is no PR to read yet, so this is the one gate step that cannot be answered locally. It is answerable by hand at any time (`npx tsx scripts/check-closing-keyword.mts --pr <n>`, or `--file` on a body draft), and the same reader runs again at the squash and inside the rite. A token because the gate runs it with the PR number interpolated.",
+  },
 ];
 
 /**
