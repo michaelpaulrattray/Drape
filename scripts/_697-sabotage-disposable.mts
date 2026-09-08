@@ -173,9 +173,13 @@ const SABOTAGES: Sabotage[] = [
     file: ROUTER,
     find: "          createdAt: user.createdAt.toISOString(),",
     replace: "          createdAt: user.createdAt as never,",
+    /* Two arms now — #700's whole-projection assertion covers this procedure
+       too. Sibling of the `getUserFullDetails` case above; both were found by
+       the exit-code repair rather than by anyone re-reading this file. */
     expect: [
       "the dates cross the boundary as ISO STRINGS — a Date would reach the panel as something else",
-    ],
+      "the projection the ROUTER builds, whole — invariant 8, and the fixture holds the forbidden six so it can fail",
+    ].sort(),
   },
   {
     name: "listBlockedIPs leaks an extra field into its projection",
@@ -196,7 +200,16 @@ const SABOTAGES: Sabotage[] = [
     file: ROUTER,
     find: "          createdAt: result.user.createdAt.toISOString(),",
     replace: "          createdAt: result.user.createdAt as never,",
-    expect: ["the dates cross as ISO strings, and the credits and stats ride along untouched"],
+    /* Two arms now, not one. #700 added a WHOLE-projection assertion over the
+       same procedure, so breaking its date conversion reddens that as well as
+       the date arm. ⚠ This staleness was found by the exit-code repair three
+       lines below — before it, a driver whose expectations no longer matched
+       the tree printed FINDINGS and exited 0. It went from silent to loud on
+       its first run after the fix. */
+    expect: [
+      "the dates cross as ISO strings, and the credits and stats ride along untouched",
+      "the user projection the ROUTER builds, whole — invariant 8, forbidden six seeded",
+    ].sort(),
   },
   {
     name: "the schema drops the moderator role",
@@ -360,6 +373,8 @@ function runSuite(): { failed: string[]; total: number } {
   };
 }
 
+let EXIT_CODE = 0;
+
 function main(): void {
   console.log("=== BASELINE: the suite must be GREEN before any sabotage ===");
   const base = runSuite();
@@ -407,8 +422,13 @@ function main(): void {
   if (findings.length > 0) {
     console.log("\nFINDINGS:");
     for (const f of findings) console.log(`  - ${f}`);
+    EXIT_CODE = 1;
   }
 }
 
 main();
-process.exit(0);
+/* PR #701 review, finding 1 - working law 2 pointed at this driver itself.
+   An unconditional exit(0) meant a run whose arms MISBEHAVED still read as
+   success to any wrapper, CI step or && chain: the instrument could print
+   FINDINGS and pass. Only a red BASELINE used to exit non-zero. */
+process.exit(EXIT_CODE);
