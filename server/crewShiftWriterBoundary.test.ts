@@ -38,14 +38,22 @@ const REPO = join(__dirname, "..");
  * The files that may write, each with the ONE table it may write.
  *
  * A third entry is a decision, not an omission — and the pairing is what makes
- * this test say something: `crew-count-queue.mts` writing `crew_shift_runs`, or
+ * this test say something: `crewQueueCount.mts` writing `crew_shift_runs`, or
  * `crew-shift-start.mts` writing the counts, would each be a boundary breach
  * that a single shared allowlist could not see.
  */
 const WRITER_SCRIPTS = [
   { path: "scripts/crew-shift-start.mts", table: "crew_shift_runs" },
   { path: "scripts/crew-shift-close.mts", table: "crew_shift_runs" },
-  { path: "scripts/crew-count-queue.mts", table: "crew_queue_counts" },
+  /* ⚠ MOVED 2026-09-08 (#618): the counting left `crew-count-queue.mts` for
+     `scripts/lib/crewQueueCount.mts` so that the SHIFT CLOSE can take the same
+     reading - his panel used to show what a shift found, never what it closed.
+     **This list follows the STATEMENTS, not the command name.** The arms below
+     read source for `INSERT`/`UPDATE`, so leaving the old path here would have
+     pinned a file that no longer writes: every arm would pass, over nothing.
+     That is exactly how this guard reddened when the code moved, which is the
+     behaviour to keep. */
+  { path: "scripts/lib/crewQueueCount.mts", table: "crew_queue_counts" },
   /* JOINED 2026-08-31 (#325). It answers his "not relevant" taps, and it is the
      first shift writer whose table HE also writes — so it carries an extra arm
      below that the other three do not need: it may set the resolution columns

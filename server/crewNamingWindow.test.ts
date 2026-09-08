@@ -31,7 +31,21 @@ import { describe, expect, it } from "vitest";
 import { judgementIsBlind, mergedPullRequestArgs, SEARCH_RESULT_CEILING } from "../scripts/lib/crewNamingWindow.mts";
 
 const PAGE_BOUND = 1000;
-const COUNTER = join(__dirname, "..", "scripts", "crew-count-queue.mts");
+/**
+ * ⚠ THE READING MOVED 2026-09-08 (#618) AND THIS CONSTANT MOVED WITH IT.
+ *
+ * `crew-count-queue.mts` is now a command-line front door; the counting - and
+ * therefore every line these arms assert about - lives in
+ * `scripts/lib/crewQueueCount.mts` so the SHIFT CLOSE can take the same
+ * reading. **This is the second guard in one commit that was keyed on the file
+ * the code happened to live in**, and both were repointed rather than relaxed.
+ *
+ * The arm at the bottom of this file - *"the source reader is really looking at
+ * the counter"* - is what turned that from a silent pass into a red, and it is
+ * the reason the pairing is worth keeping: four absence checks over a file that
+ * no longer holds the code would all have been green, for the wrong reason.
+ */
+const COUNTER = join(__dirname, "..", "scripts", "lib", "crewQueueCount.mts");
 
 describe("the merged-pull-request window is derived from the oldest open card", () => {
   it("asks GitHub only for merges since that card was filed", () => {
@@ -119,7 +133,7 @@ describe("a truncated read reports every card, and judges none", () => {
  * reviewer caught one card earlier (#494/#498 finding 1: a second list one line
  * from its source).
  */
-describe("crew-count-queue reads through this module", () => {
+describe("the queue counting reads through this module", () => {
   const source = readFileSync(COUNTER, "utf8");
 
   it("imports both, and builds no arguments of its own", () => {
