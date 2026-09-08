@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7fcf53ca530cc4ef"
+    "sourceFingerprint": "8c8a699b80f55436"
   },
   "domains": [
     {
@@ -32578,6 +32578,11 @@
     {
       "from": "module:server/routes/moderator.ts",
       "to": "module:server/slack/slackNotification.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderator.ts",
+      "to": "module:server/stripe/stripeService.ts",
       "kind": "imports"
     },
     {

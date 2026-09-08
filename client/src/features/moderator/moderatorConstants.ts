@@ -100,6 +100,7 @@ export interface OpenChangeRequestOptions {
   relatedAuditLogId?: number;
   ipAddress?: string;
   stripeSessionId?: string;
-  originalAmountCents?: number;
-  originalCredits?: number;
+  // No money fields here on purpose (#418): a refund request names which
+  // charge, and the server derives the amount and credits from Stripe and
+  // the customer's own ledger.
 }

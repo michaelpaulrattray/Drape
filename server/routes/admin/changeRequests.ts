@@ -109,6 +109,16 @@ export const changeRequestsRouter = router({
         if (request.creditAmount) approvalParams.creditAmount = request.creditAmount;
         if (request.creditReason) approvalParams.creditReason = request.creditReason;
         if (request.ipAddress) approvalParams.reason = `${request.title} (IP: ${request.ipAddress})`;
+        // ⚠ The stripe_refund executor reads these three off the approval
+        // params, and until #418 nothing put them there — every approved
+        // Stripe refund would have died at execution on "Missing Stripe
+        // session ID". The AMOUNT is deliberately not carried: the executor
+        // reads it from the charge itself at the moment money moves.
+        if (request.type === "stripe_refund") {
+          approvalParams.stripeSessionId = request.stripeSessionId;
+          approvalParams.refundType = request.refundType;
+          approvalParams.originalCredits = request.originalCredits;
+        }
 
         // Determine targetId for the approval action
         const targetId = request.type === "block_ip" && request.ipAddress

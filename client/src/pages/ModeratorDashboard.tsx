@@ -59,8 +59,6 @@ export default function ModeratorDashboard() {
   const [crIpAddress, setCrIpAddress] = useState("");
   const [crStripeSessionId, setCrStripeSessionId] = useState("");
   const [crRefundType, setCrRefundType] = useState<"full" | "proportional">("proportional");
-  const [crOriginalAmountCents, setCrOriginalAmountCents] = useState(0);
-  const [crOriginalCredits, setCrOriginalCredits] = useState(0);
 
   // User investigation state
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -207,7 +205,6 @@ export default function ModeratorDashboard() {
     setCrTitle(""); setCrDescription(""); setCrEvidenceSummary(""); setCrRelatedAuditLogId("");
     setCrCreditAmount(""); setCrCreditReason(""); setCrIpAddress("");
     setCrStripeSessionId(""); setCrRefundType("proportional");
-    setCrOriginalAmountCents(0); setCrOriginalCredits(0);
   };
 
   const openChangeRequest = (options?: OpenChangeRequestOptions) => {
@@ -218,8 +215,6 @@ export default function ModeratorDashboard() {
     if (options?.relatedAuditLogId) setCrRelatedAuditLogId(String(options.relatedAuditLogId));
     if (options?.ipAddress) setCrIpAddress(options.ipAddress);
     if (options?.stripeSessionId) setCrStripeSessionId(options.stripeSessionId);
-    if (options?.originalAmountCents) setCrOriginalAmountCents(options.originalAmountCents);
-    if (options?.originalCredits) setCrOriginalCredits(options.originalCredits);
     setChangeRequestOpen(true);
   };
 
@@ -245,8 +240,6 @@ export default function ModeratorDashboard() {
       ipAddress: crIpAddress || undefined,
       stripeSessionId: crStripeSessionId || undefined,
       refundType: crType === "stripe_refund" ? crRefundType : undefined,
-      originalAmountCents: crType === "stripe_refund" ? crOriginalAmountCents : undefined,
-      originalCredits: crType === "stripe_refund" ? crOriginalCredits : undefined,
     }, {
       onSuccess: (result) => {
         if (attachmentIds.length > 0 && result.requestId) {
@@ -427,8 +420,6 @@ export default function ModeratorDashboard() {
         crIpAddress={crIpAddress} setCrIpAddress={setCrIpAddress}
         crStripeSessionId={crStripeSessionId} setCrStripeSessionId={setCrStripeSessionId}
         crRefundType={crRefundType} setCrRefundType={setCrRefundType}
-        crOriginalAmountCents={crOriginalAmountCents} setCrOriginalAmountCents={setCrOriginalAmountCents}
-        crOriginalCredits={crOriginalCredits} setCrOriginalCredits={setCrOriginalCredits}
       />
     </StaffSurface>
   );

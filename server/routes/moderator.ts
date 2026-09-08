@@ -279,8 +279,10 @@ export const moderatorRouter = router({
       ipAddress: z.string().max(45).optional(),
       stripeSessionId: z.string().max(128).optional(),
       refundType: z.enum(["full", "proportional"]).optional(),
-      originalAmountCents: z.number().min(1).optional(),
-      originalCredits: z.number().min(1).optional(),
+      // `originalAmountCents` / `originalCredits` are NOT inputs any more
+      // (#418): the amount comes from the Stripe charge and the credits from
+      // this user's own ledger row, below. The schema is non-strict, so an
+      // older bundle still sending them has the keys stripped harmlessly.
     }))
     .mutation(async ({ ctx, input }) => {
       const { createChangeRequest } = await import("../db");
@@ -297,11 +299,30 @@ export const moderatorRouter = router({
       if (input.type === "block_ip" && !input.ipAddress) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "IP address is required for block IP requests" });
       }
+      // For a Stripe refund the purchase facts are DERIVED, never typed (#418):
+      // the credits from this user's own ledger row for that session (which
+      // also proves the session belongs to the target user — the lookup is
+      // keyed on BOTH), and the amount from the charge Stripe actually made.
+      // A session that matches neither refuses HERE, at submit, with a plain
+      // message — not at execution weeks later.
+      let derivedOriginalCredits: number | null = null;
+      let derivedAmountCents: number | null = null;
       if (input.type === "stripe_refund") {
         if (!input.stripeSessionId) throw new TRPCError({ code: "BAD_REQUEST", message: "Stripe session ID is required for refund requests" });
         if (!input.refundType) throw new TRPCError({ code: "BAD_REQUEST", message: "Refund type (full/proportional) is required" });
-        if (!input.originalAmountCents) throw new TRPCError({ code: "BAD_REQUEST", message: "Original purchase amount is required" });
-        if (!input.originalCredits) throw new TRPCError({ code: "BAD_REQUEST", message: "Original credit amount is required" });
+
+        const { getCreditTransactionByRef } = await import("../db");
+        const ledgerRow = await getCreditTransactionByRef(input.targetUserId, input.stripeSessionId);
+        if (!ledgerRow || ledgerRow.amount <= 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "No credit purchase matches that Stripe session for this user — check the session ID against the customer's credit history" });
+        }
+        derivedOriginalCredits = ledgerRow.amount;
+
+        const { getSessionChargedAmountCents } = await import("../stripe/stripeService");
+        derivedAmountCents = await getSessionChargedAmountCents(input.stripeSessionId);
+        if (!derivedAmountCents) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Could not read the original charge from Stripe for that session — the refund request was not filed" });
+        }
       }
 
       // Create the change request in the database
@@ -321,11 +342,13 @@ export const moderatorRouter = router({
         ipAddress: input.ipAddress || null,
         stripeSessionId: input.stripeSessionId || null,
         refundType: input.refundType || null,
-        originalCredits: input.originalCredits || null,
-        // Calculate refund amount based on type — stored for admin review
+        originalCredits: derivedOriginalCredits,
+        // The full-refund preview stored for admin review carries the DERIVED
+        // figures. A proportional refund stores no amount, as before — it
+        // depends on the balance at execution time.
         ...(input.type === "stripe_refund" && input.refundType === "full" ? {
-          refundAmountCents: input.originalAmountCents || null,
-          creditsToDeduct: input.originalCredits || null,
+          refundAmountCents: derivedAmountCents,
+          creditsToDeduct: derivedOriginalCredits,
         } : {}),
       });
 

@@ -249,19 +249,25 @@ export async function executeChangeRequestAction(
 
     case "cr_stripeRefund": {
       const { getUserById: getUser, getUserCredits: getCredits, updateChangeRequestStatus: updateCR } = await import("../../db");
-      const { issueStripeRefund, calculateProportionalRefund } = await import("../../stripe/stripeService");
+      const { issueStripeRefund, calculateProportionalRefund, getSessionChargedAmountCents } = await import("../../stripe/stripeService");
       const userId = Number(pendingAction.targetId);
       const changeRequestId = params.changeRequestId as number;
       const stripeSessionId = params.stripeSessionId as string;
       const refundType = (params.refundType as string) || "proportional";
       const originalCredits = params.originalCredits as number;
-      const originalAmountCents = params.originalAmountCents as number;
 
       if (!stripeSessionId) throw new Error("Missing Stripe session ID for refund");
-      if (!originalCredits || !originalAmountCents) throw new Error("Missing original purchase details");
+      if (!originalCredits) throw new Error("Missing original purchase details");
 
       const targetUser = await getUser(userId);
       if (!targetUser) throw new Error("User not found");
+
+      // The original amount is read from the charge itself, at the moment
+      // money moves — never from params, a stored row, or a client (#418).
+      const originalAmountCents = await getSessionChargedAmountCents(stripeSessionId);
+      if (!originalAmountCents) {
+        throw new Error(`Could not read the original charge from Stripe for session ${stripeSessionId} — refund not issued`);
+      }
 
       const userCredits = await getCredits(userId);
       const currentBalance = userCredits?.balance ?? 0;

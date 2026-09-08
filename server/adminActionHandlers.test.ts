@@ -40,6 +40,7 @@ const db = {
 const stripe = {
   issueStripeRefund: vi.fn(),
   calculateProportionalRefund: vi.fn(),
+  getSessionChargedAmountCents: vi.fn(),
 };
 
 vi.mock("./db", () => db);
@@ -111,6 +112,7 @@ beforeEach(() => {
   db.unblockIp.mockResolvedValue(true);
   db.updateChangeRequestStatus.mockResolvedValue({ success: true });
   stripe.issueStripeRefund.mockResolvedValue({ success: true, refundId: "re_1" });
+  stripe.getSessionChargedAmountCents.mockResolvedValue(1000);
   stripe.calculateProportionalRefund.mockReturnValue({
     refundAmountCents: 500,
     creditsToDeduct: 50,
@@ -278,14 +280,18 @@ describe("cr_blockIP", () => {
 // ── cr_stripeRefund ─────────────────────────────────────────────────────────
 
 describe("cr_stripeRefund", () => {
+  // No `originalAmountCents` in the params, because there is none in the
+  // product (#418): the amount is read from the Stripe charge at execution.
   const PURCHASE = {
     stripeSessionId: "cs_test_1",
     originalCredits: 100,
-    originalAmountCents: 1000,
   };
 
   it("issues the Stripe refund, deducts the credits it bought, and SETTLES", async () => {
     await runCr("cr_stripeRefund", PURCHASE);
+    // The proportional split is computed from the CHARGED amount (the mocked
+    // session read, 1000), the purchase's credits, and the live balance.
+    expect(stripe.calculateProportionalRefund).toHaveBeenCalledWith(1000, 100, 500);
     expect(stripe.issueStripeRefund).toHaveBeenCalledWith(
       "cs_test_1",
       500,
@@ -307,6 +313,24 @@ describe("cr_stripeRefund", () => {
     expect(stripe.issueStripeRefund.mock.calls[0][1]).toBe(1000);
     // 100 credits bought, only 30 left — a customer is never taken below zero.
     expect(db.adjustUserCredits.mock.calls[0][1]).toBe(-30);
+  });
+
+  it("#418 PINNED — a figure smuggled into params cannot set the refund; the charge itself does", async () => {
+    // The exact defect: the client used to compute `credits * 0.00072` and
+    // send it. If a stale approval, an old bundle or anything else puts an
+    // `originalAmountCents` into params, it must be IGNORED.
+    await runCr("cr_stripeRefund", { ...PURCHASE, refundType: "full", originalAmountCents: 7 });
+    expect(stripe.issueStripeRefund.mock.calls[0][1]).toBe(1000);
+  });
+
+  it("refuses, and moves NOTHING, when the charge cannot be read from Stripe", async () => {
+    stripe.getSessionChargedAmountCents.mockResolvedValue(null);
+    await expect(runCr("cr_stripeRefund", PURCHASE)).rejects.toThrow(
+      "Could not read the original charge",
+    );
+    expect(stripe.issueStripeRefund).not.toHaveBeenCalled();
+    expect(db.adjustUserCredits).not.toHaveBeenCalled();
+    expect(db.updateChangeRequestStatus).not.toHaveBeenCalled();
   });
 
   it("refuses without a Stripe session, and without the original purchase details", async () => {
