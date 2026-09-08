@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ade10b117706fb1a"
+    "sourceFingerprint": "e0b0b4b5525fa21c"
   },
   "domains": [
     {
@@ -12704,6 +12704,10 @@
     {
       "id": "test:server/crewCardResolution.test.ts",
       "path": "server/crewCardResolution.test.ts"
+    },
+    {
+      "id": "test:server/crewCloseCounts.test.ts",
+      "path": "server/crewCloseCounts.test.ts"
     },
     {
       "id": "test:server/crewHeartbeat.test.ts",
