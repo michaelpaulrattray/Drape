@@ -59,7 +59,7 @@
  * and a custody block with nothing to quote is a missing reading rather than a
  * green one. The tidy read is `output/deploy-receipts/index.log`.
  *
- *   npx tsx scripts/deploy-rite.mts [--dry]
+ *   npx tsx scripts/deploy-rite.mts [--dry] [--anyway]
  *
  * PLAIN — NEVER under `railway run --service MySQL -- …`. That wrapper injects
  * `RAILWAY_SERVICE_ID`/`RAILWAY_SERVICE_NAME` for MySQL, and an unscoped
@@ -127,8 +127,26 @@ import { runTypecheckOnCommit } from "./lib/typecheckOnCommit.mts";
 import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
 import { judgeBriefingConformance } from "./lib/briefingConformance.mts";
 import { eyeFrameKeysOf, judgeEyeFramePresence } from "./lib/eyeFramePresence.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-const DRY = process.argv.includes("--dry");
+/*
+  THE WHOLE VOCABULARY, DECLARED ONCE (#642). `--anyway` was read 700 lines
+  below and named in nothing but the refusal that mentions it, so the usage
+  line above documented one of the two flags this script has. A word it does
+  not know now stops the rite before the push rather than being ignored — on
+  the one road that reaches production, `--dryrun` used to mean a real deploy.
+*/
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: ["dry", "anyway"] });
+const DRY = args.flag("dry");
+const ANYWAY = args.flag("anyway");
+/*
+  THE RECEIPT SAYS HOW IT WAS INVOKED, AND IT IS REBUILT FROM THE PARSE.
+  Reading raw argv again is what the adopter guard forbids, and after a strict
+  parse the two readings cannot disagree on CONTENT: an unknown word refuses
+  above, a boolean cannot carry a value, and a repeat refuses. They differ only
+  in the order the operator typed them, which no receipt has ever been read for.
+*/
+const INVOCATION = [DRY ? "--dry" : null, ANYWAY ? "--anyway" : null].filter(Boolean).join(" ") || "(none)";
 /*
   ⚠ THE isTTY REFUSAL ORDERED AT fable-1332 §5 WAS BUILT, DRIVEN, AND BACKED
   OUT — because its population is EVERYONE (found opus-978).
@@ -196,7 +214,7 @@ process.on("exit", (code) => {
       receiptFile,
       [
         `deploy-rite ${startedAtIso}`,
-        `argv: ${process.argv.slice(2).join(" ") || "(none)"}`,
+        `argv: ${INVOCATION}`,
         `EXIT STATUS: ${verdict}`,
         "",
         ...lines,
@@ -840,7 +858,7 @@ say(`DEPLOY RITE — ${shortSha} · ${subject}`);
 say(`  service ${SERVICE} · ${BASE}${DRY ? " · DRY RUN (no push)" : ""}`);
 say(`  paid work at push: ${inFlight}`);
 say(`  the founder: ${founderIsActive.note}`);
-if (founderIsActive.active && !process.argv.includes("--anyway")) {
+if (founderIsActive.active && !ANYWAY) {
   die(`he is in an active session — ${founderIsActive.note}. Batch this and deploy when he goes `
     + `quiet (fable-504). If this push IS the fix he is waiting on, say so and re-run with --anyway.`);
 }

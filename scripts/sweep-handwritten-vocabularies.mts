@@ -173,6 +173,7 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 
@@ -876,7 +877,9 @@ const narrowed = ["alpha", "beta"];
 
 // ---------------------------------------------------------------------------
 
-if (process.argv.includes("--controls")) {
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: ["controls"] });
+
+if (args.flag("controls")) {
   console.log("CONTROLS");
   const ok = runControls();
   console.log(ok ? "\nCONTROLS HELD" : "\nREFUSED — a control failed");
