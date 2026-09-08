@@ -37,6 +37,40 @@ import { judgeBriefingConformance } from "../scripts/lib/briefingConformance.mts
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const realBriefing = readFileSync(path.join(repoRoot, "server/crew/crew-briefing.json"), "utf8");
 
+/*
+  ⚠ THE SPECIMENS ARE BUILT HERE, NEVER BORROWED FROM THE LIVE BRIEFING (#674's
+  law-7 sibling, found by the gate on 2026-09-08).
+
+  Both mutation arms below used to clone row [0] of a real list. That is a
+  reader with a hidden precondition — the committed edition must happen to
+  carry a row — and NEXT UP legitimately emptied for the first time in edition
+  300, which turned this suite RED ON MAIN AND BLOCKED EVERY MERGE. The arm did
+  not fail because the schema stopped refusing an over-cap list; it failed
+  because it had nothing to clone, and an arm that reddens for the wrong reason
+  proves nothing about the thing it names.
+
+  #674 taught the SCHEMA that an empty NEXT UP is legitimate. It did not sweep
+  the arms that assumed otherwise, and the pipeline arm below is the same shape
+  waiting for the first edition with nothing in flight — so it is converted
+  here too, before it costs a second shift.
+
+  Each helper builds the MINIMUM its schema declares, so a required field added
+  later fails these arms loudly rather than letting them pass on a stale clone.
+*/
+const nextUpRow = (issueNumber: number) => ({
+  issueNumber,
+  title: "a card the queue is offering, number " + String(issueNumber),
+  urgent: false,
+});
+
+const pipelineRow = () => ({
+  id: "specimen-row",
+  title: "a change this shift has in flight",
+  status: "building" as const,
+  prNumber: null,
+  note: null,
+});
+
 describe("judgeBriefingConformance", () => {
   it("positive control: the REAL committed briefing parses", () => {
     const verdict = judgeBriefingConformance(realBriefing);
@@ -45,8 +79,7 @@ describe("judgeBriefingConformance", () => {
 
   it("red on the e55 specimen — a pipeline status outside the enum — naming the failing path", () => {
     const briefing = JSON.parse(realBriefing);
-    expect(briefing.pipeline.length).toBeGreaterThan(0);
-    briefing.pipeline[0].status = "done";
+    briefing.pipeline = [{ ...pipelineRow(), status: "done" }];
     const verdict = judgeBriefingConformance(JSON.stringify(briefing));
     expect(verdict.ok).toBe(false);
     expect(verdict.why, "the refusal must point at the pipeline status, not fail for some other reason").toMatch(/pipeline\.0\.status/);
@@ -54,13 +87,9 @@ describe("judgeBriefingConformance", () => {
 
   it("red on a list past its cap — e55's other half, moved to the queue #293 left standing", () => {
     const briefing = JSON.parse(realBriefing);
-    const template = briefing.nextUp.items[0];
-    expect(template, "the cap arm needs a real row to clone").toBeTruthy();
     /* Unique issue numbers, because the schema also refuses duplicates — an
        arm that reddens for the wrong reason prints PROVEN over nothing. */
-    while (briefing.nextUp.items.length <= 40) {
-      briefing.nextUp.items.push({ ...template, issueNumber: 900000 + briefing.nextUp.items.length });
-    }
+    briefing.nextUp.items = Array.from({ length: 41 }, (_unused, index) => nextUpRow(900000 + index));
     const verdict = judgeBriefingConformance(JSON.stringify(briefing));
     expect(verdict.ok).toBe(false);
     expect(verdict.why, "the refusal must name the capped list, not fail for some other reason").toMatch(/nextUp\.items/);

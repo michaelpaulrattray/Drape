@@ -25,6 +25,7 @@ import {
   isDevServerChild,
   isDevServerRoot,
   rootsStartedAfter,
+  pidsNamed,
   rootsToKill,
   type ProcessRow,
 } from "../scripts/lib/devServerTrees.mts";
@@ -121,6 +122,71 @@ describe("⚠ the refusal, which is the whole point", () => {
     /* A partial kill is the worst outcome: some trees gone, one respawning,
        and a report saying the cleanup ran. */
     expect(rootsToKill(TABLE, [22316, 21752]).kind).toBe("refused");
+  });
+
+  it("REFUSES an empty target list rather than reporting a kill of nothing", () => {
+    /*
+      #642's declared remainder, filed by PR #670's review. The loop below never
+      runs on an empty list, so this returned `{ kind: "kill", rootPids: [] }`
+      and dev-servers.mts killed nothing, printed the trees still standing, and
+      exited 0 — which reads as a successful cleanup.
+
+      An empty list is never a legitimate kill instruction: the --since path
+      exits earlier on its own "nothing to kill", so the only way to arrive
+      here empty is that every word the operator named was unusable.
+    */
+    const verdict = rootsToKill(TABLE, []);
+    expect(verdict.kind).toBe("refused");
+    expect(verdict.kind === "refused" && verdict.reason).toContain("no pid");
+  });
+});
+
+describe("⚠ the pids the operator NAMED, before any of them is a number", () => {
+  /*
+    `--kill abc`, `--kill 0` and `--kill ""` all became [] through
+    `.map(Number).filter(Boolean)` — NaN and 0 are both falsy — and the script
+    then exited 0 having killed nothing. The parse it sits behind catches the
+    MISSING-value spelling (`--kill` with nothing after it); this catches the
+    UNUSABLE-value one, which is the half that was left open.
+  */
+  it("reads a plain list of pids", () => {
+    expect(pidsNamed("22316, 29132")).toEqual({ kind: "pids", pids: [22316, 29132] });
+  });
+
+  it("refuses a word that is not a number, and quotes it back", () => {
+    const verdict = pidsNamed("abc");
+    expect(verdict.kind).toBe("refused");
+    expect(verdict.kind === "refused" && verdict.reason).toContain("abc");
+  });
+
+  it("refuses 0, which is falsy and was silently dropped", () => {
+    expect(pidsNamed("0").kind).toBe("refused");
+  });
+
+  it("refuses an empty string", () => {
+    expect(pidsNamed("").kind).toBe("refused");
+  });
+
+  it("refuses a NEGATIVE and a fractional pid", () => {
+    expect(pidsNamed("-1").kind).toBe("refused");
+    expect(pidsNamed("22316.5").kind).toBe("refused");
+  });
+
+  it("⚠ refuses the WHOLE list when one member is unusable, naming only that one", () => {
+    /*
+      The direction that matters: `--kill 22316,abc` used to drop "abc" and kill
+      22316, so the operator got a partial cleanup and no word about it. Same
+      reasoning as the batch refusal above.
+    */
+    const verdict = pidsNamed("22316,abc");
+    expect(verdict.kind).toBe("refused");
+    expect(verdict.kind === "refused" && verdict.reason).toContain("abc");
+    /* ⚠ NO TRAILING SPACE (PR #676 review). The regression this guards against
+       is `pidsNamed` quoting every word back, which reads `"22316", "abc"` — a
+       quote after the digits, never a space — so the assertion would have
+       stayed green through exactly the failure it documents. Plain and
+       stronger: the correct reason contains no other occurrence of them. */
+    expect(verdict.kind === "refused" && verdict.reason).not.toContain("22316");
   });
 });
 

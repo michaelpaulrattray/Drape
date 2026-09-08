@@ -24,6 +24,7 @@ import { execFileSync } from "node:child_process";
 import {
   devServerTrees,
   rootsStartedAfter,
+  pidsNamed,
   rootsToKill,
   type ProcessRow,
 } from "./lib/devServerTrees.mts";
@@ -150,7 +151,18 @@ if (since !== null) {
   if (mine.length === 0) { console.log("  none — nothing to kill."); process.exit(0); }
   targets = mine.map((tree) => tree.rootPid);
 } else {
-  targets = (kill ?? "").split(",").map((one) => Number(one.trim())).filter(Boolean);
+  /* ⚠ Parsed by the module that owns the refusal, never here (#642 remainder).
+     `.map(Number).filter(Boolean)` dropped NaN AND 0, so `--kill abc` reached
+     rootsToKill as an empty list and this script exited 0 having killed
+     nothing. */
+  const named = pidsNamed(kill ?? "");
+  if (named.kind === "refused") {
+    console.error(`
+REFUSING:
+${named.reason}`);
+    process.exit(1);
+  }
+  targets = named.pids;
 }
 
 const verdict = rootsToKill(rows, targets);
