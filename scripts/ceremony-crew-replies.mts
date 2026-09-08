@@ -98,15 +98,18 @@ try {
   }
 
   /*
-    `cardId` MUST BE NULLABLE. NULL is a journal note — a member of the
+    `cardId` MUST BE NULLABLE. NULL is a GENERAL note — a member of the
     vocabulary, not a missing value — so a NOT NULL here would silently turn
-    every cardless reply into a write error in front of the founder. Read back
-    rather than trusted, because a table created from an older copy of the
-    migration would pass every check above.
+    every cardless reply into a write error in front of the founder. (It meant a
+    JOURNAL note until #293 removed the journal from his page; his answer to
+    where those words should then land was, verbatim and entire, *"Keep a
+    General box."* The column's meaning did not move — only the box it draws
+    in.) Read back rather than trusted, because a table created from an older
+    copy of the migration would pass every check above.
   */
   const cardId = columns.find((row) => String(row.Field) === "cardId");
   if (String(cardId?.Null) !== "YES") {
-    throw new Error("`cardId` is NOT NULL — a journal note (cardId NULL) could never be written");
+    throw new Error("`cardId` is NOT NULL — a general note (cardId NULL) could never be written");
   }
 
   const [rows] = await conn.query<any[]>(`SELECT COUNT(*) AS n FROM \`${TABLE}\``);
