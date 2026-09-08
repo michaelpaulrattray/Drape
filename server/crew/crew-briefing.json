@@ -1,7 +1,7 @@
 {
-  "edition": 303,
-  "updatedAt": "2026-09-08T10:10:00Z",
-  "shift": "Foreman (Opus) - your moderators' own request list was showing them a code word instead of a name",
+  "edition": 304,
+  "updatedAt": "2026-09-08T11:45:00Z",
+  "shift": "Foreman (Opus) - your background-work numbers now say what they are, and a pull request is one merge away from never closing your cards by accident",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,19 +116,19 @@
     ],
     "chips": [
       {
-        "label": "Rollbacks cannot sweep up your work",
+        "label": "Your switch numbers say what they are",
         "tone": "good",
-        "source": "Shipped tonight (#611). It watched saves only - and undoing a change is a save it never saw."
+        "source": "Shipped on your word (#663). Bugs (11 on offer, 1 possibly fixed) - it never was the open count."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "78 open, none yours, none urgent. 3 closed tonight, 1 filed, 15 stale - read 8 Sep 04:25Z."
+        "source": "77 open, one waiting on you, none urgent. 1 closed tonight, 16 stale - read 8 Sep 11:29Z."
       },
       {
-        "label": "Nothing is waiting on you",
-        "tone": "good",
-        "source": "Your NEXT UP list is empty - you closed #543 this morning. Nothing needs your eye."
+        "label": "One thing is waiting on you",
+        "tone": "neutral",
+        "source": "A taste question about your sign-in page (#678). Nothing is broken; one sentence decides it."
       },
       {
         "label": "Check-ups",
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-08T10:03:21.521Z",
+      "readAt": "2026-09-08T11:29:45.465Z",
       "items": [
         {
           "issueNumber": 16,
@@ -257,26 +257,37 @@
   },
   "needsYou": [
     {
-      "id": "switch-count-meaning-663",
-      "issueNumber": 663,
-      "state": "answered",
-      "filedAt": "2026-09-07T21:45:00Z",
-      "title": "Your switch panel's number counts what a shift may TAKE, and calls it the open count - which should it be?",
-      "productImpact": "This is the other half of the question you asked yesterday morning: \"how many bugs has it done and worked on its still reading as 18 but its been working all night\".\n\nHalf of that was staleness - the number is written once at the START of a shift and never again, so it reports what a shift FOUND rather than what it CLOSED. That half is a fix and it is queued.\n\nThis half is yours, because it is about what your own panel means. The number under Bugs is NOT \"open cards labelled bug\". It is how many are ON OFFER to a shift tonight - cards you have already ordered into NEXT UP, and cards parked on your own ruling, are subtracted first. You asked for that in #324: \"how do we know they are not already scheduled to be fixed in current pipeline or work?\" - and it was the right ask.\n\nBut the panel labels it as the open count, and you read it as one. So you were holding a number that answers \"what could a shift take tonight\" against a question that was \"how many are left\".",
-      "workedExample": "Last night the panel said Bugs 11. GitHub had 10 open cards labelled bug at the same moment, and 13 the morning you asked.\n\nNone of those three numbers is wrong. 11 is what a shift could pick up - two of the cards were already ordered by you into NEXT UP, so they were subtracted. 10 is how many exist. 13 is how many existed before that night's work.\n\nYou looked at 11 and reasonably read it as \"eleven bugs left\". It means \"eleven a shift may take\", and nothing on the panel says so.",
+      "id": "signin-hard-light-678",
+      "issueNumber": 678,
+      "state": "open",
+      "filedAt": "2026-09-08T11:45:00Z",
+      "title": "Your sign-in page is a fixed light screen whatever theme the app is in - deliberate, or just old?",
+      "productImpact": "Nothing is broken and nobody has complained. This is a taste question about the first page a customer sees, and one sentence from you decides it.\n\nThe app has a dark theme and a light one. The sign-in page has neither: it is painted with 116 fixed colour values and knows nothing about the theme. So a customer using Drape in dark mode who signs out - or follows an email verification link - lands on a full-brightness white page. The verify-email page does the same.\n\nThat may be exactly right. A deliberately bright front door is a real choice and plenty of products make it. But nothing anywhere in either file says it was chosen - it is simply how things were painted before the theme existed, and never revisited. Found while sweeping the staff pages, which were rebuilt off this same pattern earlier this week.\n\nEither answer is small. The wrong guess means repainting your front door twice.",
+      "workedExample": "You are in dark mode, you sign out, and the screen goes white. That is what happens today. The only question is whether it should.",
       "options": [
         {
-          "key": "say-what-it-is",
-          "label": "The panel says what the number is - \"Bugs: 11 on offer, 13 open\"",
-          "consequence": "You keep the subtraction you asked for and it stops being invisible. Two numbers on the row instead of one, so the row is slightly busier - but each one answers a question you actually ask."
+          "key": "brand",
+          "label": "Deliberate - the front door stays light",
+          "consequence": "A line in the file recording that it is a decision, and the two pages marked as a known exception to the colour rule. Nothing a customer sees changes."
         },
         {
-          "key": "plain-count",
-          "label": "The number becomes the plain open count, with \"already queued\" beside it as now",
-          "consequence": "One number, simplest to read. You lose the \"what could a shift take tonight\" reading, which is the thing #324 asked for - the panel would go back to offering you a total that includes work you have already ordered."
+          "key": "follow",
+          "label": "It should follow the theme like everything else",
+          "consequence": "The two pages move to the house colours - the four values map cleanly, so it is small - then looked at in both themes before it ships, with your eye on the result."
         }
       ],
-      "recommendation": "The first. The subtraction is useful and it is yours - a shift should not be offered work you have already queued. The only thing that ever went wrong is that the panel never said it was doing it, and the second option fixes the label by throwing the feature away.\n\nWorth saying plainly: six shifts in a row read this, agreed it was your call, and left it buried inside a bigger card where you could not see it. Splitting it out so it could reach you is most of what was done here."
+      "recommendation": "No recommendation on this one, deliberately: it is a look-and-feel call about your own front door and either answer is defensible. Whichever you pick, the two pages stop being invisible to the colour rule, which is what they are today."
+    },
+    {
+      "id": "switch-count-meaning-663",
+      "issueNumber": 663,
+      "state": "done",
+      "filedAt": "2026-09-07T21:45:00Z",
+      "title": "Your switch panel's number counts what a shift may TAKE, and calls it the open count - which should it be?",
+      "productImpact": "Built on your word and live. You answered this at 10:11 last night with two words - \"The first\" - and it shipped this morning.\n\nYour background-work panel used to say Bugs (11, 2 already queued). That 11 was never the number of open bugs: cards you have ordered into NEXT UP, and cards parked on your own ruling, come out of it first. The panel never said so, which is where your question came from.\n\nIt now reads Bugs (11 on offer, 2 already queued). Every row says it - including the rows that excluded nothing, so Performance (5) is now Performance (5 on offer). A label that came and went would still leave you having to know that its absence meant a different number.\n\nThe fuller form the card sketched - 11 on offer, 13 open - is deliberately not built. Nothing stores the true open count, and the card's own bar said not to invent it. Your sentence is answered without it.",
+      "workedExample": "Before:  Bugs (11, 1 possibly fixed)   Security (0, 1 parked)   Performance (5)\nAfter:   Bugs (11 on offer, 1 possibly fixed)   Security (0 on offer, 1 parked)   Performance (5 on offer)",
+      "options": [],
+      "recommendation": null
     },
     {
       "id": "waiting-eye-chip-649",
@@ -4383,6 +4394,22 @@
   ],
   "pipeline": [
     {
+      "id": "switch-count-663",
+      "title": "Your switch panel's number says what it is - on offer, not open",
+      "status": "merged",
+      "prNumber": 682,
+      "note": "Your ruling, built and live in production. Reviewed: pass with one note, which turned up four more places describing the old wording - all fixed.",
+      "cardId": null
+    },
+    {
+      "id": "closing-keyword-376",
+      "title": "A pull request can no longer close one of your cards by accident",
+      "status": "building",
+      "prNumber": 683,
+      "note": "Built, reviewed and its three findings fixed. Not merged: the branch needs one routine merge command that this session was not permitted to run, and the only file in the way is a generated map. Next shift lands it.",
+      "cardId": null
+    },
+    {
       "id": "pr-680-type-labels-679",
       "title": "Your moderators' own request list showed them 'stripe_refund' instead of 'Stripe refund'",
       "status": "merged",
@@ -5044,7 +5071,7 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-08T10:03:20.592Z",
+    "readAt": "2026-09-08T11:29:44.577Z",
     "items": []
   }
 }
