@@ -1,5 +1,5 @@
 /**
- * #686 — LIGHT IS THE DEFAULT THEME, DECLARED ONCE.
+ * card 686 — LIGHT IS THE DEFAULT THEME, DECLARED ONCE.
  *
  * Founder, 2026-09-08 (terminal), verbatim: *"light is default not dark theme"*
  * — and it already was, in `foundation/theme.ts` (`DEFAULT_THEME = "light"`,
@@ -18,7 +18,7 @@ import { DEFAULT_THEME } from "./theme";
 
 const APP = path.join(process.cwd(), "client", "src", "App.tsx");
 
-describe("#686 · light is the default theme, declared in one place", () => {
+describe("card 686 · light is the default theme, declared in one place", () => {
   it("the foundation's default is light", () => {
     expect(DEFAULT_THEME).toBe("light");
   });
