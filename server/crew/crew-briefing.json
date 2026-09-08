@@ -1,7 +1,7 @@
 {
-  "edition": 310,
-  "updatedAt": "2026-09-08T21:17:50Z",
-  "shift": "Foreman - two staff screens were handing over more of a customer's record than they meant to, and the lock on your moderator screen had never been tested. Both fixed. The reviewer caught a third copy of the same rule that I had walked straight past",
+  "edition": 311,
+  "updatedAt": "2026-09-08T22:30:00Z",
+  "shift": "Fable (escalated) - the moderator refund button was quoting nonsense money: a 10,000-credit top-up would have offered a 7-cent refund. Fixed at the root - the refund amount now comes from the Stripe charge itself, and two worse traps found on the same road are closed",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-08T21:18:02.820Z",
+      "readAt": "2026-09-08T22:24:55.011Z",
       "items": [
         {
           "issueNumber": 16,
@@ -251,6 +251,12 @@
           "title": "Law-7 sibling: the legacy refine box does not re-measure on a resize (cosmetic, legacy studio)",
           "kind": "roadmap",
           "rung": "N8"
+        },
+        {
+          "issueNumber": 706,
+          "title": "The future top-up writer must store a Stripe-retrievable reference — the #418 refund road depends on it (measured: population empty today)",
+          "kind": "roadmap",
+          "rung": null
         }
       ]
     }
@@ -4394,6 +4400,14 @@
   ],
   "pipeline": [
     {
+      "id": "refund-magic-float-418",
+      "title": "The Request refund button was inventing its money figure - and the road behind it could never actually pay a refund",
+      "status": "merged",
+      "prNumber": 704,
+      "cardId": null,
+      "note": "A moderator refunding a customer's top-up saw an amount computed by a bare magic number: 10,000 credits became 7 cents. Worse, found on the same road: an approved refund would always have failed at the last step (a needed detail was never passed along), and a refund for a customer who had spent all their credits would have silently refunded their ENTIRE payment while they kept everything they bought. All three fixed: the amount now comes from the actual Stripe charge and the credits from the customer's own purchase record - nobody types money figures anymore. Nobody was ever hurt: measured at the live database, zero top-up purchases exist yet. Two follow-up cards filed (#705, #706)."
+    },
+    {
       "id": "staff-reads-spread-row-700",
       "title": "Two staff screens were handing over a customer's whole database record, not the part they meant to",
       "status": "merged",
@@ -5172,7 +5186,32 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-08T21:18:01.991Z",
-    "items": []
+    "readAt": "2026-09-08T22:24:54.172Z",
+    "items": [
+      {
+        "issueNumber": 479,
+        "title": "Two editions cannot reach his page: the shared tree's uncommitted files block the rite, and it has now cost two shifts",
+        "urgent": false,
+        "held": {
+          "state": "fable"
+        }
+      },
+      {
+        "issueNumber": 599,
+        "title": "Fangs render outside a closed mouth — 'mouth at rest' + 'dentition visible' is true for tusks and impossible for fangs, so the engine draws sabre teeth over the lip (his oni-cyber Re-imagine, roll 249)",
+        "urgent": false,
+        "held": {
+          "state": "fable"
+        }
+      },
+      {
+        "issueNumber": 664,
+        "title": "A subscriber's Annual toggle changes every price on the page and never reaches the server — the upgrade bills on their existing cycle",
+        "urgent": false,
+        "held": {
+          "state": "fable"
+        }
+      }
+    ]
   }
 }
