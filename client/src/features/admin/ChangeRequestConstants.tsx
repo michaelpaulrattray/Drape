@@ -68,7 +68,18 @@ export const PRIORITY_CONFIG: Record<string, { label: string; className: string 
   urgent: { label: "Urgent", className: "bg-red-50 text-red-700 border-red-200" },
 };
 
-export const ALL_TYPES = [
+/**
+ * The admin filter's own ORDER -- money types first, which is a deliberate
+ * choice and is why this is not simply `CHANGE_REQUEST_TYPES`.
+ *
+ * It is typed `ChangeRequestType[]`, so a name that is not a real type is a
+ * typecheck failure, and `changeRequestLabels.test.ts` asserts it holds the
+ * same SET as the shared declaration. Without that pair a tenth type would be
+ * added to the shared map, the wire and the icon table -- all three forced by
+ * the compiler -- and silently never appear in this filter, which is the
+ * one-list-not-visited class this whole change is about, one shape over.
+ */
+export const ALL_TYPES: ChangeRequestType[] = [
   "refund_credits", "add_credits", "stripe_refund", "flag_account", "note_incident",
   "suspend_user", "unsuspend_user", "block_ip", "other",
 ];

@@ -36,7 +36,7 @@ import {
  *
  * ## Why "human-looking" is a quote followed by an uppercase letter
  *
- * `server/lib/adminActions/index.ts` legitimately maps the SAME nine keys onto
+ * `server/lib/adminActions/index.ts` legitimately maps SIX of these keys onto
  * approval action ids (`refund_credits: "cr_refundCredits"`). That is a
  * different fact about the same type and it must stay. The discriminator is
  * that a label starts with a capital and an identifier does not — so that file
@@ -82,8 +82,13 @@ const code = (text: string) =>
 function labelPairsIn(text: string): string[] {
   const hit: string[] = [];
   for (const key of CHANGE_REQUEST_TYPES) {
-    // `key: "Uppercase..."` — an object literal mapping the type to a label.
-    const asProperty = new RegExp(`\\b${key}\\s*:\\s*["'\`][A-Z]`);
+    /* `key: "Uppercase..."` — an object literal mapping the type to a label.
+       The key may be quoted (`"refund_credits": "Refund credits"`), which is
+       what a map pasted out of JSON or written under a quote-props lint rule
+       looks like; no copy in the tree is written that way today, and a matcher
+       that can only see the spelling that happened to occur is one paste away
+       from silence. */
+    const asProperty = new RegExp(`(?:\\b|["'])${key}["']?\\s*:\\s*["'\`][A-Z]`);
     // `value="key">Uppercase` — the same pairing written as JSX.
     const asJsx = new RegExp(`value=["']${key}["']\\s*>\\s*[A-Z]`);
     if (asProperty.test(text) || asJsx.test(text)) hit.push(key);
@@ -141,7 +146,7 @@ describe("the change-request type labels are declared once (#679)", () => {
     expect(labelPairsIn(code(truth)).length).toBe(CHANGE_REQUEST_TYPES.length);
   });
 
-  it("NEGATIVE CONTROL: the action map keyed on the same nine types is not a label map", () => {
+  it("NEGATIVE CONTROL: the action map keyed on six of these types is not a label map", () => {
     const actions = fs.readFileSync(
       path.join(REPO, "server", "lib", "adminActions", "index.ts"),
       "utf8",
@@ -152,6 +157,34 @@ describe("the change-request type labels are declared once (#679)", () => {
 
     // And a single shared word is not a map either.
     expect(labelPairsIn(`const v = { other: "Other" };`)).toEqual(["other"]);
+  });
+
+  it("POSITIVE CONTROL: a copy written with QUOTED keys is caught too", () => {
+    expect(
+      labelPairsIn(`{ "refund_credits": "Refund credits", "block_ip": "Block IP" }`),
+    ).toEqual(["refund_credits", "block_ip"]);
+  });
+
+  /**
+   * THE ADMIN FILTER'S LIST IS THE EIGHTH COPY OF THE KEYS, AND NOTHING ELSE
+   * HERE WATCHES IT (PR #680 review, finding 1).
+   *
+   * `ALL_TYPES` orders the types money-first, which is a real design choice, so
+   * it is not simply `CHANGE_REQUEST_TYPES` — it is a second LIST of the same
+   * SET. Typing it `ChangeRequestType[]` stops a name that is not a type; this
+   * arm stops a type that is not in the list.
+   *
+   * Without the pair: a tenth type is added to the shared map, the wire enum
+   * and the icon table — all three forced by the compiler — every guard above
+   * stays green, and the admin filter silently never offers it. That is the
+   * one-list-not-visited class this whole change is about, one shape over.
+   */
+  it("the admin filter offers exactly the types that exist, in its own order", async () => {
+    const { ALL_TYPES } = await import("../client/src/features/admin/ChangeRequestConstants");
+    expect([...ALL_TYPES].sort()).toEqual([...CHANGE_REQUEST_TYPES].sort());
+    /* …and the order really is its own, so this arm is not quietly asserting
+       the two lists are identical. */
+    expect(ALL_TYPES).not.toEqual([...CHANGE_REQUEST_TYPES]);
   });
 
   /**
