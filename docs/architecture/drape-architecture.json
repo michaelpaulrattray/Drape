@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9884175811a5ada2"
+    "sourceFingerprint": "448728e857308f8e"
   },
   "domains": [
     {
@@ -12850,6 +12850,10 @@
     {
       "id": "test:server/discrepancyScanListOnly.test.ts",
       "path": "server/discrepancyScanListOnly.test.ts"
+    },
+    {
+      "id": "test:server/disposableAge.test.ts",
+      "path": "server/disposableAge.test.ts"
     },
     {
       "id": "test:server/export.test.ts",
