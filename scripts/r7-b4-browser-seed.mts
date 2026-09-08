@@ -4,6 +4,11 @@ import { bootstrapModelSnapshot } from '../server/casting/snapshotBootstrap';
 import { getDb } from '../server/db/connection';
 import { openDatabase } from "./lib/dbConnection.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
+
+/* The vocabulary is declared once, at the top, so an unknown word stops the
+   seed before it touches a fixture rather than being ignored on line 129. */
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: ["cleanup"] });
 
 /*
   One world per process (scripts/lib/worldGuard.mts). Inert outside a Railway
@@ -125,7 +130,7 @@ async function cleanup(userId: number) {
 const userId = await fixtureUserId();
 await cleanup(userId);
 
-if (process.argv.includes('--cleanup')) {
+if (args.flag("cleanup")) {
   await connection.end();
   console.log(JSON.stringify({ cleaned: true, userId }));
   process.exit(0);

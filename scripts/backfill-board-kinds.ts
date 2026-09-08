@@ -16,8 +16,10 @@ import "dotenv/config";
 import mysql from "mysql2/promise";
 import { mapLegacyRow, type LegacyBoardItemRow } from "../server/lib/boardBackfill";
 import { openDatabase } from "./lib/dbConnection.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-const APPLY = process.argv.includes("--apply");
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: ["apply"] });
+const APPLY = args.flag("apply");
 
 async function main() {
   const url = process.env.DATABASE_URL;

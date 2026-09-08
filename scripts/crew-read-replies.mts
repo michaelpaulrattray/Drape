@@ -62,8 +62,9 @@ import { openDatabase, resolveDatabaseUrl, utc } from "./lib/dbConnection.mts";
 import { listedRows } from "./lib/deployWatch.mts";
 import { chooseBriefing, describeSource } from "./lib/liveBriefing.mts";
 import { hostIndex, staleOpenHosts, type ReplyRow } from "./lib/replyHosts.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-const showAll = process.argv.includes("--all");
+const showAll = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: ["all"] }).flag("all");
 
 /* `.env` for the dev fallback. It is loaded BEFORE the URL is resolved, and
    `resolveDatabaseUrl` prefers MYSQL_PUBLIC_URL, so a wrapped production run is

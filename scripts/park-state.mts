@@ -45,9 +45,11 @@ import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 import { balanceLine, readOpenRouterBalance } from "./lib/openrouterBalance.mts";
 import { falLine, readFalBalance } from "./lib/falSpend.mts";
 import { findSuiteLine, suiteVerdict } from "./lib/suiteLine.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-const WITH_SUITE = process.argv.includes("--suite");
-const WITH_PROD = !process.argv.includes("--no-prod");
+const args = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: ["suite", "no-prod"] });
+const WITH_SUITE = args.flag("suite");
+const WITH_PROD = !args.flag("no-prod");
 const SERVICE = process.env.RAILWAY_SERVICE ?? "Drape";
 const BASE = process.env.PROD_BASE_URL ?? "https://drape-production-0232.up.railway.app";
 
