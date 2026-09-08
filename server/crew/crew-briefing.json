@@ -1,7 +1,7 @@
 {
-  "edition": 304,
-  "updatedAt": "2026-09-08T11:45:00Z",
-  "shift": "Foreman (Opus) - your background-work numbers now say what they are, and a pull request is one merge away from never closing your cards by accident",
+  "edition": 305,
+  "updatedAt": "2026-09-08T13:40:00Z",
+  "shift": "Foreman (Opus) - three cards closed: a pull request can no longer close your cards by accident, one drawing of a floating panel instead of five, and a test that could report a verdict without measuring anything",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -123,17 +123,17 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "77 open, one waiting on you, none urgent. 1 closed tonight, 16 stale - read 8 Sep 11:29Z."
+        "source": "74 open, none waiting on you, none urgent. 3 closed and 1 filed tonight, 15 stale (8 Sep)."
       },
       {
-        "label": "One thing is waiting on you",
-        "tone": "neutral",
-        "source": "A taste question about your sign-in page (#678). Nothing is broken; one sentence decides it."
+        "label": "Nothing is waiting on you",
+        "tone": "good",
+        "source": "Your sign-in question (#678) was answered and closed today. Nothing else needs your word."
       },
       {
         "label": "Check-ups",
         "tone": "neutral",
-        "source": "Nothing overdue. The Janitor's is due and goes to the next shift."
+        "source": "Nothing overdue. The Janitor is due and goes to the next shift; three cards came first tonight."
       },
       {
         "label": "Charges balanced at the last read",
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-08T11:29:45.465Z",
+      "readAt": "2026-09-08T13:35:55.733Z",
       "items": [
         {
           "issueNumber": 16,
@@ -259,7 +259,7 @@
     {
       "id": "signin-hard-light-678",
       "issueNumber": 678,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-08T11:45:00Z",
       "title": "Your sign-in page is a fixed light screen whatever theme the app is in - deliberate, or just old?",
       "productImpact": "Nothing is broken and nobody has complained. This is a taste question about the first page a customer sees, and one sentence from you decides it.\n\nThe app has a dark theme and a light one. The sign-in page has neither: it is painted with 116 fixed colour values and knows nothing about the theme. So a customer using Drape in dark mode who signs out - or follows an email verification link - lands on a full-brightness white page. The verify-email page does the same.\n\nThat may be exactly right. A deliberately bright front door is a real choice and plenty of products make it. But nothing anywhere in either file says it was chosen - it is simply how things were painted before the theme existed, and never revisited. Found while sweeping the staff pages, which were rebuilt off this same pattern earlier this week.\n\nEither answer is small. The wrong guess means repainting your front door twice.",
@@ -4394,6 +4394,22 @@
   ],
   "pipeline": [
     {
+      "id": "float-panel-shell-388",
+      "title": "The little panels in your top bar were drawn five separate times",
+      "status": "merged",
+      "prNumber": 685,
+      "note": "The menu behind your face, the help menu behind the '?', and the Report-a-bug panel are meant to look like one thing. They were three separate pieces of code that happened to say the same thing - and they had already stopped agreeing: one of them had quietly picked up a different shadow, which nobody chose. Looking for the rest of the family turned up two more, so it was five drawings of one panel, not three.\n\nThere is now one description of what a floating panel looks like, and all five read it. Nothing on your screen changes, and that is the deliverable: every panel was opened in the running app in both themes, before and after, and the measurements came back identical - eight of the ten photographs are the same file byte for byte, and the two that differ do so by nine pixels of text smoothing out of 648,000.\n\nThe name the card recommended for the shared piece was already taken by something else, which is exactly the collision the promotion rules exist to catch. And the new check that stops a sixth drawing appearing was BLIND when it was first written - it passed while the defect was put back on purpose. That was found by breaking it deliberately rather than by trusting it.",
+      "cardId": null
+    },
+    {
+      "id": "hook-fixture-mode-673",
+      "title": "A test could report a verdict on something it had never actually run",
+      "status": "merged",
+      "prNumber": 688,
+      "note": "Some of our safety checks work by installing a small script that runs when code is committed or pushed, then proving it refuses bad work. On Windows those scripts run whatever their file permissions say. On the machine that runs the checks for real, one wrong permission makes the script silently ignored - and the test carries on and reports that everything is fine.\n\nIt has happened twice. The second time, a test reported what a particular safety script can and cannot do - the finding an entire design decision rested on - over a script that had never run.\n\nThere is now a check that finds this shape anywhere in the suite. It was proved by deliberately breaking both of the real places, and by blinding it, which is the failure that matters: a checker that finds nothing looks exactly like a codebase with nothing wrong.",
+      "cardId": null
+    },
+    {
       "id": "switch-count-663",
       "title": "Your switch panel's number says what it is - on offer, not open",
       "status": "merged",
@@ -4404,10 +4420,9 @@
     {
       "id": "closing-keyword-376",
       "title": "A pull request can no longer close one of your cards by accident",
-      "status": "building",
+      "status": "merged",
       "prNumber": 683,
-      "note": "Built, reviewed and its three findings fixed. Not merged: the branch needs one routine merge command that this session was not permitted to run, and the only file in the way is a generated map. Next shift lands it.",
-      "cardId": null
+      "note": "Merged and live. From now on a pull request cannot close one of your cards by mentioning it - the words that used to do that are refused in three places, including the one place a pull request never reaches. It caught its own paperwork first: the text describing the fix would itself have closed a card at the moment it landed."
     },
     {
       "id": "pr-680-type-labels-679",
@@ -5071,7 +5086,7 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-08T11:29:44.577Z",
+    "readAt": "2026-09-08T13:35:54.832Z",
     "items": []
   }
 }
