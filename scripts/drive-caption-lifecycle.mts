@@ -34,17 +34,38 @@ import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
    Below it the module opens a database and then spends renders. A refusal is
    only worth having if it lands BEFORE the thing it is protecting you from,
    so the vocabulary is read here rather than beside the loop that uses it. */
-/* ⚠ ONE BARE WORD, DECLARED (#642). The case to run, so a re-run costs one case's renders.
-   A positional the parser does not know about is SWALLOWED, so before this a
-   misspelled name (`ab` for `a`) selected nothing and the
-   driver ran EVERY case - the opposite of what was asked, and on a driver that
-   spends renders that is the expensive direction. */
+
+/**
+ * THE CASES, AND THE ONE ASKED FOR (#642).
+ *
+ * ⚠ **A DECLARED POSITIONAL IS NOT A CHECKED ONE, AND THE FAILURE HERE RUNS
+ * THE OTHER WAY FROM THE OBVIOUS ONE** (PR #670's review, finding 1). The old
+ * reader was `const only = process.argv[2]` with `!only || only === name`, so a
+ * misspelled `ab` made every `wanted()` FALSE and the driver ran **zero**
+ * cases - and then printed its unconditional `ALL CAPTION-LIFECYCLE CASES PASS.`
+ * and exited 0.
+ *
+ * That is worse than running every case: an operator re-running one case to
+ * verify a fix, who typos the name, reads ALL PASS over nothing driven and
+ * files the fix as verified. A green claim with no artifact behind it, which is
+ * working law 1 exactly.
+ *
+ * Declaring the positional stopped an unknown `--flag`; only checking the WORD
+ * against the closed vocabulary stops this. Both are needed and the second is
+ * the one that matters.
+ */
+const CASES = ["a", "b", "c"] as const;
+
 const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
   value: [],
   boolean: [],
   positional: 1,
 });
 const only = ARGS.positional(0);
+if (only !== null && !(CASES as readonly string[]).includes(only)) {
+  console.error(`REFUSING: "${only}" is not a case. Known: ${CASES.join(", ")} (or no argument, for all three).`);
+  process.exit(1);
+}
 
 /*
   One world per process (scripts/lib/worldGuard.mts). Inert outside a Railway

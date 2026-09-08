@@ -26,15 +26,27 @@ import { itemsOf, type RefineDelta } from "../server/castingV2/refineDelta";
 import { pendingReaskFor, resolveAnswer } from "../server/castingV2/refineReask";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-/* ⚠ THE PARSE IS THE FIRST THING THIS MODULE DOES, ON PURPOSE (#642).
-   Below it the module opens a database and then spends renders. A refusal is
-   only worth having if it lands BEFORE the thing it is protecting you from,
-   so the vocabulary is read here rather than beside the loop that uses it. */
-/* ⚠ ONE BARE WORD, DECLARED (#642). The class to run; absent means all of them.
-   A positional the parser does not know about is SWALLOWED, so before this a
-   misspelled name (a class name with a typo in it) selected nothing and the
-   driver ran EVERY case - the opposite of what was asked, and on a driver that
-   spends renders that is the expensive direction. */
+/**
+ * THE PARSE IS THE FIRST THING THIS MODULE DOES, ON PURPOSE (#642).
+ *
+ * ⚠ **AND THE SENTENCE THAT WAS HERE FIRST WAS FALSE OF THIS FILE** (PR
+ * #670's review, finding 3): it said the module "opens a database and then
+ * spends renders", copy-pasted from `drive-caption-lifecycle.mts`. **This file
+ * opens no database and renders nothing** - its own header says *"Text stage
+ * only - no renders"*, and what it spends is cents of OpenRouter text through
+ * `interpretRefinement`. A confident wrong sentence in a shipped file is this
+ * repository's own bug class (law 7c), and it does not get to survive in the
+ * commit that names that class.
+ *
+ * The parse still belongs at the top: a refusal is only worth having if it
+ * lands before the thing it protects you from, and here that is the text spend.
+ *
+ * ⚠ **THE POSITIONAL IS CHECKED AGAINST THE CLOSED VOCABULARY, not merely
+ * declared** (finding 1). The old reader made a misspelled class name skip
+ * every class, so the driver ran **zero** of them and then printed
+ * `EVERY HONEST PHRASING LANDED.` and exited 0 - a green claim with no artifact
+ * behind it. The check itself sits below, where `CLASSES` is declared.
+ */
 const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
   value: [],
   boolean: [],
@@ -197,6 +209,14 @@ const CLASSES: Klass[] = [
     asks: ["pink hair and green eyes", "green eyes, pink hair", "make her hair pink with green eyes"],
   },
 ];
+
+/* ⚠ The closed vocabulary, checked (PR #670's review, finding 1). It sits
+   here rather than beside the parse because this is where the names exist; the
+   parse above still refuses an unknown --flag before anything is spent. */
+if (only !== null && !CLASSES.some((klass) => klass.name === only)) {
+  console.error(`REFUSING: "${only}" is not a class. Known: ${CLASSES.map((klass) => klass.name).join(", ")} (or no argument, for all of them).`);
+  process.exit(1);
+}
 
 function drawerValue(delta: RefineDelta, drawer: string): string | null {
   if (drawer.startsWith("free.")) {
