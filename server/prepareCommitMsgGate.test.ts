@@ -1,5 +1,14 @@
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -83,6 +92,21 @@ const git = (cwd: string, ...args: string[]) => gitIn(HOOKS_DIR, cwd, ...args);
  * being measured.
  */
 const plainGit = (cwd: string, ...args: string[]) => gitIn("/drape-no-hooks-here", cwd, ...args);
+
+/**
+ * Make a hook file runnable, on every platform this suite runs on.
+ *
+ * ⚠ GIT SILENTLY IGNORES A HOOK WITHOUT THE EXECUTABLE BIT — it says so in a
+ * `hint:` and carries on as if the hook did not exist. Windows sets
+ * `core.filemode=false` so a hook runs regardless, which means a fixture
+ * missing this passes locally and measures NOTHING on ubuntu. That is the same
+ * defect this file's own index-mode arm exists to catch in `.githooks`, and it
+ * arrived here first as a fixture bug — caught by the gate, on the very arm
+ * whose whole job is to establish what a hook can and cannot do.
+ */
+function installable(file: string) {
+  chmodSync(file, 0o755);
+}
 
 const repos: string[] = [];
 afterAll(() => {
@@ -217,6 +241,10 @@ describe("the prepare-commit-msg gate", { timeout: 180_000 }, () => {
       mkdirSync(solo, { recursive: true });
       copyFileSync(HOOK, join(solo, "prepare-commit-msg"));
       copyFileSync(SHARED, join(solo, "shift-branch-guard"));
+      /* Set explicitly rather than trusting what `copyFileSync` carries over —
+         see `installable`: a hook without this is ignored on Linux and the arm
+         then proves nothing while passing. */
+      installable(join(solo, "prepare-commit-msg"));
 
       plainGit(dir, "checkout", "-q", "-b", "team/611-solo");
       const before = tipOf(dir, "team/611-solo");
@@ -322,7 +350,13 @@ describe("the prepare-commit-msg gate", { timeout: 180_000 }, () => {
       const dir = freshRepo();
       const solo = join(dir, "post-checkout-hooks");
       mkdirSync(solo, { recursive: true });
+      /* ⚠ THIS FIXTURE WITHOUT ITS chmod IS HOW THIS ARM LIED ON THE GATE.
+         Git ignored the hook (`hint: … was ignored because it's not set as
+         executable`), the branch switched because NOTHING ran, and the arm
+         reported "post-checkout cannot refuse" over a measurement it had not
+         made. On Windows it ran anyway and the arm passed. */
       writeFileSync(join(solo, "post-checkout"), "#!/bin/sh\necho REFUSED-BY-post-checkout >&2\nexit 1\n");
+      installable(join(solo, "post-checkout"));
 
       plainGit(dir, "branch", "team/611-postcheckout");
       const result = gitIn(solo, dir, "checkout", "team/611-postcheckout");
