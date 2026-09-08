@@ -1,7 +1,7 @@
 {
-  "edition": 309,
-  "updatedAt": "2026-09-08T19:55:00Z",
-  "shift": "Foreman - the file guarding who may look at your customers' accounts had 46 checks and 42 of them could not fail. It now has 34 that all run the real thing - and the reviewer caught one I had left alone, which turned out to be the worst of the lot",
+  "edition": 310,
+  "updatedAt": "2026-09-08T21:17:50Z",
+  "shift": "Foreman - two staff screens were handing over more of a customer's record than they meant to, and the lock on your moderator screen had never been tested. Both fixed. The reviewer caught a third copy of the same rule that I had walked straight past",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-08T19:49:42.823Z",
+      "readAt": "2026-09-08T21:18:02.820Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4394,6 +4394,22 @@
   ],
   "pipeline": [
     {
+      "id": "staff-reads-spread-row-700",
+      "title": "Two staff screens were handing over a customer's whole database record, not the part they meant to",
+      "status": "merged",
+      "prNumber": 701,
+      "cardId": null,
+      "note": "When a staff member opens a customer's account to look into a complaint, the screen asks the server for that customer. Four of those requests were answering by handing over the customer's ENTIRE row and then tidying up a few dates on the way out - rather than naming the fields a staff member is allowed to see.\n\nNOTHING WAS LEAKING, and I checked that rather than assumed it. A layer further down was naming the fields properly, so only the right ones ever travelled. But the safety was living in the wrong place: the day anyone adds a column to the customers table and widens that lower layer for some other staff feature - a completely ordinary thing to do - the new column would have ridden out to the staff screen automatically, with nothing objecting and no alarm going off. The most sensitive things we hold are on that row: the password hash, the Stripe customer id, and the recipe behind a customer's cast.\n\nI proved that before fixing it rather than after. I put all six of those secrets onto the test customer and ran the checks against the OLD code: all six travelled out to the staff screen. Then the fix, and they stop. The screens show exactly what they showed before - this is one of those changes where the right outcome is that you see nothing at all.\n\nThe card named two of these. Looking for others of the same shape found two more on the ADMIN side, and those turned out to have no test at all - the file that looked like their test was asking itself questions rather than asking the product. Fixed together.\n\nProved by deliberately breaking it eleven ways and checking the right alarm - and only the right alarm - went off each time, including one deliberate non-break that must set nothing off."
+    },
+    {
+      "id": "moderator-gate-untested-699",
+      "title": "The lock on your moderator screen was one line that nothing had ever tested",
+      "status": "merged",
+      "prNumber": 702,
+      "cardId": null,
+      "note": "One line decided who is allowed to see the moderator screen, and nothing anywhere checked it. What looked like its test was six checks that wrote the answer down and then agreed with it - they were removed last night, which is how the gap came to light.\n\nTO BE CLEAR ABOUT THE SIZE OF IT: this was never an open door. The server refuses the wrong person whatever the screen does, and that refusal IS tested. What was untested is whether someone without permission gets a clean 'you do not have access' or a broken-looking screen full of errors. The line was correct. Nothing would have noticed if it stopped being.\n\nThe rule now lives in one place and is properly tested - a moderator gets in, an admin gets in (the product promises that in writing and nothing had ever checked it), an ordinary customer does not, and an unrecognised role is refused rather than let through. Two more that are easy to get wrong: while your session is still loading nobody is bounced, and a signed-out visitor is sent to sign in rather than told they lack permission.\n\nTHE PART WORTH YOUR TIME. The same rule was written out THREE times in three files. I found two and said so in the write-up; the reviewer found the third and it was the one that mattered most - the Moderation row in your account menu. That row LINKS to the screen the rule guards, so if the two copies ever drifted apart, somebody would be shown the row and then bounced by the screen behind it. All three now ask the same question, and there is a check that fails if anyone writes a fourth copy."
+    },
+    {
       "id": "hollow-moderator-arms-697",
       "title": "The file guarding who may look at a customer's account was checking almost nothing",
       "status": "merged",
@@ -5156,7 +5172,7 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-08T19:49:41.876Z",
+    "readAt": "2026-09-08T21:18:01.991Z",
     "items": []
   }
 }
