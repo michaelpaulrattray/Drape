@@ -115,6 +115,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { importerCount, readTree } from "./lib/importerCountDiff.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const REPO = resolve(import.meta.dirname, "..");
 const TABLE = resolve(REPO, "docs/specs/cleanup-dispositions.yaml");
@@ -460,7 +461,29 @@ function controls(log: (line: string) => void): boolean {
 
 /* ---- the run ------------------------------------------------------------ */
 
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replaceAll("\\", "/").split("/").pop()!)) {
+/*
+  RUN DIRECTLY? ASK THE PLATFORM, NOT `argv[1]` (#642).
+
+  This file is BOTH a flag reader (`--strict` below) and a self-invocation
+  check, which is a shape #642's table has no state for -- and the two cannot
+  coexist: once a script imports the strict parser, the derived adopter guard
+  (`readsArgvOutsideTheStrictParse`) forbids ANY further `process.argv`, and it
+  is right to, because a second reader beside a declared vocabulary is exactly
+  the half-revert it exists to catch.
+
+  `import.meta.main` is Node 24's own answer and needs no argv at all. It also
+  retires the WEAKEST of this repository's three spellings: the line it replaces
+  compared BASENAMES, so any entrypoint sharing this file's filename satisfied
+  it. The two stricter spellings (`check-architecture.mts`,
+  `generate-architecture.mts`) are untouched here and carded -- their own
+  neighbour documents a Windows trap in this idiom (a silent no-op that reads
+  exactly like a clean run), which is the argument for the primitive over a
+  fourth hand-rolled comparison.
+*/
+if (import.meta.main) {
+  /* Parsed FIRST, so a mistyped word stops the run before the controls print
+     rather than after the whole table has been audited. */
+  const strict = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: ["strict"] }).flag("strict");
   console.log("CONTROLS — driven directly, against tables that cannot come clean");
   if (!controls((line) => console.log(line))) {
     console.log("REFUSED — the checker failed its own controls; no verdict printed.");
@@ -521,7 +544,6 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replaceAll("\\",
     console.log(`  ${kind.padEnd(12)} ${entries.length}${entries.length > 0 ? `  ${entries.slice(0, 8).join(", ")}${entries.length > 8 ? " …" : ""}` : ""}`);
   }
 
-  const strict = process.argv.includes("--strict");
   const fatal = audit.stale.length + audit.blockerless.length + audit.ownerless.length
     + audit.unknown.length + audit.rewired.length + audit.unreadable.length
     + audit.overdebt.length
