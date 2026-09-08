@@ -63,11 +63,20 @@ drape_refuse_shift_branch() {
   # a conditional here would fall through to the plain checkout on exactly the
   # road the finding is about, which is the failure wearing a fix. The honest
   # answer is a message that is true on every road and promises nothing.
+  #
+  # ⚠ AND `git revert --abort` IS DELIBERATELY NOT IN THIS LIST, WHICH IS THE
+  # SECOND THING DRIVING IT TAUGHT. A refused revert leaves NO sequencer state
+  # at all — only its staged change — so that command errors with "no revert in
+  # progress" on the commonest road of the lot. It was in the list until an arm
+  # was written for it and went red, which is the whole argument for pinning a
+  # message's promises instead of writing them. The three named below are each
+  # driven; a refused revert or a refused `--no-verify` commit leaves staged
+  # changes and nothing to abort, and `git checkout main` is the answer there.
   echo "Nothing was committed. What that operation staged is still staged." >&2
   echo "To leave this state, whichever road you were on:" >&2
   echo "" >&2
-  echo "  git revert --abort     /  git cherry-pick --abort  /  git rebase --abort" >&2
-  echo "  git checkout main      (once the tree is clean)" >&2
+  echo "  git cherry-pick --abort  /  git rebase --abort  /  git merge --abort" >&2
+  echo "  git checkout main        (once the tree is clean)" >&2
   echo "" >&2
   echo "(docs/RETRO_LOG.md R3 — a terminal commit has landed on a shift branch" >&2
   echo "this way more than once. Never --no-verify.)" >&2

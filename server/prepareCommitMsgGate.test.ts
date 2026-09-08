@@ -185,7 +185,36 @@ describe("the prepare-commit-msg gate", { timeout: 180_000 }, () => {
       /* ⚠ THE EXIT CODE ALONE IS NOT THE VERDICT — `post-checkout` exits 1 and
          its act happens anyway. What settles it is that no commit was made. */
       expect(tipOf(dir, "team/611-revert"), "the revert must not have committed").toBe(before);
-      plainGit(dir, "revert", "--quit");
+
+      /* ⚠ WHY THE MESSAGE DOES NOT NAME `git revert --abort`, PINNED (round 2,
+         finding 3 — and the arm went RED before this comment existed, which is
+         the point). A refused revert leaves NO sequencer state, only its
+         staged change, so that command errors with "no revert in progress" on
+         the commonest road of the lot. It WAS in the refusal's escape list
+         until this arm was written for it.
+
+         A promise in a message is a claim like any other; this is the arm that
+         keeps the corrected list honest, on the #649 pattern — if git ever
+         starts leaving revert state here, this reddens and the message can
+         gain the line back. */
+      const aborted = git(dir, "revert", "--abort");
+      expect(
+        aborted.status,
+        "a refused revert leaves nothing to abort — if this passes, the message may name it again",
+      ).not.toBe(0);
+      /* The revert of the tip commit stages the undo of it — here a deletion
+         of `third.txt`. What matters is that SOMETHING is left staged, which
+         is why `git checkout main` needed the force below and why the old
+         "never refused" promise was an overstatement. */
+      expect(
+        plainGit(dir, "status", "--porcelain").stdout.trim(),
+        "the revert's change is left staged",
+      ).not.toBe("");
+      /* `git checkout main` is the escape on this road, and it is what the
+         message names. Driven, because the previous version of that sentence
+         promised an exit it could not always deliver. */
+      expect(git(dir, "checkout", "-f", "main").status).toBe(0);
+      expect(branchOf(dir)).toBe("main");
     });
 
     it("REFUSES a cherry-pick onto a team/* branch in the main tree", () => {
@@ -196,7 +225,14 @@ describe("the prepare-commit-msg gate", { timeout: 180_000 }, () => {
       expect(result.status).not.toBe(0);
       expect(result.stderr).toContain("MAIN working tree");
       expect(tipOf(dir, "team/611-pick"), "the cherry-pick must not have committed").toBe(before);
-      plainGit(dir, "cherry-pick", "--quit");
+
+      /* The same promise on this road — a refused cherry-pick leaves
+         CHERRY_PICK_HEAD and a staged change behind, so `git checkout main` is
+         not the answer and the abort the message names has to work. */
+      const aborted = git(dir, "cherry-pick", "--abort");
+      expect(aborted.status, `git cherry-pick --abort must work: ${aborted.stderr}`).toBe(0);
+      expect(tipOf(dir, "HEAD")).toBe(before);
+      expect(plainGit(dir, "status", "--porcelain").stdout.trim(), "and it must leave a clean tree").toBe("");
     });
 
     it("REFUSES a replayed rebase commit — HEAD is DETACHED there, so the branch is read from git's state file", () => {
@@ -230,6 +266,47 @@ describe("the prepare-commit-msg gate", { timeout: 180_000 }, () => {
       expect(aborted.status, aborted.stderr).toBe(0);
       expect(branchOf(dir), "the abort must put him back on his branch").toBe("team/611-abort");
       expect(tipOf(dir, "HEAD"), "and back at the commit he started from").toBe(before);
+    });
+
+    it("REFUSES a merge onto a team/* branch — the fifth road, and the header did not name it", () => {
+      /* ⚠ FOUND BY REVIEW AND DRIVEN BEFORE IT WAS BELIEVED (round 2, finding
+         1). `git merge` runs this hook, so `git merge main` on a shift branch
+         in the main tree — the one command CLAUDE.md prescribes for unsticking
+         a conflicting PR — is refused. The refusal is the guard working; what
+         was wrong was a header presenting its table as the complete
+         measurement while missing a road. */
+      const dir = freshRepo();
+      plainGit(dir, "checkout", "-q", "-b", "team/611-merge");
+      const before = tipOf(dir, "team/611-merge");
+      const result = git(dir, "merge", "--no-edit", "side");
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain("MAIN working tree");
+      expect(tipOf(dir, "team/611-merge"), "no merge commit may land").toBe(before);
+
+      /* And the escape the message names for this road actually works — a
+         refused merge leaves MERGE_HEAD behind, so `git checkout main` alone
+         is not the answer. */
+      const aborted = git(dir, "merge", "--abort");
+      expect(aborted.status, aborted.stderr).toBe(0);
+      expect(tipOf(dir, "HEAD")).toBe(before);
+    });
+
+    it("REFUSES `git commit --no-verify` — it skips pre-commit and NOT this hook", () => {
+      /* ⚠ THE HEADER CLAIMED THE OPPOSITE UNTIL ROUND 2 OF THE REVIEW. Git's
+         githooks documentation: prepare-commit-msg "is not suppressed by the
+         --no-verify option". The error was in the safe direction — coverage is
+         stronger than was claimed — but it was a false sentence in a header
+         whose authority is that it was measured, so the corrected claim is
+         pinned here rather than merely rewritten. */
+      const dir = freshRepo();
+      plainGit(dir, "checkout", "-q", "-b", "team/611-noverify");
+      const before = tipOf(dir, "team/611-noverify");
+      writeFileSync(join(dir, "bypass.txt"), "x\n");
+      plainGit(dir, "add", "bypass.txt");
+      const result = git(dir, "commit", "--no-verify", "-m", "bypass");
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain("MAIN working tree");
+      expect(tipOf(dir, "team/611-noverify"), "--no-verify must not get a commit through").toBe(before);
     });
 
     it("REFUSES an ordinary commit ON ITS OWN — with pre-commit not installed at all", () => {

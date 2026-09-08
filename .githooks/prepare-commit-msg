@@ -36,13 +36,35 @@
 #   - The card's objection to `prepare-commit-msg` was about a hook that WRITES
 #     AND STAGES A FILE (#610 drove that: the staged file is dropped in a
 #     revert). A REFUSAL has no such problem — firing twice in a revert simply
-#     refuses twice — and it covers all four roads.
-#   - `reference-transaction` also covers all four, and was built and driven
+#     refuses twice — and it covers every commit road in this header.
+#   - `reference-transaction` covers the same roads, and was built and driven
 #     first. It was DISCARDED ON COST: it fires on every ref update in the
 #     repository, measured at SEVEN invocations per commit and FOURTEEN per
 #     checkout, adding ~137 ms to every commit, checkout, fetch, reset and
 #     stash in the founder's own sessions. This hook is ONE invocation per
 #     commit and ZERO on checkout and fetch, for the same coverage.
+#
+# ⚠ AND THE TABLE WAS SHORT BY TWO ROADS, BOTH FOUND BY REVIEW AND BOTH DRIVEN
+# BEFORE THEY WERE BELIEVED (PR #671, round 2). It presented itself as the
+# complete measurement and was not:
+#
+#   git merge (automatic merge commit)   BLOCKED
+#   git commit --no-verify               BLOCKED
+#
+#   - `git merge` runs this hook, so `git merge main` on a `team/*` branch in
+#     the main tree is refused. That is the guard working — no commit lands on
+#     a shift branch in the shared tree — but it fires on a road the header did
+#     not name, and it leaves MERGE_HEAD behind, so `git merge --abort` is the
+#     escape and is now in the refusal's list.
+#   - ⚠ `--no-verify` DOES NOT SKIP THIS HOOK. The header used to claim it did,
+#     "exactly as it skips pre-commit". Git's own githooks documentation says
+#     prepare-commit-msg "is not suppressed by the --no-verify option", and a
+#     drive confirms it: `git commit --no-verify` on a shift branch in the main
+#     tree is REFUSED. The error was in the safe direction — coverage is
+#     STRONGER than was claimed — but a header whose whole authority is
+#     "measured, not argued" carrying a false sentence about its own hook is
+#     the class this repository keeps being bitten by. Both roads are pinned by
+#     arms so the corrected claims stay checkable.
 #
 # ⚠ THE ONE ROAD NEITHER THIS NOR `pre-commit` COVERS IS `git am`, AND IT IS
 # DECLARED RATHER THAN LEFT TO BE DISCOVERED. Measured the same way: `git am`
@@ -60,8 +82,8 @@
 # replayed onto is named in git's own state file for the duration, and that is
 # the only place it is named.
 #
-# THE ESCAPE IS FIXING THE COMMIT, NOT --no-verify (which skips this hook
-# exactly as it skips pre-commit). Driven by
+# THE ESCAPE IS FIXING THE COMMIT. `--no-verify` is NOT an escape from this
+# arm — see the table above; it skips `pre-commit` and not this. Driven by
 # server/prepareCommitMsgGate.test.ts against real temporary repositories, in
 # both directions, on every road in the table above.
 #
@@ -100,7 +122,8 @@ esac
 drape_in_main_working_tree || exit 0
 
 drape_refuse_shift_branch "$branch" "That commit"
-echo "This is .githooks/prepare-commit-msg — git does not run pre-commit on a" >&2
-echo "revert, a cherry-pick or a replayed rebase, so this arm is what caught it." >&2
+echo "This is .githooks/prepare-commit-msg. It covers the roads pre-commit does" >&2
+echo "not see — revert, cherry-pick, a replayed rebase, a merge — and, unlike" >&2
+echo "pre-commit, it is not suppressed by --no-verify." >&2
 echo "" >&2
 exit 1
