@@ -1,7 +1,7 @@
 {
-  "edition": 299,
-  "updatedAt": "2026-09-08T02:07:19.109Z",
-  "shift": "Foreman (Opus) - the number under your switches was written before the work, not after",
+  "edition": 300,
+  "updatedAt": "2026-09-08T04:26:00.599Z",
+  "shift": "Foreman (Opus) - a rollback on a shift branch could quietly sweep up your work",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,24 +116,24 @@
     ],
     "chips": [
       {
-        "label": "Your switch numbers now follow the work",
+        "label": "Rollbacks cannot sweep up your work",
         "tone": "good",
-        "source": "Shipped tonight (#618). A shift refreshes them as it finishes, not only when it starts."
+        "source": "Shipped tonight (#611). It watched saves only - and undoing a change is a save it never saw."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "82 open, 1 yours (#543, waits on 12 Sep), none urgent. 1 closed, 14 stale — read 8 Sep 01:50Z."
+        "source": "78 open, none yours, none urgent. 3 closed tonight, 1 filed, 15 stale - read 8 Sep 04:25Z."
       },
       {
         "label": "Nothing is waiting on you",
         "tone": "good",
-        "source": "Your last held picture cleared by your own reply tonight. Nothing else needs your eye."
+        "source": "Your NEXT UP list is empty - you closed #543 this morning. Nothing needs your eye."
       },
       {
         "label": "Check-ups",
         "tone": "neutral",
-        "source": "Nothing overdue. The Janitor's is due today and goes to the next shift."
+        "source": "Nothing overdue. The Janitor's is due and goes to the next shift."
       },
       {
         "label": "Charges balanced at the last read",
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-08T02:07:48.088Z",
+      "readAt": "2026-09-08T03:13:44.733Z",
       "items": [
         {
           "issueNumber": 16,
@@ -281,7 +281,7 @@
     {
       "id": "waiting-eye-chip-649",
       "issueNumber": 649,
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-07T20:40:00Z",
       "title": "A picture you have answered but not finished with: should it wear the same badge a card does?",
       "productImpact": "A small look-and-feel question, and it is yours because it is about pictures.\n\nWhen you answer a card on this page but the job is not finished, it keeps a badge - ANSWERED, STILL YOURS TO DO - so it stays in front of you instead of quietly disappearing. That was your own instruction: keep it on your desk until the act is done.\n\nThe same state can now apply to a set of FRAMES in your gallery, and there the badge is not drawn. So a picture you have already ruled on looks exactly like a fresh one waiting for you.\n\nThe cheap answer is to put the same badge on the gallery. The reason nobody has just done it: frames are judged by looking, and a badge sitting on top of a picture may read as clutter where the same badge on a card reads as information. That is a taste call, not an engineering one.\n\nWHAT WE WOULD DO IF YOU SAY NOTHING: leave the gallery alone. It is the smaller risk - a gallery item you have answered still shows your reply underneath it, so nothing is lost, and a picture stays a picture.\n\nEverything else on that card is built and merged; this is all that is left of it.",
@@ -466,7 +466,7 @@
       "workedExample": "The before-picture, measured over the three days BEFORE any of tonight's work landed: 1.18 jobs finished per working session against a target of 3, and 28.25 minutes of machine checking per job against a target of 10. Both miss, which is the point of taking it before rather than after.\n\nThe next performance read covers the nights that have the new tools. If cards-per-session goes up and minutes-per-job goes down, the design worked. If they do not, it did not, and the numbers will say so plainly rather than being explained away.",
       "options": [],
       "recommendation": "Nothing to do tonight. When you next look at a performance read, the two numbers are in it — and your word on them closes this card.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-05T11:35:00.000Z"
     },
     {
@@ -4383,6 +4383,30 @@
   ],
   "pipeline": [
     {
+      "id": "pr-671-shift-branch-rollback-611",
+      "title": "A rollback on a shift branch could quietly sweep up your unsaved work (#611)",
+      "status": "merged",
+      "prNumber": 671,
+      "cardId": null,
+      "note": "THE THING THIS PROTECTS. You and the night shifts share one folder on your machine. There is already a guard that stops a shift saving its work onto its own branch while sitting in your folder - because when that happened, it swept up whatever you had open and unsaved at the time. It has happened more than once.\n\nWHAT WAS OPEN. That guard only ever watched an ordinary save. Git simply does not run it when you UNDO a change, copy one across, or replay a batch of them. So the one thing it existed to prevent could still happen, by a different door.\n\nAND UNDOING A CHANGE IS NOW A ROUTINE ACT. Since your app started going live the moment something merges, the way we prove a change can be rolled back is to undo it. That turned the one road the guard was blind to into a road we walk on purpose.\n\nWHAT IS DIFFERENT NOW. Undo, copy-across, replay and merge are all refused the same way an ordinary save was, with a message that says which branch, why, and exactly what to type to get out of it. Nothing changes for you working on the main line - that was checked in both directions.\n\nWHAT THE CHECKING TURNED UP, AND IT IS THE part worth reading. The card that asked for this recommended a particular way of doing it. I built it and it does not work: that kind of guard is allowed to object but not to actually stop anything. The card had also ruled OUT the approach that turned out to be right, on a reason that applied to a different job. Both are now written down as measurements anyone can re-run, rather than as opinions.\n\nA first version worked and was thrown away on cost: it would have added about a seventh of a second to every single git action you take, all night, to cover one rare case. What shipped costs that on saves only, and nothing at all the rest of the time.\n\nYour reviewer found six real things across two rounds, including two sentences in my own notes that were simply false - one claimed a bypass flag would skip this guard when it does not, and one promised a way out that errors on the commonest road. Both were found by writing the test rather than by re-reading the sentence. All six fixed."
+    },
+    {
+      "id": "pr-672-run-directly-668",
+      "title": "Eight tools asked \"am I the one being run?\" eight different ways (#668)",
+      "status": "merged",
+      "prNumber": 672,
+      "cardId": null,
+      "note": "NOTHING YOU WOULD HAVE SEEN, AND THAT IS THE PROBLEM. Several of our internal tools are both a thing another tool uses and a thing a person runs directly, so each had to work out which was happening. Eight of them worked it out in four different hand-written ways.\n\nTHE WAY IT GOES WRONG IS SILENT. One of those eight files carries a warning, written by whoever last got it wrong: on Windows the comparison can simply never match, so the tool does nothing, reports no error, and finishes successfully. A check that checks nothing and says it passed.\n\nWHAT IS DIFFERENT NOW. All eight ask the platform instead - one built-in answer, nothing to spell wrong. The comments that explained the old approach were corrected rather than left behind, because a note describing machinery that no longer exists is how the next person is misled.\n\nAND THE REVIEWER CAUGHT THE SAME TRAP HIDING IN THE FIX. The new built-in only exists on recent versions; on an older one it is silently false in both directions, which is the identical do-nothing-and-say-it-passed failure arriving through a different door. The two tools your commit process runs now refuse loudly on an old version instead, and the version requirement is written down - after a first attempt at writing it down allowed the exact versions that lack it."
+    },
+    {
+      "id": "card-649-closed-at-the-code",
+      "title": "A card that was already finished, closed at the code rather than rebuilt",
+      "status": "merged",
+      "prNumber": null,
+      "cardId": null,
+      "note": "Before building anything, a shift now opens the files a card names and checks whether the work is already done. This one was: all three parts had landed in an earlier change, and the third had been settled by your own reply - \"leave it\". It was still sitting in the queue marked as blocked.\n\nClosed with the commit that did the work as the receipt, and the block taken off. That is a night's work saved by half an hour of reading."
+    },
+    {
       "id": "pr-669-count-at-close-618",
       "title": "The number under your switches was written before the night's work, not after (#618)",
       "status": "merged",
@@ -4957,13 +4981,7 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-08T02:07:47.310Z",
-    "items": [
-      {
-        "issueNumber": 543,
-        "title": "The shift never idles on a gate — preflight, a second worktree while the gate runs, merge-in-order, two review rounds max, and the two numbers that prove it (URGENT, his order)",
-        "urgent": false
-      }
-    ]
+    "readAt": "2026-09-08T03:13:43.831Z",
+    "items": []
   }
 }
