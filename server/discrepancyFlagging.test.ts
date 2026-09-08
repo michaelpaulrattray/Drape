@@ -19,7 +19,32 @@
  * reported as `unrefundedFailureCost` rather than flagged.
  */
 
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
+
+/** This file lives at `server/`, so the repository root is one level up. */
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+/**
+ * The threshold every surface actually asks with, READ OUT OF THE ONE FILE
+ * THAT DECLARES IT rather than re-typed here.
+ *
+ * `DEFAULT_DISCREPANCY_THRESHOLD` lives in `client/`, which server code must
+ * not import (#416 removed a server-side `.default(50)` for being a second
+ * declaration one layer down, where the client's single-source guard cannot
+ * walk). Typing `500` into a server test would put it back in a third place —
+ * so the value is parsed from the declaring file, and a suite that cannot find
+ * it refuses rather than falling back to a number of its own.
+ */
+const BADGE_THRESHOLD = (() => {
+  const rel = "client/src/features/moderator/flagThresholds.ts";
+  const source = readFileSync(resolve(REPO_ROOT, rel), "utf8");
+  const match = source.match(/DEFAULT_DISCREPANCY_THRESHOLD\s*=\s*(\d+)/);
+  if (!match) throw new Error(`${rel} no longer declares DEFAULT_DISCREPANCY_THRESHOLD`);
+  return Number(match[1]);
+})();
 
 /*
  * ⚠ SIXTY LINES OF `discrepancyQueries.ts` USED TO BE RE-TYPED HERE, under a
@@ -39,6 +64,8 @@ import { describe, it, expect } from "vitest";
  * The formula change of #119 is exactly why that matters: fifteen arms below
  * went RED on it, which is the whole point of not owning a copy.
  */
+import { generations } from "../drizzle/schema";
+import { EVIDENCE_CANDIDATE_GENERATION_TYPE } from "./casting/evidence/evidenceCandidateContract";
 import {
   attachUserInfoToFlagged,
   computeDiscrepancy,
@@ -68,6 +95,117 @@ function computeDiscrepancies(
     threshold,
   );
   return { users: attachUserInfoToFlagged(flagged, userInfo), scannedCount };
+}
+
+
+/**
+ * The index of the `{` that opens the object literal containing `index`.
+ *
+ * Walks back with a depth counter, so a nested object between the property and
+ * the opening brace cannot make it stop early, and a preceding sibling object
+ * cannot make it stop late. Returns -1 when no enclosing brace is found.
+ */
+function enclosingObjectStart(source: string, index: number): number {
+  let depth = 0;
+  for (let i = index - 1; i >= 0; i -= 1) {
+    const ch = source[i];
+    if (ch === "}") depth += 1;
+    else if (ch === "{") {
+      if (depth === 0) return i;
+      depth -= 1;
+    }
+  }
+  return -1;
+}
+
+
+/**
+ * The two files allowed to spell the family's name, because both DECLARE it
+ * rather than use it: the drizzle column (the enum the constant must be a
+ * member of) and the contract module (the constant itself).
+ */
+const DECLARING_FILES = [
+  "drizzle/schema.ts",
+  "server/casting/evidence/evidenceCandidateContract.ts",
+];
+
+/**
+ * Every non-test source file under `server/`, `shared/` and `drizzle/` that
+ * spells `evidenceCandidate` as a string literal, minus the exempt list.
+ *
+ * Taking the exemptions as an ARGUMENT is what lets the positive control drive
+ * this same walk with none of them and prove it can see anything at all.
+ */
+function sourceFilesUnderRoots(): string[] {
+  const files: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(resolve(REPO_ROOT, dir), { withFileTypes: true })) {
+      const rel = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (entry.name !== "node_modules") walk(rel);
+        continue;
+      }
+      if (!entry.name.endsWith(".ts") || entry.name.endsWith(".test.ts")) continue;
+      files.push(rel);
+    }
+  };
+  walk("server");
+  walk("shared");
+  walk("drizzle");
+  return files;
+}
+
+/**
+ * Every non-test module that WRITES the family — derived, not enumerated.
+ *
+ * ⚠ THIS LIST WAS TWO HARDCODED PATHS AND THE PR #690 REVIEW CAUGHT IT AS THE
+ * SAME SHAPE THE COMMIT ABOVE HAD JUST FIXED. The "exclusion cannot grow"
+ * claim rests on EVERY writer setting `operationId`; a third writer added later
+ * would use the constant (so the literal sweep is blind to it by design) and an
+ * enumerated arm would never walk to it. Its rows would then be dropped from
+ * the reconciliation with every arm green.
+ */
+function evidenceWriters(): Array<{ rel: string; source: string }> {
+  return sourceFilesUnderRoots()
+    .map((rel) => ({ rel, source: readFileSync(resolve(REPO_ROOT, rel), "utf8") }))
+    .filter(({ source }) => /type:\s*EVIDENCE_CANDIDATE_GENERATION_TYPE/.test(source));
+}
+
+/**
+ * `block` with every balanced `{...}` removed, so a property found in it is one
+ * of the object's OWN.
+ *
+ * Raised as a nit by the review: `enclosingObjectStart` finds the right values
+ * literal, but an `operationId:` inside a NESTED object before `type:` would
+ * have satisfied the check while the insert column itself was absent. Contrived
+ * against today's two flat writers, and worth closing because the arm's whole
+ * claim is about window errors.
+ */
+function withoutNestedObjects(block: string): string {
+  let out = "";
+  let depth = 0;
+  for (const ch of block) {
+    if (ch === "{") depth += 1;
+    else if (ch === "}") depth = Math.max(0, depth - 1);
+    else if (depth === 0) out += ch;
+  }
+  return out;
+}
+
+function literalSpellings(exempt: readonly string[]): string[] {
+  /* `evidenceComposerSchema.ts` carries the column's DDL as one string, which
+     is a copy of the SCHEMA rather than of the name, and is checked against the
+     live column by its own contract suite. Named so the exemption is a decision
+     on the record rather than a regex nobody can read. */
+  const skip = new Set([...exempt, "server/casting/evidence/evidenceComposerSchema.ts"]);
+
+  return sourceFilesUnderRoots()
+    .filter((rel) => !skip.has(rel))
+    .filter((rel) => {
+      const source = readFileSync(resolve(REPO_ROOT, rel), "utf8");
+      return source.includes(`"${EVIDENCE_CANDIDATE_GENERATION_TYPE}"`)
+        || source.includes(`'${EVIDENCE_CANDIDATE_GENERATION_TYPE}'`);
+    });
 }
 
 // ── Tests ──
@@ -521,34 +659,194 @@ describe("the founder's account: what the residual is made of", () => {
     );
   }
 
-  it("reproduces the -11,600 the live scan reports, from the production aggregations", () => {
+  /*
+   * ⚠ THIS ARM NOW PINS WHAT THE SCAN READ *BEFORE* #638, AND IT IS KEPT
+   * BECAUSE THE ARITHMETIC IS WHAT THE REPAIR HAD TO ANSWER. `unlinkedCost`
+   * is an INPUT here, so this reading is unchanged by the exclusion — what
+   * changed is which rows the SQL puts into it, and that is the arm below.
+   */
+  it("reproduces the -11,600 the scan reported before the family was excluded", () => {
     const result = reading(UNLINKED);
 
     expect(result.users).toHaveLength(1);
     expect(result.users[0].discrepancy).toBe(-11_600);
-    // And it is what puts a 1 on his Moderation badge: one account, flagged.
+    // And it is what put a 1 on his Moderation badge: one account, flagged.
     expect(result.scannedCount).toBe(1);
   });
 
   /*
-   * THE DEFECT SHOWN RATHER THAN ASSERTED. The 45 evidence rows are the work
-   * of operations that charged 9,300 and own no rows at all, so the same work
-   * enters `expected` twice. This arm runs the counterfactual — the identical
-   * account with those rows attributed to their operations instead of counted
-   * again — and the two readings are made to disagree by exactly their cost.
+   * ⚠ THE CONSTANT MUST NAME A TYPE THE COLUMN ACTUALLY HAS, AND THIS ARM
+   * EXISTS BECAUSE A SABOTAGE PROVED NOTHING ELSE COULD SAY SO.
    *
-   * `operationCost` is deliberately UNCHANGED between the two: linking a row
-   * to an operation that already recorded a charge adds nothing, because the
-   * operation's own charge is authoritative where it exists. That is the whole
-   * rule the unlinked road walks past.
+   * Every other arm compares the constant to ITSELF — the SQL arm asserts the
+   * bound parameter equals `EVIDENCE_CANDIDATE_GENERATION_TYPE`, the writers
+   * arm greps for the identifier — so misspelling its VALUE left all thirty
+   * green while the predicate excluded nothing and the badge stayed lit. An
+   * assertion that reads its own subject is not a reader of it.
+   *
+   * The enum is the independent side: `generations.type` is where the product
+   * declares what a row may be, and it is not derived from this constant.
    */
-  it("attributing the evidence rows to the operations that charged for them leaves -150", () => {
+  it("the excluded type is one the generations column can actually hold", () => {
+    expect(generations.type.enumValues).toContain(EVIDENCE_CANDIDATE_GENERATION_TYPE);
+  });
+
+  /*
+   * ⚠ THE CLASS, NOT THE FOUR INSTANCES — and it took a review to find that the
+   * sweep had stopped at the sites the card happened to name (PR #690).
+   *
+   * The card's class was "the family's name re-typed as a literal", and after
+   * the four named sites were collapsed, `server/db/dailyQuota.ts` still held
+   * three more — two of them inside RAW SQL, which is the one spelling
+   * TypeScript cannot hold to the enum. A rename would have updated the
+   * constant and the column and left the quota reader matching nothing, so
+   * evidence candidates would stop counting toward the daily limit with
+   * everything green.
+   *
+   * So the guard is derived over the tree rather than written per file: the
+   * next instance of this class reddens without anybody remembering to sweep.
+   *
+   * Two files are allowed to spell it, and both DECLARE rather than use it:
+   * the drizzle column (the enum this constant must be a member of — the arm
+   * above reads it) and the contract module (the constant itself).
+   */
+  it("no server module spells the family's name as a literal — only its two declaring files", () => {
+    expect(literalSpellings(DECLARING_FILES)).toEqual([]);
+  });
+
+  /*
+   * ⚠ THE POSITIVE CONTROL, AND THE FIRST ONE WRITTEN HERE WAS NOT ONE.
+   *
+   * It read the two declaring files with `readFileSync` and asserted they hold
+   * the literal — which never touches the WALK. Blinding the walk so it matched
+   * no file at all left both arms green: the guard would have reported "no
+   * offenders" over a population of nothing, which is the exact shape it exists
+   * to catch one level down.
+   *
+   * So the control drives the SAME walk with the exemptions removed, where the
+   * two declaring files must appear. One mechanism, exercised both ways.
+   */
+  it("that sweep is actually looking — with nothing exempt it finds the declaring files", () => {
+    const found = literalSpellings([]);
+
+    for (const rel of DECLARING_FILES) expect(found).toContain(rel);
+  });
+
+  /*
+   * ⚠ THE POPULATION CANNOT GROW, AND THAT IS THE WHOLE CASE FOR AN EXCLUSION
+   * KEYED ON A `type` VALUE BEING NARROW RATHER THAN AN OPEN EXEMPTION.
+   *
+   * The predicate can only ever drop a row that has NO operation. Both live
+   * writers of this type set `operationId` in the same INSERT, so no road the
+   * product still runs can create a row it would drop. Asserted at the writers'
+   * own bytes rather than promised in prose: a writer that quietly stopped
+   * setting `operationId` would reopen the exemption with nothing going red,
+   * which is the shape this repair's whole narrowness rests on.
+   */
+  it("every writer of the evidence type sets operationId, so the exclusion cannot grow", () => {
+    const writers = evidenceWriters();
+
+    /* The positive control, on the same walk: a blinded population would make
+       the loop below vacuous and pass. These two are the writers today. */
+    expect(writers.map((w) => w.rel).sort()).toEqual([
+      "server/casting/evidence/evidenceFork.ts",
+      "server/db/inkAddCandidates.ts",
+    ]);
+
+    for (const { rel, source } of writers) {
+      // It names the family through the shared constant, never a re-typed literal.
+      expect(source, rel).not.toContain('"evidenceCandidate"');
+
+      const uses = [...source.matchAll(/type:\s*EVIDENCE_CANDIDATE_GENERATION_TYPE/g)];
+      expect(uses.length, `${rel} writes the family`).toBeGreaterThan(0);
+
+      /* Every insert of it carries an operationId in the SAME values object.
+         The window is bounded by the nearest enclosing `{` walked back with a
+         brace counter, rather than by a property name that happens to come
+         first — anchoring on `userId:` assumed an ordering neither writer
+         promises. Nested objects are then stripped, so a metadata sub-object's
+         own `operationId:` cannot stand in for the insert column. */
+      for (const use of uses) {
+        const start = enclosingObjectStart(source, use.index);
+        expect(start, `${rel}: an object literal encloses the type`).toBeGreaterThan(-1);
+        /* `start + 1` skips the enclosing brace itself — including it would
+           make the whole body read as nested and strip everything. */
+        const own = withoutNestedObjects(source.slice(start + 1, use.index));
+        expect(own, `${rel}: operationId in the same values object as the type`)
+          .toContain("operationId:");
+      }
+    }
+  });
+
+  /*
+   * THE REPAIR SHOWN RATHER THAN ASSERTED. The 45 evidence rows are the work
+   * of operations that charged 9,300 and own no rows at all, so the same work
+   * enters `expected` twice. Excluding them from `unlinkedCost` — which is what
+   * `UNLINKED_ROW_SQL` now does — moves the reading by exactly their cost, and
+   * takes it under the threshold the badge is drawn at.
+   *
+   * ⚠ THIS ARM USED TO BE NAMED FOR THE OTHER ROAD, AND THE NAME WAS THE BUG.
+   * It read "attributing the evidence rows to the operations that charged for
+   * them leaves -150", and its comment said `operationCost` is "deliberately
+   * UNCHANGED between the two: linking a row to an operation that already
+   * recorded a charge adds nothing". That premise is true of 34 of the 46
+   * operations and FALSE of the other 12, which recorded `chargedCredits = 0`
+   * and would therefore pick their rows back up through the fallback branch.
+   * So the arm modelled EXCLUSION and was named for LINKING, and -150 — the
+   * exclusion's number — was read as the linking road's number. #638's
+   * recommendation was built on it. Driven at the production rows on
+   * 2026-09-09: linking lands on -4,100, not -150, and leaves him flagged.
+   * A double that answers like the outcome is not a reader of the outcome.
+   */
+  it("excluding the parked evidence family from the unlinked side leaves -150", () => {
     const asShipped = reading(UNLINKED).users[0].discrepancy;
-    const ifLinked = reading(UNLINKED - EVIDENCE_UNLINKED).users[0].discrepancy;
+    const ifExcluded = reading(UNLINKED - EVIDENCE_UNLINKED).users[0].discrepancy;
 
     expect(asShipped).toBe(-11_600);
-    expect(ifLinked).toBe(-150);
-    expect(ifLinked - asShipped).toBe(EVIDENCE_UNLINKED);
+    expect(ifExcluded).toBe(-150);
+    expect(ifExcluded - asShipped).toBe(EVIDENCE_UNLINKED);
+    // And that is the half that matters: the badge is drawn at 500.
+    expect(Math.abs(ifExcluded)).toBeLessThan(BADGE_THRESHOLD);
+    expect(Math.abs(asShipped)).toBeGreaterThanOrEqual(BADGE_THRESHOLD);
+  });
+
+  /*
+   * ⚠ THE ROAD THAT WAS DECLINED, PINNED SO IT CANNOT BE RE-RECOMMENDED FROM
+   * MEMORY. Linking the rows was #638's own recommendation and it is possible:
+   * all 45 match one `evidence_candidate_generate` operation each, 0 orphans,
+   * 0 ambiguous, every charged operation's linked-row sum equal to its charge.
+   * It was declined because of what it LANDS ON, and this arm is that number.
+   *
+   * 12 of the 46 operations recorded no charge while owning a cost-bearing row
+   * (3,950 credits between them), so linking moves that cost out of the
+   * unlinked side and straight back in through `operationCost`'s fallback.
+   */
+  it("linking the rows instead would land on -4,100 and leave the badge lit", () => {
+    const FALLBACK_PICKUP = 3_950; // the 12 zero-charge operations' rows
+
+    const ifLinked = computeDiscrepancies(
+      [{ userId: 1, grossDeductions: GROSS, totalRefunds: 10_230 }],
+      [{
+        userId: 1,
+        completedCost: 97_030,
+        pendingCost: 350,
+        failedCost: 11_110,
+        unlinkedCost: UNLINKED - EVIDENCE_UNLINKED,
+        totalGenerations: 2_145,
+        failedGenerations: 82,
+      }],
+      // The fallback branch picks the zero-charge operations' rows back up.
+      [{ userId: 1, operationCost: OPERATION + FALLBACK_PICKUP }],
+      users,
+      50,
+    ).users[0].discrepancy;
+
+    // The mechanism: the pickup comes back through operationCost, credit for credit.
+    expect(ifLinked).toBe(-150 - FALLBACK_PICKUP);
+    // And the measured number itself, so the arm is not merely self-consistent
+    // for whatever pickup someone types above it.
+    expect(ifLinked).toBe(-4_100);
+    expect(Math.abs(ifLinked)).toBeGreaterThanOrEqual(BADGE_THRESHOLD);
   });
 
   /*

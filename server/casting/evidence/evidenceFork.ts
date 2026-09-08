@@ -40,6 +40,7 @@ import {
   markClaimedGenerationOperationRecoveryRequired,
 } from "../../db/generationOperations";
 import { createModuleLogger } from "../../logging/logger";
+import { EVIDENCE_CANDIDATE_GENERATION_TYPE } from "./evidenceCandidateContract";
 import { modelOperationLockKey } from "../operationContract";
 import { availableModelWhere } from "../modelAvailability";
 import {
@@ -430,7 +431,7 @@ async function prepareEvidenceForkIn(
       modelId: targetModelId,
       operationId: input.operationId,
       stepKey,
-      type: "evidenceCandidate" as const,
+      type: EVIDENCE_CANDIDATE_GENERATION_TYPE,
       status: "processing" as const,
       pointsCost: 0,
     })));

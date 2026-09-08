@@ -14,6 +14,7 @@ import {
   models,
 } from "../../drizzle/schema";
 import {
+  EVIDENCE_CANDIDATE_GENERATION_TYPE,
   INK_ADD_CAPABILITY_KEY,
   INK_ADD_PRICE_CREDITS,
   type EvidenceProbeOutcome,
@@ -306,7 +307,7 @@ async function createAttemptIn(
       operationId: input.operationId,
       stepKey: `attempt:${input.attemptNumber}`,
       viewAngle: input.sourceViewAngle,
-      type: "evidenceCandidate",
+      type: EVIDENCE_CANDIDATE_GENERATION_TYPE,
       status: "pending",
       pointsCost: input.attemptNumber === 1 ? input.priceCredits : 0,
       resultUrl: null,

@@ -13,6 +13,7 @@
 
 import { eq, and, gte, sql } from "drizzle-orm";
 import { generationOperations, generations } from "../../drizzle/schema";
+import { EVIDENCE_CANDIDATE_GENERATION_TYPE } from "../casting/evidence/evidenceCandidateContract";
 import { getDb } from "./connection";
 import { envInt } from "../_core/env";
 
@@ -27,7 +28,19 @@ import { envInt } from "../_core/env";
  */
 const DAILY_LIMIT = envInt("DAILY_GENERATION_LIMIT");
 
-/** Image generation types that consume Gemini image RPD */
+/**
+ * Image generation types that consume Gemini image RPD.
+ *
+ * ⚠ THIS LIST HAD A SECOND COPY, RE-TYPED INSIDE THE `IN (...)` OF THE QUERY
+ * BELOW, AND THE SQL IS DERIVED FROM IT NOW (#638's law-7 sweep, found by the
+ * PR #690 review). Two lists of the same thing drift, and this pair drifts in
+ * the direction that silently stops counting: a type added here and not there
+ * consumes no quota, with nothing red anywhere.
+ *
+ * The evidence member comes from the family's own constant for the same
+ * reason — a raw-SQL string literal is the one spelling TypeScript cannot hold
+ * to the enum, so a rename would leave this reader matching nothing.
+ */
 const IMAGE_GEN_TYPES = [
   "castingImage",
   "fullBody",
@@ -38,7 +51,7 @@ const IMAGE_GEN_TYPES = [
   "wardrobeComposite",
   "wardrobeRefinement",
   "wardrobeDigitize",
-  "evidenceCandidate",
+  EVIDENCE_CANDIDATE_GENERATION_TYPE,
 ] as const;
 
 /**
@@ -59,7 +72,7 @@ export async function getUserDailyGenerationCount(
       total: sql<number>`COUNT(DISTINCT CASE
         WHEN ${generationOperations.kind} = 'evidence_fork_copy'
           THEN NULL
-        WHEN ${generations.type} = 'evidenceCandidate'
+        WHEN ${generations.type} = ${EVIDENCE_CANDIDATE_GENERATION_TYPE}
           THEN CONCAT('operation:', ${generations.operationId})
         ELSE CONCAT('generation:', ${generations.id})
       END)`,
@@ -73,7 +86,7 @@ export async function getUserDailyGenerationCount(
       and(
         eq(generations.userId, userId),
         gte(generations.createdAt, todayStart),
-        sql`${generations.type} IN ('castingImage', 'fullBody', 'multiView', 'iteration', 'upscale', 'wardrobeVTO', 'wardrobeComposite', 'wardrobeRefinement', 'wardrobeDigitize', 'evidenceCandidate')`,
+        sql`${generations.type} IN (${sql.join(IMAGE_GEN_TYPES.map((type) => sql`${type}`), sql`, `)})`,
         sql`${generations.status} != 'failed'`,
       ),
     );
