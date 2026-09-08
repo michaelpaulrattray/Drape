@@ -326,9 +326,20 @@ describe("the prepare-commit-msg gate", { timeout: 180_000 }, () => {
 
       plainGit(dir, "branch", "team/611-postcheckout");
       const result = gitIn(solo, dir, "checkout", "team/611-postcheckout");
-      expect(result.status, "it does exit non-zero…").not.toBe(0);
-      expect(branchOf(dir), "…and the branch switched anyway, so it cannot refuse").toBe(
-        "team/611-postcheckout",
+
+      /* ⚠ THE EXIT CODE IS NOT ASSERTED, AND THE GATE IS WHY. This arm first
+         read `expect(status).not.toBe(0)` and passed on Windows and FAILED on
+         ubuntu, where git reports 0 after a failing `post-checkout`. That
+         difference is not the finding — it is a distraction from it. On BOTH
+         platforms the hook exited 1 and the branch switched regardless, which
+         is the whole claim: `post-checkout` cannot refuse. Asserting the code
+         would have made a cross-platform quirk look like the subject. */
+      expect(
+        branchOf(dir),
+        "the branch switched even though post-checkout exited 1 — it cannot refuse",
+      ).toBe("team/611-postcheckout");
+      expect(result.stderr, "and the hook really did run and object").toContain(
+        "REFUSED-BY-post-checkout",
       );
     });
   });

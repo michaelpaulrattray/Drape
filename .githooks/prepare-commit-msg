@@ -29,6 +29,10 @@
 #     exit code as ignored, so it CANNOT refuse. That is the same property the
 #     card correctly used to rule out `post-commit`, and it rules out the
 #     option the card recommended.
+#     ⚠ If you re-run that row, read the OUTCOME and not git's exit code: git
+#     reports non-zero here on Windows and ZERO on ubuntu after the same failing
+#     hook. The branch switches on both, which is the finding; the code is a
+#     platform quirk that reads like one.
 #   - The card's objection to `prepare-commit-msg` was about a hook that WRITES
 #     AND STAGES A FILE (#610 drove that: the staged file is dropped in a
 #     revert). A REFUSAL has no such problem — firing twice in a revert simply

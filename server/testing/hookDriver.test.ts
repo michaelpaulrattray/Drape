@@ -217,6 +217,8 @@ describe("the class is keyed on the SHAPE now, because three greps were keyed on
       "its VERDICT driver is runHook; the bare call is the declared repository-state read (git check-attr), where throwing on any failure is wanted",
     "server/preCommitGate.test.ts":
       "same shape — the bare call is `git ls-files` reading index modes, not a gate decision",
+    "server/prepareCommitMsgGate.test.ts":
+      "same shape again — every VERDICT goes through runHook; the bare calls are `git ls-files` reading index modes and `git ls-files --others` naming a written patch file, repository-state reads where throwing on any failure is wanted",
     "server/batchB-drive-guards.test.ts":
       "DECLARED REMAINDER: asserts EXACT codes (toBe(2)), so a non-run fails loudly rather than passing — the loud half of the class, worth migrating but not silent",
     "server/shiftWorktree.test.ts":
