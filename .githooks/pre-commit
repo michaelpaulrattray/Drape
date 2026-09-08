@@ -99,10 +99,11 @@ atlas_merge_regenerated=0
 
 # ---------------------------------------------------------------- ARM 1 (R3)
 # The condition and the refusal are SOURCED, not written here: this arm has a
-# second reader since #611 (.githooks/reference-transaction, the backstop for
-# the three roads git skips this hook on), and a rule with two readers kept as
-# two copies is working law 4's own shape. What stays here is the question
-# THIS hook asks — what is HEAD — which is not the question that one asks.
+# second reader since #611 — .githooks/prepare-commit-msg, the backstop for the
+# three roads git skips this hook on — and a rule with two readers kept as two
+# copies is working law 4's own shape. What stays here is the question THIS
+# hook asks: what is HEAD. The backstop asks it of HEAD too and then, when HEAD
+# is DETACHED (a rebase replay), of git's own rebase state file.
 . "$(dirname "$0")/shift-branch-guard"
 
 branch=$(git symbolic-ref --short -q HEAD 2>/dev/null)

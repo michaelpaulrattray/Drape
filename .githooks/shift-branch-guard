@@ -1,17 +1,18 @@
 # Sourced, never executed — `. "$(dirname "$0")/shift-branch-guard"`.
 #
 # THE R3 CONDITION AND ITS REFUSAL, IN ONE PLACE BECAUSE IT HAS TWO CONSUMERS
-# (#611). `.githooks/pre-commit` ARM 1 asks it of HEAD before a commit;
-# `.githooks/reference-transaction` ARM 1B asks it of a branch REF on the three
-# roads git skips pre-commit on. The moment a rule has two readers, a copy in
-# each is the drift this repository has been bitten by before — which is why
-# `.githooks/atlas-paths` exists, and this follows it.
+# (#611). `.githooks/pre-commit` ARM 1 asks it before an ordinary commit;
+# `.githooks/prepare-commit-msg` ARM 1B asks it on the roads git skips
+# pre-commit on — revert, cherry-pick and a replayed rebase. The moment a rule
+# has two readers, a copy in each is the drift this repository has been bitten
+# by before — which is why `.githooks/atlas-paths` exists, and this follows it.
 #
-# What is NOT shared is deliberate: pre-commit reads HEAD (its question is
-# "what am I committing onto"), and the reference-transaction hook reads the
-# branch out of the ref, because on a REPLAYED REBASE HEAD is DETACHED and a
-# `symbolic-ref` read there returns nothing at all. Two different questions,
-# one answer about what to do with the result.
+# What is NOT shared is deliberate: each hook works out WHICH BRANCH is being
+# committed onto for itself, and only the main-tree test and the refusal live
+# here. `pre-commit` reads HEAD and stops. The backstop reads HEAD too, and
+# falls back to git's rebase state file when HEAD is DETACHED — which is what
+# a replayed rebase commits on, and where a `symbolic-ref` read returns nothing
+# at all. Two ways of naming the branch, one answer about what to do with it.
 
 # Is this the repository's MAIN working tree, rather than a linked worktree?
 #
@@ -47,7 +48,26 @@ drape_refuse_shift_branch() {
   echo "  npx tsx scripts/shift-worktree.mts add <slug>" >&2
   echo "  git worktree add ../drape-shift-<slug> -b team/<slug>" >&2
   echo "" >&2
-  echo "To leave this state, 'git checkout main' — that is never refused." >&2
+  # ⚠ THIS USED TO PROMISE "'git checkout main' — that is never refused", AND
+  # THAT WAS AN OVERSTATEMENT ON THE SEQUENCER ROADS (PR #671 review, finding
+  # 3). Nothing is committed, but the operation's changes are left STAGED, and
+  # a cherry-pick leaves CHERRY_PICK_HEAD behind — so git itself refuses that
+  # checkout the moment those changes conflict with main. A message that
+  # guarantees an exit and then does not deliver one is worse than no message.
+  #
+  # ⚠ THE REVIEWER'S REPAIR WAS A CONDITIONAL NAMING THE ABORT FOR THE ROAD IN
+  # PROGRESS, AND IT WAS DRIVEN BEFORE IT WAS TAKEN: at prepare-commit-msg time
+  # git has written NO sequencer state yet. Measured on a refused revert,
+  # `REVERT_HEAD`, `CHERRY_PICK_HEAD`, `sequencer`, `rebase-merge` and
+  # `rebase-apply` are all absent — they appear only after the hook returns. So
+  # a conditional here would fall through to the plain checkout on exactly the
+  # road the finding is about, which is the failure wearing a fix. The honest
+  # answer is a message that is true on every road and promises nothing.
+  echo "Nothing was committed. What that operation staged is still staged." >&2
+  echo "To leave this state, whichever road you were on:" >&2
+  echo "" >&2
+  echo "  git revert --abort     /  git cherry-pick --abort  /  git rebase --abort" >&2
+  echo "  git checkout main      (once the tree is clean)" >&2
   echo "" >&2
   echo "(docs/RETRO_LOG.md R3 — a terminal commit has landed on a shift branch" >&2
   echo "this way more than once. Never --no-verify.)" >&2

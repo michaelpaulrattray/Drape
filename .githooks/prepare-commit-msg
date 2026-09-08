@@ -102,9 +102,5 @@ drape_in_main_working_tree || exit 0
 drape_refuse_shift_branch "$branch" "That commit"
 echo "This is .githooks/prepare-commit-msg — git does not run pre-commit on a" >&2
 echo "revert, a cherry-pick or a replayed rebase, so this arm is what caught it." >&2
-if [ -n "$git_dir" ] && { [ -d "$git_dir/rebase-merge" ] || [ -d "$git_dir/rebase-apply" ]; }; then
-  echo "" >&2
-  echo "A rebase is in progress: 'git rebase --abort' is never refused." >&2
-fi
 echo "" >&2
 exit 1

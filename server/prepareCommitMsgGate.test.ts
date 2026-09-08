@@ -6,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -389,41 +390,75 @@ describe("the prepare-commit-msg gate", { timeout: 180_000 }, () => {
          drifts. So the helper is sabotaged to answer "no" and BOTH roads are
          re-driven on one repository: an ordinary commit (pre-commit's road,
          which this hook alone also refuses) and a revert (only this hook's). */
-      const original = readFileSync(SHARED, "utf8");
+      /* ⚠ THE SABOTAGE IS ON A COPY, AND THE REAL `.githooks` IS NEVER
+         TOUCHED (PR #671 review, finding 2). The first version of this arm
+         rewrote the tracked `shift-branch-guard` on disk and restored it in a
+         `finally`, which fails two ways:
+
+         — `pnpm test` is `vitest run` with file parallelism, and
+           `preCommitGate.test.ts`'s own refusal arm drives the real `.githooks`
+           in another worker. Landing inside the window makes ARM 1 allow a
+           commit, and a suite this change never touched goes red as a flake
+           that reads like a guard failure.
+         — worse, `finally` survives a thrown expectation but NOT a killed
+           worker. A run that dies inside the window leaves the R3 guard
+           permanently answering "not the main tree" — ARM 1 and ARM 1B both
+           dead, no failing test, no error, in the founder's shared tree. That
+           is the path-three death this repository's working law 7 is about,
+           manufactured by the suite whose job is to prevent it.
+
+         The whole hooks directory is copied so nothing is missed —
+         `pre-commit` sources `atlas-regenerate` and calls `atlas-stage`, which
+         sources `atlas-paths` — and every sourcing is `$(dirname "$0")`
+         relative, so the copied call sites go through the COPIED helper. That
+         is what makes the copy a faithful test of the real wiring. */
+      const solo = mkdtempSync(join(tmpdir(), "drape-sabotage-hooks-"));
+      repos.push(solo);
+      for (const name of readdirSync(HOOKS_DIR)) {
+        copyFileSync(join(HOOKS_DIR, name), join(solo, name));
+        installable(join(solo, name));
+      }
+      const copied = join(solo, "shift-branch-guard");
+      const original = readFileSync(copied, "utf8");
+      expect(original, "the copy must be the real helper").toContain("drape_in_main_working_tree() {");
+
       const dir = freshRepo();
       plainGit(dir, "checkout", "-q", "-b", "team/611-shared");
-      try {
-        writeFileSync(
-          SHARED,
-          original.replace(
-            "drape_in_main_working_tree() {",
-            "drape_in_main_working_tree() {\n  return 1",
-          ),
-        );
-        writeFileSync(join(dir, "sab.txt"), "x\n");
-        git(dir, "add", "sab.txt");
-        expect(
-          git(dir, "commit", "-q", "-m", "sabotaged").status,
-          "pre-commit ARM 1 must read the shared condition",
-        ).toBe(0);
-        expect(
-          git(dir, "revert", "--no-edit", "HEAD").status,
-          "the prepare-commit-msg arm must read the same one",
-        ).toBe(0);
-      } finally {
-        /* Restored by rewriting the captured bytes, never with `git checkout`
-           — that wipes every uncommitted change in the file. */
-        writeFileSync(SHARED, original);
-      }
-      expect(readFileSync(SHARED, "utf8"), "the sabotage must be fully undone").toBe(original);
 
-      /* ⚠ THE CONTROL ON THE SABOTAGE. Without a repeat on the RESTORED file,
-         both expectations above are equally satisfied by a hook that is simply
-         broken, and this arm would pass while proving nothing. */
-      const after = freshRepo();
-      plainGit(after, "checkout", "-q", "-b", "team/611-shared-after");
-      expect(git(after, "revert", "--no-edit", "HEAD").status).not.toBe(0);
-      plainGit(after, "revert", "--quit");
+      /* The control FIRST, on the untouched copy: without it the two
+         expectations below are equally satisfied by a copy that is simply
+         broken, and the arm would pass while proving nothing. */
+      expect(
+        gitIn(solo, dir, "revert", "--no-edit", "HEAD").status,
+        "unsabotaged, the copied hooks must still refuse",
+      ).not.toBe(0);
+      plainGit(dir, "revert", "--quit");
+
+      writeFileSync(
+        copied,
+        original.replace(
+          "drape_in_main_working_tree() {",
+          "drape_in_main_working_tree() {\n  return 1",
+        ),
+      );
+
+      writeFileSync(join(dir, "sab.txt"), "x\n");
+      gitIn(solo, dir, "add", "sab.txt");
+      expect(
+        gitIn(solo, dir, "commit", "-q", "-m", "sabotaged").status,
+        "pre-commit ARM 1 must read the shared condition",
+      ).toBe(0);
+      expect(
+        gitIn(solo, dir, "revert", "--no-edit", "HEAD").status,
+        "the prepare-commit-msg arm must read the same one",
+      ).toBe(0);
+
+      /* And the real file was never in play — stated as an assertion rather
+         than as a promise in the comment above. */
+      expect(readFileSync(SHARED, "utf8"), "the tracked helper must be untouched").toContain(
+        "drape_in_main_working_tree() {",
+      );
+      expect(readFileSync(SHARED, "utf8")).not.toContain("drape_in_main_working_tree() {\n  return 1");
     });
   });
 });
