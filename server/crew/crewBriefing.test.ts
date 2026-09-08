@@ -507,15 +507,37 @@ describe("#492 — the at-a-glance label is capped where it cannot be forgotten"
 describe("#493 — the briefing cannot list one card in two homes", () => {
   const valid = () => JSON.parse(readFileSync(briefingPath, "utf8"));
 
-  it("the real file parses, and both populations are real", () => {
+  it("the real file parses, and the ladder is a real population", () => {
+    /* ⚠ THIS ARM USED TO REQUIRE A NON-EMPTY NEXT UP, AND AN EMPTY ONE IS A
+       LEGITIMATE STATE THE SUITE COULD NOT EXPRESS. It became real on
+       2026-09-08, when the founder closed #543 and his ordered band emptied
+       for the first time — the desk sweep wrote the truthful `nextUp: []` and
+       this arm went red on a briefing that was correct.
+
+       An empty NEXT UP means "he has ordered nothing that is still open",
+       which is the state the team works toward; a guard that treats it as a
+       defect argues for keeping work on his desk. The LADDER is different and
+       keeps its floor: it is the standing roadmap and is never empty, so a
+       vacuous parse still cannot pass the disjointness refinement unnoticed. */
     const parsed = crewBriefingSchema.parse(valid());
     expect(parsed.program.ladderCards.items.length).toBeGreaterThan(0);
-    expect(parsed.nextUp.items.length).toBeGreaterThan(0);
+    expect(Array.isArray(parsed.nextUp.items), "NEXT UP may be empty; it may not be absent").toBe(true);
   });
 
   it("⚠ POSITIVE CONTROL — a NEXT UP card copied onto the ladder is REFUSED", () => {
+    /* ⚠ THE DOUBLED CARD IS PLANTED, NOT BORROWED FROM THE LIVE FILE. Reading
+       `nextUp.items[0]` made this control depend on the founder having an open
+       ordered card — so on the first night his band emptied, the control that
+       proves the doubling refusal fires died with a TypeError instead of
+       testing anything. A control must not go quiet because the tree reached a
+       good state. */
     const base = valid();
-    const doubled = base.nextUp.items[0].issueNumber;
+    const doubled = 909090;
+    base.nextUp.items.push({
+      issueNumber: doubled,
+      title: "a card he has ordered",
+      urgent: false,
+    });
     base.program.ladderCards.items.push({
       issueNumber: doubled,
       title: "the same card, listed twice",
@@ -523,6 +545,18 @@ describe("#493 — the briefing cannot list one card in two homes", () => {
       rung: null,
     });
     expect(() => crewBriefingSchema.parse(base)).toThrow(/exactly one home/);
+  });
+
+  it("⚠ NEGATIVE CONTROL — the same planted card in ONE home parses", () => {
+    /* Without this, the arm above is equally satisfied by a schema that
+       refuses any planted NEXT UP row for some unrelated reason. */
+    const base = valid();
+    base.nextUp.items.push({
+      issueNumber: 909090,
+      title: "a card he has ordered",
+      urgent: false,
+    });
+    expect(() => crewBriefingSchema.parse(base)).not.toThrow();
   });
 
   it("⚠ POSITIVE CONTROL — a rung the ladder does not hold is REFUSED", () => {
