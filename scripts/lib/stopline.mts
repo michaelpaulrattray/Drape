@@ -637,16 +637,39 @@ export function scriptFilesUnder(dir: string): string[] {
   parse closes - one word bypassing a refusal. Every importer keeps its own
   vocabulary now.
 */
-const invokedDirectly = process.argv[1] !== undefined
-  && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+/*
+  RUN DIRECTLY? ASK THE PLATFORM, NOT `argv[1]` (#668).
 
-/* The guard fails toward SILENCE - a symlinked checkout or a drive-letter
-   casing difference on Windows would exit 0 having proven nothing. Asked for,
-   and not run, is the one state worth saying out loud. */
+  `import.meta.main` is Node 24's own answer: it needs no argv, no path
+  resolution, and has nothing to spell wrong. What it replaces was one of four
+  hand-rolled spellings of the same question, and the idiom's failure mode is
+  documented in this repository BY ONE OF THE FILES THAT GOT IT WRONG --
+  `import.meta.url` is `file:///C:/...` on Windows while `process.argv[1]` is a
+  backslashed path, so the comparison never matches, the block never fires, and
+  the script exits 0 having done nothing. A silent no-op that reads exactly
+  like a clean run.
+
+  Driven both ways under `tsx` (run directly: true; imported: false), because
+  tsx and not bare node is what actually runs these.
+*/
+const invokedDirectly = import.meta.main;
+
+/* ⚠ THIS COMMENT NAMED A FAILURE THAT NO LONGER EXISTS, AND CORRECTING IT IS
+   PART OF THE CHANGE (#668). It read: "the guard fails toward SILENCE - a
+   symlinked checkout or a drive-letter casing difference on Windows would exit
+   0 having proven nothing". Both of those were properties of the PATH
+   COMPARISON this block used to sit under, and `import.meta.main` does no path
+   comparison at all - which is the whole reason for the swap.
+
+   The note itself stays, because the state it reports is still real and is
+   still the one worth saying out loud: --prove asked for, and not run, because
+   this module was imported rather than invoked. The argv[1] value came out of
+   the message with the argv[1] check - it named the mechanism, and the
+   mechanism is gone. */
 if (!invokedDirectly && process.argv.includes("--prove")) {
   console.error(
-    "NOTE: --prove was passed, but this module was imported rather than invoked"
-    + ` (argv[1] is ${process.argv[1] ?? "unset"}). Its controls did NOT run.`
+    "NOTE: --prove was passed, but this module was imported rather than invoked."
+    + " Its controls did NOT run."
     + " Run `npx tsx scripts/lib/stopline.mts --prove` directly.",
   );
 }

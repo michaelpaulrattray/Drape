@@ -1876,7 +1876,22 @@ export function writeAtlas(outDir: string) {
 
 /* --------------------------------------------------------------------- CLI */
 
-const invokedDirectly = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+/*
+  RUN DIRECTLY? ASK THE PLATFORM, NOT `argv[1]` (#668).
+
+  `import.meta.main` is Node 24's own answer: it needs no argv, no path
+  resolution, and has nothing to spell wrong. What it replaces was one of four
+  hand-rolled spellings of the same question, and the idiom's failure mode is
+  documented in this repository BY ONE OF THE FILES THAT GOT IT WRONG --
+  `import.meta.url` is `file:///C:/...` on Windows while `process.argv[1]` is
+  `C:\...`, so the comparison never matches, the block never fires, and the
+  script exits 0 having done nothing. A silent no-op that reads exactly like a
+  clean run.
+
+  Driven both ways under `tsx` (run directly: true; imported: false), because
+  tsx and not bare node is what actually runs these.
+*/
+const invokedDirectly = import.meta.main;
 
 if (invokedDirectly) {
   const atlas = writeAtlas(OUT_DIR);
