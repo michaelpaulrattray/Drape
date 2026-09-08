@@ -249,19 +249,25 @@ export async function executeChangeRequestAction(
 
     case "cr_stripeRefund": {
       const { getUserById: getUser, getUserCredits: getCredits, updateChangeRequestStatus: updateCR } = await import("../../db");
-      const { issueStripeRefund, calculateProportionalRefund } = await import("../../stripe/stripeService");
+      const { issueStripeRefund, calculateProportionalRefund, getSessionChargedAmountCents } = await import("../../stripe/stripeService");
       const userId = Number(pendingAction.targetId);
       const changeRequestId = params.changeRequestId as number;
       const stripeSessionId = params.stripeSessionId as string;
       const refundType = (params.refundType as string) || "proportional";
       const originalCredits = params.originalCredits as number;
-      const originalAmountCents = params.originalAmountCents as number;
 
       if (!stripeSessionId) throw new Error("Missing Stripe session ID for refund");
-      if (!originalCredits || !originalAmountCents) throw new Error("Missing original purchase details");
+      if (!originalCredits) throw new Error("Missing original purchase details");
 
       const targetUser = await getUser(userId);
       if (!targetUser) throw new Error("User not found");
+
+      // The original amount is read from the charge itself, at the moment
+      // money moves — never from params, a stored row, or a client (#418).
+      const originalAmountCents = await getSessionChargedAmountCents(stripeSessionId);
+      if (!originalAmountCents) {
+        throw new Error(`Could not read the original charge from Stripe for session ${stripeSessionId} — refund not issued`);
+      }
 
       const userCredits = await getCredits(userId);
       const currentBalance = userCredits?.balance ?? 0;
@@ -276,6 +282,15 @@ export async function executeChangeRequestAction(
         const calc = calculateProportionalRefund(originalAmountCents, originalCredits, currentBalance);
         refundAmountCents = calc.refundAmountCents;
         creditsToDeduct = calc.creditsToDeduct;
+      }
+
+      // ⚠ A zero here is NOT "refund nothing" one layer down: issueStripeRefund
+      // omits a falsy amount and Stripe then refunds the ENTIRE charge — a
+      // spent-out balance would get all its money back and keep what it spent
+      // (PR #704 review, finding 1). Nothing to claw back means nothing to
+      // refund, said out loud, before any money moves.
+      if (!Number.isFinite(refundAmountCents) || refundAmountCents <= 0) {
+        throw new Error(`Nothing to refund proportionally — the customer's balance is ${currentBalance} and the calculated refund is ${refundAmountCents} cents. Use a full refund if this is goodwill.`);
       }
 
       const refundResult = await issueStripeRefund(stripeSessionId, refundAmountCents, `Change request #${changeRequestId}`);

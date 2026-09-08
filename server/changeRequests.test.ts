@@ -71,6 +71,10 @@ vi.mock("./security/adminSecurity", async (importOriginal) => {
 // Mock the db module
 vi.mock("./db", () => ({
   createChangeRequest: vi.fn().mockResolvedValue({ success: true, requestId: 1 }),
+  // #418: the stripe_refund creation road derives its credits figure from the
+  // customer's own ledger row. Default null — an arm that wants the road open
+  // queues a row with mockResolvedValueOnce.
+  getCreditTransactionByRef: vi.fn().mockResolvedValue(null),
   getChangeRequestById: vi.fn().mockImplementation((id: number) => {
     if (id === 1) {
       return Promise.resolve({
@@ -174,6 +178,21 @@ vi.mock("./db", () => ({
         createdAt: new Date("2026-01-15T10:00:00Z"), updatedAt: new Date("2026-01-15T10:00:00Z"),
       });
     }
+    // Mock for the stripe_refund review test (#418)
+    if (id === 8) {
+      return Promise.resolve({
+        id: 8, type: "stripe_refund", status: "pending", priority: "high",
+        submittedById: 10, submittedByName: "Mod User",
+        targetUserId: 42, targetUserName: "Refund User",
+        title: "Refund top-up charge", description: "Customer asked for their top-up back",
+        evidenceSummary: null, relatedAuditLogId: null,
+        creditAmount: null, creditReason: null, ipAddress: null,
+        stripeSessionId: "cs_live_418", refundType: "proportional",
+        originalCredits: 5000, refundAmountCents: null, creditsToDeduct: null,
+        reviewedById: null, reviewedByName: null, reviewedAt: null, reviewNotes: null,
+        createdAt: new Date("2026-01-15T10:00:00Z"), updatedAt: new Date("2026-01-15T10:00:00Z"),
+      });
+    }
     // Mock for note_incident (no auto-execute)
     if (id === 7) {
       return Promise.resolve({
@@ -247,6 +266,14 @@ vi.mock("./db", () => ({
     },
   }),
 }));
+
+// The Stripe read the creation road performs since #418: the charged amount
+// comes from the session itself, never from input. Default answers 6000 so
+// the happy arms need no key; a refusal arm queues null with ...Once.
+const stripeService = {
+  getSessionChargedAmountCents: vi.fn().mockResolvedValue(6000),
+};
+vi.mock("./stripe/stripeService", () => stripeService);
 
 // ============================================================
 // THE PRODUCT'S OWN VOCABULARIES, READ OFF THE RUNNING ROUTERS
@@ -430,6 +457,89 @@ describe("Change Request - Types & Validation (DRIVEN and DERIVED)", () => {
         validCreateInput({ type: "refund_credits", creditAmount: 50 }) as never,
       ),
     ).resolves.toBeDefined();
+  });
+
+  /*
+   * #418 — a stripe_refund's money facts are DERIVED, never typed. The client
+   * used to send `originalAmountCents` computed by a bare magic float
+   * (`credits * 0.00072` — a 10,000-credit top-up became a 7-cent refund);
+   * now the customer's own ledger row names the credits, the Stripe charge
+   * names the amount, and an input that still carries the old fields cannot
+   * influence what is stored.
+   */
+  it("#418 — a stripe_refund is REFUSED when no purchase matches the session, or Stripe cannot name the charge", async () => {
+    // No ledger row for that (user, session) → refused at submit. This is
+    // also what pins the session to the TARGET user: the lookup is keyed on
+    // both, so someone else's session id refuses identically.
+    await expect(
+      modCaller().createChangeRequest(
+        validCreateInput({ type: "stripe_refund", stripeSessionId: "cs_x", refundType: "full" }) as never,
+      ),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringContaining("No credit purchase matches"),
+    });
+
+    // A positive row of another KIND carrying that session id refuses the
+    // same way — this door refunds TOP-UPS, and the type clause is the
+    // server-side twin of the client button's own `tx.type === "topup"` gate
+    // (PR #704 review, finding 2).
+    const { getCreditTransactionByRef } = await import("./db");
+    vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({ amount: 5000, type: "subscription" } as never);
+    await expect(
+      modCaller().createChangeRequest(
+        validCreateInput({ type: "stripe_refund", stripeSessionId: "cs_x", refundType: "full" }) as never,
+      ),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringContaining("No credit purchase matches"),
+    });
+
+    // Ledger row present but Stripe cannot say what was charged → refused.
+    vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({ amount: 5000, type: "topup" } as never);
+    stripeService.getSessionChargedAmountCents.mockResolvedValueOnce(null);
+    await expect(
+      modCaller().createChangeRequest(
+        validCreateInput({ type: "stripe_refund", stripeSessionId: "cs_x", refundType: "full" }) as never,
+      ),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringContaining("Could not read the original charge"),
+    });
+  });
+
+  it("#418 — the stored request carries the DERIVED figures, and a smuggled amount changes nothing", async () => {
+    const { getCreditTransactionByRef, createChangeRequest } = await import("./db");
+
+    // FULL refund: the preview stored for admin review is the ledger's
+    // credits and the session's charged amount — not the 7 cents the old
+    // client field would have put there.
+    vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({ amount: 5000, type: "topup" } as never);
+    vi.mocked(createChangeRequest).mockClear();
+    await modCaller().createChangeRequest(
+      validCreateInput({
+        type: "stripe_refund", stripeSessionId: "cs_x", refundType: "full",
+        originalAmountCents: 7, originalCredits: 1,
+      }) as never,
+    );
+    expect(vi.mocked(getCreditTransactionByRef)).toHaveBeenCalledWith(42, "cs_x");
+    expect(vi.mocked(createChangeRequest).mock.calls[0][0]).toMatchObject({
+      originalCredits: 5000,
+      refundAmountCents: 6000,
+      creditsToDeduct: 5000,
+    });
+
+    // PROPORTIONAL: the credits are stored, the amount deliberately is not —
+    // it depends on the balance at execution and is read from Stripe then.
+    // (The full arm above is the positive control for this absence.)
+    vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({ amount: 5000, type: "topup" } as never);
+    vi.mocked(createChangeRequest).mockClear();
+    await modCaller().createChangeRequest(
+      validCreateInput({ type: "stripe_refund", stripeSessionId: "cs_x", refundType: "proportional" }) as never,
+    );
+    const stored = vi.mocked(createChangeRequest).mock.calls[0][0] as Record<string, unknown>;
+    expect(stored).toMatchObject({ originalCredits: 5000 });
+    expect(stored).not.toHaveProperty("refundAmountCents");
   });
 
   it("a block_ip request with no address is REFUSED by the product, and says which rule", async () => {
@@ -834,6 +944,32 @@ describe("Change Request - Admin Review Procedures", () => {
         1,
         expect.objectContaining({ status: "pending_execution", reviewedById: 1 }),
       );
+    });
+
+    it("#418 — approving a stripe_refund hands the executor the session, type and credits, and NO amount", async () => {
+      /*
+       * Until #418 these params carried only `changeRequestId` and `reason`,
+       * so every approved Stripe refund died at execution on "Missing Stripe
+       * session ID" — the road was wired to refuse itself. Asserted at the
+       * wire (invariant 5): on what is handed to the approval store, not on a
+       * constant near it. The AMOUNT is asserted absent on purpose — the
+       * executor reads it from the charge at the moment money moves.
+       */
+      const { requestApproval } = await import("./slack/slackApproval");
+      vi.mocked(requestApproval).mockClear();
+      await adminCaller().reviewChangeRequest({ id: 8, action: "approved" } as never);
+      expect(requestApproval).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "cr_stripeRefund",
+          params: expect.objectContaining({
+            stripeSessionId: "cs_live_418",
+            refundType: "proportional",
+            originalCredits: 5000,
+          }),
+        }),
+      );
+      const sent = vi.mocked(requestApproval).mock.calls[0][0] as unknown as { params: Record<string, unknown> };
+      expect(sent.params).not.toHaveProperty("originalAmountCents");
     });
 
     it("denying a request marks it denied, and executes nothing", async () => {

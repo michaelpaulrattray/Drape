@@ -27,11 +27,12 @@
  *
  * ## What did not change (§7)
  *
- * Every query, the CSV export, both date filters, the page size and the refund
- * change-request payload are the ones that were here. ⚠ **Including the
- * `amountCents` derivation, which is a money path and is left alone
- * deliberately** — it is questionable and it is filed as **#418** rather
- * than edited inside a surface PR.
+ * Every query, the CSV export, both date filters and the page size are the
+ * ones that were here. The refund payload is not: the `amountCents`
+ * derivation this paragraph used to defend (a bare `* 0.00072`) was filed as
+ * **#418** rather than edited inside a surface PR, and #418's fix later
+ * removed it — the row action now names only which charge, and the server
+ * reads the money figures from Stripe and the ledger.
  */
 import { toast } from "sonner";
 
@@ -148,10 +149,15 @@ export function CreditsSubTab({
     ],
     evidence: tx.description || undefined,
     /*
-      The refund action, unchanged in what it sends. It opens the change-request
-      form; it does not itself move money, which is why it is not `destructive`
-      — a consequence note on a button that opens a form would be describing the
-      wrong step.
+      The refund action. It opens the change-request form; it does not itself
+      move money, which is why it is not `destructive` — a consequence note on
+      a button that opens a form would be describing the wrong step.
+
+      It names WHICH charge (the session id) and nothing about money: the
+      amount comes from the Stripe charge itself and the credits from this
+      ledger, both read by the server (#418 — this line used to compute the
+      amount with a bare magic float, `tx.amount * 0.00072`, which turned a
+      10,000-credit top-up into a 7-cent refund).
     */
     actions:
       tx.type === "topup" && tx.referenceId
@@ -160,14 +166,11 @@ export function CreditsSubTab({
               key: "refund",
               label: "Request refund",
               onClick: () => {
-                const amountCents = Math.round(tx.amount * 0.00072);
                 onOpenChangeRequest({
                   type: "stripe_refund",
                   targetUserId: String(selectedUserId),
                   targetUserName: userDetailsQuery.data?.user?.name || "",
                   stripeSessionId: tx.referenceId!,
-                  originalAmountCents: amountCents,
-                  originalCredits: tx.amount,
                 });
               },
             },

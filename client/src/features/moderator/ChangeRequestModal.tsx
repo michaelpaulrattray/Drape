@@ -143,10 +143,6 @@ interface ChangeRequestModalProps {
   setCrStripeSessionId: (v: string) => void;
   crRefundType: "full" | "proportional";
   setCrRefundType: (v: "full" | "proportional") => void;
-  crOriginalAmountCents: number;
-  setCrOriginalAmountCents: (v: number) => void;
-  crOriginalCredits: number;
-  setCrOriginalCredits: (v: number) => void;
 }
 
 const MAX_FILES = 5;
@@ -195,8 +191,6 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
     crIpAddress, setCrIpAddress,
     crStripeSessionId, setCrStripeSessionId,
     crRefundType, setCrRefundType,
-    crOriginalAmountCents, setCrOriginalAmountCents,
-    crOriginalCredits, setCrOriginalCredits,
   } = props;
 
   const [attachments, setAttachments] = useState<UploadedAttachment[]>([]);
@@ -351,21 +345,23 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
           {crType === "stripe_refund" && (
             <div className="flex flex-col gap-3 p-3 rounded-xl" style={severityLook("warning")}>
               <p className="text-xs font-medium">Stripe refund details</p>
-              <StaffField label="Stripe session ID" htmlFor="cr-stripe-session">
+              {/*
+                The session id is the ONLY purchase fact this form takes (#418).
+                It used to ask for "Original amount (cents)" and "Original
+                credits" too — two hand-typed money figures standing between a
+                moderator and a refund, one of them prefilled by a magic float
+                that turned 10,000 credits into 7 cents. The amount now comes
+                from the Stripe charge itself and the credits from the
+                customer's own purchase record, both read by the server; a
+                session that matches neither is refused at submit.
+              */}
+              <StaffField
+                label="Stripe session ID"
+                htmlFor="cr-stripe-session"
+                helper="The refund amount is taken from this charge and the customer's purchase record — nothing to type."
+              >
                 <Input id="cr-stripe-session" value={crStripeSessionId} onChange={(e) => setCrStripeSessionId(e.target.value)} placeholder="cs_test_..." className="font-mono text-xs" required />
               </StaffField>
-              <div className="grid grid-cols-2 gap-3">
-                <StaffField
-                  label="Original amount (cents)"
-                  htmlFor="cr-original-amount"
-                  helper={crOriginalAmountCents > 0 ? `$${(crOriginalAmountCents / 100).toFixed(2)}` : undefined}
-                >
-                  <Input id="cr-original-amount" type="number" value={crOriginalAmountCents || ""} onChange={(e) => setCrOriginalAmountCents(parseInt(e.target.value) || 0)} placeholder="e.g., 1500" />
-                </StaffField>
-                <StaffField label="Original credits" htmlFor="cr-original-credits">
-                  <Input id="cr-original-credits" type="number" value={crOriginalCredits || ""} onChange={(e) => setCrOriginalCredits(parseInt(e.target.value) || 0)} placeholder="e.g., 150" />
-                </StaffField>
-              </div>
               <StaffField
                 label="Refund type"
                 helper={crRefundType === "proportional"

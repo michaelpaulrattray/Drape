@@ -557,6 +557,28 @@ export async function getPaymentIntentFromSession(sessionId: string): Promise<st
 }
 
 /**
+ * What the customer was actually charged for a checkout session, in cents.
+ *
+ * This is THE source for a refund's "original amount" (#418). It used to be
+ * recomputed from a credit count by a bare magic float on the moderator's
+ * client (`credits * 0.00072`, which turned a 10,000-credit top-up into 7
+ * cents); `amount_total` is the figure Stripe charged the card, it is
+ * immutable on a completed session, and reading it means no constant exists
+ * to drift. Returns null when the session cannot be read or carries no
+ * charge — callers on the money path must REFUSE on null, never guess.
+ */
+export async function getSessionChargedAmountCents(sessionId: string): Promise<number | null> {
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const amount = session.amount_total;
+    return typeof amount === "number" && amount > 0 ? amount : null;
+  } catch (error) {
+    log.error({ err: error }, `[Stripe] Failed to read charged amount for session ${sessionId}:`);
+    return null;
+  }
+}
+
+/**
  * Issue a Stripe refund for a payment.
  * Supports full or partial refunds via amountCents parameter.
  * 
@@ -570,6 +592,13 @@ export async function issueStripeRefund(
   amountCents?: number,
   reason?: string
 ): Promise<{ success: boolean; refundId?: string; status?: string; error?: string }> {
+  // An EXPLICIT non-positive amount is refused, never silently upgraded: the
+  // falsy-check below turns 0 into "omit the amount", and an omitted amount
+  // means FULL refund to Stripe. A caller that computed zero meant zero
+  // (PR #704 review, finding 1). Omitting the parameter still means full.
+  if (amountCents !== undefined && !(Number.isFinite(amountCents) && amountCents > 0)) {
+    return { success: false, error: `Refund amount must be a positive number of cents (got ${amountCents}) — omit it entirely for a full refund` };
+  }
   try {
     const paymentIntentId = await getPaymentIntentFromSession(sessionId);
     if (!paymentIntentId) {
