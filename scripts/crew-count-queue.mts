@@ -100,9 +100,19 @@
  * calls the same function now, so a night that closes ten cards leaves his
  * panel saying so.
  *
- * The output of this command is unchanged, which is the property to keep: a
- * shift reads this log at 3am and the extraction must not have edited what it
- * says.
+ * The output of this command is unchanged on every road a shift actually
+ * reads, which is the property to keep: a shift reads this log at 3am and the
+ * extraction must not have edited what it says.
+ *
+ * ⚠ **ONE SENTENCE DID MOVE, AND THE CLAIM IS NARROWED RATHER THAN LEFT TO
+ * BE DISCOVERED** (PR #669's review, finding 3). The sum-mismatch refusal used
+ * to print `REFUSING to report a total: the groups sum to ...`; it now arrives
+ * through this front door as `REFUSING: the groups sum to ...`, because the
+ * reading returns its reason as a value and this file prints the prefix. The
+ * success path - the one driven end to end - is byte-identical. Nothing greps
+ * that line today; it is written down because "output unchanged" was a wider
+ * claim than the diff supported, and a claim nobody narrows is one somebody
+ * later relies on.
  */
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { refreshQueueCounts } from "./lib/crewQueueCount.mts";

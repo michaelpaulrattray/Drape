@@ -49,6 +49,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import {
+  QUEUE_GH_TIMEOUT_MS,
   refreshQueueCounts,
   refreshQueueCountsQuietly,
   type QueueGhReader,
@@ -266,6 +267,66 @@ describe("⚠ the quiet wrapper — the property that it cannot cost a shift its
     const outcome = await refreshQueueCountsQuietly(conn, (line) => said.push(line), ghThatReports({ bug: 3 }), QUIET);
     expect(outcome.ok).toBe(true);
     expect(said).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ THE TWO ROADS PR #669's REVIEW FOUND, BOTH DRIVEN.
+ *
+ * Finding 1 — **a hang is not a throw.** The wrapper resolves on every road it
+ * can see; a `gh` that blocks forever is none of them, so no arm above could
+ * ever have caught it. Now it sits on the shift close, a timeout turns the
+ * invisible road into `ETIMEDOUT`, which the catch already handles.
+ *
+ * Finding 2 — **the `warn` sink was advertised and never invoked.** Eight
+ * warning sites inside the three readers wrote straight to `console.error`, so
+ * a caller passing `warn` captured nothing while believing it had — the
+ * `guard-docblock-is-an-unchecked-claim` class expressed in a type instead of
+ * a comment, in the very file whose docblock names that class.
+ */
+describe("⚠ the roads the review found", () => {
+  it("the real `gh` reader carries a timeout — a hang is the road the catch cannot rescue", () => {
+    const source = readFileSync(
+      join(__dirname, "..", "scripts", "lib", "crewQueueCount.mts"),
+      "utf8",
+    );
+    expect(source).toMatch(/const REAL_GH[\s\S]{0,400}?timeout: QUEUE_GH_TIMEOUT_MS/);
+    /* Generous on purpose: the whole reading is a handful of `gh` calls, so
+       this may only ever fire on a genuine hang, never on a slow day. */
+    expect(QUEUE_GH_TIMEOUT_MS).toBeGreaterThanOrEqual(60_000);
+  });
+
+  it("⚠ NEGATIVE CONTROL — the same reading fails on a reader with no timeout", () => {
+    const doctored = 'const REAL_GH: QueueGhReader = (args) => execFileSync("gh", [...args], { encoding: "utf8" });';
+    expect(doctored).not.toMatch(/const REAL_GH[\s\S]{0,400}?timeout: QUEUE_GH_TIMEOUT_MS/);
+  });
+
+  it("a failing `gh` routes its warning through the sink, not past it", async () => {
+    const { conn } = connectionThat({});
+    const said: string[] = [];
+    const ghThatDies: QueueGhReader = () => {
+      throw new Error("gh: not logged in");
+    };
+    const outcome = await refreshQueueCounts(conn, ghThatDies, { log: () => {}, warn: (line) => said.push(line) });
+    /* The reading still succeeds — every `gh` road degrades to a SKIPPED
+       category rather than a wrong number, which is the property that lets his
+       panel keep an old figure instead of learning a false one. */
+    expect(outcome.ok).toBe(true);
+    expect(said.join("\n")).toMatch(/could not/);
+  });
+
+  it("⚠ and a caller asking for silence GETS it — the sink's whole claim", async () => {
+    const { conn } = connectionThat({});
+    const ghThatDies: QueueGhReader = () => {
+      throw new Error("gh: not logged in");
+    };
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await refreshQueueCounts(conn, ghThatDies, QUIET);
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 

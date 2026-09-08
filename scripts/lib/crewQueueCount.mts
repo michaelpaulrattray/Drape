@@ -103,10 +103,32 @@ export type QueueCountConnection = {
  */
 export type QueueGhReader = (args: readonly string[], options?: { readonly maxBuffer?: number }) => string;
 
+/**
+ * ⚠ A HANG IS NOT A THROW, AND IT IS THE ONE ROAD A CATCH CANNOT RESCUE
+ * (PR #669's review, finding 1).
+ *
+ * `refreshQueueCountsQuietly` resolves on every road it can SEE - success, a
+ * returned refusal, a rejection, a thrown non-Error. A `gh` that blocks
+ * forever (an auth prompt, a network that dies mid-TCP) is none of those: it
+ * never resolves and never rejects, so the arms that prove the wrapper safe
+ * cannot see it. Before this reading moved, that cost only the standalone
+ * counter. Now it sits on the SHIFT CLOSE, after the terminal UPDATE - the run
+ * row is safely closed either way, so #288's shape cannot recur, but the
+ * process would never reach its own exit or its #295 finding.
+ *
+ * A timeout converts the invisible road into one the catch already handles:
+ * `execFileSync` throws `ETIMEDOUT`, the wrapper reports it, and his panel
+ * keeps its previous numbers. Two minutes is deliberately generous - the whole
+ * reading is a handful of `gh` calls and the slowest measured is seconds, so
+ * this can only ever fire on a genuine hang, never on a slow day.
+ */
+export const QUEUE_GH_TIMEOUT_MS = 120_000;
+
 const REAL_GH: QueueGhReader = (args, options) =>
   execFileSync("gh", [...args], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
+    timeout: QUEUE_GH_TIMEOUT_MS,
     ...(options?.maxBuffer === undefined ? {} : { maxBuffer: options.maxBuffer }),
   });
 
@@ -231,7 +253,11 @@ type CardNamingIndex = {
   readonly truncated: boolean;
 };
 
-function readCardNamings(since: { number: number; date: string } | null, gh: QueueGhReader): CardNamingIndex | null {
+function readCardNamings(
+  since: { number: number; date: string } | null,
+  gh: QueueGhReader,
+  warn: (line: string) => void,
+): CardNamingIndex | null {
   try {
     const out = gh(
       /* Built in `scripts/lib/crewNamingWindow.mts` so the wire this reading
@@ -255,7 +281,7 @@ function readCardNamings(since: { number: number; date: string } | null, gh: Que
        named as unjudged, and the reason is printed. */
     const truncated = rows.length >= MERGED_PR_PAGE_BOUND;
     if (truncated) {
-      console.error(
+      warn(
         `⚠ the possibly-fixed reading hit its page bound: ${MERGED_PR_PAGE_BOUND} merged pull requests came back`
         + " — the reader cannot tell which merges it is missing, so every offered card is reported OUT OF REACH"
         + " rather than unflagged. Narrow the window by closing old cards, or page the read by date.",
@@ -295,14 +321,14 @@ function readCardNamings(since: { number: number; date: string } | null, gh: Que
       /* SAID OUT LOUD, because a reader that silently drops evidence is the
          shape this card is about. The instrument stays a floor and reports
          where its floor is. */
-      console.error(
+      warn(
         `note: ${citing} merged pull request(s) named more than ${CITED_CARDS_CEILING} cards each and were read as`
         + " CITING rather than fixing (#514) — their mentions are not evidence about any single card.",
       );
     }
     return { index, truncated };
   } catch (cause) {
-    console.error(`[warn] could not read the merged pull requests: ${(cause as Error).message}`);
+    warn(`[warn] could not read the merged pull requests: ${(cause as Error).message}`);
     return null;
   }
 }
@@ -328,7 +354,12 @@ function readCardNamings(since: { number: number; date: string } | null, gh: Que
  * makes "the count, the titles and the exclusions share one `countedAt`" a
  * property of the statement rather than of three reads agreeing.
  */
-function countOpen(label: string, namings: CardNamingIndex | null, gh: QueueGhReader): CategoryReading | null {
+function countOpen(
+  label: string,
+  namings: CardNamingIndex | null,
+  gh: QueueGhReader,
+  warn: (line: string) => void,
+): CategoryReading | null {
   try {
     const out = gh(
       ["issue", "list", "--state", "open", "--label", label, "--limit", "500",
@@ -347,7 +378,7 @@ function countOpen(label: string, namings: CardNamingIndex | null, gh: QueueGhRe
     const rows = JSON.parse(out);
     if (!Array.isArray(rows)) return null;
     if (rows.length >= 500) {
-      console.error(`REFUSING ${label}: 500 rows came back, which is the limit — the count would be a floor, not a count.`);
+      warn(`REFUSING ${label}: 500 rows came back, which is the limit — the count would be a floor, not a count.`);
       return null;
     }
     /*
@@ -443,7 +474,7 @@ function countOpen(label: string, namings: CardNamingIndex | null, gh: QueueGhRe
       outOfReach,
     };
   } catch (cause) {
-    console.error(`[warn] could not count \`${label}\`: ${(cause as Error).message}`);
+    warn(`[warn] could not count \`${label}\`: ${(cause as Error).message}`);
     return null;
   }
 }
@@ -462,7 +493,7 @@ function countOpen(label: string, namings: CardNamingIndex | null, gh: QueueGhRe
  * silently. At 100 open today there is room, and the day there is not, this
  * refuses instead of quietly capping his pipeline at 500.
  */
-function countPipelineGroups(gh: QueueGhReader): {
+function countPipelineGroups(gh: QueueGhReader, warn: (line: string) => void): {
   total: number;
   byGroup: Map<string, Array<{ number: number; title: string }>>;
 } | null {
@@ -471,7 +502,7 @@ function countPipelineGroups(gh: QueueGhReader): {
     const rows = JSON.parse(out);
     if (!Array.isArray(rows)) return null;
     if (rows.length >= 500) {
-      console.error("REFUSING the pipeline groups: 500 rows came back, which is the limit — the total would be a floor, not a total.");
+      warn("REFUSING the pipeline groups: 500 rows came back, which is the limit — the total would be a floor, not a total.");
       return null;
     }
     /* Most recent first, sorted here rather than trusted — `countOpen`'s reason,
@@ -503,14 +534,14 @@ function countPipelineGroups(gh: QueueGhReader): {
          dropped card is precisely what this card exists to end. */
       const bucket = byGroup.get(key);
       if (!bucket) {
-        console.error(`REFUSING: a card was filed under \`${key}\`, which is not a declared group. The vocabularies have drifted.`);
+        warn(`REFUSING: a card was filed under \`${key}\`, which is not a declared group. The vocabularies have drifted.`);
         return null;
       }
       bucket.push({ number: row.number, title: row.title });
     }
     return { total: stamped.length, byGroup };
   } catch (cause) {
-    console.error(`[warn] could not read the open queue for the pipeline groups: ${(cause as Error).message}`);
+    warn(`[warn] could not read the open queue for the pipeline groups: ${(cause as Error).message}`);
     return null;
   }
 }
@@ -649,7 +680,7 @@ export async function refreshQueueCounts(
   if (oldestOpen === null) {
     log("  (the oldest open card's date could not be read — the merged-PR window falls back to the whole history.)");
   }
-  const namings = readCardNamings(oldestOpen, gh);
+  const namings = readCardNamings(oldestOpen, gh, warn);
   if (namings === null) {
     log("  ⚠ the possibly-fixed reading could not be taken this run — every category is written unflagged.");
   }
@@ -657,7 +688,7 @@ export async function refreshQueueCounts(
   let written = 0;
   let skipped = 0;
   for (const category of CREW_WORK_CATEGORIES) {
-    const reading = countOpen(category.queueLabel, namings, gh);
+    const reading = countOpen(category.queueLabel, namings, gh, warn);
     if (reading === null) {
       skipped += 1;
       log(`  ${category.label.padEnd(14)} SKIPPED — the old row stands, with its older timestamp`);
@@ -744,7 +775,7 @@ export async function refreshQueueCounts(
     answer, and the panel's own rule since #277 is that a row must never vanish
     or he cannot tell "nothing there" from "not offered".
   */
-  const pipeline = countPipelineGroups(gh);
+  const pipeline = countPipelineGroups(gh, warn);
   if (pipeline === null) {
     skipped += CREW_PIPELINE_GROUPS.length;
     log("\n  PIPELINE GROUPS SKIPPED — the old rows stand, with their older timestamps");
