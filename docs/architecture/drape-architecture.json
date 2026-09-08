@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b8c5f0f50cdccb46"
+    "sourceFingerprint": "8e964c648fdbf23a"
   },
   "domains": [
     {
@@ -10962,6 +10962,10 @@
     {
       "id": "test:client/src/foundation/theme.test.ts",
       "path": "client/src/foundation/theme.test.ts"
+    },
+    {
+      "id": "test:client/src/foundation/themeDefault.test.ts",
+      "path": "client/src/foundation/themeDefault.test.ts"
     },
     {
       "id": "test:client/src/foundation/token-guard.test.ts",
