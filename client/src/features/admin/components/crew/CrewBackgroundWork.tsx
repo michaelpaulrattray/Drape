@@ -262,9 +262,21 @@ export function CrewBackgroundWork({
                       it is smaller than the label's population are ONE fact, and
                       a count that shrinks with its reason a paragraph away is
                       the confident-wrong-number failure this panel exists to
-                      prevent. `Bugs (11, 2 already queued)`. */}
+                      prevent. `Bugs (11 on offer, 2 already queued)`.
+
+                      ⚠ AND THE NUMBER SAYS WHAT IT IS — `on offer`, ALWAYS, NOT
+                      ONLY ON A ROW THAT EXCLUDED SOMETHING (#663, his ruling
+                      2026-09-08: *"The first"*). This count has never been the
+                      open count: `founder-ordered` and `parked` cards are taken
+                      out of it (#324), so it answers *how many could a shift
+                      take tonight* — and the panel never said so, which is
+                      where #618's *"how many bugs has it done"* came from. The
+                      two words go on EVERY row, including a row that excluded
+                      nothing: a suffix that appears only sometimes still makes
+                      him learn that its absence means a different number, and
+                      that is the machinery showing through. */}
                   <span className="dp-crew__count">
-                    {" "}({count ? count.openCount : "—"}{excluded ? `, ${excluded}` : ""}
+                    {" "}({count ? `${count.openCount} on offer` : "—"}{excluded ? `, ${excluded}` : ""}
                     {/* ⚠ AFTER THE EXCLUSIONS, AND THE ORDER CARRIES THE
                         MEANING (#494). What was SUBTRACTED is said first; what
                         is still inside the number and worth a second look is
