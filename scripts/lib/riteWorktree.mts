@@ -47,7 +47,15 @@ import path from "node:path";
  * this declaration.
  */
 export const stillOnDisk = (p: string): boolean => {
-  try { lstatSync(p); return true; } catch { return false; }
+  try { lstatSync(p); return true; } catch (error) {
+    /* ⚠ ONLY "IT IS NOT THERE" MEANS ABSENT — a bare `catch { return false }`
+       reads an EPERM or EACCES on the link path as GONE and authorises the
+       recursive delete, on the one predicate this module calls the thing
+       standing between a sweep and the main checkout (PR #692 review,
+       finding 2). The module's doctrine everywhere else is "when in doubt,
+       keep"; this is the same polarity, at the one call that decides it. */
+    return (error as NodeJS.ErrnoException)?.code !== "ENOENT";
+  }
 };
 
 /**

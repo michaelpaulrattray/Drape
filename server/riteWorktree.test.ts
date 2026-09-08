@@ -32,7 +32,7 @@
  * then fires and takes the directory. The decoy is still checked, as a
  * documented redundancy that costs nothing — never as the proof.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import {
   existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync,
@@ -41,6 +41,12 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { inWorktreeOf, removeThrowawayDir, stillOnDisk } from "../scripts/lib/riteWorktree.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite spawns real `git` — #548's class. Without the declaration it runs
+   inside vitest's 5s default and goes red under load on somebody's machine
+   rather than in CI. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const ROOT = path.resolve(__dirname, "..");
 
@@ -155,8 +161,13 @@ describe("inWorktreeOf leaves no directory behind on the failure shape #654 meas
       return null;
     });
     expect(dir).not.toBe("");
+    /* No per-arm number: the file-level `vi.setConfig` above is the house rule
+       ("declared once per file, never per arm"). 30 s is ~3x the load-adjusted
+       cost of this arm — it checks out ONE tree at 2.5 s solo, against the
+       sibling two-tree arm in `scriptGuards.test.ts` that measured 4.8 s solo
+       and 20.5 s inside a full 680-file run. */
     expect(existsSync(dir), "the throwaway directory is the 7.8 GB that was leaking").toBe(false);
-  }, 60_000);
+  });
 });
 
 describe("the junction reading has ONE declaration and both recursive-delete roads use it", () => {
@@ -193,6 +204,38 @@ describe("the junction reading has ONE declaration and both recursive-delete roa
     expect(script).not.toMatch(/existsSync\(plan\.nodeModulesLink\)/);
     /* And the state the removal plan is printed from reads the same way. */
     expect(script).toMatch(/junctionPresent: stillOnDisk\(plan\.nodeModulesLink\)/);
+  });
+
+  it("FAILS CLOSED — a read it cannot complete means STILL THERE, not gone", () => {
+    /*
+      PR #692 review, finding 2. `lstat` can fail for reasons other than
+      absence — EPERM, EACCES, ENOTDIR — and a bare `catch { return false }`
+      would read every one of them as "the junction is gone" and authorise the
+      recursive delete. This is the predicate the module's own docblock calls
+      the thing standing between a sweep and the main checkout, so it takes the
+      same polarity as everything else here: when in doubt, keep.
+
+      ⚠ THE FIXTURE IS NOT THE OBVIOUS ONE, AND THE FIRST ONE WAS WRONG. A path
+      THROUGH a file (`<file>/child`) is the natural ENOTDIR case and it was
+      written first — this bench answers **ENOENT** for it, and the arm caught
+      its own bad fixture rather than passing. Measured here, all four
+      candidates: through-a-file ENOENT, absent ENOENT, a 400-character name
+      ENOENT, and only a NUL-bearing path fails for a reason that is not
+      absence. EPERM cannot be manufactured portably, so the branch is driven
+      with the one non-ENOENT failure this platform reliably gives — which is
+      the same branch, reached the same way.
+    */
+    withTemp((base) => {
+      const unreadable = `${base}\0x`;
+      let code = "";
+      try { lstatSync(unreadable); } catch (e) { code = (e as NodeJS.ErrnoException).code ?? ""; }
+      expect(code, "the fixture must fail for a reason that is NOT absence").not.toBe("ENOENT");
+      expect(code.length, "the platform must give a code, or this arm proves nothing").toBeGreaterThan(0);
+      expect(stillOnDisk(unreadable)).toBe(true);
+      /* And the ordinary absent case still reads absent, or the hardening has
+         simply broken the reader in the other direction. */
+      expect(stillOnDisk(path.join(base, "nothing-here"))).toBe(false);
+    });
   });
 
   it("stillOnDisk sees a link whose target has gone — the property existsSync lacks", () => {
