@@ -1,10 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { listScriptGuardSuites, ORIGIN_SUITE, PUSH_PATH_SUITES, runScriptGuardsOnCommit } from "../scripts/lib/scriptGuards.mts";
+import { grepAtCommit, listScriptGuardSuites, ORIGIN_SUITE, PUSH_PATH_SUITES, runScriptGuardsOnCommit } from "../scripts/lib/scriptGuards.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 /* This suite drives a real child process, so it declares the class's timeout
@@ -92,6 +93,49 @@ describe("the script-guard suite list is derived from the suites", () => {
       "server/scriptExitDiscipline.test.ts",
       "server/scriptWorldGuard.test.ts",
     ].sort());
+  });
+
+  it("derives the list from the COMMIT, not the desk — the #479 narrowing's other half", () => {
+    /* Until 2026-09-09 the list came from a working-tree grep while the suites
+       ran in a worktree of the commit; the rite's blanket dirty-tree refusal
+       was the only thing making those the same tree. That guard is narrowed
+       now (a desk-only dirty `server/*.test.ts` no longer refuses a push), so
+       the sameness must be constructed here. Driven on a real repository whose
+       desk copy of a suite has LOST the deriving token while the commit keeps
+       it: the desk grep drops the suite (the negative control — the hole is
+       real), the commit grep keeps it, and `runScriptGuardsOnCommit`'s DEFAULT
+       derivation is the commit-scoped one. */
+    const repo = mkdtempSync(path.join(os.tmpdir(), "drape-guardlist-"));
+    try {
+      const git = (...args: string[]) => execFileSync("git", args, { cwd: repo, encoding: "utf8" });
+      git("init", "--quiet");
+      git("config", "user.email", "suite@drape.test");
+      git("config", "user.name", "suite");
+      mkdirSync(path.join(repo, "server"), { recursive: true });
+      mkdirSync(path.join(repo, "node_modules"), { recursive: true });
+      writeFileSync(path.join(repo, "server", ORIGIN_SUITE.split("/")[1]!), 'walk("scripts")\n');
+      writeFileSync(path.join(repo, "server", "deskDrops.test.ts"), 'walk("scripts")\n');
+      git("add", "server");
+      git("commit", "--quiet", "-m", "fixture");
+      const sha = git("rev-parse", "HEAD").trim();
+      writeFileSync(path.join(repo, "server", "deskDrops.test.ts"), "walk('nothing')\n");
+
+      expect(listScriptGuardSuites(repo)).not.toContain("server/deskDrops.test.ts");
+      expect(listScriptGuardSuites(repo, (r) => grepAtCommit(r, sha))).toContain("server/deskDrops.test.ts");
+
+      const handed: string[][] = [];
+      const verdict = runScriptGuardsOnCommit(repo, sha, {
+        vitest: (cwd, suites) => {
+          handed.push(suites);
+          return { status: 0, output: "" };
+        },
+      });
+      expect(verdict.ok).toBe(true);
+      expect(handed).toHaveLength(1);
+      expect(handed[0]).toContain("server/deskDrops.test.ts");
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
   });
 
   it("the named push-path suites are added, deduplicated, and cannot rescue a broken grep", () => {

@@ -87,6 +87,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, write
 import path from "node:path";
 
 import { closingKeywordHits, closingKeywordRefusal } from "./lib/closingKeyword.mts";
+import { dirtyEntriesFrom, judgeDirtyTree } from "./lib/dirtyTreeGuard.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { decideWatch, foreignServiceContext, listedRows } from "./lib/deployWatch.mts";
 import { comparePositions, parseVariableLines } from "./lib/productionFlagPositions.mts";
@@ -595,9 +596,67 @@ function productionUrl(): string | undefined {
 const sha = git("rev-parse", "HEAD");
 const shortSha = sha.slice(0, 8);
 const subject = git("log", "-1", "--format=%s");
-const dirty = git("status", "--porcelain").split("\n").filter((line) => line && !line.startsWith("??"));
-if (dirty.length > 0) {
-  die(`the working tree has ${dirty.length} uncommitted tracked change(s) — a deploy must carry a commit, not a desk:\n${dirty.join("\n")}`);
+/*
+  THE DESK DOES NOT BLOCK A DEPLOY IT IS PROVABLY NO PART OF (#479 — his word:
+  "go with all your recommendations", 2026-09-09; option 2 of the card).
+
+  This refused on ANY uncommitted tracked file until then, and the tree is
+  shared (`two-seats-one-tree`): three shifts in one night closed blocked
+  behind two of the founder's own parked law-doc edits while editions 229–231
+  sat finished and unable to reach his page. What the refusal actually
+  protects is narrower than "a clean tree", because everything decision-grade
+  here runs on the COMMIT — the push ships committed bytes, the script guards
+  and `pnpm check` run in a throwaway worktree of `sha`, the quiet/briefing/
+  eye judges read `git show <sha>:…`. So it refuses exactly the two shapes
+  that can still corrupt this deploy, and names the rest on the receipt:
+
+   - a dirty file the push's own commits CHANGE (which bytes ship must never
+     be a puzzle), judged against `--no-renames` diffs so a rename shows both
+     of its paths;
+   - a dirty file where the rite READS THE DISK to decide something real —
+     `RITE_DISK_READS` in the lib, `drizzle/` above all, because §5b turns
+     those bytes into DDL against the PRODUCTION database.
+
+  ⚠ ADDING A DISK READ TO THIS RITE? Its path joins `RITE_DISK_READS` in the
+  same commit — the list is a floor the suite holds to these bytes, not a
+  derivation that will notice for you.
+
+  Fail-closed stands: an unresolvable remote tip refuses every dirty file,
+  because "not carried" is then unproven. It refuses under `--dry` too, as the
+  blanket guard always did. Stated limit: the post-push asset reading (§5c)
+  reads desk bytes and could mis-state a RECEIPT line — never what deploys.
+  `scripts/lib/dirtyTreeGuard.mts` owns the judgement;
+  `server/dirtyTreeGuard.test.ts` the arms.
+*/
+{
+  const dirty = dirtyEntriesFrom(run("git", ["status", "--porcelain", "-z", "--no-renames"]));
+  if (dirty.length > 0) {
+    const remoteTip = git("ls-remote", "origin", "refs/heads/main").split(/\s+/)[0] ?? "";
+    let carried: ReadonlySet<string> | null = null;
+    if (/^[0-9a-f]{40}$/.test(remoteTip)) {
+      if (!git("cat-file", "-t", remoteTip).startsWith("commit")) git("fetch", "--quiet", "origin", "main");
+      if (git("cat-file", "-t", remoteTip).startsWith("commit")) {
+        carried = new Set(
+          remoteTip === sha
+            ? []
+            : git("diff", "--name-only", "--no-renames", `${remoteTip}..${sha}`).split(/\r?\n/).filter(Boolean),
+        );
+      }
+    }
+    const verdict = judgeDirtyTree(dirty, carried);
+    if (verdict.refused.length > 0) {
+      die(
+        `${verdict.refused.length} uncommitted tracked change(s) sit where this deploy would carry or read them — a deploy must carry a commit, not a desk:\n`
+        + verdict.refused.map(({ entry, why }) => `${entry.status} ${entry.path} — ${why}`).join("\n")
+        + (verdict.deskOnly.length > 0
+          ? `\n  (desk-only, would not block on their own: ${verdict.deskOnly.map((entry) => entry.path).join(" · ")})`
+          : "")
+        + "\n  repair: commit or stash the named file(s), then re-run — desk-only files parked by another seat no longer block (#479)",
+      );
+    }
+    say(`  desk changes: ${verdict.deskOnly.length} tracked file(s) modified and provably no part of this deploy — proceeding (#479):`);
+    for (const entry of verdict.deskOnly) say(`    ${entry.status} ${entry.path}`);
+  }
 }
 
 /*
@@ -738,9 +797,11 @@ if (dirty.length > 0) {
   shared tree carries untracked litter that is not in the push (two breaching
   files the day this landed). The suite list is derived from the suites
   themselves and REFUSES if it loses its origin case; a worktree that cannot be
-  made refuses too. It sits AFTER the dirty-tree refusal above so that the
-  tree the list is derived from and the tree the suites run in are the same
-  commit by construction (review of #157, finding 3).
+  made refuses too. ⚠ The suite LIST is derived AT THE COMMIT (`grepAtCommit`)
+  since #479: it used to read the working tree and rely on the dirty-tree
+  refusal above making desk and commit the same tree (review of #157, finding
+  3) — that refusal is narrower now, so the sameness is constructed where it
+  is needed instead of inherited from a guard aimed at something else.
   `scripts/lib/scriptGuards.mts` is the owner; `server/scriptGuards.test.ts`
   the arms. Seconds, like the atlas and capability checks.
 */

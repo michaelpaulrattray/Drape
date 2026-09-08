@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c434c01a08475eb1"
+    "sourceFingerprint": "ec4cbc079b17c5c6"
   },
   "domains": [
     {
@@ -12852,6 +12852,10 @@
     {
       "id": "test:server/devServerTrees.test.ts",
       "path": "server/devServerTrees.test.ts"
+    },
+    {
+      "id": "test:server/dirtyTreeGuard.test.ts",
+      "path": "server/dirtyTreeGuard.test.ts"
     },
     {
       "id": "test:server/discrepancyFlagging.test.ts",
