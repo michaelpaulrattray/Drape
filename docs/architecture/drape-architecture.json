@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "85c174adb8670867"
+    "sourceFingerprint": "40e76ffa2f4d4cda"
   },
   "domains": [
     {
@@ -12674,6 +12674,10 @@
     {
       "id": "test:server/clientInputCaps.test.ts",
       "path": "server/clientInputCaps.test.ts"
+    },
+    {
+      "id": "test:server/closingKeyword.test.ts",
+      "path": "server/closingKeyword.test.ts"
     },
     {
       "id": "test:server/contactAddresses.test.ts",

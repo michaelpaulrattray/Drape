@@ -258,6 +258,30 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # ⚠ A PULL REQUEST MUST NOT CLOSE A CARD BY ACCIDENT (#376, eight
+      # instances in five grammatical frames). GitHub reads `Closes #N` in a PR
+      # body or title and nothing after it — including a sentence written to say
+      # the keyword is being withheld, which is instance 3 and instance 7. Two
+      # of the eight closed cards whose bar was "his eye closes it".
+      #
+      # It runs BEFORE the expensive checks: the repair is one edit to the PR
+      # description, and finding that out at 30 seconds rather than 8 minutes is
+      # the whole point. Cards are closed by `gh issue close` with a receipt
+      # after the deploy, which is what every card here already gets.
+      #
+      # Skipped only when there is no PR to read (a manual `workflow_dispatch`
+      # without `pr_number`), never when the read FAILS — the script refuses on
+      # an unreadable PR rather than passing over a question nobody answered.
+      - name: PR body closes no card by accident (#376)
+        if: ${{ needs.resolve.outputs.pr != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Named rather than inferred from the checkout's remote, for the
+          # money/auth step's reason: this run may gate a ref, not a clone.
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ needs.resolve.outputs.pr }}
+        run: npx tsx scripts/check-closing-keyword.mts --pr "$PR"
+
       - name: Typecheck (pnpm check)
         run: pnpm check
 

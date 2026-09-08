@@ -65,6 +65,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { closingKeywordHits, closingKeywordRefusal } from "./lib/closingKeyword.mts";
 import {
   type GateState,
   type MergeAction,
@@ -460,6 +461,54 @@ function oneLine(text: string): string {
 }
 
 /**
+ * ⚠ NOTHING IS SQUASHED THAT WOULD CLOSE A CARD BY ACCIDENT (#376).
+ *
+ * The gate reads the PR title and body when the run is created. **This reads
+ * them again at the moment of the merge, and reads the BRANCH'S COMMIT MESSAGES
+ * besides** — which the gate never sees as text, and which are what GitHub
+ * writes into the squash body on this repository (`c1d120c0` is the proof: its
+ * body is the branch's own message, not the PR description).
+ *
+ * So this is not the gate's check run twice. It covers the one road the gate
+ * cannot: a body that was clean when the run fired, edited after, or a commit
+ * message carrying the token into `main` under a clean description. That road
+ * is instance 7 of the eight on #376 — a shift that had deliberately kept the
+ * keyword out of its PR body and still closed a card at the squash.
+ *
+ * It REFUSES the merge rather than warning. The repair is one edit and the card
+ * is closed by hand with its receipt afterwards, which is the practice already.
+ */
+function refuseAccidentalClose(pr: PrReading): void {
+  let text: string;
+  try {
+    const read = JSON.parse(
+      gh(["pr", "view", String(pr.number), "--json", "title,body,commits"]),
+    ) as { title?: unknown; body?: unknown; commits?: Array<{ messageHeadline?: string; messageBody?: string }> };
+    /* A missing field is a failed read, never an empty one — a checker that
+       passes because it could not look is invariant 7 wearing a green tick. */
+    if (typeof read.title !== "string" || typeof read.body !== "string" || !Array.isArray(read.commits)) {
+      say(`REFUSED: gh answered for #${pr.number} without a title, body or commit list — the closing-keyword check (#376) has proven nothing.`);
+      process.exit(1);
+    }
+    text = [
+      read.title,
+      read.body,
+      ...read.commits.map((c) => `${c.messageHeadline ?? ""}\n${c.messageBody ?? ""}`),
+    ].join("\n");
+  } catch (error) {
+    say(`REFUSED: could not read #${pr.number}'s title, body and commits — ${(error as Error).message}`);
+    say("  The closing-keyword check (#376) has proven nothing; it does not pass by being unable to look.");
+    process.exit(1);
+  }
+
+  const hits = closingKeywordHits(text);
+  if (hits.length > 0) {
+    say(closingKeywordRefusal(`#${pr.number}'s title, body or commit messages`, hits));
+    process.exit(1);
+  }
+}
+
+/**
  * THE MERGE, AND THE RECEIPT IS READ BACK RATHER THAN INFERRED (#568).
  *
  * ⚠ **NOTHING HERE TRUSTS AN EXIT CODE, AND NOTHING HERE ASKS `gh` TO TOUCH
@@ -471,6 +520,9 @@ function oneLine(text: string): string {
  * and the four states; this function is their I/O.
  */
 function mergePr(pr: PrReading): void {
+  /* ⚠ THE LAST LOOK BEFORE THE SQUASH (#376) — see `refuseAccidentalClose`. */
+  refuseAccidentalClose(pr);
+
   /* ⚠ `--delete-branch` is deliberately NOT passed to `gh pr merge`, even when
      the flag is set. It is the local half of that flag that broke, and this
      tool's help only ever promised the remote half — which `deleteRemoteBranch`
