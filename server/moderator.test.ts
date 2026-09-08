@@ -53,10 +53,17 @@
  *       one is a moderator, a plain user, or null). The capability grid's
  *       footnote 1 — *admins pass the moderator middleware, so they inherit
  *       the entire moderator surface* — had no test that could fail.
- *     · **No moderator READ procedure is driven anywhere.** `getAuditLogs`,
- *       `getAuditStats`, `getAbuseAlerts`, `getUserActivity`, `listUsers`,
- *       `listBlockedIPs`, `getUserFullDetails` had zero driven callers in the
- *       repository; the fourteen arms of shape 2 stood in for all of them.
+ *     · **No moderator READ procedure was driven anywhere.** Not one of the
+ *       router's TWELVE reads had a driven caller in the repository; the
+ *       fourteen arms of shape 2 stood in for all of them. ⚠ **This sentence
+ *       first said "seven" and drove seven, which the reviewer of PR #698
+ *       caught: the file then read as coverage it did not have, and two of the
+ *       five it left out — `getUserCreditHistory` and
+ *       `getUserGenerationHistory` — carry the SAME `all`-collapse and
+ *       date-conversion translations, one of them on the credits read a staff
+ *       member opens to investigate a complaint.** All twelve are driven now,
+ *       and the last describe in this file derives the population from the
+ *       running router so the claim cannot quietly stop being true.
  *
  * - **The client's guard is NOT recited here.** The six "UI Access Control"
  *   arms transcribed `ModeratorDashboard.tsx:180`'s
@@ -189,6 +196,9 @@ vi.mock("./db", () => ({
     activeUsers: 80,
     suspendedUsers: 5,
   }),
+  getDetailedCreditHistory: vi.fn().mockResolvedValue({ transactions: [], total: 0 }),
+  getDetailedGenerationHistory: vi.fn().mockResolvedValue({ generations: [], total: 0 }),
+  getFlaggedReferrals: vi.fn().mockResolvedValue({ items: [], total: 0 }),
 }));
 
 /*
@@ -222,6 +232,17 @@ function soleCallTo(fn: unknown): Record<string, unknown> {
     throw new Error(`expected the procedure to reach its reader exactly once, saw ${calls.length}`);
   }
   return calls[0][0] as Record<string, unknown>;
+}
+
+/* The same control for a reader taking more than one argument — the credit and
+   generation histories pass the userId FIRST and the filters second, and an
+   arm that only looked at the filters could not see the id go wrong. */
+function soleCallArgsTo(fn: unknown): unknown[] {
+  const { calls } = (fn as { mock: { calls: unknown[][] } }).mock;
+  if (calls.length !== 1) {
+    throw new Error(`expected the procedure to reach its reader exactly once, saw ${calls.length}`);
+  }
+  return calls[0];
 }
 
 /*
@@ -435,6 +456,154 @@ describe("Moderator Role — the read surface, DRIVEN through the router", () =>
       expect(result!.credits).toEqual({ balance: 100 });
       expect(result!.stats).toEqual({ totalModels: 5, totalGenerations: 50 });
     });
+  });
+
+  /*
+   * ⚠ THE FIVE BELOW WERE THE REVIEWER'S FINDING ON THIS PR, AND IT WAS RIGHT.
+   * The docblock above this describe said NOTHING drove a moderator read
+   * procedure and then drove seven — while the router declares TWELVE reads.
+   * The other five were neither driven nor named, so the file read as coverage
+   * it did not have, which is the same sentence this whole repair was about.
+   *
+   * Two of them carry the EXACT translation shape driven above — `all`
+   * collapsing to no filter, a date string becoming a `Date` — and one of
+   * those two is the CREDITS read a staff member opens to investigate a
+   * customer's complaint. Named rather than enumerated as a remainder,
+   * because law 7's bar is fix or file, and these cost four arms.
+   */
+  describe("getUserCreditHistory — a CREDITS read, carrying the same translations", () => {
+    it("`all` is a filter word, not a transaction type — the router sends none for it", async () => {
+      const { getDetailedCreditHistory } = await import("./db");
+      await callerFor(MODERATOR).getUserCreditHistory({ userId: 42, type: "all" });
+      const [userId, options] = soleCallArgsTo(getDetailedCreditHistory);
+      expect(userId).toBe(42);
+      expect((options as Record<string, unknown>).type).toBeUndefined();
+    });
+
+    it("a real transaction type travels whole, and the dates become Dates", async () => {
+      const { getDetailedCreditHistory } = await import("./db");
+      await callerFor(MODERATOR).getUserCreditHistory({
+        userId: 42,
+        type: "topup",
+        startDate: "2026-01-01T00:00:00.000Z",
+      });
+      const sent = soleCallArgsTo(getDetailedCreditHistory)[1] as Record<string, unknown>;
+      expect(sent.type).toBe("topup");
+      expect(sent.startDate).toBeInstanceOf(Date);
+      expect((sent.startDate as Date).toISOString()).toBe("2026-01-01T00:00:00.000Z");
+      expect(sent.endDate).toBeUndefined();
+      expect(sent.limit).toBe(50);
+    });
+  });
+
+  describe("getUserGenerationHistory — two `all`s, both of which must collapse", () => {
+    it("neither `all` reaches the reader as a filter", async () => {
+      const { getDetailedGenerationHistory } = await import("./db");
+      await callerFor(MODERATOR).getUserGenerationHistory({
+        userId: 42,
+        status: "all",
+        type: "all",
+      });
+      const sent = soleCallArgsTo(getDetailedGenerationHistory)[1] as Record<string, unknown>;
+      expect(sent.status).toBeUndefined();
+      expect(sent.type).toBeUndefined();
+    });
+
+    it("a real status and a real type both travel whole", async () => {
+      const { getDetailedGenerationHistory } = await import("./db");
+      await callerFor(MODERATOR).getUserGenerationHistory({
+        userId: 42,
+        status: "failed",
+        type: "castingImage",
+      });
+      const sent = soleCallArgsTo(getDetailedGenerationHistory)[1] as Record<string, unknown>;
+      expect(sent.status).toBe("failed");
+      expect(sent.type).toBe("castingImage");
+    });
+  });
+
+  describe("getFlaggedReferrals", () => {
+    it("the router's own defaults reach the reader when nothing is asked for", async () => {
+      const { getFlaggedReferrals } = await import("./db");
+      await callerFor(MODERATOR).getFlaggedReferrals();
+      expect(getFlaggedReferrals).toHaveBeenCalledWith(50, 0);
+    });
+  });
+
+  describe("getAuditLogById", () => {
+    it("the id asked for is the id read — not a default, not the first row", async () => {
+      const { getAuditLogById } = await import("./auditLog");
+      await callerFor(MODERATOR).getAuditLogById({ id: 77 });
+      expect(getAuditLogById).toHaveBeenCalledWith(77);
+    });
+  });
+
+  describe("getUserStats", () => {
+    it("the statistics reader is reached, and its answer is what comes back", async () => {
+      const { getUserStatistics } = await import("./db");
+      const result = await callerFor(MODERATOR).getUserStats();
+      expect(getUserStatistics).toHaveBeenCalled();
+      expect(result.totalUsers).toBe(100);
+    });
+  });
+});
+
+/*
+ * ⚠ AND THIS IS THE ARM THAT KEEPS THE SENTENCE ABOVE TRUE TOMORROW.
+ *
+ * The claim "every read on this router is driven" is exactly the kind of
+ * sentence that stops being true without anybody editing it — a new procedure
+ * is added to the router and no test anywhere goes red. That is
+ * `list-stops-being-the-list`, and it is what put two FICTIONAL procedure
+ * names into a security describe in this suite's own history.
+ *
+ * So the population is DERIVED from the running router and compared against
+ * what this file accounts for. Add a procedure tomorrow and this reddens until
+ * someone drives it or names where it is driven.
+ *
+ * ⚠ WHAT IT CANNOT CATCH, said plainly rather than left to be assumed: it
+ * compares NAMES. Listing a procedure below without actually driving it would
+ * pass. It catches the drift that happens by accident — a surface growing —
+ * not a deliberate untruth.
+ */
+describe("Moderator Role — every procedure on the router is accounted for, DERIVED", () => {
+  /* Driven by an arm in THIS file, above. */
+  const DRIVEN_HERE = [
+    "getAuditLogs", "getAbuseAlerts", "getAuditStats", "getAuditLogById",
+    "getUserDetails", "getUserActivity", "listBlockedIPs", "listUsers",
+    "getUserFullDetails", "getUserStats", "getUserCreditHistory",
+    "getUserGenerationHistory", "getFlaggedReferrals",
+  ];
+
+  /* Driven elsewhere, read at that file before being written here. */
+  const DRIVEN_ELSEWHERE: Record<string, string> = {
+    createChangeRequest:
+      "changeRequests.test.ts — the db write, the audit row and the Slack note, plus the refusals",
+    getMyChangeRequests:
+      "changeRequests.test.ts — the session's moderator id reaching the db helper, and the status filter",
+  };
+
+  it("no procedure on the moderator router is unaccounted for", () => {
+    const surface = Object.keys(
+      (moderatorRouter as unknown as { _def: { procedures: Record<string, unknown> } })._def
+        .procedures,
+    );
+    expect(surface.length).toBeGreaterThan(0);
+    const accounted = new Set([...DRIVEN_HERE, ...Object.keys(DRIVEN_ELSEWHERE)]);
+    expect(surface.filter((name) => !accounted.has(name)).sort()).toEqual([]);
+  });
+
+  it("and nothing is accounted for that the router does not have — the list cannot outlive the surface", () => {
+    const surface = new Set(
+      Object.keys(
+        (moderatorRouter as unknown as { _def: { procedures: Record<string, unknown> } })._def
+          .procedures,
+      ),
+    );
+    const fictional = [...DRIVEN_HERE, ...Object.keys(DRIVEN_ELSEWHERE)].filter(
+      (name) => !surface.has(name),
+    );
+    expect(fictional.sort()).toEqual([]);
   });
 });
 
