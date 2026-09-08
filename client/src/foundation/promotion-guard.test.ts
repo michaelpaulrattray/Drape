@@ -192,9 +192,20 @@ describe("the floating panel's shell is written once", () => {
       and a reader that searched raw text would redden on the explanation.
     */
     const offenders: string[] = [];
-    for (const file of await clientSources(new URL("../", import.meta.url))) {
+    const files = await clientSources(new URL("../", import.meta.url));
+    /*
+      A walk that finds nothing passes an absence test green, so the population
+      is asserted before it is read — the same floor the arm above this one
+      keeps. Both files that own a shell rule must be in it.
+    */
+    expect(files.length).toBeGreaterThan(100);
+    expect(files.map((f) => f.name)).toEqual(
+      expect.arrayContaining(["foundation.css", "modals.css"]),
+    );
+    for (const file of files) {
       const text = code(file.text);
-      for (const [selector, body] of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      // The first element of a match is the WHOLE match; the captures start at 1.
+      for (const [, selector, body] of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
         if (!SHELL_CSS.every((re) => re.test(body))) continue;
         const name = selector.trim().split(/\s+/).pop() ?? selector.trim();
         if (name === ".dp-floatpanel") continue;
