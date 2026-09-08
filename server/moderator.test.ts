@@ -181,32 +181,68 @@ vi.mock("./db", () => ({
     ],
     total: 1,
   }),
+  /*
+   * Mirrors `listAllUsers`' OWN select (`server/db/admin.ts`) field for field,
+   * plus the forbidden six seeded on top - the #700 shape. A short fixture
+   * would let the router drop a real field with nothing going red, and an
+   * unseeded one would let a spread regression pass (the PR #698 round-2
+   * lesson, one procedure along).
+   */
   listAllUsers: vi.fn().mockResolvedValue({
     users: [
       {
         id: 42,
+        openId: "open-42",
         name: "Test User",
         email: "test@example.com",
+        avatarUrl: "https://example.test/a.png",
         role: "user",
         suspendedAt: null,
+        suspendedReason: null,
+        frozenAt: null,
         lockedUntil: null,
         createdAt: new Date("2025-06-01"),
         lastSignedIn: new Date("2026-01-15"),
+        passwordHash: "seeded-forbidden-hash",
+        apiKey: "seeded-forbidden-key",
+        stripeCustomerId: "cus_seededforbidden",
+        masterPrompt: "seeded forbidden master prompt",
+        technicalSchema: { seeded: "forbidden" },
+        preferences: { seeded: "forbidden" },
       },
     ],
     total: 1,
   }),
+  /* Mirrors `getUserFullDetails`' own returned object, forbidden six seeded. */
   getUserFullDetails: vi.fn().mockResolvedValue({
     user: {
       id: 42,
+      openId: "open-42",
       name: "Test User",
+      displayName: "Testy",
       email: "test@example.com",
+      avatarUrl: "https://example.test/a.png",
+      bannerUrl: null,
+      bio: null,
       role: "user",
+      storageUsed: 1024,
+      storageLimit: 104857600,
       suspendedAt: null,
       suspendedReason: null,
+      suspendedBy: null,
+      frozenAt: null,
+      frozenReason: null,
+      frozenBy: null,
       lockedUntil: null,
+      failedLoginAttempts: 0,
       createdAt: new Date("2025-06-01"),
       lastSignedIn: new Date("2026-01-15"),
+      passwordHash: "seeded-forbidden-hash",
+      apiKey: "seeded-forbidden-key",
+      stripeCustomerId: "cus_seededforbidden",
+      masterPrompt: "seeded forbidden master prompt",
+      technicalSchema: { seeded: "forbidden" },
+      preferences: { seeded: "forbidden" },
     },
     credits: { balance: 100 },
     stats: { totalModels: 5, totalGenerations: 50 },
@@ -439,6 +475,32 @@ describe("Moderator Role — the read surface, DRIVEN through the router", () =>
       expect(result.users[0].suspendedAt).toBeNull();
       expect(result.total).toBe(1);
     });
+
+    it("the projection the ROUTER builds, whole — invariant 8, and the fixture holds the forbidden six so it can fail", async () => {
+      const result = await callerFor(MODERATOR).listUsers();
+      /*
+       * #700. The row this reads comes from a fixture seeded with
+       * passwordHash/apiKey/stripeCustomerId/masterPrompt/technicalSchema/
+       * preferences, so a router that SPREADS the row puts all six on a staff
+       * wire and this reddens. Asserted whole rather than six `not.toContain`
+       * checks: a field added to the helper's select upstream must redden here
+       * too, which is the half a forbidden-list can never see.
+       */
+      expect(result.users[0]).toEqual({
+        id: 42,
+        openId: "open-42",
+        name: "Test User",
+        email: "test@example.com",
+        avatarUrl: "https://example.test/a.png",
+        role: "user",
+        suspendedAt: null,
+        suspendedReason: null,
+        frozenAt: null,
+        lockedUntil: null,
+        createdAt: "2025-06-01T00:00:00.000Z",
+        lastSignedIn: "2026-01-15T00:00:00.000Z",
+      });
+    });
   });
 
   describe("listBlockedIPs", () => {
@@ -476,6 +538,36 @@ describe("Moderator Role — the read surface, DRIVEN through the router", () =>
       expect(result!.user.suspendedAt).toBeNull();
       expect(result!.credits).toEqual({ balance: 100 });
       expect(result!.stats).toEqual({ totalModels: 5, totalGenerations: 50 });
+    });
+
+    it("the user projection the ROUTER builds, whole — invariant 8, forbidden six seeded", async () => {
+      const result = await callerFor(MODERATOR).getUserFullDetails({ userId: 42 });
+      expect(result).not.toBeNull();
+      // #700, same reasoning as `listUsers` above — this is the deeper of the
+      // two reads and the one a moderator opens to investigate an account.
+      expect(result!.user).toEqual({
+        id: 42,
+        openId: "open-42",
+        name: "Test User",
+        displayName: "Testy",
+        email: "test@example.com",
+        avatarUrl: "https://example.test/a.png",
+        bannerUrl: null,
+        bio: null,
+        role: "user",
+        storageUsed: 1024,
+        storageLimit: 104857600,
+        suspendedAt: null,
+        suspendedReason: null,
+        suspendedBy: null,
+        frozenAt: null,
+        frozenReason: null,
+        frozenBy: null,
+        lockedUntil: null,
+        failedLoginAttempts: 0,
+        createdAt: "2025-06-01T00:00:00.000Z",
+        lastSignedIn: "2026-01-15T00:00:00.000Z",
+      });
     });
   });
 
