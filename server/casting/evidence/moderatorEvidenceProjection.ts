@@ -1,3 +1,5 @@
+import { EVIDENCE_CANDIDATE_GENERATION_TYPE } from "./evidenceCandidateContract";
+
 const EVIDENCE_CANDIDATE_PUBLIC_FAILURE =
   "The tattoo preview could not be created. Any charged credits were refunded.";
 
@@ -35,7 +37,7 @@ export function projectEvidenceCandidateForModerator<Row extends {
   metadata: unknown;
   resultUrl?: string | null;
 }>(row: Row): Row {
-  if (row.type !== "evidenceCandidate") return row;
+  if (row.type !== EVIDENCE_CANDIDATE_GENERATION_TYPE) return row;
   const source = row.metadata && typeof row.metadata === "object"
     && !Array.isArray(row.metadata)
     ? row.metadata as Record<string, unknown>

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "229afd6aefd9accb"
+    "sourceFingerprint": "9884175811a5ada2"
   },
   "domains": [
     {
@@ -20875,6 +20875,11 @@
     },
     {
       "from": "module:server/casting/evidence/evidenceFork.ts",
+      "to": "module:server/casting/evidence/evidenceCandidateContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/evidence/evidenceFork.ts",
       "to": "module:server/casting/evidence/evidenceDelivery.ts",
       "kind": "imports"
     },
@@ -21946,6 +21951,11 @@
     {
       "from": "module:server/casting/evidence/inkViewImpact.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/evidence/moderatorEvidenceProjection.ts",
+      "to": "module:server/casting/evidence/evidenceCandidateContract.ts",
       "kind": "imports"
     },
     {
@@ -29030,12 +29040,22 @@
     },
     {
       "from": "module:server/db/dailyQuota.ts",
+      "to": "module:server/casting/evidence/evidenceCandidateContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/dailyQuota.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/db/discrepancyQueries.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/discrepancyQueries.ts",
+      "to": "module:server/casting/evidence/evidenceCandidateContract.ts",
       "kind": "imports"
     },
     {
@@ -34081,7 +34101,7 @@
       "severity": "info",
       "kind": "retired-module-has-callers",
       "subject": "module:server/casting/evidence/evidenceCandidateContract.ts",
-      "message": "Marked retire but still imported by 21 module(s). Not removable yet."
+      "message": "Marked retire but still imported by 25 module(s). Not removable yet."
     },
     {
       "id": "finding:live-caller:module:server/casting/evidence/evidenceComposerSchema.ts",

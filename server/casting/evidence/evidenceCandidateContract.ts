@@ -2,6 +2,22 @@ export const INK_ADD_CAPABILITY_KEY = "ink.add.front_upper_torso.v1" as const;
 export const INK_ADD_PRICE_CREDITS = 350 as const;
 export const EVIDENCE_CANDIDATE_MAX_ATTEMPTS = 2 as const;
 
+/**
+ * The `generations.type` the evidence family writes, declared ONCE.
+ *
+ * It had four literal spellings — the two writers (`evidenceFork`,
+ * `inkAddCandidates`), the moderator projection, and it was about to gain a
+ * fifth in the discrepancy scan's exclusion (#638). A reader that excludes a
+ * family by re-typing its name is working law 4's shape: the exclusion and the
+ * writers would be two lists of the same thing, free to drift, and the drift
+ * would show up as a reconciliation instrument quietly excluding nothing.
+ *
+ * Declared here rather than imported from the drizzle enum so this contract
+ * module keeps no schema dependency; `server/discrepancyFlagging.test.ts` holds
+ * it to a value the column actually has, and holds the call sites to using it.
+ */
+export const EVIDENCE_CANDIDATE_GENERATION_TYPE = "evidenceCandidate" as const;
+
 export const EVIDENCE_INTENT_STATUSES = [
   "pending",
   "resolved",
