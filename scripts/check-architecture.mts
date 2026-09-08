@@ -364,27 +364,42 @@ export function checkArchitecture(
   DIRECTIONS — SO IT IS REFUSED HERE RATHER THAN OBEYED (PR #672 review,
   finding 1).
 
-  `import.meta.main` arrived in the Node 24 line. Before it, the expression is
-  `undefined`, the block below never fires, and this script exits 0 having done
+  `import.meta.main` landed in Node **v24.2.0**, and was backported to
+  **v22.18.0**. On anything older the expression is `undefined`, the block
+  below never fires, and this script exits 0 having done
   nothing — which is the SAME silent-green failure #668 was filed to remove,
   arriving through the runtime instead of the path spelling. It matters most
   right here: `.githooks/atlas-stage` runs the generator as a command, a no-op
   is not a failure, and the hook would print "regenerated and staged — this
   commit carries the map of its own tree" having staged nothing.
 
-  `package.json` pins `engines: node >= 24`, but that WARNS at install time and
-  cannot stop a hook mid-commit on a machine that never installed. Only these
-  two files carry this guard, and deliberately: they are the two the hooks
-  invoke as commands. The other seven are refused loudly by their own callers
-  or are libraries whose importers keep working either way.
+  `package.json` pins `engines: node >= 24.2` — the conservative bound, because
+  this repository runs the 24 line and CI pins it; the 22.18 backport is real
+  but is not a runtime anything here targets. ⚠ The first version of that pin
+  read `>= 24`, which ADMITS 24.0 and 24.1, where the expression is undefined —
+  a pin certifying the exact runtime the guard exists to refuse (PR #672 review
+  round 2).
+
+  And the pin only WARNS at install; it cannot stop a hook mid-commit on a
+  machine that never installed. Only these two files carry the runtime guard,
+  and deliberately: they are the two the hooks invoke as commands. The other
+  seven are libraries whose importers keep working either way.
+
+  ⚠ IT THROWS RATHER THAN CALLING `process.exit`, AND THAT IS A NAMED TRADE.
+  On an old runtime `import.meta.main` is undefined in BOTH directions, so this
+  cannot tell a direct run from an import — it therefore fires when a test
+  suite imports this module too, and roughly eight do. Failing loud there is
+  the intention (the alternative is the silent no-op this whole card removes),
+  but a `process.exit(1)` inside a vitest worker kills the worker mid-suite,
+  which `server/scriptExitDiscipline.test.ts` warns about. A throw fails just
+  as loudly, carries the same message, and leaves the runner able to report it.
 */
 if (typeof import.meta.main === "undefined") {
-  console.error(
-    "REFUSED — this Node does not support `import.meta.main` (needs >= 24, this is "
+  throw new Error(
+    "REFUSED — this Node does not support `import.meta.main` (needs >= 24.2, this is "
       + `${process.version}). Without it this script would exit 0 having done nothing, `
       + "and the commit hook would report a map it never wrote.",
   );
-  process.exit(1);
 }
 
 const invokedDirectly = import.meta.main;

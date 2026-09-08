@@ -70,11 +70,25 @@ function tsx(file: string, args: string[] = [], cwd = REPO) {
 }
 
 /**
- * Every `.mts` under `scripts/` (excluding disposables, which are untracked by
- * design) that declares the self-invocation check. Derived, so a ninth file
- * joins the population by existing rather than by somebody remembering.
+ * Every `.mts` under `scripts/`, excluding disposables (a shift's own scratch
+ * files, never tracked).
+ *
+ * ⚠ IT USED TO ADMIT ONLY FILES DECLARING `const invokedDirectly`, WHICH KEYED
+ * THE POPULATION TO A NAME RATHER THAN TO THE IDIOM (PR #672 review, round 2).
+ * A ninth file spelling the check `const isEntry = process.argv[1] === …` sat
+ * OUTSIDE the population, so the detector never read it and the suite stayed
+ * green over the exact hand-rolled comparison it exists to refuse — the
+ * "caught the day it is written" claim holding only for authors who happened
+ * to reuse the retired variable name. The list-stops-being-the-list class in
+ * miniature.
+ *
+ * So the walk admits everything and `offencesIn` decides. That is safe rather
+ * than merely wider: measured at the tree, NO `.mts` under `scripts/` reads
+ * `process.argv[1]` outside a comment, so a file that wants argv has the
+ * strict parser and a file that hand-rolls this question is an offender by
+ * construction.
  */
-function modulesDeclaringTheCheck(): string[] {
+function scriptModules(): string[] {
   const found: string[] = [];
   const walk = (dir: string, rel: string) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -93,11 +107,8 @@ function modulesDeclaringTheCheck(): string[] {
          rite on a clean tree (#223, #589). A file gone at the read was not
          part of the tree at the moment of the reading, so skipping it is the
          correct answer rather than a tolerated failure. */
-      const src = readListedSource(join(dir, entry.name));
-      if (src === null) continue;
-      if (/\bconst invokedDirectly\b/.test(src) || /\bif \(import\.meta\.main\)/.test(src)) {
-        found.push(childRel);
-      }
+      if (readListedSource(join(dir, entry.name)) === null) continue;
+      found.push(childRel);
     }
   };
   walk(SCRIPTS, "");
@@ -118,6 +129,25 @@ function modulesDeclaringTheCheck(): string[] {
  * QUOTE the retired idiom to explain what changed — quoting a defect must
  * never read as committing it.
  */
+/**
+ * The modules that actually carry a self-invocation check.
+ *
+ * ⚠ NARROWER THAN `scriptModules()` ON PURPOSE, AND THE TWO MUST NOT BE
+ * CONFUSED. The static scan reads every file, because an offender is defined by
+ * the idiom and not by a variable name. The IMPORT arm cannot: it loads each
+ * module in a child process, and `scripts/` holds paid benches, database
+ * openers and campaign drivers that have no business being imported by a test
+ * run. So that arm keeps this population — the files whose command block is
+ * the thing under test — and pays for what it imports.
+ */
+function modulesDeclaringTheCheck(): string[] {
+  return scriptModules().filter((rel) => {
+    const src = readListedSource(join(SCRIPTS, rel));
+    if (src === null) return false;
+    return /\bconst invokedDirectly\b/.test(src) || /\bif \(import\.meta\.main\)/.test(src);
+  });
+}
+
 function offencesIn(rel: string, source: string): string[] {
   const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
   const offences: string[] = [];
@@ -160,10 +190,16 @@ describe("the self-invocation check", () => {
 
   it("NOBODY asks it with argv any more — the population is derived, not listed", () => {
     /* A guard whose population is the set of files you already fixed stops
-       watching the moment you fix one. So the population is every `.mts` under
-       scripts/ that carries the check at all, and the offence is the idiom. */
-    const modules = modulesDeclaringTheCheck();
-    expect(modules.length, "the check should be findable in the tree").toBeGreaterThanOrEqual(8);
+       watching the moment you fix one. So the population is EVERY `.mts` under
+       scripts/ — not only the files carrying the retired variable name — and
+       the offence is the idiom. See `scriptModules`: keying on the name let a
+       new file spelling it `const isEntry = process.argv[1] === …` sit outside
+       the population entirely. */
+    const modules = scriptModules();
+    /* A floor, because a walk that silently returned nothing would satisfy
+       `offenders === []` forever. It is well above the nine files that carry
+       the check, since the population is now the whole directory. */
+    expect(modules.length, "the walk must actually be reading scripts/").toBeGreaterThan(40);
 
     const offenders: string[] = [];
     for (const rel of modules) {
@@ -218,7 +254,12 @@ describe("the self-invocation check", () => {
        at install; the runtime refusal is what stops a hook mid-commit on a
        machine that never installed. */
     const pkg = JSON.parse(readListedSource(join(REPO, "package.json")) ?? "{}");
-    expect(pkg.engines?.node, "package.json must pin the runtime the primitive needs").toBe(">=24");
+    /* ⚠ `>=24.2`, NOT `>=24` — the first pin admitted 24.0 and 24.1, where
+       `import.meta.main` is undefined, so it certified the exact runtime the
+       guard exists to refuse (PR #672 review, round 2). The primitive landed
+       in v24.2.0 and was backported to v22.18.0; this takes the conservative
+       bound because the repository runs the 24 line and CI pins it. */
+    expect(pkg.engines?.node, "package.json must pin a runtime that HAS the primitive").toBe(">=24.2");
 
     for (const rel of ["check-architecture.mts", "generate-architecture.mts"]) {
       const src = readListedSource(join(SCRIPTS, rel));
@@ -241,8 +282,15 @@ describe("the self-invocation check", () => {
        So each module is imported in a child `tsx` process that prints one
        word afterwards. The module must contribute NOTHING to stdout and the
        child must exit 0: a command block that fired would print, write, or
-       take the exit code with it. */
+       take the exit code with it.
+
+       ⚠ THIS POPULATION IS THE NARROW ONE AND IT MUST STAY NARROW. The static
+       scan above reads every `.mts` under scripts/; this arm IMPORTS each one,
+       and scripts/ holds paid benches, database openers and campaign drivers
+       that a test run has no business loading. Only the modules that actually
+       carry the check belong here. */
     const modules = modulesDeclaringTheCheck();
+    expect(modules.length, "the import arm must have subjects").toBeGreaterThanOrEqual(8);
     const dir = mkdtempSync(join(tmpdir(), "drape-import-only-"));
     scratches.push(dir);
 
