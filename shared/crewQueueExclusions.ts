@@ -16,7 +16,8 @@
  *
  * His card's own words: *"A count that silently shrinks for an invisible reason
  * is the confident-wrong-number failure this panel already exists to avoid."*
- * So the panel reads **`Bugs (11, 2 already queued)`** rather than `Bugs (11)`.
+ * So the panel reads **`Bugs (11 on offer, 2 already queued)`** rather than `Bugs (11)`
+ * (the `on offer` half is #663, which named the number the clause made smaller).
  * A number that quietly got smaller is indistinguishable from a broken counter,
  * and this panel exists precisely because he could not tell those apart.
  *
@@ -47,7 +48,7 @@
  * One reason a card carrying a category's label is nevertheless not offered.
  *
  * `label` is the words the panel says — lower case, because it is read inside
- * a parenthesis mid-sentence: *(11, 2 already queued)*.
+ * a parenthesis mid-sentence: *(11 on offer, 2 already queued)*.
  */
 export const QUEUE_EXCLUSION_REASONS = [
   {

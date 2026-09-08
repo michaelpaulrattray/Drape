@@ -267,7 +267,7 @@ describe("the partition", () => {
     /* ⚠ Which is the DECLARED behaviour, not the desired one: it matches
        `#316`'s existing `bug` + `founder-ordered` shape exactly, and #324's
        exclusion is what keeps such a card off the offered count — the row reads
-       `Small fixes (n, 1 already queued)` rather than offering it twice. The
+       `Small fixes (n on offer, 1 already queued)` rather than offering it twice. The
        arm below is that promise, driven. */
     expect(exclusionFor(["founder-ordered", "small-fix"])).toBe("ordered");
     expect(exclusionFor(["debt", "small-fix"])).toBe(null);

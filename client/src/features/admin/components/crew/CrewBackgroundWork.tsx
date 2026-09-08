@@ -57,11 +57,13 @@
  * background work a shift may take on its own judgement.
  *
  * So the number is now the OFFERED population, and the reasons ride inside the
- * same parenthesis: `Bugs (11, 2 already queued)`. **The clause is the whole
- * fix, not the subtraction** — his card's own sentence is that *a count that
- * silently shrinks for an invisible reason is the confident-wrong-number
+ * same parenthesis: `Bugs (11 on offer, 2 already queued)`. **The clause is the
+ * whole fix, not the subtraction** — his card's own sentence is that *a count
+ * that silently shrinks for an invisible reason is the confident-wrong-number
  * failure this panel already exists to avoid.* A category that excluded nothing
- * draws no clause and looks exactly as it does today.
+ * draws no clause — but it DOES still say `on offer` (#663), because the number
+ * means the same thing on every row and a suffix that came and went would be one
+ * more thing to learn.
  *
  * # ⚠ THE COUNT SAYS HOW OLD IT IS, RATHER THAN IMPLYING AN INSTANT
  *
@@ -262,9 +264,21 @@ export function CrewBackgroundWork({
                       it is smaller than the label's population are ONE fact, and
                       a count that shrinks with its reason a paragraph away is
                       the confident-wrong-number failure this panel exists to
-                      prevent. `Bugs (11, 2 already queued)`. */}
+                      prevent. `Bugs (11 on offer, 2 already queued)`.
+
+                      ⚠ AND THE NUMBER SAYS WHAT IT IS — `on offer`, ALWAYS, NOT
+                      ONLY ON A ROW THAT EXCLUDED SOMETHING (#663, his ruling
+                      2026-09-08: *"The first"*). This count has never been the
+                      open count: `founder-ordered` and `parked` cards are taken
+                      out of it (#324), so it answers *how many could a shift
+                      take tonight* — and the panel never said so, which is
+                      where #618's *"how many bugs has it done"* came from. The
+                      two words go on EVERY row, including a row that excluded
+                      nothing: a suffix that appears only sometimes still makes
+                      him learn that its absence means a different number, and
+                      that is the machinery showing through. */}
                   <span className="dp-crew__count">
-                    {" "}({count ? count.openCount : "—"}{excluded ? `, ${excluded}` : ""}
+                    {" "}({count ? `${count.openCount} on offer` : "—"}{excluded ? `, ${excluded}` : ""}
                     {/* ⚠ AFTER THE EXCLUSIONS, AND THE ORDER CARRIES THE
                         MEANING (#494). What was SUBTRACTED is said first; what
                         is still inside the number and worth a second look is

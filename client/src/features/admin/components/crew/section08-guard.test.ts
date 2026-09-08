@@ -1351,3 +1351,47 @@ describe("issue 494 — the count says which of its cards may already be done", 
     expect(body).toContain("flagged.has(card.number)");
   });
 });
+
+/*
+  ⚠ ISSUE 663 — THE COUNT SAYS WHICH OF THE TWO NUMBERS IT IS.
+
+  His ruling, 2026-09-08 00:11:46Z (Crew reply #165), entire: *"The first"* —
+  option 1 of the card, *the panel says what the number is*. The number has
+  never been the open count: `founder-ordered` and `parked` cards come out of it
+  (#324, `shared/crewQueueExclusions.ts`), so it answers *what could a shift
+  take tonight*. The panel said neither, and #618 is him reading it as the
+  other one.
+
+  ⚠ **THESE ARE SOURCE READS AND THEY ARE THE WEAKER HALF ON PURPOSE.** No
+  render harness exists in this client (`vitest.config.ts` is `environment:
+  "node"`, and `readOnlyEcho.test.ts` says so in its own header), so what these
+  arms can prove is that the words ride the number in the one place that draws
+  it. **The behaviour was DRIVEN in the running app, both themes, at 1440** —
+  `Bugs (7 on offer)` and `Casting upkeep (6 on offer, 1 already queued)` — and
+  that drive, not these arms, is the evidence the copy reached his page.
+*/
+describe("issue 663 — the switch count says it is what a shift may take", () => {
+  it("the words ride the NUMBER, and the not-counted row still says nothing", () => {
+    const body = code(read(path.join(HERE, "CrewBackgroundWork.tsx")));
+    /* Both halves in one string on purpose: the phrase sits inside the branch
+       that HAS a count, so a category nobody has counted yet still draws a bare
+       `(—)` rather than claiming an offer of nothing. */
+    expect(body).toContain('{count ? `${count.openCount} on offer` : "—"}');
+  });
+
+  it("it is not conditional on an exclusion — a row that excluded nothing says it too", () => {
+    const body = code(read(path.join(HERE, "CrewBackgroundWork.tsx")));
+    /* The failure this guards is the tempting narrower fix: label the number
+       only where something was subtracted. That leaves `Process (12)` meaning
+       one thing and `Bugs (11 on offer, 2 already queued)` meaning another, and
+       makes him learn that the absence of two words is itself a fact. */
+    const atOffer = body.indexOf("on offer");
+    const atExcluded = body.indexOf("excluded ? `, ${excluded}`");
+    /* Both anchors asserted present BEFORE they are compared: an order test
+       whose anchor has moved reads `-1` and fails with a number nobody can
+       act on, which is a diagnosis the next shift pays for. */
+    expect(atOffer).toBeGreaterThan(-1);
+    expect(atExcluded).toBeGreaterThan(-1);
+    expect(atOffer).toBeLessThan(atExcluded);
+  });
+});
