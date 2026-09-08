@@ -1,7 +1,7 @@
 {
-  "edition": 307,
-  "updatedAt": "2026-09-08T17:15:00Z",
-  "shift": "Janitor - patrol #4: three cards closed. Your machine had 1.33 GB of abandoned copies of Drape sitting in its temp folder, and the leak that made them is fixed",
+  "edition": 308,
+  "updatedAt": "2026-09-08T18:35:00Z",
+  "shift": "Foreman - two cards closed. A test file that reported 104 checks was holding 55: fifty of them could not fail, and four were telling us wrong things about your own product",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-08T13:35:55.733Z",
+      "readAt": "2026-09-08T18:22:18.941Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4394,6 +4394,22 @@
   ],
   "pipeline": [
     {
+      "id": "selfasserting-arms-681",
+      "title": "A safety net with 104 knots in it, fifty of which were tied to nothing",
+      "status": "merged",
+      "prNumber": 696,
+      "cardId": null,
+      "note": "The change-request road is how a moderator asks an admin to refund credits, suspend an account or block an address - real money and real accounts. The file that is supposed to check that road reported 104 checks. Fifty of them checked nothing at all: they wrote down an answer, then confirmed the answer they had just written. One whole block of sixteen would have stayed green if we deleted the code it claims to test. Every one of the 104 was read by hand, because two attempts to count them automatically gave two different wrong answers. Fifty are gone or rebuilt to actually run the product; 55 remain and every one of them touches real code. Nine deliberate breakages were then made to the product to prove the new checks go off - eight did. The ninth did not, and it was a check I had just written this evening: it looked like it was proving that a moderator cannot pretend to be someone else, and it was proving nothing. It is two checks now, and both of them fire."
+    },
+    {
+      "id": "journal-docblock-328",
+      "title": "The instruction file every agent reads first was pointing them at a page you retired",
+      "status": "merged",
+      "prNumber": 695,
+      "cardId": null,
+      "note": "Two small notes-to-self in the code still described the old journal box as if it were live - one of them in a script an operator runs against the live database, where the wrong sentence would have been printed in an error message. Fixing them turned up something bigger: the main instruction file, the one loaded into every session before a shift starts, still said you steer from the old claude.ai page and that your 'journal entries' are the rulings. You moved the Desk into the product on 26 August and removed the journal on 31 August. So the first thing every agent read was two weeks out of date about where to find your words. Corrected, in your own sentences."
+    },
+    {
       "id": "rite-temp-leak-654",
       "title": "1.33 GB of abandoned copies of Drape were sitting in your temp folder",
       "status": "merged",
@@ -4469,13 +4485,6 @@
       "status": "merged",
       "prNumber": 677,
       "note": "Thirty-seven action labels across the change-requests page and its review panel. Also fixes an attachments strip that drew a near-white card in dark mode. Looked at in both themes before shipping; the reviewer passed it and its three notes were taken in one go."
-    },
-    {
-      "id": "card-638-linkability-answered",
-      "title": "The false flag on your own account: the repair everyone assumed would work only gets two thirds of the way",
-      "status": "building",
-      "prNumber": null,
-      "note": "Measured at your live rows tonight, nothing changed. The tidy repair everyone assumed would work gets two thirds of the way and leaves the flag lit; the blunter one clears it. Both numbers are on the card."
     },
     {
       "id": "card-675-runner-sleeps-on-backlog",
@@ -4739,10 +4748,24 @@
   ],
   "problems": [
     {
+      "id": "wrong-numbers-in-tests-681",
+      "title": "Four things our own checks were saying about your product were simply not true - and not one of them could ever have gone off",
+      "severity": "info",
+      "state": "open",
+      "detail": "The check file for the change-request road (a moderator asking an admin to refund credits, suspend someone or block an address) had four statements in it that disagree with what the product actually does. It said the product accepts eight kinds of request; it accepts nine. It said five of them need Slack sign-off; six do. It listed five internal action names where there are six. And it said the Slack card an admin reads carries a 'Credit Reason' line - the product has never sent one.\n\nNone of these was a bug you could hit. The point is why they survived: every one of those checks wrote its own list down and then checked its own list, so nothing in the product had to be consulted and nothing could disagree. Two of them had been wrong for months.\n\nAll four are corrected to read the product's own declarations, so the next time one drifts, something goes red. Nothing here changed behaviour - the product was right and its checks were wrong, which is the direction we would rather find."
+    },
+    {
+      "id": "queue-shape-0909-foreman",
+      "title": "The queue: 69 open, 14 nobody has looked at in a week - two closed tonight, one new one written",
+      "severity": "info",
+      "state": "open",
+      "detail": "69 cards open, 14 with no comment, no close and no code near them for seven days. Two closed tonight (#328 and #681) and one written (#697, which came out of tonight's work).\n\nNothing is waiting on you: NEXT UP is empty, nothing carries urgent, and none of the four check-up rounds is overdue.\n\nThe standing note from the last four nights still holds and is now measured on a third band: the oldest small fixes read the same way the bugs do - several of them end in a decision that is yours (which of two things should look the same, whether a label or a poll rate should move) rather than in work a shift can do. That is not a complaint about the switches; it is what the bottom of the queue actually is."
+    },
+    {
       "id": "queue-shape-0908g-foreman",
       "title": "The queue: 78 open, 15 nobody has looked at in a week - and tonight the small-fix band read the same way the bug band has",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "detail": "78 cards open, 15 with no comment, no close and no code near them for seven days. Steady rather than growing. One closed tonight (#679) and one written (#681).\n\nThe part worth your attention: the last three nights reported that your Bugs switch overstates what a shift can actually pick up. Tonight the Small fixes band was read the same way, card by card at the code, and it reads similarly - of the oldest ones, several end in a decision that is yours rather than a shift's: which of two identical drawings changes and to what (#394), whether a rule sits under every row or only under a total (#419), whether a control that says 30 seconds should change its words or its speed (#455), and one that says in its own body that nothing moves until you answer (#276). Those are not stuck; they are correctly waiting.\n\nThis is the same measurement #663 is about. It is not a complaint - a queue full of decisions is what a queue looks like when the buildable work has been built. It matters only because the number under your switch counts cards, and a shift can only take some of them."
     },
     {
@@ -4768,21 +4791,21 @@
     },
     {
       "id": "queue-shape-0908d-foreman",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 82 open, two cards moved tonight, and 14 nobody has re-read in a week",
       "severity": "info",
       "detail": "82 open. Two changes merged tonight against one card (#642, which stays open - seven of its thirteen items are done). One new card filed, and it is named in the second entry above.\n\n14 cards have had no comment, no close and no commit against them for seven days - the same 14 as last night, and none of them is waiting on you.\n\nTHE SHAPE, said plainly: the bug list is now mostly cards whose remaining work is a DECISION rather than a change. That is not a stale queue - four of them were re-read against the actual code again tonight and every earlier sizing held. Three of those decisions you answered while this shift was running, and they are recorded on their cards."
     },
     {
       "id": "temp-leftovers-654",
-      "state": "open",
-      "title": "7.8 GB of leftover copies of the app were sitting in your machine's temporary folder",
+      "state": "resolved",
+      "title": "The leftover copies of the app are swept and the leak that made them is fixed",
       "severity": "info",
       "detail": "Something you can actually see on your own computer, so it is here rather than only in the queue.\n\nWHAT IT IS. Several of the team's checks work by making a throwaway copy of the whole app in Windows' temporary folder, testing against it, then deleting it. When Windows refuses that delete - which it does fairly often, because something is still holding the folder for a moment - nothing tries again. Each abandoned copy is about 275 MB.\n\nWHAT WAS MEASURED. 32 of them were standing there tonight: 7.8 GB. For scale, the team's evidence folder that already has its own card is 6.5 GB, so this was the larger of the two piles and unlike that one none of it is worth keeping.\n\nWHAT HAPPENED. Cleared tonight, by hand. THE CODE IS UNCHANGED, so it will build up again at roughly one abandoned copy in every fifteen.\n\nWHY IT WAS NOT JUST FIXED ON THE SPOT. The obvious repair - delete the folder harder - is the exact thing that piece of code carries a warning against, because those copies contain a shortcut pointing back at the real app, and deleting through it can destroy the working copy on this machine. It needs a check that the shortcut is gone first, which is a small careful change rather than a one-liner, so it is #654 with the measurement in it."
     },
     {
       "id": "queue-shape-0908b-foreman",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 82 open, one closed tonight and two filed, and 14 nobody has re-read in a week",
       "severity": "info",
       "detail": "82 open - the same number as last night, because one card closed and two were filed from what turned up while working it.\n\nWHAT CLOSED: the random test failure (#652). What was filed: the leftover copies eating your disk (7.8 GB, cleared tonight, will come back until the code changes), and a question about a whole family of the team's own checks that may be looking at less than they claim to. The second one is filed honestly as a MEASUREMENT and not as a list of faults - the sweep counted 71 candidates and could not tell a real one from a false alarm, so it says so rather than handing anyone 71 things to fix.\n\nWHAT IS ROTTING: 14 cards have had no comment, no close and no code touch them for a week - one more than last night, and it moved because a card crossed the seven-day line rather than because anything got worse. None is a customer fault and none is waiting on you.\n\nSTILL ONLY ONE THING NEEDS YOU: #543, and it waits on a measurement due 12 September, not on a decision."
@@ -4831,9 +4854,9 @@
     },
     {
       "id": "sweep-clock-broken-526",
-      "title": "The rule for deleting old scratch files can no longer tell what is old",
+      "title": "The scratch-file clock can tell what is old again",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "detail": "Found by tonight's tidy-up, and it is a workshop problem rather than an app one — no customer is affected and nothing is at risk. The team deletes its own leftover scratch once it is more than a week old, judged by the file's last-modified date. On 30 August, in a single hour, something rewrote that date on 270 of 307 files. They all now look brand new, so the sweep can never fire and the pile only grows. It was found because the previous tidy-up run had deliberately written the real dates down beforehand — otherwise there would have been nothing to compare against. Deliberately NOT patched over tonight: what should replace the date is a real decision, and a lone tidy-up shift changing a deletion rule on its own is exactly what your 'nothing gets deleted quietly' rule is there to stop. The recommendation on the card is to date a file by the piece of work it was written for, since that is saved in the record and cannot be rewritten."
     },
     {
@@ -5118,7 +5141,7 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-08T13:35:54.832Z",
+    "readAt": "2026-09-08T18:22:18.115Z",
     "items": []
   }
 }
