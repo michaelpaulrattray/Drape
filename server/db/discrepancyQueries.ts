@@ -96,6 +96,45 @@
  * the same work is counted TWICE: once through the operation that charged for
  * it, and again through the rows it left unlinked.
  *
+ * ⚠ **THAT GAP IS CLOSED AS OF 2026-09-09 — `UNLINKED_ROW_SQL` BELOW EXCLUDES
+ * THE FAMILY, AND THE ROAD IT DID *NOT* TAKE IS THE FINDING WORTH KEEPING**
+ * (#638, driven at the production rows before anything was built). The card
+ * recommended LINKING the rows instead — a ceremony writing `operationId` onto
+ * the 45 — and preferred it as the structurally right answer, on the belief
+ * that linking and excluding both land on −150. **Both halves were measured
+ * and the second one is false:**
+ *
+ *   today          unlinked 70,750 + operation 58,900 = 129,650  →  −11,600
+ *   LINK the rows  unlinked 59,300 + operation 62,850 = 122,150  →   −4,100
+ *   EXCLUDE them   unlinked 59,300 + operation 58,900 = 118,200  →     −150
+ *
+ * (Gross was 118,050 this reading against 117,890 on 2026-09-07; the operation
+ * side moved by the same 160, which is ordinary v2 activity between the two.)
+ *
+ * **Linking IS possible** — all 45 rows match one `evidence_candidate_generate`
+ * operation each by time, 0 orphans and 0 ambiguous, and every charged
+ * operation's linked-row sum equals its own charge exactly, which is a second
+ * reader agreeing with a match made on timestamps alone. **It just does not
+ * work**, because 12 of those 46 operations recorded `chargedCredits = 0` while
+ * owning a cost-bearing row, and the rule's fallback branch — "its rows where
+ * it recorded none" — picks 3,950 of the 11,450 straight back up. The badge is
+ * drawn at `DEFAULT_DISCREPANCY_THRESHOLD` (500), so linking leaves him flagged
+ * at −4,100 and only the exclusion clears him.
+ *
+ * ⚠ **AND THE DECIDING FACT IS THE ONE NOBODY WOULD HAVE THOUGHT TO ASK FOR:
+ * ACROSS THE WHOLE DATABASE, ALL USERS AND ALL TIME, THERE ARE *ZERO*
+ * OPERATIONS THAT RECORD NO CHARGE AND OWN A COST-BEARING ROW.** The ceremony
+ * would have MANUFACTURED twelve instances of a shape production has never
+ * held, inside the fallback branch whose stated justification the paragraph
+ * above already records as false at the rows. That is why the structurally
+ * tidier road was declined, and it was declined on a measurement rather than
+ * on taste.
+ *
+ * The four arms in `server/discrepancyFlagging.test.ts` were CHANGED rather
+ * than deleted, per the card's bar — including the one that modelled linking
+ * by holding `operationCost` fixed, which is exactly the premise that made
+ * −150 look like linking's number when it is the exclusion's.
+ *
  * ⚠ THAT IS #119'S OWN DEFECT CLASS, ONE DOOR OVER, AND IT IS WHY THIS IS
  * WORTH THE WORDS. The rule above makes an operation's own charge authoritative
  * precisely so a Sign's five audit rows cannot be added to the 450 it charged.
@@ -121,14 +160,16 @@
  * uncharged, completed ones included, which is a reader that always agrees
  * with whoever runs it.
  *
- * The repair is NOT made here: this is a money-adjacent instrument and the
- * choice between excluding the parked family, linking its rows, and narrowing
- * `unlinkedCost` is filed rather than taken on a shift's judgement. It is
- * card 0638, which carries the three roads and the recommendation; #462
- * measured the cause and closed.
- * `server/discrepancyFlagging.test.ts` pins the double-count as CURRENT
- * behaviour with the production shape, so the repair has to change an arm that
- * states what it is changing.
+ * The repair was NOT made when the cause was measured: this is a
+ * money-adjacent instrument and the choice between excluding the parked
+ * family, linking its rows, and narrowing `unlinkedCost` was filed rather than
+ * taken on a shift's judgement. It was card 0638, which carried the three
+ * roads and made the choice conditional on ONE measurement — whether linking
+ * was possible — and that measurement, taken, chose the other road for the
+ * reason set out above. #462 measured the cause and closed.
+ * `server/discrepancyFlagging.test.ts` pinned the double-count as CURRENT
+ * behaviour with the production shape, so the repair had to change an arm that
+ * states what it is changing; it does.
  *
  * Refunds are no longer part of the discrepancy. They are written only by
  * the product or by staff (a failure refund, a per-slice refund, an admin
@@ -157,6 +198,7 @@ import {
   generations,
   users,
 } from "../../drizzle/schema";
+import { EVIDENCE_CANDIDATE_GENERATION_TYPE } from "../casting/evidence/evidenceCandidateContract";
 import { getDb } from "./connection";
 
 export interface FlaggedUserDiscrepancy {
@@ -379,6 +421,33 @@ export function attachUserInfoToFlagged(
 export const OPERATION_COST_SQL = sql<number>`COALESCE(SUM(CASE WHEN ${generationOperations.chargedCredits} > 0 THEN ${generationOperations.chargedCredits} ELSE COALESCE((SELECT SUM(linked.pointsCost) FROM ${generations} AS linked WHERE linked.operationId = ${generationOperations}.id), 0) END), 0)`;
 
 /**
+ * WHICH `generations` ROWS THE UNLINKED SIDE COUNTS — declared once because
+ * it has two readers, and they were two copies of it (#638).
+ *
+ * The scan writes it as a CASE inside an aggregate and the per-user page
+ * writes it as a WHERE, and the module's own header promises both derive from
+ * one rule. They did not: they were the same predicate typed twice, which is
+ * working law 4, and this change would have had to edit it in both places and
+ * hope. It is one expression now, and the page and the scan cannot answer
+ * different questions about the same account.
+ *
+ * ⚠ **THE EXCLUSION, AND WHY IT IS THIS ONE.** The parked July evidence
+ * family (#6) left 45 `evidenceCandidate` rows with no `operationId`, worth
+ * 11,450 credits, for work its operations had already charged 9,300 for — so
+ * the same work entered `expected` twice and the founder's own account read
+ * −11,600 and sat on his Moderation badge as the instrument's only flag.
+ *
+ * ⚠ **ITS POPULATION CANNOT GROW, WHICH IS WHAT MAKES THIS NARROW RATHER THAN
+ * AN OPEN-ENDED EXEMPTION.** The exclusion only ever bites on a row that has
+ * NO operation, and both live writers of this type set `operationId` in the
+ * same INSERT (`server/db/inkAddCandidates.ts`, `evidenceFork.ts`) — so a row
+ * this predicate can drop cannot be created by any road the product still
+ * runs. That is structural, not a promise, and
+ * `server/discrepancyFlagging.test.ts` holds both writers to it.
+ */
+export const UNLINKED_ROW_SQL = sql`(${generations.operationId} IS NULL AND ${generations.type} <> ${EVIDENCE_CANDIDATE_GENERATION_TYPE})`;
+
+/**
  * Scan all users for credit discrepancies above a threshold.
  * Uses SQL aggregation for performance — no N+1 queries. A READ: it writes
  * nothing and freezes nobody (see the header).
@@ -406,7 +475,7 @@ export async function getUsersWithDiscrepancies(
       completedCost: sql<number>`COALESCE(SUM(CASE WHEN ${generations.status} = 'completed' THEN ${generations.pointsCost} ELSE 0 END), 0)`.as("completedCost"),
       pendingCost: sql<number>`COALESCE(SUM(CASE WHEN ${generations.status} IN ('pending', 'processing') THEN ${generations.pointsCost} ELSE 0 END), 0)`.as("pendingCost"),
       failedCost: sql<number>`COALESCE(SUM(CASE WHEN ${generations.status} = 'failed' THEN ${generations.pointsCost} ELSE 0 END), 0)`.as("failedCost"),
-      unlinkedCost: sql<number>`COALESCE(SUM(CASE WHEN ${generations.operationId} IS NULL THEN ${generations.pointsCost} ELSE 0 END), 0)`.as("unlinkedCost"),
+      unlinkedCost: sql<number>`COALESCE(SUM(CASE WHEN ${UNLINKED_ROW_SQL} THEN ${generations.pointsCost} ELSE 0 END), 0)`.as("unlinkedCost"),
       totalGenerations: sql<number>`COUNT(*)`.as("totalGenerations"),
       failedGenerations: sql<number>`COALESCE(SUM(CASE WHEN ${generations.status} = 'failed' THEN 1 ELSE 0 END), 0)`.as("failedGenerations"),
     })
@@ -462,7 +531,7 @@ export async function getUserRecordCosts(
   const db = await getDb();
   if (!db) return { unlinkedCost: 0, operationCost: 0 };
 
-  const genConditions = [sql`${generations.userId} = ${userId}`, sql`${generations.operationId} IS NULL`];
+  const genConditions = [sql`${generations.userId} = ${userId}`, UNLINKED_ROW_SQL];
   if (range.startDate) genConditions.push(gte(generations.createdAt, range.startDate));
   if (range.endDate) genConditions.push(lte(generations.createdAt, range.endDate));
 

@@ -19,7 +19,32 @@
  * reported as `unrefundedFailureCost` rather than flagged.
  */
 
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
+
+/** This file lives at `server/`, so the repository root is one level up. */
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+/**
+ * The threshold every surface actually asks with, READ OUT OF THE ONE FILE
+ * THAT DECLARES IT rather than re-typed here.
+ *
+ * `DEFAULT_DISCREPANCY_THRESHOLD` lives in `client/`, which server code must
+ * not import (#416 removed a server-side `.default(50)` for being a second
+ * declaration one layer down, where the client's single-source guard cannot
+ * walk). Typing `500` into a server test would put it back in a third place —
+ * so the value is parsed from the declaring file, and a suite that cannot find
+ * it refuses rather than falling back to a number of its own.
+ */
+const BADGE_THRESHOLD = (() => {
+  const rel = "client/src/features/moderator/flagThresholds.ts";
+  const source = readFileSync(resolve(REPO_ROOT, rel), "utf8");
+  const match = source.match(/DEFAULT_DISCREPANCY_THRESHOLD\s*=\s*(\d+)/);
+  if (!match) throw new Error(`${rel} no longer declares DEFAULT_DISCREPANCY_THRESHOLD`);
+  return Number(match[1]);
+})();
 
 /*
  * ⚠ SIXTY LINES OF `discrepancyQueries.ts` USED TO BE RE-TYPED HERE, under a
@@ -521,34 +546,122 @@ describe("the founder's account: what the residual is made of", () => {
     );
   }
 
-  it("reproduces the -11,600 the live scan reports, from the production aggregations", () => {
+  /*
+   * ⚠ THIS ARM NOW PINS WHAT THE SCAN READ *BEFORE* #638, AND IT IS KEPT
+   * BECAUSE THE ARITHMETIC IS WHAT THE REPAIR HAD TO ANSWER. `unlinkedCost`
+   * is an INPUT here, so this reading is unchanged by the exclusion — what
+   * changed is which rows the SQL puts into it, and that is the arm below.
+   */
+  it("reproduces the -11,600 the scan reported before the family was excluded", () => {
     const result = reading(UNLINKED);
 
     expect(result.users).toHaveLength(1);
     expect(result.users[0].discrepancy).toBe(-11_600);
-    // And it is what puts a 1 on his Moderation badge: one account, flagged.
+    // And it is what put a 1 on his Moderation badge: one account, flagged.
     expect(result.scannedCount).toBe(1);
   });
 
   /*
-   * THE DEFECT SHOWN RATHER THAN ASSERTED. The 45 evidence rows are the work
-   * of operations that charged 9,300 and own no rows at all, so the same work
-   * enters `expected` twice. This arm runs the counterfactual — the identical
-   * account with those rows attributed to their operations instead of counted
-   * again — and the two readings are made to disagree by exactly their cost.
+   * ⚠ THE POPULATION CANNOT GROW, AND THAT IS THE WHOLE CASE FOR AN EXCLUSION
+   * KEYED ON A `type` VALUE BEING NARROW RATHER THAN AN OPEN EXEMPTION.
    *
-   * `operationCost` is deliberately UNCHANGED between the two: linking a row
-   * to an operation that already recorded a charge adds nothing, because the
-   * operation's own charge is authoritative where it exists. That is the whole
-   * rule the unlinked road walks past.
+   * The predicate can only ever drop a row that has NO operation. Both live
+   * writers of this type set `operationId` in the same INSERT, so no road the
+   * product still runs can create a row it would drop. Asserted at the writers'
+   * own bytes rather than promised in prose: a writer that quietly stopped
+   * setting `operationId` would reopen the exemption with nothing going red,
+   * which is the shape this repair's whole narrowness rests on.
    */
-  it("attributing the evidence rows to the operations that charged for them leaves -150", () => {
+  it("both live writers of the evidence type set operationId, so the exclusion cannot grow", () => {
+    const writers = [
+      "server/db/inkAddCandidates.ts",
+      "server/casting/evidence/evidenceFork.ts",
+    ];
+
+    for (const rel of writers) {
+      const source = readFileSync(resolve(REPO_ROOT, rel), "utf8");
+
+      // It names the family through the shared constant, never a re-typed literal.
+      expect(source, rel).not.toContain('"evidenceCandidate"');
+
+      const uses = [...source.matchAll(/type:\s*EVIDENCE_CANDIDATE_GENERATION_TYPE/g)];
+      expect(uses.length, `${rel} writes the family`).toBeGreaterThan(0);
+
+      // Every insert of it carries an operationId in the same values object.
+      for (const use of uses) {
+        const valuesBlockStart = source.lastIndexOf("userId:", use.index);
+        expect(valuesBlockStart, `${rel}: a values object above the type`).toBeGreaterThan(-1);
+        const block = source.slice(valuesBlockStart, use.index);
+        expect(block, `${rel}: operationId beside the type it writes`).toContain("operationId:");
+      }
+    }
+  });
+
+  /*
+   * THE REPAIR SHOWN RATHER THAN ASSERTED. The 45 evidence rows are the work
+   * of operations that charged 9,300 and own no rows at all, so the same work
+   * enters `expected` twice. Excluding them from `unlinkedCost` — which is what
+   * `UNLINKED_ROW_SQL` now does — moves the reading by exactly their cost, and
+   * takes it under the threshold the badge is drawn at.
+   *
+   * ⚠ THIS ARM USED TO BE NAMED FOR THE OTHER ROAD, AND THE NAME WAS THE BUG.
+   * It read "attributing the evidence rows to the operations that charged for
+   * them leaves -150", and its comment said `operationCost` is "deliberately
+   * UNCHANGED between the two: linking a row to an operation that already
+   * recorded a charge adds nothing". That premise is true of 34 of the 46
+   * operations and FALSE of the other 12, which recorded `chargedCredits = 0`
+   * and would therefore pick their rows back up through the fallback branch.
+   * So the arm modelled EXCLUSION and was named for LINKING, and -150 — the
+   * exclusion's number — was read as the linking road's number. #638's
+   * recommendation was built on it. Driven at the production rows on
+   * 2026-09-09: linking lands on -4,100, not -150, and leaves him flagged.
+   * A double that answers like the outcome is not a reader of the outcome.
+   */
+  it("excluding the parked evidence family from the unlinked side leaves -150", () => {
     const asShipped = reading(UNLINKED).users[0].discrepancy;
-    const ifLinked = reading(UNLINKED - EVIDENCE_UNLINKED).users[0].discrepancy;
+    const ifExcluded = reading(UNLINKED - EVIDENCE_UNLINKED).users[0].discrepancy;
 
     expect(asShipped).toBe(-11_600);
-    expect(ifLinked).toBe(-150);
-    expect(ifLinked - asShipped).toBe(EVIDENCE_UNLINKED);
+    expect(ifExcluded).toBe(-150);
+    expect(ifExcluded - asShipped).toBe(EVIDENCE_UNLINKED);
+    // And that is the half that matters: the badge is drawn at 500.
+    expect(Math.abs(ifExcluded)).toBeLessThan(BADGE_THRESHOLD);
+    expect(Math.abs(asShipped)).toBeGreaterThanOrEqual(BADGE_THRESHOLD);
+  });
+
+  /*
+   * ⚠ THE ROAD THAT WAS DECLINED, PINNED SO IT CANNOT BE RE-RECOMMENDED FROM
+   * MEMORY. Linking the rows was #638's own recommendation and it is possible:
+   * all 45 match one `evidence_candidate_generate` operation each, 0 orphans,
+   * 0 ambiguous, every charged operation's linked-row sum equal to its charge.
+   * It was declined because of what it LANDS ON, and this arm is that number.
+   *
+   * 12 of the 46 operations recorded no charge while owning a cost-bearing row
+   * (3,950 credits between them), so linking moves that cost out of the
+   * unlinked side and straight back in through `operationCost`'s fallback.
+   */
+  it("linking the rows instead would land on -4,100 and leave the badge lit", () => {
+    const FALLBACK_PICKUP = 3_950; // the 12 zero-charge operations' rows
+
+    const ifLinked = computeDiscrepancies(
+      [{ userId: 1, grossDeductions: GROSS, totalRefunds: 10_230 }],
+      [{
+        userId: 1,
+        completedCost: 97_030,
+        pendingCost: 350,
+        failedCost: 11_110,
+        unlinkedCost: UNLINKED - EVIDENCE_UNLINKED,
+        totalGenerations: 2_145,
+        failedGenerations: 82,
+      }],
+      // The fallback branch picks the zero-charge operations' rows back up.
+      [{ userId: 1, operationCost: OPERATION + FALLBACK_PICKUP }],
+      users,
+      50,
+    ).users[0].discrepancy;
+
+    expect(ifLinked).toBe(-150 - FALLBACK_PICKUP);
+    expect(Math.abs(ifLinked)).toBeGreaterThanOrEqual(BADGE_THRESHOLD);
   });
 
   /*
