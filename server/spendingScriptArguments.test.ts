@@ -1054,6 +1054,87 @@ describe("the read-only reporters declare a vocabulary, and it is the one they r
     expect(drivesAPaidTransport(sourceOf("scripts/lib/designLaws.mts"))).toBe(true);
   });
 
+  /**
+   * ⚠ THE #642 REMAINDER, PINNED BY NAME FOR THE REASON THE ELEVEN ABOVE ARE
+   * (PR #670's review, finding 2).
+   *
+   * These four are the last by-name argv readers in `scripts/`. They ride the
+   * derived adopters sweep below, but that sweep bans a hand argv read and
+   * NOTHING ELSE - so deleting `"kill"` from `dev-servers.mts`'s spec reddens
+   * nothing, and the documented `--kill 1234` line refuses at the keyboard.
+   * That is precisely "the one way this work costs more than it saves", so the
+   * repaired files are watched by name: `fix-drops-subject-from-guard`.
+   *
+   * ⚠ **AND THE POSITIONAL PAIR CARRY A SECOND ARM, because DECLARING a
+   * positional is not CHECKING it.** The old readers made a misspelled case
+   * name skip every case, so the driver ran ZERO of them and then printed its
+   * unconditional success line and exited 0 - a green claim with no artifact
+   * behind it, which is worse than running the wrong thing. The parse stops an
+   * unknown `--flag`; only a check against the closed vocabulary stops that.
+   */
+  const REMAINDER = [
+    { path: "scripts/dev-servers.mts", accepts: [["--since", "14:30"], ["--kill", "1234"], []] },
+    { path: "scripts/drive-caption-lifecycle.mts", accepts: [["a"], []] },
+    { path: "scripts/drive-paraphrase.mts", accepts: [["order"], []] },
+    { path: "scripts/unwiring-timeline.mts", accepts: [["C:/tmp/t"], ["C:/tmp/t", "10"], ["C:/tmp/t", "10", "out.json"]] },
+  ] as const;
+
+  it.each(REMAINDER)("$path parses strictly and never by name", ({ path }) => {
+    expect(sourceOf(path)).toContain("parseStrictArgsOrRefuse");
+    /* At the CODE, so a docblock quoting the shape it replaced is free to
+       (#360's class) - and every one of these four does exactly that. */
+    expect(codeOf(path)).not.toMatch(/process\.argv\.indexOf\(/);
+    expect(codeOf(path)).not.toMatch(/process\.argv\.includes\(/);
+    expect(codeOf(path)).not.toMatch(/process\.argv\[\d\]/);
+  });
+
+  it.each(REMAINDER)("$path declares every flag it actually asks for", ({ path }) => {
+    const spec = specIn(sourceOf(path));
+    const declared = new Set([...spec.value, ...spec.boolean]);
+    const missing = flagsRead(codeOf(path)).filter((name) => !declared.has(name));
+    expect(missing, `${path} reads flags it does not declare`).toEqual([]);
+  });
+
+  it.each(REMAINDER)("$path still accepts the lines its own usage block documents", ({ path, accepts }) => {
+    /*
+      ⚠ THE DIRECTION THAT COSTS AN OPERATOR A WORKING COMMAND. Every other
+      arm here asks whether the file refuses enough; this asks whether it still
+      says YES to what its docblock tells someone to type. A spec that drifts
+      narrower is silent until a person is at a keyboard at 3am.
+    */
+    const spec = specIn(sourceOf(path));
+    for (const line of accepts) {
+      expect(() => parseStrictArgs([...line], spec), `${path} refuses its own documented line: ${line.join(" ") || "(no arguments)"}`)
+        .not.toThrow();
+    }
+  });
+
+  it("⚠ the two case-selecting drivers CHECK the word, not merely declare it", () => {
+    /*
+      The false-green road, and it is the one this tranche nearly shipped: with
+      the word unchecked, `drive-caption-lifecycle.mts ab` runs zero cases and
+      prints ALL CAPTION-LIFECYCLE CASES PASS. Both files name their known set
+      in the refusal, so the operator is told what to type instead.
+    */
+    const caption = codeOf("scripts/drive-caption-lifecycle.mts");
+    expect(caption).toMatch(/is not a case\. Known:/);
+    expect(caption).toMatch(/const CASES = \["a", "b", "c"\]/);
+
+    const paraphrase = codeOf("scripts/drive-paraphrase.mts");
+    expect(paraphrase).toMatch(/is not a class\. Known:/);
+    /* Derived from CLASSES itself rather than a second list of ten names -
+       working law 4, on the list an operator is shown. */
+    expect(paraphrase).toMatch(/CLASSES\.some\(\(klass\) => klass\.name === only\)/);
+  });
+
+  it("⚠ NEGATIVE CONTROL - the acceptance reader can actually refuse", () => {
+    /* An arm built on `not.toThrow` passes over a parser that never throws.
+       Driven against a line every one of these four must reject. */
+    const spec = specIn(sourceOf("scripts/dev-servers.mts"));
+    expect(() => parseStrictArgs(["--kil", "1234"], spec)).toThrow(ArgumentError);
+    expect(() => parseStrictArgs(["--kill"], spec)).toThrow(ArgumentError);
+  });
+
   it("sweeps a real population of adopters — a clean answer over no files is not an answer", () => {
     const { adopters, offenders } = strictParseAdoptersReadingArgvByHand(SCRIPTS, REPO);
     expect(adopters.length, "nothing imports the strict parser — the check below is vacuous").toBeGreaterThan(25);

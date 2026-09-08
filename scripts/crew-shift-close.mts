@@ -82,6 +82,7 @@ import {
   looksLive,
 } from "../shared/crewShiftState.js";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
+import { refreshQueueCountsQuietly } from "./lib/crewQueueCount.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const TABLE = "crew_shift_runs";
@@ -263,6 +264,32 @@ try {
     + `\n  ${iso(row.startedAt)} → ${iso(row.endedAt)}`,
   );
   console.log("\nHis page now reads `Nothing running` unless another seat is open.");
+
+  /*
+    ⚠ REFRESH HIS NUMBERS, NOW THAT THE ROW IS TERMINAL (#618).
+
+    His question, 2026-09-07: *"how many bugs has it done and worked on its
+    still reading as 18 but its been working all night"*. The counter ran at
+    shift START and nowhere else, so the figure under each of his switches was
+    what a shift FOUND, never what it CLOSED - ten bug cards closed overnight
+    and the panel still read the morning's number.
+
+    ⚠ **IT RUNS AFTER THE UPDATE, AND IT CANNOT FAIL THIS COMMAND. THAT
+    ORDERING IS THE WHOLE SAFETY ARGUMENT.** A close that dies leaves a run row
+    open, which his page renders as a shift still running - #288's incident, and
+    the reason #618 refused the child-process road. So the count is taken only
+    once the row is safely closed, everything it can raise is caught here, and a
+    counting failure costs his panel ONE STALE READING rather than costing a
+    shift its close. The catch lives INSIDE `refreshQueueCountsQuietly` so it
+    is a driven unit rather than a `try` a later edit can quietly move;
+    `server/crewCloseCounts.test.ts` reddens if either half stops holding.
+
+    It is also why nothing here checks for a working `gh` first: on a machine
+    without one the reading refuses BY VALUE, this prints the reason, and the
+    close still exits on its own verdict.
+  */
+  console.log("\nrefreshing the numbers under his switches...");
+  await refreshQueueCountsQuietly(conn, (line) => console.error(line));
 
   /*
     THE FINDING (#295). Reported only once the row is safely terminal — a
