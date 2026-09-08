@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8e964c648fdbf23a"
+    "sourceFingerprint": "4c0f298da622383f"
   },
   "domains": [
     {
@@ -12902,6 +12902,10 @@
     {
       "id": "test:server/heroProxy.test.ts",
       "path": "server/heroProxy.test.ts"
+    },
+    {
+      "id": "test:server/hookFixtureMode.test.ts",
+      "path": "server/hookFixtureMode.test.ts"
     },
     {
       "id": "test:server/identityChangeDialog.test.ts",
