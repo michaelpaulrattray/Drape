@@ -72,16 +72,18 @@ export function ReviewModal({
   const notesPlaceholder = action === "approved" ? actionCfg.approveNotesPlaceholder : actionCfg.denyNotesPlaceholder;
   const confirmLabel = action === "approved"
     /*
-      ⚠ TITLE CASE ON PURPOSE, AND IT IS THE ONE PLACE THIS FILE DOES NOT SPEAK
-      THE HOUSE VOICE. `approveLabel` is `"Approve Refund"`, `"Acknowledge"`,
-      `"Confirm Suspend"` — nineteen strings in `ChangeRequestConstants.tsx`,
-      which also feeds `ChangeRequestList.tsx`, a surface brief 06 already
-      shipped. Lowercasing this suffix alone would read as a typo beside them;
-      lowercasing the constants is a copy change across a file no modal owns.
-      Filed rather than smuggled in, and brief 11 §8 upholds that: *"nineteen
-      strings feeding a shipped surface is a copy change, not a modal change."*
+      SENTENCE CASE, AND THE SUFFIX MOVED WITH THE CONSTANTS (#428, closing the
+      remainder brief 11 §8 declared). This block used to read "TITLE CASE ON
+      PURPOSE" — correctly, at the time: `approveLabel` was `"Approve Refund"`,
+      `"Confirm Suspend"` and so on, and lowercasing this suffix ALONE would
+      have read as a typo beside them. That is why the two had to move in one
+      commit rather than either moving first.
+
+      `Slack` keeps its capital because it is a proper noun, as do `Stripe` and
+      the `IP` initialism next door; brief 05 §"Labels" asks for sentence case,
+      not for lowercase.
     */
-    ? (isSensitive ? `${actionCfg.approveLabel} & Send to Slack` : actionCfg.approveLabel)
+    ? (isSensitive ? `${actionCfg.approveLabel} & send to Slack` : actionCfg.approveLabel)
     : actionCfg.denyLabel;
 
   return (
@@ -134,8 +136,8 @@ export function ReviewModal({
           </Button>
           {/*
             ⚠ The pending label names the act rather than the button's own
-            words. It cannot reuse `confirmLabel`: those nineteen constants are
-            imperatives (`Approve Refund`, `Acknowledge`), and an imperative
+            words. It cannot reuse `confirmLabel`: those constants are
+            imperatives (`Approve refund`, `Acknowledge`), and an imperative
             with an ellipsis reads as an instruction, not as progress.
           */}
           <Button
