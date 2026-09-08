@@ -57,11 +57,13 @@
  * background work a shift may take on its own judgement.
  *
  * So the number is now the OFFERED population, and the reasons ride inside the
- * same parenthesis: `Bugs (11, 2 already queued)`. **The clause is the whole
- * fix, not the subtraction** — his card's own sentence is that *a count that
- * silently shrinks for an invisible reason is the confident-wrong-number
+ * same parenthesis: `Bugs (11 on offer, 2 already queued)`. **The clause is the
+ * whole fix, not the subtraction** — his card's own sentence is that *a count
+ * that silently shrinks for an invisible reason is the confident-wrong-number
  * failure this panel already exists to avoid.* A category that excluded nothing
- * draws no clause and looks exactly as it does today.
+ * draws no clause — but it DOES still say `on offer` (#663), because the number
+ * means the same thing on every row and a suffix that came and went would be one
+ * more thing to learn.
  *
  * # ⚠ THE COUNT SAYS HOW OLD IT IS, RATHER THAN IMPLYING AN INSTANT
  *

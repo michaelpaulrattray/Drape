@@ -4075,7 +4075,7 @@ export const crewQueueCounts = mysqlTable("crew_queue_counts", {
    *
    * ⚠ **UNLIKE `excluded` ABOVE, THIS SUBTRACTS NOTHING.** A flagged card is
    * still offered and still inside `openCount`; the panel reads
-   * `Bugs (14, 2 already queued, 2 possibly fixed)`, where the queued two are
+   * `Bugs (14 on offer, 2 already queued, 2 possibly fixed)` (#663), where the queued two are
    * OUT of the fourteen and the flagged two are two OF them. His card's own
    * rule: *"No card closes from this instrument."* It says which cards a shift
    * re-reads first, and the re-read is the control.
