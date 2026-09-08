@@ -532,23 +532,34 @@ for (const [label, script] of [["atlas", "architecture:check"], ["capability", "
      It rides inside the secret scan's block for one reason and it is stated
      rather than left to be inferred: the push range is resolved and PROVEN
      here (`ranged`, re-fetched, re-typed), and a second reader computing its
-     own range is the mirror this repository keeps being bitten by. When the
-     range is unreadable this refuses rather than skipping — the same rule the
-     scan above follows, for the same reason. */
+     own range is the mirror this repository keeps being bitten by.
+
+     ⚠ AND WHEN THE RANGE IS UNREADABLE IT REFUSES — which this comment claimed
+     before the code did (PR #683 review, finding 1, CONFIRMED). With `ranged`
+     false the loop below read ZERO commits and printed `closing keyword: none`:
+     a clean verdict over nothing at all, which is the exact class this block
+     exists to close, printed by the block itself. It deliberately does NOT copy
+     the secret scan's full-history fallback — reading every commit ever made
+     would refuse this repository's own past — and a rite run is cheap to retry,
+     so the honest answer to *"I cannot tell what this push adds"* is to stop. */
   /* ⚠ ONE `git log` PER COMMIT, DELIBERATELY. A single formatted run has to
      separate its records, and a commit body may contain any byte a separator
      could be spelled with — the first shape of this block put literal NUL
      bytes in this source file to get one. A push adds a handful of commits;
      the boring loop costs milliseconds and cannot mis-split a body. */
-  const shas = ranged
-    ? git("log", "--format=%H", `${remoteTip}..HEAD`)
-        .split(/\r?\n/).map((s) => s.trim()).filter((s) => /^[0-9a-f]{40}$/.test(s))
-    : [];
+  if (!ranged) {
+    console.log("REFUSED: the closing-keyword check (#376) cannot tell which commits this push adds — the push does not fire.");
+    console.log("  The remote tip of main could not be resolved, so there is no range to read and nothing has been checked.");
+    console.log("  repair: git fetch origin main, then re-run the rite");
+    process.exit(1);
+  }
+  const shas = git("log", "--format=%H", `${remoteTip}..HEAD`)
+    .split(/\r?\n/).map((s) => s.trim()).filter((s) => /^[0-9a-f]{40}$/.test(s));
   /* The scan above refuses a clean verdict that read nothing; this refuses a
      clean verdict that read FEWER than the push adds, which is the same law one
      notch tighter — the count is already known here, so there is no reason to
      settle for "at least one". */
-  if (ranged && toPush > 0 && shas.length !== toPush) {
+  if (toPush > 0 && shas.length !== toPush) {
     console.log(`REFUSED: the closing-keyword check (#376) read ${shas.length} of the ${toPush} commit(s) this push adds — the push does not fire.`);
     console.log("  This is the reader failing quietly, not the commits being clean.");
     process.exit(1);

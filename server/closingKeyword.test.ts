@@ -98,6 +98,42 @@ describe("#376 — the shape of the reader", () => {
     expect(CLOSING_KEYWORDS).toHaveLength(9);
   });
 
+  /*
+    ⚠ THE TWO WHITESPACE CORNERS (PR #683 review, finding 2).
+
+    Both were shapes the reader could NOT see while its own docblock said it was
+    deliberately wider than GitHub. Whether GitHub itself closes on either is
+    **not driven here** — it would take a scratch repository and a live issue,
+    and nothing in this product needs the answer. The separator is widened until
+    the question stops mattering, which is the safe direction: a checker may be
+    wider than the parser it guards, never quietly narrower.
+  */
+  it("finding 2a — the colon with no space after it", () => {
+    expect(closingKeywordHits("Closes:#12")).toHaveLength(1);
+    expect(closingKeywordHits("Closes: #12")).toHaveLength(1);
+    /* The widening also takes `closes#12`, which GitHub may well ignore. That
+       is a false REFUSAL, costing one edit, and it is the direction chosen. */
+    expect(closingKeywordHits("closes#12")).toHaveLength(1);
+  });
+
+  it("finding 2b — the keyword ending a line and the number opening the next", () => {
+    const hits = closingKeywordHits("The card is Fixes\n#12 and nothing else.");
+    expect(hits).toHaveLength(1);
+    expect(hits[0].reference).toBe("#12");
+    /* Attributed to the line the KEYWORD is on — where the author typed it. */
+    expect(hits[0].line).toBe(1);
+  });
+
+  it("a hit deep in a long text still names its own line", () => {
+    /* The line number comes from the match's offset now, not from a per-line
+       loop; this is the arm that would catch that arithmetic drifting. */
+    const text = `${"filler\n".repeat(40)}Closes #99\ntail`;
+    const hits = closingKeywordHits(text);
+    expect(hits).toHaveLength(1);
+    expect(hits[0].line).toBe(41);
+    expect(hits[0].text).toBe("Closes #99");
+  });
+
   it("the cross-repository and URL reference forms count too", () => {
     expect(closingKeywordHits("Fixes michaelpaulrattray/Drape#12")).toHaveLength(1);
     expect(closingKeywordHits("Resolves https://github.com/michaelpaulrattray/Drape/issues/12")).toHaveLength(1);
@@ -170,6 +206,28 @@ describe("#376 — all three roads call it", () => {
     /* It reads the push range, not just HEAD: instance 6 rode in on an edition
        commit and the rite pushes several at a time. */
     expect(rite).toContain('git("log", "-1", "--format=%B", sha)');
+  });
+
+  it("road 3 refuses an UNREADABLE range rather than printing a clean verdict over nothing", () => {
+    /* PR #683 review, finding 1, CONFIRMED: with the remote tip unresolvable
+       this block read zero commits and printed `closing keyword: none`. The
+       refusal must sit BEFORE the read, or the green line is reachable. */
+    const rite = read("scripts/deploy-rite.mts");
+    const refusal = rite.indexOf("cannot tell which commits this push adds");
+    expect(refusal).toBeGreaterThan(-1);
+    expect(refusal).toBeLessThan(rite.indexOf('git("log", "--format=%H"'));
+    /* And the count guard no longer excuses itself when the range is unknown —
+       `ranged &&` in front of it was half of what made the hole reachable. */
+    expect(rite).toContain("if (toPush > 0 && shas.length !== toPush) {");
+    expect(rite).not.toContain("if (ranged && toPush > 0 && shas.length !== toPush) {");
+  });
+
+  it("road 2 refuses a commit list gh may have truncated, rather than capping silently", () => {
+    /* PR #683 review, finding 3: `gh pr view --json commits` is one page of
+       100, and a truncated array is still an array — the missing-field guard
+       cannot see it. */
+    const merge = read("scripts/pr-merge-in-order.mts");
+    expect(merge).toContain("read.commits.length >= 100");
   });
 
   it("no road re-spells the pattern — one declaration, three importers", () => {

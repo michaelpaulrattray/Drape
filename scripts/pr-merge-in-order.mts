@@ -490,6 +490,19 @@ function refuseAccidentalClose(pr: PrReading): void {
       say(`REFUSED: gh answered for #${pr.number} without a title, body or commit list — the closing-keyword check (#376) has proven nothing.`);
       process.exit(1);
     }
+    /* ⚠ THE PAGE CAP IS NAMED RATHER THAN SHIPPED SILENTLY (PR #683 review,
+       finding 3). `gh pr view --json commits` returns ONE GraphQL page, so a
+       branch of more than 100 commits is read PARTIALLY — and the guard above
+       cannot see it, because a truncated array is still an array. That is the
+       same "read fewer than there are" shape the rite refuses, and an asymmetry
+       between two roads is what gets written up as coverage. A shift branch is
+       one to five commits, so this refusal should never fire; if it ever does,
+       the branch wants squashing before it wants this tool. */
+    if (read.commits.length >= 100) {
+      say(`REFUSED: #${pr.number} has ${read.commits.length} commits and gh returns one page of 100 — the closing-keyword check (#376) may have read only part of them.`);
+      say("  repair: squash or rebase the branch, or read the commits with `gh api --paginate` and check by hand");
+      process.exit(1);
+    }
     text = [
       read.title,
       read.body,

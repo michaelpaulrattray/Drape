@@ -43,6 +43,17 @@
  * example costs one edit; the alternative costs a reopened card and a founder
  * decision taken by a parser.
  *
+ * ⚠ **"WIDER" IS A CHOICE ABOUT FRAMES, AND WAS BRIEFLY WRITTEN AS THOUGH IT
+ * WERE A PROVEN FACT ABOUT WHITESPACE TOO.** The review of PR #683 found the
+ * separator was `\s*:?\s+` — which cannot match `Closes:#12`, and which, run
+ * per line, could not see a keyword ending one line with its number opening the
+ * next. GitHub's own tolerance in those two corners is **not driven here**: it
+ * would take a scratch repository and a real issue to settle, and nothing in
+ * this product needs the answer. So the separator is simply **widened until the
+ * question stops mattering** — any whitespace or none, newlines included — and
+ * this comment says which of the two it is. **A checker may be wider than the
+ * parser it guards; it may never quietly be narrower.**
+ *
  * The one thing it will not do is guess. A keyword that does not immediately
  * precede a reference is ordinary English and passes — *"#368 stays open"*,
  * *"this closes the gap"*, *"the fix in #12"* — because GitHub does not close
@@ -81,8 +92,13 @@ export type ClosingKeywordHit = {
   silently in the direction that lets a card close.
 */
 const REFERENCE = String.raw`#\d+|[\w.-]+\/[\w.-]+#\d+|https?:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues\/\d+`;
+/* ⚠ `\s*`, NOT `\s+` — AND THE `*` IS THE WHOLE OF FINDING 2 (PR #683 review).
+   `\s+` could not match `Closes:#12`: after the optional colon it demanded a
+   space and found `#`, and backtracking off the colon left `\s+` facing `:`.
+   The widened form also matches `closes#12`, which GitHub may well ignore —
+   that is the safe direction and it is taken deliberately. */
 const PATTERN = new RegExp(
-  String.raw`\b(${CLOSING_KEYWORDS.join("|")})\b\s*:?\s+(${REFERENCE})`,
+  String.raw`\b(${CLOSING_KEYWORDS.join("|")})\b\s*:?\s*(${REFERENCE})`,
   "gi",
 );
 
@@ -91,30 +107,59 @@ const PATTERN = new RegExp(
  *
  * Empty means GitHub closes nothing from this text — which is the only state
  * the three call sites allow through.
+ *
+ * ⚠ **MATCHED OVER THE WHOLE TEXT, THEN ATTRIBUTED TO A LINE** — the second
+ * half of finding 2. The first shape split into lines FIRST, so a keyword
+ * ending one line with its number opening the next was invisible to it while
+ * `\s` in the pattern would have matched the newline perfectly well. GitHub
+ * reads the raw body. Line numbers are still reported, because a refusal that
+ * cannot be located is a refusal nobody can act on — they are derived from the
+ * match's offset rather than from the loop, which is the only way to have both.
  */
 export function closingKeywordHits(text: string): ClosingKeywordHit[] {
   const hits: ClosingKeywordHit[] = [];
   const lines = text.split(/\r?\n/);
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
-    /* ⚠ THIS RESET IS BELT-AND-BRACES AND SAYS SO, because the first draft of
-       this file claimed it was load-bearing and a sabotage proved otherwise: a
-       /g regex whose `exec` returns null resets `lastIndex` to 0 itself, and
-       this loop always runs to null. It is kept for the day someone adds an
-       early `break` — at which point the cursor WOULD carry into the next line
-       — and it is documented as insurance rather than as the thing that makes
-       the loop correct. A comment nobody can fail is a claim, not a guard. */
-    PATTERN.lastIndex = 0;
-    let match: RegExpExecArray | null = PATTERN.exec(line);
-    while (match !== null) {
-      hits.push({
-        keyword: match[1],
-        reference: match[2],
-        line: i + 1,
-        text: line.trim(),
-      });
-      match = PATTERN.exec(line);
+  /* Where each line starts in `text`, so an offset becomes a line number. The
+     +1 is the separator; `\r\n` makes this one short, which can only ever
+     under-count by moving a hit to the line above — the frame is quoted beside
+     it either way. */
+  const lineStarts: number[] = [];
+  let at = 0;
+  for (const line of lines) {
+    lineStarts.push(at);
+    at += line.length + 1;
+  }
+  const lineOf = (offset: number): number => {
+    let lo = 0;
+    let hi = lineStarts.length - 1;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      if (lineStarts[mid] <= offset) lo = mid;
+      else hi = mid - 1;
     }
+    return lo;
+  };
+
+  /* ⚠ THIS RESET IS BELT-AND-BRACES AND SAYS SO, because the first draft of
+     this file claimed it was load-bearing and a sabotage proved otherwise: a
+     /g regex whose `exec` returns null resets `lastIndex` to 0 itself, and this
+     loop always runs to null. It is kept for the day someone adds an early
+     `break` — at which point the cursor WOULD carry into the next call — and it
+     is documented as insurance rather than as the thing that makes the loop
+     correct. A comment nobody can fail is a claim, not a guard. */
+  PATTERN.lastIndex = 0;
+  let match: RegExpExecArray | null = PATTERN.exec(text);
+  while (match !== null) {
+    const index = lineOf(match.index);
+    hits.push({
+      keyword: match[1],
+      reference: match[2],
+      line: index + 1,
+      /* The line the hit STARTS on. A hit spanning a newline is quoted by its
+         opening line, which is where the keyword the author typed actually is. */
+      text: lines[index].trim(),
+    });
+    match = PATTERN.exec(text);
   }
   return hits;
 }
