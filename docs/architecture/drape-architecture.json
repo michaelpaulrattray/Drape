@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1a31f1afd1cdf1e7"
+    "sourceFingerprint": "7fcf53ca530cc4ef"
   },
   "domains": [
     {
@@ -133,7 +133,7 @@
     {
       "id": "domain:staff",
       "name": "staff",
-      "moduleCount": 11
+      "moduleCount": 12
     },
     {
       "id": "domain:studio",
@@ -2241,6 +2241,12 @@
     {
       "id": "module:client/src/features/staff/staffDialog.tsx",
       "path": "client/src/features/staff/staffDialog.tsx",
+      "domain": "staff",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/staff/staffRole.ts",
+      "path": "client/src/features/staff/staffRole.ts",
       "domain": "staff",
       "lifecycle": "active"
     },
@@ -10920,6 +10926,10 @@
       "path": "client/src/features/staff/section11-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/staff/staffRole.test.ts",
+      "path": "client/src/features/staff/staffRole.test.ts"
+    },
+    {
       "id": "test:client/src/features/staff/stores/useStaffAutoRefreshStore.test.ts",
       "path": "client/src/features/staff/stores/useStaffAutoRefreshStore.test.ts"
     },
@@ -14438,6 +14448,11 @@
     {
       "from": "module:client/src/components/ui/tooltip.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/UserCard.tsx",
+      "to": "module:client/src/features/staff/staffRole.ts",
       "kind": "imports"
     },
     {
@@ -18107,6 +18122,11 @@
     },
     {
       "from": "module:client/src/features/staff/useModeratorFlagCounts.ts",
+      "to": "module:client/src/features/staff/staffRole.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/useModeratorFlagCounts.ts",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -20088,6 +20108,11 @@
     {
       "from": "module:client/src/pages/ModeratorDashboard.tsx",
       "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/ModeratorDashboard.tsx",
+      "to": "module:client/src/features/staff/staffRole.ts",
       "kind": "imports"
     },
     {

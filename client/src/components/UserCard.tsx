@@ -82,6 +82,7 @@
 import { useLocation } from 'wouter';
 import { Icon, P, WORKSPACE_ROLE_LABEL } from '@/foundation';
 import { showsMenuCount } from '@/foundation/menuCount';
+import { isStaffRole } from '@/features/staff/staffRole';
 
 interface UserCardProps {
   userName: string;
@@ -131,7 +132,16 @@ export function UserCard({
 }: UserCardProps) {
   const [, navigate] = useLocation();
   const isAdmin = role === 'admin';
-  const isModerator = isAdmin || role === 'moderator';
+  /*
+    card #699 — the THIRD statement of "who counts as staff", found by the PR
+    #702 review's own law-7 sweep after mine stopped one short. It gates the
+    Moderation row, which links to the panel `isStaffRole` now guards: two
+    copies of one rule drift, and the drift is visible — a person shown the row
+    and bounced by the panel behind it, or a moderator who loses the row while
+    the panel still admits them. `isAdmin` stays as it is; it answers a
+    different question (the Admin row), not this one.
+  */
+  const isModerator = isStaffRole(role);
 
   return (
     <div className="dp-menu">
