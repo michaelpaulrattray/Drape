@@ -1,0 +1,106 @@
+#!/bin/sh
+#
+# ARM 1B — THE ROADS `pre-commit` NEVER SEES (#611, the law-7 sibling of
+# #606/#519).
+#
+# `.githooks/pre-commit` ARM 1 refuses a commit made in the MAIN working tree
+# while HEAD is a `team/*` branch (docs/RETRO_LOG.md R3: the founder's
+# interactive sessions and the night shift share one working directory, and a
+# commit made there on a shift branch has swept up another seat's work more
+# than once). PR #610 measured that git does not run `pre-commit` AT ALL on
+# three roads — `git revert`, `git cherry-pick` and a REPLAYED rebase commit —
+# so ARM 1 is simply absent on them. Under deploy-on-merge every rollback proof
+# is a revert, which makes the commonest of the three a road shifts walk ON
+# PURPOSE. This hook is that arm's backstop.
+#
+# ⚠ WHY HERE, AND WHY THAT IS NOT WHAT #611 RECOMMENDED. The card ruled
+# `prepare-commit-msg` out and recommended a `post-checkout` arm. Both halves
+# of that were re-driven on git 2.55.0.windows.3 before this was written, one
+# scratch repository per hook per road, each hook installed ALONE and exiting
+# 1 — and the verdict read at the BRANCH REF, never at HEAD:
+#
+#                          ordinary   revert    cherry-pick  rebase replay
+#   pre-commit             BLOCKED    committed committed    replayed
+#   prepare-commit-msg     BLOCKED    BLOCKED   BLOCKED      BLOCKED
+#   post-checkout          committed  committed committed    replayed
+#   reference-transaction  BLOCKED    BLOCKED   BLOCKED      BLOCKED
+#
+#   - `post-checkout` exits 1 and the branch switches anyway: git documents its
+#     exit code as ignored, so it CANNOT refuse. That is the same property the
+#     card correctly used to rule out `post-commit`, and it rules out the
+#     option the card recommended.
+#   - The card's objection to `prepare-commit-msg` was about a hook that WRITES
+#     AND STAGES A FILE (#610 drove that: the staged file is dropped in a
+#     revert). A REFUSAL has no such problem — firing twice in a revert simply
+#     refuses twice — and it covers all four roads.
+#   - `reference-transaction` also covers all four, and was built and driven
+#     first. It was DISCARDED ON COST: it fires on every ref update in the
+#     repository, measured at SEVEN invocations per commit and FOURTEEN per
+#     checkout, adding ~137 ms to every commit, checkout, fetch, reset and
+#     stash in the founder's own sessions. This hook is ONE invocation per
+#     commit and ZERO on checkout and fetch, for the same coverage.
+#
+# ⚠ THE ONE ROAD NEITHER THIS NOR `pre-commit` COVERS IS `git am`, AND IT IS
+# DECLARED RATHER THAN LEFT TO BE DISCOVERED. Measured the same way: `git am`
+# runs the `applypatch` hooks and not this one, so a mailed patch applied onto
+# a `team/*` branch in the main tree commits with no refusal. It is not
+# backstopped because no road in this repository walks it — the shift workflow
+# is branch, PR, squash-merge, and `git am` appears nowhere in the standing
+# orders, the rite or any script. `reference-transaction` WOULD cover it, at
+# the cost above. If patches ever become a road here, that is the trade to
+# re-open, and this paragraph is where to start.
+#
+# HEAD IS DETACHED DURING A REBASE, which is why this hook does not simply ask
+# `git symbolic-ref` the way ARM 1 does: mid-replay that returns nothing at
+# all, and "no branch" is a state ARM 1 deliberately allows. The branch being
+# replayed onto is named in git's own state file for the duration, and that is
+# the only place it is named.
+#
+# THE ESCAPE IS FIXING THE COMMIT, NOT --no-verify (which skips this hook
+# exactly as it skips pre-commit). Driven by
+# server/prepareCommitMsgGate.test.ts against real temporary repositories, in
+# both directions, on every road in the table above.
+#
+# Installed by:  git config core.hooksPath .githooks
+
+# The condition and the refusal are SOURCED, not written here — see
+# .githooks/shift-branch-guard. ARM 1 reads the same two, so the rule cannot
+# drift into being two rules.
+. "$(dirname "$0")/shift-branch-guard"
+
+# The ordinary road: HEAD is the branch being committed onto.
+branch=$(git symbolic-ref --short -q HEAD 2>/dev/null)
+
+# The replay road: HEAD is detached, and the branch is in git's state file.
+# `rebase-merge` is the interactive/merge backend, `rebase-apply` the older
+# am-based one; whichever exists names the branch as a full ref.
+if [ -z "$branch" ]; then
+  git_dir=$(git rev-parse --git-dir 2>/dev/null)
+  if [ -n "$git_dir" ]; then
+    for state in "$git_dir/rebase-merge/head-name" "$git_dir/rebase-apply/head-name"; do
+      if [ -f "$state" ]; then
+        head_name=$(cat "$state" 2>/dev/null)
+        case "$head_name" in
+          refs/heads/*) branch=${head_name#refs/heads/} ;;
+        esac
+      fi
+    done
+  fi
+fi
+
+case "$branch" in
+  team/*) ;;
+  *) exit 0 ;;
+esac
+
+drape_in_main_working_tree || exit 0
+
+drape_refuse_shift_branch "$branch" "That commit"
+echo "This is .githooks/prepare-commit-msg — git does not run pre-commit on a" >&2
+echo "revert, a cherry-pick or a replayed rebase, so this arm is what caught it." >&2
+if [ -n "$git_dir" ] && { [ -d "$git_dir/rebase-merge" ] || [ -d "$git_dir/rebase-apply" ]; }; then
+  echo "" >&2
+  echo "A rebase is in progress: 'git rebase --abort' is never refused." >&2
+fi
+echo "" >&2
+exit 1

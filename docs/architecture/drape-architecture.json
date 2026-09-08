@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3f03a012b68ae698"
+    "sourceFingerprint": "a74f449c3b869219"
   },
   "domains": [
     {
@@ -13008,6 +13008,10 @@
     {
       "id": "test:server/preflight.test.ts",
       "path": "server/preflight.test.ts"
+    },
+    {
+      "id": "test:server/prepareCommitMsgGate.test.ts",
+      "path": "server/prepareCommitMsgGate.test.ts"
     },
     {
       "id": "test:server/privateEvidencePurge.test.ts",
