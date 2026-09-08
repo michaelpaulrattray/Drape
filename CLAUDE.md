@@ -387,9 +387,16 @@ work is either one of its shifts or must behave like one. The binding pieces:
   merges.** The remedy is a `needs-fable` remove-and-re-add BEFORE merging, not
   a hunt for a `skip-review` label nobody applied — which is what the tool used
   to tell you.
-- **The founder steers from the Desk** (a claude.ai artifact page): his
-  replies and journal entries there are rulings — quoted verbatim when acted
-  on. Desk cards lead with product impact and a worked example, flags second.
+- **The founder steers from the Desk, and the Desk is `/admin/crew` in the
+  product** — his own switch-over order, 2026-08-26: *"once its all live ensure
+  that the live crew tab is the new desk and everything is pointed towards it to
+  be updated rather than the old desk."* The claude.ai artifact page is RETIRED:
+  a read-only mirror nobody updates, never read for input. ⚠ **And there are no
+  "journal entries" any more** — #293 removed the journal, and his cardless
+  replies land in the **General box** (*"Keep a General box."*). What is a ruling
+  is what he types on that page: a reply on a card, or a General note — quoted
+  verbatim when acted on. Desk cards lead with product impact and a worked
+  example, flags second.
 - The continuous runner and its watchdog task are deliberately persistent
   processes — never swept as leftovers. `.agents/STOP` halts the team.
 
