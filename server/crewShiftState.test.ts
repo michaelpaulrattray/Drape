@@ -18,6 +18,8 @@ import {
   CREW_SHIFT_SEATS,
   CREW_SHIFT_STALL_MS,
   CREW_SHIFT_WORK_KINDS,
+  findCardCollisions,
+  looksLive,
   deriveShiftRunState,
 } from "../shared/crewShiftState";
 
@@ -105,5 +107,67 @@ describe("the vocabularies are closed and shared", () => {
 
   it("the outcomes are exactly the three #272 names", () => {
     expect([...CREW_SHIFT_OUTCOMES]).toEqual(["shipped", "stopped", "failed"]);
+  });
+});
+
+/**
+ * THE CARD COLLISION (#608) — two seats worked the same founder reply three
+ * minutes apart, and the merge conflict at push time was the only control.
+ *
+ * The arms that matter are the two the design turns on: it must fire on a row
+ * that has NEVER CHECKED IN (which is what the origin incident's row was, and
+ * why `looksLive` is not the instrument), and it must be silent when no card
+ * is named, because a shift may legitimately open a run without one.
+ */
+describe("findCardCollisions", () => {
+  const run = (id: number, cardRef: string | null) => ({
+    id,
+    cardRef,
+    shift: `foreman-${id}`,
+    seat: "foreman" as const,
+  });
+
+  it("finds an open run on the same card", () => {
+    const hits = findCardCollisions([run(1, "#535"), run(2, "#601")], "#535");
+
+    expect(hits.map((h) => h.id)).toEqual([1]);
+  });
+
+  it("fires on a row that has never checked in — the origin incident's shape", () => {
+    /* The other seat's row was three minutes old and had never heartbeated, so
+       `looksLive` reads it as not live. This reading does not consult it. */
+    const justOpened = { ...run(118, "#535"), heartbeatAt: new Date(), startedAt: new Date() };
+
+    expect(findCardCollisions([justOpened], "#535")).toHaveLength(1);
+    expect(looksLive(justOpened, Date.now())).toBe(false);
+  });
+
+  it("treats `#535`, `535` and a padded ref as one card", () => {
+    expect(findCardCollisions([run(1, "535")], "#535")).toHaveLength(1);
+    expect(findCardCollisions([run(1, "#535")], " 535 ")).toHaveLength(1);
+    expect(findCardCollisions([run(1, " #535")], "535")).toHaveLength(1);
+  });
+
+  it("does not collide different cards, or #535 with #5350", () => {
+    expect(findCardCollisions([run(1, "#5350")], "#535")).toHaveLength(0);
+    expect(findCardCollisions([run(1, "#601")], "#535")).toHaveLength(0);
+  });
+
+  it("is silent when either side names no card", () => {
+    expect(findCardCollisions([run(1, "#535")], null)).toHaveLength(0);
+    expect(findCardCollisions([run(1, "#535")], "  ")).toHaveLength(0);
+    expect(findCardCollisions([run(1, null)], "#535")).toHaveLength(0);
+    // Two cardless runs are not "the same card".
+    expect(findCardCollisions([run(1, null)], null)).toHaveLength(0);
+  });
+
+  it("collides on an unparseable ref by its own text, rather than dropping it", () => {
+    expect(findCardCollisions([run(1, "PROGRAM.md ladder")], "program.md LADDER")).toHaveLength(1);
+  });
+
+  it("reports every colliding run, not just the newest", () => {
+    const hits = findCardCollisions([run(3, "#535"), run(2, "#601"), run(1, "#535")], "#535");
+
+    expect(hits.map((h) => h.id)).toEqual([3, 1]);
   });
 });
