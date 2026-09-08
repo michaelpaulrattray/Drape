@@ -98,8 +98,22 @@ type Write = { file: string; call: string; hook: string; destination: string | n
  * `installable(join(solo, "post-checkout"))` can be matched against it without
  * resolving anything.
  */
+async function suites(dir: URL, prefix = "", out: string[] = []): Promise<string[]> {
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      await suites(new URL(`${entry.name}/`, dir), `${prefix}${entry.name}/`, out);
+    } else if (entry.name.endsWith(".test.ts")) {
+      out.push(`${prefix}${entry.name}`);
+    }
+  }
+  return out;
+}
+
 async function hookWrites(): Promise<Write[]> {
-  const names = (await readdir(SERVER)).filter((n) => n.endsWith(".test.ts"));
+  /* Every suite under `server/`, at any depth — today they all sit at the top,
+     and a hook-driving suite filed in a subfolder joins this population by
+     existing rather than by being added to a list. */
+  const names = await suites(SERVER);
   const found: Write[] = [];
   for (const file of names) {
     const text = code(await readFile(new URL(file, SERVER), "utf8"));
