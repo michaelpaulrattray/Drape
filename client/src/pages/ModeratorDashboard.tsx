@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { isModeratorPanelUnauthorized } from "@/features/staff/staffRole";
 import { trpc } from "@/lib/trpc";
 import { Redirect } from "wouter";
 import {
@@ -177,7 +178,9 @@ export default function ModeratorDashboard() {
     still silent when he turns it off. (`AdminAuditLogs` carries the long note.)
   */
 
-  const isUnauthorized = !loading && isAuthenticated && user?.role !== "moderator" && user?.role !== "admin";
+  /* #699 — the rule lives in `staffRole.ts` and is driven there. Inlining it
+     again is what left this gate with no test for as long as it existed. */
+  const isUnauthorized = isModeratorPanelUnauthorized({ loading, isAuthenticated, role: user?.role });
   useEffect(() => { if (isUnauthorized) toast.error("Access denied. Moderator or admin privileges required."); }, [isUnauthorized]);
 
   // ── Handlers ──

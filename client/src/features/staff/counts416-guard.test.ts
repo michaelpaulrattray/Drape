@@ -292,8 +292,17 @@ describe("card 416 — the moderator hook sets no option that reaches another su
       inherit the entire moderator surface (the capability grid).
     */
     const hook = code(read("features/staff/useModeratorFlagCounts.ts"));
-    expect(hook).toMatch(/role\s*===\s*"moderator"/);
-    expect(hook).toMatch(/role\s*===\s*"admin"/);
+    /*
+      #699 — this arm used to match the two role literals HERE, which pinned
+      the SPELLING of a rule rather than the rule. The rule now lives in
+      `staffRole.ts` and is driven (`staffRole.test.ts` proves moderator and
+      admin are admitted and everything else refused, and the extraction is
+      sabotage-proven). What this arm still owns, and what it should always
+      have owned, is that THIS hook asks the shared rule about THIS user —
+      the argument is half the assertion, since `isStaffRole(undefined)` would
+      typecheck and gate the query to nobody.
+    */
+    expect(hook).toMatch(/isStaffRole\(user\?\.role\)/);
     expect(hook).toMatch(/enabled\s*=\s*isAuthenticated\s*&&\s*isStaff/);
   });
 });

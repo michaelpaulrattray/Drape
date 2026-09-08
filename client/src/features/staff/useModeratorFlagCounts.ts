@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { DEFAULT_DISCREPANCY_THRESHOLD } from "@/features/moderator/flagThresholds";
+import { isStaffRole } from "./staffRole";
 import { trpc } from "@/lib/trpc";
 
 /**
@@ -111,7 +112,7 @@ export function readFlagCounts(
 
 export function useModeratorFlagCounts(): ModeratorFlagCounts {
   const { user, isAuthenticated } = useAuth();
-  const isStaff = user?.role === "moderator" || user?.role === "admin";
+  const isStaff = isStaffRole(user?.role);
   const enabled = isAuthenticated && isStaff;
 
   /*
