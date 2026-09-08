@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c7d7ae87451ecdf2"
+    "sourceFingerprint": "3052d9bda3f6a79a"
   },
   "domains": [
     {
@@ -14444,6 +14444,11 @@
     {
       "from": "module:client/src/components/ui/tooltip.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/UserCard.tsx",
+      "to": "module:client/src/features/staff/staffRole.ts",
       "kind": "imports"
     },
     {

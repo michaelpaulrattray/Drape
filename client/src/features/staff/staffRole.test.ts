@@ -40,10 +40,23 @@ import path from "node:path";
 import { isStaffRole, isModeratorPanelUnauthorized, STAFF_ROLES } from "./staffRole";
 
 const ROOT = path.resolve(__dirname, "..", "..", "..", "..");
-const read = (rel: string) => readFileSync(path.join(ROOT, rel), "utf8");
+const raw = (rel: string) => readFileSync(path.join(ROOT, rel), "utf8");
+
+/*
+ * Strip comments, so a docblock explaining a rule cannot trip the rule -
+ * the house idiom, taken from `counts416-guard.test.ts`. PR #702 review,
+ * finding 2: the wiring arms below read RAW source at first, so a future
+ * comment quoting the pre-#699 line - exactly the kind of comment this
+ * repository writes, and `UserCard.tsx` now carries one a word away from it -
+ * would have falsely reddened them. It failed toward noise rather than
+ * silence, which is the right direction and still worth closing.
+ */
+const read = (rel: string) =>
+  raw(rel).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
 const DASHBOARD = "client/src/pages/ModeratorDashboard.tsx";
 const FLAG_COUNTS = "client/src/features/staff/useModeratorFlagCounts.ts";
+const USER_CARD = "client/src/components/UserCard.tsx";
 
 /* A settled, signed-in session — the state every role arm below varies. */
 const settled = (role: string | null | undefined) => ({
@@ -143,6 +156,18 @@ describe("the component still USES the rule rather than re-deriving it", () => {
   it("useModeratorFlagCounts calls the predicate and states no comparison of its own", () => {
     const text = read(FLAG_COUNTS);
     expect(text).toMatch(/isStaffRole\(/);
+    expect(text).not.toMatch(INLINE_ROLE_GATE);
+  });
+
+  it("UserCard's Moderation row asks the same rule — the third call site", () => {
+    /*
+      Found by the PR #702 review's law-7 sweep, after mine stopped at two.
+      This one gates the account menu's Moderation row, which LINKS to the
+      panel the predicate guards — so a drift between them is visible to a
+      person: shown the row, bounced by the panel behind it.
+    */
+    const text = read(USER_CARD);
+    expect(text).toMatch(/isStaffRole\(role\)/);
     expect(text).not.toMatch(INLINE_ROLE_GATE);
   });
 

@@ -41,6 +41,7 @@ const OUT = path.join(ROOT, "_sabotage-699-result.json");
 const RULE = "client/src/features/staff/staffRole.ts";
 const PAGE = "client/src/pages/ModeratorDashboard.tsx";
 const COUNTS = "client/src/features/staff/useModeratorFlagCounts.ts";
+const CARD = "client/src/components/UserCard.tsx";
 
 type Sabotage = { name: string; file: string; find: string; replace: string; expect: string[] };
 
@@ -56,6 +57,7 @@ const A_NOINLINE = "ModeratorDashboard states no role comparison of its own";
 const A_COUNTS = "useModeratorFlagCounts calls the predicate and states no comparison of its own";
 const A_BOTH = "the gate still drives BOTH the redirect and the toast";
 const A_GATED = "the query is gated to the roles that may ask it";
+const A_CARD = "UserCard's Moderation row asks the same rule — the third call site";
 
 const SABOTAGES: Sabotage[] = [
   {
@@ -117,6 +119,13 @@ const SABOTAGES: Sabotage[] = [
     find: "  const isStaff = isStaffRole(user?.role);",
     replace: '  const isStaff = user?.role === "moderator" || user?.role === "admin";',
     expect: [A_COUNTS, A_GATED].sort(),
+  },
+  {
+    name: "WIRING — UserCard's Moderation row re-derives the rule inline (the third call site)",
+    file: CARD,
+    find: "  const isModerator = isStaffRole(role);",
+    replace: "  const isModerator = isAdmin || role === 'moderator';",
+    expect: [A_CARD],
   },
   {
     name: "WIRING — the panel keeps the toast but loses the REDIRECT (the guard itself)",
