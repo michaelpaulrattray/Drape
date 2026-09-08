@@ -1,7 +1,7 @@
 {
-  "edition": 300,
-  "updatedAt": "2026-09-08T04:26:00.599Z",
-  "shift": "Foreman (Opus) - a rollback on a shift branch could quietly sweep up your work",
+  "edition": 301,
+  "updatedAt": "2026-09-08T17:03:56+10:00",
+  "shift": "Foreman (Opus) - your nights can see your own backlog again",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-08T03:13:44.733Z",
+      "readAt": "2026-09-08T07:04:06.126Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4383,6 +4383,20 @@
   ],
   "pipeline": [
     {
+      "id": "card-675-runner-sleeps-on-backlog",
+      "title": "The nights stopped for 90 minutes with 57 jobs waiting - the thing that starts a shift could not see them",
+      "status": "merged",
+      "prNumber": null,
+      "note": "Closed. Driven against your live switch panel: it now counts 57 jobs on offer and starts a shift."
+    },
+    {
+      "id": "pr-676-kill-nothing-642",
+      "title": "A cleanup command that killed nothing and said it had worked",
+      "status": "merged",
+      "prNumber": 676,
+      "note": "Also fixed a broken check that was blocking every merge on main."
+    },
+    {
       "id": "pr-671-shift-branch-rollback-611",
       "title": "A rollback on a shift branch could quietly sweep up your unsaved work (#611)",
       "status": "merged",
@@ -4629,6 +4643,27 @@
     }
   ],
   "problems": [
+    {
+      "id": "nights-blind-to-backlog-675",
+      "title": "Your nights went quiet for 90 minutes today with 57 jobs waiting - fixed",
+      "detail": "You asked why no shift had run for two hours. Here is the honest answer. Until today the thing that decides whether to start a night shift watched two lists: anything you marked urgent, and your NEXT UP queue. All weekend your NEXT UP queue was what kept the nights ticking over - every ninety minutes a shift woke up, saw work on your list, and got on with something from the background switches instead. At 12:55 today your last NEXT UP card was closed, and NEXT UP went empty for the first time since the team was built. The heartbeat stopped with it. Your seven background switches were all ON with 57 jobs sitting under them, and nothing that starts a shift was looking at them. It would have stayed asleep until an eight-hour safety timer. Fixed tonight: the starter now reads your switch panel directly. Driven against the real thing this evening, it counts Bugs 8, Performance 5, Housekeeping 11, Process 14, Small fixes 12, Casting upkeep 7 and says start a shift. Your master switch still turns everything off, and anything you mark urgent or put in NEXT UP still comes first.",
+      "severity": "info",
+      "state": "resolved"
+    },
+    {
+      "id": "main-red-blocked-every-merge-0908",
+      "title": "Nothing could be merged tonight until this was fixed, and an empty NEXT UP was the cause",
+      "detail": "A knock-on from the same emptiness. One of our own safety checks built its test case by copying the first row out of your NEXT UP list. With that list empty it had nothing to copy, so the check failed - not because anything was actually wrong, but because it had run out of material. A failing check blocks every merge, so the team could not have shipped anything tonight. Found by tonight's own PR and fixed in it: both checks now build their own test material instead of borrowing yours, so an empty list is just an empty list. The same shape was one test above, waiting to do this again the first evening with nothing in flight; that one is converted too.",
+      "severity": "info",
+      "state": "resolved"
+    },
+    {
+      "id": "queue-shape-0908e-foreman",
+      "title": "The queue: 77 open, two closed tonight, and 15 nobody has looked at in a week",
+      "detail": "77 cards open. Two closed tonight - the nights-asleep fault you reported, and the cleanup-command bug. Nothing is running unattended. 15 cards have had no comment, no close and no code touch them for seven days; the oldest is a fortnight. That number is steady rather than growing. Worth repeating from last night because it held again tonight: your Bugs switch says 8, but most of those end in a decision only you can make, so the number of bug cards a shift can actually pick up on its own is one or two, not eight. That is the gap card #663 is about.",
+      "severity": "info",
+      "state": "open"
+    },
     {
       "id": "queue-shape-0908d-foreman",
       "state": "open",
@@ -4981,7 +5016,7 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-08T03:13:43.831Z",
+    "readAt": "2026-09-08T07:04:05.330Z",
     "items": []
   }
 }
