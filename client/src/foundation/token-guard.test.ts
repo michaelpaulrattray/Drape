@@ -120,7 +120,10 @@ const GUARDED_PATHS = [
     at the bottom of this list collects every one of them. The reasoning above
     is kept because it is the history — and because it is the reasoning that
     left the change request modal outside every guard until the founder opened
-    it. The admin rows stay: that directory still holds a file no brief owns.
+    it. The admin rows STAYED until #428 collapsed them into the
+    `features/admin` directory row below — at the time this block was
+    written that directory still held a file no brief owned, and that file
+    is the one #428 fixed.
   */
   "pages/AdminAuditLogs.tsx",
   "pages/AdminBugReports.tsx",

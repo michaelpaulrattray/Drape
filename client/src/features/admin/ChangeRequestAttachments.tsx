@@ -20,12 +20,22 @@
  * statement of a value that already has one — working law 4. The classes are
  * `text-muted-foreground`, `bg-muted`, `border-border` instead.
  *
- * Two of the sixteen are NOT a flat swap and are stated rather than left to be
- * re-derived: the row hover was `#F0F0F0` over an `#F8F8F8` card, so it becomes
- * `hover:bg-accent` (`--fillStrong`) rather than `bg-muted`, which would have
- * made hovering do nothing; and the filename was `#666` against `#999` beside
- * it, i.e. the row's CONTENT rather than its meta, so it becomes
- * `text-foreground`.
+ * THREE of the sixteen are NOT a flat swap and are stated rather than left to
+ * be re-derived:
+ *
+ *   1. The row hover was `#F0F0F0` over an `#F8F8F8` card, so it becomes
+ *      `hover:bg-accent` (`--fillStrong`) rather than `bg-muted` — which is the
+ *      card's own token, and would have made hovering do nothing.
+ *   2. The filename was `#666` against `#999` beside it, i.e. the row's CONTENT
+ *      rather than its meta, so `text-foreground`.
+ *   3. ⚠ The image letterbox was `#F0F0F0` INSIDE the `#F8F8F8` card — a third
+ *      step of grey — and it becomes `bg-muted`, the same token as the card. So
+ *      that one distinction is deliberately LOST rather than preserved. It is
+ *      named here because it is the only one of the three the drive could not
+ *      show: it is visible solely behind an `object-contain` image that does
+ *      not fill its box, and no real attachment exists in dev to render. A
+ *      letterbox one shade off its own card is decoration; if it is ever wanted
+ *      back it is `bg-accent`, and this paragraph is why it is not there now.
  *
  * With this file clean, `features/admin` has no hex remainder — see the
  * directory row in `foundation/token-guard.test.ts`.

@@ -136,8 +136,8 @@ export function ReviewModal({
           </Button>
           {/*
             ⚠ The pending label names the act rather than the button's own
-            words. It cannot reuse `confirmLabel`: those nineteen constants are
-            imperatives (`Approve Refund`, `Acknowledge`), and an imperative
+            words. It cannot reuse `confirmLabel`: those constants are
+            imperatives (`Approve refund`, `Acknowledge`), and an imperative
             with an ellipsis reads as an instruction, not as progress.
           */}
           <Button
