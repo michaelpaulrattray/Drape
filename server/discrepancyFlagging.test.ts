@@ -64,6 +64,8 @@ const BADGE_THRESHOLD = (() => {
  * The formula change of #119 is exactly why that matters: fifteen arms below
  * went RED on it, which is the whole point of not owning a copy.
  */
+import { generations } from "../drizzle/schema";
+import { EVIDENCE_CANDIDATE_GENERATION_TYPE } from "./casting/evidence/evidenceCandidateContract";
 import {
   attachUserInfoToFlagged,
   computeDiscrepancy,
@@ -562,6 +564,23 @@ describe("the founder's account: what the residual is made of", () => {
   });
 
   /*
+   * ⚠ THE CONSTANT MUST NAME A TYPE THE COLUMN ACTUALLY HAS, AND THIS ARM
+   * EXISTS BECAUSE A SABOTAGE PROVED NOTHING ELSE COULD SAY SO.
+   *
+   * Every other arm compares the constant to ITSELF — the SQL arm asserts the
+   * bound parameter equals `EVIDENCE_CANDIDATE_GENERATION_TYPE`, the writers
+   * arm greps for the identifier — so misspelling its VALUE left all thirty
+   * green while the predicate excluded nothing and the badge stayed lit. An
+   * assertion that reads its own subject is not a reader of it.
+   *
+   * The enum is the independent side: `generations.type` is where the product
+   * declares what a row may be, and it is not derived from this constant.
+   */
+  it("the excluded type is one the generations column can actually hold", () => {
+    expect(generations.type.enumValues).toContain(EVIDENCE_CANDIDATE_GENERATION_TYPE);
+  });
+
+  /*
    * ⚠ THE POPULATION CANNOT GROW, AND THAT IS THE WHOLE CASE FOR AN EXCLUSION
    * KEYED ON A `type` VALUE BEING NARROW RATHER THAN AN OPEN EXEMPTION.
    *
@@ -660,7 +679,11 @@ describe("the founder's account: what the residual is made of", () => {
       50,
     ).users[0].discrepancy;
 
+    // The mechanism: the pickup comes back through operationCost, credit for credit.
     expect(ifLinked).toBe(-150 - FALLBACK_PICKUP);
+    // And the measured number itself, so the arm is not merely self-consistent
+    // for whatever pickup someone types above it.
+    expect(ifLinked).toBe(-4_100);
     expect(Math.abs(ifLinked)).toBeGreaterThanOrEqual(BADGE_THRESHOLD);
   });
 
