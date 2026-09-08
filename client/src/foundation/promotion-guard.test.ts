@@ -142,3 +142,103 @@ describe("the three dialogs are one shell with different contents", () => {
     expect(shell.match(/key === "Escape"/g) ?? []).toHaveLength(1);
   });
 });
+
+/**
+ * THE FLOATING PANEL'S SHELL HAS ONE OWNER (#388).
+ *
+ * Three panels in the lobby's top bar drew the same bordered surface in three
+ * notations, and had already drifted on a fourth property. The sweep for the
+ * class found two more in the foundation itself, so the population was FIVE:
+ * `.dp-account-menu`, `.dp-pop__panel`, `.dpc-cardmenu__panel`, and the inline
+ * shells in `LobbyUtilityMenu.tsx` and `FeedbackForm.tsx`.
+ *
+ * The arm below is DERIVED rather than a list of those five: it looks for the
+ * SIGNATURE of the shell wherever it is written, so a sixth panel added next
+ * year is caught by the same reading. Measured at the commit: five owners
+ * before, one after.
+ */
+const SHELL_CSS = [
+  /border:\s*1px solid var\(--borderCard\)/,
+  /background:\s*var\(--surface\)/,
+  /border-radius:\s*var\(--r-md\)/,
+] as const;
+
+const SHELL_INLINE = [
+  /border:\s*'1px solid var\(--borderCard\)'/,
+  /background:\s*'var\(--surface\)'/,
+] as const;
+
+const clientSources = async (dir: URL, out: { name: string; text: string }[] = []) => {
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const child = new URL(`${entry.name}${entry.isDirectory() ? "/" : ""}`, dir);
+    if (entry.isDirectory()) await clientSources(child, out);
+    else if (/\.(css|tsx|ts)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
+      out.push({ name: entry.name, text: await readFile(child, "utf8") });
+    }
+  }
+  return out;
+};
+
+describe("the floating panel's shell is written once", () => {
+  it("nothing but .dp-floatpanel declares the border, the radius and the surface together", async () => {
+    /*
+      ⚠ THE RADIUS IS PART OF THE SIGNATURE ON PURPOSE. `.dp-panel` — the
+      invite-codes form, a static panel standing above a table — carries the
+      same border and background at `--r-xl`. It is a different object and it
+      is deliberately NOT folded in; including the radius is what lets this arm
+      say so without keeping an exemption list, which is the thing that drifts.
+
+      Comments are stripped first: this file's own docblocks quote the defect,
+      and a reader that searched raw text would redden on the explanation.
+    */
+    const offenders: string[] = [];
+    const files = await clientSources(new URL("../", import.meta.url));
+    /*
+      A walk that finds nothing passes an absence test green, so the population
+      is asserted before it is read — the same floor the arm above this one
+      keeps. Both files that own a shell rule must be in it.
+    */
+    expect(files.length).toBeGreaterThan(100);
+    expect(files.map((f) => f.name)).toEqual(
+      expect.arrayContaining(["foundation.css", "modals.css"]),
+    );
+    for (const file of files) {
+      const text = code(file.text);
+      // The first element of a match is the WHOLE match; the captures start at 1.
+      for (const [, selector, body] of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+        if (!SHELL_CSS.every((re) => re.test(body))) continue;
+        const name = selector.trim().split(/\s+/).pop() ?? selector.trim();
+        if (name === ".dp-floatpanel") continue;
+        offenders.push(`${file.name} — ${name}`);
+      }
+      if (SHELL_INLINE.every((re) => re.test(text))) offenders.push(`${file.name} — inline style`);
+    }
+    expect(offenders, "each of these should wear .dp-floatpanel instead").toEqual([]);
+  });
+
+  it("and the shell carries only what all of them share", async () => {
+    /*
+      Width, padding, overflow and the shadow legitimately differ per surface —
+      216px with `--shadowCard` on the account menu, 264px with `--shadowPop`
+      on the other two. A shell that grew any of them would be silently
+      restyling a panel nobody looked at.
+    */
+    const css = await readFile(new URL("./foundation.css", import.meta.url), "utf8");
+    const rule = code(css).match(/\.dp-floatpanel\s*\{([^}]*)\}/)?.[1];
+    expect(rule, ".dp-floatpanel must exist").toBeTruthy();
+    const declared = (rule ?? "")
+      .split(";")
+      .map((d) => d.split(":")[0]?.trim())
+      .filter(Boolean);
+    expect(declared.sort()).toEqual(["background", "border", "border-radius"]);
+  });
+
+  it("the reader can see a violation — the shape it caught five of", () => {
+    const before = ".dp-whatever { border: 1px solid var(--borderCard); border-radius: var(--r-md); background: var(--surface); }";
+    const body = before.match(/\{([^}]*)\}/)?.[1] ?? "";
+    expect(SHELL_CSS.every((re) => re.test(body)), "the matcher must see it").toBe(true);
+    const stillFine = ".dp-panel { border: 1px solid var(--borderCard); border-radius: var(--r-xl); background: var(--surface); }";
+    const otherBody = stillFine.match(/\{([^}]*)\}/)?.[1] ?? "";
+    expect(SHELL_CSS.every((re) => re.test(otherBody)), "a different radius is a different object").toBe(false);
+  });
+});

@@ -422,6 +422,37 @@ button.dp-invite:focus-visible .dp-memberstack__add {
   object-fit: cover;
 }
 
+/*
+  THE FLOATING PANEL'S SHELL, WRITTEN ONCE (#388).
+
+  Three panels hang off the lobby's top bar — the account menu below, the help
+  menu behind the `?`, and the Report-a-bug panel. Each drew the same *bordered
+  surface with a radius* in its own notation: a CSS class here, an inline
+  `style` object in `LobbyUtilityMenu`, and a TS const in `FeedbackForm`.
+  Measured 2026-09-01 (#388), they agreed on exactly the three declarations
+  below and had already drifted on a fourth.
+
+  ⚠ **ONLY WHAT ALL THREE SHARE LIVES HERE.** Width, padding, overflow and the
+  shadow stay with the caller, because those legitimately differ per surface —
+  the account menu is 216px with full-bleed rows and `--shadowCard` (the
+  paragraph under this one measured that literal from his prototype), the other
+  two are 264px with their own padding and `--shadowPop`. A shell owning those
+  would be the general panel component nobody asked for, and
+  `PROMOTION-PASS.md` forbids widening a thing in order to promote it.
+
+  ⚠ **IT IS NOT `.dp-panel`, WHICH ALREADY EXISTED** — the invite-codes form's
+  static panel, at the foot of this file, at `--r-xl`. The same three
+  declarations, a different radius, and a different object: a form standing
+  above a table rather than a surface floating over the page. It is
+  deliberately not converted, the radius is the reason, and converting it would
+  move pixels on a surface this card never measured.
+*/
+.dp-floatpanel {
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
 /* Opens down and right-aligned — the chip is at the viewport's other edge now. */
 /*
   THE ACCOUNT MENU'S SHELL (section 04 §2, #374), set from the prototype at
@@ -432,7 +463,9 @@ button.dp-invite:focus-visible .dp-memberstack__add {
   ⚠ **`--r-lg` IS 12px HERE, NOT THE 11px HIS BRIEF ANNOTATES IT WITH.** §2 asks
   for `var(--r-lg)` and comments it `11px`; the token whose value is 11px is
   `--r-md`, and the prototype's own literal is `11px`. The value is the thing he
-  drew, so `--r-md` is what this takes.
+  drew, so `--r-md` is what this takes — and since #388 it takes it from
+  `.dp-floatpanel` above, along with the border and the background, which is
+  why the rule below no longer names them.
 
   Rows are full-bleed — `padding: 0` and `overflow: hidden` on the shell — which
   is why the row radius is zeroed below. `--shadowCard` rather than `--shadowPop`
@@ -447,9 +480,6 @@ button.dp-invite:focus-visible .dp-memberstack__add {
   display: flex;
   flex-direction: column;
   width: 216px;
-  border: 1px solid var(--borderCard);
-  border-radius: var(--r-md);
-  background: var(--surface);
   box-shadow: var(--shadowCard);
   overflow: hidden;
   animation: dp-scaleIn var(--t-mid) var(--ease) both;
@@ -1370,13 +1400,11 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   rather than absolute so the panel is not clipped by an ancestor that happens
   to hide its overflow.
 */
+/* The shell — border, radius, background — comes from `.dp-floatpanel` (#388). */
 .dp-pop__panel {
   z-index: 40;
   width: 216px;
   padding: var(--s-2);
-  background: var(--surface);
-  border: 1px solid var(--borderCard);
-  border-radius: var(--r-md);
   box-shadow: var(--shadowCard);
   display: flex;
   flex-direction: column;

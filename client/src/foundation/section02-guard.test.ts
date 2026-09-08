@@ -201,7 +201,13 @@ describe("the account is in one corner and the workspace in the other", () => {
    */
   it("the topbar owns the chip and its menu", () => {
     expect(TOPBAR).toMatch(/className="dp-accountchip"/);
-    expect(TOPBAR).toMatch(/className="dp-account-menu"/);
+    /*
+      ⚠ The class LIST, not the class STRING (#388). The shell's three shared
+      declarations moved to `.dp-floatpanel`, so the menu now wears two classes
+      and an exact-string match would have reddened on a change that left this
+      arm's own claim — the topbar owns the chip and its menu — untouched.
+    */
+    expect(TOPBAR).toMatch(/className="[^"]*\bdp-account-menu\b[^"]*"/);
   });
 
   it("the rail kept none of it", () => {
