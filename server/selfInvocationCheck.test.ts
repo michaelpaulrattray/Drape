@@ -1,10 +1,11 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
 import { runHook } from "./testing/hookDriver";
+import { readListedSource } from "./testing/listedSource";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
@@ -85,7 +86,15 @@ function modulesDeclaringTheCheck(): string[] {
       if (!entry.name.endsWith(".mts")) continue;
       /* Disposables are a shift's own scratch files and are never tracked. */
       if (entry.name.startsWith("_") && entry.name.includes("disposable")) continue;
-      const src = readFileSync(join(dir, entry.name), "utf8");
+      /* ⚠ `readListedSource`, NOT a bare read — this walk LISTS then READS,
+         and this working tree is shared by several sessions and carries
+         hundreds of untracked disposables (#8). A file that leaves between the
+         two throws ENOENT out of the walk, and that ENOENT refuses the deploy
+         rite on a clean tree (#223, #589). A file gone at the read was not
+         part of the tree at the moment of the reading, so skipping it is the
+         correct answer rather than a tolerated failure. */
+      const src = readListedSource(join(dir, entry.name));
+      if (src === null) continue;
       if (/\bconst invokedDirectly\b/.test(src) || /\bif \(import\.meta\.main\)/.test(src)) {
         found.push(childRel);
       }
@@ -134,7 +143,10 @@ describe("the self-invocation check", () => {
 
     const offenders: string[] = [];
     for (const rel of modules) {
-      const src = readFileSync(join(SCRIPTS, rel), "utf8");
+      /* Also a listed entry — `rel` came out of the walk above, so the same
+         vanish-between-list-and-read window applies here. */
+      const src = readListedSource(join(SCRIPTS, rel));
+      if (src === null) continue;
       /* Comments are stripped first: several of these files deliberately quote
          the retired idiom to explain what changed and why, and quoting a
          defect must never read as committing it. */
