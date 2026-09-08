@@ -122,6 +122,16 @@ const NOT_THE_CLASS: Record<string, string> = {
     + " is about",
   "server/testing/listedSource.test.ts":
     "the file that owns the rule — it names the population it scans for",
+  "server/riteWorktree.test.ts":
+    "lists NOTHING in the repository — its one `readdirSync` is a decoy"
+    + " `node_modules` it made under `mkdtemp` two lines earlier, and its"
+    + " `lstatSync` is a junction inside that same fixture. Its `scripts/`"
+    + " mentions are three FIXED names it asserts the CONTENTS of"
+    + " (`scripts/lib/riteWorktree.mts`, `scripts/shift-worktree.mts`,"
+    + " `scripts/lib/shiftWorktree.mts` — the law-7 sweep arm holding both call"
+    + " sites to one declaration), and every one of them SHOULD throw if it is"
+    + " missing: a sweep arm that shrugs at an absent subject is the guard over"
+    + " nothing this file exists to prevent",
   "server/shiftDigest.test.ts":
     "lists the REPOSITORY ROOT for its top-level directory names — the derived"
     + " `roots` the path index needs — and never reads a listed entry. Its reads"

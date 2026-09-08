@@ -23,9 +23,69 @@
  * never exits.
  */
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmdirSync, symlinkSync, unlinkSync } from "node:fs";
+import { lstatSync, mkdtempSync, rmdirSync, rmSync, symlinkSync, unlinkSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+
+/**
+ * Does `p` still exist as an entry on disk?
+ *
+ * ⚠ `lstat` and NOT `existsSync`: a junction is a link, and `existsSync`
+ * FOLLOWS it — a junction whose TARGET has gone reads as absent while the link
+ * itself is still standing in the directory about to be removed recursively.
+ * The question both callers ask is only ever "is there still a link in the
+ * way", so the reading must not follow.
+ *
+ * **Exported because there are TWO places that authorise a recursive delete on
+ * this answer** (law 7's sweep, taken with #654): this module's
+ * `removeThrowawayDir`, and `scripts/shift-worktree.mts`, which feeds it to
+ * `junctionMustBeGone`. That guard lives in `shiftWorktree.mts`, which has no
+ * imports at all — it takes booleans so it can be driven without a disk — so
+ * the READING cannot live beside it, and a second `lstat` helper over there
+ * would be working law 4 on the one predicate that stands between a sweep and
+ * the main checkout. `server/riteWorktree.test.ts` holds both call sites to
+ * this declaration.
+ */
+export const stillOnDisk = (p: string): boolean => {
+  try { lstatSync(p); return true; } catch (error) {
+    /* ⚠ ONLY "IT IS NOT THERE" MEANS ABSENT — a bare `catch { return false }`
+       reads an EPERM or EACCES on the link path as GONE and authorises the
+       recursive delete, on the one predicate this module calls the thing
+       standing between a sweep and the main checkout (PR #692 review,
+       finding 2). The module's doctrine everywhere else is "when in doubt,
+       keep"; this is the same polarity, at the one call that decides it. */
+    return (error as NodeJS.ErrnoException)?.code !== "ENOENT";
+  }
+};
+
+/**
+ * Remove the throwaway parent directory, falling back to a RECURSIVE removal
+ * only once the junction is PROVEN gone at the disk (#654).
+ *
+ * ⚠ This is the module's dangerous act and the gate is the whole of it.
+ * `rmSync(recursive)` through a live junction walks into the REAL
+ * `node_modules` of the main checkout — the destruction this module's header
+ * exists to warn about. So the fallback never runs on inference about which
+ * teardown call threw; it runs on a positive read of the junction path, and
+ * when that read says the link is still there the directory is LEFT (litter is
+ * recoverable, the main checkout is not).
+ *
+ * Returns which of the three happened, so a caller — and the suite — can tell
+ * "swept" from "left because it was not safe" from "left because the platform
+ * refused", instead of reading a silent `catch`.
+ */
+export const removeThrowawayDir = (
+  dir: string,
+  junction: string | null,
+): "removed" | "kept-junction-present" | "kept-remove-failed" => {
+  /* The non-recursive removal first, unchanged: on the overwhelmingly common
+     path `git worktree remove` has already taken the tree and this is the
+     empty parent. */
+  try { rmdirSync(dir); return "removed"; } catch { /* the tree is still inside */ }
+  if (junction !== null && stillOnDisk(junction)) return "kept-junction-present";
+  try { rmSync(dir, { recursive: true, force: true }); return "removed"; } catch { /* held open */ }
+  return "kept-remove-failed";
+};
 
 /**
  * Check out `commit` detached into a throwaway worktree of `root`, junction
@@ -65,6 +125,12 @@ export const inWorktreeOf = <T,>(root: string, commit: string, body: (tree: stri
     }
     try { git("worktree", "remove", "--force", tree); } catch { /* never added */ }
     try { git("worktree", "prune"); } catch { /* best effort */ }
-    try { rmdirSync(dir); } catch { /* the remove already took it */ }
+    /* MEASURED: `remove --force` fails on ~6.7% of trees (120 driven, 8 left) —
+       a sibling suite's `prune` unregisters a tree whose directory is still
+       there, so the remove says "is not a working tree" and gives up. The
+       non-recursive `rmdir` then fails too, because the tree is inside. That
+       leak stood at 7.8 GB across 32 checkouts in %TEMP% when #654 measured it
+       and had regrown to 4 within a day of being swept by hand. */
+    removeThrowawayDir(dir, junction);
   }
 };
