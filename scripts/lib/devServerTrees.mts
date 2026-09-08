@@ -231,6 +231,43 @@ export function rootsStartedAfter(
 }
 
 /**
+ * ⚠ THE PIDS THE OPERATOR NAMED, before any of them is treated as a number.
+ *
+ * `--kill`'s value was read with `.split(",").map(Number).filter(Boolean)`, and
+ * both `NaN` and `0` are falsy — so `--kill abc`, `--kill 0` and `--kill ""`
+ * each became an EMPTY target list, killed nothing, and exited 0 having printed
+ * the trees still standing. An operator reads that as a cleanup that ran.
+ *
+ * Worse in the mixed case: `--kill 22316,abc` dropped the word it could not
+ * read and killed the rest, so a typo bought a PARTIAL cleanup silently — the
+ * same outcome `rootsToKill`'s whole-batch refusal already exists to prevent,
+ * arriving one step earlier than that function can see.
+ *
+ * Filed as #642's declared remainder by PR #670's review, which named it a
+ * judgement rather than a conversion: the parse it sits behind catches the
+ * MISSING-value spelling (`--kill` with nothing after it) and not the UNUSABLE
+ * one. A pid is a positive whole number; every other word is refused and quoted
+ * back, because a refusal that does not say which word was wrong sends the
+ * operator to re-read their own command line.
+ */
+export function pidsNamed(
+  said: string,
+): { kind: "pids"; pids: number[] } | { kind: "refused"; reason: string } {
+  const words = said.split(",").map((one) => one.trim());
+  const unusable = words.filter((word) => !/^[1-9][0-9]*$/.test(word));
+  if (unusable.length > 0) {
+    const quoted = unusable.map((word) => `"${word}"`).join(", ");
+    return {
+      kind: "refused",
+      reason: `--kill was given ${quoted}, which ${unusable.length === 1 ? "is not a pid" : "are not pids"}.`
+        + ` A pid is a positive whole number. Nothing was killed —`
+        + ` run this with no arguments to see the roots and their pids.`,
+    };
+  }
+  return { kind: "pids", pids: words.map((word) => Number(word)) };
+}
+
+/**
  * ⚠ THE REFUSAL, and it is the point of the whole module.
  *
  * A pid somebody read off `netstat` is a CHILD. Handed one, this says so and
@@ -243,6 +280,17 @@ export function rootsToKill(
   rows: readonly ProcessRow[],
   pids: readonly number[],
 ): { kind: "kill"; rootPids: number[] } | { kind: "refused"; reason: string } {
+  /*
+    ⚠ AN EMPTY LIST IS NEVER A KILL INSTRUCTION (#642 remainder). The loop below
+    simply does not run on one, so this used to answer `{ kind: "kill",
+    rootPids: [] }` — a verdict saying "go ahead" about nothing. `pidsNamed`
+    now stops every route that produced an empty list, and this is the guard at
+    the point where the decision is actually made rather than at the one caller
+    that happens to exist today.
+  */
+  if (pids.length === 0) {
+    return { kind: "refused", reason: "no pid was named, so there is nothing to kill." };
+  }
   const trees = devServerTrees(rows);
   const rootPids = new Set(trees.map((tree) => tree.rootPid));
   const byPid = new Map(rows.map((row) => [row.pid, row]));
