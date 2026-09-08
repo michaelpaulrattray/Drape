@@ -119,16 +119,13 @@ export function LobbyUtilityMenu() {
         <div
           ref={panelRef}
           role="menu"
-          className="dp-menu"
+          className="dp-floatpanel dp-menu"
           {...surfaceProps}
           style={{
             ...panelStyle,
             zIndex: 50,
             width: PANEL_WIDTH,
             padding: feedback ? 'var(--s-6)' : 'var(--s-2)',
-            borderRadius: 'var(--r-md)',
-            border: '1px solid var(--borderCard)',
-            background: 'var(--surface)',
             boxShadow: 'var(--shadowPop)',
           }}
         >

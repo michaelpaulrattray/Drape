@@ -137,7 +137,7 @@ export function Popover({
           id={panelId}
           role="listbox"
           aria-label={heading}
-          className="dp-pop__panel"
+          className="dp-floatpanel dp-pop__panel"
           style={panel.panelStyle}
           {...panel.surfaceProps}
           onKeyDown={(event) => {

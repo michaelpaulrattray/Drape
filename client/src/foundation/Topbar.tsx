@@ -184,7 +184,7 @@ function AccountChip({ account }: { account: TopbarAccount }) {
         <ChevronDown size={9} strokeWidth={2.4} aria-hidden="true" />
       </button>
       {account.menu && menuOpen ? (
-        <div className="dp-account-menu" role="menu">
+        <div className="dp-floatpanel dp-account-menu" role="menu">
           {account.menu}
         </div>
       ) : null}
