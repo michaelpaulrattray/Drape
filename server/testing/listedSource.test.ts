@@ -294,6 +294,14 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
     "cannotSayCopy.ts — the cannot-say copy table, by fixed name",
     "CAPABILITY_JSON — the committed atlas, behind existsSync in readCommittedAtlas",
   ],
+  "server/changeRequestLabels.test.ts": [
+    "SOURCE_OF_TRUTH — shared/changeRequestLabels.ts by fixed name, the one"
+    + " declaration this suite exists to protect; if it has gone the guard has"
+    + " lost its subject and must say so rather than sweep a tree with nothing"
+    + " to compare against",
+    "server/lib/adminActions/index.ts — the NEGATIVE control's fixed name; an"
+    + " absent negative control is a matcher nobody is checking",
+  ],
   "server/patrolClocks.test.ts": [
     "REAL_LOGS — the four patrol logs by fixed name; one going missing is the defect and must throw",
   ],

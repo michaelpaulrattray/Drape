@@ -1,6 +1,7 @@
 import { adminProcedure, router } from "../../_core/trpc";
 import { getClientIp } from "../../security/rateLimit";
 import { CHANGE_REQUEST_ACTION_BY_TYPE, executeApprovedAdminAction } from "../../lib/adminActions";
+import { changeRequestTypeLabel } from "@shared/changeRequestLabels";
 import {
   requestApproval as requestSlackApproval,
   getApprovalStatus as getSlackApprovalStatus,
@@ -68,17 +69,6 @@ export const changeRequestsRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: `Change request is already ${request.status}` });
       }
 
-      const typeLabels: Record<string, string> = {
-        refund_credits: "Refund Credits",
-        add_credits: "Add Credits",
-        flag_account: "Flag Account",
-        note_incident: "Note Incident",
-        suspend_user: "Suspend User",
-        unsuspend_user: "Unsuspend User",
-        block_ip: "Block IP",
-        stripe_refund: "Stripe Refund",
-        other: "Other",
-      };
       // Sensitive types require Slack approval before execution — and a type is
       // sensitive EXACTLY WHEN it has an approval action to be approved with.
       // That equivalence is structural rather than coincidental: two lines
@@ -134,7 +124,7 @@ export const changeRequestsRouter = router({
             email: ctx.user.email || undefined,
           },
           targetId,
-          description: `Change Request #${input.id}: ${typeLabels[request.type] || request.type}\n\n*Title:* ${request.title}\n*Target:* ${request.targetUserName || `User ${request.targetUserId}`}${request.creditAmount ? `\n*Amount:* ${request.creditAmount} credits` : ""}${request.ipAddress ? `\n*IP:* ${request.ipAddress}` : ""}\n*Submitted By:* ${request.submittedByName || `User ${request.submittedById}`}`,
+          description: `Change Request #${input.id}: ${changeRequestTypeLabel(request.type)}\n\n*Title:* ${request.title}\n*Target:* ${request.targetUserName || `User ${request.targetUserId}`}${request.creditAmount ? `\n*Amount:* ${request.creditAmount} credits` : ""}${request.ipAddress ? `\n*IP:* ${request.ipAddress}` : ""}\n*Submitted By:* ${request.submittedByName || `User ${request.submittedById}`}`,
           params: approvalParams,
           ipAddress: getClientIp(ctx.req),
         });
@@ -169,11 +159,11 @@ export const changeRequestsRouter = router({
         // Notify #admin-actions about the pending Slack approval
         await sendAdminActionNotification({
           title: `\u23f3 Change Request #${input.id} Approved \u2014 Awaiting Slack Confirmation`,
-          description: `*${adminName}* approved change request #${input.id} (${typeLabels[request.type] || request.type}).\n\nExecution is held pending Slack confirmation.${!approvalResult.sent ? "\n\n\u26a0\ufe0f Slack not configured \u2014 action was auto-approved and will execute when polled." : ""}`,
+          description: `*${adminName}* approved change request #${input.id} (${changeRequestTypeLabel(request.type)}).\n\nExecution is held pending Slack confirmation.${!approvalResult.sent ? "\n\n\u26a0\ufe0f Slack not configured \u2014 action was auto-approved and will execute when polled." : ""}`,
           severity: "info",
           fields: [
             { title: "Request ID", value: `#${input.id}`, short: true },
-            { title: "Type", value: typeLabels[request.type] || request.type, short: true },
+            { title: "Type", value: changeRequestTypeLabel(request.type), short: true },
             { title: "Reviewed By", value: adminName, short: true },
             { title: "Status", value: "\u23f3 Awaiting Slack Approval", short: true },
             { title: "Submitted By", value: request.submittedByName || `User ${request.submittedById}`, short: true },
@@ -224,11 +214,11 @@ export const changeRequestsRouter = router({
       // Notify #admin-actions
       await sendAdminActionNotification({
         title: `${actionEmoji} Change Request #${input.id} ${actionVerb}`,
-        description: `*${adminName}* ${actionVerb.toLowerCase()} change request #${input.id} (${typeLabels[request.type] || request.type}).\n\n*Original Title:* ${request.title}${input.reviewNotes ? `\n*Review Notes:* ${input.reviewNotes}` : ""}`,
+        description: `*${adminName}* ${actionVerb.toLowerCase()} change request #${input.id} (${changeRequestTypeLabel(request.type)}).\n\n*Original Title:* ${request.title}${input.reviewNotes ? `\n*Review Notes:* ${input.reviewNotes}` : ""}`,
         severity: input.action === "approved" ? "info" : "warning",
         fields: [
           { title: "Request ID", value: `#${input.id}`, short: true },
-          { title: "Type", value: typeLabels[request.type] || request.type, short: true },
+          { title: "Type", value: changeRequestTypeLabel(request.type), short: true },
           { title: "Reviewed By", value: adminName, short: true },
           { title: "Decision", value: `${actionEmoji} ${actionVerb}`, short: true },
           { title: "Submitted By", value: request.submittedByName || `User ${request.submittedById}`, short: true },

@@ -99,6 +99,10 @@ import {
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import type { ChangeRequestType, ChangeRequestPriority } from "./moderatorConstants";
+import {
+  CHANGE_REQUEST_TYPES,
+  CHANGE_REQUEST_TYPE_LABELS,
+} from "@shared/changeRequestLabels";
 
 export interface UploadedAttachment {
   id: number;
@@ -273,15 +277,11 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
               <Select value={crType} onValueChange={(v) => setCrType(v as ChangeRequestType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="refund_credits">Refund credits</SelectItem>
-                  <SelectItem value="add_credits">Add credits</SelectItem>
-                  <SelectItem value="flag_account">Flag account</SelectItem>
-                  <SelectItem value="note_incident">Note incident</SelectItem>
-                  <SelectItem value="suspend_user">Suspend user</SelectItem>
-                  <SelectItem value="unsuspend_user">Unsuspend user</SelectItem>
-                  <SelectItem value="block_ip">Block IP</SelectItem>
-                  <SelectItem value="stripe_refund">Stripe refund</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  {CHANGE_REQUEST_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {CHANGE_REQUEST_TYPE_LABELS[type]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </StaffField>

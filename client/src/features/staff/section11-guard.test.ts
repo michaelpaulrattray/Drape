@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { CHANGE_REQUEST_TYPES } from "@shared/changeRequestLabels";
+
 /**
  * Brief 11's rules, as assertions rather than as review memory
  * (`docs/specs/Casting-ui-ux-design/drape-redesign/11-staff-dialogs.md`, #436).
@@ -280,8 +282,17 @@ describe("brief 11 §6/§7 — the segmented priority, the plain Slack line, one
     const cr = DIALOG_FILES.find((d) => d.rel.endsWith("ChangeRequestModal.tsx"))!.src;
     expect(code(cr), "priority uses .dp-segmented").toContain('className="dp-segmented"');
     /* Nine options and five-with-an-outlier stay lists — his own line, and the
-       arm exists so a later tidy-up does not "finish the job". */
-    expect(code(cr)).toContain('<SelectItem value="stripe_refund">');
+       arm exists so a later tidy-up does not "finish the job".
+       ⚠ This used to pin one literal option, `<SelectItem value="stripe_refund">`.
+       #679 made the nine options derive from `shared/changeRequestLabels.ts`,
+       so the literal is gone and the fact it stood for is asserted directly
+       instead: the type field is a Select fed by all nine types. The old form
+       was also weaker — it stayed green while eight of the nine were deleted,
+       so long as that one survived. */
+    expect(code(cr), "the type field renders SelectItems").toMatch(
+      /CHANGE_REQUEST_TYPES\.map\([\s\S]{0,200}<SelectItem/,
+    );
+    expect(CHANGE_REQUEST_TYPES.length, "nine options, still a list").toBe(9);
     const audit = DIALOG_FILES.find((d) => d.rel.endsWith("AuditActionModals.tsx"))!.src;
     expect(code(audit)).toContain('<SelectItem value="permanent">');
     expect(code(audit), "duration is not segmented").not.toContain('className="dp-segmented"');

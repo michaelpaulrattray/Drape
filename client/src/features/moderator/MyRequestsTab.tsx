@@ -22,17 +22,8 @@ import { useState } from "react";
 import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
+import { changeRequestTypeLabel } from "@shared/changeRequestLabels";
 
-const TYPE_LABELS: Record<string, string> = {
-  refund_credits: "Refund credits",
-  add_credits: "Add credits",
-  flag_account: "Flag account",
-  note_incident: "Note incident",
-  suspend_user: "Suspend user",
-  unsuspend_user: "Unsuspend user",
-  block_ip: "Block IP",
-  other: "Other",
-};
 
 /** Waiting on somebody is the only state a moderator needs to act on. */
 const ATTENTION_STATUS = new Set(["pending"]);
@@ -75,7 +66,7 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
             <RowId>#{request.id}</RowId> {request.title}
           </>
         }
-        meta={`${TYPE_LABELS[request.type] || request.type} · about ${request.targetUserName || `user ${request.targetUserId}`}`}
+        meta={`${changeRequestTypeLabel(request.type)} · about ${request.targetUserName || `user ${request.targetUserId}`}`}
       />,
       <StatePill
         key="status"
