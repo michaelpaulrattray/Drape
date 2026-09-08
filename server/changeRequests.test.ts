@@ -249,9 +249,87 @@ vi.mock("./db", () => ({
 }));
 
 // ============================================================
+// THE PRODUCT'S OWN VOCABULARIES, READ OFF THE RUNNING ROUTERS
+// ============================================================
+/*
+ * Every list in this file used to be typed out by hand, and three of them had
+ * drifted from the product without a single arm going red (#679, #681). These
+ * readers exist so no arm below has to state a vocabulary the routers already
+ * declare. Each REFUSES rather than returning an empty list -- a reader that
+ * reads nothing agrees with everything.
+ */
+type RouterWithProcedures = {
+  _def: { procedures: Record<string, { _def: { inputs: unknown[] } }> };
+};
+
+/**
+ * zod 4 keeps a wrapped schema's real one under `_def.innerType`, so an
+ * `.optional()` object -- which `listChangeRequests` declares, because it takes
+ * no argument at all from `BillingTab`-style callers -- has no `.shape` of its
+ * own. Unwrap, then read.
+ */
+function unwrapSchema<T extends { _def?: { innerType?: unknown } }>(schema: T | undefined): T | undefined {
+  let node = schema;
+  for (let hop = 0; node && hop < 5; hop++) {
+    const inner = node._def?.innerType as T | undefined;
+    if (!inner) return node;
+    node = inner;
+  }
+  return node;
+}
+
+function inputShapeOf(router: unknown, procedure: string): Record<string, unknown> {
+  const procedures = (router as unknown as RouterWithProcedures)._def.procedures;
+  const proc = procedures[procedure];
+  if (!proc) throw new Error(`no procedure "${procedure}" on this router`);
+  const declared = proc._def.inputs[0] as { shape?: Record<string, unknown>; _def?: { innerType?: unknown } } | undefined;
+  const schema = unwrapSchema(declared);
+  if (!schema?.shape) throw new Error(`procedure "${procedure}" declares no object input schema`);
+  return schema.shape;
+}
+
+/*
+ * zod 4 wraps an enum in ZodDefault/ZodOptional, so `.options` is one or two
+ * hops in. Measured on zod 4.1.12 rather than assumed: `.default()` is one hop,
+ * `.optional().default()` is two.
+ */
+function enumOptionsOf(router: unknown, procedure: string, field: string): string[] {
+  const declared = inputShapeOf(router, procedure)[field] as
+    | { options?: string[]; _def?: { innerType?: unknown } }
+    | undefined;
+  const options = unwrapSchema(declared)?.options;
+  if (!options?.length) {
+    throw new Error(`"${field}" on "${procedure}" is not an enum this reader can read`);
+  }
+  return [...options];
+}
+
+// ============================================================
 // Change Request Types & Validation
 // ============================================================
-describe("Change Request - Types & Validation", () => {
+describe("Change Request - Types & Validation (DRIVEN and DERIVED)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function modCaller() {
+    return moderatorRouter.createCaller({
+      user: { id: 10, role: "moderator", name: "Mod User", suspendedAt: null },
+    } as never);
+  }
+
+  /** An input that passes every rule, so an arm can change exactly one thing. */
+  function validCreateInput(overrides: Record<string, unknown> = {}) {
+    return {
+      type: "note_incident",
+      priority: "normal",
+      targetUserId: 42,
+      title: "Incident note",
+      description: "Something happened that needs to be recorded",
+      ...overrides,
+    };
+  }
+
   /**
    * This arm used to hand-type EIGHT types and then assert its own list was
    * eight long (#679). The product accepts nine; `stripe_refund` was never
@@ -269,319 +347,148 @@ describe("Change Request - Types & Validation", () => {
     }
   });
 
-  it("should support all 6 status values including pending_execution", () => {
-    const validStatuses = ["pending", "approved", "denied", "cancelled", "expired", "pending_execution"];
-    expect(validStatuses).toHaveLength(6);
+  /*
+   * THIS ARM DECLARED SIX STATUS STRINGS AND ASSERTED ITS OWN ARRAY WAS SIX
+   * LONG. The vocabulary it was describing is declared on the admin list
+   * procedure's own input, one hop away, and nothing compared the two.
+   */
+  it("the status vocabulary is the product's own -- and `all` is a FILTER word, not a status", () => {
+    const declared = enumOptionsOf(changeRequestsRouter, "listChangeRequests", "status");
+    expect(declared).toContain("all");
+    const statuses = declared.filter((s) => s !== "all");
+    expect([...statuses].sort()).toEqual([
+      "approved", "cancelled", "denied", "expired", "pending", "pending_execution",
+    ]);
   });
 
-  it("should support all 4 priority levels", () => {
-    const validPriorities = ["low", "normal", "high", "urgent"];
-    expect(validPriorities).toHaveLength(4);
+  it("the priority levels are the create procedure's own enum, not a copy of it", () => {
+    expect([...enumOptionsOf(moderatorRouter, "createChangeRequest", "priority")].sort()).toEqual([
+      "high", "low", "normal", "urgent",
+    ]);
   });
 
-  it("should require title with minimum 5 characters", () => {
-    const validTitle = "Refund credits for user";
-    const invalidTitle = "Hi";
-    expect(validTitle.length).toBeGreaterThanOrEqual(5);
-    expect(invalidTitle.length).toBeLessThan(5);
+  /*
+   * FOUR ARMS STOOD FOR THE LENGTH RULES and not one of them touched the
+   * product: each declared a string and asserted `String.length` against a
+   * number typed on the line above ("Hi".length < 5). They would have been
+   * green with `.min(5)` deleted from the router. The bounds are DRIVEN now,
+   * and each arm carries the positive control that proves it is not simply
+   * refusing everything.
+   */
+  it("the title bounds are the product's -- too short and too long are both REFUSED", async () => {
+    await expect(
+      modCaller().createChangeRequest(validCreateInput({ title: "Hi" }) as never),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      modCaller().createChangeRequest(validCreateInput({ title: "x".repeat(513) }) as never),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    // POSITIVE CONTROL -- the boundary values themselves are ACCEPTED, so the
+    // two refusals above are the bounds and not a broken fixture.
+    await expect(
+      modCaller().createChangeRequest(validCreateInput({ title: "Fiver" }) as never),
+    ).resolves.toBeDefined();
+    await expect(
+      modCaller().createChangeRequest(validCreateInput({ title: "x".repeat(512) }) as never),
+    ).resolves.toBeDefined();
   });
 
-  it("should require description with minimum 10 characters", () => {
-    const validDesc = "User experienced a service disruption during generation";
-    const invalidDesc = "Bad user";
-    expect(validDesc.length).toBeGreaterThanOrEqual(10);
-    expect(invalidDesc.length).toBeLessThan(10);
+  it("the description bounds are the product's -- too short and too long are both REFUSED", async () => {
+    await expect(
+      modCaller().createChangeRequest(validCreateInput({ description: "Bad user" }) as never),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      modCaller().createChangeRequest(validCreateInput({ description: "x".repeat(5001) }) as never),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    // POSITIVE CONTROL, at both boundaries.
+    await expect(
+      modCaller().createChangeRequest(validCreateInput({ description: "x".repeat(10) }) as never),
+    ).resolves.toBeDefined();
+    await expect(
+      modCaller().createChangeRequest(validCreateInput({ description: "x".repeat(5000) }) as never),
+    ).resolves.toBeDefined();
   });
 
-  it("should enforce title max length of 512 characters", () => {
-    const maxLength = 512;
-    const tooLong = "x".repeat(513);
-    expect(tooLong.length).toBeGreaterThan(maxLength);
+  /*
+   * THESE TWO ASSERTED THAT AN OBJECT LITERAL HELD THE KEYS TYPED INTO IT two
+   * lines above (`expect(refundRequest.creditAmount).toBeGreaterThan(0)`). The
+   * rule they were named for is a real refusal in the procedure body, and it is
+   * driven here -- including the message, because there are four such refusals
+   * in that procedure and a bare BAD_REQUEST does not say which one fired.
+   */
+  it("a credit request with no amount is REFUSED by the product, and says which rule", async () => {
+    for (const type of ["refund_credits", "add_credits"]) {
+      await expect(
+        modCaller().createChangeRequest(validCreateInput({ type }) as never),
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: expect.stringContaining("Credit amount is required"),
+      });
+    }
+    // POSITIVE CONTROL -- with the amount, the same input is accepted.
+    await expect(
+      modCaller().createChangeRequest(
+        validCreateInput({ type: "refund_credits", creditAmount: 50 }) as never,
+      ),
+    ).resolves.toBeDefined();
   });
 
-  it("should enforce description max length of 5000 characters", () => {
-    const maxLength = 5000;
-    const tooLong = "x".repeat(5001);
-    expect(tooLong.length).toBeGreaterThan(maxLength);
+  it("a block_ip request with no address is REFUSED by the product, and says which rule", async () => {
+    await expect(
+      modCaller().createChangeRequest(validCreateInput({ type: "block_ip" }) as never),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: expect.stringContaining("IP address is required"),
+    });
+    // POSITIVE CONTROL.
+    await expect(
+      modCaller().createChangeRequest(
+        validCreateInput({ type: "block_ip", ipAddress: "192.168.1.100" }) as never,
+      ),
+    ).resolves.toBeDefined();
   });
 
-  it("should require creditAmount for credit-related types", () => {
-    const refundRequest = {
-      type: "refund_credits" as const,
-      creditAmount: 50,
-      creditReason: "Service disruption",
-    };
-    expect(refundRequest.creditAmount).toBeGreaterThan(0);
-    expect(refundRequest.creditReason).toBeDefined();
-  });
-
-  it("should require ipAddress for block_ip type", () => {
-    const blockIpRequest = {
-      type: "block_ip" as const,
-      ipAddress: "192.168.1.1",
-    };
-    expect(blockIpRequest.ipAddress).toBeDefined();
-    expect(blockIpRequest.ipAddress.length).toBeGreaterThan(0);
-  });
-
-  it("should allow optional fields", () => {
-    const minimalRequest = {
-      type: "note_incident" as const,
-      priority: "normal" as const,
-      targetUserId: 42,
-      title: "Incident note",
-      description: "Something happened that needs to be recorded",
-    };
-    expect(minimalRequest).not.toHaveProperty("evidenceSummary");
-    expect(minimalRequest).not.toHaveProperty("relatedAuditLogId");
-    expect(minimalRequest).not.toHaveProperty("creditAmount");
-    expect(minimalRequest).not.toHaveProperty("ipAddress");
-  });
+  /*
+   * "should allow optional fields" IS DELETED, category (2) -- worthless. It
+   * built an object with five keys and asserted it did not have the four it had
+   * never been given. There is no reading of it that can fail, and nothing in
+   * the product it could be pointed at: `evidenceSummary`, `relatedAuditLogId`,
+   * `creditAmount` and `ipAddress` are `.optional()` on the schema, which every
+   * driven arm above already exercises by omitting them.
+   */
 });
 
 // ============================================================
-// Change Request CRUD Helpers
+// Change Request CRUD Helpers -- THE WHOLE DESCRIBE IS DELETED (#681)
 // ============================================================
-describe("Change Request - CRUD Helpers", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe("createChangeRequest", () => {
-    it("should create a change request and return the ID", async () => {
-      const { createChangeRequest } = await import("./db");
-      const result = await createChangeRequest({
-        type: "refund_credits",
-        priority: "normal",
-        submittedById: 10,
-        submittedByName: "Mod User",
-        targetUserId: 42,
-        targetUserName: "Test User",
-        title: "Refund credits for service disruption",
-        description: "User experienced a service disruption during generation and lost 50 credits",
-        creditAmount: 50,
-        creditReason: "Service disruption",
-      });
-
-      expect(result.success).toBe(true);
-      expect(result.requestId).toBe(1);
-      expect(createChangeRequest).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: "refund_credits",
-          submittedById: 10,
-          targetUserId: 42,
-          creditAmount: 50,
-        }),
-      );
-    });
-
-    it("should create a flag_account request without credit fields", async () => {
-      const { createChangeRequest } = await import("./db");
-      const result = await createChangeRequest({
-        type: "flag_account",
-        priority: "high",
-        submittedById: 10,
-        submittedByName: "Mod User",
-        targetUserId: 99,
-        targetUserName: "Suspicious User",
-        title: "Flag account for suspicious activity",
-        description: "Multiple rate limit violations detected in the last 24 hours",
-        relatedAuditLogId: 501,
-      });
-
-      expect(result.success).toBe(true);
-      expect(createChangeRequest).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: "flag_account",
-          priority: "high",
-          relatedAuditLogId: 501,
-        }),
-      );
-    });
-
-    it("should create a block_ip request with IP address", async () => {
-      const { createChangeRequest } = await import("./db");
-      const result = await createChangeRequest({
-        type: "block_ip",
-        priority: "urgent",
-        submittedById: 10,
-        submittedByName: "Mod User",
-        targetUserId: 0,
-        title: "Block suspicious IP address",
-        description: "IP address has been making brute force login attempts",
-        ipAddress: "192.168.1.100",
-      });
-
-      expect(result.success).toBe(true);
-      expect(createChangeRequest).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: "block_ip",
-          ipAddress: "192.168.1.100",
-        }),
-      );
-    });
-  });
-
-  describe("getChangeRequestById", () => {
-    it("should return a change request by ID", async () => {
-      const { getChangeRequestById } = await import("./db");
-      const request = await getChangeRequestById(1);
-
-      expect(request).not.toBeNull();
-      expect(request!.id).toBe(1);
-      expect(request!.type).toBe("refund_credits");
-      expect(request!.status).toBe("pending");
-      expect(request!.submittedById).toBe(10);
-      expect(request!.targetUserId).toBe(42);
-      expect(request!.creditAmount).toBe(50);
-    });
-
-    it("should return an approved request with review details", async () => {
-      const { getChangeRequestById } = await import("./db");
-      const request = await getChangeRequestById(2);
-
-      expect(request).not.toBeNull();
-      expect(request!.status).toBe("approved");
-      expect(request!.reviewedById).toBe(1);
-      expect(request!.reviewedByName).toBe("Admin");
-      expect(request!.reviewNotes).toBe("Confirmed suspicious activity");
-      expect(request!.reviewedAt).toBeInstanceOf(Date);
-    });
-
-    it("should return null for non-existent request", async () => {
-      const { getChangeRequestById } = await import("./db");
-      const request = await getChangeRequestById(999);
-      expect(request).toBeNull();
-    });
-  });
-
-  describe("listChangeRequests", () => {
-    it("should return paginated list with summary", async () => {
-      const { listChangeRequests } = await import("./db");
-      const result = await listChangeRequests({ limit: 50, offset: 0 });
-
-      expect(result.requests).toBeInstanceOf(Array);
-      expect(result.total).toBeGreaterThanOrEqual(0);
-      expect(result.summary).toBeDefined();
-      expect(result.summary).toHaveProperty("pendingCount");
-      expect(result.summary).toHaveProperty("approvedCount");
-      expect(result.summary).toHaveProperty("deniedCount");
-      expect(result.summary).toHaveProperty("totalCount");
-    });
-
-    it("should support filtering by status", async () => {
-      const { listChangeRequests } = await import("./db");
-      await listChangeRequests({ status: "pending" });
-
-      expect(listChangeRequests).toHaveBeenCalledWith(
-        expect.objectContaining({ status: "pending" }),
-      );
-    });
-
-    it("should support filtering by type", async () => {
-      const { listChangeRequests } = await import("./db");
-      await listChangeRequests({ type: "refund_credits" });
-
-      expect(listChangeRequests).toHaveBeenCalledWith(
-        expect.objectContaining({ type: "refund_credits" }),
-      );
-    });
-
-    it("should support filtering by priority", async () => {
-      const { listChangeRequests } = await import("./db");
-      await listChangeRequests({ priority: "urgent" });
-
-      expect(listChangeRequests).toHaveBeenCalledWith(
-        expect.objectContaining({ priority: "urgent" }),
-      );
-    });
-  });
-
-  describe("updateChangeRequestStatus", () => {
-    it("should approve a pending request", async () => {
-      const { updateChangeRequestStatus } = await import("./db");
-      const result = await updateChangeRequestStatus(1, {
-        status: "approved",
-        reviewedById: 1,
-        reviewedByName: "Admin",
-        reviewNotes: "Approved - credits will be refunded",
-      });
-
-      expect(result.success).toBe(true);
-      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({
-          status: "approved",
-          reviewedById: 1,
-          reviewedByName: "Admin",
-        }),
-      );
-    });
-
-    it("should deny a pending request", async () => {
-      const { updateChangeRequestStatus } = await import("./db");
-      const result = await updateChangeRequestStatus(1, {
-        status: "denied",
-        reviewedById: 1,
-        reviewedByName: "Admin",
-        reviewNotes: "Insufficient evidence",
-      });
-
-      expect(result.success).toBe(true);
-      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({
-          status: "denied",
-          reviewNotes: "Insufficient evidence",
-        }),
-      );
-    });
-
-    it("should cancel a request by moderator", async () => {
-      const { updateChangeRequestStatus } = await import("./db");
-      const result = await updateChangeRequestStatus(1, {
-        status: "cancelled",
-        reviewedById: 10,
-        reviewedByName: "Mod User",
-        reviewNotes: "No longer needed",
-      });
-
-      expect(result.success).toBe(true);
-    });
-  });
-
-  describe("getChangeRequestsByModerator", () => {
-    it("should return requests for a specific moderator", async () => {
-      const { getChangeRequestsByModerator } = await import("./db");
-      const result = await getChangeRequestsByModerator(10);
-
-      expect(result.requests).toBeInstanceOf(Array);
-      expect(result.total).toBeGreaterThanOrEqual(0);
-      expect(result.summary).toBeDefined();
-      expect(getChangeRequestsByModerator).toHaveBeenCalledWith(10);
-    });
-
-    it("should support filtering by status", async () => {
-      const { getChangeRequestsByModerator } = await import("./db");
-      await getChangeRequestsByModerator(10, { status: "pending" });
-
-      expect(getChangeRequestsByModerator).toHaveBeenCalledWith(
-        10,
-        expect.objectContaining({ status: "pending" }),
-      );
-    });
-
-    it("should support pagination", async () => {
-      const { getChangeRequestsByModerator } = await import("./db");
-      await getChangeRequestsByModerator(10, { limit: 10, offset: 20 });
-
-      expect(getChangeRequestsByModerator).toHaveBeenCalledWith(
-        10,
-        expect.objectContaining({ limit: 10, offset: 20 }),
-      );
-    });
-  });
-});
+/*
+ * SIXTEEN ARMS STOOD HERE AND NONE OF THEM REACHED THE PRODUCT. `./db` is
+ * replaced wholesale by `vi.mock` at the top of this file, so every one of them
+ * imported a `vi.fn()`, called it, and asserted either what the fixture had
+ * been configured to return or that the mock had been called with what the arm
+ * had just passed it:
+ *
+ *     const { getChangeRequestById } = await import("./db");
+ *     const request = await getChangeRequestById(1);
+ *     expect(request!.creditAmount).toBe(50);        // the fixture, 60 lines up
+ *
+ *     await listChangeRequests({ status: "pending" });
+ *     expect(listChangeRequests).toHaveBeenCalledWith(
+ *       expect.objectContaining({ status: "pending" }),   // its own argument
+ *     );
+ *
+ * They were green on the day they were written, green when the helpers they
+ * name changed, and green if `createChangeRequest` were deleted from `server/db`
+ * entirely -- a whole describe of sixteen that cannot fail, under a heading
+ * claiming to cover the CRUD layer. The real db helpers need a database and are
+ * out of a unit suite's reach; what a unit suite CAN reach is the procedures
+ * that call them, and those are driven for real below (`createChangeRequest`,
+ * `getMyChangeRequests`, `listChangeRequests`, `getChangeRequest`,
+ * `reviewChangeRequest`, `executeChangeRequestAfterSlack`), each asserting the
+ * db call as a CONSEQUENCE of the procedure rather than of the test.
+ *
+ * Deleting them removes no coverage, which is the whole finding: the file
+ * reported sixteen arms' worth of it and held none.
+ */
 
 // ============================================================
 // Moderator Change Request Procedures
@@ -693,65 +600,140 @@ describe("Change Request - Moderator Procedures", () => {
       expect(changeRequestTypeLabel("no_such_type")).toBe("no_such_type");
     });
 
-    it("should include credit fields in Slack notification for credit types", () => {
-      const input = {
+    /*
+     * TWO ARMS STOOD HERE THAT BUILT THE SLACK PAYLOAD THEMSELVES -- declaring
+     * a `fields` array, pushing to it under the same `if` the product uses, and
+     * then asserting their own array held what they had just pushed. They were
+     * a transcription of the procedure written as a test of it.
+     *
+     * Driving the real one immediately caught something the transcription could
+     * not: the credit arm asserted a "Credit Reason" field, and the product has
+     * never sent one. `moderator.ts` pushes "Credit Amount", "IP Address" and
+     * "Evidence" and nothing else -- so the suite's only description of the
+     * admin's Slack card named a field that does not exist. That is the THIRD
+     * wrong statement about the product found in this file, after the eight-vs-
+     * nine type count and the five-vs-six sensitive list (#679).
+     */
+    async function slackFieldsFromCreate(input: Record<string, unknown>) {
+      const { sendAdminActionNotification } = await import("./slack/slackNotification");
+      vi.mocked(sendAdminActionNotification).mockClear();
+      await moderatorRouter
+        .createCaller({ user: { id: 10, role: "moderator", name: "Mod User", suspendedAt: null } } as never)
+        .createChangeRequest(input as never);
+      const call = vi.mocked(sendAdminActionNotification).mock.calls[0]?.[0] as
+        | { fields?: Array<{ title: string; value: string }> }
+        | undefined;
+      if (!call?.fields?.length) throw new Error("the create procedure sent no Slack fields to read");
+      return call.fields;
+    }
+
+    it("a credit request's Slack card carries the AMOUNT -- and no Credit Reason field, which the old arm invented", async () => {
+      const fields = await slackFieldsFromCreate({
         type: "refund_credits",
+        priority: "normal",
+        targetUserId: 42,
+        title: "Refund credits for service disruption",
+        description: "User experienced a service disruption during generation and lost 50 credits",
         creditAmount: 50,
         creditReason: "Service disruption",
-      };
+      });
+      expect(fields.find((f) => f.title === "Credit Amount")?.value).toBe("50 credits");
+      expect(fields.map((f) => f.title)).not.toContain("Credit Reason");
 
-      const fields: Array<{ title: string; value: string; short?: boolean }> = [
-        { title: "Type", value: "Refund Credits", short: true },
-        { title: "Priority", value: "Normal", short: true },
-        { title: "Target", value: "Test User (#42)", short: true },
-      ];
-
-      if (input.creditAmount) {
-        fields.push({ title: "Credit Amount", value: `${input.creditAmount} credits`, short: true });
-      }
-      if (input.creditReason) {
-        fields.push({ title: "Credit Reason", value: input.creditReason, short: true });
-      }
-
-      expect(fields.find(f => f.title === "Credit Amount")).toBeDefined();
-      expect(fields.find(f => f.title === "Credit Reason")).toBeDefined();
+      // POSITIVE CONTROL for the absence above -- a field the card DOES carry,
+      // so "not.toContain" is not passing on an empty read (`absence-only
+      // expect passes on nothing`).
+      expect(fields.map((f) => f.title)).toContain("Title");
     });
 
-    it("should include IP address in Slack notification for block_ip type", () => {
-      const input = {
+    it("a block_ip request's Slack card carries the ADDRESS, and a non-IP request does not", async () => {
+      const withIp = await slackFieldsFromCreate({
         type: "block_ip",
+        priority: "urgent",
+        targetUserId: 0,
+        title: "Block suspicious IP address",
+        description: "IP address has been making brute force login attempts",
         ipAddress: "192.168.1.100",
-      };
+      });
+      expect(withIp.find((f) => f.title === "IP Address")?.value).toBe("192.168.1.100");
 
-      const fields: Array<{ title: string; value: string; short?: boolean }> = [
-        { title: "Type", value: "Block IP", short: true },
-      ];
-
-      if (input.ipAddress) {
-        fields.push({ title: "IP Address", value: input.ipAddress, short: true });
-      }
-
-      expect(fields.find(f => f.title === "IP Address")).toBeDefined();
+      // NEGATIVE CONTROL -- the field is conditional, so a request without an
+      // address must not carry it. Without this the arm passes on a card that
+      // always holds every field.
+      const withoutIp = await slackFieldsFromCreate({
+        type: "note_incident",
+        priority: "normal",
+        targetUserId: 42,
+        title: "Incident note",
+        description: "Something happened that needs to be recorded",
+      });
+      expect(withoutIp.map((f) => f.title)).not.toContain("IP Address");
     });
   });
 
   describe("getMyChangeRequests query", () => {
-    it("should return requests for the current moderator", async () => {
+    /*
+     * BOTH ARMS HERE CALLED THE MOCKED db HELPER THEMSELVES and asserted it had
+     * been called with the argument they had just passed it. The procedure was
+     * never invoked, so the fact that actually matters -- that the moderator id
+     * comes from `ctx.user.id` and NOT from input (invariant 3) -- was the one
+     * thing they could not see.
+     */
+    /*
+     * SABOTAGE NOTE, and it is the reason this arm has two halves. The first
+     * shape of it drove the procedure with a forged `submittedById: 999` and
+     * asserted the session id reached the helper -- which reads like invariant
+     * 3 and PROVES NOTHING: the input schema does not declare that field, so
+     * zod strips it before the handler runs, and the arm stayed green with the
+     * handler sabotaged to read `input.submittedById ?? ctx.user.id`. It was a
+     * guard over a defect its own fixture could not express.
+     *
+     * The two halves below are each sabotage-proven: changing what the handler
+     * passes reddens the first, and DECLARING a caller-identity field on the
+     * schema -- which is what would make the forgery reachable in the first
+     * place -- reddens the second.
+     */
+    it("the moderator id handed to the db helper is the SESSION's", async () => {
       const { getChangeRequestsByModerator } = await import("./db");
-      const result = await getChangeRequestsByModerator(10);
+      vi.mocked(getChangeRequestsByModerator).mockClear();
 
-      expect(result.requests).toBeInstanceOf(Array);
-      expect(result.summary).toBeDefined();
-      expect(result.summary.pendingCount).toBeDefined();
+      await moderatorRouter
+        .createCaller({ user: { id: 10, role: "moderator", suspendedAt: null } } as never)
+        .getMyChangeRequests({} as never);
+
+      expect(vi.mocked(getChangeRequestsByModerator).mock.calls[0][0]).toBe(10);
     });
 
-    it("should support status filtering", async () => {
-      const { getChangeRequestsByModerator } = await import("./db");
-      await getChangeRequestsByModerator(10, { status: "approved" });
+    it("and the input declares no caller identity for it to be read from (invariant 3)", () => {
+      const declared = Object.keys(inputShapeOf(moderatorRouter, "getMyChangeRequests"));
+      // Population control -- an empty read would agree with everything.
+      expect(declared).toContain("status");
+      for (const field of declared) {
+        expect(field).not.toMatch(/^(submittedBy|userId|moderatorId|submittedById)/i);
+      }
+    });
 
+    it("a status filter reaches the db helper, and `all` is translated to no filter", async () => {
+      const { getChangeRequestsByModerator } = await import("./db");
+      const caller = moderatorRouter.createCaller({
+        user: { id: 10, role: "moderator", suspendedAt: null },
+      } as never);
+
+      vi.mocked(getChangeRequestsByModerator).mockClear();
+      await caller.getMyChangeRequests({ status: "approved" } as never);
       expect(getChangeRequestsByModerator).toHaveBeenCalledWith(
         10,
         expect.objectContaining({ status: "approved" }),
+      );
+
+      // `all` is a filter word rather than a status, and the procedure turns it
+      // into `undefined` -- the arm that used to stand here could not have
+      // noticed either way, because it never ran the procedure.
+      vi.mocked(getChangeRequestsByModerator).mockClear();
+      await caller.getMyChangeRequests({ status: "all" } as never);
+      expect(getChangeRequestsByModerator).toHaveBeenCalledWith(
+        10,
+        expect.objectContaining({ status: undefined }),
       );
     });
   });
@@ -765,39 +747,58 @@ describe("Change Request - Admin Review Procedures", () => {
     vi.clearAllMocks();
   });
 
+  function adminCallerHere() {
+    return changeRequestsRouter.createCaller({
+      user: { id: 1, role: "admin", email: "admin@example.com", name: "Admin", openId: null, suspendedAt: null },
+      req: { headers: {}, socket: {} },
+    } as never);
+  }
+
   describe("listChangeRequests (admin)", () => {
-    it("should return all change requests with summary", async () => {
+    /*
+     * BOTH ARMS HERE IMPORTED THE MOCKED db HELPER AND CALLED IT THEMSELVES.
+     * The admin procedure was never invoked, so neither arm could have noticed
+     * the `all` translation below, and neither would have gone red if the
+     * procedure stopped passing the filter through at all.
+     */
+    it("the admin list returns the db's summary, and passes a status filter through", async () => {
       const { listChangeRequests } = await import("./db");
-      const result = await listChangeRequests();
+      vi.mocked(listChangeRequests).mockClear();
 
-      expect(result.requests).toBeInstanceOf(Array);
+      const result = await adminCallerHere().listChangeRequests({ status: "pending" } as never);
       expect(result.summary).toBeDefined();
-      expect(result.summary.pendingCount).toBeDefined();
-    });
-
-    it("should support filtering by status", async () => {
-      const { listChangeRequests } = await import("./db");
-      await listChangeRequests({ status: "pending" });
-
       expect(listChangeRequests).toHaveBeenCalledWith(
         expect.objectContaining({ status: "pending" }),
+      );
+    });
+
+    it("`all` is a filter word, not a status -- the procedure sends no status at all", async () => {
+      const { listChangeRequests } = await import("./db");
+      vi.mocked(listChangeRequests).mockClear();
+
+      await adminCallerHere().listChangeRequests({ status: "all" } as never);
+      expect(listChangeRequests).toHaveBeenCalledWith(
+        expect.objectContaining({ status: undefined }),
       );
     });
   });
 
   describe("getChangeRequest (admin)", () => {
-    it("should return a single change request by ID", async () => {
-      const { getChangeRequestById } = await import("./db");
-      const request = await getChangeRequestById(1);
-
-      expect(request).not.toBeNull();
-      expect(request!.id).toBe(1);
+    /*
+     * THE SECOND ARM HERE WAS NAMED "should throw for non-existent request" AND
+     * ASSERTED `expect(request).toBeNull()` on the MOCK -- the title claimed a
+     * throw the arm never asked for, and the procedure does throw. A title is
+     * not an assertion.
+     */
+    it("an existing request comes back whole", async () => {
+      const request = await adminCallerHere().getChangeRequest({ id: 1 } as never);
+      expect(request).toMatchObject({ id: 1, type: "refund_credits" });
     });
 
-    it("should throw for non-existent request", async () => {
-      const { getChangeRequestById } = await import("./db");
-      const request = await getChangeRequestById(999);
-      expect(request).toBeNull();
+    it("a request that does not exist is NOT_FOUND -- the throw the old arm only claimed", async () => {
+      await expect(
+        adminCallerHere().getChangeRequest({ id: 999 } as never),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
     });
   });
 
@@ -864,67 +865,45 @@ describe("Change Request - Admin Review Procedures", () => {
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
     });
 
-    it("should send Slack notification on approval", async () => {
+    /*
+     * THREE ARMS STOOD HERE AND EACH ONE CALLED THE MOCK ITSELF: two invoked
+     * `sendAdminActionNotification` with a payload they had typed and then
+     * asserted it had been called with it, and the third did the same with
+     * `writeImmutableLog`. None of them ran `reviewChangeRequest`. The
+     * procedure genuinely sends both, so all three are driven now.
+     */
+    it("an approval and a denial each announce themselves, in the product's own words", async () => {
       const { sendAdminActionNotification } = await import("./slack/slackNotification");
 
-      await sendAdminActionNotification({
-        title: "✅ Change Request Approved: Refund Credits",
-        description: "Admin approved change request #1",
-        severity: "info",
-        fields: [
-          { title: "Type", value: "Refund Credits", short: true },
-          { title: "Submitted By", value: "Mod User", short: true },
-          { title: "Target", value: "Test User (#42)", short: true },
-          { title: "Review Notes", value: "Approved - credits will be refunded" },
-        ],
-      });
-
+      vi.mocked(sendAdminActionNotification).mockClear();
+      await adminCaller().reviewChangeRequest({
+        id: 1, action: "approved", reviewNotes: "Approved - credits will be refunded",
+      } as never);
       expect(sendAdminActionNotification).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: expect.stringContaining("Approved"),
-        }),
+        expect.objectContaining({ title: expect.stringContaining("Approved") }),
+      );
+
+      vi.mocked(sendAdminActionNotification).mockClear();
+      await adminCaller().reviewChangeRequest({
+        id: 1, action: "denied", reviewNotes: "Insufficient evidence",
+      } as never);
+      expect(sendAdminActionNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ title: expect.stringContaining("Denied") }),
       );
     });
 
-    it("should send Slack notification on denial", async () => {
-      const { sendAdminActionNotification } = await import("./slack/slackNotification");
-
-      await sendAdminActionNotification({
-        title: "❌ Change Request Denied: Refund Credits",
-        description: "Admin denied change request #1",
-        severity: "warning",
-        fields: [
-          { title: "Type", value: "Refund Credits", short: true },
-          { title: "Submitted By", value: "Mod User", short: true },
-          { title: "Review Notes", value: "Insufficient evidence" },
-        ],
-      });
-
-      expect(sendAdminActionNotification).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: expect.stringContaining("Denied"),
-          severity: "warning",
-        }),
-      );
-    });
-
-    it("should write immutable audit log for review actions", async () => {
+    it("a review writes the immutable audit record, as a consequence of the procedure", async () => {
       const { writeImmutableLog } = await import("./security/adminSecurity");
+      vi.mocked(writeImmutableLog).mockClear();
 
-      await writeImmutableLog("change_request_reviewed", {
-        requestId: 1,
-        action: "approved",
-        reviewedBy: 1,
-        reviewedByName: "Admin",
-      });
+      await adminCaller().reviewChangeRequest({
+        id: 1, action: "approved", reviewNotes: "Approved - credits will be refunded",
+      } as never);
 
-      expect(writeImmutableLog).toHaveBeenCalledWith(
-        "change_request_reviewed",
-        expect.objectContaining({
-          requestId: 1,
-          action: "approved",
-        }),
-      );
+      expect(writeImmutableLog).toHaveBeenCalled();
+      const [action, detail] = vi.mocked(writeImmutableLog).mock.calls[0] as [string, Record<string, unknown>];
+      expect(action).toEqual(expect.stringContaining("change_request"));
+      expect(detail).toMatchObject({ requestId: 1 });
     });
   });
 });
@@ -1030,23 +1009,32 @@ describe("Change Request - Security Boundaries (DRIVEN through the real procedur
     });
   });
 
-  it("change request review actions should be limited to approved/denied", () => {
-    const validActions = ["approved", "denied"];
-    expect(validActions).toContain("approved");
-    expect(validActions).toContain("denied");
-    expect(validActions).not.toContain("pending");
-    expect(validActions).not.toContain("cancelled");
-    expect(validActions).not.toContain("expired");
-    expect(validActions).not.toContain("pending_execution");
+  /*
+   * THESE TWO CLOSED A DESCRIBE CALLED "Security Boundaries" BY ASSERTING
+   * LITERALS: one declared `["approved", "denied"]` and asked its own array
+   * what it contained; the other declared `"x".repeat(2001)` and asserted 2001
+   * is more than 2000. Both are real rules on the review procedure's input, and
+   * both are read from it now.
+   */
+  it("the review actions are the product's own enum -- approve and deny, nothing else", () => {
+    const actions = enumOptionsOf(changeRequestsRouter, "reviewChangeRequest", "action");
+    expect([...actions].sort()).toEqual(["approved", "denied"]);
   });
 
-  it("review notes should be limited to 2000 characters", () => {
-    const maxLength = 2000;
-    const validNotes = "Approved after reviewing the evidence";
-    const tooLong = "x".repeat(2001);
+  it("a review note past the product's limit is REFUSED, and one at the limit is accepted", async () => {
+    const caller = changeRequestsRouter.createCaller({
+      user: { id: 1, role: "admin", email: "admin@example.com", name: "Admin", openId: null, suspendedAt: null },
+      req: { headers: {}, socket: {} },
+    } as never);
 
-    expect(validNotes.length).toBeLessThanOrEqual(maxLength);
-    expect(tooLong.length).toBeGreaterThan(maxLength);
+    await expect(
+      caller.reviewChangeRequest({ id: 1, action: "denied", reviewNotes: "x".repeat(2001) } as never),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+
+    // POSITIVE CONTROL at the boundary itself.
+    await expect(
+      caller.reviewChangeRequest({ id: 1, action: "denied", reviewNotes: "x".repeat(2000) } as never),
+    ).resolves.toBeDefined();
   });
 });
 
@@ -1100,408 +1088,75 @@ describe("Change Request - Replaces Escalation", () => {
     expect(moderatorSurface).not.toContain("listChangeRequests");
   });
 
-  it("change request should have structured fields instead of free-text reason", () => {
-    const changeRequest = {
-      type: "refund_credits",
-      priority: "normal",
-      title: "Refund credits for service disruption",
-      description: "Detailed description of the issue",
-      evidenceSummary: "Ticket #12345, screenshots attached",
-      creditAmount: 50,
-      creditReason: "Service disruption",
-    };
-
-    // Structured fields vs old escalation which only had: actionType, targetId, reason, severity
-    expect(changeRequest).toHaveProperty("type");
-    expect(changeRequest).toHaveProperty("priority");
-    expect(changeRequest).toHaveProperty("title");
-    expect(changeRequest).toHaveProperty("description");
-    expect(changeRequest).toHaveProperty("evidenceSummary");
-    expect(changeRequest).toHaveProperty("creditAmount");
-    expect(changeRequest).toHaveProperty("creditReason");
-  });
-
-  it("change requests should be trackable with status workflow", () => {
-    const workflow = {
-      initial: "pending",
-      approvalPath: "pending" as string,
-      denialPath: "pending" as string,
-      cancelPath: "pending" as string,
-    };
-
-    workflow.approvalPath = "approved";
-    workflow.denialPath = "denied";
-    workflow.cancelPath = "cancelled";
-
-    expect(workflow.initial).toBe("pending");
-    expect(workflow.approvalPath).toBe("approved");
-    expect(workflow.denialPath).toBe("denied");
-    expect(workflow.cancelPath).toBe("cancelled");
-  });
+  /*
+   * THE TWO ARMS THAT STOOD HERE ARE #681'S OWN HEADLINE SPECIMENS, AND BOTH
+   * ARE DELETED, category (2) -- worthless.
+   *
+   *   "change request should have structured fields instead of free-text
+   *   reason" declared a seven-key object and then asserted, seven times, that
+   *   the object it had just written held the keys it had just written.
+   *
+   *   "change requests should be trackable with status workflow" declared an
+   *   object of four strings, ASSIGNED three new strings to it, and asserted it
+   *   now held the strings that had been assigned to it two lines above.
+   *
+   * Neither refers to the product in any way, so neither can be pointed at it:
+   * the structured fields are the create procedure's input schema, which the
+   * driven bound arms at the top of this file exercise, and the status workflow
+   * is the vocabulary read off `listChangeRequests` in the same place. There is
+   * nothing here to derive that is not already derived.
+   */
 });
 
 // ============================================================
 // Auto-Execute on Approval Tests
 // ============================================================
 
-describe("Change Request - Auto-Execute on Approval", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe("refund_credits auto-execute", () => {
-    /*
-     * ⚠ AN ARM STOOD HERE that hand-executed the refund: it called the mocked
-     * `updateChangeRequestStatus`, `addCredits` and `logAuditEvent` in the
-     * order the product calls them ("Simulate approval", "Simulate
-     * auto-execute") and then asserted each had been called with what it had
-     * just passed. It was a transcription of `executeChangeRequestAction`'s
-     * `cr_refundCredits` case written as a test of it.
-     *
-     * DELETED, category (3) — covered. `server/adminActionHandlers.test.ts`
-     * drives the real case and asserts the same call, including the `cr-<id>`
-     * reference that makes a repeated approval idempotent, plus the settlement
-     * this arm never mentioned. Filed under 3g's D.
-     */
-    it("should not execute if creditAmount is null or zero", async () => {
-      const { addCredits } = await import("./db");
-
-      // A refund_credits request with no credit amount should not trigger addCredits
-      const shouldExecute = (creditAmount: number | null) => {
-        return creditAmount !== null && creditAmount > 0;
-      };
-
-      expect(shouldExecute(null)).toBe(false);
-      expect(shouldExecute(0)).toBe(false);
-      expect(shouldExecute(50)).toBe(true);
-      expect(addCredits).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("add_credits auto-execute", () => {
-    it("should call addCredits with bonus type when add_credits request is approved", async () => {
-      const { getChangeRequestById, addCredits } = await import("./db");
-
-      const request = await getChangeRequestById(6); // add_credits, creditAmount: 100
-      expect(request!.type).toBe("add_credits");
-      expect(request!.creditAmount).toBe(100);
-
-      const creditResult = await addCredits(
-        request!.targetUserId,
-        request!.creditAmount!,
-        "bonus",
-        `Credits added via change request #6: ${request!.creditReason || request!.title}`,
-        "cr-6"
-      );
-
-      expect(addCredits).toHaveBeenCalledWith(
-        42,
-        100,
-        "bonus",
-        expect.stringContaining("Credits added via change request #6"),
-        "cr-6"
-      );
-      expect(creditResult.success).toBe(true);
-    });
-  });
-
-  describe("suspend_user auto-execute", () => {
-    it("should call suspendUser when suspend_user request is approved", async () => {
-      const { getChangeRequestById, suspendUser } = await import("./db");
-      const { logAuditEvent, AUDIT_ACTIONS } = await import("./auditLog");
-
-      const request = await getChangeRequestById(3); // suspend_user
-      expect(request!.type).toBe("suspend_user");
-
-      const result = await suspendUser(
-        request!.targetUserId,
-        `Suspended via change request #3: ${request!.title}`,
-        1 // admin ID
-      );
-
-      expect(suspendUser).toHaveBeenCalledWith(
-        55, // targetUserId
-        expect.stringContaining("Suspended via change request #3"),
-        1
-      );
-      expect(result.success).toBe(true);
-
-      await logAuditEvent({
-        userId: 1,
-        action: AUDIT_ACTIONS.ACCOUNT_SUSPENDED,
-        resourceType: "user",
-        resourceId: "55",
-        metadata: { reason: request!.title, changeRequestId: 3 },
-        severity: "warning",
-        req: undefined as any,
-      });
-
-      expect(logAuditEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: "admin.account_suspended",
-          resourceType: "user",
-        }),
-      );
-    });
-  });
-
-  describe("unsuspend_user auto-execute", () => {
-    it("should call unsuspendUser when unsuspend_user request is approved", async () => {
-      const { getChangeRequestById, unsuspendUser } = await import("./db");
-      const { logAuditEvent, AUDIT_ACTIONS } = await import("./auditLog");
-
-      const request = await getChangeRequestById(4); // unsuspend_user
-      expect(request!.type).toBe("unsuspend_user");
-
-      const result = await unsuspendUser(request!.targetUserId);
-
-      expect(unsuspendUser).toHaveBeenCalledWith(55);
-      expect(result.success).toBe(true);
-
-      await logAuditEvent({
-        userId: 1,
-        action: AUDIT_ACTIONS.ACCOUNT_UNSUSPENDED,
-        resourceType: "user",
-        resourceId: "55",
-        metadata: { reason: request!.title, changeRequestId: 4 },
-        severity: "info",
-        req: undefined as any,
-      });
-
-      expect(logAuditEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: "admin.account_unsuspended",
-          resourceType: "user",
-        }),
-      );
-    });
-  });
-
-  describe("block_ip auto-execute", () => {
-    it("should call blockIp when block_ip request is approved", async () => {
-      const { getChangeRequestById, blockIp } = await import("./db");
-      const { logAuditEvent, AUDIT_ACTIONS } = await import("./auditLog");
-
-      const request = await getChangeRequestById(5); // block_ip, ipAddress: "192.168.1.100"
-      expect(request!.type).toBe("block_ip");
-      expect(request!.ipAddress).toBe("192.168.1.100");
-
-      const result = await blockIp(
-        request!.ipAddress!,
-        `Blocked via change request #5: ${request!.title}`,
-        1 // admin ID
-      );
-
-      expect(blockIp).toHaveBeenCalledWith(
-        "192.168.1.100",
-        expect.stringContaining("Blocked via change request #5"),
-        1
-      );
-      expect(result.success).toBe(true);
-
-      await logAuditEvent({
-        userId: 1,
-        action: AUDIT_ACTIONS.IP_BLOCKED,
-        resourceType: "ip",
-        resourceId: "192.168.1.100",
-        metadata: { reason: request!.title, changeRequestId: 5 },
-        severity: "warning",
-        req: undefined as any,
-      });
-
-      expect(logAuditEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: "admin.ip_blocked",
-          resourceType: "ip",
-        }),
-      );
-    });
-
-    it("should not execute block_ip if ipAddress is missing", async () => {
-      const { blockIp } = await import("./db");
-
-      const shouldExecute = (ipAddress: string | null) => {
-        return ipAddress !== null && ipAddress.length > 0;
-      };
-
-      expect(shouldExecute(null)).toBe(false);
-      expect(shouldExecute("")).toBe(false);
-      expect(shouldExecute("192.168.1.100")).toBe(true);
-      expect(blockIp).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("non-executable types", () => {
-    it("should NOT auto-execute for flag_account type", async () => {
-      const { addCredits, suspendUser, unsuspendUser, blockIp } = await import("./db");
-
-      const nonExecutableTypes = ["flag_account", "note_incident", "other"];
-      for (const type of nonExecutableTypes) {
-        const shouldAutoExecute = !["flag_account", "note_incident", "other"].includes(type);
-        expect(shouldAutoExecute).toBe(false);
-      }
-
-      // None of the action functions should be called
-      expect(addCredits).not.toHaveBeenCalled();
-      expect(suspendUser).not.toHaveBeenCalled();
-      expect(unsuspendUser).not.toHaveBeenCalled();
-      expect(blockIp).not.toHaveBeenCalled();
-    });
-
-    it("should NOT auto-execute for note_incident type", async () => {
-      const { getChangeRequestById } = await import("./db");
-
-      const request = await getChangeRequestById(7); // note_incident
-      expect(request!.type).toBe("note_incident");
-
-      // note_incident should not trigger any auto-execution
-      const autoExecuteTypes = ["refund_credits", "add_credits", "suspend_user", "unsuspend_user", "block_ip"];
-      expect(autoExecuteTypes.includes(request!.type)).toBe(false);
-    });
-  });
-
-  describe("denial should NOT auto-execute", () => {
-    it("should not call any action functions when a request is denied", async () => {
-      const { getChangeRequestById, updateChangeRequestStatus, addCredits, suspendUser, unsuspendUser, blockIp } = await import("./db");
-
-      const request = await getChangeRequestById(1); // refund_credits
-      expect(request!.type).toBe("refund_credits");
-
-      // Deny the request
-      await updateChangeRequestStatus(1, {
-        status: "denied",
-        reviewedById: 1,
-        reviewedByName: "Admin",
-        reviewNotes: "Insufficient evidence",
-      });
-
-      // Auto-execute should only happen on approval, not denial
-      const shouldAutoExecute = (action: string) => action === "approved";
-      expect(shouldAutoExecute("denied")).toBe(false);
-
-      // None of the action functions should be called for denial
-      expect(addCredits).not.toHaveBeenCalled();
-      expect(suspendUser).not.toHaveBeenCalled();
-      expect(unsuspendUser).not.toHaveBeenCalled();
-      expect(blockIp).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("execution failure handling", () => {
-    it("should handle addCredits failure gracefully", async () => {
-      const { addCredits } = await import("./db");
-      
-      // Override mock to simulate failure
-      (addCredits as any).mockResolvedValueOnce({ success: false, error: "Insufficient balance" });
-
-      const result = await addCredits(42, 50, "refund", "Test refund", "cr-test");
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("Insufficient balance");
-    });
-
-    it("should handle suspendUser failure gracefully", async () => {
-      const { suspendUser } = await import("./db");
-
-      (suspendUser as any).mockResolvedValueOnce({ success: false, error: "User already suspended" });
-
-      const result = await suspendUser(55, "Test suspension", 1);
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("User already suspended");
-    });
-
-    it("should handle blockIp failure gracefully", async () => {
-      const { blockIp } = await import("./db");
-
-      (blockIp as any).mockResolvedValueOnce({ success: false });
-
-      const result = await blockIp("192.168.1.100", "Test block", 1);
-      expect(result.success).toBe(false);
-    });
-
-    it("should catch unexpected errors during auto-execution", async () => {
-      const { addCredits } = await import("./db");
-
-      (addCredits as any).mockRejectedValueOnce(new Error("Database connection lost"));
-
-      try {
-        await addCredits(42, 50, "refund", "Test", "cr-test");
-        // Should not reach here
-        expect(true).toBe(false);
-      } catch (error: any) {
-        expect(error.message).toBe("Database connection lost");
-      }
-    });
-  });
-
-  describe("execution result structure", () => {
-    it("should return executed: false for non-executable types", () => {
-      const executionResult = { executed: false };
-      expect(executionResult.executed).toBe(false);
-      expect(executionResult).not.toHaveProperty("success");
-      expect(executionResult).not.toHaveProperty("error");
-    });
-
-    it("should return executed: true with success for successful execution", () => {
-      const executionResult = { executed: true, success: true };
-      expect(executionResult.executed).toBe(true);
-      expect(executionResult.success).toBe(true);
-    });
-
-    it("should return executed: true with error for failed execution", () => {
-      const executionResult = { executed: true, success: false, error: "Something went wrong" };
-      expect(executionResult.executed).toBe(true);
-      expect(executionResult.success).toBe(false);
-      expect(executionResult.error).toBe("Something went wrong");
-    });
-  });
-
-  describe("Slack notification for auto-execution", () => {
-    it("should send Slack notification after successful auto-execution", async () => {
-      const { sendAdminActionNotification } = await import("./slack/slackNotification");
-
-      await sendAdminActionNotification({
-        title: "⚙️✅ Auto-Executed: Refund Credits",
-        description: "Action auto-executed for change request #1. Execution succeeded.",
-        severity: "info",
-        fields: [
-          { title: "Request", value: "#1", short: true },
-          { title: "Type", value: "Refund Credits", short: true },
-          { title: "Target", value: "Test User", short: true },
-          { title: "Execution", value: "Success", short: true },
-        ],
-      });
-
-      expect(sendAdminActionNotification).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: expect.stringContaining("Auto-Executed"),
-          severity: "info",
-        }),
-      );
-    });
-
-    it("should send critical Slack notification after failed auto-execution", async () => {
-      const { sendAdminActionNotification } = await import("./slack/slackNotification");
-
-      await sendAdminActionNotification({
-        title: "⚙️❌ Auto-Executed: Suspend User",
-        description: "Action auto-executed for change request #3. Execution failed: User already suspended.",
-        severity: "critical",
-        fields: [
-          { title: "Request", value: "#3", short: true },
-          { title: "Type", value: "Suspend User", short: true },
-          { title: "Target", value: "Bad Actor", short: true },
-          { title: "Execution", value: "Failed", short: true },
-        ],
-      });
-
-      expect(sendAdminActionNotification).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: "critical",
-        }),
-      );
-    });
-  });
-});
+/*
+ * THE "Auto-Execute on Approval" DESCRIBE -- NINETEEN ARMS -- IS DELETED IN
+ * FULL, category (3): every case in it is covered for real elsewhere, and not
+ * one of the nineteen ran a line of product code.
+ *
+ * What they did instead, in three shapes:
+ *
+ *   1. FETCH A FIXTURE, THEN HAND-EXECUTE THE PRODUCT. The add_credits,
+ *      suspend_user, unsuspend_user and block_ip arms each read a mock fixture,
+ *      then called the mocked `addCredits`/`suspendUser`/`blockIp` and
+ *      `logAuditEvent` themselves, in the order the product calls them, and
+ *      asserted each had been called with what the arm had just passed. They
+ *      were `executeChangeRequestAction` transcribed into a test of itself.
+ *
+ *   2. DECLARE A PREDICATE AND ASSERT IT. "should not execute if creditAmount
+ *      is null or zero" declared `const shouldExecute = (n) => n !== null &&
+ *      n > 0` and then checked that function against three numbers. The
+ *      product's rule was never consulted.
+ *
+ *   3. ASSERT A LITERAL. The three "execution result structure" arms declared
+ *      `{ executed: false }` and asserted it was `{ executed: false }`.
+ *
+ * WHERE THE REAL COVERAGE IS, read at the artifacts rather than assumed:
+ *
+ *   server/adminActionHandlers.test.ts drives the actual handlers --
+ *   `cr_suspendUser` (including its refusal to suspend an ADMIN, which no arm
+ *   here imagined), `cr_unsuspendUser`, `cr_refundCredits` (including the
+ *   `cr-<id>` reference that makes a repeated approval idempotent),
+ *   `cr_addCredits` (including that a BONUS and a REFUND are not the same row),
+ *   `cr_blockIP` and `cr_stripeRefund` -- and each has its own "does NOT settle
+ *   when the action failed" arm, which is the failure handling these four
+ *   "gracefully" arms were reaching for by re-configuring a mock to fail and
+ *   then asserting the mock had failed.
+ *
+ *   server/adminActionDispatch.test.ts drives the routing, and its first arm
+ *   holds the SIX cr_ actions to the one declaration.
+ *
+ *   The denial case -- "denial should NOT auto-execute" -- is driven in this
+ *   file, in "denying a request marks it denied, and executes nothing", where
+ *   the procedure runs and the dispatcher is asserted never to have been
+ *   called. The sensitive-approval case is driven beside it.
+ *
+ * Deleting nineteen arms that cannot fail, whose subject is covered by arms
+ * that can, is the whole of #681 in one block.
+ */
 
 // ============================================================
 // Slack Approval Gating for Sensitive Change Requests
@@ -1616,200 +1271,170 @@ describe("Change Request - Slack Approval Gating", () => {
     });
   });
 
+  /**
+   * Every arm below sets its OWN fixture. `vi.clearAllMocks()` clears CALLS and
+   * not implementations, so a `mockResolvedValue` left by a neighbour is still
+   * in force when the next arm runs -- which is how one of the arms deleted
+   * here came to depend on the row its predecessor happened to leave behind.
+   */
+  async function givenRequest(row: Record<string, unknown>) {
+    const { getChangeRequestById } = await import("./db");
+    vi.mocked(getChangeRequestById).mockResolvedValue(row as never);
+  }
+
+  function adminCallerG() {
+    return changeRequestsRouter.createCaller({
+      user: { id: 1, role: "admin", email: "admin@example.com", name: "Admin", openId: null, suspendedAt: null },
+      req: { headers: {}, socket: {} },
+    } as never);
+  }
+
   describe("sensitive approval flow", () => {
     /*
-     * ⚠ AN ARM STOOD HERE that called the mocked `updateChangeRequestStatus`
-     * itself with a `pending_execution` payload and then asserted it had been
-     * called with it ("Simulate the procedure setting pending_execution").
+     * THREE ARMS STOOD HERE. One declared a `result` object with
+     * `pendingExecution: true` typed into it and asserted it was true. One
+     * iterated `SENSITIVE_TYPES` and asserted each member of that array was in
+     * that array. The third called the mocked `updateChangeRequestStatus`
+     * itself and asserted its own call.
      *
-     * DELETED, category (3) — covered. `reviewChangeRequest` is driven for
-     * real in "reviewChangeRequest mutation" above, where approving the same
-     * sensitive fixture is asserted to set `pending_execution` rather than
-     * approving outright, because the procedure actually ran. Filed under
-     * 3g's D.
+     * The first two are DELETED, category (3) -- the sensitive road is driven
+     * in "approving a SENSITIVE request sets pending_execution rather than
+     * approving outright" above, where the procedure actually runs. The third
+     * named a real fact nothing else asserted -- that the Slack action id is
+     * STORED on the request -- so it is driven rather than dropped.
      */
-    it("should return pendingExecution: true for sensitive type approval", () => {
-      const result = {
-        success: true,
-        action: "approved" as const,
-        message: "Change request #1 approved — awaiting Slack confirmation before execution",
-        slackApprovalId: "test-action-id-123",
-        slackSent: true,
-        pendingExecution: true,
-        executionResult: { executed: false },
-      };
-
-      expect(result.pendingExecution).toBe(true);
-      expect(result.slackApprovalId).toBeDefined();
-      expect(result.executionResult.executed).toBe(false);
-    });
-
-    it("should store slackApprovalId on the change request", async () => {
+    it("the Slack approval id is stored on the request, by the procedure", async () => {
       const { updateChangeRequestStatus } = await import("./db");
+      await givenRequest({
+        id: 1, type: "refund_credits", status: "pending", submittedById: 10,
+        targetUserId: 42, creditAmount: 50, title: "Refund", reviewNotes: null,
+      });
+      vi.mocked(updateChangeRequestStatus).mockClear();
 
-      await updateChangeRequestStatus(1, {
-        status: "pending_execution",
-        slackApprovalId: "test-slack-action-id",
-      }, "pending_execution");
+      await adminCallerG().reviewChangeRequest({ id: 1, action: "approved" } as never);
 
+      /*
+       * TWO writes, and the second is the one this arm is about: the procedure
+       * moves the request to `pending_execution` first, then stores the Slack
+       * action id in a SECOND call that also passes the expected current status
+       * as a third argument -- an optimistic-concurrency guard. Asserting two
+       * arguments would not have matched it at all, which is what the first
+       * shape of this arm did.
+       */
       expect(updateChangeRequestStatus).toHaveBeenCalledWith(
         1,
         expect.objectContaining({
-          slackApprovalId: "test-slack-action-id",
+          status: "pending_execution",
+          slackApprovalId: expect.any(String),
         }),
         "pending_execution",
       );
     });
-
-    it("should route each sensitive type through Slack", () => {
-      for (const type of SENSITIVE_TYPES) {
-        const isSensitive = SENSITIVE_TYPES.includes(type);
-        expect(isSensitive).toBe(true);
-      }
-    });
   });
 
   describe("non-sensitive approval flow", () => {
-    it("should NOT set pending_execution for non-sensitive type approval", async () => {
-      const { getChangeRequestById } = await import("./db");
+    /*
+     * BOTH ARMS ASSERTED A `result` LITERAL they had typed, one of them after
+     * reading a fixture that played no part in the assertion. The distinction
+     * they were reaching for is real and is driven here: a non-sensitive type
+     * goes STRAIGHT to its final status, with no Slack hop in between.
+     */
+    it("a non-sensitive approval goes straight to approved -- no pending_execution, no Slack id", async () => {
+      const { updateChangeRequestStatus } = await import("./db");
+      await givenRequest({
+        id: 7, type: "note_incident", status: "pending", submittedById: 10,
+        targetUserId: 42, title: "Note", reviewNotes: null,
+      });
+      expect(SENSITIVE_TYPES).not.toContain("note_incident");
+      vi.mocked(updateChangeRequestStatus).mockClear();
 
-      const request = await getChangeRequestById(7); // note_incident (non-sensitive)
-      expect(request).not.toBeNull();
-      expect(SENSITIVE_TYPES.includes(request!.type)).toBe(false);
+      await adminCallerG().reviewChangeRequest({ id: 7, action: "approved" } as never);
 
-      // Non-sensitive types go directly to approved status
-      const result = {
-        success: true,
-        action: "approved" as const,
-        message: "Change request #7 has been approved",
-        executionResult: { executed: false },
-      };
-
-      expect(result).not.toHaveProperty("pendingExecution");
-      expect(result).not.toHaveProperty("slackApprovalId");
-    });
-
-    it("should process non-sensitive denials immediately", () => {
-      const result = {
-        success: true,
-        action: "denied" as const,
-        message: "Change request #7 has been denied",
-        executionResult: { executed: false },
-      };
-
-      expect(result.action).toBe("denied");
-      expect(result).not.toHaveProperty("pendingExecution");
+      const [, update] = vi.mocked(updateChangeRequestStatus).mock.calls[0] as [number, Record<string, unknown>];
+      expect(update.status).toBe("approved");
+      expect(update).not.toHaveProperty("slackApprovalId");
     });
   });
 
   describe("denial bypasses Slack", () => {
-    it("should NOT route through Slack when denying a sensitive type", () => {
-      // Even for sensitive types, denial is immediate (no Slack needed)
-      const request = { type: "suspend_user", status: "pending" };
-      const action = "denied";
-
-      const shouldRouteToSlack = action === "approved" && SENSITIVE_TYPES.includes(request.type);
-      expect(shouldRouteToSlack).toBe(false);
-    });
-
-    it("should set status directly to denied for sensitive type denial", async () => {
+    /*
+     * ONE ARM DECLARED `const shouldRouteToSlack = action === "approved" && ...`
+     * and asserted its own boolean; the other called the mocked db helper
+     * itself. The claim -- that even a SENSITIVE type is denied outright,
+     * without waiting for Slack -- is worth keeping, so it is driven.
+     */
+    it("a SENSITIVE type is denied outright, with no Slack hop and nothing executed", async () => {
       const { updateChangeRequestStatus } = await import("./db");
-
-      await updateChangeRequestStatus(3, {
-        status: "denied",
-        reviewedById: 1,
-        reviewedByName: "Admin",
-        reviewNotes: "Insufficient evidence",
+      const { requestApproval } = await import("./slack/slackApproval");
+      await givenRequest({
+        id: 3, type: "suspend_user", status: "pending", submittedById: 10,
+        targetUserId: 55, title: "Suspend", reviewNotes: null,
       });
+      expect(SENSITIVE_TYPES).toContain("suspend_user");
+      vi.mocked(updateChangeRequestStatus).mockClear();
+      vi.mocked(requestApproval).mockClear();
+
+      await adminCallerG().reviewChangeRequest({
+        id: 3, action: "denied", reviewNotes: "Insufficient evidence",
+      } as never);
 
       expect(updateChangeRequestStatus).toHaveBeenCalledWith(
         3,
         expect.objectContaining({ status: "denied" }),
       );
+      expect(requestApproval).not.toHaveBeenCalled();
     });
   });
 
   describe("checkChangeRequestSlackStatus", () => {
-    it("should return null slackStatus for non-pending_execution requests", () => {
-      const request = { status: "approved", slackApprovalId: null };
-      const result = request.status !== "pending_execution" || !request.slackApprovalId
-        ? { status: request.status, slackStatus: null, message: "Already executed" }
-        : null;
-
-      expect(result).not.toBeNull();
-      expect(result!.slackStatus).toBeNull();
+    /*
+     * FOUR ARMS STOOD HERE AND ALL FOUR BUILT THEIR OWN `result` OBJECT and
+     * asserted its fields -- including the message strings, which they typed
+     * themselves. The procedure exists, is an `adminProcedure`, and was driven
+     * by nothing at all. It is driven now.
+     */
+    it("a request that is not awaiting Slack reports no Slack status", async () => {
+      await givenRequest({ id: 1, status: "approved", slackApprovalId: null });
+      const result = await adminCallerG().checkChangeRequestSlackStatus({ changeRequestId: 1 } as never);
+      expect(result).toMatchObject({ status: "approved", slackStatus: null });
     });
 
-    it("should return pending slackStatus for pending_execution requests", () => {
-      const mockSlackStatus = {
-        status: "pending" as const,
-        resolvedBy: null,
-        resolvedAt: null,
-        expiresAt: new Date(Date.now() + 300000),
-      };
+    it("a request awaiting Slack reports what Slack says -- pending, approved and denied", async () => {
+      await givenRequest({ id: 3, status: "pending_execution", slackApprovalId: "slack-1" });
 
-      const result = {
-        status: "pending_execution",
-        slackStatus: mockSlackStatus.status,
-        message: "Awaiting Slack approval",
-      };
+      slackApprovalStatus.mockReturnValue({ status: "pending", resolvedBy: null, resolvedAt: null });
+      expect(
+        await adminCallerG().checkChangeRequestSlackStatus({ changeRequestId: 3 } as never),
+      ).toMatchObject({ status: "pending_execution", slackStatus: "pending" });
 
-      expect(result.slackStatus).toBe("pending");
-      expect(result.status).toBe("pending_execution");
+      slackApprovalStatus.mockReturnValue({ status: "approved", resolvedBy: "slack-admin" });
+      expect(
+        await adminCallerG().checkChangeRequestSlackStatus({ changeRequestId: 3 } as never),
+      ).toMatchObject({ slackStatus: "approved", resolvedBy: "slack-admin" });
+
+      slackApprovalStatus.mockReturnValue({ status: "denied", resolvedBy: "slack-admin" });
+      expect(
+        await adminCallerG().checkChangeRequestSlackStatus({ changeRequestId: 3 } as never),
+      ).toMatchObject({ slackStatus: "denied" });
     });
 
-    it("should return approved slackStatus when Slack approves", () => {
-      const result = {
-        status: "pending_execution",
-        slackStatus: "approved" as const,
-        resolvedBy: "slack-admin",
-        message: "Slack approved — ready to execute",
-      };
-
-      expect(result.slackStatus).toBe("approved");
-      expect(result.resolvedBy).toBe("slack-admin");
-    });
-
-    it("should return denied slackStatus when Slack denies", () => {
-      const result = {
-        status: "pending_execution",
-        slackStatus: "denied" as const,
-        resolvedBy: "slack-admin",
-        message: "Slack denied — action will not execute",
-      };
-
-      expect(result.slackStatus).toBe("denied");
+    it("an approval Slack has forgotten reads as not_found rather than as pending", async () => {
+      await givenRequest({ id: 3, status: "pending_execution", slackApprovalId: "slack-1" });
+      slackApprovalStatus.mockReturnValue(undefined);
+      expect(
+        await adminCallerG().checkChangeRequestSlackStatus({ changeRequestId: 3 } as never),
+      ).toMatchObject({ slackStatus: "not_found" });
     });
   });
 
   describe("executeChangeRequestAfterSlack", () => {
-    it("should reject execution if request is not pending_execution", () => {
-      const request = { status: "approved", slackApprovalId: null };
-      const shouldReject = request.status !== "pending_execution" || !request.slackApprovalId;
-      expect(shouldReject).toBe(true);
-    });
-
-    it("should reject execution if Slack status is not approved", () => {
-      const slackStatuses = ["pending", "denied", "expired"];
-      for (const status of slackStatuses) {
-        const shouldExecute = status === "approved";
-        expect(shouldExecute).toBe(false);
-      }
-    });
-
-    it("should allow execution when Slack status is approved", () => {
-      const slackStatus = { status: "approved" };
-      expect(slackStatus.status === "approved").toBe(true);
-    });
-
     /*
-     * ⚠ TWO ARMS STOOD HERE that called the mocked `updateChangeRequestStatus`
-     * with a denied/expired payload and then asserted it had been called with
-     * it ("Simulate Slack denial → update CR to denied"). The real procedure —
-     * `executeChangeRequestAfterSlack` — was never touched.
-     *
-     * It is driven now, on a double of the Slack approval store rather than a
-     * webhook. Filed under 3g's D.
+     * THREE ARMS STOOD HERE and each declared a boolean and asserted it:
+     * `const shouldReject = request.status !== "pending_execution" || ...;
+     * expect(shouldReject).toBe(true)`. They restated the procedure's guard in
+     * the test's own words, one line before asserting the restatement. All
+     * three conditions are DRIVEN by the four arms below -- a denial, an
+     * expiry, an approval, and a request that was never pending Slack at all.
      */
     /** A request that HAS been admin-approved and is awaiting Slack. */
     async function givenPendingExecution() {
@@ -1892,50 +1517,48 @@ describe("Change Request - Slack Approval Gating", () => {
   });
 
   describe("Slack approval action types", () => {
-    it("should have cr_ prefixed action types for all sensitive change request types", () => {
-      const crActions = [
-        "cr_suspendUser",
-        "cr_unsuspendUser",
-        "cr_refundCredits",
-        "cr_addCredits",
-        "cr_blockIP",
-      ];
-
-      expect(crActions).toHaveLength(5);
-      crActions.forEach(action => {
-        expect(action).toMatch(/^cr_/);
-      });
+    /*
+     * A THIRD WRONG NUMBER, and #681 did not know about this one -- it named
+     * the eight-vs-nine type count and the five-vs-six sensitive list. This arm
+     * hand-typed FIVE `cr_` actions and asserted its own array was five long.
+     * The product declares SIX: `cr_stripeRefund` was missing here too, in the
+     * same file, from the same drift, for the same reason.
+     */
+    it("the cr_ actions are the product's own, and every one is prefixed", () => {
+      const actions = Object.values(CHANGE_REQUEST_ACTION_BY_TYPE);
+      expect(actions).toHaveLength(6);
+      expect([...actions].sort()).toEqual([
+        "cr_addCredits", "cr_blockIP", "cr_refundCredits",
+        "cr_stripeRefund", "cr_suspendUser", "cr_unsuspendUser",
+      ]);
+      for (const action of actions) expect(action).toMatch(/^cr_/);
     });
 
-    it("should map cr_ actions to correct labels", () => {
-      const ACTION_LABELS: Record<string, string> = {
-        cr_suspendUser: "CR: Suspend User",
-        cr_unsuspendUser: "CR: Unsuspend User",
-        cr_refundCredits: "CR: Refund Credits",
-        cr_addCredits: "CR: Add Credits",
-        cr_blockIP: "CR: Block IP",
-      };
-
-      expect(ACTION_LABELS["cr_suspendUser"]).toContain("Suspend");
-      expect(ACTION_LABELS["cr_refundCredits"]).toContain("Refund");
-      expect(ACTION_LABELS["cr_blockIP"]).toContain("Block");
-    });
+    /*
+     * A FOURTH WRONG STATEMENT ABOUT THE PRODUCT, and this one is not a count.
+     * "should map cr_ actions to correct labels" declared its own label map --
+     * `cr_suspendUser: "CR: Suspend User"` -- and asserted that map contained
+     * "Suspend". The product's labels read "Change Request: Suspend User". So
+     * the suite's only description of what an admin sees in Slack used a prefix
+     * the product has never sent, and its assertions were loose enough
+     * (`toContain("Suspend")`) that the difference could not show.
+     *
+     * DELETED rather than derived, and the reason is stated so the next reader
+     * does not re-derive it: `ACTION_LABELS` is module-private in
+     * `server/slack/slackApproval.ts` and that module is mocked in this file,
+     * so there is nothing here to read. Exporting it is a product change, and
+     * this card is test-only by its own terms. Filed on #681 instead.
+     */
   });
 
-  describe("pending_execution status in summary", () => {
-    it("should include pendingExecutionCount in list summary", () => {
-      const summary = {
-        pendingCount: 3,
-        approvedCount: 5,
-        deniedCount: 2,
-        pendingExecutionCount: 1,
-        totalCount: 11,
-      };
-
-      expect(summary).toHaveProperty("pendingExecutionCount");
-      expect(summary.pendingExecutionCount).toBe(1);
-    });
-  });
+  /*
+   * "should include pendingExecutionCount in list summary" IS DELETED,
+   * category (2). It declared a five-key summary object and asserted the object
+   * held the key and the value it had just been given. The real summary is
+   * built inside the db helper, which this suite mocks wholesale, so there is
+   * no product reading available at this level -- and the admin list
+   * procedure's own passthrough is already driven above.
+   */
 
   describe("end-to-end flow simulation", () => {
     /*
@@ -1959,7 +1582,17 @@ describe("Change Request - Slack Approval Gating", () => {
         req: { headers: {}, socket: {} },
       } as never);
 
-      // 1. the admin approves a SENSITIVE request — it goes to pending_execution
+      // 1. the admin approves a SENSITIVE request - it goes to pending_execution.
+      //
+      // The starting row is set HERE rather than inherited. This arm used to
+      // rely on whichever fixture the preceding describe happened to leave on
+      // the mock -- `vi.clearAllMocks()` clears calls, not implementations --
+      // which is the same "a fixture inherited from a neighbour is not a
+      // fixture" note its own sibling below already carries.
+      vi.mocked(getChangeRequestById).mockResolvedValue({
+        id: 1, type: "refund_credits", status: "pending", submittedById: 10,
+        targetUserId: 42, creditAmount: 50, title: "Refund", reviewNotes: null,
+      } as never);
       await caller.reviewChangeRequest({ id: 1, action: "approved" } as never);
       expect(updateChangeRequestStatus).toHaveBeenCalledWith(
         1,
