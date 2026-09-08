@@ -1,7 +1,7 @@
 {
-  "edition": 302,
-  "updatedAt": "2026-09-08T08:20:00Z",
-  "shift": "Foreman (Opus) - the staff panel stops shouting, and a stuck money-instrument card got its answer",
+  "edition": 303,
+  "updatedAt": "2026-09-08T10:10:00Z",
+  "shift": "Foreman (Opus) - your moderators' own request list was showing them a code word instead of a name",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-08T07:04:06.126Z",
+      "readAt": "2026-09-08T10:03:21.521Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4383,9 +4383,16 @@
   ],
   "pipeline": [
     {
+      "id": "pr-680-type-labels-679",
+      "title": "Your moderators' own request list showed them 'stripe_refund' instead of 'Stripe refund'",
+      "status": "merged",
+      "prNumber": 680,
+      "note": "A moderator files a Stripe refund request, then looks at their own list of requests - and the kind of request came back as the raw code word rather than its name. The cause is the sort of thing that only shows up when you go looking: the wording of those nine request kinds was typed out by hand in SEVEN separate places, and when Stripe refunds were added, six of the seven were updated. The seventh was that list. Nobody was careless.\n\nThere is now one place that says what each kind is called, and all seven read from it. Two of the seven were in the test suite itself, and both were quietly stating the wrong number - one insisted there were eight kinds when there are nine, three sections above another test a previous shift had added saying exactly that. It had added the right check and left the wrong one standing.\n\nA new check sweeps every file in the app for anyone writing that list out again, and it was deliberately broken six different ways to prove it actually catches them. The reviewer passed it and found an eighth copy nobody had spotted - the type filter on your own admin page - which would have silently never offered a tenth kind. That is fixed here too. Looked at in the running app in both themes, before and after."
+    },
+    {
       "id": "pr-677-staff-copy-428",
       "title": "Your staff panel stops shouting: Approve Refund becomes Approve refund, and the last light-only file goes dark-safe",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 677,
       "note": "Thirty-seven action labels across the change-requests page and its review panel. Also fixes an attachments strip that drew a near-white card in dark mode. Looked at in both themes before shipping; the reviewer passed it and its three notes were taken in one go."
     },
@@ -4658,6 +4665,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0908g-foreman",
+      "title": "The queue: 78 open, 15 nobody has looked at in a week - and tonight the small-fix band read the same way the bug band has",
+      "severity": "info",
+      "state": "open",
+      "detail": "78 cards open, 15 with no comment, no close and no code near them for seven days. Steady rather than growing. One closed tonight (#679) and one written (#681).\n\nThe part worth your attention: the last three nights reported that your Bugs switch overstates what a shift can actually pick up. Tonight the Small fixes band was read the same way, card by card at the code, and it reads similarly - of the oldest ones, several end in a decision that is yours rather than a shift's: which of two identical drawings changes and to what (#394), whether a rule sits under every row or only under a total (#419), whether a control that says 30 seconds should change its words or its speed (#455), and one that says in its own body that nothing moves until you answer (#276). Those are not stuck; they are correctly waiting.\n\nThis is the same measurement #663 is about. It is not a complaint - a queue full of decisions is what a queue looks like when the buildable work has been built. It matters only because the number under your switch counts cards, and a shift can only take some of them."
+    },
+    {
       "id": "nights-blind-to-backlog-675",
       "title": "Your nights went quiet for 90 minutes today with 57 jobs waiting - fixed",
       "detail": "You asked why no shift had run for two hours. Here is the honest answer. Until today the thing that decides whether to start a night shift watched two lists: anything you marked urgent, and your NEXT UP queue. All weekend your NEXT UP queue was what kept the nights ticking over - every ninety minutes a shift woke up, saw work on your list, and got on with something from the background switches instead. At 12:55 today your last NEXT UP card was closed, and NEXT UP went empty for the first time since the team was built. The heartbeat stopped with it. Your seven background switches were all ON with 57 jobs sitting under them, and nothing that starts a shift was looking at them. It would have stayed asleep until an eight-hour safety timer. Fixed tonight: the starter now reads your switch panel directly. Driven against the real thing this evening, it counts Bugs 8, Performance 5, Housekeeping 11, Process 14, Small fixes 12, Casting upkeep 7 and says start a shift. Your master switch still turns everything off, and anything you mark urgent or put in NEXT UP still comes first.",
@@ -4676,7 +4690,7 @@
       "title": "The queue: 77 open, 15 nobody has looked at in a week - and your Bugs switch is overstating itself for a third night",
       "detail": "77 cards open, 15 with no comment, no close and no code near them for seven days. Steady rather than growing. The part worth your attention is the same one as the last two nights, and tonight it was checked card by card rather than taken on trust: your Bugs switch says 7, and six of those seven end in a decision only you can make - a price question, a product call, or a change to what the casting engine is told. One was takeable and it was taken. So the honest number of bug cards a shift can pick up on its own is about one, not seven. Card #663 is exactly this gap, and it has now shown up three nights running rather than once. Two new cards were written tonight rather than worked: your sign-in page is still hard light (116 hard-coded colours, the exact pattern the staff pages were rebuilt to retire) and needs one word from you on whether it should follow the theme at all; and the same staff labels are typed three more times on the server, where nothing reads them today.",
       "severity": "info",
-      "state": "open"
+      "state": "resolved"
     },
     {
       "id": "queue-shape-0908d-foreman",
@@ -5030,7 +5044,7 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-08T07:04:05.330Z",
+    "readAt": "2026-09-08T10:03:20.592Z",
     "items": []
   }
 }
