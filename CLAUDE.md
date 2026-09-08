@@ -388,9 +388,11 @@ work is either one of its shifts or must behave like one. The binding pieces:
   a hunt for a `skip-review` label nobody applied — which is what the tool used
   to tell you.
 - **The founder steers from the Desk, and the Desk is `/admin/crew` in the
-  product** — his own switch-over order, 2026-08-26: *"once its all live ensure
-  that the live crew tab is the new desk and everything is pointed towards it to
-  be updated rather than the old desk."* The claude.ai artifact page is RETIRED:
+  product** — his own switch-over order, 2026-08-26 (terminal), recorded in the
+  night-shift standing orders (`.agents/foreman/prompt.md`, which is untracked)
+  and, from *"ensure"* onward, in briefing edition 4 at `fd994c23`: *"once its
+  all live ensure that the live crew tab is the new desk and everything is
+  pointed towards it to be updated rather than the old desk."* The claude.ai artifact page is RETIRED:
   a read-only mirror nobody updates, never read for input. ⚠ **And there are no
   "journal entries" any more** — #293 removed the journal, and his cardless
   replies land in the **General box** (*"Keep a General box."*). What is a ruling
