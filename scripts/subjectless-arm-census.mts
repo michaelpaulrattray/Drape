@@ -39,7 +39,6 @@
  */
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 const IGNORE = new Set([
   "expect", "it", "test", "describe", "vi", "z",
@@ -149,13 +148,22 @@ export function testFilesUnder(roots: string[]): string[] {
   return out;
 }
 
-/* ⚠ Windows: `import.meta.url` is `file:///C:/…` while `process.argv[1]` is
- * `C:\…`, so the usual ``file://${argv[1]}`` comparison NEVER matches — the
- * script then prints nothing and exits 0, a silent no-op indistinguishable
- * from a clean run. Compared as resolved paths instead. */
-const invokedDirectly =
-  process.argv[1] !== undefined &&
-  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+/*
+  RUN DIRECTLY? ASK THE PLATFORM, NOT `argv[1]` (#668).
+
+  ⚠ THE WARNING THIS COMMENT USED TO CARRY IS THE REASON THE LINE CHANGED, so
+  it is kept rather than deleted: `import.meta.url` is `file:///C:/...` on
+  Windows while `process.argv[1]` is a backslashed path, so the usual
+  comparison NEVER matches -- the script then prints nothing and exits 0, a
+  silent no-op indistinguishable from a clean run. This file worked around it
+  by comparing RESOLVED paths, which was the strongest of the four hand-rolled
+  spellings in the tree and still a hand-rolled spelling.
+
+  `import.meta.main` is Node 24's own answer. No argv, no path resolution,
+  nothing to spell wrong. Driven both ways under `tsx` (run directly: true;
+  imported: false), because tsx and not bare node is what runs these.
+*/
+const invokedDirectly = import.meta.main;
 
 if (invokedDirectly) {
   const files = testFilesUnder(["server", "client/src", "shared"]);

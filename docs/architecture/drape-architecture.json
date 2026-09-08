@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6a27492f7f5b3766"
+    "sourceFingerprint": "6a81665e83f4b882"
   },
   "domains": [
     {
@@ -13524,6 +13524,10 @@
     {
       "id": "test:server/segmentsOnFaceEndpoint.test.ts",
       "path": "server/segmentsOnFaceEndpoint.test.ts"
+    },
+    {
+      "id": "test:server/selfInvocationCheck.test.ts",
+      "path": "server/selfInvocationCheck.test.ts"
     },
     {
       "id": "test:server/serverResilience.test.ts",

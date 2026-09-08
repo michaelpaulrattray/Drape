@@ -41,8 +41,6 @@
  */
 
 /** Words that carry no distinguishing weight when matched inside a `saw`. */
-import { resolve as resolvePath } from "node:path";
-import { fileURLToPath } from "node:url";
 const NOISE = new Set([
   "with", "and", "the", "her", "his", "their", "one", "each", "both", "pair",
   "matching", "visible", "worn", "that", "this", "from", "into", "onto", "over",
@@ -221,8 +219,22 @@ const CASES: Array<{ kind: "POSITIVE" | "NEGATIVE"; why: string; asked: string; 
   the class the strict parse exists to close. Five modules in `scripts/lib`
   carried it; `server/spendingScriptArguments.test.ts` now pins all five.
 */
-const invokedDirectly = process.argv[1] !== undefined
-  && resolvePath(process.argv[1]) === fileURLToPath(import.meta.url);
+/*
+  RUN DIRECTLY? ASK THE PLATFORM, NOT `argv[1]` (#668).
+
+  `import.meta.main` is Node 24's own answer: it needs no argv, no path
+  resolution, and has nothing to spell wrong. What it replaces was one of four
+  hand-rolled spellings of the same question, and the idiom's failure mode is
+  documented in this repository BY ONE OF THE FILES THAT GOT IT WRONG --
+  `import.meta.url` is `file:///C:/...` on Windows while `process.argv[1]` is a
+  backslashed path, so the comparison never matches, the block never fires, and
+  the script exits 0 having done nothing. A silent no-op that reads exactly
+  like a clean run.
+
+  Driven both ways under `tsx` (run directly: true; imported: false), because
+  tsx and not bare node is what actually runs these.
+*/
+const invokedDirectly = import.meta.main;
 
 if (invokedDirectly && process.argv.includes("--prove")) {
   let failed = 0;
