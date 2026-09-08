@@ -145,9 +145,25 @@ export const moderatorRouter = router({
         sortBy: input?.sortBy || "createdAt",
         sortOrder: input?.sortOrder || "desc",
       });
+      /*
+       * #700 — an EXPLICIT projection, not a spread of the db row. The
+       * safety used to live entirely in `listAllUsers`' own select: widen
+       * that select for some other staff feature and the new column arrived
+       * on a moderator's wire with nothing here saying no. Invariant 8 wants
+       * this by construction rather than by the helper remembering.
+       * Driven by `server/moderator.test.ts`, whose fixture seeds the
+       * forbidden six so a spread regression reddens.
+       */
       return {
         users: result.users.map(user => ({
-          ...user,
+          id: user.id,
+          openId: user.openId,
+          name: user.name,
+          email: user.email,
+          avatarUrl: user.avatarUrl,
+          role: user.role,
+          suspendedReason: user.suspendedReason,
+          frozenAt: user.frozenAt,
           suspendedAt: user.suspendedAt?.toISOString() || null,
           lockedUntil: user.lockedUntil?.toISOString() || null,
           createdAt: user.createdAt.toISOString(),
@@ -164,9 +180,26 @@ export const moderatorRouter = router({
       const { getUserFullDetails } = await import("../db");
       const result = await getUserFullDetails(input.userId);
       if (!result) return null;
+      /* #700 — explicit projection, same reasoning as `listUsers` above. */
       return {
         user: {
-          ...result.user,
+          id: result.user.id,
+          openId: result.user.openId,
+          name: result.user.name,
+          displayName: result.user.displayName,
+          email: result.user.email,
+          avatarUrl: result.user.avatarUrl,
+          bannerUrl: result.user.bannerUrl,
+          bio: result.user.bio,
+          role: result.user.role,
+          storageUsed: result.user.storageUsed,
+          storageLimit: result.user.storageLimit,
+          suspendedReason: result.user.suspendedReason,
+          suspendedBy: result.user.suspendedBy,
+          frozenAt: result.user.frozenAt,
+          frozenReason: result.user.frozenReason,
+          frozenBy: result.user.frozenBy,
+          failedLoginAttempts: result.user.failedLoginAttempts,
           suspendedAt: result.user.suspendedAt?.toISOString() || null,
           lockedUntil: result.user.lockedUntil?.toISOString() || null,
           createdAt: result.user.createdAt.toISOString(),

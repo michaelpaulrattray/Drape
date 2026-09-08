@@ -303,9 +303,23 @@ export const usersRouter = router({
         sortOrder: input?.sortOrder || "desc",
       });
 
+      /*
+       * #700 — an EXPLICIT projection, not a spread of the db row. Widening
+       * `listAllUsers`' select for some other staff feature used to put the
+       * new column straight onto an admin's wire with nothing here saying no.
+       * Invariant 8 by construction. Driven in
+       * `server/adminUserProjection.test.ts`, whose fixture seeds the
+       * forbidden six so a spread regression reddens.
+       */
       return {
         users: result.users.map(user => ({
-          ...user,
+          id: user.id,
+          openId: user.openId,
+          name: user.name,
+          email: user.email,
+          avatarUrl: user.avatarUrl,
+          role: user.role,
+          suspendedReason: user.suspendedReason,
           suspendedAt: user.suspendedAt?.toISOString() || null,
           frozenAt: user.frozenAt?.toISOString() || null,
           lockedUntil: user.lockedUntil?.toISOString() || null,
@@ -332,9 +346,25 @@ export const usersRouter = router({
       
       if (!result) return null;
 
+      /* #700 — explicit projection, same reasoning as `listUsers` above. */
       return {
         user: {
-          ...result.user,
+          id: result.user.id,
+          openId: result.user.openId,
+          name: result.user.name,
+          displayName: result.user.displayName,
+          email: result.user.email,
+          avatarUrl: result.user.avatarUrl,
+          bannerUrl: result.user.bannerUrl,
+          bio: result.user.bio,
+          role: result.user.role,
+          storageUsed: result.user.storageUsed,
+          storageLimit: result.user.storageLimit,
+          suspendedReason: result.user.suspendedReason,
+          suspendedBy: result.user.suspendedBy,
+          frozenReason: result.user.frozenReason,
+          frozenBy: result.user.frozenBy,
+          failedLoginAttempts: result.user.failedLoginAttempts,
           suspendedAt: result.user.suspendedAt?.toISOString() || null,
           frozenAt: result.user.frozenAt?.toISOString() || null,
           lockedUntil: result.user.lockedUntil?.toISOString() || null,
