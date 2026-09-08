@@ -50,6 +50,7 @@
  * a new persistent process, which `PROGRAM.md` makes a founder-announced act.
  */
 import {
+  CARD_REF_STORED_LENGTH,
   CREW_SHIFT_SEATS,
   CREW_SHIFT_WORK_KINDS,
   findCardCollisions,
@@ -305,6 +306,14 @@ try {
       It fires at the moment the card is DECLARED, which is the moment the
       answer is cheapest — before a branch, before a line.
 
+      ⚠ IT IS A SELECT THEN AN INSERT, SO A SECONDS-WIDE RACE REMAINS AND IS
+      ACCEPTED RATHER THAN UNNOTICED: two seats declaring the same card within
+      the same moment both pass. The origin incident was THREE MINUTES apart,
+      which is the scale this class actually occurs at, and closing the window
+      properly would need a DB constraint this script may not issue (the
+      writer boundary forbids DDL, and MySQL has no partial unique index).
+      Named so the next reader does not believe it is race-proof.
+
       ⚠ It can never cost a night: `--same-card` overrides it, and the refusal
       names the flag. So a crashed shift's stale row costs one word, which is
       the asymmetry `CREW_SHIFT_LIVE_HEARTBEAT_MS` already argues for.
@@ -332,7 +341,7 @@ try {
         + `\n  shift     ${shift.slice(0, 64)}`
         + `\n  seat      ${seat}`
         + `\n  workKind  ${kind}`
-        + `\n  cardRef   ${arg("card")?.slice(0, 64) ?? "(none)"}`
+        + `\n  cardRef   ${arg("card")?.slice(0, CARD_REF_STORED_LENGTH) ?? "(none)"}`
         + `\n  cardTitle ${arg("title")?.slice(0, 255) ?? "(none)"}`
         + `\n  intent    ${intent.slice(0, 500)}`
         + `\n  branch    ${arg("branch")?.slice(0, 255) ?? "(none)"}`
@@ -350,7 +359,10 @@ try {
         shift.slice(0, 64),
         seat,
         kind,
-        arg("card")?.slice(0, 64) ?? null,
+        /* The SAME length `normaliseCardRef` truncates to before comparing —
+           a literal here and a literal there is the drift that made the
+           collision guard silent on long free-text refs (PR #691 review). */
+        arg("card")?.slice(0, CARD_REF_STORED_LENGTH) ?? null,
         arg("title")?.slice(0, 255) ?? null,
         intent.slice(0, 500),
         arg("branch")?.slice(0, 255) ?? null,

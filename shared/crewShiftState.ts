@@ -267,15 +267,29 @@ export function looksLive(
  * argues for one screen up — being wrong toward refusing costs a word, being
  * wrong toward silence costs a session.
  */
+export const CARD_REF_STORED_LENGTH = 64;
+
 export function normaliseCardRef(raw: string | null | undefined): string | null {
   if (typeof raw !== "string") return null;
-  const trimmed = raw.trim();
+  /* ⚠ TRUNCATE FIRST, AND TO THE LENGTH THE COLUMN ACTUALLY HOLDS.
+     `crew-shift-start.mts` stores `--card` as `.slice(0, 64)`; comparing the
+     UNTRUNCATED argument against the truncated row means two seats declaring
+     the same long free-text ref normalise differently and never collide. That
+     is silent on exactly the class this guard defends — a founder-reply
+     description rather than a `#NNN`, which is the origin incident's own shape
+     (found by the PR #691 review). Both sides see what the column can hold. */
+  const trimmed = raw.slice(0, CARD_REF_STORED_LENGTH).trim();
   if (!trimmed) return null;
-  /* `#535`, `535` and `#535 ` are one card. Anything else compares as itself,
-     lowercased, rather than being dropped — a card ref this cannot parse is
-     still worth colliding on. */
+  /* `#535`, `535`, `#535 ` and `#0535` are one card. Anything else compares as
+     itself, lowercased, rather than being dropped — a card ref this cannot
+     parse is still worth colliding on. */
   const numbered = trimmed.match(/^#?(\d+)$/);
-  return numbered ? `#${numbered[1]}` : trimmed.toLowerCase();
+  if (!numbered) return trimmed.toLowerCase();
+  /* Leading zeros are dropped so `#0608` and `#608` are the same card. Guarded
+     on length because past 15 digits `Number` stops being exact, and a ref that
+     long is not a card number anyway. */
+  const digits = numbered[1]!;
+  return digits.length <= 15 ? `#${Number(digits)}` : `#${digits}`;
 }
 
 /** The open runs already naming this card. Empty when the card is absent. */

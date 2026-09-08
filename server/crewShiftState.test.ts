@@ -18,6 +18,7 @@ import {
   CREW_SHIFT_SEATS,
   CREW_SHIFT_STALL_MS,
   CREW_SHIFT_WORK_KINDS,
+  CARD_REF_STORED_LENGTH,
   findCardCollisions,
   looksLive,
   deriveShiftRunState,
@@ -159,6 +160,36 @@ describe("findCardCollisions", () => {
     expect(findCardCollisions([run(1, null)], "#535")).toHaveLength(0);
     // Two cardless runs are not "the same card".
     expect(findCardCollisions([run(1, null)], null)).toHaveLength(0);
+  });
+
+  /*
+   * ⚠ THE TRUNCATION HOLE, FOUND BY THE PR #691 REVIEW, ON THE GUARD'S OWN
+   * DEFENDED CLASS. `crew-shift-start.mts` stores `--card` truncated to the
+   * column's 64 characters; comparing the UNTRUNCATED argument against that row
+   * meant two seats declaring the same long free-text ref — a founder-reply
+   * description, which is the origin incident's own shape — normalised
+   * differently and never collided.
+   */
+  it("a long free-text ref collides with its own stored truncation", () => {
+    const long = `remove the suggestion chips from every brief box and close the cards ${"x".repeat(20)}`;
+    expect(long.length).toBeGreaterThan(CARD_REF_STORED_LENGTH);
+
+    const stored = long.slice(0, CARD_REF_STORED_LENGTH); // what the column holds
+    expect(findCardCollisions([run(1, stored)], long)).toHaveLength(1);
+  });
+
+  it("two long refs that differ only past the stored length are one card, honestly", () => {
+    /* The consequence of the fix, stated rather than discovered: past 64
+       characters the column cannot tell them apart, so neither can this. */
+    const base = "a".repeat(CARD_REF_STORED_LENGTH);
+    expect(findCardCollisions([run(1, `${base}ONE`)], `${base}TWO`)).toHaveLength(1);
+  });
+
+  it("leading zeros do not make a second card", () => {
+    expect(findCardCollisions([run(1, "#0608")], "#608")).toHaveLength(1);
+    expect(findCardCollisions([run(1, "608")], "#00608")).toHaveLength(1);
+    // ...and it is still not a different NUMBER.
+    expect(findCardCollisions([run(1, "#6080")], "#608")).toHaveLength(0);
   });
 
   it("collides on an unparseable ref by its own text, rather than dropping it", () => {
