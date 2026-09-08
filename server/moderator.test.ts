@@ -146,6 +146,27 @@ vi.mock("./db", () => ({
     failedLoginAttempts: 0,
     createdAt: new Date("2025-06-01"),
     lastSignedIn: new Date("2026-01-15"),
+    /*
+     * ⚠ THE FORBIDDEN SIX ARE SEEDED HERE ON PURPOSE, AND THE INVARIANT-8 ARM
+     * BELOW CANNOT FAIL WITHOUT THEM (PR #698 review, round 2).
+     *
+     * That arm asserts these six never cross the boundary — but the fixture
+     * held none of them, so `getUserDetails`' explicit projection regressing to
+     * `user: { ...user }` would have left every key coming from a clean
+     * fixture and all six assertions green. It could only ever have caught
+     * someone writing `passwordHash: user.passwordHash` deliberately, which is
+     * not how `passwordHash` reached `auth.me`.
+     *
+     * With them seeded, a spread LEAKS them and the arm reddens — driven, not
+     * argued. This is the very class this file was repaired for, surviving in
+     * the one arm the rewrite kept verbatim.
+     */
+    passwordHash: "seeded-forbidden-hash",
+    apiKey: "seeded-forbidden-key",
+    stripeCustomerId: "cus_seededforbidden",
+    masterPrompt: "seeded forbidden master prompt",
+    technicalSchema: { seeded: "forbidden" },
+    preferences: { seeded: "forbidden" },
   }),
   getBlockedIps: vi.fn().mockResolvedValue({
     ips: [
