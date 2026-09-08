@@ -130,13 +130,17 @@ export function FeedbackForm({ mode, onDone }: { mode: FeedbackMode; onDone: () 
  * this wide (the textarea reads comfortably at it). Two panels that agree on a
  * number are not one fact wearing two names; binding them would make a future
  * change to either one silently move the other.
+ *
+ * ⚠ **THE SHELL ITSELF IS NOT HERE ANY MORE (#388).** The border, the radius
+ * and the background were written out three times across this panel, the help
+ * menu and the account menu, and had already drifted; they live once in
+ * `.dp-floatpanel` (`foundation.css`), and every consumer of this const wears
+ * that class. What stays here is what belongs to THIS panel alone — its width,
+ * its padding and its shadow.
  */
 export const FEEDBACK_PANEL_STYLE = {
   zIndex: 50,
   width: 264,
   padding: 'var(--s-6)',
-  borderRadius: 'var(--r-md)',
-  border: '1px solid var(--borderCard)',
-  background: 'var(--surface)',
   boxShadow: 'var(--shadowPop)',
 } as const;

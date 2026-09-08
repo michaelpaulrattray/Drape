@@ -45,7 +45,7 @@ export function ReportBugButton() {
           ref={panelRef}
           role="dialog"
           aria-label="Report a bug"
-          className="dp-menu"
+          className="dp-floatpanel dp-menu"
           {...surfaceProps}
           style={{ ...panelStyle, ...FEEDBACK_PANEL_STYLE }}
         >

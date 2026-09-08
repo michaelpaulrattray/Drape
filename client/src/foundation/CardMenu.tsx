@@ -153,7 +153,7 @@ export function CardMenu({
           */
           <span
             ref={panel.panelRef}
-            className="dpc-cardmenu__panel"
+            className="dp-floatpanel dpc-cardmenu__panel"
             role="menu"
             style={panel.panelStyle}
             {...panel.surfaceProps}
