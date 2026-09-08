@@ -23,6 +23,12 @@
  * source, with a positive control — the house idiom from
  * `section05-guard.test.ts`).
  *
+ * ⚠ THE CARD NUMBER IS IN COMMENTS, NEVER IN A `describe` STRING. `#699` is a
+ * valid three-digit hex literal, so inside a string the token guard
+ * (`client/src/foundation/token-guard.test.ts`) cannot tell it from a colour —
+ * it reddened the gate on this file's first push and said exactly that. The
+ * guard strips comments, which is where a card reference belongs.
+ *
  * THE TRAP THE CARD NAMED, and it has its own arm: the gate is deliberately
  * false while the session is loading. A test that skipped that term would
  * read "authorised" for the wrong reason.
@@ -46,7 +52,8 @@ const settled = (role: string | null | undefined) => ({
   role,
 });
 
-describe("#699 — who the moderator panel admits", () => {
+/* card #699 */
+describe("the moderator panel gate — who it admits", () => {
   it("a MODERATOR is admitted", () => {
     expect(isModeratorPanelUnauthorized(settled("moderator"))).toBe(false);
   });
@@ -73,7 +80,8 @@ describe("#699 — who the moderator panel admits", () => {
   });
 });
 
-describe("#699 — the two terms that are not about the role", () => {
+/* card #699 */
+describe("the moderator panel gate — the two terms that are not about the role", () => {
   it("a session still LOADING is not refused — the card's own named trap", () => {
     /*
       The panel's guard ladder is loading -> unauthenticated -> unauthorised,
@@ -97,7 +105,8 @@ describe("#699 — the two terms that are not about the role", () => {
   });
 });
 
-describe("#699 — isStaffRole, the rule the two call sites now share", () => {
+/* card #699 */
+describe("isStaffRole — the rule the two call sites now share", () => {
   it("admits exactly the two staff roles and nothing else", () => {
     expect(isStaffRole("moderator")).toBe(true);
     expect(isStaffRole("admin")).toBe(true);
@@ -114,7 +123,8 @@ describe("#699 — isStaffRole, the rule the two call sites now share", () => {
   });
 });
 
-describe("#699 — the component still USES the rule rather than re-deriving it", () => {
+/* card #699 */
+describe("the component still USES the rule rather than re-deriving it", () => {
   /*
     The arms above prove the LOGIC. These prove the WIRING — that a future
     edit does not quietly put an inline comparison back, which is exactly the

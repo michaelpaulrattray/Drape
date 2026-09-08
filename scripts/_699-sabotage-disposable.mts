@@ -147,6 +147,8 @@ function runSuite(): { failed: string[]; total: number } {
   return { failed: arms.filter(a => a.status === "failed").map(a => a.title).sort(), total: arms.length };
 }
 
+let EXIT_CODE = 0;
+
 function main(): void {
   console.log("=== BASELINE: the suite must be GREEN before any sabotage ===");
   const base = runSuite();
@@ -191,8 +193,14 @@ function main(): void {
   if (findings.length > 0) {
     console.log("\nFINDINGS:");
     for (const f of findings) console.log(`  - ${f}`);
+    EXIT_CODE = 1;
   }
 }
 
 main();
-process.exit(0);
+/* PR #701 review, finding 1 - working law 2 pointed at the driver itself.
+   An unconditional exit(0) meant a run whose arms MISBEHAVED still read as
+   success to any wrapper, CI step or && chain: the instrument could print
+   FINDINGS and pass. On the sibling driver this repair caught two stale
+   expectations on its very first run. */
+process.exit(EXIT_CODE);
