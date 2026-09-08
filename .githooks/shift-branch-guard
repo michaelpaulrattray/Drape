@@ -1,0 +1,84 @@
+# Sourced, never executed — `. "$(dirname "$0")/shift-branch-guard"`.
+#
+# THE R3 CONDITION AND ITS REFUSAL, IN ONE PLACE BECAUSE IT HAS TWO CONSUMERS
+# (#611). `.githooks/pre-commit` ARM 1 asks it before an ordinary commit;
+# `.githooks/prepare-commit-msg` ARM 1B asks it on the roads git skips
+# pre-commit on — revert, cherry-pick and a replayed rebase. The moment a rule
+# has two readers, a copy in each is the drift this repository has been bitten
+# by before — which is why `.githooks/atlas-paths` exists, and this follows it.
+#
+# What is NOT shared is deliberate: each hook works out WHICH BRANCH is being
+# committed onto for itself, and only the main-tree test and the refusal live
+# here. `pre-commit` reads HEAD and stops. The backstop reads HEAD too, and
+# falls back to git's rebase state file when HEAD is DETACHED — which is what
+# a replayed rebase commits on, and where a `symbolic-ref` read returns nothing
+# at all. Two ways of naming the branch, one answer about what to do with it.
+
+# Is this the repository's MAIN working tree, rather than a linked worktree?
+#
+# The first `worktree` line of the porcelain listing is always the main working
+# tree; every linked worktree follows it. Both readings come from git, so a
+# path-shape difference between them (separators, case, a junction) cannot make
+# the two disagree the way a hand-built path would.
+#
+# ⚠ IT ANSWERS "NO" WHEN IT CANNOT TELL. A guard that cannot establish where it
+# is must not refuse a commit — that is the one failure mode that would stop the
+# founder's own sessions working, and it is the opposite of invariant 7's
+# posture on purpose: the arms this feeds are BACKSTOPS on a road that already
+# has a written record, not the only thing standing between a secret and the
+# world.
+drape_in_main_working_tree() {
+  drape__toplevel=$(git rev-parse --show-toplevel 2>/dev/null) || return 1
+  [ -n "$drape__toplevel" ] || return 1
+  drape__main=$(git worktree list --porcelain 2>/dev/null | sed -n '1s/^worktree //p')
+  [ -n "$drape__main" ] || return 1
+  [ "$drape__toplevel" = "$drape__main" ]
+}
+
+# The refusal both arms print. $1 is the branch, $2 the road in the founder's
+# words ("this commit", "that revert") so the message names what was actually
+# refused rather than a hook.
+drape_refuse_shift_branch() {
+  echo "" >&2
+  echo "REFUSED — '$1' is a shift branch and this is the MAIN working tree." >&2
+  echo "" >&2
+  echo "A team/* branch is committed from its own worktree, never from the shared" >&2
+  echo "tree that other sessions are also editing. $2 would land on it here:" >&2
+  echo "" >&2
+  echo "  npx tsx scripts/shift-worktree.mts add <slug>" >&2
+  echo "  git worktree add ../drape-shift-<slug> -b team/<slug>" >&2
+  echo "" >&2
+  # ⚠ THIS USED TO PROMISE "'git checkout main' — that is never refused", AND
+  # THAT WAS AN OVERSTATEMENT ON THE SEQUENCER ROADS (PR #671 review, finding
+  # 3). Nothing is committed, but the operation's changes are left STAGED, and
+  # a cherry-pick leaves CHERRY_PICK_HEAD behind — so git itself refuses that
+  # checkout the moment those changes conflict with main. A message that
+  # guarantees an exit and then does not deliver one is worse than no message.
+  #
+  # ⚠ THE REVIEWER'S REPAIR WAS A CONDITIONAL NAMING THE ABORT FOR THE ROAD IN
+  # PROGRESS, AND IT WAS DRIVEN BEFORE IT WAS TAKEN: at prepare-commit-msg time
+  # git has written NO sequencer state yet. Measured on a refused revert,
+  # `REVERT_HEAD`, `CHERRY_PICK_HEAD`, `sequencer`, `rebase-merge` and
+  # `rebase-apply` are all absent — they appear only after the hook returns. So
+  # a conditional here would fall through to the plain checkout on exactly the
+  # road the finding is about, which is the failure wearing a fix. The honest
+  # answer is a message that is true on every road and promises nothing.
+  #
+  # ⚠ AND `git revert --abort` IS DELIBERATELY NOT IN THIS LIST, WHICH IS THE
+  # SECOND THING DRIVING IT TAUGHT. A refused revert leaves NO sequencer state
+  # at all — only its staged change — so that command errors with "no revert in
+  # progress" on the commonest road of the lot. It was in the list until an arm
+  # was written for it and went red, which is the whole argument for pinning a
+  # message's promises instead of writing them. The three named below are each
+  # driven; a refused revert or a refused `--no-verify` commit leaves staged
+  # changes and nothing to abort, and `git checkout main` is the answer there.
+  echo "Nothing was committed. What that operation staged is still staged." >&2
+  echo "To leave this state, whichever road you were on:" >&2
+  echo "" >&2
+  echo "  git cherry-pick --abort  /  git rebase --abort  /  git merge --abort" >&2
+  echo "  git checkout main        (once the tree is clean)" >&2
+  echo "" >&2
+  echo "(docs/RETRO_LOG.md R3 — a terminal commit has landed on a shift branch" >&2
+  echo "this way more than once. Never --no-verify.)" >&2
+  echo "" >&2
+}

@@ -63,15 +63,26 @@
 #
 #   ARM 3, the stale map — BACKSTOPPED. `.githooks/pre-push` ARM 2 runs the
 #     rite's own freshness checks before any branch push (#606, #519).
-#   ARM 1, the shared-tree cross-commit (R3) — NOT backstopped, and it is the
-#     one that matters, because "under deploy-on-merge every rollback proof is a
-#     revert" makes this a road shifts walk on purpose. A `git revert` on a
-#     `team/*` branch from the MAIN working tree commits with no refusal, which
-#     is the R3 incident verbatim. Filed as issue #611 rather than fixed here.
+#   ARM 1, the shared-tree cross-commit (R3) — BACKSTOPPED since #611.
+#     `.githooks/prepare-commit-msg` refuses a commit landing on a `team/*`
+#     branch from the main tree on all three of these roads. It shares this
+#     arm's condition and its refusal through `.githooks/shift-branch-guard`
+#     rather than restating them, so the rule cannot become two rules. Read
+#     that hook's header before changing either: it carries the measured table
+#     of which hooks FIRE and which can REFUSE on which road — including why
+#     `post-checkout`, which #611 itself recommended, cannot refuse anything,
+#     and why the `reference-transaction` version that also worked was
+#     discarded (seven invocations per commit, fourteen per checkout).
 #   ARM 2, the control byte (R4) — NOT backstopped, and the exposure is small:
 #     a replayed commit's bytes were scanned when it was first created. It bites
 #     only on a cherry-pick of a commit made with --no-verify or authored
 #     outside this repository.
+#     ⚠ SINCE #611 THE ROAD TO BACKSTOPPING IT IS CHEAP AND OPEN, and that is
+#     recorded rather than taken: `prepare-commit-msg` runs with the index
+#     already staged, so this arm's `git diff --cached` scan would work there
+#     unchanged. It was left because #611 scoped itself to ARM 1, because the
+#     scan would then run twice on every ordinary commit, and because nothing
+#     has measured the exposure as worth that. Filed on #611, not forgotten.
 #
 # THE ESCAPE IS FIXING THE COMMIT, NOT --no-verify. Driven by
 # server/preCommitGate.test.ts against real temporary repositories.
@@ -87,25 +98,19 @@ atlas_merge_regenerated=0
 "$(dirname "$0")/atlas-regenerate" || exit 1
 
 # ---------------------------------------------------------------- ARM 1 (R3)
+# The condition and the refusal are SOURCED, not written here: this arm has a
+# second reader since #611 — .githooks/prepare-commit-msg, the backstop for the
+# three roads git skips this hook on — and a rule with two readers kept as two
+# copies is working law 4's own shape. What stays here is the question THIS
+# hook asks: what is HEAD. The backstop asks it of HEAD too and then, when HEAD
+# is DETACHED (a rebase replay), of git's own rebase state file.
+. "$(dirname "$0")/shift-branch-guard"
+
 branch=$(git symbolic-ref --short -q HEAD 2>/dev/null)
 case "$branch" in
   team/*)
-    toplevel=$(git rev-parse --show-toplevel 2>/dev/null)
-    # The first `worktree` line of the porcelain listing is always the main
-    # working tree; every linked worktree follows it.
-    main_tree=$(git worktree list --porcelain 2>/dev/null | sed -n '1s/^worktree //p')
-    if [ -n "$toplevel" ] && [ "$toplevel" = "$main_tree" ]; then
-      echo "" >&2
-      echo "REFUSED — '$branch' is a shift branch and this is the MAIN working tree." >&2
-      echo "" >&2
-      echo "A team/* branch is committed from its own worktree, never from the shared" >&2
-      echo "tree that other sessions are also editing:" >&2
-      echo "" >&2
-      echo "  git worktree add ../drape-shift-<slug> -b team/<slug>" >&2
-      echo "" >&2
-      echo "(docs/RETRO_LOG.md R3 — a terminal commit has landed on a shift branch" >&2
-      echo "this way more than once. Never --no-verify.)" >&2
-      echo "" >&2
+    if drape_in_main_working_tree; then
+      drape_refuse_shift_branch "$branch" "This commit"
       exit 1
     fi
     ;;
