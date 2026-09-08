@@ -47,7 +47,10 @@ const CLOSE_SPEC = {
 
 const START_SPEC = {
   value: ["shift", "seat", "kind", "card", "title", "intent", "note", "branch"],
-  boolean: ["dry-run"],
+  /* `same-card` overrides the #608 collision refusal — a shift that really is
+     meant to share a card passes it, so a dead shift's stale row costs one
+     word rather than a night. */
+  boolean: ["dry-run", "same-card"],
 } as const;
 
 describe("the argument reader refuses what it was not asked about", () => {
@@ -246,6 +249,22 @@ describe("and it still accepts the lines a shift actually types", () => {
     expect(args.value("shift")).toBe("foreman-147");
     expect(args.value("seat")).toBe("foreman");
     expect(args.value("branch")).toBeNull();
+  });
+
+  it("accepts the #608 collision override, and still refuses a near-miss of it", () => {
+    const args = parseStrictArgs(
+      ["--shift", "foreman-150", "--seat", "foreman", "--kind", "background",
+       "--card", "#535", "--intent", "sharing a card on purpose", "--same-card"],
+      START_SPEC,
+    );
+    expect(args.flag("same-card")).toBe(true);
+    /* The override is the one flag whose ABSENCE is load-bearing, so a typo of
+       it must refuse rather than silently leave the refusal armed... */
+    expect(() =>
+      parseStrictArgs(["--shift", "x", "--samecard"], START_SPEC),
+    ).toThrow();
+    // ...and not passing it leaves the flag false, which is what arms the guard.
+    expect(parseStrictArgs(["--shift", "x"], START_SPEC).flag("same-card")).toBe(false);
   });
 
   it("accepts the heartbeat", () => {

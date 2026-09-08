@@ -50,8 +50,10 @@
  * a new persistent process, which `PROGRAM.md` makes a founder-announced act.
  */
 import {
+  CARD_REF_STORED_LENGTH,
   CREW_SHIFT_SEATS,
   CREW_SHIFT_WORK_KINDS,
+  findCardCollisions,
   type CrewShiftSeat,
   type CrewShiftWorkKind,
 } from "../shared/crewShiftState.js";
@@ -72,7 +74,7 @@ const TABLE = "crew_shift_runs";
    the instance and leaving its sibling is law 7 half done. */
 const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
   value: ["shift", "seat", "kind", "card", "title", "intent", "note", "branch"],
-  boolean: ["dry-run"],
+  boolean: ["dry-run", "same-card"],
 });
 
 /** `--flag value`, absent ⇒ null. No shorthand and no clustering: one shape. */
@@ -278,14 +280,59 @@ try {
       later one, which is the failure that matters more.
     */
     const [open] = await conn.query<any[]>(
-      `SELECT id, shift, seat, intent, startedAt FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC`,
+      `SELECT id, shift, seat, cardRef, intent, startedAt FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC`,
     );
     if (open.length > 0) {
       console.log(`\n⚠ ${open.length} run(s) still open — another seat, or a shift that died without closing:`);
       for (const row of open) {
-        console.log(`   #${row.id} ${row.shift} (${row.seat}) started ${iso(row.startedAt)} — ${row.intent}`);
+        console.log(
+          `   #${row.id} ${row.shift} (${row.seat})${row.cardRef ? ` on ${row.cardRef}` : ""}`
+          + ` started ${iso(row.startedAt)} — ${row.intent}`,
+        );
       }
       console.log("   If one of these is a dead shift, close it: scripts/crew-shift-close.mts --id <n> --outcome failed\n");
+    }
+
+    /*
+      ⚠ ANOTHER OPEN RUN IS ALREADY ON THIS CARD (#608) — and this one REFUSES,
+      where the warning above does not.
+
+      The two readings are different questions and the answers differ in kind.
+      "Another seat is working" is normal: two seats genuinely share this tree.
+      "Another seat is working THE SAME CARD" is a duplicated session, and the
+      only thing that caught it last time was a merge conflict at push time,
+      forty minutes in.
+
+      It fires at the moment the card is DECLARED, which is the moment the
+      answer is cheapest — before a branch, before a line.
+
+      ⚠ IT IS A SELECT THEN AN INSERT, SO A SECONDS-WIDE RACE REMAINS AND IS
+      ACCEPTED RATHER THAN UNNOTICED: two seats declaring the same card within
+      the same moment both pass. The origin incident was THREE MINUTES apart,
+      which is the scale this class actually occurs at, and closing the window
+      properly would need a DB constraint this script may not issue (the
+      writer boundary forbids DDL, and MySQL has no partial unique index).
+      Named so the next reader does not believe it is race-proof.
+
+      ⚠ It can never cost a night: `--same-card` overrides it, and the refusal
+      names the flag. So a crashed shift's stale row costs one word, which is
+      the asymmetry `CREW_SHIFT_LIVE_HEARTBEAT_MS` already argues for.
+    */
+    const collisions = findCardCollisions(open, arg("card"));
+    if (collisions.length > 0 && !ARGS.flag("same-card")) {
+      const them = collisions
+        .map((row) => `   #${row.id} ${row.shift} (${row.seat}) started ${iso(row.startedAt)} — ${row.intent}`)
+        .join("\n");
+      refuse(
+        `${collisions.length === 1 ? "another OPEN run is" : `${collisions.length} OPEN runs are`}`
+        + ` already on ${arg("card")}:\n${them}\n`
+        + "\n   Two seats on one card is a duplicated session — that is forty minutes"
+        + "\n   of the last one, caught only by a merge conflict at push time (#608)."
+        + "\n\n   Take the next card instead, and say in your entry that you stood off this one."
+        + "\n   If that run is a DEAD shift, close it:"
+        + "\n     scripts/crew-shift-close.mts --id <n> --outcome failed --note '…'"
+        + "\n   If you really are meant to share it, pass --same-card.",
+      );
     }
 
     if (DRY_RUN) {
@@ -294,7 +341,7 @@ try {
         + `\n  shift     ${shift.slice(0, 64)}`
         + `\n  seat      ${seat}`
         + `\n  workKind  ${kind}`
-        + `\n  cardRef   ${arg("card")?.slice(0, 64) ?? "(none)"}`
+        + `\n  cardRef   ${arg("card")?.slice(0, CARD_REF_STORED_LENGTH) ?? "(none)"}`
         + `\n  cardTitle ${arg("title")?.slice(0, 255) ?? "(none)"}`
         + `\n  intent    ${intent.slice(0, 500)}`
         + `\n  branch    ${arg("branch")?.slice(0, 255) ?? "(none)"}`
@@ -312,7 +359,10 @@ try {
         shift.slice(0, 64),
         seat,
         kind,
-        arg("card")?.slice(0, 64) ?? null,
+        /* The SAME length `normaliseCardRef` truncates to before comparing —
+           a literal here and a literal there is the drift that made the
+           collision guard silent on long free-text refs (PR #691 review). */
+        arg("card")?.slice(0, CARD_REF_STORED_LENGTH) ?? null,
         arg("title")?.slice(0, 255) ?? null,
         intent.slice(0, 500),
         arg("branch")?.slice(0, 255) ?? null,

@@ -242,6 +242,66 @@ export function looksLive(
   return now - heartbeat <= CREW_SHIFT_LIVE_HEARTBEAT_MS;
 }
 
+/**
+ * IS ANOTHER OPEN RUN ALREADY ON THIS CARD? (#608)
+ *
+ * Two seats worked the same founder reply three minutes apart, and the only
+ * thing that caught it was a merge conflict at push time — roughly forty
+ * minutes of a session spent on work already merged. The shift row that would
+ * have said so was WRITTEN by both and READ by neither: invariant 7's shape,
+ * a control invoked only by a human who already suspects something.
+ *
+ * ⚠ **LIVENESS IS DELIBERATELY NOT CONSULTED, AND THAT IS THE WHOLE DESIGN
+ * DECISION HERE.** The obvious instrument is `looksLive` above, and it would
+ * NOT have fired on the incident this exists for: the other seat's row was
+ * three minutes old and had never checked in, so `hasEverCheckedIn` — and
+ * therefore every liveness test in this file — reads it as not live. A guard
+ * that cannot fire on its own origin incident is not a guard.
+ *
+ * **An OPEN row naming a card is the declaration.** That is what a shift
+ * writes it for, and it is true from the instant it is written.
+ *
+ * The stale-row objection is real and is answered by the OVERRIDE rather than
+ * by narrowing the reading: a dead shift's row costs the next shift one flag,
+ * never a night. That is the same asymmetry `CREW_SHIFT_LIVE_HEARTBEAT_MS`
+ * argues for one screen up — being wrong toward refusing costs a word, being
+ * wrong toward silence costs a session.
+ */
+export const CARD_REF_STORED_LENGTH = 64;
+
+export function normaliseCardRef(raw: string | null | undefined): string | null {
+  if (typeof raw !== "string") return null;
+  /* ⚠ TRUNCATE FIRST, AND TO THE LENGTH THE COLUMN ACTUALLY HOLDS.
+     `crew-shift-start.mts` stores `--card` as `.slice(0, 64)`; comparing the
+     UNTRUNCATED argument against the truncated row means two seats declaring
+     the same long free-text ref normalise differently and never collide. That
+     is silent on exactly the class this guard defends — a founder-reply
+     description rather than a `#NNN`, which is the origin incident's own shape
+     (found by the PR #691 review). Both sides see what the column can hold. */
+  const trimmed = raw.slice(0, CARD_REF_STORED_LENGTH).trim();
+  if (!trimmed) return null;
+  /* `#535`, `535`, `#535 ` and `#0535` are one card. Anything else compares as
+     itself, lowercased, rather than being dropped — a card ref this cannot
+     parse is still worth colliding on. */
+  const numbered = trimmed.match(/^#?(\d+)$/);
+  if (!numbered) return trimmed.toLowerCase();
+  /* Leading zeros are dropped so `#0608` and `#608` are the same card. Guarded
+     on length because past 15 digits `Number` stops being exact, and a ref that
+     long is not a card number anyway. */
+  const digits = numbered[1]!;
+  return digits.length <= 15 ? `#${Number(digits)}` : `#${digits}`;
+}
+
+/** The open runs already naming this card. Empty when the card is absent. */
+export function findCardCollisions<T extends { readonly cardRef: string | null }>(
+  openRuns: readonly T[],
+  cardRef: string | null | undefined,
+): T[] {
+  const mine = normaliseCardRef(cardRef);
+  if (mine === null) return [];
+  return openRuns.filter((run) => normaliseCardRef(run.cardRef) === mine);
+}
+
 /** How a run ended. Three members, exactly as #272 names them. */
 export const CREW_SHIFT_OUTCOMES = ["shipped", "stopped", "failed"] as const;
 export type CrewShiftOutcome = (typeof CREW_SHIFT_OUTCOMES)[number];
