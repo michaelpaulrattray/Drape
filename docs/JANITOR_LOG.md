@@ -451,3 +451,137 @@ use the editions/commits road above; the `Drape-census` owner question (commit
 or zip the census scratch, then remove the tree); the `output/` 6.5 GB citation
 pass, which needs a manifest; and re-read knip from the nightly, watching
 whether unused files keeps climbing.
+
+---
+
+## Run 4 — 2026-09-09 02:07–03:xx AEST (Janitor, patrol #4)
+
+Clock: run 3 was 2026-09-05, cadence 3 days, so this run was **1 day overdue** —
+`patrol-clocks.mts` ranked this seat first and alone, and the founder's
+Housekeeping switch is ON. Master switch ON, all seven categories on. NEXT UP
+empty, urgent band empty, no new replies, no card intents waiting. Inherited:
+run 3's "Next run" list (#526's mtime finding, the `Drape-census` owner
+question, the `output/` citation pass, the knip re-read) and the fresh #689.
+
+### A. #526 IS ANSWERED WITH AN INSTRUMENT — a disposable is dated at an artifact now
+
+Run 3's finding was that the keep test reads an mtime and **270 of 307 mtimes
+had been rewritten to one hour**, so nothing could ever be swept. It left the
+question open and forbade any `scripts/` sweep dated from disk until it was
+settled. It is settled: `scripts/disposable-age.mts` (PR #693) resolves a file's
+age through the artifact its NAME points at — the card, at the issue's own close
+on GitHub; a briefing edition, at the commit that first shipped it. Neither can
+be re-stamped by anything on this machine. **A name it cannot read anchors at
+nothing and the file is KEPT.**
+
+**#526's option 1, taken as written, including its safety clause.**
+
+### B. #689's NUMBER, and the finding worth more than the number
+
+| | 2026-08-29 (run 2) | 2026-09-08 (#689) | **this run** |
+|---|---|---|---|
+| untracked disposables under `scripts/` | 379 | 732 | **856** |
+| cited by another file — always KEEP | — | — | **99** |
+| anchored at a card or an edition | — | — | **403** |
+| unresolved by name — therefore KEEP | — | — | **453** |
+| both readers call old, and uncited | — | — | **128** |
+
+⚠ **The 453 are the finding, not the 128.** They are called `_probe-…`,
+`_read-…`, `_edit-…`, `court-…`, and they are **permanent litter for want of
+four characters at the front of a name** — no artifact anywhere records when
+their work happened. So `scripts/SKELETON-disposable.mts` now says *name it for
+its card*, with this measurement as its reason. That is the durable half; a
+sweep is the one-off half.
+
+⚠ **AND THE COUNT MOVES WHILE YOU READ IT.** Two runs fifteen minutes apart gave
+131 and 128 — three cards crossed the 7-day boundary between them. A sweep
+manifest must therefore be written by the SAME invocation that produced the
+number it quotes, which is what `--list` is for.
+
+### C. THE READER FOUND ITS OWN HOLE BEFORE IT DELETED ANYTHING, AND IT WAS A KNOWN ONE
+
+Its first citation sweep was one `git grep`, which reads **tracked** files only.
+Checked by an independent pass before any sweep ran: **of 131 candidates, 3 were
+named by files being KEPT** — `_327-max-author-read` by `_466-authorread` and
+`_477-court-read`, `_327-strip` by `_477-strip`, `_briefing-e81` by
+`_patch195l`. All three would have been deleted out from under a script that
+still names them.
+
+**That is this log's own RESTORED lesson, reproduced in a new reader**: *a
+citation index that excludes the population it is classifying cannot see that
+population's internal edges* — twelve restored scripts, three rounds. `scripts/`
+is an authority over itself now (cited 70 → 99), and the PR review then found
+the same class **one shape over**: an untracked NON-disposable keeper was still
+invisible. Every untracked file under `scripts/` is folded in; the excluded set
+is empty rather than narrower.
+
+⚠ **AND THE ARM FOR THAT FIX DID NOT EXIST UNTIL TWO SABOTAGES SAID SO.**
+Narrowing the walk back reddened nothing (the arm drove the helper, which does
+not care which list feeds it), and after extracting the walk, swapping only the
+ARGUMENT still reddened nothing. Both are guarded now. **`derive-adds-a-hop`:
+sabotage the helper AND assert its arguments.**
+
+### D. Two things measured rather than argued
+
+- The reader first **excluded `docs/JANITOR_LOG.md`** from the citation grep, on
+  the reasoning that this file records deletions. Measured: it changed **3
+  files' citation status and ZERO verdicts**. It bought nothing, `docs/` is an
+  authority under the manifest, and excluding one in order to delete more leans
+  the wrong way. Removed.
+- Its first run, from a fresh worktree, printed **0 of everything, cheerfully** —
+  identical to "the pile is gone". Hence `--root` and a refusal on an empty
+  population.
+
+### E. Litter ledger — outside the repository. 48 DIRECTORIES, 1.33 GB
+
+| item | found | done |
+|---|---|---|
+| `%TEMP%/drape-rite-*` | **5 dirs, 1,332 MB.** #654 swept 32 (7.8 GB) by hand on 2026-09-08 and **4 had regrown within one day** — the leak measured live | **swept**, and the CODE repaired (PR #692, `31d65cb1`): a recursive fallback gated on a positive read that the junction is gone |
+| `%TEMP%/drape-atlas-merge-*` (28), `drape-atlas-commit-*` (6), `drape-precommit-*` (9) | **a SECOND family #654 does not name**, from three test fixtures. All three already tear down in an `afterAll`; the leftovers cluster on four days, the signature of runs that never reached it. **43 dirs and 1.4 MB between them** | **swept**; filed as **#694** with that number in the second column, because it is the same shape and not the same cost |
+| holders, registrations, junctions | no process named any of the 48 on its command line (`Win32_Process`); none registered in `git worktree list`; **no `node_modules` inside any of them** | safe to remove recursively — and the main tree's `node_modules` was read **before and after**: 77 entries, `.bin/vitest` present |
+| `drape-tfjs-pose-spike` | holds a REAL `node_modules` (not a reparse point), 2026-08-06 | **left, and recorded** — outside #654's family, and a directory with a real install is not swept on a hunch. Run 5's question |
+| `Drape-census`, `drape-pinned-42652964` | unchanged from run 3 | **KEEP** — the pinned tree is cited by `scripts/court-ink-carry-a-disposable.mts:19`; the census owner question is still open and is still run 5's |
+
+### F. Dead-code reading — the climb STOPPED
+
+Nightly `34153675089`, 2026-09-07, compact reporter:
+
+| reading | files | deps | exports | types | duplicates |
+|---|---|---|---|---|---|
+| nightly 2026-09-04 (run 3) | 69 | 1 | 186 | 122 | 19 |
+| **nightly 2026-09-07 (this run)** | **69** | 1 | **191** | **129** | **19** |
+
+✅ **Run 3's one watch-item — unused files 51 → 69 in seven days — is answered,
+and answered the right way: flat at 69 across three days.** Duplicates flat at
+19. Exports and types moved by single digits, the ordinary drift of a week's
+merges. Nothing proposed; recorded on #108.
+
+⚠ **Run 3 never appended its row to `docs/JANITOR_KNIP.md`** — its reading lived
+only in §F of this file, which is exactly the drift that table exists to
+prevent. **Run 4 filled it in** rather than skipping it, and both rows are there
+now, in date order.
+
+### G. Anti-boredom check
+
+Every act traces to an open card that predates this shift (#654, #526, #689,
+#108), to run 3's own "Next run" list, or to a finding this patrol produced on
+its own clock (#694, filed and NOT worked). **Nothing was spent** — no credits,
+no house money, no render, no reader. Production writes: the crew run row, the
+queue counts, nothing else. No instrument was built that a card did not ask
+for: `disposable-age.mts` is #526's own recommended option 1.
+
+**Next run (~2026-09-12):**
+
+1. ⚠ **THE 128-FILE SWEEP WAS NOT RUN AND THAT IS DELIBERATE.** The manifest is
+   written (`output/janitor-run4-sweep-manifest.txt`, and the full read beside
+   it), the reader is merged and its verdicts are guarded — but the reader
+   landed **this shift**, and a brand-new instrument's first act should not be
+   an irreversible deletion of 128 untracked files that exist in no git history.
+   **Run 5 re-runs it, compares the two readings, and sweeps what both agree
+   on.** Working law 2's spirit: a verdict that survives a second independent
+   run is worth more than one that is merely fresh.
+2. The `Drape-census` owner question — commit or zip the census scratch, then
+   the tree goes. Open since run 3.
+3. `output/` is now **#527's citation pass** and still needs a written manifest.
+4. `drape-tfjs-pose-spike` (§E) — a month old and holding a real `node_modules`.
+5. Re-read knip from the nightly and watch whether `files` stays at 69.

@@ -1,7 +1,7 @@
 {
-  "edition": 306,
-  "updatedAt": "2026-09-08T15:50:00Z",
-  "shift": "Foreman (Opus) - two cards closed: the Moderation badge that only ever flagged you is now empty, and two night shifts can no longer start the same job",
+  "edition": 307,
+  "updatedAt": "2026-09-08T17:15:00Z",
+  "shift": "Janitor - patrol #4: three cards closed. Your machine had 1.33 GB of abandoned copies of Drape sitting in its temp folder, and the leak that made them is fixed",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -123,7 +123,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "72 open, none waiting on you, none urgent. 2 closed tonight, 15 stale (8 Sep)."
+        "source": "72 open, none waiting on you, none urgent. 3 closed tonight, 15 stale (9 Sep)."
       },
       {
         "label": "Nothing is waiting on you",
@@ -132,8 +132,8 @@
       },
       {
         "label": "Check-ups",
-        "tone": "neutral",
-        "source": "Nothing overdue. The Janitor is due and goes to the next shift; two cards came first."
+        "tone": "good",
+        "source": "Nothing overdue. The Janitor ran tonight, a day late; next one 12 Sep."
       },
       {
         "label": "Your account is no longer flagged",
@@ -4393,6 +4393,22 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "rite-temp-leak-654",
+      "title": "1.33 GB of abandoned copies of Drape were sitting in your temp folder",
+      "status": "merged",
+      "prNumber": 692,
+      "cardId": null,
+      "note": "Every time the team runs its safety checks before a deploy, it makes a private throwaway copy of the whole project, checks the code in it, and deletes it. About one time in fifteen the delete quietly failed and the copy just stayed - each one a quarter of a gigabyte. Nobody noticed because nothing goes wrong when it happens; it only costs disk. Yesterday's count was 7.8 GB across 32 copies, they were swept by hand, and FOUR had come back within a day - which is how we knew the leak was still running rather than a one-off. Tonight the sweep took 1.33 GB across 48 directories, and the code that leaks them is repaired, so they stop coming back."
+    },
+    {
+      "id": "disposable-age-526-689",
+      "title": "The team can finally tidy up after itself - its scrap files were unable to expire",
+      "status": "merged",
+      "prNumber": 693,
+      "cardId": null,
+      "note": "Each shift writes small throwaway scripts to check something, and the rule is that they get deleted a week later. The rule read the file's 'last modified' date - and back in August something rewrote that date on 270 of them in a single hour, so every one of them looked brand new and nothing could ever be deleted. The pile has grown from 379 files to 856 while that was true. It now works out a file's real age from the job it was written for - the card it belongs to, and the date that card closed, which lives on GitHub where nothing on your machine can touch it. 128 files are now provably old enough to go. They have NOT been deleted yet, on purpose: the tool is a day old, and its first act should not be an irreversible deletion. The next check-up runs it again and deletes only what both readings agree on."
+    },
     {
       "id": "evidence-double-count-638",
       "title": "Your Moderation badge said 1, and the one account it flagged was yours",
