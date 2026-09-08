@@ -27,6 +27,7 @@ import {
   rootsToKill,
   type ProcessRow,
 } from "./lib/devServerTrees.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 function powershell(command: string): string {
   return execFileSync("powershell.exe", ["-NoProfile", "-Command", command], {
@@ -105,7 +106,17 @@ function cutoffOf(said: string): Date {
   return when;
 }
 
-const args = process.argv.slice(2);
+/* ⚠ THE VOCABULARY, DECLARED ONCE (#642). Read out of this file's own usage
+   block above, not guessed: `--since <clock>` and `--kill <pids>`. Before this,
+   a mistyped `--kil 1234` was simply NOT SEEN - both `indexOf` reads returned
+   -1, the script printed the trees and exited 0, and the operator read that as
+   "nothing to kill" rather than "you typed it wrong". `--kill` with nothing
+   after it was worse: it became an empty target list and killed nothing,
+   silently. */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: ["since", "kill"],
+  boolean: [],
+});
 const rows = processTable();
 const trees = devServerTrees(rows);
 const ports = portsByPid();
@@ -126,20 +137,20 @@ console.log(`${trees.length} dev server tree(s), oldest first:`);
 for (const tree of trees) console.log(describe(tree));
 console.log("\n⚠ the pids netstat shows you are CHILDREN. Kill the ROOT or the watcher starts another.");
 
-const sinceAt = args.indexOf("--since");
-const killAt = args.indexOf("--kill");
-if (sinceAt === -1 && killAt === -1) process.exit(0);
+const since = ARGS.value("since");
+const kill = ARGS.value("kill");
+if (since === null && kill === null) process.exit(0);
 
 let targets: number[];
-if (sinceAt !== -1) {
-  const cutoff = cutoffOf(args[sinceAt + 1] ?? "");
+if (since !== null) {
+  const cutoff = cutoffOf(since);
   const mine = rootsStartedAfter(rows, cutoff);
   console.log(`\nstarted at or after ${cutoff.toLocaleString()}:`);
   for (const tree of mine) console.log(describe(tree));
   if (mine.length === 0) { console.log("  none — nothing to kill."); process.exit(0); }
   targets = mine.map((tree) => tree.rootPid);
 } else {
-  targets = (args[killAt + 1] ?? "").split(",").map((one) => Number(one.trim())).filter(Boolean);
+  targets = (kill ?? "").split(",").map((one) => Number(one.trim())).filter(Boolean);
 }
 
 const verdict = rootsToKill(rows, targets);
