@@ -45,6 +45,9 @@ import {
   validateSlug,
   type RemovalState,
 } from "./lib/shiftWorktree.mts";
+/* The one reading that authorises a recursive delete on this machine, shared
+   with the rite's own teardown rather than re-declared here (#654, law 7). */
+import { stillOnDisk } from "./lib/riteWorktree.mts";
 
 function refuse(message: string): never {
   console.error(`shift-worktree: REFUSING — ${message}`);
@@ -276,7 +279,7 @@ const state: RemovalState = {
   unpushedCommits,
   dirtyFiles,
   registered,
-  junctionPresent: existsSync(plan.nodeModulesLink),
+  junctionPresent: stillOnDisk(plan.nodeModulesLink),
 };
 
 console.log(`shift-worktree remove ${slug}`);
@@ -306,8 +309,14 @@ if (state.junctionPresent) {
 // The proof, not the assumption. `rmdir` on a junction removes the LINK; if
 // something went wrong and the path is still there, the next step would walk
 // into the real install.
+//
+// ⚠ `stillOnDisk` and not `existsSync` (#654, law 7 sweep). This comment has
+// always said "if the path is still there", and `existsSync` FOLLOWS the link
+// — so a junction whose target had gone read as absent while the link was
+// still standing in the directory about to be removed. The reading now sees
+// the link itself, which is what the sentence claims.
 if (!dryRun) {
-  const stillThere = junctionMustBeGone(existsSync(plan.nodeModulesLink));
+  const stillThere = junctionMustBeGone(stillOnDisk(plan.nodeModulesLink));
   if (!stillThere.ok) refuse(stillThere.reason);
 }
 say("prove the junction is gone");
