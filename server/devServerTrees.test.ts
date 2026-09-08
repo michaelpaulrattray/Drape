@@ -181,7 +181,12 @@ describe("⚠ the pids the operator NAMED, before any of them is a number", () =
     const verdict = pidsNamed("22316,abc");
     expect(verdict.kind).toBe("refused");
     expect(verdict.kind === "refused" && verdict.reason).toContain("abc");
-    expect(verdict.kind === "refused" && verdict.reason).not.toContain("22316 ");
+    /* ⚠ NO TRAILING SPACE (PR #676 review). The regression this guards against
+       is `pidsNamed` quoting every word back, which reads `"22316", "abc"` — a
+       quote after the digits, never a space — so the assertion would have
+       stayed green through exactly the failure it documents. Plain and
+       stronger: the correct reason contains no other occurrence of them. */
+    expect(verdict.kind === "refused" && verdict.reason).not.toContain("22316");
   });
 });
 
