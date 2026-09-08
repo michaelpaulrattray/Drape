@@ -1,7 +1,7 @@
 {
-  "edition": 301,
-  "updatedAt": "2026-09-08T17:03:56+10:00",
-  "shift": "Foreman (Opus) - your nights can see your own backlog again",
+  "edition": 302,
+  "updatedAt": "2026-09-08T08:20:00Z",
+  "shift": "Foreman (Opus) - the staff panel stops shouting, and a stuck money-instrument card got its answer",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -4383,6 +4383,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-677-staff-copy-428",
+      "title": "Your staff panel stops shouting: Approve Refund becomes Approve refund, and the last light-only file goes dark-safe",
+      "status": "in-review",
+      "prNumber": 677,
+      "note": "Thirty-seven action labels across the change-requests page and its review panel. Also fixes an attachments strip that drew a near-white card in dark mode. Looked at in both themes before shipping; the reviewer passed it and its three notes were taken in one go."
+    },
+    {
+      "id": "card-638-linkability-answered",
+      "title": "The false flag on your own account: the repair everyone assumed would work only gets two thirds of the way",
+      "status": "building",
+      "prNumber": null,
+      "note": "Measured at your live rows tonight, nothing changed. The tidy repair everyone assumed would work gets two thirds of the way and leaves the flag lit; the blunter one clears it. Both numbers are on the card."
+    },
+    {
       "id": "card-675-runner-sleeps-on-backlog",
       "title": "The nights stopped for 90 minutes with 57 jobs waiting - the thing that starts a shift could not see them",
       "status": "merged",
@@ -4658,9 +4672,9 @@
       "state": "resolved"
     },
     {
-      "id": "queue-shape-0908e-foreman",
-      "title": "The queue: 77 open, two closed tonight, and 15 nobody has looked at in a week",
-      "detail": "77 cards open. Two closed tonight - the nights-asleep fault you reported, and the cleanup-command bug. Nothing is running unattended. 15 cards have had no comment, no close and no code touch them for seven days; the oldest is a fortnight. That number is steady rather than growing. Worth repeating from last night because it held again tonight: your Bugs switch says 8, but most of those end in a decision only you can make, so the number of bug cards a shift can actually pick up on its own is one or two, not eight. That is the gap card #663 is about.",
+      "id": "queue-shape-0908f-foreman",
+      "title": "The queue: 77 open, 15 nobody has looked at in a week - and your Bugs switch is overstating itself for a third night",
+      "detail": "77 cards open, 15 with no comment, no close and no code near them for seven days. Steady rather than growing. The part worth your attention is the same one as the last two nights, and tonight it was checked card by card rather than taken on trust: your Bugs switch says 7, and six of those seven end in a decision only you can make - a price question, a product call, or a change to what the casting engine is told. One was takeable and it was taken. So the honest number of bug cards a shift can pick up on its own is about one, not seven. Card #663 is exactly this gap, and it has now shown up three nights running rather than once. Two new cards were written tonight rather than worked: your sign-in page is still hard light (116 hard-coded colours, the exact pattern the staff pages were rebuilt to retire) and needs one word from you on whether it should follow the theme at all; and the same staff labels are typed three more times on the server, where nothing reads them today.",
       "severity": "info",
       "state": "open"
     },
