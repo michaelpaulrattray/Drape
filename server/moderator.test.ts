@@ -1,5 +1,86 @@
+/*
+ * ⚠ THIS FILE ASSERTED DRAPE'S MODERATOR SURFACE AGAINST LITERALS IT TYPED ON
+ * THE LINE ABOVE, AND CALLED IT "Access Control" WHILE DOING IT. 42 of its 46
+ * arms could not fail. Repaired 2026-09-09 (#697, the law-7 class of #681).
+ *
+ * The three shapes that were here, all three of #681's:
+ *
+ *   1. ASSERTS ITS OWN LITERAL —
+ *          const user = { id: 10, role: "moderator" };
+ *          expect(user.role === "moderator" || user.role === "admin").toBe(true);
+ *      That is `"moderator" === "moderator"`, under a heading reading
+ *      **Moderator Role - Access Control**. Eight arms of it, plus six more
+ *      reciting the same boolean as "UI Access Control", plus
+ *          it("should not provide unblock capability", () => expect(true).toBe(true))
+ *      — a tautology standing in for a security claim.
+ *
+ *   2. CALLS A MODULE THIS FILE MOCKS, THEN ASSERTS THE MOCK — fourteen arms.
+ *          const { getFilteredAuditLogs } = await import("./auditLog");
+ *          await getFilteredAuditLogs({ severity: "warning" });
+ *          expect(getFilteredAuditLogs).toHaveBeenCalledWith(
+ *            expect.objectContaining({ severity: "warning" }));
+ *      No line of `moderatorRouter` runs in that. Delete the procedure it
+ *      names and it stays green.
+ *
+ *   3. TRANSCRIBES THE PRODUCT AND TESTS THE TRANSCRIPTION — the eight-arm
+ *      change-request describe, whose subject is genuinely and better covered
+ *      in `changeRequests.test.ts` (read at that file, not assumed).
+ *
+ * ⚠ AND SHAPE 3 HAD ALREADY DRIFTED, WHICH IS THE SPECIMEN WORTH KEEPING:
+ *          it("should support all 8 change request types", …)
+ *      **The product declares NINE** — `CHANGE_REQUEST_TYPE_LABELS` in
+ *      `shared/changeRequestLabels.ts` — and `stripe_refund` was the missing
+ *      one, for the third time in this suite's history. #681 corrected exactly
+ *      this count in `changeRequests.test.ts` on 2026-09-09; the copy in THIS
+ *      file was a second statement of the same wrong number, still green.
+ *      Working law 4 on a test: a second list shadowing a source of truth
+ *      always drifts from it.
+ *
+ * WHAT REPLACED THEM, and the rule applied to each:
+ *
+ * - **Covered next door → DELETED, not rewritten.** `moderatorProcedure`'s
+ *   refusals (plain user, unauthenticated, suspended moderator, and a live
+ *   moderator as the positive control) are DRIVEN in
+ *   `changeRequests.test.ts`'s "Security Boundaries (DRIVEN through the real
+ *   procedures)". Re-driving them here would be the mirror this file was
+ *   caught being. The change-request validation, the type list, the Slack
+ *   note and the audit row are likewise driven there and are gone from here.
+ *
+ * - **NOT covered anywhere → DRIVEN here, because this is the router's own
+ *   file.** Two gaps were measured before a line was written:
+ *     · **No ADMIN is driven through `moderatorRouter` anywhere in the tree**
+ *       (`grep -rn 'moderatorRouter.createCaller' server/` — every existing
+ *       one is a moderator, a plain user, or null). The capability grid's
+ *       footnote 1 — *admins pass the moderator middleware, so they inherit
+ *       the entire moderator surface* — had no test that could fail.
+ *     · **No moderator READ procedure was driven anywhere.** Not one of the
+ *       router's TWELVE reads had a driven caller in the repository; the
+ *       fourteen arms of shape 2 stood in for all of them. ⚠ **This sentence
+ *       first said "seven" and drove seven, which the reviewer of PR #698
+ *       caught: the file then read as coverage it did not have, and two of the
+ *       five it left out — `getUserCreditHistory` and
+ *       `getUserGenerationHistory` — carry the SAME `all`-collapse and
+ *       date-conversion translations, one of them on the credits read a staff
+ *       member opens to investigate a complaint.** All twelve are driven now,
+ *       and the last describe in this file derives the population from the
+ *       running router so the claim cannot quietly stop being true.
+ *
+ * - **The client's guard is NOT recited here.** The six "UI Access Control"
+ *   arms transcribed `ModeratorDashboard.tsx:180`'s
+ *   `user?.role !== "moderator" && user?.role !== "admin"` into a server
+ *   suite. A server test cannot render that component, so the transcription
+ *   was the whole arm. Deleted; the untested client guard is filed as a card
+ *   rather than faked here.
+ *
+ * THE BAR: every arm below was proven by SABOTAGING THE PRODUCT and watching
+ * exactly it redden — not by reading. #681's repair produced one arm that read
+ * like invariant 3 and stayed green under sabotage because zod stripped the
+ * forged field before the handler saw it. That is what this class does even to
+ * someone repairing it, which is why the sabotage is the receipt.
+ */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { moderatorRouter } from "./routes/moderator";
+import { users } from "../drizzle/schema";
 
 // Mock the slackNotification module
 vi.mock("./slack/slackNotification", () => ({
@@ -65,6 +146,27 @@ vi.mock("./db", () => ({
     failedLoginAttempts: 0,
     createdAt: new Date("2025-06-01"),
     lastSignedIn: new Date("2026-01-15"),
+    /*
+     * ⚠ THE FORBIDDEN SIX ARE SEEDED HERE ON PURPOSE, AND THE INVARIANT-8 ARM
+     * BELOW CANNOT FAIL WITHOUT THEM (PR #698 review, round 2).
+     *
+     * That arm asserts these six never cross the boundary — but the fixture
+     * held none of them, so `getUserDetails`' explicit projection regressing to
+     * `user: { ...user }` would have left every key coming from a clean
+     * fixture and all six assertions green. It could only ever have caught
+     * someone writing `passwordHash: user.passwordHash` deliberately, which is
+     * not how `passwordHash` reached `auth.me`.
+     *
+     * With them seeded, a spread LEAKS them and the arm reddens — driven, not
+     * argued. This is the very class this file was repaired for, surviving in
+     * the one arm the rewrite kept verbatim.
+     */
+    passwordHash: "seeded-forbidden-hash",
+    apiKey: "seeded-forbidden-key",
+    stripeCustomerId: "cus_seededforbidden",
+    masterPrompt: "seeded forbidden master prompt",
+    technicalSchema: { seeded: "forbidden" },
+    preferences: { seeded: "forbidden" },
   }),
   getBlockedIps: vi.fn().mockResolvedValue({
     ips: [
@@ -115,341 +217,414 @@ vi.mock("./db", () => ({
     activeUsers: 80,
     suspendedUsers: 5,
   }),
+  getDetailedCreditHistory: vi.fn().mockResolvedValue({ transactions: [], total: 0 }),
+  getDetailedGenerationHistory: vi.fn().mockResolvedValue({ generations: [], total: 0 }),
+  getFlaggedReferrals: vi.fn().mockResolvedValue({ items: [], total: 0 }),
 }));
 
-describe("Moderator Role - Access Control", () => {
-  describe("moderatorProcedure middleware", () => {
-    it("should allow moderator role access", () => {
-      const user = { id: 10, role: "moderator", suspendedAt: null };
-      expect(user.role === "moderator" || user.role === "admin").toBe(true);
-    });
+/*
+ * The three callers every arm below uses. `suspendedAt: null` is part of the
+ * fixture rather than an afterthought — `moderatorProcedure` checks the role
+ * FIRST and the suspension SECOND, so a context missing the field would pass
+ * the role arms for the wrong reason.
+ */
+const MODERATOR = { id: 10, role: "moderator", suspendedAt: null };
+const ADMIN = { id: 1, role: "admin", suspendedAt: null };
+const PLAIN_USER = { id: 42, role: "user", suspendedAt: null };
 
-    it("should allow admin role access to moderator endpoints", () => {
-      const user = { id: 1, role: "admin", suspendedAt: null };
-      expect(user.role === "moderator" || user.role === "admin").toBe(true);
-    });
+function callerFor(user: unknown) {
+  return moderatorRouter.createCaller({ user } as never);
+}
 
-    it("should deny regular user access", () => {
-      const user = { id: 42, role: "user", suspendedAt: null };
-      expect(user.role === "moderator" || user.role === "admin").toBe(false);
-    });
+/*
+ * What a mocked reader was HANDED, with a population control on the way past.
+ *
+ * ⚠ The difference between this and the shape this file was repaired for is
+ * WHO CALLED IT. Every use below drives a real procedure first and then reads
+ * the argument the ROUTER passed on — the mock is the far end of the product,
+ * not the subject. An arm that calls the reader itself and asserts its own
+ * argument is the defect; `expect(calls.length).toBe(1)` is what keeps the two
+ * apart, because a procedure that never reached its reader has ZERO calls and
+ * would otherwise read as agreement.
+ */
+function soleCallTo(fn: unknown): Record<string, unknown> {
+  const { calls } = (fn as { mock: { calls: unknown[][] } }).mock;
+  if (calls.length !== 1) {
+    throw new Error(`expected the procedure to reach its reader exactly once, saw ${calls.length}`);
+  }
+  return calls[0][0] as Record<string, unknown>;
+}
 
-    it("should deny suspended moderator access", () => {
-      const user = { id: 10, role: "moderator", suspendedAt: new Date() };
-      const isSuspended = !!user.suspendedAt;
-      expect(isSuspended).toBe(true);
-    });
+/* The same control for a reader taking more than one argument — the credit and
+   generation histories pass the userId FIRST and the filters second, and an
+   arm that only looked at the filters could not see the id go wrong. */
+function soleCallArgsTo(fn: unknown): unknown[] {
+  const { calls } = (fn as { mock: { calls: unknown[][] } }).mock;
+  if (calls.length !== 1) {
+    throw new Error(`expected the procedure to reach its reader exactly once, saw ${calls.length}`);
+  }
+  return calls[0];
+}
 
-    it("should deny unauthenticated access", () => {
-      const user = null;
-      expect(user).toBeNull();
-    });
-  });
-
-  describe("Role separation from admin", () => {
-    it("moderator role should NOT have admin privileges", () => {
-      const user = { id: 10, role: "moderator" };
-      expect(user.role).not.toBe("admin");
-    });
-
-    it("moderator should not pass admin allowlist check", () => {
-      // Moderators bypass the allowlist entirely - they use a different middleware
-      const user = { id: 10, role: "moderator" };
-      const isAdmin = user.role === "admin";
-      expect(isAdmin).toBe(false);
-    });
-
-    it("admin should be able to access moderator endpoints", () => {
-      const user = { id: 1, role: "admin" };
-      const canAccessModerator = user.role === "moderator" || user.role === "admin";
-      expect(canAccessModerator).toBe(true);
-    });
-  });
-});
-
-describe("Moderator Role - Read-Only Procedures", () => {
-  describe("getAuditLogs", () => {
-    it("should return audit logs with pagination", async () => {
-      const { getFilteredAuditLogs } = await import("./auditLog");
-      const result = await getFilteredAuditLogs({
-        limit: 20,
-        offset: 0,
-      });
-      expect(result).toBeDefined();
-      expect(result.logs).toBeInstanceOf(Array);
-      expect(result.total).toBeGreaterThanOrEqual(0);
-    });
-
-    it("should support severity filtering", async () => {
-      const { getFilteredAuditLogs } = await import("./auditLog");
-      const result = await getFilteredAuditLogs({
-        limit: 20,
-        offset: 0,
-        severity: "warning",
-      });
-      expect(result).toBeDefined();
-      expect(getFilteredAuditLogs).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: "warning" })
-      );
-    });
-
-    it("should support category filtering", async () => {
-      const { getFilteredAuditLogs } = await import("./auditLog");
-      const result = await getFilteredAuditLogs({
-        limit: 20,
-        offset: 0,
-        actionCategory: "abuse",
-      });
-      expect(result).toBeDefined();
-    });
-
-    it("should support user ID filtering", async () => {
-      const { getFilteredAuditLogs } = await import("./auditLog");
-      const result = await getFilteredAuditLogs({
-        limit: 20,
-        offset: 0,
-        userId: 42,
-      });
-      expect(result).toBeDefined();
-      expect(getFilteredAuditLogs).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: 42 })
-      );
-    });
-  });
-
-  describe("getAbuseAlerts", () => {
-    it("should return abuse alerts summary", async () => {
-      const { getAbuseAlertsSummary } = await import("./auditLog");
-      const result = await getAbuseAlertsSummary(10);
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty("alerts");
-      expect(result).toHaveProperty("criticalCount");
-      expect(result).toHaveProperty("warningCount");
-    });
-  });
-
-  describe("getAuditStats", () => {
-    it("should return audit statistics", async () => {
-      const { getAuditStatistics } = await import("./auditLog");
-      const result = await getAuditStatistics();
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty("totalLogs");
-      expect(result).toHaveProperty("last24Hours");
-    });
-  });
-
-  describe("getUserDetails (read-only)", () => {
-    it("should return user details without mutation capability", async () => {
-      const { getUserById } = await import("./db");
-      const user = await getUserById(42);
-      expect(user).toBeDefined();
-      expect(user).toHaveProperty("id");
-      expect(user).toHaveProperty("name");
-      expect(user).toHaveProperty("role");
-      // Moderator view should NOT include sensitive admin-only fields
-    });
-
-    it("should return null for non-existent user", async () => {
-      const { getUserById } = await import("./db");
-      (getUserById as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
-      const user = await getUserById(99999);
-      expect(user).toBeNull();
-    });
-  });
-
-  describe("getUserActivity (read-only)", () => {
-    it("should return user activity logs", async () => {
-      const { getFilteredAuditLogs } = await import("./auditLog");
-      const result = await getFilteredAuditLogs({
-        userId: 42,
-        limit: 50,
-        offset: 0,
-      });
-      expect(result).toBeDefined();
-      expect(result.logs).toBeInstanceOf(Array);
-    });
-  });
-
-  describe("listBlockedIPs (read-only)", () => {
-    it("should return blocked IPs list", async () => {
-      const { getBlockedIps } = await import("./db");
-      const result = await getBlockedIps(50, 0);
-      expect(result).toBeDefined();
-      expect(result.ips).toBeInstanceOf(Array);
-      expect(result.total).toBeGreaterThanOrEqual(0);
-    });
-
-    it("should not provide unblock capability", () => {
-      // Moderator router does NOT have unblockIP mutation
-      // This is verified by the router definition - no mutation exists
-      expect(true).toBe(true); // Structural verification
-    });
-  });
-
-  describe("listUsers (read-only)", () => {
-    it("should return user list with pagination", async () => {
-      const { listAllUsers } = await import("./db");
-      const result = await listAllUsers({
-        limit: 20,
-        offset: 0,
-        status: "all",
-        role: "all",
-        sortBy: "createdAt",
-        sortOrder: "desc",
-      });
-      expect(result).toBeDefined();
-      expect(result.users).toBeInstanceOf(Array);
-      expect(result.total).toBeGreaterThanOrEqual(0);
-    });
-
-    it("should support search filtering", async () => {
-      const { listAllUsers } = await import("./db");
-      await listAllUsers({
-        limit: 20,
-        offset: 0,
-        search: "test",
-        status: "all",
-        role: "all",
-        sortBy: "createdAt",
-        sortOrder: "desc",
-      });
-      expect(listAllUsers).toHaveBeenCalledWith(
-        expect.objectContaining({ search: "test" })
-      );
-    });
-  });
-
-  describe("getUserFullDetails (read-only)", () => {
-    it("should return full user details for investigation", async () => {
-      const { getUserFullDetails } = await import("./db");
-      const result = await getUserFullDetails(42);
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty("user");
-      expect(result).toHaveProperty("credits");
-      expect(result).toHaveProperty("stats");
-    });
-  });
-});
-
-describe("Moderator Role - Change Requests (replaces Escalation)", () => {
+/*
+ * ⚠ THE REFUSALS ARE NOT HERE, ON PURPOSE. A plain user, an unauthenticated
+ * caller and a SUSPENDED moderator are each driven against this same
+ * middleware in `changeRequests.test.ts` ("Security Boundaries (DRIVEN
+ * through the real procedures)"), with a live moderator as the positive
+ * control. Re-driving them here would be a second copy of a source of truth —
+ * working law 4, and the exact habit this file was repaired for.
+ *
+ * What is here is the half NOTHING in the tree drove: an ADMIN. Measured
+ * before writing — every `moderatorRouter.createCaller` in the repository
+ * passed a moderator, a plain user, or null. The capability grid's footnote 1
+ * (*"Admins pass the moderator middleware, so they inherit the entire
+ * moderator surface"*) is a stated product commitment, and the only thing
+ * standing for it was `expect("admin" === "moderator" || "admin" === "admin")`.
+ */
+describe("Moderator Role — the middleware's ADMIN half, DRIVEN", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe("createChangeRequest mutation", () => {
-    it("should validate change request input", () => {
-      const validInput = {
-        type: "refund_credits" as const,
-        priority: "normal" as const,
-        targetUserId: 42,
-        targetUserName: "Test User",
-        title: "Refund credits for service disruption",
-        description: "User experienced a service disruption during generation and lost 50 credits",
-        creditAmount: 50,
-        creditReason: "Service disruption",
-      };
+  it("an ADMIN is allowed through moderatorProcedure — the capability grid's footnote, driven not recited", async () => {
+    await expect(callerFor(ADMIN).getAuditStats()).resolves.toBeDefined();
+  });
 
-      expect(validInput.type).toBe("refund_credits");
-      expect(validInput.title.length).toBeGreaterThanOrEqual(5);
-      expect(validInput.description.length).toBeGreaterThanOrEqual(10);
+  it("a plain user is REFUSED that same procedure — the control that makes the arm above mean something", async () => {
+    await expect(callerFor(PLAIN_USER).getAuditStats()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+  });
+});
+
+/*
+ * ⚠ NOTHING IN THIS REPOSITORY DROVE A SINGLE MODERATOR READ PROCEDURE.
+ * `getAuditLogs`, `getAuditStats`, `getAbuseAlerts`, `getUserActivity`,
+ * `listUsers`, `listBlockedIPs` and `getUserFullDetails` had zero driven
+ * callers anywhere; fourteen arms that called the mocked readers themselves
+ * stood in for all of them, and every one would have survived the deletion of
+ * the procedure it was named after.
+ *
+ * These are the router's own translations — the work it does BETWEEN the
+ * panel and the reader, which is the only part of a read path that can be
+ * wrong: `all` collapsing to no filter, a date string becoming a `Date`, a
+ * `Date` becoming an ISO string, and its own page sizes.
+ */
+describe("Moderator Role — the read surface, DRIVEN through the router", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("getAuditLogs", () => {
+    it("`all` is a filter word, not a severity — the router sends NO severity for it", async () => {
+      const { getFilteredAuditLogs } = await import("./auditLog");
+      await callerFor(MODERATOR).getAuditLogs({ severity: "all" });
+      expect(soleCallTo(getFilteredAuditLogs).severity).toBeUndefined();
     });
 
-    it("should reject description too short", () => {
-      const shortDesc = "bad user";
-      expect(shortDesc.length).toBeLessThan(10);
+    it("a real severity travels whole", async () => {
+      const { getFilteredAuditLogs } = await import("./auditLog");
+      await callerFor(MODERATOR).getAuditLogs({ severity: "warning" });
+      expect(soleCallTo(getFilteredAuditLogs).severity).toBe("warning");
     });
 
-    it("should reject title too short", () => {
-      const shortTitle = "Hi";
-      expect(shortTitle.length).toBeLessThan(5);
+    it("`all` is a filter word for the category too", async () => {
+      const { getFilteredAuditLogs } = await import("./auditLog");
+      await callerFor(MODERATOR).getAuditLogs({ actionCategory: "all" });
+      expect(soleCallTo(getFilteredAuditLogs).actionCategory).toBeUndefined();
     });
 
-    it("should support all 8 change request types", () => {
-      const validTypes = [
-        "refund_credits", "add_credits", "flag_account", "note_incident",
-        "suspend_user", "unsuspend_user", "block_ip", "other",
-      ];
-      expect(validTypes).toHaveLength(8);
-      validTypes.forEach(type => {
-        expect(typeof type).toBe("string");
+    it("a real category travels whole", async () => {
+      const { getFilteredAuditLogs } = await import("./auditLog");
+      await callerFor(MODERATOR).getAuditLogs({ actionCategory: "abuse" });
+      expect(soleCallTo(getFilteredAuditLogs).actionCategory).toBe("abuse");
+    });
+
+    it("a userId filter travels whole", async () => {
+      const { getFilteredAuditLogs } = await import("./auditLog");
+      await callerFor(MODERATOR).getAuditLogs({ userId: 42 });
+      expect(soleCallTo(getFilteredAuditLogs).userId).toBe(42);
+    });
+
+    it("the date STRINGS the panel sends become real Dates on the way to the reader", async () => {
+      const { getFilteredAuditLogs } = await import("./auditLog");
+      await callerFor(MODERATOR).getAuditLogs({
+        startDate: "2026-01-01T00:00:00.000Z",
+        endDate: "2026-02-01T00:00:00.000Z",
       });
+      const sent = soleCallTo(getFilteredAuditLogs);
+      expect(sent.startDate).toBeInstanceOf(Date);
+      expect((sent.startDate as Date).toISOString()).toBe("2026-01-01T00:00:00.000Z");
+      expect(sent.endDate).toBeInstanceOf(Date);
+      expect((sent.endDate as Date).toISOString()).toBe("2026-02-01T00:00:00.000Z");
     });
 
-    it("should send Slack notification for new change request", async () => {
-      const { sendAdminActionNotification } = await import("./slack/slackNotification");
-      
-      await sendAdminActionNotification({
-        title: "📋 New Change Request: Refund Credits",
-        description: "Mod User submitted a change request for Test User",
-        severity: "info",
-        fields: [
-          { title: "Type", value: "Refund Credits", short: true },
-          { title: "Priority", value: "Normal", short: true },
-          { title: "Target", value: "Test User (#42)", short: true },
-          { title: "Credit Amount", value: "50 credits", short: true },
-        ],
+    it("no dates asked for means NONE sent — never an Invalid Date, which reads as a filter", async () => {
+      const { getFilteredAuditLogs } = await import("./auditLog");
+      await callerFor(MODERATOR).getAuditLogs({});
+      const sent = soleCallTo(getFilteredAuditLogs);
+      expect(sent.startDate).toBeUndefined();
+      expect(sent.endDate).toBeUndefined();
+    });
+
+    it("asked for nothing at all, the router's own page size is what reaches the reader", async () => {
+      const { getFilteredAuditLogs } = await import("./auditLog");
+      await callerFor(MODERATOR).getAuditLogs();
+      const sent = soleCallTo(getFilteredAuditLogs);
+      expect(sent.limit).toBe(20);
+      expect(sent.offset).toBe(0);
+    });
+  });
+
+  describe("getUserActivity", () => {
+    it("the userId asked for reaches the reader, with this procedure's own page size of 50", async () => {
+      const { getFilteredAuditLogs } = await import("./auditLog");
+      await callerFor(MODERATOR).getUserActivity({ userId: 42 });
+      const sent = soleCallTo(getFilteredAuditLogs);
+      expect(sent.userId).toBe(42);
+      expect(sent.limit).toBe(50);
+      expect(sent.offset).toBe(0);
+    });
+  });
+
+  describe("getAbuseAlerts", () => {
+    it("asked for nothing, the router's own default of 10 reaches the summary reader", async () => {
+      const { getAbuseAlertsSummary } = await import("./auditLog");
+      await callerFor(MODERATOR).getAbuseAlerts();
+      expect(getAbuseAlertsSummary).toHaveBeenCalledWith(10);
+    });
+
+    it("an asked-for limit replaces it", async () => {
+      const { getAbuseAlertsSummary } = await import("./auditLog");
+      await callerFor(MODERATOR).getAbuseAlerts({ limit: 25 });
+      expect(getAbuseAlertsSummary).toHaveBeenCalledWith(25);
+    });
+  });
+
+  describe("getUserDetails", () => {
+    it("a user who does not exist comes back as NULL — not an error, not an empty shell", async () => {
+      const { getUserById } = await import("./db");
+      /* Fixture control, not the subject: the reader is posed so the ROUTER's
+         own `if (!user) return null` branch can be driven. The assertion is on
+         what the router RETURNED. */
+      (getUserById as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
+      await expect(callerFor(MODERATOR).getUserDetails({ userId: 99999 })).resolves.toBeNull();
+    });
+  });
+
+  describe("listUsers", () => {
+    it("a search term reaches the db helper", async () => {
+      const { listAllUsers } = await import("./db");
+      await callerFor(MODERATOR).listUsers({ search: "test" });
+      expect(soleCallTo(listAllUsers).search).toBe("test");
+    });
+
+    it("no search term sends none, and the router's own defaults go with it", async () => {
+      const { listAllUsers } = await import("./db");
+      await callerFor(MODERATOR).listUsers();
+      const sent = soleCallTo(listAllUsers);
+      expect(sent.search).toBeUndefined();
+      expect(sent.limit).toBe(20);
+      expect(sent.offset).toBe(0);
+      expect(sent.status).toBe("all");
+      expect(sent.role).toBe("all");
+      expect(sent.sortBy).toBe("createdAt");
+      expect(sent.sortOrder).toBe("desc");
+    });
+
+    it("the dates cross the boundary as ISO STRINGS — a Date would reach the panel as something else", async () => {
+      const result = await callerFor(MODERATOR).listUsers();
+      expect(result.users[0].createdAt).toBe("2025-06-01T00:00:00.000Z");
+      expect(result.users[0].lastSignedIn).toBe("2026-01-15T00:00:00.000Z");
+      expect(result.users[0].suspendedAt).toBeNull();
+      expect(result.total).toBe(1);
+    });
+  });
+
+  describe("listBlockedIPs", () => {
+    it("the projection the ROUTER builds, whole — ISO dates, and a null expiry kept null", async () => {
+      const result = await callerFor(MODERATOR).listBlockedIPs();
+      /* Asserted WHOLE rather than field by field: this is a staff read path,
+         and invariant 8 is about what crosses the boundary. A field added to
+         the row upstream reddens here instead of arriving unnoticed. */
+      expect(result.ips[0]).toEqual({
+        id: 1,
+        ipAddress: "10.0.0.1",
+        reason: "Brute force",
+        blockedBy: 1,
+        expiresAt: null,
+        createdAt: "2026-01-10T00:00:00.000Z",
       });
+      expect(result.total).toBe(1);
+    });
+  });
 
-      expect(sendAdminActionNotification).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: expect.stringContaining("Change Request"),
-        }),
-      );
+  describe("getUserFullDetails", () => {
+    it("a user who does not exist comes back as NULL", async () => {
+      const { getUserFullDetails } = await import("./db");
+      (getUserFullDetails as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
+      await expect(
+        callerFor(MODERATOR).getUserFullDetails({ userId: 99999 }),
+      ).resolves.toBeNull();
     });
 
-    it("should log change request to audit log", async () => {
-      const { logAuditEvent } = await import("./auditLog");
-      
-      await logAuditEvent({
-        userId: 10,
-        action: "moderator.change_request_created",
-        resourceType: "change_request",
-        resourceId: "1",
-        metadata: {
-          type: "refund_credits",
-          priority: "normal",
-          targetUserId: 42,
-          title: "Refund credits for service disruption",
-        },
-        severity: "info",
-        req: undefined as any,
+    it("the dates cross as ISO strings, and the credits and stats ride along untouched", async () => {
+      const result = await callerFor(MODERATOR).getUserFullDetails({ userId: 42 });
+      expect(result).not.toBeNull();
+      expect(result!.user.createdAt).toBe("2025-06-01T00:00:00.000Z");
+      expect(result!.user.lastSignedIn).toBe("2026-01-15T00:00:00.000Z");
+      expect(result!.user.suspendedAt).toBeNull();
+      expect(result!.credits).toEqual({ balance: 100 });
+      expect(result!.stats).toEqual({ totalModels: 5, totalGenerations: 50 });
+    });
+  });
+
+  /*
+   * ⚠ THE FIVE BELOW WERE THE REVIEWER'S FINDING ON THIS PR, AND IT WAS RIGHT.
+   * The docblock above this describe said NOTHING drove a moderator read
+   * procedure and then drove seven — while the router declares TWELVE reads.
+   * The other five were neither driven nor named, so the file read as coverage
+   * it did not have, which is the same sentence this whole repair was about.
+   *
+   * Two of them carry the EXACT translation shape driven above — `all`
+   * collapsing to no filter, a date string becoming a `Date` — and one of
+   * those two is the CREDITS read a staff member opens to investigate a
+   * customer's complaint. Named rather than enumerated as a remainder,
+   * because law 7's bar is fix or file, and these cost four arms.
+   */
+  describe("getUserCreditHistory — a CREDITS read, carrying the same translations", () => {
+    it("`all` is a filter word, not a transaction type — the router sends none for it", async () => {
+      const { getDetailedCreditHistory } = await import("./db");
+      await callerFor(MODERATOR).getUserCreditHistory({ userId: 42, type: "all" });
+      const [userId, options] = soleCallArgsTo(getDetailedCreditHistory);
+      expect(userId).toBe(42);
+      expect((options as Record<string, unknown>).type).toBeUndefined();
+    });
+
+    it("a real transaction type travels whole, and the dates become Dates", async () => {
+      const { getDetailedCreditHistory } = await import("./db");
+      await callerFor(MODERATOR).getUserCreditHistory({
+        userId: 42,
+        type: "topup",
+        startDate: "2026-01-01T00:00:00.000Z",
       });
+      const sent = soleCallArgsTo(getDetailedCreditHistory)[1] as Record<string, unknown>;
+      expect(sent.type).toBe("topup");
+      expect(sent.startDate).toBeInstanceOf(Date);
+      expect((sent.startDate as Date).toISOString()).toBe("2026-01-01T00:00:00.000Z");
+      expect(sent.endDate).toBeUndefined();
+      expect(sent.limit).toBe(50);
+    });
+  });
 
-      expect(logAuditEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: "moderator.change_request_created",
-          resourceType: "change_request",
-        }),
-      );
+  describe("getUserGenerationHistory — two `all`s, both of which must collapse", () => {
+    it("neither `all` reaches the reader as a filter", async () => {
+      const { getDetailedGenerationHistory } = await import("./db");
+      await callerFor(MODERATOR).getUserGenerationHistory({
+        userId: 42,
+        status: "all",
+        type: "all",
+      });
+      const sent = soleCallArgsTo(getDetailedGenerationHistory)[1] as Record<string, unknown>;
+      expect(sent.status).toBeUndefined();
+      expect(sent.type).toBeUndefined();
     });
 
-    it("should support optional related audit log ID", () => {
-      const withAuditLog = {
-        type: "flag_account",
-        relatedAuditLogId: 501,
-      };
-      const withoutAuditLog = {
-        type: "note_incident",
-      };
-
-      expect(withAuditLog.relatedAuditLogId).toBe(501);
-      expect(withoutAuditLog).not.toHaveProperty("relatedAuditLogId");
+    it("a real status and a real type both travel whole", async () => {
+      const { getDetailedGenerationHistory } = await import("./db");
+      await callerFor(MODERATOR).getUserGenerationHistory({
+        userId: 42,
+        status: "failed",
+        type: "castingImage",
+      });
+      const sent = soleCallArgsTo(getDetailedGenerationHistory)[1] as Record<string, unknown>;
+      expect(sent.status).toBe("failed");
+      expect(sent.type).toBe("castingImage");
     });
+  });
 
-    it("should support optional target name", () => {
-      const withName = {
-        type: "suspend_user",
-        targetUserId: 42,
-        targetUserName: "John Doe",
-      };
-      const withoutName = {
-        type: "suspend_user",
-        targetUserId: 42,
-      };
-
-      expect(withName.targetUserName).toBe("John Doe");
-      expect(withoutName).not.toHaveProperty("targetUserName");
+  describe("getFlaggedReferrals", () => {
+    it("the router's own defaults reach the reader when nothing is asked for", async () => {
+      const { getFlaggedReferrals } = await import("./db");
+      await callerFor(MODERATOR).getFlaggedReferrals();
+      expect(getFlaggedReferrals).toHaveBeenCalledWith(50, 0);
     });
+  });
+
+  describe("getAuditLogById", () => {
+    it("the id asked for is the id read — not a default, not the first row", async () => {
+      const { getAuditLogById } = await import("./auditLog");
+      await callerFor(MODERATOR).getAuditLogById({ id: 77 });
+      expect(getAuditLogById).toHaveBeenCalledWith(77);
+    });
+  });
+
+  describe("getUserStats", () => {
+    it("the statistics reader is reached, and its answer is what comes back", async () => {
+      const { getUserStatistics } = await import("./db");
+      const result = await callerFor(MODERATOR).getUserStats();
+      expect(getUserStatistics).toHaveBeenCalled();
+      expect(result.totalUsers).toBe(100);
+    });
+  });
+});
+
+/*
+ * ⚠ AND THIS IS THE ARM THAT KEEPS THE SENTENCE ABOVE TRUE TOMORROW.
+ *
+ * The claim "every read on this router is driven" is exactly the kind of
+ * sentence that stops being true without anybody editing it — a new procedure
+ * is added to the router and no test anywhere goes red. That is
+ * `list-stops-being-the-list`, and it is what put two FICTIONAL procedure
+ * names into a security describe in this suite's own history.
+ *
+ * So the population is DERIVED from the running router and compared against
+ * what this file accounts for. Add a procedure tomorrow and this reddens until
+ * someone drives it or names where it is driven.
+ *
+ * ⚠ WHAT IT CANNOT CATCH, said plainly rather than left to be assumed: it
+ * compares NAMES. Listing a procedure below without actually driving it would
+ * pass. It catches the drift that happens by accident — a surface growing —
+ * not a deliberate untruth.
+ */
+describe("Moderator Role — every procedure on the router is accounted for, DERIVED", () => {
+  /* Driven by an arm in THIS file, above. */
+  const DRIVEN_HERE = [
+    "getAuditLogs", "getAbuseAlerts", "getAuditStats", "getAuditLogById",
+    "getUserDetails", "getUserActivity", "listBlockedIPs", "listUsers",
+    "getUserFullDetails", "getUserStats", "getUserCreditHistory",
+    "getUserGenerationHistory", "getFlaggedReferrals",
+  ];
+
+  /* Driven elsewhere, read at that file before being written here. */
+  const DRIVEN_ELSEWHERE: Record<string, string> = {
+    createChangeRequest:
+      "changeRequests.test.ts — the db write, the audit row and the Slack note, plus the refusals",
+    getMyChangeRequests:
+      "changeRequests.test.ts — the session's moderator id reaching the db helper, and the status filter",
+  };
+
+  it("no procedure on the moderator router is unaccounted for", () => {
+    const surface = Object.keys(
+      (moderatorRouter as unknown as { _def: { procedures: Record<string, unknown> } })._def
+        .procedures,
+    );
+    expect(surface.length).toBeGreaterThan(0);
+    const accounted = new Set([...DRIVEN_HERE, ...Object.keys(DRIVEN_ELSEWHERE)]);
+    expect(surface.filter((name) => !accounted.has(name)).sort()).toEqual([]);
+  });
+
+  it("and nothing is accounted for that the router does not have — the list cannot outlive the surface", () => {
+    const surface = new Set(
+      Object.keys(
+        (moderatorRouter as unknown as { _def: { procedures: Record<string, unknown> } })._def
+          .procedures,
+      ),
+    );
+    const fictional = [...DRIVEN_HERE, ...Object.keys(DRIVEN_ELSEWHERE)].filter(
+      (name) => !surface.has(name),
+    );
+    expect(fictional.sort()).toEqual([]);
   });
 });
 
@@ -546,81 +721,20 @@ describe("Moderator Role - Security Boundaries (DERIVED from the running router)
     expect(user.id).toBe(42);
     expect(user.email).toBe("test@example.com");
   });
-
-  it("change request priority should support 4 levels", () => {
-    const validPriorities = ["low", "normal", "high", "urgent"];
-    expect(validPriorities).toHaveLength(4);
-    validPriorities.forEach(p => expect(typeof p).toBe("string"));
-  });
-
-  it("change request description must be at least 10 characters", () => {
-    const minLength = 10;
-    const validDesc = "This user has been violating rate limits repeatedly";
-    const invalidDesc = "bad user";
-
-    expect(validDesc.length).toBeGreaterThanOrEqual(minLength);
-    expect(invalidDesc.length).toBeLessThan(minLength);
-  });
-
-  it("change request description must not exceed 5000 characters", () => {
-    const maxLength = 5000;
-    const longDesc = "x".repeat(5001);
-    expect(longDesc.length).toBeGreaterThan(maxLength);
-  });
 });
 
-describe("Moderator Role - Database Schema", () => {
-  it("user role enum should include moderator", () => {
-    const validRoles = ["user", "admin", "moderator"];
-    expect(validRoles).toContain("moderator");
-  });
-
-  it("moderator role should be distinct from admin", () => {
-    expect("moderator").not.toBe("admin");
-  });
-
-  it("moderator role should be distinct from user", () => {
-    expect("moderator").not.toBe("user");
-  });
-});
-
-describe("Moderator Role - UI Access Control", () => {
-  it("moderator dashboard should be accessible by moderator role", () => {
-    const user = { role: "moderator" };
-    const canAccessModeratorDashboard = user.role === "moderator" || user.role === "admin";
-    expect(canAccessModeratorDashboard).toBe(true);
-  });
-
-  it("moderator dashboard should be accessible by admin role", () => {
-    const user = { role: "admin" };
-    const canAccessModeratorDashboard = user.role === "moderator" || user.role === "admin";
-    expect(canAccessModeratorDashboard).toBe(true);
-  });
-
-  it("moderator dashboard should NOT be accessible by regular user", () => {
-    const user = { role: "user" };
-    const canAccessModeratorDashboard = user.role === "moderator" || user.role === "admin";
-    expect(canAccessModeratorDashboard).toBe(false);
-  });
-
-  it("admin dashboard should NOT be accessible by moderator", () => {
-    const user = { role: "moderator" };
-    const canAccessAdminDashboard = user.role === "admin";
-    expect(canAccessAdminDashboard).toBe(false);
-  });
-
-  it("dashboard sidebar should show moderator link for moderator role", () => {
-    const user = { role: "moderator" };
-    const showModeratorLink = user.role === "moderator";
-    const showAdminLink = user.role === "admin";
-    expect(showModeratorLink).toBe(true);
-    expect(showAdminLink).toBe(false);
-  });
-
-  it("dashboard sidebar should show both links for admin role", () => {
-    const user = { role: "admin" };
-    const showAdminSection = user.role === "admin";
-    expect(showAdminSection).toBe(true);
-    // Admin section includes moderator view link
+/*
+ * ⚠ THREE ARMS HERE RECITED THE ROLE VOCABULARY AT ITSELF —
+ *     expect(["user", "admin", "moderator"]).toContain("moderator");
+ *     expect("moderator").not.toBe("admin");
+ *     expect("moderator").not.toBe("user");
+ * — under the heading "Database Schema", while touching no schema. Drop
+ * `moderator` from the column tomorrow and all three stay green.
+ *
+ * One arm replaces them, read off the column the product actually declares.
+ */
+describe("Moderator Role — the role vocabulary, DERIVED from the schema", () => {
+  it("the users table's role column declares the moderator role — read off the column, not recited", () => {
+    expect(users.role.enumValues).toEqual(["user", "admin", "moderator"]);
   });
 });
