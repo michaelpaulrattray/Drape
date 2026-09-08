@@ -24,15 +24,21 @@
  * must add its path to `RITE_DISK_READS` in the same commit, and the rite's
  * guard comment says so at the place it happens.
  */
-import { readFileSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   RITE_DISK_READS,
   dirtyEntriesFrom,
   judgeDirtyTree,
 } from "../scripts/lib/dirtyTreeGuard.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* One arm drives real git child processes on a fixture repository (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const ROOT = path.resolve(__dirname, "..");
 const RITE = readFileSync(path.join(ROOT, "scripts", "deploy-rite.mts"), "utf8");
@@ -159,8 +165,13 @@ describe("RITE_DISK_READS covers the rite's real import graph — derived, not r
       seen.add(file);
       if (!/\.(m?ts|tsx)$/.test(file)) continue;
       const text = readFileSync(path.join(ROOT, file), "utf8");
-      for (const match of text.matchAll(/from\s+"(\.[^"]+)"|import\s*\(\s*"(\.[^"]+)"\s*\)/g)) {
-        const spec = match[1] ?? match[2]!;
+      /* Three shapes: `from "…"` (covers import-from AND export-from — the
+         barrel shape that blinded the Atlas for months), dynamic
+         `import("…")`, and the bare side-effect `import "…"` (#707 review,
+         finding 4 — it matched neither alternative and so landed in neither
+         `reached` nor `unresolved`, escaping the refuse-never-shrug rule). */
+      for (const match of text.matchAll(/from\s+"(\.[^"]+)"|import\s*\(\s*"(\.[^"]+)"\s*\)|import\s+"(\.[^"]+)"/g)) {
+        const spec = match[1] ?? match[2] ?? match[3]!;
         const resolved = resolveSpec(file, spec);
         if (resolved) queue.push(resolved);
         else unresolved.push(`${file} -> ${spec}`);
@@ -186,12 +197,73 @@ describe("RITE_DISK_READS covers the rite's real import graph — derived, not r
   });
 });
 
+describe("the two path reads agree on encoding — driven on a real repository (#707 review, finding 1)", () => {
+  it("a carried dirty café file refuses as carried; the unquoted read provably misses it", () => {
+    /* The rite's EXACT argv on both sides, against a repository whose pushed
+       commit and desk both touch a non-ASCII filename. The negative control
+       is the bug itself: the pre-fix diff read (no -z) C-quotes the path, the
+       carried set spells it differently from the -z dirty set, and the judge
+       fails open on the one case rule 1 exists to refuse. */
+    const repo = mkdtempSync(path.join(os.tmpdir(), "drape-quotepath-"));
+    try {
+      const git = (...args: string[]) => execFileSync("git", args, { cwd: repo, encoding: "utf8" });
+      git("init", "--quiet");
+      git("config", "user.email", "suite@drape.test");
+      git("config", "user.name", "suite");
+      /* Pinned so the negative control demonstrates on any machine's global
+         config; the -z reads under test are quoting-immune either way. */
+      git("config", "core.quotePath", "true");
+      writeFileSync(path.join(repo, "base.txt"), "tip\n");
+      git("add", "base.txt");
+      git("commit", "--quiet", "-m", "the remote tip");
+      const tip = git("rev-parse", "HEAD").trim();
+      mkdirSync(path.join(repo, "docs"));
+      writeFileSync(path.join(repo, "docs", "café-brief.md"), "committed\n");
+      git("add", "docs");
+      git("commit", "--quiet", "-m", "the push");
+      writeFileSync(path.join(repo, "docs", "café-brief.md"), "desk edit\n");
+
+      const dirty = dirtyEntriesFrom(git("status", "--porcelain", "-z", "--no-renames"));
+      expect(dirty.map((entry) => entry.path)).toContain("docs/café-brief.md");
+      const carried = new Set(
+        git("diff", "--name-only", "--no-renames", "-z", `${tip}..HEAD`).split("\0").filter(Boolean),
+      );
+      const verdict = judgeDirtyTree(dirty, carried);
+      expect(verdict.refused).toHaveLength(1);
+      expect(verdict.refused[0]!.why).toContain("this push's commits change this file");
+
+      const unquoted = new Set(
+        git("diff", "--name-only", "--no-renames", `${tip}..HEAD`).split(/\r?\n/).filter(Boolean),
+      );
+      expect([...unquoted].some((p) => p.startsWith('"')), "git did C-quote the path — the control is live").toBe(true);
+      expect(judgeDirtyTree(dirty, unquoted).refused, "the pre-fix read fails open — the bug was real").toEqual([]);
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("the rite invokes the guard, and the disk reads the list claims still exist", () => {
-  it("the guard is wired: parsed with -z --no-renames, judged, carried read with --no-renames", () => {
+  it("the guard is wired: -z on BOTH path reads, throwing reads, the judge invoked", () => {
     expect(RITE).toContain("dirtyEntriesFrom(");
     expect(RITE).toContain("judgeDirtyTree(");
-    expect(RITE).toContain('"--porcelain", "-z", "--no-renames"');
-    expect(RITE).toContain('"--name-only", "--no-renames"');
+    /* Both reads -z (#707 review, finding 1: name-only C-quotes unusual paths
+       while -z status does not, and two spellings of one path fail open) and
+       both through the throwing runner (finding 3: `run()` hands a failed
+       git's stderr to the parser, which reads it as a clean tree). */
+    expect(RITE).toContain('gitOrThrow("status", "--porcelain", "-z", "--no-renames")');
+    expect(RITE).toContain('gitOrThrow("diff", "--name-only", "--no-renames", "-z"');
+  });
+
+  it("the atlas and capability custody checks run on the COMMIT, not the desk", () => {
+    /* #707 review, finding 2 — the same desk-vs-commit class as the script
+       guards. The worktree recipe is pinned at the bytes: the custody block
+       hands `sha` to `inWorktreeOf` and spawns the checks with the tree as
+       cwd, so desk dirt in a scanned root can neither redden them nor let a
+       stale committed map ride a desk that happens to agree. */
+    expect(RITE).toContain("const custody = inWorktreeOf(");
+    expect(RITE).toContain('cwd: tree, encoding: "utf8", shell: true');
+    expect(RITE).toContain("the commit being pushed — the push does not fire");
   });
 
   it("the pinned disk reads are where the list says: drizzle bytes and .gitattributes", () => {

@@ -12,9 +12,11 @@
  *
  * What the blanket refusal actually protected, read at the rite rather than
  * assumed: the push ships COMMITS (Railway builds main's committed bytes), the
- * script guards and `pnpm check` run in a throwaway worktree OF THE COMMIT,
- * and the quiet/briefing/eye judges read `git show <sha>:…`. A dirty tracked
- * file can therefore only corrupt a deploy in two ways, and both still refuse:
+ * script guards, `pnpm check` and the atlas/capability custody checks run in
+ * a throwaway worktree OF THE COMMIT (the custody pair moved there with this
+ * narrowing — #707 review, finding 2), and the quiet/briefing/eye judges read
+ * `git show <sha>:…`. A dirty tracked file can therefore only corrupt a
+ * deploy in two ways, and both still refuse:
  *
  *  1. **It is a file the push's own commits change** — then the desk holds a
  *     different version of something this deploy ships, and "which bytes am I
