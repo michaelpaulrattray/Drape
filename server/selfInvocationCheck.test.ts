@@ -104,6 +104,30 @@ function modulesDeclaringTheCheck(): string[] {
   return found.sort();
 }
 
+/**
+ * The offences one module's source carries, if any.
+ *
+ * ⚠ FACTORED OUT SO A FIXTURE CAN DRIVE THE REAL DETECTOR. A positive control
+ * that matches the pattern against an inline string proves the REGEX and not
+ * the pipeline: the comment-strip below could stop reaching a declaration and
+ * the arm would report a clean tree forever (working law 2, PR #672 review).
+ * Everything after the read goes through here, so the control and the walk
+ * cannot diverge.
+ *
+ * Comments are stripped first because several of these files deliberately
+ * QUOTE the retired idiom to explain what changed — quoting a defect must
+ * never read as committing it.
+ */
+function offencesIn(rel: string, source: string): string[] {
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  const offences: string[] = [];
+  if (/process\.argv\[1\]/.test(code)) offences.push(`${rel}: reads process.argv[1]`);
+  if (/\bconst invokedDirectly\b/.test(code) && !/const invokedDirectly = import\.meta\.main;/.test(code)) {
+    offences.push(`${rel}: declares invokedDirectly without import.meta.main`);
+  }
+  return offences;
+}
+
 describe("the self-invocation check", () => {
   it("`import.meta.main` is true when tsx RUNS a file and false when tsx IMPORTS it", () => {
     /* ⚠ THE ARM THE WHOLE CHANGE RESTS ON. Every other arm here is about which
@@ -147,21 +171,63 @@ describe("the self-invocation check", () => {
          vanish-between-list-and-read window applies here. */
       const src = readListedSource(join(SCRIPTS, rel));
       if (src === null) continue;
-      /* Comments are stripped first: several of these files deliberately quote
-         the retired idiom to explain what changed and why, and quoting a
-         defect must never read as committing it. */
-      const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-      if (/process\.argv\[1\]/.test(code)) offenders.push(`${rel}: reads process.argv[1]`);
-      if (/\bconst invokedDirectly\b/.test(code) && !/const invokedDirectly = import\.meta\.main;/.test(code)) {
-        offenders.push(`${rel}: declares invokedDirectly without import.meta.main`);
-      }
+      offenders.push(...offencesIn(rel, src));
     }
     expect(offenders, "each of these hand-rolls a question the platform answers").toEqual([]);
 
-    /* ⚠ THE POSITIVE CONTROL ON THE PATTERN. An empty `offenders` is a claim
-       about a checker (working law 2); without this a lost escape would empty
-       it forever and leave the arm green over a tree full of offenders. */
-    expect('const invokedDirectly = process.argv[1] !== undefined;'.match(/process\.argv\[1\]/)).not.toBeNull();
+    /* ⚠ THE POSITIVE CONTROL DRIVES THE DETECTOR, NOT THE REGEX (PR #672
+       review, finding 2). It first matched the pattern against an inline
+       string, which cannot fail if the PIPELINE loses the ability to flag a
+       real file — the comment-strip eating a declaration, say — leaving
+       `offenders` empty forever over a tree full of them. So the same function
+       the loop above uses is driven on a fixture carrying the retired idiom,
+       and must flag BOTH offences. */
+    const planted = offencesIn(
+      "planted.mts",
+      "const invokedDirectly = process.argv[1] !== undefined\n  && resolve(process.argv[1]) === fileURLToPath(import.meta.url);\n",
+    );
+    expect(planted, "the detector must still flag a real offender").toEqual([
+      "planted.mts: reads process.argv[1]",
+      "planted.mts: declares invokedDirectly without import.meta.main",
+    ]);
+
+    /* And the other direction, so the detector is not simply "flags
+       everything": a correctly converted file yields nothing, and a file that
+       only QUOTES the idiom inside a comment yields nothing either — several
+       of these deliberately do, to explain what changed. */
+    expect(offencesIn("clean.mts", "const invokedDirectly = import.meta.main;\n")).toEqual([]);
+    expect(
+      offencesIn("quoting.mts", "/* it used to read process.argv[1] here */\nconst invokedDirectly = import.meta.main;\n"),
+    ).toEqual([]);
+  });
+
+  it("an old runtime is REFUSED, not silently obeyed — the failure the swap could have imported", () => {
+    /* ⚠ THE SWAP'S OWN RISK, CLOSED (PR #672 review, finding 1).
+       `import.meta.main` arrived in the Node 24 line; before it the expression
+       is `undefined`, which is falsy in BOTH directions — so on an old runtime
+       every converted command block becomes a silent no-op that exits 0. That
+       is the same green-silent class #668 exists to remove, arriving through
+       the runtime instead of the path spelling.
+
+       It bites hardest where a hook runs one of these as a COMMAND: a no-op is
+       not a failure, so `.githooks/atlas-stage` would print "regenerated and
+       staged — this commit carries the map of its own tree" having staged
+       nothing.
+
+       Two things close it and this arm holds both. The declarative pin warns
+       at install; the runtime refusal is what stops a hook mid-commit on a
+       machine that never installed. */
+    const pkg = JSON.parse(readListedSource(join(REPO, "package.json")) ?? "{}");
+    expect(pkg.engines?.node, "package.json must pin the runtime the primitive needs").toBe(">=24");
+
+    for (const rel of ["check-architecture.mts", "generate-architecture.mts"]) {
+      const src = readListedSource(join(SCRIPTS, rel));
+      expect(src, `${rel} must be readable`).not.toBeNull();
+      expect(
+        src ?? "",
+        `${rel} is run as a command by a git hook — it must REFUSE an old runtime, not no-op`,
+      ).toContain('typeof import.meta.main === "undefined"');
+    }
   });
 
   it("IMPORTED, not one of them runs its command block — the arm that matters", () => {

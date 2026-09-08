@@ -359,6 +359,34 @@ export function checkArchitecture(
   Driven both ways under `tsx` (run directly: true; imported: false), because
   tsx and not bare node is what actually runs these.
 */
+/*
+  ⚠ AN OLD RUNTIME MAKES `import.meta.main` UNDEFINED, WHICH IS FALSY IN BOTH
+  DIRECTIONS — SO IT IS REFUSED HERE RATHER THAN OBEYED (PR #672 review,
+  finding 1).
+
+  `import.meta.main` arrived in the Node 24 line. Before it, the expression is
+  `undefined`, the block below never fires, and this script exits 0 having done
+  nothing — which is the SAME silent-green failure #668 was filed to remove,
+  arriving through the runtime instead of the path spelling. It matters most
+  right here: `.githooks/atlas-stage` runs the generator as a command, a no-op
+  is not a failure, and the hook would print "regenerated and staged — this
+  commit carries the map of its own tree" having staged nothing.
+
+  `package.json` pins `engines: node >= 24`, but that WARNS at install time and
+  cannot stop a hook mid-commit on a machine that never installed. Only these
+  two files carry this guard, and deliberately: they are the two the hooks
+  invoke as commands. The other seven are refused loudly by their own callers
+  or are libraries whose importers keep working either way.
+*/
+if (typeof import.meta.main === "undefined") {
+  console.error(
+    "REFUSED — this Node does not support `import.meta.main` (needs >= 24, this is "
+      + `${process.version}). Without it this script would exit 0 having done nothing, `
+      + "and the commit hook would report a map it never wrote.",
+  );
+  process.exit(1);
+}
+
 const invokedDirectly = import.meta.main;
 
 if (invokedDirectly) {
