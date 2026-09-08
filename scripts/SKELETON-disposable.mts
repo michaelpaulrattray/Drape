@@ -63,6 +63,27 @@
  * product's own types locally instead of importing it (working law 4), which
  * compiles until the real type moves. (#335, folded in from #249.)
  *
+ * # NAME IT FOR ITS CARD — this is what decides whether it can ever be deleted
+ *
+ * `_<card>-<what>-disposable.mts`, e.g. `_654-junction-probe-disposable.mts`.
+ * Not a preference: it is the difference between a file the Janitor can date
+ * and a file that lives here forever.
+ *
+ * The litter manifest's keep test is a 7-day window, and for an untracked file
+ * the only date available is the filesystem mtime — which #526 measured to be
+ * worthless: **270 of 307 disposables had their mtime rewritten to a single
+ * hour** by one unidentified event, so every one of them read as brand new and
+ * the sweep could never fire. `scripts/disposable-age.mts` replaced that
+ * reading with an ARTIFACT: the card in the name, dated at the issue's own
+ * close on GitHub, which nothing on this machine can re-stamp.
+ *
+ * ⚠ **It keeps what it cannot name, on purpose** — a wrong guess deletes
+ * somebody's working file. Measured on the live pile the day it was built:
+ * **856 untracked disposables, 403 anchored by name, 453 unresolved.** Every
+ * one of those 453 is called `_probe-…`, `_read-…`, `_edit-…` or `court-…`,
+ * and every one of them is now permanent litter for want of four characters
+ * at the front of its name.
+ *
  * # It is a real script, and that is the point
  *
  * A template kept as prose or as a `.txt` drifts from the guards the first time
