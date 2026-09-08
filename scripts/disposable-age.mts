@@ -24,7 +24,9 @@
  *
  * - `_<N>-…` — card #N. Anchored at the issue's `closedAt` (GitHub owns it).
  *   An issue still OPEN anchors at nothing and the file is KEPT: the work may
- *   be live, and that is the safe direction.
+ *   be live, and that is the safe direction. ⚠ `gh issue list` excludes PULL
+ *   REQUESTS, so a disposable named for a PR number resolves to "not an issue"
+ *   — also a KEEP, and stated here rather than looking like a bug later.
  * - `_briefing-e<N>-…` — briefing edition N. Anchored at the commit that first
  *   shipped that edition in `server/crew/crew-briefing.json`. This is the road
  *   run 3 took by hand for the seven writers it deleted; it is mechanised here.
@@ -100,18 +102,41 @@ const gitIn = (root: string) => (...args: string[]): string =>
   execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
 
 /**
- * Every UNTRACKED disposable under `scripts/`.
+ * Every UNTRACKED path under `scripts/`, decoded.
  *
  * `--untracked-files=all` and not the default: git collapses an untracked
  * DIRECTORY to one line, and a population read from the collapsed form is
  * short by everything inside it.
+ *
+ * ⚠ **A C-QUOTED NAME IS DROPPED AND NAMED, NEVER HALF-DECODED** (PR #693
+ * review, finding 4). git quotes a path it considers unusual and C-escapes the
+ * contents (`\"`, `\\`, octal for non-ASCII). Stripping the quotes alone
+ * yields a path that does not exist, which then crashes the `statSync` later
+ * with a message that does not say why. So a quoted name whose body still
+ * carries a backslash is returned in `undecodable` instead: it is kept (it is
+ * never in the population, so it can never be swept) and the run says so,
+ * which is the fail-loud direction on a reader that feeds a deletion.
  */
+export const untrackedUnderScripts = (
+  statusPorcelain: string,
+): { paths: string[]; undecodable: string[] } => {
+  const paths: string[] = [];
+  const undecodable: string[] = [];
+  for (const line of statusPorcelain.split(/\r?\n/)) {
+    if (!line.startsWith("?? ")) continue;
+    const raw = line.slice(3).trim();
+    const quoted = raw.startsWith('"') && raw.endsWith('"');
+    const body = quoted ? raw.slice(1, -1) : raw;
+    if (quoted && body.includes("\\")) { undecodable.push(raw); continue; }
+    if (body.startsWith("scripts/")) paths.push(body);
+  }
+  return { paths, undecodable };
+};
+
+/** The population itself: the untracked disposables among those paths. */
 export const untrackedDisposables = (statusPorcelain: string): string[] =>
-  statusPorcelain
-    .split(/\r?\n/)
-    .filter((line) => line.startsWith("?? "))
-    .map((line) => line.slice(3).trim().replace(/^"|"$/g, ""))
-    .filter((p) => p.startsWith("scripts/") && /-disposable\.[a-z]+$/i.test(p));
+  untrackedUnderScripts(statusPorcelain).paths
+    .filter((p) => /-disposable\.[a-z]+$/i.test(p));
 
 /**
  * The id a disposable's NAME points at, or null.
@@ -163,14 +188,65 @@ export const citationsFrom = (grepOutput: string, population: string[]): Map<str
   return found;
 };
 
+/**
+ * The population's own INTERNAL edges, in the `path:line:text` shape `git grep`
+ * produces so one tested reader sees both kinds.
+ *
+ * ⚠ **IT TAKES EVERY UNTRACKED FILE UNDER `scripts/`, NOT ONLY THE DISPOSABLES
+ * AMONG THEM** (PR #693 review, finding 2 — this PR's own class, one shape
+ * over, and the reviewer was right). Folding in only the population left an
+ * untracked NON-disposable keeper invisible to both readers, and
+ * `scripts/lib/sabotage.mts` is exactly that shape. A helper the team keeps,
+ * importing a disposable, would have left that disposable at zero citations and
+ * reported it sweepable. The excluded set is empty now rather than merely
+ * narrower, which is the only version of this fix that ends.
+ *
+ * ⚠ **AND IT IS A FUNCTION RATHER THAN A LOOP INSIDE `read()` BECAUSE THE FIRST
+ * CUT OF THIS FIX HAD NO ARM.** Narrowing the loop back to the disposables
+ * reddened NOTHING — the arm written for it drove `citationsFrom`, which does
+ * not care which list fed it, so the helper was proven and the call site was
+ * not. That is the `derive-adds-a-hop` class arriving inside the repair for
+ * another one. The reader is injected so the WALK itself can be driven.
+ */
+export const internalCitationLines = (
+  files: string[],
+  readText: (file: string) => string | null,
+): string[] => {
+  const lines: string[] = [];
+  for (const file of files) {
+    const text = readText(file);
+    if (text === null) continue;
+    for (const line of text.split(/\r?\n/)) {
+      if (line.includes("-disposable.")) lines.push(`${file}:0:${line}`);
+    }
+  }
+  return lines;
+};
+
 /** Every issue this repository has, by number, with the date it closed. */
+const ISSUE_LIMIT = 2000;
+
 const readIssues = (root: string): Map<number, { state: string; closedAt: Date | null }> => {
   const raw = execFileSync(
     process.platform === "win32" ? "gh.exe" : "gh",
-    ["issue", "list", "--state", "all", "--limit", "2000", "--json", "number,state,closedAt"],
+    ["issue", "list", "--state", "all", "--limit", String(ISSUE_LIMIT), "--json", "number,state,closedAt"],
     { cwd: root, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
   );
   const rows = JSON.parse(raw) as { number: number; state: string; closedAt: string | null }[];
+  if (rows.length >= ISSUE_LIMIT) {
+    /* ⚠ THE TRUNCATION ANNOUNCES ITSELF (PR #693 review, finding 3). `gh issue
+       list` returns NEWEST FIRST, so at the ceiling it is the OLDEST cards that
+       fall off — and their disposables would then read "#N is not an issue in
+       this repository" and be kept forever, with nothing anywhere going red.
+       That is the hoarding failure this card exists to remove, returning
+       silently through the door built to fix it. ~700 issues today, so this is
+       latent; the refusal is what makes it stop being latent. */
+    throw new Error(
+      `gh returned ${rows.length} issues at the --limit of ${ISSUE_LIMIT}, so the list is TRUNCATED and`
+      + " the oldest cards are missing. Their files would read as unresolvable and be kept forever."
+      + " Raise ISSUE_LIMIT or page the read.",
+    );
+  }
   if (rows.length === 0) {
     /* An unauthenticated `gh` prints an empty list, which looks exactly like a
        repository with no issues — and every card anchor would then read
@@ -206,7 +282,12 @@ const editionDate = (git: (...a: string[]) => string, n: number): Date | null =>
 
 export const read = (root: string): Verdict[] => {
   const git = gitIn(root);
-  const population = untrackedDisposables(git("status", "--porcelain", "--untracked-files=all"));
+  const porcelain = git("status", "--porcelain", "--untracked-files=all");
+  const { paths: untracked, undecodable } = untrackedUnderScripts(porcelain);
+  for (const raw of undecodable) {
+    console.error(`disposable-age: UNDECODABLE NAME, kept and not classified — ${raw}`);
+  }
+  const population = untracked.filter((p) => /-disposable\.[a-z]+$/i.test(p));
   let grepOut = "";
   try {
     /* ⚠ NOTHING IS EXCLUDED, AND THE FIRST DRAFT EXCLUDED `docs/JANITOR_LOG.md`.
@@ -241,14 +322,9 @@ export const read = (root: string): Verdict[] => {
     The population's own text is folded into the same `path:line:text` shape
     `git grep` produces, so ONE tested reader sees both kinds of edge.
   */
-  const internal: string[] = [];
-  for (const file of population) {
-    let text = "";
-    try { text = readFileSync(path.join(root, file), "utf8"); } catch { continue; }
-    for (const line of text.split(/\r?\n/)) {
-      if (line.includes("-disposable.")) internal.push(`${file}:0:${line}`);
-    }
-  }
+  const internal = internalCitationLines(untracked, (file) => {
+    try { return readFileSync(path.join(root, file), "utf8"); } catch { return null; }
+  });
   const citations = citationsFrom([grepOut, internal.join("\n")].join("\n"), population);
   const issues = readIssues(root);
 
@@ -288,7 +364,21 @@ const main = (): void => {
   const args = process.argv.slice(2);
   const known = new Set(["--list", "--json", "--days", "--root"]);
   for (const a of args) {
-    if (a.startsWith("--") && !known.has(a.split("=")[0])) {
+    if (!a.startsWith("--")) continue;
+    /* ⚠ THE `=` FORM IS REFUSED, NOT TOLERATED (PR #693 review, finding 1).
+       The first cut checked `known.has(a.split("=")[0])`, so `--days=60` and
+       `--root=<tree>` PASSED this guard — and then the value parsers, which
+       are exact `indexOf("--days")` matches, never saw them. The run went
+       ahead on the DEFAULTS: the operator's own tree, a 7-day window, and a
+       sweep list they did not ask for. This report is the input to a deletion
+       act, so a silently-wrong parameter is the one place "it only reports"
+       stops being a defence. */
+    if (a.includes("=")) {
+      console.error(`disposable-age: REFUSING — write \`${a.split("=")[0]} ${a.split("=").slice(1).join("=")}\`, not \`${a}\`.`);
+      console.error("  The value form is not parsed here, and accepting it silently would run on defaults.");
+      process.exit(1);
+    }
+    if (!known.has(a)) {
       console.error(`disposable-age: REFUSING — unknown flag ${a}`);
       process.exit(1);
     }
@@ -359,4 +449,26 @@ const main = (): void => {
   process.exit(0);
 };
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) main();
+/*
+  "AM I THE THING THAT WAS RUN?" — ASKED OF THE PLATFORM, NEVER OF argv (#668).
+
+  This file is both a library (the suite imports its readers) and a command, so
+  it needs the question — and the hand-rolled spelling it carried first is the
+  one #668 removed from eight other scripts: on Windows `import.meta.url` is
+  `file:///C:/…` while `process.argv[1]` is backslashed, so the comparison never
+  matches, the script prints nothing and exits 0, and a silent no-op is
+  indistinguishable from a clean run. There is deliberately no shared helper —
+  a helper leaves a hop to get wrong.
+
+  The refusal is a THROW rather than an exit: this module is imported by a
+  vitest suite, and a `process.exit(1)` inside a worker kills it mid-run.
+*/
+if (typeof import.meta.main === "undefined") {
+  throw new Error(
+    "REFUSED — this Node does not support `import.meta.main` (needs >= 24.2, this is "
+      + `${process.version}). Without it this reader would exit 0 having read nothing, `
+      + "and an empty sweep list looks exactly like a swept pile.",
+  );
+}
+
+if (import.meta.main) main();

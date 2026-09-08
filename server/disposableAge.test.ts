@@ -20,10 +20,21 @@
  * machine and every hour, so a suite that read it would be asserting against
  * a moving target.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
-  citationsFrom, nameAnchorOf, sweepable, untrackedDisposables, type Verdict,
+  citationsFrom, internalCitationLines, nameAnchorOf, sweepable, untrackedDisposables,
+  untrackedUnderScripts,
+  type Verdict,
 } from "../scripts/disposable-age.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* The subject imports `execFileSync` (git and gh), so this file is in #548's
+   derived population one hop out — even though the arms below drive only the
+   pure readers. Declaring the floor is cheaper and more honest than arguing
+   that today's arms happen not to spawn: tomorrow's might. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = new Date("2026-09-09T00:00:00Z");
@@ -67,6 +78,37 @@ describe("untrackedDisposables — the population, and only the population", () 
   it("reads a quoted path — git quotes any name it considers unusual", () => {
     expect(untrackedDisposables('?? "scripts/_1-a b-disposable.mts"'))
       .toEqual(["scripts/_1-a b-disposable.mts"]);
+  });
+
+  it("DROPS a C-quoted name rather than half-decoding it, and names it", () => {
+    /*
+      PR #693 review, finding 4. git C-escapes the body of a quoted path
+      (`\"`, `\\`, octal for non-ASCII). Stripping the quotes alone yields a
+      path that does not exist, and the `statSync` in `read()` then crashes the
+      whole run with a message that does not say why. Dropping it is the
+      fail-safe direction: a file that is never in the population can never be
+      swept, and the run says the name out loud.
+    */
+    const escaped = String.raw`?? "scripts/_1-od\303\251-disposable.mts"`;
+    const got = untrackedUnderScripts(escaped);
+    expect(got.paths).toEqual([]);
+    expect(got.undecodable).toHaveLength(1);
+    expect(untrackedDisposables(escaped)).toEqual([]);
+  });
+
+  it("lists every untracked path under scripts/, not only the disposables", () => {
+    /* The citation sweep needs ALL of them (review finding 2): an untracked
+       keeper naming a disposable is a citation, and `scripts/lib/sabotage.mts`
+       is exactly that shape. */
+    const got = untrackedUnderScripts(PORCELAIN);
+    expect(got.paths).toEqual([
+      "scripts/_429-plan-disposable.mts",
+      "scripts/court-ink-plate-disposable.mts",
+      "scripts/_briefing-e88-disposable.mts",
+      "scripts/lib/sabotage.mts",
+      "scripts/_429-notes.md",
+    ]);
+    expect(got.undecodable).toEqual([]);
   });
 });
 
@@ -137,6 +179,76 @@ describe("citationsFrom — a KEEP is a citation", () => {
       "docs/y.md:2:scripts/_429-plan-disposable.mts",
     ].join("\n"), POPULATION);
     expect(found.get("scripts/_429-plan-disposable.mts")).toEqual(["docs/x.md", "docs/y.md"]);
+  });
+
+  it("THE WALK ITSELF reads untracked NON-disposables, not just the population", () => {
+    /*
+      ⚠ THE ARM THAT WAS MISSING, AND ITS ABSENCE WAS FOUND BY A SABOTAGE.
+      Narrowing the walk back to the disposables alone reddened NOTHING: the
+      arm below drives `citationsFrom`, which does not care which list fed it,
+      so the helper was proven and the CALL SITE was not — `derive-adds-a-hop`,
+      arriving inside the repair for the reviewer's finding 2.
+
+      This drives the walk with an injected reader and asserts on the FILES IT
+      ASKED FOR, which is the only thing a narrowing changes.
+    */
+    const asked: string[] = [];
+    const lines = internalCitationLines(
+      ["scripts/_429-plan-disposable.mts", "scripts/lib/sabotage.mts", "scripts/gone.mts"],
+      (file) => {
+        asked.push(file);
+        if (file === "scripts/gone.mts") return null;
+        return file === "scripts/lib/sabotage.mts"
+          ? 'import { arm } from "../_429-plan-disposable.mts";'
+          : "// nothing here";
+      },
+    );
+    expect(asked, "the keeper must be WALKED, not merely allowed").toContain("scripts/lib/sabotage.mts");
+    expect(asked).toHaveLength(3);
+    expect(lines).toEqual([
+      'scripts/lib/sabotage.mts:0:import { arm } from "../_429-plan-disposable.mts";',
+    ]);
+  });
+
+  it("and `read()` HANDS IT the wide list — the argument, not just the walker", () => {
+    /*
+      ⚠ THE SECOND HALF, AND IT WAS ALSO FOUND BY A SABOTAGE RATHER THAN BY
+      THINKING. Extracting the walk made the arm above possible, and swapping
+      the ARGUMENT back to `population` inside `read()` STILL reddened nothing:
+      the walker is proven, the call that feeds it is not. `read()` needs a real
+      repository with real untracked files, which a unit suite cannot have
+      deterministically — so the call site is asserted at the source, which is
+      thin but is the only reading here that can fail.
+
+      This is the whole `derive-adds-a-hop` lesson in one arm: sabotage the
+      helper, AND assert its arguments.
+    */
+    const source = readFileSync(
+      path.join(path.resolve(__dirname, ".."), "scripts/disposable-age.mts"),
+      "utf8",
+    );
+    expect(source).toMatch(/internalCitationLines\(\s*untracked\s*,/);
+    expect(source, "`population` is the NARROW list — feeding it here is the defect")
+      .not.toMatch(/internalCitationLines\(\s*population\s*,/);
+    /* And the wide list must genuinely be the wide one where it is built. */
+    expect(source).toMatch(/const \{ paths: untracked, undecodable \} = untrackedUnderScripts\(porcelain\)/);
+  });
+
+  it("POSITIVE CONTROL — an untracked NON-disposable keeper counts as a citation", () => {
+    /*
+      PR #693 review, finding 2, and it is this PR's own class one shape over.
+      The first cut folded in only the POPULATION's text, so an untracked file
+      the team keeps — `scripts/lib/sabotage.mts` is exactly that shape, and it
+      is in this file's own fixture — was invisible to both readers. A keeper
+      importing a disposable would have left that disposable at zero citations
+      and reported it sweepable. The excluded set is empty now rather than
+      merely narrower, which is the only version of this fix that ends.
+    */
+    const found = citationsFrom(
+      'scripts/lib/sabotage.mts:0:import { arm } from "../_429-plan-disposable.mts";',
+      POPULATION,
+    );
+    expect(found.get("scripts/_429-plan-disposable.mts")).toEqual(["scripts/lib/sabotage.mts"]);
   });
 
   it("POSITIVE CONTROL — sees the population's own INTERNAL edges", () => {
