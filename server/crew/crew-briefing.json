@@ -1,7 +1,7 @@
 {
-  "edition": 297,
-  "updatedAt": "2026-09-07T23:10:00.000Z",
-  "shift": "Foreman (Opus) - your reviewer went missing on a change that merged anyway, and nothing in the log said so",
+  "edition": 298,
+  "updatedAt": "2026-09-08T00:22:51.000Z",
+  "shift": "Foreman (Opus) - the command that deploys your app would accept a typo and deploy anyway",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-07T23:01:12.104Z",
+      "readAt": "2026-09-08T00:23:17.033Z",
       "items": [
         {
           "issueNumber": 16,
@@ -259,7 +259,7 @@
     {
       "id": "switch-count-meaning-663",
       "issueNumber": 663,
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-07T21:45:00Z",
       "title": "Your switch panel's number counts what a shift may TAKE, and calls it the open count - which should it be?",
       "productImpact": "This is the other half of the question you asked yesterday morning: \"how many bugs has it done and worked on its still reading as 18 but its been working all night\".\n\nHalf of that was staleness - the number is written once at the START of a shift and never again, so it reports what a shift FOUND rather than what it CLOSED. That half is a fix and it is queued.\n\nThis half is yours, because it is about what your own panel means. The number under Bugs is NOT \"open cards labelled bug\". It is how many are ON OFFER to a shift tonight - cards you have already ordered into NEXT UP, and cards parked on your own ruling, are subtracted first. You asked for that in #324: \"how do we know they are not already scheduled to be fixed in current pipeline or work?\" - and it was the right ask.\n\nBut the panel labels it as the open count, and you read it as one. So you were holding a number that answers \"what could a shift take tonight\" against a question that was \"how many are left\".",
@@ -281,7 +281,7 @@
     {
       "id": "waiting-eye-chip-649",
       "issueNumber": 649,
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-07T20:40:00Z",
       "title": "A picture you have answered but not finished with: should it wear the same badge a card does?",
       "productImpact": "A small look-and-feel question, and it is yours because it is about pictures.\n\nWhen you answer a card on this page but the job is not finished, it keeps a badge - ANSWERED, STILL YOURS TO DO - so it stays in front of you instead of quietly disappearing. That was your own instruction: keep it on your desk until the act is done.\n\nThe same state can now apply to a set of FRAMES in your gallery, and there the badge is not drawn. So a picture you have already ruled on looks exactly like a fresh one waiting for you.\n\nThe cheap answer is to put the same badge on the gallery. The reason nobody has just done it: frames are judged by looking, and a badge sitting on top of a picture may read as clutter where the same badge on a card reads as information. That is a taste call, not an engineering one.\n\nWHAT WE WOULD DO IF YOU SAY NOTHING: leave the gallery alone. It is the smaller risk - a gallery item you have answered still shows your reply underneath it, so nothing is lost, and a picture stays a picture.\n\nEverything else on that card is built and merged; this is all that is left of it.",
@@ -2029,7 +2029,7 @@
     {
       "id": "casting-upkeep-switch-contradiction",
       "issueNumber": null,
-      "state": "open",
+      "state": "done",
       "title": "Your Casting upkeep switch is ON, and the crew's own rulebook says that work is OFF - which one do you mean?",
       "productImpact": "This is a ten-second question and it has been quietly costing shifts for a week.\n\nOn this page there is a panel of switches deciding what the night crew is allowed to pick up on its own. Casting upkeep is ON. But the crew's rulebook carries your instruction from the 4th - \"leave casting upkeep off for now then\" - and that says OFF.\n\nSo every night a shift arrives, reads both, and has to decide which of the two is you. Every one of them has correctly chosen your written words and left that work alone. But that is a judgement call about your intentions being made in the dark, at two in the morning, by a machine - which is exactly the thing this page exists to stop.\n\nNothing is broken and nothing is waiting on it. Seven jobs sit in that category and none of them is urgent. It just needs one of the two to be right.",
       "workedExample": "Tonight was the sixth shift to hit it. Five before it resolved the contradiction silently and never mentioned it; the shift before mine wrote that down and asked for it to reach you, which is why it is here.",
@@ -2054,7 +2054,7 @@
       "id": "credits-unit-403-frames",
       "title": "Add credits, saying it the way Change plan says it",
       "question": "Both panels now argue value the same way: credits per dollar, whole numbers. First frame is a paid account - \"2,941 credits per $1, up from 2,778\". Second is a free account, where there is no rate to be beaten, so the comparison is dropped rather than reading \"up from free\". Does the top line carry its weight, or would you rather the value argument sat somewhere else on this card?",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-07T20:40:00Z",
       "issueNumber": 403,
       "cardId": null,
@@ -4342,7 +4342,7 @@
       "id": "refunded-pill-553-frames",
       "title": "REFUNDED on a failed tile - and the one tile that must not wear it",
       "question": "Your ask from the 5th, built. Two failed tiles side by side: the left one was refused by the engine's filter and got the money back; the right one never started and was never charged. Only the left wears REFUNDED. Is the tag where you wanted it, and does it read quietly enough?",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-07T12:45:00Z",
       "issueNumber": 553,
       "cardId": null,
@@ -4363,7 +4363,7 @@
       "id": "waiting-card-354-frames",
       "title": "The fourth kind of card, on your own desk",
       "question": "Your word tonight was \"The first. Keep it on my desk until the act is done.\" This is what that looks like: the top card wears ANSWERED - STILL YOURS TO DO, the card below it is a fresh ask and wears nothing. Is the difference clear enough at a glance, and is the wording right?",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-07T12:45:00Z",
       "issueNumber": 354,
       "cardId": null,
@@ -4382,6 +4382,20 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "pr-666-strict-flags-642",
+      "title": "The command that puts your app live would accept a typo and deploy anyway (#642)",
+      "status": "merged",
+      "prNumber": 666,
+      "note": "WHAT THIS IS ABOUT. Deploying Drape is one typed command. It has a rehearsal mode - you add the word --dry and it does everything except actually put the code live. It is the safety net you use when you want to check a deploy will work without doing it.\n\nWHAT WAS WRONG. The command looked for the exact word --dry and ignored every other word you gave it. So --dryrun, or --dry-run, or a mistyped --dr, meant a REAL DEPLOY. There was no error and no warning - it simply did not see the word, decided you had not asked for a rehearsal, and shipped.\n\nAND IT HAD A SECOND SWITCH NOBODY HAD WRITTEN DOWN. The deploy command also refuses to run while you are working, so a shift cannot deploy underneath you - and there is an override for when the deploy IS the thing you are waiting for. That override existed, seven hundred lines away from the first one, and the command's own instructions listed only one of its two switches. Anybody reading the manual would not have known the second was there.\n\nWHAT IS DIFFERENT NOW. All seven of these tools now stop on a word they do not recognise and tell you which words they do take. Try to deploy with a typo and you get: REFUSING: unknown argument --dryrun. Known: --dry, --anyway. The two switches are written in one place and the refusal message is printed from that same place, so the manual and the behaviour cannot drift apart again.\n\nTHE OTHER SIX. Same class, same fix: the tool that reads your replies, the one that reports where everything stands, the one that seeds test data, two housekeeping checkers, and a database backfill. That last one is worth naming: it only writes when you give it --apply, so a mistyped --aply used to mean a silent rehearsal - the harmless direction, but the same blindness.\n\nPROVED RATHER THAN ASSERTED. Every one of the seven was run with a deliberate nonsense word and refused. The rehearsal mode was run for real and got all the way through the deploy command's own checks. And the automatic guard that watches for this class was deliberately broken on a file I had just fixed, to confirm it would notice - it named the file. Your Fable reviewer read the whole thing and found no defects.\n\nNOTHING A CUSTOMER TOUCHES CHANGED. These are the crew's own tools. Nothing here spends money, writes to your database, or goes near billing or logins."
+    },
+    {
+      "id": "pr-667-selfcheck-642",
+      "title": "A checker that had to ask \"am I the thing being run?\" was asking it the sloppiest way (#642)",
+      "status": "merged",
+      "prNumber": 667,
+      "note": "A small one, and the interesting part is why it could not be done the obvious way.\n\nSome of the crew's files are two things at once: a library other tools borrow from, and a command a person can run. Each carries a line asking am I the one that was run? - because borrowing from it must not set it off.\n\nThis particular file asked that question by comparing FILE NAMES, which is the loosest possible version of it. It also read the typed command the old blind way. Fixing the second broke the first: the safety guard that watches this class quite rightly forbids a file from reading the command line twice, once carefully and once carelessly - a second careless reader beside a careful one is exactly the half-finished fix it exists to catch.\n\nSo it is answered with the platform instead of another hand-written comparison: modern Node has a built-in way to ask this, and it needs no reading of the typed command at all. Checked in our actual setup first, both ways round, before it was used.\n\nProved with the real borrower rather than a stand-in: the tool that genuinely imports from this file was run, and it did not set the checker off.\n\nI also counted the rest of that family and left it alone: EIGHT more files ask the same question, in four different hand-written spellings, and one of them has a comment written by whoever last got it wrong - on Windows the comparison never matches, so the checker prints nothing and exits cleanly. A checker that checks nothing and reports success. That is filed as its own card rather than swept into this one."
+    },
     {
       "id": "pr-665-review-absent-566",
       "title": "A change merged with your Fable reviewer never having looked at it - and the tool told the shift the wrong reason (#566)",
@@ -4576,11 +4590,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0908c-foreman",
+      "id": "queue-shape-0908d-foreman",
       "state": "open",
-      "title": "The queue: 81 open, one closed tonight, and 14 nobody has re-read in a week",
+      "title": "The queue: 82 open, two cards moved tonight, and 14 nobody has re-read in a week",
       "severity": "info",
-      "detail": "81 open. One closed tonight (#566). Nothing new filed - a rarity, and a good one.\n\n14 cards have had no comment, no close and no commit against them for seven days. That number is read by a command now rather than by a throwaway, so it counts real engagement instead of any stray edit.\n\nWORTH SAYING PLAINLY, because it is the shape of the queue and not a backlog being ignored: the bug list is now largely cards whose remaining step is a DECISION of yours rather than a diff. Tonight I re-read four of them at the code and every one held - a refund calculation that needs a call on where the number comes from, a deletion job on your own machine, a guard whose repair is a choice between two hooks, and one whose own filing says \"leave it until someone actually reports it\". None of those is a shift being lazy; each is waiting on a person."
+      "detail": "82 open. Two changes merged tonight against one card (#642, which stays open - seven of its thirteen items are done). One new card filed, and it is named in the second entry above.\n\n14 cards have had no comment, no close and no commit against them for seven days - the same 14 as last night, and none of them is waiting on you.\n\nTHE SHAPE, said plainly: the bug list is now mostly cards whose remaining work is a DECISION rather than a change. That is not a stale queue - four of them were re-read against the actual code again tonight and every earlier sizing held. Three of those decisions you answered while this shift was running, and they are recorded on their cards."
     },
     {
       "id": "temp-leftovers-654",
@@ -4917,10 +4931,16 @@
     156,
     157,
     158,
-    159
+    159,
+    160,
+    161,
+    162,
+    163,
+    164,
+    165
   ],
   "nextUp": {
-    "readAt": "2026-09-07T23:01:11.320Z",
+    "readAt": "2026-09-08T00:23:16.262Z",
     "items": [
       {
         "issueNumber": 543,
