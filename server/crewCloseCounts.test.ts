@@ -45,13 +45,27 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import {
   refreshQueueCounts,
   refreshQueueCountsQuietly,
   type QueueGhReader,
 } from "../scripts/lib/crewQueueCount.mts";
+
+/*
+   ⚠ DECLARED EVEN THOUGH NO ARM HERE SPAWNS ANYTHING (#548's population).
+
+   Every arm below injects a `gh` double, so nothing in this file reaches a
+   child process today. The deriver still puts it in the population, and it is
+   RIGHT to: this file imports the reading, and the reading's `gh` parameter
+   DEFAULTS to the real command. An arm added later that forgets the double
+   would spawn `gh` inside vitest's 5s default and go red under load on
+   somebody's machine rather than in CI - which is exactly the failure #548 is
+   about. Declaring it costs nothing and removes that trap.
+*/
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const CLOSE = join(__dirname, "..", "scripts", "crew-shift-close.mts");
 
