@@ -1,7 +1,7 @@
 {
-  "edition": 305,
-  "updatedAt": "2026-09-08T13:40:00Z",
-  "shift": "Foreman (Opus) - three cards closed: a pull request can no longer close your cards by accident, one drawing of a floating panel instead of five, and a test that could report a verdict without measuring anything",
+  "edition": 306,
+  "updatedAt": "2026-09-08T15:50:00Z",
+  "shift": "Foreman (Opus) - two cards closed: the Moderation badge that only ever flagged you is now empty, and two night shifts can no longer start the same job",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -123,7 +123,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "74 open, none waiting on you, none urgent. 3 closed and 1 filed tonight, 15 stale (8 Sep)."
+        "source": "72 open, none waiting on you, none urgent. 2 closed tonight, 15 stale (8 Sep)."
       },
       {
         "label": "Nothing is waiting on you",
@@ -133,12 +133,12 @@
       {
         "label": "Check-ups",
         "tone": "neutral",
-        "source": "Nothing overdue. The Janitor is due and goes to the next shift; three cards came first tonight."
+        "source": "Nothing overdue. The Janitor is due and goes to the next shift; two cards came first."
       },
       {
-        "label": "Charges balanced at the last read",
+        "label": "Your account is no longer flagged",
         "tone": "good",
-        "source": "58,740 charged against 58,740 recorded, read 6 Sep. Not re-taken tonight."
+        "source": "Re-read tonight after the fix: out by 150, under the 500 mark. The list is empty."
       }
     ],
     "ladderCards": {
@@ -4393,6 +4393,22 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "evidence-double-count-638",
+      "title": "Your Moderation badge said 1, and the one account it flagged was yours",
+      "status": "merged",
+      "prNumber": 690,
+      "cardId": null,
+      "note": "The badge counts accounts whose credits and records disagree. It has been showing 1 for a while, and clicking through showed YOUR account, out by 11,600 credits. Nothing was ever at risk - the list only lists, it freezes nobody - but a warning light whose only warning is wrong is a warning light you stop reading. The cause was old: 45 rows from the parked July evidence work were counted twice, once through the job that charged for them and again through rows that never recorded which job they belonged to. Read again after the fix tonight: your account is out by 150 credits, well under the 500 mark, and the list is empty."
+    },
+    {
+      "id": "same-card-collision-608",
+      "title": "Two night shifts could start the same job and neither would know",
+      "status": "merged",
+      "prNumber": 691,
+      "cardId": null,
+      "note": "It happened on 6 September: two shifts both acted on the same reply of yours, three minutes apart, and the only thing that noticed was a clash when the second one tried to save its work - about forty minutes wasted. Each shift already writes down which card it is on, and nothing ever read it. Now a shift that names a card another running shift has already named is stopped before it starts, and told to take the next one. It can be overridden in one word, so a crashed shift's leftover note can never block a whole night."
+    },
     {
       "id": "float-panel-shell-388",
       "title": "The little panels in your top bar were drawn five separate times",
