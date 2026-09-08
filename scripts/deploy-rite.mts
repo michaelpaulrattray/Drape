@@ -86,6 +86,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
+import { closingKeywordHits, closingKeywordRefusal } from "./lib/closingKeyword.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { decideWatch, foreignServiceContext, listedRows } from "./lib/deployWatch.mts";
 import { comparePositions, parseVariableLines } from "./lib/productionFlagPositions.mts";
@@ -519,6 +520,59 @@ for (const [label, script] of [["atlas", "architecture:check"], ["capability", "
   }
   console.log(`  secret scan: ok — ${scanned < 0 ? "count unreadable" : `${scanned} commit(s)`} read `
     + `(${ranged ? `${remoteTip.slice(0, 8)}..HEAD` : "full history — remote tip unreadable"})`);
+
+  /* ⚠ NO COMMIT REACHING `main` CLOSES A CARD BY ACCIDENT (#376) — the third
+     of the three roads, and the one only the rite can see.
+
+     Instance 6 of the eight closed #535 — a card whose bar was *his eye closes
+     it* — from an EDITION COMMIT'S SUBJECT, four minutes after instance 5
+     closed the same card from a PR body. The gate never sees an edition: it
+     rides main through this ceremony and meets no pull request.
+
+     It rides inside the secret scan's block for one reason and it is stated
+     rather than left to be inferred: the push range is resolved and PROVEN
+     here (`ranged`, re-fetched, re-typed), and a second reader computing its
+     own range is the mirror this repository keeps being bitten by.
+
+     ⚠ AND WHEN THE RANGE IS UNREADABLE IT REFUSES — which this comment claimed
+     before the code did (PR #683 review, finding 1, CONFIRMED). With `ranged`
+     false the loop below read ZERO commits and printed `closing keyword: none`:
+     a clean verdict over nothing at all, which is the exact class this block
+     exists to close, printed by the block itself. It deliberately does NOT copy
+     the secret scan's full-history fallback — reading every commit ever made
+     would refuse this repository's own past — and a rite run is cheap to retry,
+     so the honest answer to *"I cannot tell what this push adds"* is to stop. */
+  /* ⚠ ONE `git log` PER COMMIT, DELIBERATELY. A single formatted run has to
+     separate its records, and a commit body may contain any byte a separator
+     could be spelled with — the first shape of this block put literal NUL
+     bytes in this source file to get one. A push adds a handful of commits;
+     the boring loop costs milliseconds and cannot mis-split a body. */
+  if (!ranged) {
+    console.log("REFUSED: the closing-keyword check (#376) cannot tell which commits this push adds — the push does not fire.");
+    console.log("  The remote tip of main could not be resolved, so there is no range to read and nothing has been checked.");
+    console.log("  repair: git fetch origin main, then re-run the rite");
+    process.exit(1);
+  }
+  const shas = git("log", "--format=%H", `${remoteTip}..HEAD`)
+    .split(/\r?\n/).map((s) => s.trim()).filter((s) => /^[0-9a-f]{40}$/.test(s));
+  /* The scan above refuses a clean verdict that read nothing; this refuses a
+     clean verdict that read FEWER than the push adds, which is the same law one
+     notch tighter — the count is already known here, so there is no reason to
+     settle for "at least one". */
+  if (toPush > 0 && shas.length !== toPush) {
+    console.log(`REFUSED: the closing-keyword check (#376) read ${shas.length} of the ${toPush} commit(s) this push adds — the push does not fire.`);
+    console.log("  This is the reader failing quietly, not the commits being clean.");
+    process.exit(1);
+  }
+  for (const sha of shas) {
+    const hits = closingKeywordHits(git("log", "-1", "--format=%B", sha));
+    if (hits.length > 0) {
+      console.log(closingKeywordRefusal(`commit ${sha.slice(0, 8)}, which this push would add to main`, hits));
+      console.log("  repair: git commit --amend (or rebase) to take the keyword out, then re-run the rite");
+      process.exit(1);
+    }
+  }
+  console.log(`  closing keyword: none — ${shas.length} commit message(s) read, this push closes no card`);
 }
 
 const railway = (...args: string[]) => run("railway.cmd", args, true);
