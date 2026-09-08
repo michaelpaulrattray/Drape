@@ -24,6 +24,23 @@ import "dotenv/config";
 import { interpretRefinement } from "../server/castingV2/refineInterpreter";
 import { itemsOf, type RefineDelta } from "../server/castingV2/refineDelta";
 import { pendingReaskFor, resolveAnswer } from "../server/castingV2/refineReask";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
+
+/* ⚠ THE PARSE IS THE FIRST THING THIS MODULE DOES, ON PURPOSE (#642).
+   Below it the module opens a database and then spends renders. A refusal is
+   only worth having if it lands BEFORE the thing it is protecting you from,
+   so the vocabulary is read here rather than beside the loop that uses it. */
+/* ⚠ ONE BARE WORD, DECLARED (#642). The class to run; absent means all of them.
+   A positional the parser does not know about is SWALLOWED, so before this a
+   misspelled name (a class name with a typo in it) selected nothing and the
+   driver ran EVERY case - the opposite of what was asked, and on a driver that
+   spends renders that is the expensive direction. */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: [],
+  boolean: [],
+  positional: 1,
+});
+const only = ARGS.positional(0);
 
 /* §5e: the reask questions and the vacancy phrases are a function of the
    Cast's own pronouns now — a bench supplies one Cast. */
@@ -196,7 +213,6 @@ function holds(value: string, word: string): boolean {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").includes(word.toLowerCase());
 }
 
-const only = process.argv[2];
 let failures = 0;
 const findings: string[] = [];
 const open: string[] = [];

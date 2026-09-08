@@ -86,10 +86,20 @@ import {
   type TimelineKind,
   type TimelineRow,
 } from "./lib/importerCountDiff.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
-const WORKTREE = process.argv[2];
-const STRIDE = Number(process.argv[3] ?? 10);
-const OUT = process.argv[4] ?? "output/unwiring-timeline.json";
+/* ⚠ THREE BARE WORDS, DECLARED (#642) - read out of this file's own usage
+   line below: `<worktree> [stride] [out.json]`. A FOURTH word, or any `--flag`,
+   was silently ignored before this; now it refuses and names the vocabulary. */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: [],
+  boolean: [],
+  positional: 3,
+});
+const WORKTREE = ARGS.positional(0);
+const RAW_STRIDE = ARGS.positional(1);
+const STRIDE = Number(RAW_STRIDE ?? 10);
+const OUT = ARGS.positional(2) ?? "output/unwiring-timeline.json";
 
 if (!WORKTREE || !existsSync(WORKTREE)) {
   console.error("usage: unwiring-timeline.mts <worktree> [stride] [out.json]");
@@ -97,7 +107,7 @@ if (!WORKTREE || !existsSync(WORKTREE)) {
   process.exit(2);
 }
 if (!Number.isInteger(STRIDE) || STRIDE < 1) {
-  console.error(`stride must be a positive integer; got ${process.argv[3]}`);
+  console.error(`stride must be a positive integer; got ${RAW_STRIDE}`);
   process.exit(2);
 }
 

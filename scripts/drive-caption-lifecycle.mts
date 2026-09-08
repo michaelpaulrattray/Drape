@@ -28,6 +28,23 @@ import { refineCandidate } from "../server/castingV2/refineService";
 import { selectVariant } from "../server/db/castingV2Variants";
 import { storagePublicUrl } from "../server/storage";
 import { assertOneWorld } from "./lib/worldGuard.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
+
+/* ⚠ THE PARSE IS THE FIRST THING THIS MODULE DOES, ON PURPOSE (#642).
+   Below it the module opens a database and then spends renders. A refusal is
+   only worth having if it lands BEFORE the thing it is protecting you from,
+   so the vocabulary is read here rather than beside the loop that uses it. */
+/* ⚠ ONE BARE WORD, DECLARED (#642). The case to run, so a re-run costs one case's renders.
+   A positional the parser does not know about is SWALLOWED, so before this a
+   misspelled name (`ab` for `a`) selected nothing and the
+   driver ran EVERY case - the opposite of what was asked, and on a driver that
+   spends renders that is the expensive direction. */
+const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
+  value: [],
+  boolean: [],
+  positional: 1,
+});
+const only = ARGS.positional(0);
 
 /*
   One world per process (scripts/lib/worldGuard.mts). Inert outside a Railway
@@ -139,7 +156,6 @@ async function run(candidateIndex: number, steps: string[]): Promise<{ rows: Row
 }
 
 /* One case at a time when asked, so a re-run costs one case's renders. */
-const only = process.argv[2];
 const wanted = (name: string) => !only || only === name;
 
 /* ---- (a) branch from worn, then colour: worn SURVIVES and colour APPLIES ---- */
