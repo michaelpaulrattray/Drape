@@ -1,7 +1,7 @@
 {
-  "edition": 308,
-  "updatedAt": "2026-09-08T18:35:00Z",
-  "shift": "Foreman - two cards closed. A test file that reported 104 checks was holding 55: fifty of them could not fail, and four were telling us wrong things about your own product",
+  "edition": 309,
+  "updatedAt": "2026-09-08T19:55:00Z",
+  "shift": "Foreman - the file guarding who may look at your customers' accounts had 46 checks and 42 of them could not fail. It now has 34 that all run the real thing - and the reviewer caught one I had left alone, which turned out to be the worst of the lot",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-08T18:22:18.941Z",
+      "readAt": "2026-09-08T19:49:42.823Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4394,6 +4394,14 @@
   ],
   "pipeline": [
     {
+      "id": "hollow-moderator-arms-697",
+      "title": "The file guarding who may look at a customer's account was checking almost nothing",
+      "status": "merged",
+      "prNumber": 698,
+      "cardId": null,
+      "note": "This is the file that is supposed to prove only the right staff can open a customer's account, read their audit trail, or look at what they have been charged. It reported 46 checks. 42 of them could not fail.\n\nMost were writing an answer down and then agreeing with it - one, under a heading reading 'Access Control', literally checked that the word \"moderator\" equals the word \"moderator\". Another said 'should not provide unblock capability' and then checked that true is true.\n\nTwo real holes were underneath. Nowhere in the whole codebase did anything check that an ADMIN can actually use the moderator screens - a promise the product makes in writing. And not one of the twelve 'read' actions on that screen was ever exercised: the audit log, the user list, the blocked addresses, the credit history a staff member opens when a customer complains about a charge. All twelve run for real now.\n\nEvery replacement was proved by deliberately breaking the product 33 different ways and checking that the right alarm - and only the right alarm - went off each time. That includes one deliberate non-break which must set nothing off, so a crash can never be mistaken for an alarm.\n\nThe reviewer then found the sharpest thing of the night: one old check I had left alone because it looked fine was asking whether a password hash could leak onto the moderator screen - against a test customer who had no password hash. So it would have stayed green through exactly the leak it was named after. Measured: with that gap, the leak was staged and not one of the 34 alarms went off. Fixed and re-proved. The lesson is worth more than the fix - a clean-up pass is blindest to the checks it decided not to touch."
+    },
+    {
       "id": "selfasserting-arms-681",
       "title": "A safety net with 104 knots in it, fifty of which were tied to nothing",
       "status": "merged",
@@ -4747,6 +4755,13 @@
     }
   ],
   "problems": [
+    {
+      "id": "queue-shape-0909b-foreman",
+      "title": "The queue: 71 open, 14 nobody has looked at in a week - one closed, two new ones written",
+      "severity": "info",
+      "state": "open",
+      "detail": "71 cards open, 14 with no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, nothing carries urgent, your desk is clear, and none of the four check-up rounds is overdue.\n\nTonight's work closed one file of a bigger clean-up (#697 stays open - eleven more files) and wrote two new cards, both found by the reviewer rather than invented: #699, the one line in the browser that decides whether a non-staff visitor sees the moderator screen, which nothing tests; and #700, two staff screens that hand back a database row wholesale and are safe only because a different file happens to trim it first. Neither is a live problem today and both are written down so they cannot become one quietly.\n\nThe standing note holds for a fifth night: the open bugs and the oldest small fixes now mostly end in a decision that is yours rather than in work a shift can do on its own."
+    },
     {
       "id": "wrong-numbers-in-tests-681",
       "title": "Four things our own checks were saying about your product were simply not true - and not one of them could ever have gone off",
@@ -5141,7 +5156,7 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-08T18:22:18.115Z",
+    "readAt": "2026-09-08T19:49:41.876Z",
     "items": []
   }
 }
