@@ -1,7 +1,7 @@
 {
-  "edition": 298,
-  "updatedAt": "2026-09-08T00:22:51.000Z",
-  "shift": "Foreman (Opus) - the command that deploys your app would accept a typo and deploy anyway",
+  "edition": 299,
+  "updatedAt": "2026-09-08T02:07:19.109Z",
+  "shift": "Foreman (Opus) - the number under your switches was written before the work, not after",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,24 +116,24 @@
     ],
     "chips": [
       {
-        "label": "Your machine is clear",
+        "label": "Your switch numbers now follow the work",
         "tone": "good",
-        "source": "Eleven leftover dev servers were running, oldest 4 Sep. All stopped; none left."
+        "source": "Shipped tonight (#618). A shift refreshes them as it finishes, not only when it starts."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "82 open, 1 yours (#543, waits on 12 Sep), none urgent. 1 closed, 1 filed, 14 stale."
+        "source": "82 open, 1 yours (#543, waits on 12 Sep), none urgent. 1 closed, 14 stale — read 8 Sep 01:50Z."
+      },
+      {
+        "label": "Nothing is waiting on you",
+        "tone": "good",
+        "source": "Your last held picture cleared by your own reply tonight. Nothing else needs your eye."
       },
       {
         "label": "Check-ups",
         "tone": "neutral",
         "source": "Nothing overdue. The Janitor's is due today and goes to the next shift."
-      },
-      {
-        "label": "The warning was about you",
-        "tone": "good",
-        "source": "The Moderation badge's one flagged account is yours. Repair is #638, still open."
       },
       {
         "label": "Charges balanced at the last read",
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-08T00:23:17.033Z",
+      "readAt": "2026-09-08T02:07:48.088Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4311,7 +4311,7 @@
       "id": "sign-names-whom-556-frames",
       "title": "Four kept, and which one does Sign mean?",
       "question": "Your own question, answered in the dock. First frame is what you saw: \"4 kept\" beside \"Sign to roster\", four faces at equal weight. Second is now: \"4 kept - 05 selected\", the chosen face ringed and the others stepped back. Third is the case the review caught - five kept across two rolls, where the label has to name the roll as well, because \"03\" means a position inside one roll. Does the dock now say plainly enough that it signs one?",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-07T12:45:00Z",
       "issueNumber": 556,
       "cardId": null,
@@ -4382,6 +4382,22 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "pr-669-count-at-close-618",
+      "title": "The number under your switches was written before the night's work, not after (#618)",
+      "status": "merged",
+      "prNumber": 669,
+      "cardId": null,
+      "note": "WHAT YOU ASKED. Yesterday morning: \"how many bugs has it done and worked on its still reading as 18 but its been working all night\".\n\nYOU WERE RIGHT, AND THE COUNTING WAS NEVER THE PROBLEM. It was WHEN it ran. The number under each switch on your panel was written once, at the START of a shift, and never again. So it always told you what a shift FOUND when it arrived - never what it CLOSED before it left. On the night you asked, ten bug cards closed and the panel still showed you the morning's figure.\n\nWHAT IS DIFFERENT NOW. A shift refreshes those numbers as it finishes. Close three bug cards tonight and the panel is three lower by morning, without anybody typing anything.\n\nTHE PART THAT NEEDED CARE. Adding work to the end of a shift means adding a way for the end of a shift to go wrong - and if that step dies, the shift's row is left open and your page says a shift is still running when it is not. That has happened before. So the counting runs only AFTER the shift is safely marked finished, and it cannot take the finish down with it: if the count fails for any reason, it says why, your numbers stay as they were, and the shift closes normally.\n\nThe reviewer found two real things and both are fixed: a count that HUNG rather than failed would still have hung the close (there is a time limit on it now), and a 'stay quiet' setting that was offered and never actually used. It also caught that one sentence I wrote about the change was wider than the change - that is corrected in the file rather than left for somebody to trip on."
+    },
+    {
+      "id": "pr-670-argv-remainder-642",
+      "title": "A mistyped case name ran nothing and printed ALL PASS (#642)",
+      "status": "merged",
+      "prNumber": 670,
+      "cardId": null,
+      "note": "WHAT THIS IS ABOUT. Four of our own tools took typed instructions and quietly ignored anything they did not recognise. The one that matters: the command that stops leftover dev servers on your machine. Typing --kil instead of --kill did not produce an error - the tool listed the servers, exited cleanly, and killed nothing. You would read that as \"there was nothing to stop\", not as \"you typed it wrong\".\n\nAND THE REVIEWER CAUGHT SOMETHING WORSE, WHICH I HAD DESCRIBED BACKWARDS. Two of our test tools let you name a single case to re-run. If you misspelled the name, the tool ran ZERO cases - and then printed ALL PASS and exited successfully. So somebody checking a fix, who typos the name, reads ALL PASS having tested nothing at all, and files the fix as verified. I had written in the code that a typo ran EVERY case; the opposite was true, and the opposite is the dangerous direction. Both tools now refuse a name they do not know and tell you the names they do.\n\nWHY IT MATTERS TO YOU. None of this is your app - it is the night shift's own tooling. But a tool that reports success over nothing is how a shift comes to tell you something is fixed when it is not, and that is the one thing these reports are for.\n\nTWO THINGS ARE LEFT ON THIS CARD, both recorded rather than rushed. One command uses -h for help and our checker does not speak it, so converting it naively would break a working command. And --kill with an unusable value still exits quietly having done nothing - a different fault from this one, and it needs a decision about what it should say."
+    },
     {
       "id": "pr-666-strict-flags-642",
       "title": "The command that puts your app live would accept a typo and deploy anyway (#642)",
@@ -4937,10 +4953,11 @@
     162,
     163,
     164,
-    165
+    165,
+    166
   ],
   "nextUp": {
-    "readAt": "2026-09-08T00:23:16.262Z",
+    "readAt": "2026-09-08T02:07:47.310Z",
     "items": [
       {
         "issueNumber": 543,
