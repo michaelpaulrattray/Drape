@@ -85,6 +85,12 @@ import {
   sharesFiles,
 } from "./lib/prMergeOrder.mts";
 import { gitTreeReader, readProtectedRefs } from "./lib/pushPaths.mts";
+import { openDatabase } from "./lib/dbConnection.mts";
+import {
+  FOUNDER_ACTIVE_WINDOW_MINUTES,
+  productionDatabaseUrl,
+  readFounderActivity,
+} from "./lib/founderActivity.mts";
 import {
   type ReviewRunReading,
   reviewPresence,
@@ -137,6 +143,9 @@ let dryRun = false;
 let intervalMs = 30_000;
 let timeoutMs = 45 * 60_000;
 let deleteBranch = false;
+/** ⚠ Skip the courtesy freeze — for the case where THIS merge is the fix he is
+ *  waiting on. Deliberate, named on the receipt, never a default (#585). */
+let anyway = false;
 
 const parsePr = (raw: string, flag: string): number => {
   const n = Number(raw);
@@ -166,6 +175,9 @@ for (let i = 0; i < argv.length; i += 1) {
     case "--delete-branch":
       deleteBranch = true;
       break;
+    case "--anyway":
+      anyway = true;
+      break;
     case "--interval":
       intervalMs = Number(next()) * 1000;
       break;
@@ -183,8 +195,13 @@ for (let i = 0; i < argv.length; i += 1) {
           "  --acknowledge <n>   'I have read #n's review verdict' (repeatable)",
           "  --dry-run           print every merge, sync and push; perform none",
           "  --delete-branch     also delete the remote branch on merge (off by default)",
+          "  --anyway            merge even while he is mid-session (#585) — for the fix he is waiting on",
           "  --interval <s>      poll every s seconds (default 30)",
           "  --timeout <min>     give up waiting after min minutes (default 45)",
+          "",
+          "",
+          "A merge deploys (#508), so a PR whose merge would land mid-roll WAITS for him to go",
+          "quiet and merges itself when he does — that is not a stall. --anyway overrides it.",
           "",
           "exit 2 = STOPPED on something needing a person; the line says which PR and why.",
         ].join("\n"),
@@ -753,6 +770,62 @@ function syncMain(pr: PrReading, worktreePath: string): SyncResult {
   return { kind: "synced" };
 }
 
+/**
+ * THE COURTESY FREEZE, ON THE ROAD SHIFTS ACTUALLY MERGE ON (#585, from #508's
+ * design D8).
+ *
+ * ⚠ **THE RITE HAD MANNERS AND THIS DID NOT, AND AFTER THE DEPLOY-ON-MERGE FLIP
+ * THAT IS THE WRONG WAY ROUND.** Before #508 only the rite reached production,
+ * so its freeze was the whole story. Now a squash merge deploys — and a merge
+ * landing mid-roll kills the process holding his candidates and costs him the
+ * D-85 window (up to ~6 minutes; the money is conserved by per-slice billing
+ * and the sweep, so what he actually loses is the wait).
+ *
+ * The reading is EXTRACTED, not copied (`scripts/lib/founderActivity.mts`) —
+ * two answers to "is he busy" that can disagree is worse than one that is
+ * sometimes wrong.
+ *
+ * # It waits; it does not refuse
+ *
+ * The loop this sits in is already a polling loop, so a frozen PR simply keeps
+ * waiting and says why — and merges by itself the moment he goes quiet. That is
+ * the difference between this and the rite, which is a one-shot act and must
+ * die instead.
+ *
+ * # ⚠ IT FAILS OPEN, AND THAT IS THE CARD'S OWN BAR
+ *
+ * An unreadable ledger MERGES. The freeze is manners, not a control (D-85
+ * accepts the collision outright), and a broken read must never wedge the merge
+ * road — a shift that cannot merge is a shift that cannot ship his fixes. Every
+ * unreadable path says so on the line it prints, so nobody reads a failure as
+ * quiet. **A worktree has no Railway link**, which is exactly such a path and is
+ * the common one: the tool is usually run from the main tree.
+ *
+ * ⚠ **His OWN merges from the GitHub UI are untouched** — he never needed a
+ * freeze against himself, and nothing here runs on that road.
+ */
+async function courtesyFreeze(): Promise<{ holds: boolean; line: string }> {
+  if (anyway) {
+    return { holds: false, line: "the courtesy freeze was SKIPPED with --anyway" };
+  }
+  const activity = await readFounderActivity({
+    url: productionDatabaseUrl(() =>
+      execFileSync("railway.cmd", ["variables", "--service", "MySQL", "--kv"], {
+        encoding: "utf8",
+        maxBuffer: 8 * 1024 * 1024,
+      })),
+    openDatabase,
+  });
+  return {
+    holds: activity.active,
+    line: activity.active
+      ? `he is in an active session — ${activity.note}. This merge deploys and would cost him `
+        + `the D-85 wait, so it holds until he is quiet for ${FOUNDER_ACTIVE_WINDOW_MINUTES} minutes. `
+        + `Re-run with --anyway if this merge IS the fix he is waiting on.`
+      : `the founder: ${activity.note}`,
+  };
+}
+
 const sleep = (n: number) => new Promise<void>((r) => setTimeout(r, n));
 
 // ---- the plan --------------------------------------------------------------
@@ -799,8 +872,18 @@ outer: for (const first of readings) {
     say(describeAction(pr, action));
 
     if (action.kind === "merge") {
-      mergePr(pr);
-      break;
+      /* ⚠ READ AT THE MERGE MOMENT, not once at the top — the whole point is
+         that he stops being busy while this tool waits, and a verdict taken
+         before an earlier PR's gate finished would be minutes stale. */
+      const freeze = await courtesyFreeze();
+      say(`  ${freeze.line}`);
+      if (!freeze.holds) {
+        mergePr(pr);
+        break;
+      }
+      say(`#${pr.number} WAITING on the courtesy freeze — not a stall, and nothing is wrong.`);
+      /* Deliberately NO break: the loop's own dry-run, deadline and sleep
+         handling below is the wait, and it re-reads the PR each time round. */
     }
     if (action.kind === "skip") break;
     if (action.kind === "stop") {
