@@ -20,7 +20,7 @@
  * reading that had silently stopped freezing — so each one asserts the NOTE too,
  * because a receipt that shows a failure as quiet is the actual defect.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -34,6 +34,12 @@ import {
   productionDatabaseUrl,
   readFounderActivity,
 } from "../scripts/lib/founderActivity.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* The runner arm below spawns a real batch file, so this suite declares the
+   class's timeout rather than racing vitest's 5 s default under a parallel
+   run (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const NOW = Date.parse("2026-09-09T13:00:00Z");
 const at = (minutesAgo: number) =>
