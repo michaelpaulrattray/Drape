@@ -1,7 +1,7 @@
 {
-  "edition": 311,
-  "updatedAt": "2026-09-08T22:30:00Z",
-  "shift": "Fable (escalated) - the moderator refund button was quoting nonsense money: a 10,000-credit top-up would have offered a 7-cent refund. Fixed at the root - the refund amount now comes from the Stripe charge itself, and two worse traps found on the same road are closed",
+  "edition": 312,
+  "updatedAt": "2026-09-09T00:25:32Z",
+  "shift": "Fable (escalated) - the night shift stopped losing whole nights to your open editor: the deploy ceremony now tells apart files you have parked from files that are actually part of a deploy, lets the first kind through by name, and still refuses the second. The exact jam that held three of these reports off your page for a night cannot happen again.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-08T22:24:55.011Z",
+      "readAt": "2026-09-09T00:24:39.700Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4400,6 +4400,14 @@
   ],
   "pipeline": [
     {
+      "id": "rite-desk-guard-479",
+      "title": "The deploy ceremony no longer waits for your editor - parked files are read out by name and the deploy goes through",
+      "status": "merged",
+      "prNumber": 707,
+      "cardId": null,
+      "note": "Three shifts in one night ended blocked because the ceremony that publishes this page refused to run while ANY file sat unsaved-to-history in the shared workspace - including two files that were simply open in your own session. You approved the fix and it is live: files that are provably no part of a deploy are named on the record and the deploy proceeds; files that ARE part of it, or that the ceremony itself reads to make decisions (above all the database-change folder, whose contents it runs against the live database), still stop everything, exactly as before. The safety reviewer went over it twice and found five sharpenings - all five are in, each proven by a test that was shown to catch its own removal. Driven live both ways before closing: a parked law-doc passed by name; a touched database file refused with the reason spelled out."
+    },
+    {
       "id": "refund-magic-float-418",
       "title": "The Request refund button was inventing its money figure - and the road behind it could never actually pay a refund",
       "status": "merged",
@@ -5186,16 +5194,8 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-08T22:24:54.172Z",
+    "readAt": "2026-09-09T00:24:38.907Z",
     "items": [
-      {
-        "issueNumber": 479,
-        "title": "Two editions cannot reach his page: the shared tree's uncommitted files block the rite, and it has now cost two shifts",
-        "urgent": false,
-        "held": {
-          "state": "fable"
-        }
-      },
       {
         "issueNumber": 599,
         "title": "Fangs render outside a closed mouth — 'mouth at rest' + 'dentition visible' is true for tusks and impossible for fangs, so the engine draws sabre teeth over the lip (his oni-cyber Re-imagine, roll 249)",
