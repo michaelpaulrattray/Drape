@@ -11,6 +11,7 @@ import {
 } from "../db/generationOperations";
 import { claimCandidateForRecovery } from "../db/castingV2";
 import { createModuleLogger } from "../logging/logger";
+import { SLICE_REFUND_DESCRIPTION } from "./sliceRefundLedger";
 
 const log = createModuleLogger("castingV2/rollRecovery");
 
@@ -574,7 +575,7 @@ async function adjudicateRollOperation(
       const outcome = await recordRefund(
         operation.userId,
         slice,
-        "Casting candidate did not arrive",
+        SLICE_REFUND_DESCRIPTION.candidateAbsent,
         candidateChargeReference(operation.id, candidate.publicId),
       );
       if (outcome.recorded) {

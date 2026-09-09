@@ -42,6 +42,7 @@ import {
 import { operationChargeReference } from "../casting/operationContract";
 import { recordRefund } from "../casting/atomicCredits";
 import { candidateChargeReference } from "./rollRecovery";
+import { SLICE_REFUND_DESCRIPTION } from "./sliceRefundLedger";
 import { deductCredits } from "../db/credits";
 import { markGenerationOperationRunning } from "../db/generationOperations";
 import {
@@ -430,7 +431,7 @@ export async function retryCandidate(
     const refund = await recordRefund(
       input.userId,
       price,
-      "Casting retry landed nowhere",
+      SLICE_REFUND_DESCRIPTION.retryLandedNowhere,
       candidateChargeReference(operationId, candidate.publicId),
     );
     refunded = refund.recorded ? refund.amount : 0;
