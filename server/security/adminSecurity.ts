@@ -80,10 +80,34 @@ export function isOnAdminAllowlist(email?: string, openId?: string): boolean {
 }
 
 /**
- * Validate admin access - checks both role AND allowlist
+ * Validate admin access - checks both role AND allowlist.
+ *
+ * TWO fields decide the answer and they are the only two read here: `role`,
+ * then `email`/`openId` through `isOnAdminAllowlist`.
+ *
+ * ⚠ IT NO LONGER TAKES A `name` (#733, the law-7 sibling of #727). Every
+ * admin request supplied one and no branch had ever read it. That is the same
+ * shape #727 removed one function along: an ignored input on a security
+ * predicate tells the next reader it is checked, and here it did so beside a
+ * genuine trap — the allowlist's two entries are `OWNER_OPEN_ID` and
+ * `OWNER_NAME`, and the one called `OWNER_NAME` is compared against the user's
+ * EMAIL, so it only ever admits anybody when it holds an email address. A
+ * `name` sitting unread in this signature was the wrong hint in exactly the
+ * place someone populating that variable would read it.
+ *
+ * ⚠ `id` IS ALSO READ BY NO BRANCH, AND IT STAYS ON PURPOSE — the exception
+ * is stated here rather than left to be rediscovered as a third instance of
+ * the same class. It is the subject of a live tripwire: the arm named *"an id
+ * that matches the allowlist entry does not admit"* drives this function with
+ * an id equal to an allowlist entry, and goes red if an id road is ever added
+ * quietly. That widening is the founder's call, not a shift's. Removing the
+ * parameter would delete the only door through which a test can pose the
+ * question at all, which is a control dying to a correct-looking change — the
+ * path-three death CLAUDE.md's law 7 is about. So it is kept, and its reason
+ * is written down where the signature is read.
  */
 export function validateAdminAccess(
-  user: { id: number; role: string; email?: string; name?: string; openId?: string }
+  user: { id: number; role: string; email?: string; openId?: string }
 ): { allowed: boolean; reason?: string } {
   // Check role first
   if (user.role !== "admin") {
