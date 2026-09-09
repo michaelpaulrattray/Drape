@@ -79,7 +79,7 @@
  * live roadmap, so any table edit broke them alongside the tripwire. A bench
  * whose arms move together cannot say which one caught anything.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
 
@@ -87,6 +87,15 @@ import { readListedSource } from "./testing/listedSource";
 
 
 import { allowTreeSweeps } from "./testing/suiteClocks";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+
+/* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
+   encode — and under the parallel run that cost multiplies by fifteen or twenty
+   against vitest's 5,000 ms default. The measurement, and the two roads that
+   were rejected, are in `contendedTestTimeout.ts` (#741). File level, never
+   per arm: a number typed onto one `it(…)` is not inherited by its neighbour. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /* This file walks the docs and mailbox trees with `readdirSync`. It timed out at the
    5s default TWICE across the runs on #233 (foreman-98 run 2; foreman-99 run 2).

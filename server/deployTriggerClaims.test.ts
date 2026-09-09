@@ -44,10 +44,19 @@
  */
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { DEPLOY_SOURCE_REF } from "../scripts/lib/ritePushSequence.mts";
 import { readListedSource } from "./testing/listedSource";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+
+/* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
+   encode — and under the parallel run that cost multiplies by fifteen or twenty
+   against vitest's 5,000 ms default. The measurement, and the two roads that
+   were rejected, are in `contendedTestTimeout.ts` (#741). File level, never
+   per arm: a number typed onto one `it(…)` is not inherited by its neighbour. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const ROOT = process.cwd();
 

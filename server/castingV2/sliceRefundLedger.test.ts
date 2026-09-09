@@ -16,7 +16,7 @@
  * fired in 60 days, and no `castingV2.retry` operation has ever run on
  * production, all time.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,6 +27,15 @@ import {
   SLICE_REFUND_DESCRIPTIONS,
   rollSliceRefundDescription,
 } from "./sliceRefundLedger";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+
+/* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
+   encode — and under the parallel run that cost multiplies by fifteen or twenty
+   against vitest's 5,000 ms default. The measurement, and the two roads that
+   were rejected, are in `contendedTestTimeout.ts` (#741). File level, never
+   per arm: a number typed onto one `it(…)` is not inherited by its neighbour. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..");

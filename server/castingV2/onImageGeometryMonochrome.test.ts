@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { readListedSource } from "../testing/listedSource";
 
@@ -11,6 +11,15 @@ import {
   paintTerm, checkerAt, checkerCell, CHECKERED, LOST_GREY, DIMMED_FRAME_CEILING, TERM_LEGEND,
   boxOutlineSvg, type TermClass,
 } from "../../scripts/lib/termsPalette.mts";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+
+/* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
+   encode — and under the parallel run that cost multiplies by fifteen or twenty
+   against vitest's 5,000 ms default. The measurement, and the two roads that
+   were rejected, are in `contendedTestTimeout.ts` (#741). File level, never
+   per arm: a number typed onto one `it(…)` is not inherited by its neighbour. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /**
  * ON-IMAGE GEOMETRY IS MONOCHROME — founder ruling, 2026-08-11 (fable-230),

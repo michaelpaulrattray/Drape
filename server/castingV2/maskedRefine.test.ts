@@ -41,6 +41,15 @@ import { hasRegion } from "./zoneScope";
 import { readRaster, type Mask } from "./maskedComposite";
 import { ProviderError } from "../providers/types";
 
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+
+/* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
+   encode — and under the parallel run that cost multiplies by fifteen or twenty
+   against vitest's 5,000 ms default. The measurement, and the two roads that
+   were rejected, are in `contendedTestTimeout.ts` (#741). File level, never
+   per arm: a number typed onto one `it(…)` is not inherited by its neighbour. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+
 /**
  * The product-path seam, proved without a provider.
  *

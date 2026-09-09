@@ -44,7 +44,7 @@
  *     measured. The unowned-axis class, one layer down from where it was
  *     looked for.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -62,6 +62,15 @@ import { FREE_SUBJECT_KEYS } from "./refineSubjects";
 import { FACET_KEYS } from "./facetCards";
 import { openKindDeparture, openKindIsPlural, openKindZoneScope } from "./openKindPolicy";
 import type { FeatureSlot } from "./recipeAssembler";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+
+/* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
+   encode — and under the parallel run that cost multiplies by fifteen or twenty
+   against vitest's 5,000 ms default. The measurement, and the two roads that
+   were rejected, are in `contendedTestTimeout.ts` (#741). File level, never
+   per arm: a number typed onto one `it(…)` is not inherited by its neighbour. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /** The one prefix, in one place, so a test cannot pin a different spelling. */
 const OPEN = "open:";

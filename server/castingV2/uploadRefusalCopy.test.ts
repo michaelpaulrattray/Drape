@@ -1,11 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { readListedSource } from "../testing/listedSource";
 import { inkDesignBytesRefusal } from "./inkUploadDoor";
 import { referenceAttachBytesRefusal } from "./referenceAttachDoor";
 import { BYTES_NOT_AN_IMAGE_MESSAGE } from "./uploadRefusalCopy";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+
+/* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
+   encode — and under the parallel run that cost multiplies by fifteen or twenty
+   against vitest's 5,000 ms default. The measurement, and the two roads that
+   were rejected, are in `contendedTestTimeout.ts` (#741). File level, never
+   per arm: a number typed onto one `it(…)` is not inherited by its neighbour. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /**
  * The guard for #209 item 1's law-4 half.

@@ -24,7 +24,7 @@
  *     `rideWhole` is the exact shape of the defect
  *     `negative-arm-cannot-find-yes-defects` names, and it would be silent.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import sharp from "sharp";
 
 import { INK_PLACEMENTS, inkPlacementEntry } from "../../shared/inkPlacementVocabulary";
@@ -32,6 +32,15 @@ import { FACE_REGION, INK_REGION, PERSON_REGION, overlapPixels, sourceRegionWord
 import { cutInkDesign } from "./inkReferenceCutter";
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
 import type { Mask } from "./maskedComposite";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+
+/* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
+   encode — and under the parallel run that cost multiplies by fifteen or twenty
+   against vitest's 5,000 ms default. The measurement, and the two roads that
+   were rejected, are in `contendedTestTimeout.ts` (#741). File level, never
+   per arm: a number typed onto one `it(…)` is not inherited by its neighbour. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /**
  * A picture in which every pixel names its own coordinates.
