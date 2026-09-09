@@ -988,10 +988,17 @@ describe("the block by LANE — his creature split (#232) and the anatomy clause
       blanket "visible at rest" demand on the mouth re-opens the contradiction.
     */
     expect(CREATURE_EXPRESSION_LINE).toContain("shows as that anatomy allows");
-    expect(CREATURE_EXPRESSION_LINE).toContain("fangs sit inside the mouth");
-    expect(CREATURE_EXPRESSION_LINE).toContain("lips slightly parted at rest");
-    /* His register clause, the law in one sentence. */
-    expect(CREATURE_EXPRESSION_LINE).toContain("Lips may part at rest to show what is there; never teeth forced through closed lips.");
+    /*
+      His eye overturned the first fix (2026-09-09): "lips slightly parted at
+      rest" still reads as a closed mouth, and the fangs came through the lips
+      like tusks. The sentence that made all eight read as teeth on his own
+      brief is now the line, verbatim — the mouth slightly OPEN, upper teeth
+      showing. Both superseded phrasings are pinned OUT.
+    */
+    expect(CREATURE_EXPRESSION_LINE).toContain("Fangs are teeth: the mouth is slightly open, upper teeth showing, the fangs among them");
+    expect(CREATURE_EXPRESSION_LINE).toContain("nothing growing out of or over the lips");
+    expect(CREATURE_EXPRESSION_LINE).not.toContain("lips slightly parted at rest");
+    expect(CREATURE_EXPRESSION_LINE).not.toContain("forced through closed lips");
     /* The defect phrase, refused by name. */
     expect(CREATURE_EXPRESSION_LINE).not.toContain("stays visible at rest");
     /* The tusked control's half of the court, in the bytes: protrusion is still the tusk's own. */
