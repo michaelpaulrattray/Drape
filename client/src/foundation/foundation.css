@@ -2764,25 +2764,44 @@ a.dp-segmented__seg {
  * value in 12px mono, and — the only variant — **a hairline above a subtotal
  * with `500` on the LABEL, never on the value.**
  *
- * ⚠ **THERE IS A SECOND IMPLEMENTATION IN THE TREE AND THIS PR DELIBERATELY
- * DOES NOT ABSORB IT.** `.dp-ov__leader` (brief 07, three consumers:
- * `GovernanceCard`, `SystemStatusCard`, `UserGrowthCard`) is the same idea with
- * a different divider grammar — a `border-bottom` between EVERY row rather than
- * a hairline before a subtotal — and it differs in four measured properties
- * (`align-items` center vs baseline, gap 8 vs 10, padding 7 vs 6, value 11.5px
- * vs 12px). Converging it would change the pixels of a section that shipped
- * yesterday behind 66 guard arms, inside a PR about a different section.
+ * ✅ **THE SECOND IMPLEMENTATION IS GONE — #419, 2026-09-10.** This paragraph
+ * used to open *"there is a second implementation in the tree and this PR
+ * deliberately does not absorb it"*: `.dp-ov__leader` (brief 07, three
+ * consumers: `GovernanceCard`, `SystemStatusCard`, `UserGrowthCard`) was the
+ * same idea with a different divider grammar — a `border-bottom` between EVERY
+ * row rather than a hairline before a subtotal — differing in four measured
+ * properties (`align-items` center vs baseline, gap 8 vs 10, padding 7 vs 6,
+ * value 11.5px vs 12px). Brief 09's §4c spec above is what survived; Overview's
+ * three cards were converted onto it and `.dp-ov__leader*` was deleted, so the
+ * four disagreements are settled rather than carried.
  *
- * `PROMOTION-PASS.md` settles that directly — *"NOT a refactor … NOT a chance
- * to tidy the original"*, and *"if a promotion needs a rewrite to be general it
- * is not ready — leave it and log it."* **So it is logged, with both specs
- * quoted, rather than absorbed quietly or left unmentioned.**
+ * ⚠ **THE DIVIDER GRAMMAR IS A PROPERTY OF THE GROUP, NEVER OF A ROW** — a
+ * single row cannot decide *"a rule between every row"*, so `--divided` sits on
+ * `.dp-leaders` and `LeaderRow`'s prop surface is unchanged by the conversion.
+ * A rule under every row reads as a table; a rule only before a total reads as
+ * arithmetic, and the two are not variants of one another — Overview's rows are
+ * mostly not totals, which is why it takes the divided container and the
+ * investigation surface does not.
+ *
+ * ⚠ **THE SWATCH CASE IS WHY THIS DID NOT NEED THE PRIMITIVE WIDENED, and the
+ * card that asked for the conversion had not seen it.** `GovernanceCard`'s
+ * donut key draws an 8px colour swatch before the label, which was a flex ITEM
+ * of the old row. `label` is a `ReactNode` precisely so a caller can compose:
+ * the swatch went INSIDE the label as an `inline-block`, and no `lead` slot was
+ * added. `PROMOTION-PASS.md` — *"if a promotion needs a rewrite to be general
+ * it is not ready"* — is what a `lead` slot would have breached.
  *
  * ⚠ **His §9 also names Settings as a third consumer, and it is not one.**
  * `.dp-set__row` takes an interactive CONTROL on the right — a toggle, a field,
  * a button — not a measured value. Same silhouette, different job.
  */
 .dp-leaders { display: flex; flex-direction: column; }
+
+/* A rule between every row — a table, not arithmetic (#419). The last row
+   never carries one: a hairline under the final entry reads as a cut-off
+   list rather than a divider. */
+.dp-leaders--divided > .dp-leader { border-bottom: 1px solid var(--rule); }
+.dp-leaders--divided > .dp-leader:last-child { border-bottom: none; }
 
 .dp-leader {
   display: flex;

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4683687bc063005f"
+    "sourceFingerprint": "f0f75275da26a51a"
   },
   "domains": [
     {
@@ -15151,8 +15151,18 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/overview/SystemStatusCard.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/overview/UserGrowthCard.tsx",
       "to": "module:client/src/features/admin/overview/chartTokens.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/UserGrowthCard.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {

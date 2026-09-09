@@ -1257,8 +1257,9 @@ export function TableHead({ eyebrow, children }: { eyebrow: string; children?: R
  *
  * Brief 09 §9: *"the most-used row in the product, and it should be a component
  * by the end of this PR."* Its specification is that brief's §4c; the CSS block
- * carries the full reasoning, including the second implementation this
- * deliberately does not absorb and why.
+ * carries the full reasoning, including the second implementation that #419
+ * deleted, the divider grammar that came across with it, and why the swatch
+ * case did not widen this component.
  *
  * ⚠ **`subtotal` puts the weight on the LABEL, never the value** (his §6: *"No
  * `font-medium` doing the work of a subtotal"*). The type offers no way to

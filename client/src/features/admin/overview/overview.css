@@ -259,6 +259,25 @@
   border-radius: 1px;
 }
 
+/* ⚠ The donut key's swatch is the ONE of six that is not a flex item (#419):
+   it sits inside a leader row's `label`, which is a `ReactNode` so a caller can
+   compose. The other five live in `.dp-ov__legenditem` / `.dp-ov__key`, which
+   are `display: flex; gap: 6px` — so making `.dp-ov__swatch` itself an
+   inline-block with a margin would silently move four unrelated legends. It is
+   scoped here instead. `inline-block` on the wrapper (not `inline-flex`) is
+   deliberate: the row aligns on `baseline`, and an inline-flex box's baseline
+   would be taken from the swatch — an empty box — rather than the label text,
+   which drops the label relative to its mono value. */
+.dp-ov__keylabel {
+  display: inline-block;
+}
+
+.dp-ov__keylabel .dp-ov__swatch {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
 /* ------------------------------------------------- blocks inside a card */
 
 .dp-ov__block {
@@ -290,34 +309,10 @@
   color: var(--faint);
 }
 
-/* Leader rows: label left, value right in mono (§8). */
-.dp-ov__leaders {
-  display: flex;
-  flex-direction: column;
-}
-
-.dp-ov__leader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--rule);
-}
-
-.dp-ov__leader:last-child {
-  border-bottom: none;
-}
-
-.dp-ov__leaderlabel {
-  font: 400 11.5px var(--font-sans);
-  color: var(--metaStrong);
-}
-
-.dp-ov__leadervalue {
-  font: 400 11.5px var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  color: var(--ink);
-}
+/* Leader rows (§8) are the foundation's `LeaderRow` inside a
+   `.dp-leaders--divided` container — this section's own `.dp-ov__leader*`
+   family was deleted by #419. See `foundation.css`'s leader-row header for
+   which of the two specs survived and why. */
 
 .dp-ov__stamp {
   font: 400 10.5px var(--font-sans);

@@ -7,6 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { LeaderRow } from "@/foundation";
 import { axisTick, tooltipStyle, useChartTokens } from "./chartTokens";
 
 /**
@@ -114,17 +115,9 @@ export function UserGrowthCard({
         </div>
       </div>
 
-      <div className="dp-ov__leaders">
-        <div className="dp-ov__leader">
-          <span className="dp-ov__leaderlabel">Frozen</span>
-          <span className="dp-ov__spacer" />
-          <span className="dp-ov__leadervalue">{data.frozenAccounts}</span>
-        </div>
-        <div className="dp-ov__leader">
-          <span className="dp-ov__leaderlabel">Suspended</span>
-          <span className="dp-ov__spacer" />
-          <span className="dp-ov__leadervalue">{data.suspendedAccounts}</span>
-        </div>
+      <div className="dp-leaders dp-leaders--divided">
+        <LeaderRow label="Frozen" value={data.frozenAccounts} />
+        <LeaderRow label="Suspended" value={data.suspendedAccounts} />
       </div>
 
       {totalPlanUsers > 0 && (

@@ -691,3 +691,72 @@ describe("§1 — the queries are untouched", () => {
     expect(banners.match(/utils\.announcements\.getActive\.invalidate\(\)/g)).toHaveLength(3);
   });
 });
+
+/* ------------------------------------- #419 — one leader row, not two
+ *
+ * Brief 07 §8's leader rows were a SECOND implementation of brief 09's
+ * `LeaderRow`, disagreeing in four measured properties. #419 converted the
+ * three cards onto the foundation's and deleted `.dp-ov__leader*`.
+ *
+ * ⚠ **THE ARM THAT MATTERS IS THE SWATCH ONE, because it is the mistake this
+ * change nearly shipped.** The donut key's colour chip moved INSIDE a leader
+ * row's `label`, where a flex item's `flex: none` is inert. Making
+ * `.dp-ov__swatch` itself an inline-block with a margin fixes that one site and
+ * silently moves the FOUR unrelated legends in `CreditEconomyCard`,
+ * `HealthMetrics` and `UserGrowthCard`, which sit in `display: flex; gap: 6px`
+ * containers. The override is scoped under `.dp-ov__keylabel`, and the arm
+ * holds it there.
+ *
+ * Every absence arm below carries its positive control, per this file's header.
+ */
+
+const FOUNDATION_CSS = read(path.resolve(CLIENT_SRC, "foundation", "foundation.css"));
+
+describe("#419 — the leader row is defined once", () => {
+  it("overview.css declares no leader family of its own", () => {
+    const css = code(CSS);
+    expect(css).not.toContain(".dp-ov__leader");
+    /* Positive control: the matcher is reading a stylesheet that really does
+       declare things, so the absence above is a deletion and not an empty
+       read. */
+    expect(css).toContain(".dp-ov__swatch {");
+  });
+
+  it("no card in the section hand-builds a leader row", () => {
+    /* Derived over the directory, not a named list: a fourth card that draws
+       label - spacer - value by hand is measured the moment it exists. */
+    const offenders = section()
+      .filter((f) => code(f.text).includes("__leader"))
+      .map((f) => f.name);
+    expect(offenders).toEqual([]);
+  });
+
+  it("the three converted cards take LeaderRow from the foundation", () => {
+    for (const name of ["GovernanceCard.tsx", "SystemStatusCard.tsx", "UserGrowthCard.tsx"]) {
+      const body = code(read(path.join(HERE, name)));
+      expect(body, name + " lost its LeaderRow import").toContain("LeaderRow");
+      expect(body, name + " does not import from the foundation").toContain('from "@/foundation"');
+      expect(body, name + " lost the divided container").toContain("dp-leaders--divided");
+    }
+  });
+
+  it("the divided container is the group's property, with the last row exempt", () => {
+    expect(FOUNDATION_CSS).toContain(".dp-leaders--divided > .dp-leader { border-bottom:");
+    expect(FOUNDATION_CSS).toContain(
+      ".dp-leaders--divided > .dp-leader:last-child { border-bottom: none; }",
+    );
+  });
+
+  it("the swatch override is scoped to the key label, not applied to all six", () => {
+    const css = code(CSS);
+    /* Positive control first: the scoped rule exists, so a rename of the
+       wrapper cannot make this arm pass by matching nothing. */
+    expect(css).toContain(".dp-ov__keylabel .dp-ov__swatch {");
+    /* And the base swatch stays a flex item — the four legends must not move. */
+    const base = css.slice(css.indexOf(".dp-ov__swatch {"));
+    const decls = base.slice(0, base.indexOf("}"));
+    expect(decls).toContain("flex: none;");
+    expect(decls).not.toContain("display: inline-block");
+    expect(decls).not.toContain("margin-right");
+  });
+});
