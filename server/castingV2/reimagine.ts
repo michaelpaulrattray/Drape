@@ -460,7 +460,7 @@ export function reimagineSystemPrompt(allowance: number): string {
       house block's, and a pose word on it argues with the block on every
       roll that carries it.
     */
-    "- Name a mouth feature — fangs, tusks, dentition, a tongue — as anatomy only, never how it is held or displayed: no \"kept visible\", no \"bared\", no open or closed mouth. The studio's own block says how the mouth sits at rest.",
+    "- Name a mouth feature — fangs, tusks, dentition, a tongue — as anatomy only, never how it is held or displayed: no \"kept visible\", no \"bared\", no open or closed mouth. The studio's own block says how the mouth sits at rest. If the request itself says how the mouth is held, keep it: it is theirs.",
     `- Word allowance: at most ${allowance} words, and fewer is better.`,
     "- Keep wording image-engine safe: no nudity, no sexual language, no gore, no named real person or named character, and avoid explicit sheer or revealing clothing language. Never name the breastbone.",
     "- Write ONE paragraph and nothing else — no second paragraph, no blank line, no heading, no list, no notes after it.",

@@ -202,6 +202,10 @@ describe("the instruction", () => {
     */
     expect(rules).toContain("Name a mouth feature");
     expect(rules).toContain("never how it is held or displayed");
+    /* The carve-out, same declared principle as the skin rule's: her own typed
+       pose word is hers to keep — refusing it rations her words (review of
+       #708, finding 2). */
+    expect(rules).toContain("If the request itself says how the mouth is held, keep it: it is theirs.");
   });
 
   it("⚠ THE CLASS ARM (#477's lesson): every taught-good example passes the full refusal chain at its own worst facts", () => {

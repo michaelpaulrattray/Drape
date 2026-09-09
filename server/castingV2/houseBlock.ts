@@ -301,7 +301,11 @@ export const ANATOMY_VISIBILITY_LINE =
  * (*"where the mouth is the being's own anatomy"*, *"if the being has a tail,
  * wings, or other anatomy the description names"*), so on a human they assert
  * nothing. That asymmetry is deliberate: the reader's mistakes are cheap in
- * one direction and free in the other.
+ * one direction and free in the other. ⚠ One sentence of the #599 rewrite is
+ * PERMISSIVE rather than conditional — *"lips may part at rest to show what
+ * is there"* — so a misread human now carries permission to part the lips: a
+ * visibly smaller drift than a creature losing its dentition, but a cost
+ * where this paragraph used to promise none (review of #708, finding 3).
  */
 export type HouseLane = "human" | "creature";
 export const HOUSE_LANES = ["human", "creature"] as const satisfies readonly HouseLane[];
