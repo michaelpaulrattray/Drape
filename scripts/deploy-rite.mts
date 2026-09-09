@@ -90,6 +90,7 @@ import { closingKeywordHits, closingKeywordRefusal } from "./lib/closingKeyword.
 import { dirtyEntriesFrom, judgeDirtyTree } from "./lib/dirtyTreeGuard.mts";
 import { inWorktreeOf } from "./lib/riteWorktree.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
+import { productionDatabaseUrl, readFounderActivity } from "./lib/founderActivity.mts";
 import { decideWatch, foreignServiceContext, listedRows } from "./lib/deployWatch.mts";
 import { comparePositions, parseVariableLines } from "./lib/productionFlagPositions.mts";
 import {
@@ -610,12 +611,13 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const listDeployments = () =>
   listedRows(railway("deployment", "list", "--service", SERVICE, "--json", "--limit", "5"));
 
-/** The production database's public URL, read by name and never printed. */
+/** The production database's public URL, read by name and never printed.
+ *  The PARSE is `scripts/lib/founderActivity.mts` — shared with the merge
+ *  helper, which needs the same address for the same freeze (#585). Two
+ *  consumers with two regexes over one `KEY=value` block is working law 4 with
+ *  a credential attached. */
 function productionUrl(): string | undefined {
-  return railway("variables", "--service", "MySQL", "--kv").split(/\r?\n/)
-    .map((line) => line.trim())
-    .find((line) => line.startsWith("MYSQL_PUBLIC_URL="))
-    ?.slice("MYSQL_PUBLIC_URL=".length);
+  return productionDatabaseUrl(() => railway("variables", "--service", "MySQL", "--kv"));
 }
 
 /* ── 1. what is being deployed ──────────────────────────────────────────── */
@@ -907,62 +909,25 @@ function productionUrl(): string | undefined {
 
   Read by NAME from the MySQL service; the URL never leaves this block.
 */
-/**
- * IS HE IN THE MIDDLE OF SOMETHING (fable-504)?
- *
- * Ten deploys landed in one night while the founder was dogfooding, and one of
- * them killed a roll he was watching. The Aug-1 ruling accepts that collision
- * class and forbids drain infrastructure — it does not forbid manners. So the
- * rite REFUSES while he has casting work from the last ten minutes, and says
- * why. `--anyway` proceeds deliberately, for the case where the push IS the fix
- * he is waiting on.
- *
- * # WHAT THIS CAN AND CANNOT SEE — said in the receipt, not just here
- *
- * It reads ROWS: candidates and variants. Browsing writes neither. On
- * 2026-08-16 this line printed *"his last casting work was 138.5 minutes ago"*
- * while he was opening face panels — twelve production scans between 10:46Z and
- * 10:58Z, reconciled to the cent against fal's own balance — and two deploys
- * landed inside that session, one of them five seconds after a scan of his.
- *
- * The guard is unchanged, deliberately (fable-754 §4): what it protects against
- * is a killed roll, and reading request logs per deploy to catch a browsing
- * session buys a risk the kept-scan table is already retiring. What changes is
- * the SENTENCE — it now says which reading it took, so nobody quotes a
- * quietness this instrument cannot see. An instrument that overstates its own
- * reach is the uptime-anchor family's defect wearing a politeness costume.
- */
-const founderIsActive = await (async (): Promise<{ active: boolean; note: string }> => {
-  const url = productionUrl();
-  if (!url) return { active: false, note: "(unread — MYSQL_PUBLIC_URL not readable)" };
-  try {
-    const connection = await openDatabase(url);
-    const [rows] = await connection.query<any[]>(
-      `SELECT MAX(at) AS latest FROM (
-         SELECT MAX(createdAt) AS at FROM casting_candidates WHERE userId = 1
-         UNION ALL
-         SELECT MAX(createdAt) AS at FROM casting_candidate_variants WHERE userId = 1
-       ) AS his`,
-    );
-    await connection.end();
-    const latest = rows[0]?.latest ? new Date(rows[0].latest).getTime() : 0;
-    const blind = "browsing writes no row and is invisible to this reading";
-    if (!latest) return { active: false, note: `no cast or version on record (${blind})` };
-    const minutes = (Date.now() - latest) / 60_000;
-    return {
-      active: minutes <= 10,
-      note: `his last CAST OR VERSION was ${minutes.toFixed(1)} minutes ago (${blind})`,
-    };
-  } catch {
-    return { active: false, note: "(unread — the production ledger could not be reached)" };
-  }
-})();
+/*
+  IS HE IN THE MIDDLE OF SOMETHING (fable-504)? The reading, its blindness and
+  its fail-open are `scripts/lib/founderActivity.mts` — extracted there for
+  #585, because after the deploy-on-merge flip the rite is no longer the only
+  road to production and `scripts/pr-merge-in-order.mts` needs the SAME read.
+  Two readings of "is he busy" that could disagree is worse than one that is
+  sometimes wrong (working law 4).
+*/
+const founderIsActive = await readFounderActivity({
+  url: productionUrl(),
+  openDatabase,
+});
 
 const inFlight = await (async (): Promise<string> => {
-  const url = railway("variables", "--service", "MySQL", "--kv").split(/\r?\n/)
-    .map((line) => line.trim())
-    .find((line) => line.startsWith("MYSQL_PUBLIC_URL="))
-    ?.slice("MYSQL_PUBLIC_URL=".length);
+  /* ⚠ **THE SAME PARSE AS THE FREEZE'S, SO IT IS THE SAME FUNCTION** (review of
+     PR #723, finding 2 — working law 7: the sweep is part of the fix, and this
+     sibling sat fifteen lines below the comment saying two copies is the
+     defect). Two parses drifting would make THIS read fail open in silence. */
+  const url = productionUrl();
   if (!url) return "(unread — MYSQL_PUBLIC_URL not readable)";
   try {
     const connection = await openDatabase(url);

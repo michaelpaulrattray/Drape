@@ -41,6 +41,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import { openDatabase } from "./lib/dbConnection.mts";
+import { productionDatabaseUrl } from "./lib/founderActivity.mts";
 import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 import { balanceLine, readOpenRouterBalance } from "./lib/openrouterBalance.mts";
 import { falLine, readFalBalance } from "./lib/falSpend.mts";
@@ -181,11 +182,13 @@ if (process.env.DATABASE_URL) {
   say(`ledger    dev ${dev.where} — ${"line" in dev ? dev.line : `UNREAD: ${dev.error}`}`);
 }
 if (WITH_PROD) {
-  /* By NAME, from the service. The value is used and never printed. */
-  const production = run("railway.cmd", ["variables", "--service", "MySQL", "--kv"], true).split("\n")
-    .map((line) => line.trim())
-    .find((line) => line.startsWith("MYSQL_PUBLIC_URL="))
-    ?.slice("MYSQL_PUBLIC_URL=".length);
+  /* By NAME, from the service. The value is used and never printed.
+     ⚠ The parse is `scripts/lib/founderActivity.mts` — a fourth copy of it was
+     swept in with #585 (review of PR #723, finding 2). This one also split on
+     `"
+"` alone, so a CRLF line would have left a `` on the end of the URL. */
+  const production = productionDatabaseUrl(() =>
+    run("railway.cmd", ["variables", "--service", "MySQL", "--kv"], true));
   if (!production) {
     say("ledger    production — UNREAD (MYSQL_PUBLIC_URL not readable from the MySQL service)");
   } else {
