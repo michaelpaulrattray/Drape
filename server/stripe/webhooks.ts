@@ -351,29 +351,24 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
 
   const grantMonths = bought.monthsBought;
 
-  // Get current credits to calculate rollover
-  const currentCredits = await getUserCredits(userId);
-  if (!currentCredits) {
-    return { success: false, message: "User credits not found" };
-  }
-
   // ⚠ AN EARLY RENEWAL CARRIES THE BALANCE THROUGH IN FULL — because the
   // UNWIND lives in changePlan, not here (#664 review finding 1). An interval
   // switch's anchor reset invoices the new period with billing_reason
-  // "subscription_update"; changePlan has already deducted the unconsumed
-  // share of the OLD period's grant, mirroring the money credit Stripe issued
-  // for the same days. So what remains on the balance at this point is
-  // allowance the customer has genuinely paid for and kept — rolling it at
-  // the plan's percentage would forfeit paid-for credits, and rolling it in
-  // full mints nothing (the mint was the missing unwind, and it is no longer
-  // missing). A cycle that RUNS OUT still keeps only its percentage.
-  // Ordering: this set (grant + full balance) and changePlan's deduct
-  // commute, because a 100% rollover makes this write purely additive.
-  const unusedCredits = currentCredits.balance;
-  const rolloverCredits =
+  // "subscription_update"; changePlan deducts the unconsumed share of the OLD
+  // period's grant, mirroring the money credit Stripe issued for the same
+  // days. So what remains on the balance is allowance the customer genuinely
+  // paid for and kept — the plan's percentage would forfeit paid-for credits.
+  // A cycle that RUNS OUT still keeps only its percentage.
+  //
+  // ⚠ The RULE is passed, not a number (#664 review round 2, finding 1):
+  // refreshMonthlyCredits computes the rollover from the balance its own
+  // compare-and-set write is conditioned on, so the unwind (or a spend)
+  // landing mid-refresh makes the write miss and retry instead of being
+  // silently erased by a SET computed from a stale read.
+  const computeRollover =
     billingReason === "subscription_update"
-      ? unusedCredits
-      : calculateRolloverCredits(unusedCredits, planTier as PlanTier);
+      ? (balance: number) => balance
+      : (balance: number) => calculateRolloverCredits(balance, planTier as PlanTier);
 
   const grantCredits = getMonthlyCredits(planTier as PlanTier) * grantMonths;
 
@@ -381,10 +376,10 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
   const result = await refreshMonthlyCredits(
     userId,
     grantCredits,
-    rolloverCredits,
+    computeRollover,
     `stripe-invoice:${invoice.id}`,
     grantMonths === 12
-      ? `Annual credit grant — 12 months up front (${grantCredits} credits + ${rolloverCredits} rollover)`
+      ? `Annual credit grant — 12 months up front (${grantCredits} credits + rollover)`
       : undefined,
   );
 
@@ -393,7 +388,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
   }
 
   log.info(
-    `[Webhook] Refreshed credits for user ${userId}: ${grantCredits} (${grantMonths} month${grantMonths === 1 ? "" : "s"} bought) + ${rolloverCredits} rollover = ${result.newBalance}`,
+    `[Webhook] Refreshed credits for user ${userId}: ${grantCredits} (${grantMonths} month${grantMonths === 1 ? "" : "s"} bought) + rollover = ${result.newBalance}`,
   );
   return { success: true, message: `Refreshed credits for user ${userId}` };
 }
@@ -440,6 +435,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
       subscriptionStatus: "canceled",
       planTier: "free",
       stripeSubscriptionId: null,
+      billingInterval: null,
       planExpiresAt: null,
       currentPeriodStart: null,
       currentPeriodEnd: null,

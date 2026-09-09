@@ -142,10 +142,13 @@ describe("the period-bought grant rule", () => {
     });
     expect(result.success).toBe(true);
     expect(refreshMonthlyCredits).toHaveBeenCalledTimes(1);
-    const [userId, grant, rollover, ref, description] = refreshMonthlyCredits.mock.calls[0];
+    const [userId, grant, computeRollover, ref, description] = refreshMonthlyCredits.mock.calls[0];
     expect(userId).toBe(7);
     expect(grant).toBe(MONTHLY_CREDITS * 12);
-    expect(rollover).toBe(PERCENT_ROLLOVER);
+    /* The rollover is a RULE now (round-2 finding 1): the refresh computes it
+       from the balance its compare-and-set is conditioned on. A create keeps
+       the plan's percentage. */
+    expect(computeRollover(4_000)).toBe(PERCENT_ROLLOVER);
     expect(ref).toBe("stripe-invoice:in_annual_create");
     expect(description).toContain("Annual");
     expect(description).toContain("12 months");
@@ -160,9 +163,9 @@ describe("the period-bought grant rule", () => {
       lines: { data: [periodLine("month")] },
     });
     expect(result.success).toBe(true);
-    const [, grant, rollover, , description] = refreshMonthlyCredits.mock.calls[0];
+    const [, grant, computeRollover, , description] = refreshMonthlyCredits.mock.calls[0];
     expect(grant).toBe(MONTHLY_CREDITS);
-    expect(rollover).toBe(PERCENT_ROLLOVER);
+    expect(computeRollover(4_000)).toBe(PERCENT_ROLLOVER);
     expect(description).toBeUndefined();
   });
 
@@ -190,10 +193,11 @@ describe("the period-bought grant rule", () => {
       lines: { data: [prorationLine, periodLine("year")] },
     });
     expect(result.success).toBe(true);
-    const [, grant, rollover] = refreshMonthlyCredits.mock.calls[0];
+    const [, grant, computeRollover] = refreshMonthlyCredits.mock.calls[0];
     expect(grant).toBe(MONTHLY_CREDITS * 12);
-    /* The full 4,000 on the balance, not the 800 the percentage would keep. */
-    expect(rollover).toBe(4_000);
+    /* The whole conditioned balance, not the 800 the percentage would keep —
+       the unwind in changePlan is what made carrying it through honest. */
+    expect(computeRollover(4_000)).toBe(4_000);
   });
 
   it("⚠ CLOVER dialect: a year read off the line's own period span grants 12× — the shape production actually receives", async () => {
@@ -255,7 +259,7 @@ describe("the period-bought grant rule", () => {
       billing_reason: "subscription_cycle",
       lines: { data: [periodLine("year")] },
     });
-    const [, , rollover] = refreshMonthlyCredits.mock.calls[0];
-    expect(rollover).toBe(PERCENT_ROLLOVER);
+    const [, , computeRollover] = refreshMonthlyCredits.mock.calls[0];
+    expect(computeRollover(4_000)).toBe(PERCENT_ROLLOVER);
   });
 });

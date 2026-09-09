@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "bdf0003ffabea3c2"
+    "sourceFingerprint": "ba583a7e6eb3fd63"
   },
   "domains": [
     {
@@ -12730,6 +12730,10 @@
     {
       "id": "test:server/court.test.ts",
       "path": "server/court.test.ts"
+    },
+    {
+      "id": "test:server/creditRefreshRace.test.ts",
+      "path": "server/creditRefreshRace.test.ts"
     },
     {
       "id": "test:server/creditToolKind.test.ts",

@@ -505,6 +505,17 @@ export const billingRouter = router({
         // Floor at the balance read NOW (not the pre-change row): a deduction
         // that exceeds the balance is refused by deductCredits, and a spend
         // mid-change must cost the customer nothing extra.
+        //
+        // ⚠ A DELIBERATELY COARSE MIRROR (#664 review round 2, finding 2):
+        // the floor is the TOTAL balance, so the unwind can consume credits
+        // that arrived from other sources (an admin adjustment, a referral)
+        // when the cycle's own grant was already spent. The balance is one
+        // number — the ledger records sources but the product has no
+        // per-source lots to spend from, and inventing lot-tracking for this
+        // edge would be a second accounting system. The customer is never
+        // taken below zero and never loses more than the share whose money
+        // they are getting back; who that share was "from" is attribution,
+        // not value. If lots ever exist, this floor is the line to revisit.
         const liveCredits = await getUserCredits(ctx.user.id);
         const returnable = Math.min(creditsToReturn, Math.max(0, liveCredits?.balance ?? 0));
         if (returnable > 0) {
