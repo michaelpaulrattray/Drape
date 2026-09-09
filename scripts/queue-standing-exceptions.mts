@@ -25,10 +25,20 @@
  *   2. process/gate findings that block every merge
  *   3. patrol duties when their clock fires
  *
- * Only (1) is a label, and it is the one that rotted, so this prints the urgent
- * band — ordered oldest-first, because an urgent card that has waited longest
- * is the one #236 was filed about ("an urgent founder card sat a whole shift
- * unworked").
+ * ⚠ **AND HIS ORDERED BAND OUTRANKS ALL THREE, WHICH THIS VIEW COULD NOT SEE
+ * UNTIL #472.** It read ONE label — `urgent` — and when that band was empty it
+ * printed *"Bands 2 and 3 apply"*, a sentence that reads as COMPLETE. Measured
+ * the day the card was filed: **0 urgent, 14 `founder-ordered`** — a shift
+ * running this script alone was told the urgent band was empty and patrols
+ * applied, while fourteen cards he had personally ordered sat unnamed. That is
+ * the same shape one step out from #471, and the third appearance of it on this
+ * feature: **a derived priority view whose population is narrower than the rule
+ * it serves, with a message that reads as complete.**
+ *
+ * The two bands are printed separately and never merged (#471: `urgent` means
+ * this cannot wait, `founder-ordered` means he chose the order), his first,
+ * because PROGRAM.md's clause of 2026-08-30 says *taken FIRST — before the
+ * focus, before patrols, before anything.*
  *
  * ⚠ This docblock claimed BOTH remaining bands "stay prose in the Program
  * because a clock and a blocking-ness judgement are not labels" — half of that
@@ -42,23 +52,21 @@
  * # It reports rather than decides
  *
  * A shift still chooses its brief under the anti-randomness rule. This answers
- * one question — *which cards are in the urgent band right now* — and answers
- * it from the artifact rather than from a paragraph that was true last week.
+ * two questions — *what has he ordered* and *what is in the urgent band right
+ * now* — and answers both from the artifact rather than from a paragraph that
+ * was true last week.
  *
- *     pnpm tsx scripts/queue-standing-exceptions.mts
+ *     npx tsx scripts/queue-standing-exceptions.mts
  *
  * Needs `gh` authenticated; it reads nothing else and writes nothing at all.
+ * The rendering lives in `scripts/lib/standingExceptions.mts` so both the empty
+ * and the populated state can be driven (`server/standingExceptions.test.ts`).
  */
 import { execFileSync } from "node:child_process";
 
-type Row = {
-  number: number;
-  title: string;
-  createdAt: string;
-  labels: { name: string }[];
-};
+import { renderBands, type Row } from "./lib/standingExceptions.mts";
 
-function readUrgent(): Row[] {
+function readBand(label: string): Row[] {
   const raw = execFileSync(
     "gh",
     [
@@ -67,7 +75,7 @@ function readUrgent(): Row[] {
       "--state",
       "open",
       "--label",
-      "urgent",
+      label,
       "--limit",
       "200",
       "--json",
@@ -79,17 +87,22 @@ function readUrgent(): Row[] {
 }
 
 function main(): number {
-  let rows: Row[];
+  let ordered: Row[];
+  let urgent: Row[];
   try {
-    rows = readUrgent();
-  } catch (error) {
     /*
       REFUSE RATHER THAN PRINT AN EMPTY RANKING. A ranking that comes up empty
       because `gh` is unauthenticated reads exactly like a ranking that is
       genuinely empty, and the second one means "nothing urgent, work a patrol".
       That is the collector class CLAUDE.md's Atlas section names: a reader that
-      can come up empty THROWS rather than returning a short list.
+      can come up empty THROWS rather than returning a short list. It matters
+      MORE on the ordered band than it ever did on the urgent one — an empty
+      ordered band tells a shift he has asked for nothing, which is precisely
+      the harm his 2026-08-30 clause was written about.
     */
+    ordered = readBand("founder-ordered");
+    urgent = readBand("urgent");
+  } catch (error) {
     console.error(
       "queue-standing-exceptions: could not read the queue — is `gh` authenticated?",
     );
@@ -97,38 +110,9 @@ function main(): number {
     return 1;
   }
 
-  rows.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-
-  console.log("THE URGENT BAND — standing exception 1, derived from the queue");
-  console.log(`read ${new Date().toISOString()} · ${rows.length} open\n`);
-
-  if (rows.length === 0) {
-    console.log(
-      "  (empty — no card carries `urgent`. Bands 2 and 3 apply; for band 3 run",
-    );
-    console.log("   `npx tsx scripts/patrol-clocks.mts`.)");
-    return 0;
+  for (const line of renderBands({ ordered, urgent, now: new Date() })) {
+    console.log(line);
   }
-
-  for (const [index, row] of rows.entries()) {
-    const others = row.labels
-      .map((label) => label.name)
-      .filter((name) => name !== "urgent");
-    const age = Math.floor(
-      (Date.now() - Date.parse(row.createdAt)) / (24 * 60 * 60 * 1000),
-    );
-    console.log(
-      `${String(index + 1).padStart(2)}. #${row.number}  ${row.createdAt.slice(0, 10)}  (${age}d)  ${row.title}`,
-    );
-    if (others.length > 0) console.log(`      labels: ${others.join(", ")}`);
-  }
-
-  console.log(
-    "\nOldest first. Band 2 (blocks every merge) is a judgement and stays prose.",
-  );
-  console.log(
-    "Band 3 (a patrol whose clock has fired) is DERIVED — `npx tsx scripts/patrol-clocks.mts`.",
-  );
   return 0;
 }
 
