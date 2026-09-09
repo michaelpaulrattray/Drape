@@ -194,6 +194,14 @@ describe("the instruction", () => {
     expect(rules).toContain(WAR_BUILT_RIGHT);
     expect(rules).toContain("WRONG — keeps every piece and adds a story");
     expect(rules).toContain(PIRATE_RIGHT);
+    /*
+      #599 — the author names the fang, the house line owns how the mouth
+      sits. Roll 249's "kept sharp and visible" was a pose word on a mouth
+      feature, and it pushed the same way as the old house line: every fanged
+      being got sabre teeth over a shut mouth.
+    */
+    expect(rules).toContain("Name a mouth feature");
+    expect(rules).toContain("never how it is held or displayed");
   });
 
   it("⚠ THE CLASS ARM (#477's lesson): every taught-good example passes the full refusal chain at its own worst facts", () => {

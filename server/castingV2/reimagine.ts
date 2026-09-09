@@ -452,6 +452,15 @@ export function reimagineSystemPrompt(allowance: number): string {
     "- Do NOT write notes about the series or the process — nothing about how many portraits, what changes between them, what is unstated, or your own instructions. Never mention the request or the person who wrote it. Write only what the picture should contain.",
     "- Do NOT ADD skin or surface words that fight the studio's realism rules — no translucent, poreless, flawless, airbrushed, waxy or doll-like skin, no perfect symmetry — and never write one even to deny it. If the request uses such a word, keep it: it is theirs.",
     "- Never pin an exact garment, cut, jewellery piece or armour piece the request did not name. Say what the wardrobe is MADE OF and FEELS like.",
+    /*
+      #599 — roll 249's authored sentence "Fangs mark the demon heritage
+      plainly, kept sharp and visible" pushed the same way as the old house
+      line and every fanged being got the sabre-tooth read. A named mouth
+      feature is a FACT the author keeps; how the mouth holds it is the
+      house block's, and a pose word on it argues with the block on every
+      roll that carries it.
+    */
+    "- Name a mouth feature — fangs, tusks, dentition, a tongue — as anatomy only, never how it is held or displayed: no \"kept visible\", no \"bared\", no open or closed mouth. The studio's own block says how the mouth sits at rest.",
     `- Word allowance: at most ${allowance} words, and fewer is better.`,
     "- Keep wording image-engine safe: no nudity, no sexual language, no gore, no named real person or named character, and avoid explicit sheer or revealing clothing language. Never name the breastbone.",
     "- Write ONE paragraph and nothing else — no second paragraph, no blank line, no heading, no list, no notes after it.",

@@ -197,10 +197,27 @@ export const EXPRESSION_LINE = "EXPRESSION: Eyes into the lens, present, mouth c
  * on* — carries the logic. Every ban he kept is kept, in his own nouns; the
  * one he did not name (`no blank CGI stare`) survives because it is the human
  * line's and has nothing to do with the mouth.
+ *
+ * ⚠ **"STAYS VISIBLE AT REST" WAS THE NEXT CONTRADICTION DOWN AND IT IS GONE
+ * (#599)** — founder, on roll 249 of his oni-cyber Re-imagine: *"the fangs
+ * were not rendering correctly … see the fangs coming out of the lips — or
+ * like this one, mouth seems forced closed might be the issue?"* "Mouth at
+ * rest" + "stays visible at rest" is satisfiable for TUSKS (they protrude by
+ * anatomy) and impossible for FANGS (they live inside the mouth), so the
+ * engine resolved it the only way it could: mouth shut, sabre teeth drawn
+ * over the lip. #232/#243 were proven on tusked fixtures, where the sentence
+ * is true; fangs were never in the fixture set. The sentence now says HOW
+ * each kind shows — tusks and an underbite protrude of themselves, fangs show
+ * through lips slightly parted — and the clause that carries the law is in
+ * his register: *lips may part at rest to show what is there; never teeth
+ * forced through closed lips.* Court: his oni brief before/after plus the
+ * tusked control (the fix must not close the tusk mouth), his eye closing it.
  */
 export const CREATURE_EXPRESSION_LINE =
   "EXPRESSION: Eyes into the lens, present, mouth at rest — pose off, anatomy on. "
-  + "Where the mouth is the being's own anatomy it stays visible at rest: non-human dentition, tusks, an underbite, a split lip, a species tongue. "
+  + "Where the mouth is the being's own anatomy it shows as that anatomy allows: non-human dentition, tusks, an underbite, a split lip, a species tongue. "
+  + "Tusks and an underbite protrude past the lips of themselves; fangs sit inside the mouth and show through lips slightly parted at rest. "
+  + "Lips may part at rest to show what is there; never teeth forced through closed lips. "
   + "No laugh, no speech, no acted roar, no tongue out as a pose, no blank CGI stare.";
 
 /**
