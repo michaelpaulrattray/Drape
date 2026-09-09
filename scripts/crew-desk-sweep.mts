@@ -85,10 +85,9 @@ import {
 import {
   CREW_HOLD_LABELS,
   CREW_HOLD_MARKER,
-  heldStateFromLabels,
-  holdReasonFromBody,
   planDeskHoldLabels,
 } from "../shared/crewNextUpHold.js";
+import { type OrderedIssue, planNextUpItems } from "./lib/nextUpItems.mts";
 import {
   CREW_LADDER_GROUP_KEYS,
   RUNG_LABEL_PREFIX,
@@ -182,7 +181,7 @@ const ordered = gh([
   /* `body` rides along for the hold REASON (#298). It is the same request, so
      it costs nothing extra — and it is the only way the sentence a filer wrote
      reaches his page without somebody transcribing it into the briefing. */
-  "--json", "number,title,labels,body",
+  "--json", "number,title,labels,body,createdAt",
 ]) as Json[] | null;
 
 if (ordered === null) {
@@ -201,16 +200,23 @@ if (ordered === null) {
     that is band 1. Everything else the founder ordered follows, also oldest
     first.
 
-    ⚠ **AND THIS PARAGRAPH USED TO END "`scripts/queue-standing-exceptions.mts`
-    is the same sort", WHICH IS NO LONGER TRUE (#472).** That script prints his
-    ordered band WHOLLY ABOVE the urgent band, oldest-first within each, on
-    PROGRAM.md's *"taken FIRST — before the focus, before patrols, before
-    anything"* clause; this block floats urgent to the top of the ordered
-    population instead. **Both are defensible readings of his own words and
-    they can disagree on which card to take first** — an old non-urgent ordered
-    card against a newer one carrying both labels. The reading is HIS to settle
-    and it is carded as #718 rather than decided here; what is fixed in this commit is
-    the sentence that asserted an agreement which had stopped existing.
+    ⚠ **HE SETTLED IT — #718, Crew reply #168, 2026-09-09, verbatim and
+    entire: *"Urgent wins inside your ordered group"*.** So this page's reading
+    was the surviving one, and the priority view came to it rather than the
+    other way round.
+
+    ⚠ **AND THE REPAIR IS NOT THAT THE TWO NOW AGREE — IT IS THAT THERE IS ONE
+    SORT.** This paragraph used to end *"`scripts/queue-standing-exceptions.mts`
+    is the same sort"*, which was true when written and silently stopped being
+    true (#472); asserting an agreement in prose is what let the two drift for a
+    week with a worked example nobody could see. The comparator is
+    `scripts/lib/orderedBand.mts` and both views call it, on the same key —
+    ⚠ **this block used to tiebreak on `issueNumber`, which is oldest-first for
+    one repository's issues and was therefore not wrong, but it is a DIFFERENT
+    KEY, and two functions comparing different keys can only ever be held to
+    each other by a sentence.** `server/orderedBandOrder.test.ts` drives both
+    over one fixture.
+
     Caught by looking at the rendered page: sorting on the number alone put a
     non-urgent card above three urgent ones, which is a running order that no
     shift would obey.
@@ -296,51 +302,12 @@ if (ordered === null) {
 
   staleHolds = deskPlan.stale;
 
-  const items = ordered
-    .slice()
-    .map((row) => {
-      const labels = Array.isArray(row.labels)
-        ? row.labels.map((label: Json) => String(label?.name ?? ""))
-        : [];
-      /*
-        ⚠ **THE HOLD'S STATE COMES FROM A LABEL AND ITS REASON FROM THE BODY,
-        AND THE REASON IS ONLY EVER WRITTEN BESIDE A LIVE STATE** (#298).
-
-        That asymmetry is the anti-rot property, not a shortcut: `#278` told him
-        it was blocked for two shifts after it was unblocked, because the state
-        lived in prose. Here, removing the label removes the whole row's chip
-        AND its sentence in one act — a reason cannot outlive the state that
-        renders it, whatever the body still says.
-
-        A held card with no marker line keeps its chip. The label alone answers
-        *"why was this skipped"*, and demanding prose would let a filer's
-        omission quietly un-hold a card.
-      */
-      const appliedReason = applied.get(Number(row.number)) ?? null;
-      const state = heldStateFromLabels(
-        appliedReason === null ? labels : [...labels, CREW_HOLD_LABELS.blocked],
-      );
-      /* A hold this run applied says WHY from the desk; every other hold keeps
-         reading the filer's own line, which is #298's rule untouched. */
-      const because = state === null
-        ? null
-        : appliedReason ?? holdReasonFromBody(String(row.body ?? ""));
-      return {
-        issueNumber: Number(row.number),
-        title: String(row.title).slice(0, 300),
-        urgent: labels.includes("urgent"),
-        ...(state === null ? {} : { held: { state, ...(because ? { because } : {}) } }),
-      };
-    })
-    /*
-      ⚠ **HELD ROWS ARE NOT SORTED DOWN, AND THAT IS #298's OWN INSTRUCTION**:
-      *"Do not quietly hide blocked rows — he needs to see that seven of eight
-      are stuck, because that is the real state of his queue and it is the thing
-      that would tell him to unblock something."* The position stays the
-      priority order; the chip explains the skip.
-    */
-    .sort((a, b) =>
-      (a.urgent === b.urgent ? 0 : a.urgent ? -1 : 1) || a.issueNumber - b.issueNumber);
+  /*
+    The rows and their running order are `scripts/lib/nextUpItems.mts` — a pure
+    function, so his page's order can be DRIVEN against the priority view's
+    instead of held to it by a sentence. That sentence is what failed (#718).
+  */
+  const items = planNextUpItems({ ordered: ordered as OrderedIssue[], appliedReasons: applied });
   const before = JSON.stringify(briefing.nextUp?.items ?? null);
   briefing.nextUp = { readAt: new Date().toISOString(), items };
   if (JSON.stringify(items) !== before) {
@@ -408,7 +375,16 @@ if (allOpen === null) {
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
     /* Ladder order first (unplaced last), oldest first within a rung — the
-       order he reads the rungs in, never the order gh returns. */
+       order he reads the rungs in, never the order gh returns.
+
+       ⚠ **THIS TIEBREAK IS THE "NOT WRONG, BUT A DIFFERENT KEY" SHAPE #718 IS
+       ABOUT, AND IT IS LEFT ALONE DELIBERATELY** (review of PR #722, finding
+       3). `issueNumber` is oldest-first for one repository's issues, and this
+       ladder has exactly ONE consumer — so there is no sibling to drift from
+       and nothing to hold it to. **It is named here because it is the first
+       place the class would re-fire**: the day a second ladder view exists,
+       this sort moves into `scripts/lib/orderedBand.mts` beside the ordered
+       band's, rather than being copied into the new one. */
     .sort((a, b) => {
       const at = a.rung === null ? rungKeys.length : rungKeys.indexOf(a.rung);
       const bt = b.rung === null ? rungKeys.length : rungKeys.indexOf(b.rung);
