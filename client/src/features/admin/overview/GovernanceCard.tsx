@@ -1,5 +1,5 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { EmptyState } from "@/foundation";
+import { EmptyState, LeaderRow } from "@/foundation";
 import { tooltipStyle, useChartTokens } from "./chartTokens";
 
 /**
@@ -124,19 +124,21 @@ export function GovernanceCard({
                 <span className="dp-ov__donutcaption">total</span>
               </div>
             </div>
-            <div className="dp-ov__keycol">
+            <div className="dp-ov__keycol dp-leaders dp-leaders--divided">
               {chartData!.map((entry) => (
-                <div key={entry.status} className="dp-ov__leader">
-                  <span
-                    className="dp-ov__swatch"
-                    style={{ background: fillFor(entry.status) }}
-                  />
-                  <span className="dp-ov__leaderlabel">
-                    {STATUS_LABELS[entry.status] || entry.status}
-                  </span>
-                  <span className="dp-ov__spacer" />
-                  <span className="dp-ov__leadervalue">{entry.count}</span>
-                </div>
+                <LeaderRow
+                  key={entry.status}
+                  label={
+                    <span className="dp-ov__keylabel">
+                      <span
+                        className="dp-ov__swatch"
+                        style={{ background: fillFor(entry.status) }}
+                      />
+                      {STATUS_LABELS[entry.status] || entry.status}
+                    </span>
+                  }
+                  value={entry.count}
+                />
               ))}
             </div>
           </div>

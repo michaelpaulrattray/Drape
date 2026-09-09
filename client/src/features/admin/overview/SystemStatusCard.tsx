@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { LeaderRow } from "@/foundation";
 
 /**
  * SYSTEM (brief 07 §8) — leader rows, mono values, no status badge ramp.
@@ -85,26 +86,16 @@ export function SystemStatusCard({ activeBanners, serverStartedAt }: SystemStatu
         {error && <span className="dp-ov__unreachable">Unreachable</span>}
       </div>
 
-      <div className="dp-ov__leaders">
-        <div className="dp-ov__leader">
-          <span className="dp-ov__leaderlabel">Server uptime</span>
-          <span className="dp-ov__spacer" />
-          <span className="dp-ov__leadervalue">
-            {health ? formatUptime(health.uptime) : "—"}
-          </span>
-        </div>
-        <div className="dp-ov__leader">
-          <span className="dp-ov__leaderlabel">Database latency</span>
-          <span className="dp-ov__spacer" />
-          <span className="dp-ov__leadervalue">
-            {dbStatus ? `${dbStatus.latencyMs.toFixed(0)}ms` : "—"}
-          </span>
-        </div>
-        <div className="dp-ov__leader">
-          <span className="dp-ov__leaderlabel">Active banners</span>
-          <span className="dp-ov__spacer" />
-          <span className="dp-ov__leadervalue">{activeBanners}</span>
-        </div>
+      <div className="dp-leaders dp-leaders--divided">
+        <LeaderRow
+          label="Server uptime"
+          value={health ? formatUptime(health.uptime) : "—"}
+        />
+        <LeaderRow
+          label="Database latency"
+          value={dbStatus ? `${dbStatus.latencyMs.toFixed(0)}ms` : "—"}
+        />
+        <LeaderRow label="Active banners" value={activeBanners} />
       </div>
 
       <p className="dp-ov__stamp">
