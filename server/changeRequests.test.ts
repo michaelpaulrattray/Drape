@@ -508,18 +508,46 @@ describe("Change Request - Types & Validation (DRIVEN and DERIVED)", () => {
     });
   });
 
-  it("#418 — the stored request carries the DERIVED figures, and a smuggled amount changes nothing", async () => {
+  /**
+   * ⚠ #705 CHANGED WHAT "A SMUGGLED AMOUNT CHANGES NOTHING" MEANS, AND THIS
+   * ARM SPLIT IN TWO RATHER THAN LOSING THE STRONGER HALF.
+   *
+   * #418 removed `originalAmountCents` / `originalCredits` from the input and
+   * left the schema OPEN on purpose, so an older staff bundle still sending
+   * them had the keys stripped. This arm proved the strip: smuggle 7 cents,
+   * get the derived 6000 anyway.
+   *
+   * One deploy later (#705) the schema is `.strict()`, so the smuggled key is
+   * REFUSED before the handler runs — which is what the arm below now drives.
+   * The derivation itself is still the load-bearing claim and keeps its own
+   * arm, with no smuggled keys in it, because a refusal proves nothing about
+   * where 6000 came from.
+   */
+  it("#705 — a smuggled original amount is now REFUSED, not silently dropped", async () => {
+    for (const smuggled of [{ originalAmountCents: 7 }, { originalCredits: 1 }]) {
+      await expect(
+        modCaller().createChangeRequest(
+          validCreateInput({
+            type: "stripe_refund", stripeSessionId: "cs_x", refundType: "full",
+            ...smuggled,
+          }) as never,
+        ),
+        `${Object.keys(smuggled)[0]} was accepted — #418's removal is still only a silent drop`,
+      ).rejects.toThrow(/[Uu]nrecognized key/);
+    }
+  });
+
+  it("#418 — the stored request carries the DERIVED figures", async () => {
     const { getCreditTransactionByRef, createChangeRequest } = await import("./db");
 
     // FULL refund: the preview stored for admin review is the ledger's
-    // credits and the session's charged amount — not the 7 cents the old
-    // client field would have put there.
+    // credits and the session's charged amount — never a figure the client
+    // supplied, which it now cannot even send.
     vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({ amount: 5000, type: "topup" } as never);
     vi.mocked(createChangeRequest).mockClear();
     await modCaller().createChangeRequest(
       validCreateInput({
         type: "stripe_refund", stripeSessionId: "cs_x", refundType: "full",
-        originalAmountCents: 7, originalCredits: 1,
       }) as never,
     );
     expect(vi.mocked(getCreditTransactionByRef)).toHaveBeenCalledWith(42, "cs_x");
@@ -653,21 +681,29 @@ describe("Change Request - Moderator Procedures", () => {
     it("FROM THE DIFF — the submitter cannot be forged through the input", async () => {
       // The old arm passed `submittedById: 10` in by hand, so it could not
       // have noticed the procedure reading it from anywhere.
-      const { createChangeRequest } = await import("./db");
-      vi.mocked(createChangeRequest).mockClear();
-      await moderatorRouter
-        .createCaller({ user: { id: 10, role: "moderator", name: "Mod User", suspendedAt: null } } as never)
-        .createChangeRequest({
-          type: "note_incident",
-          priority: "normal",
-          targetUserId: 42,
-          title: "An incident worth noting",
-          description: "A description long enough to pass the minimum length rule.",
-          submittedById: 999,
-        } as never);
-      expect(vi.mocked(createChangeRequest).mock.calls[0][0]).toEqual(
-        expect.objectContaining({ submittedById: 10 }),
-      );
+      //
+      // ⚠ #705 moved WHERE the forgery dies. The schema is `.strict()` now, so
+      // a forged `submittedById` never reaches the handler at all — it is a
+      // BAD_REQUEST at the parser rather than a key the handler declines to
+      // read. That is strictly stronger, and it is what this arm asserts.
+      //
+      // The arm ABOVE is this one's positive control and the reason the change
+      // costs nothing: on a clean input it proves the stored `submittedById`
+      // is 10, i.e. that the value comes from `ctx.user.id` (invariant 3). If
+      // anyone ever adds `submittedById` to the schema, `.strict()` stops
+      // refusing it and THIS arm goes red — which is the case worth catching.
+      await expect(
+        moderatorRouter
+          .createCaller({ user: { id: 10, role: "moderator", name: "Mod User", suspendedAt: null } } as never)
+          .createChangeRequest({
+            type: "note_incident",
+            priority: "normal",
+            targetUserId: 42,
+            title: "An incident worth noting",
+            description: "A description long enough to pass the minimum length rule.",
+            submittedById: 999,
+          } as never),
+      ).rejects.toThrow(/[Uu]nrecognized key/);
     });
 
     /**
