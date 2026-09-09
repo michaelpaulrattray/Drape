@@ -121,6 +121,33 @@ const defaultGrep = (root: string): string => {
   }
 };
 
+/**
+ * The same grep AT THE COMMIT, so the list and the run read one tree (#479).
+ *
+ * Until 2026-09-09 the list was derived from the WORKING TREE while the suites
+ * ran in a worktree of the commit — same tree only because the rite refused
+ * any dirty tracked file before reaching here. The rite's guard is narrower
+ * now (a desk-only dirty `server/*.test.ts` no longer refuses the push), so
+ * the "same commit by construction" the rite's comment promised has to be
+ * constructed HERE rather than inherited: `git grep <commit>` reads committed
+ * bytes wherever the desk stands. A dirty test file that dropped the token
+ * from the desk copy can no longer silently drop its suite from the run.
+ */
+export const grepAtCommit = (root: string, commit: string): string => {
+  const prefix = `${commit}:`;
+  try {
+    return execFileSync("git", ["grep", "-l", "-e", "\"scripts\"", commit, "--", "server/*.test.ts"], {
+      cwd: root, encoding: "utf8", maxBuffer: 32 * 1024 * 1024,
+    })
+      .split(/\r?\n/)
+      .map((line) => (line.startsWith(prefix) ? line.slice(prefix.length) : line))
+      .join("\n");
+  } catch (error: any) {
+    if (error?.status === 1 && !String(error?.stderr ?? "").trim()) return "";
+    throw error;
+  }
+};
+
 export type ScriptGuardVerdict = {
   ok: boolean;
   suites: string[];
@@ -139,7 +166,7 @@ export const runScriptGuardsOnCommit = (root: string, commit: string, options: {
   suites?: string[];
   vitest?: (cwd: string, suites: string[]) => { status: number | null; output: string };
 } = {}): ScriptGuardVerdict => {
-  const suites = options.suites ?? listScriptGuardSuites(root);
+  const suites = options.suites ?? listScriptGuardSuites(root, (r) => grepAtCommit(r, commit));
   const vitest = options.vitest ?? defaultVitest;
   return inWorktreeOf(root, commit, (tree) => {
     const result = vitest(tree, suites);

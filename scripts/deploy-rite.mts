@@ -87,6 +87,8 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, write
 import path from "node:path";
 
 import { closingKeywordHits, closingKeywordRefusal } from "./lib/closingKeyword.mts";
+import { dirtyEntriesFrom, judgeDirtyTree } from "./lib/dirtyTreeGuard.mts";
+import { inWorktreeOf } from "./lib/riteWorktree.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { decideWatch, foreignServiceContext, listedRows } from "./lib/deployWatch.mts";
 import { comparePositions, parseVariableLines } from "./lib/productionFlagPositions.mts";
@@ -378,19 +380,45 @@ if (!/\.githooks\/merge-atlas %O %A %B %P/.test(atlasDriver)) {
   makes text calls and costs money — the census's own rule that a script whose
   default action is to spend is never run casually.
 */
-for (const [label, script] of [["atlas", "architecture:check"], ["capability", "capability:check"]]) {
-  const result = spawnSync("pnpm", [script!], { encoding: "utf8", shell: true });
-  const printed = `${result.stdout ?? ""}${result.stderr ?? ""}`
-    .trim().split(/\r?\n/).slice(-3).join(" · ");
-  if (result.status !== 0) {
-    console.log(`REFUSED: ${label} check is RED — the push does not fire. ${printed}`);
-    /* Both refusals on the night of #78/#79/#86 were LOCAL staleness — the
-       generated file on disk behind the source — and the repair is one line.
-       Printing it beside the refusal is the second half of Retro guard R1. */
-    console.log("  repair: pnpm architecture:generate && pnpm capability:generate — then review the diff and commit it");
-    process.exit(1);
+/* The commit being pushed, read once and used by every custody step below.
+   (Hoisted from the "what is being deployed" section when the custody checks
+   moved onto the commit — one reading, never two that could disagree.) */
+const sha = git("rev-parse", "HEAD");
+const shortSha = sha.slice(0, 8);
+const subject = git("log", "-1", "--format=%s");
+
+/* ⚠ ON THE COMMIT, IN A THROWAWAY WORKTREE — not the desk (#707 review,
+   finding 2; the same class #479 fixed in the script-guard list). Both
+   generators hash bytes ON DISK, and the desk is shared: with the dirty-tree
+   guard narrowed below, a seat's parked edit in a scanned root would either
+   redden these against bytes that are in no commit (and the printed repair
+   would tell a shift to commit a map built from ANOTHER SEAT'S desk), or —
+   the quiet direction — pass a desk that happens to agree while the COMMIT
+   carries a stale map. The worktree recipe is the one the script guards and
+   `pnpm check` already use; what these checks see is what `origin/main` will
+   hold. */
+{
+  const custody = inWorktreeOf(path.resolve(import.meta.dirname, ".."), sha, (tree) =>
+    (["architecture:check", "capability:check"] as const).map((script) => {
+      const result = spawnSync("pnpm", [script], { cwd: tree, encoding: "utf8", shell: true });
+      return {
+        label: script.startsWith("architecture") ? "atlas" : "capability",
+        status: result.status,
+        printed: `${result.stdout ?? ""}${result.stderr ?? ""}`.trim().split(/\r?\n/).slice(-3).join(" · "),
+      };
+    }));
+  for (const check of custody) {
+    if (check.status !== 0) {
+      console.log(`REFUSED: ${check.label} check is RED on ${shortSha}, the commit being pushed — the push does not fire. ${check.printed}`);
+      /* Both refusals on the night of #78/#79/#86 were LOCAL staleness — the
+         generated file on disk behind the source — and the repair is one line.
+         Printing it beside the refusal is the second half of Retro guard R1. */
+      console.log("  repair: pnpm architecture:generate && pnpm capability:generate — then review the diff, COMMIT it, and re-run");
+      console.log("  NOTE: this ran on the COMMIT, not your working directory — a red here is in the push, not in desk litter.");
+      process.exit(1);
+    }
+    console.log(`  ${check.label}: ok (on ${shortSha})`);
   }
-  console.log(`  ${label}: ok`);
 }
 
 /*  THE SECRET SCAN (#469) — his order, Crew reply #110, 2026-09-03, verbatim:
@@ -591,13 +619,87 @@ function productionUrl(): string | undefined {
 }
 
 /* ── 1. what is being deployed ──────────────────────────────────────────── */
+/* (`sha`/`shortSha`/`subject` are read once, above the custody checks — those
+   run on the commit now and need the reading first.) */
 
-const sha = git("rev-parse", "HEAD");
-const shortSha = sha.slice(0, 8);
-const subject = git("log", "-1", "--format=%s");
-const dirty = git("status", "--porcelain").split("\n").filter((line) => line && !line.startsWith("??"));
-if (dirty.length > 0) {
-  die(`the working tree has ${dirty.length} uncommitted tracked change(s) — a deploy must carry a commit, not a desk:\n${dirty.join("\n")}`);
+/*
+  THE DESK DOES NOT BLOCK A DEPLOY IT IS PROVABLY NO PART OF (#479 — his word:
+  "go with all your recommendations", 2026-09-09; option 2 of the card).
+
+  This refused on ANY uncommitted tracked file until then, and the tree is
+  shared (`two-seats-one-tree`): three shifts in one night closed blocked
+  behind two of the founder's own parked law-doc edits while editions 229–231
+  sat finished and unable to reach his page. What the refusal actually
+  protects is narrower than "a clean tree", because everything decision-grade
+  here runs on the COMMIT — the push ships committed bytes, the script guards,
+  `pnpm check` and the atlas/capability custody checks run in a throwaway
+  worktree of `sha` (the last two moved there with this narrowing — #707
+  review, finding 2), the quiet/briefing/eye judges read `git show <sha>:…`.
+  So it refuses exactly the two shapes that can still corrupt this deploy,
+  and names the rest on the receipt:
+
+   - a dirty file the push's own commits CHANGE (which bytes ship must never
+     be a puzzle), judged against `--no-renames` diffs so a rename shows both
+     of its paths;
+   - a dirty file where the rite READS THE DISK to decide something real —
+     `RITE_DISK_READS` in the lib, `drizzle/` above all, because §5b turns
+     those bytes into DDL against the PRODUCTION database.
+
+  ⚠ ADDING A DISK READ TO THIS RITE? Its path joins `RITE_DISK_READS` in the
+  same commit — the list is a floor the suite holds to these bytes, not a
+  derivation that will notice for you.
+
+  Fail-closed stands: an unresolvable remote tip refuses every dirty file,
+  because "not carried" is then unproven. It refuses under `--dry` too, as the
+  blanket guard always did. Stated limit: the post-push asset reading (§5c)
+  reads desk bytes and could mis-state a RECEIPT line — never what deploys —
+  and it skips (and counts) a desk-deleted tracked file rather than dying
+  post-push with the receipt unwritten (#707 review 2, finding 1).
+  `scripts/lib/dirtyTreeGuard.mts` owns the judgement;
+  `server/dirtyTreeGuard.test.ts` the arms.
+*/
+{
+  /* Two of these reads THROW on a failed git rather than tolerating it (#707
+     review, finding 3): `run()` returns a failed process's stderr as text,
+     which `dirtyEntriesFrom` parses to ZERO entries — the old blanket guard
+     DIED on those same bytes, so a tolerant read here would fail OPEN on the
+     exact input the old guard failed closed on. A crashed rite pushes
+     nothing, which is the direction this guard promises. The ls-remote read
+     stays tolerant on purpose: its failure shape is already fail-closed
+     (`carried: null` refuses everything). And BOTH path reads are `-z` (#707
+     review, finding 1): name-only output C-quotes unusual paths while -z
+     status does not, and a carried set that spells `café` differently from
+     the dirty set judges the carried file desk-only. */
+  const gitOrThrow = (...args: string[]): string =>
+    execFileSync("git", args, { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+  const dirty = dirtyEntriesFrom(gitOrThrow("status", "--porcelain", "-z", "--no-renames"));
+  if (dirty.length > 0) {
+    const remoteTip = git("ls-remote", "origin", "refs/heads/main").split(/\s+/)[0] ?? "";
+    let carried: ReadonlySet<string> | null = null;
+    if (/^[0-9a-f]{40}$/.test(remoteTip)) {
+      if (!git("cat-file", "-t", remoteTip).startsWith("commit")) git("fetch", "--quiet", "origin", "main");
+      if (git("cat-file", "-t", remoteTip).startsWith("commit")) {
+        carried = new Set(
+          remoteTip === sha
+            ? []
+            : gitOrThrow("diff", "--name-only", "--no-renames", "-z", `${remoteTip}..${sha}`).split("\0").filter(Boolean),
+        );
+      }
+    }
+    const verdict = judgeDirtyTree(dirty, carried);
+    if (verdict.refused.length > 0) {
+      die(
+        `${verdict.refused.length} uncommitted tracked change(s) sit where this deploy would carry or read them — a deploy must carry a commit, not a desk:\n`
+        + verdict.refused.map(({ entry, why }) => `${entry.status} ${entry.path} — ${why}`).join("\n")
+        + (verdict.deskOnly.length > 0
+          ? `\n  (desk-only, would not block on their own: ${verdict.deskOnly.map((entry) => entry.path).join(" · ")})`
+          : "")
+        + "\n  repair: commit or stash the named file(s), then re-run — desk-only files parked by another seat no longer block (#479)",
+      );
+    }
+    say(`  desk changes: ${verdict.deskOnly.length} tracked file(s) modified and provably no part of this deploy — proceeding (#479):`);
+    for (const entry of verdict.deskOnly) say(`    ${entry.status} ${entry.path}`);
+  }
 }
 
 /*
@@ -738,9 +840,11 @@ if (dirty.length > 0) {
   shared tree carries untracked litter that is not in the push (two breaching
   files the day this landed). The suite list is derived from the suites
   themselves and REFUSES if it loses its origin case; a worktree that cannot be
-  made refuses too. It sits AFTER the dirty-tree refusal above so that the
-  tree the list is derived from and the tree the suites run in are the same
-  commit by construction (review of #157, finding 3).
+  made refuses too. ⚠ The suite LIST is derived AT THE COMMIT (`grepAtCommit`)
+  since #479: it used to read the working tree and rely on the dirty-tree
+  refusal above making desk and commit the same tree (review of #157, finding
+  3) — that refusal is narrower now, so the sameness is constructed where it
+  is needed instead of inherited from a guard aimed at something else.
   `scripts/lib/scriptGuards.mts` is the owner; `server/scriptGuards.test.ts`
   the arms. Seconds, like the atlas and capability checks.
 */
@@ -1189,9 +1293,22 @@ const assets = await (async (): Promise<{ line: string; problems: string[] }> =>
     encoding: "utf8",
     shell: false,
   }).stdout.split(NL).filter((file) => /\.(ts|tsx)$/.test(file) && !/\.test\.tsx?$/.test(file));
-  const { references, dynamic } = assetReferencesIn(
-    sources.map((file) => ({ path: file, text: readFileSync(file, "utf8") })),
-  );
+  /* `ls-files` lists the INDEX, and this runs POST-PUSH on the shared desk: a
+     tracked file deleted in the working tree but not staged is listed and has
+     no bytes — before #479's narrowing the §1 guard made that state
+     unreachable here, and after it a desk-only deletion passes on purpose
+     (#707 review 2, finding 1). A desk-deleted tracked file must not cost the
+     ceremony its receipt: it is skipped, and the skip is said on the line. */
+  const readable: Array<{ path: string; text: string }> = [];
+  const unreadable: string[] = [];
+  for (const file of sources) {
+    try {
+      readable.push({ path: file, text: readFileSync(file, "utf8") });
+    } catch {
+      unreadable.push(file);
+    }
+  }
+  const { references, dynamic } = assetReferencesIn(readable);
   const statuses = new Map<string, number | null>();
   await Promise.all(
     references.map(async (reference) => {
@@ -1204,7 +1321,10 @@ const assets = await (async (): Promise<{ line: string; problems: string[] }> =>
     }),
   );
   const verdict = assetVerdict(references, dynamic, statuses);
-  return { line: `${verdict.line} · ${base}`, problems: verdict.problems };
+  return {
+    line: `${verdict.line}${unreadable.length > 0 ? ` · ${unreadable.length} tracked file(s) unreadable on the desk, skipped (deleted but unstaged?)` : ""} · ${base}`,
+    problems: verdict.problems,
+  };
 })();
 
 /* ── 6. the receipt ─────────────────────────────────────────────────────── */
