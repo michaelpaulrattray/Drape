@@ -1,7 +1,7 @@
 {
-  "edition": 312,
-  "updatedAt": "2026-09-09T00:25:32Z",
-  "shift": "Fable (escalated) - the night shift stopped losing whole nights to your open editor: the deploy ceremony now tells apart files you have parked from files that are actually part of a deploy, lets the first kind through by name, and still refuses the second. The exact jam that held three of these reports off your page for a night cannot happen again.",
+  "edition": 313,
+  "updatedAt": "2026-09-09T01:22:27Z",
+  "shift": "Fable (escalated) - the fangs bug from your oni-cyber roll is fixed and measured: fangs now sit inside the mouth and show through slightly parted lips instead of being drawn over a shut mouth like sabre teeth. Your before/after strips are in the eye gallery - your eye closes it.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -262,6 +262,17 @@
     }
   },
   "needsYou": [
+    {
+      "id": "fangs-at-rest-599",
+      "issueNumber": 599,
+      "state": "open",
+      "filedAt": "2026-09-09T01:22:27Z",
+      "title": "Fangs: the fix is live and the court ran - your eye on two strips closes it",
+      "productImpact": "On your oni-cyber roll (249), the fangs were drawn OUTSIDE a forced-shut mouth, sabre-tooth fashion - 4 of your 6 frames read that way. The cause was the studio's own creature rule demanding dentition 'stays visible at rest', which is true of tusks and impossible for fangs. The rule now says how each kind shows: tusks protrude on their own; fangs sit inside the mouth and show through lips slightly parted. Re-rolled your exact brief 8 times against the fix: 7 of 8 now put the fangs in the mouth (5 clean, 2 with no fangs showing - the usual per-roll coin), 1 still drew short teeth over the lip. A tusked control was rolled both ways to prove the fix does not close a tusked mouth - it does not. The writing assistant also stops adding 'kept sharp and visible'-style pose words to mouth features; your own typed words are always kept.",
+      "workedExample": "Your roll 249 frame vs the re-roll: before, two long white fangs hang fully outside closed lips like a sabre-tooth cat; after, the lips part slightly and the fangs show inside the mouth, tips at the lip line - a demon's mouth rather than a taxidermy error.",
+      "options": [],
+      "recommendation": "Look at the two strips in the gallery. If the after rows read right, reply on #599 and the card closes. If the 1-in-8 residual (short fangs over the lip) is not livable, say so - the next step is a measured word-guard born from that frame."
+    },
     {
       "id": "signin-hard-light-678",
       "issueNumber": 678,
@@ -2067,6 +2078,27 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "fangs-court-strips-599",
+      "title": "Fangs in the mouth - your oni-cyber brief, before and after",
+      "question": "Top row is your own roll 249; bottom row is the same brief re-rolled against the fix. Do the after fangs sit in a mouth now? Second strip is the tusked control, before and after - the tusks must still protrude. Does the fix hold at your eye?",
+      "state": "open",
+      "filedAt": "2026-09-09T01:22:27Z",
+      "issueNumber": 599,
+      "cardId": "fangs-at-rest-599",
+      "frames": [
+        {
+          "key": "crew-eye/eda7f26c-b566-409f-b6d5-944117612b8e.jpg",
+          "caption": "Your oni-cyber brief. Top: roll 249, your frames - fangs over a shut mouth on 4 of 6. Bottom: same brief, fixed rule - fangs inside the mouth on 7 of 8, one residual.",
+          "arm": "oni-cyber"
+        },
+        {
+          "key": "crew-eye/b11551bb-cda3-42a6-be51-49e380768461.jpg",
+          "caption": "The tusked control (tusks implied, never typed). Top: today's rule. Bottom: fixed rule - the tusk mouth did not close.",
+          "arm": "control"
+        }
+      ]
+    },
     {
       "id": "credits-unit-403-frames",
       "title": "Add credits, saying it the way Change plan says it",
@@ -4399,6 +4431,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "pr-708-fangs-at-rest",
+      "title": "Fangs render inside the mouth - creature rule + writing assistant (#599)",
+      "status": "merged",
+      "prNumber": 708,
+      "note": "Squash e5d374f8, deployed on merge. Court: $1.34, 24 renders; strips in your gallery; #599 waits on your eye."
+    },
     {
       "id": "rite-desk-guard-479",
       "title": "The deploy ceremony no longer waits for your editor - parked files are read out by name and the deploy goes through",
