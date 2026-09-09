@@ -110,6 +110,11 @@ async function loadModule(env: { ownerOpenId: string; ownerName: string }) {
 const EMPTY_ALLOWLIST = { ownerOpenId: "", ownerName: "" };
 /** A populated list, in the only shape the environment can produce: strings. */
 const POPULATED_ALLOWLIST = { ownerOpenId: "owner-open-id", ownerName: "owner@klieglabs.com" };
+/**
+ * A list whose entry LOOKS like a user id — the configuration someone reaches
+ * for when they want to allowlist admin 42, and the one #727 is about.
+ */
+const ID_SHAPED_ALLOWLIST = { ownerOpenId: "42", ownerName: "" };
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -128,7 +133,7 @@ describe("the admin allowlist — which regime the product is actually in", () =
   it("an EMPTY allowlist admits every database admin — the documented production state, driven", async () => {
     const { security } = await loadModule(EMPTY_ALLOWLIST);
 
-    expect(security.isOnAdminAllowlist(999_999, "a-stranger@example.com", "no-such-open-id")).toBe(true);
+    expect(security.isOnAdminAllowlist("a-stranger@example.com", "no-such-open-id")).toBe(true);
     expect(security.validateAdminAccess({
       id: 999_999,
       role: "admin",
@@ -149,7 +154,7 @@ describe("the admin allowlist — which regime the product is actually in", () =
   it("a POPULATED allowlist admits the admin whose openId is on it", async () => {
     const { security } = await loadModule(POPULATED_ALLOWLIST);
 
-    expect(security.isOnAdminAllowlist(999, undefined, "owner-open-id")).toBe(true);
+    expect(security.isOnAdminAllowlist(undefined, "owner-open-id")).toBe(true);
     expect(security.validateAdminAccess({
       id: 999,
       role: "admin",
@@ -161,7 +166,7 @@ describe("the admin allowlist — which regime the product is actually in", () =
   it("a POPULATED allowlist admits the admin whose email is on it", async () => {
     const { security } = await loadModule(POPULATED_ALLOWLIST);
 
-    expect(security.isOnAdminAllowlist(999, "owner@klieglabs.com")).toBe(true);
+    expect(security.isOnAdminAllowlist("owner@klieglabs.com")).toBe(true);
   });
 
   /**
@@ -172,7 +177,7 @@ describe("the admin allowlist — which regime the product is actually in", () =
   it("a POPULATED allowlist REFUSES an admin who is not on it — the branch an empty list makes unreachable", async () => {
     const { security } = await loadModule(POPULATED_ALLOWLIST);
 
-    expect(security.isOnAdminAllowlist(999, "attacker@example.com", "not-the-owner")).toBe(false);
+    expect(security.isOnAdminAllowlist("attacker@example.com", "not-the-owner")).toBe(false);
     expect(security.validateAdminAccess({
       id: 999,
       role: "admin",
@@ -185,23 +190,36 @@ describe("the admin allowlist — which regime the product is actually in", () =
   });
 
   /**
-   * ⚠ A DEAD BRANCH, PINNED RATHER THAN FIXED. `isOnAdminAllowlist` checks
-   * `ADMIN_ALLOWLIST.includes(userId)` with `userId` a NUMBER, but the list can
-   * only ever be populated from `process.env`, whose values are strings — so
-   * `["42"].includes(42)` is false and that branch cannot fire in any deployed
-   * configuration. Driven, not reasoned: with `OWNER_OPEN_ID="42"`, user 42 is
-   * refused by id and admitted only by `openId`.
+   * ⚠ THE DEAD BRANCH IS GONE, AND THIS ARM REPLACED THE ONE THAT PINNED IT
+   * (#727, 2026-09-09). `isOnAdminAllowlist` used to take `userId: number` and
+   * compare it against the list with `ADMIN_ALLOWLIST.includes(userId)`. The
+   * list can only be populated from `process.env`, whose values are strings, so
+   * `["42"].includes(42)` was `false` and that branch could not fire in any
+   * deployed configuration — proven by a sabotage that deleted it outright and
+   * reddened nothing. The branch, the `userId` parameter and the
+   * `(number | string)[]` type went together. **Nothing about who is admitted
+   * changed**, which is why this is not a behaviour change on the admin surface.
    *
-   * It is recorded here and NOT repaired, because #697's own bar is *"do not
-   * batch this with a behaviour change"* — widening who the allowlist admits is
-   * a product change on the admin surface, not a test repair. Filed as its own
-   * card; if that card is taken, this arm goes red and that is the point of it.
+   * What replaces it guards the other direction, which is the one that now
+   * matters. Making a numeric id admit is a WIDENING of who reaches the admin
+   * surface and is the founder's call, not a shift's; this arm is what goes red
+   * if an id road is ever added quietly. It drives `validateAdminAccess`,
+   * because after the repair that is the only caller still holding a user id.
    */
-  it("an allowlist populated from the environment holds STRINGS, so a numeric id never matches it", async () => {
-    const { security } = await loadModule({ ownerOpenId: "42", ownerName: "" });
+  it("an id that matches the allowlist entry does not admit — the list holds strings, and there is no id road", async () => {
+    const { security } = await loadModule(ID_SHAPED_ALLOWLIST);
 
-    expect(security.isOnAdminAllowlist(42)).toBe(false);
-    expect(security.isOnAdminAllowlist(42, undefined, "42")).toBe(true);
+    /* The openId road works in this regime, so the refusal below is about the
+       ID and not about the fixture being broken. */
+    expect(security.validateAdminAccess({ id: 42, role: "admin", openId: "42" }))
+      .toEqual({ allowed: true });
+
+    /* The same admin, the same id, and the list literally contains "42" —
+       refused, because an id is not a thing this list can match. */
+    expect(security.validateAdminAccess({ id: 42, role: "admin", openId: "not-the-owner" })).toEqual({
+      allowed: false,
+      reason: "User is not on admin allowlist despite having admin role",
+    });
   });
 });
 
