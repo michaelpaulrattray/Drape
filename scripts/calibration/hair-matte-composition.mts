@@ -212,10 +212,18 @@ for (const [label, mask] of order) {
   }
   const small = resized.data;
   const tint = Buffer.alloc(W * H * 4);
+  /*
+    WHITE, not red — the founder's standing ruling (fable-230): *"Bounding-box
+    overlays are THIN WHITE, not red — everywhere."* This filled the mask
+    `255, 30, 30` until 2026-09-09 (#257), and the guard that enforces the
+    ruling could not see it: it read a hex in a `fill=` position and an
+    `[r, g, b]` literal, and this is neither. The overlay carries its meaning in
+    the ALPHA ramp below, which is untouched — the hue was never doing work.
+  */
   for (let index = 0; index < W * H; index += 1) {
     tint[index * 4] = 255;
-    tint[index * 4 + 1] = 30;
-    tint[index * 4 + 2] = 30;
+    tint[index * 4 + 1] = 255;
+    tint[index * 4 + 2] = 255;
     tint[index * 4 + 3] = Math.round(small[index] * 0.62);
   }
   panels.push(

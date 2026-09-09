@@ -48,11 +48,72 @@ const isGreyHex = (hex: string): boolean => {
 };
 
 /**
- * Every non-grey colour the source draws with. Two idioms, and each is anchored
- * so it cannot fire on a number that merely looks like one: a hex only counts in
- * a `fill=`/`stroke=`/`colour:` position, and an RGB triple only counts on a
- * line that says it is a colour — `for (const radius of [4, 8, 16])` is a list
- * of radii and the guard must not pretend otherwise.
+ * Idiom 3: `buf[i] = R; buf[i + 1] = G; buf[i + 2] = B;` — one base expression,
+ * three consecutive channel offsets, all three values written as literals.
+ *
+ * The backreferences are the whole anchor. `\1` pins the buffer name and `\2`
+ * pins the index EXPRESSION verbatim, so `a[i] = 220; b[j + 1] = 40;` cannot be
+ * folded into one match; the bounded gaps let the three writes sit on one line
+ * or on three without admitting an unrelated statement between them.
+ */
+const PER_CHANNEL_WRITE = new RegExp(
+  String.raw`([A-Za-z_$][\w$]*)\s*\[([^\]\n]+?)\]\s*=\s*(\d{1,3})\s*;`
+  + String.raw`[\s\S]{0,60}?\1\s*\[\s*\2\s*\+\s*1\s*\]\s*=\s*(\d{1,3})\s*;`
+  + String.raw`[\s\S]{0,60}?\1\s*\[\s*\2\s*\+\s*2\s*\]\s*=\s*(\d{1,3})\s*;`,
+  "g",
+);
+
+/**
+ * Every non-grey colour the source draws with. THREE idioms, and each is
+ * anchored so it cannot fire on a number that merely looks like one: a hex only
+ * counts in a `fill=`/`stroke=`/`colour:` position, and an RGB triple only
+ * counts on a line that says it is a colour — `for (const radius of [4, 8, 16])`
+ * is a list of radii and the guard must not pretend otherwise.
+ *
+ * # The third idiom, added 2026-09-09 (#257) — and it was the COMMON one
+ *
+ * Per-channel assignment into a raw RGBA buffer is **the standard way this
+ * codebase paints a mask back onto a frame**: sharp promotes a raw
+ * single-channel buffer to greyscale and paints the whole frame, so `dest-in`
+ * is not available and the boring loop is the documented cure. So the guard was
+ * blind to the idiom its own subject matter uses most.
+ *
+ * PR #256 is the specimen and it is the sharpest one available: it went red on
+ * `fill="#ffb0b0"`, a **caption tint** — the least important colour in the file
+ * — while the same file painted its **mask** in solid red three lines away and
+ * the guard passed it. Fixing only what CI named would have been the fix going
+ * to the instance while the class walked free, which is the failure this file's
+ * own header was written about, happening to this file.
+ *
+ * ⚠ **It was never a hypothetical class.** At the tree this landed on, eight
+ * writes in the population matched the idiom and **six were non-grey** — one of
+ * them TRACKED: `scripts/calibration/hair-matte-composition.mts` filled a whole
+ * mask `255, 30, 30` and composited it onto a photograph. #257 was filed
+ * believing no specimen existed in the population (*"every prior overlay writer
+ * stayed untracked"*); read at the bytes, the population is the files ON DISK,
+ * so they were all in it and only the missing vocabulary hid them. All six are
+ * repainted in the commit that adds this.
+ *
+ * # Why idiom 3 is anchored STRUCTURALLY, with no colour word
+ *
+ * Idiom 2 asks whether the line says "colour", because `[4, 8, 16]` alone is
+ * ambiguous. Idiom 3 needs no such test and is stronger without one: three
+ * assignments into the same base at offsets `+0/+1/+2`, every value literal and
+ * inside `0…255`, in a file that composites onto an image, is an RGB write by
+ * construction. Requiring a `colour`-ish word beside it would have missed the
+ * live breach above — `tint[index * 4] = 255` names its buffer, not its channel.
+ *
+ * The alpha write (`+ 3`) is deliberately outside the match: opacity is not a
+ * hue, and a mark is allowed to be faint.
+ *
+ * # ⚠ The stated limit: the population is the DISK, not the index
+ *
+ * The walk below reads `scripts/` as it stands, so an UNTRACKED disposable is
+ * in scope — correctly, because an untracked overlay writer is exactly what put
+ * a red mask in front of the founder. The cost is that a red this guard reports
+ * may be invisible to CI and live only on one machine's tree. That property is
+ * not new here (idioms 1 and 2 have always had it); it matters more now, because
+ * five of the six breaches above were untracked shift instruments.
  */
 export const nonGreyColoursIn = (raw: string): string[] => {
   const source = withoutProse(raw);
@@ -68,6 +129,14 @@ export const nonGreyColoursIn = (raw: string): string[] => {
       if (r === g && g === b) continue;
       found.push(match[0]!);
     }
+  }
+  for (const match of source.matchAll(PER_CHANNEL_WRITE)) {
+    const [r, g, b] = [Number(match[3]), Number(match[4]), Number(match[5])];
+    if (r > 255 || g > 255 || b > 255) continue;
+    if (r === g && g === b) continue;
+    /* Reported as the triple rather than as the matched span: the span is three
+       statements long and would bury the finding in the failure message. */
+    found.push(`${match[1]}[${match[2]!.trim()}] = ${r}, ${g}, ${b}`);
   }
   return found;
 };
@@ -102,6 +171,55 @@ describe("on-image geometry is monochrome, everywhere (founder ruling, fable-230
       .map((file) => ({ rel: file.rel, colours: nonGreyColoursIn(file.raw) }))
       .filter((file) => file.colours.length > 0);
     expect(breaches.map((b) => `${b.rel}: ${b.colours.join(", ")}`)).toEqual([]);
+  });
+
+  it("CAN FAIL on the PER-CHANNEL idiom — the specimens that were in the tree, carried here", () => {
+    /*
+      #257's bar, and the reason it says the control must carry its own fixture:
+      the guard is being widened onto an idiom, and the same commit repaints
+      every instance of it. So a control POINTING at a file would be green the
+      moment the fix lands and could never redden again — a guard that cannot
+      fail, which is the shape this whole file exists to refuse (working law 2).
+
+      These are the real breaches, verbatim from the tree at 2026-09-09, kept as
+      literals so the arm survives the repair:
+    */
+    expect(nonGreyColoursIn(
+      /* scripts/calibration/hair-matte-composition.mts:216 — the tracked one. */
+      `tint[index * 4] = 255;\n    tint[index * 4 + 1] = 30;\n    tint[index * 4 + 2] = 30;\n`
+      + `    tint[index * 4 + 3] = Math.round(small[index] * 0.62);`,
+    )).toEqual(["tint[index * 4] = 255, 30, 30"]);
+
+    /* Three writes on ONE line — the untracked `-WHERE` overlay writers' shape,
+       and the line #257 quotes in its own body. */
+    expect(nonGreyColoursIn(`rgba[i * 4] = 220; rgba[i * 4 + 1] = 40; rgba[i * 4 + 2] = 40;`))
+      .toEqual(["rgba[i * 4] = 220, 40, 40"]);
+    /* A bare index rather than a stride expression (`_shift105`). */
+    expect(nonGreyColoursIn(`red[i] = 255; red[i + 1] = 0; red[i + 2] = 0;`))
+      .toEqual(["red[i] = 255, 0, 0"]);
+
+    /* The negative side, and each of these is a way the match could over-fire.
+       An always-refusing guard passes every arm above it BY refusing. */
+    expect(nonGreyColoursIn(`d[at] = 255; d[at + 1] = 255; d[at + 2] = 255;`), "white is the ruling")
+      .toEqual([]);
+    expect(nonGreyColoursIn(`d[at] = 96; d[at + 1] = 96; d[at + 2] = 96;`), "a grey mark").toEqual([]);
+    expect(nonGreyColoursIn(`a[i] = 220; b[i + 1] = 40; c[i + 2] = 40;`), "three different buffers")
+      .toEqual([]);
+    expect(nonGreyColoursIn(`a[i] = 220; a[j + 1] = 40; a[j + 2] = 40;`), "a different index")
+      .toEqual([]);
+    expect(nonGreyColoursIn(`a[i] = 220; a[i + 2] = 40; a[i + 3] = 40;`), "not channels 0/1/2")
+      .toEqual([]);
+    expect(nonGreyColoursIn(`a[i] = r; a[i + 1] = g; a[i + 2] = b;`), "values are variables")
+      .toEqual([]);
+    /* Alpha alone is not a hue: a mark is allowed to be faint. */
+    expect(nonGreyColoursIn(`d[at] = 255; d[at + 1] = 255; d[at + 2] = 255; d[at + 3] = 40;`))
+      .toEqual([]);
+    /* Two unrelated statements that happen to sit near each other must not be
+       welded into a match by the gap tolerance. */
+    expect(nonGreyColoursIn(
+      `hist[bin] = 220;\n${"    doSomethingRatherLongIndeed(withAnArgument, andAnother, andOneMore);\n".repeat(2)}`
+      + `    hist[bin + 1] = 40;\n    hist[bin + 2] = 40;`,
+    )).toEqual([]);
   });
 
   it("CAN FAIL — the two idioms it hunts, driven directly", () => {
