@@ -264,17 +264,20 @@ export function alignToPreview(
  * because the arithmetic says so, and if the rate is ever changed the badge
  * follows it instead of quietly becoming a lie.
  */
-export const ANNUAL_RATE = 0.83;
-
-/** What a year costs, from the monthly price. The mutation's own arithmetic. */
-export function annualPrice(monthlyInCents: number): number {
-  return Math.round(monthlyInCents * 12 * ANNUAL_RATE);
-}
-
-/** Whole months free at the annual rate — the badge, and never a percentage. */
-export function monthsFree(): number {
-  return Math.round(12 - 12 * ANNUAL_RATE);
-}
+/*
+  ⚠ **THE RATE LIVES IN `@shared/annualBilling` NOW (#664)** — the server's
+  checkout builder carried its own `* 12 * 0.83` inline, which made this
+  constant a MIRROR of the number that actually charges the card (working
+  law 4). One declaration, two readers; the re-exports keep this module the
+  client's one door to the arithmetic, under the names its surfaces and
+  suites already use.
+*/
+export {
+  ANNUAL_RATE,
+  annualPriceInCents as annualPrice,
+  monthsFreePerYear as monthsFree,
+} from "@shared/annualBilling";
+import { annualPriceInCents as sharedAnnualPrice } from "@shared/annualBilling";
 
 /**
  * WHAT A YEAR COSTS, SAID BY THE MONTH — card 390 item 2.
@@ -297,7 +300,7 @@ export function monthsFree(): number {
  * `alignToPreview` exists to close one surface further down.
  */
 export function monthlyEquivalent(monthlyInCents: number): number {
-  return Math.round(annualPrice(monthlyInCents) / 12);
+  return Math.round(sharedAnnualPrice(monthlyInCents) / 12);
 }
 
 /**

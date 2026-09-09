@@ -27,6 +27,8 @@ import {
 import { SlackAlerts } from "../slack/slackNotification";
 import { SubscriptionPlan } from "./stripeProducts";
 import { PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
+import { subscriptionPeriodSec } from "./subscriptionPeriods";
+import { invoiceSubscriptionId, periodBought } from "./invoiceLines";
 import { createModuleLogger } from "../logging/logger";
 import { checkEventEnvironment } from "./environmentTag";
 import { deploymentTag } from "../_core/env";
@@ -223,15 +225,25 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   }
   const planTier = mappedTier ?? (userWithCredits.credits?.planTier || "free");
 
-  // Access period timestamps from the subscription object
-  const periodStart = (subscription as any).current_period_start || Math.floor(Date.now() / 1000);
-  const periodEnd = (subscription as any).current_period_end || Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+  // The period lives on the subscription ITEM on this API version (#664 —
+  // see subscriptionPeriods.ts): the sub-level read was writing a fabricated
+  // month into currentPeriodStart/End on every event.
+  const { startSec: periodStart, endSec: periodEnd } = subscriptionPeriodSec(subscription);
+
+  // The interval the customer is billed on, read off the price itself (#664
+  // decision 5) — this column is a CACHE of the Stripe artifact, refreshed
+  // every time Stripe tells us the subscription changed. Anything that is not
+  // a month or a year is cached as unknown rather than guessed monthly.
+  const stripeInterval = (subscription as any).items?.data?.[0]?.price?.recurring?.interval;
+  const billingInterval =
+    stripeInterval === "year" || stripeInterval === "month" ? stripeInterval : null;
 
   // Update subscription in database
   await updateUserSubscription(userId, {
     stripeSubscriptionId: subscription.id,
     subscriptionStatus: mapStripeStatus(subscription.status),
     planTier: planTier as PlanTier,
+    billingInterval,
     currentPeriodStart: new Date(periodStart * 1000),
     currentPeriodEnd: new Date(periodEnd * 1000),
     planExpiresAt: new Date(periodEnd * 1000),
@@ -263,6 +275,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
     stripeSubscriptionId: null,
     subscriptionStatus: "canceled",
     planTier: "free",
+    billingInterval: null,
     planExpiresAt: null,
     currentPeriodStart: null,
     currentPeriodEnd: null,
@@ -276,8 +289,11 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
  * Handle invoice.payment_succeeded event (monthly credit refresh)
  */
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<WebhookResult> {
-  // Only process subscription invoices
-  const subscriptionId = (invoice as any).subscription;
+  // Only process subscription invoices. Read through the dialect helper: on
+  // the clover payloads production actually receives, `invoice.subscription`
+  // does not exist and this gate used to skip EVERY real invoice (#664
+  // review finding 2 — the renewal refresh was structurally unreachable).
+  const subscriptionId = invoiceSubscriptionId(invoice);
   if (!subscriptionId) {
     return { success: true, message: "Not a subscription invoice, skipping" };
   }
@@ -299,30 +315,81 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
     return { success: true, message: "Free tier, no credits to refresh" };
   }
 
-  // Get current credits to calculate rollover
-  const currentCredits = await getUserCredits(userId);
-  if (!currentCredits) {
-    return { success: false, message: "User credits not found" };
+  // ⚠ CREDITS ARE GRANTED WHEN A PERIOD IS BOUGHT, SIZED BY THE PERIOD
+  // BOUGHT (#664 decision 3). This handler used to grant one month's credits
+  // on ANY subscription invoice — which would have given an annual subscriber
+  // one month's allowance for a year's money, and (under `always_invoice`)
+  // would have RESET the balance on every tier change's proration invoice.
+  // The invoice's own non-proration recurring line is the artifact that says
+  // what was bought — read dialect-free (invoiceLines.ts), sized by the
+  // line's own period span.
+  const billingReason = (invoice as any).billing_reason;
+  const bought = periodBought(invoice);
+
+  if (!bought) {
+    // A renewal or first purchase whose period cannot be read is a FULL
+    // period paid with NO credits granted — the silent-zero-grant failure
+    // the #664 review named. It fails loud: Stripe redelivers, and the
+    // failure is visible instead of a happy log over an empty grant.
+    if (billingReason === "subscription_create" || billingReason === "subscription_cycle") {
+      log.error(
+        `[Webhook] Invoice ${invoice.id} (${billingReason}) has NO readable period line — a paid period would grant nothing. Refusing so the failure is visible.`,
+      );
+      return {
+        success: false,
+        message: `Invoice ${invoice.id} bought a period this handler could not read — no credits granted, refusing loudly`,
+      };
+    }
+    log.info(
+      `[Webhook] Invoice ${invoice.id} bought no period (proration-only) — no allowance reset for user ${userId}`,
+    );
+    return {
+      success: true,
+      message: `Proration-only invoice for user ${userId} — no period bought, no credit refresh`,
+    };
   }
 
-  // Calculate rollover based on plan tier
-  const unusedCredits = currentCredits.balance;
-  const rolloverCredits = calculateRolloverCredits(unusedCredits, planTier as PlanTier);
-  const monthlyCredits = getMonthlyCredits(planTier as PlanTier);
+  const grantMonths = bought.monthsBought;
+
+  // ⚠ AN EARLY RENEWAL CARRIES THE BALANCE THROUGH IN FULL — because the
+  // UNWIND lives in changePlan, not here (#664 review finding 1). An interval
+  // switch's anchor reset invoices the new period with billing_reason
+  // "subscription_update"; changePlan deducts the unconsumed share of the OLD
+  // period's grant, mirroring the money credit Stripe issued for the same
+  // days. So what remains on the balance is allowance the customer genuinely
+  // paid for and kept — the plan's percentage would forfeit paid-for credits.
+  // A cycle that RUNS OUT still keeps only its percentage.
+  //
+  // ⚠ The RULE is passed, not a number (#664 review round 2, finding 1):
+  // refreshMonthlyCredits computes the rollover from the balance its own
+  // compare-and-set write is conditioned on, so the unwind (or a spend)
+  // landing mid-refresh makes the write miss and retry instead of being
+  // silently erased by a SET computed from a stale read.
+  const computeRollover =
+    billingReason === "subscription_update"
+      ? (balance: number) => balance
+      : (balance: number) => calculateRolloverCredits(balance, planTier as PlanTier);
+
+  const grantCredits = getMonthlyCredits(planTier as PlanTier) * grantMonths;
 
   // Refresh credits
   const result = await refreshMonthlyCredits(
     userId,
-    monthlyCredits,
-    rolloverCredits,
+    grantCredits,
+    computeRollover,
     `stripe-invoice:${invoice.id}`,
+    grantMonths === 12
+      ? `Annual credit grant — 12 months up front (${grantCredits} credits + rollover)`
+      : undefined,
   );
-  
+
   if (!result.success) {
     return { success: false, message: "Failed to refresh credits", error: result.error };
   }
 
-  log.info(`[Webhook] Refreshed credits for user ${userId}: ${monthlyCredits} + ${rolloverCredits} rollover = ${result.newBalance}`);
+  log.info(
+    `[Webhook] Refreshed credits for user ${userId}: ${grantCredits} (${grantMonths} month${grantMonths === 1 ? "" : "s"} bought) + rollover = ${result.newBalance}`,
+  );
   return { success: true, message: `Refreshed credits for user ${userId}` };
 }
 
@@ -330,8 +397,11 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
  * Handle invoice.payment_failed event
  */
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<WebhookResult> {
-  // Only process subscription invoices
-  const subscriptionId = (invoice as any).subscription;
+  // Only process subscription invoices — dialect-free (#664 review finding 2,
+  // law 7: the same dead gate as the success handler, swept with it). Under
+  // the clover payloads the old `invoice.subscription` read was absent here
+  // too, so the final-failure auto-cancel could never have fired.
+  const subscriptionId = invoiceSubscriptionId(invoice);
   if (!subscriptionId) {
     return { success: true, message: "Not a subscription invoice, skipping" };
   }
@@ -365,6 +435,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
       subscriptionStatus: "canceled",
       planTier: "free",
       stripeSubscriptionId: null,
+      billingInterval: null,
       planExpiresAt: null,
       currentPeriodStart: null,
       currentPeriodEnd: null,
@@ -459,7 +530,8 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
         `Credits frozen: chargeback ${dispute.id} — $${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`,
         disputeRef,
         // Not a tool spend: this revoke freezes a disputed balance and makes
-        // nothing. The one deliberate null toolKind in the product (#401).
+        // nothing. One of the two deliberate null-toolKind sites (#401, #664
+        // — the other is the plan-change unwind in routes/billing.ts).
         { toolKind: null }
       );
       if (revokeResult.success) {

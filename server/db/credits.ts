@@ -57,7 +57,8 @@ export type CreditToolKind = "image" | "video" | "text";
  *
  * - `toolKind: CreditToolKind` states what the charge made.
  * - `toolKind: null` states, deliberately, that the row is NOT a tool charge
- *   at all. The one live case is the chargeback revoke in stripe/webhooks.ts.
+ *   at all. Two live cases: the chargeback revoke in stripe/webhooks.ts and
+ *   the plan-change credit unwind in routes/billing.ts (#664).
  *   Null never means "unlabelled tool charge": the field is required, so a
  *   new charge site cannot compile without its author deciding.
  * - A charged operation with genuinely no output kind has no live instance

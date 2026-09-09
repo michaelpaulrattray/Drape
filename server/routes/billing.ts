@@ -4,6 +4,8 @@ import {
   getSubscriptionByUserId,
   updateUserSubscription,
   addCredits,
+  deductCredits,
+  getUserCredits,
 } from "../db";
 import {
   getOrCreateStripeCustomer,
@@ -12,12 +14,13 @@ import {
   getSubscriptionDetails,
   cancelSubscription,
   reactivateSubscription,
-  calculateProration,
+  readSubscriptionBillingState,
+  quotePlanChange,
   updateSubscriptionPlan,
-  calculateCreditAdjustment,
   getCustomerInvoices,
   getAllCustomerInvoices,
 } from "../stripe/stripeService";
+import { stripeIntervalOf } from "@shared/annualBilling";
 import {
   SUBSCRIPTION_PRODUCTS,
   SubscriptionPlan,
@@ -30,6 +33,8 @@ import { appBaseUrl, PRODUCTION_APP_HOSTNAME } from "../_core/appOrigin";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { SlackAlerts } from "../slack/slackNotification";
 import { z } from "zod";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("routes/billing");
 import { TRPCError } from "@trpc/server";
 
 export const billingRouter = router({
@@ -68,6 +73,7 @@ export const billingRouter = router({
         ...ownPlanFacts("free"),
         balance: 0,
         subscriptionStatus: null,
+        billingInterval: null,
         currentPeriodStart: null,
         currentPeriodEnd: null,
         canUpgrade: true,
@@ -89,6 +95,11 @@ export const billingRouter = router({
       creditsUsed: subscription.creditsUsed,
       rolloverCredits: subscription.rolloverCredits,
       subscriptionStatus: subscription.subscriptionStatus,
+      // The interval the customer is actually billed on (#664) — a cache of
+      // the Stripe price's own recurring interval, written by the webhook and
+      // by changePlan. Null means unknown, never "monthly": the surfaces fall
+      // back to monthly COPY but must not claim a cycle nobody read.
+      billingInterval: subscription.billingInterval ?? null,
       currentPeriodStart: subscription.currentPeriodStart,
       currentPeriodEnd: subscription.currentPeriodEnd,
       lastRefreshAt: subscription.lastRefreshAt,
@@ -246,10 +257,14 @@ export const billingRouter = router({
     return { success: true, message: "Subscription reactivated." };
   }),
 
-  // Preview proration for plan change
+  // Preview a plan change — the same quote `changePlan` acts on (#664), so
+  // the figure a surface prints and the figure the button charges cannot be
+  // two computations.
   previewPlanChange: protectedProcedure
     .input(z.object({
       newPlan: z.enum(PURCHASABLE_PLANS),
+      // Absent = keep the interval the customer is billed on today.
+      interval: z.enum(["monthly", "annual"]).optional(),
     }).strict())
     .query(async ({ ctx, input }) => {
       const subscription = await getSubscriptionByUserId(ctx.user.id);
@@ -261,39 +276,35 @@ export const billingRouter = router({
         });
       }
 
-      const proration = await calculateProration(
+      const billingState = await readSubscriptionBillingState(
         subscription.stripeSubscriptionId,
-        input.newPlan
       );
 
-      if (!proration) {
+      if (!billingState) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to calculate proration.",
         });
       }
 
-      // Calculate credit adjustment
-      const currentPlan = subscription.planTier || "free";
-      const creditAdjustment = calculateCreditAdjustment(
-        currentPlan,
-        input.newPlan,
-        proration.daysRemaining,
-        proration.totalDays
-      );
+      const quote = quotePlanChange(billingState, input.newPlan, input.interval);
 
       return {
-        currentPlan,
+        currentPlan: billingState.currentPlan,
         newPlan: input.newPlan,
-        isUpgrade: proration.isUpgrade,
-        proratedAmount: proration.proratedAmount,
-        immediateCharge: proration.immediateCharge,
-        creditBalance: proration.creditBalance,
-        currentPlanPrice: proration.currentPlanPrice,
-        newPlanPrice: proration.newPlanPrice,
-        daysRemaining: proration.daysRemaining,
-        totalDays: proration.totalDays,
-        creditAdjustment,
+        isUpgrade: quote.isUpgrade,
+        proratedAmount: quote.proratedAmount,
+        immediateCharge: quote.immediateCharge,
+        creditBalance: quote.creditBalance,
+        currentPlanPrice: quote.currentPlanPrice,
+        newPlanPrice: quote.newPlanPrice,
+        daysRemaining: quote.daysRemaining,
+        totalDays: quote.totalDays,
+        creditAdjustment: quote.creditAdjustment,
+        creditUnwind: quote.creditUnwind,
+        kind: quote.kind,
+        currentInterval: quote.currentInterval,
+        targetInterval: quote.targetInterval,
       };
     }),
 
@@ -374,13 +385,19 @@ export const billingRouter = router({
       cancelAtPeriodEnd: details.cancelAtPeriodEnd,
       currentPeriodStart: details.currentPeriodStart,
       currentPeriodEnd: details.currentPeriodEnd,
+      billingInterval: details.billingInterval,
     };
   }),
 
-  // Change subscription plan with proration
+  // Change subscription plan and/or billing interval, invoiced immediately
   changePlan: protectedProcedure
     .input(z.object({
       newPlan: z.enum(PURCHASABLE_PLANS),
+      // The billing cycle being bought (#664). ⚠ ABSENT MEANS KEEP THE CYCLE
+      // THE CUSTOMER IS ON — never "monthly": an older bundle that omits it
+      // must not be able to move somebody's interval, and the server reads
+      // the current one off the Stripe price itself.
+      interval: z.enum(["monthly", "annual"]).optional(),
       // Additive for deploy skew: current clients send one id per deliberate
       // click; an older bundle may omit it until the new client is live.
       //
@@ -411,24 +428,38 @@ export const billingRouter = router({
         });
       }
 
-      // Calculate proration first to get credit adjustment
-      const proration = await calculateProration(
+      // Read the billing state off the Stripe artifact, quote the change,
+      // and only then act — the quote is the same one previewPlanChange
+      // serves, so the confirm step and the charge cannot be two arithmetics.
+      const billingState = await readSubscriptionBillingState(
         subscription.stripeSubscriptionId,
-        input.newPlan
       );
 
-      if (!proration) {
+      if (!billingState) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to calculate proration.",
+          message:
+            "We could not read your current billing details. Nothing was changed — please try again.",
         });
       }
 
-      // Update the subscription in Stripe
+      const quote = quotePlanChange(billingState, input.newPlan, input.interval);
+
+      if (input.newPlan === billingState.currentPlan && quote.kind === "same-interval") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You are already on this plan and billing cycle.",
+        });
+      }
+
+      // Update the subscription in Stripe — at the interval being bought,
+      // invoiced immediately (always_invoice; see updateSubscriptionPlan).
       const result = await updateSubscriptionPlan(
         subscription.stripeSubscriptionId,
         input.newPlan,
-        ctx.user.id
+        ctx.user.id,
+        quote.targetInterval,
+        billingState.subscriptionItemId,
       );
 
       if (!result.success) {
@@ -438,14 +469,22 @@ export const billingRouter = router({
         });
       }
 
-      // Calculate and apply credit adjustment for upgrades
-      const currentPlan = subscription.planTier || "free";
-      const creditAdjustment = calculateCreditAdjustment(
-        currentPlan,
-        input.newPlan,
-        proration.daysRemaining,
-        proration.totalDays
-      );
+      // ⚠ CREDITS MIRROR THE MONEY'S OWN PRORATION, IN BOTH DIRECTIONS
+      // (#664 review findings 1+3). Stripe's `always_invoice` nets the money
+      // side of every change — unused time comes back as customer balance —
+      // so the credit side must net the same share or alternating changes
+      // mint allowance: upgrade-then-downgrade kept the ×12 grant while the
+      // money returned, and switch-then-switch-back re-granted a period
+      // whose money had been refunded. One rule closes the class:
+      //   · same-interval upgrade   → grant the remaining-cycle share (+)
+      //   · same-interval downgrade → deduct the same share (−)
+      //   · interval switch         → deduct the OLD period's unconsumed
+      //     grant; the switch invoice's webhook grants the NEW period.
+      // Deductions floor at the live balance: spent credits are spent.
+      const currentPlan = billingState.currentPlan;
+      const creditAdjustment = quote.creditAdjustment;
+      const creditsToReturn =
+        quote.kind === "interval-switch" ? quote.creditUnwind : Math.max(0, -creditAdjustment);
 
       if (creditAdjustment > 0) {
         // Add prorated credits for upgrade
@@ -462,12 +501,60 @@ export const billingRouter = router({
             message: "The plan changed, but the credit adjustment could not be recorded. Contact support before retrying.",
           });
         }
+      } else if (creditsToReturn > 0) {
+        // Floor at the balance read NOW (not the pre-change row): a deduction
+        // that exceeds the balance is refused by deductCredits, and a spend
+        // mid-change must cost the customer nothing extra.
+        //
+        // ⚠ A DELIBERATELY COARSE MIRROR (#664 review round 2, finding 2):
+        // the floor is the TOTAL balance, so the unwind can consume credits
+        // that arrived from other sources (an admin adjustment, a referral)
+        // when the cycle's own grant was already spent. The balance is one
+        // number — the ledger records sources but the product has no
+        // per-source lots to spend from, and inventing lot-tracking for this
+        // edge would be a second accounting system. The customer is never
+        // taken below zero and never loses more than the share whose money
+        // they are getting back; who that share was "from" is attribution,
+        // not value. If lots ever exist, this floor is the line to revisit.
+        const liveCredits = await getUserCredits(ctx.user.id);
+        const returnable = Math.min(creditsToReturn, Math.max(0, liveCredits?.balance ?? 0));
+        if (returnable > 0) {
+          const unwindResult = await deductCredits(
+            ctx.user.id,
+            returnable,
+            "subscription",
+            quote.kind === "interval-switch"
+              ? `Unused ${quote.currentInterval} cycle credits returned with its refund (switch to ${input.newPlan}, billed ${quote.targetInterval === "annual" ? "yearly" : "monthly"})`
+              : `Prorated credits returned with the refund for downgrading to ${input.newPlan}`,
+            input.clientRequestId ? `plan-change-unwind:${input.clientRequestId}` : undefined,
+            // Not a tool spend: the unwind returns unconsumed allowance
+            // beside Stripe's money credit for the same days. One of the two
+            // deliberate null-toolKind sites (#401; the other is the
+            // chargeback revoke in stripe/webhooks.ts).
+            { toolKind: null },
+          );
+          if (!unwindResult.success && !unwindResult.duplicate) {
+            // The plan HAS changed and the money side is already netted;
+            // a failed unwind must be visible, not silent generosity.
+            log.error(
+              { userId: ctx.user.id, returnable, error: unwindResult.error },
+              "[Billing] plan-change credit unwind failed after the Stripe update",
+            );
+          }
+        }
       }
 
-      // Update local subscription record
+      // Update local subscription record — the period dates for an interval
+      // switch come from the subscription webhook, which reads them off the
+      // updated Stripe object rather than guessing them here.
       await updateUserSubscription(ctx.user.id, {
         planTier: input.newPlan,
+        billingInterval: stripeIntervalOf(quote.targetInterval),
       });
+
+      // What the change actually cost: Stripe's own invoice when readable,
+      // our day-granular quote otherwise — and the audit row says which.
+      const proratedAmount = result.invoicedAmount ?? quote.proratedAmount;
 
       // Audit log: subscription plan changed
       await logAuditEvent({
@@ -478,20 +565,35 @@ export const billingRouter = router({
         metadata: {
           previousPlan: currentPlan,
           newPlan: input.newPlan,
-          isUpgrade: proration.isUpgrade,
+          previousInterval: quote.currentInterval,
+          newInterval: quote.targetInterval,
+          changeKind: quote.kind,
+          isUpgrade: quote.isUpgrade,
           creditAdjustment,
-          proratedAmount: result.proratedAmount,
+          creditsReturned: creditsToReturn,
+          proratedAmount,
+          amountSource: result.invoicedAmount != null ? "stripe-invoice" : "estimate",
         },
         req: ctx.req,
       });
 
+      const planName = SUBSCRIPTION_PRODUCTS[input.newPlan]?.name ?? input.newPlan;
+      const message =
+        quote.kind === "interval-switch"
+          ? quote.targetInterval === "annual"
+            ? `You are on ${planName}, billed yearly — the new billing year starts today, and the full year of credits lands as soon as the payment settles, replacing what was left of your old cycle's allowance.`
+            : `You are on ${planName}, billed monthly — the new billing month starts today, and unused time from your year comes off future bills automatically.`
+          : quote.isUpgrade
+            ? `Upgraded to ${planName}! ${creditAdjustment} bonus credits added.`
+            : `Downgraded to ${planName}. Unused time on the old price comes back as billing credit, and its unused credits go with it.`;
+
       return {
         success: true,
-        message: proration.isUpgrade
-          ? `Upgraded to ${input.newPlan}! ${creditAdjustment} bonus credits added.`
-          : `Downgraded to ${input.newPlan}. Changes take effect at next billing cycle.`,
-        proratedAmount: result.proratedAmount,
+        message,
+        proratedAmount,
         creditAdjustment,
+        targetInterval: quote.targetInterval,
+        changeKind: quote.kind,
       };
     }),
 });

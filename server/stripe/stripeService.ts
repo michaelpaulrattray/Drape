@@ -7,7 +7,15 @@
 import Stripe from "stripe";
 import { ENV } from "../_core/env";
 import { SUBSCRIPTION_PRODUCTS, SubscriptionPlan } from "./stripeProducts";
+import {
+  periodPriceInCents,
+  stripeIntervalOf,
+  choiceOfStripeInterval,
+  monthsBought,
+  type BillingIntervalChoice,
+} from "@shared/annualBilling";
 import { environmentMetadata } from "./environmentTag";
+import { subscriptionPeriodSec } from "./subscriptionPeriods";
 import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("stripe/stripeService");
@@ -65,14 +73,13 @@ export async function createSubscriptionCheckoutSession(
 ): Promise<string> {
   const product = SUBSCRIPTION_PRODUCTS[plan];
   
-  // Calculate price based on interval
-  // Annual billing gets 17% discount
+  // The annual arithmetic lives in shared/annualBilling.ts (#664): this
+  // builder used to carry its own `* 12 * 0.83` inline while the client
+  // declared ANNUAL_RATE separately — working law 4's mirror, on the number
+  // that charges the card.
   const isAnnual = interval === "annual";
-  const monthlyPrice = product.priceInCents;
-  const unitAmount = isAnnual 
-    ? Math.round(monthlyPrice * 12 * 0.83) // 17% off annual
-    : monthlyPrice;
-  const billingInterval = isAnnual ? "year" : "month";
+  const unitAmount = periodPriceInCents(product.priceInCents, interval);
+  const billingInterval = stripeIntervalOf(interval);
   const planName = isAnnual 
     ? `${product.name} (Annual)` 
     : product.name;
@@ -145,6 +152,9 @@ export async function getSubscriptionDetails(subscriptionId: string): Promise<{
   currentPeriodEnd: Date;
   plan: SubscriptionPlan | null;
   cancelAtPeriodEnd: boolean;
+  /** The interval the customer is actually billed on, read from the price
+   *  itself (#664 decision 5) — never from metadata a writer might drop. */
+  billingInterval: "month" | "year" | null;
 } | null> {
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
@@ -152,16 +162,20 @@ export async function getSubscriptionDetails(subscriptionId: string): Promise<{
     // Extract plan from metadata
     const plan = (subscription.metadata.plan as SubscriptionPlan) || null;
     
-    // Access period timestamps from the subscription object
-    const periodStart = (subscription as any).current_period_start || Math.floor(Date.now() / 1000);
-    const periodEnd = (subscription as any).current_period_end || Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
-    
+    // The period lives on the subscription ITEM on this API version — see
+    // subscriptionPeriods.ts; the sub-level read was taking its fallback.
+    const { startSec, endSec } = subscriptionPeriodSec(subscription);
+
+    const stripeInterval = (subscription as any).items?.data?.[0]?.price?.recurring?.interval;
+
     return {
       status: subscription.status,
-      currentPeriodStart: new Date(periodStart * 1000),
-      currentPeriodEnd: new Date(periodEnd * 1000),
+      currentPeriodStart: new Date(startSec * 1000),
+      currentPeriodEnd: new Date(endSec * 1000),
       plan,
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      billingInterval:
+        stripeInterval === "year" || stripeInterval === "month" ? stripeInterval : null,
     };
   } catch (error) {
     log.error({ err: error }, `[Stripe] Failed to get subscription ${subscriptionId}:`);
@@ -274,130 +288,291 @@ export function getMonthlyCredits(planTier: PlanTier): number {
 
 
 /**
- * Calculate prorated amount for plan change
- * Returns the amount in cents that will be charged/credited
+ * THE SUBSCRIPTION'S BILLING STATE, READ AT THE ARTIFACT (#664 decision 5).
+ *
+ * The interval comes from the subscription item's own price — the thing that
+ * actually bills — never from `metadata.interval`, which a writer can drop
+ * without anything failing. The plan still comes from metadata because a plan
+ * is OUR word, not Stripe's; a metadata plan the product no longer declares
+ * answers null and the caller refuses, exactly as the webhook does (#391).
  */
-export async function calculateProration(
+export type SubscriptionBillingState = {
+  subscriptionItemId: string;
+  currentPlan: SubscriptionPlan;
+  currentInterval: BillingIntervalChoice;
+  /** Unix seconds, straight off the subscription. */
+  periodStartSec: number;
+  periodEndSec: number;
+};
+
+export async function readSubscriptionBillingState(
   subscriptionId: string,
-  newPlan: SubscriptionPlan
-): Promise<{
-  proratedAmount: number;
-  isUpgrade: boolean;
-  immediateCharge: number;
-  creditBalance: number;
-  newPlanPrice: number;
-  currentPlanPrice: number;
-  daysRemaining: number;
-  totalDays: number;
-} | null> {
+): Promise<SubscriptionBillingState | null> {
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    
-    // Get current plan from metadata
-    const currentPlan = subscription.metadata.plan as SubscriptionPlan | undefined;
-    if (!currentPlan) {
-      log.error("[Stripe] No current plan found in subscription metadata");
+
+    const item = (subscription as any).items?.data?.[0];
+    if (!item?.id) {
+      log.error(`[Stripe] Subscription ${subscriptionId} has no subscription item`);
       return null;
     }
 
-    // Get pricing
-    const currentPlanPrice = SUBSCRIPTION_PRODUCTS[currentPlan].priceInCents;
-    const newPlanPrice = SUBSCRIPTION_PRODUCTS[newPlan].priceInCents;
-    
-    // Calculate time remaining in current period
-    const periodStart = (subscription as any).current_period_start || Math.floor(Date.now() / 1000);
-    const periodEnd = (subscription as any).current_period_end || Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
-    const now = Math.floor(Date.now() / 1000);
-    
-    const totalDays = Math.ceil((periodEnd - periodStart) / (24 * 60 * 60));
-    const daysRemaining = Math.max(0, Math.ceil((periodEnd - now) / (24 * 60 * 60)));
-    
-    // Calculate prorated amounts
-    const dailyCurrentRate = currentPlanPrice / totalDays;
-    const dailyNewRate = newPlanPrice / totalDays;
-    
-    const unusedValue = Math.floor(dailyCurrentRate * daysRemaining);
-    const newPeriodCost = Math.floor(dailyNewRate * daysRemaining);
-    
-    const proratedAmount = newPeriodCost - unusedValue;
-    const isUpgrade = newPlanPrice > currentPlanPrice;
-    
+    const currentInterval = choiceOfStripeInterval(item.price?.recurring?.interval);
+    if (!currentInterval) {
+      log.error(
+        `[Stripe] Subscription ${subscriptionId} bills on an interval this product does not sell (${item.price?.recurring?.interval ?? "none"})`,
+      );
+      return null;
+    }
+
+    const currentPlan = subscription.metadata.plan as SubscriptionPlan | undefined;
+    if (!currentPlan || !(currentPlan in SUBSCRIPTION_PRODUCTS)) {
+      log.error(
+        `[Stripe] Subscription ${subscriptionId} names no plan the product declares ("${currentPlan ?? ""}")`,
+      );
+      return null;
+    }
+
+    const { startSec, endSec } = subscriptionPeriodSec(subscription);
+
     return {
-      proratedAmount,
-      isUpgrade,
-      immediateCharge: isUpgrade ? proratedAmount : 0,
-      creditBalance: !isUpgrade ? Math.abs(proratedAmount) : 0,
-      newPlanPrice,
-      currentPlanPrice,
-      daysRemaining,
-      totalDays,
+      subscriptionItemId: item.id,
+      currentPlan,
+      currentInterval,
+      periodStartSec: startSec,
+      periodEndSec: endSec,
     };
   } catch (error) {
-    log.error({ err: error }, `[Stripe] Failed to calculate proration for ${subscriptionId}:`);
+    log.error({ err: error }, `[Stripe] Failed to read billing state for ${subscriptionId}:`);
     return null;
   }
 }
 
 /**
- * Update subscription to a new plan with proration
+ * WHAT A PLAN CHANGE DOES TODAY, QUOTED BEFORE IT IS DONE (#664).
+ *
+ * Two shapes, and Stripe's own documented behaviour decides which one runs
+ * (verified at the docs, not assumed — the design comment on #664 quotes it):
+ *
+ * - **same-interval** — the item's price changes, the cycle keeps its dates,
+ *   and `always_invoice` bills the prorated difference immediately. Both
+ *   plans are priced at the CYCLE'S OWN interval: the maths this replaces
+ *   priced an annual subscriber's plans at their monthly rate over a 365-day
+ *   period, which understated every figure by ~12×.
+ *
+ * - **interval-switch** — Stripe resets the billing cycle anchor to now and
+ *   invoices the full new period immediately, minus credit for the unused
+ *   share of the old one. `creditAdjustment` is 0 here ON PURPOSE: the switch
+ *   invoice buys a whole period, so the invoice webhook grants the whole
+ *   period's allowance (decision 3), and a local top-up would double-grant.
+ *
+ * Day-granular where Stripe prorates to the second, exactly as the maths it
+ * replaces was — these figures feed the credit adjustment and the copy, while
+ * the money is Stripe's own computation, read back off the invoice after the
+ * update (`updateSubscriptionPlan`).
+ */
+export type PlanChangeQuote = {
+  kind: "same-interval" | "interval-switch";
+  currentInterval: BillingIntervalChoice;
+  targetInterval: BillingIntervalChoice;
+  /** Tier direction, judged at monthly rates — an interval switch on one tier
+   *  is neither an upgrade nor a downgrade of the plan itself. */
+  isUpgrade: boolean;
+  /** Signed cents: what today's action nets across credit and charge. */
+  proratedAmount: number;
+  immediateCharge: number;
+  creditBalance: number;
+  /** Per PERIOD at its own interval — a year's price on the annual leg. */
+  newPlanPrice: number;
+  currentPlanPrice: number;
+  daysRemaining: number;
+  totalDays: number;
+  /**
+   * SIGNED credits `changePlan` itself applies for a same-interval change
+   * (#664 review findings 1+3 — the mirror rule: credits move with the
+   * money's own proration, in BOTH directions). Positive on an upgrade —
+   * the remaining-cycle share of the higher allowance, paid for today.
+   * NEGATIVE on a downgrade — the remaining-cycle share of the allowance
+   * being handed back, because `always_invoice` returns that share's MONEY
+   * to the customer's balance in the same act; a grant kept while its money
+   * comes back is the credit-minting loop the review found. 0 on an
+   * interval switch (the invoice grants; `creditUnwind` deducts).
+   */
+  creditAdjustment: number;
+  /**
+   * The unconsumed share of the OLD period's grant, deducted on an
+   * interval switch — the same fraction of the same period Stripe credits
+   * back in money. Without it, switch → switch-back alternation mints a
+   * period's allowance per round trip. 0 for same-interval changes.
+   */
+  creditUnwind: number;
+};
+
+export function quotePlanChange(
+  state: SubscriptionBillingState,
+  newPlan: SubscriptionPlan,
+  requestedInterval?: BillingIntervalChoice,
+  nowSec: number = Math.floor(Date.now() / 1000),
+): PlanChangeQuote {
+  // Absent means KEEP the interval the customer is on. This is also the fix
+  // for the sibling defect the #664 read found: the old update path minted
+  // every replacement price as monthly, silently converting an annual
+  // subscriber to monthly billing on any tier change.
+  const targetInterval = requestedInterval ?? state.currentInterval;
+  const kind: PlanChangeQuote["kind"] =
+    targetInterval === state.currentInterval ? "same-interval" : "interval-switch";
+
+  const DAY = 24 * 60 * 60;
+  const totalDays = Math.max(1, Math.ceil((state.periodEndSec - state.periodStartSec) / DAY));
+  const daysRemaining = Math.min(
+    totalDays,
+    Math.max(0, Math.ceil((state.periodEndSec - nowSec) / DAY)),
+  );
+
+  const currentPlanPrice = periodPriceInCents(
+    SUBSCRIPTION_PRODUCTS[state.currentPlan].priceInCents,
+    state.currentInterval,
+  );
+  const newPlanPrice = periodPriceInCents(
+    SUBSCRIPTION_PRODUCTS[newPlan].priceInCents,
+    targetInterval,
+  );
+
+  const unusedValue = Math.floor((currentPlanPrice * daysRemaining) / totalDays);
+  const proratedAmount =
+    kind === "same-interval"
+      ? Math.floor((newPlanPrice * daysRemaining) / totalDays) - unusedValue
+      : newPlanPrice - unusedValue;
+
+  const isUpgrade =
+    SUBSCRIPTION_PRODUCTS[newPlan].priceInCents >
+    SUBSCRIPTION_PRODUCTS[state.currentPlan].priceInCents;
+
+  const cycleMonths = monthsBought(stripeIntervalOf(state.currentInterval));
+  const creditAdjustment =
+    kind === "same-interval"
+      ? calculateCreditAdjustment(
+          state.currentPlan as PlanTier,
+          newPlan as PlanTier,
+          daysRemaining,
+          totalDays,
+          cycleMonths,
+        )
+      : 0;
+
+  // The switch unwind mirrors Stripe's own money credit: the same fraction
+  // (daysRemaining / totalDays) of the same period's grant.
+  const creditUnwind =
+    kind === "interval-switch"
+      ? Math.floor(
+          PLAN_TIERS[state.currentPlan as PlanTier].monthlyCredits *
+            cycleMonths *
+            (daysRemaining / totalDays),
+        )
+      : 0;
+
+  return {
+    kind,
+    currentInterval: state.currentInterval,
+    targetInterval,
+    isUpgrade,
+    proratedAmount,
+    immediateCharge: Math.max(proratedAmount, 0),
+    creditBalance: Math.max(-proratedAmount, 0),
+    newPlanPrice,
+    currentPlanPrice,
+    daysRemaining,
+    totalDays,
+    creditAdjustment,
+    creditUnwind,
+  };
+}
+
+/**
+ * Update the subscription to the new plan at the target interval.
+ *
+ * `always_invoice`, not `create_prorations` (#664 decision 2): the default
+ * defers the prorated charge to the NEXT invoice — a month away on monthly,
+ * up to a YEAR away on annual — while every surface says "due today".
+ * Verified at the docs: only `always_invoice` bills the change immediately,
+ * and switching to a price with a different `recurring.interval` resets the
+ * billing cycle anchor to now, which invoices the new period at once.
  */
 export async function updateSubscriptionPlan(
   subscriptionId: string,
   newPlan: SubscriptionPlan,
-  userId: number
+  userId: number,
+  targetInterval: BillingIntervalChoice,
+  subscriptionItemId?: string,
 ): Promise<{
   success: boolean;
-  proratedAmount?: number;
+  /** What Stripe actually invoiced for the change, when it can be read. */
+  invoicedAmount?: number | null;
   error?: string;
 }> {
   try {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    
-    // Get the current subscription item
-    const items = (subscription as any).items?.data;
-    if (!items || items.length === 0) {
-      return { success: false, error: "No subscription items found" };
+    let itemId = subscriptionItemId;
+    if (!itemId) {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      itemId = (subscription as any).items?.data?.[0]?.id;
+      if (!itemId) {
+        return { success: false, error: "No subscription items found" };
+      }
     }
-    
-    const subscriptionItemId = items[0].id;
+
     const newProduct = SUBSCRIPTION_PRODUCTS[newPlan];
-    
-    // Create a new price for the plan
+
+    // Create a new price for the plan AT THE INTERVAL BEING BOUGHT — the old
+    // mint was unconditionally monthly, which is the sibling defect above.
     const price = await stripe.prices.create({
       currency: "usd",
-      unit_amount: newProduct.priceInCents,
+      unit_amount: periodPriceInCents(newProduct.priceInCents, targetInterval),
       recurring: {
-        interval: newProduct.interval,
+        interval: stripeIntervalOf(targetInterval),
       },
       product_data: {
-        name: newProduct.name,
+        name: targetInterval === "annual" ? `${newProduct.name} (Annual)` : newProduct.name,
       },
     });
 
-    // Update the subscription with proration
-    await stripe.subscriptions.update(subscriptionId, {
+    const updated = await stripe.subscriptions.update(subscriptionId, {
       items: [
         {
-          id: subscriptionItemId,
+          id: itemId,
           price: price.id,
         },
       ],
-      proration_behavior: "create_prorations",
+      proration_behavior: "always_invoice",
       metadata: {
         userId: userId.toString(),
         plan: newPlan,
+        // Parity with checkout metadata; the READ side never trusts this —
+        // the interval is read off the price (readSubscriptionBillingState).
+        interval: targetInterval,
         ...environmentMetadata(),
       },
     });
 
-    // Calculate the prorated amount for logging
-    const proration = await calculateProration(subscriptionId, newPlan);
-    
-    log.info(`[Stripe] Updated subscription ${subscriptionId} to ${newPlan} with proration`);
-    return {
-      success: true,
-      proratedAmount: proration?.proratedAmount || 0,
-    };
+    // The figure the customer was actually billed, read at the artifact.
+    let invoicedAmount: number | null = null;
+    const latestInvoice = (updated as any).latest_invoice;
+    const invoiceId = typeof latestInvoice === "string" ? latestInvoice : latestInvoice?.id;
+    if (invoiceId) {
+      try {
+        const invoice = await stripe.invoices.retrieve(invoiceId);
+        if (typeof invoice.amount_due === "number") invoicedAmount = invoice.amount_due;
+      } catch (invoiceErr) {
+        log.warn(
+          { err: invoiceErr },
+          `[Stripe] Could not read the change invoice for ${subscriptionId}`,
+        );
+      }
+    }
+
+    log.info(
+      `[Stripe] Updated subscription ${subscriptionId} to ${newPlan} (${targetInterval}), invoiced immediately`,
+    );
+    return { success: true, invoicedAmount };
   } catch (error) {
     log.error({ err: error }, `[Stripe] Failed to update subscription ${subscriptionId}:`);
     return {
@@ -408,29 +583,41 @@ export async function updateSubscriptionPlan(
 }
 
 /**
- * Calculate credit adjustment for plan change
- * When upgrading: add the difference in monthly credits immediately
- * When downgrading: no immediate credit change (takes effect next billing cycle)
+ * SIGNED credit adjustment for a same-interval plan change (#664, and the
+ * review's mirror rule): the remaining-cycle share of the allowance
+ * difference, × the months the cycle runs (12 on an annual cycle).
+ *
+ * Positive on an upgrade — the higher allowance is being paid for today
+ * (`always_invoice` charges the same fraction of the money difference in
+ * the same act, and no invoice fires that would grant it).
+ *
+ * ⚠ NEGATIVE ON A DOWNGRADE — this returned 0 for downgrades until the
+ * #664 review, and that zero was one half of a credit-minting loop: the
+ * money difference for the remaining cycle comes BACK to the customer
+ * (Stripe's proration credit), so the credits that same difference bought
+ * must go back with it, or upgrade-then-downgrade alternation keeps the
+ * allowance while recovering the money. The caller floors the deduction at
+ * the live balance — credits already spent are spent.
  */
 export function calculateCreditAdjustment(
   currentPlan: PlanTier,
   newPlan: PlanTier,
   daysRemaining: number,
-  totalDays: number
+  totalDays: number,
+  monthsInCycle: number = 1,
 ): number {
   const currentCredits = PLAN_TIERS[currentPlan].monthlyCredits;
   const newCredits = PLAN_TIERS[newPlan].monthlyCredits;
-  
-  if (newCredits <= currentCredits) {
-    // Downgrade: no immediate credit change
-    return 0;
+
+  const deltaForCycle = (newCredits - currentCredits) * monthsInCycle;
+  const fraction = daysRemaining / totalDays;
+
+  if (deltaForCycle >= 0) {
+    return Math.floor(deltaForCycle * fraction);
   }
-  
-  // Upgrade: prorate the additional credits
-  const additionalCredits = newCredits - currentCredits;
-  const proratedCredits = Math.floor(additionalCredits * (daysRemaining / totalDays));
-  
-  return proratedCredits;
+  // Downgrade: the same share, the other way. Truncate toward zero so the
+  // deduction never exceeds the mirror of what an upgrade would have granted.
+  return -Math.floor(-deltaForCycle * fraction);
 }
 
 

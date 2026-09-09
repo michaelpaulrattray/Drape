@@ -132,6 +132,14 @@ export const credits = mysqlTable("points", {
   stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }),
   subscriptionStatus: mysqlEnum("subscriptionStatus", ["active", "canceled", "past_due", "unpaid", "trialing"]),
+  // A cache of the Stripe subscription's own price interval (#664) — written
+  // by the subscription webhook and by changePlan, read by billing.getStatus
+  // so the plan surfaces can open on the interval the customer is actually
+  // billed on without a Stripe round-trip. Stripe's dialect ("month"/"year")
+  // on purpose: this column caches the artifact, and shared/annualBilling.ts
+  // owns the translation to the product's "monthly"/"annual". NULL means no
+  // subscription (or a row from before this column), never "monthly".
+  billingInterval: mysqlEnum("billingInterval", ["month", "year"]),
   currentPeriodStart: timestamp("currentPeriodStart"),
   currentPeriodEnd: timestamp("currentPeriodEnd"),
   // Track credits purchased vs earned for analytics
