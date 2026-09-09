@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ba583a7e6eb3fd63"
+    "sourceFingerprint": "b8bc7cdeefe51121"
   },
   "domains": [
     {
@@ -8252,7 +8252,7 @@
       "name": "createChangeRequest",
       "type": "mutation",
       "auth": "moderator",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/moderator.ts"
     },
@@ -35036,13 +35036,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:models.list",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:moderator.createChangeRequest",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:moderator.createChangeRequest",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
