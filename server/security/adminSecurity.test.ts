@@ -30,8 +30,23 @@
  * # The bar this file is held to
  *
  * #697's, verbatim: *"whatever is rewritten is proven by a SABOTAGE OF THE
- * PRODUCT, not by reading."* Every arm below is named in that driver, which
- * asserts the reddened set EXACTLY and carries a no-op control.
+ * PRODUCT, not by reading."* Every arm below is named in
+ * `scripts/_697-adminsecurity-sabotage-disposable.mts`, which asserts the
+ * reddened set EXACTLY and carries a no-op control.
+ *
+ * # ⚠ WHAT THIS FILE STILL DOES NOT DRIVE, said rather than implied
+ *
+ * `writeImmutableLog` has **no arm here, and had none before** — the old file
+ * imported it and never called it, and this one does not import it. So nothing
+ * was lost, but "this module is driven now" would be too big a sentence: one
+ * export of it is not. It is deliberate rather than overlooked. That control is
+ * already on `CLAUDE.md`'s *"Currently not enforced — do not rely on these"*
+ * list (the hash chain is in-memory, resets every deploy, and its Slack backup
+ * no-ops when Slack is unconfigured, which production is), so an arm proving it
+ * behaves would be proving the behaviour of a control the product does not
+ * currently get anything from. Driving it is worth doing WITH that repair, not
+ * before it, and it is recorded on the follow-up card rather than left for
+ * someone to discover from the import list.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 
