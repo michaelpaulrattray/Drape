@@ -396,6 +396,24 @@ describe("card 415 §3 — Crew states its freshness exactly once, and still nam
 
     const before = "{stateQuery.data.briefing.shift} · checked {checkedAgo}";
     expect(inlineStamp.test(before), "the line as it stood before card 415").toBe(true);
+
+    /*
+      ⚠ **AND THE STAMP CARRIES A TIME AGAIN SINCE #329 — A DIFFERENT FACT, AND
+      THIS IS WHERE THAT STAYS TRUE.** The bar says when the PAGE last checked;
+      the foot says when a SHIFT last WROTE the edition, which the bar cannot
+      say and which had no reader at all. The ruling this arm enforces is that
+      the page states ITS OWN freshness once — so what is forbidden is the
+      page's clock coming back here, not any time at all.
+    */
+    /* Scoped to the stamp ELEMENT, not the file: `dataUpdatedAt` legitimately
+       drives the WORKING NOW ticker elsewhere in this page, and a file-wide
+       ban would forbid a thing #415 never ruled on. */
+    const stampElement = crew.match(/<p className="dp-crew__stamp"[^]*?<\/p>/)?.[0] ?? "";
+    expect(stampElement, "the stamp element itself must be findable").toContain("crew-edition-stamp");
+    expect(stampElement, "the write stamp comes from the briefing, not the page's clock")
+      .toMatch(/shortDate\(stateQuery\.data\.briefing\.updatedAt\)/);
+    expect(stampElement, "the page's own elapsed clock must not return to this line")
+      .not.toMatch(/checkedAgo|dataUpdatedAt|Date\.now/);
   });
 
   it("the SHIFT NAME survived, and that is the half the bar cannot say", () => {
@@ -406,7 +424,22 @@ describe("card 415 §3 — Crew states its freshness exactly once, and still nam
       The bar's stamp has no room for it and no business with it.
     */
     const crew = code(CREW());
-    expect(crew).toMatch(/written by\{"\s"\}\s*\n?\s*\{stateQuery\.data\.briefing\.shift\}/);
+    /*
+      ⚠ **THIS ASSERTED AN ADJACENCY AND THE INTENT IS AUTHORSHIP (#329).** It
+      pinned the literal `written by{" "}{…shift}`, so it reddened the moment
+      anything was inserted between the two words — including the edition's
+      WRITE TIME, which is not freshness and is the arm above's subject, not
+      this one's. A guard that fails on a change it does not forbid teaches
+      the next shift to edit the guard, which is how a ruling quietly dies.
+      What #415 protects here is that the SHIFT NAME survived, so that is
+      what is asserted.
+    */
+    expect(crew).toMatch(/written[^<]*by\{"\s"\}\s*\n?\s*\{stateQuery\.data\.briefing\.shift\}/);
+
+    /* NEGATIVE CONTROL — dropping the shift entirely must still redden, or
+       the loosening above has bought the arm's own silence. */
+    const withoutAuthor = 'Briefing edition {stateQuery.data.briefing.edition}';
+    expect(/written[^<]*by\{"\s"\}/.test(withoutAuthor)).toBe(false);
   });
 
   it("a FAILED check still says so — the bar's stamp cannot", () => {
