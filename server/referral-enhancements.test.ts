@@ -305,6 +305,12 @@ describe("referral.sendInvite — driven through the real procedure", () => {
 
     await expect(caller.sendInvite({ email: "friend@example.com" })).resolves.toEqual({ sent: true });
     expect(inviteWriter).toHaveBeenCalledTimes(1);
+    /* Self-contained on the reviewer's note (PR #739): without this the arm
+       would stay green if the send were deleted outright. Coverage held
+       collectively either way — the first arm's `soleCallTo` reddens a deleted
+       send — but an arm that needs its neighbours to mean anything is one
+       refactor away from meaning nothing. */
+    expect(klaviyo).toHaveBeenCalledTimes(1);
   });
 
   /* Invariant 6: a rate limit is a real TOO_MANY_REQUESTS, not a 200 carrying
