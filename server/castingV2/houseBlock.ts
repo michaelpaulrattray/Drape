@@ -305,12 +305,45 @@ export const CREATURE_EXPRESSION_LINE =
  * sentence (anglerfish, lamia, sphinx, goth woman — judged at the frames,
  * never by the pixel counter) are the court record beside the widening one.
  */
+/**
+ * THE FANG SENTENCE — his, verbatim from the roll his eye passed (#599, roll
+ * `b1c0eff8`): declared ONCE and used in two places (working law 4).
+ */
+export const FANG_SENTENCE =
+  "the mouth is slightly open with the upper teeth showing and the fangs among them as teeth — nothing grows out of or over the lips";
+
 export const ANATOMY_VISIBILITY_LINE =
   "ANATOMY: If the being has a tail, wings, or other anatomy the description names, it must be visible in this frame "
   + "— over a shoulder, beside the ribcage, or rising into the picture. "
   + "Show anatomy the species implies, even when the description doesn't name the part. "
-  + "Where the being has fangs, the mouth is slightly open with the upper teeth showing and the fangs among them as teeth — nothing grows out of or over the lips. "
+  + `Where the being has fangs, ${FANG_SENTENCE}. `
   + "Do not hide it behind the back. Do not switch to a full-body shot.";
+
+/**
+ * THE DENTITION CLAUSE (#599, fourth court) — code's own paragraph, placed
+ * straight after the customer's brief, for a creature-lane roll whose brief
+ * names fangs.
+ *
+ * Four rolls on his account settled where the fang sentence has to sit: in
+ * the DESCRIPTION it made all eight frames read as teeth (his eye: *"fangs
+ * are all visible correctly now"*); in the block's EXPRESSION slot alone it
+ * changed nothing he could see; in the ANATOMY slot too it reached about half
+ * (*"3-4 of them produced fangs as teeth the others were coming out of the
+ * lip still"*). The AUTHORITY line makes the description WHO and the block
+ * HOW, and the engine weights WHO. So, like the family clause (#154), this is
+ * a paragraph the code writes beside his words — his words stay verbatim, the
+ * clause is ours, and it is recorded in the prompt like everything else sent.
+ *
+ * The trigger is his own word: `fang`/`fangs` in the brief, creature lane
+ * only. A human-lane brief never gets it (the human line is "mouth closed"
+ * on purpose), and a creature brief that names no fangs never gets it — the
+ * tusked oni keeps its tusk mouth untouched.
+ */
+export function dentitionClauseFor(briefText: string, lane: HouseLane): string | null {
+  if (lane !== "creature") return null;
+  if (!/\bfangs?\b/i.test(briefText)) return null;
+  return `DENTITION: The being's fangs are teeth — ${FANG_SENTENCE}.`;
+}
 
 /**
  * WHICH LANE THE BLOCK IS COMPOSED IN (#232, #237) — the founder's own split:

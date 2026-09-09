@@ -44,7 +44,7 @@
 import type { TextEngine } from "../providers/types";
 import { interpreterTextQueue } from "./interpreter";
 import { createOpenRouterTextEngine, DEFAULT_INTERPRETER_MODEL } from "../providers/openrouterText";
-import { DEFAULT_HOUSE_LANE, houseBlockForStyle, type HouseLane } from "./houseBlock";
+import { DEFAULT_HOUSE_LANE, dentitionClauseFor, houseBlockForStyle, type HouseLane } from "./houseBlock";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "../../shared/castStyles";
 
 /*
@@ -336,6 +336,14 @@ export function composeFinalPrompt(
   lane: HouseLane = DEFAULT_HOUSE_LANE,
 ): string {
   const parts = [briefText.trim()];
+  /*
+    THE DENTITION CLAUSE (#599): code's paragraph straight after his words,
+    for a creature whose brief names fangs — the description is the slot the
+    engine actually obeys (four rolls, his eye), and the family clause is the
+    precedent for a code-written paragraph beside the brief.
+  */
+  const dentition = dentitionClauseFor(briefText, lane);
+  if (dentition) parts.push(dentition);
   if (clause && clause.trim().length > 0) parts.push(clause.trim());
   /*
     The block is the STYLE's (#142) and the LANE's (#232/#237) — one style
