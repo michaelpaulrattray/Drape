@@ -227,9 +227,21 @@ export const EXPRESSION_LINE = "EXPRESSION: Eyes into the lens, present, mouth c
  * So for fangs the line now asks for the mouth SLIGHTLY OPEN with the upper
  * teeth showing — his sentence, verbatim in his register — and the "parted at
  * rest" clause is gone. Tusks are untouched: they protrude of themselves.
+ *
+ * ⚠ **AND THE EXPRESSION SLOT WAS TOO WEAK A PLACE FOR IT (2026-09-09, same
+ * day, his eye again).** The identical sentence made all eight frames read as
+ * teeth when it sat in the DESCRIPTION (roll `b1c0eff8`) and failed when it
+ * sat only here (roll `4cdd75b5`: *"strip house is reading wrong compared to
+ * the last one where i said it was good"*). Two reasons, both structural: the
+ * AUTHORITY line makes the description WHO and this block HOW, so the engine
+ * weights the description; and this line opened with "mouth at rest", which
+ * the engine reads as closed before it reaches the fang clause. So the fang
+ * sentence now ALSO lives in `ANATOMY_VISIBILITY_LINE` (earlier in the block,
+ * framed as anatomy the way the tail is), and the creature geometry is *lips
+ * parted enough to show the being's own dentition* — never "at rest".
  */
 export const CREATURE_EXPRESSION_LINE =
-  "EXPRESSION: Eyes into the lens, present, mouth at rest — pose off, anatomy on. "
+  "EXPRESSION: Eyes into the lens, present, lips parted enough to show the being's own dentition — pose off, anatomy on. "
   + "Where the mouth is the being's own anatomy it shows as that anatomy allows: non-human dentition, tusks, an underbite, a split lip, a species tongue. "
   + "Tusks and an underbite protrude past the lips of themselves. "
   + "Fangs are teeth: the mouth is slightly open, upper teeth showing, the fangs among them — nothing growing out of or over the lips. "
@@ -297,6 +309,7 @@ export const ANATOMY_VISIBILITY_LINE =
   "ANATOMY: If the being has a tail, wings, or other anatomy the description names, it must be visible in this frame "
   + "— over a shoulder, beside the ribcage, or rising into the picture. "
   + "Show anatomy the species implies, even when the description doesn't name the part. "
+  + "Where the being has fangs, the mouth is slightly open with the upper teeth showing and the fangs among them as teeth — nothing grows out of or over the lips. "
   + "Do not hide it behind the back. Do not switch to a full-body shot.";
 
 /**
