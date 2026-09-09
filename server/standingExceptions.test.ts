@@ -15,10 +15,15 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { readFileSync } from "node:fs";
+
 import {
+  BAND_CEILING,
   PATROL_POINTER,
   oldestFirst,
+  refuseIfTruncated,
   renderBands,
+  report,
   type Row,
 } from "../scripts/lib/standingExceptions.mts";
 
@@ -137,20 +142,87 @@ describe("oldest first, in both bands", () => {
   });
 });
 
-describe("the script wires the lib and reads BOTH labels", () => {
-  /* Assert at the caller, not near it (invariant 5's shape): the rendering
-     being right is worthless if the script still fetches one band. */
-  const SCRIPT = new URL("../scripts/queue-standing-exceptions.mts", import.meta.url);
+describe("the fetch -> render seam, DRIVEN — where the interesting bug lives", () => {
+  /*
+    ⚠ THE ARMS HERE REPLACE TWO SOURCE GREPS, AND THE GREPS COULD NOT SEE THE
+    ONE BUG THAT MATTERS (gate review of PR #716, finding 2). They asserted the
+    file CONTAINED `readBand("founder-ordered")` and a `catch … return 1`.
+    Transposing the bands at the call site kept every arm green, and a
+    commented-out call would have passed too. `report` takes the band reader as
+    a parameter for exactly this reason.
+  */
+  const ordered = card({ number: 330, title: "his ordered card", labels: [{ name: "founder-ordered" }] });
+  const urgent = card({ number: 711, title: "the urgent card", labels: [{ name: "urgent" }] });
 
-  it("fetches the ordered band and the urgent band", async () => {
-    const source = await import("node:fs").then((fs) => fs.readFileSync(SCRIPT, "utf8"));
-    expect(source).toContain('readBand("founder-ordered")');
-    expect(source).toContain('readBand("urgent")');
+  const byLabel = (label: string): Row[] => {
+    if (label === "founder-ordered") return [ordered];
+    if (label === "urgent") return [urgent];
+    throw new Error(`unexpected label ${label}`);
+  };
+
+  function drive(readBand: (label: string) => readonly Row[]) {
+    const out: string[] = [];
+    const errs: string[] = [];
+    const code = report({ readBand, now: NOW, log: (l) => out.push(l), error: (l) => errs.push(l) });
+    return { code, out: out.join("\n"), errs: errs.join("\n") };
+  }
+
+  it("⚠ each band's rows land under THAT band — a transposition is red here", () => {
+    const { code, out } = drive(byLabel);
+    expect(code).toBe(0);
+    const hisBand = out.indexOf("HIS ORDERED BAND");
+    const urgentBand = out.indexOf("THE URGENT BAND");
+    expect(out.indexOf("#330")).toBeGreaterThan(hisBand);
+    expect(out.indexOf("#330")).toBeLessThan(urgentBand);
+    expect(out.indexOf("#711")).toBeGreaterThan(urgentBand);
   });
 
-  it("refuses rather than printing an empty ranking it could not read", async () => {
-    const source = await import("node:fs").then((fs) => fs.readFileSync(SCRIPT, "utf8"));
-    expect(source).toContain("could not read the queue");
-    expect(source).toMatch(/catch[\s\S]*return 1;/);
+  it("asks for both labels, once each", () => {
+    const asked: string[] = [];
+    drive((label) => { asked.push(label); return byLabel(label); });
+    expect(asked).toEqual(["founder-ordered", "urgent"]);
+  });
+
+  it("an unreadable queue REFUSES — exit 1, nothing printed as a ranking", () => {
+    /* An unauthenticated `gh` prints nothing, which looks exactly like an empty
+       queue — and an empty ordered band tells a shift he has asked for nothing. */
+    const { code, out, errs } = drive(() => { throw new Error("gh: not authenticated"); });
+    expect(code).toBe(1);
+    expect(out).toBe("");
+    expect(errs).toContain("REFUSING");
+    expect(errs).toContain("not authenticated");
+  });
+
+  it("the refusal names the real reason FIRST, and the gh hint second", () => {
+    /* The truncation refusal comes through this same channel, and "is gh
+       authenticated?" is the wrong first sentence when the answer is a ceiling. */
+    const { errs } = drive(() => { refuseIfTruncated("founder-ordered", BAND_CEILING); return []; });
+    expect(errs.indexOf("ceiling")).toBeLessThan(errs.indexOf("authenticated"));
+  });
+});
+
+describe("a band at its ceiling is INCOMPLETE and says so", () => {
+  /* ⚠ A silent cap is this view's own defect class in different clothes: past
+     the limit `gh` drops the OLDEST card, which is the one this ranking exists
+     to surface (#236), while the header still prints a count that reads whole. */
+  it("refuses at the ceiling, naming the band and the constant", () => {
+    expect(() => refuseIfTruncated("founder-ordered", BAND_CEILING)).toThrow(/INCOMPLETE/);
+    expect(() => refuseIfTruncated("founder-ordered", BAND_CEILING)).toThrow(/founder-ordered/);
+    expect(() => refuseIfTruncated("founder-ordered", BAND_CEILING)).toThrow(/BAND_CEILING/);
+  });
+
+  it("and does NOT refuse below it — the arm that keeps it usable", () => {
+    /* Without this the refusal could be unconditional and every arm above would
+       still pass by refusing. */
+    expect(() => refuseIfTruncated("urgent", BAND_CEILING - 1)).not.toThrow();
+    expect(() => refuseIfTruncated("urgent", 0)).not.toThrow();
+  });
+
+  it("the executable asks gh for exactly BAND_CEILING rows", () => {
+    /* The one claim left that only the script can answer: the ceiling it refuses
+       at must be the ceiling it ASKED for, or the refusal never fires. */
+    const source = readFileSync(new URL("../scripts/queue-standing-exceptions.mts", import.meta.url), "utf8");
+    expect(source).toContain("String(BAND_CEILING)");
+    expect(source).toContain("refuseIfTruncated(label, rows.length)");
   });
 });

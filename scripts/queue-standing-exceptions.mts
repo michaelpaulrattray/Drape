@@ -59,13 +59,23 @@
  *     npx tsx scripts/queue-standing-exceptions.mts
  *
  * Needs `gh` authenticated; it reads nothing else and writes nothing at all.
- * The rendering lives in `scripts/lib/standingExceptions.mts` so both the empty
- * and the populated state can be driven (`server/standingExceptions.test.ts`).
+ * The rendering AND the fetch->render seam live in
+ * `scripts/lib/standingExceptions.mts` so both the empty and the populated
+ * state can be driven without a subprocess (`server/standingExceptions.test.ts`).
+ * What is left here is the `gh` call and the exit code: everything that DECIDES
+ * anything is on the other side of that boundary, because a seam asserted by a
+ * source grep is not asserted (gate review of PR #716, finding 2).
  */
 import { execFileSync } from "node:child_process";
 
-import { renderBands, type Row } from "./lib/standingExceptions.mts";
+import {
+  BAND_CEILING,
+  refuseIfTruncated,
+  report,
+  type Row,
+} from "./lib/standingExceptions.mts";
 
+/** The one impure act: ask `gh` for the open cards carrying a label. */
 function readBand(label: string): Row[] {
   const raw = execFileSync(
     "gh",
@@ -77,43 +87,22 @@ function readBand(label: string): Row[] {
       "--label",
       label,
       "--limit",
-      "200",
+      String(BAND_CEILING),
       "--json",
       "number,title,createdAt,labels",
     ],
     { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
   );
-  return JSON.parse(raw) as Row[];
+  const rows = JSON.parse(raw) as Row[];
+  refuseIfTruncated(label, rows.length);
+  return rows;
 }
 
-function main(): number {
-  let ordered: Row[];
-  let urgent: Row[];
-  try {
-    /*
-      REFUSE RATHER THAN PRINT AN EMPTY RANKING. A ranking that comes up empty
-      because `gh` is unauthenticated reads exactly like a ranking that is
-      genuinely empty, and the second one means "nothing urgent, work a patrol".
-      That is the collector class CLAUDE.md's Atlas section names: a reader that
-      can come up empty THROWS rather than returning a short list. It matters
-      MORE on the ordered band than it ever did on the urgent one — an empty
-      ordered band tells a shift he has asked for nothing, which is precisely
-      the harm his 2026-08-30 clause was written about.
-    */
-    ordered = readBand("founder-ordered");
-    urgent = readBand("urgent");
-  } catch (error) {
-    console.error(
-      "queue-standing-exceptions: could not read the queue — is `gh` authenticated?",
-    );
-    console.error(String(error instanceof Error ? error.message : error));
-    return 1;
-  }
-
-  for (const line of renderBands({ ordered, urgent, now: new Date() })) {
-    console.log(line);
-  }
-  return 0;
-}
-
-process.exit(main());
+process.exit(
+  report({
+    readBand,
+    now: new Date(),
+    log: (line) => console.log(line),
+    error: (line) => console.error(line),
+  }),
+);

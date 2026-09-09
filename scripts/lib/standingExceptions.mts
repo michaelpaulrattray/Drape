@@ -28,6 +28,33 @@
  * looked at**, and the bands-2-and-3 sentence appears only when BOTH are empty,
  * because that is the only state in which it is true.
  */
+/**
+ * How many open cards one band may hold before this reading is INCOMPLETE.
+ *
+ * ⚠ **A silent cap is this view's own defect class wearing different clothes**
+ * (gate review of PR #716, finding 1). The fetch asked for 200 rows and never
+ * asked whether it got 200: past that, `gh`'s ordering drops the OLDEST card
+ * first — which is exactly the card this ranking exists to surface, and #236 is
+ * the incident about an old card sitting unworked. The header would still print
+ * a count that reads as the whole band.
+ *
+ * So it refuses rather than truncating, the way `scripts/lib/queueRot.mts`'s
+ * `refuseIfTruncated` does, and for the same stated reason: a short list that
+ * looks complete is worse than no list. The decision lives here so it can be
+ * driven without a subprocess.
+ */
+export const BAND_CEILING = 200;
+
+/** Throws when a band came back AT its ceiling, i.e. possibly cut short. */
+export function refuseIfTruncated(label: string, rowsRead: number): void {
+  if (rowsRead < BAND_CEILING) return;
+  throw new Error(
+    `the \`${label}\` band came back with ${rowsRead} rows, at the ceiling of ${BAND_CEILING}, `
+    + `so this reading may be INCOMPLETE and its count would look like the whole band. `
+    + `Raise BAND_CEILING in scripts/lib/standingExceptions.mts.`,
+  );
+}
+
 export type Row = {
   number: number;
   title: string;
@@ -118,4 +145,61 @@ export function renderBands(input: {
     `Band 3 (a patrol whose clock has fired) is DERIVED — \`${PATROL_POINTER}\`.`,
   );
   return out;
+}
+
+/**
+ * THE WHOLE READING — the fetch→render seam, on THIS side of the boundary so it
+ * can be driven (gate review of PR #716, finding 2).
+ *
+ * ⚠ **The seam is where the interesting bug lives, and the first shape of this
+ * suite could not see it.** With the rendering driven by injected lists and the
+ * wiring asserted by a source grep, transposing the two bands at the call site —
+ * `renderBands({ ordered: urgent, urgent: ordered })` — kept EVERY arm green:
+ * the rendering arms supply their own lists, and a grep only proves the two
+ * fetch strings exist somewhere in the file (a commented-out call passes too).
+ * That is the instrument class CLAUDE.md names at invariant 4: the Atlas's own
+ * `strictInput` "was a substring test for months".
+ *
+ * So the band reader is a PARAMETER. The executable passes the real `gh` call
+ * and the suite passes a fake keyed on the label, and a transposition is a red
+ * arm rather than a shift being told his ordered queue is the urgent one.
+ *
+ * It returns a process exit code and writes through injected sinks, so no arm
+ * needs a subprocess and no arm reads a real queue.
+ */
+export function report(input: {
+  readBand: (label: string) => readonly Row[];
+  now: Date;
+  log: (line: string) => void;
+  error: (line: string) => void;
+}): number {
+  const { readBand, now, log, error } = input;
+  let ordered: readonly Row[];
+  let urgent: readonly Row[];
+  try {
+    /*
+      REFUSE RATHER THAN PRINT AN EMPTY RANKING. A ranking that comes up empty
+      because `gh` is unauthenticated reads exactly like a ranking that is
+      genuinely empty, and the second one means "nothing urgent, work a patrol".
+      That is the collector class CLAUDE.md's Atlas section names: a reader that
+      can come up empty THROWS rather than returning a short list. It matters
+      MORE on the ordered band than it ever did on the urgent one — an empty
+      ordered band tells a shift he has asked for nothing, which is precisely
+      the harm his 2026-08-30 clause was written about.
+    */
+    ordered = readBand("founder-ordered");
+    urgent = readBand("urgent");
+  } catch (failure) {
+    /* The message goes FIRST and the hint second — the truncation refusal comes
+       through here too, and "is `gh` authenticated?" is the wrong thing to read
+       first when the real answer is "raise the ceiling". */
+    error(
+      `queue-standing-exceptions REFUSING: ${String(failure instanceof Error ? failure.message : failure)}`,
+    );
+    error("(if that reads like a transport failure rather than a refusal: is `gh` authenticated?)");
+    return 1;
+  }
+
+  for (const line of renderBands({ ordered, urgent, now })) log(line);
+  return 0;
 }
