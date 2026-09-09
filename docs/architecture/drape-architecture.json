@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "5ba3ec72a48e3421"
+    "sourceFingerprint": "ad9344dd50890b50"
   },
   "domains": [
     {
@@ -23,7 +23,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 9
+      "moduleCount": 10
     },
     {
       "id": "domain:boards",
@@ -128,7 +128,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 54
+      "moduleCount": 55
     },
     {
       "id": "domain:staff",
@@ -5803,6 +5803,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/stripe/subscriptionPeriods.ts",
+      "path": "server/stripe/subscriptionPeriods.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/stripe/webhooks.ts",
       "path": "server/stripe/webhooks.ts",
       "domain": "billing",
@@ -5955,6 +5961,12 @@
     {
       "id": "module:shared/_core/errors.ts",
       "path": "shared/_core/errors.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/annualBilling.ts",
+      "path": "shared/annualBilling.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -10658,6 +10670,10 @@
       "path": "client/src/features/admin/overview/section07-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/annualPath664-guard.test.ts",
+      "path": "client/src/features/billing/annualPath664-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/casting/castingPrices.test.ts",
       "path": "client/src/features/casting/castingPrices.test.ts"
     },
@@ -11048,6 +11064,10 @@
     {
       "id": "test:server/announcements.test.ts",
       "path": "server/announcements.test.ts"
+    },
+    {
+      "id": "test:server/annualBilling.test.ts",
+      "path": "server/annualBilling.test.ts"
     },
     {
       "id": "test:server/approvalGate.test.ts",
@@ -13034,6 +13054,10 @@
       "path": "server/phase-a-quota.test.ts"
     },
     {
+      "id": "test:server/planChangeQuote.test.ts",
+      "path": "server/planChangeQuote.test.ts"
+    },
+    {
       "id": "test:server/prMergeOrder.test.ts",
       "path": "server/prMergeOrder.test.ts"
     },
@@ -13648,6 +13672,14 @@
     {
       "id": "test:server/storageManifestReceipt.test.ts",
       "path": "server/storageManifestReceipt.test.ts"
+    },
+    {
+      "id": "test:server/stripe/annualInvoiceGrant.test.ts",
+      "path": "server/stripe/annualInvoiceGrant.test.ts"
+    },
+    {
+      "id": "test:server/stripe/annualPlanChange.test.ts",
+      "path": "server/stripe/annualPlanChange.test.ts"
     },
     {
       "id": "test:server/stripe/environmentTag.test.ts",
@@ -17822,6 +17854,11 @@
     {
       "from": "module:client/src/features/settings/index.ts",
       "to": "module:client/src/features/settings/SettingsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/planMath.ts",
+      "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
     {
@@ -31005,6 +31042,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/billing.ts",
+      "to": "module:shared/annualBilling.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/boardOps.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -33160,6 +33202,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/stripe/stripeService.ts",
+      "to": "module:server/stripe/subscriptionPeriods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripeService.ts",
+      "to": "module:shared/annualBilling.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -33202,6 +33254,16 @@
     {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/stripe/stripeService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
+      "to": "module:server/stripe/subscriptionPeriods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
+      "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
     {

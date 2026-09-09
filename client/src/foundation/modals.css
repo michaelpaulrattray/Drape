@@ -295,6 +295,15 @@
 }
 
 .dpc-confirm__go:hover { filter: brightness(0.94); }
+
+/* A confirm that BUYS rather than destroys (#664): the ink every other
+   primary wears (`.dp-btn--primary`), because error red over a purchase
+   button tells the customer the safe road is dangerous. */
+.dpc-confirm__go--primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
 .dpc-confirm__keep:disabled,
 .dpc-confirm__go:disabled { opacity: 0.6; cursor: default; }
 

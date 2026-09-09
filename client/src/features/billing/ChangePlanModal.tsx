@@ -6,10 +6,15 @@
  * does not fit an 880px modal that has already spent 186px on a nav column, and
  * it opens from four places Settings does not.
  *
- * **Nothing about the mutations changed.** `previewPlanChange` still previews,
- * `changePlan` still changes, `createSubscriptionCheckout` still opens Stripe
- * for an account with no subscription, `cancelSubscription` is still what
- * dropping to Free means. §1: *"Only where they live and how they look."*
+ * ~~**Nothing about the mutations changed.**~~ ⚠ **TRUE UNTIL #664.** The
+ * mutations' HOMES are unchanged (§1: *"Only where they live and how they
+ * look"*), but `changePlan` and `previewPlanChange` now carry `interval` —
+ * the Annual toggle is a real choice for an existing subscriber, the toggle
+ * opens on the interval the account is billed on, and a subscriber's change
+ * is confirmed against the server's own quote before it charges, because the
+ * charge is immediate now (`always_invoice`). `createSubscriptionCheckout`
+ * still opens Stripe for an account with no subscription, and
+ * `cancelSubscription` is still what dropping to Free means.
  *
  * ## The four rules in §6 that are decisions rather than styling
  *
@@ -85,6 +90,7 @@ import { ConfirmDialog } from "@/foundation";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import "@/features/settings/settings.css";
 import {
+  formatDollars,
   formatShortDate,
   formatWholeDollars,
   formatCreditsPerDollar,
@@ -143,15 +149,35 @@ export function ChangePlanModal({
   onClose: () => void;
   onAddCredits: () => void;
 }) {
-  const [interval, setInterval] = useState<Interval>("monthly");
+  /*
+    ⚠ **THE TOGGLE OPENS ON THE INTERVAL THE CUSTOMER IS BILLED ON** (#664).
+    It used to open on Monthly for everyone — so an annual subscriber's first
+    frame priced a purchase they had not chosen, which is the same lie the
+    card was filed about pointing the other way. `null` = they have not
+    touched it; the billed interval (or monthly, for an account with no
+    subscription) shows until they do.
+  */
+  const [intervalChoice, setIntervalChoice] = useState<Interval | null>(null);
   const [compare, setCompare] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const [confirmingDrop, setConfirmingDrop] = useState(false);
+  /* The plan waiting on the confirm step — the year's total is shown where it
+     is charged (card 390 item 2), and since #664 the charge is immediate, so
+     no plan change fires without its figure being read first. */
+  const [confirming, setConfirming] = useState<LadderPlan | null>(null);
 
   const { data: plans } = trpc.billing.getPlans.useQuery();
   const { data: status, refetch: refetchStatus } = trpc.billing.getStatus.useQuery();
   const { data: costs } = trpc.credits.getCosts.useQuery();
   const utils = trpc.useUtils();
+
+  const billedInterval: Interval | null =
+    status?.billingInterval === "year"
+      ? "annual"
+      : status?.billingInterval === "month"
+        ? "monthly"
+        : null;
+  const interval: Interval = intervalChoice ?? billedInterval ?? "monthly";
 
   const checkout = trpc.billing.createSubscriptionCheckout.useMutation({
     onSuccess: (data) => {
@@ -170,6 +196,7 @@ export function ChangePlanModal({
     onSuccess: (data) => {
       toast.success(data.message);
       setPending(null);
+      setConfirming(null);
       void refetchStatus();
       void utils.credits.getBalance.invalidate();
       onClose();
@@ -183,8 +210,20 @@ export function ChangePlanModal({
         ),
       );
       setPending(null);
+      setConfirming(null);
     },
   });
+
+  /*
+    The confirm step's figure is the SAME quote the server acts on
+    (`previewPlanChange` and `changePlan` read one `quotePlanChange`), so the
+    number read and the number charged cannot be two arithmetics. The dialog
+    waits for it: a charge is never confirmed against a figure nobody has.
+  */
+  const changeQuote = trpc.billing.previewPlanChange.useQuery(
+    { newPlan: (confirming?.id ?? "starter") as never, interval },
+    { enabled: hasSubscriptionForQuote(status) && confirming !== null },
+  );
 
   const cancelSubscription = trpc.billing.cancelSubscription.useMutation({
     onSuccess: (data) => {
@@ -278,14 +317,27 @@ export function ChangePlanModal({
   */
   const priceOf = (plan: LadderPlan) => priceAMonth(plan.priceInCents, interval === "annual");
 
+  /*
+    ⚠ **THE INTERVAL RIDES THE MUTATION** — the whole card (#664). A press on
+    a subscriber's account opens the confirm step rather than charging: since
+    the change is invoiced immediately (`always_invoice`), the figure must be
+    read before it is paid. Checkout keeps its own confirm — Stripe's page.
+  */
   const act = (plan: LadderPlan) => {
-    setPending(plan.id);
     if (!hasSubscription) {
+      setPending(plan.id);
       checkout.mutate({ plan: plan.id as never, interval });
       return;
     }
-    changePlan.mutate({ newPlan: plan.id as never, clientRequestId: crypto.randomUUID() });
+    setConfirming(plan);
   };
+
+  /* A subscriber's OWN tier can still change its billing cycle — without
+     this, the toggle argues annual prices while the rung most people are
+     deciding about carries no button at all. */
+  const intervalDiffers = hasSubscription && billedInterval !== null && interval !== billedInterval;
+  const switchBillingLabel =
+    interval === "annual" ? "Switch to annual billing" : "Switch to monthly billing";
 
   /*
     §6c: EXACTLY ONE ink button per view — the next tier up. Everything beyond
@@ -395,7 +447,7 @@ export function ChangePlanModal({
               type="button"
               className={`dp-segmented__seg${interval === "monthly" ? " dp-segmented__seg--on" : ""}`}
               aria-pressed={interval === "monthly"}
-              onClick={() => setInterval("monthly")}
+              onClick={() => setIntervalChoice("monthly")}
             >
               Monthly
             </button>
@@ -403,7 +455,7 @@ export function ChangePlanModal({
               type="button"
               className={`dp-segmented__seg${interval === "annual" ? " dp-segmented__seg--on" : ""}`}
               aria-pressed={interval === "annual"}
-              onClick={() => setInterval("annual")}
+              onClick={() => setIntervalChoice("annual")}
             >
               Annual
               <span className="dp-plan__badge">{monthsFree()} MONTHS FREE</span>
@@ -428,6 +480,8 @@ export function ChangePlanModal({
             ladder={ladder}
             pending={pending}
             onAct={act}
+            intervalDiffers={intervalDiffers}
+            switchBillingLabel={switchBillingLabel}
           />
         ) : (
           <>
@@ -501,7 +555,15 @@ export function ChangePlanModal({
                     made false by the product changing.
                   */}
                   {blurb ? <span className="dp-plan__blurb">{blurb}</span> : null}
-                  {isCurrent ? (
+                  {isCurrent && intervalDiffers ? (
+                    <Button
+                      variant="secondary"
+                      disabled={pending === plan.id}
+                      onClick={() => act(plan)}
+                    >
+                      {pending === plan.id ? "Working…" : switchBillingLabel}
+                    </Button>
+                  ) : isCurrent ? (
                     /*
                       ⚠ **`Current`, NOT `ON THIS ONE`, AND IT IS NO LONGER A
                       BOX** (card 425 item 2). His words: *"the button in the
@@ -674,6 +736,36 @@ export function ChangePlanModal({
         ) : null}
       </footer>
 
+      {confirming && changeQuote.data ? (
+        <ConfirmDialog
+          title={
+            interval === "annual"
+              ? `${confirming.name} — billed yearly`
+              : `${confirming.name} — billed monthly`
+          }
+          body={describeChange(confirming, changeQuote.data)}
+          confirmLabel={
+            changeQuote.data.immediateCharge > 0
+              ? `Confirm · about ${formatDollars(changeQuote.data.immediateCharge)}`
+              : "Confirm change"
+          }
+          busyLabel="Changing…"
+          busy={changePlan.isPending}
+          cancelLabel="Not now"
+          tone="primary"
+          onConfirm={() => {
+            if (!confirming) return;
+            setPending(confirming.id);
+            changePlan.mutate({
+              newPlan: confirming.id as never,
+              interval,
+              clientRequestId: crypto.randomUUID(),
+            });
+          }}
+          onCancel={() => setConfirming(null)}
+        />
+      ) : null}
+
       {confirmingDrop ? (
         <ConfirmDialog
           title="Drop to Free"
@@ -708,6 +800,8 @@ function CompareGrid({
   ladder,
   pending,
   onAct,
+  intervalDiffers,
+  switchBillingLabel,
 }: {
   plans: LadderPlan[];
   currentId: string;
@@ -717,6 +811,8 @@ function CompareGrid({
   ladder: LadderPlan[];
   pending: string | null;
   onAct: (plan: LadderPlan) => void;
+  intervalDiffers: boolean;
+  switchBillingLabel: string;
 }) {
   /* The same one expression the cards read — `Price a month` and `Credits per
      dollar` are two readings of ONE number and must not be computed twice. */
@@ -815,7 +911,18 @@ function CompareGrid({
         <span className="dp-plan__cell dp-plan__cell--label" />
         {plans.map((plan) => (
           <span key={plan.id} className={cellClass(plan)}>
-            {plan.id === currentId ? (
+            {plan.id === currentId && intervalDiffers ? (
+              /* The same offer card mode makes (#664, law 7): the customer's
+                 own column is exactly where a billing-cycle switch lives. */
+              <Button
+                variant="secondary"
+                size="small"
+                disabled={pending === plan.id}
+                onClick={() => onAct(plan)}
+              >
+                {pending === plan.id ? "Working…" : switchBillingLabel}
+              </Button>
+            ) : plan.id === currentId ? (
               /* The instance he named (card 425 item 2). This column already
                  says so twice — `.dp-plan__cell--current` tints every cell in
                  it and the head carries `YOU ARE HERE` — so a third statement
@@ -854,6 +961,64 @@ function CompareGrid({
       </p>
     </div>
   );
+}
+
+/*
+  The confirm step's sentence, derived from the server's own quote — every
+  figure in it is a field the charge is computed from, so the copy and the
+  invoice cannot disagree (the prototype's defect, closed at the wire).
+  "About" is honest: the quote is day-granular and Stripe prorates to the
+  second, so the settled figure can differ by cents.
+*/
+function describeChange(
+  plan: LadderPlan,
+  quote: {
+    kind: "same-interval" | "interval-switch";
+    targetInterval: "monthly" | "annual";
+    isUpgrade: boolean;
+    immediateCharge: number;
+    creditBalance: number;
+    newPlanPrice: number;
+    daysRemaining: number;
+    creditAdjustment: number;
+  },
+): string {
+  if (quote.kind === "interval-switch") {
+    if (quote.targetInterval === "annual") {
+      return (
+        `${plan.name} costs ${formatDollars(quote.newPlanPrice)} for the year. ` +
+        `The unused part of your current cycle comes off that, so about ` +
+        `${formatDollars(quote.immediateCharge)} is due today. Your new billing year ` +
+        `starts now, and the full year of credits lands as soon as the payment settles.`
+      );
+    }
+    return (
+      `${plan.name} moves to ${formatDollars(quote.newPlanPrice)} a month, starting today. ` +
+      (quote.immediateCharge > 0
+        ? `About ${formatDollars(quote.immediateCharge)} is due today.`
+        : `Nothing to pay today — about ${formatDollars(quote.creditBalance)} of unused time ` +
+          `becomes credit toward your future bills.`)
+    );
+  }
+  if (quote.isUpgrade) {
+    return (
+      `About ${formatDollars(quote.immediateCharge)} is due today — the difference for the ` +
+      `${quote.daysRemaining} ${quote.daysRemaining === 1 ? "day" : "days"} left in this cycle.` +
+      (quote.creditAdjustment > 0
+        ? ` ${quote.creditAdjustment.toLocaleString()} credits land on your balance the moment it goes through.`
+        : "")
+    );
+  }
+  return (
+    `Nothing to pay today. Unused time on your current plan becomes credit toward future ` +
+    `bills, and the ${plan.name} allowance starts at your next renewal.`
+  );
+}
+
+/* `enabled` needs the subscription fact before `hasSubscription` is derived
+   below the queries — one tiny reader keeps the two truths one expression. */
+function hasSubscriptionForQuote(status: { hasSubscription?: boolean } | undefined): boolean {
+  return !!status?.hasSubscription;
 }
 
 function ComparisonRow({

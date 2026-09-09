@@ -35,6 +35,9 @@ export async function updateUserSubscription(
       | "trialing"
       | null;
     planTier?: PlanTier;
+    /** Cache of the Stripe price's own recurring interval (#664); null when
+     *  there is no subscription or the interval could not be read. */
+    billingInterval?: "month" | "year" | null;
     planExpiresAt?: Date | null;
     currentPeriodStart?: Date | null;
     currentPeriodEnd?: Date | null;
@@ -82,6 +85,9 @@ export async function refreshMonthlyCredits(
   monthlyCredits: number,
   rolloverCredits: number,
   referenceId: string,
+  /** Ledger line override — the annual grant says it is a year's allowance
+   *  rather than calling 12 months a "monthly refresh" (#664). */
+  description?: string,
 ): Promise<CreditWriteResult> {
   const db = await getDb();
   if (!db) {
@@ -111,7 +117,8 @@ export async function refreshMonthlyCredits(
         userId,
         amount: monthlyCredits,
         type: "subscription",
-        description: `Monthly credit refresh (${monthlyCredits} credits + ${rolloverCredits} rollover)`,
+        description:
+          description ?? `Monthly credit refresh (${monthlyCredits} credits + ${rolloverCredits} rollover)`,
         referenceId: ledgerReferenceId,
         balanceAfter: newBalance,
       });
@@ -180,6 +187,7 @@ export async function getSubscriptionByUserId(userId: number) {
       stripeCustomerId: credits.stripeCustomerId,
       stripeSubscriptionId: credits.stripeSubscriptionId,
       subscriptionStatus: credits.subscriptionStatus,
+      billingInterval: credits.billingInterval,
       currentPeriodStart: credits.currentPeriodStart,
       currentPeriodEnd: credits.currentPeriodEnd,
       balance: credits.balance,

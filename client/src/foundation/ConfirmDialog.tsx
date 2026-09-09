@@ -53,6 +53,7 @@ export function ConfirmDialog({
   busy,
   notes,
   cancelLabel = "Keep it",
+  tone = "danger",
   onConfirm,
   onCancel,
 }: {
@@ -64,6 +65,16 @@ export function ConfirmDialog({
   /** Present = a required note, and the confirm stays inert until it is typed. */
   notes?: { label: string; placeholder: string; maxLength: number };
   cancelLabel?: string;
+  /**
+   * What the confirm button is FOR (#664). This dialog was born destructive
+   * — its go-button wears `var(--error)` — and every consumer until the plan
+   * change was asking about a loss. A PURCHASE confirmation in error red
+   * tells the customer the safe road is dangerous, so a buying consumer says
+   * `tone="primary"` and the button wears the ink every other primary wears.
+   * Danger stays the default: a destructive dialog that forgets the prop must
+   * fail toward the warning, never away from it.
+   */
+  tone?: "danger" | "primary";
   onConfirm: (notes: string) => void;
   onCancel: () => void;
 }) {
@@ -187,7 +198,7 @@ export function ConfirmDialog({
           </button>
           <button
             type="button"
-            className="dpc-confirm__go"
+            className={tone === "primary" ? "dpc-confirm__go dpc-confirm__go--primary" : "dpc-confirm__go"}
             onClick={() => onConfirm(typed.trim())}
             disabled={busy || !armed}
           >

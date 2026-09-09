@@ -55,7 +55,10 @@ import { framesFor } from "@/features/settings/planLadder";
 import { useCycleSpend } from "./useCycleSpend";
 
 export function AddCreditsModal({ onClose }: { onClose: () => void }) {
-  const [annual, setAnnual] = useState(false);
+  /* ⚠ The toggle opens on the interval the customer is BILLED on (#664) —
+     `null` until they touch it, so an annual subscriber is not shown a
+     monthly purchase they did not choose. */
+  const [annualChoice, setAnnualChoice] = useState<boolean | null>(null);
   const [open, setOpen] = useState(false);
   const [chosen, setChosen] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
@@ -64,6 +67,8 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
   const { data: status } = trpc.billing.getStatus.useQuery();
   const { data: costs } = trpc.credits.getCosts.useQuery();
   const utils = trpc.useUtils();
+
+  const annual = annualChoice ?? status?.billingInterval === "year";
 
   const currentId = status?.planTier ?? "free";
   const hasSubscription = !!status?.hasSubscription;
@@ -95,8 +100,11 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
   const selectedId = chosen ?? options[0]?.id ?? null;
   const selected = options.find((entry) => entry.id === selectedId) ?? null;
 
+  /* The interval rides the preview (#664), so `due today` below is the
+     charge for the purchase the toggle describes — not the monthly figure
+     wearing an annual page. */
   const { data: preview } = trpc.billing.previewPlanChange.useQuery(
-    { newPlan: selectedId as never },
+    { newPlan: selectedId as never, interval: annual ? "annual" : "monthly" },
     { enabled: hasSubscription && !!selectedId },
   );
 
@@ -182,7 +190,11 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
       });
       return;
     }
-    changePlan.mutate({ newPlan: selected.id as never, clientRequestId: crypto.randomUUID() });
+    changePlan.mutate({
+      newPlan: selected.id as never,
+      interval: annual ? "annual" : "monthly",
+      clientRequestId: crypto.randomUUID(),
+    });
   };
 
   const framesNow = framesFor(currentCredits, costPerFrame);
@@ -229,7 +241,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
               role="switch"
               aria-checked={annual}
               aria-label="Pay yearly"
-              onClick={() => setAnnual((on) => !on)}
+              onClick={() => setAnnualChoice(!annual)}
             />
           </div>
 
@@ -349,11 +361,17 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
           </span>
         </div>
 
-        {/* §7.4 — the renewal line, branching on interval. */}
+        {/* §7.4 — the renewal line, branching on interval. An interval
+            switch resets the cycle (#664), so quoting the OLD renewal date
+            beside it would be the prototype's date-vs-charge defect again. */}
         <p className="dp-topup__renewal">
-          {hasSubscription && cycle
-            ? `Prorated for the ${cycle.daysLeft} ${cycle.daysLeft === 1 ? "day" : "days"} left in this cycle, then ${formatShortDate(cycle.renewsAt)}.`
-            : "Charged today, then on the same date each period."}
+          {hasSubscription && preview?.kind === "interval-switch"
+            ? annual
+              ? "Billed for the whole year today — your new billing year starts now, and the year's credits land with the payment."
+              : "Billed monthly from today — unused time from your year comes off future bills automatically."
+            : hasSubscription && cycle
+              ? `Prorated for the ${cycle.daysLeft} ${cycle.daysLeft === 1 ? "day" : "days"} left in this cycle, then ${formatShortDate(cycle.renewsAt)}.`
+              : "Charged today, then on the same date each period."}
           {!annual ? ` Pay yearly instead and ${monthsFree()} of the twelve months are free.` : ""}
         </p>
       </div>

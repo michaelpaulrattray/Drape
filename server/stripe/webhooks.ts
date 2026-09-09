@@ -27,6 +27,8 @@ import {
 import { SlackAlerts } from "../slack/slackNotification";
 import { SubscriptionPlan } from "./stripeProducts";
 import { PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
+import { monthsBought } from "@shared/annualBilling";
+import { subscriptionPeriodSec } from "./subscriptionPeriods";
 import { createModuleLogger } from "../logging/logger";
 import { checkEventEnvironment } from "./environmentTag";
 import { deploymentTag } from "../_core/env";
@@ -223,15 +225,25 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   }
   const planTier = mappedTier ?? (userWithCredits.credits?.planTier || "free");
 
-  // Access period timestamps from the subscription object
-  const periodStart = (subscription as any).current_period_start || Math.floor(Date.now() / 1000);
-  const periodEnd = (subscription as any).current_period_end || Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+  // The period lives on the subscription ITEM on this API version (#664 —
+  // see subscriptionPeriods.ts): the sub-level read was writing a fabricated
+  // month into currentPeriodStart/End on every event.
+  const { startSec: periodStart, endSec: periodEnd } = subscriptionPeriodSec(subscription);
+
+  // The interval the customer is billed on, read off the price itself (#664
+  // decision 5) — this column is a CACHE of the Stripe artifact, refreshed
+  // every time Stripe tells us the subscription changed. Anything that is not
+  // a month or a year is cached as unknown rather than guessed monthly.
+  const stripeInterval = (subscription as any).items?.data?.[0]?.price?.recurring?.interval;
+  const billingInterval =
+    stripeInterval === "year" || stripeInterval === "month" ? stripeInterval : null;
 
   // Update subscription in database
   await updateUserSubscription(userId, {
     stripeSubscriptionId: subscription.id,
     subscriptionStatus: mapStripeStatus(subscription.status),
     planTier: planTier as PlanTier,
+    billingInterval,
     currentPeriodStart: new Date(periodStart * 1000),
     currentPeriodEnd: new Date(periodEnd * 1000),
     planExpiresAt: new Date(periodEnd * 1000),
@@ -263,6 +275,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
     stripeSubscriptionId: null,
     subscriptionStatus: "canceled",
     planTier: "free",
+    billingInterval: null,
     planExpiresAt: null,
     currentPeriodStart: null,
     currentPeriodEnd: null,
@@ -299,30 +312,70 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
     return { success: true, message: "Free tier, no credits to refresh" };
   }
 
+  // ⚠ CREDITS ARE GRANTED WHEN A PERIOD IS BOUGHT, SIZED BY THE PERIOD
+  // BOUGHT (#664 decision 3). This handler used to grant one month's credits
+  // on ANY subscription invoice — which would have given an annual subscriber
+  // one month's allowance for a year's money, and (under `always_invoice`)
+  // would have RESET the balance on every tier change's proration invoice.
+  // The invoice's own non-proration recurring line is the artifact that says
+  // what was bought: a month, a year, or (proration-only) nothing at all.
+  const invoiceLines: any[] = (invoice as any).lines?.data ?? [];
+  const periodLine = invoiceLines.find(
+    (line) => line && line.proration === false && (line.price?.recurring || line.plan),
+  );
+
+  if (!periodLine) {
+    log.info(
+      `[Webhook] Invoice ${invoice.id} bought no period (proration-only) — no allowance reset for user ${userId}`,
+    );
+    return {
+      success: true,
+      message: `Proration-only invoice for user ${userId} — no period bought, no credit refresh`,
+    };
+  }
+
+  const lineInterval: string | undefined =
+    periodLine.price?.recurring?.interval ?? periodLine.plan?.interval;
+  const grantMonths = monthsBought(lineInterval === "year" ? "year" : "month");
+
   // Get current credits to calculate rollover
   const currentCredits = await getUserCredits(userId);
   if (!currentCredits) {
     return { success: false, message: "User credits not found" };
   }
 
-  // Calculate rollover based on plan tier
+  // A cycle the customer ENDED EARLY keeps its whole balance; a cycle that
+  // ran out keeps its rollover percentage (#664 decision 4). An interval
+  // switch resets the billing anchor, so its full-period invoice arrives with
+  // billing_reason "subscription_update" — an early renewal the customer
+  // asked for, not a period they let lapse.
   const unusedCredits = currentCredits.balance;
-  const rolloverCredits = calculateRolloverCredits(unusedCredits, planTier as PlanTier);
-  const monthlyCredits = getMonthlyCredits(planTier as PlanTier);
+  const billingReason = (invoice as any).billing_reason;
+  const rolloverCredits =
+    billingReason === "subscription_update"
+      ? unusedCredits
+      : calculateRolloverCredits(unusedCredits, planTier as PlanTier);
+
+  const grantCredits = getMonthlyCredits(planTier as PlanTier) * grantMonths;
 
   // Refresh credits
   const result = await refreshMonthlyCredits(
     userId,
-    monthlyCredits,
+    grantCredits,
     rolloverCredits,
     `stripe-invoice:${invoice.id}`,
+    grantMonths === 12
+      ? `Annual credit grant — 12 months up front (${grantCredits} credits + ${rolloverCredits} rollover)`
+      : undefined,
   );
-  
+
   if (!result.success) {
     return { success: false, message: "Failed to refresh credits", error: result.error };
   }
 
-  log.info(`[Webhook] Refreshed credits for user ${userId}: ${monthlyCredits} + ${rolloverCredits} rollover = ${result.newBalance}`);
+  log.info(
+    `[Webhook] Refreshed credits for user ${userId}: ${grantCredits} (${grantMonths} month${grantMonths === 1 ? "" : "s"} bought) + ${rolloverCredits} rollover = ${result.newBalance}`,
+  );
   return { success: true, message: `Refreshed credits for user ${userId}` };
 }
 
