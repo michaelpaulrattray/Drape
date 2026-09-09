@@ -1,7 +1,7 @@
 {
-  "edition": 321,
-  "updatedAt": "2026-09-09T18:30:00Z",
-  "shift": "Foreman - a locked-out admin that had not happened yet, and a job that turned out not to need doing. The first: the list that says who is allowed to reach your admin pages promised something it could not do. It invited you to add a person by their user number, and its own notes gave a worked example - but a number added that way would have matched nobody. The first person to use the feature would have locked out the admin they were trying to let in, and been told a reason that pointed nowhere near the cause. Nobody has been affected: the list is empty on your live site, which I checked at the settings rather than taking a document's word for it. The second: I took a job off the list asking for three of the pull-request checks to be added to the deploy ceremony, measured it, and found none of the three can run there - one of them is not a check at all. The road it was meant to protect has had no traffic since the checks were built. Closed with the measurement rather than built.",
+  "edition": 322,
+  "updatedAt": "2026-09-09T19:55:00Z",
+  "shift": "Foreman - two safety nets that were pointing at the wrong thing. The first: the gate on your admin pages was handed a person's NAME on every single request, and nothing ever looked at it. That sounds like tidiness, and it is not: the setting beside it is called OWNER_NAME and it is actually matched against an email address. So the one place somebody would look while trying to let an admin in was quietly suggesting a name would do it. Nobody has been affected - the list is empty on your live site. The second: the 'possibly already fixed' note under your background-work switches was firing hardest on exactly the wrong pull requests - the ones whose write-ups say, in plain words, that the job was NOT done. A shift that files a card and says so was guaranteeing that card got flagged as maybe-finished forever. It now ignores anything named inside pasted output or a table. One of the four known cases is fixed outright; the other three are prose and are left alone deliberately, because telling those from a real fix means guessing at English, and that is a decision rather than a reading.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-09T18:24:44.082Z",
+      "readAt": "2026-09-09T19:48:24.095Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4465,6 +4465,22 @@
   ],
   "pipeline": [
     {
+      "id": "pr-736-citation-strip-728",
+      "title": "Your panel was flagging cards as maybe-finished because a write-up MENTIONED them (#728)",
+      "status": "merged",
+      "prNumber": 736,
+      "cardId": null,
+      "note": "Squash 75d05bc3. The flag fired hardest on the pull requests that say the work was NOT done - five out of five checked. It now ignores a card named inside pasted output or a table. One of the four cases is fixed; the other three are ordinary prose and are left flagging on purpose, filed as #737 with a recommendation that it may be right never to build it. The reviewer found a real hole in the fix and it was closed in code rather than written down as a limit."
+    },
+    {
+      "id": "pr-735-admin-gate-name-733",
+      "title": "The gate on your admin pages was handed a name nothing ever read (#733)",
+      "status": "merged",
+      "prNumber": 735,
+      "cardId": null,
+      "note": "Squash 2ba128d5. Nobody is affected today - checked at your live settings, not taken from a document. It mattered the day somebody used it: the setting called OWNER_NAME is matched against an EMAIL, so an unread name sitting in that gate was the wrong hint in the one place a person would read it. A second unread field was found and deliberately KEPT, because a test depends on it to catch a change only you should authorise. Review: clean pass, no findings."
+    },
+    {
       "id": "card-500-rite-checks-measured",
       "title": "A job on the list turned out not to need doing - measured, then closed (#500)",
       "status": "merged",
@@ -4964,11 +4980,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0910b-foreman",
+      "id": "queue-shape-0910c-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 64 open, 17 nobody has looked at in a week - one closed, one refuted, one filed",
-      "detail": "64 cards open. 17 have had no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue - the next is due in two days.\n\nTonight: #727 fixed and closed, #500 measured and closed WITHOUT being built, #733 filed. One more card changed state without any work: #711, the credit-grant bug, is now marked as waiting for a Fable seat.\n\nThat last one is worth a sentence, because it was costing real money. #711 is the only open bug and it needs a design decision rather than a patch - where a credit grant should hang, once it can no longer hang on the Stripe update. Six shifts in a row had each read it from scratch, reached that same conclusion, and moved on, because nothing on the card said \"this is on hold\". It says so now, so the seventh shift does not pay for the same reading. It is not waiting on you.\n\nThe standing note from the last nine nights still holds and got a little sharper tonight: of the small fixes left, most end in a decision that is yours, and the process list is now the same - the two cards next in line, #524 and #523, each say in their own body that they wait on your word. Tonight's work came from the two cards on the board that did not."
+      "title": "The queue: 63 open, 17 nobody has looked at in a week - two closed tonight, one filed",
+      "detail": "63 cards open. 17 have had no comment, no close and no code near them for seven days - that figure has not moved this week, and the oldest is 15 days.\n\nNothing is waiting on you. NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue - the next is due in two days.\n\nTonight: #733 and #728 both fixed, merged and closed, and #737 filed from the second one. The shape worth saying plainly is the same as last night's: of the small jobs left on the board, most end in a decision only you can make. That is not a complaint - it is what an idle queue looks like when the team is not allowed to invent work."
     },
     {
       "id": "queue-shape-0910-foreman",
@@ -5395,7 +5411,7 @@
     169
   ],
   "nextUp": {
-    "readAt": "2026-09-09T18:24:43.299Z",
+    "readAt": "2026-09-09T19:48:23.241Z",
     "items": []
   }
 }
