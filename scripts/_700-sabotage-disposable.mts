@@ -95,8 +95,8 @@ const SABOTAGES: Sabotage[] = [
   {
     name: "MODERATOR listUsers silently DROPS avatarUrl (the panel loses the face)",
     file: MOD,
-    find: "          avatarUrl: user.avatarUrl,\n          role: user.role,\n          suspendedReason: user.suspendedReason,\n          frozenAt: user.frozenAt,",
-    replace: "          role: user.role,\n          suspendedReason: user.suspendedReason,\n          frozenAt: user.frozenAt,",
+    find: "          avatarUrl: user.avatarUrl,\n          role: user.role,\n          suspendedReason: user.suspendedReason,\n          suspendedAt: user.suspendedAt?.toISOString() || null,",
+    replace: "          role: user.role,\n          suspendedReason: user.suspendedReason,\n          suspendedAt: user.suspendedAt?.toISOString() || null,",
     expect: [MOD_LIST],
   },
   {
@@ -119,27 +119,41 @@ const SABOTAGES: Sabotage[] = [
     ].sort(),
   },
 
-  /* ── The wire-type divergence this PR deliberately PRESERVES ───────────────
-   * PR #701 review, finding 3. `frozenAt` crosses the moderator wire as a raw
-   * Date and the admin wire as an ISO string — same column, same helper, two
-   * staff surfaces. Converging them is a wire-type change and is filed
-   * separately rather than smuggled into a no-behaviour-change PR. Until the
-   * fixtures seeded it NON-NULL these two sabotages reddened NOTHING, because
-   * `null` is the one value where raw and ISO are indistinguishable. */
+  /* ── The wire type, CONVERGED on #703 — both arms watch the revert ─────
+   * PR #701 review, finding 3 measured a divergence: `frozenAt` crossed the
+   * moderator wire as a raw Date and the admin wire as an ISO string — same
+   * column, same helper, two staff surfaces, neither wrong on its own. #703
+   * converged the moderator onto ISO, which is what four of its five date
+   * fields already did and what the admin twin always did.
+   *
+   * ⚠ THE FIRST ARM'S DIRECTION INVERTED, and it is kept rather than deleted:
+   * what it watched for — a silent convergence — has now HAPPENED on purpose,
+   * and what it watches now is the same column drifting apart again from the
+   * other side. Both arms still depend on the fixtures seeding `frozenAt`
+   * NON-NULL: at `null` a raw Date and an ISO string are indistinguishable
+   * and both of these sabotages redden NOTHING. */
   {
-    name: "MODERATOR frozenAt silently converges to ISO (the follow-up landing unannounced)",
+    name: "MODERATOR frozenAt reverts to a raw Date (the #703 convergence coming undone)",
     file: MOD,
-    /* Anchored on its NEIGHBOURS, not on the line alone: the bare line also
-       appears in `getUserDetails`, a third moderator read that passes the same
-       column raw. The driver REFUSED the two-match anchor rather than patching
-       whichever came first — without that refusal this arm would have
-       sabotaged the wrong procedure and read the result as a pass. */
-    find: "          suspendedReason: user.suspendedReason,\n          frozenAt: user.frozenAt,",
-    replace: "          suspendedReason: user.suspendedReason,\n          frozenAt: user.frozenAt?.toISOString() || null,",
+    /* ⚠ THIS ARM REPLACES THE LINE; IT MUST NOT INSERT ONE. Its first shape
+       added a raw `frozenAt` above the converted one, so the object carried
+       the key twice and the later literal won — the sabotage reddened
+       NOTHING and the driver reported it as a finding rather than a pass,
+       which is the whole reason every arm asserts its reddened set exactly.
+
+       The find is unique in this file: `listUsers` reads `user.` and
+       `getUserFullDetails` reads `result.user.`, and `getUserDetails` — a
+       third moderator read that still passes this column raw, a wholly-raw
+       projection outside #703's scope and recorded on that card — cannot
+       match a converted line at all. `admin/users.ts` holds the identical
+       text and is a different file. The driver REFUSES a two-match anchor
+       either way. */
+    find: "          frozenAt: user.frozenAt?.toISOString() || null,",
+    replace: "          frozenAt: user.frozenAt,",
     expect: [MOD_LIST],
   },
   {
-    name: "ADMIN frozenAt silently converges to a raw Date (the divergence moving the other way)",
+    name: "ADMIN frozenAt reverts to a raw Date (the same drift from the other side)",
     file: ADMIN,
     find: "          frozenAt: user.frozenAt?.toISOString() || null,",
     replace: "          frozenAt: user.frozenAt,",

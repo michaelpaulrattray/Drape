@@ -67,10 +67,11 @@ vi.mock("./db", () => ({
         role: "user",
         suspendedAt: null,
         suspendedReason: null,
-        /* Seeded NON-NULL on purpose (PR #701 review, finding 3): THIS surface
-           converts `frozenAt` to ISO while the moderator twin passes it raw,
-           and at `null` those two are indistinguishable — so neither the
-           divergence nor a silent convergence could redden anything. */
+        /* Seeded NON-NULL on purpose (PR #701 review, finding 3). At `null` a
+           raw `Date` and an ISO string are indistinguishable, so neither the
+           divergence this seed was written for nor its convergence could
+           redden anything. THIS surface has always sent ISO; the moderator
+           twin sent a raw `Date` until #703 converged it onto this one. */
         frozenAt: new Date("2026-02-01"),
         lockedUntil: null,
         createdAt: new Date("2025-06-01"),
@@ -187,7 +188,7 @@ describe("#700 — the admin user reads project explicitly", () => {
       frozenBy: null,
       failedLoginAttempts: 0,
       suspendedAt: null,
-      frozenAt: "2026-02-01T00:00:00.000Z", // ISO here, raw Date on the moderator twin
+      frozenAt: "2026-02-01T00:00:00.000Z", // ISO on both wires since #703
       lockedUntil: null,
       createdAt: "2025-06-01T00:00:00.000Z",
       lastSignedIn: "2026-01-15T00:00:00.000Z",
