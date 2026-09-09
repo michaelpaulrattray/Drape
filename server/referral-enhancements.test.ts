@@ -153,68 +153,23 @@ describe("Referral Expiration Job", () => {
     await expect(expireStalePendingReferrals()).rejects.toThrow("DB connection failed");
   });
 });
-
-// ── Feature 2: Moderator Flagged Referrals Query ──
-
-vi.mock("./db/moderatorQueries", () => ({
-  getFlaggedReferrals: vi.fn(),
-  getDetailedCreditHistory: vi.fn(),
-  getDetailedGenerationHistory: vi.fn(),
-}));
-
-import { getFlaggedReferrals } from "./db/moderatorQueries";
-
-const mockGetFlaggedReferrals = vi.mocked(getFlaggedReferrals);
-
-describe("Moderator Flagged Referrals Query", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("should return flagged referrals with user details", async () => {
-    const mockData = {
-      items: [
-        {
-          id: 1,
-          referrerUserId: 10,
-          referrerName: "Alice",
-          referrerEmail: "alice@example.com",
-          referredUserId: 20,
-          referredName: "Bob",
-          referredEmail: "bob@example.com",
-          referrerIp: "192.168.1.1",
-          referredIp: "192.168.1.1",
-          status: "signed_up",
-          creditsAwarded: 0,
-          referrerCredited: false,
-          referredCredited: false,
-          createdAt: new Date("2026-01-15"),
-          completedAt: null,
-        },
-      ],
-      total: 1,
-    };
-
-    mockGetFlaggedReferrals.mockResolvedValue(mockData);
-    const result = await getFlaggedReferrals(50, 0);
-
-    expect(result.total).toBe(1);
-    expect(result.items).toHaveLength(1);
-    expect(result.items[0].referrerIp).toBe(result.items[0].referredIp);
-    expect(result.items[0].referrerName).toBe("Alice");
-  });
-
-  it("should return empty when no flagged referrals exist", async () => {
-    mockGetFlaggedReferrals.mockResolvedValue({ items: [], total: 0 });
-    const result = await getFlaggedReferrals(50, 0);
-    expect(result.total).toBe(0);
-    expect(result.items).toHaveLength(0);
-  });
-
-  it("should support pagination", async () => {
-    mockGetFlaggedReferrals.mockResolvedValue({ items: [], total: 100 });
-    const result = await getFlaggedReferrals(20, 40);
-    expect(mockGetFlaggedReferrals).toHaveBeenCalledWith(20, 40);
-    expect(result.total).toBe(100);
-  });
-});
+/*
+ * ── Feature 2: Moderator Flagged Referrals Query ── REMOVED (#697)
+ *
+ * Three arms lived here and not one of them entered the product. The file
+ * mocked `./db/moderatorQueries` wholesale, imported the mocked
+ * `getFlaggedReferrals`, CALLED IT ITSELF, and asserted on what it had just
+ * told the mock to return — including an arm named "should support pagination"
+ * that called the mock with (20, 40) and then asserted the mock had been called
+ * with (20, 40). Deleting the real procedure from the router would not have
+ * reddened any of them.
+ *
+ * The subject is driven for real in `server/moderator.test.ts` — through
+ * `moderatorProcedure` and the actual router — where the defaults arm already
+ * existed and an asked-for-page arm was added in this same commit to replace
+ * the pagination claim rather than merely drop it.
+ *
+ * Found by PR #698's reviewer as a 13th file the card's own table missed: its
+ * reader keyed on files mocking `./db` / `./auditLog`, and this one mocks the
+ * deeper `./db/moderatorQueries`.
+ */

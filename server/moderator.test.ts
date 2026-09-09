@@ -650,6 +650,20 @@ describe("Moderator Role — the read surface, DRIVEN through the router", () =>
       await callerFor(MODERATOR).getFlaggedReferrals();
       expect(getFlaggedReferrals).toHaveBeenCalledWith(50, 0);
     });
+
+    /**
+     * The asked-for page, which nothing drove anywhere until now.
+     * `server/referral-enhancements.test.ts` carried an arm CALLED
+     * "should support pagination" that called the mocked db reader itself with
+     * `(20, 40)` and asserted the mock had been called with `(20, 40)` — its own
+     * argument, with the router never entered. It is deleted in this commit and
+     * this is what replaces it: the same claim, made about the product (#697).
+     */
+    it("an asked-for page replaces both defaults — the limit and the offset travel whole", async () => {
+      const { getFlaggedReferrals } = await import("./db");
+      await callerFor(MODERATOR).getFlaggedReferrals({ limit: 20, offset: 40 });
+      expect(getFlaggedReferrals).toHaveBeenCalledWith(20, 40);
+    });
   });
 
   describe("getAuditLogById", () => {
