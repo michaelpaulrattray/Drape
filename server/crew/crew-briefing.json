@@ -1,7 +1,7 @@
 {
-  "edition": 316,
-  "updatedAt": "2026-09-09T10:58:00.000Z",
-  "shift": "Foreman - two jobs on the team's own instruments, both merged. The list a night shift reads to decide what matters most could not see the cards YOU ordered, so with nothing marked urgent it said the queue was clear. And the foot of this page named who wrote the briefing without ever saying when. Nothing about the studio changed; both were about you being able to trust what these screens tell you.",
+  "edition": 317,
+  "updatedAt": "2026-09-09T12:33:49.824Z",
+  "shift": "Foreman - two jobs on the machinery behind the nights, both finished. A rule you set - never draw a marker on a photograph in red - was being broken on a real file, and the check that was supposed to catch it could not see the way the code actually paints. And the switch that stops the team when your Claude account runs out was firing on shifts that had simply written the number 429 in a report. Nothing about the studio itself changed; both were about the nights doing what they say they do.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-09T10:52:45.416Z",
+      "readAt": "2026-09-09T12:34:46.827Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4460,6 +4460,20 @@
   ],
   "pipeline": [
     {
+      "id": "false-cap-park-495",
+      "title": "The nights could stop and tell you your Claude account had run out when it had not (#495)",
+      "status": "merged",
+      "note": "No pull request - this code lives outside the repository, so its receipt is the test run. When a shift dies, the runner reads its log to decide why. If it looks like your usage cap, it stops the whole team at once and writes the reason into the file that halts the nights. It was matching on the bare number 429 anywhere in the log. A shift that had worked card #429, one that quoted a commit reference, and one writing about production - all three would have stopped the team announcing a cap you had never hit. Read across every shift log on disk: ten would have stopped it, and exactly ONE was a real cap. Now four. The other repair was not in the card and was found by measuring: the word 'quota' was matching inside 'quotable', 'quotation' and a filename. Your seven cap phrases are untouched - that is your ruling, not a shift's. Five sabotage runs prove each repair can still fail if someone undoes it.",
+      "prNumber": null
+    },
+    {
+      "id": "pr-720-mono-third-idiom-257",
+      "title": "A rule you set was being broken on a real file, and the check could not see it (#257)",
+      "status": "merged",
+      "prNumber": 720,
+      "note": "Squash fa6dc69b, merged 12:32. Your standing rule is that a marker drawn on top of a photograph is thin and white, never red - so the eye reads the picture, not the annotation. A check enforces that automatically on every diagnostic tool the team writes. It knew two ways of writing a colour and the code actually uses a third, which is the ordinary way this codebase paints a mask onto a frame - so it was blind to the one that matters most. Taught it the third way, and it immediately found a live breach: a hair-matting tool was filling an entire mask in solid red and laying it over a photograph. Five more were found in the team's own scratch tools. All six repainted white. The card that asked for this thought the problem was theoretical - nobody had checked, and it was not. Fable review: pass, both observations taken."
+    },
+    {
       "id": "pr-716-ordered-band-472",
       "title": "The list your shifts read to decide what matters could not see the cards you ordered (#472)",
       "status": "merged",
@@ -4896,9 +4910,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0909d-foreman",
+      "id": "queue-shape-0909e-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 64 open, 15 nobody has looked at in a week - two closed tonight, one written",
+      "detail": "64 cards open, 15 with no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight closed #257 and #495 and wrote one new card (#721), which is the honest remainder of the second job rather than new work.\n\nThe standing note from the last seven nights now holds on BOTH lists. Of the small fixes left, seven of nine end in a decision that is yours. Tonight the same thing showed up in the process list: the next two cards in line - #524 and #523 - each say in their own body that they are waiting on your word, not on a shift. Neither was taken. That is two categories where the work a shift can do on its own is close to run out, which is worth knowing before it looks like the nights are going quiet."
+    },
+    {
+      "id": "queue-shape-0909d-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 65 open, 15 nobody has looked at in a week - two closed tonight, one written",
       "detail": "65 cards open, 15 with no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight closed #472 and #329 and wrote one new card (#718), which asks you a single question when you have a moment - see it below.\n\nThe standing note from the last six nights holds and tonight tightened it: of the nine small fixes left, seven end in a decision that is yours rather than work a shift can do. One of them, #26, turned out not to be a small fix at all - its own design document says it needs a paid measurement, a database change and your word on a number - so it has been taken off that list with the reasoning written on the card. Each night was spending twenty minutes re-reading it to reach the same answer."
     },
@@ -5307,10 +5328,11 @@
     163,
     164,
     165,
-    166
+    166,
+    167
   ],
   "nextUp": {
-    "readAt": "2026-09-09T10:52:44.639Z",
+    "readAt": "2026-09-09T12:34:45.917Z",
     "items": []
   }
 }
