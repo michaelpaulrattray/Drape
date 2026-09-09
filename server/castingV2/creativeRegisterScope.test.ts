@@ -980,6 +980,24 @@ describe("the block by LANE — his creature split (#232) and the anatomy clause
     }
   });
 
+  it("#599 — dentition shows AS ITS ANATOMY ALLOWS: tusks protrude, fangs part the lips, and the sabre-tooth contradiction cannot come back", () => {
+    /*
+      "Stays visible at rest" was true of tusks and impossible for fangs, so
+      the engine drew fangs OVER a shut mouth (his oni roll 249). The line now
+      says how each kind shows, and the defect phrase is pinned out: any
+      blanket "visible at rest" demand on the mouth re-opens the contradiction.
+    */
+    expect(CREATURE_EXPRESSION_LINE).toContain("shows as that anatomy allows");
+    expect(CREATURE_EXPRESSION_LINE).toContain("fangs sit inside the mouth");
+    expect(CREATURE_EXPRESSION_LINE).toContain("lips slightly parted at rest");
+    /* His register clause, the law in one sentence. */
+    expect(CREATURE_EXPRESSION_LINE).toContain("Lips may part at rest to show what is there; never teeth forced through closed lips.");
+    /* The defect phrase, refused by name. */
+    expect(CREATURE_EXPRESSION_LINE).not.toContain("stays visible at rest");
+    /* The tusked control's half of the court, in the bytes: protrusion is still the tusk's own. */
+    expect(CREATURE_EXPRESSION_LINE).toContain("Tusks and an underbite protrude past the lips of themselves");
+  });
+
   it("#237 — the anatomy clause is a FRAMING fact: his three placements, both prohibitions, and no second crop word", () => {
     for (const placement of ["over a shoulder", "beside the ribcage", "rising into the picture"]) {
       expect(ANATOMY_VISIBILITY_LINE).toContain(placement);
