@@ -79,7 +79,7 @@
  *    with the tag it existed for (#487). `.dp-plan__tab` has one context
  *    again, which is what item 6 was trying to buy.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -224,6 +224,26 @@ export function ChangePlanModal({
     { newPlan: (confirming?.id ?? "starter") as never, interval },
     { enabled: hasSubscriptionForQuote(status) && confirming !== null },
   );
+
+  /*
+    ⚠ A QUOTE THAT FAILS MUST SAY SO (#664 review finding 5): the confirm
+    dialog renders only once the quote exists, so a failed preview used to
+    leave the press doing nothing at all — no dialog, no sentence, a dead
+    button on a billing surface.
+  */
+  const quoteError = confirming ? changeQuote.error : null;
+  useEffect(() => {
+    if (!quoteError) return;
+    logRawFailure("billing.previewPlanChange", quoteError);
+    toast.error(
+      readableFailure(
+        quoteError,
+        "We could not price this change. Nothing was charged — please try again.",
+      ),
+    );
+    setConfirming(null);
+    setPending(null);
+  }, [quoteError]);
 
   const cancelSubscription = trpc.billing.cancelSubscription.useMutation({
     onSuccess: (data) => {
@@ -989,7 +1009,8 @@ function describeChange(
         `${plan.name} costs ${formatDollars(quote.newPlanPrice)} for the year. ` +
         `The unused part of your current cycle comes off that, so about ` +
         `${formatDollars(quote.immediateCharge)} is due today. Your new billing year ` +
-        `starts now, and the full year of credits lands as soon as the payment settles.`
+        `starts now, and the full year of credits lands as soon as the payment settles, ` +
+        `replacing what was left of this cycle's allowance.`
       );
     }
     return (
@@ -997,7 +1018,8 @@ function describeChange(
       (quote.immediateCharge > 0
         ? `About ${formatDollars(quote.immediateCharge)} is due today.`
         : `Nothing to pay today — about ${formatDollars(quote.creditBalance)} of unused time ` +
-          `becomes credit toward your future bills.`)
+          `becomes credit toward your future bills.`) +
+      ` The unused months of credits go back with that refund; this month's allowance takes their place.`
     );
   }
   if (quote.isUpgrade) {
@@ -1010,8 +1032,9 @@ function describeChange(
     );
   }
   return (
-    `Nothing to pay today. Unused time on your current plan becomes credit toward future ` +
-    `bills, and the ${plan.name} allowance starts at your next renewal.`
+    `Nothing to pay today. Unused time on your current plan comes back as billing credit — ` +
+    `the unused credits that time bought go back with it — and the ${plan.name} allowance ` +
+    `starts at your next renewal.`
   );
 }
 

@@ -107,6 +107,11 @@ describe("interval switches", () => {
     /* Decision 3: the switch's anchor-reset invoice buys a whole period, so
        the invoice webhook grants the year — a local top-up would double-grant. */
     expect(q.creditAdjustment).toBe(0);
+    /* And the OLD period's unconsumed grant goes back — the same fraction of
+       the same period Stripe credits back in money (#664 review finding 1). */
+    expect(q.creditUnwind).toBe(
+      Math.floor(PLAN_TIERS.starter.monthlyCredits * (15 / 30)),
+    );
   });
 
   it("annual → monthly mid-year nets NEGATIVE — nothing due today, the remainder becomes credit", () => {
@@ -117,6 +122,10 @@ describe("interval switches", () => {
     expect(q.immediateCharge).toBe(0);
     expect(q.creditBalance).toBe(-q.proratedAmount);
     expect(q.creditAdjustment).toBe(0);
+    /* Leaving a year mid-way unwinds the unconsumed share of the YEAR's grant. */
+    expect(q.creditUnwind).toBe(
+      Math.floor(PLAN_TIERS.starter.monthlyCredits * 12 * (q.daysRemaining / q.totalDays)),
+    );
   });
 
   it("the customer's OWN tier can switch cycles — same plan, different interval is a real change", () => {
@@ -127,12 +136,67 @@ describe("interval switches", () => {
   });
 });
 
+describe("the mirror rule holds — no change mints credits (#664 review finding 1)", () => {
+  it("a same-interval DOWNGRADE returns the share an upgrade would grant", () => {
+    const now = T0 + 15 * DAY;
+    const up = quotePlanChange(monthlyState(), "pro", undefined, now);
+    const down = quotePlanChange(
+      monthlyState({ currentPlan: "pro" }),
+      "starter",
+      undefined,
+      now,
+    );
+    expect(down.creditAdjustment).toBeLessThan(0);
+    expect(down.creditAdjustment).toBe(-up.creditAdjustment);
+    expect(down.creditUnwind).toBe(0);
+  });
+
+  it("⚠ THE LOOP IS DEAD: annual → monthly → annual nets ~zero free credits", () => {
+    /*
+      The review's reproduction, as arithmetic. Before the unwind existed,
+      each round trip kept the old period's credits while Stripe returned the
+      old period's money — ~12 months of allowance minted per alternation.
+      Composing the shipped rules (webhook grants the period bought and
+      carries the balance; changePlan deducts the unwind), the whole trip
+      may cost the customer a few days and mint nothing.
+    */
+    const starterCredits = PLAN_TIERS.starter.monthlyCredits;
+    // Day 0: buy Starter annual — the invoice grants the year.
+    let balance = starterCredits * 12;
+
+    // Day 1: switch to monthly.
+    const s1 = quotePlanChange(
+      annualState(),
+      "starter",
+      "monthly",
+      T0 + 1 * DAY,
+    );
+    balance = balance - s1.creditUnwind + starterCredits * 1; // unwind, then the month's grant
+
+    // Day 2: switch back to annual (a fresh 30-day monthly cycle began at day 1).
+    const s2 = quotePlanChange(
+      monthlyState({ periodStartSec: T0 + 1 * DAY, periodEndSec: T0 + 31 * DAY }),
+      "starter",
+      "annual",
+      T0 + 2 * DAY,
+    );
+    balance = balance - s2.creditUnwind + starterCredits * 12;
+
+    // What an honest fresh annual holds is 12 months; the trip may keep at
+    // most the few days actually consumed (day-granularity rounding), never
+    // months. Before the unwind this figure was ~25 months.
+    expect(balance).toBeLessThanOrEqual(starterCredits * 12 + starterCredits);
+    expect(balance).toBeGreaterThanOrEqual(starterCredits * 12 - starterCredits);
+  });
+});
+
 describe("edges", () => {
   it("a change on the period's last day still divides by the real cycle, never by zero", () => {
     const q = quotePlanChange(monthlyState(), "pro", undefined, T0 + 30 * DAY);
     expect(q.daysRemaining).toBe(0);
     expect(q.proratedAmount).toBe(0);
     expect(q.creditAdjustment).toBe(0);
+    expect(q.creditUnwind).toBe(0);
   });
 
   it("days remaining never exceeds the cycle (a clock skewed before the period start)", () => {

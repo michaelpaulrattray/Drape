@@ -101,11 +101,30 @@ function deliver(invoice: Record<string, unknown>) {
   return handleStripeWebhook("payload", "sig");
 }
 
+/* Pre-Basil (classic) shapes — no period, so the reader falls back to the
+   classic interval field. */
 const periodLine = (interval: "month" | "year") => ({
   proration: false,
   price: { recurring: { interval } },
 });
 const prorationLine = { proration: true, price: { recurring: { interval: "month" } } };
+
+/* Clover shapes — what the registered endpoint actually delivers
+   (api_version 2026-01-28.clover, read at stripe.webhookEndpoints.list):
+   no line.proration, no line.price; parent.subscription_item_details and a
+   period whose SPAN says what was bought. */
+const DAY_S = 86_400;
+const T = 1_788_900_000;
+const cloverPeriodLine = (days: number) => ({
+  parent: { type: "subscription_item_details", subscription_item_details: { proration: false } },
+  pricing: { price_details: { price: "price_x" }, unit_amount_decimal: "67728" },
+  period: { start: T, end: T + days * DAY_S },
+});
+const cloverProrationLine = {
+  parent: { type: "subscription_item_details", subscription_item_details: { proration: true } },
+  pricing: { price_details: { price: "price_y" } },
+  period: { start: T, end: T + 30 * DAY_S },
+};
 
 beforeEach(() => {
   refreshMonthlyCredits.mockClear();
@@ -175,6 +194,57 @@ describe("the period-bought grant rule", () => {
     expect(grant).toBe(MONTHLY_CREDITS * 12);
     /* The full 4,000 on the balance, not the 800 the percentage would keep. */
     expect(rollover).toBe(4_000);
+  });
+
+  it("⚠ CLOVER dialect: a year read off the line's own period span grants 12× — the shape production actually receives", async () => {
+    const result = await deliver({
+      id: "in_clover_annual",
+      customer: "cus_1",
+      /* No invoice.subscription in this dialect — the id lives on parent. */
+      parent: { subscription_details: { subscription: "sub_1" } },
+      billing_reason: "subscription_cycle",
+      lines: { data: [cloverPeriodLine(365)] },
+    });
+    expect(result.success).toBe(true);
+    const [, grant] = refreshMonthlyCredits.mock.calls[0];
+    expect(grant).toBe(MONTHLY_CREDITS * 12);
+  });
+
+  it("CLOVER dialect: a month's span grants one month", async () => {
+    await deliver({
+      id: "in_clover_month",
+      customer: "cus_1",
+      parent: { subscription_details: { subscription: "sub_1" } },
+      billing_reason: "subscription_cycle",
+      lines: { data: [cloverPeriodLine(30)] },
+    });
+    const [, grant] = refreshMonthlyCredits.mock.calls[0];
+    expect(grant).toBe(MONTHLY_CREDITS);
+  });
+
+  it("CLOVER dialect: a proration-only invoice still resets nothing", async () => {
+    const result = await deliver({
+      id: "in_clover_proration",
+      customer: "cus_1",
+      parent: { subscription_details: { subscription: "sub_1" } },
+      billing_reason: "subscription_update",
+      lines: { data: [cloverProrationLine] },
+    });
+    expect(result.success).toBe(true);
+    expect(refreshMonthlyCredits).not.toHaveBeenCalled();
+  });
+
+  it("⚠ A RENEWAL THE READER CANNOT SIZE FAILS LOUD — never a paid period with a silent zero grant (#664 review finding 2)", async () => {
+    const result = await deliver({
+      id: "in_unreadable",
+      customer: "cus_1",
+      subscription: "sub_1",
+      billing_reason: "subscription_cycle",
+      lines: { data: [] },
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("could not read");
+    expect(refreshMonthlyCredits).not.toHaveBeenCalled();
   });
 
   it("a renewal that runs out keeps only the percentage — the decision-4 sentence's other half", async () => {

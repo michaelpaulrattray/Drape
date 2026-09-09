@@ -54,6 +54,15 @@ describe("ChangePlanModal", () => {
   });
 });
 
+describe("ChangePlanModal — review round 2", () => {
+  const source = code(read("ChangePlanModal.tsx"));
+
+  it("a failed quote says so and stands down — the press can never die silently (finding 5)", () => {
+    expect(source).toContain('logRawFailure("billing.previewPlanChange"');
+    expect(source).toMatch(/quoteError[\s\S]*setConfirming\(null\)/);
+  });
+});
+
 describe("AddCreditsModal", () => {
   const source = code(read("AddCreditsModal.tsx"));
 
@@ -68,5 +77,11 @@ describe("AddCreditsModal", () => {
 
   it("an interval switch rewrites the renewal line — the old cycle's date must not be quoted beside a charge that resets it", () => {
     expect(source).toContain('preview?.kind === "interval-switch"');
+  });
+
+  it("⚠ a subscriber's button is inert until its quote exists (finding 4) — no charge under a $0.00 label", () => {
+    expect(source).toContain("const quoteReady = !hasSubscription || (!!preview && !previewFailed);");
+    expect(source).toMatch(/disabled=\{!selected \|\| working \|\| !quoteReady\}/);
+    expect(source).toMatch(/if \(!selected \|\| !quoteReady\) return;/);
   });
 });

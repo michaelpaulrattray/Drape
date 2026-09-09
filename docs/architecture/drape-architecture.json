@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6c3611b1e9412385"
+    "sourceFingerprint": "e63ec5d30db31105"
   },
   "domains": [
     {
@@ -23,7 +23,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 10
+      "moduleCount": 11
     },
     {
       "id": "domain:boards",
@@ -5787,6 +5787,12 @@
     {
       "id": "module:server/stripe/environmentTag.ts",
       "path": "server/stripe/environmentTag.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/stripe/invoiceLines.ts",
+      "path": "server/stripe/invoiceLines.ts",
       "domain": "billing",
       "lifecycle": "active"
     },
@@ -31028,6 +31034,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:server/slack/slackNotification.ts",
       "kind": "imports"
     },
@@ -33248,6 +33259,11 @@
     },
     {
       "from": "module:server/stripe/webhooks.ts",
+      "to": "module:server/stripe/invoiceLines.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/stripe/stripeProducts.ts",
       "kind": "imports"
     },
@@ -33259,11 +33275,6 @@
     {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/stripe/subscriptionPeriods.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/stripe/webhooks.ts",
-      "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
     {

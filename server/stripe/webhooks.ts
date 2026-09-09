@@ -27,8 +27,8 @@ import {
 import { SlackAlerts } from "../slack/slackNotification";
 import { SubscriptionPlan } from "./stripeProducts";
 import { PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
-import { monthsBought } from "@shared/annualBilling";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
+import { invoiceSubscriptionId, periodBought } from "./invoiceLines";
 import { createModuleLogger } from "../logging/logger";
 import { checkEventEnvironment } from "./environmentTag";
 import { deploymentTag } from "../_core/env";
@@ -289,8 +289,11 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
  * Handle invoice.payment_succeeded event (monthly credit refresh)
  */
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<WebhookResult> {
-  // Only process subscription invoices
-  const subscriptionId = (invoice as any).subscription;
+  // Only process subscription invoices. Read through the dialect helper: on
+  // the clover payloads production actually receives, `invoice.subscription`
+  // does not exist and this gate used to skip EVERY real invoice (#664
+  // review finding 2 — the renewal refresh was structurally unreachable).
+  const subscriptionId = invoiceSubscriptionId(invoice);
   if (!subscriptionId) {
     return { success: true, message: "Not a subscription invoice, skipping" };
   }
@@ -318,13 +321,25 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
   // one month's allowance for a year's money, and (under `always_invoice`)
   // would have RESET the balance on every tier change's proration invoice.
   // The invoice's own non-proration recurring line is the artifact that says
-  // what was bought: a month, a year, or (proration-only) nothing at all.
-  const invoiceLines: any[] = (invoice as any).lines?.data ?? [];
-  const periodLine = invoiceLines.find(
-    (line) => line && line.proration === false && (line.price?.recurring || line.plan),
-  );
+  // what was bought — read dialect-free (invoiceLines.ts), sized by the
+  // line's own period span.
+  const billingReason = (invoice as any).billing_reason;
+  const bought = periodBought(invoice);
 
-  if (!periodLine) {
+  if (!bought) {
+    // A renewal or first purchase whose period cannot be read is a FULL
+    // period paid with NO credits granted — the silent-zero-grant failure
+    // the #664 review named. It fails loud: Stripe redelivers, and the
+    // failure is visible instead of a happy log over an empty grant.
+    if (billingReason === "subscription_create" || billingReason === "subscription_cycle") {
+      log.error(
+        `[Webhook] Invoice ${invoice.id} (${billingReason}) has NO readable period line — a paid period would grant nothing. Refusing so the failure is visible.`,
+      );
+      return {
+        success: false,
+        message: `Invoice ${invoice.id} bought a period this handler could not read — no credits granted, refusing loudly`,
+      };
+    }
     log.info(
       `[Webhook] Invoice ${invoice.id} bought no period (proration-only) — no allowance reset for user ${userId}`,
     );
@@ -334,9 +349,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
     };
   }
 
-  const lineInterval: string | undefined =
-    periodLine.price?.recurring?.interval ?? periodLine.plan?.interval;
-  const grantMonths = monthsBought(lineInterval === "year" ? "year" : "month");
+  const grantMonths = bought.monthsBought;
 
   // Get current credits to calculate rollover
   const currentCredits = await getUserCredits(userId);
@@ -344,13 +357,19 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
     return { success: false, message: "User credits not found" };
   }
 
-  // A cycle the customer ENDED EARLY keeps its whole balance; a cycle that
-  // ran out keeps its rollover percentage (#664 decision 4). An interval
-  // switch resets the billing anchor, so its full-period invoice arrives with
-  // billing_reason "subscription_update" — an early renewal the customer
-  // asked for, not a period they let lapse.
+  // ⚠ AN EARLY RENEWAL CARRIES THE BALANCE THROUGH IN FULL — because the
+  // UNWIND lives in changePlan, not here (#664 review finding 1). An interval
+  // switch's anchor reset invoices the new period with billing_reason
+  // "subscription_update"; changePlan has already deducted the unconsumed
+  // share of the OLD period's grant, mirroring the money credit Stripe issued
+  // for the same days. So what remains on the balance at this point is
+  // allowance the customer has genuinely paid for and kept — rolling it at
+  // the plan's percentage would forfeit paid-for credits, and rolling it in
+  // full mints nothing (the mint was the missing unwind, and it is no longer
+  // missing). A cycle that RUNS OUT still keeps only its percentage.
+  // Ordering: this set (grant + full balance) and changePlan's deduct
+  // commute, because a 100% rollover makes this write purely additive.
   const unusedCredits = currentCredits.balance;
-  const billingReason = (invoice as any).billing_reason;
   const rolloverCredits =
     billingReason === "subscription_update"
       ? unusedCredits
@@ -383,8 +402,11 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
  * Handle invoice.payment_failed event
  */
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<WebhookResult> {
-  // Only process subscription invoices
-  const subscriptionId = (invoice as any).subscription;
+  // Only process subscription invoices — dialect-free (#664 review finding 2,
+  // law 7: the same dead gate as the success handler, swept with it). Under
+  // the clover payloads the old `invoice.subscription` read was absent here
+  // too, so the final-failure auto-cancel could never have fired.
+  const subscriptionId = invoiceSubscriptionId(invoice);
   if (!subscriptionId) {
     return { success: true, message: "Not a subscription invoice, skipping" };
   }
@@ -512,7 +534,8 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
         `Credits frozen: chargeback ${dispute.id} — $${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`,
         disputeRef,
         // Not a tool spend: this revoke freezes a disputed balance and makes
-        // nothing. The one deliberate null toolKind in the product (#401).
+        // nothing. One of the two deliberate null-toolKind sites (#401, #664
+        // — the other is the plan-change unwind in routes/billing.ts).
         { toolKind: null }
       );
       if (revokeResult.success) {

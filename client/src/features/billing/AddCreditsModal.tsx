@@ -103,7 +103,7 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
   /* The interval rides the preview (#664), so `due today` below is the
      charge for the purchase the toggle describes — not the monthly figure
      wearing an annual page. */
-  const { data: preview } = trpc.billing.previewPlanChange.useQuery(
+  const { data: preview, isError: previewFailed } = trpc.billing.previewPlanChange.useQuery(
     { newPlan: selectedId as never, interval: annual ? "annual" : "monthly" },
     { enabled: hasSubscription && !!selectedId },
   );
@@ -180,8 +180,17 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
     },
   });
 
+  /*
+    ⚠ A SUBSCRIBER'S BUTTON IS INERT UNTIL ITS QUOTE EXISTS (#664 review
+    finding 4). The charge is immediate now (`always_invoice`), and before
+    this gate a click that beat the preview fired the real mutation under a
+    button reading `Add credits · $0.00` — a purchase confirmed against a
+    figure nobody had.
+  */
+  const quoteReady = !hasSubscription || (!!preview && !previewFailed);
+
   const submit = () => {
-    if (!selected) return;
+    if (!selected || !quoteReady) return;
     setWorking(true);
     if (!hasSubscription) {
       checkout.mutate({
@@ -381,8 +390,17 @@ export function AddCreditsModal({ onClose }: { onClose: () => void }) {
         <Button variant="quiet" size="small" onClick={onClose} disabled={working}>
           Cancel
         </Button>
-        <Button variant="primary" size="small" onClick={submit} disabled={!selected || working}>
-          {working ? "Working…" : `Add credits · ${formatDollars(dueToday)}`}
+        <Button
+          variant="primary"
+          size="small"
+          onClick={submit}
+          disabled={!selected || working || !quoteReady}
+        >
+          {working
+            ? "Working…"
+            : quoteReady
+              ? `Add credits · ${formatDollars(dueToday)}`
+              : "Checking the charge…"}
         </Button>
       </div>
     </ModalScrim>

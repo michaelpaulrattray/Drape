@@ -387,8 +387,25 @@ export type PlanChangeQuote = {
   currentPlanPrice: number;
   daysRemaining: number;
   totalDays: number;
-  /** Credits `changePlan` itself grants; 0 on an interval switch. */
+  /**
+   * SIGNED credits `changePlan` itself applies for a same-interval change
+   * (#664 review findings 1+3 — the mirror rule: credits move with the
+   * money's own proration, in BOTH directions). Positive on an upgrade —
+   * the remaining-cycle share of the higher allowance, paid for today.
+   * NEGATIVE on a downgrade — the remaining-cycle share of the allowance
+   * being handed back, because `always_invoice` returns that share's MONEY
+   * to the customer's balance in the same act; a grant kept while its money
+   * comes back is the credit-minting loop the review found. 0 on an
+   * interval switch (the invoice grants; `creditUnwind` deducts).
+   */
   creditAdjustment: number;
+  /**
+   * The unconsumed share of the OLD period's grant, deducted on an
+   * interval switch — the same fraction of the same period Stripe credits
+   * back in money. Without it, switch → switch-back alternation mints a
+   * period's allowance per round trip. 0 for same-interval changes.
+   */
+  creditUnwind: number;
 };
 
 export function quotePlanChange(
@@ -431,6 +448,7 @@ export function quotePlanChange(
     SUBSCRIPTION_PRODUCTS[newPlan].priceInCents >
     SUBSCRIPTION_PRODUCTS[state.currentPlan].priceInCents;
 
+  const cycleMonths = monthsBought(stripeIntervalOf(state.currentInterval));
   const creditAdjustment =
     kind === "same-interval"
       ? calculateCreditAdjustment(
@@ -438,7 +456,18 @@ export function quotePlanChange(
           newPlan as PlanTier,
           daysRemaining,
           totalDays,
-          monthsBought(stripeIntervalOf(state.currentInterval)),
+          cycleMonths,
+        )
+      : 0;
+
+  // The switch unwind mirrors Stripe's own money credit: the same fraction
+  // (daysRemaining / totalDays) of the same period's grant.
+  const creditUnwind =
+    kind === "interval-switch"
+      ? Math.floor(
+          PLAN_TIERS[state.currentPlan as PlanTier].monthlyCredits *
+            cycleMonths *
+            (daysRemaining / totalDays),
         )
       : 0;
 
@@ -455,6 +484,7 @@ export function quotePlanChange(
     daysRemaining,
     totalDays,
     creditAdjustment,
+    creditUnwind,
   };
 }
 
@@ -553,13 +583,21 @@ export async function updateSubscriptionPlan(
 }
 
 /**
- * Calculate credit adjustment for plan change.
- * When upgrading: add the remaining-cycle share of the credit difference
- * immediately — × the months the cycle runs (12 on an annual cycle, #664),
- * because an annual subscriber upgrading mid-year has bought the higher
- * tier's allowance for every month left in the year and no invoice fires to
- * grant it.
- * When downgrading: no immediate credit change (takes effect next billing cycle).
+ * SIGNED credit adjustment for a same-interval plan change (#664, and the
+ * review's mirror rule): the remaining-cycle share of the allowance
+ * difference, × the months the cycle runs (12 on an annual cycle).
+ *
+ * Positive on an upgrade — the higher allowance is being paid for today
+ * (`always_invoice` charges the same fraction of the money difference in
+ * the same act, and no invoice fires that would grant it).
+ *
+ * ⚠ NEGATIVE ON A DOWNGRADE — this returned 0 for downgrades until the
+ * #664 review, and that zero was one half of a credit-minting loop: the
+ * money difference for the remaining cycle comes BACK to the customer
+ * (Stripe's proration credit), so the credits that same difference bought
+ * must go back with it, or upgrade-then-downgrade alternation keeps the
+ * allowance while recovering the money. The caller floors the deduction at
+ * the live balance — credits already spent are spent.
  */
 export function calculateCreditAdjustment(
   currentPlan: PlanTier,
@@ -571,16 +609,15 @@ export function calculateCreditAdjustment(
   const currentCredits = PLAN_TIERS[currentPlan].monthlyCredits;
   const newCredits = PLAN_TIERS[newPlan].monthlyCredits;
 
-  if (newCredits <= currentCredits) {
-    // Downgrade: no immediate credit change
-    return 0;
+  const deltaForCycle = (newCredits - currentCredits) * monthsInCycle;
+  const fraction = daysRemaining / totalDays;
+
+  if (deltaForCycle >= 0) {
+    return Math.floor(deltaForCycle * fraction);
   }
-
-  // Upgrade: prorate the additional credits over what is left of the cycle
-  const additionalCredits = (newCredits - currentCredits) * monthsInCycle;
-  const proratedCredits = Math.floor(additionalCredits * (daysRemaining / totalDays));
-
-  return proratedCredits;
+  // Downgrade: the same share, the other way. Truncate toward zero so the
+  // deduction never exceeds the mirror of what an upgrade would have granted.
+  return -Math.floor(-deltaForCycle * fraction);
 }
 
 

@@ -4,6 +4,8 @@ import {
   getSubscriptionByUserId,
   updateUserSubscription,
   addCredits,
+  deductCredits,
+  getUserCredits,
 } from "../db";
 import {
   getOrCreateStripeCustomer,
@@ -31,6 +33,8 @@ import { appBaseUrl, PRODUCTION_APP_HOSTNAME } from "../_core/appOrigin";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { SlackAlerts } from "../slack/slackNotification";
 import { z } from "zod";
+import { createModuleLogger } from "../logging/logger";
+const log = createModuleLogger("routes/billing");
 import { TRPCError } from "@trpc/server";
 
 export const billingRouter = router({
@@ -297,6 +301,7 @@ export const billingRouter = router({
         daysRemaining: quote.daysRemaining,
         totalDays: quote.totalDays,
         creditAdjustment: quote.creditAdjustment,
+        creditUnwind: quote.creditUnwind,
         kind: quote.kind,
         currentInterval: quote.currentInterval,
         targetInterval: quote.targetInterval,
@@ -464,12 +469,22 @@ export const billingRouter = router({
         });
       }
 
-      // Apply the credit adjustment for same-interval upgrades. An interval
-      // switch grants nothing here ON PURPOSE (#664 decision 3): its anchor
-      // reset invoices a whole period, and the invoice webhook grants that
-      // period's full allowance — a local top-up would double-grant.
+      // ⚠ CREDITS MIRROR THE MONEY'S OWN PRORATION, IN BOTH DIRECTIONS
+      // (#664 review findings 1+3). Stripe's `always_invoice` nets the money
+      // side of every change — unused time comes back as customer balance —
+      // so the credit side must net the same share or alternating changes
+      // mint allowance: upgrade-then-downgrade kept the ×12 grant while the
+      // money returned, and switch-then-switch-back re-granted a period
+      // whose money had been refunded. One rule closes the class:
+      //   · same-interval upgrade   → grant the remaining-cycle share (+)
+      //   · same-interval downgrade → deduct the same share (−)
+      //   · interval switch         → deduct the OLD period's unconsumed
+      //     grant; the switch invoice's webhook grants the NEW period.
+      // Deductions floor at the live balance: spent credits are spent.
       const currentPlan = billingState.currentPlan;
       const creditAdjustment = quote.creditAdjustment;
+      const creditsToReturn =
+        quote.kind === "interval-switch" ? quote.creditUnwind : Math.max(0, -creditAdjustment);
 
       if (creditAdjustment > 0) {
         // Add prorated credits for upgrade
@@ -485,6 +500,36 @@ export const billingRouter = router({
             code: "INTERNAL_SERVER_ERROR",
             message: "The plan changed, but the credit adjustment could not be recorded. Contact support before retrying.",
           });
+        }
+      } else if (creditsToReturn > 0) {
+        // Floor at the balance read NOW (not the pre-change row): a deduction
+        // that exceeds the balance is refused by deductCredits, and a spend
+        // mid-change must cost the customer nothing extra.
+        const liveCredits = await getUserCredits(ctx.user.id);
+        const returnable = Math.min(creditsToReturn, Math.max(0, liveCredits?.balance ?? 0));
+        if (returnable > 0) {
+          const unwindResult = await deductCredits(
+            ctx.user.id,
+            returnable,
+            "subscription",
+            quote.kind === "interval-switch"
+              ? `Unused ${quote.currentInterval} cycle credits returned with its refund (switch to ${input.newPlan}, billed ${quote.targetInterval === "annual" ? "yearly" : "monthly"})`
+              : `Prorated credits returned with the refund for downgrading to ${input.newPlan}`,
+            input.clientRequestId ? `plan-change-unwind:${input.clientRequestId}` : undefined,
+            // Not a tool spend: the unwind returns unconsumed allowance
+            // beside Stripe's money credit for the same days. One of the two
+            // deliberate null-toolKind sites (#401; the other is the
+            // chargeback revoke in stripe/webhooks.ts).
+            { toolKind: null },
+          );
+          if (!unwindResult.success && !unwindResult.duplicate) {
+            // The plan HAS changed and the money side is already netted;
+            // a failed unwind must be visible, not silent generosity.
+            log.error(
+              { userId: ctx.user.id, returnable, error: unwindResult.error },
+              "[Billing] plan-change credit unwind failed after the Stripe update",
+            );
+          }
         }
       }
 
@@ -514,6 +559,7 @@ export const billingRouter = router({
           changeKind: quote.kind,
           isUpgrade: quote.isUpgrade,
           creditAdjustment,
+          creditsReturned: creditsToReturn,
           proratedAmount,
           amountSource: result.invoicedAmount != null ? "stripe-invoice" : "estimate",
         },
@@ -524,11 +570,11 @@ export const billingRouter = router({
       const message =
         quote.kind === "interval-switch"
           ? quote.targetInterval === "annual"
-            ? `You are on ${planName}, billed yearly — the new billing year starts today, and the full year of credits lands as soon as the payment settles.`
+            ? `You are on ${planName}, billed yearly — the new billing year starts today, and the full year of credits lands as soon as the payment settles, replacing what was left of your old cycle's allowance.`
             : `You are on ${planName}, billed monthly — the new billing month starts today, and unused time from your year comes off future bills automatically.`
           : quote.isUpgrade
             ? `Upgraded to ${planName}! ${creditAdjustment} bonus credits added.`
-            : `Downgraded to ${planName}. Changes take effect at next billing cycle.`;
+            : `Downgraded to ${planName}. Unused time on the old price comes back as billing credit, and its unused credits go with it.`;
 
       return {
         success: true,
