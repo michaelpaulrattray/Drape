@@ -1,7 +1,7 @@
 {
-  "edition": 319,
-  "updatedAt": "2026-09-09T15:46:08.514Z",
-  "shift": "Foreman - a test that was supposed to be guarding the door to your admin panel turned out to be guarding nothing. The list of who is allowed to be an admin could have been deleted, reversed, or set to let everybody in, and every check still passed. That is proven now, along with four other things about admin actions that nothing was watching. No customer-facing code changed - this is about what the safety net actually catches.",
+  "edition": 320,
+  "updatedAt": "2026-09-09T17:36:54Z",
+  "shift": "Foreman - two safety nets that could not catch anything, both found by the net repaired last night. The first is the counter behind your background-work panel: one bad answer from GitHub could tell it a category holding eight cards was empty, and the gate that decides whether the nights keep running reads exactly that number - so a moment's hiccup could put the team to sleep announcing there was nothing to do. The second is the test guarding your site's security headers: it agreed with whatever machine it ran on, and the frame-protection your live site depends on could have been thrown away with all nine checks green. No customer-facing code changed in either.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-09T15:44:55.178Z",
+      "readAt": "2026-09-09T17:37:04.442Z",
       "items": [
         {
           "issueNumber": 16,
@@ -300,11 +300,11 @@
       "issueNumber": 599,
       "state": "open",
       "filedAt": "2026-09-09T01:22:27Z",
-      "title": "Fangs: the fix is live and the court ran - your eye on two strips closes it",
+      "title": "Fangs: one word closes this - do the after frames read right?",
       "productImpact": "On your oni-cyber roll (249), the fangs were drawn OUTSIDE a forced-shut mouth, sabre-tooth fashion - 4 of your 6 frames read that way. The cause was the studio's own creature rule demanding dentition 'stays visible at rest', which is true of tusks and impossible for fangs. The rule now says how each kind shows: tusks protrude on their own; fangs sit inside the mouth and show through lips slightly parted. Re-rolled your exact brief 8 times against the fix: 7 of 8 now put the fangs in the mouth (5 clean, 2 with no fangs showing - the usual per-roll coin), 1 still drew short teeth over the lip. A tusked control was rolled both ways to prove the fix does not close a tusked mouth - it does not. The writing assistant also stops adding 'kept sharp and visible'-style pose words to mouth features; your own typed words are always kept.",
       "workedExample": "Your roll 249 frame vs the re-roll: before, two long white fangs hang fully outside closed lips like a sabre-tooth cat; after, the lips part slightly and the fangs show inside the mouth, tips at the lip line - a demon's mouth rather than a taxidermy error.",
       "options": [],
-      "recommendation": "Look at the two strips in the gallery. If the after rows read right, reply on #599 and the card closes. If the 1-in-8 residual (short fangs over the lip) is not livable, say so - the next step is a measured word-guard born from that frame."
+      "recommendation": "You have replied \"Seen\" twice, which tells me you looked but not what you decided - that is my fault for asking you to look rather than to choose, so here is the same thing as one question. Reply RIGHT and the card closes and the strips come off your desk. Reply NOT RIGHT and I chase the one-in-eight residual (short fangs over the lip) with a measured word-guard born from that frame. Either word finishes it."
     },
     {
       "id": "signin-hard-light-678",
@@ -2114,7 +2114,7 @@
     {
       "id": "fangs-court-strips-599",
       "title": "Fangs in the mouth - your oni-cyber brief, before and after",
-      "question": "Top row is your own roll 249; bottom row is the same brief re-rolled against the fix. Do the after fangs sit in a mouth now? Second strip is the tusked control, before and after - the tusks must still protrude. Does the fix hold at your eye?",
+      "question": "One question, and either answer closes it: in the bottom rows, do the fangs sit inside a mouth? (The second strip is the tusked control - the tusks must still stick out, and they do.) Reply RIGHT or NOT RIGHT rather than \"seen\", and this leaves your desk.",
       "state": "open",
       "filedAt": "2026-09-09T01:22:27Z",
       "issueNumber": 599,
@@ -4465,6 +4465,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-729-queue-zero-725",
+      "title": "A hiccup could tell your panel a busy category was empty - and the nights read that number (#725)",
+      "status": "merged",
+      "prNumber": 729,
+      "note": "Squash 6a6a889a. Your background-work panel gets its numbers from seven separate questions asked of GitHub, one per category, about fifteen seconds apart. If GitHub answers one of them with a shrug - not an error, just an empty answer - that was written down as a real zero, stamped with the current time. It happened once last night: Process stored 0 at 15:00:11 and 8 forty seconds later. The reason it matters more than a wrong number on a screen is that the gate deciding whether the nights keep working reads these counts, and its only protection against a bad zero is checking the number is recent - which this kind of zero passes, because it genuinely is. A wide enough hiccup writes several fresh zeros at once and the team puts itself to sleep. The fix costs nothing: the same run already reads your whole queue once, for the pipeline groups below your switches, so a zero is now checked against that reading before it is believed. A category that says 'empty' while the queue plainly holds its cards is refused, and the old number stands with its honest age. A category that really is empty still says zero - that had to be proven separately, or the repair would just be a different wrong panel. The same hole was found in the reading right beside it, which would have written a zero into every pipeline row at once, and it was fixed in the same commit."
+    },
+    {
+      "id": "pr-731-sechdr-regimes-726",
+      "title": "The test guarding your site's security headers agreed with whatever machine it ran on (#726)",
+      "status": "merged",
+      "prNumber": 731,
+      "note": "Squash 03792b8b. Your live site sends a set of instructions to every browser - among them a rule that forbids anyone from loading your site inside a frame on their own page, which is how a certain kind of fraud works. The developer version of the site deliberately relaxes that rule. The test file that was supposed to guard the strict version never said which of the two it was checking; it worked out which mode it was in and then agreed with whatever it found. Measured rather than argued: on a machine set to developer mode, the strict frame rule could be deleted entirely and all nine checks still passed. The rebuilt file forces each mode explicitly - nine checks became twenty-seven - and the same sabotage now fails immediately. Also found: the address of your image bucket is part of these instructions, and the test measured a different answer on this machine than it did on the build server, asserting nothing about either. Both are pinned now. Ten deliberate breakages of the real code were each predicted in advance and each behaved exactly as predicted."
+    },
+    {
       "id": "pr-724-adminsec-arms-697",
       "title": "The test guarding your admin door was guarding nothing (#697)",
       "status": "merged",
@@ -5360,7 +5374,7 @@
     169
   ],
   "nextUp": {
-    "readAt": "2026-09-09T15:44:54.113Z",
+    "readAt": "2026-09-09T17:37:03.489Z",
     "items": []
   }
 }
