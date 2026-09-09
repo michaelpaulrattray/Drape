@@ -218,7 +218,7 @@ describe("the headers that do not depend on the regime", () => {
         expect(headers["Strict-Transport-Security"]).toBe("max-age=31536000; includeSubDomains");
       });
 
-      it("sets the four fixed hardening headers", () => {
+      it("sets the five fixed hardening headers", () => {
         expect(headers["X-Content-Type-Options"]).toBe("nosniff");
         expect(headers["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
         expect(headers["X-XSS-Protection"]).toBe("1; mode=block");
