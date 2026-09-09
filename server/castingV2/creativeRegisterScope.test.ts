@@ -967,7 +967,11 @@ describe("the block by LANE — his creature split (#232) and the anatomy clause
   it("#232 — the human line keeps 'mouth closed'; the creature line is mouth AT REST with its own anatomy, and keeps every ban he kept", () => {
     expect(EXPRESSION_LINE).toContain("mouth closed");
     expect(CREATURE_EXPRESSION_LINE).not.toContain("mouth closed");
-    expect(CREATURE_EXPRESSION_LINE).toContain("mouth at rest");
+    /* "mouth at rest" read as CLOSED to the engine (his eye, 2026-09-09, roll
+       4cdd75b5) — the creature geometry is lips parted for the being's own
+       dentition, and "at rest" is pinned out of this line. */
+    expect(CREATURE_EXPRESSION_LINE).toContain("lips parted enough to show the being's own dentition");
+    expect(CREATURE_EXPRESSION_LINE).not.toContain("mouth at rest");
     /* His own sentence carries the logic. */
     expect(CREATURE_EXPRESSION_LINE).toContain("pose off, anatomy on");
     /* Allowed at rest — his own nouns. */
@@ -1011,6 +1015,11 @@ describe("the block by LANE — his creature split (#232) and the anatomy clause
     }
     expect(ANATOMY_VISIBILITY_LINE).toContain("Do not hide it behind the back.");
     expect(ANATOMY_VISIBILITY_LINE).toContain("Do not switch to a full-body shot.");
+    /* #599, third court: the fang sentence in the EXPRESSION slot alone failed
+       his eye; in the description it passed. It lives here too now — anatomy,
+       earlier in the block, the way the tail does. */
+    expect(ANATOMY_VISIBILITY_LINE).toContain("Where the being has fangs, the mouth is slightly open with the upper teeth showing");
+    expect(ANATOMY_VISIBILITY_LINE).toContain("nothing grows out of or over the lips");
     expect(ANATOMY_VISIBILITY_LINE).toContain("tail");
     expect(ANATOMY_VISIBILITY_LINE).toContain("wings");
     /*
