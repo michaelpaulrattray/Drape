@@ -281,9 +281,20 @@ export const moderatorRouter = router({
       refundType: z.enum(["full", "proportional"]).optional(),
       // `originalAmountCents` / `originalCredits` are NOT inputs any more
       // (#418): the amount comes from the Stripe charge and the credits from
-      // this user's own ledger row, below. The schema is non-strict, so an
-      // older bundle still sending them has the keys stripped harmlessly.
-    }))
+      // this user's own ledger row, below.
+      //
+      // ⚠ `.strict()` is the SECOND HALF of that removal and is deliberately
+      // one deploy behind it (#705). While the schema was non-strict an older
+      // staff bundle still sending the two keys had them stripped harmlessly,
+      // which is what made #418 deploy-safe in one commit. PR #704 shipped and
+      // deployed the client that stopped sending them, so the tolerance has
+      // done its job and access-control invariant 4 applies: an undeclared
+      // field on a credit-adjustment surface is refused, not dropped.
+      //
+      // `server/publicInputStrictness.test.ts` proves both halves by parsing
+      // through the real router — the rejection AND the positive control that
+      // `ModeratorDashboard.tsx`'s own payload still parses.
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       const { createChangeRequest } = await import("../db");
       const { sendAdminActionNotification, sendAuditLogEntry } = await import("../slack/slackNotification");

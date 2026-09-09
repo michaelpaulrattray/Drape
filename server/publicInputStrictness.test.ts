@@ -206,3 +206,103 @@ describe("the public endpoints closed on fable-1435 §2", () => {
     expect(() => parserOf(systemRouter, "aProcedureNobodyWrote")).toThrow(/no procedure named/);
   });
 });
+
+/**
+ * THE STAFF CHANGE-REQUEST SURFACE, closed on #705.
+ *
+ * Not public and not billing, so it is the third population this file has
+ * grown — it is here because the PROOF is the same one, and a second file
+ * re-deriving `parserOf` would be the mirror working law 4 warns about.
+ *
+ * `moderator.createChangeRequest` is how a moderator asks an admin to move
+ * credits. #418 removed `originalAmountCents` and `originalCredits` from its
+ * input (the server derives both now) and deliberately left the schema OPEN,
+ * because that is what made the removal safe in one commit: a staff bundle
+ * still sending the two keys had them stripped rather than rejected.
+ *
+ * CLAUDE.md's own removal contract — *a billing input field is removed only
+ * after clients have stopped sending it for ONE FULL DEPLOY* — is what says
+ * when the tolerance may end. PR #704 was that deploy (merged 2026-09-08,
+ * serving on production before this change was written), so the second half
+ * lands now and invariant 4 applies to a credit-adjustment surface.
+ *
+ * # THE CALL SITE, READ BEFORE TIGHTENING
+ *
+ * ONE caller — `client/src/pages/ModeratorDashboard.tsx`'s
+ * `createChangeRequestMutation.mutate({ … })` — and it sends exactly thirteen
+ * declared keys, several as `undefined`. That payload is the positive control
+ * below, verbatim in shape, because `.strict()` on a money-adjacent staff
+ * surface fails invisibly in the direction that rejects the operator.
+ */
+describe("moderator.createChangeRequest, closed on #705", () => {
+  /** The shape `ModeratorDashboard.tsx` actually sends, undefined optionals and all. */
+  const AS_THE_DASHBOARD_SENDS_IT = {
+    type: "refund_credits",
+    priority: "normal",
+    targetUserId: 823,
+    targetUserName: "verify-bot-local",
+    title: "Refund a failed roll",
+    description: "The roll never delivered and the credits were held.",
+    evidenceSummary: undefined,
+    relatedAuditLogId: undefined,
+    creditAmount: 160,
+    creditReason: "roll 249 never delivered",
+    ipAddress: undefined,
+    stripeSessionId: undefined,
+    refundType: undefined,
+  } as const;
+
+  it("⚠ CONTROL — the one live caller's own payload still parses", async () => {
+    /*
+      The arm that matters. A rejection arm passes just as happily when the
+      schema rejects EVERYTHING, and the cost of that here is a moderator who
+      cannot raise a refund request at all.
+    */
+    const { moderatorRouter } = await import("./routes/moderator");
+    expect(() =>
+      parserOf(moderatorRouter, "createChangeRequest").parse({ ...AS_THE_DASHBOARD_SENDS_IT }),
+    ).not.toThrow();
+    /* And the minimum shape, since every optional above may legitimately be absent. */
+    expect(() =>
+      parserOf(moderatorRouter, "createChangeRequest").parse({
+        type: "note_incident",
+        targetUserId: 823,
+        title: "A note",
+        description: "Something worth recording.",
+      }),
+    ).not.toThrow();
+  });
+
+  it("rejects an undeclared field", async () => {
+    const { moderatorRouter } = await import("./routes/moderator");
+    expect(
+      () =>
+        parserOf(moderatorRouter, "createChangeRequest").parse({
+          ...AS_THE_DASHBOARD_SENDS_IT,
+          somethingNobodyDeclared: "x",
+        }),
+      "createChangeRequest silently dropped an undeclared field — invariant 4 is not enforced on it",
+    ).toThrow();
+  });
+
+  it("⚠ rejects the two fields #418 removed — the removal is now enforced, not merely ignored", async () => {
+    /*
+      The point of the card. Until this commit a caller could send
+      `originalAmountCents` and be told nothing; the server derived its own
+      figure and the smuggled one vanished. Enforced now, one deploy after the
+      client stopped sending them, which is the order CLAUDE.md's removal
+      contract prescribes and the reason this is a separate PR from #704.
+    */
+    const { moderatorRouter } = await import("./routes/moderator");
+    for (const removed of ["originalAmountCents", "originalCredits"] as const) {
+      expect(
+        () =>
+          parserOf(moderatorRouter, "createChangeRequest").parse({
+            ...AS_THE_DASHBOARD_SENDS_IT,
+            [removed]: 999,
+          }),
+        `${removed} was accepted — #418's removal is still only a silent drop`,
+      ).toThrow();
+    }
+  });
+});
