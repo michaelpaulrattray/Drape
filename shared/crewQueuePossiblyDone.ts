@@ -374,9 +374,12 @@ export function qualifyingNamings(
  * # WHAT IS STRIPPED, AND WHY ONLY THESE TWO
  *
  *   * **A closed fenced block** (``` or ~~~) — pasted tool output, a log, a
- *     sample. #360 established this exact rule for the quiet-shift detector and
- *     `is-quiet-entry.ps1` already implements it; this is the same rule in the
- *     same repository, not a new idea.
+ *     sample. #360 established this exact rule for the quiet-shift detector,
+ *     which strips fences before testing. ⚠ **That precedent lives in the
+ *     untracked `.agents/` standing-orders territory (`is-quiet-entry.ps1`), so
+ *     no guard in this repository can hold the citation honest** (PR #736
+ *     review, note 2) — it is named as provenance for the idea, and the arms
+ *     below are what actually prove the behaviour here.
  *   * **A table row** — a line whose first non-space character is `|` and which
  *     holds at least two of them. A triage or patrol report tabulates the cards
  *     it is FILING; #728's own body is that shape.
@@ -408,14 +411,28 @@ export function evidenceTextOf(text: string): string {
      with no partner leaves its region unmarked and therefore intact. */
   const fenced: boolean[] = new Array(lines.length).fill(false);
   let openedAt = -1;
+  let openMarker = "";
   for (let at = 0; at < lines.length; at += 1) {
-    if (!/^\s{0,3}(?:```|~~~)/.test(lines[at])) continue;
+    const marker = /^\s{0,3}(```|~~~)/.exec(lines[at]);
+    if (marker === null) continue;
     if (openedAt === -1) {
       openedAt = at;
+      openMarker = marker[1];
       continue;
     }
+    /* ⚠ A FENCE CLOSES ONLY ON ITS OWN CHARACTER, WHICH IS COMMONMARK'S RULE
+       AND ALSO THE ONLY SHAPE THAT FAILS THE RIGHT WAY (PR #736 review, note
+       1). Toggling on either marker was the first cut, and a bare `~~~` pasted
+       INSIDE a ``` block closed it early and inverted the parity of every later
+       marker — so in a body shaped ```/~~~/code/```/prose/```/code/``` the
+       PROSE line was stripped while GitHub renders it as prose. That silently
+       un-flags a real reference, which is the one direction this card forbids.
+       Every other mixed-marker shape strips LESS than the renderer shows as
+       code, which is the safe side. */
+    if (marker[1] !== openMarker) continue;
     for (let mark = openedAt; mark <= at; mark += 1) fenced[mark] = true;
     openedAt = -1;
+    openMarker = "";
   }
   const kept: string[] = [];
   for (let at = 0; at < lines.length; at += 1) {

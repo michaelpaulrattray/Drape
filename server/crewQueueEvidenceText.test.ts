@@ -99,6 +99,28 @@ describe("evidenceTextOf — what a reference is allowed to count in", () => {
     expect(namedAsEvidenceIn(body, 0)).toEqual([404]);
   });
 
+  it("⚠ A MISMATCHED MARKER DOES NOT CLOSE A FENCE — the parity shape from PR #736's review", () => {
+    /*
+      Note 1 of the review, driven. Toggling on EITHER marker meant a bare
+      `~~~` pasted inside a ``` block closed it early and inverted the parity of
+      every later marker, so the prose line below was stripped while GitHub
+      renders it as prose — a real reference silently un-flagged, which is the
+      one direction this card forbids. A fence now closes only on its own
+      character, which is CommonMark's rule.
+    */
+    const body = [
+      "```",
+      "~~~",
+      "pasted output",
+      "```",
+      "prose that names #404",
+      "```",
+      "more pasted output",
+      "```",
+    ].join("\n");
+    expect(namedAsEvidenceIn(body, 0)).toEqual([404]);
+  });
+
   it("two closed fences are both stripped, and the prose between them survives", () => {
     const body = ["```", "#1", "```", "prose names #2", "```", "#3", "```"].join("\n");
     expect(namedAsEvidenceIn(body, 0)).toEqual([2]);
