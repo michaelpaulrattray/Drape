@@ -1,7 +1,7 @@
 {
-  "edition": 322,
-  "updatedAt": "2026-09-09T19:55:00Z",
-  "shift": "Foreman - two safety nets that were pointing at the wrong thing. The first: the gate on your admin pages was handed a person's NAME on every single request, and nothing ever looked at it. That sounds like tidiness, and it is not: the setting beside it is called OWNER_NAME and it is actually matched against an email address. So the one place somebody would look while trying to let an admin in was quietly suggesting a name would do it. Nobody has been affected - the list is empty on your live site. The second: the 'possibly already fixed' note under your background-work switches was firing hardest on exactly the wrong pull requests - the ones whose write-ups say, in plain words, that the job was NOT done. A shift that files a card and says so was guaranteeing that card got flagged as maybe-finished forever. It now ignores anything named inside pasted output or a table. One of the four known cases is fixed outright; the other three are prose and are left alone deliberately, because telling those from a real fix means guessing at English, and that is a decision rather than a reading.",
+  "edition": 323,
+  "updatedAt": "2026-09-09T20:53:37Z",
+  "shift": "Foreman - two repairs you should not be able to see, which is the bar for both of them. The first is on your admin Overview: the little rows that read 'Frozen ... 2' or 'Server uptime ... 2m' were drawn from a second, private copy of a row the rest of the product already has, and the two copies disagreed about four things - how the label and the number line up, the gap between them, the spacing above and below, and the size of the number. There is one row now, and it is the one your own brief specified. Nothing on the page changes except that those rows sit a hair tighter and the figures are a half-pixel larger. The near-miss is worth a line: the little colour chip beside each slice of the Governance donut had to move inside the row's label, and the obvious way to make it fit would have quietly nudged four unrelated chart legends elsewhere on the page. That was caught by reading all six places the chip is used before changing it, and there is now a check that goes red if anyone tries the obvious way again. The second is about the nights themselves. On 6 September a shift worked for two and a half hours, built and shipped a feature, and then wrote its whole report as a chat message instead of to the file the next shift reads. The work was fine; the record was lost, and two shifts later nothing in the handoff knew the build had happened. The runner now rescues that report into the mailbox itself, marked plainly as a rescue rather than a proper close, and its claims get checked exactly as a real report's would.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-09T19:48:24.095Z",
+      "readAt": "2026-09-09T20:53:48.803Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4465,6 +4465,22 @@
   ],
   "pipeline": [
     {
+      "id": "pr-738-leader-row-419",
+      "title": "Your admin Overview drew its label-and-number rows from a second, private copy (#419)",
+      "status": "merged",
+      "prNumber": 738,
+      "cardId": null,
+      "note": "Squash 9c4d4864. Two definitions of one row, disagreeing on alignment, gap, padding and text size; the foundation's - the one your brief 09 specified - survived, and Overview's was deleted. The divider between rows moved onto the GROUP rather than the row, because a single row cannot decide 'a rule between every row'. The card had not noticed the donut key's colour chip, and that is where the only risk was: the tempting fix would have moved four unrelated legends. Driven at both themes before and after, with the computed spacing read back off the live page. Review: pass, two notes, both taken in one push."
+    },
+    {
+      "id": "close-stamp-recovery-600",
+      "title": "A night shift can no longer lose its whole report by writing it to the wrong place (#600)",
+      "status": "merged",
+      "prNumber": null,
+      "cardId": null,
+      "note": "No pull request, and that is not a shortcut: this code lives in the team's own untracked folder, so it can never reach the gate and its only possible coverage is its own test driver - 22 checks, all green, with four deliberate breakages each proving a different check can actually fail. The rescued report is named so it can never pass as a shift's own close, its claims are verified rather than skipped, and the one thing bolted to this road - the rule that decides whether a night was quiet enough to stop the team - was checked and holds."
+    },
+    {
       "id": "pr-736-citation-strip-728",
       "title": "Your panel was flagging cards as maybe-finished because a write-up MENTIONED them (#728)",
       "status": "merged",
@@ -4980,6 +4996,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0910d-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 62 open, 17 nobody has looked at in a week - two closed tonight, none filed",
+      "detail": "62 cards open. 17 have had no comment, no close and no code near them for seven days - the same 17 as last night, and the oldest is 15 days.\n\nNothing is waiting on you except the one word on the fangs frames, which is unchanged. NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight: #419 and #600 both built, verified and closed. Nothing new was filed, because nothing new was found that a card did not already cover.\n\nThe same shape as the last two nights, said once more because it is the honest read: of the small jobs left on the board, most end in a decision only you can make - four of the eight small fixes are questions about how something should look or how fast something should refresh, and the team is not allowed to answer those for you."
+    },
+    {
       "id": "queue-shape-0910c-foreman",
       "severity": "info",
       "state": "open",
@@ -5411,7 +5434,7 @@
     169
   ],
   "nextUp": {
-    "readAt": "2026-09-09T19:48:23.241Z",
+    "readAt": "2026-09-09T20:53:47.954Z",
     "items": []
   }
 }
