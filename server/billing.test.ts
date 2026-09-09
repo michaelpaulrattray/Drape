@@ -187,13 +187,23 @@ describe("Billing - Low Balance Warning", () => {
 });
 
 describe("Billing - Credit Adjustment for Plan Changes", () => {
-  it("should return 0 for downgrade (no immediate credit change)", () => {
-    // Pro to Starter
-    expect(calculateCreditAdjustment("pro", "starter", 15, 30)).toBe(0);
+  it("⚠ a downgrade returns the SAME share it would have granted — signed, not zero (#664 review)", () => {
+    /*
+      This arm pinned 0 for downgrades until the #664 review found the loop
+      that zero enabled: `always_invoice` returns the remaining cycle's money
+      difference to the customer, so keeping the credits that difference
+      bought lets upgrade-then-downgrade alternation mint allowance. The
+      contract is the MIRROR now: each direction moves the same share.
+    */
+    // Pro (200,000) to Starter (75,000), half the cycle left: −62,500
+    expect(calculateCreditAdjustment("pro", "starter", 15, 30)).toBe(-62500);
+    expect(calculateCreditAdjustment("pro", "starter", 15, 30)).toBe(
+      -calculateCreditAdjustment("starter", "pro", 15, 30),
+    );
     // Studio to Pro
-    expect(calculateCreditAdjustment("studio", "pro", 15, 30)).toBe(0);
+    expect(calculateCreditAdjustment("studio", "pro", 15, 30)).toBe(-150000);
     // Studio to Starter
-    expect(calculateCreditAdjustment("studio", "starter", 15, 30)).toBe(0);
+    expect(calculateCreditAdjustment("studio", "starter", 15, 30)).toBe(-212500);
   });
 
   it("should calculate prorated credits for upgrade", () => {

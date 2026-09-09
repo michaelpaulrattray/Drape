@@ -1,0 +1,46 @@
+-- THE INTERVAL THE CUSTOMER IS ACTUALLY BILLED ON — one nullable column (#664).
+--
+-- The Annual/Monthly toggle on the plan surfaces became a real choice for an
+-- existing subscriber in the same change as this file: `changePlan` learns
+-- `interval`, and the toggle must OPEN on the interval the account is billed
+-- on, or the page's first frame prices a purchase the customer did not choose
+-- (the exact lie #664 was filed about, pointing the other way).
+--
+-- ============================================================================
+-- WHY A COLUMN — the interval's source of truth is Stripe, and this is a CACHE
+-- ============================================================================
+--
+-- The truth is the Stripe subscription item's own price (`recurring.interval`)
+-- — the thing that actually bills, which no metadata writer can silently drop.
+-- But `billing.getStatus` is the read every plan surface opens with, and it is
+-- one database row on purpose; putting a Stripe round-trip inside it would put
+-- a third-party call on every settings paint. So the column caches the
+-- artifact, refreshed at every point Stripe tells us the subscription moved:
+-- the subscription webhook (created/updated/deleted) and `changePlan` itself.
+--
+-- Stripe's own dialect (`month`/`year`), NOT the product's (`monthly`/
+-- `annual`), because a cache of an artifact records the artifact;
+-- `shared/annualBilling.ts` owns the translation and is the only place the
+-- two vocabularies meet.
+--
+-- ============================================================================
+-- ⚠ NULLABLE, AND NULL MEANS UNKNOWN — NEVER "MONTHLY"
+-- ============================================================================
+--
+-- NULL rows are: accounts with no subscription (the population today — read at
+-- production 2026-09-09, ZERO rows have ever held a `stripeSubscriptionId`),
+-- and any future row from before its webhook refresh. The surfaces fall back
+-- to monthly COPY for the toggle's default, but the server never treats NULL
+-- as a fact: `changePlan` reads the interval off the Stripe price itself
+-- before acting, so a stale or missing cache can misprice nothing.
+--
+-- `migration-before-code`: the column is nullable and no INSERT names it; the
+-- only writers pass it through `updateUserSubscription`, which sets only the
+-- fields it is given. The deploy rite applies this before the new code takes
+-- traffic (#322, #508 — pre-deploy migrations), and `ALTER TABLE … ADD COLUMN`
+-- is one of the three shapes `scripts/lib/ceremonyAutoApply.mts` positively
+-- recognises, so no ceremony reaches the founder.
+--
+-- PURELY ADDITIVE. One nullable column. No row is rewritten, no index moves,
+-- no existing column changes.
+ALTER TABLE `points` ADD COLUMN `billingInterval` enum('month','year');

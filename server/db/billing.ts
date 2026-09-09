@@ -35,6 +35,9 @@ export async function updateUserSubscription(
       | "trialing"
       | null;
     planTier?: PlanTier;
+    /** Cache of the Stripe price's own recurring interval (#664); null when
+     *  there is no subscription or the interval could not be read. */
+    billingInterval?: "month" | "year" | null;
     planExpiresAt?: Date | null;
     currentPeriodStart?: Date | null;
     currentPeriodEnd?: Date | null;
@@ -77,11 +80,31 @@ export async function getUserByStripeCustomerId(
   return user.length > 0 ? { ...user[0], credits: result[0] } : null;
 }
 
+/**
+ * ⚠ THE ROLLOVER IS COMPUTED FROM THE BALANCE THE WRITE IS CONDITIONED ON
+ * (#664 review round 2, finding 1). This function used to take a rollover the
+ * CALLER computed from its own earlier read and SET the balance absolutely —
+ * so any write that landed between that read and the SET was silently erased.
+ * The named exploit was the plan-change unwind racing the switch invoice's
+ * grant (which reopened the credit-minting loop the unwind exists to close),
+ * but the class is older and wider: a SPEND interleaving an ordinary renewal
+ * refresh was erased the same way, in the customer's favour, on every renewal
+ * since this function existed.
+ *
+ * So the caller passes HOW to compute the rollover (`computeRollover`), and
+ * this function reads the balance, computes, and writes with a COMPARE-AND-
+ * SET on the very balance it computed from — a concurrent write makes the
+ * UPDATE match zero rows and the loop re-reads. Three misses fail loud; the
+ * only caller is the Stripe webhook, and Stripe redelivers a failed event.
+ */
 export async function refreshMonthlyCredits(
   userId: number,
   monthlyCredits: number,
-  rolloverCredits: number,
+  computeRollover: (currentBalance: number) => number,
   referenceId: string,
+  /** Ledger line override — the annual grant says it is a year's allowance
+   *  rather than calling 12 months a "monthly refresh" (#664). */
+  description?: string,
 ): Promise<CreditWriteResult> {
   const db = await getDb();
   if (!db) {
@@ -90,34 +113,53 @@ export async function refreshMonthlyCredits(
   const ledgerReferenceId = normalizeCreditReferenceId(referenceId);
 
   try {
-    const userCredits = await getUserCredits(userId);
-    if (!userCredits) {
-      return { success: false, error: "User credits not found" };
-    }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const userCredits = await getUserCredits(userId);
+      if (!userCredits) {
+        return { success: false, error: "User credits not found" };
+      }
 
-    const newBalance = monthlyCredits + rolloverCredits;
+      const balanceReadFrom = userCredits.balance;
+      const rolloverCredits = Math.max(0, Math.floor(computeRollover(balanceReadFrom)));
+      const newBalance = monthlyCredits + rolloverCredits;
 
-    return await withTransaction(async (tx) => {
-      await tx
-        .update(credits)
-        .set({
-          balance: newBalance,
-          rolloverCredits: rolloverCredits,
-          lastRefreshAt: new Date(),
-        })
-        .where(eq(credits.userId, userId));
+      const written = await withTransaction(async (tx) => {
+        const updateResult = await tx
+          .update(credits)
+          .set({
+            balance: newBalance,
+            rolloverCredits: rolloverCredits,
+            lastRefreshAt: new Date(),
+          })
+          .where(and(eq(credits.userId, userId), eq(credits.balance, balanceReadFrom)));
 
-      await tx.insert(creditTransactions).values({
-        userId,
-        amount: monthlyCredits,
-        type: "subscription",
-        description: `Monthly credit refresh (${monthlyCredits} credits + ${rolloverCredits} rollover)`,
-        referenceId: ledgerReferenceId,
-        balanceAfter: newBalance,
+        const affected = (updateResult as any)[0]?.affectedRows ?? 0;
+        if (affected === 0) {
+          // The balance moved under us — nothing written; re-read and retry.
+          return null;
+        }
+
+        await tx.insert(creditTransactions).values({
+          userId,
+          amount: monthlyCredits,
+          type: "subscription",
+          description:
+            description ?? `Monthly credit refresh (${monthlyCredits} credits + ${rolloverCredits} rollover)`,
+          referenceId: ledgerReferenceId,
+          balanceAfter: newBalance,
+        });
+
+        return { success: true as const, newBalance };
       });
 
-      return { success: true, newBalance };
-    });
+      if (written) return written;
+    }
+
+    log.error(
+      { userId, referenceId: ledgerReferenceId },
+      "[Database] credit refresh lost the balance race three times — failing loud so the event is redelivered",
+    );
+    return { success: false, error: "Balance changed during refresh — retry" };
   } catch (error) {
     if (isDuplicateCreditReferenceError(error)) {
       const existing = await getCreditTransactionByRef(userId, ledgerReferenceId);
@@ -180,6 +222,7 @@ export async function getSubscriptionByUserId(userId: number) {
       stripeCustomerId: credits.stripeCustomerId,
       stripeSubscriptionId: credits.stripeSubscriptionId,
       subscriptionStatus: credits.subscriptionStatus,
+      billingInterval: credits.billingInterval,
       currentPeriodStart: credits.currentPeriodStart,
       currentPeriodEnd: credits.currentPeriodEnd,
       balance: credits.balance,
