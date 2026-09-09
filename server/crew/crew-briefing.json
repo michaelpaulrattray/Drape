@@ -1,7 +1,7 @@
 {
-  "edition": 318,
-  "updatedAt": "2026-09-09T14:38:56.552Z",
-  "shift": "Foreman - your one-line answer settled a disagreement between two of your own screens, and it turned out THREE of them were carrying the rule. Then a second job: since merging a pull request became a deploy, the tool the nights merge with had no manners about your rolls - it could land on top of a cast you were watching. Both are live. Nothing about the studio itself changed.",
+  "edition": 319,
+  "updatedAt": "2026-09-09T15:46:08.514Z",
+  "shift": "Foreman - a test that was supposed to be guarding the door to your admin panel turned out to be guarding nothing. The list of who is allowed to be an admin could have been deleted, reversed, or set to let everybody in, and every check still passed. That is proven now, along with four other things about admin actions that nothing was watching. No customer-facing code changed - this is about what the safety net actually catches.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,6 +116,11 @@
     ],
     "chips": [
       {
+        "label": "Your admin door is checked now",
+        "tone": "good",
+        "source": "Four ways to break the admin allowlist, none made a test fail. Fifteen real checks now."
+      },
+      {
         "label": "Your switch numbers say what they are",
         "tone": "good",
         "source": "Shipped on your word (#663). Bugs (11 on offer, 1 possibly fixed) - it never was the open count."
@@ -123,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "72 open, none waiting on you, none urgent. 3 closed tonight, 15 stale (9 Sep)."
+        "source": "66 open, none waiting on you, none urgent. 1 closed tonight, 4 new, 17 stale (10 Sep)."
       },
       {
         "label": "Nothing is waiting on you",
@@ -133,7 +138,7 @@
       {
         "label": "Check-ups",
         "tone": "good",
-        "source": "Nothing overdue. The Janitor ran tonight, a day late; next one 12 Sep."
+        "source": "Nothing overdue. The Janitor ran yesterday; the other three are due 12-13 Sep."
       },
       {
         "label": "Your account is no longer flagged",
@@ -142,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-09T14:37:37.200Z",
+      "readAt": "2026-09-09T15:44:55.178Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4460,6 +4465,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-724-adminsec-arms-697",
+      "title": "The test guarding your admin door was guarding nothing (#697)",
+      "status": "merged",
+      "prNumber": 724,
+      "note": "Squash 9e3a17c3. There is a list in the code that decides who is allowed to be an admin, and a test file whose job was to check it. Tonight it was measured by deliberately breaking the code in ten different ways and watching which tests noticed. Deleting the list, reversing it, or making it let everybody in: not one test complained. The reason turned out to be that the list is built from two settings that are not set anywhere in testing, so the part of the code that checks it was never reached, and the test had been softened over time until it agreed. Eight checks became fifteen, including three things nothing was watching at all - whether a sensitive action like changing someone's plan gets recorded as sensitive, whether the alert names the right person, and whether a blocked admin break-in is filed as critical. All fifteen are proven by breaking the code and watching exactly the right one fail. Nothing a customer touches changed."
+    },
+    {
       "id": "pr-722-ordered-band-718",
       "title": "Your answer - and it turned out THREE screens carried the rule, not two (#718)",
       "status": "merged",
@@ -5348,7 +5360,7 @@
     169
   ],
   "nextUp": {
-    "readAt": "2026-09-09T14:37:36.193Z",
+    "readAt": "2026-09-09T15:44:54.113Z",
     "items": []
   }
 }
