@@ -353,12 +353,39 @@ function readCardNamings(
  * one more field on one call rather than a second round trip — which is what
  * makes "the count, the titles and the exclusions share one `countedAt`" a
  * property of the statement rather than of three reads agreeing.
+ *
+ * ⚠ **AND THE PROMISE ABOVE HAD A THIRD ROAD IT DID NOT COVER UNTIL #725: `gh`
+ * EXITING 0 AND RETURNING `[]`.** A transient empty response is a *successful*
+ * read of nothing, so it was neither a throw nor a non-array — it was written
+ * as a fact, with a FRESH `countedAt`, and the staleness ceiling that guards
+ * `check-park.ps1` against a bad zero cannot see a zero that is genuinely new.
+ * Observed once on production at a shift start: `process` stored 0 at 15:00:11
+ * and 8 forty seconds later, with `written 20, skipped 0`.
+ *
+ * ⚠ **SO A ZERO IS NOW CROSS-EXAMINED, AND THE WITNESS IS FREE.** `population`
+ * is how many open cards carry each label in the whole-queue read this same run
+ * already takes for the pipeline groups — one response, one instant. A category
+ * that reads empty while that population holds cards with its label is
+ * *provably* wrong and is REFUSED. A genuinely empty category still stores 0,
+ * which is arm 3 of the suite and the only thing that stops this from being a
+ * counter that can no longer say zero.
+ *
+ * ⚠ **AND A ZERO IT CANNOT CHECK IS ALSO REFUSED**, because an unverifiable
+ * zero is precisely the one that parks the team. The cost of refusing is a
+ * number one run older with an honest age on it; the cost of believing is the
+ * nights putting themselves to sleep announcing there is nothing to do.
+ *
+ * ⚠ **IT IS `total` THAT IS CROSS-EXAMINED, NEVER `offered`, and the difference
+ * is the trap.** A stored count of 0 is ORDINARY and correct when every card in
+ * a category is excluded — `security` reads `0 open · 1 parked` today. Only an
+ * empty ROW LIST is the thing `gh` cannot have meant.
  */
 function countOpen(
   label: string,
   namings: CardNamingIndex | null,
   gh: QueueGhReader,
   warn: (line: string) => void,
+  population: ReadonlyMap<string, number> | null,
 ): CategoryReading | null {
   try {
     const out = gh(
@@ -380,6 +407,30 @@ function countOpen(
     if (rows.length >= 500) {
       warn(`REFUSING ${label}: 500 rows came back, which is the limit — the count would be a floor, not a count.`);
       return null;
+    }
+    /* #725 — the zero is the one reading that must survive a cross-examination
+       before it is believed. See the docblock: refusing costs a number one run
+       older, believing a wrong one costs the nights. */
+    if (rows.length === 0) {
+      /* `null` is "the witness never took the stand", which is a different fact
+         from "the witness says nobody carries this label" — and the two roads
+         out of here refuse for different reasons, so they are told apart here
+         rather than collapsed into a falsy check. */
+      const carried = population === null ? null : population.get(label) ?? 0;
+      if (carried === null) {
+        warn(
+          `REFUSING ${label}: it read empty, and the whole-queue population that could confirm that`
+          + " could not be taken this run — an unchecked zero is the one that parks the team (#725).",
+        );
+        return null;
+      }
+      if (carried > 0) {
+        warn(
+          `REFUSING ${label}: it read empty, but this run's own whole-queue read holds ${carried} open card(s)`
+          + " carrying that label. The two disagree, so the zero is not written (#725).",
+        );
+        return null;
+      }
     }
     /*
       MOST RECENT FIRST, SORTED HERE RATHER THAN TRUSTED (#285's own words).
@@ -492,10 +543,31 @@ function countOpen(
  * a `--limit` shorter than the real population turns a count into a floor
  * silently. At 100 open today there is room, and the day there is not, this
  * refuses instead of quietly capping his pipeline at 500.
+ *
+ * ⚠ **AND THE PARAGRAPH ABOVE DESCRIBED A GUARD THIS FUNCTION DID NOT HAVE
+ * (#725's law-7 sibling, found in its own sweep).** *"A broken `gh` that
+ * returned an empty list here would write TWELVE zeros"* is exactly right about
+ * the stake and was wrong about the protection: `!Array.isArray(rows)` catches
+ * a broken SHAPE, and an empty array is a perfectly good array. The most
+ * reassuring and most wrong sentence this panel could print was one blip away,
+ * in the function whose docblock names it.
+ *
+ * `queueIsKnownNonEmpty` is the corroboration, and it is free — the oldest open
+ * card was already read at the top of this run, for the merged-PR window. If a
+ * card exists, a whole queue reading empty is provably wrong.
+ *
+ * ⚠ **ITS LIMIT, STATED RATHER THAN DISCOVERED: A GENUINELY EMPTY QUEUE ALSO
+ * REFUSES.** `readOldestOpenCardFiling` returns `null` both when it fails and
+ * when there is nothing to find, so it cannot corroborate emptiness — only
+ * non-emptiness. The trade is deliberate: the cost of refusing is that his
+ * pipeline rows keep their last numbers with an honest age on them, ended by
+ * the first card anybody files; the cost of believing is a page that says the
+ * whole queue is empty on the strength of one bad response.
  */
-function countPipelineGroups(gh: QueueGhReader, warn: (line: string) => void): {
+function countPipelineGroups(gh: QueueGhReader, warn: (line: string) => void, queueIsKnownNonEmpty: boolean): {
   total: number;
   byGroup: Map<string, Array<{ number: number; title: string }>>;
+  labelPopulation: ReadonlyMap<string, number>;
 } | null {
   try {
     const out = gh(["issue", "list", "--state", "open", "--limit", "500", "--json", "number,title,createdAt,labels"]);
@@ -503,6 +575,16 @@ function countPipelineGroups(gh: QueueGhReader, warn: (line: string) => void): {
     if (!Array.isArray(rows)) return null;
     if (rows.length >= 500) {
       warn("REFUSING the pipeline groups: 500 rows came back, which is the limit — the total would be a floor, not a total.");
+      return null;
+    }
+    if (rows.length === 0) {
+      warn(
+        "REFUSING the pipeline groups: the whole open queue read back empty, which would write a zero into every"
+        + (queueIsKnownNonEmpty
+          ? " group — and this run's own oldest-open-card read found a card, so it is provably wrong (#725)."
+          : " group. Nothing this run read can corroborate an empty queue, and `nothing in the pipeline at all`"
+            + " is too reassuring a sentence to print on one unconfirmed response (#725)."),
+      );
       return null;
     }
     /* Most recent first, sorted here rather than trusted — `countOpen`'s reason,
@@ -539,7 +621,23 @@ function countPipelineGroups(gh: QueueGhReader, warn: (line: string) => void): {
       }
       bucket.push({ number: row.number, title: row.title });
     }
-    return { total: stamped.length, byGroup };
+    /*
+      ⚠ THE SAME ROWS, COUNTED A SECOND WAY — AND THAT IS THE POINT (#725).
+
+      The groups above partition the queue; this counts how many open cards
+      carry each individual LABEL, which the groups cannot answer because a card
+      belongs to exactly one group and may carry several labels. It is the
+      evidence `countOpen` needs to disprove a zero, and it costs nothing: it is
+      derived from the population this function has already read, in the same
+      response, at the same moment. Asking `gh` a second time would produce a
+      second reading of a different instant, which is the shape that cannot
+      settle a disagreement between two readings.
+    */
+    const labelPopulation = new Map<string, number>();
+    for (const row of stamped) {
+      for (const name of row.labels) labelPopulation.set(name, (labelPopulation.get(name) ?? 0) + 1);
+    }
+    return { total: stamped.length, byGroup, labelPopulation };
   } catch (cause) {
     warn(`[warn] could not read the open queue for the pipeline groups: ${(cause as Error).message}`);
     return null;
@@ -685,10 +783,26 @@ export async function refreshQueueCounts(
     log("  ⚠ the possibly-fixed reading could not be taken this run — every category is written unflagged.");
   }
 
+  /*
+    ⚠ THE WHOLE-QUEUE READ IS TAKEN HERE, BEFORE THE CATEGORIES, AND ITS ROWS
+    ARE WRITTEN LATER (#725). It moved up rather than being read twice: it is
+    the evidence a category's zero is cross-examined against, and two reads
+    would be two different instants — which cannot settle a disagreement, only
+    describe one.
+
+    ⚠ It is read FIRST on purpose, so the only skew it can produce is a card
+    closing between the two reads: the category then legitimately says zero
+    while this population still holds it, and the zero is refused. That costs a
+    number one run older with an honest age. The other order would let a card
+    OPENED between the reads make a stale zero look confirmed, which is the
+    failure this is about.
+  */
+  const pipeline = countPipelineGroups(gh, warn, oldestOpen !== null);
+
   let written = 0;
   let skipped = 0;
   for (const category of CREW_WORK_CATEGORIES) {
-    const reading = countOpen(category.queueLabel, namings, gh, warn);
+    const reading = countOpen(category.queueLabel, namings, gh, warn, pipeline?.labelPopulation ?? null);
     if (reading === null) {
       skipped += 1;
       log(`  ${category.label.padEnd(14)} SKIPPED — the old row stands, with its older timestamp`);
@@ -775,7 +889,6 @@ export async function refreshQueueCounts(
     answer, and the panel's own rule since #277 is that a row must never vanish
     or he cannot tell "nothing there" from "not offered".
   */
-  const pipeline = countPipelineGroups(gh, warn);
   if (pipeline === null) {
     skipped += CREW_PIPELINE_GROUPS.length;
     log("\n  PIPELINE GROUPS SKIPPED — the old rows stand, with their older timestamps");

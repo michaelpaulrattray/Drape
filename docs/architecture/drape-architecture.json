@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "cfacfe4f2873f390"
+    "sourceFingerprint": "ff51e17cbe464d9e"
   },
   "domains": [
     {
@@ -12794,6 +12794,10 @@
     {
       "id": "test:server/crewPipelineProjection.test.ts",
       "path": "server/crewPipelineProjection.test.ts"
+    },
+    {
+      "id": "test:server/crewQueueCountEmptyRead.test.ts",
+      "path": "server/crewQueueCountEmptyRead.test.ts"
     },
     {
       "id": "test:server/crewQueueCountRescue.test.ts",
