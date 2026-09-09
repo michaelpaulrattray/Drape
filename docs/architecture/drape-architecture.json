@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6f0d3b43122f73d3"
+    "sourceFingerprint": "4d5dd33db7d7c0d1"
   },
   "domains": [
     {
@@ -13670,6 +13670,10 @@
     {
       "id": "test:server/staffImageBoundary.test.ts",
       "path": "server/staffImageBoundary.test.ts"
+    },
+    {
+      "id": "test:server/standingExceptions.test.ts",
+      "path": "server/standingExceptions.test.ts"
     },
     {
       "id": "test:server/staticAssetReferences.test.ts",

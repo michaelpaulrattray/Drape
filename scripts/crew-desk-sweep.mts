@@ -198,8 +198,19 @@ if (ordered === null) {
     (newest first, which is nobody's priority).
 
     `PROGRAM.md`'s standing exceptions put **urgent first, oldest first** —
-    that is band 1, and `scripts/queue-standing-exceptions.mts` is the same
-    sort. Everything else the founder ordered follows, also oldest first.
+    that is band 1. Everything else the founder ordered follows, also oldest
+    first.
+
+    ⚠ **AND THIS PARAGRAPH USED TO END "`scripts/queue-standing-exceptions.mts`
+    is the same sort", WHICH IS NO LONGER TRUE (#472).** That script prints his
+    ordered band WHOLLY ABOVE the urgent band, oldest-first within each, on
+    PROGRAM.md's *"taken FIRST — before the focus, before patrols, before
+    anything"* clause; this block floats urgent to the top of the ordered
+    population instead. **Both are defensible readings of his own words and
+    they can disagree on which card to take first** — an old non-urgent ordered
+    card against a newer one carrying both labels. The reading is HIS to settle
+    and it is carded as #718 rather than decided here; what is fixed in this commit is
+    the sentence that asserted an agreement which had stopped existing.
     Caught by looking at the rendered page: sorting on the number alone put a
     non-urgent card above three urgent ones, which is a running order that no
     shift would obey.
