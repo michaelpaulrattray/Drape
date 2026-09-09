@@ -375,7 +375,16 @@ if (allOpen === null) {
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
     /* Ladder order first (unplaced last), oldest first within a rung — the
-       order he reads the rungs in, never the order gh returns. */
+       order he reads the rungs in, never the order gh returns.
+
+       ⚠ **THIS TIEBREAK IS THE "NOT WRONG, BUT A DIFFERENT KEY" SHAPE #718 IS
+       ABOUT, AND IT IS LEFT ALONE DELIBERATELY** (review of PR #722, finding
+       3). `issueNumber` is oldest-first for one repository's issues, and this
+       ladder has exactly ONE consumer — so there is no sibling to drift from
+       and nothing to hold it to. **It is named here because it is the first
+       place the class would re-fire**: the day a second ladder view exists,
+       this sort moves into `scripts/lib/orderedBand.mts` beside the ordered
+       band's, rather than being copied into the new one. */
     .sort((a, b) => {
       const at = a.rung === null ? rungKeys.length : rungKeys.indexOf(a.rung);
       const bt = b.rung === null ? rungKeys.length : rungKeys.indexOf(b.rung);

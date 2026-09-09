@@ -29,9 +29,12 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { readFileSync } from "node:fs";
+
 import {
   ORDERED_BAND_RULE,
   compareOrderedBand,
+  filedKey,
   sortOrderedBand,
 } from "../scripts/lib/orderedBand.mts";
 import {
@@ -159,8 +162,9 @@ describe("THE AGREEMENT — his page and the shift's priority view", () => {
       a fixture whose answer differs under every plausible alternative sort
       (oldest-first, newest-first, by number).
     */
-    const byComparator = sortOrderedBand(WORKED_EXAMPLE.map((card) => ({ ...card })))
-      .map((card) => card.number);
+    const byComparator = sortOrderedBand(
+      WORKED_EXAMPLE.map((card) => ({ ...card, issueNumber: card.number })),
+    ).map((card) => card.number);
     expect(byComparator).toEqual([250, 400, 100, 500]);
     expect(deskPageOrder(WORKED_EXAMPLE)).toEqual(byComparator);
     expect(priorityViewOrder(WORKED_EXAMPLE)).toEqual(byComparator);
@@ -176,16 +180,109 @@ describe("THE AGREEMENT — his page and the shift's priority view", () => {
 
 describe("the comparator itself", () => {
   it("puts urgent before non-urgent whatever the dates say", () => {
-    const older = { urgent: false, createdAt: "2020-01-01T00:00:00Z" };
-    const newer = { urgent: true, createdAt: "2026-09-09T00:00:00Z" };
+    const older = { urgent: false, createdAt: "2020-01-01T00:00:00Z", issueNumber: 1 };
+    const newer = { urgent: true, createdAt: "2026-09-09T00:00:00Z", issueNumber: 2 };
     expect(compareOrderedBand(newer, older)).toBeLessThan(0);
     expect(compareOrderedBand(older, newer)).toBeGreaterThan(0);
   });
 
   it("falls back to oldest first when both carry the same urgency", () => {
-    const older = { urgent: true, createdAt: "2026-08-01T00:00:00Z" };
-    const newer = { urgent: true, createdAt: "2026-09-01T00:00:00Z" };
+    const older = { urgent: true, createdAt: "2026-08-01T00:00:00Z", issueNumber: 9 };
+    const newer = { urgent: true, createdAt: "2026-09-01T00:00:00Z", issueNumber: 1 };
     expect(compareOrderedBand(older, newer)).toBeLessThan(0);
+  });
+
+  it("is a TOTAL order — same second, same urgency, still decided", () => {
+    /*
+      ⚠ **Review of PR #722, finding 2.** Without the numeric limb these two
+      compared equal and fell to input order under a stable sort, so the three
+      views agreed on ties only because all three feed on one `gh` call and
+      inherit its server-side ordering — a premise no fixture can test, since a
+      fixture hands every consumer the same array.
+    */
+    const first = { urgent: true, createdAt: "2026-09-01T00:00:00Z", issueNumber: 100 };
+    const second = { urgent: true, createdAt: "2026-09-01T00:00:00Z", issueNumber: 400 };
+    expect(compareOrderedBand(first, second)).toBeLessThan(0);
+    expect(compareOrderedBand(second, first)).toBeGreaterThan(0);
+    expect(compareOrderedBand(first, { ...first })).toBe(0);
+  });
+
+  it("orders a tie the same way whichever way round it is handed the pair", () => {
+    /* A stable sort would pass the arm above while still returning 0 — this is
+       the one that fails if the numeric limb is dropped. */
+    const rows = [
+      { urgent: false, createdAt: "2026-09-01T00:00:00Z", issueNumber: 400 },
+      { urgent: false, createdAt: "2026-09-01T00:00:00Z", issueNumber: 100 },
+    ];
+    expect(sortOrderedBand(rows).map((r) => r.issueNumber)).toEqual([100, 400]);
+    expect(sortOrderedBand([...rows].reverse()).map((r) => r.issueNumber)).toEqual([100, 400]);
+  });
+});
+
+describe("a row with no filing date — ONE normalisation, not three", () => {
+  /*
+    ⚠ **Review of PR #722, finding 1**, and it is this module's own defect in
+    miniature: `String(row.createdAt)` gives `"undefined"` and sorts LAST,
+    `String(row.createdAt ?? "")` gives `""` and sorts FIRST. Two consumers had
+    one each, so a row without the field would have led one view and trailed
+    another — while every fixture supplied the field and nothing went red.
+  */
+  const undated = [
+    { number: 100, title: "no date", createdAt: undefined as unknown as string, urgent: false },
+    { number: 400, title: "dated", createdAt: "2026-09-05T00:00:00Z", urgent: false },
+  ];
+
+  it("sorts an undated card LAST rather than to the front of his queue", () => {
+    /* A card whose filing date could not be read must not be handed the top of
+       the band on the strength of a missing field. */
+    expect(deskPageOrder(undated)).toEqual([400, 100]);
+    expect(priorityViewOrder(undated)).toEqual([400, 100]);
+  });
+
+  it("makes his page and the priority view agree on it — which they did not", () => {
+    expect(deskPageOrder(undated)).toEqual(priorityViewOrder(undated));
+  });
+
+  it("ranks BOTH historical spellings identically — the divergence is gone", () => {
+    /*
+      ⚠ **THIS IS THE ARM THAT ACTUALLY CLOSES FINDING 1, AND IT IS WORTH
+      SAYING WHY THE OBVIOUS SABOTAGE DOES NOT REDDEN.** Re-introducing
+      `String(row.createdAt)` in one consumer produces `"undefined"`, which
+      localeCompares after every ISO date — the SAME rank the sentinel gets. The
+      bug was never `"undefined"`; it was `""`, which sorted BEFORE every date
+      and put an undated card at the front of his queue. `filedKey` maps `""`
+      to the sentinel, so the two spellings can no longer disagree at all.
+    */
+    const iso = "2026-09-05T00:00:00Z";
+    for (const spelling of ["undefined", "", undefined, null]) {
+      expect(
+        filedKey(spelling).localeCompare(iso),
+        `${JSON.stringify(spelling)} must rank AFTER a real date, as every other absent shape does`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  it("is reached RAW by both consumers — nobody stringifies on the way in", () => {
+    /*
+      The behavioural arms above cannot see a consumer that pre-formats the
+      field into some third spelling. This can, and it is the one thing a source
+      read is genuinely better at: proving a second normalisation has not
+      re-grown beside the shared one.
+    */
+    for (const file of ["lib/nextUpItems.mts", "next-up-escalation.mts"]) {
+      const source = readFileSync(new URL(`../scripts/${file}`, import.meta.url), "utf8");
+      expect(source, `${file} must hand createdAt through raw, not stringify it`)
+        .not.toMatch(/String\(row\.createdAt/);
+    }
+  });
+
+  it("treats every absent-ish shape the same way, in one place", () => {
+    for (const absent of [undefined, null, "", 0, {}]) {
+      expect(filedKey(absent), `${JSON.stringify(absent)} must read as undated`)
+        .toBe(filedKey(undefined));
+    }
+    /* And an undated key sorts after every real ISO date, not before. */
+    expect(filedKey(undefined).localeCompare("2999-12-31T23:59:59Z")).toBeGreaterThan(0);
   });
 });
 

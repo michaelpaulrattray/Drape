@@ -94,7 +94,9 @@ export function isUrgent(row: Row): boolean {
  * `compareOrderedBand`, which his page reads from the same module.
  */
 export function orderedBandRunningOrder(rows: readonly Row[]): Row[] {
-  return sortOrderedBand(rows.map((row) => ({ ...row, urgent: isUrgent(row) })));
+  return sortOrderedBand(
+    rows.map((row) => ({ ...row, urgent: isUrgent(row), issueNumber: row.number })),
+  );
 }
 
 function rowLines(rows: readonly Row[], ownLabel: string, now: Date): string[] {

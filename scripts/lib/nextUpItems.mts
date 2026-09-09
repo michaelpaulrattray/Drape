@@ -31,7 +31,7 @@ export type OrderedIssue = {
   title: unknown;
   labels?: unknown;
   body?: unknown;
-  createdAt: string;
+  createdAt?: unknown;
 };
 
 /** A row of NEXT UP, exactly as `nextUpSchema` in `server/crew/crewBriefing.ts`
@@ -89,7 +89,9 @@ export function planNextUpItems(input: {
       issueNumber: Number(row.number),
       title: String(row.title).slice(0, 300),
       urgent: labels.includes("urgent"),
-      createdAt: String(row.createdAt),
+      /* ⚠ NOT stringified here — `filedKey` in `scripts/lib/orderedBand.mts`
+         owns what a missing date means, once, for all three views. */
+      createdAt: row.createdAt,
       ...(state === null ? {} : { held: { state, ...(because ? { because } : {}) } }),
     };
   });

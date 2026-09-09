@@ -48,25 +48,61 @@
  */
 
 /**
- * The two fields the running order reads. Deliberately the minimum: a consumer
- * passes its own row shape through and keeps whatever else it carries.
+ * The three fields the running order reads. Deliberately the minimum: a
+ * consumer passes its own row shape through and keeps whatever else it carries.
  */
 export type OrderedBandRow = {
   /** Does the card carry the `urgent` label. */
   urgent: boolean;
-  /** ISO-8601, as GitHub stamps it at filing. */
-  createdAt: string;
+  /** ISO-8601, as GitHub stamps it at filing. May be absent — see `filedKey`. */
+  createdAt: unknown;
+  /** ⚠ The tiebreak, and it is required rather than optional — see below. */
+  issueNumber: number;
 };
 
 /**
- * HIS RULING AS A COMPARATOR: urgent first, then oldest first.
+ * ⚠ **ONE NORMALISATION OF A MISSING `createdAt`, BECAUSE TWO OF THEM IS THIS
+ * FILE'S OWN DEFECT RE-GROWN IN MINIATURE** (review of PR #722, finding 1).
+ *
+ * The first shape of this repair left each consumer to stringify the field
+ * itself, and they disagreed: `String(row.createdAt)` gives `"undefined"`,
+ * which sorts AFTER every ISO date, while `String(row.createdAt ?? "")` gives
+ * `""`, which sorts BEFORE all of them. **So a row arriving without the field
+ * would have led one view and trailed another** — the exact "two keys held
+ * together by a sentence" class this module exists to close.
+ *
+ * The sentinel sorts LAST on purpose: a card whose filing date could not be
+ * read must not be given the front of his queue, and the `issueNumber` limb
+ * below then resolves two such rows against each other rather than leaving
+ * them to input order.
+ */
+export function filedKey(createdAt: unknown): string {
+  return typeof createdAt === "string" && createdAt !== "" ? createdAt : "￿";
+}
+
+/**
+ * HIS RULING AS A COMPARATOR: urgent first, then oldest first, then the issue
+ * number.
  *
  * The second limb is PROGRAM.md's ordered clause untouched (*absent a word,
  * oldest first*) and #236, the incident about an old card sitting unworked.
+ *
+ * ⚠ **THE THIRD LIMB EXISTS TO MAKE THIS A TOTAL ORDER** (review of PR #722,
+ * finding 2). Without it, two cards filed in the same second compared equal and
+ * fell to input order under a stable sort — so the three views agreed on ties
+ * only because all three feed on one `gh issue list` call and inherit its
+ * server-side ordering. **That is a premise no arm can test**, since a fixture
+ * hands every consumer the same array; and the team files cards by script, so
+ * same-second filings are not hypothetical. A tie whose `gh` order shifted
+ * between runs would also churn the desk sweep's `JSON.stringify` comparison
+ * and rewrite NEXT UP for no reason. The issue number is oldest-first by the
+ * same relation `createdAt` is, so it never contradicts the limb above it.
  */
 export function compareOrderedBand(a: OrderedBandRow, b: OrderedBandRow): number {
   if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
-  return a.createdAt.localeCompare(b.createdAt);
+  const byDate = filedKey(a.createdAt).localeCompare(filedKey(b.createdAt));
+  if (byDate !== 0) return byDate;
+  return a.issueNumber - b.issueNumber;
 }
 
 /** A sorted COPY, so a caller's array is never re-ordered under it. */

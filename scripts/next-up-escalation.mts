@@ -314,7 +314,10 @@ const items = rows
       issueNumber: Number(row.number),
       title: String(row.title ?? ""),
       urgent: labels.includes("urgent"),
-      createdAt: String(row.createdAt ?? ""),
+      /* ⚠ Handed through RAW: `filedKey` owns what a missing date means, and
+         two consumers normalising it differently is what finding 1 of PR
+         #722's review caught — `"undefined"` sorts last, `""` sorts first. */
+      createdAt: row.createdAt,
       held: heldStatesFromLabels(labels),
     };
   })
