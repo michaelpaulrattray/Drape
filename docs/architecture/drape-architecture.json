@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f520667ad8eaa8c3"
+    "sourceFingerprint": "187eeeb49b4e0b41"
   },
   "domains": [
     {
@@ -13050,6 +13050,10 @@
     {
       "id": "test:server/operationLockWire.test.ts",
       "path": "server/operationLockWire.test.ts"
+    },
+    {
+      "id": "test:server/orderedBandOrder.test.ts",
+      "path": "server/orderedBandOrder.test.ts"
     },
     {
       "id": "test:server/pathB-completion.test.ts",

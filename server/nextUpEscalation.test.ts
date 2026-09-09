@@ -45,7 +45,7 @@ vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 const SCRIPT = resolve("scripts/next-up-escalation.mts");
 const SWEEP = resolve("scripts/crew-desk-sweep.mts");
 
-type Row = { number: number; title: string; labels: { name: string }[] };
+type Row = { number: number; title: string; createdAt: string; labels: { name: string }[] };
 type Result = { status: number; stdout: string; stderr: string; last: string };
 
 let dir = "";
@@ -58,8 +58,18 @@ afterAll(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
+/*
+  ⚠ **`createdAt` IS SYNTHESISED FROM THE ISSUE NUMBER, AND THAT IS THE TRUE
+  RELATION RATHER THAN A CONVENIENCE** (#718): GitHub stamps numbers in filing
+  order, so a higher number IS a later card. It is why the desk sweep's old
+  `issueNumber` tiebreak was never WRONG — only a different key, which could be
+  held to its siblings by nothing but a sentence.
+*/
+const filedAt = (number: number): string =>
+  new Date(Date.UTC(2026, 0, 1) + number * 60 * 60 * 1000).toISOString();
+
 function card(number: number, labels: string[], title = `card ${number}`): Row {
-  return { number, title, labels: labels.map((name) => ({ name })) };
+  return { number, title, createdAt: filedAt(number), labels: labels.map((name) => ({ name })) };
 }
 
 function queueFile(name: string, rows: Row[]): string {
@@ -398,21 +408,53 @@ describe("it fails toward NOT spending", () => {
 });
 
 describe("the order is the desk sweep's order, or it is nothing", () => {
-  it("carries the same sort expression as scripts/crew-desk-sweep.mts", () => {
-    /*
-      A MIRROR NEEDS A READER (working law 4). The sweep writes NEXT UP onto his
-      page and this gate decides what is at the top of it; two sorts drifting
-      apart would escalate a card he cannot see at the top of his own queue, and
-      nothing would go red. The sort is one expression, so it is compared as
-      text — the cheap check that can actually fail.
-    */
-    const normalise = (text: string) => text.replace(/\s+/g, " ").trim();
-    const SORT = normalise(
-      "(a.urgent === b.urgent ? 0 : a.urgent ? -1 : 1) || a.issueNumber - b.issueNumber",
-    );
+  /*
+    ⚠ **THIS USED TO COMPARE THE TWO SORTS AS TEXT, AND IT WORKED — it reddened
+    the moment #718 changed one of them.** What it could never say is whether
+    the two ORDERS agreed, only whether the two STRINGS did; and its repair
+    would have been to paste the new expression into a third file. His ruling of
+    2026-09-09 (*"Urgent wins inside your ordered group"*) made the sort one
+    function instead — `scripts/lib/orderedBand.mts` — so there is nothing left
+    to mirror, and what is checked here is that nobody has re-grown a copy.
 
-    expect(normalise(readFileSync(SCRIPT, "utf8"))).toContain(SORT);
-    expect(normalise(readFileSync(SWEEP, "utf8"))).toContain(SORT);
+    The ORDER itself is now driven through the real process below, and across
+    his page and the shift's priority view in `server/orderedBandOrder.test.ts`.
+  */
+  it("declares no comparator of its own, and neither does the sweep", () => {
+    for (const [name, path] of [["the gate", SCRIPT], ["the sweep", SWEEP]] as const) {
+      const source = readFileSync(path, "utf8");
+      expect(source, `${name} must not carry its own urgent-first expression`)
+        .not.toMatch(/a\.urgent \?/);
+      expect(source, `${name} must reach the running order through the shared module`)
+        .toMatch(/lib\/(orderedBand|nextUpItems)\.mts/);
+    }
+  });
+
+  it("puts an urgent card above an OLDER ordered one — his ruling, driven", () => {
+    /*
+      ⚠ **THE ARM THE TEXT COMPARISON COULD NOT BE.** The card's own worked
+      example: an old non-urgent ordered card against a newer one carrying both
+      labels. #100 was filed first; #400 is urgent, so it is the top card and
+      the gate must answer about #400.
+    */
+    const queue = queueFile("ruling-order", [
+      card(100, ["founder-ordered"], "old and not urgent"),
+      card(400, ["founder-ordered", "awaiting-fable"], "newer and urgent"),
+    ]);
+    /* The urgent one is the Fable-only one, so a gate reading oldest-first
+       would answer NONE here and a gate obeying his ruling escalates #400. */
+    const withUrgent = queueFile("ruling-order-urgent", [
+      card(100, ["founder-ordered"], "old and not urgent"),
+      card(400, ["founder-ordered", "urgent", "awaiting-fable"], "newer and urgent"),
+    ]);
+
+    const oldestFirst = run("--queue", queue, "--state", statePath("ruling-a"), "--today", "2026-09-09");
+    expect(oldestFirst.last, "without `urgent`, the older card leads and it is Opus-takeable")
+      .toContain("NONE");
+
+    const ruling = run("--queue", withUrgent, "--state", statePath("ruling-b"), "--today", "2026-09-09");
+    expect(ruling.last, "with `urgent`, his ruling floats #400 to the top").toContain("ESCALATE");
+    expect(ruling.last).toContain("#400");
   });
 
   it("uses shared/crewNextUpHold.ts for the hold verdict rather than its own list", () => {
