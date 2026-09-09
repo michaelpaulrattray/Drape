@@ -56,6 +56,7 @@ import {
 import {
   CITED_CARDS_CEILING,
   cardNumbersIn,
+  namedAsEvidenceIn,
   isCitingRatherThanFixing,
   parsePossiblyDone,
   possiblyDoneSentence,
@@ -302,14 +303,21 @@ function readCardNamings(
          A pull request's own number is dropped: a body legitimately names it. */
       const title = typeof row.title === "string" ? row.title : "";
       const body = typeof row.body === "string" ? row.body : "";
-      const cards = cardNumbersIn(`${title}\n${body}`, pr);
+      /* TWO READINGS OF ONE BODY, each answering the question it was calibrated
+         for (#728). `mentioned` is every `#N` anywhere — the population
+         `CITED_CARDS_CEILING`'s 8 was derived from, and the one that must keep
+         seeing a patrol report's tabulated twelve. `cards` is the same reader
+         asked of the body with fenced blocks and table rows removed, which is
+         what a flag is allowed to rest on. */
+      const mentioned = cardNumbersIn(`${title}\n${body}`, pr);
+      const cards = namedAsEvidenceIn(`${title}\n${body}`, pr);
       /* ⚠ A CITING PULL REQUEST CONTRIBUTES NOTHING, AND IT IS DROPPED HERE
          RATHER THAN AT THE FLAG (#514). One skip removes the naming from the
          index, so the flag and its RECEIPT lose it together — this module has
          already been bitten once by a second copy of a comparison (PR #498,
          finding 1), and a ceiling applied at the question rather than at the
          evidence would be that same second list. */
-      if (isCitingRatherThanFixing(cards.length)) {
+      if (isCitingRatherThanFixing(mentioned.length)) {
         citing += 1;
         continue;
       }

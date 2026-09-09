@@ -65,6 +65,18 @@
  * cheap pointer at the front of it. The un-wiring differ's docblock states its
  * limits the same way and for the same reason.
  *
+ * ⚠ **AND IT OVER-REPORTS IN A SYSTEMATIC DIRECTION TOO — THE HALF THIS
+ * DOCBLOCK WAS MISSING (#728).** The paragraph above states the under-reporting
+ * honestly and says nothing about the other side, so the limit that was
+ * measured five-for-five went unwritten: **the flag fires hardest on the pull
+ * requests whose bodies say, in words, that the work was NOT done.** A shift
+ * that files a card from its own sweep and says so is the discipline this
+ * repository requires, and doing it guarantees the card is named by that merged
+ * pull request forever. `evidenceTextOf` removes the pasted-output shape of
+ * this (#716's fence); the prose shape — *"all filed as #455, none taken"* —
+ * SURVIVES on purpose, because telling it from a real fix needs a vocabulary of
+ * English phrases and that is a judgement about wording, not a reading.
+ *
  * # `shared/` FOR `crewQueueTitles.ts`'s REASON
  *
  * Three things key on this shape: the shift tool that writes the row
@@ -342,6 +354,120 @@ export function qualifyingNamings(
  * a card reference. Deliberately NOT anchored to a keyword: `Closes #12` and
  * `see #12` are the same fact to this reader, which is his no-judging bar.
  */
+/**
+ * THE TEXT A CARD REFERENCE COUNTS AS EVIDENCE IN — everything except a fenced
+ * block and a table row (#728).
+ *
+ * ⚠ **THE INSTRUMENT FIRED HARDEST ON THE PULL REQUESTS WHOSE BODIES SAY, IN
+ * WORDS, THAT THE WORK WAS NOT DONE.** Measured five for five on 2026-09-09,
+ * each read at the artifact: a shift that files a card from its own sweep and
+ * says so is the discipline this repository requires, and doing it guaranteed
+ * the card was named by that merged pull request forever.
+ *
+ * `CITED_CARDS_CEILING` already drops a body naming more than eight cards, and
+ * it works — but **it is a COUNT heuristic where the signal is TEXTUAL**, so a
+ * body naming exactly one card in a pasted list slips under it, and no ceiling
+ * can ever catch that. PR #716's shape is the specimen: it pastes the priority
+ * view's own sample output inside a fence, `#711` is one row of it, and the
+ * card turned *possibly fixed* on his panel.
+ *
+ * # WHAT IS STRIPPED, AND WHY ONLY THESE TWO
+ *
+ *   * **A closed fenced block** (``` or ~~~) — pasted tool output, a log, a
+ *     sample. #360 established this exact rule for the quiet-shift detector,
+ *     which strips fences before testing. ⚠ **That precedent lives in the
+ *     untracked `.agents/` standing-orders territory (`is-quiet-entry.ps1`), so
+ *     no guard in this repository can hold the citation honest** (PR #736
+ *     review, note 2) — it is named as provenance for the idea, and the arms
+ *     below are what actually prove the behaviour here.
+ *   * **A table row** — a line whose first non-space character is `|` and which
+ *     holds at least two of them. A triage or patrol report tabulates the cards
+ *     it is FILING; #728's own body is that shape.
+ *
+ * Nothing else. The four remaining specimens (#455 by PR #456, #481/#482 by PR
+ * #717, #655 by PR #656) name their cards in ordinary prose — *"all filed as
+ * #455, none taken"*, *"logged, not done here"* — and they SURVIVE this strip
+ * and still flag. That is deliberate: separating those from a real fix needs a
+ * vocabulary of English phrases, which is a judgement about wording and belongs
+ * on its own card rather than smuggled in here. A blockquote is likewise NOT
+ * stripped, though `is-quiet-entry.ps1` strips one: a quoted founder ruling is
+ * not the same object as pasted machine output, and widening this without a
+ * measurement is how a noise filter starts swallowing findings.
+ *
+ * # ⚠ AN UNTERMINATED FENCE STRIPS NOTHING, AND THAT DIRECTION IS THE WHOLE
+ * POINT
+ *
+ * The card's bar: *"It must keep failing toward FLAGGING."* A fence opened and
+ * never closed is a malformed body, and the tempting reading — everything after
+ * it is code — would silently delete every card reference in the rest of the
+ * text, which removes evidence and un-flags real findings. So an unclosed fence
+ * is left entirely alone: a false flag costs one re-read, a missed one costs
+ * him a card that is already done.
+ */
+export function evidenceTextOf(text: string): string {
+  const lines = (text ?? "").split("\n");
+  /* TWO PASSES, because whether a fence closes is not knowable at the line that
+     opens it. The first pass marks the lines of CLOSED fences only; an opener
+     with no partner leaves its region unmarked and therefore intact. */
+  const fenced: boolean[] = new Array(lines.length).fill(false);
+  let openedAt = -1;
+  let openMarker = "";
+  for (let at = 0; at < lines.length; at += 1) {
+    const marker = /^\s{0,3}(```|~~~)/.exec(lines[at]);
+    if (marker === null) continue;
+    if (openedAt === -1) {
+      openedAt = at;
+      openMarker = marker[1];
+      continue;
+    }
+    /* ⚠ A FENCE CLOSES ONLY ON ITS OWN CHARACTER, WHICH IS COMMONMARK'S RULE
+       AND ALSO THE ONLY SHAPE THAT FAILS THE RIGHT WAY (PR #736 review, note
+       1). Toggling on either marker was the first cut, and a bare `~~~` pasted
+       INSIDE a ``` block closed it early and inverted the parity of every later
+       marker — so in a body shaped ```/~~~/code/```/prose/```/code/``` the
+       PROSE line was stripped while GitHub renders it as prose. That silently
+       un-flags a real reference, which is the one direction this card forbids.
+       Every other mixed-marker shape strips LESS than the renderer shows as
+       code, which is the safe side. */
+    if (marker[1] !== openMarker) continue;
+    for (let mark = openedAt; mark <= at; mark += 1) fenced[mark] = true;
+    openedAt = -1;
+    openMarker = "";
+  }
+  const kept: string[] = [];
+  for (let at = 0; at < lines.length; at += 1) {
+    if (fenced[at]) continue;
+    const line = lines[at];
+    /* A table row: first non-space character is a pipe, and at least two pipes
+       in the line. The second condition is what stops a stray leading `|` in
+       prose from reading as a table. */
+    const trimmed = line.replace(/^\s+/, "");
+    if (trimmed.charAt(0) === "|" && (line.match(/\|/g) ?? []).length >= 2) continue;
+    kept.push(line);
+  }
+  return kept.join("\n");
+}
+
+/**
+ * The card numbers a pull request body names AS EVIDENCE — `cardNumbersIn`
+ * asked of `evidenceTextOf` rather than of the raw body (#728).
+ *
+ * ⚠ **THIS IS A SECOND READING OF ONE BODY, ON PURPOSE, AND THE FIRST ONE IS
+ * NOT REPLACED.** `CITED_CARDS_CEILING` stays pointed at the RAW mention count,
+ * because that is the population its 8 was derived from — p95 over 220 merged
+ * pull requests — and because a patrol report that tabulates twelve cards is
+ * exactly the thing that ceiling exists to catch. Stripping its table first
+ * would make it read as a one-card fix and quietly undo the measurement.
+ *
+ * So the two questions are asked separately and each of the two readings is
+ * used for the one it answers: *how many cards does this body mention at all*
+ * (the calibrated noise heuristic) and *which cards does it name in prose* (the
+ * evidence behind a flag).
+ */
+export function namedAsEvidenceIn(text: string, self?: number): number[] {
+  return cardNumbersIn(evidenceTextOf(text), self);
+}
+
 export function cardNumbersIn(text: string, self?: number): number[] {
   const out: number[] = [];
   /* An `exec` loop rather than `matchAll`, and `indexOf` rather than a Set:
