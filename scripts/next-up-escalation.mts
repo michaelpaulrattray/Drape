@@ -114,6 +114,8 @@ import { resolve } from "node:path";
 
 import { heldStatesFromLabels } from "../shared/crewNextUpHold.js";
 
+import { compareOrderedBand } from "./lib/orderedBand.mts";
+
 type Json = Record<string, any>;
 
 const KNOWN_FLAGS = new Set(["--state", "--queue", "--record", "--today"]);
@@ -260,7 +262,7 @@ function readQueue(): Json[] | null {
     "--label", "founder-ordered",
     "--state", "open",
     "--limit", String(QUEUE_LIMIT),
-    "--json", "number,title,labels",
+    "--json", "number,title,labels,createdAt",
   ]);
   return Array.isArray(rows) ? (rows as Json[]) : null;
 }
@@ -276,11 +278,18 @@ if (rows.length >= QUEUE_LIMIT) none(`${QUEUE_LIMIT} rows came back, which is th
 
 /**
  * NEXT UP order, and it is **the sweep's order or it is nothing**: urgent
- * first, then oldest first. `scripts/crew-desk-sweep.mts` writes exactly this
- * sort onto his page, and a gate that escalated a card he cannot see at the top
- * of his own queue would be answering a different question from the one he
- * asked. The two sorts are the one paragraph of shared logic that is duplicated
- * here, and `server/nextUpEscalation.test.ts` pins them against each other.
+ * first, then oldest first — the founder's ruling of 2026-09-09 (#718, Crew
+ * reply #168: *"Urgent wins inside your ordered group"*). `scripts/crew-desk-
+ * sweep.mts` writes exactly this order onto his page, and a gate that escalated
+ * a card he cannot see at the top of his own queue would be answering a
+ * different question from the one he asked.
+ *
+ * ⚠ **IT IS NO LONGER DUPLICATED HERE, AND THE DUPLICATE IS WHY THIS COMMENT
+ * EXISTS.** The sort used to be one expression copied into three files, pinned
+ * to its siblings by a suite comparing them AS TEXT — which caught the drift it
+ * was built for (this file reddened when #718 landed) and could only ever say
+ * *the strings differ*, never *the orders differ*. The comparator is
+ * `scripts/lib/orderedBand.mts` and all three call it.
  */
 /**
  * ⚠ **A ROW NOBODY CAN NAME MAKES THE WHOLE QUEUE UNREADABLE, and the reason is
@@ -305,11 +314,11 @@ const items = rows
       issueNumber: Number(row.number),
       title: String(row.title ?? ""),
       urgent: labels.includes("urgent"),
+      createdAt: String(row.createdAt ?? ""),
       held: heldStatesFromLabels(labels),
     };
   })
-  .sort((a, b) =>
-    (a.urgent === b.urgent ? 0 : a.urgent ? -1 : 1) || a.issueNumber - b.issueNumber);
+  .sort(compareOrderedBand);
 
 if (items.length === 0) none("NEXT UP is empty — nothing is ordered");
 
