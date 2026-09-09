@@ -1,7 +1,7 @@
 {
-  "edition": 313,
-  "updatedAt": "2026-09-09T01:22:27Z",
-  "shift": "Fable (escalated) - the fangs bug from your oni-cyber roll is fixed and measured: fangs now sit inside the mouth and show through slightly parted lips instead of being drawn over a shut mouth like sabre teeth. Your before/after strips are in the eye gallery - your eye closes it.",
+  "edition": 314,
+  "updatedAt": "2026-09-09T04:52:18.000Z",
+  "shift": "Fable (escalated) - the Annual toggle on the plan pages is real now: it opens on the cycle you are billed on, the prices are what the buttons buy, and the exact charge is confirmed before anything is paid. Live in production; Stripe is in test mode, so you can try it with card 4242 4242 4242 4242.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-09T00:24:39.700Z",
+      "readAt": "2026-09-09T04:51:27.459Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4432,6 +4432,13 @@
   ],
   "pipeline": [
     {
+      "id": "pr-710-annual-path-664",
+      "title": "The annual path exists - Annual/Monthly is a real choice for a subscriber (#664)",
+      "status": "merged",
+      "prNumber": 710,
+      "note": "Squash db932e73, deployed on merge and verified serving. Three Fable review rounds; every finding taken - including a credit-minting loop the first review caught before any customer existed, and a webhook dialect mismatch that had the renewal credit refresh structurally dead. Follow-up carded as #711. #664 closed with its receipt."
+    },
+    {
       "id": "pr-708-fangs-at-rest",
       "title": "Fangs render inside the mouth - creature rule + writing assistant (#599)",
       "status": "merged",
@@ -5233,22 +5240,15 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-09T00:24:38.907Z",
+    "readAt": "2026-09-09T04:51:26.668Z",
     "items": [
       {
         "issueNumber": 599,
         "title": "Fangs render outside a closed mouth — 'mouth at rest' + 'dentition visible' is true for tusks and impossible for fangs, so the engine draws sabre teeth over the lip (his oni-cyber Re-imagine, roll 249)",
         "urgent": false,
         "held": {
-          "state": "fable"
-        }
-      },
-      {
-        "issueNumber": 664,
-        "title": "A subscriber's Annual toggle changes every price on the page and never reaches the server — the upgrade bills on their existing cycle",
-        "urgent": false,
-        "held": {
-          "state": "fable"
+          "state": "blocked",
+          "because": "HIS EYE — the fix is merged (PR #708, `e5d374f8`, deployed) and the court ran; both strips are in the eye gallery and the tally is in the comments. Nothing els…"
         }
       }
     ]
