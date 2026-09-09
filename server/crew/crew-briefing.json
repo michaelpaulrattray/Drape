@@ -1,7 +1,7 @@
 {
-  "edition": 317,
-  "updatedAt": "2026-09-09T12:33:49.824Z",
-  "shift": "Foreman - two jobs on the machinery behind the nights, both finished. A rule you set - never draw a marker on a photograph in red - was being broken on a real file, and the check that was supposed to catch it could not see the way the code actually paints. And the switch that stops the team when your Claude account runs out was firing on shifts that had simply written the number 429 in a report. Nothing about the studio itself changed; both were about the nights doing what they say they do.",
+  "edition": 318,
+  "updatedAt": "2026-09-09T14:38:56.552Z",
+  "shift": "Foreman - your one-line answer settled a disagreement between two of your own screens, and it turned out THREE of them were carrying the rule. Then a second job: since merging a pull request became a deploy, the tool the nights merge with had no manners about your rolls - it could land on top of a cast you were watching. Both are live. Nothing about the studio itself changed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-09T12:34:46.827Z",
+      "readAt": "2026-09-09T14:37:37.200Z",
       "items": [
         {
           "issueNumber": 16,
@@ -271,7 +271,7 @@
     {
       "id": "ordered-queue-order-718",
       "issueNumber": 718,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-09T10:45:00Z",
       "title": "Two of your screens disagree about which card a shift takes first - one small question settles it",
       "productImpact": "Nothing is going wrong today and this is not urgent. When you mark a card as ordered, your shifts take it first - that part works. The question is what happens INSIDE that group when one of those cards is ALSO marked urgent. This page floats the urgent one to the top of your ordered list; the list a night shift runs to decide what to work on now puts your whole ordered group above urgent, oldest first. Both are fair readings of your own words, and neither is a bug - which is exactly why it needs you rather than a shift guessing. It was found by the reviewer while checking tonight's other change, and today it is theoretical: nothing is ordered and nothing is urgent as this is written.",
@@ -4460,6 +4460,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-722-ordered-band-718",
+      "title": "Your answer - and it turned out THREE screens carried the rule, not two (#718)",
+      "status": "merged",
+      "prNumber": 722,
+      "note": "Squash 0a808d4a. Your words: Urgent wins inside your ordered group. Your own page already worked that way, so nothing you look at has moved - what changed is that the list a night shift reads came to it. Two things worth knowing. First, there was a THIRD screen carrying the same rule and nobody knew: the gate that decides which model a shift starts on. It was found by a check going red, not by a person. Second, the repair is not make them agree - the three were held together by a SENTENCE in a comment saying they matched, which was true when it was written and quietly stopped being true. There is now one piece of code all three read, so they cannot drift apart again. Fable review: pass, two findings taken and both real - one of them meant a card with no filing date could have jumped to the FRONT of your queue on one screen and the back on another."
+    },
+    {
+      "id": "pr-723-merge-freeze-585",
+      "title": "The nights could deploy on top of a cast you were watching (#585)",
+      "status": "merged",
+      "prNumber": 723,
+      "note": "Squash c258a24b. Since the change you made on 6 September, merging a pull request IS a deploy - and a deploy kills whatever is mid-render. Your money is safe either way (each slice refunds on its own), but you would sit waiting up to six minutes for candidates that were already coming. The deploy ceremony has refused to deploy while you are casting for months; the tool the nights actually merge with had no such manners, which after that change is the wrong way round. It now WAITS while you have cast anything in the last ten minutes, and merges itself the moment you stop - so nothing gets stuck waiting for a person. Your own merges from GitHub are untouched: you never needed protecting from yourself. Worth recording that the review caught this shipping BROKEN - the first version could never have fired, because of how Windows runs the command it needed. It was verified at the machine, not argued about, and the fix has a test that spawns the real thing."
+    },
+    {
       "id": "false-cap-park-495",
       "title": "The nights could stop and tell you your Claude account had run out when it had not (#495)",
       "status": "merged",
@@ -4910,11 +4924,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0909e-foreman",
+      "id": "queue-shape-0910-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 64 open, 15 nobody has looked at in a week - two closed tonight, one written",
-      "detail": "64 cards open, 15 with no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight closed #257 and #495 and wrote one new card (#721), which is the honest remainder of the second job rather than new work.\n\nThe standing note from the last seven nights now holds on BOTH lists. Of the small fixes left, seven of nine end in a decision that is yours. Tonight the same thing showed up in the process list: the next two cards in line - #524 and #523 - each say in their own body that they are waiting on your word, not on a shift. Neither was taken. That is two categories where the work a shift can do on its own is close to run out, which is worth knowing before it looks like the nights are going quiet."
+      "title": "The queue: 62 open, 15 nobody has looked at in a week - two more closed tonight",
+      "detail": "62 cards open, 15 with no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight closed #718 (your ruling) and #585. Nothing new was filed.\n\nThe standing note from the last eight nights still holds, and it is the honest shape of the board: of the small fixes left, seven of nine end in a decision that is yours. The same is now true of the process list - the next cards in line, #524 and #523, each say in their own body that they wait on your word. Tonight's two both came from you, which is why there was plenty to do. When your replies run out, the work that is left is mostly work that needs you."
     },
     {
       "id": "queue-shape-0909d-foreman",
@@ -5329,10 +5343,12 @@
     164,
     165,
     166,
-    167
+    167,
+    168,
+    169
   ],
   "nextUp": {
-    "readAt": "2026-09-09T12:34:45.917Z",
+    "readAt": "2026-09-09T14:37:36.193Z",
     "items": []
   }
 }
