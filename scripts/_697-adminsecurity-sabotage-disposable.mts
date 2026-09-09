@@ -26,6 +26,15 @@
  * ⚠ It can only be re-run with the PRE-REPAIR file checked out; against the
  * repaired suite those sets are false, which is the whole point of them.
  *
+ * ⚠ AND SINCE #727 IT CANNOT BE RE-RUN AT ALL — recorded here rather than left
+ * for someone to discover at a confusing failure. That repair deleted the dead
+ * numeric-id branch AND the `userId` parameter from the product, so the `find`
+ * strings the pre-repair sets were measured with no longer exist in any tree
+ * that also carries the repaired suite: `--before` would need the pre-#697
+ * suite and the pre-#727 product at once, and those are not the same commit.
+ * The `before` sets are kept as the RECORD of what was measured, not as
+ * something still drivable.
+ *
  * Run: npx tsx scripts/_697-adminsecurity-sabotage-disposable.mts [--before]
  */
 import { execFileSync } from "node:child_process";
@@ -75,29 +84,38 @@ const SABOTAGES: Sabotage[] = [
     before: [],
   },
   {
-    /* ⚠ A CONTROL, NOT A COVERAGE ARM — it must redden NOTHING, and that is the
-       finding. `ADMIN_ALLOWLIST` can only be populated from `process.env`, whose
-       values are strings, so `includes(userId)` with a NUMBER can never match in
-       any deployed configuration. Deleting the branch outright changes no
-       behaviour, which is what this proves. Pinned by the suite's own
-       numeric-id arm and filed as its own card; NOT repaired here, because
-       widening who the allowlist admits is a behaviour change and #697 forbids
-       batching one with this work. */
-    name: "THE DEAD BRANCH — the numeric-id match goes (must redden NOTHING)",
+    /* ⚠ THE SUCCESSOR TO THE DEAD-BRANCH CONTROL (#727), AND IT POINTS THE
+       OTHER WAY. The entry that stood here deleted
+       `ADMIN_ALLOWLIST.includes(userId)` and had to redden NOTHING — that is how
+       the branch was proven dead, and on the strength of it the branch, the
+       `userId` parameter and the `(number | string)[]` type were all removed.
+       A sabotage of code that no longer exists is not a control, so it is
+       REPLACED rather than deleted and quietly mourned.
+
+       What is worth guarding now points the other way: the ADDITION of an id
+       road. That widens who reaches the admin surface, it is the founder's call
+       and not a shift's, and it is the exact edit a reader of the old docblock
+       would have made. This adds one in the only place a user id still exists,
+       and the suite's id arm must catch it.
+
+       PREDICTED BEFORE RUNNING: exactly one arm red — the id arm. The empty-list
+       arms short-circuit before this condition, the populated-list arms carry
+       ids that are not on the list, and the role arms are refused earlier. */
+    name: "THE ID ROAD IS RE-ADDED — a numeric id starts admitting",
     file: SEC,
-    find: "  if (ADMIN_ALLOWLIST.includes(userId)) {\n    return true;\n  }",
-    replace: "  if (false) {\n    return true;\n  }",
-    expect: [],
+    find: "  if (!isOnAdminAllowlist(user.email, user.openId)) {",
+    replace: "  if (!isOnAdminAllowlist(user.email, user.openId) && !ADMIN_ALLOWLIST.includes(String(user.id))) {",
+    expect: ["an id that matches the allowlist entry does not admit — the list holds strings, and there is no id road"],
     before: [],
   },
   {
     name: "THE ALLOWLIST STOPS REFUSING — everyone passes a populated list",
     file: SEC,
-    find: "  if (email && ADMIN_ALLOWLIST.includes(email)) {\n    return true;\n  }\n  \n  return false;",
-    replace: "  if (email && ADMIN_ALLOWLIST.includes(email)) {\n    return true;\n  }\n  \n  return true;",
+    find: "  if (email && ADMIN_ALLOWLIST.includes(email)) {\n    return true;\n  }\n\n  return false;",
+    replace: "  if (email && ADMIN_ALLOWLIST.includes(email)) {\n    return true;\n  }\n\n  return true;",
     expect: [
       "a POPULATED allowlist REFUSES an admin who is not on it — the branch an empty list makes unreachable",
-      "an allowlist populated from the environment holds STRINGS, so a numeric id never matches it",
+      "an id that matches the allowlist entry does not admit — the list holds strings, and there is no id road",
     ].sort(),
     before: [],
   },
@@ -108,7 +126,7 @@ const SABOTAGES: Sabotage[] = [
     replace: "  if (false) {\n    return true;\n  }",
     expect: [
       "a POPULATED allowlist admits the admin whose openId is on it",
-      "an allowlist populated from the environment holds STRINGS, so a numeric id never matches it",
+      "an id that matches the allowlist entry does not admit — the list holds strings, and there is no id road",
     ].sort(),
     before: [],
   },

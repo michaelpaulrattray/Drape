@@ -15,48 +15,67 @@ import { AUDIT_ACTIONS } from "../../drizzle/schema";
 
 /**
  * ADMIN ALLOWLIST
- * 
- * Only users whose ID or email is in this list can have admin privileges.
- * Even if someone changes the role in the database, they won't have admin
- * access unless they're on this allowlist.
- * 
- * To add a new admin:
- * 1. Add their user ID or email to this list
- * 2. Update their role to 'admin' in the database
- * 
- * Format: Array of user IDs (numbers) or emails (strings)
+ *
+ * A second gate in front of the admin role: even someone whose row says
+ * `admin` is refused unless they are on this list. An EMPTY list admits every
+ * database admin, which is what production runs today (neither variable below
+ * is set there — read at the Railway variables, 2026-09-09), so admin access
+ * is role-only until somebody populates it.
+ *
+ * ⚠ THE LIST HOLDS STRINGS, AND ONLY STRINGS (#727). Its two entries come from
+ * `process.env`, whose values are always strings, so there is no road by which
+ * a number reaches it. It used to be typed `(number | string)[]`, documented as
+ * *"user IDs (numbers) or emails (strings)"* with the worked example
+ * `1, "admin@klieglabs.com", 2`, and it carried a matching
+ * `ADMIN_ALLOWLIST.includes(userId)` branch that compared a NUMERIC id against
+ * that list. `["42"].includes(42)` is `false`, so that branch could not fire in
+ * any deployed configuration: with `OWNER_OPEN_ID="42"`, user 42 was refused by
+ * id and admitted only by `openId`. The type, the docblock and the branch
+ * together promised an id allowlist that did not exist — and the person it
+ * would have failed is whoever populated the list with a numeric id, believed
+ * they had allowlisted an admin, and got *"User is not on admin allowlist
+ * despite having admin role"* pointing nowhere near the cause.
+ *
+ * The dead branch is gone and the type says what is true. Nothing about who is
+ * admitted changed: the branch was proven unreachable by a sabotage that
+ * deletes it and reddens no arm (a permanent control in
+ * `server/security/adminSecurity.test.ts`). MAKING numeric ids work is the
+ * other repair, and it is a WIDENING of who reaches the admin surface — the
+ * founder's call, not a shift's.
+ *
+ * To allowlist an admin: set `OWNER_OPEN_ID` to their `openId`, or `OWNER_NAME`
+ * to a value matching their `email`, and set their role to `admin`.
  */
-const ADMIN_ALLOWLIST: (number | string)[] = [
-  // Add allowed admin user IDs or emails here
-  // Example: 1, "admin@klieglabs.com", 2
+const ADMIN_ALLOWLIST: string[] = [
   process.env.OWNER_OPEN_ID || null,
   process.env.OWNER_NAME || null,
-].filter(Boolean) as (number | string)[];
+].filter(Boolean) as string[];
 
 /**
- * Check if a user is on the admin allowlist
+ * Check if a user is on the admin allowlist.
+ *
+ * ⚠ Takes no user id ON PURPOSE (#727) — an id is not a thing this list can
+ * hold. A `userId: number` parameter sat here and was compared against the
+ * list; it never matched, and its presence told every reader that ids were
+ * checked. An ignored parameter on a security predicate is the same lie the
+ * old type told, so it went with the branch rather than staying as a comment.
  */
-export function isOnAdminAllowlist(userId: number, email?: string, openId?: string): boolean {
+export function isOnAdminAllowlist(email?: string, openId?: string): boolean {
   // If allowlist is empty, allow all database admins (backwards compatible)
   if (ADMIN_ALLOWLIST.length === 0) {
     return true;
   }
-  
-  // Check if user ID is in allowlist
-  if (ADMIN_ALLOWLIST.includes(userId)) {
-    return true;
-  }
-  
+
   // Check if openId is in allowlist (OWNER_OPEN_ID is a string, not a number)
   if (openId && ADMIN_ALLOWLIST.includes(openId)) {
     return true;
   }
-  
+
   // Check if email is in allowlist
   if (email && ADMIN_ALLOWLIST.includes(email)) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -72,7 +91,7 @@ export function validateAdminAccess(
   }
   
   // Check allowlist
-  if (!isOnAdminAllowlist(user.id, user.email, user.openId)) {
+  if (!isOnAdminAllowlist(user.email, user.openId)) {
     return { 
       allowed: false, 
       reason: "User is not on admin allowlist despite having admin role" 
