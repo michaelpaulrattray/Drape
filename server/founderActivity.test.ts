@@ -22,7 +22,10 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
   FOUNDER_ACTIVE_WINDOW_MINUTES,
@@ -202,6 +205,76 @@ describe("the ledger's address, read by name and never printed", () => {
   });
 });
 
+describe("⚠ THE RUNNER — a `.cmd` needs a shell, and without one the freeze is INERT", () => {
+  /*
+    Review of PR #723, finding 1, and it was verified at the artifact before it
+    was believed: `execFileSync("railway.cmd", …)` without `shell: true` throws
+    `EINVAL spawnSync railway.cmd` on this machine, every time. The throw was
+    swallowed by `productionDatabaseUrl`'s fail-open, so **every merge would
+    have printed "(unread — MYSQL_PUBLIC_URL not readable)" and merged anyway**
+    — a courtesy freeze that could never fire, wearing a note that reads like a
+    worktree with no Railway link. Invariant 7 exactly.
+
+    ⚠ **A SOURCE ARM WOULD NOT HAVE CAUGHT IT AND WOULD NOT CATCH IT NOW** —
+    the shape looked right. So this DRIVES a real batch file through the same
+    call shape the shared runner uses, which is the only reading that can tell
+    the two apart.
+  */
+  const windows = process.platform === "win32";
+
+  it.skipIf(!windows)("resolves a real .cmd from PATH the way the shared runner does", () => {
+    const dir = mkdtempSync(join(tmpdir(), "drape-runner-"));
+    try {
+      writeFileSync(join(dir, "drape-probe.cmd"), "@echo MYSQL_PUBLIC_URL=mysql://probe", "utf8");
+      const withPath = { ...process.env, PATH: `${dir};${process.env.PATH ?? ""}` };
+
+      /* THE NEGATIVE CONTROL: the shape the first version of this shipped. */
+      let threw: string | null = null;
+      try {
+        execFileSync("drape-probe.cmd", [], { encoding: "utf8", env: withPath });
+      } catch (error) {
+        threw = String((error as { code?: string }).code ?? error);
+      }
+      expect(threw, "without a shell a .cmd must NOT resolve — if this ever passes, the arm below proves nothing")
+        .toBe("EINVAL");
+
+      /* THE POSITIVE CONTROL: the shape `railwayVariables` uses. */
+      const out = execFileSync("drape-probe.cmd", [], {
+        encoding: "utf8",
+        env: withPath,
+        shell: true,
+      });
+      expect(out).toContain("MYSQL_PUBLIC_URL=mysql://probe");
+      /* And the parse the freeze depends on survives the round trip. */
+      expect(productionDatabaseUrl(() => out)).toBe("mysql://probe");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("the shared runner asks for a shell, and so does the rite's own", () => {
+    /* The drive above proves WHY; this proves neither road has lost it. The
+       rite keeps its own general-purpose `railway()` runner (twenty-odd call
+       sites), which already carried this lesson in its own words — so what must
+       hold is that both ask for a shell, not that there is one runner. */
+    const source = (file: string) =>
+      readFileSync(new URL(`../scripts/${file}`, import.meta.url), "utf8");
+    /* ⚠ Read the FUNCTION BODY, not the file. The first shape of this arm
+       searched the whole module and matched the docblock, which quotes
+       `shell: true` in prose — so removing it from the actual call left the
+       arm green. An instrument that reads a comment as a fact is the class
+       this repository writes down most often. */
+    const module = source("lib/founderActivity.mts");
+    const start = module.indexOf("export function railwayVariables");
+    expect(start, "the shared runner must exist").toBeGreaterThan(-1);
+    const body = module.slice(start, module.indexOf("\n}", start));
+    expect(body, "the shared runner must ask for a shell — a .cmd cannot resolve without one")
+      .toContain("shell: true");
+    expect(source("pr-merge-in-order.mts"), "the helper must use the shared runner, not build its own")
+      .not.toMatch(/execFileSync\("railway\.cmd"/);
+  });
+});
+
 describe("ONE reading, not two — the rite and the merge helper", () => {
   const source = (file: string) =>
     readFileSync(new URL(`../scripts/${file}`, import.meta.url), "utf8");
@@ -218,6 +291,21 @@ describe("ONE reading, not two — the rite and the merge helper", () => {
     for (const file of ["deploy-rite.mts", "pr-merge-in-order.mts"]) {
       expect(source(file), `${file} must not carry its own copy of the query`)
         .not.toContain("casting_candidate_variants WHERE userId");
+    }
+  });
+
+  it("nobody re-inlines the MYSQL_PUBLIC_URL parse — all four copies are gone", () => {
+    /*
+      ⚠ Review of PR #723, finding 2, and working law 7: the sweep is part of
+      the fix. The rite carried a SECOND copy fifteen lines below the comment
+      saying two copies is the defect, and `park-state.mts` carried a third that
+      split on `"
+"` alone — so a CRLF line left a `
+` on the end of the URL.
+    */
+    for (const file of ["deploy-rite.mts", "pr-merge-in-order.mts", "park-state.mts"]) {
+      expect(source(file), `${file} must reach the address through the shared parse`)
+        .not.toContain(`startsWith("MYSQL_PUBLIC_URL=")`);
     }
   });
 

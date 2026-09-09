@@ -89,6 +89,7 @@ import { openDatabase } from "./lib/dbConnection.mts";
 import {
   FOUNDER_ACTIVE_WINDOW_MINUTES,
   productionDatabaseUrl,
+  railwayVariables,
   readFounderActivity,
 } from "./lib/founderActivity.mts";
 import {
@@ -809,11 +810,11 @@ async function courtesyFreeze(): Promise<{ holds: boolean; line: string }> {
     return { holds: false, line: "the courtesy freeze was SKIPPED with --anyway" };
   }
   const activity = await readFounderActivity({
-    url: productionDatabaseUrl(() =>
-      execFileSync("railway.cmd", ["variables", "--service", "MySQL", "--kv"], {
-        encoding: "utf8",
-        maxBuffer: 8 * 1024 * 1024,
-      })),
+    /* ⚠ The RUNNER is shared, not just the parse — `railway.cmd` is a batch
+       file and `execFileSync` without `shell: true` throws `EINVAL` on this
+       machine, which the fail-open would have swallowed into a freeze that
+       could never fire (review of PR #723, finding 1). */
+    url: productionDatabaseUrl(railwayVariables),
     openDatabase,
   });
   return {
@@ -867,6 +868,8 @@ outer: for (const first of readings) {
   // about a branch that is now BEHIND. Acting on the snapshot is how this tool
   // would merge a stale branch (working law 1 — the plan is a claim).
   let pr = dryRun ? first : readPr(first.number, readWorktrees());
+  /** Was the LAST thing this PR waited on the freeze rather than the gate? */
+  let heldOnFreeze = false;
   for (;;) {
     const action: MergeAction = decideMergeAction(pr, { moneyPattern });
     say(describeAction(pr, action));
@@ -877,10 +880,12 @@ outer: for (const first of readings) {
          before an earlier PR's gate finished would be minutes stale. */
       const freeze = await courtesyFreeze();
       say(`  ${freeze.line}`);
+      heldOnFreeze = false;
       if (!freeze.holds) {
         mergePr(pr);
         break;
       }
+      heldOnFreeze = true;
       say(`#${pr.number} WAITING on the courtesy freeze — not a stall, and nothing is wrong.`);
       /* Deliberately NO break: the loop's own dry-run, deadline and sleep
          handling below is the wait, and it re-reads the PR each time round. */
@@ -908,9 +913,18 @@ outer: for (const first of readings) {
       break;
     }
     if (Date.now() >= deadline) {
+      /* ⚠ **NAME WHAT WAS ACTUALLY BEING WAITED ON** (review of PR #723,
+         finding 3). A dogfooding session can outlast the default 45 minutes,
+         and sending the operator to the gate-stall tool over a courtesy freeze
+         is a diagnosis pointing at the wrong instrument — the same class as a
+         receipt that shows a failure as quiet. */
       say(
-        `GAVE UP — waited ${(timeoutMs / 60_000).toFixed(0)} minutes on #${pr.number}. That is not a ` +
-          `stall verdict: run \`gate-stall-check --pr ${pr.number}\` to tell a live run from a dead one (#368).`,
+        heldOnFreeze
+          ? `GAVE UP — waited ${(timeoutMs / 60_000).toFixed(0)} minutes on #${pr.number}, and the last ` +
+            `thing it was waiting on was the COURTESY FREEZE, not the gate. Nothing is wrong: he has been ` +
+            `casting. Re-run when he is quiet, or with --anyway if this merge IS the fix he is waiting on.`
+          : `GAVE UP — waited ${(timeoutMs / 60_000).toFixed(0)} minutes on #${pr.number}. That is not a ` +
+            `stall verdict: run \`gate-stall-check --pr ${pr.number}\` to tell a live run from a dead one (#368).`,
       );
       exitCode = 3;
       break outer;

@@ -44,6 +44,36 @@
  * unreadable path says so in its own note, so a receipt never shows a silence
  * that was really a failure.
  */
+import { execFileSync } from "node:child_process";
+
+/**
+ * ⚠ **THE RUNNER IS SHARED TOO, AND `shell: true` IS THE WHOLE OF IT** (review
+ * of PR #723, finding 1 — verified at the artifact before it was believed:
+ * `execFileSync("railway.cmd", …)` without a shell throws `EINVAL spawnSync
+ * railway.cmd` on this machine, every time).
+ *
+ * `railway.cmd` is a BATCH FILE. `execFileSync` cannot resolve one from PATH
+ * without a shell, and since the CVE-2024-27980 fix (Node 18.20 / 20.12+; this
+ * repo runs 22) spawning a `.cmd` without `shell: true` throws outright.
+ *
+ * **The first version of this shipped without it, and that is invariant 7
+ * exactly**: the throw was swallowed by `productionDatabaseUrl`'s fail-open,
+ * every merge would have printed *"(unread — MYSQL_PUBLIC_URL not readable)"*
+ * and merged anyway, and the receipt would have read like a worktree with no
+ * Railway link. **A courtesy freeze that can never fire, wearing a note that
+ * says the manners exist.** The rite already carried this lesson in its own
+ * words — *"the first run of this script watched a deploy that had already
+ * succeeded for thirty minutes because of it"* — which is why the runner now
+ * lives beside the reading rather than being rebuilt by each caller.
+ */
+export function railwayVariables(service = "MySQL"): string {
+  return execFileSync("railway.cmd", ["variables", "--service", service, "--kv"], {
+    encoding: "utf8",
+    maxBuffer: 8 * 1024 * 1024,
+    /* ⚠ NOT a style choice. See above. */
+    shell: true,
+  });
+}
 
 /** The window, in minutes, inside which a row of his counts as an active session. */
 export const FOUNDER_ACTIVE_WINDOW_MINUTES = 10;

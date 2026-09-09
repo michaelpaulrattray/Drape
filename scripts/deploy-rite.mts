@@ -923,10 +923,11 @@ const founderIsActive = await readFounderActivity({
 });
 
 const inFlight = await (async (): Promise<string> => {
-  const url = railway("variables", "--service", "MySQL", "--kv").split(/\r?\n/)
-    .map((line) => line.trim())
-    .find((line) => line.startsWith("MYSQL_PUBLIC_URL="))
-    ?.slice("MYSQL_PUBLIC_URL=".length);
+  /* ⚠ **THE SAME PARSE AS THE FREEZE'S, SO IT IS THE SAME FUNCTION** (review of
+     PR #723, finding 2 — working law 7: the sweep is part of the fix, and this
+     sibling sat fifteen lines below the comment saying two copies is the
+     defect). Two parses drifting would make THIS read fail open in silence. */
+  const url = productionUrl();
   if (!url) return "(unread — MYSQL_PUBLIC_URL not readable)";
   try {
     const connection = await openDatabase(url);
