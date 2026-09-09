@@ -1,7 +1,7 @@
 {
-  "edition": 323,
-  "updatedAt": "2026-09-09T20:53:37Z",
-  "shift": "Foreman - two repairs you should not be able to see, which is the bar for both of them. The first is on your admin Overview: the little rows that read 'Frozen ... 2' or 'Server uptime ... 2m' were drawn from a second, private copy of a row the rest of the product already has, and the two copies disagreed about four things - how the label and the number line up, the gap between them, the spacing above and below, and the size of the number. There is one row now, and it is the one your own brief specified. Nothing on the page changes except that those rows sit a hair tighter and the figures are a half-pixel larger. The near-miss is worth a line: the little colour chip beside each slice of the Governance donut had to move inside the row's label, and the obvious way to make it fit would have quietly nudged four unrelated chart legends elsewhere on the page. That was caught by reading all six places the chip is used before changing it, and there is now a check that goes red if anyone tries the obvious way again. The second is about the nights themselves. On 6 September a shift worked for two and a half hours, built and shipped a feature, and then wrote its whole report as a chat message instead of to the file the next shift reads. The work was fine; the record was lost, and two shifts later nothing in the handoff knew the build had happened. The runner now rescues that report into the mailbox itself, marked plainly as a rescue rather than a proper close, and its claims get checked exactly as a real report's would.",
+  "edition": 324,
+  "updatedAt": "2026-09-09T22:55:00Z",
+  "shift": "Foreman - two suites that were only pretending to watch, and a sentence that had four copies of itself. The first: five tests on the referral invite never touched the product. They told a stand-in what to say, asked it, and agreed with the answer they had just given it - so deleting the invite feature outright would have left every one of them green. They drive the real thing now, and that turned up a genuine hole: twelve tests prove the product KNOWS that guerrillamail is a throwaway address, and not one of them proved the invite screen ever ASKS. With the check switched off the old suite still passed 17 of 17. Eight deliberate breakages of the invite path now each turn exactly one test red. The second is about the credit ledger. When a picture you paid for does not arrive we refund you and write a sentence on your credit history saying why. Our own weekly count of missing pictures finds those refunds by matching that sentence word for word - and the sentence was typed out in five places. Reword one, an ordinary copy change, and the count silently stops seeing that refund while still reporting that everything agrees. There is one copy now and a check that goes red on a sixth. Worth saying out loud: the first version of that check shipped slower than reported and the safety net caught it - the details are on the card, because a report that does not match the code is the thing this whole night was about.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -4465,6 +4465,22 @@
   ],
   "pipeline": [
     {
+      "id": "pr-739-referral-hollow-arms-697",
+      "title": "Five tests on your referral invite were watching a stand-in, not the product (#697)",
+      "status": "merged",
+      "prNumber": 739,
+      "cardId": null,
+      "note": "Squash b11d7ba4. Two groups of tests configured a fake, called the fake, and asserted what they had just told it to return - no line of the invite feature ran in any of them. Seven now drive the real procedure end to end: the right address, name, share link and reward reaching the mail service; the invite recorded against the signed-in account rather than anything the request sent; a throwaway address refused with nothing sent; a duplicate refused with nothing sent; the eleventh invite in a day refused properly rather than silently. Three more were DELETED rather than rewritten - their subject is a daily job wired inside the server's own startup, unreachable without booting it, so three tests pretending to cover it were worse than none and the gap is now written down. The bar was eight deliberate breakages, each turning exactly one test red. Review: clean pass, one note, taken in one push."
+    },
+    {
+      "id": "pr-740-slice-refund-vocabulary-536",
+      "title": "The sentence on your credit history had four copies, and our own count matched on the wording (#536)",
+      "status": "merged",
+      "prNumber": 740,
+      "cardId": null,
+      "note": "Squash 240bb6cc. When a casting slice does not arrive we refund it and write a reason on the credit ledger. The weekly count of missing pictures cross-checks itself against those refunds by matching the sentence exactly - and the four sentences were typed out at their four writers and then a fifth time in the counter. Reword any one of them and the count stops seeing that refund while still printing AGREES, possibly for months: the contact-sheet sentence has not fired in sixty days and no retry has ever run on production, so nothing would have complained. One place writes them now, everything else asks it, and a check goes red on a sixth copy. No wording changed - every sentence is byte-for-byte what it was, so no credit line on any account moves. Two of the three problems found during the build were in our own tools rather than the product, and both are written down on the card rather than quietly fixed."
+    },
+    {
       "id": "pr-738-leader-row-419",
       "title": "Your admin Overview drew its label-and-number rows from a second, private copy (#419)",
       "status": "merged",
@@ -4996,16 +5012,23 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0910d-foreman",
+      "id": "queue-shape-0910e-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 58 open, 14 nobody has looked at in a week - two closed tonight, one filed",
+      "detail": "58 cards open. 14 have had no comment, no close and no code near them for seven days, and the oldest is 15 days - both numbers down from last night, because two of the stale ones were the work tonight.\n\nNothing is waiting on you except the one word on the fangs frames, which is unchanged from three nights ago. NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight: #697 advanced a file and #536 closed. One new card filed (#741) - a check of the same kind as tonight's, on someone else's file, goes red at random when the machine is busy. That matters more than it sounds: a check that cries wolf is a check people learn to ignore, and these particular ones are what stop a price, a limit or a sentence being written down twice.\n\nThe shape of what is left is the same as the last three nights and worth repeating once: of the small jobs on the board, most end in a decision only you can make - how something should look, how fast something should refresh, which drawing to use. The team is not allowed to answer those."
+    },
+    {
+      "id": "queue-shape-0910d-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 62 open, 17 nobody has looked at in a week - two closed tonight, none filed",
       "detail": "62 cards open. 17 have had no comment, no close and no code near them for seven days - the same 17 as last night, and the oldest is 15 days.\n\nNothing is waiting on you except the one word on the fangs frames, which is unchanged. NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight: #419 and #600 both built, verified and closed. Nothing new was filed, because nothing new was found that a card did not already cover.\n\nThe same shape as the last two nights, said once more because it is the honest read: of the small jobs left on the board, most end in a decision only you can make - four of the eight small fixes are questions about how something should look or how fast something should refresh, and the team is not allowed to answer those for you."
     },
     {
       "id": "queue-shape-0910c-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 63 open, 17 nobody has looked at in a week - two closed tonight, one filed",
       "detail": "63 cards open. 17 have had no comment, no close and no code near them for seven days - that figure has not moved this week, and the oldest is 15 days.\n\nNothing is waiting on you. NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue - the next is due in two days.\n\nTonight: #733 and #728 both fixed, merged and closed, and #737 filed from the second one. The shape worth saying plainly is the same as last night's: of the small jobs left on the board, most end in a decision only you can make. That is not a complaint - it is what an idle queue looks like when the team is not allowed to invent work."
     },
