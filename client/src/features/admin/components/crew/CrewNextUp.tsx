@@ -34,27 +34,9 @@
  */
 import { cn } from "@/lib/utils";
 import { TableHead } from "@/foundation";
+import { shortDate } from "./CrewProgramBanner";
 import { heldCount, nextUpRows } from "./crewTypes";
 import type { CrewBriefingView, CrewNeedsYouCard } from "./crewTypes";
-
-/**
- * "read 09:12 · 30 Aug" — the stamp is said, never implied.
- *
- * ⚠ 24-hour, forced: the third of this page's three time formatters and the
- * second one missed when `CrewWorkingNow`'s `clockTime` was fixed. Its docblock
- * carries the argument; the class sweep is in `shortDate`'s.
- */
-function readStamp(iso: string): string {
-  const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) return iso;
-  return at.toLocaleString(undefined, {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
 
 export function CrewNextUp({
   nextUp,
@@ -72,7 +54,7 @@ export function CrewNextUp({
           rides beside it — both are measured values, so both are mono. */}
       <TableHead eyebrow="Next up">
         {rows.length > 0 && <span className="dp-crew__meta">{rows.length} open</span>}
-        <span className="dp-crew__mono">queue read {readStamp(nextUp.readAt)}</span>
+        <span className="dp-crew__mono">queue read {shortDate(nextUp.readAt)}</span>
       </TableHead>
 
       {rows.length === 0 ? (

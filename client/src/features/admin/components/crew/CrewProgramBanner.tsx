@@ -448,6 +448,20 @@ export function CrewProgramBanner({
  * confirming quote read *"— you, 25 Aug, 07:17 pm"* directly above a shift
  * strip printing `20:17`. Found by LOOKING at the rendered page during brief
  * 08's drive, which is how the first instance was found too.
+ *
+ * ⚠ **`readStamp` IS GONE — it was byte-identical to this and is now a call to
+ * it (#329's sweep).** Three formatters is what let one fix reach one of them;
+ * a page that renders a date in two places from two copies will disagree in
+ * one of them eventually, and this one already had. **TWO remain and they
+ * answer different questions**: this (day + time, for anything DATED) and
+ * `CrewWorkingNow`'s `clockTime` (time only, for a live strip whose rows are
+ * all today). That is a difference of purpose, not a duplicate — collapsing it
+ * would put a date on every row of a strip that is minutes old.
+ *
+ * It lives in a component file with six importers, which is the promotion pass's
+ * shape for a move into a shared module. **That move is NOT made here**: it is
+ * six import lines in a change about a missing timestamp, and the pass is a
+ * carded activity (#481/#482). Logged rather than done.
  */
 export function shortDate(iso: string): string {
   const date = new Date(iso);

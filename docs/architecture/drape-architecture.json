@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "5d33a21efc7350f4"
+    "sourceFingerprint": "5f13323da04cfba6"
   },
   "domains": [
     {
@@ -12760,6 +12760,10 @@
       "path": "server/crew/crewTabScope.test.ts"
     },
     {
+      "id": "test:server/crewBriefingFieldReaders.test.ts",
+      "path": "server/crewBriefingFieldReaders.test.ts"
+    },
+    {
       "id": "test:server/crewCardIntents.test.ts",
       "path": "server/crewCardIntents.test.ts"
     },
@@ -14794,6 +14798,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
       "to": "module:shared/crewCardState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
       "kind": "imports"
     },
     {
