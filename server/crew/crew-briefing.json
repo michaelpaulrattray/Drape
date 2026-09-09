@@ -1,7 +1,7 @@
 {
-  "edition": 315,
-  "updatedAt": "2026-09-09T07:20:00.000Z",
-  "shift": "Foreman - two small tidying jobs on the staff screens, both live. A moderator's refund request now refuses a field it does not recognise instead of quietly dropping it, and one date on the moderator screens crosses in the same form as every date beside it. Nothing you can see changed; both were loose ends with a receipt.",
+  "edition": 316,
+  "updatedAt": "2026-09-09T10:58:00.000Z",
+  "shift": "Foreman - two jobs on the team's own instruments, both merged. The list a night shift reads to decide what matters most could not see the cards YOU ordered, so with nothing marked urgent it said the queue was clear. And the foot of this page named who wrote the briefing without ever saying when. Nothing about the studio changed; both were about you being able to trust what these screens tell you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-09T07:15:38.324Z",
+      "readAt": "2026-09-09T10:52:45.416Z",
       "items": [
         {
           "issueNumber": 16,
@@ -253,6 +253,12 @@
           "rung": "N8"
         },
         {
+          "issueNumber": 26,
+          "title": "The inspired EDIT is capped at a tenth of the inspired BRIEF — 200 chars vs 2000",
+          "kind": "roadmap",
+          "rung": null
+        },
+        {
           "issueNumber": 706,
           "title": "The future top-up writer must store a Stripe-retrievable reference — the #418 refund road depends on it (measured: population empty today)",
           "kind": "roadmap",
@@ -262,6 +268,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "ordered-queue-order-718",
+      "issueNumber": 718,
+      "state": "open",
+      "filedAt": "2026-09-09T10:45:00Z",
+      "title": "Two of your screens disagree about which card a shift takes first - one small question settles it",
+      "productImpact": "Nothing is going wrong today and this is not urgent. When you mark a card as ordered, your shifts take it first - that part works. The question is what happens INSIDE that group when one of those cards is ALSO marked urgent. This page floats the urgent one to the top of your ordered list; the list a night shift runs to decide what to work on now puts your whole ordered group above urgent, oldest first. Both are fair readings of your own words, and neither is a bug - which is exactly why it needs you rather than a shift guessing. It was found by the reviewer while checking tonight's other change, and today it is theoretical: nothing is ordered and nothing is urgent as this is written.",
+      "workedExample": "Say you ordered a card on 25 August, and a newer one on 5 September that you also marked urgent. This page tells a shift to take the newer urgent one. The shift's own list tells it to take the older one, because it comes first in the order you set. Same two cards, two different answers to 'what do I do first'.",
+      "options": [
+        {
+          "key": "urgent-wins",
+          "label": "Urgent wins inside your ordered group",
+          "consequence": "Recommended. 'Urgent' keeps meaning 'this cannot wait' everywhere, and it is what this page already does - so nothing you look at changes; the shift's own list is brought into line behind it."
+        },
+        {
+          "key": "order-wins",
+          "label": "Your order wins - urgent does not jump the queue",
+          "consequence": "The other fair reading: once you have set an order, it is the order. This page would change to match, so a card you marked urgent would no longer rise to the top of NEXT UP."
+        }
+      ],
+      "recommendation": "Take the first one - urgent wins inside your ordered group. Reply on #718 with a word and both screens get lined up behind it, plus a check that stops them drifting apart again. It was two copies of one rule that let them disagree in the first place."
+    },
     {
       "id": "fangs-at-rest-599",
       "issueNumber": 599,
@@ -4432,6 +4460,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-716-ordered-band-472",
+      "title": "The list your shifts read to decide what matters could not see the cards you ordered (#472)",
+      "status": "merged",
+      "prNumber": 716,
+      "note": "Squash c4f979ba, merged 10:40. When you order a card it is meant to be taken FIRST - before anything else. But the list a night shift runs to answer 'what matters most right now' only ever looked at one label: urgent. So with nothing marked urgent it printed 'bands 2 and 3 apply', which reads as 'the queue is clear' - on a day the card was filed when FOURTEEN cards you had personally ordered were sitting there unnamed. It now prints your ordered cards first, oldest first, says plainly which labels it looked at when a band is empty, and shows a card that is blocked AS blocked, so a held card cannot read as work waiting to be picked up. Fable review over two rounds; every finding taken. #472 closed with its receipt."
+    },
+    {
+      "id": "pr-717-edition-written-at-329",
+      "title": "This page now says when the briefing was written, not just who wrote it (#329)",
+      "status": "merged",
+      "prNumber": 717,
+      "note": "Squash 9cb724ce, merged 10:50. The line at the foot of this page said 'Briefing edition 315, written by Foreman...' and never said when. If you left this page open overnight it looked exactly the same whether the last edition landed two minutes or nine hours ago. It now reads 'written 9 Sept, 17:20 by ...'. The time was always being recorded - it was the one thing the briefing saved that nothing on the page ever drew, which is the same fault that got the journal removed. Looked at in both light and dark before shipping. Fable review: clean pass. #329 closed with its receipt."
+    },
+    {
       "id": "pr-714-strict-change-request-705",
       "title": "A moderator's refund request refuses a field it does not know (#705)",
       "status": "merged",
@@ -4854,9 +4896,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0909c-foreman",
+      "id": "queue-shape-0909d-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 65 open, 15 nobody has looked at in a week - two closed tonight, one written",
+      "detail": "65 cards open, 15 with no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight closed #472 and #329 and wrote one new card (#718), which asks you a single question when you have a moment - see it below.\n\nThe standing note from the last six nights holds and tonight tightened it: of the nine small fixes left, seven end in a decision that is yours rather than work a shift can do. One of them, #26, turned out not to be a small fix at all - its own design document says it needs a paid measurement, a database change and your word on a number - so it has been taken off that list with the reasoning written on the card. Each night was spending twenty minutes re-reading it to reach the same answer."
+    },
+    {
+      "id": "queue-shape-0909c-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 66 open, 17 nobody has looked at in a week - two closed tonight, none written",
       "detail": "66 cards open, 17 with no comment, no close and no code near them for seven days. That number went up from 14 without anything getting worse: it counts real engagement only, so cards simply age into it.\n\nNothing is waiting on you: NEXT UP is empty, nothing carries urgent, and none of the four check-up rounds is overdue.\n\nTonight closed two small fixes (#705 and #703) and wrote no new cards. The standing note from the last five nights holds again, and tonight measured it: of the eleven small fixes on the board, six end in a decision that is yours - which of two things should look the same, whether a label or a refresh rate should move, whether a glyph is right - rather than in work a shift can do on its own. The one open bug, #711, is a money-path design and is Fable's when it is taken."
     },
@@ -4864,7 +4913,7 @@
       "id": "queue-shape-0909b-foreman",
       "title": "The queue: 71 open, 14 nobody has looked at in a week - one closed, two new ones written",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "detail": "71 cards open, 14 with no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, nothing carries urgent, your desk is clear, and none of the four check-up rounds is overdue.\n\nTonight's work closed one file of a bigger clean-up (#697 stays open - eleven more files) and wrote two new cards, both found by the reviewer rather than invented: #699, the one line in the browser that decides whether a non-staff visitor sees the moderator screen, which nothing tests; and #700, two staff screens that hand back a database row wholesale and are safe only because a different file happens to trim it first. Neither is a live problem today and both are written down so they cannot become one quietly.\n\nThe standing note holds for a fifth night: the open bugs and the oldest small fixes now mostly end in a decision that is yours rather than in work a shift can do on its own."
     },
     {
@@ -4878,7 +4927,7 @@
       "id": "queue-shape-0909-foreman",
       "title": "The queue: 69 open, 14 nobody has looked at in a week - two closed tonight, one new one written",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "detail": "69 cards open, 14 with no comment, no close and no code near them for seven days. Two closed tonight (#328 and #681) and one written (#697, which came out of tonight's work).\n\nNothing is waiting on you: NEXT UP is empty, nothing carries urgent, and none of the four check-up rounds is overdue.\n\nThe standing note from the last four nights still holds and is now measured on a third band: the oldest small fixes read the same way the bugs do - several of them end in a decision that is yours (which of two things should look the same, whether a label or a poll rate should move) rather than in work a shift can do. That is not a complaint about the switches; it is what the bottom of the queue actually is."
     },
     {
@@ -5261,7 +5310,7 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-09T07:15:37.293Z",
+    "readAt": "2026-09-09T10:52:44.639Z",
     "items": []
   }
 }
