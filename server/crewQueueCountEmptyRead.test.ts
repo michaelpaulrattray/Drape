@@ -37,10 +37,19 @@
  *   5. the cross-check reads the population from the SAME response as the
  *      pipeline groups, not a second `gh` round trip.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { CREW_WORK_CATEGORIES } from "../shared/crewWorkSwitches";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { refreshQueueCounts, type QueueGhReader } from "../scripts/lib/crewQueueCount.mts";
+
+/* ⚠ IN THE #548 POPULATION ONE HOP OUT, AND CORRECTLY SO. Every arm here hands
+   the reading a FAKE `gh` and nothing in this file spawns anything — but the
+   module it imports holds `execFileSync` in its real reader, which is the hop
+   the deriver resolves, and an arm added later that forgot the fake would spawn
+   for real inside vitest's 5s default. `server/crewCloseCounts.test.ts` carries
+   the same declaration for the same reason. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /** The label the observed incident was on, and a second one to hold beside it. */
 const PROCESS = "seat:retro";
