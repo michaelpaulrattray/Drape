@@ -72,7 +72,12 @@ describe("toolKind: null is an ENUMERATED decision, not a default (#401)", () =>
    * endpoint is. (The population is derived from the code, not transcribed:
    * a prose list with no arm deriving it is how a list stops being the list.)
    */
-  const EXPECTED_NULL_SITES = ["server/stripe/webhooks.ts"];
+  /* Growing this list IS the enumerated decision the arm below exists to
+     force. Two members now: the chargeback revoke (#401 — freezes a disputed
+     balance) and the plan-change credit unwind (#664 — returns unconsumed
+     allowance beside Stripe's money credit for the same days). Neither makes
+     anything, which is what null states. */
+  const EXPECTED_NULL_SITES = ["server/routes/billing.ts", "server/stripe/webhooks.ts"];
 
   async function collectServerFiles(dir: string): Promise<string[]> {
     const entries = await readdir(dir, { withFileTypes: true });
@@ -97,7 +102,7 @@ describe("toolKind: null is an ENUMERATED decision, not a default (#401)", () =>
     return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
   }
 
-  it("exactly one production file passes toolKind: null, and it is the revoke", async () => {
+  it("exactly TWO production files pass toolKind: null — the revoke and the plan-change unwind (#401, #664)", async () => {
     const files = await collectServerFiles("server");
     // The scanner itself is proven able to see: it must find the credits
     // module and the webhook module before its verdict counts for anything.
