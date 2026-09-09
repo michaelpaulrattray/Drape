@@ -41,6 +41,9 @@ const A_ONE_READ = "asks `gh` for the whole open queue exactly once, however man
 const A_EVERY_CATEGORY = "⚠ every switch category is covered by the cross-check, derived rather than listed";
 const A_SIBLING_REFUSES = "⚠ REFUSES an empty queue read while this run's own oldest-card read found a card";
 const A_SIBLING_CONTROL = "⚠ POSITIVE CONTROL — a queue that really has rows still writes every group";
+const A_DRIFT_NAMED = "⚠ NAMES a label whose cards PREDATE the whole-queue read — a rename cannot hide";
+const A_DRIFT_SKEW = "⚠ CONTROL — a card filed DURING the run is skew, and says nothing at all";
+const A_DRIFT_ORDINARY = "⚠ CONTROL — an ordinary agreeing run says nothing either";
 
 type Sabotage = { name: string; file: string; find: string; replace: string; expect: string[] };
 
@@ -105,7 +108,11 @@ const SABOTAGES: Sabotage[] = [
     file: LIB,
     find: "      for (const name of row.labels) labelPopulation.set(name, (labelPopulation.get(name) ?? 0) + 1);",
     replace: "      for (const name of [] as string[]) labelPopulation.set(name, (labelPopulation.get(name) ?? 0) + 1);",
-    expect: [A_REFUSES_DISAGREEMENT, A_OTHERS_STILL_WRITTEN, A_EVERY_CATEGORY].sort(),
+    /* ⚠ A FOURTH CORRECTION, AND IT IS THE TRIPWIRE ARRIVING: with the
+       population emptied, every label looks renamed, so the ordinary-run
+       control reddens too. The three below were right before that arm existed
+       and are incomplete now rather than wrong. */
+    expect: [A_REFUSES_DISAGREEMENT, A_OTHERS_STILL_WRITTEN, A_EVERY_CATEGORY, A_DRIFT_ORDINARY].sort(),
   },
   {
     /* ⚠ THE ORDERING, WHICH IS THE HALF A READER WOULD CALL COSMETIC. Reading
@@ -132,6 +139,9 @@ const SABOTAGES: Sabotage[] = [
     expect: [
       A_REFUSES_DISAGREEMENT, A_EMPTY_STILL_ZERO, A_OTHERS_STILL_WRITTEN, A_ONE_READ,
       A_SIBLING_REFUSES, A_SIBLING_CONTROL,
+      /* No population at all means no tripwire either — the drift arm cannot
+         see what it is there to see. */
+      A_DRIFT_NAMED,
     ].sort(),
   },
   {
@@ -150,7 +160,25 @@ const SABOTAGES: Sabotage[] = [
     file: LIB,
     find: "    if (rows.length === 0) {\n      warn(\n        \"REFUSING the pipeline groups:",
     replace: "    if (rows.length >= 0) {\n      warn(\n        \"REFUSING the pipeline groups:",
-    expect: [A_SIBLING_CONTROL, A_REFUSES_DISAGREEMENT, A_OTHERS_STILL_WRITTEN, A_EMPTY_STILL_ZERO].sort(),
+    expect: [A_SIBLING_CONTROL, A_REFUSES_DISAGREEMENT, A_OTHERS_STILL_WRITTEN, A_EMPTY_STILL_ZERO, A_DRIFT_NAMED].sort(),
+  },
+  {
+    /* PR #729's review, finding 1 — the tripwire that catches the guard going
+       inert. Removing it is the state the review found. */
+    name: "THE TRIPWIRE GOES — a renamed label disarms the guard in silence",
+    file: LIB,
+    find: "      const predating = stamped.filter((row) => Number.isFinite(row.at) && row.at < populationReadAt);",
+    replace: "      const predating = [] as typeof stamped;",
+    expect: [A_DRIFT_NAMED],
+  },
+  {
+    /* Its own control, in the other direction: a tripwire that fires on the
+       benign skew case is one a shift learns to scroll past. */
+    name: "THE TRIPWIRE STOPS TELLING SKEW APART — every disagreement is called drift",
+    file: LIB,
+    find: "      const predating = stamped.filter((row) => Number.isFinite(row.at) && row.at < populationReadAt);",
+    replace: "      const predating = stamped;",
+    expect: [A_DRIFT_SKEW],
   },
 ];
 

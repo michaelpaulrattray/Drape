@@ -246,6 +246,86 @@ describe("the whole-queue read is cross-examined the same way", () => {
   });
 });
 
+/**
+ * THE TRIPWIRE ON THE GUARD ITSELF (PR #729's review, finding 1).
+ *
+ * The cross-examination is only as good as the two reads agreeing on what a
+ * label is CALLED. `gh issue list --label` matches case-insensitively; the
+ * lookup is exact. A rename or a re-casing leaves the per-label read working
+ * and the population answering 0 — and the guard goes inert with every arm
+ * above still green, which is invariant 7's shape.
+ *
+ * ⚠ It warns rather than refusing, and it tells the ONE benign cause apart:
+ * a card filed while this run was reading reaches the per-label read and not
+ * the population, which is ordinary on a shift that files cards.
+ */
+describe("a label the two reads disagree about is named, not silently tolerated", () => {
+  /** A `gh` whose per-label answer carries a label the whole-queue read never mentions. */
+  function ghWithDrift(cardCreatedAt: string): QueueGhReader {
+    return (args) => {
+      const at = args.indexOf("--label");
+      if (at !== -1) {
+        const label = args[at + 1]!;
+        if (label !== PROCESS) return JSON.stringify([]);
+        /* The card is real and carries the label under a DIFFERENT canonical
+           casing, which is exactly what a rename leaves behind. */
+        return JSON.stringify([{
+          number: 4242,
+          title: "a card whose label was renamed",
+          createdAt: cardCreatedAt,
+          updatedAt: cardCreatedAt,
+          labels: [{ name: "Seat:Retro" }],
+        }]);
+      }
+      if (args.includes("sort:created-asc")) return JSON.stringify([{ number: 1000, createdAt: "2026-09-01T00:00:00Z" }]);
+      if (args.includes("pr")) return JSON.stringify([]);
+      return JSON.stringify(cardsFor(BUGS, 1));
+    };
+  }
+
+  it("⚠ NAMES a label whose cards PREDATE the whole-queue read — a rename cannot hide", async () => {
+    const { conn, writes } = connectionThat();
+    const said: string[] = [];
+    const outcome = await refreshQueueCounts(conn, ghWithDrift("2026-09-01T00:00:00Z"), {
+      log: () => {},
+      warn: (line) => said.push(line),
+    });
+
+    expect(outcome.ok).toBe(true);
+    /* The count is still WRITTEN — this is a warning about the guard, not a
+       refusal of the reading, and the reading itself is correct. */
+    expect(storedFor(writes, "process")).toBe(1);
+    expect(said.join("\n")).toMatch(/VOCABULARY DRIFT on `seat:retro`/);
+  });
+
+  it("⚠ CONTROL — a card filed DURING the run is skew, and says nothing at all", async () => {
+    const { conn, writes } = connectionThat();
+    const said: string[] = [];
+    /* Filed after the population read, which happens at the start of this
+       call — the ordinary shape on a shift that files a card mid-count. */
+    const outcome = await refreshQueueCounts(conn, ghWithDrift(new Date(Date.now() + 60_000).toISOString()), {
+      log: () => {},
+      warn: (line) => said.push(line),
+    });
+
+    expect(outcome.ok).toBe(true);
+    expect(storedFor(writes, "process")).toBe(1);
+    /* A tripwire that fires on the benign case is one people learn to ignore. */
+    expect(said.join("\n")).not.toMatch(/VOCABULARY DRIFT/);
+  });
+
+  it("⚠ CONTROL — an ordinary agreeing run says nothing either", async () => {
+    const { conn } = connectionThat();
+    const said: string[] = [];
+    await refreshQueueCounts(conn, ghThatBlips({ queue: { [PROCESS]: 3, [BUGS]: 1 } }), {
+      log: () => {},
+      warn: (line) => said.push(line),
+    });
+
+    expect(said.join("\n")).not.toMatch(/VOCABULARY DRIFT/);
+  });
+});
+
 describe("the evidence comes from a reading this run already takes", () => {
   it("asks `gh` for the whole open queue exactly once, however many categories refuse", async () => {
     const { conn } = connectionThat();

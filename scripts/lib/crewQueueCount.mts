@@ -386,6 +386,7 @@ function countOpen(
   gh: QueueGhReader,
   warn: (line: string) => void,
   population: ReadonlyMap<string, number> | null,
+  populationReadAt: number,
 ): CategoryReading | null {
   try {
     const out = gh(
@@ -468,6 +469,40 @@ function countOpen(
       const r = Number.isFinite(right.at) ? right.at : -Infinity;
       return r - l;
     });
+    /*
+      ⚠ THE TRIPWIRE ON THE CROSS-EXAMINATION ITSELF (PR #729's review,
+      finding 1). The guard above is only as good as the two reads agreeing on
+      what a label is CALLED: `gh issue list --label` matches case-insensitively
+      on GitHub's side, while `population.get(label)` is an exact-string lookup
+      against the canonical name the API returns. A rename, or a re-creation
+      with different casing, would leave the per-label read working and the
+      population lookup answering 0 — so a blip zero on that category would be
+      believed again, with every arm here still green. Invariant 7's shape
+      exactly: invoked, and inert by configuration.
+
+      It WARNS and never refuses, because there is one benign way to see this.
+
+      ⚠ **AND THE BENIGN WAY IS TOLD APART RATHER THAN TOLERATED**, which is
+      the difference between a tripwire and a line people learn to ignore. The
+      whole-queue read happens first, so a card filed DURING the run reaches the
+      per-label read and not the population — and a shift filing cards while its
+      own count runs is ordinary. Those rows are exactly the ones created after
+      that read, and they carry their own `createdAt`. Only a row PREDATING the
+      population read is unexplainable by skew, and only those are named.
+    */
+    if (population !== null && (population.get(label) ?? 0) === 0) {
+      const predating = stamped.filter((row) => Number.isFinite(row.at) && row.at < populationReadAt);
+      if (predating.length > 0) {
+        warn(
+          `⚠ VOCABULARY DRIFT on \`${label}\`: the per-label read found ${predating.length} card(s) filed BEFORE`
+          + " this run's whole-queue read, and that read knows of none carrying the label. `gh` matches a label"
+          + " case-insensitively and the cross-examination matches it exactly, so a rename or a re-casing would"
+          + " disarm the #725 zero guard for this category silently. The count is written; the guard is not"
+          + " trustworthy for it until the label names agree.",
+        );
+      }
+    }
+
     const titlesOf = (list: typeof stamped): CrewQueueTitle[] => list
       .slice(0, QUEUE_TITLES_PER_CATEGORY)
       .map((row) => ({ number: row.number, title: row.title }));
@@ -797,12 +832,15 @@ export async function refreshQueueCounts(
     OPENED between the reads make a stale zero look confirmed, which is the
     failure this is about.
   */
+  /* The instant the population describes — the tripwire in `countOpen` tells a
+     label rename apart from a card filed while this very run was reading. */
+  const populationReadAt = Date.now();
   const pipeline = countPipelineGroups(gh, warn, oldestOpen !== null);
 
   let written = 0;
   let skipped = 0;
   for (const category of CREW_WORK_CATEGORIES) {
-    const reading = countOpen(category.queueLabel, namings, gh, warn, pipeline?.labelPopulation ?? null);
+    const reading = countOpen(category.queueLabel, namings, gh, warn, pipeline?.labelPopulation ?? null, populationReadAt);
     if (reading === null) {
       skipped += 1;
       log(`  ${category.label.padEnd(14)} SKIPPED — the old row stands, with its older timestamp`);
