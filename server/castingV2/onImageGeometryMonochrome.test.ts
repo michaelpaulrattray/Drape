@@ -114,6 +114,32 @@ const PER_CHANNEL_WRITE = new RegExp(
  * may be invisible to CI and live only on one machine's tree. That property is
  * not new here (idioms 1 and 2 have always had it); it matters more now, because
  * five of the six breaches above were untracked shift instruments.
+ *
+ * # ⚠ Three shapes idiom 3 CANNOT see, and the live specimen for the first
+ *
+ * Named by the PR #720 review, and the reason they are written down rather than
+ * matched is worth more than the list: **the law-7 sweep for this idiom used the
+ * guard's own regex, so any shape the regex cannot see went unswept too.** A
+ * sweep sharing its subject's blind spot reports a clean tree either way.
+ *
+ * 1. **A literal hue behind a conditional.** `scripts/measure-upscale-halo-disposable.mts:58-61`
+ *    paints solid magenta as `paint[at * 4] = bright ? 255 : 0; … + 2] = bright ? 255 : 0;`
+ *    — tracked, and **not a breach**: it writes a standalone `halo-map.png` and
+ *    never calls `.composite(`, so it is outside this population, which is
+ *    on-image geometry rather than diagnostic maps. It is kept here as the
+ *    specimen, because a future overlay writer using that ternary would pass
+ *    silently.
+ * 2. **Spacing drift between the writes** — `t[i*4]` then `t[i * 4 + 1]` breaks
+ *    the verbatim `\2` anchor.
+ * 3. **An explicit `+ 0`** on the first channel — `t[i * 4 + 0]` never matches.
+ *
+ * Shapes 2 and 3 have no instance in the tracked tree and neither is house
+ * style. Widening the match to cover any of the three was DECLINED rather than
+ * missed: the anchor's whole strength is that it is exact, and admitting an
+ * arbitrary expression on the value side is what the "values are variables"
+ * negative arm exists to refuse. The honest repair for shape 1 is a population
+ * question — whether a standalone diagnostic map is on-image geometry — and
+ * that is the founder's ruling, not a regex.
  */
 export const nonGreyColoursIn = (raw: string): string[] => {
   const source = withoutProse(raw);
@@ -198,7 +224,7 @@ describe("on-image geometry is monochrome, everywhere (founder ruling, fable-230
     expect(nonGreyColoursIn(`red[i] = 255; red[i + 1] = 0; red[i + 2] = 0;`))
       .toEqual(["red[i] = 255, 0, 0"]);
 
-    /* The negative side, and each of these is a way the match could over-fire.
+    /* The negative side — EIGHT arms, and each is a way the match could over-fire.
        An always-refusing guard passes every arm above it BY refusing. */
     expect(nonGreyColoursIn(`d[at] = 255; d[at + 1] = 255; d[at + 2] = 255;`), "white is the ruling")
       .toEqual([]);
