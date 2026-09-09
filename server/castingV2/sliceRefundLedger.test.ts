@@ -38,7 +38,18 @@ const REPO = path.resolve(HERE, "..", "..");
 const AUTHOR = path.join("server", "castingV2", "sliceRefundLedger.ts");
 const THIS_FILE = path.join("server", "castingV2", "sliceRefundLedger.test.ts");
 
-const ROOTS = ["server", "scripts", "shared", path.join("client", "src")];
+/*
+ * The swept population, stated rather than assumed — a sweep is only as honest
+ * as the ground it covers.
+ *
+ * `drizzle` is here on the PR #740 review's note: it holds the schema and the
+ * constants a writer reaches for, so it is a plausible fifth home for one of
+ * these sentences. What is deliberately NOT swept is the repo ROOT's own loose
+ * files (`seed.ts`, configs) — nothing there writes a credit ledger row, and a
+ * flat read of the root would pull in every config file this repository grows.
+ * If a writer ever lands outside these five, this line is the thing to move.
+ */
+const ROOTS = ["server", "scripts", "shared", "drizzle", path.join("client", "src")];
 const EXTENSIONS = new Set([".ts", ".tsx", ".mts", ".js", ".mjs"]);
 
 /*
