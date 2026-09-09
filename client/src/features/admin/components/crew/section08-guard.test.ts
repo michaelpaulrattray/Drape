@@ -303,6 +303,22 @@ describe("§1 — a quote is rendered verbatim and never trimmed", () => {
     formats the character counter with the same method name, and a number is
     not a clock. Pinning "3" would also have been a magic number tied to
     today's fixture — the population and the file spread are derived instead.
+
+    ⚠ **AND IT WAS PINNED AT THREE ANYWAY, AND THIS ARM WENT RED WHEN THE THIRD
+    FORMATTER WAS DELETED ON PURPOSE (#329).** `CrewNextUp`'s `readStamp` was
+    BYTE-IDENTICAL to `CrewProgramBanner`'s `shortDate` — the duplication this
+    page's own docblocks record as the reason a 24-hour fix once reached one
+    formatter of three — so it became a call to it and the spread fell 3 → 2.
+
+    **The floor moved to two, and the direction it may move is stated so the
+    next lowering is a decision rather than a habit:** the arm exists to catch a
+    sweep that matches NOTHING (a renamed API, a moved formatter), which reads
+    exactly like a clean page. Two survive and they answer DIFFERENT questions —
+    day + time for anything dated, time-only for a live strip whose rows are all
+    today — so two is the honest floor for this tree. **A future fall to one is
+    the arm doing its job again**: it means either a real collapse worth
+    thinking about, or the sweep breaking, and those must not be told apart by
+    editing this number.
   */
   it("the formatter sweep has a real population, spread across files", () => {
     const perFile = surfaces()
@@ -311,8 +327,8 @@ describe("§1 — a quote is rendered verbatim and never trimmed", () => {
         n: (code(f.text).match(/toLocale(?:Time)?String\([\s\S]{0,240}?hour:/g) ?? []).length,
       }))
       .filter((f) => f.n > 0);
-    expect(perFile.length).toBeGreaterThanOrEqual(3);
-    expect(perFile.reduce((sum, f) => sum + f.n, 0)).toBeGreaterThanOrEqual(3);
+    expect(perFile.length).toBeGreaterThanOrEqual(2);
+    expect(perFile.reduce((sum, f) => sum + f.n, 0)).toBeGreaterThanOrEqual(2);
   });
 
   it("keeps the attribution and the date, and the date is absolute", () => {

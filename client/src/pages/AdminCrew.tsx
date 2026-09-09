@@ -94,7 +94,7 @@ import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
 import { CrewBackgroundWork } from "@/features/admin/components/crew/CrewBackgroundWork";
 import { CrewNextUp } from "@/features/admin/components/crew/CrewNextUp";
 import { CrewSkeleton } from "@/features/admin/components/crew/CrewSkeleton";
-import { CrewProgramBanner } from "@/features/admin/components/crew/CrewProgramBanner";
+import { CrewProgramBanner, shortDate } from "@/features/admin/components/crew/CrewProgramBanner";
 import { CrewWorkingNow } from "@/features/admin/components/crew/CrewWorkingNow";
 import { useCrewState } from "@/features/admin/components/crew/useCrewState";
 
@@ -467,9 +467,24 @@ export default function AdminCrew() {
                   merely looks old; it cannot say *"and I know it is stale"*.
                   The stamp reports when data last LANDED, this reports the
                   last ATTEMPT, and they are different facts.
+
+                ⚠ **AND A THIRD THING JOINED THEM (#329): WHEN THE EDITION WAS
+                WRITTEN.** `updatedAt` was the one field of the briefing schema
+                with ZERO readers — written by every edition, drawn nowhere —
+                found by the law-7 class sweep of #293, which removed the
+                journal for exactly that. It is NOT the timestamp #415 took off
+                this line: **the bar says when the PAGE last checked; this says
+                when a SHIFT last wrote.** A page left open all night was
+                equally silent about both, so the sentence named its author and
+                never said when he spoke.
+
+                It sits before the shift sentence rather than after it because
+                that sentence is a paragraph, and a time at the end of a
+                paragraph is a time he will not read.
             */}
             <p className="dp-crew__stamp" data-testid="crew-edition-stamp">
-              Briefing edition {stateQuery.data.briefing.edition}, written by{" "}
+              Briefing edition {stateQuery.data.briefing.edition}, written{" "}
+              {shortDate(stateQuery.data.briefing.updatedAt)} by{" "}
               {stateQuery.data.briefing.shift}
               {stateQuery.isError && " · the last check failed — trying again"}
             </p>
