@@ -652,7 +652,9 @@ function productionUrl(): string | undefined {
   Fail-closed stands: an unresolvable remote tip refuses every dirty file,
   because "not carried" is then unproven. It refuses under `--dry` too, as the
   blanket guard always did. Stated limit: the post-push asset reading (§5c)
-  reads desk bytes and could mis-state a RECEIPT line — never what deploys.
+  reads desk bytes and could mis-state a RECEIPT line — never what deploys —
+  and it skips (and counts) a desk-deleted tracked file rather than dying
+  post-push with the receipt unwritten (#707 review 2, finding 1).
   `scripts/lib/dirtyTreeGuard.mts` owns the judgement;
   `server/dirtyTreeGuard.test.ts` the arms.
 */
@@ -1291,9 +1293,22 @@ const assets = await (async (): Promise<{ line: string; problems: string[] }> =>
     encoding: "utf8",
     shell: false,
   }).stdout.split(NL).filter((file) => /\.(ts|tsx)$/.test(file) && !/\.test\.tsx?$/.test(file));
-  const { references, dynamic } = assetReferencesIn(
-    sources.map((file) => ({ path: file, text: readFileSync(file, "utf8") })),
-  );
+  /* `ls-files` lists the INDEX, and this runs POST-PUSH on the shared desk: a
+     tracked file deleted in the working tree but not staged is listed and has
+     no bytes — before #479's narrowing the §1 guard made that state
+     unreachable here, and after it a desk-only deletion passes on purpose
+     (#707 review 2, finding 1). A desk-deleted tracked file must not cost the
+     ceremony its receipt: it is skipped, and the skip is said on the line. */
+  const readable: Array<{ path: string; text: string }> = [];
+  const unreadable: string[] = [];
+  for (const file of sources) {
+    try {
+      readable.push({ path: file, text: readFileSync(file, "utf8") });
+    } catch {
+      unreadable.push(file);
+    }
+  }
+  const { references, dynamic } = assetReferencesIn(readable);
   const statuses = new Map<string, number | null>();
   await Promise.all(
     references.map(async (reference) => {
@@ -1306,7 +1321,10 @@ const assets = await (async (): Promise<{ line: string; problems: string[] }> =>
     }),
   );
   const verdict = assetVerdict(references, dynamic, statuses);
-  return { line: `${verdict.line} · ${base}`, problems: verdict.problems };
+  return {
+    line: `${verdict.line}${unreadable.length > 0 ? ` · ${unreadable.length} tracked file(s) unreadable on the desk, skipped (deleted but unstaged?)` : ""} · ${base}`,
+    problems: verdict.problems,
+  };
 })();
 
 /* ── 6. the receipt ─────────────────────────────────────────────────────── */

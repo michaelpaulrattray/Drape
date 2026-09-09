@@ -44,7 +44,10 @@
  *  - The rite's post-push static-asset reading (§5c) reads client/shared/server
  *    bytes from the DESK. A dirty file there can mis-state a RECEIPT line about
  *    bucket assets — never a refusal, never what deploys — so it is reported
- *    (desk-only files are named on the receipt) rather than blocked on.
+ *    (desk-only files are named on the receipt) rather than blocked on. A
+ *    desk-DELETED tracked file (` D`, unstaged) is skipped by that reading and
+ *    counted on its line rather than crashing the post-push ceremony
+ *    (#707 review 2, finding 1).
  */
 
 /** One tracked change, as `git status --porcelain -z --no-renames` records it. */

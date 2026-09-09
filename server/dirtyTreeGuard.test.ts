@@ -277,6 +277,16 @@ describe("the rite invokes the guard, and the disk reads the list claims still e
     }
   });
 
+  it("§5c tolerates a desk-deleted tracked file — the receipt survives what the guard now admits", () => {
+    /* #707 review 2, finding 1: `ls-files` lists the index, so an unstaged
+       tracked deletion is listed with no bytes on disk, and the pre-fix
+       readFileSync killed the rite POST-PUSH, before the receipt. Pinned at
+       the bytes: the read is wrapped, the skip is counted on the line. */
+    expect(RITE).toContain("A desk-deleted tracked file must not cost the");
+    expect(RITE).toContain("unreadable.push(file);");
+    expect(RITE).toContain("tracked file(s) unreadable on the desk, skipped");
+  });
+
   it("the blanket refusal is gone — the guard cannot quietly be both", () => {
     /* The old shape refused on `dirty.length > 0` with no judgement. Its exact
        die-line is absent; the narrowed one is present. */
