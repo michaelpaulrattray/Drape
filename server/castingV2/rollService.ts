@@ -83,6 +83,7 @@ import { storageDelete, storagePut, storageReadBytes } from "../storage";
 import { thumbnailOf } from "./thumbnails";
 import { createModuleLogger } from "../logging/logger";
 import { detectRenderFault } from "./renderFault";
+import { rollSliceRefundDescription } from "./sliceRefundLedger";
 import { ProviderError } from "../providers/types";
 import type { CreativeEngine } from "../providers/types";
 import {
@@ -1421,9 +1422,7 @@ export async function dispatchCandidate(input: {
         the wrong event, on the one line they read when they wonder where their
         credits went.
       */
-      failureClass === "render_fault"
-        ? "This tile came back as a contact sheet rather than a portrait"
-        : "Casting candidate did not arrive",
+      rollSliceRefundDescription(failureClass),
       // The same derivation the recovery adjudicator uses. Two call sites, one
       // helper — byte-identical references are what make a retry idempotent
       // rather than a second refund.

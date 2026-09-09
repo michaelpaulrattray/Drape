@@ -71,6 +71,7 @@ import {
   classifyRefineRefundDescription,
   refineRefundReadingLabel,
 } from "../server/castingV2/refineRefundLedger";
+import { SLICE_REFUND_DESCRIPTIONS } from "../server/castingV2/sliceRefundLedger";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { priceFalCalls, readFalPrices, readFalTraffic } from "./lib/falSpend.mts";
 import { activityByDay, readOpenRouterActivity } from "./lib/openrouterBalance.mts";
@@ -399,27 +400,24 @@ if (sliceTotal === 0) {
 {
   /*
     The second reader. Same event, different table, no shared resolver — and
-    EVERY refund sentence on the slice path, each quoted from its writer:
+    EVERY refund sentence on the slice path, IMPORTED from the one module that
+    composes them (#536).
 
-      "Casting candidate did not arrive"      rollService (roll AND retry, the
-                                              shared dispatch) + rollRecovery
-      "This tile came back as a contact …"    rollService, the render_fault exit
-      "Casting retry landed nowhere"          retryService, the landed-nowhere exit
-      "Casting retry did not arrive (recov…)" retryRecovery
-
-    Counting a subset of these is not a smaller reading, it is a WRONG one: it
-    manufactures a disagreement out of a healthy window. Two drafts of this list
-    did exactly that (PR #533's two review rounds).
+    ⚠ This list used to be four string literals typed out here, copied from the
+    four writers. Counting a subset of these is not a smaller reading, it is a
+    WRONG one — it manufactures a disagreement out of a healthy window, and two
+    drafts of the hand-typed list did exactly that (PR #533's two review
+    rounds). Worse, the drift is SILENT: a reworded sentence at a writer whose
+    failure has not fired lately leaves this cross-check printing AGREES for
+    months. `sliceRefundLedger.ts` is the single author, its enumeration is
+    `Object.values` of the record, and each sentence's writer is named there.
   */
   const arrivalRefunds = await q(
     `SELECT description, COUNT(*) AS n, SUM(amount) AS credits FROM point_transactions
       WHERE createdAt >= ? AND type = 'refund'
-        AND description IN ('Casting candidate did not arrive',
-                            'This tile came back as a contact sheet rather than a portrait',
-                            'Casting retry landed nowhere',
-                            'Casting retry did not arrive (recovered)')
+        AND description IN (${SLICE_REFUND_DESCRIPTIONS.map(() => "?").join(", ")})
       GROUP BY description ORDER BY n DESC`,
-    [since],
+    [since, ...SLICE_REFUND_DESCRIPTIONS],
   );
   const ledgerSays = sum(arrivalRefunds);
   const ledgerCredits = arrivalRefunds.reduce((total, row) => total + Number(row.credits ?? 0), 0);

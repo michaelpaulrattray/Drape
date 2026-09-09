@@ -44,6 +44,7 @@ import {
 import { recordRefund } from "../casting/atomicCredits";
 import { createModuleLogger } from "../logging/logger";
 import { candidateChargeReference, isSettleable, readOperationLedger } from "./rollRecovery";
+import { SLICE_REFUND_DESCRIPTION } from "./sliceRefundLedger";
 
 const log = createModuleLogger("castingV2/retryRecovery");
 
@@ -229,7 +230,7 @@ async function adjudicateRetryOperation(
   const refund = await (options.refund ?? recordRefund)(
     operation.userId,
     owed,
-    "Casting retry did not arrive (recovered)",
+    SLICE_REFUND_DESCRIPTION.retryRecovered,
     candidateChargeReference(operation.id, candidate.publicId),
   );
   if (!refund.recorded) {
