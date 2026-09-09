@@ -163,8 +163,12 @@ export const moderatorRouter = router({
           avatarUrl: user.avatarUrl,
           role: user.role,
           suspendedReason: user.suspendedReason,
-          frozenAt: user.frozenAt,
           suspendedAt: user.suspendedAt?.toISOString() || null,
+          /* #703 — ISO, like every other date on this projection. It crossed
+             as a raw `Date` while its four neighbours crossed as strings; the
+             admin twin has always sent a string. superjson kept both alive, so
+             nothing broke — it was one column stated two ways (working law 4). */
+          frozenAt: user.frozenAt?.toISOString() || null,
           lockedUntil: user.lockedUntil?.toISOString() || null,
           createdAt: user.createdAt.toISOString(),
           lastSignedIn: user.lastSignedIn.toISOString(),
@@ -196,7 +200,8 @@ export const moderatorRouter = router({
           storageLimit: result.user.storageLimit,
           suspendedReason: result.user.suspendedReason,
           suspendedBy: result.user.suspendedBy,
-          frozenAt: result.user.frozenAt,
+          /* #703 — ISO, matching `listUsers` above and the admin twin. */
+          frozenAt: result.user.frozenAt?.toISOString() || null,
           frozenReason: result.user.frozenReason,
           frozenBy: result.user.frozenBy,
           failedLoginAttempts: result.user.failedLoginAttempts,

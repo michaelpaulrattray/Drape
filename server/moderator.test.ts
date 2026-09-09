@@ -199,10 +199,11 @@ vi.mock("./db", () => ({
         role: "user",
         suspendedAt: null,
         suspendedReason: null,
-        /* Seeded NON-NULL on purpose (PR #701 review, finding 3): this surface
-           passes `frozenAt` through RAW while the admin one converts it to ISO,
-           and at `null` those two are the same value — so the divergence, and
-           any silent convergence, would have been invisible to every arm. */
+        /* Seeded NON-NULL on purpose (PR #701 review, finding 3): at `null` a
+           raw `Date` and an ISO string are the same value, so neither the old
+           divergence nor its convergence would have been visible to any arm.
+           #703 converged this wire to ISO; the seed stays non-null because it
+           is the only thing that can prove which type actually crosses. */
         frozenAt: new Date("2026-02-01"),
         lockedUntil: null,
         createdAt: new Date("2025-06-01"),
@@ -499,12 +500,11 @@ describe("Moderator Role — the read surface, DRIVEN through the router", () =>
         role: "user",
         suspendedAt: null,
         suspendedReason: null,
-        /* RAW Date, not ISO — this is what the moderator wire actually carries
-           today, and the admin twin carries the same column as a STRING. The
-           divergence is preserved deliberately (converging it is a wire-type
-           change, filed separately); pinning it here is what makes either
-           state provable instead of invisible. */
-        frozenAt: new Date("2026-02-01"),
+        /* ISO, converged on #703 — it crossed this wire as a raw `Date` while
+           its four date neighbours crossed as strings, and the admin twin had
+           always sent a string. Pinned as a STRING here, non-null, so that a
+           hand putting the raw column back reddens rather than passing. */
+        frozenAt: "2026-02-01T00:00:00.000Z",
         lockedUntil: null,
         createdAt: "2025-06-01T00:00:00.000Z",
         lastSignedIn: "2026-01-15T00:00:00.000Z",
@@ -569,7 +569,7 @@ describe("Moderator Role — the read surface, DRIVEN through the router", () =>
         suspendedAt: null,
         suspendedReason: null,
         suspendedBy: null,
-        frozenAt: new Date("2026-02-01"), // raw here, ISO on the admin twin
+        frozenAt: "2026-02-01T00:00:00.000Z", // ISO, converged with the admin twin on #703
         frozenReason: null,
         frozenBy: null,
         lockedUntil: null,
