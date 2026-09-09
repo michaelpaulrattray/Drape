@@ -97,3 +97,17 @@ The proof roll of the house line alone (roll `4cdd75b5`, HOUSE-0..7, the roll-24
 **Change:** the fang sentence now also sits in `ANATOMY_VISIBILITY_LINE` (earlier in the block, framed as anatomy like the tail), and the creature geometry is *lips parted enough to show the being's own dentition* — "mouth at rest" is gone from the creature line and pinned out. Human line untouched. Guard arms in `creativeRegisterScope.test.ts`.
 
 **Gate:** one more roll of the roll-249 brief (no added sentence) under this block, his eye on the strip. If the description is still the only slot that works, the next honest step is the compose step writing the fang sentence INTO the seed for a fanged being (a facet the reader already sees), not another block edit.
+
+## Fourth court — the sentence goes where the engine listens
+
+The anatomy-line roll (`d31fbd76`, ANAT-0..7, six delivered, two content-filter refusals refunded): **his eye — *"about 3-4 of them produced fangs as teeth the others were coming out of the lip still."*** Four rolls, four slots, one pattern:
+
+| slot | roll | his eye |
+|---|---|---|
+| expression line only | `4cdd75b5` | wrong |
+| expression + anatomy line | `d31fbd76` | about half |
+| the description itself | `b1c0eff8` | all correct |
+
+**Change:** `dentitionClauseFor(brief, lane)` — for a creature-lane roll whose brief names `fang`/`fangs`, `composeFinalPrompt` writes `DENTITION: The being's fangs are teeth — <FANG_SENTENCE>.` as its own paragraph straight after the brief, before the family clause and the block. His words stay verbatim; the clause is code's, recorded in the prompt like the family clause (#154). Human lane never; a creature brief without fangs never (the tusked control is untouched). `FANG_SENTENCE` is declared once and shared with the anatomy line. Arms in `creativeRegisterScope.test.ts`.
+
+**Gate:** one roll of the roll-249 brief (no added sentence) under this composition, his eye on the strip.

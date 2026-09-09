@@ -1176,3 +1176,56 @@ describe("PIN THE WORLD, NEVER THE PIECES — his MAX noun law (#237)", () => {
 
 
 
+
+/*
+  #599, FOURTH COURT — THE DENTITION CLAUSE. Four rolls on his account put the
+  fang sentence in four slots; only the DESCRIPTION slot read as teeth to his
+  eye (8/8), the EXPRESSION slot changed nothing, the ANATOMY slot reached
+  about half. So for a creature whose brief names fangs the code writes the
+  sentence as its own paragraph straight after his words — the family clause's
+  shape — and these arms pin where it goes, when it goes, and that his words
+  stay verbatim.
+*/
+import { dentitionClauseFor, FANG_SENTENCE } from "./houseBlock";
+
+describe("#599 · the dentition clause sits with the description, for a fanged creature only", () => {
+  const fanged = "An adult oni-cyber being. Fangs mark the demon heritage plainly. Hair falls long and dark.";
+  const tusked = "An adult oni with heavy tusks and an underbite, iron-grey skin.";
+
+  it("is one sentence, declared once — the anatomy line carries the same words", () => {
+    expect(ANATOMY_VISIBILITY_LINE).toContain(FANG_SENTENCE);
+    expect(dentitionClauseFor(fanged, "creature")).toBe(`DENTITION: The being's fangs are teeth — ${FANG_SENTENCE}.`);
+  });
+
+  it("fires on his own word in the creature lane, and on nothing else", () => {
+    expect(dentitionClauseFor(fanged, "creature")).not.toBeNull();
+    expect(dentitionClauseFor("a vampire whose fang catches the light", "creature")).not.toBeNull();
+    /* The human lane is "mouth closed" on purpose — never. */
+    expect(dentitionClauseFor(fanged, "human")).toBeNull();
+    /* The tusked control keeps its tusk mouth untouched. */
+    expect(dentitionClauseFor(tusked, "creature")).toBeNull();
+    /* A word that merely contains the letters is not the word. */
+    expect(dentitionClauseFor("a being with fanged-looking machinery", "creature")).toBeNull();
+  });
+
+  it("goes STRAIGHT after the brief — before the family clause and the block — and the brief stays verbatim", () => {
+    const prompt = composeFinalPrompt(fanged, DEFAULT_CAST_STYLE, "Continue this family: same brief, new person.", "creature");
+    const paragraphs = prompt.split("\n\n");
+    expect(paragraphs[0]).toBe(fanged);
+    expect(paragraphs[1]).toBe(dentitionClauseFor(fanged, "creature"));
+    expect(paragraphs[2]).toBe("Continue this family: same brief, new person.");
+    expect(paragraphs[paragraphs.length - 1]).toBe(CREATURE_HOUSE_BLOCK);
+  });
+
+  it("is absent from a human roll and from a creature roll that names no fangs — bytes unchanged", () => {
+    expect(composeFinalPrompt(fanged, DEFAULT_CAST_STYLE, null, "human")).not.toContain("DENTITION:");
+    expect(composeFinalPrompt(tusked, DEFAULT_CAST_STYLE, null, "creature")).not.toContain("DENTITION:");
+    expect(composeFinalPrompt(tusked, DEFAULT_CAST_STYLE, null, "creature").split("\n\n")).toEqual([tusked, CREATURE_HOUSE_BLOCK]);
+  });
+
+  it("never carries a retired negative — neither 'open mouth' nor 'showing teeth'", () => {
+    const clause = dentitionClauseFor(fanged, "creature")!;
+    expect(clause).not.toContain("open mouth");
+    expect(clause).not.toContain("showing teeth");
+  });
+});
