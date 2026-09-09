@@ -1,7 +1,7 @@
 {
-  "edition": 314,
-  "updatedAt": "2026-09-09T04:52:18.000Z",
-  "shift": "Fable (escalated) - the Annual toggle on the plan pages is real now: it opens on the cycle you are billed on, the prices are what the buttons buy, and the exact charge is confirmed before anything is paid. Live in production; Stripe is in test mode, so you can try it with card 4242 4242 4242 4242.",
+  "edition": 315,
+  "updatedAt": "2026-09-09T07:20:00.000Z",
+  "shift": "Foreman - two small tidying jobs on the staff screens, both live. A moderator's refund request now refuses a field it does not recognise instead of quietly dropping it, and one date on the moderator screens crosses in the same form as every date beside it. Nothing you can see changed; both were loose ends with a receipt.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-09T04:51:27.459Z",
+      "readAt": "2026-09-09T07:15:38.324Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4432,6 +4432,20 @@
   ],
   "pipeline": [
     {
+      "id": "pr-714-strict-change-request-705",
+      "title": "A moderator's refund request refuses a field it does not know (#705)",
+      "status": "merged",
+      "prNumber": 714,
+      "note": "Squash 2a5d8511, deployed on merge and verified serving. Second half of a two-step change: last night's #418 stopped the form sending two money figures the server works out for itself, and the form has now been live for a full deploy - so the request refuses those figures outright rather than accepting and ignoring them. Fable review: pass, no findings. #705 closed with its receipt."
+    },
+    {
+      "id": "pr-715-frozenat-iso-703",
+      "title": "One date on the moderator screens crosses in the same form as its neighbours (#703)",
+      "status": "merged",
+      "prNumber": 715,
+      "note": "Squash 9878c8a0, deployed on merge and verified serving. The date an account was frozen was being sent from the server in a different form from the four dates beside it, and from the same date on the admin screens. Nothing was broken - every screen already coped - but one fact stated two ways is how a real bug starts. Looked at in the running app: the FROZEN pill and the Account frozen panel are unchanged. Fable review: pass, no findings. #703 closed with its receipt."
+    },
+    {
       "id": "pr-710-annual-path-664",
       "title": "The annual path exists - Annual/Monthly is a real choice for a subscriber (#664)",
       "status": "merged",
@@ -4840,6 +4854,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0909c-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 66 open, 17 nobody has looked at in a week - two closed tonight, none written",
+      "detail": "66 cards open, 17 with no comment, no close and no code near them for seven days. That number went up from 14 without anything getting worse: it counts real engagement only, so cards simply age into it.\n\nNothing is waiting on you: NEXT UP is empty, nothing carries urgent, and none of the four check-up rounds is overdue.\n\nTonight closed two small fixes (#705 and #703) and wrote no new cards. The standing note from the last five nights holds again, and tonight measured it: of the eleven small fixes on the board, six end in a decision that is yours - which of two things should look the same, whether a label or a refresh rate should move, whether a glyph is right - rather than in work a shift can do on its own. The one open bug, #711, is a money-path design and is Fable's when it is taken."
+    },
+    {
       "id": "queue-shape-0909b-foreman",
       "title": "The queue: 71 open, 14 nobody has looked at in a week - one closed, two new ones written",
       "severity": "info",
@@ -5240,17 +5261,7 @@
     166
   ],
   "nextUp": {
-    "readAt": "2026-09-09T04:51:26.668Z",
-    "items": [
-      {
-        "issueNumber": 599,
-        "title": "Fangs render outside a closed mouth — 'mouth at rest' + 'dentition visible' is true for tusks and impossible for fangs, so the engine draws sabre teeth over the lip (his oni-cyber Re-imagine, roll 249)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "HIS EYE — the fix is merged (PR #708, `e5d374f8`, deployed) and the court ran; both strips are in the eye gallery and the tally is in the comments. Nothing els…"
-        }
-      }
-    ]
+    "readAt": "2026-09-09T07:15:37.293Z",
+    "items": []
   }
 }
