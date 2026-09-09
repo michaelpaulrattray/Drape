@@ -27,7 +27,20 @@
  * personally ordered sat unnamed. **An empty band now says which labels were
  * looked at**, and the bands-2-and-3 sentence appears only when BOTH are empty,
  * because that is the only state in which it is true.
+ *
+ * # The running order inside his band is HIS, and it lives in one place
+ *
+ * ⚠ **This file used to sort his ordered band oldest-first with nothing
+ * floating, while his own page floated `urgent` to the top of it (#718).**
+ * He settled it on 2026-09-09, verbatim: *"Urgent wins inside your ordered
+ * group"*. The comparator is `scripts/lib/orderedBand.mts` and BOTH views
+ * call it — this file does not declare its own, because the disagreement it
+ * closes was two declarations, not one wrong one.
  */
+import {
+  ORDERED_BAND_RULE,
+  sortOrderedBand,
+} from "./orderedBand.mts";
 /**
  * How many open cards one band may hold before this reading is INCOMPLETE.
  *
@@ -68,9 +81,25 @@ export function oldestFirst(rows: readonly Row[]): Row[] {
   return [...rows].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
+/** Whether a queue row carries the `urgent` label — read from the row's own
+ *  labels rather than from a second list, which is this file's whole point. */
+export function isUrgent(row: Row): boolean {
+  return row.labels.some((label) => label.name === "urgent");
+}
+
+/**
+ * THE RUNNING ORDER OF HIS ORDERED BAND, exported so it can be driven against
+ * the other view's (`server/orderedBandOrder.test.ts`) rather than compared by
+ * reading two files. The rule itself is not declared here — it is
+ * `compareOrderedBand`, which his page reads from the same module.
+ */
+export function orderedBandRunningOrder(rows: readonly Row[]): Row[] {
+  return sortOrderedBand(rows.map((row) => ({ ...row, urgent: isUrgent(row) })));
+}
+
 function rowLines(rows: readonly Row[], ownLabel: string, now: Date): string[] {
   const lines: string[] = [];
-  for (const [index, row] of oldestFirst(rows).entries()) {
+  for (const [index, row] of rows.entries()) {
     const age = Math.floor(
       (now.getTime() - Date.parse(row.createdAt)) / (24 * 60 * 60 * 1000),
     );
@@ -126,20 +155,21 @@ export function renderBands(input: {
   if (ordered.length === 0) {
     out.push("  (empty — no open card carries `founder-ordered`.)");
   } else {
-    out.push(...rowLines(ordered, "founder-ordered", now));
+    out.push(...rowLines(orderedBandRunningOrder(ordered), "founder-ordered", now));
   }
 
   out.push("", "THE URGENT BAND — standing exception 1");
   if (urgent.length === 0) {
     out.push("  (empty — no open card carries `urgent`.)");
   } else {
-    out.push(...rowLines(urgent, "urgent", now));
+    out.push(...rowLines(oldestFirst(urgent), "urgent", now));
   }
 
   out.push(
     "",
-    "Oldest first within each band, and the two are NOT merged: `urgent` means this",
-    "cannot wait, `founder-ordered` means he chose the order.",
+    `His band runs ${ORDERED_BAND_RULE}; the urgent band is oldest first.`,
+    "The two are NOT merged: `urgent` means this cannot wait, `founder-ordered`",
+    "means he chose the order — and inside his band the urgent one goes first.",
     "A row carrying `blocked` is not takeable — read the card before you take it.",
     "Band 2 (blocks every merge) is a judgement and stays prose.",
     `Band 3 (a patrol whose clock has fired) is DERIVED — \`${PATROL_POINTER}\`.`,
