@@ -1,7 +1,7 @@
 {
-  "edition": 320,
-  "updatedAt": "2026-09-09T17:36:54Z",
-  "shift": "Foreman - two safety nets that could not catch anything, both found by the net repaired last night. The first is the counter behind your background-work panel: one bad answer from GitHub could tell it a category holding eight cards was empty, and the gate that decides whether the nights keep running reads exactly that number - so a moment's hiccup could put the team to sleep announcing there was nothing to do. The second is the test guarding your site's security headers: it agreed with whatever machine it ran on, and the frame-protection your live site depends on could have been thrown away with all nine checks green. No customer-facing code changed in either.",
+  "edition": 321,
+  "updatedAt": "2026-09-09T18:30:00Z",
+  "shift": "Foreman - a locked-out admin that had not happened yet, and a job that turned out not to need doing. The first: the list that says who is allowed to reach your admin pages promised something it could not do. It invited you to add a person by their user number, and its own notes gave a worked example - but a number added that way would have matched nobody. The first person to use the feature would have locked out the admin they were trying to let in, and been told a reason that pointed nowhere near the cause. Nobody has been affected: the list is empty on your live site, which I checked at the settings rather than taking a document's word for it. The second: I took a job off the list asking for three of the pull-request checks to be added to the deploy ceremony, measured it, and found none of the three can run there - one of them is not a check at all. The road it was meant to protect has had no traffic since the checks were built. Closed with the measurement rather than built.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-09T17:37:04.442Z",
+      "readAt": "2026-09-09T18:24:44.082Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4465,6 +4465,20 @@
   ],
   "pipeline": [
     {
+      "id": "card-500-rite-checks-measured",
+      "title": "A job on the list turned out not to need doing - measured, then closed (#500)",
+      "status": "merged",
+      "prNumber": null,
+      "note": "No code changed, and that is the result. The job asked for three checks that run on every pull request to also run in the ceremony that deploys your site: a workflow linter, a code-shape scanner, and a money/auth check. It said each was \"seconds\" and none was urgent. None of that survived being measured. The money/auth one is not a check - it does not block anything, it only sticks a label on a pull request so it gets the full review. The deploy ceremony has no pull request, so there is nothing to label and nothing to port. The workflow linter downloads Linux-only programs; your machine is Windows. I downloaded them and ran them rather than assuming: both refuse with \"cannot execute binary file\". Making them work means keeping a second set of pinned versions for Windows, so the two roads would stop checking with identical tools - which is the one thing that pin list exists to prevent. The scanner is a Python tool that is not installed here and, by the gate's own note, reads about 1600 files in roughly a minute - so it would put your morning page behind a minute of work on every push, or refuse the push outright. Then the part that settles it: the hole all three were meant to plug is empty. Of 34 changes to those workflow files in 90 days, 30 went through a pull request, and the 4 that did not are the four commits that BUILT the gate on 25 August - you cannot open a pull request gated by something that does not exist yet. So nothing has taken that road since. Closed with the measurement written on it, and the one idea worth keeping recorded there."
+    },
+    {
+      "id": "pr-732-allowlist-strings-727",
+      "title": "The admin allowlist promised a way in that never worked (#727)",
+      "status": "merged",
+      "prNumber": 732,
+      "note": "Squash fd0660e9. There is a second lock in front of your admin pages: even an account marked admin is refused unless it is on an allowlist. The code invited whoever set it up to put a person's user number on that list - the type said numbers were allowed, the notes said \"user IDs (numbers) or emails\", and there was a worked example showing exactly that. But the list can only ever be filled from your hosting settings, and everything that comes out of those is text. Comparing the text \"42\" to the number 42 comes back false, so a user number on that list matched nobody, ever. The person this fails is the first one to actually use the feature: they add an admin's number, believe that admin is now allowed in, and the admin is refused with the message \"User is not on admin allowlist despite having admin role\" - which points nowhere near the real cause. Nobody has been affected and that is checked, not assumed: neither of the two settings that fill this list is set on your live site, so the list is empty and everyone with the admin role gets through, which is how admin access works today. The repair is to stop promising it - the dead comparison is gone and so is the unused user number it took, because an ignored input on a security check tells the next reader it is being checked. Making user numbers actually work is the other possible repair and it is deliberately NOT done here: that widens who can reach your admin pages, which is your call and not a shift's. Nothing about who gets in changed, and that was proven rather than argued - a deliberate act of vandalism that deletes this comparison had already been shown to break no test, which is how it was known dead. The test that pinned the dead code now guards the opposite direction instead: if anyone ever quietly adds a user-number road, it goes red. Seventeen acts of vandalism, seventeen behaved exactly as predicted. The review found nothing, and the one thing it noticed in passing is filed as its own job (#733) rather than slipped into an already-approved change."
+    },
+    {
       "id": "pr-729-queue-zero-725",
       "title": "A hiccup could tell your panel a busy category was empty - and the nights read that number (#725)",
       "status": "merged",
@@ -4950,9 +4964,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0910-foreman",
+      "id": "queue-shape-0910b-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 64 open, 17 nobody has looked at in a week - one closed, one refuted, one filed",
+      "detail": "64 cards open. 17 have had no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue - the next is due in two days.\n\nTonight: #727 fixed and closed, #500 measured and closed WITHOUT being built, #733 filed. One more card changed state without any work: #711, the credit-grant bug, is now marked as waiting for a Fable seat.\n\nThat last one is worth a sentence, because it was costing real money. #711 is the only open bug and it needs a design decision rather than a patch - where a credit grant should hang, once it can no longer hang on the Stripe update. Six shifts in a row had each read it from scratch, reached that same conclusion, and moved on, because nothing on the card said \"this is on hold\". It says so now, so the seventh shift does not pay for the same reading. It is not waiting on you.\n\nThe standing note from the last nine nights still holds and got a little sharper tonight: of the small fixes left, most end in a decision that is yours, and the process list is now the same - the two cards next in line, #524 and #523, each say in their own body that they wait on your word. Tonight's work came from the two cards on the board that did not."
+    },
+    {
+      "id": "queue-shape-0910-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 62 open, 15 nobody has looked at in a week - two more closed tonight",
       "detail": "62 cards open, 15 with no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight closed #718 (your ruling) and #585. Nothing new was filed.\n\nThe standing note from the last eight nights still holds, and it is the honest shape of the board: of the small fixes left, seven of nine end in a decision that is yours. The same is now true of the process list - the next cards in line, #524 and #523, each say in their own body that they wait on your word. Tonight's two both came from you, which is why there was plenty to do. When your replies run out, the work that is left is mostly work that needs you."
     },
@@ -5374,7 +5395,7 @@
     169
   ],
   "nextUp": {
-    "readAt": "2026-09-09T17:37:03.489Z",
+    "readAt": "2026-09-09T18:24:43.299Z",
     "items": []
   }
 }
