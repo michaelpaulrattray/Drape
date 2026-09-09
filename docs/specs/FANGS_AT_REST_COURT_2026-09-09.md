@@ -72,3 +72,20 @@ Strips in his eye gallery: `crew-eye/eda7f26c-b566-409f-b6d5-944117612b8e.jpg`
 residual unlivable, the next measured step is a guard entry born from that
 frame (declined this round with the reasoning on PR #708 — a pose-word ban has
 second senses and the fixed line removed the forcing half).
+
+## Second court, the same day — his eye overturned the first fix
+
+**His eye on the strips above, verbatim:** *"the fang are coming out of the LIPS like fang tusks they dont look like teeth."* The reader's 5/8 "seated" was five tusks-through-lips to his eye, and the standard is now written down: **fangs must read as teeth inside a mouth, never growing out of or over the lips.**
+
+Two rolls on his account (the real entrance, his session), same brief as roll 249:
+
+| roll | change | his eye |
+|---|---|---|
+| `6e6140e7` (NOVIS-0..7) | the brief's own *"kept sharp and visible"* dropped; fixed line above | *"no the fangs do not read correctly here either … about the same"* |
+| `b1c0eff8` (OPEN-0..7) | the same, PLUS *"the mouth is slightly open, upper teeth showing, the fangs among them as teeth — nothing growing out of or over the lips"* | *"fangs are all visible correctly now"* |
+
+So neither the author's clause nor "lips slightly parted at rest" was the lever. **The cause is the mouth pose**: "at rest"/"parted" still reads as a closed mouth, and a closed mouth gives the engine nowhere to put a fang except through the lip. The sentence that worked is now `CREATURE_EXPRESSION_LINE`'s fang clause verbatim; "lips slightly parted at rest" and "never teeth forced through closed lips" are removed and pinned out in `creativeRegisterScope.test.ts`. Tusks keep "protrude past the lips of themselves".
+
+**Cost:** 16 renders on his account (two rolls, 160 credits each), no reader — his eye only. Frames and strips: `output/_shift599-fangs/NOVIS-*`, `OPEN-*`, `STRIP-NOVIS-faces.jpg`, `STRIP-OPEN-faces.jpg`.
+
+**Proof of the house line itself** (the brief-level sentence proved the mechanism, not the line): one 8-frame roll of the roll-249 brief WITHOUT the added sentence under the new line, his eye on it, recorded on #599. That roll is the gate that closes the card.

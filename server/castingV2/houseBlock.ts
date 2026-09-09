@@ -212,12 +212,27 @@ export const EXPRESSION_LINE = "EXPRESSION: Eyes into the lens, present, mouth c
  * his register: *lips may part at rest to show what is there; never teeth
  * forced through closed lips.* Court: his oni brief before/after plus the
  * tusked control (the fix must not close the tusk mouth), his eye closing it.
+ *
+ * ⚠ **AND THAT SENTENCE WAS NOT ENOUGH — HIS EYE OVERTURNED THE COURT
+ * (2026-09-09).** On the court strips: *"the fang are coming out of the LIPS
+ * like fang tusks they dont look like teeth."* The reader had scored the fixed
+ * line 5/8 "seated"; his eye read every one of them as tusks through lips. Two
+ * more rolls on his account settled the cause (law 9 — frames, his eye):
+ * dropping the brief's own "kept sharp and visible" changed nothing; adding
+ * *"the mouth is slightly open, upper teeth showing, the fangs among them as
+ * teeth — nothing growing out of or over the lips"* made all eight read as
+ * teeth (*"fangs are all visible correctly now"*). The cause was the MOUTH
+ * POSE: "lips slightly parted at rest" still reads as a closed mouth, and a
+ * closed mouth gives the engine nowhere to put a fang but through the lip.
+ * So for fangs the line now asks for the mouth SLIGHTLY OPEN with the upper
+ * teeth showing — his sentence, verbatim in his register — and the "parted at
+ * rest" clause is gone. Tusks are untouched: they protrude of themselves.
  */
 export const CREATURE_EXPRESSION_LINE =
   "EXPRESSION: Eyes into the lens, present, mouth at rest — pose off, anatomy on. "
   + "Where the mouth is the being's own anatomy it shows as that anatomy allows: non-human dentition, tusks, an underbite, a split lip, a species tongue. "
-  + "Tusks and an underbite protrude past the lips of themselves; fangs sit inside the mouth and show through lips slightly parted at rest. "
-  + "Lips may part at rest to show what is there; never teeth forced through closed lips. "
+  + "Tusks and an underbite protrude past the lips of themselves. "
+  + "Fangs are teeth: the mouth is slightly open, upper teeth showing, the fangs among them — nothing growing out of or over the lips. "
   + "No laugh, no speech, no acted roar, no tongue out as a pose, no blank CGI stare.";
 
 /**
