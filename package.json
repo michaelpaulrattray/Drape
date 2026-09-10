@@ -23,6 +23,7 @@
     "machinist:bundle": "tsx scripts/bundle-report.mts",
     "machinist:bench": "tsx scripts/bench-commands.mts",
     "janitor:knip": "knip --no-progress --reporter compact",
+    "warden:socket": "sh scripts/socket-scan.sh",
     "warden:semgrep": "semgrep scan --config p/nodejs --config p/expressjs --config p/typescript --config p/javascript --metrics=off --error"
   },
   "dependencies": {

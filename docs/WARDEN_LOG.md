@@ -30,6 +30,7 @@ The instruments and their own record pages:
 | gitleaks (full history, weekly) | `scripts/secret-scan.sh` | `secrets.yml`, Mondays 16:00 UTC | `secrets.yml` header |
 | gitleaks (the commits a rite push adds) | `scripts/secret-scan.sh <remote tip>` | `deploy-rite.mts`, before the push (#469) | the step's own docblock |
 | actionlint + zizmor | `scripts/workflow-lint.sh` | `gate.yml`, second step | `scripts/workflow-lint.sh` header |
+| socket.dev (manifests, PRs that touch one) | `pnpm warden:socket` | `gate.yml`, before install (#35) | `docs/WARDEN_SOCKET.md` |
 | semgrep (OSS rulesets) | `pnpm warden:semgrep` | `gate.yml`, before install (run 1) | `docs/WARDEN_SEMGREP.md` |
 | access-control suites | `npx vitest run server/approvalGate.test.ts server/staffImageBoundary.test.ts server/publicInputStrictness.test.ts server/sessionIssuanceSites.test.ts` | inside `pnpm test` | CLAUDE.md, "Access control" |
 

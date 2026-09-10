@@ -255,6 +255,52 @@ jobs:
           semgrep --version
           pnpm warden:semgrep
 
+      # The Warden's supply-chain scan (issue #35, his account 2026-09-10).
+      # `scripts/socket-scan.sh` holds the CLI version pin and the refusal, so
+      # this step names neither — one instrument, one place, the shape
+      # gitleaks and the workflow lint already use.
+      #
+      # ⚠ SCOPED TO PRs THAT TOUCH A MANIFEST, AND THAT IS THE WHOLE DESIGN.
+      # A scan costs one quota unit on the free tier (the CLI's own
+      # `scan create --help`), and the dependency set CANNOT change in a PR
+      # that touches neither package.json nor pnpm-lock.yaml — so a scan on
+      # every PR would spend the allowance to re-read bytes it already read.
+      # The pattern is DERIVED rather than trusted: server/socketScan.test.ts
+      # reads the repo's real manifest files out of `git ls-files` and reddens
+      # if one of them is not covered here (working law 4 — a second list
+      # shadowing a source of truth always drifts from it).
+      #
+      # ⚠ IT BLOCKS. A supply-chain scan that only labels is theatre, and the
+      # card asked for a gate step. The cost of that choice, stated rather
+      # than discovered: this is a THIRD-PARTY NETWORK CALL on a required
+      # check, so an exhausted free-tier quota or a Socket outage reddens a PR
+      # for a reason that is not in the tree. It is scoped as narrowly as it
+      # can be for exactly that reason, and if his org policy turns out noisy
+      # the one-line road to advisory is `|| true` plus a `::notice::` here —
+      # named so nobody has to design it under pressure.
+      #
+      # `--report-level` defaults to `error`, so a policy WARNING does not
+      # redden this; only an error does.
+      - name: Supply chain (socket.dev, manifests only)
+        env:
+          BASE: ${{ needs.resolve.outputs.base }}
+          SOCKET_CLI_API_TOKEN: ${{ secrets.SOCKET_CLI_API_TOKEN }}
+        run: |
+          # Kept in step with server/socketScan.test.ts, which asserts this
+          # exact pattern covers every manifest git tracks.
+          MANIFESTS='^(package\.json|pnpm-lock\.yaml)$'
+
+          git fetch origin "$BASE"
+          CHANGED=$(git diff --name-only "origin/$BASE"...HEAD)
+          if ! echo "$CHANGED" | grep -qE "$MANIFESTS"; then
+            echo "No manifest touched — the dependency set cannot have changed. Not spending a scan."
+            exit 0
+          fi
+
+          echo "Manifest touched:"
+          echo "$CHANGED" | grep -E "$MANIFESTS"
+          sh scripts/socket-scan.sh
+
       - name: Install
         run: pnpm install --frozen-lockfile
 
