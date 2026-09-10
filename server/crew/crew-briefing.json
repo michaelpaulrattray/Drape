@@ -1,7 +1,7 @@
 {
-  "edition": 324,
-  "updatedAt": "2026-09-09T22:55:00Z",
-  "shift": "Foreman - two suites that were only pretending to watch, and a sentence that had four copies of itself. The first: five tests on the referral invite never touched the product. They told a stand-in what to say, asked it, and agreed with the answer they had just given it - so deleting the invite feature outright would have left every one of them green. They drive the real thing now, and that turned up a genuine hole: twelve tests prove the product KNOWS that guerrillamail is a throwaway address, and not one of them proved the invite screen ever ASKS. With the check switched off the old suite still passed 17 of 17. Eight deliberate breakages of the invite path now each turn exactly one test red. The second is about the credit ledger. When a picture you paid for does not arrive we refund you and write a sentence on your credit history saying why. Our own weekly count of missing pictures finds those refunds by matching that sentence word for word - and the sentence was typed out in five places. Reword one, an ordinary copy change, and the count silently stops seeing that refund while still reporting that everything agrees. There is one copy now and a check that goes red on a sixth. Worth saying out loud: the first version of that check shipped slower than reported and the safety net caught it - the details are on the card, because a report that does not match the code is the thing this whole night was about.",
+  "edition": 325,
+  "updatedAt": "2026-09-10T00:45:00Z",
+  "shift": "Foreman - the checks on your casting studio were failing at random, and it was never your code. Running the casting studio's own 5,496 checks came back FAILING four times out of five on an untouched copy of the app - a different handful each time. That is the worst shape a check can have, because the red says nothing about what you changed, and the honest reaction is to stop believing any of them. Read at the actual error, every single failure said the same thing: the check ran out of time. Not one of them had found a real fault. The cause: each check is given five seconds, a number picked for checks that do no real work. But a few of them DO real work - one reads every file in the codebase looking for a duplicated sentence, another builds a hundred model sheets. Alone that file-reader takes a third of a second. With 275 other checks running beside it, competing for the same disk, it takes nearly six seconds - eighteen times longer - and gets cut off. The proof it was never about being slow: the two SLOWEST checks in the whole run were passing, because somebody had already given those two more time. Twenty-four of them have been given proper time now, sized from what was actually measured rather than guessed. Six runs since: all green. Two things found on the way that were worth more than the fix. First, a check running out of time can make its NEIGHBOUR report a real-looking fault - one did exactly that, and it read as a genuine bug in the refine feature. Somebody would have gone hunting for it. Second, the reviewer caught a real hole in the new safeguard I wrote: it recognised three spellings of one thing rather than working it out properly, which would have quietly stopped watching about fifty files. Fixed before it merged. One honest limit, written into the code rather than left to be discovered: I measured the casting studio and not the other 526 check files, and one file proved a shortcut cannot find them all - it looked fast in three runs and ran out of time in a fourth. That is filed as its own job (#743) with the numbers, because if it turns out to be widespread the right answer is one setting rather than another twenty-four edits.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-09T20:53:48.803Z",
+      "readAt": "2026-09-10T00:42:40.410Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4465,6 +4465,14 @@
   ],
   "pipeline": [
     {
+      "id": "pr-742-contended-timeouts-741",
+      "title": "The casting studio's own checks were failing at random, and it was never your code (#741)",
+      "status": "merged",
+      "prNumber": 742,
+      "cardId": null,
+      "note": "Squash 4774dcb6. Running the casting studio's 5,496 checks on an untouched copy came back RED four times in five, a different set each time. Every failure read at the error was the same: the check ran out of its five seconds. Not one had found a real fault. Five seconds is right for a check that does no real work; a handful here read every file in the codebase or build a hundred model sheets. The file-reader takes 330 milliseconds alone and 5,855 with 275 other checks competing for the disk - eighteen times longer. The proof it is not about slowness: the two SLOWEST checks in the run were the two PASSING, because they had already been given more time. Twenty-four now have proper time, at file level, sized from measurement. Before: 4 red in 5 runs. After: 6 green runs including one on the merged copy. Eight deliberate breakages of the new safeguard each turn the intended check red - and two of those breakages found real weaknesses in it first, which is why they were run. Two reviews: the first found a genuine hole (the safeguard recognised three spellings of one thing instead of working it out, which would have silently stopped watching around fifty files); the second passed with three notes, all taken."
+    },
+    {
       "id": "pr-739-referral-hollow-arms-697",
       "title": "Five tests on your referral invite were watching a stand-in, not the product (#697)",
       "status": "merged",
@@ -5012,9 +5020,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0910e-foreman",
+      "id": "queue-shape-0910f-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 59 open, 14 nobody has looked at in a week - one closed tonight, one filed",
+      "detail": "59 cards open, up one: #741 closed and #743 filed from it, plus one from elsewhere. 14 have had no comment, close, reopen or commit for seven days - unchanged from last night, and the oldest is 15 days. Nothing is waiting on you, nothing is marked urgent, and one card is held for a Fable review (#711, the upgrade credit-grant bug). The shape is steady rather than improving: the 14 stale ones are mostly old lost-and-found and knip items that are parked or need a decision, not work anyone is avoiding."
+    },
+    {
+      "id": "queue-shape-0910e-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 58 open, 14 nobody has looked at in a week - two closed tonight, one filed",
       "detail": "58 cards open. 14 have had no comment, no close and no code near them for seven days, and the oldest is 15 days - both numbers down from last night, because two of the stale ones were the work tonight.\n\nNothing is waiting on you except the one word on the fangs frames, which is unchanged from three nights ago. NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight: #697 advanced a file and #536 closed. One new card filed (#741) - a check of the same kind as tonight's, on someone else's file, goes red at random when the machine is busy. That matters more than it sounds: a check that cries wolf is a check people learn to ignore, and these particular ones are what stop a price, a limit or a sentence being written down twice.\n\nThe shape of what is left is the same as the last three nights and worth repeating once: of the small jobs on the board, most end in a decision only you can make - how something should look, how fast something should refresh, which drawing to use. The team is not allowed to answer those."
     },
@@ -5457,7 +5472,7 @@
     169
   ],
   "nextUp": {
-    "readAt": "2026-09-09T20:53:47.954Z",
+    "readAt": "2026-09-10T00:42:39.656Z",
     "items": []
   }
 }
