@@ -2,7 +2,9 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 import {
   BENCH_SET,
@@ -35,6 +37,13 @@ import {
  *    breakage reports a spectacular improvement. Nothing about the output would
  *    look wrong.
  */
+
+/* This suite reaches `hyperfineBin.mts`, which spawns `tar` and the binary
+   itself, so it is in #548's derived population whether or not a given arm
+   gets that far — the deriver resolves the import rather than reading this
+   file alone, and it is right to: the extraction path runs the moment a
+   download succeeds. File level, never per arm. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const ROOT = path.resolve(__dirname, "..");
 
