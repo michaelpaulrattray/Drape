@@ -56,6 +56,26 @@ describe("emptyOrderedBandVerdict — the witness that makes an empty band a fac
     expect(verdict.why).toContain("blip");
   });
 
+  /* PR #773 review, finding 1. `gh` returns the NEWEST rows and ordered cards
+     skew OLD, so on the day the queue passes the cap the band is exactly what
+     falls outside the window -- and the sweep's own ladder branch already calls
+     a capped read "a floor, not a list". One consumer must not trust what the
+     other refuses. */
+  it("REFUSES it when the witness came back AT ITS LIMIT, however unlabelled the window looks", () => {
+    const capped = Array.from({ length: 200 }, (_, i) => other(i + 1));
+    const verdict = emptyOrderedBandVerdict(capped);
+
+    expect(verdict.believable).toBe(false);
+    expect(verdict.why).toContain("limit");
+  });
+
+  it("takes the cap from the caller, so it cannot drift from the read's own --limit", () => {
+    const rows = Array.from({ length: 60 }, (_, i) => other(i + 1));
+
+    expect(emptyOrderedBandVerdict(rows, 200).believable).toBe(true);
+    expect(emptyOrderedBandVerdict(rows, 60).believable).toBe(false);
+  });
+
   it("REFUSES it, and says how many, when the same run's own read holds ordered cards", () => {
     const verdict = emptyOrderedBandVerdict([other(1), ordered(2), ordered(3)]);
 
@@ -81,6 +101,10 @@ describe("the sweep consults it, and on the road that writes his page", () => {
     const source = readFileSync(resolve("scripts/crew-desk-sweep.mts"), "utf8");
 
     expect(source).toContain("emptyOrderedBandVerdict");
-    expect(source).toMatch(/ordered\.length === 0 && !emptyOrderedBandVerdict\(allOpen\)\.believable/);
+    /* The condition, not the exact argument list: this arm reddened once
+       already when the cap argument was added, which is a guard telling the
+       truth about a call it had over-specified. What must hold is that an
+       EMPTY band is put to the witness before the block is rewritten. */
+    expect(source).toMatch(/ordered\.length === 0 && !emptyOrderedBandVerdict\(allOpen[^)]*\)\.believable/);
   });
 });

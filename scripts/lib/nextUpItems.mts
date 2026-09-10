@@ -64,8 +64,17 @@ export const ORDERED_BAND_LABEL = "founder-ordered";
  *
  *   whole-queue read unreadable  -> not believable (nothing can confirm it)
  *   whole-queue read also empty  -> not believable (a queue is never empty here)
+ *   whole-queue read AT ITS CAP  -> not believable (it may not hold the band)
  *   it holds labelled cards      -> not believable, and provably wrong
  *   it answered, none labelled   -> believable: the band really is empty
+ *
+ * The cap row is the PR #773 review's finding 1 and it is an in-file
+ * inconsistency rather than a hypothetical: the sweep's ladder branch already
+ * calls a 200-row answer "a floor, not a list", so one consumer of that read
+ * refused what this one trusted. `gh` returns the NEWEST rows, and
+ * founder-ordered cards skew OLD — the day the queue passes the cap, the band
+ * is exactly what falls outside the window, and an empty band would read as
+ * believable on a read that never looked at it.
  *
  * Refusing costs a NEXT UP block one run older with its reason printed.
  * Believing costs his page telling him he has nothing queued while his own
@@ -74,6 +83,9 @@ export const ORDERED_BAND_LABEL = "founder-ordered";
  */
 export function emptyOrderedBandVerdict(
   allOpen: readonly { labels?: unknown }[] | null,
+  /** The `--limit` the whole-queue read was taken with, so "at its cap" is the
+   *  caller's own number rather than a constant that could drift from it. */
+  limit = 200,
 ): { believable: boolean; why: string } {
   if (allOpen === null) {
     return {
@@ -85,6 +97,12 @@ export function emptyOrderedBandVerdict(
     return {
       believable: false,
       why: "the whole open queue came back empty too, which is a blip and not a queue",
+    };
+  }
+  if (allOpen.length >= limit) {
+    return {
+      believable: false,
+      why: `the witness itself came back at its ${limit}-row limit, which is a floor and not a list`,
     };
   }
   const carried = allOpen.filter((row) => labelNames(row.labels).includes(ORDERED_BAND_LABEL)).length;

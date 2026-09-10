@@ -182,10 +182,15 @@ let staleHolds: ReadonlyArray<{ issueNumber: number; hasWrittenReason: boolean }
    One call, one instant — the ladder pass below reads this same answer, so the
    two cannot describe different moments. */
 
+/* ONE owner for the cap, because three readings depend on it: the read itself,
+   the ladder's "a floor, not a list" refusal, and the empty-band witness. A
+   number typed three times is the drift working law 4 is about. */
+const OPEN_QUEUE_LIMIT = 200;
+
 const allOpen = gh([
   "issue", "list",
   "--state", "open",
-  "--limit", "200",
+  "--limit", String(OPEN_QUEUE_LIMIT),
   "--json", "number,title,labels",
 ]) as Json[] | null;
 
@@ -208,13 +213,13 @@ if (ordered === null) {
   /* A `--limit` shorter than the population would silently cap the list, and a
      capped running order reads exactly like a complete one. */
   skipped.push("NEXT UP: 200 rows came back, which is the limit — that is a floor, not a list.");
-} else if (ordered.length === 0 && !emptyOrderedBandVerdict(allOpen).believable) {
+} else if (ordered.length === 0 && !emptyOrderedBandVerdict(allOpen, OPEN_QUEUE_LIMIT).believable) {
   /* An EMPTY answer is the one reading that must survive a cross-examination
      before it is written onto his page (#772). `emptyOrderedBandVerdict` says
      why in his English; the witness is the whole-queue read above, so this
      costs no extra call. */
   skipped.push(
-    `NEXT UP: it read empty and that could not be believed — ${emptyOrderedBandVerdict(allOpen).why}.`
+    `NEXT UP: it read empty and that could not be believed — ${emptyOrderedBandVerdict(allOpen, OPEN_QUEUE_LIMIT).why}.`
     + " The block is left as it was.",
   );
 } else {
@@ -367,8 +372,8 @@ if (ordered === null) {
 
 if (allOpen === null) {
   skipped.push("LADDER: the open queue could not be read — the ladder cards are left as they were.");
-} else if (allOpen.length >= 200) {
-  skipped.push("LADDER: 200 rows came back, which is the limit — that is a floor, not a list.");
+} else if (allOpen.length >= OPEN_QUEUE_LIMIT) {
+  skipped.push(`LADDER: ${OPEN_QUEUE_LIMIT} rows came back, which is the limit — that is a floor, not a list.`);
 } else {
   const rungKeys: string[] = ((briefing.program?.ladder ?? []) as Json[]).map((rung) => String(rung.key));
   const ladderItems = allOpen
