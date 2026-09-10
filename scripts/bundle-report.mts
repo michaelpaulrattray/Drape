@@ -126,10 +126,15 @@ function main(): void {
   }
 }
 
+/* The fold and the readers throw rather than returning a small truth, so the
+   failure arm is this catch and it exits nonzero. The happy arm is the LAST
+   top-level statement in the file, which is what `scriptExitDiscipline`
+   requires — an exit sitting inside an earlier branch does not count. */
 try {
   main();
-  process.exit(0);
 } catch (error) {
   console.error(`bundle-report: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);
 }
+
+process.exit(0);
