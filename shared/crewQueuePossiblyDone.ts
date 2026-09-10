@@ -77,6 +77,52 @@
  * SURVIVES on purpose, because telling it from a real fix needs a vocabulary of
  * English phrases and that is a judgement about wording, not a reading.
  *
+ * ⚠ **AND #737 ASKED FOR THAT VOCABULARY. THE ANSWER IS NO, AND IT IS A
+ * READING RATHER THAN A PREFERENCE (2026-09-11).** The card left the question
+ * open instead of assuming it, and the live population settles it. Driven over
+ * **57 open cards against 326 merged pull requests: TEN flags, and exactly ONE
+ * of them has a naming that genuinely worked its card** — #697, by PR #739,
+ * whose TITLE is `test(#697): …`. The other nine are citations.
+ *
+ * The card's own candidate phrases — *filed as*, *logged, not done here*,
+ * *none taken*, *not taken*, *left for*, *recommended into* — were then driven
+ * against those nine, per MENTION, on the lines the references actually sit on:
+ *
+ *   * **They reach THREE of the nine** (#744 by PR #745, #481 and #482 by PR
+ *     #717). A fourth, #655, matches on PR #656 and **stays flagged anyway**,
+ *     because PR #742 names it in a second sentence the list does not reach.
+ *     One card, two namings: a vocabulary that removes one of them changes
+ *     nothing on the panel.
+ *   * **The remaining six are ordinary English sharing no shape at all** —
+ *     *"That is #743's population exactly"*, *"Records against #8 and #108 are
+ *     on those cards"*, *"his thrice-said order, #246"*, *"`#45`, the scoped
+ *     penetration probe, was labelled `debt,parked`"*. Reaching those is not a
+ *     phrase list; it is an English-meaning judgement, aimed at bodies where a
+ *     TRUE naming speaks the same way — PR #740 says *"the very shape #697 is
+ *     unpicking on the other branch tonight"*, which is citation prose sitting
+ *     one line away from prose that fixed something.
+ *
+ * So the trade on offer is a permanent wording-judging instrument — the class
+ * that already cost this repository a founder's blocked ask
+ * (`typo-gate-owned-a-real-word`) — in exchange for taking the flag from **10
+ * to 7**, while the control this flag merely points at (a background card is
+ * re-read at the code before it is taken) is unchanged either way.
+ * **DECLINED**, and #737 is closed on this reading rather than left standing as
+ * assumed work.
+ *
+ * ⚠ **ONE MECHANICAL FINDING CAME OUT OF THE DRIVE, AND IT IS NOT A
+ * VOCABULARY.** `#105` is flagged by PR #468 for the words *"His order, Crew
+ * reply #105"* — a CREW REPLY number, a numbering space of its own that
+ * collides with the card numbers. That is not a judgement about whether work
+ * was done; it is whether the token names a card at all, which is the question
+ * `cardNumbersIn` already answers for `##12` and `abc#12`. Filed as #776.
+ *
+ * ⚠ **AND THE READING THAT LOOKED BEST BEFORE IT WAS DRIVEN IS DEAD — *the
+ * card was filed while the naming pull request was already open* matches ZERO
+ * of the ten.** A shift files the card and cuts the branch afterwards, every
+ * time, so the pull request is always the younger of the two. It is recorded
+ * here because it is the obvious next idea and it costs a measurement to learn.
+ *
  * # `shared/` FOR `crewQueueTitles.ts`'s REASON
  *
  * Three things key on this shape: the shift tool that writes the row
@@ -389,7 +435,10 @@ export function qualifyingNamings(
  * #455, none taken"*, *"logged, not done here"* — and they SURVIVE this strip
  * and still flag. That is deliberate: separating those from a real fix needs a
  * vocabulary of English phrases, which is a judgement about wording and belongs
- * on its own card rather than smuggled in here. A blockquote is likewise NOT
+ * on its own card rather than smuggled in here. ⚠ **That card is #737, and it
+ * was driven and DECLINED on 2026-09-11 — the reading is in this module's
+ * header, and the three specimens below still flag on purpose and now on a
+ * measurement rather than on a deferral.** A blockquote is likewise NOT
  * stripped, though `is-quiet-entry.ps1` strips one: a quoted founder ruling is
  * not the same object as pasted machine output, and widening this without a
  * measurement is how a noise filter starts swallowing findings.
