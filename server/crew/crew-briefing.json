@@ -1,7 +1,7 @@
 {
-  "edition": 326,
-  "updatedAt": "2026-09-10T03:20:00Z",
-  "shift": "Foreman - two new measuring instruments, and the first one immediately told me something about your app that nobody here could have told you before. Everything tonight came off YOUR next-up list. Five cards on it were unblocked by your replies yesterday morning; the shift before mine read the list as empty and stepped over all five, so I started at the oldest. THE ONE THAT MATTERS TO CUSTOMERS: when somebody opens Drape for the first time, their browser downloads 637 kB of your app in a single file before one pixel appears - and that single file is the WHOLE product. The casting studio, the boards canvas, the wardrobe, the billing screens, and the admin panel, all of it, whether they are an admin or not. On your laptop that is a blink. On a phone on a train it is several seconds of blank white. The largest single thing inside it is a charts library at over a tenth of the total, and charts are a staff feature. I have not touched it. Making one big download into several smaller ones is a real piece of work that can make things WORSE if it is done without measuring, so it is filed as its own job (#744) with the numbers attached, and the tool to re-measure it is now a single command. Until tonight nothing in the team measured your app from a customer's side at all - the performance record said so about itself in as many words, and that sentence is now corrected rather than left standing. The instrument that matters most about the instrument: the tool I used reports numbers that add up to more than TWICE the real size of your app - not a rounding error, a genuine trap in how it counts. If I had trusted it you would have a figure in your records that is wrong by double and looks completely reasonable. So the headline number is weighed off the actual files on disk and the tool's own numbers are only ever shown as percentages. There is a deliberate test that feeds the two sources numbers ten times apart and fails if the headline ever comes from the wrong one. The second instrument times the team's own commands, so 'the nights feel slow' can become a number instead of an impression. First readings are in the record. THE SECOND JOB, and it is a small one you would only notice as honesty: your staff pages carry one switch labelled AUTO 30s. On Audit logs and the Moderator dashboard, the numbers under that switch were refreshing every SIXTY seconds - so the control said half a minute while what it governed was up to a minute old. The card said three places needed fixing. The actual code had seven, and the one nobody had spotted was a fourth sixty-second refresh handed to a card on the moderator screen in a different form, invisible to the way the others were found. All seven now read one number, so the label and the timers cannot drift apart again. Nothing moves on screen: the words already said 30s, they are simply true now. The reviewer then found something neither the card nor I had: the Blocked IPs list on both those pages sits under that same switch AND under the Refresh button, and is reached by NEITHER. Filed as #747 rather than quietly folded in. One thing needs you and it is on this page below - the last piece of the toolbelt job needs an account only you can open, and it takes about five minutes.",
+  "edition": 327,
+  "updatedAt": "2026-09-10T05:20:00Z",
+  "shift": "Foreman - everything tonight came off YOUR next-up list, oldest first, and one of the three needs your eye at the bottom of this page. THE ONE YOU WILL ACTUALLY NOTICE: on your admin pages, the little count beside 'Change requests' did not move while you sat still. A moderator could send you a request and the number would stay exactly where it was - not for thirty seconds, not ever - until you clicked to another admin page or clicked away from the browser and back. It now updates within about half a minute while you sit there doing nothing. You told me the cost of that was accepted, so here is the cost, plainly: the page asks the database a seven-part question every thirty seconds while your AUTO 30s switch is on, and because the same number feeds the badge in your account menu, it asks it on every page you have open, casting included. Turning that switch off stops it everywhere. I proved all three states rather than assuming them: two copies of the app running side by side, seventy seconds of sitting completely still on each - the old one asked nothing, the new one asked twice, and the new one with the switch off asked nothing. THE SECOND JOB IS INVISIBLE AND THAT IS THE POINT: the small icon buttons in your top bar - the bug, the help, the theme toggle, the settings gear, the refresh, the close X on the feedback panel - were seven separate hand-written copies of one button, and there were two more unused copies sitting in the code under the same name. They are one thing now. Nothing moved on screen and I did not take your word for that or mine: six photographs, both themes, before and after, compared pixel by pixel - zero pixels different. The only change anywhere is that the X on the feedback box now shows a 'Close' tooltip like its five neighbours already did. Your list said six buttons; the code had seven, and the extra one was the refresh on your staff bar. The automatic reviewer then found two holes in my own test and both are fixed. THE THIRD IS FOR YOUR EYE: you asked for a better mark than the sparkle on Follow. Three drawings are below, at the sizes they would really be used, with the two people-glyphs you already have beside them so you can see they do not collide. One word picks one.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-10T03:16:25.765Z",
+      "readAt": "2026-09-10T05:13:52.502Z",
       "items": [
         {
           "issueNumber": 16,
@@ -273,6 +273,38 @@
     }
   },
   "needsYou": [
+    {
+      "id": "follow-glyph-557",
+      "issueNumber": 557,
+      "state": "open",
+      "filedAt": "2026-09-10T05:20:00Z",
+      "title": "Follow: pick a mark - one letter closes this",
+      "productImpact": "Follow is drawn with a sparkle today. Your words: \"follow is a sparkles icon do you have a better idea? a magic wand or a person with a + sign? something less ai slop but still a good vibe?\" Three candidates are drawn and none of them is wired - the tile still shows the sparkle until you pick. The mark sits on every candidate tile in the casting studio, at 11 pixels, which is the smallest thing this product draws, so legibility at that size decides as much as taste does.",
+      "workedExample": "You keep a face and press Follow to get another one like it. A wants to say 'another of these' - one figure with a second, smaller one stepping out from behind it. B says 'next one' - a figure and a short step forward, and it is by far the clearest at 11px. C says 'same, varied' - a twin traced in broken strokes, and at 11px those breaks read as specks rather than a person, which I am telling you rather than hiding.",
+      "options": [
+        {
+          "key": "A",
+          "label": "A - lineage: a second figure behind the first",
+          "consequence": "Says another of these, and is built from the same head-and-shoulders as your existing people mark. The risk is that it sits close to that mark, which is why both are drawn beside it."
+        },
+        {
+          "key": "B",
+          "label": "B - next one: a figure and a short step forward",
+          "consequence": "The most legible of the three at tile size. Reads slightly more like go than like another."
+        },
+        {
+          "key": "C",
+          "label": "C - same, varied: a twin traced in broken strokes",
+          "consequence": "The idea reads at large sizes and falls apart at 11px. Drawn because you were promised three."
+        },
+        {
+          "key": "none",
+          "label": "None of these - keep the sparkle for now",
+          "consequence": "Nothing changes and the card stays open. No work is wasted; nothing was wired."
+        }
+      ],
+      "recommendation": "A, and B if you want the safest thing to read at that size. Reply with the letter and the next shift wires it, retires the sparkle from that tile, and puts the mark in your specimen sheet."
+    },
     {
       "id": "toolbelt-socket-35",
       "issueNumber": 35,
@@ -2133,6 +2165,27 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "follow-glyph-557-frames",
+      "title": "Follow: three marks, at the size they are really drawn",
+      "question": "Which of the three, or none? Look at the 11px column first - that is the size on the tile - and at the bottom two rows, which are marks you already have, to check the one you like is not saying what they say. Reply A, B, C or none.",
+      "state": "open",
+      "filedAt": "2026-09-10T05:20:00Z",
+      "issueNumber": 557,
+      "cardId": "follow-glyph-557",
+      "frames": [
+        {
+          "key": "crew-eye/fdb6eb60-5679-4b28-9f40-06f081f36435.png",
+          "caption": "Light. Each candidate large, then at 11 / 13 / 15 / 17 px and on a tile. The last two rows are the people and casting marks you already have, for separation.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/130c6c51-90b7-4588-9b88-fb333b91a7b6.png",
+          "caption": "Dark. The same sheet - a stroke that holds in one theme can thin out in the other, so both are here.",
+          "arm": "dark"
+        }
+      ]
+    },
     {
       "id": "fangs-court-strips-599",
       "title": "Fangs in the mouth - your oni-cyber brief, before and after",
@@ -4487,6 +4540,20 @@
   ],
   "pipeline": [
     {
+      "id": "pill-moves-while-still-457",
+      "title": "The Change requests count now moves while you sit still",
+      "status": "merged",
+      "prNumber": 751,
+      "note": "Proven at the wire: 70 seconds of sitting still asked nothing before, twice after, nothing again with your AUTO switch off."
+    },
+    {
+      "id": "one-icon-button-276",
+      "title": "Seven copies of one small button became one, and nothing moved on screen",
+      "status": "merged",
+      "prNumber": 750,
+      "note": "Six photographs, both themes, before and after: zero pixels different. Your list said six buttons; the code had seven."
+    },
+    {
       "id": "pr-746-staff-refresh-455",
       "title": "Your AUTO 30s switch now tells the truth on every staff screen (#455)",
       "status": "merged",
@@ -5510,7 +5577,7 @@
     169
   ],
   "nextUp": {
-    "readAt": "2026-09-10T03:16:25.002Z",
+    "readAt": "2026-09-10T05:13:51.683Z",
     "items": [
       {
         "issueNumber": 35,
@@ -5522,19 +5589,13 @@
         }
       },
       {
-        "issueNumber": 276,
-        "title": "Promotion pass, section 02: the icon button has THREE implementations, and the one with no customers is the primitive",
-        "urgent": false
-      },
-      {
-        "issueNumber": 457,
-        "title": "A moderator request arriving while he sits still does not reach the bar until he moves (from #456's review)",
-        "urgent": false
-      },
-      {
         "issueNumber": 557,
         "title": "Follow wears the retired sparkle — a house glyph that says 'another of these': two figures, the second traced behind the first",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "his desk card `follow-glyph-557` is open"
+        }
       }
     ]
   }
