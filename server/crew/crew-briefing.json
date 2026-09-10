@@ -1,7 +1,7 @@
 {
-  "edition": 325,
-  "updatedAt": "2026-09-10T00:45:00Z",
-  "shift": "Foreman - the checks on your casting studio were failing at random, and it was never your code. Running the casting studio's own 5,496 checks came back FAILING four times out of five on an untouched copy of the app - a different handful each time. That is the worst shape a check can have, because the red says nothing about what you changed, and the honest reaction is to stop believing any of them. Read at the actual error, every single failure said the same thing: the check ran out of time. Not one of them had found a real fault. The cause: each check is given five seconds, a number picked for checks that do no real work. But a few of them DO real work - one reads every file in the codebase looking for a duplicated sentence, another builds a hundred model sheets. Alone that file-reader takes a third of a second. With 275 other checks running beside it, competing for the same disk, it takes nearly six seconds - eighteen times longer - and gets cut off. The proof it was never about being slow: the two SLOWEST checks in the whole run were passing, because somebody had already given those two more time. Twenty-four of them have been given proper time now, sized from what was actually measured rather than guessed. Six runs since: all green. Two things found on the way that were worth more than the fix. First, a check running out of time can make its NEIGHBOUR report a real-looking fault - one did exactly that, and it read as a genuine bug in the refine feature. Somebody would have gone hunting for it. Second, the reviewer caught a real hole in the new safeguard I wrote: it recognised three spellings of one thing rather than working it out properly, which would have quietly stopped watching about fifty files. Fixed before it merged. One honest limit, written into the code rather than left to be discovered: I measured the casting studio and not the other 526 check files, and one file proved a shortcut cannot find them all - it looked fast in three runs and ran out of time in a fourth. That is filed as its own job (#743) with the numbers, because if it turns out to be widespread the right answer is one setting rather than another twenty-four edits.",
+  "edition": 326,
+  "updatedAt": "2026-09-10T03:20:00Z",
+  "shift": "Foreman - two new measuring instruments, and the first one immediately told me something about your app that nobody here could have told you before. Everything tonight came off YOUR next-up list. Five cards on it were unblocked by your replies yesterday morning; the shift before mine read the list as empty and stepped over all five, so I started at the oldest. THE ONE THAT MATTERS TO CUSTOMERS: when somebody opens Drape for the first time, their browser downloads 637 kB of your app in a single file before one pixel appears - and that single file is the WHOLE product. The casting studio, the boards canvas, the wardrobe, the billing screens, and the admin panel, all of it, whether they are an admin or not. On your laptop that is a blink. On a phone on a train it is several seconds of blank white. The largest single thing inside it is a charts library at over a tenth of the total, and charts are a staff feature. I have not touched it. Making one big download into several smaller ones is a real piece of work that can make things WORSE if it is done without measuring, so it is filed as its own job (#744) with the numbers attached, and the tool to re-measure it is now a single command. Until tonight nothing in the team measured your app from a customer's side at all - the performance record said so about itself in as many words, and that sentence is now corrected rather than left standing. The instrument that matters most about the instrument: the tool I used reports numbers that add up to more than TWICE the real size of your app - not a rounding error, a genuine trap in how it counts. If I had trusted it you would have a figure in your records that is wrong by double and looks completely reasonable. So the headline number is weighed off the actual files on disk and the tool's own numbers are only ever shown as percentages. There is a deliberate test that feeds the two sources numbers ten times apart and fails if the headline ever comes from the wrong one. The second instrument times the team's own commands, so 'the nights feel slow' can become a number instead of an impression. First readings are in the record. THE SECOND JOB, and it is a small one you would only notice as honesty: your staff pages carry one switch labelled AUTO 30s. On Audit logs and the Moderator dashboard, the numbers under that switch were refreshing every SIXTY seconds - so the control said half a minute while what it governed was up to a minute old. The card said three places needed fixing. The actual code had seven, and the one nobody had spotted was a fourth sixty-second refresh handed to a card on the moderator screen in a different form, invisible to the way the others were found. All seven now read one number, so the label and the timers cannot drift apart again. Nothing moves on screen: the words already said 30s, they are simply true now. The reviewer then found something neither the card nor I had: the Blocked IPs list on both those pages sits under that same switch AND under the Refresh button, and is reached by NEITHER. Filed as #747 rather than quietly folded in. One thing needs you and it is on this page below - the last piece of the toolbelt job needs an account only you can open, and it takes about five minutes.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-10T00:42:40.410Z",
+      "readAt": "2026-09-10T03:16:25.765Z",
       "items": [
         {
           "issueNumber": 16,
@@ -273,6 +273,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "toolbelt-socket-35",
+      "issueNumber": 35,
+      "state": "open",
+      "filedAt": "2026-09-10T03:20:00Z",
+      "title": "Five minutes of your time finishes the toolbelt job - it needs an account only you can open",
+      "productImpact": "Your oldest next-up card asked for three tools. Two are built and merged tonight. The third, Socket.dev, is the only one I cannot do: it needs a free account in your name and one password-style value pasted into the project settings. Nothing else is blocking it. What it is for, in plain terms: Drape is built on about a thousand pieces of other people's code. Twice a year somewhere in the industry, someone takes over one of those pieces and slips something nasty into it - code that reads your keys or your customers' data and sends them somewhere. You already have two defences and they are good ones. One watches for pieces with a publicly KNOWN problem and opens a fix automatically. The other forbids any new piece from running its own setup code on our machines, except five we have named - that is the single commonest way these attacks land, and it is already shut. Socket.dev covers the gap between them: a piece that has just been tampered with, where nobody has reported it yet, so there is nothing 'known' to match. It reads what the code actually DOES - has this version suddenly started reaching the network, or reading files it never touched - and says so before it reaches us. I want to be straight that this is a narrower gap than 'we have no protection'. It is a real one, and it is free, and it is worth having before launch.",
+      "workedExample": "A package you have never heard of, three levels beneath something you do use, publishes a new version at 2am. It looks identical. Buried in it is one line that reads environment variables - which on our server means your Stripe key and your database password - and posts them to an address in another country. Nobody has reported it, so there is no known-problem list to catch it. It does not run setup code, so that defence does not see it either. It just sits there and waits for our next deploy. Socket.dev's answer is 'this version newly gained network access and reads credentials' - and the change stops at the door instead of shipping.",
+      "options": [
+        {
+          "key": "yes",
+          "label": "YES — I will open the account",
+          "consequence": "You get three short steps and a link. The tool then checks every dependency change automatically from then on, and #35 closes."
+        },
+        {
+          "key": "not-now",
+          "label": "NOT NOW",
+          "consequence": "The card stays open and parked. Nothing else waits on it, and the two defences you already have keep running."
+        }
+      ],
+      "recommendation": "RECOMMEND YES, but it is not urgent and it should not interrupt anything. It is free, it is about five minutes, and it is the kind of thing that is much easier to have in place before launch than to add after an incident. If you say yes I will write the three steps out with the exact link and the exact place to paste the value, and wire it up the same night. One thing I deliberately did NOT do, because it is worse than doing nothing: set the whole thing up now with the password value missing. It would sit on every change looking like it was checking, and check nothing. This project has four recorded cases of a safety net that was installed and never actually connected, so it stays uninstalled until it can work."
+    },
     {
       "id": "ordered-queue-order-718",
       "issueNumber": 718,
@@ -4465,6 +4487,22 @@
   ],
   "pipeline": [
     {
+      "id": "pr-746-staff-refresh-455",
+      "title": "Your AUTO 30s switch now tells the truth on every staff screen (#455)",
+      "status": "merged",
+      "prNumber": 746,
+      "cardId": null,
+      "note": "Squash eb240104. The staff bar draws one switch labelled AUTO 30s. On Audit logs and the Moderator dashboard the statistics under it refreshed every sixty seconds - the control overstated itself by double. Your word was 'make the reader 30s'. The card named three places from a hand search; walking the code found SEVEN, and the one it missed is the interesting one: the moderator screen passes a fourth sixty-second interval to its flagged-discrepancies card as a setting rather than writing it the usual way, so any search for the usual spelling was blind to it. Three refreshes genuinely speed up from 60s to 30s; the other four already ran at 30 and simply stop restating the number. The dashboard's own private copy of '30 seconds' is deleted rather than corrected - a second copy is exactly how a label and a timer drift apart. The guard against it coming back is worked out from the code rather than being a list of the three places, because a list is how the fourth one got missed. Deliberately breaking it turns exactly the right check red. Nothing moves on screen. Cost: three database summaries run twice as often while the switch is on, on staff pages only. The reviewer passed it with no correctness findings and turned up one sibling problem, filed as #747."
+    },
+    {
+      "id": "pr-745-toolbelt-instruments-35",
+      "title": "Two measuring instruments, and the first number they gave us is about every visitor you have (#35)",
+      "status": "merged",
+      "prNumber": 745,
+      "cardId": null,
+      "note": "Squash f9e9a204. Your oldest next-up card, two of its three parts built. FIRST READING, and it is the headline: your client is ONE file of 637 kB compressed, so every visitor downloads the admin panel, the canvas and the casting studio before anything renders. The biggest single occupant is a charting library at 11.4%. Filed as #744 and deliberately NOT fixed - splitting one download into several is a real piece of work that measures before and after, not a change to slip into a tooling job. The performance record said of itself that nothing measured your app from the customer's side; that sentence is now corrected, and narrowly - the bytes are measured, page speed and the canvas still are not, and saying so is cheaper than a later shift assuming otherwise. THE TRAP, because it is the real work here: the off-the-shelf tool's per-part numbers add up to 5.08 MB against a real 2.24 MB - 2.27 times over, because of how it counts before compression. Trusting it would have put a figure in your records wrong by more than double and entirely believable. Totals now come from the actual files on disk; the tool's numbers appear only as percentages, with the inflation printed beside them. The second instrument times the team's own commands through a properly pinned benchmarking tool, checksum-verified before anything runs. A failing command is FAST, so timing one would report a triumph - it refuses instead, in two places, because the tool aborts before it writes its results and the first drive of it proved that. 41 checks, and the four load-bearing ones were each deliberately broken first to prove they can fail. The reviewer found three real defects - all in argument handling, all the same class the scripts themselves cite - and every one plus both minor notes was fixed in a single push."
+    },
+    {
       "id": "pr-742-contended-timeouts-741",
       "title": "The casting studio's own checks were failing at random, and it was never your code (#741)",
       "status": "merged",
@@ -5472,7 +5510,32 @@
     169
   ],
   "nextUp": {
-    "readAt": "2026-09-10T00:42:39.656Z",
-    "items": []
+    "readAt": "2026-09-10T03:16:25.002Z",
+    "items": [
+      {
+        "issueNumber": 35,
+        "title": "Toolbelt remainder: Socket.dev — needs his account; hyperfine and the bundle visualizer shipped (PR #745)",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "the founder — **a Socket.dev account and one repository secret.** It is the only piece left, and no shift can do it: the CLI reads `SOCKET_CLI_API_TOKEN` and t…"
+        }
+      },
+      {
+        "issueNumber": 276,
+        "title": "Promotion pass, section 02: the icon button has THREE implementations, and the one with no customers is the primitive",
+        "urgent": false
+      },
+      {
+        "issueNumber": 457,
+        "title": "A moderator request arriving while he sits still does not reach the bar until he moves (from #456's review)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 557,
+        "title": "Follow wears the retired sparkle — a house glyph that says 'another of these': two figures, the second traced behind the first",
+        "urgent": false
+      }
+    ]
   }
 }
