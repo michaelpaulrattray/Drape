@@ -43,6 +43,63 @@ export type NextUpItem = {
   held?: { state: string; because?: string };
 };
 
+/** The label whose open cards ARE the NEXT UP band. */
+export const ORDERED_BAND_LABEL = "founder-ordered";
+
+/**
+ * IS AN EMPTY NEXT UP BELIEVABLE THIS RUN? (#772, and the third instance of one
+ * class.)
+ *
+ * The sweep asks `gh` a narrow question — open issues carrying
+ * `founder-ordered` — and **an empty answer to a narrow question is
+ * indistinguishable from a broken one.** `[]` was written onto his page as
+ * *nothing queued*, with the same confidence as a real reading. It has been
+ * seen: the queue counter's half of this road stored 0 for `process` at
+ * 15:00:11 and 8 forty seconds later (#725), and the park gate's half was
+ * #730.
+ *
+ * The witness is FREE and already in the sweep: the same run reads the whole
+ * open queue with its labels for the ladder block. An empty band is a fact only
+ * when that read ANSWERED and holds no card carrying the label.
+ *
+ *   whole-queue read unreadable  -> not believable (nothing can confirm it)
+ *   whole-queue read also empty  -> not believable (a queue is never empty here)
+ *   it holds labelled cards      -> not believable, and provably wrong
+ *   it answered, none labelled   -> believable: the band really is empty
+ *
+ * Refusing costs a NEXT UP block one run older with its reason printed.
+ * Believing costs his page telling him he has nothing queued while his own
+ * ordered cards sit in the queue — and every other view a shift reads renders
+ * the same query, so nothing would disagree with it.
+ */
+export function emptyOrderedBandVerdict(
+  allOpen: readonly { labels?: unknown }[] | null,
+): { believable: boolean; why: string } {
+  if (allOpen === null) {
+    return {
+      believable: false,
+      why: "the whole-queue read that would confirm it could not be taken this run",
+    };
+  }
+  if (allOpen.length === 0) {
+    return {
+      believable: false,
+      why: "the whole open queue came back empty too, which is a blip and not a queue",
+    };
+  }
+  const carried = allOpen.filter((row) => labelNames(row.labels).includes(ORDERED_BAND_LABEL)).length;
+  if (carried > 0) {
+    return {
+      believable: false,
+      why: `this run's own whole-queue read holds ${carried} open card(s) carrying \`${ORDERED_BAND_LABEL}\``,
+    };
+  }
+  return {
+    believable: true,
+    why: `${allOpen.length} open card(s) were read and none carries \`${ORDERED_BAND_LABEL}\``,
+  };
+}
+
 function labelNames(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((label) => String((label as { name?: unknown })?.name ?? ""));
