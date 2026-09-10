@@ -620,6 +620,47 @@ export async function getInvoiceStatus(invoiceId: string): Promise<string | null
 }
 
 /**
+ * Void an invoice that must no longer be able to take money (#756).
+ *
+ * The case it exists for: a plan change's payment has FINALLY failed, so the
+ * credit side is closed — the settlement row goes void, the subscription
+ * auto-cancels — while the invoice itself stays `open` and payable through
+ * Stripe's hosted invoice page. A customer paying it later hands over money
+ * for credits that will never move (the void row refuses, by design) against a
+ * plan that is already gone. Voiding is what makes the two sides agree.
+ *
+ * ⚠ ONLY AN `open` INVOICE IS VOIDABLE, and the status is read rather than
+ * assumed. Stripe rejects `voidInvoice` on a draft, a paid, an uncollectible
+ * or an already-void invoice, so a blind call would log a failure on every
+ * benign re-delivery — and Stripe re-delivers for days. `already-closed` is
+ * therefore a SUCCESS shape, not an error: the invoice cannot take money,
+ * which is the whole point of the call.
+ *
+ * The read-then-void race is real and is deliberately left as a stated limit:
+ * if the invoice is paid in the gap, the void fails and we report it. That
+ * lands in the pre-existing late-payment case, where the void settlement row
+ * already refuses the credits.
+ */
+export async function voidInvoice(
+  invoiceId: string,
+): Promise<"voided" | "already-closed" | "failed"> {
+  try {
+    const invoice = await stripe.invoices.retrieve(invoiceId);
+    const status = invoice?.status ?? null;
+    if (status !== "open") {
+      log.info(`[Stripe] Invoice ${invoiceId} is "${status}", not open — nothing to void`);
+      return "already-closed";
+    }
+    await stripe.invoices.voidInvoice(invoiceId);
+    log.info(`[Stripe] Invoice ${invoiceId} voided — it can no longer take money`);
+    return "voided";
+  } catch (error) {
+    log.error({ err: error }, `[Stripe] Failed to void invoice ${invoiceId}:`);
+    return "failed";
+  }
+}
+
+/**
  * SIGNED credit adjustment for a same-interval plan change (#664, and the
  * review's mirror rule): the remaining-cycle share of the allowance
  * difference, × the months the cycle runs (12 on an annual cycle).

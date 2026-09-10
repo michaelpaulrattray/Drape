@@ -12,6 +12,7 @@ import {
   calculateRolloverCredits,
   getMonthlyCredits,
   cancelSubscription,
+  voidInvoice,
 } from "./stripeService";
 import { 
   updateUserSubscription, 
@@ -482,6 +483,16 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
     // settle — void it so a declined card's grant stays ungranted and the
     // row stops reading as queued work (#711).
     await voidPlanChangeSettlement(invoice.id as string);
+
+    // ⚠ AND THE INVOICE ITSELF, OR THE TWO SIDES OF THE LEDGER DISAGREE (#756,
+    // PR #755 round-2 review finding 2). Voiding the settlement closes the
+    // CREDIT side; the invoice stayed `open` and payable through Stripe's
+    // hosted invoice page, so a customer could still pay it days later —
+    // money accepted, credits never moved (the void row refuses, by design
+    // and pinned by the "void survives a late payment" arm), plan already
+    // gone. It goes beside the settlement void, not after the cancel, because
+    // an invoice that can still take money is the thing being closed here.
+    await voidInvoice(invoice.id as string);
 
     try {
       await cancelSubscription(subscriptionId);
