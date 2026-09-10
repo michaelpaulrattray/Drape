@@ -20,19 +20,20 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type Stripe from "stripe";
 
-const { pricesCreate, subscriptionsUpdate, subscriptionsRetrieve, invoicesRetrieve } =
+const { pricesCreate, subscriptionsUpdate, subscriptionsRetrieve, invoicesRetrieve, invoicesVoid } =
   vi.hoisted(() => ({
     pricesCreate: vi.fn(),
     subscriptionsUpdate: vi.fn(),
     subscriptionsRetrieve: vi.fn(),
     invoicesRetrieve: vi.fn(),
+    invoicesVoid: vi.fn(),
   }));
 
 vi.mock("stripe", () => ({
   default: class StripeDouble {
     prices = { create: pricesCreate };
     subscriptions = { retrieve: subscriptionsRetrieve, update: subscriptionsUpdate };
-    invoices = { retrieve: invoicesRetrieve };
+    invoices = { retrieve: invoicesRetrieve, voidInvoice: invoicesVoid };
     customers = { retrieve: vi.fn(), create: vi.fn() };
     checkout = { sessions: { create: vi.fn(), retrieve: vi.fn() } };
     billingPortal = { sessions: { create: vi.fn() } };
@@ -439,6 +440,169 @@ describe("the webhook settles what changePlan recorded", () => {
     expect(result.success).toBe(true);
     expect(db.resolvePlanChangeSettlement).toHaveBeenCalledWith("in_change", "void");
     expect(db.addCredits).not.toHaveBeenCalled();
+  });
+
+  /*
+    #756 — THE OTHER HALF OF THAT VOID, AND WITHOUT IT THE TWO SIDES OF THE
+    LEDGER DISAGREE. The arm above closes the CREDIT side. The INVOICE stayed
+    `open` and payable through Stripe's hosted invoice page, so the customer
+    could pay it days later: money accepted, credits refused by the void row,
+    plan already cancelled.
+  */
+  it("a FINAL payment failure also VOIDS THE INVOICE — it can no longer take money", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+    invoicesVoid.mockResolvedValue({ id: "in_change", status: "void" });
+
+    const result = await deliverEvent("invoice.payment_failed", {
+      id: "in_change",
+      customer: "cus_1",
+      subscription: "sub_1",
+      next_payment_attempt: null,
+      amount_due: 12_00,
+      currency: "usd",
+    });
+
+    expect(result.success).toBe(true);
+    expect(invoicesVoid).toHaveBeenCalledWith("in_change");
+  });
+
+  /*
+    ⚠ THE NEGATIVE CONTROL, and it is the arm that stops this becoming noise.
+    Stripe redelivers failed events for DAYS, and it rejects `voidInvoice` on
+    anything not `open`. A blind call would log a failure on every benign
+    redelivery of an invoice we already voided.
+  */
+  it("an invoice that is already closed is NOT voided again", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "void" });
+
+    const result = await deliverEvent("invoice.payment_failed", {
+      id: "in_change",
+      customer: "cus_1",
+      subscription: "sub_1",
+      next_payment_attempt: null,
+      amount_due: 12_00,
+      currency: "usd",
+    });
+
+    expect(result.success).toBe(true);
+    expect(invoicesVoid).not.toHaveBeenCalled();
+  });
+
+  /*
+    ⚠ AN `uncollectible` INVOICE IS VOIDED, AND THIS ARM IS THE PR #764 REVIEW'S
+    FINDING 1 — a real defect in the first shape of this fix, caught because the
+    docblock asserted something about Stripe that was never checked.
+
+    `uncollectible` is bad-debt bookkeeping, which is EXACTLY what somebody
+    marks a finally-failed invoice as. It is not terminal — Stripe allows
+    uncollectible → paid, so the invoice can still take money — and it is
+    voidable. Reading it as "already closed" left this card's whole defect
+    alive on that road while logging that it had been handled.
+  */
+  it("an UNCOLLECTIBLE invoice IS voided — it is bad debt, not closed, and can still be paid", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "uncollectible" });
+    invoicesVoid.mockResolvedValue({ id: "in_change", status: "void" });
+
+    await deliverEvent("invoice.payment_failed", {
+      id: "in_change",
+      customer: "cus_1",
+      subscription: "sub_1",
+      next_payment_attempt: null,
+      amount_due: 12_00,
+      currency: "usd",
+    });
+
+    expect(invoicesVoid).toHaveBeenCalledWith("in_change");
+  });
+
+  /*
+    PR #764 review note 2 — the blast radius is wider than this suite's framing
+    and that is INTENDED, so it gets an arm rather than a sentence. The void
+    sits in the final-failure branch unconditionally, so it also closes a plain
+    RENEWAL's invoice, which carries no settlement row at all. That is the same
+    ledger disagreement in a milder form — a late-paid renewal against a
+    subscription already cancelled and downgraded to free — and it is the case
+    production will meet first.
+  */
+  it("a finally-failed RENEWAL invoice is voided too, with no settlement row in sight", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue(null);
+    invoicesRetrieve.mockResolvedValue({ amount_due: 29_00, status: "open" });
+    invoicesVoid.mockResolvedValue({ id: "in_renewal", status: "void" });
+
+    const result = await deliverEvent("invoice.payment_failed", {
+      id: "in_renewal",
+      customer: "cus_1",
+      subscription: "sub_1",
+      next_payment_attempt: null,
+      amount_due: 29_00,
+      currency: "usd",
+    });
+
+    expect(result.success).toBe(true);
+    expect(invoicesVoid).toHaveBeenCalledWith("in_renewal");
+  });
+
+  /*
+    A paid invoice is the same refusal and is worth its own arm, because this
+    is the one status where voiding would be actively wrong rather than merely
+    rejected: the money is already ours.
+  */
+  it("a PAID invoice is never voided", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "paid" });
+
+    await deliverEvent("invoice.payment_failed", {
+      id: "in_change",
+      customer: "cus_1",
+      subscription: "sub_1",
+      next_payment_attempt: null,
+      amount_due: 12_00,
+      currency: "usd",
+    });
+
+    expect(invoicesVoid).not.toHaveBeenCalled();
+  });
+
+  /*
+    A void that throws must not fail the EVENT. Stripe would redeliver, and a
+    redelivery re-runs the settlement void and the auto-cancel — both already
+    done — to retry a call that will fail the same way. The invoice staying
+    payable is the pre-existing exposure, not a new one.
+  */
+  it("a failing void does not fail the event", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+    invoicesVoid.mockRejectedValue(new Error("stripe said no"));
+
+    const result = await deliverEvent("invoice.payment_failed", {
+      id: "in_change",
+      customer: "cus_1",
+      subscription: "sub_1",
+      next_payment_attempt: null,
+      amount_due: 12_00,
+      currency: "usd",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("an INTERMEDIATE failure leaves the invoice alone — Stripe's retry needs it payable", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+
+    await deliverEvent("invoice.payment_failed", {
+      id: "in_change",
+      customer: "cus_1",
+      subscription: "sub_1",
+      next_payment_attempt: NOW_SEC + 3 * DAY,
+      amount_due: 12_00,
+      currency: "usd",
+    });
+
+    expect(invoicesVoid).not.toHaveBeenCalled();
   });
 
   it("an INTERMEDIATE failure leaves the move pending — Stripe's retry is the retry", async () => {

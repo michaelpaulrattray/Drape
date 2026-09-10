@@ -620,6 +620,64 @@ export async function getInvoiceStatus(invoiceId: string): Promise<string | null
 }
 
 /**
+ * Void an invoice that must no longer be able to take money (#756).
+ *
+ * The case it exists for: a plan change's payment has FINALLY failed, so the
+ * credit side is closed — the settlement row goes void, the subscription
+ * auto-cancels — while the invoice itself stays `open` and payable through
+ * Stripe's hosted invoice page. A customer paying it later hands over money
+ * for credits that will never move (the void row refuses, by design) against a
+ * plan that is already gone. Voiding is what makes the two sides agree.
+ *
+ * ⚠ TWO STATUSES ARE VOIDABLE, NOT ONE, AND THE SECOND IS THE ONE THAT MATTERS
+ * HERE. This read said `open` alone until the PR #764 review, on a docblock
+ * claim of mine that was simply wrong. Stripe's own words:
+ *
+ *   "You can only void an invoice in `open` or `uncollectible` status."
+ *   uncollectible → "Change the invoice's status to `void` or `paid`."
+ *   — https://docs.stripe.com/invoicing/overview
+ *
+ * So `uncollectible` IS voidable and, more to the point, is **still payable**:
+ * `void` is the terminal status, not `uncollectible`. Treating it as closed
+ * would have left this card's exact defect alive on the one road built for a
+ * finally-failed invoice — somebody writing it off as bad debt in the
+ * dashboard — while logging a line claiming it was handled.
+ *
+ * The status is read rather than assumed because Stripe rejects `voidInvoice`
+ * on a draft, a paid or an already-void invoice, and it re-delivers events for
+ * days: a blind call would log a failure on every benign re-delivery.
+ * `already-closed` is a SUCCESS shape, not an error — the invoice cannot take
+ * money, which is the whole point of the call.
+ *
+ * The read-then-void race is real and is deliberately left as a stated limit:
+ * if the invoice is paid in the gap, the void fails and we report it. That
+ * lands in the pre-existing late-payment case, where the void settlement row
+ * already refuses the credits.
+ */
+const VOIDABLE_INVOICE_STATUSES = ["open", "uncollectible"] as const;
+
+export async function voidInvoice(
+  invoiceId: string,
+): Promise<"voided" | "already-closed" | "failed"> {
+  try {
+    const invoice = await stripe.invoices.retrieve(invoiceId);
+    const status = invoice?.status ?? null;
+    if (!VOIDABLE_INVOICE_STATUSES.includes(status as never)) {
+      log.info(
+        `[Stripe] Invoice ${invoiceId} is "${status}" — not voidable and cannot take money; nothing to do`,
+      );
+      return "already-closed";
+    }
+    await stripe.invoices.voidInvoice(invoiceId);
+    log.info(`[Stripe] Invoice ${invoiceId} voided — it can no longer take money`);
+    return "voided";
+  } catch (error) {
+    log.error({ err: error }, `[Stripe] Failed to void invoice ${invoiceId}:`);
+    return "failed";
+  }
+}
+
+/**
  * SIGNED credit adjustment for a same-interval plan change (#664, and the
  * review's mirror rule): the remaining-cycle share of the allowance
  * difference, × the months the cycle runs (12 on an annual cycle).
