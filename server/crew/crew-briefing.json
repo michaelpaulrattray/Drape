@@ -1,7 +1,7 @@
 {
-  "edition": 336,
-  "updatedAt": "2026-09-10T20:49:21.687Z",
-  "shift": "Foreman - two cards closed, and TWO OF THEM WERE ALREADY YOUR DECISIONS, SITTING UNBUILT FOR A WEEK. NOTHING NEW IS WAITING ON YOU. Start with that second half, because it is the one worth your attention. On 4 September you answered two questions on this page within three minutes of each other. One of them - 'Leave the page alone; teach the check to look beside the button' - is built tonight, seven days later. Here is what it was about. We have an automatic check that says every button which spends your credits must show what it costs. It was reporting the Cast it button on your casting page as a fault. It was wrong: the line directly under the brief box already reads '8 CANDIDATES, ~160 CR, ~50 SECONDS', so the price IS on screen before you press anything - it just is not printed inside the button itself, and the check only ever read the button's own words. You looked at it and said leave the page alone. So the page is untouched and the check has been taught to look beside the button as well as inside it. I drove the real app afterwards in both light and dark to prove it: that page now passes, and across all nineteen screens exactly one verdict changed. WHY IT TOOK SEVEN DAYS IS THE PART THAT MATTERS MORE THAN THE FIX. Your answer was written in a comment underneath the card, but the card's own description still opened by saying the decision was yours to make. Every shift that looked read the description, correctly decided it was still waiting on you, and moved on. Three of them. Your other answer that evening, about typewriter-style type on the staff screens, is in exactly the same state - I have rewritten that card so it now opens with your ruling instead, and sized it honestly: it is a bigger job than it looks, so it is a night of its own rather than something to squeeze in. THE OTHER CARD IS SMALL AND IS ABOUT THIS PAGE. When you reply to something here, your reply has a number. Cards have numbers too, counted separately, so the two collide. A shift quoting your reply #105 was making the panel mark card #105 as 'possibly fixed' when nothing whatsoever had been done to it. Fixed, and measured first: your replies get quoted sixty times across the work we have merged, so this was not a one-off. AND ONE THING ON YOUR ACTUAL MACHINE. A leftover copy of the app had been running since Tuesday night, holding a port and a slice of your processor, left behind by a shift whose folder has since been deleted. Four shifts spotted it and left it, because the tool we use to find these reported a clean machine. It is stopped now, and the tool's blind spot is written up - the process was the symptom, a checker that says 'all clear' over a running server is the actual fault.",
+  "edition": 337,
+  "updatedAt": "2026-09-10T22:26:29.263Z",
+  "shift": "Foreman - the checker that told four shifts your machine was clean over a running app is fixed, and the fix's own test caught something worse. NOTHING NEW IS WAITING ON YOU. Last night I told you a leftover copy of the app had been running on your machine since Tuesday, holding a port and a slice of your processor, and that four shifts had spotted it and left it because the tool we use to find these reported a clean machine. That tool is the whole job tonight. WHAT WAS WRONG. The tool knows one way of starting the app - the normal one, which runs two processes, a watcher that restarts things and the server itself. Anything started a different way matched neither description, so it was silently dropped from the list. And a dropped app and an empty machine print the exact same sentence: 'no dev server is running on this machine'. I reproduced it before touching anything: at the same second, Windows said a server was listening on port 3000 and the tool said the machine was clear. WHAT IT SAYS NOW. Any running copy is listed, whichever way it was started, and one with nothing watching over it is marked as such. If the folder it was launched from has since been deleted, it says so and says it is safe to stop - that is the fact none of the four shifts had, and it is what makes the difference between guessing and knowing. THE PART THAT MATTERS LONGER THAN THIS FIX. Teaching it a second way of starting the app fixes the case that already bit us and nothing else. So the tool now checks itself against Windows' own list of what is listening: if something is serving on one of our ports and the tool cannot account for it, it says so in those words - a hole in me, not a clean machine - and names the process so you can look. It can still be wrong; it can no longer be quietly wrong. That contradiction was already sitting on your machine, by the way: one of our other tools was printing 'one listener' in the same minute this one printed 'none'. Nothing had ever compared the two. AND THE REVIEW CAUGHT A REAL ONE, WHICH THEN CAUGHT A WORSE ONE. The automatic reviewer found that my new listing could still miss a port in one particular shape. Fair, and fixed - but the test I wrote to prove that fix turned up something I would not have found by reading: in that same shape, the tool would have read a nonsense folder name off the command line, decided the folder did not exist, and printed 'safe to stop' over a LIVE server. Confirmed at the machine, not reasoned about. That is the direction that costs you work rather than tidiness, and it is now held by a test.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-10T19:28:26.806Z",
+      "readAt": "2026-09-10T22:25:31.368Z",
       "items": [
         {
           "issueNumber": 16,
@@ -688,7 +688,7 @@
         }
       ],
       "recommendation": "Widen the check. That line tells you more than a label could — how many, how much, how long — and it sits where your eye already is. But it is a look-and-feel call, so it is yours.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-04T19:00:03.750Z",
       "issueNumber": 523
     },
@@ -4599,6 +4599,13 @@
   ],
   "pipeline": [
     {
+      "id": "clean-machine-over-running-app-783",
+      "title": "The checker that said your machine was clean over a running app now says what it cannot account for",
+      "status": "merged",
+      "prNumber": 784,
+      "note": "Last night's leftover process was the symptom; this is the fault. The tool that a shift runs before it finishes knew only the normal way of starting the app, so a copy started any other way was dropped from its list - and a dropped copy reads exactly like an empty machine. Reproduced before it was touched: Windows said a server was listening on port 3000 in the same second the tool said there was nothing running. It now lists every copy however it was started, marks one that nothing is watching over, and names the deleted folder a copy was launched from - which is what makes it safe to stop rather than a guess. The durable half is that it now checks itself against Windows' own list: something serving on our ports that it cannot account for is reported as a hole in the tool, in those words, with the process named. The reviewer found one real gap in my first version, and the test I wrote for that gap caught a worse one - the tool would have said 'safe to stop' over a live server in one shape. Both fixed and both held by tests."
+    },
+    {
       "id": "reply-number-read-as-card-776",
       "title": "A reply you write on this page can no longer be misread as a card number",
       "status": "merged",
@@ -5289,16 +5296,23 @@
   ],
   "problems": [
     {
-      "id": "leftover-app-on-your-machine-783",
+      "id": "queue-shape-0911c-foreman",
       "severity": "info",
       "state": "open",
-      "title": "A leftover copy of the app had been running on your machine since Tuesday night - stopped, and the reason nobody caught it is written up",
-      "detail": "It was holding a port and a slice of your processor, left behind by a shift whose working folder has since been deleted, so it could not have been anyone's live work.\n\nFour separate shifts noticed it and left it alone, and they were not being careless: the tool they are told to use for exactly this reported a clean machine while it was running. Two independent reasons, both now diagnosed. The process is stopped. The blind spot is card #783 - and that is the real fault, because the next one will be invisible the same way."
+      "title": "The queue: 55 open, one closed tonight, and 15 nobody has looked at in a week",
+      "detail": "Down one: the checker fault above is closed and nothing new was filed. Nothing is queued by you and nothing is blocked on you. The fifteen untouched cards are the same shape as last night - mostly old roadmap and tidy-up items rather than anything a customer would feel; the oldest two have sat since 25 August. Of the switches you have on, Bugs now holds one card and it is the Stripe refund one that is waiting on you, and Small fixes holds one that is also waiting on you - so those two bands are empty in practice, third night running. The work available to a night shift is in Process, Housekeeping and Performance."
+    },
+    {
+      "id": "leftover-app-on-your-machine-783",
+      "severity": "info",
+      "state": "resolved",
+      "title": "The leftover copy of the app is stopped AND the blind spot that hid it is fixed",
+      "detail": "The process was stopped last night. Tonight the reason four shifts walked past it is closed: the tool they are told to use could only see the normal way of starting the app, so anything else was dropped from its list without a word, and a dropped copy prints the same sentence as a clean machine. It now lists every copy, marks the ones nothing is watching over, names a deleted launch folder, and - the part that outlives this particular fault - checks itself against Windows' own list of what is listening, so a copy it cannot account for is reported rather than dropped."
     },
     {
       "id": "queue-shape-0911b-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 56 open, 14 nobody has looked at in a week - two closed tonight, two filed",
       "detail": "56 cards open, unchanged on the night: two closed (#776, #523) and two filed (#782, #783). 14 have had no comment, no close and no commit against them for a week - down one. Nothing is waiting on you.\n\nWorth knowing: both cards closed tonight were ALREADY your decisions. #523 was your 4 September ruling, unbuilt for seven days because the card's description still said the decision was yours while your answer sat in a comment below it. Your other ruling from that same evening (#524, typewriter type on the staff screens) is in the same state - its description is rewritten tonight to open with your words, and it is sized as a night of its own."
     },
@@ -5312,7 +5326,7 @@
     {
       "id": "queue-shape-0910-late-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 60 open, 15 nobody has looked at in a week - one closed tonight, three filed",
       "detail": "60 cards open. Closed tonight: #759, the Refresh button across the staff screens. Filed three: #765 (a second road where a cancelled subscription leaves an invoice payable - the sibling of tonight's money fix, split off because it carries a question only you can answer), #766 (an automatic check for the Refresh-button problem, because it has now been counted by hand three times and been wrong three times), and #756 is still in flight. 15 cards have had no comment, close or commit for seven days - up one, and still mostly parked cleanup rather than work anyone is avoiding. NEXT UP is EMPTY and nothing is on your desk."
     },
@@ -5326,7 +5340,7 @@
     {
       "id": "queue-shape-0910h-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 58 open, 14 nobody has looked at in a week - three closed tonight, three filed",
       "detail": "58 cards open. Closed tonight: #749 (your fangs complaint), #747 (the Blocked IPs list), and #35 - your Socket card, on your 'A'. Filed: #759 (three more staff lists that ignore the Refresh button above them, found by sweeping for siblings of #747), #762 (the Socket proof above), and #756 rode in from last night. 14 cards have had no comment, close or commit for seven days - unchanged, and still mostly parked cleanup rather than work anyone is avoiding. NEXT UP is now EMPTY: #35 was the last card you had ordered, and it is done."
     },
@@ -5340,7 +5354,7 @@
     {
       "id": "queue-shape-0910g-fable",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 59 open, 14 nobody has looked at in a week - your #711 closed, one filed",
       "detail": "59 cards open: #711 (the upgrade-credits money bug) closed tonight with its fix deployed, and #756 filed from its review (small: a finally-failed plan change's invoice should be cancelled on Stripe's side too, so it cannot take money after the credits are cancelled). 14 cards have had no comment, close, reopen or commit for seven days - unchanged; they are mostly parked lost-and-found and cleanup items, not work anyone is avoiding. NEXT UP now holds only #35 (Socket.dev), which waits on your answer to the three options already on your desk."
     },
@@ -5801,7 +5815,7 @@
     173
   ],
   "nextUp": {
-    "readAt": "2026-09-10T19:28:26.805Z",
+    "readAt": "2026-09-10T22:25:31.367Z",
     "items": []
   }
 }
