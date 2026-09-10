@@ -43,6 +43,30 @@ it lands — because the failure it guards is silent: an uncovered manifest
 means the step keeps printing *"No manifest touched"* over a PR that changed
 dependencies.
 
+## ⚠ His GitHub App already scans too — and this step is not the duplicate it looks like
+
+The Socket **GitHub App** is installed on the repository and posts two checks
+of its own on a manifest PR: *"Socket Security: Pull Request Alerts"* and
+*"Socket Security: Project Report"*. Neither is a required check, so neither
+blocks a merge.
+
+The obvious cheaper answer is therefore *"delete the gate step and make the
+App's check required instead"* — no script, no pin, no second quota unit.
+**That road is closed, and the reading that closes it was driven rather than
+reasoned:** the App posts **nothing at all** on a PR that touches no manifest.
+Measured 2026-09-10 on PRs **#751, #750 and #746** — none of them carries a
+Socket check of any kind. A required check that never reports leaves a PR
+**permanently pending**, so requiring the App's check would wedge every
+non-manifest PR the team opens.
+
+The gate step lives inside `gate-checks`, which always runs and always
+reports, and decides internally whether to scan. That is the only shape that
+both blocks and cannot deadlock.
+
+**The cost of keeping both, stated plainly:** a manifest PR is scanned twice,
+so two quota units instead of one. Manifest PRs are rare, and enforcement that
+cannot wedge the team is worth the second unit.
+
 ## It blocks, and here is what that costs
 
 A supply-chain scan that only labels is theatre, so this one is inside
@@ -71,9 +95,18 @@ Driven 2026-09-10: the CLI on its own exits **2** with no token and no org, but
 only after a page of banner, which is why the explicit check exists — the
 reason is the first line a shift reads.
 
-The org slug is passed only when `SOCKET_CLI_ORG_SLUG` is set, so
-auto-discovery from the token stays the default road. The CLI refuses by name
-when it can do neither (driven the same day).
+⚠ **The org slug is REQUIRED, and this was learned the expensive way round.**
+The script passes `--org` only when `SOCKET_CLI_ORG_SLUG` is set, on the
+assumption that the CLI could auto-discover the org from the token. **It
+cannot** — driven on PR #753's first gate run, where the token reached the CLI
+(`token: UqR5e*** (env)`) and it still exited 2 on *"Org name by default
+setting, --org, or auto-discovered (missing)"*. The local drive could not
+answer this, because with no token there was no token to discover FROM. The
+gate sets `SOCKET_CLI_ORG_SLUG: klieg`, which is not a secret: it is in the URL
+of the App's own check on every manifest PR, which is where it was read from.
+
+That first red run is also the proof the refusal works end to end: a
+misconfigured scanner reddened the gate instead of passing it.
 
 ## By hand
 

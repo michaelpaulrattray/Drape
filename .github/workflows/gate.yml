@@ -281,10 +281,38 @@ jobs:
       #
       # `--report-level` defaults to `error`, so a policy WARNING does not
       # redden this; only an error does.
+      #
+      # ⚠ HIS SOCKET GITHUB APP ALREADY POSTS TWO CHECKS OF ITS OWN, AND THIS
+      # STEP IS NOT THE DUPLICATE IT LOOKS LIKE — the reason is measured, and
+      # it is written here because the "simplification" is very tempting.
+      # "Socket Security: Pull Request Alerts" and "… Project Report" appear on
+      # a manifest PR and pass or fail on the same policy, so the obvious
+      # cheaper answer is to delete this step and make the App's check REQUIRED
+      # in branch protection instead. THAT ROAD IS CLOSED, and here is the
+      # reading that closes it: the App posts NOTHING AT ALL on a PR that
+      # touches no manifest — driven 2026-09-10 on PRs #751, #750 and #746,
+      # none of which carries a Socket check of any kind. A required check that
+      # never reports leaves a PR permanently pending, so requiring the App's
+      # check would wedge every non-manifest PR the team opens.
+      #
+      # This step lives inside `gate-checks`, which ALWAYS runs and ALWAYS
+      # reports, and decides internally whether to scan — which is the only
+      # shape that both blocks and cannot wedge. The cost of keeping both,
+      # stated: a manifest PR scans twice, so two quota units instead of one.
+      # Manifest PRs are rare, and enforcement that cannot deadlock is worth
+      # the second unit.
       - name: Supply chain (socket.dev, manifests only)
         env:
           BASE: ${{ needs.resolve.outputs.base }}
           SOCKET_CLI_API_TOKEN: ${{ secrets.SOCKET_CLI_API_TOKEN }}
+          # Not a secret — it is in the URL of the Socket App's own check on
+          # every manifest PR (socket.dev/dashboard/org/klieg/...), which is
+          # where this was read from. Required rather than optional: the CLI
+          # CANNOT auto-discover it from the token, driven on this PR's first
+          # gate run (exit 2, "Org name by default setting, --org, or
+          # auto-discovered (missing)") after the local drive had left the
+          # question open.
+          SOCKET_CLI_ORG_SLUG: klieg
         run: |
           # Kept in step with server/socketScan.test.ts, which asserts this
           # exact pattern covers every manifest git tracks.
