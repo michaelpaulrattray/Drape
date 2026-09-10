@@ -50,7 +50,22 @@ const ASSETS_DIR = path.join(ROOT, "dist", "public", "assets");
 const KNOWN = new Set(["--reuse", "--json", "--top"]);
 const argv = process.argv.slice(2);
 for (const arg of argv) {
-  if (arg.startsWith("--") && !KNOWN.has(arg.split("=")[0]!)) {
+  if (!arg.startsWith("--")) continue;
+  /* ⚠ THE `=` FORM IS REFUSED RATHER THAN SPLIT (PR #745 review, finding 1).
+     The first cut of this guard tested `KNOWN.has(arg.split("=")[0])`, so
+     `--top=20` PASSED it — and every consumer below reads exact strings, so
+     `indexOf("--top")` returned −1 and the operator got 12 owners believing
+     they had asked for 20. `--json=1` was worse: a caller piping stdout for
+     JSON got the markdown table. That is #289's class exactly, written into
+     the guard built to refuse it. */
+  if (arg.includes("=")) {
+    console.error(
+      `bundle-report: ${arg} — this script takes space-separated values, not \`=\`. ` +
+        `Write \`${arg.split("=")[0]} ${arg.split("=").slice(1).join("=")}\`.`,
+    );
+    process.exit(2);
+  }
+  if (!KNOWN.has(arg)) {
     console.error(`bundle-report: unknown flag ${arg}. Known: ${[...KNOWN].join(", ")}`);
     process.exit(2);
   }

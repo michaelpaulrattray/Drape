@@ -62,13 +62,22 @@ async function main(): Promise<void> {
     readFileSync(path.join(ROOT, "package.json"), "utf8"),
   ) as PackageManifest;
 
-  const wanted = only.length === 0 ? BENCH_SET : BENCH_SET.filter((r) => only.includes(r.script));
-  if (wanted.length === 0) {
+  /* ⚠ EVERY `--only` NAME MUST HIT, NOT JUST ONE (PR #745 review, finding 2).
+     Refusing only when `wanted` came back empty meant
+     `--only check --only bulid` benched `check` alone and never mentioned the
+     typo — so the operator believes a number was taken that was not. Same
+     silent-partial-drop class as finding 1, in a file whose whole header is
+     about refusing rather than returning a smaller truth. */
+  const known = new Set(BENCH_SET.map((r) => r.script));
+  const unknown = only.filter((name) => !known.has(name));
+  if (unknown.length > 0) {
     console.error(
-      `bench: --only matched nothing. The set is: ${BENCH_SET.map((r) => r.script).join(", ")}`,
+      `bench: --only ${unknown.join(", --only ")} — not in the benchmark set. ` +
+        `The set is: ${[...known].join(", ")}`,
     );
     process.exit(2);
   }
+  const wanted = only.length === 0 ? BENCH_SET : BENCH_SET.filter((r) => only.includes(r.script));
   // Throws — loudly — if a declared script is no longer in package.json.
   const resolved = resolveBenchSet(manifest, wanted);
 

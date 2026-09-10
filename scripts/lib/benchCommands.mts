@@ -182,9 +182,12 @@ export function foldHyperfine(
 }
 
 export function seconds(value: number): string {
-  return value >= 60
-    ? `${Math.floor(value / 60)}m ${(value % 60).toFixed(0).padStart(2, "0")}s`
-    : `${value.toFixed(2)} s`;
+  if (value < 60) return `${value.toFixed(2)} s`;
+  /* ⚠ ROUND FIRST, THEN SPLIT (PR #745 review, nit 2). Splitting first and
+     rounding the remainder printed `1m 60s` for 119.6 s, because `toFixed(0)`
+     carried 59.6 past the boundary the minutes had already been taken from. */
+  const whole = Math.round(value);
+  return `${Math.floor(whole / 60)}m ${String(whole % 60).padStart(2, "0")}s`;
 }
 
 export function renderBenchRows(readings: readonly BenchReading[], takenAt: string): string[] {

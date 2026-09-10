@@ -28,7 +28,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -172,8 +172,18 @@ export async function ensureHyperfine(options: EnsureOptions): Promise<string> {
       throw new Error(`hyperfine: ${pin.binary} not found inside ${pin.asset}`);
     }
     mkdirSync(versioned, { recursive: true });
-    copyFileSync(found, cached);
-    if (platform !== "win32") chmodSync(cached, 0o755);
+    /* ⚠ COPY ASIDE, THEN RENAME INTO PLACE (PR #745 review, finding 3).
+       The cache is trusted on existence alone — `existsSync(cached)` returns it
+       without re-checking — so a `copyFileSync` interrupted mid-write would
+       leave a PARTIAL file at the trusted path that every later run executes
+       unverified. `workflow-lint.sh`, the pattern this follows, keeps nothing
+       persistent and so never had that surface; the cache is what introduces
+       it. A rename within one directory is atomic, so the trusted path either
+       does not exist or holds the whole verified binary. */
+    const staging = `${cached}.partial-${process.pid}`;
+    copyFileSync(found, staging);
+    if (platform !== "win32") chmodSync(staging, 0o755);
+    renameSync(staging, cached);
     return cached;
   } finally {
     rmSync(scratch, { recursive: true, force: true });

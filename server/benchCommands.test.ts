@@ -165,6 +165,52 @@ describe("seconds", () => {
     expect(seconds(9.456)).toBe("9.46 s");
     expect(seconds(125)).toBe("2m 05s");
   });
+
+  it("never prints sixty seconds (PR #745 review, nit 2)", () => {
+    // 119.6 rendered `1m 60s` while the minutes were taken before the rounding.
+    expect(seconds(119.6)).toBe("2m 00s");
+    expect(seconds(59.6)).toBe("59.60 s");
+    expect(seconds(60)).toBe("1m 00s");
+  });
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+   2b. THE ARGUMENT GUARDS — both scripts refuse rather than dropping
+   ──────────────────────────────────────────────────────────────────────── */
+
+describe("the two entrypoints refuse a partially-understood command line", () => {
+  /*
+    ⚠ BOTH OF THESE SHIPPED WRONG AND WERE FOUND BY THE PR #745 REVIEW, in the
+    two files whose own comments cite #289 — the `--dry-run` nobody had
+    implemented, silently ignored, closing a LIVE production row. The arms are
+    at the BYTES rather than by spawning the scripts: each is a top-level guard
+    that runs at import and calls `process.exit`, so importing one inside vitest
+    would take the runner down with it.
+  */
+  /* Comments stripped, so a comment EXPLAINING the banned shape cannot trip
+     the rule — the house convention (`counts415-guard.test.ts`'s `code`), and
+     it caught this arm's own first cut: the `not.toMatch` fired on the note
+     recording what the guard used to do. */
+  const scriptSource = (name: string) =>
+    readFileSync(path.join(ROOT, "scripts", name), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+
+  it("bundle-report refuses `--flag=value` instead of accepting and ignoring it", () => {
+    const source = scriptSource("bundle-report.mts");
+    // The consumers read exact strings, so an `=` form that PASSES the guard is
+    // silently dropped. It must be refused by name.
+    expect(source).toMatch(/if\s*\(arg\.includes\("="\)\)/);
+    expect(source, "splitting on = is what let --top=20 through").not.toMatch(
+      /KNOWN\.has\(arg\.split\("="\)/,
+    );
+  });
+
+  it("bench refuses an --only name that is not in the set, even beside a good one", () => {
+    const source = scriptSource("bench-commands.mts");
+    expect(source).toMatch(/const unknown = only\.filter\(\(name\) => !known\.has\(name\)\)/);
+    expect(source).toMatch(/if \(unknown\.length > 0\)/);
+  });
 });
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -191,8 +237,11 @@ describe("hyperfine pins", () => {
   });
 
   it("assertChecksum passes the right bytes and refuses the wrong ones", () => {
-    // sha256("drape") — a positive control, so a checker that threw at
-    // everything could not pass this suite.
+    // ⚠ NOT sha256("drape") — this is the WRONG-BYTES fixture, invented to be
+    // refused. (PR #745 review, nit 1: it was labelled as the real hash, which
+    // a later reader "fixing" the test could have copied believing it.) The
+    // real hash is computed below, as the positive control, so a checker that
+    // threw at everything could not pass this suite.
     const sha = "8d0f2a3fbd8f4d0f4e5b6b6b0e6e0a3a1f9e4c1f0a2b3c4d5e6f708192a3b4c5";
     expect(() => assertChecksum(new TextEncoder().encode("drape"), sha, "fixture")).toThrow(
       /checksum mismatch/,
