@@ -2,7 +2,7 @@ import { RefreshCw } from "lucide-react";
 import { useLocation } from "wouter";
 import type { ReactNode } from "react";
 
-import { BRAND_NAME, SurfaceBar, type SurfaceBarSegment } from "@/foundation";
+import { BRAND_NAME, IconButton, SurfaceBar, type SurfaceBarSegment } from "@/foundation";
 import { useCrewTabVisible } from "@/features/admin/components/crew/useCrewState";
 import { useStaffCounts } from "./useStaffCounts";
 
@@ -297,20 +297,17 @@ function StaffBarRight({
             </button>
           )}
           {refreshControls?.onRefresh && (
-            <button
-              type="button"
-              className="dp-iconbtn"
+            <IconButton
               onClick={refreshControls.onRefresh}
               disabled={refreshControls.isRefetching}
-              title="Refresh now"
-              aria-label="Refresh now"
+              label="Refresh now"
             >
               <RefreshCw
                 className={refreshControls.isRefetching ? "dp-staffbar__spin" : undefined}
                 width={13}
                 height={13}
               />
-            </button>
+            </IconButton>
           )}
         </span>
       )}

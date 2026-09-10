@@ -236,7 +236,10 @@ describe("the popover is measured, never guessed", () => {
     // It used to sit in the same 30px square as the shell's theme toggle and
     // made it unclickable. Undoing this while obeying the rest of 00b is the
     // mistake sitting there waiting for the next author.
-    expect(UTILITY_MENU).toMatch(/className="dp-iconbtn"/);
+    /* #276 moved the class inside the primitive — `<IconButton>` IS the
+       ordinary icon button in the row, and the arm follows the subject. What
+       #73 actually forbids is the fixed corner, and that half is untouched. */
+    expect(UTILITY_MENU).toMatch(/<IconButton/);
     expect(UTILITY_MENU).not.toMatch(/position:\s*['"]absolute|className="[^"]*\bfixed\b/);
   });
 });

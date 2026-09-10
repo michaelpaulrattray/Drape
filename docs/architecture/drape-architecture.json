@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "42e6603351f3ae25"
+    "sourceFingerprint": "6dbd45a18688d3a2"
   },
   "domains": [
     {
@@ -10982,6 +10982,10 @@
       "path": "client/src/foundation/focusRing.test.ts"
     },
     {
+      "id": "test:client/src/foundation/iconbutton-guard.test.ts",
+      "path": "client/src/foundation/iconbutton-guard.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/icons-guard.test.ts",
       "path": "client/src/foundation/icons-guard.test.ts"
     },
@@ -17345,6 +17349,11 @@
     },
     {
       "from": "module:client/src/features/lobby/FeedbackForm.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/lobby/FeedbackForm.tsx",
       "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
@@ -19324,6 +19333,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/foundation/Rail.tsx",
+      "to": "module:client/src/foundation/primitives.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/foundation/RenameDialog.tsx",
       "to": "module:client/src/foundation/CastingModal.tsx",
       "kind": "imports"
@@ -19346,6 +19360,11 @@
     {
       "from": "module:client/src/foundation/Topbar.tsx",
       "to": "module:client/src/foundation/icons.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/Topbar.tsx",
+      "to": "module:client/src/foundation/primitives.tsx",
       "kind": "imports"
     },
     {

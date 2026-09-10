@@ -16,7 +16,7 @@
  * half-typed form. The form's own state is remounted rather than cleared, which
  * is the same fix in fewer moving parts.
  */
-import { Icon, P, useAnchoredPanel } from '@/foundation';
+import { Icon, IconButton, P, useAnchoredPanel } from '@/foundation';
 
 import { FEEDBACK_PANEL_STYLE, FeedbackForm } from './FeedbackForm';
 
@@ -26,19 +26,16 @@ export function ReportBugButton() {
 
   return (
     <div className="hidden md:block">
-      <button
+      <IconButton
         ref={triggerRef}
         onClick={() => (open ? close() : toggle())}
-        type="button"
-        className="dp-iconbtn"
-        aria-label="Report a bug"
+        label="Report a bug"
         aria-haspopup="dialog"
         aria-expanded={open}
-        title="Report a bug"
         {...surfaceProps}
       >
         <Icon d={P.bug} size={15} />
-      </button>
+      </IconButton>
 
       {open && (
         <div

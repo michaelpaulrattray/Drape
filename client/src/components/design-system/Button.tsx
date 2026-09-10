@@ -47,18 +47,6 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
-export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Button icon */
-  icon: ReactNode;
-  /** Accessible label */
-  label: string;
-  /** Button style variant */
-  variant?: "primary" | "secondary" | "outline" | "ghost";
-  /** Button size */
-  size?: "sm" | "md" | "lg";
-  /** Additional CSS classes */
-  className?: string;
-}
 
 /* ============================================
  * CONSTANTS
@@ -79,11 +67,6 @@ const sizeStyles = {
   lg: "px-8 py-4 text-base",
 } as const;
 
-const iconSizeStyles = {
-  sm: "w-8 h-8",
-  md: "w-10 h-10",
-  lg: "w-12 h-12",
-} as const;
 
 /* ============================================
  * CONVEYOR TEXT COMPONENT
@@ -256,47 +239,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {content}
-      </button>
-    );
-  }
-);
-
-/* ============================================
- * ICON BUTTON COMPONENT
- * ============================================ */
-
-export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
-  function IconButton(
-    {
-      icon,
-      label,
-      variant = "secondary",
-      size = "md",
-      className,
-      ...props
-    },
-    ref
-  ) {
-    const variantIconStyles = {
-      primary: "bg-[#0A0A0A] text-white hover:bg-[#0A0A0A]/90",
-      secondary: "bg-[#EBEBEB] text-[#0A0A0A] hover:bg-[#D4D4D4]",
-      outline: "bg-transparent border border-[#0A0A0A]/20 text-[#0A0A0A] hover:border-[#0A0A0A]/40",
-      ghost: "bg-transparent text-[#0A0A0A] hover:bg-[#0A0A0A]/5",
-    } as const;
-
-    return (
-      <button
-        ref={ref}
-        className={cn(
-          "group inline-flex items-center justify-center rounded-full transition-colors duration-300",
-          variantIconStyles[variant],
-          iconSizeStyles[size],
-          className
-        )}
-        aria-label={label}
-        {...props}
-      >
-        <ConveyorIcon icon={icon} />
       </button>
     );
   }

@@ -1,5 +1,5 @@
 import { Check, ChevronDown, ChevronUp, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import type {
   ButtonHTMLAttributes,
@@ -75,25 +75,45 @@ export function Button({
   );
 }
 
-export function IconButton({
-  label,
-  className,
-  type = "button",
-  children,
-  ...rest
-}: ButtonBase & { label: string }) {
-  return (
-    <button
-      type={type}
-      className={cn("dp-iconbtn", className)}
-      title={label}
-      aria-label={label}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
-}
+/**
+ * The one icon button in the product (#276, his word: *"promote primitive —
+ * ONE IconButton component"*).
+ *
+ * `label` is the accessible name AND the tooltip, because for a button whose
+ * whole face is a glyph those are the same sentence in every case we have. A
+ * call site that genuinely needs them to differ passes its own `title` — the
+ * rest spread lands AFTER, so it wins, and that is deliberate rather than
+ * accidental ordering.
+ *
+ * ⚠ **IT FORWARDS ITS REF, AND THAT IS NOT A NICETY.** Both popover triggers
+ * in the chrome (`ReportBugButton`, `LobbyUtilityMenu`) hand `useAnchoredPanel`
+ * a `triggerRef` and the panel is positioned off that element's measured box.
+ * Without the forward, adopting this primitive would have silently broken the
+ * placement of two menus — which is exactly why #276 recorded the raw class as
+ * winning "on merit as well as on customers" before the ref existed.
+ *
+ * ⚠ **AND `ChromeStubs` IS NOT A CUSTOMER, ON PURPOSE.** Its `What's new` wears
+ * `.dp-iconbtn` and is a `<span aria-disabled>`: 00b §3 and his #228 ruling put
+ * inert stubs out of the tab order by construction. The shared thing there is
+ * the CLASS, which already lives in `foundation.css`; a component that renders
+ * a `<button>` is the wrong shape for something that must never be one.
+ */
+export const IconButton = forwardRef<HTMLButtonElement, ButtonBase & { label: string }>(
+  function IconButton({ label, className, type = "button", children, ...rest }, ref) {
+    return (
+      <button
+        ref={ref}
+        type={type}
+        className={cn("dp-iconbtn", className)}
+        title={label}
+        aria-label={label}
+        {...rest}
+      >
+        {children}
+      </button>
+    );
+  },
+);
 
 /**
  * The instruction that replaces a disabled primary (README §5, rule 9).

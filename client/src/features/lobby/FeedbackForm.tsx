@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Send, X } from 'lucide-react';
 
+import { IconButton } from '@/foundation';
 import { trpc } from '@/lib/trpc';
 import { logRawFailure, readableFailure } from '@/lib/failureSentence';
 
@@ -74,9 +75,12 @@ export function FeedbackForm({ mode, onDone }: { mode: FeedbackMode; onDone: () 
         <span style={{ font: '500 12.5px var(--font-sans)', color: 'var(--ink)' }}>
           {FEEDBACK_COPY[mode].title}
         </span>
-        <button type="button" onClick={onDone} aria-label="Close" className="dp-iconbtn">
+        {/* `title` is the label's own sentence here, so the X gains the tooltip
+            its five siblings in the chrome already carry — the one visible
+            difference this promotion makes anywhere (#276). */}
+        <IconButton onClick={onDone} label="Close">
           <X size={13} strokeWidth={1.8} />
-        </button>
+        </IconButton>
       </div>
       <textarea
         autoFocus
