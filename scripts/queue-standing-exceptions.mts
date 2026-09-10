@@ -70,13 +70,24 @@ import { execFileSync } from "node:child_process";
 
 import {
   BAND_CEILING,
-  refuseIfTruncated,
   report,
   type Row,
 } from "./lib/standingExceptions.mts";
 
-/** The one impure act: ask `gh` for the open cards carrying a label. */
-function readBand(label: string): Row[] {
+/**
+ * The one impure act: ask `gh` for the whole open queue, ONCE.
+ *
+ * ⚠ **It used to be two narrow reads, one per band, and that was the defect**
+ * (#774, PR #775 review finding 1). A narrow read that exits 0 with `[]` is
+ * indistinguishable from a blip, and the view printed *"both bands are empty"*
+ * over it. Both bands are filtered out of this answer by `deriveBands`, which
+ * cross-examines an empty one against the queue it was cut from — so the
+ * witness is free and this is one FEWER `gh` call than before, not one more.
+ *
+ * The truncation refusal moved with the read and now lives beside the
+ * filtering, because the ceiling measures this population rather than a band.
+ */
+function readOpenQueue(): Row[] {
   const raw = execFileSync(
     "gh",
     [
@@ -84,8 +95,6 @@ function readBand(label: string): Row[] {
       "list",
       "--state",
       "open",
-      "--label",
-      label,
       "--limit",
       String(BAND_CEILING),
       "--json",
@@ -93,14 +102,12 @@ function readBand(label: string): Row[] {
     ],
     { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
   );
-  const rows = JSON.parse(raw) as Row[];
-  refuseIfTruncated(label, rows.length);
-  return rows;
+  return JSON.parse(raw) as Row[];
 }
 
 process.exit(
   report({
-    readBand,
+    readOpenQueue,
     now: new Date(),
     log: (line) => console.log(line),
     error: (line) => console.error(line),

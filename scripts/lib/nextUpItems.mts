@@ -124,6 +124,13 @@ export function emptyOrderedBandVerdict(
 export function emptyOrderedBandVerdictOnLabels(
   allOpen: readonly (readonly string[])[] | null,
   limit = OPEN_QUEUE_LIMIT,
+  /** Which band is being cross-examined. `founder-ordered` is the default
+   *  because it is the one his 2026-08-30 clause is about, but the judgement
+   *  is identical for `urgent` — the standing-exceptions view reads both out
+   *  of one whole-queue read and asks this question twice (#774, PR #775
+   *  review finding 1). A second copy differing only in a string literal is
+   *  exactly the drift working law 4 names. */
+  band: string = ORDERED_BAND_LABEL,
 ): { believable: boolean; why: string } {
   if (allOpen === null) {
     return {
@@ -143,16 +150,16 @@ export function emptyOrderedBandVerdictOnLabels(
       why: `the witness itself came back at its ${limit}-row limit, which is a floor and not a list`,
     };
   }
-  const carried = allOpen.filter((labels) => labels.includes(ORDERED_BAND_LABEL)).length;
+  const carried = allOpen.filter((labels) => labels.includes(band)).length;
   if (carried > 0) {
     return {
       believable: false,
-      why: `this run's own whole-queue read holds ${carried} open card(s) carrying \`${ORDERED_BAND_LABEL}\``,
+      why: `this run's own whole-queue read holds ${carried} open card(s) carrying \`${band}\``,
     };
   }
   return {
     believable: true,
-    why: `${allOpen.length} open card(s) were read and none carries \`${ORDERED_BAND_LABEL}\``,
+    why: `${allOpen.length} open card(s) were read and none carries \`${band}\``,
   };
 }
 

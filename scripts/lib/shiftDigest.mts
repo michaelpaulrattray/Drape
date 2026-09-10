@@ -698,7 +698,16 @@ export type DigestInputs = {
   /**
    * A `gh --limit` that came back FULL. The collector doctrine here refuses an
    * empty answer; a TRUNCATED one is the other half of the same question, and
-   * silently dropping the 61st card is how a queue stops being the queue.
+   * silently dropping a card is how a queue stops being the queue.
+   *
+   * ⚠ **The two fields measure different populations and the difference is not
+   * cosmetic** (#774, PR #775 review finding 2). `closedCards` is the read of
+   * closed cards itself. `nextUp` is **NOT** the band — it is the WHOLE OPEN
+   * QUEUE the band is filtered out of, so a true value means the band may be
+   * short because the read never reached it, not because the band is long.
+   * This clause used to describe a 60-row cap on the band, which is the rule
+   * that was retired; a comment left describing a retired rule re-opens the
+   * mistake it documented.
    */
   readonly truncated?: { readonly nextUp?: boolean; readonly closedCards?: boolean };
   /** Byte sizes of the sources this digest stands in for, for the footer. */
