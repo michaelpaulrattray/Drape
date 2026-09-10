@@ -60,7 +60,7 @@
  */
 import { useEffect, useState } from 'react';
 import { BookOpen, Keyboard, MessageSquare } from 'lucide-react';
-import { Icon as HouseIcon, P, useAnchoredPanel } from '@/foundation';
+import { Icon as HouseIcon, IconButton, P, useAnchoredPanel } from '@/foundation';
 
 import { FeedbackForm } from './FeedbackForm';
 
@@ -101,19 +101,16 @@ export function LobbyUtilityMenu() {
 
   return (
     <div className="hidden md:block">
-      <button
+      <IconButton
         ref={triggerRef}
         onClick={() => (open ? close() : toggle())}
-        type="button"
-        className="dp-iconbtn"
-        aria-label="Help"
+        label="Help"
         aria-haspopup="menu"
         aria-expanded={open}
-        title="Help"
         {...surfaceProps}
       >
         <HouseIcon d={P.help} size={15} />
-      </button>
+      </IconButton>
 
       {open && (
         <div

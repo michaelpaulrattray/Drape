@@ -433,8 +433,19 @@ describe("report a bug is one click", () => {
    * share one copy and cannot drift.
    */
   it("the topbar button exists and submits the same report", () => {
-    expect(BUG_BUTTON).toMatch(/className="dp-iconbtn"/);
-    expect(BUG_BUTTON).toMatch(/title="Report a bug"/);
+    /*
+      ⚠ THESE TWO ARMS PINNED `className="dp-iconbtn"` AND `title="Report a
+      bug"` UNTIL #276, and both were true of the RAW BUTTON this file was
+      written against. His word — *"promote primitive — ONE IconButton
+      component"* — moved the class and the tooltip INSIDE the primitive, which
+      is where they now cannot drift per call site. So the arms follow the
+      subject rather than the spelling: the button is an `IconButton`, its
+      accessible name and its tooltip are the one `label` the primitive sets
+      from, and the section's rule (an icon in the topbar's row, one click to
+      the same report) is unchanged.
+    */
+    expect(BUG_BUTTON).toMatch(/<IconButton/);
+    expect(BUG_BUTTON).toMatch(/label="Report a bug"/);
     expect(BUG_BUTTON).toMatch(/mode="bug"/);
     expect(CHROME).toMatch(/<ReportBugButton \/>/);
   });

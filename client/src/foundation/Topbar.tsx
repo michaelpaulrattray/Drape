@@ -6,6 +6,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 
 import { SearchStub } from "./ChromeStubs";
 import { Icon, P } from "./icons";
+import { IconButton } from "./primitives";
 
 /**
  * The 56px glass topbar (foundation README §4, plan §D.6, section 02 §1).
@@ -81,15 +82,13 @@ export function Topbar({
       </div>
       <div className="dp-topbar__right">
         {right}
-        <button
-          type="button"
-          className="dp-iconbtn dp-iconbtn--theme"
+        <IconButton
+          className="dp-iconbtn--theme"
           onClick={toggleTheme}
-          title={`Switch to ${nextTheme} theme`}
-          aria-label={`Switch to ${nextTheme} theme`}
+          label={`Switch to ${nextTheme} theme`}
         >
           <Icon d={theme === "dark" ? P.sun : P.moon} size={15} />
-        </button>
+        </IconButton>
         {account ? <AccountChip account={account} /> : null}
       </div>
     </header>
