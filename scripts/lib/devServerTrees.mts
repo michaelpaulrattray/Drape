@@ -46,6 +46,33 @@
  * this shift's. `rootsStartedAfter` takes that cutoff explicitly rather than
  * guessing at it, and the caller has to say when its shift began — which is a
  * fact it knows and a process table does not.
+ *
+ * # ⚠ AND A DEV SERVER WITH NO WATCHER AT ALL READ AS A CLEAN MACHINE (#783)
+ *
+ * Everything above is about telling a watcher from its child. A server started
+ * WITHOUT the watch verb — `npx tsx server/_core/index.ts`, which is what a
+ * crashed or hand-started run leaves behind — has no watcher anywhere in its
+ * ancestry, so it was neither a root nor a child by the tests above and was
+ * **dropped from the listing entirely**. A dropped tree and a clean machine
+ * print the same sentence.
+ *
+ * Measured on this machine, 2026-09-11, the two readings taken in the same
+ * second: `netstat` said `0.0.0.0:3000 LISTENING 45988`, and this module's
+ * caller said *"no dev server is running on this machine."* **Four consecutive
+ * shifts read that answer over a live server and reported the machine clean.**
+ *
+ * So a tree is now anything the ENTRYPOINT names, and the watch verb decides
+ * only whether it is `watched` — which is the fact that matters when killing,
+ * because a watcher restarts what you kill and nothing else does.
+ *
+ * # Which tree, when the directory it was launched from is gone
+ *
+ * The specimen was started from a shift worktree that has since been deleted,
+ * and that is the one fact that made killing it safe: it cannot be anyone's
+ * live work. A process table has no working directory, but every dev server
+ * here runs through `tsx`, and the path it loaded `tsx` from is written in its
+ * own command line — so `launchDirectoryOf` reads that, and a caller with a
+ * file system decides whether it still exists. The module stays pure.
  */
 
 /** One process, as a Windows process table reports it. */
@@ -59,13 +86,31 @@ export type ProcessRow = {
   readonly commandLine: string;
 };
 
-/** A dev-server watcher and everything it owns. */
+/** A dev server, and everything one pid ends. */
 export type DevServerTree = {
-  /** The WATCHER — the process to kill. Killing anything else is temporary. */
+  /** The process to kill. Killing anything else is temporary, or partial. */
   readonly rootPid: number;
   readonly startedAt: Date;
   /** The children it has spawned, newest last. One of them holds the port. */
   readonly childPids: readonly number[];
+  /**
+   * Does a WATCHER own this tree?
+   *
+   * `true` is `pnpm dev` — kill a child and it starts another one. `false` is
+   * a server run straight off the entrypoint, which nothing restarts and which
+   * this module could not see at all until #783.
+   */
+  readonly watched: boolean;
+  /**
+   * The directory this tree loaded `tsx` from — its worktree, in practice —
+   * or null when no row in it names one.
+   *
+   * Read out of the command lines, because a process table carries no working
+   * directory. A caller that can touch a file system turns this into the one
+   * verdict a shift may act on alone: **the directory is gone, so this is
+   * nobody's live work.**
+   */
+  readonly launchedFrom: string | null;
 };
 
 /**
@@ -114,6 +159,52 @@ export function isDevServerChild(row: ProcessRow): boolean {
   return isNodeProcess(row)
     && !isDevServerRoot(row)
     && /server\/_core\/index\.ts/.test(row.commandLine.replace(/\\/g, "/"));
+}
+
+/**
+ * A node process running the dev server, watcher or not.
+ *
+ * ⚠ **The predicate #783 was missing.** The two above are a partition of the
+ * `pnpm dev` shape and answer *which half is this*; nothing answered *is this a
+ * dev server at all*, so a tree made only of the second half — an unwatched
+ * server and the `tsx` cli that started it — matched no root and belonged to no
+ * root, and fell out of the listing without a word.
+ */
+function isDevServerProcess(row: ProcessRow): boolean {
+  return isDevServerRoot(row) || isDevServerChild(row);
+}
+
+/**
+ * ⚠ WHERE A TREE WAS LAUNCHED FROM, read out of its own command line.
+ *
+ * A process table gives no working directory, and the specimen that produced
+ * #783 had been launched from a shift worktree that was later deleted — which
+ * is the one fact that made killing it safe, because a directory that is gone
+ * cannot be anybody's live work. What every one of these processes DOES carry
+ * is the path it loaded `tsx` from, and on this machine that path begins at the
+ * tree it was started in.
+ *
+ * Measured rows, verbatim, 2026-09-11 and 2026-09-08:
+ *
+ *     node "C:/Users/Admin/Drape/node_modules/.bin//../.pnpm/tsx@4.20.6/…/cli.mjs" server/_core/index.ts
+ *     node.exe --require C:/Users/Admin/Drape/node_modules/.pnpm/tsx@4.20.6/…/preflight.cjs …
+ *
+ * ⚠ **The `node_modules` nearest the front of the line is not always the right
+ * one, which is why the remainder has to name `tsx`.** An `npx` launch puts
+ * npm's own global install first — `…/AppData/Roaming/npm/node_modules/npm/bin/npx-cli.js`
+ * — and reading that would name a directory with nothing to do with the server,
+ * and would report it PRESENT while the worktree it actually ran from was gone.
+ * That is this card's own defect arriving through the reader written to fix it.
+ *
+ * Returns forward-slashed, which every Windows file API accepts.
+ */
+export function launchDirectoryOf(commandLine: string): string | null {
+  const line = commandLine.replace(/\\/g, "/");
+  const paths = /([A-Za-z]:\/[^"';\s]*?)\/node_modules\/([^"';\s]*)/g;
+  for (const match of line.matchAll(paths)) {
+    if (/\btsx\b/i.test(match[2])) return match[1];
+  }
+  return null;
 }
 
 /**
@@ -175,11 +266,23 @@ function ancestorsOf(rows: readonly ProcessRow[], row: ProcessRow): ProcessRow[]
  * So the outermost watcher in a process's ancestry owns it, and anything with
  * a watcher above it is not a root. Returns the row itself when it is a watcher
  * with no watcher above it, and null when the row belongs to no tree at all.
+ *
+ * ⚠ **AND A TREE WITH NO WATCHER IN IT AT ALL IS STILL A TREE (#783).** The
+ * second clause used to read `isDevServerRoot(row) ? row : null`, so a server
+ * started without the watch verb was owned by nothing and owned nothing: it
+ * answered null, `devServerTrees` filtered it away, and the listing said the
+ * machine was clean over a live server on :3000. The rule is the same rule
+ * either way — **the outermost dev-server process in the ancestry owns
+ * everything below it** — with watchers preferred, because a watcher is the
+ * only thing that restarts what you kill.
  */
 export function owningRoot(rows: readonly ProcessRow[], row: ProcessRow): ProcessRow | null {
-  const watchersAbove = ancestorsOf(rows, row).filter(isDevServerRoot);
+  const above = ancestorsOf(rows, row);
+  const watchersAbove = above.filter(isDevServerRoot);
   if (watchersAbove.length > 0) return watchersAbove[watchersAbove.length - 1];
-  return isDevServerRoot(row) ? row : null;
+  const serversAbove = above.filter(isDevServerProcess);
+  if (serversAbove.length > 0) return serversAbove[serversAbove.length - 1];
+  return isDevServerProcess(row) ? row : null;
 }
 
 /**
@@ -189,6 +292,11 @@ export function owningRoot(rows: readonly ProcessRow[], row: ProcessRow): Proces
  * the server child that holds the port — because the whole point of naming a
  * root is that killing it takes ALL of them, and a listing that hid the middle
  * of the tree is what made a hand count unreliable.
+ *
+ * ⚠ **A tree with no watcher in it is listed too, and says so (#783).** It is
+ * the shape a crashed or hand-started run leaves — `npx tsx server/_core/index.ts`
+ * — and until this it was not listed at all, so a live server read as an empty
+ * machine. `watched` is the difference that matters to whoever is killing it.
  */
 export function devServerTrees(rows: readonly ProcessRow[]): DevServerTree[] {
   const owners = new Map<ProcessRow, ProcessRow | null>();
@@ -200,18 +308,59 @@ export function devServerTrees(rows: readonly ProcessRow[]): DevServerTree[] {
     a.startedAt.getTime() - b.startedAt.getTime();
 
   return rows
-    .filter((row) => isDevServerRoot(row) && ownerOf(row) === row)
-    .map((root) => ({
-      rootPid: root.pid,
-      startedAt: root.startedAt,
-      childPids: rows
-        .filter((row) => row !== root
-          && (isDevServerRoot(row) || isDevServerChild(row))
-          && ownerOf(row) === root)
-        .sort(oldestFirst)
-        .map((row) => row.pid),
-    }))
+    .filter((row) => isDevServerProcess(row) && ownerOf(row) === row)
+    .map((root) => {
+      const mine = rows
+        .filter((row) => row !== root && isDevServerProcess(row) && ownerOf(row) === root)
+        .sort(oldestFirst);
+      return {
+        rootPid: root.pid,
+        startedAt: root.startedAt,
+        childPids: mine.map((row) => row.pid),
+        watched: isDevServerRoot(root),
+        /* The root's own line first — but an `npx` launch names npm's global
+           install and nothing else, so the tree answers for itself. */
+        launchedFrom: [root, ...mine]
+          .map((row) => launchDirectoryOf(row.commandLine))
+          .find((where) => where !== null) ?? null,
+      };
+    })
     .sort(oldestFirst);
+}
+
+/**
+ * ⚠ THE BACKSTOP, AND IT IS THE PART OF #783 THAT OUTLIVES #783.
+ *
+ * Everything above classifies command lines, and a classifier has exactly one
+ * failure mode worth fearing here: a launch shape nobody anticipated is DROPPED,
+ * and a dropped tree prints the same sentence as a clean machine. Widening the
+ * predicates fixes the shape that has already bitten; it cannot fix the next
+ * one.
+ *
+ * `netstat` is the ground truth and does not care how a process was started. So
+ * a pid LISTENING on the studio's port family that belongs to no tree this
+ * module can see is reported as exactly that — **a hole in this reader**, not a
+ * clean machine. On 2026-09-11 that reading was available and nothing compared
+ * the two: `park-state.mts` printed *"1 listener(s) on :300x"* in the same
+ * minute this module's caller printed *"no dev server is running"*, and four
+ * shifts believed the second one.
+ *
+ * The family is 3000–3009: `PORT` defaults to 3000 and the dev server takes the
+ * next free port when it is busy, which is how four of them once ended up
+ * listening at once.
+ */
+export function listenersOutsideEveryTree(
+  trees: readonly DevServerTree[],
+  ports: ReadonlyMap<number, readonly number[]>,
+): { pid: number; ports: number[] }[] {
+  const known = new Set(trees.flatMap((tree) => [tree.rootPid, ...tree.childPids]));
+  const found: { pid: number; ports: number[] }[] = [];
+  for (const [pid, held] of ports) {
+    if (known.has(pid)) continue;
+    const studio = held.filter((port) => port >= 3000 && port <= 3009);
+    if (studio.length > 0) found.push({ pid, ports: [...studio].sort((a, b) => a - b) });
+  }
+  return found.sort((a, b) => a.pid - b.pid);
 }
 
 /**
@@ -316,7 +465,17 @@ export function rootsToKill(
     /* Three ways to be inside a tree and none of them is the pid to kill: the
        server that holds the port, the inner `tsx watch` the root started
        through a shell, and the shell itself. */
-    if (row && isDevServerChild(row)) {
+    if (row && isDevServerChild(row) && !owner.watched) {
+      /* ⚠ NOT the sentence below it, because it would not be true (#783). An
+         unwatched tree restarts nothing — killing this pid ends the serving and
+         leaves the process that started it standing, which is litter rather
+         than a resurrection. Say what actually happens. */
+      wrong.push(
+        `${pid} is inside dev server ${owner.rootPid}'s tree, which has NO watcher —`
+        + ` nothing would restart it, but killing ${pid} alone leaves ${owner.rootPid} behind.`
+        + ` Kill ${owner.rootPid}.`,
+      );
+    } else if (row && isDevServerChild(row)) {
       wrong.push(
         `${pid} is a dev server's CHILD — its watcher ${owner.rootPid} would start another one. Kill ${owner.rootPid}.`,
       );
@@ -326,7 +485,9 @@ export function rootsToKill(
       );
     } else {
       wrong.push(
-        `${pid} is a shell inside dev server ${owner.rootPid}'s tree — killing it orphans the watcher below it. Kill ${owner.rootPid}.`,
+        /* "what is below it" rather than "the watcher below it": an unwatched
+           tree has no watcher, and the sentence must stay true of both. */
+        `${pid} is a shell inside dev server ${owner.rootPid}'s tree — killing it orphans what is below it. Kill ${owner.rootPid}.`,
       );
     }
   }
