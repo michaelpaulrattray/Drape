@@ -1,6 +1,9 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 
+import { useStaffAutoRefresh } from "./stores/useStaffAutoRefreshStore";
+import { STAFF_REFRESH_INTERVAL_MS } from "./useStaffRefresh";
+
 /**
  * THE ADMIN BAR'S ATTENTION COUNT (#415).
  *
@@ -37,12 +40,18 @@ import { trpc } from "@/lib/trpc";
  * single-source property survives it. **The pill's source is a private detail
  * of this hook by construction; no page reaches past it.**
  *
- * # Why it costs nothing on Overview and one call elsewhere
+ * # What it costs — corrected by #457, which put it on a timer
  *
  * TanStack Query keys on procedure + input, so on `/admin/overview` this hook
  * and the page share one cache entry: same request, same data, and the page's
- * 30s poll refreshes the pill for free. On the other admin pages it is one
- * call per mount, held for `STALE_MS` so moving between tabs does not re-ask.
+ * own 30s poll already refreshed the pill for free.
+ *
+ * ⚠ **Everywhere else it was one call per mount until 2026-09-10, and it is a
+ * 30s poll now** — his word on #457, *"the cost of polling is accepted"*,
+ * because nothing else can make an ARRIVING request reach the bar while he sits
+ * still. It follows the shared `AUTO 30s` switch, so it is a poll he can stop.
+ * The full cost, including the account-menu badge carrying it onto non-staff
+ * pages for an admin, is written out at the option itself.
  *
  * # The gate
  *
@@ -57,38 +66,49 @@ const STALE_MS = 30_000;
 
 export function useStaffCounts(): { pendingChangeRequests: number } {
   const { user, isAuthenticated } = useAuth();
+  const [autoRefresh] = useStaffAutoRefresh();
   const query = trpc.admin.getOverview.useQuery(undefined, {
     enabled: isAuthenticated && user?.role === "admin",
     staleTime: STALE_MS,
     /*
-      ⚠ **NO `refetchInterval`, AND THE SENTENCE THAT USED TO SIT HERE WAS
-      FALSE** — it said *"a number that appears within thirty seconds of a
-      request landing is soon enough"*, which describes a poll this hook does
-      not have. **`staleTime` makes a refetch PERMISSIBLE at the next trigger;
-      it schedules nothing.** The QueryClient is stock (`main.tsx`), so the
-      triggers are remount and window refocus. Corrected on the gate review of
-      PR #456 rather than left as a claim nobody had driven (law 7b).
+      ⚠ **IT POLLS NOW, AND HE ORDERED THE COST** (#457, 2026-09-10, verbatim):
+      *"fix it — a moderator request arriving while he sits still must reach the
+      bar without him moving; the cost of polling is accepted."*
 
-      What actually refreshes the pill, stated exactly:
+      Everything the previous note said about the mechanics is still true and is
+      why the poll is the only repair: **`staleTime` makes a refetch PERMISSIBLE
+      at the next trigger; it schedules nothing**, and the QueryClient is stock
+      (`main.tsx`), so the triggers are remount and window refocus. Neither
+      fires while he sits on one page. Invalidation cannot close it either — the
+      mutation that RAISES the count runs in the moderator's session, and a
+      moderator's browser cannot invalidate an admin's cache.
 
-      - **Navigating between admin pages** — the bar remounts, and a stale
-        query refetches on mount. This is the common case by a distance.
-      - **Refocusing the window** — TanStack's default, and the case that
-        covers coming back to a tab left open.
-      - **Resolving a request** — `AdminChangeRequests` invalidates this query
-        in both mutation handlers, so the number he just changed is right
-        immediately, on the page where he changed it.
+      **It follows the shared `AUTO 30s` switch rather than a timer of its
+      own**, so the control he already has over the panel's polling governs this
+      too: switch it off and the pill goes back to moving on navigation and
+      refocus. The interval is imported from the hook that draws the label, so
+      the switch cannot come to say `30s` while this reads something else (#455
+      was exactly that defect, four readers deep).
 
-      **What does NOT refresh it: a request ARRIVING while he sits on one page
-      without touching anything.** That reaches the pill on his next navigation
-      or refocus, and it is filed as #457 with a recommendation rather than
-      fixed quietly — wiring this to the shared `AUTO` switch would put seven
-      aggregations on a 30s timer across eight pages, which is a decision about
-      cost, not a repair.
+      ⚠ **THE COST, NAMED RATHER THAN LEFT TO BE DISCOVERED.** `getOverview`
+      runs seven aggregations, and this hook feeds the account-menu badge as
+      well as the bar — so for an ADMIN account, with the switch on, that query
+      now runs every 30s wherever the chrome renders, which includes the lobby
+      and casting, not only the eight staff pages. `enabled` keeps every other
+      role at zero calls. This is stated on #457 and in the PR; a cheaper
+      count-only reader is the repair if it is ever measured to matter, and it
+      is one file, exactly as this hook's own note above says.
 
-      On Overview none of this arises: it is the same query the page already
-      polls, so the pill moves with the page.
+      ⚠ **`refetchInterval` IS OBSERVER-SCOPED, WHICH IS WHY IT MAY BE SET
+      HERE AT ALL.** On `/admin/overview` this hook and the page observe the
+      SAME query key; a FETCH-level option (`retry` and friends) set here is
+      resolved from the last observer and changes the PAGE's behaviour, which is
+      the defect the gate review of PR #456 caught. Each observer keeps its own
+      interval timer, so the page's poll is untouched — the two timers can land
+      apart inside one 30s window, and the only consequence is that Overview may
+      answer twice in a window instead of once.
     */
+    refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
 
     /*
       ⚠ **NO `retry` OPTION HERE, AND ITS ABSENCE IS THE DECISION** (gate review

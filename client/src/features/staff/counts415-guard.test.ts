@@ -246,7 +246,15 @@ describe("card 415 — ONE reader of the pending-request count", () => {
         "resolved from the last observer and changes the PAGE's behaviour.",
         `Options set: ${keys.join(", ")}`,
       ].join(String.fromCharCode(10)),
-    ).toEqual(["enabled", "staleTime"]);
+      /*
+        ⚠ THREE SINCE #457, AND `refetchInterval` EARNED ITS PLACE BY BEING
+        OBSERVER-SCOPED — each observer keeps its own interval timer, so setting
+        one here cannot reach `AdminOverview`'s poll the way `retry` reached its
+        retries. The list is still exhaustive on purpose: a FOURTH option
+        reddens this, and the next shift checks it against every consumer of the
+        key before adding it, which is the whole reason this arm exists.
+      */
+    ).toEqual(["enabled", "refetchInterval", "staleTime"]);
   });
 
   it("the hook returns 0 rather than a placeholder while the query is unanswered", () => {
@@ -353,15 +361,46 @@ describe("card 415 — the pill is INVALIDATED by the acts that move it", () => 
     );
   });
 
-  it("the hook still schedules NO poll — the fix is invalidation, not a timer", () => {
+  it("the hook polls on the SHARED switch, never on a timer of its own", () => {
     /*
-      The tempting repair is `refetchInterval`, which would put seven
-      aggregations on a 30s timer across eight admin pages. That is a decision
-      about cost and it is #457's, not this card's. If a later shift takes it,
-      this arm goes red and that shift updates it on purpose.
+      ⚠ THIS ARM READ `not.toMatch(/refetchInterval/)` UNTIL #457, AND IT SAID
+      SO: *"If a later shift takes it, this arm goes red and that shift updates
+      it on purpose."* This is that shift. His word, verbatim: *"fix it — a
+      moderator request arriving while he sits still must reach the bar without
+      him moving; the cost of polling is accepted."*
+
+      What the arm guards now is the part that is still a rule rather than a
+      preference: the interval is the SHARED one and the switch is the SHARED
+      one. A literal `30_000` here would be a fifth reader of a number the bar's
+      own label states — which is #455's defect, closed the night before this.
     */
     const hook = code(read("features/staff/useStaffCounts.ts"));
-    expect(hook, "no interval — see card 457").not.toMatch(/refetchInterval/);
+    expect(hook).toMatch(/refetchInterval:\s*autoRefresh\s*\?\s*STAFF_REFRESH_INTERVAL_MS\s*:\s*false/);
+    expect(hook, "the switch is the shared store, not a local useState").toMatch(
+      /useStaffAutoRefresh\(\)/,
+    );
+    /*
+      ⚠ THIS PATTERN WAS `\d{4}` AND COULD NOT SEE `30_000` — the gate review of
+      PR #751 found it, and it is working law 2 in miniature: the house style for
+      this number is UNDERSCORED, so the one literal a shift would plausibly
+      write has a longest digit run of three and slipped past the arm whose own
+      message bans it. Nothing was exposed (the positive match above pins the
+      constant form, and #455's derived arm catches the underscored ternary),
+      but an arm that cannot fail on the thing it names is not an arm.
+    */
+    const LITERAL_INTERVAL = /refetchInterval:[^,\n]*\d[\d_]{3,}/;
+    expect(hook, "a literal interval is a second copy of the label's number").not.toMatch(
+      LITERAL_INTERVAL,
+    );
+    for (const sabotage of [
+      "refetchInterval: autoRefresh ? 30_000 : false,",
+      "refetchInterval: autoRefresh ? 30000 : false,",
+      "refetchInterval: 60_000,",
+    ]) {
+      expect(LITERAL_INTERVAL.test(sabotage), sabotage + " must read as a literal").toBe(true);
+    }
+    expect(LITERAL_INTERVAL.test("refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false"))
+      .toBe(false);
     expect(hook).toMatch(/staleTime:\s*STALE_MS/);
   });
 });
