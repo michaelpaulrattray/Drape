@@ -117,6 +117,27 @@ describe("planReplyAcknowledgements — a card that would orphan a dependant is 
     expect(plan.held[0].reason).toContain("#133");
   });
 
+  it("holds a card whose frames are `waiting` — and does NOT say he has not replied", () => {
+    /*
+      PR #757 review. `crewCardNeedsHim` is true of `waiting` too, so the guard
+      fires here correctly — but on `waiting` frames he HAS replied and an act of
+      his is outstanding. The hold reason is the one artifact a shift acts on, so
+      it must not send that shift to ask him for something he already gave.
+    */
+    const briefing: ResolvableBriefing = {
+      needsYou: [card("fangs-at-rest-599", "open")],
+      eyeItems: [eye("fangs-court-strips-599", "waiting", "fangs-at-rest-599")],
+    };
+
+    const plan = planReplyAcknowledgements(briefing, ["fangs-at-rest-599"]);
+
+    expect(plan.apply).toEqual([]);
+    expect(plan.held).toHaveLength(1);
+    expect(plan.held[0].reason).toContain("#133");
+    expect(plan.held[0].reason).toContain("he has replied on those frames");
+    expect(plan.held[0].reason).not.toContain("he has not replied");
+  });
+
   it("holds a card a `waiting-founder` pipeline row still names (#291)", () => {
     const briefing: ResolvableBriefing = {
       needsYou: [card("toolbelt-socket-35", "open")],

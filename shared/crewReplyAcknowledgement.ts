@@ -142,10 +142,20 @@ export function planReplyAcknowledgements(
     const unsettled = eyeItems.filter((item) => !settling.has(item.id));
     const orphanedEye = eyeItemStillNeedingHim(card.id, unsettled);
     if (orphanedEye) {
+      /* ⚠ THE SENTENCE BRANCHES BECAUSE THE GUARD'S PREDICATE COVERS TWO
+         DIFFERENT SITUATIONS (PR #757 review). `crewCardNeedsHim` is true of
+         `waiting` as well as `open`, and on a `waiting` set of frames he HAS
+         replied — an act of his is simply still outstanding. Telling a shift
+         "he has not replied" there sends it to ask him for something he already
+         gave. The hold is right either way; only the instruction differs, and
+         the reason line is the one artifact a shift acts on. */
       reasons.push(
         `eye item '${orphanedEye.id}' still needs him and names this card (#133) — `
-        + "he has not replied on those frames, so settle them before the card can be "
-        + "marked answered",
+        + (orphanedEye.state === "waiting"
+          ? "he has replied on those frames and an act of his is still outstanding, so "
+            + "settle them before the card can be marked answered"
+          : "he has not replied on those frames, so settle them before the card can be "
+            + "marked answered"),
       );
     }
 
