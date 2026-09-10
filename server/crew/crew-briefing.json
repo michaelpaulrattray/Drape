@@ -1,7 +1,7 @@
 {
-  "edition": 330,
-  "updatedAt": "2026-09-10T10:30:00Z",
-  "shift": "Foreman - your desk empties itself now, and Socket blocks on your word. THE THING YOU ASKED ABOUT: you said the fangs card would not disappear even though you replied 'seen ages ago'. You were right and it was worse than a stuck card. Nothing in the system has EVER moved an item off your desk because you replied to it. A tool has been correctly listing 'items he has answered that the page still calls open' on every shift for twelve days, and no shift had anything to act on it with - so four of them read the list and left it, and three of those wrote down a careful reason why 'seen' might not count as an answer. That reasoning is now overruled by you: your reply IS the act. It is one command, it ran tonight, and the three items it found - both fangs items and the Socket card - are gone from your desk in this edition. YOUR SOCKET ANSWER: you said 'A', let Socket's own verdict do the blocking. Done - but not the way the card described it, because that way would not have worked. Making it a required check only stops people who are not administrators, and everything here merges as you, an administrator. So the tool that performs our merges reads Socket's verdict itself and refuses to merge past a red one. No checkbox on your key, no second scan, nothing to maintain - exactly what option A promised, with the one part added that makes it real. I closed my own scanner unmerged as A says. ONE THING I HAVE NOT PROVEN and will not pretend otherwise: Socket has never actually refused anything here - four for four green. We know our side refuses when told to; we do not know that Socket says no when it should. That needs a deliberate test and it is filed as its own card. ALSO: the Blocked IPs list on Audit logs and the Moderator dashboard was sitting under an auto-refresh switch and a Refresh button and was reached by neither.",
+  "edition": 331,
+  "updatedAt": "2026-09-10T12:10:00Z",
+  "shift": "Foreman - a button that said it refreshed, and an invoice that could still take your customer's money. TWO SMALL JOBS OFF YOUR LIST, ONE LANDED AND ONE HELD. FIRST: on the moderator and admin screens there is a Refresh button. Press it on the Users tab, on Flagged referrals, or on My requests, and it told you 'Data refreshed' while the list in front of you did not move. It is fixed and live. The job was carded as three lists on one screen; sweeping for others found it was TEN across four screens, because the tool that counted them could only see pages written one particular way and five pages are written the other way. I drove the real page afterwards rather than trusting the tests: one press now asks the server for eight lists where it used to ask for five, and twelve when you have an account open. SECOND, AND THIS ONE IS ABOUT MONEY: when a customer's plan-change payment finally fails, we correctly cancel their plan and cancel the credits - but the Stripe invoice was left sitting there, payable. They could pay it days later through Stripe's own page: money in, credits refused, plan already gone. The fix closes the invoice too. I AM NOT MERGING THAT ONE TONIGHT AND YOU SHOULD KNOW WHY. Your automatic reviewer looked at it and found a real mistake of mine - I had written in the code that Stripe will not let you cancel an invoice already written off as bad debt. I had never checked. Stripe's own documentation says the opposite, and worse, an invoice written off that way CAN still be paid - so my first version would have left your exact problem alive on the one road most likely to hit it, while logging that it had been handled. It is fixed and the reviewer's other two points are taken. But when I asked for a second look at the corrected version, the review simply never started - no verdict, not a failed one. On a money change I am not going to merge past that on my own say-so, so it waits one shift. Nothing is at risk while it waits: there are no live subscriptions yet. NOTHING IS ON YOUR DESK and NEXT UP is still empty.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-10T10:23:06.242Z",
+      "readAt": "2026-09-10T12:00:46.083Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4545,6 +4545,20 @@
   ],
   "pipeline": [
     {
+      "id": "refresh-reaches-lists-759",
+      "title": "Refresh now moves the list you are looking at - on every staff screen",
+      "status": "merged",
+      "prNumber": 763,
+      "note": "You press Refresh on the moderator panel's Users tab and it says 'Data refreshed'. The list did not move. Same on Flagged referrals, My requests, and the open account on two admin screens. The card said three lists; the sweep found ten, because the tool that counted them only recognised pages written one way. Driven on the running page afterwards: one press asks for eight lists now, twelve with an account open - and none of them fire when there is nothing open, which was the part worth getting right."
+    },
+    {
+      "id": "void-failed-invoice-756",
+      "title": "A failed plan change can no longer leave a payable invoice behind - HELD one shift",
+      "status": "in-review",
+      "prNumber": 764,
+      "note": "When a plan change's payment finally fails we cancel the plan and cancel the credits, but the Stripe invoice was left open and payable - a customer could pay it days later and get nothing. Fixed, tested, and your reviewer caught a real error in my first version: I had claimed Stripe refuses to cancel an invoice already written off as bad debt. It does not, and such an invoice can still be paid, so my first version left the problem alive on that road. Corrected. Held only because the second review never started - no verdict rather than a bad one - and I will not merge a money change past that alone. No live subscriptions, so nothing is exposed while it waits."
+    },
+    {
       "id": "reply-clears-desk-749",
       "title": "Your reply now clears the item you replied to - the fangs card you asked about",
       "status": "merged",
@@ -5165,6 +5179,20 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0910-late-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 60 open, 15 nobody has looked at in a week - one closed tonight, three filed",
+      "detail": "60 cards open. Closed tonight: #759, the Refresh button across the staff screens. Filed three: #765 (a second road where a cancelled subscription leaves an invoice payable - the sibling of tonight's money fix, split off because it carries a question only you can answer), #766 (an automatic check for the Refresh-button problem, because it has now been counted by hand three times and been wrong three times), and #756 is still in flight. 15 cards have had no comment, close or commit for seven days - up one, and still mostly parked cleanup rather than work anyone is avoiding. NEXT UP is EMPTY and nothing is on your desk."
+    },
+    {
+      "id": "review-never-started-764",
+      "severity": "warning",
+      "state": "open",
+      "title": "Your automatic reviewer did not start on a money change tonight - and that is not the same as failing it",
+      "detail": "The reviewer read the invoice fix, found a real mistake, and I corrected it. Asking for a second look at the correction produced nothing at all - not a rejection, not an error, simply no review. We have a documented remedy for exactly this (remove and re-apply the label); I ran it and it still produced nothing. This matters because an absent review looks identical to a repository that has no reviewer, so it is the one state that can be walked past without noticing. I did not walk past it: the change is held, not merged. If it happens again next shift it stops being a hiccup and becomes its own job."
+    },
+    {
       "id": "queue-shape-0910h-foreman",
       "severity": "info",
       "state": "open",
@@ -5642,7 +5670,7 @@
     173
   ],
   "nextUp": {
-    "readAt": "2026-09-10T10:23:05.178Z",
+    "readAt": "2026-09-10T12:00:45.236Z",
     "items": []
   }
 }

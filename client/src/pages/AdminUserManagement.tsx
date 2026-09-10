@@ -168,6 +168,17 @@ export default function AdminUserManagement() {
     onRefresh: () => {
       usersQuery.refetch();
       statsQuery.refetch();
+      /* #759 — the open account's own two readers, on the same reading as
+         `ModeratorDashboard`. They were invisible to that card's sweep, which
+         looked for a named `handleRefresh` and this page declares its handler
+         inline. The test is on the selection because both inputs assert over a
+         nullable id (`{ userId: selectedUserId! }`) and `refetch()` never
+         consults `enabled` — without it, a press with nothing open sends
+         `userId: null` to a `z.number()`. */
+      if (selectedUserId) {
+        userDetailsQuery.refetch();
+        userActivityQuery.refetch();
+      }
       toast.success("Users refreshed");
     },
   });
