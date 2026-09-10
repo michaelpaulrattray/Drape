@@ -86,6 +86,8 @@ export default function ModeratorDashboard() {
 
   // ── Queries ──
 
+  const utils = trpc.useUtils();
+
   const logsQuery = trpc.moderator.getAuditLogs.useQuery(
     {
       limit: PAGE_SIZE,
@@ -109,9 +111,15 @@ export default function ModeratorDashboard() {
     { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
   );
 
+  /* #747: it sits under AUTO 30s and the Refresh button and was reached by
+     neither. `enabled` still governs whether it runs at all — a disabled query
+     does not poll — so the interval costs nothing until the tab is open. */
   const blockedIpsQuery = trpc.moderator.listBlockedIPs.useQuery(
     { limit: 50, offset: 0 },
-    { enabled: activeTab === "blocked-ips" }
+    {
+      enabled: activeTab === "blocked-ips",
+      refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
+    }
   );
 
   const usersQuery = trpc.moderator.listUsers.useQuery(
@@ -186,6 +194,26 @@ export default function ModeratorDashboard() {
 
   const handleRefresh = () => {
     logsQuery.refetch(); alertsQuery.refetch(); statsQuery.refetch();
+    /* #747 — the Blocked IPs list was under both controls and reached by
+       neither.
+
+       ⚠ READ AT THE INSTALLED BYTES RATHER THAN ASSUMED, AND IT IS NOT WHAT IT
+       LOOKS LIKE: `QueryObserver.refetch()` goes straight to `fetch()` and
+       never consults `enabled` (query-core 5.90.2, `queryObserver.js:155`), so
+       this DOES fetch while another tab is open. That costs one extra staff
+       SELECT per press of a button somebody deliberately pressed, and it leaves
+       the list warm when they switch — worth more than the call. What it must
+       NOT become is an `activeTab === "blocked-ips"` test here: that is the
+       `enabled` condition spelled a second time, and second spellings drift.
+
+       The POLL is the opposite and is genuinely free: `#updateRefetchInterval`
+       sets no timer at all when `enabled` resolves false (same file, line 208),
+       so the interval below costs nothing until the tab is open. */
+    blockedIpsQuery.refetch();
+    /* The discrepancies card owns its own query, so the button reaches it by
+       invalidating rather than by a handle it does not have. It already polls
+       on AUTO 30s (#746) and answered the button beside it with nothing. */
+    utils.moderatorReconciliation.getFlaggedUsers.invalidate();
     setLastRefresh(new Date());
     toast.success("Data refreshed");
   };
