@@ -10,6 +10,7 @@ import {
   type AuditLog,
 } from "@/features/admin/adminConstants";
 import {
+  STAFF_REFRESH_INTERVAL_MS,
   StaffBarAdmin,
   StaffLoading,
   StaffSurface,
@@ -50,7 +51,7 @@ export default function AdminAuditLogs() {
       actionCategory: categoryFilter as "billing" | "model" | "security" | "abuse" | "all",
       userId: userIdSearch ? parseInt(userIdSearch) : undefined,
     },
-    { refetchInterval: autoRefresh ? 30000 : false }
+    { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
   );
 
   useEffect(() => {
@@ -59,11 +60,11 @@ export default function AdminAuditLogs() {
 
   const alertsQuery = trpc.admin.getAbuseAlerts.useQuery(
     { limit: 10 },
-    { refetchInterval: autoRefresh ? 30000 : false }
+    { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
   );
   const statsQuery = trpc.admin.getAuditStats.useQuery(
     undefined,
-    { refetchInterval: autoRefresh ? 60000 : false }
+    { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
   );
   const blockedIpsQuery = trpc.admin.listBlockedIPs.useQuery(
     { limit: 50, offset: 0 },

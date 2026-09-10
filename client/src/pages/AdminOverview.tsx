@@ -17,6 +17,7 @@ import {
 import "@/features/admin/overview/overview.css";
 import { Button, Skeleton, TableHead } from "@/foundation";
 import {
+  STAFF_REFRESH_INTERVAL_MS,
   StaffBarAdmin,
   StaffLoading,
   StaffSurface,
@@ -51,7 +52,10 @@ import {
  * thing the staff bar's own stamp says, which is the correct home for it.
  */
 
-const REFRESH_INTERVAL_MS = 30_000;
+/* #455 — this was a third local copy of the staff interval (`30_000`). The
+   number is the same one the bar's `AUTO 30s` switch names, so it is imported
+   rather than restated: a copy is how a label and a timer drift apart, which
+   is the defect this card was filed about. */
 
 export default function AdminOverview() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -65,13 +69,13 @@ export default function AdminOverview() {
 
   const overviewQuery = trpc.admin.getOverview.useQuery(undefined, {
     enabled: isAdmin,
-    refetchInterval: autoRefresh ? REFRESH_INTERVAL_MS : false,
+    refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
     staleTime: 10_000,
   });
 
   const timeSeriesQuery = trpc.admin.getTimeSeries.useQuery(undefined, {
     enabled: isAdmin,
-    refetchInterval: autoRefresh ? REFRESH_INTERVAL_MS : false,
+    refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
     staleTime: 10_000,
   });
 
