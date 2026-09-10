@@ -84,3 +84,29 @@ export async function resolvePlanChangeSettlement(
   const affected = (result as any)[0]?.affectedRows ?? (result as any).affectedRows ?? 0;
   return affected > 0;
 }
+
+/**
+ * Void every pending settlement a user still has — the subscription-death
+ * road (PR #755 review, finding 3): a subscription deleted while its change
+ * invoice sat unpaid (voluntary cancel, dashboard action) strands the row
+ * pending with no invoice event ever coming. The product holds one
+ * subscription per user, so every pending row of theirs belongs to the dead
+ * one. Voiding refuses movement, which is the safe direction on both
+ * directions of the move. Returns how many rows moved.
+ */
+export async function voidPendingPlanChangeSettlementsForUser(
+  userId: number,
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db
+    .update(planChangeSettlements)
+    .set({ status: "void", resolvedAt: new Date() })
+    .where(
+      and(
+        eq(planChangeSettlements.userId, userId),
+        eq(planChangeSettlements.status, "pending"),
+      ),
+    );
+  return (result as any)[0]?.affectedRows ?? (result as any).affectedRows ?? 0;
+}

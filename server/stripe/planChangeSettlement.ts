@@ -29,13 +29,22 @@
  * retry schedule is the retry loop, and each success redelivers the settling
  * event.
  *
- * STATED LIMIT (the #664 "coarse mirror" precedent, extended): a second plan
- * change made while a prior change's invoice is still unpaid nets coarsely —
- * each row mirrors its own invoice, the unwind floors at the live balance, and
- * the customer is never taken below zero; but no lot-tracking reconciles a
- * pending grant against a later deduction. Stripe's own money side is equally
- * coarse there (the earlier invoice stays due), and the final-failure endgame
- * (auto-cancel to free) dissolves the chain.
+ * STATED LIMITS (the #664 "coarse mirror" precedent, extended):
+ * - A second plan change made while a prior change's invoice is still unpaid
+ *   nets coarsely — each row mirrors its own invoice, the unwind floors at
+ *   the live balance, and the customer is never taken below zero; but no
+ *   lot-tracking reconciles a pending grant against a later deduction.
+ *   Stripe's own money side is equally coarse there (the earlier invoice
+ *   stays due), and the final-failure endgame dissolves the chain.
+ * - The webhook-first race's LAST road is the fresh status re-read, which
+ *   `changePlan` retries before deferring; if every retry fails inside that
+ *   exact window, the row sits pending until support finds it (PR #755
+ *   review, finding 1). Narrow, named, not covered.
+ * - An invoice voided or marked uncollectible from the Stripe DASHBOARD
+ *   sends no event this module hooks; its row stays pending (credits never
+ *   move — the safe direction). The two in-product death roads DO void:
+ *   final payment failure here, and subscription deletion in the webhook's
+ *   deleted handler (finding 3).
  */
 import {
   addCredits,
@@ -115,6 +124,20 @@ export async function applyPlanChangeSettlement(
   }
 
   // Unwind: deduct, floored at the balance read now.
+  //
+  // ⚠ A KNOWN-BENIGN FATAL CAN FIRE HERE (PR #755 review, finding 2): both
+  // appliers can pass the pending check concurrently, each computes its own
+  // floor from the LIVE balance, and the loser — reading the balance AFTER
+  // the winner's deduct — can hit the unique ledger ref with a DIFFERENT
+  // amount, which credits.ts classifies as a CRITICAL reference collision
+  // at log.fatal. For THIS reference family (`plan-change-settle:`) on the
+  // unwind direction, that alarm's cause is this benign race: money is
+  // conserved (the winner's deduct stood, the loser moved nothing) and the
+  // row resolves applied. An alarm reader seeing that FATAL on a
+  // plan-change-settle ref should check for two near-simultaneous appliers
+  // before treating it as a real collision. The grant direction cannot hit
+  // this — its amount is fixed by the row, so a replay always
+  // semantics-matches.
   const liveCredits = await getUserCredits(row.userId);
   const returnable = Math.min(row.credits, Math.max(0, liveCredits?.balance ?? 0));
   if (returnable <= 0) {

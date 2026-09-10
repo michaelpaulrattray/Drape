@@ -585,10 +585,16 @@ export const billingRouter = router({
               "[Billing] plan-change unwind settlement could not be recorded",
             );
           } else {
-            const status =
-              result.invoiceStatus === "paid"
-                ? "paid"
-                : await getInvoiceStatus(result.invoiceId);
+            // The fresh re-read is the LAST road to the credits when the
+            // invoice paid synchronously and its webhook was consumed before
+            // the row existed (PR #755 review, finding 1) — so a transient
+            // read failure retries before we defer. A real answer ("open",
+            // "paid") stops the loop; only null (the read itself failing)
+            // spends another attempt.
+            let status: string | null = result.invoiceStatus === "paid" ? "paid" : null;
+            for (let attempt = 0; status === null && attempt < 3; attempt++) {
+              status = await getInvoiceStatus(result.invoiceId);
+            }
             if (status === "paid") {
               const applied = await applyPlanChangeSettlement(result.invoiceId);
               if (applied.outcome === "failed") {

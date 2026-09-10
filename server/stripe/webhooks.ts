@@ -33,6 +33,7 @@ import {
   applyPlanChangeSettlement,
   voidPlanChangeSettlement,
 } from "./planChangeSettlement";
+import { voidPendingPlanChangeSettlementsForUser } from "../db";
 import { createModuleLogger } from "../logging/logger";
 import { checkEventEnvironment } from "./environmentTag";
 import { deploymentTag } from "../_core/env";
@@ -273,6 +274,17 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
   const userId = userWithCredits.id;
 
   const previousPlan = userWithCredits.credits?.planTier || "unknown";
+
+  // A subscription dying takes its unsettled plan-change credit moves with
+  // it (#711, PR #755 review finding 3): a voluntary cancel or dashboard
+  // action while a change invoice sat unpaid would otherwise strand the
+  // settlement row pending forever, with no invoice event ever coming.
+  const voided = await voidPendingPlanChangeSettlementsForUser(userId);
+  if (voided > 0) {
+    log.info(
+      `[Webhook] Voided ${voided} pending plan-change settlement(s) for user ${userId} — the subscription died before the change's invoice settled`,
+    );
+  }
 
   // Downgrade to free tier
   await updateUserSubscription(userId, {

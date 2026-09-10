@@ -121,6 +121,7 @@ export {
   recordPlanChangeSettlement,
   getPlanChangeSettlementByInvoice,
   resolvePlanChangeSettlement,
+  voidPendingPlanChangeSettlementsForUser,
   type RecordPlanChangeSettlementInput,
 } from "./planChangeSettlements";
 

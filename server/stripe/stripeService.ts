@@ -599,8 +599,15 @@ export async function updateSubscriptionPlan(
  * before DEFERRING a credit move: a webhook that fired before the settlement
  * row existed can never re-fire, so "not paid at the update" must be
  * re-checked after the row is recorded — a fresh "paid" here is how that
- * race resolves. Null means the read failed; callers defer (the webhook
- * road remains, and Stripe redelivers).
+ * race resolves.
+ *
+ * ⚠ Null means THE READ FAILED, and deferring on it is not free (PR #755
+ * review, finding 1): if the invoice paid synchronously and its webhook was
+ * consumed before the row existed, this read is the LAST road to the
+ * credits — a null here strands the row pending until support finds it. The
+ * caller therefore retries this read before deferring, and the residue (all
+ * retries failing inside that exact race window) is a stated limit, not a
+ * covered case.
  */
 export async function getInvoiceStatus(invoiceId: string): Promise<string | null> {
   try {

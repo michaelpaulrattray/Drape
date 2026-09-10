@@ -57,6 +57,7 @@ const db = vi.hoisted(() => ({
   unsuspendUser: vi.fn().mockResolvedValue({ success: true }),
   creditReferrerOnPaidAction: vi.fn().mockResolvedValue(false),
   getCreditTransactionByRef: vi.fn().mockResolvedValue(null),
+  voidPendingPlanChangeSettlementsForUser: vi.fn().mockResolvedValue(0),
   getDb: vi.fn().mockResolvedValue(null),
   withTransaction: vi.fn(),
 }));
@@ -89,6 +90,7 @@ import { billingRouter } from "../routes/billing";
 import { handleStripeWebhook } from "./webhooks";
 import { settlementLedgerRef } from "./planChangeSettlement";
 import { PLAN_TIERS } from "../../drizzle/schema";
+import { deploymentTag } from "../_core/env";
 
 const USER = { id: 7, approved: true, suspendedAt: null, lockedUntil: null };
 const caller = () => billingRouter.createCaller({ user: USER } as never);
@@ -234,6 +236,30 @@ describe("changePlan — the grant hangs on the invoice, not on the Stripe updat
       credits: UNWIND_CREDITS,
     });
     expect(result.creditSettlement).toBe("pending");
+  });
+
+  it("a transient failure of the fresh re-read RETRIES before deferring — the last road to a paid customer's credits (review finding 1)", async () => {
+    /* update-time read: open. Fresh re-read attempt 1: the read itself
+       fails. Attempt 2: paid. Deferring on attempt 1 would strand the row
+       if the webhook was already consumed — the retry is the repair. */
+    invoicesRetrieve
+      .mockResolvedValueOnce({ amount_due: 12_00, status: "open" })
+      .mockRejectedValueOnce(new Error("stripe 5xx"))
+      .mockResolvedValueOnce({ status: "paid" });
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({
+      userId: 7,
+      stripeInvoiceId: "in_change",
+      direction: "grant",
+      credits: UPGRADE_CREDITS,
+      description: "Prorated credits for upgrade to pro",
+      status: "pending",
+    });
+
+    const result = await caller().changePlan({ newPlan: "pro" });
+
+    expect(invoicesRetrieve).toHaveBeenCalledTimes(3);
+    expect(db.addCredits).toHaveBeenCalledTimes(1);
+    expect(result.creditSettlement).toBe("applied");
   });
 
   it("a grant whose settlement cannot be RECORDED refuses loudly — money taken with nothing owing it back is not success", async () => {
@@ -459,6 +485,24 @@ describe("the webhook settles what changePlan recorded", () => {
     });
 
     expect(result.success).toBe(true);
+    expect(db.addCredits).not.toHaveBeenCalled();
+    expect(db.deductCredits).not.toHaveBeenCalled();
+  });
+
+  it("a subscription DYING voids its user's pending settlements — the voluntary-cancel road (review finding 3)", async () => {
+    db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(1);
+
+    const result = await deliverEvent("customer.subscription.deleted", {
+      id: "sub_1",
+      customer: "cus_1",
+      /* subscription events are tag-checked — this one is ours. */
+      metadata: { env: deploymentTag() },
+      status: "canceled",
+      items: { data: [{ id: "si_1", price: { recurring: { interval: "month" } } }] },
+    });
+
+    expect(result.success).toBe(true);
+    expect(db.voidPendingPlanChangeSettlementsForUser).toHaveBeenCalledWith(7);
     expect(db.addCredits).not.toHaveBeenCalled();
     expect(db.deductCredits).not.toHaveBeenCalled();
   });
