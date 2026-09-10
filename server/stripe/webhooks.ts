@@ -279,10 +279,24 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
   // it (#711, PR #755 review finding 3): a voluntary cancel or dashboard
   // action while a change invoice sat unpaid would otherwise strand the
   // settlement row pending forever, with no invoice event ever coming.
-  const voided = await voidPendingPlanChangeSettlementsForUser(userId);
-  if (voided > 0) {
+  //
+  // ⚠ ONLY when the dying subscription is the one on record (round-2
+  // finding 1): Stripe redelivers failed events for days, so a stale
+  // deleted event for an OLD subscription can arrive after the user has
+  // resubscribed — and a void is irreversible, so it must not touch a NEWER
+  // subscription's pending settlement. Null on record still voids: the
+  // voluntary-cancel road this exists for may clear the stored id first.
+  const storedSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
+  if (!storedSubscriptionId || storedSubscriptionId === subscription.id) {
+    const voided = await voidPendingPlanChangeSettlementsForUser(userId);
+    if (voided > 0) {
+      log.info(
+        `[Webhook] Voided ${voided} pending plan-change settlement(s) for user ${userId} — the subscription died before the change's invoice settled`,
+      );
+    }
+  } else {
     log.info(
-      `[Webhook] Voided ${voided} pending plan-change settlement(s) for user ${userId} — the subscription died before the change's invoice settled`,
+      `[Webhook] Deleted event for ${subscription.id} but user ${userId}'s subscription on record is ${storedSubscriptionId} — a stale delivery; leaving pending settlements alone`,
     );
   }
 

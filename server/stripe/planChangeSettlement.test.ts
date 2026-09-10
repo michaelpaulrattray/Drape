@@ -491,6 +491,13 @@ describe("the webhook settles what changePlan recorded", () => {
 
   it("a subscription DYING voids its user's pending settlements — the voluntary-cancel road (review finding 3)", async () => {
     db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(1);
+    /* The dying subscription IS the one on record — the live-cancel case. */
+    db.getUserByStripeCustomerId.mockResolvedValue({
+      id: 7,
+      name: "seven",
+      email: "u@example.com",
+      credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+    });
 
     const result = await deliverEvent("customer.subscription.deleted", {
       id: "sub_1",
@@ -505,6 +512,29 @@ describe("the webhook settles what changePlan recorded", () => {
     expect(db.voidPendingPlanChangeSettlementsForUser).toHaveBeenCalledWith(7);
     expect(db.addCredits).not.toHaveBeenCalled();
     expect(db.deductCredits).not.toHaveBeenCalled();
+  });
+
+  it("a STALE redelivered deleted event (different subscription on record) does NOT void — a void is irreversible (round-2 finding 1)", async () => {
+    /* The user cancelled sub_OLD, resubscribed as sub_NEW, and upgraded;
+       sub_OLD's deleted event redelivers days later. Voiding here would
+       kill sub_NEW's pending settlement forever. */
+    db.getUserByStripeCustomerId.mockResolvedValue({
+      id: 7,
+      name: "seven",
+      email: "u@example.com",
+      credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_NEW" },
+    });
+
+    const result = await deliverEvent("customer.subscription.deleted", {
+      id: "sub_OLD",
+      customer: "cus_1",
+      metadata: { env: deploymentTag() },
+      status: "canceled",
+      items: { data: [{ id: "si_1", price: { recurring: { interval: "month" } } }] },
+    });
+
+    expect(result.success).toBe(true);
+    expect(db.voidPendingPlanChangeSettlementsForUser).not.toHaveBeenCalled();
   });
 
   it("an invoice with NO settlement recorded settles nothing and changes nothing (the control)", async () => {
