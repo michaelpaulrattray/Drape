@@ -10,7 +10,7 @@
  * The status column exists so a row that will never apply (a final payment
  * failure) says so instead of reading as queued work forever.
  */
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { planChangeSettlements, type PlanChangeSettlement } from "../../drizzle/schema";
 import { getDb } from "./connection";
 import { createModuleLogger } from "../logging/logger";
@@ -92,21 +92,42 @@ export async function resolvePlanChangeSettlement(
  * pending with no invoice event ever coming. The product holds one
  * subscription per user, so every pending row of theirs belongs to the dead
  * one. Voiding refuses movement, which is the safe direction on both
- * directions of the move. Returns how many rows moved.
+ * directions of the move.
+ *
+ * Returns the `stripeInvoiceId` of every row it voided, not a count (#765):
+ * the caller closes the INVOICE side of each one too — founder ruling
+ * 2026-09-10, option A, *"close the invoice too, the same as the
+ * payment-failure road"* — and a count gave it nothing to void WITH. The
+ * rows are read first and the update is keyed on exactly those ids, so the
+ * list returned is the list moved: a row recorded between the read and the
+ * write stays pending rather than being voided with no invoice to show for
+ * it. MySQL's UPDATE returns no rows, which is why this is two statements.
  */
 export async function voidPendingPlanChangeSettlementsForUser(
   userId: number,
-): Promise<number> {
+): Promise<string[]> {
   const db = await getDb();
-  if (!db) return 0;
-  const result = await db
-    .update(planChangeSettlements)
-    .set({ status: "void", resolvedAt: new Date() })
+  if (!db) return [];
+  const pending = await db
+    .select({ stripeInvoiceId: planChangeSettlements.stripeInvoiceId })
+    .from(planChangeSettlements)
     .where(
       and(
         eq(planChangeSettlements.userId, userId),
         eq(planChangeSettlements.status, "pending"),
       ),
     );
-  return (result as any)[0]?.affectedRows ?? (result as any).affectedRows ?? 0;
+  const invoiceIds = pending.map((row) => row.stripeInvoiceId);
+  if (invoiceIds.length === 0) return [];
+  await db
+    .update(planChangeSettlements)
+    .set({ status: "void", resolvedAt: new Date() })
+    .where(
+      and(
+        eq(planChangeSettlements.userId, userId),
+        eq(planChangeSettlements.status, "pending"),
+        inArray(planChangeSettlements.stripeInvoiceId, invoiceIds),
+      ),
+    );
+  return invoiceIds;
 }

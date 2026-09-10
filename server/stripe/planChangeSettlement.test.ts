@@ -58,7 +58,7 @@ const db = vi.hoisted(() => ({
   unsuspendUser: vi.fn().mockResolvedValue({ success: true }),
   creditReferrerOnPaidAction: vi.fn().mockResolvedValue(false),
   getCreditTransactionByRef: vi.fn().mockResolvedValue(null),
-  voidPendingPlanChangeSettlementsForUser: vi.fn().mockResolvedValue(0),
+  voidPendingPlanChangeSettlementsForUser: vi.fn().mockResolvedValue([]),
   getDb: vi.fn().mockResolvedValue(null),
   withTransaction: vi.fn(),
 }));
@@ -141,6 +141,7 @@ beforeEach(() => {
   db.deductCredits.mockResolvedValue({ success: true, newBalance: 0 });
   db.getUserCredits.mockResolvedValue({ balance: 100_000 });
   db.refreshMonthlyCredits.mockResolvedValue({ success: true, newBalance: 1 });
+  db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue([]);
   pricesCreate.mockResolvedValue({ id: "price_minted" });
   subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_change" });
   armStripeSubscription();
@@ -654,7 +655,9 @@ describe("the webhook settles what changePlan recorded", () => {
   });
 
   it("a subscription DYING voids its user's pending settlements — the voluntary-cancel road (review finding 3)", async () => {
-    db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(1);
+    db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_change"]);
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+    invoicesVoid.mockResolvedValue({ id: "in_change", status: "void" });
     /* The dying subscription IS the one on record — the live-cancel case. */
     db.getUserByStripeCustomerId.mockResolvedValue({
       id: 7,
@@ -678,6 +681,93 @@ describe("the webhook settles what changePlan recorded", () => {
     expect(db.deductCredits).not.toHaveBeenCalled();
   });
 
+  /*
+    #765 — THE INVOICE SIDE OF THAT VOID, on the voluntary-cancel road. Founder
+    ruling 2026-09-10, option A: "close the invoice too, the same as the
+    payment-failure road". Until this arm the settlement row was voided and
+    the invoice it hung on stayed `open` — payable through Stripe's hosted
+    page for a plan the customer no longer had, against credits the void row
+    would refuse. Every id the db helper hands back is voided, which is why
+    the helper returns ids and not a count.
+  */
+  it("a subscription DYING also VOIDS every pending settlement's INVOICE — nobody can pay for a plan they cancelled (#765)", async () => {
+    db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_change", "in_switch"]);
+    db.getUserByStripeCustomerId.mockResolvedValue({
+      id: 7,
+      name: "seven",
+      email: "u@example.com",
+      credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+    });
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+    invoicesVoid.mockResolvedValue({ status: "void" });
+
+    const result = await deliverEvent("customer.subscription.deleted", {
+      id: "sub_1",
+      customer: "cus_1",
+      metadata: { env: deploymentTag() },
+      status: "canceled",
+      items: { data: [{ id: "si_1", price: { recurring: { interval: "month" } } }] },
+    });
+
+    expect(result.success).toBe(true);
+    expect(invoicesVoid).toHaveBeenCalledTimes(2);
+    expect(invoicesVoid).toHaveBeenCalledWith("in_change");
+    expect(invoicesVoid).toHaveBeenCalledWith("in_switch");
+    /* The downgrade still lands — the void is beside it, not instead of it. */
+    expect(db.updateUserSubscription).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ planTier: "free", stripeSubscriptionId: null }),
+    );
+  });
+
+  it("a subscription DYING with NOTHING pending touches no invoice (the control)", async () => {
+    db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue([]);
+    db.getUserByStripeCustomerId.mockResolvedValue({
+      id: 7,
+      name: "seven",
+      email: "u@example.com",
+      credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+    });
+
+    const result = await deliverEvent("customer.subscription.deleted", {
+      id: "sub_1",
+      customer: "cus_1",
+      metadata: { env: deploymentTag() },
+      status: "canceled",
+      items: { data: [{ id: "si_1", price: { recurring: { interval: "month" } } }] },
+    });
+
+    expect(result.success).toBe(true);
+    expect(invoicesRetrieve).not.toHaveBeenCalled();
+    expect(invoicesVoid).not.toHaveBeenCalled();
+  });
+
+  it("a void that Stripe refuses on the cancel road does not fail the event — the downgrade still lands", async () => {
+    db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_change"]);
+    db.getUserByStripeCustomerId.mockResolvedValue({
+      id: 7,
+      name: "seven",
+      email: "u@example.com",
+      credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+    });
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+    invoicesVoid.mockRejectedValue(new Error("stripe said no"));
+
+    const result = await deliverEvent("customer.subscription.deleted", {
+      id: "sub_1",
+      customer: "cus_1",
+      metadata: { env: deploymentTag() },
+      status: "canceled",
+      items: { data: [{ id: "si_1", price: { recurring: { interval: "month" } } }] },
+    });
+
+    expect(result.success).toBe(true);
+    expect(db.updateUserSubscription).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ planTier: "free" }),
+    );
+  });
+
   it("a STALE redelivered deleted event (different subscription on record) does NOT void — a void is irreversible (round-2 finding 1)", async () => {
     /* The user cancelled sub_OLD, resubscribed as sub_NEW, and upgraded;
        sub_OLD's deleted event redelivers days later. Voiding here would
@@ -699,6 +789,7 @@ describe("the webhook settles what changePlan recorded", () => {
 
     expect(result.success).toBe(true);
     expect(db.voidPendingPlanChangeSettlementsForUser).not.toHaveBeenCalled();
+    expect(invoicesVoid).not.toHaveBeenCalled();
   });
 
   it("an invoice with NO settlement recorded settles nothing and changes nothing (the control)", async () => {

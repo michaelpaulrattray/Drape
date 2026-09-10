@@ -289,11 +289,25 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
   // voluntary-cancel road this exists for may clear the stored id first.
   const storedSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
   if (!storedSubscriptionId || storedSubscriptionId === subscription.id) {
-    const voided = await voidPendingPlanChangeSettlementsForUser(userId);
-    if (voided > 0) {
+    const voidedInvoiceIds = await voidPendingPlanChangeSettlementsForUser(userId);
+    if (voidedInvoiceIds.length > 0) {
       log.info(
-        `[Webhook] Voided ${voided} pending plan-change settlement(s) for user ${userId} — the subscription died before the change's invoice settled`,
+        `[Webhook] Voided ${voidedInvoiceIds.length} pending plan-change settlement(s) for user ${userId} — the subscription died before the change's invoice settled`,
       );
+      // AND THE INVOICES THEY HANG ON (#765, founder ruling 2026-09-10,
+      // option A: "close the invoice too, the same as the payment-failure
+      // road"). The void row closes the CREDIT side; the invoice stayed
+      // `open` and payable through Stripe's hosted page indefinitely, so a
+      // customer who cancelled could still pay for a plan they no longer
+      // have, against credits the void row will refuse. Every one of these
+      // invoices is for credits that were never granted, so nothing was
+      // delivered for the money — which is why the fair answer and the
+      // consistent one are the same one. `voidInvoice` reads the status
+      // first and treats an already-closed invoice as done, so a redelivered
+      // event costs nothing; a `paid` one is its own warn.
+      for (const invoiceId of voidedInvoiceIds) {
+        await voidInvoice(invoiceId);
+      }
     }
   } else {
     log.info(
