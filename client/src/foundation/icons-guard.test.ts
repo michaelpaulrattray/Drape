@@ -131,7 +131,11 @@ describe("the retired glyphs are gone from the rail, not merely unused", () => {
       "the tile stopped importing from Lucide in a shape this arm reads",
     ).toBeGreaterThan(0);
     expect(named).not.toContain("Sparkles");
-    expect(TILE).toContain("P.follow");
+    /* `code()` and not the raw source: the suite's own rule at the top of this
+       file is that a rule QUOTED in a docblock must never satisfy its own arm.
+       Without it, deleting the Icon from the button while leaving a comment
+       that mentions `P.follow` keeps this half green (PR #754 review). */
+    expect(code(TILE)).toContain("P.follow");
   });
 });
 
