@@ -760,9 +760,18 @@ export function buildDigest(inputs: DigestInputs): string {
   out.push("");
   if (isUnreadable(inputs.nextUp)) {
     out.push(`NEXT UP: UNREADABLE — ${inputs.nextUp.unreadable}`);
+    /* ⚠ IT POINTS AT THE WIDE READ, NOT THE NARROW ONE (#774, PR #775 review
+       round 2, observation 2). This line used to say `--label founder-ordered`
+       — the very read whose empty answer this collector now rules unbelievable.
+       A shift told the queue is unreadable would have run it during the same
+       blip, got `[]`, and believed it: the original harm, with a person walking
+       the retired road on the digest's own advice. */
     out.push(
-      "⚠ Read it yourself before you decide anything: `gh issue list --label founder-ordered --state open`.",
+      "⚠ Read it yourself before you decide anything, and read it WIDE:",
     );
+    out.push("  `gh issue list --state open --limit 200 --json number,title,labels`");
+    out.push("  An empty answer to the narrow `--label founder-ordered` query proves nothing — that is what");
+    out.push("  this refusal is about. A band is empty only when the queue it sits in answered too.");
     out.push("An unreadable queue is NOT an empty one, and it does not open the one-quiet-shift road (#504).");
   } else if (inputs.nextUp.length === 0) {
     /* Since #774 this line is only ever reached when the collector's own

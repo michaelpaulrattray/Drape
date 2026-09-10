@@ -41,9 +41,11 @@ import {
   ORDERED_BAND_RULE,
   sortOrderedBand,
 } from "./orderedBand.mts";
-import { emptyOrderedBandVerdictOnLabels } from "./nextUpItems.mts";
+import { OPEN_QUEUE_LIMIT, emptyOrderedBandVerdictOnLabels } from "./nextUpItems.mts";
 /**
- * How many open cards one band may hold before this reading is INCOMPLETE.
+ * How many open cards the queue read may hold before this reading is
+ * INCOMPLETE. ⚠ It counted ONE BAND until #774 widened the fetch; it counts the
+ * whole open population now, which is what is actually capped.
  *
  * ⚠ **A silent cap is this view's own defect class wearing different clothes**
  * (gate review of PR #716, finding 1). The fetch asked for 200 rows and never
@@ -56,8 +58,19 @@ import { emptyOrderedBandVerdictOnLabels } from "./nextUpItems.mts";
  * `refuseIfTruncated` does, and for the same stated reason: a short list that
  * looks complete is worse than no list. The decision lives here so it can be
  * driven without a subprocess.
+ *
+ * ⚠ **DERIVED, NOT TYPED AGAIN — and the mirror is NEW TO #774** (PR #775
+ * review round 2, observation 1). The two constants used to cap DIFFERENT
+ * populations: this one a single label's band, `OPEN_QUEUE_LIMIT` the whole
+ * open queue. Widening the read here made them one measurement living in two
+ * files, which is exactly the second-list drift working law 4 is about — and
+ * the consequence is not abstract. Were they to drift, one view would print
+ * bands as facts at a row count the other calls unreadable: **two
+ * shift-steering views disagreeing about whether the queue can be read at
+ * all.** The name stays, because this view's refusal message and its arms are
+ * written around it; only the number stops being typed twice.
  */
-export const BAND_CEILING = 200;
+export const BAND_CEILING = OPEN_QUEUE_LIMIT;
 
 /** Throws when a band came back AT its ceiling, i.e. possibly cut short. */
 export function refuseIfTruncated(what: string, rowsRead: number): void {
