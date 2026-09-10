@@ -152,8 +152,8 @@ export function useModeratorFlagCounts(): ModeratorFlagCounts {
     SET HERE** — see the note below, which is why this hook was restricted to
     observer-scoped options in the first place. `FlaggedDiscrepanciesCard`
     observes `getFlaggedUsers` at this same key and follows the same switch and
-    the same constant (`ModeratorDashboard.tsx:407`), so its own timer is
-    untouched. The only consequence of the pair is that the two timers can land
+    the same constant (`ModeratorDashboard.tsx`, via the `autoRefreshInterval`
+    prop it hands the card), so its own timer is untouched. The only consequence of the pair is that the two timers can land
     apart inside one 30s window, and the query answers twice in that window
     instead of once — the same consequence #457 accepted on Overview.
   */
