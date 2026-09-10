@@ -1,7 +1,7 @@
 {
-  "edition": 333,
-  "updatedAt": "2026-09-10T16:10:00.000Z",
-  "shift": "Foreman - two money-and-machinery fixes, and a fault that could have quietly emptied your NEXT UP list. NOTHING IS ON YOUR DESK and NEXT UP is still empty. FIRST, THE INVOICE ONE, and it is small but it is about money. When a customer's payment finally fails, we cancel their plan and we close their invoice so nobody can pay it afterwards for a plan that no longer exists. Before closing it we check what state the invoice is in - and every state we cannot close was written into the log with the same sentence: 'cannot take money, nothing to do'. That is true of a draft invoice and a cancelled one. For a PAID invoice it is the exact opposite: the money has already been taken, for a plan we are cancelling in the same breath, against credits that will never move. If that ever happened, the only record would have been a line saying nothing needed doing. It now says what it means and shouts rather than whispers. Nobody has been affected - there are no live subscriptions yet - which is precisely why it was worth fixing today rather than the first time it matters. AND THE REVIEWER'S OWN CHECK TURNED UP A BIGGER COUSIN, WHICH I HAVE WRITTEN DOWN RATHER THAN PATCHED. When a support person issues a refund, we tell ourselves it went through no matter what Stripe actually answered - so a refund Stripe reports as FAILED would still take the customer's credits away and file a record saying they were paid back. Money that never left our account. It is on the list as its own job because it needs a decision from you, not a log change: what should happen to those credits when a refund does not go through. SECOND, AND THIS ONE IS ABOUT YOUR OWN PAGE. The NEXT UP list you read on this page is rebuilt every shift by asking GitHub a single question: which cards has he ordered? If GitHub ever answers that question with nothing - not an error, just an empty answer, which we have watched happen once already - the page would have written NOTHING QUEUED with complete confidence, while your ordered cards sat there untouched. Every other view a shift reads asks the same question, so nothing would have contradicted it. An empty answer is now only believed when a second reading confirms it, and that reading is FREE: the same shift already reads the whole queue for the section below yours. If the two disagree, your list is left exactly as it was and the reason is printed. THE SAME FAULT HAD THREE MORE HOMES AND I WENT LOOKING FOR ALL OF THEM. One was the switch that decides whether the nights stop for the night - if that got an empty answer it could have put the team to sleep announcing there was nothing to do. Fixed, with nineteen checks behind it. One turned out to be harmless on inspection. The last one is written down for the next shift. Three of the four are closed tonight.",
+  "edition": 334,
+  "updatedAt": "2026-09-10T17:55:00.000Z",
+  "shift": "Foreman - the list on this page that tells a shift what you asked for could have quietly emptied itself, and so could the one that tells it what matters most. NOTHING NEW IS WAITING ON YOU FROM TONIGHT'S BUILD, but TWO MONEY QUESTIONS have moved onto your desk below, because neither is a shift's to answer. FIRST, THE FAULT. Every shift starts by reading a short briefing that opens with your NEXT UP list - the cards you personally ordered. It built that list by asking GitHub one narrow question: which open cards carry your label? If GitHub ever answered that with nothing - not an error, just an empty answer, which we have watched happen once already on this very repository - the briefing printed 'NEXT UP: EMPTY' with complete confidence, and the shift would have gone off and done background work for a whole session while your ordered cards sat there. Nothing would have contradicted it, because every other view asks the same narrow question. It now reads the WHOLE open queue in the same single request and picks your cards out of the answer. That costs nothing extra and it brings its own witness: an empty list is believed only when the queue it came from answered too. Tonight, live, it reads 'no ordered cards, and the open queue was read to confirm it' - 58 cards seen. SECOND, AND THIS IS THE PART I DID NOT FIND MYSELF. The reviewer that checks every change read mine and pointed out I had missed one - and it was the sharper of the two. There is a second list a shift reads to decide what matters most right now, and it had exactly the same fault: on an empty answer it printed 'both lists are empty, go find a patrol' and would have sent the shift off to routine maintenance while your ordered work sat untouched. That is the fifth home of one fault, and I fixed it in the same change. Pleasingly, the fix makes it FASTER - it used to ask GitHub two questions and now asks one. THE TWO MONEY QUESTIONS ON YOUR DESK. Neither is urgent and neither can bite today, because there are no live subscriptions yet - which is exactly why they are worth settling now. One is about a refund that Stripe says did NOT go through: today we would take the customer's credits anyway and file a record saying they were paid back. The other is about a customer who cancels while still owing us for a plan change: their invoice stays payable afterwards. Both are below, each with what I would do.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -273,6 +273,60 @@
     }
   },
   "needsYou": [
+    {
+      "id": "refund-failed-771",
+      "issueNumber": 771,
+      "state": "open",
+      "filedAt": "2026-09-10T17:55:00Z",
+      "title": "A refund that Stripe says FAILED still takes the customer's credits - what should happen instead?",
+      "productImpact": "A support person approves a refund on a change request. We ask Stripe for it, Stripe answers - and whatever that answer says, we treat it as done: we take the credits off the customer, mark the request approved, and file a record naming the refund. So on a refund Stripe reports as failed, the customer loses the credits, our own record says they were paid back, and no money left our account. Every screen a support person can reach agrees with the wrong answer. Nobody has been affected - there are no live subscriptions - so this is about what we do the first time a refund does not go through.",
+      "workedExample": "Someone downgrades, we owe them 40 dollars back. Stripe accepts the request and reports it as failed - a closed card, a bank rejection. Today: their credits come off, the request goes green, and the only trace is a line in our own log with the word 'failed' sitting inside a sentence that says 'issued'. There is a second half to this: most refunds that fail do so DAYS LATER, and we do not listen for that message from Stripe at all, so even the tidiest version of the first fix would not catch the common case.",
+      "options": [
+        {
+          "key": "A",
+          "label": "A - refuse before touching their credits, and leave it for a human",
+          "consequence": "Nothing moves until a person looks. The customer keeps their credits until the money is genuinely back. The cost is that a support person has to come back to it, and a refund Stripe calls 'pending' - which is normal and usually fine, a bank refund can take days - must not be treated as a failure or you will stall ordinary work."
+        },
+        {
+          "key": "B",
+          "label": "B - do it, but listen for Stripe telling us later that it failed, and put the credits back",
+          "consequence": "Support is not slowed down and the common case is covered, because that is the road a real failure actually takes. It is the larger build: we do not listen for that message at all today. It also means credits can come and go from a customer's balance without them doing anything, so they would need telling."
+        },
+        {
+          "key": "C",
+          "label": "C - both: refuse the obvious failure now, and add the later-failure listener too",
+          "consequence": "The complete answer and the most work. Given there are no live subscriptions, there is no rush - it just needs to be done before there are."
+        }
+      ],
+      "recommendation": "C, built in that order - A first because it is small and closes the loud case, then B, which is the one that will actually happen in real life. There is a third, smaller question riding along that you can settle in the same breath: when something odd happens with money, WHERE should it show up? Right now it goes to a log nobody is subscribed to. Our own history says that is not good enough - when the login-attack alarm had the same problem you had it pointed at the admin and moderator screens instead. I would do the same here."
+    },
+    {
+      "id": "cancel-owed-invoice-765",
+      "issueNumber": 765,
+      "state": "open",
+      "filedAt": "2026-09-10T17:55:00Z",
+      "title": "Someone cancels while still owing for a plan change - should that invoice stay payable?",
+      "productImpact": "When a customer's payment finally fails we now close their unpaid plan-change invoice, so nobody can pay for a plan that no longer exists. That case was unambiguous: Stripe had given up, the invoice was never going to be paid. This is the road next to it - the customer CHOOSES to cancel while a plan-change invoice is still sitting unpaid. We correctly cancel the credits that were waiting on it, but the invoice itself stays open and payable through Stripe's own page, indefinitely. If they paid it, money would come in for a plan they no longer have, against credits we already cancelled.",
+      "workedExample": "They upgrade mid-month, we raise a 30 dollar invoice for the difference, and the credits wait for it to be paid. Before paying, they cancel outright. Today: the credits are correctly cancelled, and that 30 dollar invoice is still sitting in their Stripe billing page, payable next month if they click it. The two sides of the ledger disagree - which is the exact fault we just closed on the other road.",
+      "options": [
+        {
+          "key": "A",
+          "label": "A - close the invoice too, the same as the payment-failure road",
+          "consequence": "Consistent, and nobody can pay for something they will not get. The argument against is that this is money they genuinely owed for time they had on the higher plan, and cancelling is not the same as us giving up on collecting."
+        },
+        {
+          "key": "B",
+          "label": "B - leave it payable, and let them settle what they owe",
+          "consequence": "Honest about the debt, but it leaves the ledger contradicting itself: they can pay and get nothing, because the credits are already cancelled. If you want this, it needs a second decision about what those credits do."
+        },
+        {
+          "key": "C",
+          "label": "C - close it only when nothing was actually delivered for it",
+          "consequence": "The fairest answer and the fiddliest. It means deciding, per invoice, whether the customer got anything for the money - which is a rule nobody has written down yet."
+        }
+      ],
+      "recommendation": "A. Every one of these invoices is for credits that were never granted, so there is nothing the customer received to be charged for - which makes C's careful distinction collapse into A in practice. It is also a small change once you have said so, and it matches what we already do one road over."
+    },
     {
       "id": "follow-glyph-557",
       "issueNumber": 557,
@@ -4544,6 +4598,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "next-up-blip-774",
+      "title": "Your NEXT UP list can no longer empty itself on a hiccup - and neither can the shift's priority list",
+      "status": "merged",
+      "prNumber": 775,
+      "note": "Every shift opens by reading your NEXT UP list, and it was built by asking GitHub one narrow question. An empty answer to a narrow question looks exactly like a broken one, so a hiccup would have printed 'NEXT UP: EMPTY' and sent a shift to background work for a session while your ordered cards sat untouched. It reads the whole open queue now, in the same single request, and picks your band out of it - so an empty list is only believed when the queue it came from answered too. The reviewer then found a FIFTH place with the same fault, which I had missed and had wrongly called the last: the list a shift reads to decide what matters most, which on an empty answer said 'both lists empty, go find a patrol'. Fixed in the same change, and it now asks GitHub one question where it used to ask two. Proven by sabotage three separate ways: switching the new check off reddens exactly the arms that guard it and leaves every other test green."
+    },
     {
       "id": "moderator-badge-poll-752",
       "title": "A flag now reaches the moderator's badge while she sits still",
