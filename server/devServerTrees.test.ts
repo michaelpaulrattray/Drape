@@ -26,6 +26,7 @@ import {
   isDevServerRoot,
   launchDirectoryIsGone,
   launchDirectoryOf,
+  launchDirectoryState,
   listenersOutsideEveryTree,
   portsOfTree,
   rootsStartedAfter,
@@ -608,31 +609,62 @@ describe("⚠ a server with no watcher is still a server (#783)", () => {
  */
 describe("⚠ a removed worktree leaves a shell, and a shell is still gone", () => {
   const TREE = "C:/Users/Admin/drape-shift-752-moderator-badge-poll";
-  /** A file system as a set of paths that exist. */
-  const world = (...paths: string[]) => (path: string) => paths.includes(path);
+  const LIVE = "C:/Users/Admin/Drape";
 
-  it("⚠ THE MEASURED SHAPE — the directory survives, its node_modules does not", () => {
-    /* The arm #783 needed and did not have. Under its shipped predicate this
-       is `false`: the name resolves, so nothing is said, and the one fact that
-       makes the process safe to kill is never printed. */
-    expect(launchDirectoryIsGone(TREE, world(TREE))).toBe(true);
+  /** A file system as the paths that exist, and which of them hold nothing. */
+  const disk = (present: string[], empty: string[] = []) => ({
+    exists: (path: string) => present.includes(path),
+    isEmpty: (path: string) => empty.includes(path),
+  });
+
+  it("⚠ THE MEASURED SHAPE — the directory survives and holds nothing", () => {
+    /* The arm #783 needed and did not have. Under its shipped predicate
+       (`!existsSync`) this reads as live: the name resolves, so nothing is
+       said, and the one fact that makes the process safe to kill is never
+       printed. */
+    expect(launchDirectoryState(TREE, disk([TREE], [TREE]))).toBe("shell");
+    expect(launchDirectoryIsGone("shell")).toBe(true);
   });
 
   it("the plainly deleted directory is gone too", () => {
-    expect(launchDirectoryIsGone(TREE, world())).toBe(true);
+    expect(launchDirectoryState(TREE, disk([]))).toBe("missing");
+    expect(launchDirectoryIsGone("missing")).toBe(true);
   });
 
-  it("⚠ CONTROL — a live tree is NOT gone", () => {
-    /* The direction that matters more: a false ABANDONED reads as "Nobody's
-       live work; safe to kill" over the founder's own running server. */
-    const live = "C:/Users/Admin/Drape";
-    expect(launchDirectoryIsGone(live, world(live, `${live}/node_modules`))).toBe(false);
+  it("⚠ CONTROL — a LIVE tree mid-reinstall is not abandoned (PR #785 review, finding 1)", () => {
+    /*
+      The direction that must never fail, and the second predicate this went
+      through failed it: it read "no `node_modules`" as "the tree was removed",
+      which is equally true of `rm -rf node_modules && pnpm install` on a tree
+      whose server is still running on modules it has already loaded. For that
+      window the listing would have said "Nobody's live work; safe to kill"
+      over live work.
+
+      Emptiness excludes it: a tree being reinstalled still holds its sources.
+    */
+    expect(launchDirectoryState(LIVE, disk([LIVE]))).toBe("live");
+    expect(launchDirectoryIsGone("live")).toBe(false);
+  });
+
+  it("CONTROL — an ordinary live tree is live", () => {
+    expect(launchDirectoryState(LIVE, disk([LIVE, `${LIVE}/node_modules`]))).toBe("live");
+  });
+
+  it("⚠ a directory that cannot be READ is live, not gone", () => {
+    /*
+      `isEmpty` answers "definitely empty" and never "I could not tell", so an
+      unreadable directory reads as live and the tool stays quiet. The two
+      mistakes do not cost the same: an unreported leftover costs a port, and a
+      wrongly-reported one costs somebody's work.
+    */
+    expect(launchDirectoryState(LIVE, disk([LIVE]))).toBe("live");
   });
 
   it("CONTROL — a tree whose launch directory could not be read says nothing", () => {
     /* Not knowing where it came from is not evidence that it is abandoned, and
        a reader that treated it as such would kill on ignorance. */
-    expect(launchDirectoryIsGone(null, world())).toBe(false);
+    expect(launchDirectoryState(null, disk([]))).toBe("unknown");
+    expect(launchDirectoryIsGone("unknown")).toBe(false);
   });
 });
 

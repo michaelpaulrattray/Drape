@@ -21,11 +21,12 @@
  * shift began. Say it; do not guess it.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 
 import {
   devServerTrees,
   launchDirectoryIsGone,
+  launchDirectoryState,
   listenersOutsideEveryTree,
   portsOfTree,
   rootsStartedAfter,
@@ -131,11 +132,29 @@ const ports = portsByPid();
  * ⚠ WHERE THE ONE VERDICT A SHIFT MAY ACT ON ALONE IS DECIDED (#783).
  *
  * The module is pure and reads a directory OUT of a command line; only here is
- * there a file system to ask whether it still exists. A dev server launched
- * from a worktree that has since been deleted cannot be anybody's live work —
- * which is the fact four shifts did not have when each of them decided the
- * process on :3001 was "not mine, not killed" and left it running.
+ * there a file system to ask about it. A dev server launched from a worktree
+ * that has since been removed cannot be anybody's live work — which is the fact
+ * four shifts did not have when each decided the process on :3001 was "not
+ * mine, not killed" and left it running.
+ *
+ * The disk, as that decision asks about it.
+ *
+ * ⚠ `isEmpty` says "definitely empty" and NOTHING ELSE — a directory this
+ * account cannot read is not evidence, so it answers false and the tree reads
+ * as live. The verdict it feeds says "safe to kill"; being silent about a
+ * leftover costs a port, and being wrong about a live tree costs work.
  */
+const DISK = {
+  exists: (path: string) => existsSync(path),
+  isEmpty: (path: string) => {
+    try {
+      return readdirSync(path).length === 0;
+    } catch {
+      return false;
+    }
+  },
+};
+
 const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number[]> = ports) => {
   /* ⚠ `portsOfTree`, never `childPids` — PR #784 review, finding 1. An
      unwatched tree's ROOT can be the port holder, and the backstop below cannot
@@ -143,9 +162,9 @@ const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number
   const listening = portsOfTree(tree, held).map((port) => `:${port}`);
   /* ⚠ NOT `!existsSync(launchedFrom)` — that is the shape #783 shipped, and it
      could not fire for #783's OWN specimen: a removed shift worktree leaves an
-     empty directory shell on this machine. See `launchDirectoryIsGone`. */
-  const abandoned = launchDirectoryIsGone(tree.launchedFrom, existsSync);
-  const shell = abandoned && tree.launchedFrom !== null && existsSync(tree.launchedFrom);
+     empty directory shell on this machine. See `launchDirectoryState`, which
+     also words the line, so this file holds no second copy of the decision. */
+  const state = launchDirectoryState(tree.launchedFrom, DISK);
   return `  root ${String(tree.rootPid).padStart(6)}  started ${tree.startedAt.toLocaleString()}`
     + `  children [${tree.childPids.join(", ") || "none"}]`
     /* "between restarts" is a promise only a watcher can keep. An unwatched
@@ -154,13 +173,13 @@ const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number
       ? listening.join(" ")
       : tree.watched ? "(no port — between restarts)" : "(no port — nothing is being served)"}`
     + (tree.watched ? "" : "\n         ⚠ NO WATCHER — started off the entrypoint, so nothing restarts it")
-    + (abandoned
-      ? `\n         ⚠ ABANDONED — launched from ${tree.launchedFrom}, which ${shell
-        ? "is an empty shell: its node_modules is gone, so that tree was removed"
+    + (launchDirectoryIsGone(state)
+      ? `\n         ⚠ ABANDONED — launched from ${tree.launchedFrom}, which ${state === "shell"
+        ? "is an empty directory: that tree was removed and only its name is left"
         : "no longer exists"}.`
         + " Nobody's live work; safe to kill."
       : "")
-    + (tree.launchedFrom === null
+    + (state === "unknown"
       ? "\n         (no launch directory in its command lines — whose it is cannot be read here)"
       : "");
 };

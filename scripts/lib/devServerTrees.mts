@@ -392,19 +392,51 @@ export function portsOfTree(
  * night, inside the repair for it: a reader failing toward the reassuring answer.
  *
  * The honest question is not whether the name resolves but whether the tree the
- * process ran from is still a tree. It loaded `tsx` from `<dir>/node_modules`,
- * so that directory's absence is the evidence, and it is the process's own
- * evidence rather than a rule invented here. `exists` is injected because this
- * module touches no file system — the caller passes `existsSync`, an arm passes
- * a map, and the decision stays where an arm can hold it.
+ * process ran from is still a tree. **The measured fact about the specimen is
+ * that it is EMPTY**, and that is what this asks.
+ *
+ * ⚠ **It asked a weaker question for one round and PR #785's review caught it:
+ * "no `node_modules`" is ALSO true of a LIVE tree mid-`pnpm install`** — a
+ * routine dependency repair, which a running server survives on modules it has
+ * already loaded. For that window the listing would have said *"Nobody's live
+ * work; safe to kill"* over somebody's live work, which is the one direction
+ * this verdict must never fail in. Emptiness excludes it: a tree being
+ * reinstalled still holds all its sources.
+ *
+ * ⚠ **`isEmpty` answers "definitely empty", never "I could not tell."** A
+ * directory this account cannot read is not evidence of anything, so the caller
+ * returns `false` for it and the tree reads as live. Silence is the safe
+ * failure here, and it is the opposite of #783's — because the cost of the two
+ * mistakes is not symmetrical: an unreported leftover costs a port, and a
+ * wrongly-reported one costs work.
+ *
+ * The reader is injected because this module touches no file system — the
+ * caller passes the disk, an arm passes a fixture, and the decision stays where
+ * an arm can hold it. Three states rather than a boolean so the caller can WORD
+ * its line without re-deriving the anatomy of the decision (PR #785 review,
+ * finding 2 — working law 4 in miniature).
  */
-export function launchDirectoryIsGone(
+export type LaunchDirectoryState = "unknown" | "live" | "missing" | "shell";
+
+/** A file system, as this decision needs to ask about one. */
+export type DirectoryReader = {
+  exists(path: string): boolean;
+  /** True only when the directory is KNOWN to hold nothing. */
+  isEmpty(path: string): boolean;
+};
+
+export function launchDirectoryState(
   launchedFrom: string | null,
-  exists: (path: string) => boolean,
-): boolean {
-  if (launchedFrom === null) return false;
-  if (!exists(launchedFrom)) return true;
-  return !exists(`${launchedFrom}/node_modules`);
+  disk: DirectoryReader,
+): LaunchDirectoryState {
+  if (launchedFrom === null) return "unknown";
+  if (!disk.exists(launchedFrom)) return "missing";
+  return disk.isEmpty(launchedFrom) ? "shell" : "live";
+}
+
+/** The two states that mean nobody's live work. */
+export function launchDirectoryIsGone(state: LaunchDirectoryState): boolean {
+  return state === "missing" || state === "shell";
 }
 
 /**
