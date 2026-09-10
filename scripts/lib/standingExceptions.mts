@@ -41,8 +41,11 @@ import {
   ORDERED_BAND_RULE,
   sortOrderedBand,
 } from "./orderedBand.mts";
+import { OPEN_QUEUE_LIMIT, emptyOrderedBandVerdictOnLabels } from "./nextUpItems.mts";
 /**
- * How many open cards one band may hold before this reading is INCOMPLETE.
+ * How many open cards the queue read may hold before this reading is
+ * INCOMPLETE. ⚠ It counted ONE BAND until #774 widened the fetch; it counts the
+ * whole open population now, which is what is actually capped.
  *
  * ⚠ **A silent cap is this view's own defect class wearing different clothes**
  * (gate review of PR #716, finding 1). The fetch asked for 200 rows and never
@@ -55,17 +58,82 @@ import {
  * `refuseIfTruncated` does, and for the same stated reason: a short list that
  * looks complete is worse than no list. The decision lives here so it can be
  * driven without a subprocess.
+ *
+ * ⚠ **DERIVED, NOT TYPED AGAIN — and the mirror is NEW TO #774** (PR #775
+ * review round 2, observation 1). The two constants used to cap DIFFERENT
+ * populations: this one a single label's band, `OPEN_QUEUE_LIMIT` the whole
+ * open queue. Widening the read here made them one measurement living in two
+ * files, which is exactly the second-list drift working law 4 is about — and
+ * the consequence is not abstract. Were they to drift, one view would print
+ * bands as facts at a row count the other calls unreadable: **two
+ * shift-steering views disagreeing about whether the queue can be read at
+ * all.** The name stays, because this view's refusal message and its arms are
+ * written around it; only the number stops being typed twice.
  */
-export const BAND_CEILING = 200;
+export const BAND_CEILING = OPEN_QUEUE_LIMIT;
 
 /** Throws when a band came back AT its ceiling, i.e. possibly cut short. */
-export function refuseIfTruncated(label: string, rowsRead: number): void {
+export function refuseIfTruncated(what: string, rowsRead: number): void {
   if (rowsRead < BAND_CEILING) return;
   throw new Error(
-    `the \`${label}\` band came back with ${rowsRead} rows, at the ceiling of ${BAND_CEILING}, `
+    `the ${what} came back with ${rowsRead} rows, at the ceiling of ${BAND_CEILING}, `
     + `so this reading may be INCOMPLETE and its count would look like the whole band. `
     + `Raise BAND_CEILING in scripts/lib/standingExceptions.mts.`,
   );
+}
+
+/**
+ * BOTH BANDS, CUT OUT OF ONE WHOLE-QUEUE READ AND CROSS-EXAMINED (#774,
+ * PR #775 review finding 1).
+ *
+ * The view used to take TWO narrow reads — `--label founder-ordered` and
+ * `--label urgent` — and believe whatever each returned. An empty answer to a
+ * narrow question is indistinguishable from a broken one, so a `gh` exiting 0
+ * with `[]` printed *"both bands are empty — Bands 2 and 3 apply"* and sent a
+ * shift to a patrol while his own ordered cards sat in the queue. That is the
+ * exact harm his 2026-08-30 clause was written about, and it is the fifth
+ * instance of the class #725/#730/#772/#774 closed everywhere else.
+ *
+ * ⚠ **The repair REMOVES a `gh` call rather than adding one.** Reading the
+ * whole open queue once and filtering both bands out of the answer is cheaper
+ * than two narrow reads AND carries its own witness: a queue that answered
+ * with rows in it can be asked whether it holds any card carrying the label.
+ * `emptyOrderedBandVerdictOnLabels` is the same judgement the digest and the
+ * desk sweep use — passed a band name, because a second copy differing only in
+ * a string literal is the drift working law 4 names.
+ *
+ * It THROWS on an unbelievable empty, which is what `report`'s existing catch
+ * already turns into a refusal and a non-zero exit. Refusing costs a shift one
+ * re-run; believing costs it a whole session on the wrong work.
+ */
+export function deriveBands(allOpen: readonly Row[]): {
+  ordered: readonly Row[];
+  urgent: readonly Row[];
+} {
+  /* The ceiling now measures the POPULATION, because that is what was capped.
+     `gh` returns the NEWEST rows and an ordered card that has waited longest is
+     what #236 was filed about — so a full window is precisely the read that may
+     have dropped the card this ranking exists to surface. */
+  refuseIfTruncated("open queue", allOpen.length);
+
+  const labelsOf = (row: Row) => (row.labels ?? []).map((label) => label?.name ?? "");
+  const witness = allOpen.map(labelsOf);
+
+  const band = (label: string) => {
+    const rows = allOpen.filter((row) => labelsOf(row).includes(label));
+    if (rows.length === 0) {
+      const verdict = emptyOrderedBandVerdictOnLabels(witness, BAND_CEILING, label);
+      if (!verdict.believable) {
+        throw new Error(
+          `the \`${label}\` band read empty and that could not be believed — ${verdict.why}. `
+          + `An empty band is a real answer only when the queue it was cut from answered too.`,
+        );
+      }
+    }
+    return rows;
+  };
+
+  return { ordered: band("founder-ordered"), urgent: band("urgent") };
 }
 
 export type Row = {
@@ -200,12 +268,14 @@ export function renderBands(input: {
  * needs a subprocess and no arm reads a real queue.
  */
 export function report(input: {
-  readBand: (label: string) => readonly Row[];
+  /** ONE whole-queue read, not one per band (#774, PR #775 review finding 1).
+   *  See `deriveBands` for why the shape changed. */
+  readOpenQueue: () => readonly Row[];
   now: Date;
   log: (line: string) => void;
   error: (line: string) => void;
 }): number {
-  const { readBand, now, log, error } = input;
+  const { readOpenQueue, now, log, error } = input;
   let ordered: readonly Row[];
   let urgent: readonly Row[];
   try {
@@ -218,9 +288,18 @@ export function report(input: {
       MORE on the ordered band than it ever did on the urgent one — an empty
       ordered band tells a shift he has asked for nothing, which is precisely
       the harm his 2026-08-30 clause was written about.
+
+      ⚠ **AND UNTIL #774 THAT REFUSAL COVERED ONLY THE THROWING ROAD.** A `gh`
+      that exits 0 with `[]` is not an exception — it is the production blip
+      (#725: `process` 0 at 15:00:11, 8 forty seconds later), and it sailed
+      through to print *"both bands are empty"* with full confidence. This view
+      was the FIFTH reader of that class and the PR that claimed to close the
+      fourth-and-last is the one that found it (PR #775 review, finding 1).
+      `deriveBands` is the cross-examination.
     */
-    ordered = readBand("founder-ordered");
-    urgent = readBand("urgent");
+    const bands = deriveBands(readOpenQueue());
+    ordered = bands.ordered;
+    urgent = bands.urgent;
   } catch (failure) {
     /* The message goes FIRST and the hint second — the truncation refusal comes
        through here too, and "is `gh` authenticated?" is the wrong thing to read

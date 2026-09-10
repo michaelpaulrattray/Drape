@@ -698,7 +698,16 @@ export type DigestInputs = {
   /**
    * A `gh --limit` that came back FULL. The collector doctrine here refuses an
    * empty answer; a TRUNCATED one is the other half of the same question, and
-   * silently dropping the 61st card is how a queue stops being the queue.
+   * silently dropping a card is how a queue stops being the queue.
+   *
+   * ⚠ **The two fields measure different populations and the difference is not
+   * cosmetic** (#774, PR #775 review finding 2). `closedCards` is the read of
+   * closed cards itself. `nextUp` is **NOT** the band — it is the WHOLE OPEN
+   * QUEUE the band is filtered out of, so a true value means the band may be
+   * short because the read never reached it, not because the band is long.
+   * This clause used to describe a 60-row cap on the band, which is the rule
+   * that was retired; a comment left describing a retired rule re-opens the
+   * mistake it documented.
    */
   readonly truncated?: { readonly nextUp?: boolean; readonly closedCards?: boolean };
   /** Byte sizes of the sources this digest stands in for, for the footer. */
@@ -751,12 +760,26 @@ export function buildDigest(inputs: DigestInputs): string {
   out.push("");
   if (isUnreadable(inputs.nextUp)) {
     out.push(`NEXT UP: UNREADABLE — ${inputs.nextUp.unreadable}`);
+    /* ⚠ IT POINTS AT THE WIDE READ, NOT THE NARROW ONE (#774, PR #775 review
+       round 2, observation 2). This line used to say `--label founder-ordered`
+       — the very read whose empty answer this collector now rules unbelievable.
+       A shift told the queue is unreadable would have run it during the same
+       blip, got `[]`, and believed it: the original harm, with a person walking
+       the retired road on the digest's own advice. */
     out.push(
-      "⚠ Read it yourself before you decide anything: `gh issue list --label founder-ordered --state open`.",
+      "⚠ Read it yourself before you decide anything, and read it WIDE:",
     );
+    out.push("  `gh issue list --state open --limit 200 --json number,title,labels`");
+    out.push("  An empty answer to the narrow `--label founder-ordered` query proves nothing — that is what");
+    out.push("  this refusal is about. A band is empty only when the queue it sits in answered too.");
     out.push("An unreadable queue is NOT an empty one, and it does not open the one-quiet-shift road (#504).");
   } else if (inputs.nextUp.length === 0) {
-    out.push("NEXT UP: EMPTY — no open `founder-ordered` card.");
+    /* Since #774 this line is only ever reached when the collector's own
+       whole-queue witness AGREED the band is empty; a `gh` blip comes back
+       UNREADABLE above and says so. The clause is here because the difference
+       is invisible from the outside — the old line looked exactly like this
+       one and was printed with the same confidence on a blip. */
+    out.push("NEXT UP: EMPTY — no open `founder-ordered` card, and the open queue was read to confirm it.");
   } else {
     out.push(`NEXT UP: ${inputs.nextUp.length} open \`founder-ordered\` card(s), oldest first:`);
     for (const row of [...inputs.nextUp].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
@@ -766,7 +789,17 @@ export function buildDigest(inputs: DigestInputs): string {
       );
     }
     if (inputs.truncated?.nextUp) {
-      out.push("  ⚠ TRUNCATED — the read came back at its limit, so there may be more. Run the query yourself.");
+      /* ⚠ The cap is on the POPULATION, not on the band (#774): the band is
+         filtered out of a whole-open-queue read, and `gh` returns the NEWEST
+         rows while ordered cards skew OLD — so a full window is precisely the
+         case where an ordered card can sit outside it. Saying "there may be
+         more" without saying more of WHAT would read as a long band. */
+      out.push(
+        "  ⚠ TRUNCATED — the whole-queue read this band was filtered from came back at its limit,",
+      );
+      out.push(
+        "    so an older `founder-ordered` card may sit outside the window. Run the query yourself.",
+      );
     }
   }
   out.push("");

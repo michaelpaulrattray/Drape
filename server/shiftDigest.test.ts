@@ -54,6 +54,12 @@ import {
   splitSections,
   type DigestInputs,
 } from "../scripts/lib/shiftDigest.mts";
+import {
+  OPEN_QUEUE_LIMIT,
+  bandFromOpenQueue,
+  emptyOrderedBandVerdict,
+  emptyOrderedBandVerdictOnLabels,
+} from "../scripts/lib/nextUpItems.mts";
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const ROOTS = ["server", "client", "scripts", "docs", "shared", "drizzle"];
@@ -662,5 +668,123 @@ describe("bytes the digest must not waste", () => {
       }),
     );
     expect(digest).not.toContain("TRUNCATED");
+  });
+});
+
+/**
+ * THE COLLECTOR'S JUDGEMENT — the half that was actually wrong (#774).
+ *
+ * Every arm above drives `buildDigest`, the RENDERER, which was never the
+ * defect: handed `[]` it correctly printed EMPTY, because `[]` was all it was
+ * ever told. The bug lived in the collector, which asked `gh` a narrow question
+ * and could not tell an empty answer from a broken one — and a collector that
+ * fetches and judges in one breath can only be tested by standing up a `gh`,
+ * which is why it shipped green through three sibling repairs (#725, #730,
+ * #772). `bandFromOpenQueue` is that judgement, lifted out so these arms exist.
+ */
+describe("bandFromOpenQueue — an empty NEXT UP is cross-examined, never believed", () => {
+  const row = (number: number, labels: string[] = []) => ({
+    number,
+    title: `card ${number}`,
+    labels,
+    createdAt: "2026-09-01T00:00:00Z",
+  });
+
+  it("cuts the band out of a whole-queue read and leaves the rest behind", () => {
+    const verdict = bandFromOpenQueue(
+      [row(1, ["bug"]), row(2, ["founder-ordered"]), row(3, ["seat:retro"])],
+      200,
+    );
+    expect("unreadable" in verdict).toBe(false);
+    if ("unreadable" in verdict) return;
+    expect(verdict.band.map((item) => item.number)).toEqual([2]);
+    expect(verdict.truncated).toBe(false);
+  });
+
+  it("believes an empty band when the queue answered and holds no ordered card", () => {
+    const verdict = bandFromOpenQueue([row(1, ["bug"]), row(2, ["seat:retro"])], 200);
+    expect("unreadable" in verdict).toBe(false);
+    if ("unreadable" in verdict) return;
+    expect(verdict.band).toEqual([]);
+  });
+
+  /* THE ARM THIS CARD EXISTS FOR. A `gh` that exits 0 with `[]` is the blip
+     seen on production (#725: `process` 0 at 15:00:11, 8 forty seconds later).
+     The old road printed "NEXT UP: EMPTY" on exactly this input. */
+  it("REFUSES an empty band when the whole queue came back empty too — the blip", () => {
+    const verdict = bandFromOpenQueue([], 200);
+    expect("unreadable" in verdict).toBe(true);
+    if (!("unreadable" in verdict)) return;
+    expect(verdict.unreadable).toContain("could not be believed");
+    expect(verdict.unreadable).toContain("blip");
+  });
+
+  it("REFUSES an empty band when the witness itself came back at its cap", () => {
+    /* `gh` returns the NEWEST rows and ordered cards skew OLD, so a full
+       window is exactly the read that may never have reached the band. */
+    const full = Array.from({ length: 5 }, (_, index) => row(index + 1, ["bug"]));
+    const verdict = bandFromOpenQueue(full, 5);
+    expect("unreadable" in verdict).toBe(true);
+    if (!("unreadable" in verdict)) return;
+    expect(verdict.unreadable).toContain("5-row limit");
+  });
+
+  it("marks truncation on the POPULATION, not on the band", () => {
+    /* One ordered card in a read that filled its window: the band is short and
+       complete-looking, and the marker is the only thing that says an older
+       ordered card may sit outside it. */
+    const full = [
+      row(1, ["founder-ordered"]),
+      ...Array.from({ length: 4 }, (_, index) => row(index + 2, ["bug"])),
+    ];
+    const verdict = bandFromOpenQueue(full, 5);
+    expect("unreadable" in verdict).toBe(false);
+    if ("unreadable" in verdict) return;
+    expect(verdict.band).toHaveLength(1);
+    expect(verdict.truncated).toBe(true);
+  });
+
+  it("defaults its cap to the one constant both readers share", () => {
+    /* The sweep and the digest are two files asking one question; the day they
+       hold two numbers, "at its cap" means two things. */
+    expect(OPEN_QUEUE_LIMIT).toBe(200);
+    const atCap = Array.from({ length: OPEN_QUEUE_LIMIT }, (_, index) => row(index + 1, ["bug"]));
+    expect("unreadable" in bandFromOpenQueue(atCap)).toBe(true);
+  });
+});
+
+describe("emptyOrderedBandVerdict — the two shapes are stated, never guessed", () => {
+  /*
+    ⚠ THE POSITIVE CONTROL THAT MATTERS. The raw reader flattens `{ name }`
+    label objects; the label reader takes `string[]`. Neither throws on the
+    other's input — the raw one reads `.name` off a string, gets `undefined`,
+    and counts ZERO ordered cards. So the sharpest refusal of the four would
+    silently never fire and an empty band would read as believable while the
+    band sat in the witness. These arms prove each shape reaches the same
+    verdict through its own door.
+  */
+  const RAW = [{ labels: [{ name: "founder-ordered" }] }, { labels: [{ name: "bug" }] }];
+  const NAMES = [["founder-ordered"], ["bug"]];
+
+  it("catches an ordered card in the witness through the RAW door", () => {
+    const verdict = emptyOrderedBandVerdict(RAW, 200);
+    expect(verdict.believable).toBe(false);
+    expect(verdict.why).toContain("1 open card(s) carrying");
+  });
+
+  it("catches the same card through the LABEL door", () => {
+    const verdict = emptyOrderedBandVerdictOnLabels(NAMES, 200);
+    expect(verdict.believable).toBe(false);
+    expect(verdict.why).toContain("1 open card(s) carrying");
+  });
+
+  it("agrees on a witness that genuinely holds no ordered card", () => {
+    expect(emptyOrderedBandVerdict([{ labels: [{ name: "bug" }] }], 200).believable).toBe(true);
+    expect(emptyOrderedBandVerdictOnLabels([["bug"]], 200).believable).toBe(true);
+  });
+
+  it("refuses a witness that could not be taken at all", () => {
+    expect(emptyOrderedBandVerdict(null, 200).believable).toBe(false);
+    expect(emptyOrderedBandVerdictOnLabels(null, 200).believable).toBe(false);
   });
 });

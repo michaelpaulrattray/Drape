@@ -20,6 +20,7 @@ import { readFileSync } from "node:fs";
 import {
   BAND_CEILING,
   PATROL_POINTER,
+  deriveBands,
   oldestFirst,
   refuseIfTruncated,
   renderBands,
@@ -154,21 +155,21 @@ describe("the fetch -> render seam, DRIVEN — where the interesting bug lives",
   const ordered = card({ number: 330, title: "his ordered card", labels: [{ name: "founder-ordered" }] });
   const urgent = card({ number: 711, title: "the urgent card", labels: [{ name: "urgent" }] });
 
-  const byLabel = (label: string): Row[] => {
-    if (label === "founder-ordered") return [ordered];
-    if (label === "urgent") return [urgent];
-    throw new Error(`unexpected label ${label}`);
-  };
+  /* One whole open queue, from which both bands are cut (#774). Padding rows
+     carrying neither label are what a real queue looks like, and they are what
+     makes an empty band believable - see the witness arms below. */
+  const filler = (n: number) => card({ number: n, title: `card ${n}`, labels: [{ name: "bug" }] });
+  const WHOLE_QUEUE: Row[] = [ordered, urgent, filler(900), filler(901)];
 
-  function drive(readBand: (label: string) => readonly Row[]) {
+  function drive(readOpenQueue: () => readonly Row[]) {
     const out: string[] = [];
     const errs: string[] = [];
-    const code = report({ readBand, now: NOW, log: (l) => out.push(l), error: (l) => errs.push(l) });
+    const code = report({ readOpenQueue, now: NOW, log: (l) => out.push(l), error: (l) => errs.push(l) });
     return { code, out: out.join("\n"), errs: errs.join("\n") };
   }
 
   it("⚠ each band's rows land under THAT band — a transposition is red here", () => {
-    const { code, out } = drive(byLabel);
+    const { code, out } = drive(() => WHOLE_QUEUE);
     expect(code).toBe(0);
     const hisBand = out.indexOf("HIS ORDERED BAND");
     const urgentBand = out.indexOf("THE URGENT BAND");
@@ -177,10 +178,13 @@ describe("the fetch -> render seam, DRIVEN — where the interesting bug lives",
     expect(out.indexOf("#711")).toBeGreaterThan(urgentBand);
   });
 
-  it("asks for both labels, once each", () => {
-    const asked: string[] = [];
-    drive((label) => { asked.push(label); return byLabel(label); });
-    expect(asked).toEqual(["founder-ordered", "urgent"]);
+  it("takes ONE read for both bands, not one per band", () => {
+    /* The old seam asked `gh` twice, once per label, and believed each answer
+       on its own. Widening it is what gives the empty-band witness below
+       something to cross-examine against - and it is one FEWER call. */
+    let reads = 0;
+    drive(() => { reads += 1; return WHOLE_QUEUE; });
+    expect(reads).toBe(1);
   });
 
   it("an unreadable queue REFUSES — exit 1, nothing printed as a ranking", () => {
@@ -196,7 +200,7 @@ describe("the fetch -> render seam, DRIVEN — where the interesting bug lives",
   it("the refusal names the real reason FIRST, and the gh hint second", () => {
     /* The truncation refusal comes through this same channel, and "is gh
        authenticated?" is the wrong first sentence when the answer is a ceiling. */
-    const { errs } = drive(() => { refuseIfTruncated("founder-ordered", BAND_CEILING); return []; });
+    const { errs } = drive(() => { refuseIfTruncated("open queue", BAND_CEILING); return []; });
     expect(errs.indexOf("ceiling")).toBeLessThan(errs.indexOf("authenticated"));
   });
 });
@@ -207,7 +211,7 @@ describe("a band at its ceiling is INCOMPLETE and says so", () => {
      to surface (#236), while the header still prints a count that reads whole. */
   it("refuses at the ceiling, naming the band and the constant", () => {
     expect(() => refuseIfTruncated("founder-ordered", BAND_CEILING)).toThrow(/INCOMPLETE/);
-    expect(() => refuseIfTruncated("founder-ordered", BAND_CEILING)).toThrow(/founder-ordered/);
+    expect(() => refuseIfTruncated("open queue", BAND_CEILING)).toThrow(/open queue/);
     expect(() => refuseIfTruncated("founder-ordered", BAND_CEILING)).toThrow(/BAND_CEILING/);
   });
 
@@ -223,6 +227,103 @@ describe("a band at its ceiling is INCOMPLETE and says so", () => {
        at must be the ceiling it ASKED for, or the refusal never fires. */
     const source = readFileSync(new URL("../scripts/queue-standing-exceptions.mts", import.meta.url), "utf8");
     expect(source).toContain("String(BAND_CEILING)");
-    expect(source).toContain("refuseIfTruncated(label, rows.length)");
+    /* The refusal moved INTO `deriveBands` with the read it measures (#774),
+       so what the script must still prove is that it asks WIDE - a `--label`
+       here would put the narrow read back and the witness would have nothing
+       to look at. */
+    expect(source).toContain("readOpenQueue");
+    expect(source).not.toContain("--label");
+  });
+});
+
+/**
+ * THE FIFTH READER OF THE BLIP CLASS (#774, PR #775 review finding 1).
+ *
+ * The class: a successful `gh` read of NOTHING believed as a fact, on a signal
+ * that steers or stops the team. Four readers were repaired (#725 the queue
+ * counter, #730 the park gate, #772 the desk sweep, #774 the shift digest) and
+ * the PR that closed the fourth declared it the last. It was not: THIS view
+ * refused only when its read THREW, so a `gh` exiting 0 with `[]` printed
+ * "both bands are empty - Bands 2 and 3 apply" with full confidence and sent a
+ * shift to a patrol while his own ordered cards sat in the queue.
+ *
+ * These arms drive `deriveBands` directly, which is the whole reason the seam
+ * was widened: a collector that fetched and judged in one breath could only be
+ * tested by standing up a `gh`.
+ */
+describe("deriveBands - an empty band is cross-examined against the queue it was cut from", () => {
+  const row = (n: number, labels: string[]): Row =>
+    card({ number: n, title: `card ${n}`, labels: labels.map((name) => ({ name })) });
+
+  const REAL_QUEUE: Row[] = [
+    row(1, ["bug"]),
+    row(2, ["seat:retro"]),
+    row(3, ["small-fix"]),
+  ];
+
+  it("cuts both bands out of one read and leaves the rest behind", () => {
+    const { ordered, urgent } = deriveBands([
+      ...REAL_QUEUE,
+      row(330, ["founder-ordered"]),
+      row(711, ["urgent"]),
+    ]);
+    expect(ordered.map((r) => r.number)).toEqual([330]);
+    expect(urgent.map((r) => r.number)).toEqual([711]);
+  });
+
+  it("believes both bands empty when the queue answered and holds neither label", () => {
+    /* The state the view is in most nights, and it must stay cheap and quiet. */
+    const { ordered, urgent } = deriveBands(REAL_QUEUE);
+    expect(ordered).toEqual([]);
+    expect(urgent).toEqual([]);
+  });
+
+  it("counts a card carrying BOTH labels into both bands", () => {
+    /* His 2026-09-09 ruling keeps the bands separate and a card can be in both;
+       cutting from one read must not make membership exclusive. */
+    const { ordered, urgent } = deriveBands([...REAL_QUEUE, row(9, ["founder-ordered", "urgent"])]);
+    expect(ordered.map((r) => r.number)).toEqual([9]);
+    expect(urgent.map((r) => r.number)).toEqual([9]);
+  });
+
+  /* THE ARM THE FINDING EXISTS FOR. */
+  it("REFUSES when the whole queue came back empty - the blip, not an empty band", () => {
+    expect(() => deriveBands([])).toThrow(/could not be believed/);
+    expect(() => deriveBands([])).toThrow(/blip/);
+  });
+
+  it("REFUSES at the ceiling, because gh drops the OLDEST card first", () => {
+    /* An ordered card that has waited longest is exactly what this ranking
+       exists to surface (#236), and it is the first row a full window loses. */
+    const full = Array.from({ length: BAND_CEILING }, (_, i) => row(i + 1, ["bug"]));
+    expect(() => deriveBands(full)).toThrow(/INCOMPLETE/);
+  });
+
+  it("names WHICH band it could not believe", () => {
+    /* A refusal that does not say which band leaves a shift guessing at the
+       one thing it needed - and the two bands mean different things. */
+    let message = "";
+    try {
+      deriveBands([]);
+    } catch (failure) {
+      message = String(failure instanceof Error ? failure.message : failure);
+    }
+    expect(message).toContain("founder-ordered");
+  });
+
+  it("the refusal reaches the operator as exit 1, never as a printed ranking", () => {
+    /* deriveBands throws; report's existing catch is what turns that into a
+       refusal. Without this arm the two halves could disagree silently. */
+    const out: string[] = [];
+    const errs: string[] = [];
+    const code = report({
+      readOpenQueue: () => [],
+      now: NOW,
+      log: (l) => out.push(l),
+      error: (l) => errs.push(l),
+    });
+    expect(code).toBe(1);
+    expect(out.join("")).toBe("");
+    expect(errs.join("")).toContain("REFUSING");
   });
 });

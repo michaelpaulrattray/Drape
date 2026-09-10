@@ -47,6 +47,20 @@ export type NextUpItem = {
 export const ORDERED_BAND_LABEL = "founder-ordered";
 
 /**
+ * THE CAP ON THE WHOLE-QUEUE READ THAT WITNESSES AN EMPTY BAND — and it lives
+ * here because TWO FILES now depend on it meaning the same thing (#774).
+ *
+ * `crew-desk-sweep.mts` declared it for three readings of its own (the read,
+ * the ladder's "a floor, not a list" refusal, and the witness below) with a
+ * comment saying a number typed three times is the drift working law 4 is
+ * about. The digest is now the fourth and fifth reading, in another file — so
+ * the constant moves to the module both import rather than being typed a
+ * second time. `verdict.why` quotes it back, so a cap that drifted would say
+ * one number while the read used another.
+ */
+export const OPEN_QUEUE_LIMIT = 200;
+
+/**
  * IS AN EMPTY NEXT UP BELIEVABLE THIS RUN? (#772, and the third instance of one
  * class.)
  *
@@ -85,7 +99,38 @@ export function emptyOrderedBandVerdict(
   allOpen: readonly { labels?: unknown }[] | null,
   /** The `--limit` the whole-queue read was taken with, so "at its cap" is the
    *  caller's own number rather than a constant that could drift from it. */
-  limit = 200,
+  limit = OPEN_QUEUE_LIMIT,
+): { believable: boolean; why: string } {
+  return emptyOrderedBandVerdictOnLabels(
+    allOpen === null ? null : allOpen.map((row) => labelNames(row.labels)),
+    limit,
+  );
+}
+
+/**
+ * THE SAME JUDGEMENT, OVER LABEL NAMES RATHER THAN RAW `gh` ROWS (#774).
+ *
+ * ⚠ **It exists because the two callers hold their rows in two shapes and a
+ * function silently accepting both is how a witness stops witnessing.** The
+ * sweep passes `gh` rows, whose `labels` are `{ name }` objects; the digest
+ * flattens to `string[]` before it filters. Handing the flattened shape to the
+ * raw reader does not throw — `labelNames` reads `.name` off a string, gets
+ * `undefined`, and the carried count is **silently zero**, so the sharpest of
+ * the four refusals (*"your own read holds N ordered cards"*) would never fire
+ * and an empty band would read as believable while the band was sitting in the
+ * witness. Both callers therefore state their shape at the boundary, and the
+ * decision itself is written once.
+ */
+export function emptyOrderedBandVerdictOnLabels(
+  allOpen: readonly (readonly string[])[] | null,
+  limit = OPEN_QUEUE_LIMIT,
+  /** Which band is being cross-examined. `founder-ordered` is the default
+   *  because it is the one his 2026-08-30 clause is about, but the judgement
+   *  is identical for `urgent` — the standing-exceptions view reads both out
+   *  of one whole-queue read and asks this question twice (#774, PR #775
+   *  review finding 1). A second copy differing only in a string literal is
+   *  exactly the drift working law 4 names. */
+  band: string = ORDERED_BAND_LABEL,
 ): { believable: boolean; why: string } {
   if (allOpen === null) {
     return {
@@ -105,22 +150,65 @@ export function emptyOrderedBandVerdict(
       why: `the witness itself came back at its ${limit}-row limit, which is a floor and not a list`,
     };
   }
-  const carried = allOpen.filter((row) => labelNames(row.labels).includes(ORDERED_BAND_LABEL)).length;
+  const carried = allOpen.filter((labels) => labels.includes(band)).length;
   if (carried > 0) {
     return {
       believable: false,
-      why: `this run's own whole-queue read holds ${carried} open card(s) carrying \`${ORDERED_BAND_LABEL}\``,
+      why: `this run's own whole-queue read holds ${carried} open card(s) carrying \`${band}\``,
     };
   }
   return {
     believable: true,
-    why: `${allOpen.length} open card(s) were read and none carries \`${ORDERED_BAND_LABEL}\``,
+    why: `${allOpen.length} open card(s) were read and none carries \`${band}\``,
   };
 }
 
 function labelNames(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((label) => String((label as { name?: unknown })?.name ?? ""));
+}
+
+/** A row of the shift digest's NEXT UP block, already flattened. */
+export type BandRow = {
+  number: number;
+  title: string;
+  labels: string[];
+  createdAt: string;
+};
+
+/**
+ * THE BAND, CUT OUT OF A WHOLE-QUEUE READ — the shift digest's judgement half,
+ * lifted here for the same reason everything else in this file was (#774).
+ *
+ * `scripts/shift-digest.mts` does the `gh` call; **this decides what the answer
+ * MEANS**, which is the part that was wrong and the part a test must be able to
+ * drive. A collector that both fetches and judges can only be tested by
+ * standing up a `gh`, which is why the defect this repairs shipped green.
+ *
+ * Three outcomes, and the middle one is the whole point:
+ *
+ *   the band has rows          -> those rows, truncation measured on the POPULATION
+ *   the band is empty, witnessed -> an empty band, believable, printed as EMPTY
+ *   the band is empty, unwitnessed -> `Unreadable` — a blip, never "nothing queued"
+ *
+ * ⚠ Truncation is measured on `allOpen`, NOT on the band. `gh` returns the
+ * NEWEST rows and `founder-ordered` cards skew OLD, so a read that filled its
+ * window is exactly the one that may not have reached the band.
+ */
+export function bandFromOpenQueue(
+  allOpen: readonly BandRow[],
+  limit = OPEN_QUEUE_LIMIT,
+): { band: BandRow[]; truncated: boolean } | { unreadable: string } {
+  const band = allOpen.filter((row) => row.labels.includes(ORDERED_BAND_LABEL));
+  if (band.length === 0) {
+    /* The LABEL-shaped reader, because these rows are already flattened —
+       see its own docblock for what handing it the wrong shape costs. */
+    const verdict = emptyOrderedBandVerdictOnLabels(allOpen.map((row) => row.labels), limit);
+    if (!verdict.believable) {
+      return { unreadable: `an empty NEXT UP could not be believed — ${verdict.why}` };
+    }
+  }
+  return { band, truncated: allOpen.length >= limit };
 }
 
 /**
