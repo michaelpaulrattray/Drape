@@ -1,9 +1,14 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { requireShell, runHook } from "./testing/hookDriver";
+
+/* The refusal arm spawns a real shell, and vitest's 5s default is not enough
+   for that under load on somebody's machine — #548's class. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * THE WARDEN'S SUPPLY-CHAIN SCAN — the three things about it that can rot

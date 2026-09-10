@@ -107,6 +107,12 @@ export const EXCUSED_GATE_STEPS: ReadonlyArray<{
       "needs semgrep (python) installed; the Warden runs it on its own clock and the gate blocks on it. A token because the step is three commands, only one of which is ours.",
   },
   {
+    gateRun: "scripts/socket-scan.sh",
+    match: "token",
+    reason:
+      "the Socket.dev supply-chain scan (#35) — it is a NETWORK call that SPENDS a quota unit on the free tier and needs the repository secret, and preflight's own header promises it runs no network and is safe on any tree at any time. Adopting it would make every local preflight cost an allowance the gate is rationing. By hand it is `pnpm warden:socket` with a token exported; the gate blocks on it, and only a manifest diff can fire it at all. A token because the gate runs it behind `sh`.",
+  },
+  {
     gateRun: "pnpm install --frozen-lockfile",
     match: "command",
     reason: "a local tree already has its dependencies; the lockfile arm is a CI concern.",
