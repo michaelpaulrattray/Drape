@@ -341,6 +341,50 @@ export async function assertNoMonoSentences(page: Page, where: string, log: LawL
  * Keyed on the verbs that spend. A button in a pending state ("Rolling...",
  * "Casting...") is exempt: it has already been paid for and is reporting, not
  * offering.
+ *
+ * ⚠ **THE PRICE MAY SIT BESIDE THE BUTTON RATHER THAN INSIDE ITS LABEL —
+ * FOUNDER RULING, Crew reply #127, 2026-09-04 21:42Z, verbatim and entire:**
+ *
+ * > *"Leave the page alone; teach the check to look beside the button"*
+ *
+ * **The check was narrower than the law it enforces.** D-15, quoted in this
+ * module's own header, says *"the cost is visible on the affordance, never
+ * behind a confirm step"* — and this read `innerText` on the button and nothing
+ * else. So `/casting` was reported as a violation while printing
+ * **`8 CANDIDATES · ~160 CR · ~50 SECONDS`** on its own row directly under the
+ * brief box, at the affordance, before the click, with nothing to open. The
+ * page satisfied D-15 and the instrument called it a fault (#523, found by
+ * #512's drive).
+ *
+ * That direction of error is the expensive one: **a law that reddens on a
+ * correct page is one people learn to ignore**, which is the same failure as
+ * having no law — `typo-gate-owned-a-real-word`'s class, where a gate owning a
+ * real word blocked the founder's own ask.
+ *
+ * # ⚠ THE CLIMB IS BOUNDED, AND THE BOUND IS THE WHOLE DESIGN
+ *
+ * The tempting widening is *"a price anywhere on the page"*, and it would be
+ * a vacuous pass: every surface that spends also renders a credit balance in
+ * its chrome, so the law would hold everywhere and catch nothing. So the price
+ * must be in the button's own label **or in an ancestor at most
+ * `PRICE_GROUP_LEVELS` up**, and `<body>` is never consulted.
+ *
+ * Two ancestors is what the real page needs and no more, read at the rendered
+ * DOM rather than guessed: the button sits in `div.dp-field` (the `Field`
+ * primitive, one div), and the receipt line `p.dpc-hero__receipt` is that div's
+ * SIBLING — so the nearest element holding both is the grandparent. A third
+ * level would start swallowing page chrome.
+ *
+ * ⚠ **IT THEREFORE FAILS TOWARD REDDENING.** Wrap the button in one more div
+ * and a correct page reports a violation until somebody looks. That is the safe
+ * direction and it is chosen deliberately: the alternative — an unbounded climb
+ * — fails toward silence, and a silent design law is indistinguishable from a
+ * deleted one.
+ *
+ * `designLawControls.mts` pins all four corners: priced in the label, priced
+ * beside the button (the real page's shape), priced NOWHERE, and priced too far
+ * away. The last is the one that stops this widening drifting back into
+ * "anywhere on the page".
  */
 export async function assertPricedButtons(page: Page, where: string, log: LawLog) {
   const result = await page.evaluate(() => {
@@ -364,17 +408,47 @@ export async function assertPricedButtons(page: Page, where: string, log: LawLog
     */
     const PAID = [/^cast it/i, /^roll again/i, /^sign\b(?!\s*(in|out|up)\b)/i];
     const PENDING = [/^casting/i, /^rolling/i, /^signing/i];
+    /* A price is a number followed by the credit unit. */
+    const PRICE = /\d+\s*cr\b/i;
+    /*
+      HOW FAR "BESIDE" REACHES. Two, because the real page needs two and no
+      more: the button is inside `div.dp-field` and the receipt line is that
+      div's sibling, so the grandparent is the nearest element holding both.
+      Raising this is not a tuning knob — it is how this law goes quiet.
+    */
+    const PRICE_GROUP_LEVELS = 2;
     const bad: string[] = [];
     let seen = 0;
+    let beside = 0;
     for (const b of Array.from(document.querySelectorAll("button"))) {
       const label = (b.innerText ?? "").trim();
       if (!label || PENDING.some((p) => p.test(label))) continue;
       if (!PAID.some((p) => p.test(label))) continue;
       seen += 1;
-      // A price is a number followed by the credit unit.
-      if (!/\d+\s*cr\b/i.test(label)) bad.push(label);
+      if (PRICE.test(label)) continue;
+      /*
+        ⚠ `document.body` AND `document.documentElement` ARE NEVER CONSULTED.
+        Reading either is "a price anywhere on the page", which every surface
+        that spends satisfies through its own credit balance — the vacuous pass
+        this bound exists to prevent.
+      */
+      let node: HTMLElement | null = b.parentElement;
+      let found = false;
+      for (let level = 0; level < PRICE_GROUP_LEVELS; level += 1) {
+        if (!node || node === document.body || node === document.documentElement) break;
+        if (PRICE.test(node.innerText ?? "")) {
+          found = true;
+          break;
+        }
+        node = node.parentElement;
+      }
+      if (found) beside += 1;
+      else bad.push(label);
     }
-    return { bad, seen };
+    /* The bound is RETURNED rather than restated in the message below: two
+       copies of it would drift the moment one is edited (working law 4), and
+       the copy that drifts is the one in the sentence a reader believes. */
+    return { bad, seen, beside, levels: PRICE_GROUP_LEVELS };
   });
   if (result.seen === 0) {
     log.notApplicable(where, "every paid button states its price", "no paid buttons on this surface");
@@ -385,8 +459,14 @@ export async function assertPricedButtons(page: Page, where: string, log: LawLog
     "every paid button states its price",
     result.bad.length === 0,
     result.bad.length === 0
-      ? `${result.seen} paid button(s), all priced`
-      : `${result.bad.length} of ${result.seen} unpriced: ${result.bad.join(" | ")}`,
+      ? /* The count of prices found BESIDE rather than IN is reported, not
+           hidden: it is the difference between the page the founder ruled on
+           and a page whose labels all carry their own price, and a reader of
+           this line should be able to tell those apart. */
+        `${result.seen} paid button(s), all priced` +
+        (result.beside > 0 ? ` (${result.beside} beside the button, not in the label)` : "")
+      : `${result.bad.length} of ${result.seen} unpriced` +
+        ` (label and ${result.levels} ancestor(s) read): ${result.bad.join(" | ")}`,
   );
 }
 
