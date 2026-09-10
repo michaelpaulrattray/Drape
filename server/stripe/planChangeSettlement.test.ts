@@ -491,6 +491,61 @@ describe("the webhook settles what changePlan recorded", () => {
   });
 
   /*
+    ⚠ AN `uncollectible` INVOICE IS VOIDED, AND THIS ARM IS THE PR #764 REVIEW'S
+    FINDING 1 — a real defect in the first shape of this fix, caught because the
+    docblock asserted something about Stripe that was never checked.
+
+    `uncollectible` is bad-debt bookkeeping, which is EXACTLY what somebody
+    marks a finally-failed invoice as. It is not terminal — Stripe allows
+    uncollectible → paid, so the invoice can still take money — and it is
+    voidable. Reading it as "already closed" left this card's whole defect
+    alive on that road while logging that it had been handled.
+  */
+  it("an UNCOLLECTIBLE invoice IS voided — it is bad debt, not closed, and can still be paid", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "uncollectible" });
+    invoicesVoid.mockResolvedValue({ id: "in_change", status: "void" });
+
+    await deliverEvent("invoice.payment_failed", {
+      id: "in_change",
+      customer: "cus_1",
+      subscription: "sub_1",
+      next_payment_attempt: null,
+      amount_due: 12_00,
+      currency: "usd",
+    });
+
+    expect(invoicesVoid).toHaveBeenCalledWith("in_change");
+  });
+
+  /*
+    PR #764 review note 2 — the blast radius is wider than this suite's framing
+    and that is INTENDED, so it gets an arm rather than a sentence. The void
+    sits in the final-failure branch unconditionally, so it also closes a plain
+    RENEWAL's invoice, which carries no settlement row at all. That is the same
+    ledger disagreement in a milder form — a late-paid renewal against a
+    subscription already cancelled and downgraded to free — and it is the case
+    production will meet first.
+  */
+  it("a finally-failed RENEWAL invoice is voided too, with no settlement row in sight", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue(null);
+    invoicesRetrieve.mockResolvedValue({ amount_due: 29_00, status: "open" });
+    invoicesVoid.mockResolvedValue({ id: "in_renewal", status: "void" });
+
+    const result = await deliverEvent("invoice.payment_failed", {
+      id: "in_renewal",
+      customer: "cus_1",
+      subscription: "sub_1",
+      next_payment_attempt: null,
+      amount_due: 29_00,
+      currency: "usd",
+    });
+
+    expect(result.success).toBe(true);
+    expect(invoicesVoid).toHaveBeenCalledWith("in_renewal");
+  });
+
+  /*
     A paid invoice is the same refusal and is worth its own arm, because this
     is the one status where voiding would be actively wrong rather than merely
     rejected: the money is already ours.
