@@ -28,9 +28,11 @@
  */
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
+import { statIfPresent } from "./listedEntry.mts";
 
 export const HYPERFINE_VERSION = "1.20.0";
 
@@ -101,7 +103,11 @@ function tarBinary(): string {
 function findFile(root: string, name: string): string | null {
   for (const entry of readdirSync(root)) {
     const full = path.join(root, entry);
-    if (statSync(full).isDirectory()) {
+    /* ENOENT-tolerant, like every other walk in `scripts/` (#589): an entry can
+       leave between the listing and the stat. */
+    const stat = statIfPresent(full);
+    if (!stat) continue;
+    if (stat.isDirectory()) {
       const found = findFile(full, name);
       if (found) return found;
     } else if (entry === name) {
@@ -180,6 +186,3 @@ export function reportedVersion(binary: string): string {
   return (result.stdout ?? "").trim();
 }
 
-export function readJson<T>(file: string): T {
-  return JSON.parse(readFileSync(file, "utf8")) as T;
-}

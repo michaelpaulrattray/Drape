@@ -28,7 +28,7 @@ import {
   type HyperfineExport,
   type PackageManifest,
 } from "./lib/benchCommands.mts";
-import { ensureHyperfine, readJson, reportedVersion } from "./lib/hyperfineBin.mts";
+import { ensureHyperfine, reportedVersion } from "./lib/hyperfineBin.mts";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const CACHE = path.join(ROOT, ".tools");
@@ -130,7 +130,7 @@ async function main(): Promise<void> {
           `Run it directly, fix the tree, then benchmark it.`,
       );
     }
-    const exported = readJson<HyperfineExport>(exportFile);
+    const exported = JSON.parse(readFileSync(exportFile, "utf8")) as HyperfineExport;
     readings.push(...foldHyperfine(exported, [row]));
   }
 

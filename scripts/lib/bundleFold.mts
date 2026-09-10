@@ -47,8 +47,10 @@
  * previous build looks like. `server/bundleFold.test.ts` drives all of them.
  */
 import { gzipSync } from "node:zlib";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import path from "node:path";
+
+import { readBytesIfPresent, statIfPresent } from "./listedEntry.mts";
 
 /* ────────────────────────────────────────────────────────────────────────────
    1. WHAT IS ON DISK — the only source of a bytes-shipped number
@@ -88,9 +90,15 @@ export function readEmittedAssets(assetsDir: string): EmittedAsset[] {
         ? ("css" as const)
         : null;
     if (!kind) continue;
+    /* Listed, then stat'ed, then read — a file can leave between any two of
+       those, and the ENOENT would refuse the run (#589). ENOENT only: a real
+       permission or type error still throws, because a reader that swallowed
+       those would go green by going blind. */
     const full = path.join(assetsDir, entry);
-    if (!statSync(full).isFile()) continue;
-    const bytes = readFileSync(full);
+    const stat = statIfPresent(full);
+    if (!stat || !stat.isFile()) continue;
+    const bytes = readBytesIfPresent(full);
+    if (!bytes) continue;
     assets.push({
       file: `assets/${entry}`,
       kind,
