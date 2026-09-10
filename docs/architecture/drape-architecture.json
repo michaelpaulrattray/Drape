@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "42e6603351f3ae25"
+    "sourceFingerprint": "4fde46d73d3e93f5"
   },
   "domains": [
     {
@@ -18261,6 +18261,16 @@
     {
       "from": "module:client/src/features/staff/useStaffCounts.ts",
       "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/useStaffCounts.ts",
+      "to": "module:client/src/features/staff/stores/useStaffAutoRefreshStore.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/useStaffCounts.ts",
+      "to": "module:client/src/features/staff/useStaffRefresh.ts",
       "kind": "imports"
     },
     {
