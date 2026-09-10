@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "dbbfc2eb25a3dcd1"
+    "sourceFingerprint": "e41f84bb750c6a34"
   },
   "domains": [
     {
@@ -18286,6 +18286,16 @@
     {
       "from": "module:client/src/features/staff/useModeratorFlagCounts.ts",
       "to": "module:client/src/features/staff/staffRole.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/useModeratorFlagCounts.ts",
+      "to": "module:client/src/features/staff/stores/useStaffAutoRefreshStore.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/staff/useModeratorFlagCounts.ts",
+      "to": "module:client/src/features/staff/useStaffRefresh.ts",
       "kind": "imports"
     },
     {

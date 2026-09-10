@@ -270,18 +270,115 @@ describe("card 416 — the moderator hook sets no option that reaches another su
       mounts inside the page that renders it — so a fetch-level option set here
       changes that card's behaviour on the moderator dashboard.
 
-      A third key reddens this on purpose: it may well be correct, and it must
-      be checked against every consumer of the key before it lands.
+      ⚠ **THIS ARM USED TO ASSERT `keys === ["staleTime"]`, AND #752 IS WHY IT NO
+      LONGER DOES — the change is a TIGHTENING, not a relaxation.** An exact list
+      of one pins the CONTENTS of this hook; the rule it exists to protect is
+      about the SCOPE of an option. Those came apart the moment a second
+      observer-scoped option was genuinely correct here: #752 adds
+      `refetchInterval` so a flag raised while a moderator sits still reaches her
+      badge, and `refetchInterval` is observer-scoped — each observer keeps its
+      own timer, so the card's poll is untouched.
+
+      Under the old shape the only way to land that was to edit the expected list
+      to `["refetchInterval", "staleTime"]`, which would have gone green for a
+      FETCH-level option added next year just as readily. The allowlist below
+      names the scope instead, so an unrecognised option still reddens — which is
+      the behaviour the note above actually promises — and a fetch-level one is
+      refused BY NAME with the reason attached.
+
+      An option not on either list reddens on purpose: it may well be correct,
+      and it must be checked against every consumer of the key before it lands.
     */
+    /**
+     * Resolved PER OBSERVER by TanStack — each observer keeps its own, so
+     * setting one here cannot reach `FlaggedDiscrepanciesCard`.
+     */
+    const OBSERVER_SCOPED = [
+      "enabled",
+      "notifyOnChangeProps",
+      "placeholderData",
+      "refetchInterval",
+      "refetchOnMount",
+      "refetchOnReconnect",
+      "refetchOnWindowFocus",
+      "select",
+      "staleTime",
+    ];
+    /*
+      Resolved from the LAST observer to set them — they live on the Query, not
+      the observer — so setting one here reaches `FlaggedDiscrepanciesCard`.
+      Named rather than left to the catch-all so the failure says WHY, not just
+      "unexpected key".
+
+      ⚠ **This list is the one `counts415-guard.test.ts` already names in its own
+      failure message** (`retry, retryDelay, networkMode, gcTime,
+      structuralSharing`) — kept in agreement with it deliberately, and the first
+      draft of this arm disagreed with it in both directions: it had
+      `refetchOnWindowFocus` here (it is observer-scoped — each observer decides
+      for itself whether a focus event refetches) and omitted
+      `structuralSharing` (which is fetch-level). Both are corrected above. The
+      two guards ask different questions — that one pins its hook's options
+      exhaustively, this one classifies by scope — so they are not a mirrored
+      list in working law 4's sense; where they overlap they must still agree.
+    */
+    const FETCH_LEVEL = ["gcTime", "networkMode", "retry", "retryDelay", "structuralSharing"];
+
     const hook = code(read("features/staff/useModeratorFlagCounts.ts"));
     const optionBlocks = Array.from(hook.matchAll(/\{\s*(enabled,[^}]*)\}/g)).map((m) => m[1]);
     expect(optionBlocks.length, "both queries pass an options object").toBe(2);
     for (const block of optionBlocks) {
-      const keys = Array.from(block.matchAll(/([A-Za-z]+):/g))
+      const keys = Array.from(block.matchAll(/([A-Za-z]+):\s/g))
         .map((m) => m[1])
         .sort();
-      expect(keys, "options set: " + keys.join(", ")).toEqual(["staleTime"]);
+
+      const fetchLevel = keys.filter((k) => FETCH_LEVEL.includes(k));
+      expect(
+        fetchLevel,
+        [
+          "FETCH-level option(s) set on a SHARED query key: " + fetchLevel.join(", "),
+          "TanStack resolves these from the last observer to set them, not per",
+          "observer — so this reaches FlaggedDiscrepanciesCard on the moderator",
+          "dashboard, which observes getFlaggedUsers at this same key.",
+          "This exact defect shipped once already (#415, PR #456).",
+        ].join("\n"),
+      ).toEqual([]);
+
+      const unknown = keys.filter((k) => !OBSERVER_SCOPED.includes(k));
+      expect(
+        unknown,
+        [
+          "Option(s) this guard does not classify: " + unknown.join(", "),
+          "Before adding one, check it against EVERY consumer of this query key",
+          "— `FlaggedDiscrepanciesCard` observes getFlaggedUsers here too. If it",
+          "is resolved per observer, add it to OBSERVER_SCOPED with the reason.",
+          "If TanStack resolves it from the last observer, it does not belong in",
+          "this hook at all; add it to FETCH_LEVEL so the next reader is told.",
+        ].join("\n"),
+      ).toEqual([]);
+
+      expect(keys, "every query still sets staleTime: " + keys.join(", ")).toContain("staleTime");
+      /*
+        ⚠ AND THE POLL ITSELF IS PINNED, ON BOTH QUERIES (#752). Without this the
+        arms above are all satisfied by a hook that has no `refetchInterval` at
+        all — which is precisely the state #752 was filed about, and every
+        absence-only assertion is green against it.
+
+        The SHARED switch and the SHARED constant, never a literal: a `30_000`
+        here would be a fifth reader of a number the panel's own label states,
+        which is #455's defect. Same shape as `useStaffCounts` under #457.
+      */
+      expect(
+        block,
+        "a flag raised while she sits still must reach her badge (#752): " + block,
+      ).toMatch(/refetchInterval:\s*autoRefresh\s*\?\s*STAFF_REFRESH_INTERVAL_MS\s*:\s*false/);
     }
+
+    expect(hook, "the switch is the shared store, not a local useState").toMatch(
+      /useStaffAutoRefresh\(\)/,
+    );
+    expect(hook, "the interval is imported, never written as a literal").not.toMatch(
+      /refetchInterval:[^,\n]*\d{2,}/,
+    );
   });
 
   it("the query is gated to the roles that may ask it", () => {
