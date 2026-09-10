@@ -491,7 +491,7 @@ describe("card 415 §3 — the switch's label and the page's timer are one numbe
     );
   });
 
-  it("#455 — NOTHING the switch drives states its own number, and the population is derived", () => {
+  it("card 455 — NOTHING the switch drives states its own number, and the population is derived", () => {
     /*
       ⚠ THE ARM #455 ASKED FOR, AND IT IS DERIVED RATHER THAN A LIST OF THREE
       PAGES — because a list is exactly how this got here. The card named three
@@ -522,7 +522,7 @@ describe("card 415 §3 — the switch's label and the page's timer are one numbe
       offenders,
       "A staff reader driven by the AUTO 30s switch must take its period from"
       + " STAFF_REFRESH_INTERVAL_MS, never restate one — that is how a label and a"
-      + " timer drift apart (#455):\n" + offenders.map((row) => `  ${row}`).join("\n"),
+      + " timer drift apart (card 455):\n" + offenders.map((row) => `  ${row}`).join("\n"),
     ).toEqual([]);
 
     /* CAN FAIL — the matcher is driven on the exact bytes that were there
