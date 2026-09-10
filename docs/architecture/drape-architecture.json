@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3518620eba00af67"
+    "sourceFingerprint": "b6e23eaf597d92aa"
   },
   "domains": [
     {
@@ -11190,6 +11190,10 @@
       "path": "server/batchC-structured.test.ts"
     },
     {
+      "id": "test:server/benchCommands.test.ts",
+      "path": "server/benchCommands.test.ts"
+    },
+    {
       "id": "test:server/benchKit.test.ts",
       "path": "server/benchKit.test.ts"
     },
@@ -11232,6 +11236,14 @@
     {
       "id": "test:server/bulkRefreshDialog.test.ts",
       "path": "server/bulkRefreshDialog.test.ts"
+    },
+    {
+      "id": "test:server/bundleFold.test.ts",
+      "path": "server/bundleFold.test.ts"
+    },
+    {
+      "id": "test:server/bundleReportWiring.test.ts",
+      "path": "server/bundleReportWiring.test.ts"
     },
     {
       "id": "test:server/capabilityAtlas.test.ts",

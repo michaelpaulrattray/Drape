@@ -35,14 +35,52 @@ The instruments and their record pages:
 | the call census | `railway.cmd run --service MySQL -- npx tsx scripts/call-census-report.mts --since <iso>` | WHERE a refine's seconds go — by stage, model, and question | `call-census-report.mts` header |
 | the deploy rite's balance block | every push (`scripts/deploy-rite.mts`) | today / week / month spend and the account balances, at each deploy | `output/deploy-receipts/` |
 | the delivery-rate report (D-236) | `server/castingV2/reliabilityReport.ts` via `scripts/drive-self-walk.mts` | did the customer GET the thing — per class, with the false-pass bucket | `DECISION_LOG.md` D-236 |
+| the client bundle read | `pnpm machinist:bundle` | how many bytes a visitor downloads, and whose they are | this file |
+| the house-command bench | `pnpm machinist:bench` | what our own commands cost — check, atlas, build, suite | this file |
 
 Two things the ledger read does NOT measure, stated so the absence is never
 read as a zero (doctrine entry 1): the roll's per-slice timing (rolls log
 their census to the container rather than persisting it — the operation's
 wall is the whole roll's), and **anything about the client** — page load,
 interaction latency, the canvas, the "laggy in general" half of the charter.
-No instrument records the client today. Until one does, that half of the
-charter is UNREAD, not fine.
+
+⚠ **THAT SECOND SENTENCE ENDED "No instrument records the client today", AND
+IT IS NO LONGER TRUE OF ONE PART OF THE CLIENT — #35, 2026-09-10.** The
+toolbelt remainder shipped two readers, and the correction is deliberately
+narrow, because the tempting version of it is the false one:
+
+- **`pnpm machinist:bundle` reads the BYTES SHIPPED** — the emitted JS and CSS,
+  gzipped, plus who is responsible for them. That is now READ.
+- **Page load, interaction latency and the canvas are still UNREAD**, and the
+  bundle figure is not a proxy for any of them. A 600 kB bundle and a laggy
+  canvas are different faults with different fixes; the charter's *"laggy in
+  general"* half is about the second, and nothing measures it yet.
+
+**The first readings, taken on the build shift rather than on a Machinist run**
+(so they are dated evidence, not a patrol entry — the seat's Run 2 is still its
+own act, on its own clock):
+
+| reading | 2026-09-10, `team/toolbelt-remainder` |
+|---|---|
+| JS shipped, gzip | **637.0 kB** in **ONE** chunk |
+| CSS shipped, gzip | 67.4 kB |
+| heaviest owners (share of attributed bytes) | `recharts` 11.4% · `react-dom` 11.0% · `app: features/casting` 6.3% · `app: features/boards` 5.5% · `framer-motion` 4.8% · `lodash` 3.8% |
+| `pnpm architecture:check` | 9.36 s median (3 runs) |
+| `pnpm capability:check` | 1.52 s median (3 runs) |
+
+⚠ **The bundle is ONE chunk, so every visitor downloads the admin panel, the
+canvas and the casting studio before anything renders.** That is the largest
+client number this project has ever had in writing, and it is a FINDING, not a
+brief — what to do about it is the Machinist's to card and measure, and #744
+holds it.
+
+⚠ **And a warning that belongs beside the numbers rather than in a
+docblock:** `rollup-plugin-visualizer`'s per-module byte counts sum to **2.27×**
+the bundle actually emitted, because `renderedLength` is pre-minification and a
+per-module `gzipLength` compresses each module against nothing but itself. The
+reader takes its totals from the files on disk for that reason and reports the
+plugin's numbers only as SHARES. **Never quote an owner's byte count as a
+size** — `scripts/lib/bundleFold.mts` carries the measurement.
 
 ---
 

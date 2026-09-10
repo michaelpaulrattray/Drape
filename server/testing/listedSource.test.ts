@@ -131,6 +131,15 @@ const NOT_THE_CLASS: Record<string, string> = {
     + " is about",
   "server/testing/listedSource.test.ts":
     "the file that owns the rule — it names the population it scans for",
+  "server/benchCommands.test.ts":
+    "lists NOTHING. It entered the candidate set when its argument-guard arms"
+    + " began reading two entrypoints, and all three of its reads are FIXED"
+    + " names that SHOULD throw: `package.json`, the manifest the bench set is"
+    + " bound against (working law 4's whole point — a repository without one is"
+    + " broken, not short), and `scripts/bundle-report.mts` /"
+    + " `scripts/bench-commands.mts`, read for their guards. A vanished"
+    + " entrypoint reported as `no offending shape found` is the false green"
+    + " this rule exists to prevent (#35)",
   "server/riteWorktree.test.ts":
     "lists NOTHING in the repository — its one `readdirSync` is a decoy"
     + " `node_modules` it made under `mkdtemp` two lines earlier, and its"

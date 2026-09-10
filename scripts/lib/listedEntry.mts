@@ -50,3 +50,16 @@ export function statIfPresent(path: string): Stats | null {
 export function readIfPresent(path: string): string | null {
   return enoentNull(() => readFileSync(path, "utf8"));
 }
+
+/**
+ * The same tolerance, returning BYTES.
+ *
+ * Added for the bundle reader (#35), which gzips emitted assets to find out
+ * what a visitor downloads. Decoding those to utf8 first and re-encoding would
+ * change the byte count on any non-ASCII content — so a walker that needs
+ * sizes cannot use `readIfPresent`, and would otherwise reach for a bare
+ * `readFileSync` and re-open #589 at a new site.
+ */
+export function readBytesIfPresent(path: string): Buffer | null {
+  return enoentNull(() => readFileSync(path));
+}
