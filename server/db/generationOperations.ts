@@ -1982,6 +1982,15 @@ export async function finalizeFencedCastingV2SignOperation(input: {
         // the standard code, and sealing a clean receipt over its support
         // message is exactly the erasure this discriminator prevents.
         eq(generationOperations.errorCode, CASTING_V2_SIGN_FENCE_CODE),
+        /*
+          ⚠ AND NEVER A DELETED SUBJECT (#778's review, finding 1). This seal
+          re-binds `modelId` when one is passed, which on a fenced row would
+          put back the very Cast id the deletion fence stripped. Unreachable
+          today — deletion refuses over a `recovery_required` prior operation —
+          and stated here because until #532 the scrub's nulling of `errorCode`
+          was making the line above do this job by accident.
+        */
+        isNull(generationOperations.subjectDeletedAt),
       ));
     if (affectedRows(sealed) !== 1) {
       throw new Error("Fenced Sign operation seal lost its state race");

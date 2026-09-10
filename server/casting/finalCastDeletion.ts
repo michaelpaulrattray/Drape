@@ -628,6 +628,18 @@ export async function planFinalCastDeletion(input: {
  * `replay_failure` branch that would hand an `errorCode` to a caller. Keeping
  * the field widens what SUPPORT can read, and nothing else.
  *
+ * ⚠ **ONE READER KEYS ON THIS COLUMN'S VALUE, AND IT IS NAMED HERE BECAUSE
+ * KEEPING `errorCode` REMOVED A LAYER NOBODY HAD MEANT TO BUILD** (#778's
+ * review, finding 1 — law 7's *what was bolted to it*, pointed at a field
+ * instead of a call site). The stale-operation sweep and its seal select a
+ * fenced Sign by `errorCode === CASTING_V2_SIGN_FENCE_CODE`
+ * (`server/casting/operationRecovery.ts`, `server/db/generationOperations.ts`),
+ * and while this scrub nulled the column, a subject-deleted row could not
+ * match them however hard it tried. That protection was ACCIDENTAL. Both
+ * selectors, and the adjudicator's own door, now refuse a `subjectDeletedAt`
+ * row explicitly, so the guarantee survives this change and does not depend on
+ * a field being empty.
+ *
  * It is a named constant rather than an inline object so the guard can assert
  * the VALUE (`server/r7-final-cast-deletion.test.ts`) instead of matching
  * source text — this repository has had a substring standing in for a contract

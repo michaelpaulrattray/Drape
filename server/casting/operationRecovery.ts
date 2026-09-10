@@ -868,6 +868,22 @@ export async function adjudicateStaleGenerationOperation(
     candidate CAS and the ledger — and `claimRecoveryAttempt` keeps it from
     running more than once every few minutes.
   */
+  /*
+    ⚠ A DELETED SUBJECT IS NEVER ADJUDICATED, WHATEVER ITS STATUS (#778's
+    review, finding 1). The sweep's own selector now says the same thing in
+    SQL; this says it at the door, because the adjudicator is exported and a
+    caller other than the sweep would otherwise arrive with no such filter.
+
+    What it prevents is specific rather than theoretical: a fenced Sign that
+    survived a deletion would re-enter adjudication every few minutes, and
+    `finalizeFencedCastingV2SignOperation` would re-bind `modelId` — putting
+    the deleted Cast's id back on the row the fence exists to strip it from.
+
+    Inert today by construction (deletion refuses over an unsettled prior
+    operation, transactionally), which is why it is cheap and why it is
+    written down rather than left to be re-derived.
+  */
+  if (operation.subjectDeletedAt) return "skipped";
   const fencedSign =
     operation.status === "recovery_required"
     && operation.kind === "castingV2.sign"
@@ -1324,7 +1340,20 @@ export async function sweepStaleGenerationOperations(input: {
   const rows = await db
     .select()
     .from(generationOperations)
-    .where(or(
+    /*
+      ⚠ A SUBJECT-DELETED RECEIPT IS NEVER SWEPT, AND THIS ARM IS NEW (#778's
+      review, finding 1). It is INERT TODAY and is here for what it stops
+      tomorrow: `executeFinalCastDeletion` refuses to delete over any
+      `claimed`, `running` or `recovery_required` prior operation, in the same
+      transaction that scrubs, so no fenced row can be in a state this
+      selector matches. Until #532 the fence ALSO nulled `errorCode`, which
+      meant the code discriminator below was quietly doing this job as a second
+      layer; #532 keeps the failure class on purpose, so the layer that
+      remained by accident is now stated on purpose instead.
+    */
+    .where(and(
+      isNull(generationOperations.subjectDeletedAt),
+      or(
       and(eq(generationOperations.status, "claimed"), lt(generationOperations.updatedAt, staleClaimBefore)),
       and(eq(generationOperations.status, "running"), lt(generationOperations.leaseExpiresAt, now)),
       /*
@@ -1347,6 +1376,7 @@ export async function sweepStaleGenerationOperations(input: {
         eq(generationOperations.status, "recovery_required"),
         eq(generationOperations.kind, "castingV2.sign"),
         eq(generationOperations.errorCode, CASTING_V2_SIGN_FENCE_CODE),
+      ),
       ),
     ))
     /*
