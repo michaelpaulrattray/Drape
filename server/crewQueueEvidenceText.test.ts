@@ -139,13 +139,25 @@ describe("evidenceTextOf — what a reference is allowed to count in", () => {
   });
 });
 
-describe("⚠ THE REMAINDER — the three specimens this strip deliberately does NOT catch", () => {
+describe("⚠ THE DECLINED REMAINDER — the specimens this strip does NOT catch, and #737 ruled it should not", () => {
   /*
     Written as SURVIVING arms rather than left out. The card's recommendation
     was the fenced/table strip alone, with the phrase vocabulary — *"filed as"*,
     *"logged, not done here"*, *"none taken"* — as a judgement about wording
-    that belongs on its own card. These arms are what will go red, informatively,
-    on the day that card is built.
+    that belongs on its own card.
+
+    ⚠ THAT CARD WAS #737 AND IT WAS DRIVEN AND DECLINED (2026-09-11). Over 57
+    open cards and 326 merged pull requests the rule fired TEN times with ONE
+    true naming among them, and the candidate vocabulary reached THREE of the
+    nine false ones — the other six being ordinary English with no shared shape,
+    in bodies where a true naming speaks the same way. The full reading is in
+    `shared/crewQueuePossiblyDone.ts`'s header.
+
+    So these arms are no longer "what will go red when that card is built".
+    They are the DECLINED population, pinned where the work happens: if a later
+    change makes one of them stop naming its card as evidence, that is a
+    wording judgement having crept in, and it should be argued rather than
+    absorbed.
   */
   it("PR #456's prose still names #455 as evidence", () => {
     expect(namedAsEvidenceIn(PR_456_SENTENCE, 456)).toContain(455);
@@ -159,5 +171,19 @@ describe("⚠ THE REMAINDER — the three specimens this strip deliberately does
   it("PR #656's shape still names #655 as evidence", () => {
     const sentence = "Filed as #655 with the measurement and a recommendation, rather than presented as findings";
     expect(namedAsEvidenceIn(sentence, 656)).toContain(655);
+  });
+
+  /*
+    ⚠ A FOURTH SPECIMEN, FOUND BY #737'S DRIVE AND OF A DIFFERENT KIND (#776).
+    `#105` is flagged today because PR #468 wrote *"His order, Crew reply #105"*
+    — a crew REPLY number, which is its own numbering space and collides with
+    the card numbers. Unlike the three above, telling this one apart needs no
+    judgement about whether work was done: it is whether the token names a card
+    at all, the question the pattern already answers for `##12` and `abc#12`.
+    Pinned here as a surviving arm so #776 goes red informatively.
+  */
+  it("a crew REPLY number is still read as a card reference — the #776 specimen", () => {
+    const sentence = "**His order, Crew reply #105, 2026-09-02, verbatim and entire:** *\"Also run the AUTHOR half\"*";
+    expect(namedAsEvidenceIn(sentence, 468)).toContain(105);
   });
 });
