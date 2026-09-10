@@ -66,9 +66,14 @@ export default function AdminAuditLogs() {
     undefined,
     { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
   );
+  /* #747 — see the twin on ModeratorDashboard. `enabled` still decides whether
+     it runs; the interval only applies once the tab is open. */
   const blockedIpsQuery = trpc.admin.listBlockedIPs.useQuery(
     { limit: 50, offset: 0 },
-    { enabled: activeTab === "blocked-ips" }
+    {
+      enabled: activeTab === "blocked-ips",
+      refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
+    }
   );
   const userDetailsQuery = trpc.admin.getUserDetails.useQuery(
     { userId: selectedLog?.userId || 0 },
@@ -117,6 +122,11 @@ export default function AdminAuditLogs() {
     logsQuery.refetch();
     alertsQuery.refetch();
     statsQuery.refetch();
+    /* #747 — the Blocked IPs list, which both controls above it claimed to keep
+       fresh and neither reached. See the twin on ModeratorDashboard for what
+       `refetch()` does on a disabled query (it fetches; `enabled` gates the
+       POLL, not this) and why that is the right cost to pay here. */
+    blockedIpsQuery.refetch();
     setLastRefresh(new Date());
     toast.success("Data refreshed");
   };
