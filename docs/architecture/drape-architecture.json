@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a1f9882d500d3d41"
+    "sourceFingerprint": "f4719cb5db629b75"
   },
   "domains": [
     {
@@ -13790,6 +13790,10 @@
     {
       "id": "test:server/stripe/stripeRefund.test.ts",
       "path": "server/stripe/stripeRefund.test.ts"
+    },
+    {
+      "id": "test:server/stripe/voidInvoiceStatus.test.ts",
+      "path": "server/stripe/voidInvoiceStatus.test.ts"
     },
     {
       "id": "test:server/stripe/webhookIdempotency.test.ts",

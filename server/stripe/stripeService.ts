@@ -653,15 +653,32 @@ export async function getInvoiceStatus(invoiceId: string): Promise<string | null
  * if the invoice is paid in the gap, the void fails and we report it. That
  * lands in the pre-existing late-payment case, where the void settlement row
  * already refuses the credits.
+ *
+ * ⚠ `paid` IS NOT "NOTHING TO DO" AND IS THE ONE STATUS THAT MUST NOT SHARE
+ * THE BENIGN ROAD (#767, PR #764 round-2 review). Every other non-voidable
+ * status — `draft`, `void` — means the invoice cannot take money, which is
+ * what this call wanted. `paid` means it ALREADY TOOK IT, on the one road
+ * built for an invoice whose payment has finally failed: money accepted for a
+ * plan that is already cancelled and credits that will never move. Folding it
+ * in logged that as routine at info, and for a finally-failed RENEWAL there is
+ * no settlement row and therefore no second trace — that info line was the
+ * only record the event left. It gets its own return shape so a caller can
+ * tell "closed" from "paid", and its own line at warn so a reader can.
  */
 const VOIDABLE_INVOICE_STATUSES = ["open", "uncollectible"] as const;
 
 export async function voidInvoice(
   invoiceId: string,
-): Promise<"voided" | "already-closed" | "failed"> {
+): Promise<"voided" | "already-closed" | "already-paid" | "failed"> {
   try {
     const invoice = await stripe.invoices.retrieve(invoiceId);
     const status = invoice?.status ?? null;
+    if (status === "paid") {
+      log.warn(
+        `[Stripe] Invoice ${invoiceId} is already PAID on the final-failure road — money was taken for a plan that is being cancelled, and its credits will not move. Check this customer.`,
+      );
+      return "already-paid";
+    }
     if (!VOIDABLE_INVOICE_STATUSES.includes(status as never)) {
       log.info(
         `[Stripe] Invoice ${invoiceId} is "${status}" — not voidable and cannot take money; nothing to do`,
