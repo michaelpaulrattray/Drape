@@ -450,10 +450,18 @@ export function qualifyingNamings(
  * nothing.** One flag, and that is the honest figure — it is worth having
  * because it costs no judgement, not because it is large.
  *
- * ⚠ **IT STILL FAILS TOWARD FLAGGING.** Only the word IMMEDIATELY in front of
- * the `#` is consulted, so *"the run that landed #105"* and *"see #105"* still
- * name the card; a false flag costs one re-read, a missed one costs him a card
- * that is already done.
+ * ⚠ **THE ADJACENCY STILL FAILS TOWARD FLAGGING.** Only the word IMMEDIATELY in
+ * front of the `#` is consulted, so *"the run that landed #105"* and *"see
+ * #105"* still name the card; a false flag costs one re-read, a missed one
+ * costs him a card that is already done.
+ *
+ * ⚠ **THE WORD MATCH ITSELF FAILS THE OTHER WAY, AND SAYING SO IS THE POINT
+ * (PR #780 review, nit 2).** Every other narrowing in this module leans toward
+ * flagging; this one REMOVES flags by construction, which is what it is for.
+ * That is why it is bounded by a measurement rather than by a judgement, and
+ * why `edition` — as plausible as either word it sits beside — is not in it.
+ * `namesAnotherSequence` carries the one place the direction leaks past the
+ * measured population, and it too is pinned by an arm.
  */
 /**
  * THE TEXT A CARD REFERENCE COUNTS AS EVIDENCE IN — everything except a fenced
@@ -587,9 +595,37 @@ export const NON_CARD_SEQUENCE_WORDS = ["reply", "run"] as const;
  * spaces or tabs.** `[^\S\n]*` rather than `\s*` so a `run` at the end of one
  * line cannot claim a `#N` at the start of the next, and `(?:^|[^\w])` so
  * `overrun #26` and `prerun #26` are ordinary card references.
+ *
+ * # ⚠ THE CHARACTER IN FRONT OF THE WORD IS LOAD-BEARING, AND IT WAS MEASURED
+ *
+ * The PR #780 reviewer asked why `[^\w]` rather than whitespace, since it also
+ * admits `(`, `-` and `"` — a boundary that was neither measured nor pinned.
+ * Driven over the same 328 merged pull requests: of the **62** mentions where
+ * one of these words sits in front of a `#N`, **60 are whitespace-separated and
+ * 2 are `(`** — `(reply #114` in PR #537 and `(reply #72` in PR #369, both
+ * genuine reply numbers written inside parentheses. **So narrowing this to
+ * whitespace would re-break two real mentions**, which is why it stays.
+ *
+ * ⚠ **AND THE LEAK THE REVIEWER NAMED IS REAL, MEASURED AT ZERO, AND LEFT
+ * OPEN ON PURPOSE.** *"in the long run #26 will need the same treatment"* would
+ * have its reference dropped, because `run` is an ordinary English word there
+ * and nothing mechanical can tell it from a run number. All three shapes the
+ * reviewer named — `in the long run`, `dry-run`, `re-run` — measure **0
+ * instances across the corpus**, and the two hyphenated ones are run numbers
+ * anyway (a re-run of run 26). Telling the idiom apart needs a judgement about
+ * English, which is precisely the instrument **#737 measured and DECLINED**;
+ * the arms below pin all three so the absence is a decision rather than a gap.
+ * If one ever appears it costs one flag, and this paragraph is where to start.
  */
+/* Built ONCE rather than per mention (PR #780 review, nit 3). The word list is
+   `as const`, so nothing about this regex can change at runtime. */
+const ANOTHER_SEQUENCE = new RegExp(
+  `(?:^|[^\\w])(?:${NON_CARD_SEQUENCE_WORDS.join("|")})[^\\S\\n]*$`,
+  "i",
+);
+
 function namesAnotherSequence(before: string): boolean {
-  return new RegExp(`(?:^|[^\\w])(?:${NON_CARD_SEQUENCE_WORDS.join("|")})[^\\S\\n]*$`, "i").test(before);
+  return ANOTHER_SEQUENCE.test(before);
 }
 
 export function cardNumbersIn(text: string, self?: number): number[] {

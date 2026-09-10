@@ -237,6 +237,40 @@ describe("a #N naming another sequence is not a card reference (#776)", () => {
     expect(cardNumbersIn("the run\n#26 is the card")).toContain(26);
   });
 
+  /*
+    ⚠ THE CHARACTER IN FRONT OF THE WORD — PR #780's review asked why the
+    boundary admits punctuation, and the corpus answers: of the 62 mentions
+    where one of these words precedes a `#N`, 60 are whitespace-separated and
+    TWO are an opening parenthesis — `(reply #114` in PR #537 and `(reply #72`
+    in PR #369, both genuine reply numbers. Narrowing this to whitespace would
+    re-break both, so the arm quotes the real one.
+  */
+  it("`(reply #114` is excluded too — the two parenthesised specimens in the corpus", () => {
+    expect(namedAsEvidenceIn("His word on the shape (reply #114) settled it", 537)).not.toContain(114);
+  });
+
+  /*
+    ⚠ THE THREE SHAPES THE REVIEWER NAMED, ALL MEASURED AT ZERO INSTANCES, ALL
+    PINNED — this module's own idiom for making an absence a decision rather
+    than a gap (the `edition #12` arm above).
+
+    The two hyphenated ones are run numbers anyway: a re-run of run 26. The
+    third is the honest leak — `run` as ordinary English — and nothing
+    mechanical separates it from a run number, which is the wording judgement
+    #737 measured and declined. It is pinned as it BEHAVES, not as one might
+    wish, so the next reader finds a decision instead of a surprise.
+  */
+  it("`re-run #26` and `dry-run #26` are excluded — a re-run of run 26 is still a run number", () => {
+    expect(cardNumbersIn("re-run #26 to confirm")).not.toContain(26);
+    expect(cardNumbersIn("a dry-run #26 first")).not.toContain(26);
+  });
+
+  it("⚠ THE KNOWN LEAK, PINNED: `in the long run #26` loses its reference, and no measurement objects", () => {
+    /* Zero instances across 328 merged pull requests. If this arm ever has to
+       change, the cost was one flag and the reason is in the docblock. */
+    expect(cardNumbersIn("in the long run #26 will need the same treatment")).not.toContain(26);
+  });
+
   /* ⚠ `edition` WAS MEASURED AT ZERO AND LEFT OUT, and this arm is what keeps
      that a decision rather than an oversight: adding it should redden here and
      send whoever adds it back for the measurement first. */
