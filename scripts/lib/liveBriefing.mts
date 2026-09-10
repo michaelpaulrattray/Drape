@@ -81,7 +81,16 @@ export type BriefingChoice = {
   why: string;
 };
 
-const parseFacts = (json: string): BriefingFacts | null => {
+/**
+ * The four fields a reply read needs, or null when the bytes are not a briefing.
+ *
+ * Exported (as `parseBriefingFacts`) because the reply reader's WRITE road has
+ * to take the same reading of the file ON DISK that this module takes of the
+ * DEPLOYED one — see `shared/crewReplyAcknowledgement.ts`. Re-spelling the
+ * parse in the caller is working law 4 in miniature: the two would disagree
+ * about what an unparseable briefing is, and one of them writes a file.
+ */
+export const parseBriefingFacts = (json: string): BriefingFacts | null => {
   let parsed: unknown;
   try {
     parsed = JSON.parse(json);
@@ -123,7 +132,7 @@ export function chooseBriefing(
   treeJson: string | null,
   showAtCommit: (sha: string) => string | null,
 ): BriefingChoice {
-  const treeFacts = treeJson === null ? null : parseFacts(treeJson);
+  const treeFacts = treeJson === null ? null : parseBriefingFacts(treeJson);
   const treeEdition = treeFacts?.edition ?? null;
   const fallback = (why: string): BriefingChoice =>
     ({ kind: "tree", facts: treeFacts, sha: null, treeEdition, treeAhead: false, why });
@@ -134,7 +143,7 @@ export function chooseBriefing(
   const deployedJson = showAtCommit(sha);
   if (deployedJson === null) return fallback(`the briefing could not be read at ${sha.slice(0, 8)} — this clone may not hold that commit`);
 
-  const deployedFacts = parseFacts(deployedJson);
+  const deployedFacts = parseBriefingFacts(deployedJson);
   if (!deployedFacts) return fallback(`the briefing at ${sha.slice(0, 8)} does not parse`);
 
   return {

@@ -42,8 +42,26 @@ const base = (rel: string) => basename(rel);
  * cleared by the guard built to catch it. Each entry therefore earns exactly
  * one match: the first is exempt, a second is an offender by name.
  */
+/*
+  ⚠ THE TWO #749 ENTRIES ARE THE SAME EXEMPTION ONE STEP DOWNSTREAM, AND THE
+  SECOND HALF OF THEIR REASON IS THE IMPORTANT ONE.
+
+  `crewReplyAcknowledgement.ts` writes `answered` onto the items
+  `staleOpenHosts` found, so it inherits that population and a wider literal
+  here could only ever act on something the detector never reported.
+
+  But it must not widen for a reason of its own, and it is the direction that
+  costs him: `waiting` means *he answered, and an act of HIS is still
+  outstanding* — a shift set it deliberately. Overwriting that with `answered`
+  would take a card off his desk while he still owes the thing it is waiting
+  for, which is the same class of silent vanishing the whole desk is built to
+  prevent. `crewCardNeedsHim` is therefore the WRONG predicate on both lines,
+  and the literal is the rule rather than a shortcut past it.
+*/
 const ACCEPTED = new Set([
   'lib/replyHosts.mts: host.state !== "open"',
+  'crewReplyAcknowledgement.ts: item.state !== "open"',
+  'crewReplyAcknowledgement.ts: card.state !== "open"',
 ]);
 
 /**

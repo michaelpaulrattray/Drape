@@ -505,7 +505,10 @@ if (heldEyeItems.length > 0) {
   console.log("  The gallery renders `open` only, so marking these done removes them from his");
   console.log("  screen. Their issue closing means the work finished, not that he looked — so");
   console.log("  each is left visible and named instead (#354). This does NOT clear itself:");
-  console.log("  mark it `answered` once he has judged, or re-point it at a card still open.");
+  console.log("  If he has REPLIED on them, that is already the act and a command applies it (#749):");
+  console.log("    railway.cmd run --service MySQL -- npx tsx scripts/crew-read-replies.mts --write");
+  console.log("  Only when he has NOT replied is this a judgement: mark it `answered` once he has");
+  console.log("  judged, or re-point it at a card still open.");
   for (const hold of heldEyeItems) {
     console.log(`  ! ${hold.id} (#${hold.issueNumber}) — ${hold.reason}`);
   }
