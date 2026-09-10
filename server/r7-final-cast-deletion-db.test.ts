@@ -181,6 +181,24 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
        WHERE id = ?`,
       [identitySnapshotId, packageSnapshotId, priorOperationId],
     );
+    /*
+      #532's specimen, as a fixture: an EARLIER attempt on this Cast that
+      FAILED with a real class name beside a subject-bearing message. On
+      production 14 of 60 `model.delete` rows look exactly like this and carry
+      no code at all, because the retry that eventually succeeded scrubbed the
+      first attempt's reason along with its subject.
+    */
+    const failedPriorOperationId = randomUUID();
+    await connection.execute(
+      `INSERT INTO generation_operations
+        (id, userId, clientRequestId, kind, modelId, payloadHash, status, plannedCredits, chargedCredits,
+         refundedCredits, errorCode, publicMessage, completedAt)
+       VALUES (?, ?, ?, 'model.delete', ?, ?, 'failed', 0, 0, 0, 'PRECONDITION_FAILED', ?, NOW())`,
+      [
+        failedPriorOperationId, userId, randomUUID(), modelId, "c".repeat(64),
+        `Could not delete while ${sharedMetadataUrl} was still in flight`,
+      ],
+    );
     const unboundOperationId = randomUUID();
     await connection.execute(
       `INSERT INTO generation_operations
@@ -316,6 +334,21 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
         modelId: null, result: null, publicMessage: null, expectedIdentityRevisionId: null,
         expectedStateVersion: null, expectedIdentitySnapshotId: null, expectedPackageSnapshotId: null,
       });
+    /*
+      ⚠ #532 — THE FAILURE CLASS SURVIVES THE FENCE AND EVERYTHING ELSE DOES
+      NOT. `errorCode` is a name WE chose for OUR defect, so it is the
+      accounting truth the fence's schema comment permits; the message written
+      about her Cast, the saved result and the Cast id all still go, and the
+      row is still stamped, so nothing serves it back.
+    */
+    expect(await row("SELECT status, modelId, errorCode, publicMessage, result FROM generation_operations WHERE id = ?", [failedPriorOperationId]))
+      .toMatchObject({
+        status: "failed", modelId: null, errorCode: "PRECONDITION_FAILED",
+        publicMessage: null, result: null,
+      });
+    expect((await row("SELECT subjectDeletedAt FROM generation_operations WHERE id = ?", [failedPriorOperationId])).subjectDeletedAt)
+      .not.toBeNull();
+
     expect(await row("SELECT status, modelId, expectedIdentityRevisionId, expectedStateVersion, expectedIdentitySnapshotId, expectedPackageSnapshotId, chargeReferenceId, result, chargedCredits, refundedCredits, subjectDeletedAt FROM generation_operations WHERE id = ?", [operationId]))
       .toMatchObject({
         status: "succeeded", modelId: null, expectedIdentityRevisionId: null, chargeReferenceId: null,
