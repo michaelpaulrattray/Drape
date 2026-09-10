@@ -32,6 +32,7 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { LAW_SURFACES } from "./lib/lawText.mts";
+import { OPEN_QUEUE_LIMIT, bandFromOpenQueue } from "./lib/nextUpItems.mts";
 import {
   buildDigest,
   DigestRefusal,
@@ -176,29 +177,58 @@ function ghJson(root: string, args: string[]): unknown | Unreadable {
   }
 }
 
-/* Named, because the truncation marker below compares against them: a read that
-   comes back exactly at its limit may have lost rows, and dropping the 61st
-   founder-ordered card silently is how a queue stops being the queue. */
-const NEXT_UP_LIMIT = 60;
+/* Named, because the truncation marker below compares against it: a read that
+   comes back exactly at its limit may have lost rows, and dropping a closed
+   card silently is how a "what changed" section stops being one. */
 const CLOSED_LIMIT = 40;
 
-function nextUp(root: string, network: boolean): NextUpRow[] | Unreadable {
-  if (!network) return { unreadable: "--no-network was passed; NOT an empty queue" };
+/**
+ * NEXT UP — READ AS THE WHOLE OPEN QUEUE AND FILTERED, NEVER ASKED NARROWLY
+ * (#774, the fourth and last reader of one class).
+ *
+ * The class: *a successful `gh` read of nothing believed as a fact, on a
+ * signal that steers or stops the team.* It was seen on production — the queue
+ * counter stored 0 for `process` at 15:00:11 and 8 forty seconds later (#725)
+ * — and fixed at the park gate (#730) and the desk sweep (#772). This is the
+ * one that mattered most and was left: **the line every shift reads first.**
+ *
+ * Asking `--label founder-ordered` and getting `[]` is indistinguishable from
+ * a blip, and the old road printed **"NEXT UP: EMPTY — no open
+ * `founder-ordered` card"** with full confidence. A shift that believes it
+ * works a background card instead of the card he ordered, for a whole session.
+ *
+ * ⚠ **The fix is to WIDEN the question, not to add a second one.** The digest
+ * takes only two `gh` reads and neither was a whole-queue read, so unlike the
+ * sweep it had no free witness beside it. Reading the whole open queue and
+ * filtering the band out of the answer is the SAME ONE CALL, and the witness
+ * arrives with it: `emptyOrderedBandVerdict` — the sweep's own function, not a
+ * second implementation of the same judgement — decides whether `[]` is a fact
+ * or a blip, and an unbelievable empty comes back `Unreadable`, which this
+ * file already renders correctly.
+ *
+ * ⚠ **THE TRUNCATION RULE MOVED WITH IT AND IS NOT THE OLD ONE.** It used to
+ * cap the BAND at 60; the cap is now on the POPULATION, so "at the limit"
+ * means the whole-queue read may not have reached the band at all — `gh`
+ * returns the NEWEST rows and ordered cards skew OLD, so the band is exactly
+ * what falls outside a full window. The marker says which of the two it is.
+ */
+function nextUp(root: string, network: boolean): { rows: NextUpRow[] | Unreadable; truncated: boolean } {
+  const answer = (rows: NextUpRow[] | Unreadable, truncated = false) => ({ rows, truncated });
+  if (!network) return answer({ unreadable: "--no-network was passed; NOT an empty queue" });
   const raw = ghJson(root, [
     "issue",
     "list",
-    "--label",
-    "founder-ordered",
     "--state",
     "open",
     "--limit",
-    String(NEXT_UP_LIMIT),
+    String(OPEN_QUEUE_LIMIT),
     "--json",
     "number,title,labels,createdAt",
   ]);
-  if (raw && typeof raw === "object" && "unreadable" in raw) return raw as Unreadable;
-  if (!Array.isArray(raw)) return { unreadable: "gh returned something that is not a list" };
-  return raw.map((row: Record<string, unknown>) => ({
+  if (raw && typeof raw === "object" && "unreadable" in raw) return answer(raw as Unreadable);
+  if (!Array.isArray(raw)) return answer({ unreadable: "gh returned something that is not a list" });
+
+  const allOpen = raw.map((row: Record<string, unknown>) => ({
     number: Number(row.number),
     title: String(row.title ?? ""),
     labels: Array.isArray(row.labels)
@@ -206,6 +236,15 @@ function nextUp(root: string, network: boolean): NextUpRow[] | Unreadable {
       : [],
     createdAt: String(row.createdAt ?? ""),
   }));
+
+  /* The judgement lives in `lib/nextUpItems.mts` so it can be DRIVEN without
+     standing up a `gh` — this function's only remaining job is the call and
+     the flattening above. That split is the whole reason the repair is
+     testable; the road it replaces fetched and judged in one breath, which is
+     how it shipped green. */
+  const verdict = bandFromOpenQueue(allOpen, OPEN_QUEUE_LIMIT);
+  if ("unreadable" in verdict) return answer({ unreadable: verdict.unreadable });
+  return answer(verdict.band, verdict.truncated);
 }
 
 /**
@@ -305,14 +344,14 @@ function main(argv: string[]): number {
       programMd,
       lawSurfaces,
       roots: topLevelDirectories(root),
-      nextUp: queue,
+      nextUp: queue.rows,
       patrolClocks: patrolClocks(root),
       since,
       commits: commitsSince(root, sinceIso),
       closedCards: closed.cards,
       moneyAuthMap,
       truncated: {
-        nextUp: Array.isArray(queue) && queue.length >= NEXT_UP_LIMIT,
+        nextUp: queue.truncated,
         closedCards: closed.truncated,
       },
       request: { paths: options.paths, flags: options.flags },

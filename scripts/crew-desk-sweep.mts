@@ -89,6 +89,7 @@ import {
 } from "../shared/crewNextUpHold.js";
 import {
   type OrderedIssue,
+  OPEN_QUEUE_LIMIT,
   emptyOrderedBandVerdict,
   planNextUpItems,
 } from "./lib/nextUpItems.mts";
@@ -182,10 +183,11 @@ let staleHolds: ReadonlyArray<{ issueNumber: number; hasWrittenReason: boolean }
    One call, one instant — the ladder pass below reads this same answer, so the
    two cannot describe different moments. */
 
-/* ONE owner for the cap, because three readings depend on it: the read itself,
-   the ladder's "a floor, not a list" refusal, and the empty-band witness. A
-   number typed three times is the drift working law 4 is about. */
-const OPEN_QUEUE_LIMIT = 200;
+/* ONE owner for the cap, because five readings across two files depend on it:
+   this read, the ladder's "a floor, not a list" refusal, the empty-band
+   witness, and the shift digest's own two (#774). A number typed once per file
+   is the drift working law 4 is about, so it lives in `lib/nextUpItems.mts`
+   beside the verdict that quotes it. */
 
 const allOpen = gh([
   "issue", "list",

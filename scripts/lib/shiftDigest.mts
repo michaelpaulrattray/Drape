@@ -756,7 +756,12 @@ export function buildDigest(inputs: DigestInputs): string {
     );
     out.push("An unreadable queue is NOT an empty one, and it does not open the one-quiet-shift road (#504).");
   } else if (inputs.nextUp.length === 0) {
-    out.push("NEXT UP: EMPTY — no open `founder-ordered` card.");
+    /* Since #774 this line is only ever reached when the collector's own
+       whole-queue witness AGREED the band is empty; a `gh` blip comes back
+       UNREADABLE above and says so. The clause is here because the difference
+       is invisible from the outside — the old line looked exactly like this
+       one and was printed with the same confidence on a blip. */
+    out.push("NEXT UP: EMPTY — no open `founder-ordered` card, and the open queue was read to confirm it.");
   } else {
     out.push(`NEXT UP: ${inputs.nextUp.length} open \`founder-ordered\` card(s), oldest first:`);
     for (const row of [...inputs.nextUp].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
@@ -766,7 +771,17 @@ export function buildDigest(inputs: DigestInputs): string {
       );
     }
     if (inputs.truncated?.nextUp) {
-      out.push("  ⚠ TRUNCATED — the read came back at its limit, so there may be more. Run the query yourself.");
+      /* ⚠ The cap is on the POPULATION, not on the band (#774): the band is
+         filtered out of a whole-open-queue read, and `gh` returns the NEWEST
+         rows while ordered cards skew OLD — so a full window is precisely the
+         case where an ordered card can sit outside it. Saying "there may be
+         more" without saying more of WHAT would read as a long band. */
+      out.push(
+        "  ⚠ TRUNCATED — the whole-queue read this band was filtered from came back at its limit,",
+      );
+      out.push(
+        "    so an older `founder-ordered` card may sit outside the window. Run the query yourself.",
+      );
     }
   }
   out.push("");
