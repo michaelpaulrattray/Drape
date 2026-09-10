@@ -104,8 +104,14 @@
  * different measurements of different populations and are each free to move
  * without the other; what a mirror would be is a second list of the FILES, and
  * there is none — `sourceSweepSuites.ts` derives the population from the tree.
- * Where a file is in both populations, either declaration satisfies the guard,
- * because either one already lifts it off the 5 s default.
+ *
+ * ⚠ **THE SYMMETRY IS ONE-WAY, AND AN EARLIER DRAFT OF THIS SENTENCE CLAIMED
+ * BOTH.** This card's guard accepts EITHER constant, because the property it
+ * asserts is only "off the 5 s default". **#548's does not** — its
+ * `declaresTheTimeout` accepts solely `CHILD_PROCESS_TEST_TIMEOUT_MS`. So a
+ * file in BOTH populations must declare the child-process one, and the four
+ * that already do are correct as they stand. Nothing needs changing: that
+ * failure is loud and names its own remedy. The overpromise was in the prose.
  *
  * Declared once per FILE, never per arm:
  *

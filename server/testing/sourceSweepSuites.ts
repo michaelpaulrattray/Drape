@@ -113,6 +113,14 @@ export function sweepsTheTree(source: string, fromFile: string, repoRoot: string
     does not know. **Grepped at the tree the day this shipped: no live instance,
     all importers use the plain named import.** So it is a remainder rather than
     a defect, and it is the silent direction, which is why it is written down.
+
+    ⚠ AND ITS SIBLING ON THE IMPORT HALF: `relativeSpecifiers` reads STATIC
+    import syntax, so a suite reaching the reader through a dynamic
+    `await import(…)` leaves this population silently. No live instance today
+    and static imports are the house style — but **this is the exact class that
+    blinded the architecture Atlas to 65 modules** (`d614320f`), where "zero
+    inbound edges" was the reading that meant "safe to delete". It is cheap to
+    write down and expensive to rediscover.
   */
   return /\breadListedSource\s*\(/.test(codeOnly(source));
 }
@@ -133,6 +141,19 @@ export function sweepsTheTree(source: string, fromFile: string, repoRoot: string
  * ⚠ **A PER-ARM NUMBER DOES NOT COUNT, AND THAT IS DELIBERATE** — it is the
  * road #548 measured as leaking, and this tree holds two live half-covered
  * files. The declaration must be the file's.
+ *
+ * ⚠ **ITS REMAINDER, AND IT IS THE ONE THIS READER IS WEAKEST ON: THE CONSTANT
+ * IS MATCHED BY NAME, NEVER BY PROVENANCE.** A file writing its own
+ * `const CONTENDED_TEST_TIMEOUT_MS = 7_000;` and setting that satisfies this
+ * predicate while re-authoring the figure — which is precisely the second-copy
+ * shape the raw-number arm exists to refuse, and it compiles, so `tsc` is no
+ * backstop either. **`sweepsTheTree` applies the both-halves discipline that
+ * would close it** (resolve the specifier as well as match the call) and this
+ * function deliberately does not, because the structural fix is real work and
+ * the risk is a shadow nobody has a motive to write. **It is written down here
+ * rather than left to be rediscovered, which is the whole of the difference
+ * between a limit and a defect** — and if this class ever bites, the fix is
+ * named above rather than needing to be invented.
  */
 export function declaresTheFloor(source: string): boolean {
   const code = codeOnly(source);
