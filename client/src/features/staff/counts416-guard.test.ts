@@ -339,7 +339,7 @@ describe("card 416 — the moderator hook sets no option that reaches another su
           "TanStack resolves these from the last observer to set them, not per",
           "observer — so this reaches FlaggedDiscrepanciesCard on the moderator",
           "dashboard, which observes getFlaggedUsers at this same key.",
-          "This exact defect shipped once already (#415, PR #456).",
+          "This exact defect shipped once already — see card 415 and PR 456.",
         ].join("\n"),
       ).toEqual([]);
 
@@ -369,7 +369,7 @@ describe("card 416 — the moderator hook sets no option that reaches another su
       */
       expect(
         block,
-        "a flag raised while she sits still must reach her badge (#752): " + block,
+        "a flag raised while she sits still must reach her badge (card 752): " + block,
       ).toMatch(/refetchInterval:\s*autoRefresh\s*\?\s*STAFF_REFRESH_INTERVAL_MS\s*:\s*false/);
     }
 
