@@ -29,6 +29,10 @@ import { SubscriptionPlan } from "./stripeProducts";
 import { PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
 import { invoiceSubscriptionId, periodBought } from "./invoiceLines";
+import {
+  applyPlanChangeSettlement,
+  voidPlanChangeSettlement,
+} from "./planChangeSettlement";
 import { createModuleLogger } from "../logging/logger";
 import { checkEventEnvironment } from "./environmentTag";
 import { deploymentTag } from "../_core/env";
@@ -310,6 +314,29 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
   const userId = userWithCredits.id;
   const planTier = userWithCredits.credits?.planTier || "free";
 
+  // ⚠ THE PLAN-CHANGE CREDIT MOVE SETTLES HERE (#711) — before the period
+  // logic, because an upgrade's grant rides a PRORATION-ONLY invoice, which
+  // the periodBought branch below deliberately exits early for. `changePlan`
+  // recorded the move against this invoice's id when Stripe accepted the
+  // update; this event is the money actually arriving. Applied first so an
+  // interval switch's unwind lands before the same invoice's period grant
+  // (the refresh's compare-and-set tolerates either order; this one is
+  // deterministic). A failed application fails the event LOUD — Stripe
+  // redelivers, and the ledger's unique reference makes the retry safe.
+  const settlement = await applyPlanChangeSettlement(invoice.id as string);
+  if (settlement.outcome === "failed") {
+    return {
+      success: false,
+      message: `Plan-change settlement for invoice ${invoice.id} failed — refusing so Stripe redelivers`,
+      error: settlement.error,
+    };
+  }
+  if (settlement.outcome === "applied") {
+    log.info(
+      `[Webhook] Applied plan-change credit settlement for invoice ${invoice.id} (user ${userId}): ${settlement.creditsMoved} credits`,
+    );
+  }
+
   // Skip if free tier (shouldn't happen but just in case)
   if (planTier === "free") {
     return { success: true, message: "Free tier, no credits to refresh" };
@@ -424,6 +451,11 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
   if (isFinalFailure) {
     // Final retry exhausted — auto-cancel the subscription and downgrade to free
     log.info(`[Webhook] Final payment failure for user ${userId}, auto-cancelling subscription`);
+
+    // A pending plan-change credit move hanging on THIS invoice will never
+    // settle — void it so a declined card's grant stays ungranted and the
+    // row stops reading as queued work (#711).
+    await voidPlanChangeSettlement(invoice.id as string);
 
     try {
       await cancelSubscription(subscriptionId);

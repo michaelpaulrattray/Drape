@@ -116,6 +116,14 @@ export {
   spendWindow,
 } from "./billing";
 
+// Plan-change credit settlements (#711)
+export {
+  recordPlanChangeSettlement,
+  getPlanChangeSettlementByInvoice,
+  resolvePlanChangeSettlement,
+  type RecordPlanChangeSettlementInput,
+} from "./planChangeSettlements";
+
 // Waitlist
 export {
   addToWaitlist,

@@ -17,9 +17,14 @@ import {
   readSubscriptionBillingState,
   quotePlanChange,
   updateSubscriptionPlan,
+  getInvoiceStatus,
   getCustomerInvoices,
   getAllCustomerInvoices,
 } from "../stripe/stripeService";
+import {
+  queuePlanChangeSettlement,
+  applyPlanChangeSettlement,
+} from "../stripe/planChangeSettlement";
 import { stripeIntervalOf } from "@shared/annualBilling";
 import {
   SUBSCRIPTION_PRODUCTS,
@@ -469,77 +474,142 @@ export const billingRouter = router({
         });
       }
 
-      // ⚠ CREDITS MIRROR THE MONEY'S OWN PRORATION, IN BOTH DIRECTIONS
-      // (#664 review findings 1+3). Stripe's `always_invoice` nets the money
-      // side of every change — unused time comes back as customer balance —
-      // so the credit side must net the same share or alternating changes
-      // mint allowance: upgrade-then-downgrade kept the ×12 grant while the
-      // money returned, and switch-then-switch-back re-granted a period
-      // whose money had been refunded. One rule closes the class:
+      // ⚠ CREDITS MIRROR THE MONEY'S OWN PRORATION, IN BOTH DIRECTIONS —
+      // AND THEY MOVE WHEN THAT MONEY SETTLES (#664 findings 1+3; #711).
+      // Stripe's `always_invoice` nets the money side of every change, so the
+      // credit side nets the same share:
       //   · same-interval upgrade   → grant the remaining-cycle share (+)
       //   · same-interval downgrade → deduct the same share (−)
       //   · interval switch         → deduct the OLD period's unconsumed
       //     grant; the switch invoice's webhook grants the NEW period.
-      // Deductions floor at the live balance: spent credits are spent.
+      // But the Stripe update SUCCEEDING is not the money settling: the
+      // `always_invoice` charge can decline, and a grant applied here-and-now
+      // let a declined card keep an upgrade's credits (×12 on annual) while
+      // the invoice sat unpaid. So the move is RECORDED against the change's
+      // own invoice and APPLIED when that invoice is paid — which for a
+      // working card (and every zero-due downgrade invoice) is already true
+      // by the time we look, so the happy path applies in this same breath.
+      // The record-then-recheck order and the shared ledger key are the race
+      // analysis — see stripe/planChangeSettlement.ts. Deductions still floor
+      // at the live balance, read at APPLICATION time: spent credits are
+      // spent, and the #664 "deliberately coarse mirror" ruling (the floor is
+      // the total balance; no per-source lots) carries over unchanged.
       const currentPlan = billingState.currentPlan;
       const creditAdjustment = quote.creditAdjustment;
       const creditsToReturn =
         quote.kind === "interval-switch" ? quote.creditUnwind : Math.max(0, -creditAdjustment);
 
-      if (creditAdjustment > 0) {
-        // Add prorated credits for upgrade
-        const creditResult = await addCredits(
-          ctx.user.id,
-          creditAdjustment,
-          "bonus",
-          `Prorated credits for upgrade to ${input.newPlan}`,
-          input.clientRequestId ? `plan-change:${input.clientRequestId}` : undefined,
-        );
-        if (!creditResult.success) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "The plan changed, but the credit adjustment could not be recorded. Contact support before retrying.",
-          });
-        }
-      } else if (creditsToReturn > 0) {
-        // Floor at the balance read NOW (not the pre-change row): a deduction
-        // that exceeds the balance is refused by deductCredits, and a spend
-        // mid-change must cost the customer nothing extra.
-        //
-        // ⚠ A DELIBERATELY COARSE MIRROR (#664 review round 2, finding 2):
-        // the floor is the TOTAL balance, so the unwind can consume credits
-        // that arrived from other sources (an admin adjustment, a referral)
-        // when the cycle's own grant was already spent. The balance is one
-        // number — the ledger records sources but the product has no
-        // per-source lots to spend from, and inventing lot-tracking for this
-        // edge would be a second accounting system. The customer is never
-        // taken below zero and never loses more than the share whose money
-        // they are getting back; who that share was "from" is attribution,
-        // not value. If lots ever exist, this floor is the line to revisit.
-        const liveCredits = await getUserCredits(ctx.user.id);
-        const returnable = Math.min(creditsToReturn, Math.max(0, liveCredits?.balance ?? 0));
-        if (returnable > 0) {
-          const unwindResult = await deductCredits(
-            ctx.user.id,
-            returnable,
-            "subscription",
-            quote.kind === "interval-switch"
+      const direction: "grant" | "unwind" | null =
+        creditAdjustment > 0 ? "grant" : creditsToReturn > 0 ? "unwind" : null;
+      let creditSettlement: "applied" | "pending" | "none" = "none";
+
+      if (direction) {
+        const settlementCredits = direction === "grant" ? creditAdjustment : creditsToReturn;
+        const description =
+          direction === "grant"
+            ? `Prorated credits for upgrade to ${input.newPlan}`
+            : quote.kind === "interval-switch"
               ? `Unused ${quote.currentInterval} cycle credits returned with its refund (switch to ${input.newPlan}, billed ${quote.targetInterval === "annual" ? "yearly" : "monthly"})`
-              : `Prorated credits returned with the refund for downgrading to ${input.newPlan}`,
-            input.clientRequestId ? `plan-change-unwind:${input.clientRequestId}` : undefined,
-            // Not a tool spend: the unwind returns unconsumed allowance
-            // beside Stripe's money credit for the same days. One of the two
-            // deliberate null-toolKind sites (#401; the other is the
-            // chargeback revoke in stripe/webhooks.ts).
-            { toolKind: null },
+              : `Prorated credits returned with the refund for downgrading to ${input.newPlan}`;
+
+        if (!result.invoiceId) {
+          // `always_invoice` should make this unreachable: no invoice means
+          // no settlement signal to hang on. The declared fallback is the old
+          // immediate move — withholding here would risk a paid customer's
+          // credits to close a bounded house exposure, which is the wrong
+          // trade — and it is loud, never silent.
+          log.error(
+            { userId: ctx.user.id, subscriptionId: subscription.stripeSubscriptionId },
+            "[Billing] plan change produced NO invoice — applying the credit move immediately (legacy road)",
           );
-          if (!unwindResult.success && !unwindResult.duplicate) {
-            // The plan HAS changed and the money side is already netted;
-            // a failed unwind must be visible, not silent generosity.
-            log.error(
-              { userId: ctx.user.id, returnable, error: unwindResult.error },
-              "[Billing] plan-change credit unwind failed after the Stripe update",
+          if (direction === "grant") {
+            const creditResult = await addCredits(
+              ctx.user.id,
+              settlementCredits,
+              "bonus",
+              description,
+              input.clientRequestId ? `plan-change:${input.clientRequestId}` : undefined,
             );
+            if (!creditResult.success) {
+              throw new TRPCError({
+                code: "INTERNAL_SERVER_ERROR",
+                message: "The plan changed, but the credit adjustment could not be recorded. Contact support before retrying.",
+              });
+            }
+          } else {
+            const liveCredits = await getUserCredits(ctx.user.id);
+            const returnable = Math.min(settlementCredits, Math.max(0, liveCredits?.balance ?? 0));
+            if (returnable > 0) {
+              const unwindResult = await deductCredits(
+                ctx.user.id,
+                returnable,
+                "subscription",
+                description,
+                input.clientRequestId ? `plan-change-unwind:${input.clientRequestId}` : undefined,
+                { toolKind: null },
+              );
+              if (!unwindResult.success && !unwindResult.duplicate) {
+                log.error(
+                  { userId: ctx.user.id, returnable, error: unwindResult.error },
+                  "[Billing] plan-change credit unwind failed after the Stripe update",
+                );
+              }
+            }
+          }
+          creditSettlement = "applied";
+        } else {
+          // Record FIRST, then read the status FRESH: a webhook that fired
+          // before the row existed can never re-fire, so the fresh read is
+          // what closes that gap (planChangeSettlement.ts, the race note).
+          const recorded = await queuePlanChangeSettlement({
+            userId: ctx.user.id,
+            stripeInvoiceId: result.invoiceId,
+            direction,
+            credits: settlementCredits,
+            description,
+            clientRequestId: input.clientRequestId,
+          });
+          if (!recorded.success) {
+            if (direction === "grant") {
+              // The customer's money is (or will be) taken and nothing now
+              // owes them the credits — that must not pass as success.
+              throw new TRPCError({
+                code: "INTERNAL_SERVER_ERROR",
+                message: "The plan changed, but the credit adjustment could not be recorded. Contact support before retrying.",
+              });
+            }
+            // A lost unwind is house exposure, visible, never the customer's
+            // problem — the same stance as a failed unwind before #711.
+            log.error(
+              { userId: ctx.user.id, invoiceId: result.invoiceId },
+              "[Billing] plan-change unwind settlement could not be recorded",
+            );
+          } else {
+            const status =
+              result.invoiceStatus === "paid"
+                ? "paid"
+                : await getInvoiceStatus(result.invoiceId);
+            if (status === "paid") {
+              const applied = await applyPlanChangeSettlement(result.invoiceId);
+              if (applied.outcome === "failed") {
+                if (direction === "grant") {
+                  throw new TRPCError({
+                    code: "INTERNAL_SERVER_ERROR",
+                    message: "The plan changed, but the credit adjustment could not be recorded. Contact support before retrying.",
+                  });
+                }
+                // Failed unwind: visible in the module's own log; the row
+                // stays pending as the support artifact.
+                creditSettlement = "pending";
+              } else {
+                creditSettlement = "applied";
+              }
+            } else {
+              // The charge has not settled — Stripe is collecting (or the
+              // card declined and Stripe will retry). The credits move when
+              // invoice.payment_succeeded lands; a final failure voids them.
+              creditSettlement = "pending";
+            }
           }
         }
       }
@@ -571,6 +641,8 @@ export const billingRouter = router({
           isUpgrade: quote.isUpgrade,
           creditAdjustment,
           creditsReturned: creditsToReturn,
+          creditSettlement,
+          settlementInvoiceId: result.invoiceId ?? null,
           proratedAmount,
           amountSource: result.invoicedAmount != null ? "stripe-invoice" : "estimate",
         },
@@ -584,7 +656,9 @@ export const billingRouter = router({
             ? `You are on ${planName}, billed yearly — the new billing year starts today, and the full year of credits lands as soon as the payment settles, replacing what was left of your old cycle's allowance.`
             : `You are on ${planName}, billed monthly — the new billing month starts today, and unused time from your year comes off future bills automatically.`
           : quote.isUpgrade
-            ? `Upgraded to ${planName}! ${creditAdjustment} bonus credits added.`
+            ? creditSettlement === "pending"
+              ? `Upgraded to ${planName}! Your ${creditAdjustment} bonus credits land as soon as the payment settles.`
+              : `Upgraded to ${planName}! ${creditAdjustment} bonus credits added.`
             : `Downgraded to ${planName}. Unused time on the old price comes back as billing credit, and its unused credits go with it.`;
 
       return {
@@ -592,6 +666,7 @@ export const billingRouter = router({
         message,
         proratedAmount,
         creditAdjustment,
+        creditSettlement,
         targetInterval: quote.targetInterval,
         changeKind: quote.kind,
       };
