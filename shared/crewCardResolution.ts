@@ -160,6 +160,37 @@ export type ResolutionPlan = {
 const PROMOTABLE = new Set(["open", "waiting", "answered"]);
 
 /**
+ * The eye item that would be ORPHANED by taking this card off his desk (#133).
+ *
+ * The schema refuses an eye item that still needs him beside a card that does
+ * not, so this is the question every road out of `open` has to ask — not only
+ * the issue-closed one this file was written for. It is exported because
+ * `crewReplyAcknowledgement.ts` asks the identical question about a card he has
+ * REPLIED to, and two spellings of one schema rule is working law 4's own
+ * failure shape: the drift is invisible until the rite refuses an edition at
+ * the parse and neither caller knows which of them was wrong.
+ */
+export function eyeItemStillNeedingHim(
+  cardId: string,
+  eyeItems: readonly ResolvableEyeItem[],
+): ResolvableEyeItem | undefined {
+  return eyeItems.find((item) => item.cardId === cardId && crewCardNeedsHim(item.state));
+}
+
+/**
+ * The pipeline row that still says he is blocking this card (#291).
+ *
+ * Same argument as above: the schema forbids a `waiting-founder` row naming a
+ * card that no longer needs him, so any promotion off `open` must ask it.
+ */
+export function waitingFounderRowNaming(
+  cardId: string,
+  pipeline: readonly ResolvablePipelineRow[],
+): ResolvablePipelineRow | undefined {
+  return pipeline.find((row) => row.status === "waiting-founder" && row.cardId === cardId);
+}
+
+/**
  * Plan every `open`/`answered` card and eye item whose issue has CLOSED.
  *
  * `issueState` is injected rather than called directly so the rule can be
@@ -218,7 +249,15 @@ export function planCardResolutions(
         issueNumber,
         reason: "these frames are still on his page and marking them done would take them off it "
           + "(#354) — the issue closing means the work finished, not that he looked; "
-          + "mark it `answered` once he has judged, or re-point it at an open card",
+          /* ⚠ THE FIRST ROAD IS NO LONGER A HAND (#749). If he has REPLIED on these
+             frames, `crew-read-replies.mts --write` marks them answered from his own
+             reply and this hold clears itself on the next run — a shift only has to
+             decide when he has NOT replied, which is the case this hold is really
+             about. The sentence used to say "mark it answered once he has judged",
+             and four shifts read that as work only a person could do. */
+          + "if he has replied on them, `crew-read-replies.mts --write` settles it from "
+          + "his own reply; otherwise mark it `answered` once he has judged, or re-point "
+          + "it at an open card",
       });
       continue;
     }
@@ -242,9 +281,7 @@ export function planCardResolutions(
        `!eyeClosing.has(…)` clause here would be a dead condition reading as a
        live one. Both are held instead, and they are settled together by a hand
        rather than by a guess. */
-    const orphanedEye = eyeItems.find(
-      (item) => item.cardId === card.id && crewCardNeedsHim(item.state),
-    );
+    const orphanedEye = eyeItemStillNeedingHim(card.id, eyeItems);
     if (orphanedEye) {
       /* ⚠ THE ADVICE NAMES ONLY WHAT IS ACTUALLY OPEN TO THE SHIFT (review of
          PR #628, finding 2). It used to offer *"settle the frames, or close
@@ -270,9 +307,7 @@ export function planCardResolutions(
        about work, so it is reported and never guessed. (A row whose PR has
        merged is already repaired by the pass ABOVE this one, so it cannot
        still be holding anything here.) */
-    const claimingRow = pipeline.find(
-      (row) => row.status === "waiting-founder" && row.cardId === card.id,
-    );
+    const claimingRow = waitingFounderRowNaming(card.id, pipeline);
     if (claimingRow) {
       reasons.push(
         `pipeline row '${claimingRow.id ?? "(unnamed)"}' still says he is blocking it (#291) — `

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ca8d5138c3922117"
+    "sourceFingerprint": "396afc1517310764"
   },
   "domains": [
     {
@@ -128,7 +128,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 55
+      "moduleCount": 56
     },
     {
       "id": "domain:staff",
@@ -6141,6 +6141,12 @@
     {
       "id": "module:shared/crewQueueTitles.ts",
       "path": "shared/crewQueueTitles.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewReplyAcknowledgement.ts",
+      "path": "shared/crewReplyAcknowledgement.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12872,6 +12878,10 @@
     {
       "id": "test:server/crewQueueTitles.test.ts",
       "path": "server/crewQueueTitles.test.ts"
+    },
+    {
+      "id": "test:server/crewReplyAcknowledgement.test.ts",
+      "path": "server/crewReplyAcknowledgement.test.ts"
     },
     {
       "id": "test:server/crewShiftArguments.test.ts",
@@ -33781,6 +33791,11 @@
     {
       "from": "module:shared/crewPipelineGroups.ts",
       "to": "module:shared/crewWorkSwitches.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewReplyAcknowledgement.ts",
+      "to": "module:shared/crewCardResolution.ts",
       "kind": "imports"
     },
     {
