@@ -43,6 +43,81 @@ export type NextUpItem = {
   held?: { state: string; because?: string };
 };
 
+/** The label whose open cards ARE the NEXT UP band. */
+export const ORDERED_BAND_LABEL = "founder-ordered";
+
+/**
+ * IS AN EMPTY NEXT UP BELIEVABLE THIS RUN? (#772, and the third instance of one
+ * class.)
+ *
+ * The sweep asks `gh` a narrow question — open issues carrying
+ * `founder-ordered` — and **an empty answer to a narrow question is
+ * indistinguishable from a broken one.** `[]` was written onto his page as
+ * *nothing queued*, with the same confidence as a real reading. It has been
+ * seen: the queue counter's half of this road stored 0 for `process` at
+ * 15:00:11 and 8 forty seconds later (#725), and the park gate's half was
+ * #730.
+ *
+ * The witness is FREE and already in the sweep: the same run reads the whole
+ * open queue with its labels for the ladder block. An empty band is a fact only
+ * when that read ANSWERED and holds no card carrying the label.
+ *
+ *   whole-queue read unreadable  -> not believable (nothing can confirm it)
+ *   whole-queue read also empty  -> not believable (a queue is never empty here)
+ *   whole-queue read AT ITS CAP  -> not believable (it may not hold the band)
+ *   it holds labelled cards      -> not believable, and provably wrong
+ *   it answered, none labelled   -> believable: the band really is empty
+ *
+ * The cap row is the PR #773 review's finding 1 and it is an in-file
+ * inconsistency rather than a hypothetical: the sweep's ladder branch already
+ * calls a 200-row answer "a floor, not a list", so one consumer of that read
+ * refused what this one trusted. `gh` returns the NEWEST rows, and
+ * founder-ordered cards skew OLD — the day the queue passes the cap, the band
+ * is exactly what falls outside the window, and an empty band would read as
+ * believable on a read that never looked at it.
+ *
+ * Refusing costs a NEXT UP block one run older with its reason printed.
+ * Believing costs his page telling him he has nothing queued while his own
+ * ordered cards sit in the queue — and every other view a shift reads renders
+ * the same query, so nothing would disagree with it.
+ */
+export function emptyOrderedBandVerdict(
+  allOpen: readonly { labels?: unknown }[] | null,
+  /** The `--limit` the whole-queue read was taken with, so "at its cap" is the
+   *  caller's own number rather than a constant that could drift from it. */
+  limit = 200,
+): { believable: boolean; why: string } {
+  if (allOpen === null) {
+    return {
+      believable: false,
+      why: "the whole-queue read that would confirm it could not be taken this run",
+    };
+  }
+  if (allOpen.length === 0) {
+    return {
+      believable: false,
+      why: "the whole open queue came back empty too, which is a blip and not a queue",
+    };
+  }
+  if (allOpen.length >= limit) {
+    return {
+      believable: false,
+      why: `the witness itself came back at its ${limit}-row limit, which is a floor and not a list`,
+    };
+  }
+  const carried = allOpen.filter((row) => labelNames(row.labels).includes(ORDERED_BAND_LABEL)).length;
+  if (carried > 0) {
+    return {
+      believable: false,
+      why: `this run's own whole-queue read holds ${carried} open card(s) carrying \`${ORDERED_BAND_LABEL}\``,
+    };
+  }
+  return {
+    believable: true,
+    why: `${allOpen.length} open card(s) were read and none carries \`${ORDERED_BAND_LABEL}\``,
+  };
+}
+
 function labelNames(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((label) => String((label as { name?: unknown })?.name ?? ""));
