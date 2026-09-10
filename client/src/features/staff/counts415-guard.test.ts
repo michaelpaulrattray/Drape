@@ -379,9 +379,28 @@ describe("card 415 — the pill is INVALIDATED by the acts that move it", () => 
     expect(hook, "the switch is the shared store, not a local useState").toMatch(
       /useStaffAutoRefresh\(\)/,
     );
+    /*
+      ⚠ THIS PATTERN WAS `\d{4}` AND COULD NOT SEE `30_000` — the gate review of
+      PR #751 found it, and it is working law 2 in miniature: the house style for
+      this number is UNDERSCORED, so the one literal a shift would plausibly
+      write has a longest digit run of three and slipped past the arm whose own
+      message bans it. Nothing was exposed (the positive match above pins the
+      constant form, and #455's derived arm catches the underscored ternary),
+      but an arm that cannot fail on the thing it names is not an arm.
+    */
+    const LITERAL_INTERVAL = /refetchInterval:[^,\n]*\d[\d_]{3,}/;
     expect(hook, "a literal interval is a second copy of the label's number").not.toMatch(
-      /refetchInterval:[^,\n]*\d{4}/,
+      LITERAL_INTERVAL,
     );
+    for (const sabotage of [
+      "refetchInterval: autoRefresh ? 30_000 : false,",
+      "refetchInterval: autoRefresh ? 30000 : false,",
+      "refetchInterval: 60_000,",
+    ]) {
+      expect(LITERAL_INTERVAL.test(sabotage), sabotage + " must read as a literal").toBe(true);
+    }
+    expect(LITERAL_INTERVAL.test("refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false"))
+      .toBe(false);
     expect(hook).toMatch(/staleTime:\s*STALE_MS/);
   });
 });
