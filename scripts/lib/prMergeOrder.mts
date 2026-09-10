@@ -382,25 +382,8 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
         "(founder ruling on #35: \"A\").",
     };
   }
-  if (pr.supplyChain === "absent") {
-    /* ⚠ HIS OWN STATED RISK, MADE LOUD RATHER THAN SILENT. Option A's
-       consequence line names it: *"it is an outside service, so if it ever
-       fails to post its verdict a change would sit waiting until it does"*.
-       Measured before the ruling was executed: 4 of 4 PRs since the app was
-       installed carried both Socket checks, so absent is genuinely rare — and
-       #566 is this repository's own lesson that an absent check is the one
-       state that reads exactly like no control at all. So it STOPS and says
-       which of the two it is, rather than waiting silently or merging. */
-    return {
-      kind: "stop",
-      reason:
-        "Socket posted NO supply-chain verdict on this head — that is not a pass, it is " +
-        "no answer. Every PR since the app was installed has carried one, so this is the " +
-        "outside service being down or uninstalled rather than a diff it ignored. Re-run " +
-        "it, or if Socket is gone the required check on `main` has to go with it — never " +
-        "read silence as approval.",
-    };
-  }
+  /* `absent` is NOT read here — it moved to step 5.5 beside the gate's own
+     absent, for the identical reason. See the note there. */
 
   // 4. The reviewer. Green is not a pass (#219): a verdict exists to be READ,
   //    and reading it is the one thing here that is not mechanical.
@@ -543,6 +526,49 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
         "no gate-checks run on this head commit yet. " +
         `\`gate-stall-check --pr ${pr.number} --watch\` is the reading that tells a slow ` +
         "start from one that will never arrive (#368).",
+    };
+  }
+  /*
+    ⚠ AND SOCKET'S ABSENT IS READ HERE FOR THE IDENTICAL REASON — PR #761
+    review, finding 1, which caught it sitting up at step 3.5 where it would
+    have wedged this tool's own primary road.
+
+    The scenario is deterministic rather than hypothetical, and it is the one
+    this module exists for: two overlapping PRs, both green; A merges; B goes
+    CONFLICTING on the generated maps (the collision this header calls "nearly
+    always non-empty here"); B's OLD head still carries a green Socket check so
+    it passes 3.5 and reaches the sync at step 5; `syncMain` pushes a NEW head.
+    Thirty seconds later that head has no checks at all — `gate=absent` AND
+    `socket=absent` — and an absent-stop above the sync would abandon the whole
+    remaining order while printing "the outside service is down or uninstalled"
+    about a commit thirty seconds old. **A confidently wrong diagnosis**, which
+    is the class this module has already retired twice by name.
+
+    So the rule that moved the gate's absent moves this one: an absent reading a
+    CONFLICT can cause is meaningless until the conflict is answered. `red` and
+    `running` stay at 3.5, because each is a true reading of the head as it
+    stands.
+
+    Below here the branch is mergeable, so this absence is the real one.
+  */
+  if (pr.supplyChain === "absent") {
+    /* ⚠ HIS OWN STATED RISK, MADE LOUD RATHER THAN SILENT. Option A's
+       consequence line names it: *"it is an outside service, so if it ever
+       fails to post its verdict a change would sit waiting until it does"*.
+       Measured before the ruling was executed: 4 of 4 PRs since the app was
+       installed carried both Socket checks, so absent is genuinely rare — and
+       #566 is this repository's own lesson that an absent check is the one
+       state that reads exactly like no control at all. So it STOPS and says
+       which of the two it is, rather than waiting silently or merging. */
+    return {
+      kind: "stop",
+      reason:
+        "Socket posted NO supply-chain verdict on this head — that is not a pass, it is " +
+        "no answer, and this branch is mergeable so no conflict explains it. Every PR " +
+        "since the app was installed has carried one, so this is the outside service " +
+        "being down or uninstalled rather than a diff it ignored. Re-run it, or if Socket " +
+        "is gone the required check on `main` has to go with it — never read silence as " +
+        "approval.",
     };
   }
   // ⚠ UNSTABLE is deliberately NOT a hold, and the reason is written down

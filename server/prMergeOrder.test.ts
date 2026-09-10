@@ -232,10 +232,42 @@ describe("decideMergeAction — the branch order is the contract", () => {
     expect(decideMergeAction(pr({ supplyChain: "running" }), ctx).kind).toBe("wait");
   });
 
-  it("STOPS when Socket posted nothing — silence is not approval (#566's class)", () => {
+  it("STOPS when Socket posted nothing on a MERGEABLE head — silence is not approval (#566's class)", () => {
     const a = decideMergeAction(pr({ supplyChain: "absent" }), ctx);
     expect(a.kind).toBe("stop");
     expect(a.kind === "stop" && a.reason).toMatch(/not a pass, it is\s+no answer/);
+  });
+
+  /*
+    ⚠ THE INTERACTION ARMS — PR #761 review, findings 1 and 2. Every arm above
+    holds `mergeable: "CLEAN"`, and the input that mattered was the one crossing
+    `supplyChain` with the mergeability states: after `syncMain` pushes a new
+    head, BOTH checks read absent for a while, and an absent-stop above the sync
+    road abandons the whole remaining merge order while printing that an outside
+    service is down — about a commit thirty seconds old.
+  */
+  it("SYNCS a conflicting PR whose Socket verdict is absent — it does not diagnose the outage", () => {
+    const a = decideMergeAction(
+      pr({ supplyChain: "absent", gate: "absent", mergeable: "CONFLICTING", mergeStateStatus: "DIRTY" }),
+      ctx,
+    );
+    expect(a.kind).toBe("sync-main");
+  });
+
+  it("still STOPS on a RED Socket verdict even while conflicting — red is a true reading of this head", () => {
+    /* The mirror of the arm above, and the reason only `absent` moved: a red
+       verdict says something about the diff, not about the branch being behind. */
+    const a = decideMergeAction(
+      pr({ supplyChain: "red", mergeable: "CONFLICTING", mergeStateStatus: "DIRTY" }),
+      ctx,
+    );
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/Socket REFUSED/);
+  });
+
+  it("the absent-stop says the conflict does not explain it — the sentence only a mergeable head earns", () => {
+    const a = decideMergeAction(pr({ supplyChain: "absent" }), ctx);
+    expect(a.kind === "stop" && a.reason).toMatch(/no conflict explains it/);
   });
 
   it("merges when both the gate and Socket are green — the control on the three above", () => {
