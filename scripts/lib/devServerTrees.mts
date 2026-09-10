@@ -372,6 +372,74 @@ export function portsOfTree(
 }
 
 /**
+ * ⚠ IS THE TREE THIS SERVER RAN FROM GONE — AND "GONE" IS NOT "THE NAME NO
+ * LONGER RESOLVES".
+ *
+ * #783 shipped this test as `!existsSync(launchedFrom)` and **it would not have
+ * fired for the specimen #783 was filed about.** Measured at the close of that
+ * same shift, on the very directory in the card:
+ *
+ *     C:/Users/Admin/drape-shift-752-moderator-badge-poll
+ *       exists           true
+ *       node_modules     false
+ *       entries          0
+ *
+ * `shift-worktree remove` un-junctions `node_modules`, unregisters the worktree
+ * and then fails to delete the directory — git 2.55 on Windows answers `Invalid
+ * argument`, which that tool's own header records as expected. **So the ordinary
+ * removal on this machine leaves an EMPTY SHELL**, the name still resolves, and
+ * the reader says nothing. That is #783's own class for the third time in one
+ * night, inside the repair for it: a reader failing toward the reassuring answer.
+ *
+ * The honest question is not whether the name resolves but whether the tree the
+ * process ran from is still a tree. **The measured fact about the specimen is
+ * that it is EMPTY**, and that is what this asks.
+ *
+ * ⚠ **It asked a weaker question for one round and PR #785's review caught it:
+ * "no `node_modules`" is ALSO true of a LIVE tree mid-`pnpm install`** — a
+ * routine dependency repair, which a running server survives on modules it has
+ * already loaded. For that window the listing would have said *"Nobody's live
+ * work; safe to kill"* over somebody's live work, which is the one direction
+ * this verdict must never fail in. Emptiness excludes it: a tree being
+ * reinstalled still holds all its sources.
+ *
+ * ⚠ **`isEmpty` answers "definitely empty", never "I could not tell."** A
+ * directory this account cannot read is not evidence of anything, so the caller
+ * returns `false` for it and the tree reads as live. Silence is the safe
+ * failure here, and it is the opposite of #783's — because the cost of the two
+ * mistakes is not symmetrical: an unreported leftover costs a port, and a
+ * wrongly-reported one costs work.
+ *
+ * The reader is injected because this module touches no file system — the
+ * caller passes the disk, an arm passes a fixture, and the decision stays where
+ * an arm can hold it. Three states rather than a boolean so the caller can WORD
+ * its line without re-deriving the anatomy of the decision (PR #785 review,
+ * finding 2 — working law 4 in miniature).
+ */
+export type LaunchDirectoryState = "unknown" | "live" | "missing" | "shell";
+
+/** A file system, as this decision needs to ask about one. */
+export type DirectoryReader = {
+  exists(path: string): boolean;
+  /** True only when the directory is KNOWN to hold nothing. */
+  isEmpty(path: string): boolean;
+};
+
+export function launchDirectoryState(
+  launchedFrom: string | null,
+  disk: DirectoryReader,
+): LaunchDirectoryState {
+  if (launchedFrom === null) return "unknown";
+  if (!disk.exists(launchedFrom)) return "missing";
+  return disk.isEmpty(launchedFrom) ? "shell" : "live";
+}
+
+/** The two states that mean nobody's live work. */
+export function launchDirectoryIsGone(state: LaunchDirectoryState): boolean {
+  return state === "missing" || state === "shell";
+}
+
+/**
  * ⚠ THE BACKSTOP, AND IT IS THE PART OF #783 THAT OUTLIVES #783.
  *
  * Everything above classifies command lines, and a classifier has exactly one

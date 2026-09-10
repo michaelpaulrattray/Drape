@@ -24,7 +24,9 @@ import {
   devServerTrees,
   isDevServerChild,
   isDevServerRoot,
+  launchDirectoryIsGone,
   launchDirectoryOf,
+  launchDirectoryState,
   listenersOutsideEveryTree,
   portsOfTree,
   rootsStartedAfter,
@@ -579,6 +581,90 @@ describe("⚠ a server with no watcher is still a server (#783)", () => {
        cannot see is a tree it cannot clean up. */
     expect(rootsStartedAfter(UNWATCHED, at911("07:00:00")).map((tree) => tree.rootPid)).toEqual([94344]);
     expect(rootsStartedAfter(UNWATCHED, at911("08:00:00"))).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ "GONE" IS NOT "THE NAME NO LONGER RESOLVES" — and #783's own specimen is
+ * the proof.
+ *
+ * That card shipped the ABANDONED test as `!existsSync(launchedFrom)`, and it
+ * **could not have fired for the directory the card was filed about.** Measured
+ * at the close of that same shift, at the path the card names:
+ *
+ *     C:/Users/Admin/drape-shift-752-moderator-badge-poll
+ *       exists           true
+ *       node_modules     false
+ *       entries          0
+ *
+ * `shift-worktree remove` un-junctions `node_modules`, unregisters the worktree,
+ * and then fails to delete the directory — git 2.55 on Windows answers `Invalid
+ * argument`, which that tool's own header records as expected behaviour on this
+ * machine. **So the ORDINARY removal leaves an empty shell** and the name goes
+ * on resolving for as long as nobody sweeps it.
+ *
+ * The verdict was therefore silent in exactly the case it was written for:
+ * #783's class — a reader failing toward the reassuring answer — for the third
+ * time in one night, inside the repair for it.
+ */
+describe("⚠ a removed worktree leaves a shell, and a shell is still gone", () => {
+  const TREE = "C:/Users/Admin/drape-shift-752-moderator-badge-poll";
+  const LIVE = "C:/Users/Admin/Drape";
+
+  /** A file system as the paths that exist, and which of them hold nothing. */
+  const disk = (present: string[], empty: string[] = []) => ({
+    exists: (path: string) => present.includes(path),
+    isEmpty: (path: string) => empty.includes(path),
+  });
+
+  it("⚠ THE MEASURED SHAPE — the directory survives and holds nothing", () => {
+    /* The arm #783 needed and did not have. Under its shipped predicate
+       (`!existsSync`) this reads as live: the name resolves, so nothing is
+       said, and the one fact that makes the process safe to kill is never
+       printed. */
+    expect(launchDirectoryState(TREE, disk([TREE], [TREE]))).toBe("shell");
+    expect(launchDirectoryIsGone("shell")).toBe(true);
+  });
+
+  it("the plainly deleted directory is gone too", () => {
+    expect(launchDirectoryState(TREE, disk([]))).toBe("missing");
+    expect(launchDirectoryIsGone("missing")).toBe(true);
+  });
+
+  it("⚠ CONTROL — a LIVE tree mid-reinstall is not abandoned (PR #785 review, finding 1)", () => {
+    /*
+      The direction that must never fail, and the second predicate this went
+      through failed it: it read "no `node_modules`" as "the tree was removed",
+      which is equally true of `rm -rf node_modules && pnpm install` on a tree
+      whose server is still running on modules it has already loaded. For that
+      window the listing would have said "Nobody's live work; safe to kill"
+      over live work.
+
+      Emptiness excludes it: a tree being reinstalled still holds its sources.
+    */
+    expect(launchDirectoryState(LIVE, disk([LIVE]))).toBe("live");
+    expect(launchDirectoryIsGone("live")).toBe(false);
+  });
+
+  it("CONTROL — an ordinary live tree is live", () => {
+    expect(launchDirectoryState(LIVE, disk([LIVE, `${LIVE}/node_modules`]))).toBe("live");
+  });
+
+  it("⚠ a directory that cannot be READ is live, not gone", () => {
+    /*
+      `isEmpty` answers "definitely empty" and never "I could not tell", so an
+      unreadable directory reads as live and the tool stays quiet. The two
+      mistakes do not cost the same: an unreported leftover costs a port, and a
+      wrongly-reported one costs somebody's work.
+    */
+    expect(launchDirectoryState(LIVE, disk([LIVE]))).toBe("live");
+  });
+
+  it("CONTROL — a tree whose launch directory could not be read says nothing", () => {
+    /* Not knowing where it came from is not evidence that it is abandoned, and
+       a reader that treated it as such would kill on ignorance. */
+    expect(launchDirectoryState(null, disk([]))).toBe("unknown");
+    expect(launchDirectoryIsGone("unknown")).toBe(false);
   });
 });
 
