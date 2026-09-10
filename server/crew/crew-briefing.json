@@ -1,7 +1,7 @@
 {
-  "edition": 329,
-  "updatedAt": "2026-09-10T08:40:45Z",
-  "shift": "Fable (escalated) - the money bug you ordered into the queue yesterday is fixed, shipped and live. THE BUG: when someone upgrades their plan, we were handing them the upgrade's bonus credits the moment Stripe accepted the change - before the card was actually charged. A declined card kept the credits anyway: on an annual plan that is a full year of the bigger allowance, held by someone who paid nothing. The mirror-image bug rode with it: switching billing cycle with a declining card took the customer's old credits away and gave nothing back until the card recovered. THE FIX, in one sentence: credits now move when the money actually arrives, not when Stripe says 'update accepted'. For a working card nothing changes - the charge clears in the same breath and the credits appear instantly, exactly as today. For a declining card, the credits simply wait with the payment: the customer is told 'your credits land as soon as the payment settles', Stripe retries the card on its own schedule, and if it never recovers the credits are cancelled alongside the subscription. Nobody can keep what they did not pay for, and nobody loses what they did. Your reviewer went over it twice (it touches money, so it gets the hard look); every finding from both rounds is in, the one leftover edge is filed as its own card (#756), and I verified the fix live on production after the deploy. No customer has a subscription yet, so this landed before the first person it protects.",
+  "edition": 330,
+  "updatedAt": "2026-09-10T10:30:00Z",
+  "shift": "Foreman - your desk empties itself now, and Socket blocks on your word. THE THING YOU ASKED ABOUT: you said the fangs card would not disappear even though you replied 'seen ages ago'. You were right and it was worse than a stuck card. Nothing in the system has EVER moved an item off your desk because you replied to it. A tool has been correctly listing 'items he has answered that the page still calls open' on every shift for twelve days, and no shift had anything to act on it with - so four of them read the list and left it, and three of those wrote down a careful reason why 'seen' might not count as an answer. That reasoning is now overruled by you: your reply IS the act. It is one command, it ran tonight, and the three items it found - both fangs items and the Socket card - are gone from your desk in this edition. YOUR SOCKET ANSWER: you said 'A', let Socket's own verdict do the blocking. Done - but not the way the card described it, because that way would not have worked. Making it a required check only stops people who are not administrators, and everything here merges as you, an administrator. So the tool that performs our merges reads Socket's verdict itself and refuses to merge past a red one. No checkbox on your key, no second scan, nothing to maintain - exactly what option A promised, with the one part added that makes it real. I closed my own scanner unmerged as A says. ONE THING I HAVE NOT PROVEN and will not pretend otherwise: Socket has never actually refused anything here - four for four green. We know our side refuses when told to; we do not know that Socket says no when it should. That needs a deliberate test and it is filed as its own card. ALSO: the Blocked IPs list on Audit logs and the Moderator dashboard was sitting under an auto-refresh switch and a Refresh button and was reached by neither.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-10T08:41:07.045Z",
+      "readAt": "2026-09-10T10:23:06.242Z",
       "items": [
         {
           "issueNumber": 16,
@@ -308,7 +308,7 @@
     {
       "id": "toolbelt-socket-35",
       "issueNumber": 35,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-10T07:15:00Z",
       "title": "Socket.dev: it runs - but it may need a checkbox from you, or nothing at all",
       "productImpact": "You opened the Socket account and pasted the key tonight, and it worked: the scan authenticates as your organisation, uploads the roughly one thousand pieces of other people's code Drape is built on, and comes back with a result. It then stops one inch short. The half that turns a scan into a pass-or-fail has to read your organisation's own security rules, and the key you created is missing exactly that one permission. BEFORE YOU GO AND TICK IT: connecting Socket to GitHub did something I had not counted on - it now posts its own verdict on every change the team makes, automatically, at no cost to us. That verdict is currently advisory: it appears, it says pass or fail, and nothing acts on it. If it is simply told to block, the job is finished - no checkbox, no code of mine to maintain, no second scan. That is very likely the better answer, and it is why this is a question rather than a request. I got this wrong once tonight and I would rather you saw that than a clean story: I first measured that Socket's own verdict only appears on changes that touch our dependency list, and concluded it could not be trusted to block. The three changes I measured had all been merged BEFORE you installed it, so of course they carried no verdict. The honest comparison is tonight's two changes, both after: one touched the dependency list, one did not, and both got a verdict. It posts on everything.",
@@ -357,7 +357,7 @@
     {
       "id": "fangs-at-rest-599",
       "issueNumber": 599,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-09T01:22:27Z",
       "title": "Fangs: one word closes this - do the after frames read right?",
       "productImpact": "On your oni-cyber roll (249), the fangs were drawn OUTSIDE a forced-shut mouth, sabre-tooth fashion - 4 of your 6 frames read that way. The cause was the studio's own creature rule demanding dentition 'stays visible at rest', which is true of tusks and impossible for fangs. The rule now says how each kind shows: tusks protrude on their own; fangs sit inside the mouth and show through lips slightly parted. Re-rolled your exact brief 8 times against the fix: 7 of 8 now put the fangs in the mouth (5 clean, 2 with no fangs showing - the usual per-roll coin), 1 still drew short teeth over the lip. A tusked control was rolled both ways to prove the fix does not close a tusked mouth - it does not. The writing assistant also stops adding 'kept sharp and visible'-style pose words to mouth features; your own typed words are always kept.",
@@ -2195,7 +2195,7 @@
       "id": "fangs-court-strips-599",
       "title": "Fangs in the mouth - your oni-cyber brief, before and after",
       "question": "One question, and either answer closes it: in the bottom rows, do the fangs sit inside a mouth? (The second strip is the tusked control - the tusks must still stick out, and they do.) Reply RIGHT or NOT RIGHT rather than \"seen\", and this leaves your desk.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-09T01:22:27Z",
       "issueNumber": 599,
       "cardId": "fangs-at-rest-599",
@@ -4545,6 +4545,27 @@
   ],
   "pipeline": [
     {
+      "id": "reply-clears-desk-749",
+      "title": "Your reply now clears the item you replied to - the fangs card you asked about",
+      "status": "merged",
+      "prNumber": 760,
+      "note": "The detector had been right and silent for twelve days; nothing applied its answer. One command does it now, and it refuses the two cases that would break your page (frames still waiting on you, or a row saying you are blocking something). Driven against production: exactly three items moved, nothing else touched."
+    },
+    {
+      "id": "socket-blocks-35",
+      "title": "Socket's own verdict now blocks a merge - your 'A'",
+      "status": "merged",
+      "prNumber": 761,
+      "note": "Required check on main PLUS the merge tool reading it, because a required check alone does not bind an administrator and everything here merges as you. Reviewed twice; the first round caught a real one - my first version would have jammed the merge queue every time two changes overlapped. Your own scanner PR closed unmerged, as A says."
+    },
+    {
+      "id": "blocked-ips-refresh-747",
+      "title": "The Blocked IPs list answers the two controls above it",
+      "status": "merged",
+      "prNumber": 758,
+      "note": "It sat under an auto-refresh switch and a Refresh button and was reached by neither, so it only changed when the tab was reopened. Both now reach it, and the credit-discrepancies card answers the button too. Nothing looks different; it is just live."
+    },
+    {
       "id": "settlement-711",
       "title": "A declined card can no longer keep an upgrade's credits - they move when the payment does",
       "status": "merged",
@@ -4557,13 +4578,6 @@
       "status": "merged",
       "prNumber": 754,
       "note": "Your 'A' shipped. The old sparkle is deleted from that screen, not merely unused, and the mark now takes your set's stroke instead of a heavier one. Looked at in both themes."
-    },
-    {
-      "id": "toolbelt-socket-35",
-      "title": "The supply-chain scanner is built and running - and waiting on your answer above",
-      "status": "in-review",
-      "prNumber": 753,
-      "note": "The scan authenticates and completes; it needs one permission on your key to reach a verdict. Held unmerged on purpose: merged as-is it would redden every dependency change on a refusal only you can clear."
     },
     {
       "id": "pill-moves-while-still-457",
@@ -5151,6 +5165,20 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0910h-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 58 open, 14 nobody has looked at in a week - three closed tonight, three filed",
+      "detail": "58 cards open. Closed tonight: #749 (your fangs complaint), #747 (the Blocked IPs list), and #35 - your Socket card, on your 'A'. Filed: #759 (three more staff lists that ignore the Refresh button above them, found by sweeping for siblings of #747), #762 (the Socket proof above), and #756 rode in from last night. 14 cards have had no comment, close or commit for seven days - unchanged, and still mostly parked cleanup rather than work anyone is avoiding. NEXT UP is now EMPTY: #35 was the last card you had ordered, and it is done."
+    },
+    {
+      "id": "socket-never-refused-762",
+      "severity": "info",
+      "state": "open",
+      "title": "Socket now blocks a merge on your word - but it has never once said no, and that is unproven",
+      "detail": "You chose A, so Socket's supply-chain verdict now stops a merge. What is measured: it posts a verdict on every change (four out of four since you installed it), and our merge tool refuses to merge past a red one (driven, and deliberately broken to prove the refusal fires). What is NOT measured: whether Socket ever GOES red. It has been green four times out of four, so we have a control that reacts correctly to a refusal nobody has seen it make. This project has four recorded cases of a safety net that was installed and never actually connected, so it is written down rather than assumed. Proving it needs one throwaway change that adds a package Socket should object to - not a dangerous one, just one with a real alert - and then reading its verdict. Filed as #762; nothing is waiting on you."
+    },
+    {
       "id": "queue-shape-0910g-fable",
       "severity": "info",
       "state": "open",
@@ -5610,20 +5638,11 @@
     169,
     170,
     171,
-    172
+    172,
+    173
   ],
   "nextUp": {
-    "readAt": "2026-09-10T08:41:06.192Z",
-    "items": [
-      {
-        "issueNumber": 35,
-        "title": "Toolbelt remainder: Socket.dev — needs his account; hyperfine and the bundle visualizer shipped (PR #745)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "the founder — **add the `security-policy:read` scope to the `SOCKET_CLI_API_TOKEN` at `socket.dev/dashboard/org/klieg`.** One checkbox; nothing else is outstan…"
-        }
-      }
-    ]
+    "readAt": "2026-09-10T10:23:05.178Z",
+    "items": []
   }
 }
