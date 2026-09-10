@@ -158,6 +158,16 @@ export default function AdminChangeRequests() {
     isRefetching: listQuery.isFetching,
     onRefresh: () => {
       listQuery.refetch();
+      /* #759 — the open request's own reader, same reading as its siblings,
+         and this page was invisible to that card's sweep for the same reason
+         (the handler is inline, not a named `handleRefresh`). Gated on the
+         selection because the input asserts over a nullable id.
+
+         `slackStatusQuery` is deliberately NOT here and it is the one query in
+         the whole sweep that needs no button: it carries its own
+         `refetchInterval: 3000`, so it is never more than three seconds old
+         and pressing Refresh could not make it fresher. */
+      if (selectedRequestId) detailQuery.refetch();
       toast.success("Change requests refreshed");
     },
   });

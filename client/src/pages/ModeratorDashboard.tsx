@@ -210,6 +210,39 @@ export default function ModeratorDashboard() {
        sets no timer at all when `enabled` resolves false (same file, line 208),
        so the interval below costs nothing until the tab is open. */
     blockedIpsQuery.refetch();
+    /* #759 — the other three tab lists, on the identical reading. Each is
+       `enabled` on its own tab and reached by neither control above it, so an
+       admin on Users, Flagged referrals or My change requests pressed Refresh,
+       was told "Data refreshed", and the list in front of them did not move.
+       Same cost, same warning as the note above: no `activeTab` test here. */
+    usersQuery.refetch();
+    flaggedReferralsQuery.refetch();
+    myRequestsQuery.refetch();
+    /* #759 — THE DETAIL QUERIES ARE THE ONE PLACE A CONDITION BELONGS, AND IT
+       IS NOT THE `enabled` CONDITION SPELLED TWICE.
+
+       The card left this open deliberately. The answer is yes — the expanded
+       account is rendered inside the Users row, not in a modal, so this button
+       is reachable with an investigation open and that drawer is exactly what
+       the person is looking at.
+
+       But their inputs are non-null assertions over a NULLABLE id
+       (`{ userId: selectedUserId! }`), and `getUserFullDetails` / the three
+       beside it declare `z.number()` (`server/routes/moderator.ts:182`). Since
+       `refetch()` never consults `enabled`, an unconditional call with nothing
+       selected sends `userId: null` four times and the panel shows four
+       rejected requests on a press of a button that promises a refresh.
+
+       That is INPUT VALIDITY, not visibility — which is why the caution in the
+       note above does not reach it. `enabled` there answers "is this tab
+       open?" and the input is well-formed either way; here it answers "is
+       there an id at all?", and there is nothing to fetch without one. */
+    if (selectedUserId) {
+      userDetailsQuery.refetch();
+      userActivityQuery.refetch();
+      creditHistoryQuery.refetch();
+      generationHistoryQuery.refetch();
+    }
     /* The discrepancies card owns its own query, so the button reaches it by
        invalidating rather than by a handle it does not have. It already polls
        on AUTO 30s (#746) and answered the button beside it with nothing. */
