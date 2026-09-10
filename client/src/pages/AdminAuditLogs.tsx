@@ -127,6 +127,14 @@ export default function AdminAuditLogs() {
        `refetch()` does on a disabled query (it fetches; `enabled` gates the
        POLL, not this) and why that is the right cost to pay here. */
     blockedIpsQuery.refetch();
+    /* #759 — the fifth of the eight, and the only one on this page. The user
+       panel opens from a selected log row and is on screen beside this button.
+       Its input falls back to `0` rather than asserting, so an unconditional
+       call would be accepted rather than rejected — and would ask the server
+       for user 0, which never exists. The test is on the selection for the
+       same reason as its twin on ModeratorDashboard: there is nothing to
+       fetch without one. */
+    if (selectedLog?.userId) userDetailsQuery.refetch();
     setLastRefresh(new Date());
     toast.success("Data refreshed");
   };
