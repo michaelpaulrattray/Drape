@@ -26,6 +26,7 @@ import { existsSync } from "node:fs";
 import {
   devServerTrees,
   listenersOutsideEveryTree,
+  portsOfTree,
   rootsStartedAfter,
   pidsNamed,
   rootsToKill,
@@ -134,12 +135,19 @@ const ports = portsByPid();
  * which is the fact four shifts did not have when each of them decided the
  * process on :3001 was "not mine, not killed" and left it running.
  */
-const describe = (tree: (typeof trees)[number]) => {
-  const listening = tree.childPids.flatMap((pid) => (ports.get(pid) ?? []).map((port) => `:${port}`));
+const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number[]> = ports) => {
+  /* ⚠ `portsOfTree`, never `childPids` — PR #784 review, finding 1. An
+     unwatched tree's ROOT can be the port holder, and the backstop below cannot
+     see that case because the pid does belong to a tree. */
+  const listening = portsOfTree(tree, held).map((port) => `:${port}`);
   const abandoned = tree.launchedFrom !== null && !existsSync(tree.launchedFrom);
   return `  root ${String(tree.rootPid).padStart(6)}  started ${tree.startedAt.toLocaleString()}`
     + `  children [${tree.childPids.join(", ") || "none"}]`
-    + `  ${listening.length > 0 ? listening.join(" ") : "(no port — between restarts)"}`
+    /* "between restarts" is a promise only a watcher can keep. An unwatched
+       tree holding no port is not waiting to come back — it is litter. */
+    + `  ${listening.length > 0
+      ? listening.join(" ")
+      : tree.watched ? "(no port — between restarts)" : "(no port — nothing is being served)"}`
     + (tree.watched ? "" : "\n         ⚠ NO WATCHER — started off the entrypoint, so nothing restarts it")
     + (abandoned
       ? `\n         ⚠ ABANDONED — launched from ${tree.launchedFrom}, which no longer exists.`
@@ -247,8 +255,13 @@ for (const pid of verdict.rootPids) {
    a listener nobody can place may go unsaid. */
 const leftRows = processTable();
 const left = devServerTrees(leftRows);
+/* ⚠ THE FRESH PORT TABLE REACHES THE LISTING TOO — PR #784 review, finding 2.
+   It reached the backstop and not the lines above it, so a surviving watcher
+   that had already restarted its child printed the reading taken before the
+   kill, under a comment claiming both tables were re-read. */
+const portsNow = portsByPid();
 console.log(`\n${left.length} dev server tree(s) left:`);
-for (const tree of left) console.log(describe(tree));
-const stillListening = listenersOutsideEveryTree(left, portsByPid());
+for (const tree of left) console.log(describe(tree, portsNow));
+const stillListening = listenersOutsideEveryTree(left, portsNow);
 sayUnplaced(stillListening);
 process.exit(stillListening.length === 0 ? 0 : 2);

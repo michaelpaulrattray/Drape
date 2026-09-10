@@ -26,6 +26,7 @@ import {
   isDevServerRoot,
   launchDirectoryOf,
   listenersOutsideEveryTree,
+  portsOfTree,
   rootsStartedAfter,
   pidsNamed,
   rootsToKill,
@@ -627,5 +628,72 @@ describe("⚠ a listener this reader cannot place is a hole in the reader (#783)
 
   it("CONTROL — nothing listening is nothing reported", () => {
     expect(listenersOutsideEveryTree(oneTree, new Map())).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ THE PORT A TREE IS SERVING ON, AND THE CASE THE BACKSTOP CANNOT REACH —
+ * PR #784 review, finding 1.
+ *
+ * The listing read ports off `childPids` alone, which was safe while every root
+ * was a watcher and no watcher listens. #783's widening breaks that: an
+ * unwatched tree's root can hold the port itself, and the backstop above is
+ * structurally unable to notice, because the pid DOES belong to a tree.
+ *
+ * So the reassuring-sentence-over-a-live-listener shape came back one class
+ * inward, inside the repair for it. These arms are where it is held.
+ */
+describe("⚠ a tree's ports include the ROOT's own (#784 review)", () => {
+  /* A lone `node --import tsx server/_core/index.ts`: the whole server in one
+     process, its own root, no children at all. */
+  const LONE: ProcessRow[] = [
+    {
+      pid: 51001,
+      parentPid: 4,
+      name: "node.exe",
+      startedAt: at911("07:40:00"),
+      commandLine: '"C:\\Program Files\\nodejs\\node.exe" --import file:///C:/Users/Admin/Drape/node_modules/.pnpm/tsx@4.20.6/node_modules/tsx/dist/loader.mjs server/_core/index.ts',
+    },
+  ];
+
+  it("the lone-process launch is one tree, unwatched, with no children", () => {
+    expect(devServerTrees(LONE)).toEqual([
+      {
+        rootPid: 51001,
+        startedAt: at911("07:40:00"),
+        childPids: [],
+        watched: false,
+        launchedFrom: "C:/Users/Admin/Drape",
+      },
+    ]);
+  });
+
+  it("⚠ its port is reported — reading the children alone finds nothing at all", () => {
+    const [tree] = devServerTrees(LONE);
+    expect(portsOfTree(tree, new Map([[51001, [3000]]]))).toEqual([3000]);
+    /* The reading that used to be taken, spelled out so the arm above cannot be
+       satisfied by an implementation that happens to include the root by luck. */
+    expect(tree.childPids.flatMap((pid) => [3000].filter(() => pid === 51001))).toEqual([]);
+  });
+
+  it("⚠ and the backstop CANNOT catch it — which is why the line above must", () => {
+    /*
+      The honest statement of the hole. `listenersOutsideEveryTree` reports a
+      listener belonging to NO tree; this pid belongs to one. If the listing ever
+      stops reading the root, nothing else in this module will say so.
+    */
+    const trees = devServerTrees(LONE);
+    expect(listenersOutsideEveryTree(trees, new Map([[51001, [3000]]]))).toEqual([]);
+  });
+
+  it("CONTROL — a watched tree's child port still reads, and duplicates collapse", () => {
+    const [watched] = devServerTrees(PNPM_DEV);
+    expect(portsOfTree(watched, new Map([[28220, [3000]]]))).toEqual([3000]);
+    expect(portsOfTree(watched, new Map([[29132, [3000]], [28220, [3000, 3001]]]))).toEqual([3000, 3001]);
+  });
+
+  it("CONTROL — a tree holding nothing reports nothing", () => {
+    const [watched] = devServerTrees(PNPM_DEV);
+    expect(portsOfTree(watched, new Map([[99999, [3000]]]))).toEqual([]);
   });
 });

@@ -196,11 +196,29 @@ function isDevServerProcess(row: ProcessRow): boolean {
  * and would report it PRESENT while the worktree it actually ran from was gone.
  * That is this card's own defect arriving through the reader written to fix it.
  *
+ * ⚠ **A STATED LIMIT, raised by PR #784's review and not repaired here.** An
+ * `npx` run that resolves `tsx` from npm's CACHE produces
+ * `…/npm-cache/_npx/<hash>/node_modules/tsx/dist/cli.mjs`, whose remainder does
+ * name `tsx` — so this would answer with the cache directory, which always
+ * exists, and ABANDONED could never fire for that tree. No live example could
+ * be constructed (a tree without a local `tsx` also lacks the server's own
+ * dependencies, so nothing listens), which is why it is written down rather
+ * than guessed at in code. If one ever appears, this is the door it came
+ * through.
+ *
  * Returns forward-slashed, which every Windows file API accepts.
  */
 export function launchDirectoryOf(commandLine: string): string | null {
   const line = commandLine.replace(/\\/g, "/");
-  const paths = /([A-Za-z]:\/[^"';\s]*?)\/node_modules\/([^"';\s]*)/g;
+  /* ⚠ THE LOOKBEHIND IS LOAD-BEARING AND WAS FOUND BY AN ARM, NOT BY READING.
+     Without it `file:///C:/Users/Admin/Drape/node_modules/…` matches at the `e:`
+     of `file:` and answers `e:///C:/Users/Admin/Drape` — a directory that can
+     never exist, so the caller says ABANDONED and "safe to kill" over a LIVE
+     server. That is the worst direction this reader has, and the measured rows
+     hid it: they all carry a plain `C:\…` path earlier in the line, which wins
+     the scan. The lone-process launch, whose only path is the `--import` URL,
+     is the shape that shows it. */
+  const paths = /(?<![A-Za-z0-9])([A-Za-z]:\/[^"';\s]*?)\/node_modules\/([^"';\s]*)/g;
   for (const match of line.matchAll(paths)) {
     if (/\btsx\b/i.test(match[2])) return match[1];
   }
@@ -326,6 +344,31 @@ export function devServerTrees(rows: readonly ProcessRow[]): DevServerTree[] {
       };
     })
     .sort(oldestFirst);
+}
+
+/**
+ * ⚠ WHICH PORTS A TREE IS SERVING ON — the ROOT included, and that is the point.
+ *
+ * PR #784 review, finding 1. Before #783 a root was always a watcher and a
+ * watcher never listens, so reading the children alone was safe. It is not safe
+ * now: **an unwatched tree's root can be the port holder itself** — a lone
+ * `node --import tsx server/_core/index.ts` is its own root with no children at
+ * all, and so is the server left behind when the middle of an unwatched chain
+ * dies, which is exactly the litter `rootsToKill`'s new refusal warns about.
+ *
+ * ⚠ **And the backstop below cannot catch that one**, because the pid belongs
+ * to a tree and is therefore `known`. So a listing built on `childPids` alone
+ * would print `(no port)` over a live :3000 — this card's own defect, one class
+ * inward, with the instrument written to prevent it structurally blind to it.
+ * The decision lives here rather than in the caller's formatting so that an arm
+ * can hold it.
+ */
+export function portsOfTree(
+  tree: DevServerTree,
+  ports: ReadonlyMap<number, readonly number[]>,
+): number[] {
+  const held = [tree.rootPid, ...tree.childPids].flatMap((pid) => [...(ports.get(pid) ?? [])]);
+  return [...new Set(held)].sort((a, b) => a - b);
 }
 
 /**
