@@ -3,6 +3,7 @@ import { isModeratorPanelUnauthorized } from "@/features/staff/staffRole";
 import { trpc } from "@/lib/trpc";
 import { Redirect } from "wouter";
 import {
+  STAFF_REFRESH_INTERVAL_MS,
   StaffBarModeration,
   StaffLoading,
   StaffSurface,
@@ -95,17 +96,17 @@ export default function ModeratorDashboard() {
       startDate: logStartDate || undefined,
       endDate: logEndDate || undefined,
     },
-    { refetchInterval: autoRefresh ? 30000 : false }
+    { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
   );
 
   const alertsQuery = trpc.moderator.getAbuseAlerts.useQuery(
     { limit: 10 },
-    { refetchInterval: autoRefresh ? 30000 : false }
+    { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
   );
 
   const statsQuery = trpc.moderator.getAuditStats.useQuery(
     undefined,
-    { refetchInterval: autoRefresh ? 60000 : false }
+    { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
   );
 
   const blockedIpsQuery = trpc.moderator.listBlockedIPs.useQuery(
@@ -342,7 +343,7 @@ export default function ModeratorDashboard() {
             setSelectedUserId(userId);
             setActiveTab("users");
           }}
-          autoRefreshInterval={autoRefresh ? 60000 : false}
+          autoRefreshInterval={autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false}
         />
 
         {activeTab === "audit-logs" && (

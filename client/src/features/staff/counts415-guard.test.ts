@@ -491,6 +491,49 @@ describe("card 415 §3 — the switch's label and the page's timer are one numbe
     );
   });
 
+  it("card 455 — NOTHING the switch drives states its own number, and the population is derived", () => {
+    /*
+      ⚠ THE ARM #455 ASKED FOR, AND IT IS DERIVED RATHER THAN A LIST OF THREE
+      PAGES — because a list is exactly how this got here. The card named three
+      sites from a hand sweep; walking the tree found **seven**, and the one it
+      missed is the sharpest:
+
+        ModeratorDashboard.tsx:345 — `autoRefreshInterval={autoRefresh ? 60000 : false}`
+
+      a FOURTH sixty-second reader, handed to `FlaggedDiscrepanciesCard` as a
+      prop rather than written as a `refetchInterval`, so a sweep looking for
+      the option name could not see it. A guard that enumerated the card's three
+      would have shipped green over it.
+
+      The shape matched is the one thing every such site has in common: the
+      shared switch on the left of a ternary, and a NUMBER on the right. What
+      the right side must be instead is the shared constant — then the bar's
+      `AUTO 30s` label and every timer under it are one number by construction,
+      which is the whole of working law 4 for this control.
+    */
+    const offenders = [...sources(path.resolve(CLIENT_SRC, "pages")), ...sources(path.resolve(CLIENT_SRC, "features"))]
+      .flatMap(({ name, text }) =>
+        [...code(text).matchAll(/autoRefresh\s*\?\s*([0-9][0-9_]*)/g)].map(
+          (m) => `${name}: autoRefresh ? ${m[1]}`,
+        ),
+      );
+
+    expect(
+      offenders,
+      "A staff reader driven by the AUTO 30s switch must take its period from"
+      + " STAFF_REFRESH_INTERVAL_MS, never restate one — that is how a label and a"
+      + " timer drift apart (card 455):\n" + offenders.map((row) => `  ${row}`).join("\n"),
+    ).toEqual([]);
+
+    /* CAN FAIL — the matcher is driven on the exact bytes that were there
+       before this card, so a future edit that neuters the regex is caught by
+       this line rather than by the tree going quietly clean. */
+    const before = "{ refetchInterval: autoRefresh ? 60000 : false }";
+    expect([...before.matchAll(/autoRefresh\s*\?\s*([0-9][0-9_]*)/g)]).toHaveLength(1);
+    const prop = "autoRefreshInterval={autoRefresh ? 60000 : false}";
+    expect([...prop.matchAll(/autoRefresh\s*\?\s*([0-9][0-9_]*)/g)]).toHaveLength(1);
+  });
+
   it("the live re-read follows the shared switch, and the nav gate still never polls", () => {
     /*
       ⚠ THE REGRESSION THIS FORBIDS IS #133 REBUILT. `useCrewTabVisible` runs on

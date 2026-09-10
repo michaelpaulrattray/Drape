@@ -666,7 +666,23 @@ describe("§1 — the queries are untouched", () => {
     const body = code(PAGE_TEXT);
     expect(body).toContain("trpc.admin.getOverview.useQuery(undefined,");
     expect(body).toContain("trpc.admin.getTimeSeries.useQuery(undefined,");
-    expect(body).toContain("REFRESH_INTERVAL_MS = 30_000");
+    /*
+      ⚠ THIS LINE USED TO READ `REFRESH_INTERVAL_MS = 30_000`, AND CARD 455
+      DELETED THAT DECLARATION ON PURPOSE — it was a third local copy of the
+      staff interval, and a copy is how the bar's `AUTO 30s` label and the
+      page's timer drift apart.
+
+      What §1 actually promises is that the period did not MOVE, not that it is
+      spelled out here. It has not: `STAFF_REFRESH_INTERVAL_MS` is `30_000`,
+      pinned in `counts415-guard.test.ts` against the label the bar draws. So
+      the arm now asserts the thing §1 meant — the readers poll at the shared
+      staff period — and the old spelling is forbidden, because reintroducing
+      the local constant is the regression.
+    */
+    expect(body).toContain("refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false");
+    expect(body, "a restated local interval is what card 455 removed").not.toMatch(
+      /const\s+REFRESH_INTERVAL_MS\s*=/,
+    );
     expect(body).toContain("staleTime: 10_000");
   });
 
