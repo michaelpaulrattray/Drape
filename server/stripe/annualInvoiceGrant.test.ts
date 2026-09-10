@@ -52,6 +52,12 @@ vi.mock("../db", () => ({
   addCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 0 }),
   getCreditTransactionByRef: vi.fn().mockResolvedValue(null),
   creditReferrerOnPaidAction: vi.fn().mockResolvedValue(false),
+  /* #711: no plan-change settlement pending on any of these invoices — the
+     settle hook passes through, which is this suite's world. Its own arms
+     live in planChangeSettlement.test.ts. */
+  recordPlanChangeSettlement: vi.fn().mockResolvedValue({ success: true }),
+  getPlanChangeSettlementByInvoice: vi.fn().mockResolvedValue(null),
+  resolvePlanChangeSettlement: vi.fn().mockResolvedValue(true),
 }));
 
 const { MONTHLY_CREDITS, PERCENT_ROLLOVER } = vi.hoisted(() => ({

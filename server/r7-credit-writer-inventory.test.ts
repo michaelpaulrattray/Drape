@@ -39,6 +39,14 @@ describe("R7-1B deterministic retryable credit writers", () => {
     expect(route).toContain("clientRequestId: z.string().uuid().optional()");
     expect(route).toContain("`plan-change:${input.clientRequestId}`");
 
+    /* Since #711 the PRIMARY ledger key for a plan change is the change's
+       own INVOICE — one invoice, one credit move, whatever the client
+       retries — shared by changePlan and the webhook so their race is safe.
+       The clientRequestId keying above survives only on the declared
+       no-invoice fallback road. */
+    const settlement = source("./stripe/planChangeSettlement.ts");
+    expect(settlement).toContain("`plan-change-settle:${stripeInvoiceId}`");
+
     const root = new URL("../client/src/", import.meta.url).pathname.replace(
       /^\/([A-Za-z]:)/,
       "$1",

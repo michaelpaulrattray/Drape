@@ -29,6 +29,11 @@ import { SubscriptionPlan } from "./stripeProducts";
 import { PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
 import { invoiceSubscriptionId, periodBought } from "./invoiceLines";
+import {
+  applyPlanChangeSettlement,
+  voidPlanChangeSettlement,
+} from "./planChangeSettlement";
+import { voidPendingPlanChangeSettlementsForUser } from "../db";
 import { createModuleLogger } from "../logging/logger";
 import { checkEventEnvironment } from "./environmentTag";
 import { deploymentTag } from "../_core/env";
@@ -270,6 +275,31 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
 
   const previousPlan = userWithCredits.credits?.planTier || "unknown";
 
+  // A subscription dying takes its unsettled plan-change credit moves with
+  // it (#711, PR #755 review finding 3): a voluntary cancel or dashboard
+  // action while a change invoice sat unpaid would otherwise strand the
+  // settlement row pending forever, with no invoice event ever coming.
+  //
+  // ⚠ ONLY when the dying subscription is the one on record (round-2
+  // finding 1): Stripe redelivers failed events for days, so a stale
+  // deleted event for an OLD subscription can arrive after the user has
+  // resubscribed — and a void is irreversible, so it must not touch a NEWER
+  // subscription's pending settlement. Null on record still voids: the
+  // voluntary-cancel road this exists for may clear the stored id first.
+  const storedSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
+  if (!storedSubscriptionId || storedSubscriptionId === subscription.id) {
+    const voided = await voidPendingPlanChangeSettlementsForUser(userId);
+    if (voided > 0) {
+      log.info(
+        `[Webhook] Voided ${voided} pending plan-change settlement(s) for user ${userId} — the subscription died before the change's invoice settled`,
+      );
+    }
+  } else {
+    log.info(
+      `[Webhook] Deleted event for ${subscription.id} but user ${userId}'s subscription on record is ${storedSubscriptionId} — a stale delivery; leaving pending settlements alone`,
+    );
+  }
+
   // Downgrade to free tier
   await updateUserSubscription(userId, {
     stripeSubscriptionId: null,
@@ -309,6 +339,29 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
 
   const userId = userWithCredits.id;
   const planTier = userWithCredits.credits?.planTier || "free";
+
+  // ⚠ THE PLAN-CHANGE CREDIT MOVE SETTLES HERE (#711) — before the period
+  // logic, because an upgrade's grant rides a PRORATION-ONLY invoice, which
+  // the periodBought branch below deliberately exits early for. `changePlan`
+  // recorded the move against this invoice's id when Stripe accepted the
+  // update; this event is the money actually arriving. Applied first so an
+  // interval switch's unwind lands before the same invoice's period grant
+  // (the refresh's compare-and-set tolerates either order; this one is
+  // deterministic). A failed application fails the event LOUD — Stripe
+  // redelivers, and the ledger's unique reference makes the retry safe.
+  const settlement = await applyPlanChangeSettlement(invoice.id as string);
+  if (settlement.outcome === "failed") {
+    return {
+      success: false,
+      message: `Plan-change settlement for invoice ${invoice.id} failed — refusing so Stripe redelivers`,
+      error: settlement.error,
+    };
+  }
+  if (settlement.outcome === "applied") {
+    log.info(
+      `[Webhook] Applied plan-change credit settlement for invoice ${invoice.id} (user ${userId}): ${settlement.creditsMoved} credits`,
+    );
+  }
 
   // Skip if free tier (shouldn't happen but just in case)
   if (planTier === "free") {
@@ -424,6 +477,11 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
   if (isFinalFailure) {
     // Final retry exhausted — auto-cancel the subscription and downgrade to free
     log.info(`[Webhook] Final payment failure for user ${userId}, auto-cancelling subscription`);
+
+    // A pending plan-change credit move hanging on THIS invoice will never
+    // settle — void it so a declined card's grant stays ungranted and the
+    // row stops reading as queued work (#711).
+    await voidPlanChangeSettlement(invoice.id as string);
 
     try {
       await cancelSubscription(subscriptionId);

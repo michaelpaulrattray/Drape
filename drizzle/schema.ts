@@ -1698,6 +1698,43 @@ export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;
 export type InsertStripeWebhookEvent = typeof stripeWebhookEvents.$inferInsert;
 
 // ============================================================================
+// PLAN-CHANGE CREDIT SETTLEMENTS (#711)
+// ============================================================================
+// A plan change's credit move (the upgrade grant, the downgrade/interval-switch
+// unwind), recorded when Stripe accepts the update and APPLIED when the
+// change's own invoice settles. One row per change invoice — the unique
+// invoice id is what lets changePlan and the invoice webhook race to apply it
+// without either double-applying (the ledger's unique referenceId is the
+// final arbiter; this table is the queue and the record).
+export const planChangeSettlements = mysqlTable("plan_change_settlements", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  // The Stripe invoice whose settlement this credit move mirrors (in_xxx).
+  stripeInvoiceId: varchar("stripeInvoiceId", { length: 128 }).notNull().unique(),
+  // grant = credits owed to the customer when the money settles (upgrade);
+  // unwind = credits handed back beside the money Stripe returns (downgrade /
+  // interval switch), floored at the live balance at application time.
+  direction: mysqlEnum("direction", ["grant", "unwind"]).notNull(),
+  // Always positive; the direction carries the sign.
+  credits: int("credits").notNull(),
+  // The ledger line to write when it applies — composed at quote time, where
+  // the plan names and intervals are known.
+  description: text("description").notNull(),
+  // The client's request id, carried for tracing; the ledger is keyed on the
+  // invoice id, which is one-per-change whatever the client retries.
+  clientRequestId: varchar("clientRequestId", { length: 64 }),
+  // pending → applied (invoice settled, credits moved) or void (the invoice
+  // will never settle — final payment failure). Never deleted.
+  status: mysqlEnum("status", ["pending", "applied", "void"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+}, (table) => [
+  index("idx_pcs_user").on(table.userId),
+]);
+export type PlanChangeSettlement = typeof planChangeSettlements.$inferSelect;
+export type InsertPlanChangeSettlement = typeof planChangeSettlements.$inferInsert;
+
+// ============================================================================
 // BUG REPORTS (User-submitted feedback)
 // ============================================================================
 export const bugReports = mysqlTable("bug_reports", {

@@ -508,6 +508,13 @@ export async function updateSubscriptionPlan(
   success: boolean;
   /** What Stripe actually invoiced for the change, when it can be read. */
   invoicedAmount?: number | null;
+  /** The change's own invoice (in_xxx) — the artifact the credit settlement
+   *  hangs on (#711). Null only when Stripe attached no invoice, which
+   *  `always_invoice` should make unreachable. */
+  invoiceId?: string | null;
+  /** The invoice's status AT THIS READ ("paid", "open", …) — a snapshot,
+   *  not a promise; the settlement path re-reads before deferring. */
+  invoiceStatus?: string | null;
   error?: string;
 }> {
   try {
@@ -553,14 +560,19 @@ export async function updateSubscriptionPlan(
       },
     });
 
-    // The figure the customer was actually billed, read at the artifact.
+    // The figure the customer was actually billed, read at the artifact —
+    // and the invoice's identity and status, which is what the credit
+    // settlement hangs on (#711).
     let invoicedAmount: number | null = null;
+    let invoiceStatus: string | null = null;
     const latestInvoice = (updated as any).latest_invoice;
-    const invoiceId = typeof latestInvoice === "string" ? latestInvoice : latestInvoice?.id;
+    const invoiceId: string | null =
+      (typeof latestInvoice === "string" ? latestInvoice : latestInvoice?.id) ?? null;
     if (invoiceId) {
       try {
         const invoice = await stripe.invoices.retrieve(invoiceId);
         if (typeof invoice.amount_due === "number") invoicedAmount = invoice.amount_due;
+        invoiceStatus = invoice.status ?? null;
       } catch (invoiceErr) {
         log.warn(
           { err: invoiceErr },
@@ -572,13 +584,38 @@ export async function updateSubscriptionPlan(
     log.info(
       `[Stripe] Updated subscription ${subscriptionId} to ${newPlan} (${targetInterval}), invoiced immediately`,
     );
-    return { success: true, invoicedAmount };
+    return { success: true, invoicedAmount, invoiceId, invoiceStatus };
   } catch (error) {
     log.error({ err: error }, `[Stripe] Failed to update subscription ${subscriptionId}:`);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to update subscription",
     };
+  }
+}
+
+/**
+ * The invoice's status, read fresh (#711). The settlement path calls this
+ * before DEFERRING a credit move: a webhook that fired before the settlement
+ * row existed can never re-fire, so "not paid at the update" must be
+ * re-checked after the row is recorded — a fresh "paid" here is how that
+ * race resolves.
+ *
+ * ⚠ Null means THE READ FAILED, and deferring on it is not free (PR #755
+ * review, finding 1): if the invoice paid synchronously and its webhook was
+ * consumed before the row existed, this read is the LAST road to the
+ * credits — a null here strands the row pending until support finds it. The
+ * caller therefore retries this read before deferring, and the residue (all
+ * retries failing inside that exact race window) is a stated limit, not a
+ * covered case.
+ */
+export async function getInvoiceStatus(invoiceId: string): Promise<string | null> {
+  try {
+    const invoice = await stripe.invoices.retrieve(invoiceId);
+    return invoice.status ?? null;
+  } catch (error) {
+    log.warn({ err: error }, `[Stripe] Could not read invoice ${invoiceId} status`);
+    return null;
   }
 }
 
