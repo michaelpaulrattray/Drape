@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "21de2cdc58ce212f"
+    "sourceFingerprint": "3518620eba00af67"
   },
   "domains": [
     {
@@ -153,7 +153,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 38
+      "moduleCount": 40
     },
     {
       "id": "domain:wardrobe",
@@ -5839,6 +5839,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/testing/contendedTestTimeout.ts",
+      "path": "server/testing/contendedTestTimeout.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/testing/fetchablePort.ts",
       "path": "server/testing/fetchablePort.ts",
       "domain": "unassigned",
@@ -5859,6 +5865,12 @@
     {
       "id": "module:server/testing/migrationColumns.ts",
       "path": "server/testing/migrationColumns.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/sourceSweepSuites.ts",
+      "path": "server/testing/sourceSweepSuites.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -12736,6 +12748,10 @@
     {
       "id": "test:server/contactAddresses.test.ts",
       "path": "server/contactAddresses.test.ts"
+    },
+    {
+      "id": "test:server/contendedTestTimeouts.test.ts",
+      "path": "server/contendedTestTimeouts.test.ts"
     },
     {
       "id": "test:server/court.test.ts",
@@ -33348,6 +33364,11 @@
     {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/stripe/subscriptionPeriods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/testing/sourceSweepSuites.ts",
+      "to": "module:server/testing/childProcessSuites.ts",
       "kind": "imports"
     },
     {
