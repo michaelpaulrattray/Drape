@@ -30,7 +30,7 @@
  */
 import { type ReviewPresence } from "./reviewRounds.mts";
 
-/** What `gate-checks` says on the PR's CURRENT head commit. */
+/** What a named check says on the PR's CURRENT head commit. */
 export type GateState = "green" | "red" | "running" | "absent";
 
 export type PrReading = {
@@ -48,6 +48,27 @@ export type PrReading = {
   /** Every path the PR touches, for the shared-file prediction below. */
   files: readonly string[];
   gate: GateState;
+  /**
+   * SOCKET'S OWN SUPPLY-CHAIN VERDICT on this head (`Socket Security: Pull
+   * Request Alerts`) — the founder's ruling on #35, verbatim and entire: **"A"**,
+   * which is *"just let Socket's own verdict do the blocking"*.
+   *
+   * ⚠ **IT IS READ HERE BECAUSE A REQUIRED STATUS CHECK ALONE WOULD NOT HAVE
+   * BOUND US.** Measured the night the ruling landed: the account that performs
+   * every merge in this repository is an **admin** (`permissions.admin: true`)
+   * and `enforce_admins` on `main` is **false**, so GitHub's own branch
+   * protection lets it merge straight through a failing required check. Adding
+   * the context and stopping there would have been the fifth entry on this
+   * project's list of safety nets that were installed and never connected —
+   * which is the exact list his own card invoked when he chose A.
+   *
+   * The context IS registered on `main` as well (it binds anyone who is not an
+   * admin, and it is what makes the verdict a rule rather than a decoration).
+   * This field is the half that binds the road we actually merge on, and it
+   * runs no second scan and needs no token: it reads a verdict Socket already
+   * posted for free.
+   */
+  supplyChain: GateState;
   review: ReviewPresence;
   /** How many reviewer verdicts exist for this PR right now. */
   verdictCount: number;
@@ -344,6 +365,43 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
         "read the run, fix it, push. `pnpm preflight` catches the cheap causes before the push.",
     };
   }
+  // 3.5 Socket's supply-chain verdict, immediately after the gate and for the
+  //     same reason: it is a reading of THIS head that costs nothing to consult.
+  //     See `supplyChain` above for why this is read here rather than left to
+  //     branch protection.
+  if (pr.supplyChain === "running") {
+    return { kind: "wait", reason: "Socket's supply-chain verdict is still running" };
+  }
+  if (pr.supplyChain === "red") {
+    return {
+      kind: "stop",
+      reason:
+        "Socket REFUSED this diff — its supply-chain verdict on this head is failing. " +
+        "Read the alerts on the PR: something in the dependency tree does more than it " +
+        "used to, or a package changed hands. This tool never merges past that verdict " +
+        "(founder ruling on #35: \"A\").",
+    };
+  }
+  if (pr.supplyChain === "absent") {
+    /* ⚠ HIS OWN STATED RISK, MADE LOUD RATHER THAN SILENT. Option A's
+       consequence line names it: *"it is an outside service, so if it ever
+       fails to post its verdict a change would sit waiting until it does"*.
+       Measured before the ruling was executed: 4 of 4 PRs since the app was
+       installed carried both Socket checks, so absent is genuinely rare — and
+       #566 is this repository's own lesson that an absent check is the one
+       state that reads exactly like no control at all. So it STOPS and says
+       which of the two it is, rather than waiting silently or merging. */
+    return {
+      kind: "stop",
+      reason:
+        "Socket posted NO supply-chain verdict on this head — that is not a pass, it is " +
+        "no answer. Every PR since the app was installed has carried one, so this is the " +
+        "outside service being down or uninstalled rather than a diff it ignored. Re-run " +
+        "it, or if Socket is gone the required check on `main` has to go with it — never " +
+        "read silence as approval.",
+    };
+  }
+
   // 4. The reviewer. Green is not a pass (#219): a verdict exists to be READ,
   //    and reading it is the one thing here that is not mechanical.
   //

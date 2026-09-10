@@ -244,6 +244,13 @@ try {
 // and an absent one refuses the run.
 const REVIEW_JOB_NAME = "review";
 const GATE_JOB_NAME = "gate-checks";
+/**
+ * Socket's own pass/fail on a PR. The SBOM upload posts beside it as
+ * `Socket Security: Project Report`, which is a report and not a verdict — the
+ * name here is the one that goes red, and it is the one registered as a
+ * required check on `main`.
+ */
+const SUPPLY_CHAIN_CHECK_NAME = "Socket Security: Pull Request Alerts";
 const GATE_WORKFLOW_PATH = ".github/workflows/gate.yml";
 for (const [needed, workflowPath] of [
   [REVIEW_JOB_NAME, REVIEWER_WORKFLOW_PATH],
@@ -299,9 +306,9 @@ type Rollup = {
  * job name; `resolve` and `founder-gate` are its siblings and are not the bar
  * (`founder-gate` labels and never blocks, by the founder's 2026-08-25 ruling).
  */
-function gateStateOf(rollup: readonly Rollup[]): GateState {
+function gateStateOf(rollup: readonly Rollup[], name: string = GATE_JOB_NAME): GateState {
   const runs = rollup
-    .filter((c) => c.__typename === "CheckRun" && c.name === GATE_JOB_NAME)
+    .filter((c) => c.__typename === "CheckRun" && c.name === name)
     .sort((a, b) => new Date(a.startedAt ?? 0).getTime() - new Date(b.startedAt ?? 0).getTime());
   const newest = runs[runs.length - 1];
   if (!newest) return "absent";
@@ -456,6 +463,7 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     mergeStateStatus: view.mergeStateStatus,
     files: readPrFiles(view.number),
     gate: gateStateOf(view.statusCheckRollup ?? []),
+    supplyChain: gateStateOf(view.statusCheckRollup ?? [], SUPPLY_CHAIN_CHECK_NAME),
     review: reviewPresence(tally),
     verdictCount,
     acknowledgedAtVerdictCount: ackPinnedAt.get(view.number) ?? null,
@@ -837,7 +845,8 @@ readings = orderByOpened(readings);
 console.log(`pr-merge-in-order — ${readings.length} PR(s), in the order they were opened${dryRun ? " (DRY RUN)" : ""}`);
 for (const pr of readings) {
   console.log(
-    `  #${pr.number}  ${pr.headRefName}  opened ${pr.createdAt}  gate=${pr.gate}  review=${pr.review}  ` +
+    `  #${pr.number}  ${pr.headRefName}  opened ${pr.createdAt}  gate=${pr.gate}  ` +
+    `socket=${pr.supplyChain}  review=${pr.review}  ` +
       `${pr.mergeable}/${pr.mergeStateStatus}  files=${pr.files.length}` +
       `${pr.worktreePath ? "" : "  (no worktree)"}`,
   );
