@@ -84,6 +84,7 @@ const pr = (over: Partial<PrReading> = {}): PrReading => ({
   mergeStateStatus: "CLEAN",
   files: ["scripts/thing.mts"],
   gate: "green",
+  supplyChain: "green",
   review: "none",
   verdictCount: 0,
   acknowledgedAtVerdictCount: null,
@@ -205,6 +206,81 @@ describe("decideMergeAction — the branch order is the contract", () => {
     const a = decideMergeAction(pr({ gate: "absent" }), ctx);
     expect(a.kind).toBe("wait");
     expect(a.kind === "wait" && a.reason).toMatch(/gate-stall-check --pr 551/);
+  });
+
+  /*
+    SOCKET'S OWN VERDICT — the founder's ruling on #35, verbatim and entire: "A".
+
+    ⚠ THE ARM THAT MATTERS IS THE FIRST ONE, AND IT IS ABOUT WHY THIS CODE
+    EXISTS AT ALL. He chose "just let Socket's own verdict do the blocking",
+    whose consequence line promised "nothing to maintain". Registering the check
+    as REQUIRED on `main` would have been that — and it would not have bound us:
+    the account that performs every merge here is an admin, and `enforce_admins`
+    on `main` is false, so GitHub lets it merge straight through a failing
+    required check. The context is registered anyway (it binds a non-admin and
+    it makes the verdict a rule), and this reading is the half that binds the
+    road the team actually merges on. Both halves, or it is the fifth safety net
+    in this project installed and never connected.
+  */
+  it("STOPS on a red Socket verdict — a green gate is not enough on its own", () => {
+    const a = decideMergeAction(pr({ gate: "green", supplyChain: "red" }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/Socket REFUSED/);
+  });
+
+  it("waits while Socket's verdict is still running", () => {
+    expect(decideMergeAction(pr({ supplyChain: "running" }), ctx).kind).toBe("wait");
+  });
+
+  it("STOPS when Socket posted nothing on a MERGEABLE head — silence is not approval (#566's class)", () => {
+    const a = decideMergeAction(pr({ supplyChain: "absent" }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/not a pass, it is\s+no answer/);
+  });
+
+  /*
+    ⚠ THE INTERACTION ARMS — PR #761 review, findings 1 and 2. Every arm above
+    holds `mergeable: "CLEAN"`, and the input that mattered was the one crossing
+    `supplyChain` with the mergeability states: after `syncMain` pushes a new
+    head, BOTH checks read absent for a while, and an absent-stop above the sync
+    road abandons the whole remaining merge order while printing that an outside
+    service is down — about a commit thirty seconds old.
+  */
+  it("SYNCS a conflicting PR whose Socket verdict is absent — it does not diagnose the outage", () => {
+    const a = decideMergeAction(
+      pr({ supplyChain: "absent", gate: "absent", mergeable: "CONFLICTING", mergeStateStatus: "DIRTY" }),
+      ctx,
+    );
+    expect(a.kind).toBe("sync-main");
+  });
+
+  it("still STOPS on a RED Socket verdict even while conflicting — red is a true reading of this head", () => {
+    /* The mirror of the arm above, and the reason only `absent` moved: a red
+       verdict says something about the diff, not about the branch being behind. */
+    const a = decideMergeAction(
+      pr({ supplyChain: "red", mergeable: "CONFLICTING", mergeStateStatus: "DIRTY" }),
+      ctx,
+    );
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/Socket REFUSED/);
+  });
+
+  it("the absent-stop says the conflict does not explain it — the sentence only a mergeable head earns", () => {
+    const a = decideMergeAction(pr({ supplyChain: "absent" }), ctx);
+    expect(a.kind === "stop" && a.reason).toMatch(/no conflict explains it/);
+  });
+
+  it("merges when both the gate and Socket are green — the control on the three above", () => {
+    /* Without this the three arms above would all pass over a rule that simply
+       never merges anything. */
+    expect(decideMergeAction(pr({ gate: "green", supplyChain: "green" }), ctx).kind).toBe("merge");
+  });
+
+  it("⚠ the GATE is answered before Socket: a diff failing both is told about the gate", () => {
+    /* Both are refusals and both are true; the shift is sent to the one it can
+       act on with a run log rather than to an outside service's dashboard. */
+    const a = decideMergeAction(pr({ gate: "red", supplyChain: "red" }), ctx);
+    expect(a.kind === "stop" && a.reason).toMatch(/gate-checks FAILED/);
   });
 
   it("⚠ the gate is answered BEFORE the clock: a draft with a red gate still stops on the draft", () => {
