@@ -138,3 +138,7 @@ CLAUDE.local.md
 # the Playwright MCP drives. Both were 0 tracked files the day this landed.
 output/
 .playwright-mcp/
+
+# The pinned tool cache (scripts/lib/hyperfineBin.mts) — a verified binary,
+# re-fetched from its checksum whenever the pin moves. Never committed.
+.tools/
