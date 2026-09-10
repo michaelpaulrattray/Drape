@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Check, RotateCcw, Sparkles, X } from "lucide-react";
+import { Check, RotateCcw, X } from "lucide-react";
 
-import { Button, Skeleton } from "@/foundation";
+import { Button, Icon, P, Skeleton } from "@/foundation";
 import {
   CANDIDATE_FAILURE_CHIPS,
   CANDIDATE_FAILURE_LINES,
@@ -412,7 +412,7 @@ export function CandidateTile({
           {candidate.kept ? "Kept" : "Keep"}
         </Button>
         <Button variant="quiet" size="small" disabled={busy || paidBusy} onClick={onFollow}>
-          <Sparkles size={11} strokeWidth={1.9} aria-hidden="true" />
+          <Icon d={P.follow} size={11} />
           Follow
         </Button>
         <Button

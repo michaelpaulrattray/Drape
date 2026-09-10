@@ -221,6 +221,30 @@ export const P = {
    * collision in the set. His to redraw, like everything here.
    */
   reimagine: 'M12 3.5a8.5 8.5 0 1 1-8.5 8.5M3.5 12a5.5 5.5 0 1 1 5.5 5.5',
+
+  /*
+   * Follow — lineage: another of these. One figure in the house stroke, a
+   * second smaller one raised behind its shoulder (#557, the candidate tile's
+   * action row). Four subpaths, built from `avatar`'s own head-and-shoulders
+   * shapes so it belongs to the set.
+   *
+   * It replaces lucide's `Sparkles`, which this file's own header lists for
+   * retirement on sight: his words were *"follow is a sparkles icon do you
+   * have a better idea? … something less ai slop but still a good vibe?"*
+   *
+   * ⚠ **THE RISK HERE IS NOT UGLINESS, IT IS COLLISION WITH `people`**, which
+   * is already two figures and already means *members*. They are drawn apart
+   * on purpose: `people`'s second figure is a peer, same size, same baseline;
+   * this one is smaller, raised and BEHIND. The specimen sheet draws all three
+   * in a row so the difference can be checked rather than asserted.
+   *
+   * Drawn fresh, chosen by his eye at the frames from three candidates at
+   * 11/13/15/17px (Crew reply #170, 2026-09-10, verbatim and entire: "A") —
+   * the same road `reimagine` took. Rejected with him: a magic wand (the
+   * sparkle's cousin, reads as AI) and a person-with-a-plus (the rail's Invite
+   * grammar, would collide). His to redraw, like everything here.
+   */
+  follow:   'M9.6 14a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8M3.4 20.6c.9-3 3.3-4.6 6.2-4.6s5.3 1.6 6.2 4.6M14.8 5.4a3 3 0 0 1 4.3 4.2M16.4 12.6c2.4.5 4 2 4.6 4.3',
 } as const;
 
 export type IconName = keyof typeof P;

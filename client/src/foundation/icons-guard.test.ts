@@ -40,6 +40,7 @@ const read = (relative: string) => fs.readFileSync(path.resolve(CLIENT_SRC, rela
 
 const ICONS = read("foundation/icons.tsx");
 const RAIL = read("foundation/Rail.tsx");
+const TILE = read("features/castingV2/components/CandidateTile.tsx");
 const TOPBAR = read("foundation/Topbar.tsx");
 const CHROME_STUBS = read("foundation/ChromeStubs.tsx");
 const BUG_BUTTON = read("features/lobby/ReportBugButton.tsx");
@@ -107,6 +108,34 @@ describe("the retired glyphs are gone from the rail, not merely unused", () => {
    */
   it("the Invite plus is still Lucide, which is what he asked for", () => {
     expect(lucideImports(RAIL)).toContain("Plus");
+  });
+
+  /**
+   * ⚠ **THE SECOND SITE, AND IT IS THE ONE HE FOUND HIMSELF** (#557). The
+   * header has listed `Sparkles` for retirement on sight since #280, and the
+   * candidate tile's Follow button was still drawing it — his words, with a
+   * frame of the action row: *"follow is a sparkles icon do you have a better
+   * idea? … something less ai slop but still a good vibe?"*
+   *
+   * The arm is DELETION rather than disuse, the bar he set for the rail: an
+   * unused import still passes `pnpm check` and still reads as the product
+   * shipping the universal AI mark. A THIRD site appearing tomorrow is not
+   * caught here — this names files, and a derived sweep over every
+   * meaning-carrying surface is #300's job, not this file's. Said plainly so
+   * a green here is not read as "Sparkles is gone from the product".
+   */
+  it("CandidateTile.tsx draws the house Follow glyph, not Lucide's Sparkles", () => {
+    const named = lucideImports(TILE);
+    expect(
+      named.length,
+      "the tile stopped importing from Lucide in a shape this arm reads",
+    ).toBeGreaterThan(0);
+    expect(named).not.toContain("Sparkles");
+    /* `code()` and not the raw source: the suite's own rule at the top of this
+       file is that a rule QUOTED in a docblock must never satisfy its own arm.
+       Without it, deleting the Icon from the button while leaving a comment
+       that mentions `P.follow` keeps this half green (PR #754 review). */
+    expect(code(TILE)).toContain("P.follow");
   });
 });
 
