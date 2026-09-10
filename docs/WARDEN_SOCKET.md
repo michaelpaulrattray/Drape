@@ -108,6 +108,32 @@ of the App's own check on every manifest PR, which is where it was read from.
 That first red run is also the proof the refusal works end to end: a
 misconfigured scanner reddened the gate instead of passing it.
 
+## ⚠ The token needs `security-policy:read`, and until it has it this cannot merge
+
+Driven on PR #753's second gate run, and it is the useful half of the finding —
+**the scan itself worked**: the CLI authenticated (`org: klieg`, `token:
+UqR5e*** (env)`), found and uploaded **7 manifest files**, and reported *"Scan
+result: success."* It then failed on the report:
+
+```
+Socket API Request failed (403): Insufficient permissions
+  Details: {"requiredScopes":["security-policy:read"]}
+```
+
+Deciding *healthy or not* means reading the organisation's security policy, and
+the token he created carries full-scans, packages, report and repo scopes but
+not that one. **It is one checkbox on his token at
+`socket.dev/dashboard/org/klieg`.**
+
+Two things follow, and the second is the one worth writing down:
+
+- **The PR carrying this step is not merged until the scope exists.** With the
+  scope missing the step reddens every manifest PR, and a refusal only the
+  founder can clear would wedge the team.
+- **Dropping `--report` is NOT the fix.** It would make the step green by
+  creating scans that nothing ever reads — invariant 7, *a control that is not
+  invoked does not exist*, wearing the costume of a passing check.
+
 ## By hand
 
 ```

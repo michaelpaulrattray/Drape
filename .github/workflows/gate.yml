@@ -313,6 +313,18 @@ jobs:
           # auto-discovered (missing)") after the local drive had left the
           # question open.
           SOCKET_CLI_ORG_SLUG: klieg
+          #
+          # ⚠ THE TOKEN NEEDS ONE MORE SCOPE THAN IT HAS: `security-policy:read`.
+          # Driven on this PR's second gate run — the scan itself SUCCEEDED
+          # (7 manifest files uploaded, "Scan result: success") and `--report`
+          # then died on `403 Insufficient permissions - requiredScopes:
+          # ["security-policy:read"]`, because deciding healthy-or-not means
+          # reading the org's security policy. Until that scope is added this
+          # step reddens every manifest PR, which is why the PR carrying it is
+          # not merged: a scanner that cannot reach a verdict must refuse, and a
+          # refusal nobody but the founder can clear would wedge the team.
+          # Dropping `--report` would "fix" it by creating scans nobody reads —
+          # invariant 7 exactly, and not done.
         run: |
           # Kept in step with server/socketScan.test.ts, which asserts this
           # exact pattern covers every manifest git tracks.
