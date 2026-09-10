@@ -33,7 +33,6 @@ export {
 // Button Components
 export { 
   Button, 
-  IconButton, 
   LinkButton,
   NavLink,
   SocialLink,
@@ -42,7 +41,6 @@ export {
   ConveyorTextColor,
   ConveyorIcon,
   type ButtonProps,
-  type IconButtonProps,
   type LinkButtonProps,
   type NavLinkProps,
   type SocialLinkProps,

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { BrandOrb } from "./BrandOrb";
 import { Icon, P } from "./icons";
+import { IconButton } from "./primitives";
 
 /**
  * The 76px rail (foundation README §4, plan §D.5, handoff chapter 01).
@@ -291,15 +292,9 @@ export function Rail({
         {workspace?.onOpenSettings ? (
           <>
             <span className="dp-rail__divider" />
-            <button
-              type="button"
-              className="dp-iconbtn"
-              onClick={workspace.onOpenSettings}
-              title="Settings"
-              aria-label="Settings"
-            >
+            <IconButton onClick={workspace.onOpenSettings} label="Settings">
               <Icon d={P.cog} size={16} />
-            </button>
+            </IconButton>
           </>
         ) : null}
       </div>
