@@ -245,6 +245,57 @@ export const CONTROLS: Control[] = [
   },
   {
     /*
+      THE PRICE BESIDE THE BUTTON — founder ruling, Crew reply #127,
+      2026-09-04, verbatim and entire: *"Leave the page alone; teach the check
+      to look beside the button"* (#523).
+
+      The compliant arm is the CASTING TAB'S REAL SHAPE, not an invented one:
+      the button inside `div.dp-field` (the `Field` primitive), and the receipt
+      line as that div's sibling — so the price is two levels up. That is the
+      page the founder looked at and ruled correct, and if this arm ever goes
+      red the law has stopped agreeing with his ruling.
+
+      ⚠ THE OFFENDER IS THE INTERESTING HALF AND IT IS WHY THIS ARM EXISTS AT
+      ALL. A price IS on the page — a credit balance in the chrome, sitting
+      EXACTLY ONE LEVEL BEYOND the bound — and the law must still catch the
+      button. Without this, the obvious widening is "a price anywhere on the
+      page", which every surface that spends satisfies through its own credit
+      balance: the law would hold everywhere, catch nothing, and nothing would
+      say so.
+
+      ⚠ AND IT IS SHAPED THIS WAY BECAUSE THE FIRST CUT OF IT PROVED NOTHING.
+      That version put the balance in a SIBLING subtree of the field, which no
+      climb of any depth can reach — so raising the bound from 2 to 3 left the
+      arm green, and it would have read as coverage. The balance is now inside
+      the third ancestor, which is the only shape that makes the number 2
+      load-bearing: raise the constant by one and this arm reddens.
+    */
+    law: "priced-buttons",
+    breaks: "the reach of 'beside' — a price one level beyond the button's own control group",
+    run: assertPricedButtons,
+    offender: {
+      html: page(
+        ``,
+        /* ancestor 3 holds the price · ancestor 2 · ancestor 1 (.dp-field) · button */
+        `<div>` +
+          `<p>Balance: 4,200 cr</p>` +
+          `<div><div class="dp-field"><textarea aria-label="Casting brief"></textarea>` +
+          `<button>Cast it</button></div></div>` +
+          `</div>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        ``,
+        `<div>` +
+          `<div class="dp-field"><textarea aria-label="Casting brief"></textarea><button>Cast it</button></div>` +
+          `<p class="dpc-hero__receipt">8 CANDIDATES &middot; ~160 CR &middot; ~50 SECONDS</p>` +
+          `</div>`,
+      ),
+    },
+  },
+  {
+    /*
       THE BOUNDARY THE PAID VERBS SIT ON, and it had no arm until the reviewer
       of #522 walked it. "Sign" is a paid action — signing a cast to the roster
       — and "Sign in" / "Sign out" are not, but `/^sign\b/i` matched all three.
