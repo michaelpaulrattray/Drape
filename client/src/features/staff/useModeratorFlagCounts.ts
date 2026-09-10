@@ -1,6 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { DEFAULT_DISCREPANCY_THRESHOLD } from "@/features/moderator/flagThresholds";
 import { isStaffRole } from "./staffRole";
+import { useStaffAutoRefresh } from "./stores/useStaffAutoRefreshStore";
+import { STAFF_REFRESH_INTERVAL_MS } from "./useStaffRefresh";
 import { trpc } from "@/lib/trpc";
 
 /**
@@ -114,6 +116,47 @@ export function useModeratorFlagCounts(): ModeratorFlagCounts {
   const { user, isAuthenticated } = useAuth();
   const isStaff = isStaffRole(user?.role);
   const enabled = isAuthenticated && isStaff;
+  const [autoRefresh] = useStaffAutoRefresh();
+
+  /*
+    ⚠ IT POLLS NOW, AND THE COST WAS MEASURED BEFORE IT DID (#752, the sibling
+    of #457). His word on #457, verbatim: *"fix it — a moderator request
+    arriving while he sits still must reach the bar without him moving; the cost
+    of polling is accepted."* That fixed the ADMIN bar. This is the same
+    sentence one role over: a referral pair sharing an IP gets flagged, or an
+    account crosses the discrepancy threshold, and the `Moderation` count in the
+    account menu did not move until she navigated or clicked away and back.
+
+    **Why `staleTime` alone could never have closed it**: `staleTime` makes a
+    refetch PERMISSIBLE at the next trigger, it schedules nothing, and the
+    QueryClient is stock — so the triggers are remount and window refocus, and
+    neither fires while she sits on one page. Invalidation cannot reach it
+    either: the flag is raised by another session entirely.
+
+    ⚠ **THE COST WAS THE REASON THIS WAS FILED SEPARATELY FROM #457, AND IT IS
+    NOW A NUMBER RATHER THAN A WORRY** (measured against production under #464,
+    read-only, five runs each, medians):
+
+      one round trip, no work ......................  322 ms
+      admin.getOverview — ALREADY on this timer .... 1975 ms
+      getFlaggedUsers — what this line adds .........  980 ms
+
+    `getFlaggedUsers` issues exactly three sequential queries, and 3 x 322 = 966
+    — **so the database work of all three GROUP BYs together is ~14 ms**, across
+    `point_transactions` 852, `generations` 2324, `generation_operations` 651.
+    The scan this line puts on a timer is **half the cost of the poll already on
+    that timer with his blessing**. #752's caution was right to demand the
+    reading; the reading says there is no new cost decision here.
+
+    ⚠ **`refetchInterval` IS OBSERVER-SCOPED, WHICH IS THE ONLY REASON IT MAY BE
+    SET HERE** — see the note below, which is why this hook was restricted to
+    observer-scoped options in the first place. `FlaggedDiscrepanciesCard`
+    observes `getFlaggedUsers` at this same key and follows the same switch and
+    the same constant (`ModeratorDashboard.tsx`, via the `autoRefreshInterval`
+    prop it hands the card), so its own timer is untouched. The only consequence of the pair is that the two timers can land
+    apart inside one 30s window, and the query answers twice in that window
+    instead of once — the same consequence #457 accepted on Overview.
+  */
 
   /*
     ⚠ ONLY OBSERVER-SCOPED OPTIONS HERE, and the reason is a defect that already
@@ -127,12 +170,20 @@ export function useModeratorFlagCounts(): ModeratorFlagCounts {
   */
   const referrals = trpc.moderator.getFlaggedReferrals.useQuery(
     { limit: 1, offset: 0 },
-    { enabled, staleTime: STALE_MS },
+    {
+      enabled,
+      staleTime: STALE_MS,
+      refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
+    },
   );
 
   const discrepancies = trpc.moderatorReconciliation.getFlaggedUsers.useQuery(
     { threshold: DEFAULT_DISCREPANCY_THRESHOLD },
-    { enabled, staleTime: STALE_MS },
+    {
+      enabled,
+      staleTime: STALE_MS,
+      refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
+    },
   );
 
   return readFlagCounts(referrals.data, discrepancies.data);

@@ -153,14 +153,29 @@ export default function ModeratorDashboard() {
     { enabled: !!selectedUserId }
   );
 
+  /* The list BEHIND one of the two numbers the account-menu badge counts. Found
+     by the review of PR #768: without this the badge advanced on a new flagged
+     pair while the list of flagged pairs directly under her stayed put — the
+     asymmetry that PR would otherwise have created. Same shape and same reason
+     as `blockedIpsQuery` above; `enabled` means it costs nothing off this tab.
+     Its key is the {limit: 20} page and never the badge's {limit: 1}. */
   const flaggedReferralsQuery = trpc.moderator.getFlaggedReferrals.useQuery(
     { limit: 20, offset: flaggedPage * 20 },
-    { enabled: activeTab === "flagged-referrals" }
+    {
+      enabled: activeTab === "flagged-referrals",
+      refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
+    }
   );
 
+  /* Same class, one step softer: these are HER requests, but their status moves
+     when an ADMIN acts on one in another session — so nothing she does on this
+     tab can bring her the answer she is waiting for. */
   const myRequestsQuery = trpc.moderator.getMyChangeRequests.useQuery(
     { limit: 50, offset: 0 },
-    { enabled: activeTab === "my-requests" }
+    {
+      enabled: activeTab === "my-requests",
+      refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
+    }
   );
 
   const createChangeRequestMutation = trpc.moderator.createChangeRequest.useMutation({
