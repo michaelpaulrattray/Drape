@@ -1,7 +1,7 @@
 {
-  "edition": 328,
-  "updatedAt": "2026-09-10T07:15:00Z",
-  "shift": "Foreman - both cards on your next-up list came unblocked by your own two replies tonight, and I took both. THE ONE THAT IS DONE: Follow no longer wears the sparkle. You replied 'A', and A is what shipped - one figure with a smaller second one raised behind its shoulder, saying 'another of these'. It is drawn in your own icon set, at your set's stroke rather than the odd heavier one that was there, and the old sparkle is deleted from that screen rather than merely unused. I looked at it in the running app in both themes before shipping. One thing I am telling you rather than implying: the pictures I took are of the icon sheet, not of a real candidate tile, because the test database has no candidates in it to draw one - so the 11-pixel reading you actually needed is the one you already gave when you picked A. THE ONE THAT NEEDS YOU AGAIN, AND I AM SORRY IT DOES: the Socket.dev job. You opened the account and pasted the key, and that was exactly right - the scan now runs for real, uploads our thousand-odd pieces of code and comes back with a result. It then stops one inch from the finish because the key you made is missing a single permission - the one that lets it read your own security rules to decide pass or fail. It is one checkbox. BUT READ THE SECOND CARD BEFORE YOU GO AND TICK IT, because I may have wasted your five minutes: when you connected Socket to GitHub it started posting its own verdict on every change we make, all by itself, free. If that verdict is simply told to block, the whole thing is finished with no checkbox, no code of mine, and nothing to maintain. I got this wrong once already tonight and said the opposite in writing, so the card shows you the measurement that corrected me.",
+  "edition": 329,
+  "updatedAt": "2026-09-10T08:40:45Z",
+  "shift": "Fable (escalated) - the money bug you ordered into the queue yesterday is fixed, shipped and live. THE BUG: when someone upgrades their plan, we were handing them the upgrade's bonus credits the moment Stripe accepted the change - before the card was actually charged. A declined card kept the credits anyway: on an annual plan that is a full year of the bigger allowance, held by someone who paid nothing. The mirror-image bug rode with it: switching billing cycle with a declining card took the customer's old credits away and gave nothing back until the card recovered. THE FIX, in one sentence: credits now move when the money actually arrives, not when Stripe says 'update accepted'. For a working card nothing changes - the charge clears in the same breath and the credits appear instantly, exactly as today. For a declining card, the credits simply wait with the payment: the customer is told 'your credits land as soon as the payment settles', Stripe retries the card on its own schedule, and if it never recovers the credits are cancelled alongside the subscription. Nobody can keep what they did not pay for, and nobody loses what they did. Your reviewer went over it twice (it touches money, so it gets the hard look); every finding from both rounds is in, the one leftover edge is filed as its own card (#756), and I verified the fix live on production after the deploy. No customer has a subscription yet, so this landed before the first person it protects.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-10T07:03:21.301Z",
+      "readAt": "2026-09-10T08:41:07.045Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4545,6 +4545,13 @@
   ],
   "pipeline": [
     {
+      "id": "settlement-711",
+      "title": "A declined card can no longer keep an upgrade's credits - they move when the payment does",
+      "status": "merged",
+      "prNumber": 755,
+      "note": "Your ordered card #711. Credits for a plan change now wait for the payment to actually settle; a working card still feels instant. Two review rounds, all findings taken; the one residue (a dead invoice still being payable on Stripe's side) is filed as #756. Verified on production after the deploy: new build serving, new table present."
+    },
+    {
       "id": "follow-glyph-557",
       "title": "Follow stops wearing the sparkle - your pick, A, is live",
       "status": "merged",
@@ -5144,9 +5151,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0910f-foreman",
+      "id": "queue-shape-0910g-fable",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 59 open, 14 nobody has looked at in a week - your #711 closed, one filed",
+      "detail": "59 cards open: #711 (the upgrade-credits money bug) closed tonight with its fix deployed, and #756 filed from its review (small: a finally-failed plan change's invoice should be cancelled on Stripe's side too, so it cannot take money after the credits are cancelled). 14 cards have had no comment, close, reopen or commit for seven days - unchanged; they are mostly parked lost-and-found and cleanup items, not work anyone is avoiding. NEXT UP now holds only #35 (Socket.dev), which waits on your answer to the three options already on your desk."
+    },
+    {
+      "id": "queue-shape-0910f-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 59 open, 14 nobody has looked at in a week - one closed tonight, one filed",
       "detail": "59 cards open, up one: #741 closed and #743 filed from it, plus one from elsewhere. 14 have had no comment, close, reopen or commit for seven days - unchanged from last night, and the oldest is 15 days. Nothing is waiting on you, nothing is marked urgent, and one card is held for a Fable review (#711, the upgrade credit-grant bug). The shape is steady rather than improving: the 14 stale ones are mostly old lost-and-found and knip items that are parked or need a decision, not work anyone is avoiding."
     },
@@ -5595,10 +5609,11 @@
     168,
     169,
     170,
-    171
+    171,
+    172
   ],
   "nextUp": {
-    "readAt": "2026-09-10T07:03:20.507Z",
+    "readAt": "2026-09-10T08:41:06.192Z",
     "items": [
       {
         "issueNumber": 35,
@@ -5607,14 +5622,6 @@
         "held": {
           "state": "blocked",
           "because": "the founder — **add the `security-policy:read` scope to the `SOCKET_CLI_API_TOKEN` at `socket.dev/dashboard/org/klieg`.** One checkbox; nothing else is outstan…"
-        }
-      },
-      {
-        "issueNumber": 711,
-        "title": "An upgrade's credit grant lands on the Stripe update, not on the payment settling — a declined card keeps the credits (x12 on annual)",
-        "urgent": false,
-        "held": {
-          "state": "fable"
         }
       }
     ]
