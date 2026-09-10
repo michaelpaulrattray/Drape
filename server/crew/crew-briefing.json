@@ -1,7 +1,7 @@
 {
-  "edition": 331,
-  "updatedAt": "2026-09-10T12:10:00Z",
-  "shift": "Foreman - a button that said it refreshed, and an invoice that could still take your customer's money. TWO SMALL JOBS OFF YOUR LIST, ONE LANDED AND ONE HELD. FIRST: on the moderator and admin screens there is a Refresh button. Press it on the Users tab, on Flagged referrals, or on My requests, and it told you 'Data refreshed' while the list in front of you did not move. It is fixed and live. The job was carded as three lists on one screen; sweeping for others found it was TEN across four screens, because the tool that counted them could only see pages written one particular way and five pages are written the other way. I drove the real page afterwards rather than trusting the tests: one press now asks the server for eight lists where it used to ask for five, and twelve when you have an account open. SECOND, AND THIS ONE IS ABOUT MONEY: when a customer's plan-change payment finally fails, we correctly cancel their plan and cancel the credits - but the Stripe invoice was left sitting there, payable. They could pay it days later through Stripe's own page: money in, credits refused, plan already gone. The fix closes the invoice too. I AM NOT MERGING THAT ONE TONIGHT AND YOU SHOULD KNOW WHY. Your automatic reviewer looked at it and found a real mistake of mine - I had written in the code that Stripe will not let you cancel an invoice already written off as bad debt. I had never checked. Stripe's own documentation says the opposite, and worse, an invoice written off that way CAN still be paid - so my first version would have left your exact problem alive on the one road most likely to hit it, while logging that it had been handled. It is fixed and the reviewer's other two points are taken. But when I asked for a second look at the corrected version, the review simply never started - no verdict, not a failed one. On a money change I am not going to merge past that on my own say-so, so it waits one shift. Nothing is at risk while it waits: there are no live subscriptions yet. NOTHING IS ON YOUR DESK and NEXT UP is still empty.",
+  "edition": 332,
+  "updatedAt": "2026-09-10T14:17:10.744Z",
+  "shift": "Foreman - the money fix landed, and a flag now finds the moderator instead of waiting for her to go looking. FIRST, THE ONE HELD OVER FROM LAST NIGHT. That plan-change invoice that could still take a customer's money days after their payment finally failed - it is fixed and LIVE. It was held because the automatic reviewer never started on the corrected version, and I would not merge a money change on my own say-so. It started this time. Its verdict was pass, and it is merged. SECOND, AND THIS IS THE ONE YOU CAN SEE. Picture a moderator sitting on the moderation screen, not touching anything. An account crosses the credit threshold, or a pair of referrals turns up sharing an address. Until tonight the Moderation number in her account menu simply did not move - not until she clicked away to another page and came back. You ruled on exactly this sentence for the admin bar a few days ago. This is the same sentence for her. THAT JOB HAD BEEN STUCK, AND NOT FOR A SILLY REASON. Making that number keep watch means repeatedly running a search across three of our biggest tables, and nobody had ever measured what that costs, so no shift would touch it. I measured it against the real production database: the actual database work is about FOURTEEN THOUSANDTHS OF A SECOND, and the whole thing rides along inside a request we were already sending every thirty seconds anyway. So it costs us nothing new. The card that was blocking it is closed on that number. AND THE REVIEWER CAUGHT ME BEING SLOPPY, WHICH IS WORTH TELLING YOU. I claimed I had checked everywhere else this same problem could hide. I had not, quite - the LIST of flagged referrals, sitting right under that number, had the same fault. Her own requests too. Both fixed in the same change. The deeper issue - that nothing in our checks can tell which screens are supposed to keep watch and which are not, after this cropping up four separate times - is now written down as its own job rather than quietly fixed and forgotten. NOTHING IS ON YOUR DESK and NEXT UP is still empty.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-10T12:00:46.083Z",
+      "readAt": "2026-09-10T14:16:05.722Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4545,6 +4545,13 @@
   ],
   "pipeline": [
     {
+      "id": "moderator-badge-poll-752",
+      "title": "A flag now reaches the moderator's badge while she sits still",
+      "status": "merged",
+      "prNumber": 768,
+      "note": "A moderator sits on the moderation screen, touching nothing. An account crosses the credit threshold, or a referral pair turns up sharing an address. Until tonight the Moderation number in her account menu did not move until she clicked away and came back - the same sentence you ruled on for the admin bar. The job had been stuck because keeping that number current means re-running a search across three of our biggest tables and nobody had measured the cost. Measured against production: about fourteen thousandths of a second of actual database work, and it rides inside a request we already send every thirty seconds. Driven on the running app: 2 checks in 70 still seconds with AUTO on, none with it off."
+    },
+    {
       "id": "refresh-reaches-lists-759",
       "title": "Refresh now moves the list you are looking at - on every staff screen",
       "status": "merged",
@@ -4554,7 +4561,7 @@
     {
       "id": "void-failed-invoice-756",
       "title": "A failed plan change can no longer leave a payable invoice behind - HELD one shift",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 764,
       "note": "When a plan change's payment finally fails we cancel the plan and cancel the credits, but the Stripe invoice was left open and payable - a customer could pay it days later and get nothing. Fixed, tested, and your reviewer caught a real error in my first version: I had claimed Stripe refuses to cancel an invoice already written off as bad debt. It does not, and such an invoice can still be paid, so my first version left the problem alive on that road. Corrected. Held only because the second review never started - no verdict rather than a bad one - and I will not merge a money change past that alone. No live subscriptions, so nothing is exposed while it waits."
     },
@@ -5179,6 +5186,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0911-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 58 open, 15 nobody has looked at in a week - three closed tonight, two filed",
+      "detail": "58 cards open. Closed tonight: #756 (the plan-change invoice that could still take money - held last night for a missing review, reviewed and merged now), #752 (the moderator's badge), and #464, the measurement card that had been blocking #752 - closed on an actual number rather than left open. Filed two: #767 (we log a paid invoice on the failed-payment road as 'nothing to do', and that is the one status where it means money was already taken) and #769 (nothing in our checks knows which screens are supposed to keep watch, after this same fault turned up four separate times). 15 cards have had no comment, close or commit for seven days - unchanged, and still mostly parked cleanup. NEXT UP is EMPTY and nothing is on your desk."
+    },
+    {
       "id": "queue-shape-0910-late-foreman",
       "severity": "info",
       "state": "open",
@@ -5188,9 +5202,9 @@
     {
       "id": "review-never-started-764",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "Your automatic reviewer did not start on a money change tonight - and that is not the same as failing it",
-      "detail": "The reviewer read the invoice fix, found a real mistake, and I corrected it. Asking for a second look at the correction produced nothing at all - not a rejection, not an error, simply no review. We have a documented remedy for exactly this (remove and re-apply the label); I ran it and it still produced nothing. This matters because an absent review looks identical to a repository that has no reviewer, so it is the one state that can be walked past without noticing. I did not walk past it: the change is held, not merged. If it happens again next shift it stops being a hiccup and becomes its own job."
+      "detail": "RESOLVED. The review started on the merged head and returned a pass; the change is merged and live. The cause is now named rather than mysterious: GitHub creates no checks at all for a branch that has drifted out of date with main, so the request for a review was made into thin air. Merging main in first is what fixed it."
     },
     {
       "id": "queue-shape-0910h-foreman",
@@ -5670,7 +5684,7 @@
     173
   ],
   "nextUp": {
-    "readAt": "2026-09-10T12:00:45.236Z",
+    "readAt": "2026-09-10T14:16:04.889Z",
     "items": []
   }
 }
