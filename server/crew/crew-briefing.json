@@ -1,7 +1,7 @@
 {
-  "edition": 327,
-  "updatedAt": "2026-09-10T05:20:00Z",
-  "shift": "Foreman - everything tonight came off YOUR next-up list, oldest first, and one of the three needs your eye at the bottom of this page. THE ONE YOU WILL ACTUALLY NOTICE: on your admin pages, the little count beside 'Change requests' did not move while you sat still. A moderator could send you a request and the number would stay exactly where it was - not for thirty seconds, not ever - until you clicked to another admin page or clicked away from the browser and back. It now updates within about half a minute while you sit there doing nothing. You told me the cost of that was accepted, so here is the cost, plainly: the page asks the database a seven-part question every thirty seconds while your AUTO 30s switch is on, and because the same number feeds the badge in your account menu, it asks it on every page you have open, casting included. Turning that switch off stops it everywhere. I proved all three states rather than assuming them: two copies of the app running side by side, seventy seconds of sitting completely still on each - the old one asked nothing, the new one asked twice, and the new one with the switch off asked nothing. THE SECOND JOB IS INVISIBLE AND THAT IS THE POINT: the small icon buttons in your top bar - the bug, the help, the theme toggle, the settings gear, the refresh, the close X on the feedback panel - were seven separate hand-written copies of one button, and there were two more unused copies sitting in the code under the same name. They are one thing now. Nothing moved on screen and I did not take your word for that or mine: six photographs, both themes, before and after, compared pixel by pixel - zero pixels different. The only change anywhere is that the X on the feedback box now shows a 'Close' tooltip like its five neighbours already did. Your list said six buttons; the code had seven, and the extra one was the refresh on your staff bar. The automatic reviewer then found two holes in my own test and both are fixed. THE THIRD IS FOR YOUR EYE: you asked for a better mark than the sparkle on Follow. Three drawings are below, at the sizes they would really be used, with the two people-glyphs you already have beside them so you can see they do not collide. One word picks one.",
+  "edition": 328,
+  "updatedAt": "2026-09-10T07:15:00Z",
+  "shift": "Foreman - both cards on your next-up list came unblocked by your own two replies tonight, and I took both. THE ONE THAT IS DONE: Follow no longer wears the sparkle. You replied 'A', and A is what shipped - one figure with a smaller second one raised behind its shoulder, saying 'another of these'. It is drawn in your own icon set, at your set's stroke rather than the odd heavier one that was there, and the old sparkle is deleted from that screen rather than merely unused. I looked at it in the running app in both themes before shipping. One thing I am telling you rather than implying: the pictures I took are of the icon sheet, not of a real candidate tile, because the test database has no candidates in it to draw one - so the 11-pixel reading you actually needed is the one you already gave when you picked A. THE ONE THAT NEEDS YOU AGAIN, AND I AM SORRY IT DOES: the Socket.dev job. You opened the account and pasted the key, and that was exactly right - the scan now runs for real, uploads our thousand-odd pieces of code and comes back with a result. It then stops one inch from the finish because the key you made is missing a single permission - the one that lets it read your own security rules to decide pass or fail. It is one checkbox. BUT READ THE SECOND CARD BEFORE YOU GO AND TICK IT, because I may have wasted your five minutes: when you connected Socket to GitHub it started posting its own verdict on every change we make, all by itself, free. If that verdict is simply told to block, the whole thing is finished with no checkbox, no code of mine, and nothing to maintain. I got this wrong once already tonight and said the opposite in writing, so the card shows you the measurement that corrected me.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-10T05:13:52.502Z",
+      "readAt": "2026-09-10T07:03:21.301Z",
       "items": [
         {
           "issueNumber": 16,
@@ -276,7 +276,7 @@
     {
       "id": "follow-glyph-557",
       "issueNumber": 557,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-10T05:20:00Z",
       "title": "Follow: pick a mark - one letter closes this",
       "productImpact": "Follow is drawn with a sparkle today. Your words: \"follow is a sparkles icon do you have a better idea? a magic wand or a person with a + sign? something less ai slop but still a good vibe?\" Three candidates are drawn and none of them is wired - the tile still shows the sparkle until you pick. The mark sits on every candidate tile in the casting studio, at 11 pixels, which is the smallest thing this product draws, so legibility at that size decides as much as taste does.",
@@ -309,20 +309,25 @@
       "id": "toolbelt-socket-35",
       "issueNumber": 35,
       "state": "open",
-      "filedAt": "2026-09-10T03:20:00Z",
-      "title": "Five minutes of your time finishes the toolbelt job - it needs an account only you can open",
-      "productImpact": "Your oldest next-up card asked for three tools. Two are built and merged tonight. The third, Socket.dev, is the only one I cannot do: it needs a free account in your name and one password-style value pasted into the project settings. Nothing else is blocking it. What it is for, in plain terms: Drape is built on about a thousand pieces of other people's code. Twice a year somewhere in the industry, someone takes over one of those pieces and slips something nasty into it - code that reads your keys or your customers' data and sends them somewhere. You already have two defences and they are good ones. One watches for pieces with a publicly KNOWN problem and opens a fix automatically. The other forbids any new piece from running its own setup code on our machines, except five we have named - that is the single commonest way these attacks land, and it is already shut. Socket.dev covers the gap between them: a piece that has just been tampered with, where nobody has reported it yet, so there is nothing 'known' to match. It reads what the code actually DOES - has this version suddenly started reaching the network, or reading files it never touched - and says so before it reaches us. I want to be straight that this is a narrower gap than 'we have no protection'. It is a real one, and it is free, and it is worth having before launch.",
-      "workedExample": "A package you have never heard of, three levels beneath something you do use, publishes a new version at 2am. It looks identical. Buried in it is one line that reads environment variables - which on our server means your Stripe key and your database password - and posts them to an address in another country. Nobody has reported it, so there is no known-problem list to catch it. It does not run setup code, so that defence does not see it either. It just sits there and waits for our next deploy. Socket.dev's answer is 'this version newly gained network access and reads credentials' - and the change stops at the door instead of shipping.",
+      "filedAt": "2026-09-10T07:15:00Z",
+      "title": "Socket.dev: it runs - but it may need a checkbox from you, or nothing at all",
+      "productImpact": "You opened the Socket account and pasted the key tonight, and it worked: the scan authenticates as your organisation, uploads the roughly one thousand pieces of other people's code Drape is built on, and comes back with a result. It then stops one inch short. The half that turns a scan into a pass-or-fail has to read your organisation's own security rules, and the key you created is missing exactly that one permission. BEFORE YOU GO AND TICK IT: connecting Socket to GitHub did something I had not counted on - it now posts its own verdict on every change the team makes, automatically, at no cost to us. That verdict is currently advisory: it appears, it says pass or fail, and nothing acts on it. If it is simply told to block, the job is finished - no checkbox, no code of mine to maintain, no second scan. That is very likely the better answer, and it is why this is a question rather than a request. I got this wrong once tonight and I would rather you saw that than a clean story: I first measured that Socket's own verdict only appears on changes that touch our dependency list, and concluded it could not be trusted to block. The three changes I measured had all been merged BEFORE you installed it, so of course they carried no verdict. The honest comparison is tonight's two changes, both after: one touched the dependency list, one did not, and both got a verdict. It posts on everything.",
+      "workedExample": "Someone quietly takes over a small piece of code Drape uses and slips in something that reads our keys. It has just happened, so nobody has reported it and our existing 'known problems' watchdog sees nothing. Socket reads what the code actually DOES - this version has suddenly started reaching the network - and says so. Under option A that verdict stops the change from going in. Under option B my own scanner does the stopping, and Socket's verdict keeps sitting there being ignored.",
       "options": [
         {
-          "key": "yes",
-          "label": "YES — I will open the account",
-          "consequence": "You get three short steps and a link. The tool then checks every dependency change automatically from then on, and #35 closes."
+          "key": "A",
+          "label": "A - just let Socket's own verdict do the blocking (recommended)",
+          "consequence": "Nothing to tick, nothing to maintain, no second scan, and it starts working immediately. I close my own version unmerged. The one risk, stated: it is an outside service, so if it ever fails to post its verdict a change would sit waiting until it does. Two days of evidence, not two months."
         },
         {
-          "key": "not-now",
-          "label": "NOT NOW",
-          "consequence": "The card stays open and parked. Nothing else waits on it, and the two defences you already have keep running."
+          "key": "B",
+          "label": "B - tick the missing permission and use the scanner I built",
+          "consequence": "One checkbox on your Socket key. You get a scanner that lives in our own code with tests around it, so it cannot change behaviour without a change you can see. Costs a duplicate scan on any change that touches the dependency list, and Socket's own verdict stays ignored."
+        },
+        {
+          "key": "C",
+          "label": "C - both",
+          "consequence": "Belt and braces. Still needs the checkbox, still scans twice. I do not recommend it - two things enforcing the same rule is how they drift apart."
         }
       ],
       "recommendation": "RECOMMEND YES, but it is not urgent and it should not interrupt anything. It is free, it is about five minutes, and it is the kind of thing that is much easier to have in place before launch than to add after an incident. If you say yes I will write the three steps out with the exact link and the exact place to paste the value, and wire it up the same night. One thing I deliberately did NOT do, because it is worse than doing nothing: set the whole thing up now with the password value missing. It would sit on every change looking like it was checking, and check nothing. This project has four recorded cases of a safety net that was installed and never actually connected, so it stays uninstalled until it can work."
@@ -2168,8 +2173,8 @@
     {
       "id": "follow-glyph-557-frames",
       "title": "Follow: three marks, at the size they are really drawn",
-      "question": "Which of the three, or none? Look at the 11px column first - that is the size on the tile - and at the bottom two rows, which are marks you already have, to check the one you like is not saying what they say. Reply A, B, C or none.",
-      "state": "open",
+      "question": "ANSWERED - you replied 'A', and A is shipped. Left here so you can see what you picked beside the two marks it had to stay clear of. Nothing needed.",
+      "state": "done",
       "filedAt": "2026-09-10T05:20:00Z",
       "issueNumber": 557,
       "cardId": "follow-glyph-557",
@@ -4540,6 +4545,20 @@
   ],
   "pipeline": [
     {
+      "id": "follow-glyph-557",
+      "title": "Follow stops wearing the sparkle - your pick, A, is live",
+      "status": "merged",
+      "prNumber": 754,
+      "note": "Your 'A' shipped. The old sparkle is deleted from that screen, not merely unused, and the mark now takes your set's stroke instead of a heavier one. Looked at in both themes."
+    },
+    {
+      "id": "toolbelt-socket-35",
+      "title": "The supply-chain scanner is built and running - and waiting on your answer above",
+      "status": "in-review",
+      "prNumber": 753,
+      "note": "The scan authenticates and completes; it needs one permission on your key to reach a verdict. Held unmerged on purpose: merged as-is it would redden every dependency change on a refusal only you can clear."
+    },
+    {
       "id": "pill-moves-while-still-457",
       "title": "The Change requests count now moves while you sit still",
       "status": "merged",
@@ -5574,10 +5593,12 @@
     166,
     167,
     168,
-    169
+    169,
+    170,
+    171
   ],
   "nextUp": {
-    "readAt": "2026-09-10T05:13:51.683Z",
+    "readAt": "2026-09-10T07:03:20.507Z",
     "items": [
       {
         "issueNumber": 35,
@@ -5585,16 +5606,15 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "the founder — **a Socket.dev account and one repository secret.** It is the only piece left, and no shift can do it: the CLI reads `SOCKET_CLI_API_TOKEN` and t…"
+          "because": "the founder — **add the `security-policy:read` scope to the `SOCKET_CLI_API_TOKEN` at `socket.dev/dashboard/org/klieg`.** One checkbox; nothing else is outstan…"
         }
       },
       {
-        "issueNumber": 557,
-        "title": "Follow wears the retired sparkle — a house glyph that says 'another of these': two figures, the second traced behind the first",
+        "issueNumber": 711,
+        "title": "An upgrade's credit grant lands on the Stripe update, not on the payment settling — a declined card keeps the credits (x12 on annual)",
         "urgent": false,
         "held": {
-          "state": "blocked",
-          "because": "his desk card `follow-glyph-557` is open"
+          "state": "fable"
         }
       }
     ]
