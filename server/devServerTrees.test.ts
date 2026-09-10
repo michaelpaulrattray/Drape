@@ -24,6 +24,7 @@ import {
   devServerTrees,
   isDevServerChild,
   isDevServerRoot,
+  launchDirectoryIsGone,
   launchDirectoryOf,
   listenersOutsideEveryTree,
   portsOfTree,
@@ -579,6 +580,59 @@ describe("⚠ a server with no watcher is still a server (#783)", () => {
        cannot see is a tree it cannot clean up. */
     expect(rootsStartedAfter(UNWATCHED, at911("07:00:00")).map((tree) => tree.rootPid)).toEqual([94344]);
     expect(rootsStartedAfter(UNWATCHED, at911("08:00:00"))).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ "GONE" IS NOT "THE NAME NO LONGER RESOLVES" — and #783's own specimen is
+ * the proof.
+ *
+ * That card shipped the ABANDONED test as `!existsSync(launchedFrom)`, and it
+ * **could not have fired for the directory the card was filed about.** Measured
+ * at the close of that same shift, at the path the card names:
+ *
+ *     C:/Users/Admin/drape-shift-752-moderator-badge-poll
+ *       exists           true
+ *       node_modules     false
+ *       entries          0
+ *
+ * `shift-worktree remove` un-junctions `node_modules`, unregisters the worktree,
+ * and then fails to delete the directory — git 2.55 on Windows answers `Invalid
+ * argument`, which that tool's own header records as expected behaviour on this
+ * machine. **So the ORDINARY removal leaves an empty shell** and the name goes
+ * on resolving for as long as nobody sweeps it.
+ *
+ * The verdict was therefore silent in exactly the case it was written for:
+ * #783's class — a reader failing toward the reassuring answer — for the third
+ * time in one night, inside the repair for it.
+ */
+describe("⚠ a removed worktree leaves a shell, and a shell is still gone", () => {
+  const TREE = "C:/Users/Admin/drape-shift-752-moderator-badge-poll";
+  /** A file system as a set of paths that exist. */
+  const world = (...paths: string[]) => (path: string) => paths.includes(path);
+
+  it("⚠ THE MEASURED SHAPE — the directory survives, its node_modules does not", () => {
+    /* The arm #783 needed and did not have. Under its shipped predicate this
+       is `false`: the name resolves, so nothing is said, and the one fact that
+       makes the process safe to kill is never printed. */
+    expect(launchDirectoryIsGone(TREE, world(TREE))).toBe(true);
+  });
+
+  it("the plainly deleted directory is gone too", () => {
+    expect(launchDirectoryIsGone(TREE, world())).toBe(true);
+  });
+
+  it("⚠ CONTROL — a live tree is NOT gone", () => {
+    /* The direction that matters more: a false ABANDONED reads as "Nobody's
+       live work; safe to kill" over the founder's own running server. */
+    const live = "C:/Users/Admin/Drape";
+    expect(launchDirectoryIsGone(live, world(live, `${live}/node_modules`))).toBe(false);
+  });
+
+  it("CONTROL — a tree whose launch directory could not be read says nothing", () => {
+    /* Not knowing where it came from is not evidence that it is abandoned, and
+       a reader that treated it as such would kill on ignorance. */
+    expect(launchDirectoryIsGone(null, world())).toBe(false);
   });
 });
 

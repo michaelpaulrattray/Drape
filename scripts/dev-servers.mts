@@ -25,6 +25,7 @@ import { existsSync } from "node:fs";
 
 import {
   devServerTrees,
+  launchDirectoryIsGone,
   listenersOutsideEveryTree,
   portsOfTree,
   rootsStartedAfter,
@@ -140,7 +141,11 @@ const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number
      unwatched tree's ROOT can be the port holder, and the backstop below cannot
      see that case because the pid does belong to a tree. */
   const listening = portsOfTree(tree, held).map((port) => `:${port}`);
-  const abandoned = tree.launchedFrom !== null && !existsSync(tree.launchedFrom);
+  /* ⚠ NOT `!existsSync(launchedFrom)` — that is the shape #783 shipped, and it
+     could not fire for #783's OWN specimen: a removed shift worktree leaves an
+     empty directory shell on this machine. See `launchDirectoryIsGone`. */
+  const abandoned = launchDirectoryIsGone(tree.launchedFrom, existsSync);
+  const shell = abandoned && tree.launchedFrom !== null && existsSync(tree.launchedFrom);
   return `  root ${String(tree.rootPid).padStart(6)}  started ${tree.startedAt.toLocaleString()}`
     + `  children [${tree.childPids.join(", ") || "none"}]`
     /* "between restarts" is a promise only a watcher can keep. An unwatched
@@ -150,7 +155,9 @@ const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number
       : tree.watched ? "(no port — between restarts)" : "(no port — nothing is being served)"}`
     + (tree.watched ? "" : "\n         ⚠ NO WATCHER — started off the entrypoint, so nothing restarts it")
     + (abandoned
-      ? `\n         ⚠ ABANDONED — launched from ${tree.launchedFrom}, which no longer exists.`
+      ? `\n         ⚠ ABANDONED — launched from ${tree.launchedFrom}, which ${shell
+        ? "is an empty shell: its node_modules is gone, so that tree was removed"
+        : "no longer exists"}.`
         + " Nobody's live work; safe to kill."
       : "")
     + (tree.launchedFrom === null

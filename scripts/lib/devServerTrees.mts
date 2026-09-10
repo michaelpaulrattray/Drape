@@ -372,6 +372,42 @@ export function portsOfTree(
 }
 
 /**
+ * ⚠ IS THE TREE THIS SERVER RAN FROM GONE — AND "GONE" IS NOT "THE NAME NO
+ * LONGER RESOLVES".
+ *
+ * #783 shipped this test as `!existsSync(launchedFrom)` and **it would not have
+ * fired for the specimen #783 was filed about.** Measured at the close of that
+ * same shift, on the very directory in the card:
+ *
+ *     C:/Users/Admin/drape-shift-752-moderator-badge-poll
+ *       exists           true
+ *       node_modules     false
+ *       entries          0
+ *
+ * `shift-worktree remove` un-junctions `node_modules`, unregisters the worktree
+ * and then fails to delete the directory — git 2.55 on Windows answers `Invalid
+ * argument`, which that tool's own header records as expected. **So the ordinary
+ * removal on this machine leaves an EMPTY SHELL**, the name still resolves, and
+ * the reader says nothing. That is #783's own class for the third time in one
+ * night, inside the repair for it: a reader failing toward the reassuring answer.
+ *
+ * The honest question is not whether the name resolves but whether the tree the
+ * process ran from is still a tree. It loaded `tsx` from `<dir>/node_modules`,
+ * so that directory's absence is the evidence, and it is the process's own
+ * evidence rather than a rule invented here. `exists` is injected because this
+ * module touches no file system — the caller passes `existsSync`, an arm passes
+ * a map, and the decision stays where an arm can hold it.
+ */
+export function launchDirectoryIsGone(
+  launchedFrom: string | null,
+  exists: (path: string) => boolean,
+): boolean {
+  if (launchedFrom === null) return false;
+  if (!exists(launchedFrom)) return true;
+  return !exists(`${launchedFrom}/node_modules`);
+}
+
+/**
  * ⚠ THE BACKSTOP, AND IT IS THE PART OF #783 THAT OUTLIVES #783.
  *
  * Everything above classifies command lines, and a classifier has exactly one
