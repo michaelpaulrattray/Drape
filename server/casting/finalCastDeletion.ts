@@ -594,6 +594,79 @@ export async function planFinalCastDeletion(input: {
 }
 
 /**
+ * WHAT THE REPLAY FENCE TAKES OFF A PRIOR OPERATION — and, in one field, what
+ * it deliberately LEAVES.
+ *
+ * When a Cast is permanently deleted, every EARLIER operation on that Cast is
+ * scrubbed and stamped `subjectDeletedAt`. The schema states the fence's job:
+ * *"old receipts may retain accounting/idempotency truth but must not expose a
+ * saved subject result or invoke an executor."* Everything below is subject
+ * material or executor state, and every one of them goes.
+ *
+ * ⚠ **`errorCode` IS NOT ON THIS LIST, AND ITS ABSENCE IS THE POINT (#532).**
+ * It used to be, and the cost was measured on production rather than argued:
+ * **14 of 60 `model.delete` operations sit there marked `failed` with
+ * `errorCode` NULL, `publicMessage` NULL, `modelId` NULL and
+ * `subjectDeletedAt` stamped — and none of the 46 successes carries the
+ * stamp.** The sequence is not mysterious once seen: a delete fails and writes
+ * a real code, the customer retries, the retry succeeds, and the retry's own
+ * scrub — this statement — erases the first attempt's reason. **They genuinely
+ * failed; what was gone is why.** Over 60 days that fenced 52 failures across
+ * four kinds, including every one of the 35 `evidence_candidate_generate`
+ * failures the Machinist's first ledger read could not explain.
+ *
+ * `errorCode` is a `varchar(32)` holding a CLASS NAME we chose — `NOT_FOUND`,
+ * `PRECONDITION_FAILED`, `TIMEOUT`, `INTERNAL_SERVER_ERROR`, `FORK_COPY_FAILED`.
+ * It names OUR defect, never the customer's Cast, so it is exactly the
+ * *"accounting truth"* the fence's own comment permits. Its subject-bearing
+ * neighbours — `publicMessage` (free text written for that Cast), `result`
+ * (the saved subject result the fence exists to hide), `modelId` — still go.
+ *
+ * ⚠ **AND NOTHING SERVES IT BACK.** `outcomeFromExisting` in
+ * `server/db/generationOperations.ts` tests `subjectDeletedAt` FIRST and
+ * returns `deleted_subject`, so a fenced row can never reach the
+ * `replay_failure` branch that would hand an `errorCode` to a caller. Keeping
+ * the field widens what SUPPORT can read, and nothing else.
+ *
+ * ⚠ **ONE READER KEYS ON THIS COLUMN'S VALUE, AND IT IS NAMED HERE BECAUSE
+ * KEEPING `errorCode` REMOVED A LAYER NOBODY HAD MEANT TO BUILD** (#778's
+ * review, finding 1 — law 7's *what was bolted to it*, pointed at a field
+ * instead of a call site). The stale-operation sweep and its seal select a
+ * fenced Sign by `errorCode === CASTING_V2_SIGN_FENCE_CODE`
+ * (`server/casting/operationRecovery.ts`, `server/db/generationOperations.ts`),
+ * and while this scrub nulled the column, a subject-deleted row could not
+ * match them however hard it tried. That protection was ACCIDENTAL. Both
+ * selectors, and the adjudicator's own door, now refuse a `subjectDeletedAt`
+ * row explicitly, so the guarantee survives this change and does not depend on
+ * a field being empty.
+ *
+ * It is a named constant rather than an inline object so the guard can assert
+ * the VALUE (`server/r7-final-cast-deletion.test.ts`) instead of matching
+ * source text — this repository has had a substring standing in for a contract
+ * before, and it read as green for months.
+ */
+export const FENCED_PRIOR_OPERATION_SCRUB = {
+  modelId: null,
+  originBoardId: null,
+  originItemId: null,
+  expectedIdentityRevisionId: null,
+  expectedStateVersion: null,
+  expectedIdentitySnapshotId: null,
+  expectedPackageSnapshotId: null,
+  chargeReferenceId: null,
+  result: null,
+  publicMessage: null,
+  phase: null,
+  progress: null,
+  heartbeatAt: null,
+  leaseExpiresAt: null,
+  landedItemId: null,
+  landingStatus: "not_applicable",
+  landingAcknowledgedAt: null,
+  recoveryAttemptedAt: null,
+} as const;
+
+/**
  * R7-5C's single durable boundary. No storage call occurs here: this commits
  * only the exact-owned cleanup manifest that R7-5D will process later.
  */
@@ -909,25 +982,7 @@ export async function executeFinalCastDeletion(input: {
     ));
     if (priorOperations.length) {
       await tx.update(generationOperations).set({
-        modelId: null,
-        originBoardId: null,
-        originItemId: null,
-        expectedIdentityRevisionId: null,
-        expectedStateVersion: null,
-        expectedIdentitySnapshotId: null,
-        expectedPackageSnapshotId: null,
-        chargeReferenceId: null,
-        result: null,
-        errorCode: null,
-        publicMessage: null,
-        phase: null,
-        progress: null,
-        heartbeatAt: null,
-        leaseExpiresAt: null,
-        landedItemId: null,
-        landingStatus: "not_applicable",
-        landingAcknowledgedAt: null,
-        recoveryAttemptedAt: null,
+        ...FENCED_PRIOR_OPERATION_SCRUB,
         subjectDeletedAt: new Date(),
       }).where(inArray(generationOperations.id, priorOperations.map((row) => row.id)));
       await tx.delete(generationOperationLocks).where(inArray(
