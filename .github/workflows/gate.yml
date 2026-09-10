@@ -282,25 +282,33 @@ jobs:
       # `--report-level` defaults to `error`, so a policy WARNING does not
       # redden this; only an error does.
       #
-      # ⚠ HIS SOCKET GITHUB APP ALREADY POSTS TWO CHECKS OF ITS OWN, AND THIS
-      # STEP IS NOT THE DUPLICATE IT LOOKS LIKE — the reason is measured, and
-      # it is written here because the "simplification" is very tempting.
+      # ⚠ HIS SOCKET GITHUB APP ALREADY POSTS A CHECK ON EVERY PR, AND THAT MAY
+      # MAKE THIS WHOLE STEP THE WRONG ANSWER — the decision is on his desk.
       # "Socket Security: Pull Request Alerts" and "… Project Report" appear on
-      # a manifest PR and pass or fail on the same policy, so the obvious
-      # cheaper answer is to delete this step and make the App's check REQUIRED
-      # in branch protection instead. THAT ROAD IS CLOSED, and here is the
-      # reading that closes it: the App posts NOTHING AT ALL on a PR that
-      # touches no manifest — driven 2026-09-10 on PRs #751, #750 and #746,
-      # none of which carries a Socket check of any kind. A required check that
-      # never reports leaves a PR permanently pending, so requiring the App's
-      # check would wedge every non-manifest PR the team opens.
+      # every pull request since the App was installed (2026-09-10 05:37Z), pass
+      # or fail on the same policy, and cost this repository no quota. Adding
+      # that check to branch protection would give blocking enforcement with no
+      # script, no version pin and no extra token scope — which is the
+      # disappearing-technology law's clause 4 (read what the engine already
+      # gives you before reaching for a better one).
       #
-      # This step lives inside `gate-checks`, which ALWAYS runs and ALWAYS
-      # reports, and decides internally whether to scan — which is the only
-      # shape that both blocks and cannot wedge. The cost of keeping both,
-      # stated: a manifest PR scans twice, so two quota units instead of one.
-      # Manifest PRs are rare, and enforcement that cannot deadlock is worth
-      # the second unit.
+      # ⚠ AN EARLIER VERSION OF THIS COMMENT ARGUED THE OPPOSITE AND WAS WRONG,
+      # WHICH IS WHY THE REASONING IS LEFT HERE RATHER THAN QUIETLY REPLACED.
+      # It claimed the App posts only on manifest PRs — measured on #751, #750
+      # and #746, none of which carries a Socket check — and concluded that
+      # requiring the App's check would leave every non-manifest PR permanently
+      # pending. All three of those PRs MERGED BEFORE THE APP WAS INSTALLED
+      # (05:12Z, 04:51Z, 03:14Z against 05:37Z), so "no manifest" and "no App"
+      # were perfectly confounded. The clean comparison is #753 (manifest
+      # changed) and #754 (no manifest changed), both opened after the install:
+      # BOTH carry two Socket checks. The App does not care about manifests.
+      #
+      # What still argues for this step, honestly and more weakly than before:
+      # it is versioned in this repository and its behaviour is pinned by
+      # server/socketScan.test.ts, where the App's configuration lives in
+      # Socket's dashboard and can change without a commit here. That is a real
+      # fidelity argument and it is not obviously worth a duplicate scan plus a
+      # token scope. His call, not a shift's.
       - name: Supply chain (socket.dev, manifests only)
         env:
           BASE: ${{ needs.resolve.outputs.base }}

@@ -43,29 +43,43 @@ it lands — because the failure it guards is silent: an uncovered manifest
 means the step keeps printing *"No manifest touched"* over a PR that changed
 dependencies.
 
-## ⚠ His GitHub App already scans too — and this step is not the duplicate it looks like
+## ⚠ His GitHub App already posts a check on EVERY PR — so this step may be the wrong answer
 
-The Socket **GitHub App** is installed on the repository and posts two checks
-of its own on a manifest PR: *"Socket Security: Pull Request Alerts"* and
+The Socket **GitHub App** is installed (2026-09-10 05:37Z) and posts two checks
+on **every** pull request: *"Socket Security: Pull Request Alerts"* and
 *"Socket Security: Project Report"*. Neither is a required check, so neither
-blocks a merge.
+blocks a merge today.
 
-The obvious cheaper answer is therefore *"delete the gate step and make the
-App's check required instead"* — no script, no pin, no second quota unit.
-**That road is closed, and the reading that closes it was driven rather than
-reasoned:** the App posts **nothing at all** on a PR that touches no manifest.
-Measured 2026-09-10 on PRs **#751, #750 and #746** — none of them carries a
-Socket check of any kind. A required check that never reports leaves a PR
-**permanently pending**, so requiring the App's check would wedge every
-non-manifest PR the team opens.
+**Adding that check to branch protection would give blocking enforcement with
+no script, no version pin, no extra token scope and no quota spent by this
+repository.** That is the disappearing-technology law's clause 4 — *read what
+the engine already gives you before reaching for a better one; a signal bought
+and unread is the cheapest finding available*. **The decision is the founder's
+and it is on his desk.**
 
-The gate step lives inside `gate-checks`, which always runs and always
-reports, and decides internally whether to scan. That is the only shape that
-both blocks and cannot deadlock.
+### ⚠ The first version of this section argued the opposite, and it was wrong
 
-**The cost of keeping both, stated plainly:** a manifest PR is scanned twice,
-so two quota units instead of one. Manifest PRs are rare, and enforcement that
-cannot wedge the team is worth the second unit.
+Kept rather than replaced, because the mistake is more instructive than the
+conclusion. It read: *"the App posts nothing at all on a PR that touches no
+manifest — measured on #751, #750 and #746 — so requiring its check would leave
+every non-manifest PR permanently pending."*
+
+**All three of those PRs merged BEFORE the App was installed** — 05:12Z, 04:51Z
+and 03:14Z against an install at 05:37Z. So "touched no manifest" and "had no
+Socket App" were **perfectly confounded**, and the baseline could only ever have
+returned the answer it did.
+
+The clean comparison is two PRs opened *after* the install: **#753** (changes
+`package.json`) and **#754** (changes no manifest at all). **Both carry two
+Socket checks.** The App does not care about manifests.
+
+### What still argues for the gate step, weakly
+
+It is versioned in this repository and its behaviour is pinned by
+`server/socketScan.test.ts`; the App's configuration lives in Socket's own
+dashboard and can change without a commit here. That is a real fidelity
+argument. It is not obviously worth a duplicate scan plus a token scope the
+founder must add, which is why it is his call rather than a shift's.
 
 ## It blocks, and here is what that costs
 
