@@ -23,6 +23,7 @@ import {
   cardNumbersIn,
   evidenceTextOf,
   namedAsEvidenceIn,
+  NON_CARD_SEQUENCE_WORDS,
 } from "../shared/crewQueuePossiblyDone";
 
 /**
@@ -174,16 +175,79 @@ describe("⚠ THE DECLINED REMAINDER — the specimens this strip does NOT catch
   });
 
   /*
-    ⚠ A FOURTH SPECIMEN, FOUND BY #737'S DRIVE AND OF A DIFFERENT KIND (#776).
-    `#105` is flagged today because PR #468 wrote *"His order, Crew reply #105"*
-    — a crew REPLY number, which is its own numbering space and collides with
-    the card numbers. Unlike the three above, telling this one apart needs no
-    judgement about whether work was done: it is whether the token names a card
-    at all, the question the pattern already answers for `##12` and `abc#12`.
-    Pinned here as a surviving arm so #776 goes red informatively.
+    ⚠ THE FOURTH SPECIMEN LEFT THIS BLOCK — IT WAS NOT DECLINED, IT WAS BUILT
+    (#776). It was pinned here by #737's close as a surviving arm, and turning
+    it red was the receipt asked for; it is now the first arm of the block
+    below, asserting the opposite. It was of a different KIND to the three
+    above, which is why it was separable at all: those three need a judgement
+    about whether an English sentence claims a fix, and this one only needs to
+    know whether the token names a card.
   */
-  it("a crew REPLY number is still read as a card reference — the #776 specimen", () => {
+});
+
+/**
+ * A `#N` THAT NAMES A DIFFERENT NUMBERING SPACE (#776).
+ *
+ * The live specimen: card `#105` read as *possibly fixed* because merged PR
+ * #468 wrote *"His order, Crew reply #105"*. The words are the measured two —
+ * `reply` (60 mentions across 328 merged pull requests) and `run` (2, both in
+ * PR #346, while card #26 is open) — and `edition` is deliberately absent at
+ * zero measured instances.
+ *
+ * ⚠ **EVERY EXCLUDING ARM HAS ITS NEGATIVE CONTROL BESIDE IT**, because an
+ * exclusion that is too wide silently un-flags real findings, which is the one
+ * direction #776 forbids.
+ */
+describe("a #N naming another sequence is not a card reference (#776)", () => {
+  it("PR #468's sentence no longer names #105 — the specimen that carded it", () => {
     const sentence = "**His order, Crew reply #105, 2026-09-02, verbatim and entire:** *\"Also run the AUTHOR half\"*";
-    expect(namedAsEvidenceIn(sentence, 468)).toContain(105);
+    expect(namedAsEvidenceIn(sentence, 468)).not.toContain(105);
+  });
+
+  it("PR #346's sentence no longer names #26 — a shift RUN number, and #26 is an open card", () => {
+    const sentence = "- **the reader**: named run #26, `last check-in 9s ago`, `⚠ LOOKS LIVE`";
+    expect(namedAsEvidenceIn(sentence, 346)).not.toContain(26);
+  });
+
+  it("the excluded words are exactly the two that were measured", () => {
+    expect([...NON_CARD_SEQUENCE_WORDS]).toEqual(["reply", "run"]);
+  });
+
+  /* ⚠ THE NEGATIVE CONTROLS — one per word, and they are what make the two
+     arms above mean anything. Only the token IMMEDIATELY before the `#` is
+     consulted, so the same word elsewhere in the sentence changes nothing. */
+  it("`the run that fixed #105` still names the card", () => {
+    expect(cardNumbersIn("the run that fixed #105 landed last night")).toContain(105);
+  });
+
+  it("`his reply settled #105` still names the card", () => {
+    expect(cardNumbersIn("his reply settled #105 for good")).toContain(105);
+  });
+
+  it("a bare `see #105` still names the card", () => {
+    expect(cardNumbersIn("see #105")).toContain(105);
+  });
+
+  it("a word merely ENDING in one of them still names the card", () => {
+    expect(cardNumbersIn("overrun #26")).toContain(26);
+    expect(cardNumbersIn("a prerun #26 check")).toContain(26);
+  });
+
+  it("a word at the end of a line cannot claim a #N on the next one", () => {
+    expect(cardNumbersIn("the run\n#26 is the card")).toContain(26);
+  });
+
+  /* ⚠ `edition` WAS MEASURED AT ZERO AND LEFT OUT, and this arm is what keeps
+     that a decision rather than an oversight: adding it should redden here and
+     send whoever adds it back for the measurement first. */
+  it("`edition #12` still names the card — the sequence measured at zero instances", () => {
+    expect(cardNumbersIn("briefing edition #12 shipped")).toContain(12);
+  });
+
+  /* The same body naming a reply number AND the card in prose keeps the card:
+     the exclusion is per MENTION, never per body. */
+  it("a body that names a reply number and the card separately still names the card", () => {
+    const body = "His order, Crew reply #105, was clear.\nThat is why #105 is still open.";
+    expect(namedAsEvidenceIn(body, 468)).toContain(105);
   });
 });

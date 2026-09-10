@@ -115,7 +115,10 @@
  * reply #105"* — a CREW REPLY number, a numbering space of its own that
  * collides with the card numbers. That is not a judgement about whether work
  * was done; it is whether the token names a card at all, which is the question
- * `cardNumbersIn` already answers for `##12` and `abc#12`. Filed as #776.
+ * `cardNumbersIn` already answers for `##12` and `abc#12`. Filed as #776 — and
+ * **BUILT the following shift**, on its own measurement, which found `reply`
+ * sixty times rather than once and `edition` not at all. The reading is on
+ * `cardNumbersIn` below.
  *
  * ⚠ **AND THE READING THAT LOOKED BEST BEFORE IT WAS DRIVEN IS DEAD — *the
  * card was filed while the naming pull request was already open* matches ZERO
@@ -399,6 +402,58 @@ export function qualifyingNamings(
  * `(?<![\w#])` so a git object like `abc#12` and a doubled `##12` do not read as
  * a card reference. Deliberately NOT anchored to a keyword: `Closes #12` and
  * `see #12` are the same fact to this reader, which is his no-judging bar.
+ *
+ * ⚠ **AND A `#N` THAT NAMES A DIFFERENT SEQUENCE IS NOT A CARD REFERENCE AT
+ * ALL (#776).** This repository runs three numbering spaces beside the card
+ * numbers — his crew REPLIES, the shift RUNS, and the briefing EDITIONS — and
+ * every one of them collides with the low card numbers. The specimen that
+ * carded it: `#105` (*"Janitor #1 (knip): 40 unused shadcn/ui primitives"*) was
+ * flagged *possibly fixed* because merged PR #468 wrote **"His order, Crew
+ * reply #105"**, a sentence with nothing to do with shadcn primitives.
+ *
+ * **This is not the wording judgement #737 declined.** That one asked whether
+ * an English sentence CLAIMS a fix; this asks whether the token names a card,
+ * which is the question the two exclusions above already answer for `##12` and
+ * `abc#12`.
+ *
+ * # WHICH WORDS, AND WHY EXACTLY THESE TWO — MEASURED, NOT REASONED
+ *
+ * #776's bar, verbatim: *"The population is measured before the rule is chosen,
+ * not after … A word with no measured instance is a guess and should be left
+ * out."* Driven over **1,840 mentions across 328 merged pull requests**:
+ *
+ *   * **`reply` — 60 mentions, and the card said one.** It is the fourth
+ *     commonest word in front of a `#N` in this repository, ahead of `card`
+ *     (28). It is not an accident either: the standing order to quote his
+ *     rulings verbatim WITH their reply number manufactures one of these every
+ *     time a shift obeys it, so this collision grows with the discipline.
+ *   * **`run` — 2 mentions**, both in PR #346 (*"named run #26"*, *"REFUSING:
+ *     run #26 (foreman-147)"*), both genuinely naming a shift run — while card
+ *     **#26 is open**, so the false naming is live rather than hypothetical.
+ *   * ⚠ **`edition` — ZERO mentions, so it is LEFT OUT.** It is as real a
+ *     sequence as the other two and reads exactly as plausible; it simply has
+ *     no instance, and the card's bar makes that decisive. Nothing here needs
+ *     rewriting if one appears — it wants a measurement first, and then this
+ *     list and its arm together.
+ *
+ * # ⚠ IT NARROWS THE SHARED READER, AND THE CEILING WAS MEASURED FOR THAT
+ *
+ * The rule lands in `cardNumbersIn`, so `CITED_CARDS_CEILING`'s raw count sees
+ * it too — which is the one thing #728's docblock warns against doing to that
+ * heuristic, and it is why the effect was measured instead of argued. **Zero
+ * of the 328 merged pull requests cross the ceiling**, so the p95 calibration
+ * is untouched. It is also the right side of that warning: #728 kept table rows
+ * IN the raw count because those ARE card references merely pasted, whereas a
+ * reply number is not a card reference in either reading.
+ *
+ * **The whole measured effect: flags 9 → 8, removing exactly `#105`, adding
+ * nothing.** One flag, and that is the honest figure — it is worth having
+ * because it costs no judgement, not because it is large.
+ *
+ * ⚠ **IT STILL FAILS TOWARD FLAGGING.** Only the word IMMEDIATELY in front of
+ * the `#` is consulted, so *"the run that fixed #105"* and *"see #105"* still
+ * name the card; a false flag costs one re-read, a missed one costs him a card
+ * that is already done.
  */
 /**
  * THE TEXT A CARD REFERENCE COUNTS AS EVIDENCE IN — everything except a fenced
@@ -517,6 +572,26 @@ export function namedAsEvidenceIn(text: string, self?: number): number[] {
   return cardNumbersIn(evidenceTextOf(text), self);
 }
 
+/**
+ * The words that put a `#N` in a different numbering space — the measured two.
+ *
+ * Exported so the suite asserts the VALUE rather than re-typing the list, and
+ * so a word added here without its arm is visible at one place.
+ */
+export const NON_CARD_SEQUENCE_WORDS = ["reply", "run"] as const;
+
+/**
+ * Does the text immediately before a `#` end in one of those words?
+ *
+ * ⚠ **THE WORD MUST BE THE LAST THING BEFORE THE `#`, separated by nothing but
+ * spaces or tabs.** `[^\S\n]*` rather than `\s*` so a `run` at the end of one
+ * line cannot claim a `#N` at the start of the next, and `(?:^|[^\w])` so
+ * `overrun #26` and `prerun #26` are ordinary card references.
+ */
+function namesAnotherSequence(before: string): boolean {
+  return new RegExp(`(?:^|[^\\w])(?:${NON_CARD_SEQUENCE_WORDS.join("|")})[^\\S\\n]*$`, "i").test(before);
+}
+
 export function cardNumbersIn(text: string, self?: number): number[] {
   const out: number[] = [];
   /* An `exec` loop rather than `matchAll`, and `indexOf` rather than a Set:
@@ -524,11 +599,20 @@ export function cardNumbersIn(text: string, self?: number): number[] {
      iterator or spreading a Set is a build error rather than a preference.
      `lastIndex` advances between calls because the pattern is global. */
   const pattern = /(?<![\w#])#(\d+)\b/g;
-  let match: RegExpExecArray | null = pattern.exec(text ?? "");
+  const source = text ?? "";
+  let match: RegExpExecArray | null = pattern.exec(source);
   while (match !== null) {
     const card = Number(match[1]);
-    if (Number.isInteger(card) && card > 0 && card !== self && out.indexOf(card) === -1) out.push(card);
-    match = pattern.exec(text ?? "");
+    if (
+      Number.isInteger(card) &&
+      card > 0 &&
+      card !== self &&
+      out.indexOf(card) === -1 &&
+      !namesAnotherSequence(source.slice(0, match.index))
+    ) {
+      out.push(card);
+    }
+    match = pattern.exec(source);
   }
   return out;
 }
