@@ -1,4 +1,5 @@
-import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
@@ -52,6 +53,30 @@ describe("suites that sweep the source tree declare the class's timeout (#741)",
         '  import { CONTENDED_TEST_TIMEOUT_MS } from "…/testing/contendedTestTimeout";\n' +
         "  vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });",
     ).toEqual([]);
+  });
+
+  it("the population is a FLOOR, and the one file it cannot see is declared anyway", () => {
+    /*
+      ⚠ THE LIMIT, PINNED SO IT CANNOT BECOME A SURPRISE. A grep for the reader
+      returns fifteen tracked test files; this deriver returns fourteen. The
+      missing one is `deployTriggerClaims.test.ts`, which imports the reader
+      plainly and calls it — and is lost because it carries a REGEX LITERAL
+      CONTAINING A BACKTICK, which flips `codeOnly` into template mode, and a
+      template is not ended by a newline. Eleven lines vanish, the call with
+      them. The cause is documented in `childProcessSuites`, whose own header
+      records this remainder as having no live instance — true of ITS question,
+      not of this one.
+
+      The arm asserts the consequence rather than the mechanism: the file is
+      OUT of the derived population and IS declared regardless. If somebody
+      teaches the stripper about regex literals, the first half flips and this
+      arm says so, which is the moment to delete it.
+    */
+    expect(population.map((row) => row.file)).not.toContain("server/deployTriggerClaims.test.ts");
+    expect(
+      declaresTheFloor(readFileSync(join(ROOT, "server/deployTriggerClaims.test.ts"), "utf8")),
+      "a suite the deriver cannot see must still carry the floor on measurement",
+    ).toBe(true);
   });
 
   it("the file the card named is IN the population", () => {
@@ -138,8 +163,8 @@ describe("the reading can be wrong in both directions, and is checked in both (#
       'import { describe, it } from "vitest";',
       'it("x", () => {});',
     ].join("\n");
-    expect(sweepsTheTree(prose)).toBe(false);
-    expect(sweepsTheTree(SWEEPING_HEADER)).toBe(true);
+    expect(sweepsTheTree(prose, "server/x.test.ts", ROOT)).toBe(false);
+    expect(sweepsTheTree(SWEEPING_HEADER, "server/x.test.ts", ROOT)).toBe(true);
   });
 
   it("an import of the reader with no CALL is not a sweep either", () => {
@@ -147,7 +172,29 @@ describe("the reading can be wrong in both directions, and is checked in both (#
       'import { readListedSource } from "./testing/listedSource";',
       'it("x", () => {});',
     ].join("\n");
-    expect(sweepsTheTree(importOnly)).toBe(false);
+    expect(sweepsTheTree(importOnly, "server/x.test.ts", ROOT)).toBe(false);
+  });
+
+  it("sees a DEPTH-2 spelling — the hole the first draft shipped", () => {
+    /*
+      ⚠ THE REVIEWER'S FINDING, PINNED SO IT CANNOT COME BACK. The first shape
+      of the deriver matched a hand-listed array of three spellings; it covered
+      every importer alive that day and could never have seen
+      `../../testing/listedSource`, which is what a suite two levels deep under
+      `server/` must write — and the tree already holds around fifty such files.
+      A guard blind in the direction that reports a clean tree is worse than no
+      guard, so this arm drives the real depth rather than the one that happened
+      to exist.
+    */
+    const deep = [
+      'import { readListedSource } from "../../testing/listedSource";',
+      'it("x", () => { readListedSource("a.ts"); });',
+    ].join("\n");
+    expect(sweepsTheTree(deep, "server/casting/evidence/x.test.ts", ROOT)).toBe(true);
+
+    /* And the same file at depth 1, where that spelling resolves to nothing —
+       the resolver is answering about the FILE SYSTEM, not about the string. */
+    expect(sweepsTheTree(deep, "server/x.test.ts", ROOT)).toBe(false);
   });
 });
 

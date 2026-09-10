@@ -166,7 +166,16 @@ function startsAProcess(source: string): boolean {
 /** Every extension a relative import may resolve to here. */
 const EXTENSIONS = ["", ".ts", ".tsx", ".mts", ".js", ".mjs", "/index.ts", "/index.tsx"];
 
-function resolveRelative(fromFile: string, specifier: string, repoRoot: string): string | null {
+/**
+ * Exported for `sourceSweepSuites.ts` (#741), which needs the same question
+ * answered about a different target module. Sharing the resolver rather than
+ * writing a second one is the whole of working law 4 — and the first shape of
+ * that deriver DID write a second one, as a hand-listed array of three
+ * spellings, which the reviewer caught: it covered every importer that existed
+ * and would have gone silently blind on the ~50 test files sitting two levels
+ * deep under `server/`.
+ */
+export function resolveRelative(fromFile: string, specifier: string, repoRoot: string): string | null {
   if (!specifier.startsWith(".")) return null;
   const base = resolve(dirname(join(repoRoot, fromFile)), specifier);
   for (const ext of EXTENSIONS) {
@@ -178,7 +187,8 @@ function resolveRelative(fromFile: string, specifier: string, repoRoot: string):
   return null;
 }
 
-function relativeSpecifiers(source: string): string[] {
+/** Exported alongside `resolveRelative`, and for the same reason. */
+export function relativeSpecifiers(source: string): string[] {
   const out: string[] = [];
   const pattern = /(?:from|import)\s*["'](\.[^"']*)["']/g;
   let m: RegExpExecArray | null;

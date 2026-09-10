@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { codeOnly } from "./childProcessSuites";
+import { codeOnly, relativeSpecifiers, resolveRelative } from "./childProcessSuites";
 
 /**
  * WHICH SUITES SWEEP THE SOURCE TREE — the population, derived from the tree
@@ -34,7 +34,7 @@ import { codeOnly } from "./childProcessSuites";
 
 /*
   THE ONE IMPRECISION IN THE SIGNAL, MEASURED AND LEFT IN RATHER THAN CARVED
-  OUT. Of the fifteen files this reader finds, fourteen read the real tree and
+  OUT. Of the fourteen files this reader finds, thirteen read the real tree and
   one does not: `testing/listedSource.test.ts` drives the reader over
   `mkdtemp` fixtures of three files apiece, which costs microseconds. It is the
   reader's OWN suite, and it keeps the floor anyway — a 30 s ceiling on a cheap
@@ -43,12 +43,38 @@ import { codeOnly } from "./childProcessSuites";
   moment somebody fixes one file. The cost is named; the carve-out is declined.
 */
 
-/** Where the sanctioned tree reader lives, as its importers spell it. */
-const LISTED_SOURCE_SPECIFIERS = [
-  "./testing/listedSource",
-  "../testing/listedSource",
-  "./listedSource",
-];
+/*
+  ⚠ AND THE THIRD LIMIT IS THE MOST WORTH READING, BECAUSE IT IS THE ONE I GOT
+  WRONG FIRST: `codeOnly`'S DOCUMENTED BLIND SPOT IS LIVE ON THIS QUESTION
+  TODAY, ON ONE NAMED FILE.
+
+  A `grep -l readListedSource` over the tracked test files returns FIFTEEN. This
+  reader returns FOURTEEN, and the missing one is
+  `server/deployTriggerClaims.test.ts` — which imports the reader by its plain
+  name and calls it at line 214.
+
+  The cause, read at the bytes rather than assumed: that file carries a REGEX
+  LITERAL containing a BACKTICK (its `push to \`main\` deploys` claim matcher).
+  `codeOnly` does not distinguish a regex literal from division — a limit its
+  own header states — so the backtick flips it into TEMPLATE mode, and unlike a
+  single- or double-quoted literal **a template is not ended by a newline**. It
+  therefore swallows eleven lines including the call, and the file leaves the
+  population with nothing going red.
+
+  ⚠ **`childProcessSuites`'S HEADER RECORDS THIS REMAINDER AS HAVING "no live
+  instance today" — TRUE OF ITS OWN QUESTION AND NOT OF THIS ONE.** A spawn call
+  inside a template is what it grepped for; a tree-read call inside a template's
+  BLAST RADIUS is a different population, and it has an instance.
+
+  It is stated rather than fixed here because fixing it means teaching the
+  stripper to recognise regex literals, which that module explicitly declines as
+  genuinely hard, and because the consequence is bounded and known: the file is
+  DECLARED, on measurement, like the other suites the reader cannot see. **A
+  clean reading from this deriver is a floor. It is not a census.**
+*/
+
+/** The one module a member must reach, repo-relative and forward-slashed. */
+const LISTED_SOURCE = "server/testing/listedSource.ts";
 
 /**
  * Does this suite read the tree through the sanctioned reader?
@@ -58,12 +84,36 @@ const LISTED_SOURCE_SPECIFIERS = [
  * `codeOnly` has by then removed it; the CALL is read from the stripped code, so
  * a docblock naming the helper — and several in this tree do, including this
  * one — is not a sweep, and an import with no call is not one either.
+ *
+ * ⚠ **THE IMPORT HALF RESOLVES AGAINST THE FILE SYSTEM RATHER THAN MATCHING A
+ * LIST OF SPELLINGS, AND THE FIRST SHAPE OF IT DID THE SECOND THING.** That
+ * draft enumerated `./testing/listedSource`, `../testing/listedSource` and
+ * `./listedSource` — which covered every importer alive that day and
+ * **would have gone silently blind on `../../testing/listedSource`**, the
+ * spelling every suite two levels deep under `server/` must use, of which the
+ * tree already holds around fifty. It was a hand-kept mirror of a fact the file
+ * system already states (working law 4), failing in the direction that reports
+ * a clean tree. Resolving the specifier dissolves the question instead of
+ * answering it, and it is the sibling deriver's own resolver doing it.
  */
-export function sweepsTheTree(source: string): boolean {
-  const imports = LISTED_SOURCE_SPECIFIERS.some(
-    (specifier) => source.includes(`from "${specifier}"`) || source.includes(`from '${specifier}'`),
-  );
+export function sweepsTheTree(source: string, fromFile: string, repoRoot: string): boolean {
+  const imports = relativeSpecifiers(source).some((specifier) => {
+    const target = resolveRelative(fromFile, specifier, repoRoot);
+    if (!target) return false;
+    return target.replaceAll("\\", "/").endsWith(LISTED_SOURCE);
+  });
   if (!imports) return false;
+  /*
+    ⚠ THE LIMIT OF THIS HALF, STATED BECAUSE THE HOUSE DISCIPLINE IS THAT A
+    FLOOR IS DECLARED RATHER THAN DISCOVERED (the reviewer's second finding, and
+    `childProcessSuites` states its one-hop and template-literal remainders the
+    same way). A RENAMED or NAMESPACE import — `readListedSource as readSrc`,
+    or `import * as listed` — takes a genuine sweeper out of the population with
+    nothing going red, because the call is then spelled something this pattern
+    does not know. **Grepped at the tree the day this shipped: no live instance,
+    all importers use the plain named import.** So it is a remainder rather than
+    a defect, and it is the silent direction, which is why it is written down.
+  */
   return /\breadListedSource\s*\(/.test(codeOnly(source));
 }
 
@@ -137,7 +187,7 @@ export function sourceSweepSuites(repoRoot: string): SweepReading[] {
        reader must not throw where `readListedSource` would tolerate. */
     if (!existsSync(absolute)) continue;
     const source = readFileSync(absolute, "utf8");
-    if (!sweepsTheTree(source)) continue;
+    if (!sweepsTheTree(source, file, repoRoot)) continue;
     readings.push({ file, declares: declaresTheFloor(source) });
   }
 
