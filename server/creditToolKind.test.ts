@@ -73,11 +73,19 @@ describe("toolKind: null is an ENUMERATED decision, not a default (#401)", () =>
    * a prose list with no arm deriving it is how a list stops being the list.)
    */
   /* Growing this list IS the enumerated decision the arm below exists to
-     force. Two members now: the chargeback revoke (#401 — freezes a disputed
-     balance) and the plan-change credit unwind (#664 — returns unconsumed
-     allowance beside Stripe's money credit for the same days). Neither makes
-     anything, which is what null states. */
-  const EXPECTED_NULL_SITES = ["server/routes/billing.ts", "server/stripe/webhooks.ts"];
+     force. Three members now: the chargeback revoke (#401 — freezes a
+     disputed balance), the plan-change credit unwind's settlement applier
+     (#664/#711 — since #711 the unwind applies in
+     stripe/planChangeSettlement.ts when the change's invoice settles, and it
+     still returns unconsumed allowance beside Stripe's money credit for the
+     same days), and the legacy no-invoice fallback of that same unwind in
+     routes/billing.ts. None of the three makes anything, which is what null
+     states. */
+  const EXPECTED_NULL_SITES = [
+    "server/routes/billing.ts",
+    "server/stripe/planChangeSettlement.ts",
+    "server/stripe/webhooks.ts",
+  ];
 
   async function collectServerFiles(dir: string): Promise<string[]> {
     const entries = await readdir(dir, { withFileTypes: true });
@@ -102,7 +110,7 @@ describe("toolKind: null is an ENUMERATED decision, not a default (#401)", () =>
     return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
   }
 
-  it("exactly TWO production files pass toolKind: null — the revoke and the plan-change unwind (#401, #664)", async () => {
+  it("exactly THREE production files pass toolKind: null — the revoke and the plan-change unwind (settle + fallback) (#401, #664, #711)", async () => {
     const files = await collectServerFiles("server");
     // The scanner itself is proven able to see: it must find the credits
     // module and the webhook module before its verdict counts for anything.
