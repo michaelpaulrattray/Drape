@@ -1,7 +1,7 @@
 {
-  "edition": 337,
-  "updatedAt": "2026-09-10T22:26:29.263Z",
-  "shift": "Foreman - the checker that told four shifts your machine was clean over a running app is fixed, and the fix's own test caught something worse. NOTHING NEW IS WAITING ON YOU. Last night I told you a leftover copy of the app had been running on your machine since Tuesday, holding a port and a slice of your processor, and that four shifts had spotted it and left it because the tool we use to find these reported a clean machine. That tool is the whole job tonight. WHAT WAS WRONG. The tool knows one way of starting the app - the normal one, which runs two processes, a watcher that restarts things and the server itself. Anything started a different way matched neither description, so it was silently dropped from the list. And a dropped app and an empty machine print the exact same sentence: 'no dev server is running on this machine'. I reproduced it before touching anything: at the same second, Windows said a server was listening on port 3000 and the tool said the machine was clear. WHAT IT SAYS NOW. Any running copy is listed, whichever way it was started, and one with nothing watching over it is marked as such. If the folder it was launched from has since been deleted, it says so and says it is safe to stop - that is the fact none of the four shifts had, and it is what makes the difference between guessing and knowing. THE PART THAT MATTERS LONGER THAN THIS FIX. Teaching it a second way of starting the app fixes the case that already bit us and nothing else. So the tool now checks itself against Windows' own list of what is listening: if something is serving on one of our ports and the tool cannot account for it, it says so in those words - a hole in me, not a clean machine - and names the process so you can look. It can still be wrong; it can no longer be quietly wrong. That contradiction was already sitting on your machine, by the way: one of our other tools was printing 'one listener' in the same minute this one printed 'none'. Nothing had ever compared the two. AND THE REVIEW CAUGHT A REAL ONE, WHICH THEN CAUGHT A WORSE ONE. The automatic reviewer found that my new listing could still miss a port in one particular shape. Fair, and fixed - but the test I wrote to prove that fix turned up something I would not have found by reading: in that same shape, the tool would have read a nonsense folder name off the command line, decided the folder did not exist, and printed 'safe to stop' over a LIVE server. Confirmed at the machine, not reasoned about. That is the direction that costs you work rather than tidiness, and it is now held by a test.",
+  "edition": 338,
+  "updatedAt": "2026-09-10T23:08:49.942Z",
+  "shift": "Foreman - the checker that told four shifts your machine was clean over a running app is fixed, and then I caught my own fix half-working before it could mislead anybody. NOTHING IS WAITING ON YOU. THE ORIGINAL FAULT. Last night's leftover copy of the app was the symptom; the tool we use to find these was the fault. It knew one way of starting the app, so anything started another way was silently dropped from its list - and a dropped copy prints the same sentence as an empty machine. I reproduced it before touching anything: at the same second, Windows said a server was listening on port 3000 and the tool said the machine was clear. WHAT IT SAYS NOW. Every running copy is listed however it was started, one with nothing watching over it is marked as such, and - the useful part - if the folder it was launched from has been deleted, it says so and says it is safe to stop. And because teaching it one more way of starting the app only fixes the case that already bit us, it now checks itself against Windows' own list of what is listening: anything serving on our ports that it cannot account for is reported as a hole in the tool, in those words, with the process named. AND THEN THE PART I WANT YOU TO SEE. Before finishing I went and looked at the actual folder from last night's leftover - and found that my own new 'the folder is gone, safe to stop' line would never have fired for it. Deleting one of these working folders on this machine leaves an empty husk behind: the name still exists, so the tool stayed quiet. That is the exact same mistake as the one I had spent the night fixing, sitting inside the fix. Corrected, and the automatic reviewer then caught a second one - my correction would have called a perfectly live copy 'safe to stop' during a routine repair. Both are now decided on what was actually measured, and I proved all three cases on a real running server: healthy folder, folder mid-repair, and empty husk - silent, silent, and named. Nothing here is customer-facing; it is the machine you and the shifts share. Two rounds of review, two small changes merged, and the queue is down one card with nothing new filed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -4599,6 +4599,13 @@
   ],
   "pipeline": [
     {
+      "id": "abandoned-line-could-not-fire-783b",
+      "title": "The 'safe to stop' line I shipped an hour earlier could never have fired - caught before it misled anyone",
+      "status": "merged",
+      "prNumber": 785,
+      "note": "The fix above added a line saying a leftover copy is safe to stop when the folder it was launched from has been deleted. Before closing, I went and looked at the real folder from last night's leftover rather than trusting my own change: deleting one of these working folders on this machine leaves an empty husk, so the name still resolves and the line would have stayed silent in precisely the case it was written for. That is the same mistake the whole night was spent fixing, sitting inside the fix. It now asks whether the folder holds anything, which is the fact actually measured. The automatic reviewer then caught a second one: my first correction would have called a perfectly live copy 'safe to stop' during an ordinary dependency repair - it now stays quiet in that case, because being wrong in that direction costs work rather than a port. All three cases were driven on one real running server, the folder changed underneath it between readings: healthy, mid-repair, empty husk - silent, silent, named."
+    },
+    {
       "id": "clean-machine-over-running-app-783",
       "title": "The checker that said your machine was clean over a running app now says what it cannot account for",
       "status": "merged",
@@ -5296,9 +5303,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0911c-foreman",
+      "id": "queue-shape-0911d-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 55 open, one closed tonight, and 15 nobody has looked at in a week",
+      "detail": "Down one, nothing new filed. Nothing is queued by you and nothing is blocked on you. The fifteen untouched cards are the same shape as last night - mostly older roadmap and tidy-up items rather than anything a customer would feel; the oldest two have sat since 25 August. Of the switches you have on, Bugs holds one card and Small fixes holds one, and both of those are waiting on your word - so those two bands are empty in practice for a third night. The work a night shift can actually take is in Process, Housekeeping and Performance."
+    },
+    {
+      "id": "queue-shape-0911c-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 55 open, one closed tonight, and 15 nobody has looked at in a week",
       "detail": "Down one: the checker fault above is closed and nothing new was filed. Nothing is queued by you and nothing is blocked on you. The fifteen untouched cards are the same shape as last night - mostly old roadmap and tidy-up items rather than anything a customer would feel; the oldest two have sat since 25 August. Of the switches you have on, Bugs now holds one card and it is the Stripe refund one that is waiting on you, and Small fixes holds one that is also waiting on you - so those two bands are empty in practice, third night running. The work available to a night shift is in Process, Housekeeping and Performance."
     },
