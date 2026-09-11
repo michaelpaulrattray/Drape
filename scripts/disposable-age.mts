@@ -421,6 +421,60 @@ export const chainSweep = (rows: Verdict[], days: number, now: Date): Map<string
   return chain;
 };
 
+/**
+ * ONE VERDICT PER ROW, AND ONE READER FOR BOTH OUTPUTS (PR #829 review, finding
+ * 1 and the suggestion). `--list` and `--json` used to compose their own
+ * sentences, and the first draft of the chain verdict left a row that could
+ * say `KEEP cited by X` in the same report whose manifest deletes X — a file
+ * still inside its window, or unresolved by name, whose every citer had just
+ * been swept. The verdict was right (it stays because it is young) and the
+ * printed reason was false at print time, which is the exact class the summary
+ * label had been fixed for one row up. So the reason is derived here, once:
+ * a citation counts as a KEEP only from a file that STAYS, and a row whose only
+ * citers are leaving says why it actually survives.
+ */
+export type RowVerdict = {
+  verdict: "keep" | "sweep" | "sweep-chain";
+  /** The sentence `--list` prints; `--json` carries it beside the verdict. */
+  reason: string;
+};
+
+export const verdictOf = (
+  v: Verdict,
+  days: number,
+  now: Date,
+  chain: Map<string, string[]>,
+  swept: Set<string>,
+): RowVerdict => {
+  const ageDays = (d: Date) => Math.floor((now.getTime() - d.getTime()) / DAY_MS);
+  const held = chain.get(v.file);
+  /* A chain verdict is only ever handed to a file that has aged out, so the
+     anchor is never `none` here; the narrowing is for the compiler. */
+  if (held && v.anchor.kind !== "none") {
+    return {
+      verdict: "sweep-chain",
+      reason: `${v.anchor.note} ${ageDays(v.anchor.at)}d ago — kept only by ${held.join(", ")}, itself swept`,
+    };
+  }
+  if (sweepable(v, days, now) && v.anchor.kind !== "none") {
+    return { verdict: "sweep", reason: `${v.anchor.note} ${ageDays(v.anchor.at)}d ago` };
+  }
+  const staying = v.citations.filter((c) => !swept.has(c));
+  const leaving = v.citations.filter((c) => swept.has(c));
+  if (staying.length > 0) return { verdict: "keep", reason: `cited by ${staying.join(", ")}` };
+  const own = v.anchor.kind === "none"
+    ? v.anchor.note
+    : `${v.anchor.note} ${ageDays(v.anchor.at)}d ago, mtime ${ageDays(v.mtime)}d`;
+  return {
+    verdict: "keep",
+    reason: leaving.length > 0 ? `${own} — its only citers (${leaving.join(", ")}) are being swept` : own,
+  };
+};
+
+/** Everything the report sweeps: the plain verdicts and the chain ones. */
+export const sweptSet = (rows: Verdict[], days: number, now: Date, chain: Map<string, string[]>): Set<string> =>
+  new Set([...rows.filter((v) => sweepable(v, days, now)).map((v) => v.file), ...chain.keys()]);
+
 const main = (): void => {
   const args = process.argv.slice(2);
   const known = new Set(["--list", "--json", "--days", "--root"]);
@@ -457,6 +511,7 @@ const main = (): void => {
   const now = new Date();
   const rows = read(root);
   const chain = chainSweep(rows, days, now);
+  const swept = sweptSet(rows, days, now, chain);
   if (rows.length === 0) {
     console.error(`disposable-age: REFUSING — no untracked disposables under ${root}/scripts.`);
     console.error("  A fresh worktree legitimately has none, and that reading is indistinguishable");
@@ -466,7 +521,12 @@ const main = (): void => {
 
   if (args.includes("--json")) {
     console.log(JSON.stringify(
-      rows.map((v) => ({ ...v, sweepable: sweepable(v, days, now), chain: chain.get(v.file) ?? null })),
+      rows.map((v) => ({
+        ...v,
+        sweepable: sweepable(v, days, now),
+        chain: chain.get(v.file) ?? null,
+        ...verdictOf(v, days, now, chain, swept),
+      })),
       null,
       2,
     ));
@@ -474,7 +534,7 @@ const main = (): void => {
   }
 
   const ageDays = (d: Date) => Math.floor((now.getTime() - d.getTime()) / DAY_MS);
-  const cited = rows.filter((v) => v.citations.length > 0 && !chain.has(v.file));
+  const cited = rows.filter((v) => v.citations.some((c) => !swept.has(c)));
   const resolved = rows.filter((v) => v.anchor.kind !== "none");
   const sweep = rows.filter((v) => sweepable(v, days, now));
   const mtimeOld = rows.filter((v) => ageDays(v.mtime) > days);
@@ -498,20 +558,10 @@ const main = (): void => {
   console.log("");
 
   if (args.includes("--list")) {
+    const label = { keep: "KEEP ", sweep: "SWEEP", "sweep-chain": "SWEEP (chain)" } as const;
     for (const v of rows.slice().sort((a, b) => a.file.localeCompare(b.file))) {
-      const held = chain.get(v.file);
-      /* A chain verdict is only ever handed to a file that has aged out, so
-         the anchor is never `none` here; the narrowing is for the compiler. */
-      const verdict = held && v.anchor.kind !== "none"
-        ? `SWEEP (chain) ${v.anchor.note} ${ageDays(v.anchor.at)}d ago — kept only by ${held.join(", ")}, itself swept`
-        : v.citations.length > 0
-        ? `KEEP  cited by ${v.citations.join(", ")}`
-        : v.anchor.kind === "none"
-          ? `KEEP  ${v.anchor.note}`
-          : sweepable(v, days, now)
-            ? `SWEEP ${v.anchor.note} ${ageDays(v.anchor.at)}d ago`
-            : `KEEP  ${v.anchor.note} ${ageDays(v.anchor.at)}d ago, mtime ${ageDays(v.mtime)}d`;
-      console.log(`  ${verdict.padEnd(64)} ${v.file}`);
+      const { verdict, reason } = verdictOf(v, days, now, chain, swept);
+      console.log(`  ${`${label[verdict]} ${reason}`.padEnd(64)} ${v.file}`);
     }
     console.log("");
   }

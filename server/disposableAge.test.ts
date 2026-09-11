@@ -25,7 +25,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
   agedOut, chainSweep, citationsFrom, internalCitationLines, nameAnchorOf, sweepable,
-  untrackedDisposables, untrackedUnderScripts,
+  sweptSet, untrackedDisposables, untrackedUnderScripts, verdictOf,
   type Verdict,
 } from "../scripts/disposable-age.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
@@ -408,5 +408,61 @@ describe("chainSweep — a file kept ONLY by a file being swept is swept with it
     const a = old("scripts/_434-a-disposable.mts", ["scripts/_434-b-disposable.mts"]);
     const b = old("scripts/_434-b-disposable.mts", ["scripts/_434-a-disposable.mts", "docs/specs/A_COURT.md"]);
     expect(chainSweep([a, b], 7, NOW).size).toBe(0);
+  });
+});
+
+describe("verdictOf — the one sentence both outputs print, and it never names a keeper that is leaving (PR #829 review)", () => {
+  const old = (file: string, citations: string[] = []): Verdict => ({
+    file,
+    anchor: { kind: "card", id: 434, at: ago(30), note: "#434 closed" },
+    citations,
+    mtime: ago(30),
+  });
+  const prbody = old("scripts/_434-prbody-disposable.md");
+  const sabotage = old("scripts/_434-sabotage-disposable.mts", [prbody.file]);
+  const read = (rows: Verdict[], v: Verdict) => {
+    const chain = chainSweep(rows, 7, NOW);
+    return verdictOf(v, 7, NOW, chain, sweptSet(rows, 7, NOW, chain));
+  };
+
+  it("a plain sweep, a chain sweep naming its citer, and a keep cited by a file that stays", () => {
+    const kept = old("scripts/_434-court-disposable.mts", ["docs/specs/A_COURT.md"]);
+    const rows = [prbody, sabotage, kept];
+    expect(read(rows, prbody)).toEqual({ verdict: "sweep", reason: "#434 closed 30d ago" });
+    expect(read(rows, sabotage)).toEqual({
+      verdict: "sweep-chain",
+      reason: "#434 closed 30d ago — kept only by scripts/_434-prbody-disposable.md, itself swept",
+    });
+    expect(read(rows, kept)).toEqual({ verdict: "keep", reason: "cited by docs/specs/A_COURT.md" });
+  });
+
+  it("THE REVIEWER'S ROW — a young file whose only citer is being swept says WHY it stays, not who keeps it", () => {
+    /* The verdict was always right (it is inside its window); the sentence
+       was wrong at print time — `KEEP cited by X` in the report whose manifest
+       deletes X. Now the citation counts only from a file that stays, and the
+       row says its citers are leaving. */
+    const young: Verdict = { ...old("scripts/_434-young-disposable.mts", [prbody.file]), mtime: ago(1) };
+    const out = read([prbody, young], young);
+    expect(out.verdict).toBe("keep");
+    expect(out.reason).not.toContain("cited by");
+    expect(out.reason).toContain("mtime 1d");
+    expect(out.reason).toContain("its only citers (scripts/_434-prbody-disposable.md) are being swept");
+  });
+
+  it("and the same for a file unresolved by name — the anchor note is the reason, the leaving citer is noted", () => {
+    const unresolved: Verdict = { ...old("scripts/_scratch-disposable.mts", [prbody.file]), anchor: { kind: "none", note: "the name points at no card or edition" } };
+    const out = read([prbody, unresolved], unresolved);
+    expect(out.verdict).toBe("keep");
+    expect(out.reason).toBe("the name points at no card or edition — its only citers (scripts/_434-prbody-disposable.md) are being swept");
+  });
+
+  it("a keep with one citer staying and one leaving names only the one that stays", () => {
+    const both = old("scripts/_434-both-disposable.mts", [prbody.file, "docs/JANITOR_LOG.md"]);
+    expect(read([prbody, both], both)).toEqual({ verdict: "keep", reason: "cited by docs/JANITOR_LOG.md" });
+  });
+
+  it("sweptSet is the union the JSON reader used to have to compute itself", () => {
+    const rows = [prbody, sabotage];
+    expect([...sweptSet(rows, 7, NOW, chainSweep(rows, 7, NOW))].sort()).toEqual([prbody.file, sabotage.file].sort());
   });
 });
