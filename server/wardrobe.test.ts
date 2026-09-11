@@ -1522,6 +1522,9 @@ describe("Edit Classifier", () => {
 
     expect(schema.safeParse({ instruction: "roll sleeves" }).success).toBe(true);
     expect(schema.safeParse({ instruction: "" }).success).toBe(false);
+    // Whitespace-only is refused and padding is trimmed before the classifier (#816).
+    expect(schema.safeParse({ instruction: "   " }).success).toBe(false);
+    expect(schema.parse({ instruction: "  roll sleeves\n" }).instruction).toBe("roll sleeves");
     expect(schema.safeParse({}).success).toBe(false);
     expect(schema.safeParse({ instruction: "a".repeat(501) }).success).toBe(false);
   });

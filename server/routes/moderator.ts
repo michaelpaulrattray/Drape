@@ -274,8 +274,9 @@ export const moderatorRouter = router({
       priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
       targetUserId: z.number(),
       targetUserName: z.string().optional(),
-      title: z.string().min(5).max(512),
-      description: z.string().min(10).max(5000),
+      // `.trim()` before the floor (#816): five spaces and ten spaces used to pass.
+      title: z.string().trim().min(5).max(512),
+      description: z.string().trim().min(10).max(5000),
       evidenceSummary: z.string().max(5000).optional(),
       relatedAuditLogId: z.number().optional(),
       creditAmount: z.number().min(1).optional(),
