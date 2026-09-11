@@ -4,13 +4,16 @@ import { logAdminAction, writeImmutableLog } from "../../security/adminSecurity"
 import { getClientIp } from "../../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { IP_BLOCK_REASON_MAX_LENGTH } from "../../../shared/inputLimits";
 
 export const ipBlockingRouter = router({
   // Block an IP address
   blockIP: adminProcedure
     .input(z.object({
-      ipAddress: z.string().min(1),
-      reason: z.string().min(1).max(500),
+      // `.trim()` before `.min(1)` on both (#816): a block on " " is a row no request can ever
+      // match, and a whitespace-only reason used to land blank on every log.
+      ipAddress: z.string().trim().min(1),
+      reason: z.string().trim().min(1).max(IP_BLOCK_REASON_MAX_LENGTH),
       expiresInHours: z.number().min(1).max(8760).optional(), // Max 1 year, null = permanent
     }))
     .mutation(async ({ ctx, input }) => {
@@ -75,7 +78,7 @@ export const ipBlockingRouter = router({
   // Unblock an IP address
   unblockIP: adminProcedure
     .input(z.object({
-      ipAddress: z.string().min(1),
+      ipAddress: z.string().trim().min(1),
     }))
     .mutation(async ({ ctx, input }) => {
       const { unblockIp } = await import("../../db");

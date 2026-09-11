@@ -89,6 +89,20 @@ export const LEGACY_MODEL_NAME_MAX_LENGTH = 128;
 export const FREEZE_REASON_MAX_LENGTH = 500;
 export const UNFREEZE_NOTES_MAX_LENGTH = 500;
 
+/* ── Admin: suspend / role change / IP block — the reason ─────────────────
+   Three procedures, three fields, one each: `admin.users.suspendUser`,
+   `rolesRouter.changeUserRole` and `ipBlockingRouter.blockIP`. Declared apart
+   for the same reason the freeze pair is: they ARE apart, and equal today.
+
+   Read by `server/routes/admin/{users,roles,ipBlocking}.ts` and by the four
+   dialogs that submit them (`UserActionModals`, `AuditActionModals` — suspend
+   is typed in two places). Until #816 each router hand-typed `500` beside the
+   constants above and no dialog capped at all, which is the drift this file's
+   header names. */
+export const SUSPEND_REASON_MAX_LENGTH = 500;
+export const ROLE_CHANGE_REASON_MAX_LENGTH = 500;
+export const IP_BLOCK_REASON_MAX_LENGTH = 500;
+
 /* ── Profile ──────────────────────────────────────────────────────────────
    `server/routes/profile.ts` and `ProfileTab`. */
 export const PROFILE_DISPLAY_NAME_MAX_LENGTH = 100;

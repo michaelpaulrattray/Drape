@@ -4,6 +4,7 @@ import { logAdminAction, writeImmutableLog } from "../../security/adminSecurity"
 import { getClientIp } from "../../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { ROLE_CHANGE_REASON_MAX_LENGTH } from "../../../shared/inputLimits";
 
 export const rolesRouter = router({
   // Change a user's role (promote to moderator or demote to user)
@@ -11,7 +12,8 @@ export const rolesRouter = router({
     .input(z.object({
       userId: z.number(),
       newRole: z.enum(["user", "moderator"]),
-      reason: z.string().min(1).max(500),
+      // `.trim()` before `.min(1)` (#816) — whitespace-only is refused, not recorded blank.
+      reason: z.string().trim().min(1).max(ROLE_CHANGE_REASON_MAX_LENGTH),
     }))
     .mutation(async ({ ctx, input }) => {
       const { updateUserRole, getUserById } = await import("../../db");
