@@ -341,6 +341,18 @@ describe("the webhook settles what changePlan recorded", () => {
     return handleStripeWebhook("{}", "sig");
   }
 
+  /**
+   * #795 — the subscription handlers fetch the live subscription and apply
+   * THAT, never the event's payload. The deleted road proceeds only when the
+   * live read agrees the subscription is dead, so every deleted arm arms the
+   * retrieve with a dead one; an updated arm arms it with whatever the live
+   * truth of its scenario is.
+   */
+  function armLiveRead(subscription: Record<string, unknown>) {
+    subscriptionsRetrieve.mockResolvedValue(subscription);
+  }
+  const deadLiveSub = (id = "sub_1") => ({ id, status: "canceled" });
+
   beforeEach(() => {
     processedEventInserts.length = 0;
     db.getUserByStripeCustomerId.mockResolvedValue({
@@ -704,6 +716,7 @@ describe("the webhook settles what changePlan recorded", () => {
   });
 
   it("a subscription DYING voids its user's pending settlements — the voluntary-cancel road (review finding 3)", async () => {
+    armLiveRead(deadLiveSub());
     db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_change"]);
     invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
     invoicesVoid.mockResolvedValue({ id: "in_change", status: "void" });
@@ -740,6 +753,7 @@ describe("the webhook settles what changePlan recorded", () => {
     the helper returns ids and not a count.
   */
   it("a subscription DYING also VOIDS every pending settlement's INVOICE — nobody can pay for a plan they cancelled (#765)", async () => {
+    armLiveRead(deadLiveSub());
     db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_change", "in_switch"]);
     db.getUserByStripeCustomerId.mockResolvedValue({
       id: 7,
@@ -783,6 +797,7 @@ describe("the webhook settles what changePlan recorded", () => {
     the first delivery must NOT be recorded as processed.
   */
   it("a failed invoice void FAILS THE EVENT after the downgrade lands, and the SAME event redelivered voids it (review finding 1, rounds 1 and 2)", async () => {
+    armLiveRead(deadLiveSub());
     db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_change"]);
     db.getUserByStripeCustomerId.mockResolvedValue({
       id: 7,
@@ -823,6 +838,7 @@ describe("the webhook settles what changePlan recorded", () => {
   });
 
   it("a subscription DYING with NOTHING pending touches no invoice (the control)", async () => {
+    armLiveRead(deadLiveSub());
     db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue([]);
     db.getUserByStripeCustomerId.mockResolvedValue({
       id: 7,
@@ -845,6 +861,7 @@ describe("the webhook settles what changePlan recorded", () => {
   });
 
   it("a void that Stripe refuses on the cancel road FAILS the event so it is redelivered — and the downgrade still lands first", async () => {
+    armLiveRead(deadLiveSub());
     db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_change"]);
     db.getUserByStripeCustomerId.mockResolvedValue({
       id: 7,
@@ -874,6 +891,7 @@ describe("the webhook settles what changePlan recorded", () => {
     /* The user cancelled sub_OLD, resubscribed as sub_NEW, and upgraded;
        sub_OLD's deleted event redelivers days later. Voiding here would
        kill sub_NEW's pending settlement forever. */
+    armLiveRead(deadLiveSub("sub_OLD"));
     db.getUserByStripeCustomerId.mockResolvedValue({
       id: 7,
       name: "seven",
@@ -947,6 +965,7 @@ describe("the webhook settles what changePlan recorded", () => {
     });
 
     it("subscription.updated: a write that fails FAILS THE EVENT, and the SAME event redelivered writes the same state once", async () => {
+      armLiveRead(monthlySub("sub_1"));
       db.updateUserSubscription.mockResolvedValueOnce({ success: false, error: "Failed to update subscription" });
 
       const first = await deliverEvent("customer.subscription.updated", monthlySub("sub_1"));
@@ -969,6 +988,7 @@ describe("the webhook settles what changePlan recorded", () => {
     });
 
     it("subscription.deleted: a downgrade that fails FAILS THE EVENT, and the SAME event redelivered downgrades", async () => {
+      armLiveRead(deadLiveSub());
       db.getUserByStripeCustomerId.mockResolvedValue({
         id: 7,
         name: "seven",
@@ -995,6 +1015,7 @@ describe("the webhook settles what changePlan recorded", () => {
     it("subscription.deleted: a STALE delivery (a newer subscription on record) leaves the plan ALONE — the downgrade is under the same guard as the void", async () => {
       /* The failure above makes Stripe redeliver for days; if the customer
          resubscribes in that window, the retry must not downgrade sub_NEW. */
+      armLiveRead(deadLiveSub("sub_OLD"));
       db.getUserByStripeCustomerId.mockResolvedValue({
         id: 7,
         name: "seven",
@@ -1012,6 +1033,7 @@ describe("the webhook settles what changePlan recorded", () => {
     it("subscription.deleted: a failed invoice void redelivered AFTER the customer resubscribed still closes the OLD invoice — and never touches the new subscription's pending row (PR #794 review finding 1)", async () => {
       /* First delivery: sub_OLD dies on record, its settlement row goes
          void, Stripe blips on the invoice void. The event FAILS. */
+      armLiveRead(deadLiveSub("sub_OLD"));
       db.getUserByStripeCustomerId.mockResolvedValue({
         id: 7,
         name: "seven",
@@ -1054,6 +1076,7 @@ describe("the webhook settles what changePlan recorded", () => {
     });
 
     it("subscription.deleted: NULL on record still downgrades (the voluntary-cancel road clears the id first) — the control", async () => {
+      armLiveRead(deadLiveSub());
       db.getUserByStripeCustomerId.mockResolvedValue({
         id: 7,
         name: "seven",
@@ -1134,16 +1157,17 @@ describe("the webhook settles what changePlan recorded", () => {
       expect(db.updateUserSubscription).not.toHaveBeenCalled();
     });
 
-    it("invoice.payment_failed INTERMEDIATE: a past_due mark that fails is logged and the event is still ACKed — the one site in the class that is DECLINED", async () => {
-      /* A redelivered mark could land over a since-successful payment and
-         flip `hasSubscription` false on a paying account; the next invoice
-         event rewrites the status either way. Pinned as a decision, not as an
-         oversight — the verdict IS read (the failing write is what this arm
-         supplies), it just does not fail the event. */
+    it("invoice.payment_failed INTERMEDIATE: a mark that fails now FAILS THE EVENT — #795's fetch removed the reason this site was declined", async () => {
+      /* #792 declined to fail this site because a redelivered `past_due`
+         could land over a since-successful payment. The mark is written from
+         the LIVE status now, so a redelivery re-reads and can never write a
+         stale one — the decline's reason is structurally gone, and the site
+         joins the class. */
+      armLiveRead({ id: "sub_1", status: "past_due" });
       db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
       db.updateUserSubscription.mockResolvedValueOnce({ success: false, error: "Failed to update subscription" });
 
-      const result = await deliverEvent("invoice.payment_failed", {
+      const first = await deliverEvent("invoice.payment_failed", {
         id: "in_change",
         customer: "cus_1",
         subscription: "sub_1",
@@ -1152,8 +1176,13 @@ describe("the webhook settles what changePlan recorded", () => {
         currency: "usd",
       });
 
-      expect(result.success).toBe(true);
-      expect(db.updateUserSubscription).toHaveBeenCalledWith(7, { subscriptionStatus: "past_due" });
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("could not be written");
+      expect(processedEventInserts).toHaveLength(0);
+
+      const second = await redeliverLastEvent();
+      expect(second.success).toBe(true);
+      expect(db.updateUserSubscription).toHaveBeenLastCalledWith(7, { subscriptionStatus: "past_due" });
       expect(processedEventInserts).toHaveLength(1);
     });
 
@@ -1177,6 +1206,225 @@ describe("the webhook settles what changePlan recorded", () => {
         amount_due: 12_00,
         currency: "usd",
       });
+
+      expect(result.success).toBe(true);
+      expect(db.updateUserSubscription).not.toHaveBeenCalled();
+      expect(processedEventInserts).toHaveLength(1);
+    });
+  });
+
+  /*
+    #795 — FETCH, DON'T TRUST (his word: repair 1). Stripe neither orders nor
+    deduplicates delivery, and #792's own fail-the-event pattern is what armed
+    the hazard: a redelivered OLDER subscription.updated used to write its
+    payload — Pro over Ultimate — because the handler applied the snapshot the
+    event was born with. The subscription handlers now read the subscription
+    live at processing time and apply THAT; the payload is a trigger only.
+  */
+  describe("#795 — the subscription handlers apply the LIVE subscription, never the payload", () => {
+    /** What Stripe holds NOW: the customer went Pro → Ultimate (annual). */
+    const liveUltimate = {
+      id: "sub_1",
+      customer: "cus_1",
+      status: "active",
+      metadata: { plan: "ultimate" },
+      items: {
+        data: [
+          {
+            id: "si_1",
+            price: { recurring: { interval: "year" } },
+            current_period_start: NOW_SEC,
+            current_period_end: NOW_SEC + 365 * DAY,
+          },
+        ],
+      },
+    };
+    /** The card's own scenario, as the payload: an OLDER updated event still
+     *  carrying the Pro state, redelivered after the customer moved on. */
+    const stalePayloadPro = {
+      id: "sub_1",
+      customer: "cus_1",
+      status: "past_due",
+      metadata: { plan: "pro", env: deploymentTag() },
+      items: {
+        data: [
+          {
+            id: "si_1",
+            price: { recurring: { interval: "month" } },
+            current_period_start: NOW_SEC - 40 * DAY,
+            current_period_end: NOW_SEC - 10 * DAY,
+          },
+        ],
+      },
+    };
+    const deletedPayload = {
+      id: "sub_1",
+      customer: "cus_1",
+      metadata: { env: deploymentTag() },
+      status: "canceled",
+      items: { data: [{ id: "si_1", price: { recurring: { interval: "month" } } }] },
+    };
+    const intermediateInvoice = {
+      id: "in_renewal",
+      customer: "cus_1",
+      subscription: "sub_1",
+      next_payment_attempt: NOW_SEC + 3 * DAY,
+      amount_due: 12_00,
+      currency: "usd",
+    };
+
+    it("THE CARD'S SCENARIO: a redelivered older updated event writes the LIVE state — Ultimate, not the payload's Pro", async () => {
+      armLiveRead(liveUltimate);
+
+      const result = await deliverEvent("customer.subscription.updated", stalePayloadPro);
+
+      expect(result.success).toBe(true);
+      expect(db.updateUserSubscription).toHaveBeenCalledTimes(1);
+      expect(db.updateUserSubscription).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({
+          planTier: "ultimate",
+          subscriptionStatus: "active",
+          billingInterval: "year",
+          currentPeriodEnd: new Date((NOW_SEC + 365 * DAY) * 1000),
+        }),
+      );
+    });
+
+    it("updated: a live read that BLIPS fails the event — the redelivery is the retry, and it applies then-truth", async () => {
+      subscriptionsRetrieve.mockRejectedValueOnce(new Error("stripe blipped"));
+
+      const first = await deliverEvent("customer.subscription.updated", stalePayloadPro);
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("could not be read live");
+      expect(db.updateUserSubscription).not.toHaveBeenCalled();
+      expect(processedEventInserts).toHaveLength(0);
+
+      armLiveRead(liveUltimate);
+      const second = await redeliverLastEvent();
+      expect(second.success).toBe(true);
+      expect(db.updateUserSubscription).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({ planTier: "ultimate", subscriptionStatus: "active" }),
+      );
+      expect(processedEventInserts).toHaveLength(1);
+    });
+
+    it("updated: a subscription DEAD at Stripe is never applied — a late event cannot re-attach a dead subscription's tier to an account that moved on", async () => {
+      armLiveRead({ ...liveUltimate, status: "canceled" });
+
+      const result = await deliverEvent("customer.subscription.updated", stalePayloadPro);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain("nothing applied");
+      expect(db.updateUserSubscription).not.toHaveBeenCalled();
+      expect(processedEventInserts).toHaveLength(1);
+    });
+
+    it("updated: a subscription Stripe does not KNOW is ACKed loud — a redelivery cannot retry it into existence", async () => {
+      subscriptionsRetrieve.mockRejectedValue(
+        Object.assign(new Error("No such subscription"), { code: "resource_missing" }),
+      );
+
+      const result = await deliverEvent("customer.subscription.updated", stalePayloadPro);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain("does not exist");
+      expect(db.updateUserSubscription).not.toHaveBeenCalled();
+    });
+
+    it("deleted: a payload claiming death is REFUSED when the live read says the subscription is ALIVE — nothing voided, nothing downgraded", async () => {
+      armLiveRead({ id: "sub_1", status: "active" });
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+      });
+      db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_change"]);
+
+      const result = await deliverEvent("customer.subscription.deleted", deletedPayload);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain("refused");
+      expect(db.voidPendingPlanChangeSettlementsForUser).not.toHaveBeenCalled();
+      expect(db.updateUserSubscription).not.toHaveBeenCalled();
+    });
+
+    it("deleted: a live read that BLIPS fails the event BEFORE anything irreversible — the redelivery retries the whole road", async () => {
+      subscriptionsRetrieve.mockRejectedValueOnce(new Error("stripe blipped"));
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+      });
+
+      const first = await deliverEvent("customer.subscription.deleted", deletedPayload);
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("could not be read live");
+      expect(db.voidPendingPlanChangeSettlementsForUser).not.toHaveBeenCalled();
+      expect(db.updateUserSubscription).not.toHaveBeenCalled();
+      expect(processedEventInserts).toHaveLength(0);
+
+      armLiveRead(deadLiveSub());
+      const second = await redeliverLastEvent();
+      expect(second.success).toBe(true);
+      expect(db.updateUserSubscription).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({ planTier: "free", stripeSubscriptionId: null }),
+      );
+      expect(processedEventInserts).toHaveLength(1);
+    });
+
+    it("deleted: a subscription Stripe no longer KNOWS still downgrades — whatever it is, it is not alive", async () => {
+      subscriptionsRetrieve.mockRejectedValue(
+        Object.assign(new Error("No such subscription"), { code: "resource_missing" }),
+      );
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+      });
+
+      const result = await deliverEvent("customer.subscription.deleted", deletedPayload);
+
+      expect(result.success).toBe(true);
+      expect(db.updateUserSubscription).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({ planTier: "free", stripeSubscriptionId: null }),
+      );
+    });
+
+    it("intermediate payment_failed: the mark is the LIVE status — `active` when the card has since been charged, so a stale failure cannot flip a paying account off its plan", async () => {
+      armLiveRead({ id: "sub_1", status: "active" });
+
+      const result = await deliverEvent("invoice.payment_failed", intermediateInvoice);
+
+      expect(result.success).toBe(true);
+      expect(db.updateUserSubscription).toHaveBeenCalledWith(7, { subscriptionStatus: "active" });
+    });
+
+    it("intermediate payment_failed: a live read that BLIPS fails the event — the retry marks then-truth", async () => {
+      subscriptionsRetrieve.mockRejectedValueOnce(new Error("stripe blipped"));
+
+      const first = await deliverEvent("invoice.payment_failed", intermediateInvoice);
+      expect(first.success).toBe(false);
+      expect(db.updateUserSubscription).not.toHaveBeenCalled();
+      expect(processedEventInserts).toHaveLength(0);
+
+      armLiveRead({ id: "sub_1", status: "past_due" });
+      const second = await redeliverLastEvent();
+      expect(second.success).toBe(true);
+      expect(db.updateUserSubscription).toHaveBeenCalledWith(7, { subscriptionStatus: "past_due" });
+      expect(processedEventInserts).toHaveLength(1);
+    });
+
+    it("intermediate payment_failed: a DEAD subscription gets no mark — the deleted and final-failure roads own death", async () => {
+      armLiveRead(deadLiveSub());
+
+      const result = await deliverEvent("invoice.payment_failed", intermediateInvoice);
 
       expect(result.success).toBe(true);
       expect(db.updateUserSubscription).not.toHaveBeenCalled();

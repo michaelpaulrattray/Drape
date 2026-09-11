@@ -13,6 +13,7 @@ import {
   getMonthlyCredits,
   cancelSubscription,
   voidInvoice,
+  retrieveLiveSubscription,
   REFUND_METADATA_USER_KEY,
   REFUND_METADATA_CHANGE_REQUEST_KEY,
 } from "./stripeService";
@@ -48,6 +49,19 @@ import { deploymentTag } from "../_core/env";
 import { getDb } from "../db/connection";
 import { eq } from "drizzle-orm";
 const log = createModuleLogger("stripe/webhooks");
+
+/**
+ * Statuses that mean a subscription is DEAD at Stripe (#795). The deleted
+ * road proceeds only when the live read agrees the subscription is one of
+ * these; the updated road and the intermediate payment-failure mark go the
+ * other way and never APPLY a dead subscription's state — the deleted and
+ * final-failure handlers own death, and a dead subscription's tier written
+ * over a live account is exactly the stale-overwrite class this set closes.
+ */
+const DEAD_SUBSCRIPTION_STATUSES: ReadonlySet<string> = new Set([
+  "canceled",
+  "incomplete_expired",
+]);
 
 export interface WebhookResult {
   success: boolean;
@@ -220,7 +234,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
  */
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<WebhookResult> {
   const customerId = subscription.customer as string;
-  const plan = subscription.metadata?.plan as SubscriptionPlan | undefined;
 
   // Get user by Stripe customer ID
   const userWithCredits = await getUserByStripeCustomerId(customerId);
@@ -230,6 +243,54 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   }
 
   const userId = userWithCredits.id;
+
+  // ⚠ FETCH, DON'T TRUST (#795, his word: repair 1). Stripe neither orders
+  // nor deduplicates delivery, and since #792 these roads fail events on
+  // purpose so Stripe redelivers — so this event can be hours old: a
+  // redelivered Starter→Pro `updated`, landing after a Pro→Ultimate change,
+  // used to write Pro over Ultimate straight from its payload. The payload
+  // is a TRIGGER now; everything applied below — status, tier, interval,
+  // period — comes from the subscription as Stripe holds it at processing
+  // time, so a retry re-reads and applies then-truth, never the snapshot the
+  // event was born with. A read that blips fails the event (the redelivery
+  // is the retry); a subscription Stripe does not know has nothing to apply
+  // and cannot be retried into existence, so it is ACKed loud.
+  const read = await retrieveLiveSubscription(subscription.id);
+  if (read.outcome === "failed") {
+    log.error(
+      `[Webhook] Subscription ${subscription.id} for user ${userId} could not be read live from Stripe — failing the event so Stripe redelivers and the read is retried`,
+    );
+    return {
+      success: false,
+      message: `Subscription ${subscription.id} could not be read live from Stripe — redeliver to retry`,
+    };
+  }
+  if (read.outcome === "missing") {
+    log.error(
+      `[Webhook] Subscription ${subscription.id} for user ${userId} does not exist at Stripe — nothing to apply, and a redelivery cannot change that`,
+    );
+    return {
+      success: true,
+      message: `Subscription ${subscription.id} does not exist at Stripe — nothing to apply`,
+    };
+  }
+  const live = read.subscription;
+  const liveStatus = mapStripeStatus(live.status);
+
+  // A subscription whose live status maps to `canceled` is never applied on
+  // this road: death belongs to the deleted and final-failure handlers (they
+  // clear the id and downgrade, under their own stale guards), and not-yet-
+  // alive (`incomplete`) is nothing to record. Writing it here would re-attach
+  // a dead subscription's id and paid tier to an account that has moved on —
+  // downgraded, or resubscribed under a new id.
+  if (liveStatus === "canceled") {
+    log.info(
+      `[Webhook] Subscription ${live.id} is ${live.status} at Stripe — leaving user ${userId}'s record to the roads that own a dead subscription`,
+    );
+    return { success: true, message: `Subscription ${live.id} is ${live.status} at Stripe — nothing applied` };
+  }
+
+  const plan = live.metadata?.plan as SubscriptionPlan | undefined;
   // #391: a metadata.plan naming a tier the product no longer declares (a
   // folded rung on a stale checkout session) maps to null — keep the
   // account's current tier rather than persisting a value the renewal path
@@ -237,7 +298,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   const mappedTier = plan ? mapPlanToTier(plan) : null;
   if (plan && !mappedTier) {
     log.warn(
-      `[Webhook] Subscription ${subscription.id} names a plan the product no longer declares ("${plan}") — keeping user ${userId}'s current tier`,
+      `[Webhook] Subscription ${live.id} names a plan the product no longer declares ("${plan}") — keeping user ${userId}'s current tier`,
     );
   }
   const planTier = mappedTier ?? (userWithCredits.credits?.planTier || "free");
@@ -245,13 +306,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   // The period lives on the subscription ITEM on this API version (#664 —
   // see subscriptionPeriods.ts): the sub-level read was writing a fabricated
   // month into currentPeriodStart/End on every event.
-  const { startSec: periodStart, endSec: periodEnd } = subscriptionPeriodSec(subscription);
+  const { startSec: periodStart, endSec: periodEnd } = subscriptionPeriodSec(live);
 
   // The interval the customer is billed on, read off the price itself (#664
   // decision 5) — this column is a CACHE of the Stripe artifact, refreshed
   // every time Stripe tells us the subscription changed. Anything that is not
   // a month or a year is cached as unknown rather than guessed monthly.
-  const stripeInterval = (subscription as any).items?.data?.[0]?.price?.recurring?.interval;
+  const stripeInterval = (live as any).items?.data?.[0]?.price?.recurring?.interval;
   const billingInterval =
     stripeInterval === "year" || stripeInterval === "month" ? stripeInterval : null;
 
@@ -263,14 +324,16 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   // 200 and recorded as processed, so Stripe never redelivers and the plan or
   // status change it carried never lands: the customer pays and sees the old
   // plan until the NEXT event, which may be a month away. This write is the
-  // whole handler and it is one idempotent UPDATE keyed on the user, so
-  // Stripe's ~3 days of redeliveries are exactly the retry it needs. The
+  // handler's one effect and it is one idempotent UPDATE keyed on the user,
+  // so Stripe's ~3 days of redeliveries are exactly the retry it needs — and
+  // since #795 the retry re-reads the live subscription first, so it applies
+  // then-truth rather than replaying this delivery's snapshot. The
   // no-db arm of the helper is unreachable here — `getDb()` caches, and
   // `getUserByStripeCustomerId` above already threw on a null db — so the
   // failure that reaches this line is a transient the retry can clear.
   const updateResult = await updateUserSubscription(userId, {
-    stripeSubscriptionId: subscription.id,
-    subscriptionStatus: mapStripeStatus(subscription.status),
+    stripeSubscriptionId: live.id,
+    subscriptionStatus: liveStatus,
     planTier: planTier as PlanTier,
     billingInterval,
     currentPeriodStart: new Date(periodStart * 1000),
@@ -279,7 +342,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   });
   if (!updateResult.success) {
     log.error(
-      `[Webhook] Subscription ${subscription.id} for user ${userId} could not be written (${updateResult.error}) — failing the event so Stripe redelivers and the write is retried`,
+      `[Webhook] Subscription ${live.id} for user ${userId} could not be written (${updateResult.error}) — failing the event so Stripe redelivers and the write is retried`,
     );
     return {
       success: false,
@@ -287,7 +350,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
     };
   }
 
-  log.info(`[Webhook] Updated subscription for user ${userId}: ${planTier} (${subscription.status})`);
+  log.info(`[Webhook] Updated subscription for user ${userId}: ${planTier} (${live.status}, from the live read)`);
   return { success: true, message: `Updated subscription for user ${userId}` };
 }
 
@@ -307,6 +370,37 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
   const userId = userWithCredits.id;
 
   const previousPlan = userWithCredits.credits?.planTier || "unknown";
+
+  // ⚠ FETCH, DON'T TRUST here too (#795, his word: repair 1). This handler
+  // applies no payload STATE — the downgrade values below are its own — but
+  // it acts on the payload's CLAIM that the subscription died, and that claim
+  // is re-read at Stripe before anything irreversible: a live answer refuses
+  // the whole road (the customer keeps their plan — the safe direction for a
+  // contradiction that should be impossible), a transient failure fails the
+  // event so the redelivery is the retry, and a subscription Stripe no longer
+  // knows proceeds — whatever it is, it is not alive.
+  const deletedRead = await retrieveLiveSubscription(subscription.id);
+  if (deletedRead.outcome === "failed") {
+    log.error(
+      `[Webhook] Deleted event for subscription ${subscription.id} (user ${userId}) but the live read failed — failing the event so Stripe redelivers and the read is retried`,
+    );
+    return {
+      success: false,
+      message: `Subscription ${subscription.id} could not be read live from Stripe — redeliver to retry`,
+    };
+  }
+  if (
+    deletedRead.outcome === "found" &&
+    !DEAD_SUBSCRIPTION_STATUSES.has(deletedRead.subscription.status)
+  ) {
+    log.error(
+      `[Webhook] Deleted event for subscription ${subscription.id} but Stripe says it is ${deletedRead.subscription.status} — refusing to downgrade user ${userId} on a payload the live read contradicts`,
+    );
+    return {
+      success: true,
+      message: `Subscription ${subscription.id} is ${deletedRead.subscription.status} at Stripe — deleted event refused, nothing changed`,
+    };
+  }
 
   // A subscription dying takes its unsettled plan-change credit moves with
   // it (#711, PR #755 review finding 3): a voluntary cancel or dashboard
@@ -726,41 +820,68 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
       };
     }
   } else {
-    // Intermediate retry failure — mark as past_due, no alert.
+    // Intermediate retry failure — the account is marked with the
+    // subscription's LIVE status, read from Stripe, never the payload's
+    // implication (#795, his word: repair 1 — and this is the site the
+    // card's recommendation said the fetch dissolves).
     //
-    // ⚠ THIS VERDICT IS READ AND DELIBERATELY NOT MADE TO FAIL THE EVENT
-    // (#792 — the one site in the class that is declined, and why): the mark
-    // is advisory, and the next invoice event on this subscription rewrites
-    // the status either way (`payment_succeeded` → active, the final failure
-    // → canceled). A redelivery, on the other hand, can land AFTER the
-    // customer's card has since been charged successfully, and a stale
-    // `past_due` written over an `active` account flips `hasSubscription`
-    // false in `billing.getStatus` — which sends a paying customer to a
-    // fresh checkout instead of a plan change. A missing mark costs a flag
-    // the next event corrects; a stale one costs a customer money. So a
-    // failed write is logged loud and the event is ACKed.
+    // ⚠ #792 DECLINED to fail this event, and the reason was ordering: a
+    // redelivered `past_due` could land AFTER the customer's card had since
+    // been charged, and a stale mark over an `active` account flips
+    // `hasSubscription` false in `billing.getStatus` — sending a paying
+    // customer to a fresh checkout. With the status re-read at processing
+    // time that hazard is structurally gone — a redelivery writes then-truth,
+    // `active` if the payment has since succeeded — so a failed write (or a
+    // failed read) now FAILS THE EVENT and is retried, the same as every
+    // other site in the #792 class.
     //
-    // ⚠ AND THE MARK IS UNDER THE SAME STALE GUARD AS THE DOWNGRADES (PR
-    // #794 round-2 finding 1): the write is keyed on the USER, so a late
-    // intermediate failure for an OLD subscription, landing while a NEW
-    // active one is on record, would write `past_due` over the active
-    // account on its FIRST delivery — the very harm the paragraph above
-    // declines to risk on a redelivery. Null on record still marks.
+    // ⚠ STILL UNDER THE SAME STALE GUARD AS THE DOWNGRADES (PR #794 round-2
+    // finding 1): the write is keyed on the USER, so an event about an OLD
+    // subscription must not write that subscription's status — live or not —
+    // over an account a NEWER subscription now owns. Null on record still
+    // marks. And a live status that maps to `canceled` is never written
+    // here: death belongs to the deleted and final-failure roads.
     const storedSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
     if (storedSubscriptionId && storedSubscriptionId !== subscriptionId) {
       log.info(
         `[Webhook] Leaving user ${userId}'s status alone — the failed subscription ${subscriptionId} is not the one on record (${storedSubscriptionId})`,
       );
     } else {
-      const markResult = await updateUserSubscription(userId, {
-        subscriptionStatus: "past_due",
-      });
-      if (markResult.success) {
-        log.info(`[Webhook] Payment failed for user ${userId}, marked as past_due (retry scheduled)`);
-      } else {
+      const read = await retrieveLiveSubscription(subscriptionId);
+      if (read.outcome === "failed") {
         log.error(
-          `[Webhook] Payment failed for user ${userId} but the past_due mark could not be written (${markResult.error}) — ACKing anyway: the next invoice event rewrites the status, and a redelivered mark could land over a since-successful payment`,
+          `[Webhook] Payment failed for user ${userId} but subscription ${subscriptionId} could not be read live from Stripe — failing the event so the mark is retried against then-truth`,
         );
+        return {
+          success: false,
+          message: `Subscription ${subscriptionId} could not be read live from Stripe — redeliver to retry`,
+        };
+      }
+      const liveStatus =
+        read.outcome === "found" ? mapStripeStatus(read.subscription.status) : "canceled";
+      if (liveStatus === "canceled") {
+        log.info(
+          `[Webhook] Payment failed for user ${userId} but subscription ${subscriptionId} is ${
+            read.outcome === "found" ? read.subscription.status : "gone"
+          } at Stripe — leaving the status to the roads that own a dead subscription`,
+        );
+      } else {
+        const markResult = await updateUserSubscription(userId, {
+          subscriptionStatus: liveStatus,
+        });
+        if (markResult.success) {
+          log.info(
+            `[Webhook] Payment failed for user ${userId}, status marked ${liveStatus} from the live read`,
+          );
+        } else {
+          log.error(
+            `[Webhook] Payment failed for user ${userId} but the ${liveStatus} mark could not be written (${markResult.error}) — failing the event so Stripe redelivers; the retry re-reads the live status, so it can never write a stale one`,
+          );
+          return {
+            success: false,
+            message: `Status mark for user ${userId} could not be written — redeliver to retry`,
+          };
+        }
       }
     }
   }
