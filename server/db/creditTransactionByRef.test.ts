@@ -30,6 +30,7 @@ vi.mock("./connection", () => ({
 }));
 
 import { getCreditTransactionByRef } from "./credits";
+import { getUserByStripeCustomerId } from "./billing";
 
 describe("getCreditTransactionByRef distinguishes 'no row' from 'no database' (#789)", () => {
   beforeEach(() => {
@@ -51,5 +52,27 @@ describe("getCreditTransactionByRef distinguishes 'no row' from 'no database' (#
     const row = { id: 9, userId: 42, amount: -75, referenceId: "dispute_dp_1" };
     connection.rows = [row];
     await expect(getCreditTransactionByRef(42, "dispute_dp_1")).resolves.toBe(row);
+  });
+});
+
+/*
+  PR #791 review finding 1: on the dispute roads the FIRST read is the customer
+  lookup, and `getDb()` caches, so it is the read that meets a no-db window.
+  Same contract: throw on no database, null on no account, the account when
+  one holds the customer id.
+*/
+describe("getUserByStripeCustomerId distinguishes 'no account' from 'no database' (#789)", () => {
+  beforeEach(() => {
+    connection.rows = [];
+    connection.available = false;
+  });
+
+  it("THROWS when the database is unavailable — never the 'user not identified' null", async () => {
+    await expect(getUserByStripeCustomerId("cus_1")).rejects.toThrow("Database not available");
+  });
+
+  it("answers null when the database is up and no account holds the customer id (the control)", async () => {
+    connection.available = true;
+    await expect(getUserByStripeCustomerId("cus_nobody")).resolves.toBeNull();
   });
 });

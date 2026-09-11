@@ -36,7 +36,17 @@ vi.mock("../slack/slackNotification", () => ({
 const processedEventInserts = vi.hoisted(() => [] as Array<{ eventId: string; eventType: string }>);
 vi.mock("../db/connection", () => ({
   getDb: vi.fn().mockImplementation(async () => ({
-    select: () => ({ from: () => ({ where: () => ({ limit: async () => [] }) }) }), // No existing events (not a duplicate)
+    // The idempotency pre-check reads what was recorded (PR #791 review
+    // finding 2): an arm that records an event and redelivers it meets the
+    // duplicate guard, as production would. The handler's `where` is keyed on
+    // the event id alone, so the newest recording answers it.
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: async () => (processedEventInserts.length > 0 ? [processedEventInserts[processedEventInserts.length - 1]] : []),
+        }),
+      }),
+    }),
     insert: () => ({
       values: (row: { eventId: string; eventType: string }) => ({
         onDuplicateKeyUpdate: async () => {
@@ -411,13 +421,18 @@ describe("Webhook Security", () => {
     });
 
     /*
-      The other half of #789: `getCreditTransactionByRef` answered `null`
-      for BOTH "no such row" and "database unavailable", and this handler
-      read it as the first — a delivery in a no-db window ACKed a real
-      deduction as "nothing to restore". It THROWS now, and the webhook's
-      outer catch turns that into a failed event, so Stripe redelivers.
+      The other half of #789, at the read that actually decides (PR #791
+      review finding 1): `getDb()` caches its instance, so on this road a
+      no-db window is met FIRST by `getUserByStripeCustomerId`, which used to
+      answer `null` — read as "user not identified", ACKed, never redelivered.
+      A won dispute in a boot-time no-db window left the customer without
+      their credits forever. It THROWS now, the webhook's outer catch fails
+      the event, and Stripe redelivers into a window where the database is
+      back. (The reader one line later throws the same way, and cannot be
+      reached first on this road — `creditTransactionByRef.test.ts` and the
+      refund suite prove it where it IS the first read.)
     */
-    it("a database that cannot be read on a WON dispute FAILS THE EVENT rather than answering 'nothing to restore' (#789)", async () => {
+    it("a database that cannot be read on a WON dispute FAILS THE EVENT rather than ACKing 'user not identified' (#789)", async () => {
       const dispute = {
         id: "dp_test_no_db",
         charge: "ch_test_nodb",
@@ -430,14 +445,61 @@ describe("Webhook Security", () => {
 
       const event = makeEvent("charge.dispute.closed", dispute);
       vi.mocked(constructWebhookEvent).mockReturnValue(event);
-      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(mockUser as any);
-      vi.mocked(getCreditTransactionByRef).mockRejectedValue(new Error("Database not available"));
+      vi.mocked(getUserByStripeCustomerId).mockRejectedValue(new Error("Database not available"));
 
       const result = await handleStripeWebhook("payload", "sig");
 
       expect(result.success).toBe(false);
-      expect(result.message).not.toContain("no revoked credits found to restore");
+      expect(result.message).not.toContain("user not identified");
+      expect(unsuspendUser).not.toHaveBeenCalled();
       expect(addCredits).not.toHaveBeenCalled();
+      expect(processedEventInserts).toHaveLength(0);
+    });
+
+    it("a genuinely UNKNOWN customer on a closed dispute is still 'user not identified' and ACKed (the control)", async () => {
+      const dispute = {
+        id: "dp_test_unknown",
+        charge: "ch_test_unknown",
+        amount: 1000,
+        currency: "usd",
+        reason: "general",
+        customer: "cus_nobody",
+        status: "won",
+      };
+
+      const event = makeEvent("charge.dispute.closed", dispute);
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(null);
+
+      const result = await handleStripeWebhook("payload", "sig");
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain("user not identified");
+      expect(processedEventInserts).toHaveLength(1);
+    });
+  });
+
+  describe("Chargeback: dispute.created in a no-db window (#789, PR #791 review finding 1)", () => {
+    it("a database that cannot be read on a FILED dispute FAILS THE EVENT rather than ACKing with no suspend and no revoke", async () => {
+      const dispute = {
+        id: "dp_test_created_no_db",
+        charge: "ch_test_cnodb",
+        amount: 5000,
+        currency: "usd",
+        reason: "fraudulent",
+        customer: "cus_test_user42",
+        status: "needs_response",
+      };
+
+      const event = makeEvent("charge.dispute.created", dispute);
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      vi.mocked(getUserByStripeCustomerId).mockRejectedValue(new Error("Database not available"));
+
+      const result = await handleStripeWebhook("payload", "sig");
+
+      expect(result.success).toBe(false);
+      expect(suspendUser).not.toHaveBeenCalled();
+      expect(deductCredits).not.toHaveBeenCalled();
       expect(processedEventInserts).toHaveLength(0);
     });
   });

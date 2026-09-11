@@ -61,7 +61,20 @@ export async function getUserByStripeCustomerId(
   stripeCustomerId: string
 ) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db) {
+    // ⚠ THROWS, NEVER `null` (#789, PR #791 review finding 1): `null` here
+    // meant both "no account holds this customer id" and "database
+    // unavailable". Every caller is a Stripe webhook handler, and the two
+    // dispute handlers read a null user as "user not identified" and ACK the
+    // event — so a boot-time no-db window ACKed a won dispute (credits never
+    // restored) and a filed dispute (no suspend, no revoke) FOREVER, because
+    // Stripe never redelivers a 200. `getDb()` caches its instance, so this
+    // is the FIRST read on every road and the one that decides. A throw
+    // reaches the webhook's outer catch, which answers 400 so Stripe
+    // redelivers; a genuinely unknown customer still comes back `null`.
+    log.error("[Database] Cannot get user by Stripe customer id: database not available");
+    throw new Error("Database not available");
+  }
 
   const result = await db
     .select()
