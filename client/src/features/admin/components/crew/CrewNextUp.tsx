@@ -54,7 +54,7 @@ export function CrewNextUp({
           rides beside it — both are measured values, so both are mono. */}
       <TableHead eyebrow="Next up">
         {rows.length > 0 && <span className="dp-crew__meta">{rows.length} open</span>}
-        <span className="dp-crew__mono">queue read {shortDate(nextUp.readAt)}</span>
+        <span className="dp-chrome dp-crew__mono">queue read {shortDate(nextUp.readAt)}</span>
       </TableHead>
 
       {rows.length === 0 ? (
@@ -102,7 +102,7 @@ export function CrewNextUp({
                 </span>
               ))}
               {row.urgent && <span className="dp-crew__urgent">urgent</span>}
-              <span className="dp-crew__mono">#{row.issueNumber}</span>
+              <span className="dp-chrome dp-crew__mono">#{row.issueNumber}</span>
             </li>
           ))}
         </ol>

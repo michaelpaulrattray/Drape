@@ -447,7 +447,7 @@ describe("card 415 §3 — Crew states its freshness exactly once, and still nam
     /* Scoped to the stamp ELEMENT, not the file: `dataUpdatedAt` legitimately
        drives the WORKING NOW ticker elsewhere in this page, and a file-wide
        ban would forbid a thing #415 never ruled on. */
-    const stampElement = crew.match(/<p className="dp-crew__stamp"[^]*?<\/p>/)?.[0] ?? "";
+    const stampElement = crew.match(/<p className="[^"]*dp-crew__stamp"[^]*?<\/p>/)?.[0] ?? "";
     expect(stampElement, "the stamp element itself must be findable").toContain("crew-edition-stamp");
     expect(stampElement, "the write stamp comes from the briefing, not the page's clock")
       .toMatch(/shortDate\(stateQuery\.data\.briefing\.updatedAt\)/);

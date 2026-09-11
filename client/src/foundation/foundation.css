@@ -1746,6 +1746,7 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   text-overflow: ellipsis;
   white-space: nowrap;
   font: 400 10.5px var(--font-mono);
+  letter-spacing: normal; /* stacked on .dp-chrome (#524): tracking would leak */
   color: var(--faint);
 }
 

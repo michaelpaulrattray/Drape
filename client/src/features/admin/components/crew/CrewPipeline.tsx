@@ -78,7 +78,7 @@ function PipelineRow({ item }: { item: CrewPipelineItem }) {
         {item.note && <span className="dp-crew__rowwhy">{item.note}</span>}
       </span>
       {/* A PR number is a measured value, so it is mono (§4). */}
-      {item.prNumber !== null && <span className="dp-crew__mono">PR {item.prNumber}</span>}
+      {item.prNumber !== null && <span className="dp-chrome dp-crew__mono">PR {item.prNumber}</span>}
     </li>
   );
 }

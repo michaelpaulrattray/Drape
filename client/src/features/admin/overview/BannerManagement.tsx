@@ -123,7 +123,7 @@ export function BannerManagement() {
   return (
     <div className="dp-ov__card">
       <div className="dp-ov__cardhead">
-        <span className="dp-ov__blocklabel">BANNERS</span>
+        <span className="dp-eyebrow dp-ov__blocklabel">BANNERS</span>
         {data && <span className="dp-ov__count">{data.total}</span>}
         <span className="dp-ov__spacer" />
         <Button

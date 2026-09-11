@@ -95,9 +95,9 @@ export function CrewGeneral({
             <li key={`reply-${item.reply.id}`} className="dp-crew__entry">
               <div className="dp-crew__entryhead">
                 <span className="dp-crew__who">{item.reply.author}</span>
-                <span className="dp-crew__mono">{shortDate(String(item.reply.createdAt))}</span>
+                <span className="dp-chrome dp-crew__mono">{shortDate(String(item.reply.createdAt))}</span>
                 {item.orphanedFrom !== null && (
-                  <span className="dp-crew__unseen">
+                  <span className="dp-chrome dp-crew__unseen">
                     {cardTitles.has(item.orphanedFrom)
                       ? <>on “{cardTitles.get(item.orphanedFrom)}”</>
                       : <>on “{item.orphanedFrom}”, a card since closed</>}
@@ -106,8 +106,8 @@ export function CrewGeneral({
                 <span
                   className={
                     acknowledgedReplyIds.includes(item.reply.id)
-                      ? "dp-crew__seen"
-                      : "dp-crew__unseen"
+                      ? "dp-chrome dp-crew__seen"
+                      : "dp-chrome dp-crew__unseen"
                   }
                 >
                   {acknowledgedReplyIds.includes(item.reply.id)

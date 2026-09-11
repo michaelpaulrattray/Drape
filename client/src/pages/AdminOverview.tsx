@@ -14,8 +14,12 @@ import {
   BannerManagement,
   SystemStatusCard,
 } from "@/features/admin/overview";
-import "@/features/admin/overview/overview.css";
 import { Button, Skeleton, TableHead } from "@/foundation";
+/* After the foundation barrel on purpose: the overview's block labels stack
+   `.dp-eyebrow` beside `.dp-ov__blocklabel` at equal specificity, so this
+   stylesheet must come later in the cascade to keep its 8.5px (#524;
+   `registerStack-guard.test.ts` pins the order). */
+import "@/features/admin/overview/overview.css";
 import {
   STAFF_REFRESH_INTERVAL_MS,
   StaffBarAdmin,

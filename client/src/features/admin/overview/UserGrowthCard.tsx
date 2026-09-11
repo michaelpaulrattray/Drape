@@ -105,11 +105,11 @@ export function UserGrowthCard({
 
       <div className="dp-countrow">
         <div className="dp-counttile">
-          <span className="dp-ov__tilelabel">TOTAL</span>
+          <span className="dp-eyebrow dp-ov__tilelabel">TOTAL</span>
           <span className="dp-counttile__value">{data.totalUsers.toLocaleString()}</span>
         </div>
         <div className="dp-counttile">
-          <span className="dp-ov__tilelabel">NEW · 7 DAYS</span>
+          <span className="dp-eyebrow dp-ov__tilelabel">NEW · 7 DAYS</span>
           <span className="dp-counttile__value">{data.newSignups7d.toLocaleString()}</span>
           <span className="dp-ov__tilefoot">{data.newSignups24h} today</span>
         </div>
@@ -122,7 +122,7 @@ export function UserGrowthCard({
 
       {totalPlanUsers > 0 && (
         <div className="dp-ov__block">
-          <span className="dp-ov__blocklabel">PLAN DISTRIBUTION</span>
+          <span className="dp-eyebrow dp-ov__blocklabel">PLAN DISTRIBUTION</span>
           <div className="dp-ov__stack">
             {data.planDistribution.map((p) => (
               <span
@@ -151,7 +151,7 @@ export function UserGrowthCard({
 
       {chartData && chartData.length > 0 && (
         <div className="dp-ov__block">
-          <span className="dp-ov__blocklabel">DAILY SIGNUPS — 14 DAYS</span>
+          <span className="dp-eyebrow dp-ov__blocklabel">DAILY SIGNUPS — 14 DAYS</span>
           <div className="dp-ov__chart dp-ov__chart--short">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>

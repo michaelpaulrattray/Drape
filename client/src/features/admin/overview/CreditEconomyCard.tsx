@@ -87,25 +87,25 @@ export function CreditEconomyCard({
 
       <div className="dp-countrow">
         <div className="dp-counttile">
-          <span className="dp-ov__tilelabel">IN CIRCULATION</span>
+          <span className="dp-eyebrow dp-ov__tilelabel">IN CIRCULATION</span>
           <span className="dp-counttile__value">
             {formatNumber(data.totalCreditsInCirculation)}
           </span>
         </div>
         <div className="dp-counttile">
-          <span className="dp-ov__tilelabel">CONSUMED · 24H</span>
+          <span className="dp-eyebrow dp-ov__tilelabel">CONSUMED · 24H</span>
           <span className="dp-counttile__value">
             {formatNumber(data.creditsConsumed24h)}
           </span>
         </div>
         <div className="dp-counttile">
-          <span className="dp-ov__tilelabel">PURCHASED · 7D</span>
+          <span className="dp-eyebrow dp-ov__tilelabel">PURCHASED · 7D</span>
           <span className="dp-counttile__value">
             {formatNumber(data.creditsPurchased7d)}
           </span>
         </div>
         <div className="dp-counttile">
-          <span className="dp-ov__tilelabel">REFUNDED · 7D</span>
+          <span className="dp-eyebrow dp-ov__tilelabel">REFUNDED · 7D</span>
           <span className="dp-counttile__value">
             {formatNumber(data.creditsRefunded7d)}
           </span>
@@ -115,7 +115,7 @@ export function CreditEconomyCard({
       {chartData && chartData.length > 0 && (
         <div className="dp-ov__block">
           <div className="dp-ov__blockhead">
-            <span className="dp-ov__blocklabel">DAILY CREDIT FLOW — 14 DAYS</span>
+            <span className="dp-eyebrow dp-ov__blocklabel">DAILY CREDIT FLOW — 14 DAYS</span>
             <span className="dp-ov__spacer" />
             <span className="dp-ov__legend">
               <span className="dp-ov__legenditem">
@@ -175,7 +175,7 @@ export function CreditEconomyCard({
 
       {sortedTypes.length > 0 ? (
         <div className="dp-ov__block">
-          <span className="dp-ov__blocklabel">COST BY TYPE — 24H</span>
+          <span className="dp-eyebrow dp-ov__blocklabel">COST BY TYPE — 24H</span>
           <div className="dp-ov__bars">
             {sortedTypes.map((type) => {
               const maxCost = sortedTypes[0]?.totalCost || 1;

@@ -589,7 +589,7 @@ export function MediaCard({
       {label || meta ? (
         <div className="dp-mediacard__row">
           <span className="dp-mediacard__label">{label}</span>
-          {meta ? <span className="dp-mediacard__meta">{meta}</span> : null}
+          {meta ? <span className="dp-chrome dp-mediacard__meta">{meta}</span> : null}
         </div>
       ) : null}
     </div>

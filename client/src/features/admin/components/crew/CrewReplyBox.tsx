@@ -86,7 +86,7 @@ export function CrewReplyBox({
         />
       </Field>
       <div className="dp-crew__replyfoot">
-        <span className="dp-crew__mono">
+        <span className="dp-chrome dp-crew__mono">
           {tooLong
             ? `${trimmed.length.toLocaleString()} characters — the limit is ${CREW_REPLY_MAX.toLocaleString()}`
             : "⌘/Ctrl + Enter to send"}
