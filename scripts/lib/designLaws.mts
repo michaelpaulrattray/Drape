@@ -453,11 +453,13 @@ export async function assertPricedButtons(page: Page, where: string, log: LawLog
           THE ANCESTOR'S PROSE, NOT ITS BUTTONS. Every text node under the
           ancestor is read EXCEPT those inside a <button> — this one's label
           was already tested and any other button's label is a different
-          purchase. Painted text only, which is the rule `innerText` applied
-          before this walker replaced it: a node whose element paints no box
-          is not on the affordance. (Inlined rather than a named helper: the
-          bundler wraps a named function in `__name`, which the page does not
-          have.)
+          purchase. Painted text only: an element with no layout box
+          (`display: none`, unrendered) contributes nothing, and neither does
+          one under `visibility: hidden`, which keeps its box — the two
+          conditions `innerText` applied before this walker replaced it, each
+          checked on its own rather than one standing in for both (PR #805
+          review, finding 2). (Inlined rather than a named helper: the bundler
+          wraps a named function in `__name`, which the page does not have.)
         */
         const parts: string[] = [];
         const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
@@ -465,6 +467,7 @@ export async function assertPricedButtons(page: Page, where: string, log: LawLog
           const parent = n.parentElement;
           if (!parent || parent.closest("button")) continue;
           if (parent.getClientRects().length === 0) continue;
+          if (getComputedStyle(parent).visibility === "hidden") continue;
           parts.push(n.textContent ?? "");
         }
         if (PRICE.test(parts.join(" "))) {
@@ -551,15 +554,22 @@ export async function assertRetentionStated(
   const result = await page.evaluate(() => {
     const PHRASE = /unsigned sheets/i;
     const EXPIRY = /7 quiet days/i;
-    /* The elements that carry the phrase in their own text nodes — the leaf
-       holders, not every ancestor whose innerText happens to contain them. */
-    const holders = Array.from(document.querySelectorAll<HTMLElement>("*")).filter(
+    /*
+      THE DEEPEST PAINTED ELEMENTS WHOSE TEXT HOLDS THE PHRASE — read across
+      their text nodes, normalised, the way the wait above reads `innerText`.
+      The first cut demanded the phrase inside ONE text node, so a `<span>`
+      wrapped around one word would have turned the section invisible to this
+      law while the wait still saw it (PR #805 review, finding 1). Deepest
+      rather than every match, so the section is found once and not once per
+      ancestor.
+    */
+    const matches = Array.from(document.querySelectorAll<HTMLElement>("*")).filter(
       (el) =>
         el.getClientRects().length > 0 &&
-        Array.from(el.childNodes).some(
-          (n) => n.nodeType === Node.TEXT_NODE && PHRASE.test(n.textContent ?? ""),
-        ),
+        !/^(SCRIPT|STYLE|TITLE|NOSCRIPT|TEMPLATE)$/.test(el.tagName) &&
+        PHRASE.test((el.textContent ?? "").replace(/\s+/g, " ")),
     );
+    const holders = matches.filter((el) => !matches.some((other) => other !== el && el.contains(other)));
     if (holders.length === 0) return null;
     const sections = new Set<HTMLElement>();
     for (const holder of holders) {
@@ -616,13 +626,21 @@ export async function assertNoOrphanSkeletons(page: Page, where: string, log: La
   const result = await page.evaluate(() => {
     const FAILURE = /can't be cast|didn't start/i;
     const skeletons = Array.from(document.querySelectorAll<HTMLElement>(".dp-skeleton"));
-    /* The leaf holders of the failure copy — an element carrying it in its own
-       text nodes and painting a box. */
-    const copies = Array.from(document.querySelectorAll<HTMLElement>("*")).filter(
+    /*
+      THE DEEPEST PAINTED ELEMENTS WHOSE TEXT HOLDS THE FAILURE COPY — read
+      across text nodes and normalised, so `That brief <em>can't</em> be cast`
+      is still the copy. The first cut read one text node at a time and would
+      have gone green forever on the founder's own hang the day the title grew
+      inline markup (PR #805 review, finding 1); `designLawControls.mts` now
+      holds the split-phrase pair that reddens if this regresses.
+    */
+    const matches = Array.from(document.querySelectorAll<HTMLElement>("*")).filter(
       (el) =>
         el.getClientRects().length > 0 &&
-        Array.from(el.childNodes).some((n) => n.nodeType === Node.TEXT_NODE && FAILURE.test(n.textContent ?? "")),
+        !/^(SCRIPT|STYLE|TITLE|NOSCRIPT|TEMPLATE)$/.test(el.tagName) &&
+        FAILURE.test((el.textContent ?? "").replace(/\s+/g, " ")),
     );
+    const copies = matches.filter((el) => !matches.some((other) => other !== el && el.contains(other)));
     if (copies.length === 0) return { skeletons: skeletons.length, hasFailureCopy: false, under: 0 };
     const copyTop = Math.min(...copies.map((el) => el.getBoundingClientRect().top));
     const under = skeletons.filter((sk) => sk.getBoundingClientRect().top >= copyTop).length;

@@ -425,6 +425,24 @@ export const CONTROLS: Control[] = [
     },
   },
   {
+    /*
+      THE PHRASE SPLIT ACROSS INLINE MARKUP (PR #805 review, finding 1). The
+      first scoped reader wanted "unsigned sheets" inside ONE text node, so a
+      span around one word would have hidden the section from the law while
+      the wait predicate still saw it. Both arms carry the split phrase; only
+      the compliant one states the expiry inside the section.
+    */
+    law: "retention",
+    breaks: "an unsigned-sheets heading with a span through the phrase, and no expiry copy — the one-node reader saw no section",
+    run: assertRetentionStated,
+    offender: {
+      html: page(``, `<section><h2>Unsigned <em>sheets</em></h2><p>Three waiting.</p></section>`),
+    },
+    compliant: {
+      html: page(``, `<section><h2>Unsigned <em>sheets</em></h2><p>Kept for 7 quiet days, then cleared.</p></section>`),
+    },
+  },
+  {
     /* The existential twin of law 5: a surface promising retention copy that
        renders no section at all must fail rather than report nothing here. */
     law: "retention",
@@ -444,6 +462,27 @@ export const CONTROLS: Control[] = [
       html: page(``, `<p>That brief can't be cast.</p><div class="dp-skeleton"></div><div class="dp-skeleton"></div>`),
     },
     compliant: { html: page(``, `<div class="dp-skeleton"></div><div class="dp-skeleton"></div>`) },
+  },
+  {
+    /*
+      THE FAILURE COPY SPLIT ACROSS INLINE MARKUP (PR #805 review, finding 1).
+      `EmptyState` renders its title as one string today; the day it renders
+      `That brief <em>can't</em> be cast`, a one-node reader stops seeing the
+      founder's hang at all, with every other control green. Same skeleton
+      below in the offender; no skeleton in the compliant twin.
+    */
+    law: "orphan-skeletons",
+    breaks: "failure copy with a span through the phrase, skeletons under it — the one-node reader saw no failure copy",
+    run: assertNoOrphanSkeletons,
+    offender: {
+      html: page(
+        `.dp-skeleton { height: 120px; background: #222; }`,
+        `<p>That brief <em>can't</em> be cast.</p><div class="dp-skeleton"></div>`,
+      ),
+    },
+    compliant: {
+      html: page(``, `<p>That brief <em>can't</em> be cast.</p>`),
+    },
   },
   {
     /*
