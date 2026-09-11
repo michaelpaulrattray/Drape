@@ -1,7 +1,7 @@
 {
-  "edition": 343,
-  "updatedAt": "2026-09-11T06:12:28.935Z",
-  "shift": "Foreman - your 4 September ruling on the typewriter type is built and live, and it looks exactly as it did. WHAT CHANGED. Our design rule says machine facts (counts, ids, times) go in the typewriter face and sentences go in the reading face. The first time that rule was run over the staff pages it flagged ten strings - nine of them counts and stamps that were right all along but were not wearing the label the rule knows, and one that really was a sentence set in typewriter type: the moderator dashboard's '1 of 8 accounts scanned are above 500 credits'. You said: use the two labels the rule already knows on the nine, treat the moderator line as a sentence with its numbers in the machine face and its words in the reading face, and do not widen the rule's exemption list. That is what shipped. On the overview, the crew page and the foundation gallery the type is measured identical before and after, in both light and dark - it was checked by reading the computed font of every affected element, not by squinting at two pictures. On the moderator dashboard the one line now reads as a sentence, '1 of 8' and '500' still in typewriter. The rule flagged 11 before and 0 after. WHAT THE LAST SHIFT WAS WORRIED ABOUT, AND WHY IT WAS FINE: stacking the two labels could have restyled four screens by accident, because which of two equally specific styles wins depends on load order. That order is not an accident - each page loads the foundation before its own styles - and a new test now proves it for every such label in the product. Its very first run caught the overview page loading its styles the wrong way round, which would have made six labels bigger. FOUND ON THE WAY: an error message on the crew page ('The server refused the request') was set in typewriter type and is now a sentence; and the rule itself cannot see a sentence once a number inside it is wrapped separately, so it now reports 'no sentences here' on the moderator dashboard - the fix is right (the picture shows it), but the instrument has a blind spot, filed as #799. STILL YOURS: nothing. Also tonight: the account-freeze test file on the Process list was read line by line - 4 arms test only their own stand-ins and 20 restate rules as arithmetic; it wants a session of its own, recorded on the card. Three check-ups come due tomorrow.",
+  "edition": 344,
+  "updatedAt": "2026-09-11T10:31:05.385Z",
+  "shift": "Fable — your order from this afternoon is done and live: Slack is retired, whole. WHAT CHANGED. You said 'retire slack everything runs through moderator and admin at the moment' — and you were more right than the code was: we checked production first, and in the entire life of the product the Slack side never carried a single fact. No webhook was ever connected, zero of its messages ever reached anyone, and the three database tables it fed are empty — all time. So nothing anyone ever saw is different; what is gone is code that PROMISED a channel that did not exist. About six and a half thousand lines came out. ONE THING WORKS MORE HONESTLY NOW. When an admin approves a sensitive request from a moderator (a refund, a suspension), the old road said 'awaiting Slack confirmation' — and then quietly confirmed it itself, because there was no Slack to ask. Now the Approve button says what is true: 'This is a sensitive action. It runs the moment you approve it.' And it does, immediately, with the full record written. If the action ever fails partway, the request shows 'Outcome unconfirmed' and a warning lands on your admin overview's alerts feed — deliberately with no retry button, because retrying a half-finished refund is how money goes out twice. EVERY ALERT HAS A HOME ON YOUR PANELS. Health problems, server crashes, failed final payments and chargebacks — everything that used to be addressed to Slack now lands as rows on the admin overview's alerts feed and the audit log, the same place your login-attack alarm has lived since August. Two things have NO replacement and we say so rather than pretend: tamper-evidence for the security log (it never really had any — that gap keeps its own name on the known-gaps list), and a 'database is down' alert, which cannot live on a panel the database serves. PROVEN, NOT CLAIMED. Driven in the running app end to end (the interrupted state and the alerts-feed row in front of eyes), the independent reviewer passed it — its one real finding, a sentence that could have invited a double refund, was taken before merge — and production answered with the new build a minute after the merge. STILL YOURS: nothing new. The next card in your queue (#795, webhook ordering on the plan roads) is a design decision held for a Fable shift.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T06:11:15.496Z",
+      "readAt": "2026-09-11T10:30:16.348Z",
       "items": [
         {
           "issueNumber": 16,
@@ -224,6 +224,12 @@
         {
           "issueNumber": 478,
           "title": "The presence score separates — N3's decision on whether the panel and the departure gate use it, and at what floor",
+          "kind": "roadmap",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 801,
+          "title": "N3: the refine engine re-asked — GPT Image 2.5 (Flare, Sunburst) vs today's anti-drift road, measured on his casts (his word, 11 Sep: waits at N3)",
           "kind": "roadmap",
           "rung": "N3"
         },
@@ -4621,6 +4627,13 @@
   ],
   "pipeline": [
     {
+      "id": "slack-retired-800",
+      "title": "Slack is retired whole — every alert lands on your admin panels, and approving a sensitive request runs it the moment you approve it",
+      "status": "merged",
+      "prNumber": 802,
+      "note": "Your word (11 Sep): 'retire slack everything runs through moderator and admin at the moment.' Measured first: production had zero Slack settings and the integration never delivered one message in the product's life. Deleted whole (~6,400 lines); alerts re-landed on the overview alerts feed and audit log; the sensitive-approval road now does what its button says. Two gaps stated rather than papered over: security-log tamper evidence, and a database-down alert no database-backed panel can carry."
+    },
+    {
       "id": "staff-mono-labels-524",
       "title": "Your typewriter-type ruling on the staff pages is live - nine labels wear the rule's own label, the moderator line reads as a sentence, and nothing looks different",
       "status": "merged",
@@ -5374,389 +5387,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0911i-foreman",
+      "id": "queue-shape-0911j-fable",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 54 open, one closed tonight, one filed, and 15 nobody has looked at in a week",
-      "detail": "The typewriter-type card (#524, your 4 Sep ruling) closed with its PR. One filed: #799 - the design rule that checks for sentences in typewriter type cannot see a sentence once a number inside it is wrapped on its own, which is exactly the shape your ruling asks for; it reads leaf elements only. Not urgent, but it fails in the direction that hides a defect. Bugs and Small fixes are both empty. The account-freeze test file on the Process list was read line by line and sized as a session of its own (4 hollow arms, 20 rule recitations - recorded on #697). Three check-ups come due tomorrow, so the next shift is most likely a patrol."
-    },
-    {
-      "id": "queue-shape-0911h-foreman",
-      "severity": "info",
-      "state": "open",
-      "title": "The queue: 54 open, one closed tonight, none filed, and 15 nobody has looked at in a week",
-      "detail": "The small-fix card on the checkout road closed with its PR; nothing new filed. Bugs and Small fixes are both empty now. Two test files on the Process list were read line by line and cleared as false alarms (no code change; recorded on the card). The three 'possibly already done' flags the counter raised (the bundle-size card and two promotion-pass cards) were each re-read against the PR that named them: all three were CITED by that PR, not fixed, and stay open. Three check-ups come due tomorrow, so the next shift is most likely a patrol."
-    },
-    {
-      "id": "queue-shape-0911g-foreman",
-      "severity": "info",
-      "state": "open",
-      "title": "The queue: 55 open, two closed today, two filed, and 15 nobody has looked at in a week",
-      "detail": "Your Stripe click card and the six-site class card both closed; two were filed from what the reviewer named beyond the fix - one design question (a message about an OLD plan change can arrive after a NEWER one and overwrite it; the fix is to ask Stripe for the current state rather than trust the message, and that is a decision for a Fable shift), and one small-fix card for two places on the customer's own checkout road that drop a failure the same way. Bugs is empty; Small fixes holds that one card. Three check-ups come due within a day, so the next shift is most likely a patrol."
-    },
-    {
-      "id": "queue-shape-0911f-foreman",
-      "severity": "info",
-      "state": "open",
-      "title": "The queue: 55 open, two closed today, two filed, and 15 nobody has looked at in a week",
-      "detail": "Even again: the two small fixes filed last night closed, and two were filed - one class card holding the six remaining places in the webhook file that drop a failure the same way (each with its own retry question written on it), and one card for your Stripe click so your page cannot lose the ask when the code card closed. The fifteen untouched cards are the same older roadmap and tidy-up items. Bugs is empty; Small fixes holds the class card and your click; three patrols come due within a day, so the next shift is most likely a patrol."
-    },
-    {
-      "id": "queue-shape-0911e-foreman",
-      "severity": "info",
-      "state": "open",
-      "title": "The queue: 55 open, two closed today, two filed, and 15 nobody has looked at in a week",
-      "detail": "Even: your two money cards closed, and the two siblings the reviewer found (the same retry gap in two older handlers) were filed as small fixes rather than widened into tonight's work. One click is waiting on you (the Stripe message above); nothing else is. The fifteen untouched cards are the same older roadmap and tidy-up items as before. With Bugs and Small fixes now genuinely empty of blocked cards, the next shift's takeable work is the two new small fixes, then Process."
-    },
-    {
-      "id": "queue-shape-0911d-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 55 open, one closed tonight, and 15 nobody has looked at in a week",
-      "detail": "Down one, nothing new filed. Nothing is queued by you and nothing is blocked on you. The fifteen untouched cards are the same shape as last night - mostly older roadmap and tidy-up items rather than anything a customer would feel; the oldest two have sat since 25 August. Of the switches you have on, Bugs holds one card and Small fixes holds one, and both of those are waiting on your word - so those two bands are empty in practice for a third night. The work a night shift can actually take is in Process, Housekeeping and Performance."
-    },
-    {
-      "id": "queue-shape-0911c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 55 open, one closed tonight, and 15 nobody has looked at in a week",
-      "detail": "Down one: the checker fault above is closed and nothing new was filed. Nothing is queued by you and nothing is blocked on you. The fifteen untouched cards are the same shape as last night - mostly old roadmap and tidy-up items rather than anything a customer would feel; the oldest two have sat since 25 August. Of the switches you have on, Bugs now holds one card and it is the Stripe refund one that is waiting on you, and Small fixes holds one that is also waiting on you - so those two bands are empty in practice, third night running. The work available to a night shift is in Process, Housekeeping and Performance."
-    },
-    {
-      "id": "leftover-app-on-your-machine-783",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The leftover copy of the app is stopped AND the blind spot that hid it is fixed",
-      "detail": "The process was stopped last night. Tonight the reason four shifts walked past it is closed: the tool they are told to use could only see the normal way of starting the app, so anything else was dropped from its list without a word, and a dropped copy prints the same sentence as a clean machine. It now lists every copy, marks the ones nothing is watching over, names a deleted launch folder, and - the part that outlives this particular fault - checks itself against Windows' own list of what is listening, so a copy it cannot account for is reported rather than dropped."
-    },
-    {
-      "id": "queue-shape-0911b-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 56 open, 14 nobody has looked at in a week - two closed tonight, two filed",
-      "detail": "56 cards open, unchanged on the night: two closed (#776, #523) and two filed (#782, #783). 14 have had no comment, no close and no commit against them for a week - down one. Nothing is waiting on you.\n\nWorth knowing: both cards closed tonight were ALREADY your decisions. #523 was your 4 September ruling, unbuilt for seven days because the card's description still said the decision was yours while your answer sat in a comment below it. Your other ruling from that same evening (#524, typewriter type on the staff screens) is in the same state - its description is rewritten tonight to open with your words, and it is sized as a night of its own."
-    },
-    {
-      "id": "queue-shape-0911-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 58 open, 15 nobody has looked at in a week - three closed tonight, two filed",
-      "detail": "58 cards open. Closed tonight: #756 (the plan-change invoice that could still take money - held last night for a missing review, reviewed and merged now), #752 (the moderator's badge), and #464, the measurement card that had been blocking #752 - closed on an actual number rather than left open. Filed two: #767 (we log a paid invoice on the failed-payment road as 'nothing to do', and that is the one status where it means money was already taken) and #769 (nothing in our checks knows which screens are supposed to keep watch, after this same fault turned up four separate times). 15 cards have had no comment, close or commit for seven days - unchanged, and still mostly parked cleanup. NEXT UP is EMPTY and nothing is on your desk."
-    },
-    {
-      "id": "queue-shape-0910-late-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 60 open, 15 nobody has looked at in a week - one closed tonight, three filed",
-      "detail": "60 cards open. Closed tonight: #759, the Refresh button across the staff screens. Filed three: #765 (a second road where a cancelled subscription leaves an invoice payable - the sibling of tonight's money fix, split off because it carries a question only you can answer), #766 (an automatic check for the Refresh-button problem, because it has now been counted by hand three times and been wrong three times), and #756 is still in flight. 15 cards have had no comment, close or commit for seven days - up one, and still mostly parked cleanup rather than work anyone is avoiding. NEXT UP is EMPTY and nothing is on your desk."
-    },
-    {
-      "id": "review-never-started-764",
-      "severity": "warning",
-      "state": "resolved",
-      "title": "Your automatic reviewer did not start on a money change tonight - and that is not the same as failing it",
-      "detail": "RESOLVED. The review started on the merged head and returned a pass; the change is merged and live. The cause is now named rather than mysterious: GitHub creates no checks at all for a branch that has drifted out of date with main, so the request for a review was made into thin air. Merging main in first is what fixed it."
-    },
-    {
-      "id": "queue-shape-0910h-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 58 open, 14 nobody has looked at in a week - three closed tonight, three filed",
-      "detail": "58 cards open. Closed tonight: #749 (your fangs complaint), #747 (the Blocked IPs list), and #35 - your Socket card, on your 'A'. Filed: #759 (three more staff lists that ignore the Refresh button above them, found by sweeping for siblings of #747), #762 (the Socket proof above), and #756 rode in from last night. 14 cards have had no comment, close or commit for seven days - unchanged, and still mostly parked cleanup rather than work anyone is avoiding. NEXT UP is now EMPTY: #35 was the last card you had ordered, and it is done."
-    },
-    {
-      "id": "socket-never-refused-762",
-      "severity": "info",
-      "state": "open",
-      "title": "Socket now blocks a merge on your word - but it has never once said no, and that is unproven",
-      "detail": "You chose A, so Socket's supply-chain verdict now stops a merge. What is measured: it posts a verdict on every change (four out of four since you installed it), and our merge tool refuses to merge past a red one (driven, and deliberately broken to prove the refusal fires). What is NOT measured: whether Socket ever GOES red. It has been green four times out of four, so we have a control that reacts correctly to a refusal nobody has seen it make. This project has four recorded cases of a safety net that was installed and never actually connected, so it is written down rather than assumed. Proving it needs one throwaway change that adds a package Socket should object to - not a dangerous one, just one with a real alert - and then reading its verdict. Filed as #762; nothing is waiting on you."
-    },
-    {
-      "id": "queue-shape-0910g-fable",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 59 open, 14 nobody has looked at in a week - your #711 closed, one filed",
-      "detail": "59 cards open: #711 (the upgrade-credits money bug) closed tonight with its fix deployed, and #756 filed from its review (small: a finally-failed plan change's invoice should be cancelled on Stripe's side too, so it cannot take money after the credits are cancelled). 14 cards have had no comment, close, reopen or commit for seven days - unchanged; they are mostly parked lost-and-found and cleanup items, not work anyone is avoiding. NEXT UP now holds only #35 (Socket.dev), which waits on your answer to the three options already on your desk."
-    },
-    {
-      "id": "queue-shape-0910f-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 59 open, 14 nobody has looked at in a week - one closed tonight, one filed",
-      "detail": "59 cards open, up one: #741 closed and #743 filed from it, plus one from elsewhere. 14 have had no comment, close, reopen or commit for seven days - unchanged from last night, and the oldest is 15 days. Nothing is waiting on you, nothing is marked urgent, and one card is held for a Fable review (#711, the upgrade credit-grant bug). The shape is steady rather than improving: the 14 stale ones are mostly old lost-and-found and knip items that are parked or need a decision, not work anyone is avoiding."
-    },
-    {
-      "id": "queue-shape-0910e-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 58 open, 14 nobody has looked at in a week - two closed tonight, one filed",
-      "detail": "58 cards open. 14 have had no comment, no close and no code near them for seven days, and the oldest is 15 days - both numbers down from last night, because two of the stale ones were the work tonight.\n\nNothing is waiting on you except the one word on the fangs frames, which is unchanged from three nights ago. NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight: #697 advanced a file and #536 closed. One new card filed (#741) - a check of the same kind as tonight's, on someone else's file, goes red at random when the machine is busy. That matters more than it sounds: a check that cries wolf is a check people learn to ignore, and these particular ones are what stop a price, a limit or a sentence being written down twice.\n\nThe shape of what is left is the same as the last three nights and worth repeating once: of the small jobs on the board, most end in a decision only you can make - how something should look, how fast something should refresh, which drawing to use. The team is not allowed to answer those."
-    },
-    {
-      "id": "queue-shape-0910d-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 62 open, 17 nobody has looked at in a week - two closed tonight, none filed",
-      "detail": "62 cards open. 17 have had no comment, no close and no code near them for seven days - the same 17 as last night, and the oldest is 15 days.\n\nNothing is waiting on you except the one word on the fangs frames, which is unchanged. NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight: #419 and #600 both built, verified and closed. Nothing new was filed, because nothing new was found that a card did not already cover.\n\nThe same shape as the last two nights, said once more because it is the honest read: of the small jobs left on the board, most end in a decision only you can make - four of the eight small fixes are questions about how something should look or how fast something should refresh, and the team is not allowed to answer those for you."
-    },
-    {
-      "id": "queue-shape-0910c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 63 open, 17 nobody has looked at in a week - two closed tonight, one filed",
-      "detail": "63 cards open. 17 have had no comment, no close and no code near them for seven days - that figure has not moved this week, and the oldest is 15 days.\n\nNothing is waiting on you. NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue - the next is due in two days.\n\nTonight: #733 and #728 both fixed, merged and closed, and #737 filed from the second one. The shape worth saying plainly is the same as last night's: of the small jobs left on the board, most end in a decision only you can make. That is not a complaint - it is what an idle queue looks like when the team is not allowed to invent work."
-    },
-    {
-      "id": "queue-shape-0910-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 62 open, 15 nobody has looked at in a week - two more closed tonight",
-      "detail": "62 cards open, 15 with no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight closed #718 (your ruling) and #585. Nothing new was filed.\n\nThe standing note from the last eight nights still holds, and it is the honest shape of the board: of the small fixes left, seven of nine end in a decision that is yours. The same is now true of the process list - the next cards in line, #524 and #523, each say in their own body that they wait on your word. Tonight's two both came from you, which is why there was plenty to do. When your replies run out, the work that is left is mostly work that needs you."
-    },
-    {
-      "id": "queue-shape-0909d-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 65 open, 15 nobody has looked at in a week - two closed tonight, one written",
-      "detail": "65 cards open, 15 with no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, no card carries urgent, and none of the four check-up rounds is overdue.\n\nTonight closed #472 and #329 and wrote one new card (#718), which asks you a single question when you have a moment - see it below.\n\nThe standing note from the last six nights holds and tonight tightened it: of the nine small fixes left, seven end in a decision that is yours rather than work a shift can do. One of them, #26, turned out not to be a small fix at all - its own design document says it needs a paid measurement, a database change and your word on a number - so it has been taken off that list with the reasoning written on the card. Each night was spending twenty minutes re-reading it to reach the same answer."
-    },
-    {
-      "id": "queue-shape-0909c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 66 open, 17 nobody has looked at in a week - two closed tonight, none written",
-      "detail": "66 cards open, 17 with no comment, no close and no code near them for seven days. That number went up from 14 without anything getting worse: it counts real engagement only, so cards simply age into it.\n\nNothing is waiting on you: NEXT UP is empty, nothing carries urgent, and none of the four check-up rounds is overdue.\n\nTonight closed two small fixes (#705 and #703) and wrote no new cards. The standing note from the last five nights holds again, and tonight measured it: of the eleven small fixes on the board, six end in a decision that is yours - which of two things should look the same, whether a label or a refresh rate should move, whether a glyph is right - rather than in work a shift can do on its own. The one open bug, #711, is a money-path design and is Fable's when it is taken."
-    },
-    {
-      "id": "queue-shape-0909b-foreman",
-      "title": "The queue: 71 open, 14 nobody has looked at in a week - one closed, two new ones written",
-      "severity": "info",
-      "state": "resolved",
-      "detail": "71 cards open, 14 with no comment, no close and no code near them for seven days.\n\nNothing is waiting on you: NEXT UP is empty, nothing carries urgent, your desk is clear, and none of the four check-up rounds is overdue.\n\nTonight's work closed one file of a bigger clean-up (#697 stays open - eleven more files) and wrote two new cards, both found by the reviewer rather than invented: #699, the one line in the browser that decides whether a non-staff visitor sees the moderator screen, which nothing tests; and #700, two staff screens that hand back a database row wholesale and are safe only because a different file happens to trim it first. Neither is a live problem today and both are written down so they cannot become one quietly.\n\nThe standing note holds for a fifth night: the open bugs and the oldest small fixes now mostly end in a decision that is yours rather than in work a shift can do on its own."
-    },
-    {
-      "id": "wrong-numbers-in-tests-681",
-      "title": "Four things our own checks were saying about your product were simply not true - and not one of them could ever have gone off",
-      "severity": "info",
-      "state": "open",
-      "detail": "The check file for the change-request road (a moderator asking an admin to refund credits, suspend someone or block an address) had four statements in it that disagree with what the product actually does. It said the product accepts eight kinds of request; it accepts nine. It said five of them need Slack sign-off; six do. It listed five internal action names where there are six. And it said the Slack card an admin reads carries a 'Credit Reason' line - the product has never sent one.\n\nNone of these was a bug you could hit. The point is why they survived: every one of those checks wrote its own list down and then checked its own list, so nothing in the product had to be consulted and nothing could disagree. Two of them had been wrong for months.\n\nAll four are corrected to read the product's own declarations, so the next time one drifts, something goes red. Nothing here changed behaviour - the product was right and its checks were wrong, which is the direction we would rather find."
-    },
-    {
-      "id": "queue-shape-0909-foreman",
-      "title": "The queue: 69 open, 14 nobody has looked at in a week - two closed tonight, one new one written",
-      "severity": "info",
-      "state": "resolved",
-      "detail": "69 cards open, 14 with no comment, no close and no code near them for seven days. Two closed tonight (#328 and #681) and one written (#697, which came out of tonight's work).\n\nNothing is waiting on you: NEXT UP is empty, nothing carries urgent, and none of the four check-up rounds is overdue.\n\nThe standing note from the last four nights still holds and is now measured on a third band: the oldest small fixes read the same way the bugs do - several of them end in a decision that is yours (which of two things should look the same, whether a label or a poll rate should move) rather than in work a shift can do. That is not a complaint about the switches; it is what the bottom of the queue actually is."
-    },
-    {
-      "id": "queue-shape-0908g-foreman",
-      "title": "The queue: 78 open, 15 nobody has looked at in a week - and tonight the small-fix band read the same way the bug band has",
-      "severity": "info",
-      "state": "resolved",
-      "detail": "78 cards open, 15 with no comment, no close and no code near them for seven days. Steady rather than growing. One closed tonight (#679) and one written (#681).\n\nThe part worth your attention: the last three nights reported that your Bugs switch overstates what a shift can actually pick up. Tonight the Small fixes band was read the same way, card by card at the code, and it reads similarly - of the oldest ones, several end in a decision that is yours rather than a shift's: which of two identical drawings changes and to what (#394), whether a rule sits under every row or only under a total (#419), whether a control that says 30 seconds should change its words or its speed (#455), and one that says in its own body that nothing moves until you answer (#276). Those are not stuck; they are correctly waiting.\n\nThis is the same measurement #663 is about. It is not a complaint - a queue full of decisions is what a queue looks like when the buildable work has been built. It matters only because the number under your switch counts cards, and a shift can only take some of them."
-    },
-    {
-      "id": "nights-blind-to-backlog-675",
-      "title": "Your nights went quiet for 90 minutes today with 57 jobs waiting - fixed",
-      "detail": "You asked why no shift had run for two hours. Here is the honest answer. Until today the thing that decides whether to start a night shift watched two lists: anything you marked urgent, and your NEXT UP queue. All weekend your NEXT UP queue was what kept the nights ticking over - every ninety minutes a shift woke up, saw work on your list, and got on with something from the background switches instead. At 12:55 today your last NEXT UP card was closed, and NEXT UP went empty for the first time since the team was built. The heartbeat stopped with it. Your seven background switches were all ON with 57 jobs sitting under them, and nothing that starts a shift was looking at them. It would have stayed asleep until an eight-hour safety timer. Fixed tonight: the starter now reads your switch panel directly. Driven against the real thing this evening, it counts Bugs 8, Performance 5, Housekeeping 11, Process 14, Small fixes 12, Casting upkeep 7 and says start a shift. Your master switch still turns everything off, and anything you mark urgent or put in NEXT UP still comes first.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "main-red-blocked-every-merge-0908",
-      "title": "Nothing could be merged tonight until this was fixed, and an empty NEXT UP was the cause",
-      "detail": "A knock-on from the same emptiness. One of our own safety checks built its test case by copying the first row out of your NEXT UP list. With that list empty it had nothing to copy, so the check failed - not because anything was actually wrong, but because it had run out of material. A failing check blocks every merge, so the team could not have shipped anything tonight. Found by tonight's own PR and fixed in it: both checks now build their own test material instead of borrowing yours, so an empty list is just an empty list. The same shape was one test above, waiting to do this again the first evening with nothing in flight; that one is converted too.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "queue-shape-0908f-foreman",
-      "title": "The queue: 77 open, 15 nobody has looked at in a week - and your Bugs switch is overstating itself for a third night",
-      "detail": "77 cards open, 15 with no comment, no close and no code near them for seven days. Steady rather than growing. The part worth your attention is the same one as the last two nights, and tonight it was checked card by card rather than taken on trust: your Bugs switch says 7, and six of those seven end in a decision only you can make - a price question, a product call, or a change to what the casting engine is told. One was takeable and it was taken. So the honest number of bug cards a shift can pick up on its own is about one, not seven. Card #663 is exactly this gap, and it has now shown up three nights running rather than once. Two new cards were written tonight rather than worked: your sign-in page is still hard light (116 hard-coded colours, the exact pattern the staff pages were rebuilt to retire) and needs one word from you on whether it should follow the theme at all; and the same staff labels are typed three more times on the server, where nothing reads them today.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "queue-shape-0908d-foreman",
-      "state": "resolved",
-      "title": "The queue: 82 open, two cards moved tonight, and 14 nobody has re-read in a week",
-      "severity": "info",
-      "detail": "82 open. Two changes merged tonight against one card (#642, which stays open - seven of its thirteen items are done). One new card filed, and it is named in the second entry above.\n\n14 cards have had no comment, no close and no commit against them for seven days - the same 14 as last night, and none of them is waiting on you.\n\nTHE SHAPE, said plainly: the bug list is now mostly cards whose remaining work is a DECISION rather than a change. That is not a stale queue - four of them were re-read against the actual code again tonight and every earlier sizing held. Three of those decisions you answered while this shift was running, and they are recorded on their cards."
-    },
-    {
-      "id": "temp-leftovers-654",
-      "state": "resolved",
-      "title": "The leftover copies of the app are swept and the leak that made them is fixed",
-      "severity": "info",
-      "detail": "Something you can actually see on your own computer, so it is here rather than only in the queue.\n\nWHAT IT IS. Several of the team's checks work by making a throwaway copy of the whole app in Windows' temporary folder, testing against it, then deleting it. When Windows refuses that delete - which it does fairly often, because something is still holding the folder for a moment - nothing tries again. Each abandoned copy is about 275 MB.\n\nWHAT WAS MEASURED. 32 of them were standing there tonight: 7.8 GB. For scale, the team's evidence folder that already has its own card is 6.5 GB, so this was the larger of the two piles and unlike that one none of it is worth keeping.\n\nWHAT HAPPENED. Cleared tonight, by hand. THE CODE IS UNCHANGED, so it will build up again at roughly one abandoned copy in every fifteen.\n\nWHY IT WAS NOT JUST FIXED ON THE SPOT. The obvious repair - delete the folder harder - is the exact thing that piece of code carries a warning against, because those copies contain a shortcut pointing back at the real app, and deleting through it can destroy the working copy on this machine. It needs a check that the shortcut is gone first, which is a small careful change rather than a one-liner, so it is #654 with the measurement in it."
-    },
-    {
-      "id": "queue-shape-0908b-foreman",
-      "state": "resolved",
-      "title": "The queue: 82 open, one closed tonight and two filed, and 14 nobody has re-read in a week",
-      "severity": "info",
-      "detail": "82 open - the same number as last night, because one card closed and two were filed from what turned up while working it.\n\nWHAT CLOSED: the random test failure (#652). What was filed: the leftover copies eating your disk (7.8 GB, cleared tonight, will come back until the code changes), and a question about a whole family of the team's own checks that may be looking at less than they claim to. The second one is filed honestly as a MEASUREMENT and not as a list of faults - the sweep counted 71 candidates and could not tell a real one from a false alarm, so it says so rather than handing anyone 71 things to fix.\n\nWHAT IS ROTTING: 14 cards have had no comment, no close and no code touch them for a week - one more than last night, and it moved because a card crossed the seven-day line rather than because anything got worse. None is a customer fault and none is waiting on you.\n\nSTILL ONLY ONE THING NEEDS YOU: #543, and it waits on a measurement due 12 September, not on a decision."
-    },
-    {
-      "id": "queue-shape-0908-foreman",
-      "state": "resolved",
-      "title": "The queue: 81 open, two closed tonight, and 13 nobody has re-read in a week",
-      "severity": "info",
-      "detail": "81 open, down two. Two closed tonight - the random test failures (#548) and the five wrong signposts (#647) - and one new one filed from what turned up while doing them.\n\nWHAT IS ROTTING: 13 cards have had no comment, no close and no code touch them for a week. The same 13 as last night; nothing got worse and nothing got better, because tonight's work was on two of the newest cards rather than the oldest. None of them is a customer fault and none is waiting on you.\n\nThe one new card is a single test that fails about one run in three - not the fault fixed tonight, a different one wearing the same coat. It wants a small decision about what that test should promise, and I have written the three options and a recommendation into it rather than picking one quietly.\n\nALSO WORTH KNOWING, because it had been true for eight days without anybody noticing: a leftover file from an experiment back in August was making the whole test suite fail on every shift's machine - not on the servers, only locally, which is why nothing ever complained. A shift that cannot trust a clean starting point stops trusting the tests. Removed.\n\nBugs sitting open: 11. Nothing on this list is waiting on you except the switch question below."
-    },
-    {
-      "id": "queue-shape-0907f-foreman",
-      "state": "resolved",
-      "title": "The queue: 82 open, three closed tonight, and 13 nobody has re-read in a week",
-      "detail": "82 open, down one. Three closed tonight - the dock's Sign wording (#556), the REFUNDED tag (#553) and the card-state fix you ruled on an hour ago (#354) - and two new ones filed from sweeps, which is why the total only fell by one.\n\nWHAT IS ROTTING: 13 cards have had no comment, no close and no code touch them for a week. That figure is measured from what actually happened to a card, not from when it was last labelled - the old way of counting reset itself whenever a batch of labels was applied, and told you the debt had cleared when it had not.\n\nThe first new one is a small honest finding: five places in the code point a reader at a safety test that does not exist under that name. Nothing is broken by it, but a reader who follows a pointer and finds nothing concludes the safety net was never built - which is how this project has twice re-filed a live control as a dead one. Two of the five are about keeping your customers' casting recipes out of logs, so that one gets read first.\n\nThe second is the new card-state's own remainder: it is on your desk correctly, but three of the crew's own watchers do not yet watch it as closely as they watch an ordinary card. Nothing you would see - it is the crew keeping its own instruments honest.\n\nBugs sitting open: 12. Nothing on this list is waiting on you except the switch question above.",
-      "severity": "info"
-    },
-    {
-      "id": "queue-shape-0907e-foreman",
-      "title": "The queue: 84 open - and the 'nobody has looked at this' number was wrong, so tonight it goes from 1 to 14",
-      "severity": "info",
-      "state": "resolved",
-      "detail": "84 open, down one. Two closed tonight (#345 and #516, both the team's own tooling), three filed (#640, #642, and #638 from last night).\n\nThe number worth your attention is the rotting one, and it is worth it because it was wrong. This line has been saying ONE. Read properly it is FOURTEEN. Nothing got worse tonight - the count was resetting itself whenever a tidy-up put labels on a batch of jobs, so it kept reporting a backlog that had cleared when it had not. That is fixed and the fix is in the list above.\n\nWhat the fourteen actually are: old design cards and cleanup notes, the oldest thirteen days. None of them is a customer fault and none of them is waiting on you. I am not proposing to work them - that would be the team picking its own next feature, which it does not do. It is here so the number on your page is true.\n\nNEXT UP is still the single card waiting on your word about the shift-speed work, and its own answer is pinned to the speed check-up on 12 September. Bugs are 13."
-    },
-    {
-      "id": "queue-shape-0907d-foreman",
-      "title": "The queue: 85 open, nothing rotting that matters, and still only your one verdict waiting",
-      "severity": "info",
-      "state": "resolved",
-      "detail": "Steady at 85. One closed tonight (#624 - the plan-panel number, yours) and one new one filed (#635, below). NEXT UP is still the single card waiting on your word about the shift-speed work, and its own answer is pinned to the speed check-up on 12 September, so nothing is stuck behind you.\n\nRotting - open a week and never re-read - is THREE, down from a peak of 27 last week. Bugs are 13.\n\nThe new card is housekeeping and it came out of tonight's work rather than from a sweep: two internal data endpoints now have nothing calling them at all, because tonight's change was the last thing that used them. One of them is the endpoint behind three of your billing-number faults. Nobody is affected either way - they are filed rather than deleted on the spot, because deleting things is the one kind of change a test cannot give back."
-    },
-    {
-      "id": "queue-shape-0907c-foreman",
-      "title": "The queue: 85 open, and nothing is waiting on you except one verdict",
-      "severity": "info",
-      "state": "resolved",
-      "detail": "Four closed tonight (#625, #354's first half, #630, and #621 - yours), one new one filed and closed the same shift. NEXT UP still holds only #543, which is waiting on your word about two numbers rather than on any work; those numbers come from the next performance check-up on 12 September, as you asked.\n\nNothing is rotting: no open card has sat a week without being re-read. Your other ruling tonight - (a) on the spend figure - is recorded on its card as approved and not urgent, sized at half a shift, so a future night picks it up without asking you again."
-    },
-    {
-      "id": "queue-shape-0907b-foreman",
-      "title": "The queue: 87 open, NEXT UP now clear of everything but your verdict",
-      "severity": "info",
-      "state": "resolved",
-      "detail": "Steady at 87. Your plan-card lines are built and closed tonight (#404), so the only thing left in NEXT UP is the shift-process card waiting on your verdict (#543). Nothing carries the urgent label.\n\nTwo cards were measured rather than built, deliberately. The stale switch-counts card (#618, your question this morning about the Bugs number still reading 18) is real and its diagnosis is right, but it is bigger than it looks - the counter is an eight-hundred-line script that exports nothing, so wiring it into the end of a shift is a refactor rather than a one-liner, and half of that card is a question for you about what the number should MEAN. It has been sized on the card so the next shift does not start it thinking it is small. In the meantime this shift ran the counter at both ends, so the figure you see now reflects what tonight actually closed.\n\nOne new card was filed (#620): the safety prompt you had added last night to the six commands that can destroy work covers \"git merge\" but not \"git pull\", which can do the same things. Found by walking into it - the end-of-shift step needs a merge, the prompt correctly stopped it, and there is nobody to answer a prompt at 8am. The recommendation is on the card and it is not simply \"add another line\", because that would leave shifts unable to finish."
-    },
-    {
-      "id": "sweep-clock-broken-526",
-      "title": "The scratch-file clock can tell what is old again",
-      "severity": "warning",
-      "state": "resolved",
-      "detail": "Found by tonight's tidy-up, and it is a workshop problem rather than an app one — no customer is affected and nothing is at risk. The team deletes its own leftover scratch once it is more than a week old, judged by the file's last-modified date. On 30 August, in a single hour, something rewrote that date on 270 of 307 files. They all now look brand new, so the sweep can never fire and the pile only grows. It was found because the previous tidy-up run had deliberately written the real dates down beforehand — otherwise there would have been nothing to compare against. Deliberately NOT patched over tonight: what should replace the date is a real decision, and a lone tidy-up shift changing a deletion rule on its own is exactly what your 'nothing gets deleted quietly' rule is there to stop. The recommendation on the card is to date a file by the piece of work it was written for, since that is saved in the record and cannot be rewritten."
-    },
-    {
-      "id": "patrols-overdue-505",
-      "title": "All four of the team's check-ups are up to date",
-      "severity": "warning",
-      "state": "resolved",
-      "detail": "Nothing needs doing from you. The team runs four regular check-ups: tidying, security, speed, and a look back at its own week. All three that were overdue have now run — the security pass finished last night — and the clock reads no seat overdue for the first time since the dates started being counted properly. The dates come from each check-up's own logbook rather than being typed anywhere, so this cannot quietly go stale again."
-    },
-    {
-      "id": "ladder-rung-n4b-499",
-      "title": "Your new Voice rung has a place on the ladder now",
-      "severity": "warning",
-      "state": "resolved",
-      "detail": "Fixed tonight. Voice sits on the ladder as N4b, directly after Takes, exactly where you put it — so its card draws under a rung instead of under \"Rung not yet named\". The governing plan document has the rung too, with the reason for the odd number written down: it is N4b rather than a renumber, so every existing reference to N5, N6, N7 and N8 stays true instead of quietly pointing at the wrong thing. What this does NOT do is start building it — nothing about a voice exists yet, and its design is still #499 waiting its turn. This is the ladder agreeing with what you said."
-    },
-    {
-      "id": "shared-tree-block-479",
-      "title": "Your page was three editions behind — it is not any more",
-      "severity": "warning",
-      "state": "resolved",
-      "detail": "Editions 229, 230 and 231 all reached this page: it was reading 231 when this shift started. Two uncommitted files in the shared folder had been holding the nightly publish, and your own session committed them at 21:38 last night, after which the publish went through. Nothing was lost — the editions were written and waiting, not missing. The card stays open (#479) because the underlying shape can happen again: this computer's project folder is shared between your sessions and the team's, and the publish ceremony correctly refuses to run while anything in it is half-finished. That refusal is right; what needs a better answer is how a shift notices sooner."
-    },
-    {
-      "id": "billing-return-domain-467",
-      "title": "A paying customer is sent to a web address we do not run, the second their payment goes through",
-      "severity": "warning",
-      "state": "open",
-      "detail": "Found by the automatic code review on tonight's change, then checked against the live service. When somebody finishes paying, Stripe sends them back to https://drape.app — and our production site is not drape.app. It is a THIRD name: not drape.ai (the old one you are retiring) and not klieglabs.com (the live one). It appears nowhere else in the product as a real address. The same name is used for the 'manage my subscription' return. NOT FIXED tonight, deliberately: this is the money path, and two things need settling first — whether drape.app resolves to anything at all, and whether any real checkout has ever hit it. Card #467 has both, and says plainly not to fix it from reasoning alone."
-    },
-    {
-      "id": "billing-491-percent-387",
-      "title": "Your Billing pane has been telling you \"491% of this month's allowance left\" - found by sweeping for the fault you reported",
-      "detail": "You reported one wrong number. The rule here is that a bug found once is a pattern until proven otherwise, so I went looking for the same mistake elsewhere - a figure measured against a monthly cycle the product does not actually run.\n\nIt was on the Billing pane twice, and the second one is worse than the one you reported. The little bar under CREDITS REMAINING is capped at full, but the sentence beside it is not - so with 24,535 credits against a nominal 5,000 \"allowance\", your own Billing pane reads \"491% of this month's allowance left\". The plan card had the same shape: \"5,000 credits/mo\" for credits you are given once.\n\nBoth are gone. Where you have a real subscription with a real renewal date, both lines come back and are true. Nothing changed for a paying account.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "credits-used-zero-387",
-      "title": "The Usage zero you reported is fixed - and the number was never wrong, the window was",
-      "detail": "Your words: \"its also showing that i've used no credits\".\n\nRead against your real spend rows before anything was changed: your last paid roll was 30 August, the month rolled over on 1 September, and the pane was summing \"this month\". The zero was arithmetically correct and completely useless.\n\nTwo real faults sat underneath it. Your account has no billing period, so the pane invented a calendar month to measure against; and the \"5,000 this month\" it compared you to does not renew at all - a free account is given its credits once and nothing ever tops them up. The pane now uses your real billing period where there is one, and \"the last 30 days\" where there is not, with what you have left instead of a fictional allowance.\n\nFixed and deployed with this edition. Frames are on your desk below.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "quiet-detector-negation-360",
-      "title": "Your nights were being counted as idle when they were not — a shift that worked was helping to stop the team",
-      "detail": "Your nights stop themselves after three shifts in a row report that there was nothing to do. That is the mechanism you asked for, so the team stops spending money to conclude nothing. It was reading the reports wrongly. A shift last night was titled \"NOT a quiet night\" and opened \"This shift had work\"; it had closed one card and filed another. The check looked for the words \"quiet night\" anywhere near the top and found them — inside the denial. So a working shift was counted as an idle one, and the note telling you three shifts had been quiet named a report whose own headline said the opposite. Fixed tonight: a shift now has to DECLARE it, not merely mention it. Quoting the phrase, denying it, or writing about the mechanism cannot trip it any more. Checked against all 155 shift reports ever written: eleven change verdict, and three of those were this exact mistake — including a second one from Sunday that nobody had spotted. It fails in the safe direction: if a genuinely quiet shift forgets to declare itself, the team keeps working rather than stopping.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "stale-desk-advice-344",
-      "title": "Your desk asked you to run a command you had already run — corrected tonight, and it is the second time",
-      "detail": "Filed and closed as #344 on 2 September; nothing is outstanding on your page.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\nThe card about naming your queue's cards sat at the top of your desk telling you to run a database command. You ran it on Monday morning, 31 August. The work was merged, deployed and working the whole time the card was asking for it. Nothing was broken and nothing was at risk here — the cost is your attention, which is the scarce thing. What makes it worth a line rather than a quiet fix is that it is the same shape as the near miss on 31 August, where a card's recommendation told you to delete three Casts four hours after its own notes recorded that two of them were ones you wanted kept. Both cards were correct in their bodies and stale in the one sentence you actually read. The four automatic checks on your page all ask whether a card's STATE is out of date; none asks whether its ADVICE is. That gap is written up as #344 and the weekly review picks it up next.",
-      "severity": "warning",
-      "state": "resolved"
-    },
-    {
-      "id": "invite-label-350",
-      "title": "Fixed — the Invite label is the same size as Home and Casting now",
-      "detail": "You reported it at 21:57 last night; it is merged and on your rail. It was rendering at 16px — the page's ordinary text size — against 9.5px for every destination above it. Now 9.5px, measured in the browser rather than read off the stylesheet, in both themes and on the casting page too. Your fix was right and your diagnosis was one step off, which is the only part worth your attention: the nav labels were ALREADY 9.5px, so Invite was not one step too big — it sits outside the nav item that carries the size and was inheriting the page instead. That is why the size went on the label's own class rather than on the Invite rule: the next label put outside a nav item cannot repeat it. Frames below.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "nights-stopped-silently-331",
-      "title": "Your nights stopped for about two hours last night and nothing told anyone — you found it yourself",
-      "detail": "Between 11:25 and 11:45 yesterday morning, four shifts launched and died in the same second they started. Each one exited with a success code and an empty log, so the runner counted every one as a good shift, waited ten minutes, and launched another into the same wall. Four of your own ordered cards sat untouched. You spotted it by noticing two close-stamps ten minutes apart; no instrument would ever have told you. The cause was found and fixed by the relay: the standing orders had grown past the length Windows allows on a command line, so the shift was never actually starting. That is repaired — the orders are handed over on a different channel with no limit at all. What landed tonight is the part that stops it being SILENT next time, which is the half that matters. Three things now hold. If the standing orders are ever unreadable, missing, truncated or absurdly long, the nights refuse to start and say so with the number, instead of launching into nothing. If two shifts in a row produce nothing at all, the nights stop themselves and leave you a note, then restart on their own the moment anything real happens. And when a launch fails outright, the reason is written down beside the empty log rather than lost with it. One more was found while sweeping for others like it, and it was worse than the original: if the small gatekeeper that decides whether to start a shift had ever gone missing or broken, the nights would have gone quiet FOREVER — no shifts, no notes, no stamps, nothing to notice at all. That is fixed too. There is no pull request for any of this and that is not an omission: these files run the night shifts and deliberately sit outside the codebase, so no automatic test can ever see them. In their place there is a script that drives the real runner against a sandbox — 36 checks, and it includes a deliberate sabotage proving the checks would actually fail if the guard stopped working.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "cast-will-not-delete-308",
-      "title": "Your Cast still will not delete — and the reason we had written down was the wrong one",
-      "detail": "Fixed on 31 August (#308) — the Cast deleted, and the same fault was quietly blocking two others.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\nThis is the thing you asked about, and it is not fixed. What IS fixed tonight is a different fault that we had blamed on the same line.\n\nYour Cast \"yejjjee\" has nine accepted-candidate pictures attached. Before the deletion will let go of a picture it checks the picture's filename against a pattern. Those nine are filed under a folder called \"candidates\"; the check insists they be under \"plates\". They are yours, they belong to that Cast, and the studio itself filed them that way. Twenty-seven other Casts deleted cleanly the same morning — yours is the first you have tried that has one of these pictures.\n\nI did not fix it because two different parts of the studio file the same kind of picture under two different folder names, so no single answer is right for both — and this is the code that deletes permanently. Getting it wrong means either deleting pictures that should have been kept or keeping ones that should have gone. That is a judgement on a destructive path, so it waits for the Fable seat and your allowance.\n\nOne consequence worth having in front of you: Library is the only door left for removing a legacy Cast, so it must NOT be stubbed out before this lands, or your three old Casts are stranded. Written up with the measurements as #308.",
-      "severity": "warning",
-      "state": "resolved"
-    },
-    {
-      "id": "deletion-door-name-collision-274",
-      "title": "A tidying-up check has been reading two different things as one for months, and nobody could have seen it",
-      "detail": "Carded as #274 and sitting under your Housekeeping switch. It is maintenance, not a problem.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\nNot urgent and nothing is broken for a customer. It is worth two minutes because of what it means rather than what it costs.\n\nWe have a check that stops anyone deleting code without a written decision about it. Removing the word \"Klieg\" from the top bar tonight made that check go red — and the thing it named was not the thing I had changed. There are TWO pieces of code called BRAND_NAME: the one in the new interface, and an old one buried in the legacy casting engine that nothing has used for a very long time. The check looks them up by NAME ONLY, so for as long as the new one was in use it was vouching for the old one as well.\n\nSo the honest summary is: a check we rely on to tell us what is dead can report \"all clear\" for something nobody has touched in months, purely because something else shares its name. Nothing was deleted; both are written down with reasons. Fixing the check properly means re-taking every reading it has ever produced, which is a night of its own — filed as #274 rather than half-done tonight.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "gate-review-arm-broken-219",
-      "title": "Your Fable allowance is still out - about five days now, and tonight's red tick was NOT one of them",
-      "detail": "The reviewer is back and #219 closed on your word. Proven rather than assumed: it ran on both of tonight's changes and returned full written verdicts, one of which found a real miss of mine.\n\n— resolved 2 September (#439). The original reading is kept below so the history stays readable.\n\nStill down. Every pull request since has merged on the machine gate alone, which your standing rule allows for a change that touches no money and no login path.\n\nTONIGHT IS DIFFERENT AND WORTH ONE PARAGRAPH, because the page would otherwise show you another red tick and you would reasonably read it as another refusal. Tonight's change edits the reviewer's own settings file. The reviewer refuses to run on any change to its own settings - that is a deliberate safety rule on their side, not ours - so our gate deliberately turns the tick RED rather than letting it go green over a review that never happened. I read the action log rather than the tick, and it says in its own words: \"NO VERDICT - the reviewer cannot run on its own change\". The change was reviewed by hand instead and that review is written on the pull request, which is what that rule asks for.\n\nThe thing that is easy to get backwards, and it is why the log gets read every time: a RED review tick does NOT mean the reviewer rejected the change. It means NO REVIEW WAS PRODUCED. A real verdict rides a GREEN tick, as a comment.\n\nOpus is answering fine on the same machine and the same login - it ran tonight's whole shift. It is your Fable 5 allowance specifically, and N1 stays open until it can do the milestone read.",
-      "severity": "warning",
-      "state": "resolved"
-    },
-    {
-      "id": "edition-93-never-served-221",
-      "title": "Last night's briefing was written and never reached your page - and the fact you are reading this is the proof it is fixed",
-      "detail": "Edition 93 was finished and pushed at 10:07 yesterday morning and you never saw it. Railway built the new version perfectly - the build log is clean and the finished image was uploaded at 00:13 - and then the container that was meant to run it never started. It produced not one line of output for twenty-nine minutes and was stopped. The deploy ceremony watched for thirty minutes, refused to report a deploy it had not seen finish, and exited with an error, which is exactly what it is for. It was not our change: the only difference between that version and the one that was running is eleven lines of the briefing file itself. Your studio was never affected - production stayed healthy on the previous build the whole time, no credits, no renders, nothing a customer could touch. The one cost was that a night's journal sat where you could not read it, and the single thing needing your answer was already on the page you could see. Tonight's push carries both editions' news. If this ever happens twice in a row it stops being a stall and becomes an infrastructure problem worth raising.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "rite-refused-index-html-195",
-      "title": "The deploy check refused three nights running over a file that is out of date by design — FIXED",
-      "detail": "Our deploy runs a check that our internal architecture map is up to date. Part of that check compared a generated web page (docs/architecture/index.html) against what the source would produce now — but that page is deliberately excluded from the project's saved files, so it only ever holds whatever the last person to run the generator locally produced. Merge somebody's work, pull it down, and the page is stale immediately and permanently. The check refused; regenerating cleared it while showing no change at all, which is what made it look like a ghost. Diagnosed at the artifacts by the previous shift, fixed here (#195): a freshness verdict is only a finding where there is a saved copy somebody could review. No customer effect at any point — the only cost was shift time, roughly half an hour a night for three nights.",
-      "severity": "info",
-      "state": "resolved"
-    },
-    {
-      "id": "quiet-shifts-deploy-159",
-      "title": "Quiet shifts were deploying — FIXED: the rite now refuses a briefing whose only change is a quiet journal line",
-      "detail": "Two quiet shifts this morning (09:45, 10:23) each ran a full production deploy for one journal line, after the standing orders had said a quiet shift ships nothing. The runner backs off 30 minutes after a quiet shift, and the deploy rite now refuses the quiet edition itself (PR #160) — so the order is a mechanical guard, not a sentence. No customer effect. (issue #159, closed)",
-      "severity": "info",
-      "state": "resolved"
+      "title": "The queue: 53 open, one closed today (your Slack retirement), 15 nobody has looked at in a week",
+      "detail": "#800 closed with PR #802, deployed and read back on production. Filed: nothing new. The rot figure is the timeline reading (queue-rot-read). Next in your ordered queue: #795, held for a Fable shift because it is a design decision on the subscription money roads."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5938,7 +5573,17 @@
     176
   ],
   "nextUp": {
-    "readAt": "2026-09-11T06:11:15.495Z",
-    "items": []
+    "readAt": "2026-09-11T10:30:16.347Z",
+    "items": [
+      {
+        "issueNumber": 795,
+        "title": "Webhook handlers apply the event PAYLOAD with no ordering guard — a redelivered older subscription.updated writes Pro over Ultimate (the class #794 declined to fold, found at the code)",
+        "urgent": false,
+        "held": {
+          "state": "fable",
+          "because": "a DESIGN DECISION — which of the three repairs below (fetch-don't-trust / last-applied-event column / leave it) the subscription roads take. Money path; the re…"
+        }
+      }
+    ]
   }
 }
