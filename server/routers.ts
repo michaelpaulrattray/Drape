@@ -3,7 +3,7 @@
  *
  * Each feature router lives under server/routes/<feature>.ts
  * Admin sub-routers are further split under server/routes/admin/
- * The executeApprovedAdminAction helper lives in server/lib/adminActions.ts
+ * The change-request executors live under server/lib/adminActions/
  */
 import { systemRouter } from "./_core/systemRouter";
 import { router } from "./_core/trpc";

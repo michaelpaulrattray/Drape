@@ -1451,8 +1451,8 @@ export const AUDIT_ACTIONS = {
   CHANGE_REQUEST_CANCELLED: "moderator.change_request_cancelled",
   // An approved sensitive request whose executor threw (#800). Warning
   // severity, so it lands on the admin overview's alerts feed; the request
-  // itself stays `pending_execution` — visibly unsettled, no self-serve
-  // retry, because a retry road is how a refund gets issued twice.
+  // itself stays `pending_execution` — shown as "Outcome unconfirmed", no
+  // self-serve retry, because a retry road is how a refund gets issued twice.
   CHANGE_REQUEST_EXECUTION_FAILED: "admin.change_request_execution_failed",
   
   // Account freeze events (billing investigation)

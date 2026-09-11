@@ -291,7 +291,7 @@ describe("card 415 — the pill is INVALIDATED by the acts that move it", () => 
   */
 
   /** Every client mutation on a procedure that RESOLVES a change request. */
-  const RESOLVING = /trpc\.admin\.(reviewChangeRequest|executeChangeRequestAfterSlack)\.useMutation/;
+  const RESOLVING = /trpc\.admin\.reviewChangeRequest\.useMutation/;
 
   const resolvingFiles = () =>
     sources(CLIENT_SRC).filter(({ text }) => RESOLVING.test(code(text)));

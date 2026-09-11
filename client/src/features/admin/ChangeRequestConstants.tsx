@@ -59,10 +59,12 @@ export const STATUS_CONFIG: Record<string, { label: string; className: string; i
   denied: { label: "Denied", className: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
   cancelled: { label: "Cancelled", className: "bg-gray-100 text-gray-600 border-gray-200", icon: XCircle },
   expired: { label: "Expired", className: "bg-gray-100 text-gray-600 border-gray-200", icon: Clock },
-  // A sensitive request executes inside the approve mutation (#800); this
-  // state survives only when that execution was interrupted or threw, and it
-  // needs a person.
-  pending_execution: { label: "Execution interrupted", className: "bg-purple-50 text-purple-700 border-purple-200", icon: Timer },
+  // A sensitive request executes inside the approve mutation (#800). This
+  // state survives when the execution threw — OR when the action ran and only
+  // the settle write or the process died (a deploy lands mid-request), so the
+  // label must not claim the action did not happen: the outcome is UNKNOWN
+  // and a person checks the record before acting again.
+  pending_execution: { label: "Outcome unconfirmed", className: "bg-purple-50 text-purple-700 border-purple-200", icon: Timer },
 };
 
 export const PRIORITY_CONFIG: Record<string, { label: string; className: string }> = {

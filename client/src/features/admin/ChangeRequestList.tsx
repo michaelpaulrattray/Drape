@@ -117,7 +117,7 @@ export function ChangeRequestList({
         <StatePill
           key="status"
           /* The config label, not the raw enum — `pending_execution` reads
-             "Execution interrupted" since #800, and the raw words would
+             "Outcome unconfirmed" since #800, and the raw words would
              promise a wait that is not happening. */
           label={STATUS_CONFIG[request.status]?.label ?? request.status.replace("_", " ")}
           attention={ATTENTION_STATUS.has(request.status)}
@@ -192,13 +192,15 @@ export function ChangeRequestList({
 
     if (detail.status === "pending_execution") {
       /* The approve mutation records the review, then executes (#800). A
-         request still here means that execution was interrupted or threw —
-         the review notes and the audit log say what happened, and settling
-         it is a person's call, never a retry button (a retry road is how a
-         refund gets issued twice). */
+         request still here means the outcome was never confirmed — the
+         executor threw, OR the action ran and the settle write / process
+         died before recording it (this product deploys with work in
+         flight). The label must not claim the action did not happen: acting
+         again on that belief is how a refund gets issued twice. Settling it
+         is a person's call, never a retry button. */
       actions.push({
-        key: "interrupted",
-        label: "Approved, but execution did not complete — see review notes",
+        key: "unconfirmed",
+        label: "Approved, but the outcome is unconfirmed — check the audit log and Stripe before acting again",
         disabled: true,
       });
     }

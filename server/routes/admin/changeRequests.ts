@@ -83,7 +83,7 @@ export const changeRequestsRouter = router({
         // second write finds the status already moved and refuses. The
         // intermediate `pending_execution` status also means a crash between
         // this write and the executor's own `→ approved` settle leaves the
-        // request visibly unsettled ("execution did not complete") rather
+        // request visibly unsettled ("outcome unconfirmed") rather
         // than silently done or silently lost.
         const result = await updateChangeRequestStatus(input.id, {
           status: "pending_execution",

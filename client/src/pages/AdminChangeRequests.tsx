@@ -95,7 +95,7 @@ export default function AdminChangeRequests() {
     onSuccess: (result: any) => {
       // A sensitive approval executes inside the mutation (#800); an executor
       // failure arrives through onError with the request left visibly
-      // unsettled ("Execution interrupted" in the list).
+      // unsettled ("Outcome unconfirmed" in the list).
       toast.success(result.message);
       setReviewDialogOpen(false);
       setReviewNotes("");
