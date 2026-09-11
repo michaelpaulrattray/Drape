@@ -1,7 +1,7 @@
 {
-  "edition": 350,
-  "updatedAt": "2026-09-11T17:52:29.742Z",
-  "shift": "Night shift — a batch of five, and two of them are real fixes a moderator would feel. YOUR DESK IS CLEAR. WHAT CHANGED FOR YOU: (1) a moderator or admin could freeze a customer's account with a reason of one blank space — the panel button refused it, but the server did not, so the record, the audit log and the customer's email would all carry an empty reason. Fixed on all four freeze/unfreeze roads (PR #818): a blank is refused and surrounding spaces are trimmed before anything is written. (2) If the database write that freezes an account FAILED, the moderator still saw 'Account frozen successfully', the audit log still said the account was frozen by their hand, and the customer still got an email saying so — while the account could still spend. Fixed (PR #819): a failed freeze is refused before the row and the email, exactly as unfreeze already did. HOW THEY WERE FOUND: by rewriting a test file. `accountFreeze.test.ts` had 33 checks and 24 of them could not fail — they asserted rules typed into the test against themselves. Rewritten to drive the real four procedures (PR #814, 34 checks, proven by removing each rule from the product in turn: 15 of 17 removals passed the old file silently). Its sibling `adminFreeze.test.ts` was the same shape end to end and is deleted (PR #815). The reviewer reading #814 spotted both bugs above; they were filed as cards and fixed within the hour. ALSO CLOSED: #655 — 91 directory reads across 77 test files, read one by one: zero defects, so the instrument it proposed is not built. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177.",
+  "edition": 351,
+  "updatedAt": "2026-09-11T19:19:50.459Z",
+  "shift": "Night shift — a batch of four PRs on two cards, all merged. YOUR DESK IS CLEAR. WHAT CHANGED FOR A CUSTOMER: (1) a brief of one blank space could be sent to the casting studio and eight priced candidates would roll off nothing — the brief box already refuses it, but the server did not (PR #823). Now the server refuses it too, before anything is charged; a padded brief is trimmed and the words are untouched. (2) The same blank-passes-as-text hole on the site banner every customer sees, on bug reports to your inbox, on outfit names in the wardrobe, on the waitlist name, on the wardrobe edit instruction and on the old studio's iterate box — all refuse a blank now (PRs #821, #823). WHAT CHANGED FOR STAFF: an admin could suspend an account, change a role or block an IP with a reason of one space, and the record, the audit row and the immutable log all carried a blank (PR #820). Refused now, trimmed before every log, and the three caps read the shared constants both ends. From the review of that PR: unblocking an IP that was never on the list used to write three log rows claiming an unblock that never happened — it now says 'not on the block list' and writes nothing. THE TEST REPAIR (#697): `adminUserManagement.test.ts` had 20 checks and 15 could not fail — they called a fake database helper and read back what they had just typed. Rewritten to drive the four real admin reads (PR #822; proven by removing each rule from the product in turn: all seven removals passed the old file silently). WHAT IS LEFT on #816: two rows only — the credit-adjustment reason (money, goes through Fable) and the sign-up name (auth). YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,12 +128,12 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "52 open, none waiting on you, none urgent. 2 closed tonight (#655, #817), 2 filed; 25 stale."
+        "source": "52 open, none waiting on you, none urgent. 4 PRs merged tonight; 25 stale."
       },
       {
         "label": "Your desk is clear",
         "tone": "good",
-        "source": "Nothing waits on you. Four PRs merged tonight — staff-panel fixes and test repairs, no decisions."
+        "source": "Nothing waits on you. Four PRs merged tonight, no decisions."
       },
       {
         "label": "Check-ups",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T17:52:27.620Z",
+      "readAt": "2026-09-11T19:20:25.159Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,34 @@
   ],
   "pipeline": [
     {
+      "id": "adminusermgmt-driven-697",
+      "title": "adminUserManagement.test.ts drives the four real admin reads — 15 of 20 checks could not fail",
+      "status": "merged",
+      "prNumber": 822,
+      "note": "Five groups of checks called a fake database helper and read back what they had typed; nothing in the product ran. Now 16 checks through the real admin procedures: the user-list filters reach the database by name, the dashboard numbers and one account's audit rows had never been driven at all. Proven by sabotage: seven rules removed from the product in turn, each reddening exactly its check; with the OLD file swapped back in, all seven passed silently."
+    },
+    {
+      "id": "priced-roads-whitespace-816",
+      "title": "A blank brief is refused by the casting studio's server before eight candidates are charged — and on the enhance box, outfit names and the waitlist",
+      "status": "merged",
+      "prNumber": 823,
+      "note": "Found by the reviewer on #821: createRoll, follow and reimagine were the only free-text fields in their file without the trim every neighbour had. The brief box already refuses a blank; the procedure is now the control. Six checks on the production schemas, red on the unfixed product. Only outer spaces move — the customer's words are untouched."
+    },
+    {
+      "id": "wider-whitespace-816",
+      "title": "The site banner, bug reports, change requests, attachment names, the wardrobe edit box and the old iterate box all refuse a blank",
+      "status": "merged",
+      "prNumber": 821,
+      "note": "A banner of one space was a blank strip on every customer's screen; ten spaces reached the admin bug inbox as a report. Eleven driven checks red on the unfixed product, green after. Out of class and said so on the card: the suggestions box's echoed prompt is machine-supplied, not typed."
+    },
+    {
+      "id": "staff-reasons-whitespace-816",
+      "title": "Suspend, role-change and IP-block reasons refuse a blank, are trimmed before every log, and their caps are shared constants read from both ends",
+      "status": "merged",
+      "prNumber": 820,
+      "note": "The remainder of #816 after the freeze roads. Thirteen driven checks. From the review: unblocking an address that matched no row now says 'not on the block list' and writes no log claiming otherwise, and the four schemas refuse an undeclared field. Two rows stay open on #816: the credit-adjustment reason (money) and the sign-up name (auth)."
+    },
+    {
       "id": "freeze-result-817",
       "title": "A failed freeze no longer says it succeeded — no audit row, no email to the customer, an error to the moderator instead",
       "status": "merged",
@@ -5498,11 +5526,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912d-batch",
+      "id": "queue-shape-0912e-batch",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 52 open, two closed tonight (#655, #817), two filed from a review (#816, #817); NEXT UP is empty; nothing waits on you",
-      "detail": "Four PRs merged (#814, #815, #818, #819), all on the staff panel's freeze road; nothing a customer sees changed, though a customer is now protected from a blank-reason or phantom freeze. #816 stays open for its remainder (seven more untrimmed text fields, one of them on a money procedure). 25 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Machinist and Janitor were DUE today by their own clocks and neither was taken — the next shift's clock reader will show them OVERDUE, and an overdue patrol under its switch goes ahead of the category order. Background switches all on; after the patrols the order is Process (#743, #769, #697's remaining files), then Performance, then Housekeeping."
+      "title": "The queue: 52 open, none closed tonight, none filed; NEXT UP is empty; nothing waits on you",
+      "detail": "Four PRs merged (#820, #821, #822, #823) — three on #816's blank-text class (customer and staff roads, including the priced casting roll) and one on #697's test repairs. Nothing a customer must learn; a blank is refused where a person already could not send one. #816 stays open for two rows outside an Opus shift's reach (a money procedure, an auth path). 25 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Machinist and Janitor read DUE today by their own clocks (not overdue) and were not taken — Bugs came first in the category order; the next shift's reader will show them OVERDUE, and an overdue patrol under its switch goes ahead of the category order. After the patrols: Process (#743, #769, #697's remaining files — rollService, packageOrchestrator, refineService), then Performance, then Housekeeping."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5685,7 +5713,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-11T17:52:27.619Z",
+    "readAt": "2026-09-11T19:20:25.158Z",
     "items": []
   }
 }
