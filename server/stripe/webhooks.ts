@@ -38,7 +38,10 @@ import {
   applyPlanChangeSettlement,
   voidPlanChangeSettlement,
 } from "./planChangeSettlement";
-import { voidPendingPlanChangeSettlementsForUser } from "../db";
+import {
+  voidPendingPlanChangeSettlementsForUser,
+  getVoidPlanChangeSettlementInvoiceIdsForUser,
+} from "../db";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { createModuleLogger } from "../logging/logger";
 import { checkEventEnvironment } from "./environmentTag";
@@ -253,8 +256,20 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   const billingInterval =
     stripeInterval === "year" || stripeInterval === "month" ? stripeInterval : null;
 
-  // Update subscription in database
-  await updateUserSubscription(userId, {
+  // Update subscription in database.
+  //
+  // ⚠ THE VERDICT IS READ, NOT DROPPED (#792, the class of #788/#789):
+  // `updateUserSubscription` never throws — a failed write comes back
+  // `{ success: false }` — and a handler that then returns success is ACKed
+  // 200 and recorded as processed, so Stripe never redelivers and the plan or
+  // status change it carried never lands: the customer pays and sees the old
+  // plan until the NEXT event, which may be a month away. This write is the
+  // whole handler and it is one idempotent UPDATE keyed on the user, so
+  // Stripe's ~3 days of redeliveries are exactly the retry it needs. The
+  // no-db arm of the helper is unreachable here — `getDb()` caches, and
+  // `getUserByStripeCustomerId` above already threw on a null db — so the
+  // failure that reaches this line is a transient the retry can clear.
+  const updateResult = await updateUserSubscription(userId, {
     stripeSubscriptionId: subscription.id,
     subscriptionStatus: mapStripeStatus(subscription.status),
     planTier: planTier as PlanTier,
@@ -263,6 +278,15 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
     currentPeriodEnd: new Date(periodEnd * 1000),
     planExpiresAt: new Date(periodEnd * 1000),
   });
+  if (!updateResult.success) {
+    log.error(
+      `[Webhook] Subscription ${subscription.id} for user ${userId} could not be written (${updateResult.error}) — failing the event so Stripe redelivers and the write is retried`,
+    );
+    return {
+      success: false,
+      message: `Subscription update for user ${userId} could not be written — redeliver to retry`,
+    };
+  }
 
   log.info(`[Webhook] Updated subscription for user ${userId}: ${planTier} (${subscription.status})`);
   return { success: true, message: `Updated subscription for user ${userId}` };
@@ -297,8 +321,9 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
   // subscription's pending settlement. Null on record still voids: the
   // voluntary-cancel road this exists for may clear the stored id first.
   const storedSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
+  const isStaleDelivery = !!storedSubscriptionId && storedSubscriptionId !== subscription.id;
   const invoiceVoidsFailed: string[] = [];
-  if (!storedSubscriptionId || storedSubscriptionId === subscription.id) {
+  if (!isStaleDelivery) {
     const voidedInvoiceIds = await voidPendingPlanChangeSettlementsForUser(userId);
     if (voidedInvoiceIds.length > 0) {
       log.info(
@@ -326,32 +351,89 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
       // refuse it if it did. So a void that comes back `failed` is collected
       // here and FAILS THE EVENT below — after the downgrade, which must land
       // on the first attempt — the same way a failed settlement application
-      // fails its event loud. Stripe redelivers for ~3 days, the stale guard
-      // passes (the stored id is null by then, and null voids by design), and
-      // the void-inclusive list above is what makes the retry reach Stripe.
+      // fails its event loud. Stripe redelivers for ~3 days; on the way back
+      // the stored id is null (the downgrade cleared it) and the
+      // void-inclusive list above is what makes the retry reach Stripe — OR
+      // the customer has resubscribed in the meantime, the stored id is the
+      // NEW one, and the retry takes the stale arm below instead.
       for (const invoiceId of voidedInvoiceIds) {
         const verdict = await voidInvoice(invoiceId);
         if (verdict === "failed") invoiceVoidsFailed.push(invoiceId);
       }
     }
   } else {
+    // ⚠ A STALE DELIVERY STILL RETRIES THE INVOICE VOIDS (PR #794 review
+    // finding 1). The WRITER above must not run here — it would void the
+    // new subscription's pending settlement, irreversibly. But the retry
+    // this road exists for is exactly a failed invoice void redelivered
+    // into a window where the customer has resubscribed, and skipping it
+    // left the OLD plan-change invoice payable on the hosted page forever,
+    // against credits its void row will refuse — #756's two-sides-disagree
+    // state, reached through this handler's own redelivery. So the stale arm
+    // reads the rows that are ALREADY void (a read, never a write; a void
+    // row's invoice must never take money whichever subscription it hung
+    // on) and closes each invoice: one status read per row when it has
+    // already succeeded, the real void when it has not.
     log.info(
       `[Webhook] Deleted event for ${subscription.id} but user ${userId}'s subscription on record is ${storedSubscriptionId} — a stale delivery; leaving pending settlements alone`,
     );
+    const alreadyVoidInvoiceIds = await getVoidPlanChangeSettlementInvoiceIdsForUser(userId);
+    for (const invoiceId of alreadyVoidInvoiceIds) {
+      const verdict = await voidInvoice(invoiceId);
+      if (verdict === "failed") invoiceVoidsFailed.push(invoiceId);
+    }
   }
 
-  // Downgrade to free tier
-  await updateUserSubscription(userId, {
-    stripeSubscriptionId: null,
-    subscriptionStatus: "canceled",
-    planTier: "free",
-    billingInterval: null,
-    planExpiresAt: null,
-    currentPeriodStart: null,
-    currentPeriodEnd: null,
-  });
+  // Downgrade to free tier.
+  //
+  // ⚠ UNDER THE SAME STALE GUARD AS THE VOID (#792): a `deleted` event for
+  // an OLD subscription, redelivered after the customer has resubscribed,
+  // used to downgrade the NEW subscription's account to free — the guard
+  // above protected only the settlement rows. It matters more now that a
+  // failed write below FAILS THE EVENT, because that is what makes the
+  // redelivery happen: the first attempt's write did not land, the customer
+  // resubscribes in the meantime, and the retry must find the newer id on
+  // record and leave it alone. Null on record still downgrades (the
+  // voluntary-cancel road may clear the id first), and a same-id retry is one
+  // idempotent UPDATE.
+  //
+  // ⚠ AND ITS VERDICT IS READ, NOT DROPPED: `updateUserSubscription` never
+  // throws, and a downgrade that silently failed left the account reading
+  // paid after the subscription was gone at Stripe — with no further event
+  // ever coming to correct it. A failed write fails the event beside the
+  // failed voids; Stripe redelivers for ~3 days and the retry is the same
+  // UPDATE.
+  let downgradeFailed = false;
+  if (isStaleDelivery) {
+    log.info(
+      `[Webhook] Leaving user ${userId}'s plan alone — the dying subscription ${subscription.id} is not the one on record`,
+    );
+  } else {
+    const downgradeResult = await updateUserSubscription(userId, {
+      stripeSubscriptionId: null,
+      subscriptionStatus: "canceled",
+      planTier: "free",
+      billingInterval: null,
+      planExpiresAt: null,
+      currentPeriodStart: null,
+      currentPeriodEnd: null,
+    });
+    if (downgradeResult.success) {
+      log.info(`[Webhook] Subscription deleted for user ${userId} (was ${previousPlan}), downgraded to free tier`);
+    } else {
+      downgradeFailed = true;
+      log.error(
+        `[Webhook] Subscription deleted for user ${userId} but the downgrade could not be written (${downgradeResult.error}) — failing the event so Stripe redelivers and the downgrade is retried`,
+      );
+    }
+  }
 
-  log.info(`[Webhook] Subscription deleted for user ${userId} (was ${previousPlan}), downgraded to free tier`);
+  if (downgradeFailed) {
+    return {
+      success: false,
+      message: `Subscription deleted for user ${userId}, but the downgrade could not be written — redeliver to retry`,
+    };
+  }
 
   if (invoiceVoidsFailed.length > 0) {
     log.error(
@@ -561,15 +643,41 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
       log.error({ err: cancelErr }, `[Webhook] Failed to cancel subscription ${subscriptionId}:`);
     }
 
-    await updateUserSubscription(userId, {
-      subscriptionStatus: "canceled",
-      planTier: "free",
-      stripeSubscriptionId: null,
-      billingInterval: null,
-      planExpiresAt: null,
-      currentPeriodStart: null,
-      currentPeriodEnd: null,
-    });
+    // ⚠ THE DOWNGRADE'S VERDICT IS READ TOO (#792, the class of #788): a
+    // downgrade that silently failed left the account on its plan after the
+    // card died and the subscription was cancelled at Stripe — nothing after
+    // this event corrects it. And it is UNDER A STALE GUARD, because a failed
+    // write now fails the event and Stripe redelivers for ~3 days: if the
+    // customer has resubscribed by then, the id on record is the NEW one and
+    // the retry must not downgrade it. Null on record still downgrades (a
+    // `deleted` that landed first clears the id, and the retry is then one
+    // idempotent UPDATE). The invoice void, the settlement void and the cancel
+    // above are keyed on THIS invoice and THIS subscription, so they run
+    // either way.
+    const storedSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
+    const isStaleDelivery = !!storedSubscriptionId && storedSubscriptionId !== subscriptionId;
+    let downgradeFailed = false;
+    if (isStaleDelivery) {
+      log.info(
+        `[Webhook] Leaving user ${userId}'s plan alone — the failed subscription ${subscriptionId} is not the one on record (${storedSubscriptionId})`,
+      );
+    } else {
+      const downgradeResult = await updateUserSubscription(userId, {
+        subscriptionStatus: "canceled",
+        planTier: "free",
+        stripeSubscriptionId: null,
+        billingInterval: null,
+        planExpiresAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+      });
+      if (!downgradeResult.success) {
+        downgradeFailed = true;
+        log.error(
+          `[Webhook] Final payment failure for user ${userId} but the downgrade could not be written (${downgradeResult.error}) — failing the event so Stripe redelivers and the downgrade is retried`,
+        );
+      }
+    }
 
     // Only alert on final failure / auto-cancel
     const userName = userWithCredits.name || userWithCredits.email || `User #${userId}`;
@@ -588,6 +696,13 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
 
     log.info(`[Webhook] User ${userId} subscription auto-cancelled after final payment failure`);
 
+    if (downgradeFailed) {
+      return {
+        success: false,
+        message: `Payment failed for user ${userId}, subscription auto-cancelled, but the downgrade could not be written — redeliver to retry`,
+      };
+    }
+
     if (invoiceVoidVerdict === "failed") {
       log.error(
         `[Webhook] Invoice ${invoice.id} for user ${userId} could not be voided after the final payment failure — failing the event so Stripe redelivers and the void is retried; the cancel and the downgrade have already landed`,
@@ -598,12 +713,43 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
       };
     }
   } else {
-    // Intermediate retry failure — mark as past_due, no alert
-    await updateUserSubscription(userId, {
-      subscriptionStatus: "past_due",
-    });
-
-    log.info(`[Webhook] Payment failed for user ${userId}, marked as past_due (retry scheduled)`);
+    // Intermediate retry failure — mark as past_due, no alert.
+    //
+    // ⚠ THIS VERDICT IS READ AND DELIBERATELY NOT MADE TO FAIL THE EVENT
+    // (#792 — the one site in the class that is declined, and why): the mark
+    // is advisory, and the next invoice event on this subscription rewrites
+    // the status either way (`payment_succeeded` → active, the final failure
+    // → canceled). A redelivery, on the other hand, can land AFTER the
+    // customer's card has since been charged successfully, and a stale
+    // `past_due` written over an `active` account flips `hasSubscription`
+    // false in `billing.getStatus` — which sends a paying customer to a
+    // fresh checkout instead of a plan change. A missing mark costs a flag
+    // the next event corrects; a stale one costs a customer money. So a
+    // failed write is logged loud and the event is ACKed.
+    //
+    // ⚠ AND THE MARK IS UNDER THE SAME STALE GUARD AS THE DOWNGRADES (PR
+    // #794 round-2 finding 1): the write is keyed on the USER, so a late
+    // intermediate failure for an OLD subscription, landing while a NEW
+    // active one is on record, would write `past_due` over the active
+    // account on its FIRST delivery — the very harm the paragraph above
+    // declines to risk on a redelivery. Null on record still marks.
+    const storedSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
+    if (storedSubscriptionId && storedSubscriptionId !== subscriptionId) {
+      log.info(
+        `[Webhook] Leaving user ${userId}'s status alone — the failed subscription ${subscriptionId} is not the one on record (${storedSubscriptionId})`,
+      );
+    } else {
+      const markResult = await updateUserSubscription(userId, {
+        subscriptionStatus: "past_due",
+      });
+      if (markResult.success) {
+        log.info(`[Webhook] Payment failed for user ${userId}, marked as past_due (retry scheduled)`);
+      } else {
+        log.error(
+          `[Webhook] Payment failed for user ${userId} but the past_due mark could not be written (${markResult.error}) — ACKing anyway: the next invoice event rewrites the status, and a redelivered mark could land over a since-successful payment`,
+        );
+      }
+    }
   }
   return { success: true, message: `Payment failed for user ${userId}` };
 }
@@ -802,21 +948,44 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
     userName
   );
 
-  // If we identified the user, auto-suspend and revoke credits
+  // If we identified the user, auto-suspend and revoke credits.
+  //
+  // ⚠ BOTH VERDICTS ARE READ, NOT DROPPED (#792, the class of #788/#789):
+  // `suspendUser` and `deductCredits` never throw — a failure comes back
+  // `{ success: false }` — and a handler that then returned success was
+  // ACKed 200 and recorded, so Stripe never redelivered and a chargeback
+  // could leave the account NOT suspended and its credits NOT frozen: the
+  // protective control this handler exists for, silently absent. A failed
+  // suspend or revoke FAILS THE EVENT below, after the alert has gone out,
+  // and Stripe redelivers for ~3 days. On the way back: the suspend is one
+  // idempotent UPDATE; the revoke is skipped when its ledger row already
+  // exists (read by ref, below), because the amount is re-read from the
+  // live balance and a balance that moved since the first revoke would
+  // otherwise classify as a reference COLLISION rather than a duplicate.
+  const actions: string[] = [];
+  let mustRedeliver = false;
   if (userId) {
     // 1. Suspend the user account
     //    Using userId 0 as "system" since this is an automated action
     const suspendResult = await suspendUser(userId, `Chargeback filed: ${dispute.id} — $${(amount / 100).toFixed(2)} ${currency.toUpperCase()} — reason: ${reason}`, 0);
     if (suspendResult.success) {
+      actions.push("account suspended");
       log.info(`[Webhook] User ${userId} auto-suspended due to dispute ${dispute.id}`);
     } else {
+      mustRedeliver = true;
+      actions.push(`suspend failed: ${suspendResult.error}`);
       log.error(`[Webhook] Failed to suspend user ${userId}: ${suspendResult.error}`);
     }
 
     // 2. Revoke credits — as a safe approach, revoke the user's entire current balance (they can be restored on win).
-    //    The idempotency referenceId `dispute_{disputeId}` prevents double-revocation on webhook replays.
+    //    The ledger row on `dispute_{disputeId}` is the idempotency: a
+    //    redelivery that finds it already written revokes nothing more.
+    const priorRevoke = await getCreditTransactionByRef(userId, disputeRef);
     const currentBalance = userCreditsBalance ?? 0;
-    if (currentBalance > 0) {
+    if (priorRevoke) {
+      actions.push(`${Math.abs(priorRevoke.amount)} credits already revoked`);
+      log.info(`[Webhook] Credits already revoked for dispute ${dispute.id} (ledger row ${priorRevoke.id}) — nothing more to revoke`);
+    } else if (currentBalance > 0) {
       const revokeResult = await deductCredits(
         userId,
         currentBalance,
@@ -829,19 +998,41 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
         { toolKind: null }
       );
       if (revokeResult.success) {
+        actions.push(`${currentBalance} credits revoked`);
         log.info(`[Webhook] Revoked ${currentBalance} credits from user ${userId} (dispute ${dispute.id}). New balance: ${revokeResult.newBalance}`);
+      } else if (revokeResult.duplicate) {
+        // Raced by a concurrent delivery: the row landed between the read
+        // above and this write. A collision (same ref, different amount) is
+        // named as such — a redelivery cannot clear it, so the event is
+        // still ACKed and the truth is in the message and the log.
+        actions.push(revokeResult.collision ? "credit revoke collided with an existing ledger row" : "credits already revoked");
+        log.warn(`[Webhook] Revoke for dispute ${dispute.id} met an existing ledger row (${revokeResult.error})`);
       } else {
+        mustRedeliver = true;
+        actions.push(`credit revoke failed: ${revokeResult.error}`);
         log.error(`[Webhook] Failed to revoke credits from user ${userId}: ${revokeResult.error}`);
       }
     } else {
+      actions.push("0 credits — nothing to revoke");
       log.info(`[Webhook] User ${userId} has 0 credits — no credits to revoke for dispute ${dispute.id}`);
     }
   }
 
-  log.info(`[Webhook] Dispute created: ${dispute.id}, amount: ${amount} ${currency}, reason: ${reason}, userId: ${userId || "unknown"}`);
+  log.info(`[Webhook] Dispute created: ${dispute.id}, amount: ${amount} ${currency}, reason: ${reason}, userId: ${userId || "unknown"}, actions: ${actions.join(", ")}`);
+
+  if (mustRedeliver) {
+    log.error(
+      `[Webhook] Dispute ${dispute.id} filed against user ${userId} but the protective actions did not all land (${actions.join(", ")}) — failing the event so Stripe redelivers and they are retried`,
+    );
+    return {
+      success: false,
+      message: `Dispute ${dispute.id} filed — user #${userId}: ${actions.join(", ")}; failing the event so Stripe redelivers and the retry lands what did not`,
+    };
+  }
+
   return {
     success: true,
-    message: `Dispute ${dispute.id} filed — user ${userId ? `#${userId} suspended, ${userCreditsBalance ?? 0} credits revoked` : "not identified"} — Slack alert sent`,
+    message: `Dispute ${dispute.id} filed — user ${userId ? `#${userId}: ${actions.join(", ")}` : "not identified"} — Slack alert sent`,
   };
 }
 
@@ -893,9 +1084,20 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
   // customer who WON their chargeback stays without their credits until a
   // person notices. The restore is idempotent on `dispute_restore_<id>`, so
   // Stripe's ~3 days of free redeliveries are exactly the retry it needs.
-  // The unsuspend and the alert still land on the first attempt; only the
-  // verdict at the end changes.
-  let restoreFailed = false;
+  // The alert still lands on the first attempt; only the verdict at the end
+  // changes.
+  //
+  // ⚠ AND THE UNSUSPEND AND THE LOST-ROAD CANCEL ARE READ THE SAME WAY
+  // (#792, the class of #789 on this same road): `unsuspendUser` returns
+  // `{ success: false }` and `cancelSubscription` returns `false`, and both
+  // were logged and ACKed — a customer who WON stayed suspended; a customer
+  // who LOST kept a running subscription. The unsuspend is one idempotent
+  // UPDATE and the cancel sets `cancel_at_period_end` (setting it twice is
+  // the same call), so the ~3 days of redeliveries are the retry for both.
+  // The cancel's one un-retryable case is a subscription Stripe has already
+  // fully cancelled while our record still holds its id — a stale record,
+  // which IS the finding; the redeliveries stop on their own after ~3 days.
+  let mustRedeliver = false;
 
   if (userId && status === "won") {
     // DISPUTE WON: Restore the user's account and credits
@@ -905,6 +1107,7 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
       actions.push("account restored");
       log.info(`[Webhook] User ${userId} unsuspended after winning dispute ${dispute.id}`);
     } else {
+      mustRedeliver = true;
       actions.push(`unsuspend failed: ${unsuspendResult.error}`);
       log.error(`[Webhook] Failed to unsuspend user ${userId}: ${unsuspendResult.error}`);
     }
@@ -912,7 +1115,6 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
     // 2. Restore the revoked credits
     //    Look up how many credits were deducted by the dispute_created handler
     //    by finding the transaction with referenceId `dispute_{disputeId}`
-    const { getCreditTransactionByRef } = await import("../db");
     const revokeTransaction = await getCreditTransactionByRef(userId, disputeRef);
     if (revokeTransaction && revokeTransaction.amount < 0) {
       const creditsToRestore = Math.abs(revokeTransaction.amount);
@@ -930,7 +1132,7 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
         actions.push("credits already restored (duplicate)");
         log.info(`[Webhook] Credits already restored for dispute ${dispute.id} (duplicate)`);
       } else {
-        restoreFailed = true;
+        mustRedeliver = true;
         actions.push(`credit restore failed: ${restoreResult.error}`);
         log.error(`[Webhook] Failed to restore credits for user ${userId}: ${restoreResult.error}`);
       }
@@ -949,6 +1151,7 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
         actions.push("subscription cancelled");
         log.info(`[Webhook] Cancelled subscription ${stripeSubscriptionId} for user ${userId} after losing dispute ${dispute.id}`);
       } else {
+        mustRedeliver = true;
         actions.push("subscription cancel failed");
         log.error(`[Webhook] Failed to cancel subscription ${stripeSubscriptionId} for user ${userId}`);
       }
@@ -962,13 +1165,13 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
 
   log.info(`[Webhook] Dispute closed: ${dispute.id}, status: ${status}, userId: ${userId || "unknown"}, actions: ${actions.join(", ")}`);
 
-  if (restoreFailed) {
+  if (mustRedeliver) {
     log.error(
-      `[Webhook] Dispute ${dispute.id} won by user ${userId} but the credit restore failed — failing the event so Stripe redelivers and the restore is retried; the account is already unsuspended`,
+      `[Webhook] Dispute ${dispute.id} closed (${status}) for user ${userId} but not every action landed (${actions.join(", ")}) — failing the event so Stripe redelivers and the retry lands what did not`,
     );
     return {
       success: false,
-      message: `Dispute ${dispute.id} closed (${status}) — ${actions.join(", ")}; failing the event so Stripe redelivers and the restore is retried`,
+      message: `Dispute ${dispute.id} closed (${status}) — ${actions.join(", ")}; failing the event so Stripe redelivers and the retry lands what did not`,
     };
   }
 

@@ -59,6 +59,7 @@ const db = vi.hoisted(() => ({
   creditReferrerOnPaidAction: vi.fn().mockResolvedValue(false),
   getCreditTransactionByRef: vi.fn().mockResolvedValue(null),
   voidPendingPlanChangeSettlementsForUser: vi.fn().mockResolvedValue([]),
+  getVoidPlanChangeSettlementInvoiceIdsForUser: vi.fn().mockResolvedValue([]),
   getDb: vi.fn().mockResolvedValue(null),
   withTransaction: vi.fn(),
 }));
@@ -152,6 +153,7 @@ beforeEach(() => {
   db.getUserCredits.mockResolvedValue({ balance: 100_000 });
   db.refreshMonthlyCredits.mockResolvedValue({ success: true, newBalance: 1 });
   db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue([]);
+  db.getVoidPlanChangeSettlementInvoiceIdsForUser.mockResolvedValue([]);
   pricesCreate.mockResolvedValue({ id: "price_minted" });
   subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_change" });
   armStripeSubscription();
@@ -919,5 +921,270 @@ describe("the webhook settles what changePlan recorded", () => {
     expect(result.success).toBe(true);
     expect(db.refreshMonthlyCredits).toHaveBeenCalledTimes(1);
     expect(db.addCredits).not.toHaveBeenCalled();
+  });
+
+  /*
+    #792 — the class of #788/#789 on the subscription roads. `updateUserSubscription`
+    never throws; a failed write came back `{ success: false }`, the handler
+    dropped it and returned success, and the event was ACKed 200 and recorded —
+    so Stripe never redelivered and the change the event carried never landed.
+    Every arm drives the SAME event id twice through the recording double:
+    first delivery fails and is NOT recorded, redelivery lands and is recorded
+    once. A fresh id would prove nothing.
+  */
+  describe("#792 — the subscription roads read the write's verdict", () => {
+    const monthlySub = (id: string, status = "active") => ({
+      id,
+      customer: "cus_1",
+      status,
+      metadata: { plan: "pro", env: deploymentTag() },
+      items: {
+        data: [
+          {
+            id: "si_1",
+            price: { recurring: { interval: "month" } },
+            current_period_start: NOW_SEC,
+            current_period_end: NOW_SEC + 30 * DAY,
+          },
+        ],
+      },
+    });
+
+    it("subscription.updated: a write that fails FAILS THE EVENT, and the SAME event redelivered writes the same state once", async () => {
+      db.updateUserSubscription.mockResolvedValueOnce({ success: false, error: "Failed to update subscription" });
+
+      const first = await deliverEvent("customer.subscription.updated", monthlySub("sub_1"));
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("could not be written");
+      expect(first.message).toContain("redeliver");
+      expect(processedEventInserts).toHaveLength(0);
+
+      const second = await redeliverLastEvent();
+      expect(second.success).toBe(true);
+      expect(db.updateUserSubscription).toHaveBeenCalledTimes(2);
+      /* The retry is the same UPDATE — the event's own state, not a guess. */
+      expect(db.updateUserSubscription.mock.calls[0]).toEqual(db.updateUserSubscription.mock.calls[1]);
+      expect(db.updateUserSubscription).toHaveBeenLastCalledWith(
+        7,
+        expect.objectContaining({ stripeSubscriptionId: "sub_1", planTier: "pro", billingInterval: "month" }),
+      );
+      expect(processedEventInserts).toHaveLength(1);
+      expect(processedEventInserts[0].eventId).toBe(lastEvent!.id);
+    });
+
+    it("subscription.deleted: a downgrade that fails FAILS THE EVENT, and the SAME event redelivered downgrades", async () => {
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+      });
+      db.updateUserSubscription.mockResolvedValueOnce({ success: false, error: "Failed to update subscription" });
+
+      const first = await deliverEvent("customer.subscription.deleted", monthlySub("sub_1", "canceled"));
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("downgrade could not be written");
+      expect(processedEventInserts).toHaveLength(0);
+
+      const second = await redeliverLastEvent();
+      expect(second.success).toBe(true);
+      expect(db.updateUserSubscription).toHaveBeenCalledTimes(2);
+      expect(db.updateUserSubscription).toHaveBeenLastCalledWith(
+        7,
+        expect.objectContaining({ planTier: "free", stripeSubscriptionId: null, subscriptionStatus: "canceled" }),
+      );
+      expect(processedEventInserts).toHaveLength(1);
+    });
+
+    it("subscription.deleted: a STALE delivery (a newer subscription on record) leaves the plan ALONE — the downgrade is under the same guard as the void", async () => {
+      /* The failure above makes Stripe redeliver for days; if the customer
+         resubscribes in that window, the retry must not downgrade sub_NEW. */
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_NEW" },
+      });
+
+      const result = await deliverEvent("customer.subscription.deleted", monthlySub("sub_OLD", "canceled"));
+      expect(result.success).toBe(true);
+      expect(db.updateUserSubscription).not.toHaveBeenCalled();
+      expect(db.voidPendingPlanChangeSettlementsForUser).not.toHaveBeenCalled();
+      expect(processedEventInserts).toHaveLength(1);
+    });
+
+    it("subscription.deleted: a failed invoice void redelivered AFTER the customer resubscribed still closes the OLD invoice — and never touches the new subscription's pending row (PR #794 review finding 1)", async () => {
+      /* First delivery: sub_OLD dies on record, its settlement row goes
+         void, Stripe blips on the invoice void. The event FAILS. */
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_OLD" },
+      });
+      db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_old_change"]);
+      invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+      invoicesVoid.mockRejectedValueOnce(new Error("stripe blipped"));
+
+      const first = await deliverEvent("customer.subscription.deleted", monthlySub("sub_OLD", "canceled"));
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("could not be voided");
+      expect(processedEventInserts).toHaveLength(0);
+
+      /* The customer resubscribes as sub_NEW and changes plan — a PENDING
+         settlement of theirs now exists that must survive. The redelivery
+         finds sub_NEW on record. */
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_NEW" },
+      });
+      db.voidPendingPlanChangeSettlementsForUser.mockClear();
+      db.getVoidPlanChangeSettlementInvoiceIdsForUser.mockResolvedValue(["in_old_change"]);
+      invoicesVoid.mockResolvedValue({ id: "in_old_change", status: "void" });
+
+      const second = await redeliverLastEvent();
+      expect(second.success).toBe(true);
+      /* The writer never ran on the stale road — sub_NEW's pending row is
+         untouched — and the plan is left alone: the one downgrade on record
+         is the FIRST delivery's, which landed before the void blipped. */
+      expect(db.voidPendingPlanChangeSettlementsForUser).not.toHaveBeenCalled();
+      expect(db.updateUserSubscription).toHaveBeenCalledTimes(1);
+      /* But the OLD invoice, whose credit side is already void, is closed. */
+      expect(invoicesVoid).toHaveBeenCalledTimes(2);
+      expect(invoicesVoid).toHaveBeenLastCalledWith("in_old_change");
+      expect(processedEventInserts).toHaveLength(1);
+    });
+
+    it("subscription.deleted: NULL on record still downgrades (the voluntary-cancel road clears the id first) — the control", async () => {
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: null },
+      });
+
+      const result = await deliverEvent("customer.subscription.deleted", monthlySub("sub_1", "canceled"));
+      expect(result.success).toBe(true);
+      expect(db.updateUserSubscription).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({ planTier: "free", stripeSubscriptionId: null }),
+      );
+    });
+
+    it("invoice.payment_failed FINAL: a downgrade that fails FAILS THE EVENT after the cancel and the voids, and the SAME event redelivered downgrades", async () => {
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+      });
+      db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+      invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+      invoicesVoid.mockResolvedValue({ id: "in_change", status: "void" });
+      db.updateUserSubscription.mockResolvedValueOnce({ success: false, error: "Failed to update subscription" });
+
+      const failedInvoice = {
+        id: "in_change",
+        customer: "cus_1",
+        subscription: "sub_1",
+        next_payment_attempt: null,
+        amount_due: 12_00,
+        currency: "usd",
+      };
+
+      const first = await deliverEvent("invoice.payment_failed", failedInvoice);
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("downgrade could not be written");
+      /* Everything keyed on THIS invoice and THIS subscription landed first. */
+      expect(invoicesVoid).toHaveBeenCalledTimes(1);
+      expect(subscriptionsUpdate).toHaveBeenCalledWith("sub_1", { cancel_at_period_end: true });
+      expect(processedEventInserts).toHaveLength(0);
+
+      const second = await redeliverLastEvent();
+      expect(second.success).toBe(true);
+      expect(db.updateUserSubscription).toHaveBeenCalledTimes(2);
+      expect(db.updateUserSubscription).toHaveBeenLastCalledWith(
+        7,
+        expect.objectContaining({ planTier: "free", stripeSubscriptionId: null }),
+      );
+      expect(processedEventInserts).toHaveLength(1);
+    });
+
+    it("invoice.payment_failed FINAL: a STALE delivery (a newer subscription on record) voids and cancels the OLD one but leaves the plan alone", async () => {
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_NEW" },
+      });
+      db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+      invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+      invoicesVoid.mockResolvedValue({ id: "in_change", status: "void" });
+
+      const result = await deliverEvent("invoice.payment_failed", {
+        id: "in_change",
+        customer: "cus_1",
+        subscription: "sub_OLD",
+        next_payment_attempt: null,
+        amount_due: 12_00,
+        currency: "usd",
+      });
+
+      expect(result.success).toBe(true);
+      expect(invoicesVoid).toHaveBeenCalledWith("in_change");
+      expect(subscriptionsUpdate).toHaveBeenCalledWith("sub_OLD", { cancel_at_period_end: true });
+      expect(db.updateUserSubscription).not.toHaveBeenCalled();
+    });
+
+    it("invoice.payment_failed INTERMEDIATE: a past_due mark that fails is logged and the event is still ACKed — the one site in the class that is DECLINED", async () => {
+      /* A redelivered mark could land over a since-successful payment and
+         flip `hasSubscription` false on a paying account; the next invoice
+         event rewrites the status either way. Pinned as a decision, not as an
+         oversight — the verdict IS read (the failing write is what this arm
+         supplies), it just does not fail the event. */
+      db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+      db.updateUserSubscription.mockResolvedValueOnce({ success: false, error: "Failed to update subscription" });
+
+      const result = await deliverEvent("invoice.payment_failed", {
+        id: "in_change",
+        customer: "cus_1",
+        subscription: "sub_1",
+        next_payment_attempt: NOW_SEC + 3 * DAY,
+        amount_due: 12_00,
+        currency: "usd",
+      });
+
+      expect(result.success).toBe(true);
+      expect(db.updateUserSubscription).toHaveBeenCalledWith(7, { subscriptionStatus: "past_due" });
+      expect(processedEventInserts).toHaveLength(1);
+    });
+
+    it("invoice.payment_failed INTERMEDIATE: a STALE delivery (a newer subscription on record) does NOT mark the active account past_due (PR #794 round-2 finding 1)", async () => {
+      /* The write is keyed on the user; a late failure for sub_OLD landing
+         over an active sub_NEW would flip hasSubscription false on its
+         FIRST delivery and send a paying customer to a fresh checkout. */
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_NEW" },
+      });
+      db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+
+      const result = await deliverEvent("invoice.payment_failed", {
+        id: "in_old_renewal",
+        customer: "cus_1",
+        subscription: "sub_OLD",
+        next_payment_attempt: NOW_SEC + 3 * DAY,
+        amount_due: 12_00,
+        currency: "usd",
+      });
+
+      expect(result.success).toBe(true);
+      expect(db.updateUserSubscription).not.toHaveBeenCalled();
+      expect(processedEventInserts).toHaveLength(1);
+    });
   });
 });

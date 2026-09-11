@@ -11,7 +11,7 @@ vi.mock("./stripeService", () => ({
 }));
 
 vi.mock("../db", () => ({
-  updateUserSubscription: vi.fn().mockResolvedValue(undefined),
+  updateUserSubscription: vi.fn().mockResolvedValue({ success: true }),
   getUserByStripeCustomerId: vi.fn().mockResolvedValue(null),
   refreshMonthlyCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 100 }),
   getUserCredits: vi.fn().mockResolvedValue({ balance: 100 }),
@@ -217,7 +217,15 @@ describe("Webhook Security", () => {
       expect(deductCredits).not.toHaveBeenCalled();
     });
 
-    it("should handle suspend failure gracefully", async () => {
+    /*
+      #792 (the class of #788/#789 on this road). This arm used to be called
+      "should handle suspend failure gracefully" and asserted `success: true`
+      over a suspend that had NOT happened — the class, pinned as intended
+      behaviour. A chargeback whose suspend fails must FAIL THE EVENT so Stripe
+      redelivers; the revoke still lands on the first attempt, and the
+      redelivery finds its ledger row and revokes nothing more.
+    */
+    it("a suspend that fails FAILS THE EVENT after the revoke lands, and the SAME event redelivered suspends without revoking twice (#792)", async () => {
       const dispute = {
         id: "dp_test_suspend_fail",
         charge: "ch_test_sf",
@@ -231,14 +239,97 @@ describe("Webhook Security", () => {
       const event = makeEvent("charge.dispute.created", dispute);
       vi.mocked(constructWebhookEvent).mockReturnValue(event);
       vi.mocked(getUserByStripeCustomerId).mockResolvedValue(mockUser as any);
-      vi.mocked(suspendUser).mockResolvedValue({ success: false, error: "DB error" });
+      vi.mocked(suspendUser).mockResolvedValueOnce({ success: false, error: "DB error" });
+
+      const first = await handleStripeWebhook("payload", "sig");
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("suspend failed");
+      expect(first.message).toContain("75 credits revoked");
+      expect(first.message).toContain("redelivers");
+      expect(deductCredits).toHaveBeenCalledTimes(1);
+      expect(SlackAlerts.chargebackFiled).toHaveBeenCalledTimes(1);
+      expect(processedEventInserts).toHaveLength(0);
+
+      /* Redelivery of the SAME event id: the ledger already holds the revoke
+         on `dispute_<id>`, so it is read and not written again — the balance
+         has moved (it is 0 now, or refreshed since), and a second deduct
+         would classify as a COLLISION, not a duplicate. */
+      vi.mocked(getCreditTransactionByRef).mockResolvedValueOnce({
+        id: 1001,
+        userId: 42,
+        amount: -75,
+        type: "refund",
+        referenceId: "dispute_dp_test_suspend_fail",
+      } as any);
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      const second = await handleStripeWebhook("payload", "sig");
+      expect(second.success).toBe(true);
+      expect(second.message).toContain("account suspended");
+      expect(second.message).toContain("75 credits already revoked");
+      expect(suspendUser).toHaveBeenCalledTimes(2);
+      expect(deductCredits).toHaveBeenCalledTimes(1);
+      expect(processedEventInserts).toHaveLength(1);
+      expect(processedEventInserts[0].eventId).toBe(event.id);
+    });
+
+    it("a revoke that fails FAILS THE EVENT after the suspend lands, and the SAME event redelivered revokes (#792)", async () => {
+      const dispute = {
+        id: "dp_test_revoke_fail",
+        charge: "ch_test_rf",
+        amount: 1000,
+        currency: "usd",
+        reason: "fraudulent",
+        customer: "cus_test_user42",
+        status: "needs_response",
+      };
+
+      const event = makeEvent("charge.dispute.created", dispute);
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(mockUser as any);
+      vi.mocked(deductCredits).mockResolvedValueOnce({ success: false, error: "deadlock" } as any);
+
+      const first = await handleStripeWebhook("payload", "sig");
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("account suspended");
+      expect(first.message).toContain("credit revoke failed");
+      expect(processedEventInserts).toHaveLength(0);
+
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      const second = await handleStripeWebhook("payload", "sig");
+      expect(second.success).toBe(true);
+      expect(second.message).toContain("75 credits revoked");
+      expect(deductCredits).toHaveBeenCalledTimes(2);
+      expect(deductCredits).toHaveBeenLastCalledWith(
+        42,
+        75,
+        "refund",
+        expect.stringContaining("Credits frozen: chargeback dp_test_revoke_fail"),
+        "dispute_dp_test_revoke_fail",
+        { toolKind: null },
+      );
+      expect(processedEventInserts).toHaveLength(1);
+    });
+
+    it("a revoke RACED by a concurrent delivery (the ledger's duplicate verdict) is ACKed — a redelivery cannot clear it (the control)", async () => {
+      const dispute = {
+        id: "dp_test_revoke_dup",
+        charge: "ch_test_rd",
+        amount: 1000,
+        currency: "usd",
+        reason: "fraudulent",
+        customer: "cus_test_user42",
+        status: "needs_response",
+      };
+
+      const event = makeEvent("charge.dispute.created", dispute);
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(mockUser as any);
+      vi.mocked(deductCredits).mockResolvedValueOnce({ success: false, duplicate: true, error: "Credit charge already recorded" } as any);
 
       const result = await handleStripeWebhook("payload", "sig");
-
-      // Should still succeed (webhook processed) even if suspend failed
       expect(result.success).toBe(true);
-      // Credits should still be revoked even if suspend failed
-      expect(deductCredits).toHaveBeenCalled();
+      expect(result.message).toContain("credits already revoked");
+      expect(processedEventInserts).toHaveLength(1);
     });
   });
 
@@ -420,6 +511,53 @@ describe("Webhook Security", () => {
       expect(processedEventInserts[0].eventId).toBe(event.id);
     });
 
+    it("an unsuspend that fails on a WON dispute FAILS THE EVENT, and the SAME event redelivered unsuspends without restoring twice (#792)", async () => {
+      const dispute = {
+        id: "dp_test_unsuspend_blip",
+        charge: "ch_test_ub",
+        amount: 5000,
+        currency: "usd",
+        reason: "fraudulent",
+        customer: "cus_test_user42",
+        status: "won",
+      };
+
+      const event = makeEvent("charge.dispute.closed", dispute);
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(mockUser as any);
+      vi.mocked(getCreditTransactionByRef).mockResolvedValue({
+        id: 999,
+        userId: 42,
+        amount: -75,
+        type: "refund",
+        referenceId: "dispute_dp_test_unsuspend_blip",
+      } as any);
+      vi.mocked(unsuspendUser).mockResolvedValueOnce({ success: false, error: "DB error" });
+      vi.mocked(addCredits).mockResolvedValueOnce({ success: true, newBalance: 75 } as any);
+
+      /* First delivery: the restore lands, the unsuspend does not. The event
+         FAILS and nothing is recorded — a customer who WON must not stay
+         suspended until a person notices. */
+      const first = await handleStripeWebhook("payload", "sig");
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("unsuspend failed");
+      expect(first.message).toContain("75 credits restored");
+      expect(addCredits).toHaveBeenCalledTimes(1);
+      expect(processedEventInserts).toHaveLength(0);
+
+      /* Redelivery: the unsuspend lands; the restore meets its own ledger
+         row and is a duplicate, not a second grant. */
+      vi.mocked(addCredits).mockResolvedValueOnce({ success: true, newBalance: 75, duplicate: true } as any);
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      const second = await handleStripeWebhook("payload", "sig");
+      expect(second.success).toBe(true);
+      expect(second.message).toContain("account restored");
+      expect(second.message).toContain("credits already restored (duplicate)");
+      expect(unsuspendUser).toHaveBeenCalledTimes(2);
+      expect(processedEventInserts).toHaveLength(1);
+      expect(processedEventInserts[0].eventId).toBe(event.id);
+    });
+
     /*
       The other half of #789, at the read that actually decides (PR #791
       review finding 1): `getDb()` caches its instance, so on this road a
@@ -545,6 +683,38 @@ describe("Webhook Security", () => {
         42,
         "John Doe"
       );
+    });
+
+    it("a cancel Stripe refuses on a LOST dispute FAILS THE EVENT, and the SAME event redelivered cancels (#792)", async () => {
+      const dispute = {
+        id: "dp_test_cancel_blip",
+        charge: "ch_test_cb",
+        amount: 5000,
+        currency: "usd",
+        reason: "fraudulent",
+        customer: "cus_test_user42",
+        status: "lost",
+      };
+
+      const event = makeEvent("charge.dispute.closed", dispute);
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(mockUser as any);
+      vi.mocked(cancelSubscription).mockResolvedValueOnce(false);
+
+      const first = await handleStripeWebhook("payload", "sig");
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("subscription cancel failed");
+      expect(first.message).toContain("account remains suspended");
+      expect(cancelSubscription).toHaveBeenCalledTimes(1);
+      expect(processedEventInserts).toHaveLength(0);
+
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      const second = await handleStripeWebhook("payload", "sig");
+      expect(second.success).toBe(true);
+      expect(second.message).toContain("subscription cancelled");
+      expect(cancelSubscription).toHaveBeenCalledTimes(2);
+      expect(cancelSubscription).toHaveBeenLastCalledWith("sub_test_abc123");
+      expect(processedEventInserts).toHaveLength(1);
     });
 
     it("should handle lost dispute with no active subscription", async () => {

@@ -30,7 +30,7 @@ vi.mock("./stripeService", () => ({
 }));
 
 vi.mock("../db", () => ({
-  updateUserSubscription: vi.fn().mockResolvedValue(undefined),
+  updateUserSubscription: vi.fn().mockResolvedValue({ success: true }),
   getUserByStripeCustomerId: vi.fn().mockResolvedValue(null),
   refreshMonthlyCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 100 }),
   getUserCredits: vi.fn().mockResolvedValue({ balance: 100 }),
