@@ -1,7 +1,7 @@
 {
-  "edition": 349,
-  "updatedAt": "2026-09-11T16:10:01.099Z",
-  "shift": "Retro — patrol #3, second act: your one word landed and the card is done. YOUR DESK IS CLEAR. WHAT CHANGED FOR YOU: you replied 'A' on #721 at 15:52Z — a usage cap counts only when it is an actual error line, never words inside a sentence — and it was built within the hour. The night-shift runner now reads a dead shift's log the way you ruled: anything quoted (a code block, a quote, a table cell, a phrase in backticks) is ignored, and the cap wording has to lead the line the way a real error message does. Your seven phrases are exactly as they were; only how they are read changed. MEASURED BEFORE IT WAS BELIEVED: across all 3,145 shift logs on disk, the old reading called five of them a cap and the new one calls ONE — the one real report. The four it stopped calling a cap were shifts writing about the cap machinery (one of them the shift that fixed the last round, exactly as the card predicted would happen). 70 of 70 checks pass; with the old copy swapped back in, exactly the ten new checks go red and nothing else. The synthetic real cap lines — including the exact text the tool prints when your limit is hit — all still stop the team at once. EARLIER TONIGHT (edition 348): the weekly audit of the team — no shift lied this week; the only false statements in the record were the runner's own 'unverified close' stamps, seven of seven false, fixed as #813. YOUR DESK: nothing waits on you. NEXT UP is empty. Reply #177 is acknowledged here.",
+  "edition": 350,
+  "updatedAt": "2026-09-11T17:52:29.742Z",
+  "shift": "Night shift — a batch of five, and two of them are real fixes a moderator would feel. YOUR DESK IS CLEAR. WHAT CHANGED FOR YOU: (1) a moderator or admin could freeze a customer's account with a reason of one blank space — the panel button refused it, but the server did not, so the record, the audit log and the customer's email would all carry an empty reason. Fixed on all four freeze/unfreeze roads (PR #818): a blank is refused and surrounding spaces are trimmed before anything is written. (2) If the database write that freezes an account FAILED, the moderator still saw 'Account frozen successfully', the audit log still said the account was frozen by their hand, and the customer still got an email saying so — while the account could still spend. Fixed (PR #819): a failed freeze is refused before the row and the email, exactly as unfreeze already did. HOW THEY WERE FOUND: by rewriting a test file. `accountFreeze.test.ts` had 33 checks and 24 of them could not fail — they asserted rules typed into the test against themselves. Rewritten to drive the real four procedures (PR #814, 34 checks, proven by removing each rule from the product in turn: 15 of 17 removals passed the old file silently). Its sibling `adminFreeze.test.ts` was the same shape end to end and is deleted (PR #815). The reviewer reading #814 spotted both bugs above; they were filed as cards and fixed within the hour. ALSO CLOSED: #655 — 91 directory reads across 77 test files, read one by one: zero defects, so the instrument it proposed is not built. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,12 +128,12 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "52 open, none waiting on you, none urgent. 2 closed tonight (#813, #721 on your word); 25 stale."
+        "source": "52 open, none waiting on you, none urgent. 2 closed tonight (#655, #817), 2 filed; 25 stale."
       },
       {
         "label": "Your desk is clear",
         "tone": "good",
-        "source": "#721 answered 'A' at 15:52Z and built the same hour. Nothing else waits on you tonight."
+        "source": "Nothing waits on you. Four PRs merged tonight — staff-panel fixes and test repairs, no decisions."
       },
       {
         "label": "Check-ups",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T16:09:22.875Z",
+      "readAt": "2026-09-11T17:52:27.620Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,34 @@
   ],
   "pipeline": [
     {
+      "id": "freeze-result-817",
+      "title": "A failed freeze no longer says it succeeded — no audit row, no email to the customer, an error to the moderator instead",
+      "status": "merged",
+      "prNumber": 819,
+      "note": "Both freeze roads awaited the database writer and dropped its answer; both unfreeze roads already read it. Two driven checks were red on the unfixed product and are green now. Swept: every other staff action on the panel already reads its answer — the two freeze roads were the whole class."
+    },
+    {
+      "id": "freeze-whitespace-816",
+      "title": "A blank freeze reason is refused on all four freeze/unfreeze roads, and spaces around a reason are trimmed before it is stored",
+      "status": "merged",
+      "prNumber": 818,
+      "note": "Five driven checks were red on the unfixed product and are green now. The same untrimmed shape stands on the suspend, role-change and IP-block reasons (no driven test to carry a fix yet), on the credit-adjustment reason (a money procedure — reviewed by Fable when taken), and — the reviewer's wider reading — on announcement titles, bug-report text and two customer text fields. All recorded on #816, which stays open for them."
+    },
+    {
+      "id": "adminfreeze-deleted-697",
+      "title": "adminFreeze.test.ts deleted — 25 checks, every one asserting a function the test itself declared",
+      "status": "merged",
+      "prNumber": 815,
+      "note": "It imported nothing from the product. The rules it recited are real (the Freeze/Unfreeze buttons in the admin user table) and now have no test on any road — the unit suite has no browser environment — which is stated rather than hidden. The reviewer found its 'admins can never be frozen' recitation had already drifted from the product, which allows an admin to freeze themselves, and stayed green through it."
+    },
+    {
+      "id": "accountfreeze-driven-697",
+      "title": "accountFreeze.test.ts drives the four real freeze procedures — 24 of 33 checks could not fail",
+      "status": "merged",
+      "prNumber": 814,
+      "note": "Now 34 checks through the real moderator and admin procedures: every refusal, both reason prefixes, both audit rows, the admin action log, the customer notice. Proven by sabotage: each rule removed from the product in turn, 18 of 18 reddening exactly the predicted checks; with the OLD file swapped back in, 15 of 17 removals passed silently. Three staff procedures had had no real test at all."
+    },
+    {
       "id": "cap-declaration-721",
       "title": "Your 'A' on #721 built: a usage cap is an error line, not a mention — the runner stops calling a shift's own prose about caps a cap",
       "status": "merged",
@@ -5470,11 +5498,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912c-retro",
+      "id": "queue-shape-0912d-batch",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 52 open, two closed tonight (#813; #721 on your word); NEXT UP is empty; nothing waits on you",
-      "detail": "Neither of tonight's two is a product change a customer would notice — both are the team's own checkers reading prose as fact. Your desk is clear for the first time since #721 was filed on 11 Sep. 25 open cards have had no comment, close, reopen or commit for 7 days (read by queue-rot-read; a label alone does not reset that clock). Machinist and Janitor are DUE today by their own clocks and neither is overdue; the next shift very likely runs one. Background switches all on; category order after patrols is Process, then Performance, then Housekeeping."
+      "title": "The queue: 52 open, two closed tonight (#655, #817), two filed from a review (#816, #817); NEXT UP is empty; nothing waits on you",
+      "detail": "Four PRs merged (#814, #815, #818, #819), all on the staff panel's freeze road; nothing a customer sees changed, though a customer is now protected from a blank-reason or phantom freeze. #816 stays open for its remainder (seven more untrimmed text fields, one of them on a money procedure). 25 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Machinist and Janitor were DUE today by their own clocks and neither was taken — the next shift's clock reader will show them OVERDUE, and an overdue patrol under its switch goes ahead of the category order. Background switches all on; after the patrols the order is Process (#743, #769, #697's remaining files), then Performance, then Housekeeping."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5657,7 +5685,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-11T16:09:22.874Z",
+    "readAt": "2026-09-11T17:52:27.619Z",
     "items": []
   }
 }
