@@ -1,7 +1,7 @@
 {
-  "edition": 340,
-  "updatedAt": "2026-09-11T02:18:58.531Z",
-  "shift": "Foreman - the two small fixes the reviewer found last night are both built, reviewed and live; the same Stripe click is still the one thing waiting on you. WHAT CHANGED. Last night's two money fixes each closed one road; the reviewer pointed at the same gap on the road next door, and those two are done now. First: when a customer's card finally fails we close their unpaid invoice so it cannot take money later - and if Stripe hiccups at that exact moment, we used to shrug and tell Stripe 'done', so it never tried again and the invoice stayed payable forever. Now we tell Stripe 'not done', it re-sends for three days, and the close lands. Second: when a customer WINS a chargeback we put their frozen credits back - and if the database hiccuped at that moment we told Stripe 'done' and the customer stayed without their credits until a person noticed. Same fix: Stripe now retries on its own. The reviewer then caught something I had missed - on that chargeback road the very first thing we do is look the customer up, and if the database was down that lookup answered 'nobody by that name' instead of 'I cannot see', and we thanked Stripe and moved on. Both readers now say 'I cannot see' out loud, so Stripe comes back when the database is. Neither road has ever been walked by a real customer - there are no subscriptions - which is why they were cheap to close today. Six more places in the same file drop a failure the same way; they are on one card with each site's question written down, not left to memory. STILL YOURS: the thirty-second Stripe click from last night (below). Nothing else waits on you.",
+  "edition": 341,
+  "updatedAt": "2026-09-11T03:40:10.097Z",
+  "shift": "Foreman - your Stripe click is done and off your page; the six remaining money-hiccup roads in the same file are closed, and the reviewer found two more edges on the way. WHAT CHANGED. You clicked the Stripe button and said done, so the last line waiting on you is gone. Then the class card from last night: six more places where a database hiccup at the wrong moment made us tell Stripe 'done' when nothing had happened. A plan change that never reached the account (you pay for Pro, the account still says Starter for a month). A subscription gone at Stripe with the account still reading paid. A card that finally died with the account keeping its plan. A chargeback filed with the account NOT suspended and the credits NOT frozen - the one protection that handler exists for. A customer who WON their chargeback staying suspended. A lost chargeback leaving the subscription running. All six now tell Stripe 'not done', it re-sends for three days, and the retry lands what did not - each proven with the same message sent twice, never a fresh one. One place was deliberately left alone, and the reason is written in the code: the 'payment is late' flag during Stripe's retry week. If we made Stripe re-send that one, a late copy could land AFTER the card had since been charged, mark a paying customer as late, and push them into buying a second subscription. A missing flag costs nothing the next message does not fix; a stale one costs a customer money. The reviewer read every claim at the code, called it sound twice, and found two edges I had not: a failed invoice-close re-sent after a customer had already resubscribed used to skip the close and leave the OLD invoice payable forever - fixed; and that same 'late' flag could be written over a NEW subscription by a late message about an OLD one - fixed with the same three-line guard. Nothing a customer can hit today: there are no subscriptions and no chargebacks. STILL YOURS: nothing. Two cards filed for what the reviewer named beyond this fix; three check-ups come due within a day, so the next shift is most likely a patrol.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,17 +128,17 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "66 open, none waiting on you, none urgent. 1 closed tonight, 4 new, 17 stale (10 Sep)."
+        "source": "55 open, none waiting on you, none urgent. 2 closed today, 2 filed, 15 stale (11 Sep)."
       },
       {
         "label": "Nothing is waiting on you",
         "tone": "good",
-        "source": "Your sign-in question (#678) was answered and closed today. Nothing else needs your word."
+        "source": "Your Stripe click (#793) is done on your word today. Nothing else needs your word."
       },
       {
         "label": "Check-ups",
         "tone": "good",
-        "source": "Nothing overdue. The Janitor ran yesterday; the other three are due 12-13 Sep."
+        "source": "Nothing overdue. Machinist, Retro and Janitor come due 12 Sep; the Warden 13 Sep."
       },
       {
         "label": "Your account is no longer flagged",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T02:19:01.308Z",
+      "readAt": "2026-09-11T03:39:12.002Z",
       "items": [
         {
           "issueNumber": 16,
@@ -276,7 +276,7 @@
     {
       "id": "stripe-refund-failed-event-771",
       "issueNumber": 793,
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-09-11T00:54:32.972Z",
       "title": "One click in Stripe: tell it to send us the 'refund failed' message",
       "productImpact": "The new listener for refunds that fail days later only works if Stripe actually sends us that message. Stripe only sends the messages an endpoint is subscribed to, and ours is subscribed to the eight it handled before last night. Until 'refund.failed' is added to that list in the Stripe dashboard, a late refund failure still takes the credits and nobody is told - the code is there, the wire from Stripe is not. Nothing can go wrong before there are subscriptions, so this is not urgent; it is a thing to do before launch. (The click now has its own card, #793, so this line stays on your page until you say it is done.)",
@@ -4621,6 +4621,13 @@
   ],
   "pipeline": [
     {
+      "id": "webhook-verdicts-class-792",
+      "title": "Six more money roads now make Stripe retry a hiccup instead of shrugging - and the one road left alone says why",
+      "status": "merged",
+      "prNumber": 794,
+      "note": "The class card from last night, worked as one PR. Before: a plan change, a cancellation, a dead card, a chargeback filed, a chargeback won, a chargeback lost - on each, a database hiccup at the wrong moment left the account wrong and told Stripe 'done', so it never tried again. Now each tells Stripe 'not done' and it retries for three days against writes that can safely happen twice; the chargeback freeze reads its own ledger first so a retry after the balance moved cannot be mistaken for a clash. The 'payment late' flag during Stripe's retry week is left as it was, on purpose: a re-sent copy could land after the card was charged and push a paying customer into a second checkout. Reviewed twice, called sound twice; both rounds' findings taken - a failed invoice-close re-sent after a resubscribe now still closes the OLD invoice, and the late flag cannot be written over a NEW subscription by a message about an old one. Nothing a customer can hit today."
+    },
+    {
       "id": "dispute-won-restore-retries-789",
       "title": "A won chargeback whose credit restore hiccups is retried by Stripe - and a database we cannot see no longer reads as 'nobody here'",
       "status": "merged",
@@ -5353,6 +5360,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0911g-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 55 open, two closed today, two filed, and 15 nobody has looked at in a week",
+      "detail": "Your Stripe click card and the six-site class card both closed; two were filed from what the reviewer named beyond the fix - one design question (a message about an OLD plan change can arrive after a NEWER one and overwrite it; the fix is to ask Stripe for the current state rather than trust the message, and that is a decision for a Fable shift), and one small-fix card for two places on the customer's own checkout road that drop a failure the same way. Bugs is empty; Small fixes holds that one card. Three check-ups come due within a day, so the next shift is most likely a patrol."
+    },
+    {
       "id": "queue-shape-0911f-foreman",
       "severity": "info",
       "state": "open",
@@ -5892,10 +5906,11 @@
     172,
     173,
     174,
-    175
+    175,
+    176
   ],
   "nextUp": {
-    "readAt": "2026-09-11T02:19:01.307Z",
+    "readAt": "2026-09-11T03:39:12.001Z",
     "items": []
   }
 }
