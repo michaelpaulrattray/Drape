@@ -347,18 +347,79 @@ export const read = (root: string): Verdict[] => {
 };
 
 /**
- * The verdict, and it takes BOTH readers plus the citation sweep.
- *
- * A file is sweepable only when the artifact says it is old, the filesystem
- * agrees, and no tracked file names it. Requiring the mtime to agree costs
- * nothing in the direction that matters — the mass reset only ever made files
- * look NEWER, so it can only ever hold a deletion back.
+ * The three conditions that are about the FILE and not about its friends: the
+ * artifact says it is old, and the filesystem agrees. Requiring the mtime to
+ * agree costs nothing in the direction that matters — the mass reset only ever
+ * made files look NEWER, so it can only ever hold a deletion back.
  */
-export const sweepable = (v: Verdict, days: number, now: Date): boolean =>
-  v.citations.length === 0 &&
+export const agedOut = (v: Verdict, days: number, now: Date): boolean =>
   v.anchor.kind !== "none" &&
   now.getTime() - v.anchor.at.getTime() > days * DAY_MS &&
   now.getTime() - v.mtime.getTime() > days * DAY_MS;
+
+/**
+ * The verdict, and it takes BOTH readers plus the citation sweep.
+ *
+ * A file is sweepable only when it has aged out AND no file names it.
+ */
+export const sweepable = (v: Verdict, days: number, now: Date): boolean =>
+  v.citations.length === 0 && agedOut(v, days, now);
+
+/**
+ * SWEEP (chain) — a file kept ONLY by citers that are themselves being swept
+ * (#827). Returns, for every such file, the citers that were holding it.
+ *
+ * ⚠ ONE PASS LEFT EXACTLY THESE BEHIND. Janitor run 5 swept the 358 files the
+ * first reading called SWEEP, ran the reader again, and found **11 more** —
+ * every one KEPT in the first reading only because a same-card sibling that
+ * had just been deleted named it (`_434-prbody-disposable.md` keeping
+ * `_434-sabotage-disposable.mts`, and ten like it). A sweep that reads once
+ * leaves behind precisely the files whose only friend was deleted; they are
+ * the next run's noise, and every run has a second wave until the reader
+ * knows about it.
+ *
+ * The reading: start from every file that has aged out, then REMOVE any of
+ * them that a file OUTSIDE that set names — a tracked document, an untracked
+ * keeper such as `scripts/lib/sabotage.mts`, a disposable still inside its
+ * window — and repeat until nothing moves. What remains is held up by nothing
+ * that stays. The uncited members are the ordinary SWEEP; the cited ones are
+ * SWEEP (chain), and this returns them with their citers.
+ *
+ * ⚠ IT IS A FIXPOINT AND NOT THE CARD'S SINGLE RE-CLASSIFICATION, AND THE
+ * LEGIBILITY THE CARD WANTED IS KEPT ANOTHER WAY. A single pass over the
+ * first-wave SWEEP set finds wave 2 and stops — a file kept only by a wave-2
+ * file is wave 3, and two dead siblings that name EACH OTHER are never in any
+ * wave at all, because each keeps the other. Both are the same class
+ * (working law 7), so the reader closes the class. What makes a chain verdict
+ * readable is not its wave number but its CITER: every citer this names is
+ * itself in the sweep set and is printed beside it with its own verdict, so a
+ * shift reading `--list` can follow the chain by eye, however long it is.
+ *
+ * ⚠ AND IT CAN ONLY EVER ADD TO THE SWEEP SET FILES THAT HAVE AGED OUT
+ * THEMSELVES. A file inside its window, or one whose name resolves to
+ * nothing, is a keeper here exactly as it is in `sweepable`, and everything
+ * it names stays with it. The four-conditions doctrine is unchanged; the one
+ * condition that reads differently is "cited", which now asks by WHOM.
+ */
+export const chainSweep = (rows: Verdict[], days: number, now: Date): Map<string, string[]> => {
+  const candidates = new Set(rows.filter((v) => agedOut(v, days, now)).map((v) => v.file));
+  let moved = true;
+  while (moved) {
+    moved = false;
+    for (const v of rows) {
+      if (!candidates.has(v.file)) continue;
+      if (v.citations.some((citer) => !candidates.has(citer))) {
+        candidates.delete(v.file);
+        moved = true;
+      }
+    }
+  }
+  const chain = new Map<string, string[]>();
+  for (const v of rows) {
+    if (candidates.has(v.file) && v.citations.length > 0) chain.set(v.file, v.citations);
+  }
+  return chain;
+};
 
 const main = (): void => {
   const args = process.argv.slice(2);
@@ -395,6 +456,7 @@ const main = (): void => {
     : path.resolve(import.meta.dirname, "..");
   const now = new Date();
   const rows = read(root);
+  const chain = chainSweep(rows, days, now);
   if (rows.length === 0) {
     console.error(`disposable-age: REFUSING — no untracked disposables under ${root}/scripts.`);
     console.error("  A fresh worktree legitimately has none, and that reading is indistinguishable");
@@ -403,12 +465,16 @@ const main = (): void => {
   }
 
   if (args.includes("--json")) {
-    console.log(JSON.stringify(rows.map((v) => ({ ...v, sweepable: sweepable(v, days, now) })), null, 2));
+    console.log(JSON.stringify(
+      rows.map((v) => ({ ...v, sweepable: sweepable(v, days, now), chain: chain.get(v.file) ?? null })),
+      null,
+      2,
+    ));
     process.exit(0);
   }
 
   const ageDays = (d: Date) => Math.floor((now.getTime() - d.getTime()) / DAY_MS);
-  const cited = rows.filter((v) => v.citations.length > 0);
+  const cited = rows.filter((v) => v.citations.length > 0 && !chain.has(v.file));
   const resolved = rows.filter((v) => v.anchor.kind !== "none");
   const sweep = rows.filter((v) => sweepable(v, days, now));
   const mtimeOld = rows.filter((v) => ageDays(v.mtime) > days);
@@ -421,18 +487,22 @@ const main = (): void => {
   console.log(`window: ${days} days · now ${now.toISOString()}`);
   console.log("");
   console.log(`  untracked disposables under scripts/   ${rows.length}`);
-  console.log(`  cited by a tracked file (always KEEP)  ${cited.length}`);
+  console.log(`  cited by a file that stays (KEEP)      ${cited.length}`);
   console.log(`  anchored at a card or an edition       ${resolved.length}`);
   console.log(`  unresolved by name (therefore KEEP)    ${rows.length - resolved.length}`);
   console.log("");
   console.log(`  the filesystem calls OLD               ${mtimeOld.length}`);
   console.log(`  BOTH readers call old, and uncited     ${sweep.length}   <- sweepable`);
+  console.log(`  kept only by a file being swept        ${chain.size}   <- SWEEP (chain), #827`);
   console.log(`  artifact says old, filesystem says new ${disagree.length}   <- the mass-reset's shadow`);
   console.log("");
 
   if (args.includes("--list")) {
     for (const v of rows.slice().sort((a, b) => a.file.localeCompare(b.file))) {
-      const verdict = v.citations.length > 0
+      const held = chain.get(v.file);
+      const verdict = held
+        ? `SWEEP (chain) ${v.anchor.note} ${ageDays(v.anchor.at)}d ago — kept only by ${held.join(", ")}, itself swept`
+        : v.citations.length > 0
         ? `KEEP  cited by ${v.citations.join(", ")}`
         : v.anchor.kind === "none"
           ? `KEEP  ${v.anchor.note}`

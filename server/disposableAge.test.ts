@@ -24,8 +24,8 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
-  citationsFrom, internalCitationLines, nameAnchorOf, sweepable, untrackedDisposables,
-  untrackedUnderScripts,
+  agedOut, chainSweep, citationsFrom, internalCitationLines, nameAnchorOf, sweepable,
+  untrackedDisposables, untrackedUnderScripts,
   type Verdict,
 } from "../scripts/disposable-age.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
@@ -328,5 +328,85 @@ describe("sweepable — four conditions, and dropping ANY ONE must flip it to KE
   it("respects a wider window", () => {
     expect(sweepable(base, 7, NOW)).toBe(true);
     expect(sweepable(base, 60, NOW)).toBe(false);
+  });
+
+  it("is `agedOut` plus the citation test, and nothing else — the split cannot drift", () => {
+    /* `chainSweep` reuses `agedOut` for the three file-side conditions. If
+       `sweepable` ever grew a fourth condition of its own, the chain verdict
+       would sweep files the plain verdict refuses; this pins the two to one
+       definition. */
+    expect(agedOut(base, 7, NOW)).toBe(true);
+    expect(agedOut({ ...base, mtime: ago(1) }, 7, NOW)).toBe(false);
+    expect(agedOut({ ...base, anchor: { kind: "none", note: "unresolved" } }, 7, NOW)).toBe(false);
+    expect(sweepable({ ...base, citations: ["scripts/_1-x-disposable.mts"] }, 7, NOW)).toBe(false);
+  });
+});
+
+describe("chainSweep — a file kept ONLY by a file being swept is swept with it (#827)", () => {
+  /*
+    Janitor run 5's shape, as a fixture: `_434-prbody-disposable.md` was in the
+    first wave and `_434-sabotage-disposable.mts` was KEPT solely because the
+    prbody draft named it. One pass deleted the draft and left the driver for
+    the next reading to find. Every arm below spoils exactly one thing about
+    that shape, because this verdict FEEDS A DELETION and a chain reader that
+    followed one hop too many would delete a file a real document still names.
+  */
+  const old = (file: string, citations: string[] = []): Verdict => ({
+    file,
+    anchor: { kind: "card", id: 434, at: ago(30), note: "#434 closed" },
+    citations,
+    mtime: ago(30),
+  });
+  const prbody = old("scripts/_434-prbody-disposable.md");
+  const sabotage = old("scripts/_434-sabotage-disposable.mts", [prbody.file]);
+
+  it("POSITIVE CONTROL — run 5's second wave, read in the first reading", () => {
+    const chain = chainSweep([prbody, sabotage], 7, NOW);
+    expect(sweepable(sabotage, 7, NOW)).toBe(false); // the plain verdict still says KEEP
+    expect(chain.get(sabotage.file)).toEqual([prbody.file]); // and this says by whom
+    expect(chain.has(prbody.file)).toBe(false); // the first wave is not a chain verdict
+  });
+
+  it("NEGATIVE CONTROL — a citer that STAYS keeps the file, even beside one being swept", () => {
+    const held = old("scripts/_434-sabotage-disposable.mts", [prbody.file, "docs/JANITOR_LOG.md"]);
+    expect(chainSweep([prbody, held], 7, NOW).has(held.file)).toBe(false);
+  });
+
+  it("NEGATIVE CONTROL — a citer inside its window is a keeper, and so is one that resolves to nothing", () => {
+    const fresh: Verdict = { ...old("scripts/_434-fresh-disposable.mts"), mtime: ago(1) };
+    const unresolved: Verdict = { ...old("scripts/_scratch-disposable.mts"), anchor: { kind: "none", note: "" } };
+    const byFresh = old("scripts/_434-a-disposable.mts", [fresh.file]);
+    const byUnresolved = old("scripts/_434-b-disposable.mts", [unresolved.file]);
+    const chain = chainSweep([fresh, unresolved, byFresh, byUnresolved], 7, NOW);
+    expect([...chain.keys()]).toEqual([]);
+  });
+
+  it("NEGATIVE CONTROL — a file that has not aged out is never chain-swept, whoever names it", () => {
+    const young: Verdict = { ...old("scripts/_434-young-disposable.mts", [prbody.file]), mtime: ago(1) };
+    expect(chainSweep([prbody, young], 7, NOW).has(young.file)).toBe(false);
+  });
+
+  it("follows a chain of any length — the one-pass reading stops at two", () => {
+    const third = old("scripts/_434-third-disposable.mts", [sabotage.file]);
+    const chain = chainSweep([prbody, sabotage, third], 7, NOW);
+    expect(chain.get(third.file)).toEqual([sabotage.file]);
+    expect(chain.get(sabotage.file)).toEqual([prbody.file]);
+  });
+
+  it("two dead siblings naming EACH OTHER and nothing else are swept together", () => {
+    /* The card's own guard arm. Neither is in any wave of a first-wave-then-
+       reclassify reading, because each keeps the other; nothing that STAYS
+       names either, which is the only question that matters. */
+    const a = old("scripts/_434-a-disposable.mts", ["scripts/_434-b-disposable.mts"]);
+    const b = old("scripts/_434-b-disposable.mts", ["scripts/_434-a-disposable.mts"]);
+    const chain = chainSweep([a, b], 7, NOW);
+    expect(chain.get(a.file)).toEqual([b.file]);
+    expect(chain.get(b.file)).toEqual([a.file]);
+  });
+
+  it("and a cycle one real keeper reaches is kept whole", () => {
+    const a = old("scripts/_434-a-disposable.mts", ["scripts/_434-b-disposable.mts"]);
+    const b = old("scripts/_434-b-disposable.mts", ["scripts/_434-a-disposable.mts", "docs/specs/A_COURT.md"]);
+    expect(chainSweep([a, b], 7, NOW).size).toBe(0);
   });
 });
