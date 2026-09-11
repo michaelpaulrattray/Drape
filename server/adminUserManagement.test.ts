@@ -35,338 +35,142 @@ vi.mock("./security/adminSecurity", async (importOriginal) => {
 import {
   listAllUsers,
   getUserStatistics,
-  getUserFullDetails,
   adjustUserCredits,
   getUserById,
 } from "./db";
 import { logAuditEvent, getFilteredAuditLogs } from "./auditLog";
 
-describe("Admin User Management", () => {
+/**
+ * THE FOUR ADMIN READS — driven through the real procedures (#697).
+ *
+ * ⚠ FIFTEEN ARMS STOOD HERE AND NOT ONE COULD FAIL. Five describes — `listAllUsers`,
+ * `getUserStatistics`, `getUserFullDetails`, `adjustUserCredits`, `getUserActivity` —
+ * each called the MOCKED db helper itself and asserted the mock's own return
+ * (shape 2 of the class): `vi.mocked(listAllUsers).mockResolvedValue(X); const r =
+ * await listAllUsers(...); expect(r).toEqual(X)`. Nothing under `server/routes`
+ * ran. Every filter the arms named ("should filter by role") was a string typed
+ * into a mock call and read back out of it. This file mocks `./db`, so the
+ * card's own reader should have flagged it and did not — recorded on #697.
+ *
+ * What is DRIVEN now, and where:
+ *   · the PROJECTIONS of `listUsers` and `getUserFullDetails` are
+ *     `adminUserProjection.test.ts`'s subject (#700) — not repeated here;
+ *   · the FILTERS of `listUsers` — that what an admin types reaches the db
+ *     helper, and that the declared defaults and bounds hold — are here;
+ *   · `getUserStats` and `getUserActivity`, which had no driven caller
+ *     anywhere in the repository, are here: the gate, the pass-through, the
+ *     declared bounds, and a positive control each;
+ *   · `adjustCredits` keeps its own driven describe at the foot of the file.
+ *
+ * The db helpers themselves are the far end and are not driven: they need a
+ * database `vitest.setup.ts` strips on purpose. Stated, not papered over.
+ */
+describe("the admin READS — driven, not recited (#697)", () => {
+  const ADMIN = {
+    user: { id: 2, role: "admin", email: "admin@example.com", name: "Admin", openId: null, suspendedAt: null },
+    req: { headers: {}, socket: {} },
+  } as never;
+  const MODERATOR = {
+    user: { id: 10, role: "moderator", email: "mod@x", name: "Mod", openId: null, suspendedAt: null },
+    req: { headers: {}, socket: {} },
+  } as never;
+
+  async function admin() {
+    const { usersRouter } = await import("./routes/admin/users");
+    return usersRouter.createCaller(ADMIN);
+  }
+  async function moderator() {
+    const { usersRouter } = await import("./routes/admin/users");
+    return usersRouter.createCaller(MODERATOR);
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(listAllUsers).mockResolvedValue({ users: [], total: 0 } as never);
+    vi.mocked(getUserStatistics).mockResolvedValue({ total: 3, active: 2, suspended: 1, frozen: 0, admins: 1, moderators: 0 } as never);
+    vi.mocked(getFilteredAuditLogs).mockResolvedValue({ logs: [], total: 0 } as never);
   });
 
-  describe("listAllUsers", () => {
-    it("should return paginated users with default options", async () => {
-      const mockUsers = [
-        {
-          id: 1,
-          openId: "test-open-id-1",
-          name: "Test User 1",
-          email: "test1@example.com",
-          avatarUrl: null,
-          role: "user" as const,
-          suspendedAt: null,
-          suspendedReason: null,
-          lockedUntil: null,
-          createdAt: new Date(),
-          lastSignedIn: new Date(),
-        },
-        {
-          id: 2,
-          openId: "test-open-id-2",
-          name: "Test User 2",
-          email: "test2@example.com",
-          avatarUrl: null,
-          role: "admin" as const,
-          suspendedAt: null,
-          suspendedReason: null,
-          lockedUntil: null,
-          createdAt: new Date(),
-          lastSignedIn: new Date(),
-        },
-      ];
-
-      vi.mocked(listAllUsers).mockResolvedValue({
-        users: mockUsers,
-        total: 2,
+  describe("admin.listUsers — the filters reach the helper", () => {
+    it("with NO input, the declared defaults reach the helper (20 / 0 / all / all / createdAt desc)", async () => {
+      await (await admin()).listUsers();
+      expect(listAllUsers).toHaveBeenCalledWith({
+        limit: 20, offset: 0, search: undefined, status: "all", role: "all", sortBy: "createdAt", sortOrder: "desc",
       });
-
-      const result = await listAllUsers({});
-      expect(result.users).toHaveLength(2);
-      expect(result.total).toBe(2);
     });
 
-    it("should filter by search term", async () => {
-      vi.mocked(listAllUsers).mockResolvedValue({
-        users: [
-          {
-            id: 1,
-            openId: "test-open-id-1",
-            name: "John Doe",
-            email: "john@example.com",
-            avatarUrl: null,
-            role: "user" as const,
-            suspendedAt: null,
-            suspendedReason: null,
-            lockedUntil: null,
-            createdAt: new Date(),
-            lastSignedIn: new Date(),
-          },
-        ],
-        total: 1,
+    it("every filter an admin types is passed through by name — search, status, role, sort, page", async () => {
+      await (await admin()).listUsers({
+        limit: 50, offset: 100, search: "ada", status: "suspended", role: "moderator", sortBy: "name", sortOrder: "asc",
       });
-
-      const result = await listAllUsers({ search: "john" });
-      expect(result.users).toHaveLength(1);
-      expect(result.users[0].name).toBe("John Doe");
+      expect(listAllUsers).toHaveBeenCalledWith({
+        limit: 50, offset: 100, search: "ada", status: "suspended", role: "moderator", sortBy: "name", sortOrder: "asc",
+      });
     });
 
-    it("should filter by status (suspended)", async () => {
-      vi.mocked(listAllUsers).mockResolvedValue({
-        users: [
-          {
-            id: 1,
-            openId: "test-open-id-1",
-            name: "Suspended User",
-            email: "suspended@example.com",
-            avatarUrl: null,
-            role: "user" as const,
-            suspendedAt: new Date(),
-            suspendedReason: "Violation of terms",
-            lockedUntil: null,
-            createdAt: new Date(),
-            lastSignedIn: new Date(),
-          },
-        ],
-        total: 1,
-      });
-
-      const result = await listAllUsers({ status: "suspended" });
-      expect(result.users).toHaveLength(1);
-      expect(result.users[0].suspendedAt).not.toBeNull();
+    it("the page size is bounded 1..100 and a status or role outside the declared set is refused — before the helper", async () => {
+      const caller = await admin();
+      await expect(caller.listUsers({ limit: 101 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.listUsers({ limit: 0 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.listUsers({ offset: -1 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.listUsers({ status: "banned" } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.listUsers({ role: "owner" } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      expect(listAllUsers).not.toHaveBeenCalled();
+      // POSITIVE CONTROL — the boundary itself is accepted.
+      await expect(caller.listUsers({ limit: 100 })).resolves.toBeDefined();
     });
 
-    it("should filter by role", async () => {
-      vi.mocked(listAllUsers).mockResolvedValue({
-        users: [
-          {
-            id: 1,
-            openId: "admin-open-id",
-            name: "Admin User",
-            email: "admin@example.com",
-            avatarUrl: null,
-            role: "admin" as const,
-            suspendedAt: null,
-            suspendedReason: null,
-            lockedUntil: null,
-            createdAt: new Date(),
-            lastSignedIn: new Date(),
-          },
-        ],
-        total: 1,
-      });
-
-      const result = await listAllUsers({ role: "admin" });
-      expect(result.users).toHaveLength(1);
-      expect(result.users[0].role).toBe("admin");
+    it("the helper's TOTAL rides through untouched — the pager's number is the database's", async () => {
+      vi.mocked(listAllUsers).mockResolvedValue({ users: [], total: 4321 } as never);
+      await expect((await admin()).listUsers()).resolves.toMatchObject({ users: [], total: 4321 });
     });
 
-    it("should return empty array when no users found", async () => {
-      vi.mocked(listAllUsers).mockResolvedValue({
-        users: [],
-        total: 0,
-      });
-
-      const result = await listAllUsers({ search: "nonexistent" });
-      expect(result.users).toHaveLength(0);
-      expect(result.total).toBe(0);
+    it("a MODERATOR is refused the whole read — adminProcedure, driven", async () => {
+      await expect((await moderator()).listUsers()).rejects.toMatchObject({ code: "FORBIDDEN" });
+      expect(listAllUsers).not.toHaveBeenCalled();
     });
   });
 
-  describe("getUserStatistics", () => {
-    it("should return user statistics summary", async () => {
-      vi.mocked(getUserStatistics).mockResolvedValue({
-        totalUsers: 100,
-        activeUsers: 85,
-        suspendedUsers: 10,
-        lockedUsers: 5,
-        newUsersThisMonth: 15,
-        adminCount: 3,
+  describe("admin.getUserStats — the dashboard numbers", () => {
+    it("hands the helper's summary back whole, and calls it once", async () => {
+      await expect((await admin()).getUserStats()).resolves.toEqual({
+        total: 3, active: 2, suspended: 1, frozen: 0, admins: 1, moderators: 0,
       });
-
-      const stats = await getUserStatistics();
-      expect(stats.totalUsers).toBe(100);
-      expect(stats.activeUsers).toBe(85);
-      expect(stats.suspendedUsers).toBe(10);
-      expect(stats.lockedUsers).toBe(5);
-      expect(stats.newUsersThisMonth).toBe(15);
-      expect(stats.adminCount).toBe(3);
+      expect(getUserStatistics).toHaveBeenCalledTimes(1);
     });
 
-    it("should return zero values when database is empty", async () => {
-      vi.mocked(getUserStatistics).mockResolvedValue({
-        totalUsers: 0,
-        activeUsers: 0,
-        suspendedUsers: 0,
-        lockedUsers: 0,
-        newUsersThisMonth: 0,
-        adminCount: 0,
-      });
-
-      const stats = await getUserStatistics();
-      expect(stats.totalUsers).toBe(0);
+    it("a MODERATOR is refused — adminProcedure, driven", async () => {
+      await expect((await moderator()).getUserStats()).rejects.toMatchObject({ code: "FORBIDDEN" });
+      expect(getUserStatistics).not.toHaveBeenCalled();
     });
   });
 
-  describe("getUserFullDetails", () => {
-    it("should return full user details with credits and stats", async () => {
-      vi.mocked(getUserFullDetails).mockResolvedValue({
-        user: {
-          id: 1,
-          openId: "test-open-id",
-          name: "Test User",
-          displayName: "Test",
-          email: "test@example.com",
-          avatarUrl: null,
-          bannerUrl: null,
-          bio: null,
-          role: "user" as const,
-          storageUsed: 1024,
-          storageLimit: 10240,
-          suspendedAt: null,
-          suspendedReason: null,
-          suspendedBy: null,
-          lockedUntil: null,
-          failedLoginAttempts: 0,
-          createdAt: new Date(),
-          lastSignedIn: new Date(),
-        },
-        credits: {
-          balance: 500,
-          planTier: "pro",
-          creditsPurchased: 1000,
-          creditsUsed: 500,
-          rolloverCredits: 100,
-          subscriptionStatus: "active",
-        },
-        stats: {
-          totalModels: 5,
-          totalGenerations: 50,
-        },
-      });
-
-      const result = await getUserFullDetails(1);
-      expect(result).not.toBeNull();
-      expect(result?.user.id).toBe(1);
-      expect(result?.credits?.balance).toBe(500);
-      expect(result?.stats.totalModels).toBe(5);
+  describe("admin.getUserActivity — one account's audit rows", () => {
+    it("scopes the audit read to the named user, with the declared defaults (50 / 0)", async () => {
+      await (await admin()).getUserActivity({ userId: 42 });
+      expect(getFilteredAuditLogs).toHaveBeenCalledWith({ userId: 42, limit: 50, offset: 0 });
     });
 
-    it("should return null for non-existent user", async () => {
-      vi.mocked(getUserFullDetails).mockResolvedValue(null);
+    it("passes a typed page through, and refuses one outside 1..100 before the read", async () => {
+      const caller = await admin();
+      await caller.getUserActivity({ userId: 42, limit: 10, offset: 30 });
+      expect(getFilteredAuditLogs).toHaveBeenCalledWith({ userId: 42, limit: 10, offset: 30 });
+      await expect(caller.getUserActivity({ userId: 42, limit: 101 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(caller.getUserActivity({ userId: 42, offset: -1 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      expect(getFilteredAuditLogs).toHaveBeenCalledTimes(1);
+    });
 
-      const result = await getUserFullDetails(99999);
-      expect(result).toBeNull();
+    it("hands the reader's rows and total back whole", async () => {
+      const rows = [{ id: 9, action: "ACCOUNT_SUSPENDED", userId: 2, resourceId: "42" }];
+      vi.mocked(getFilteredAuditLogs).mockResolvedValue({ logs: rows, total: 1 } as never);
+      await expect((await admin()).getUserActivity({ userId: 42 })).resolves.toEqual({ logs: rows, total: 1 });
+    });
+
+    it("a MODERATOR is refused — adminProcedure, driven", async () => {
+      await expect((await moderator()).getUserActivity({ userId: 42 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+      expect(getFilteredAuditLogs).not.toHaveBeenCalled();
     });
   });
-
-  describe("adjustUserCredits", () => {
-    it("should add credits successfully", async () => {
-      vi.mocked(adjustUserCredits).mockResolvedValue({
-        success: true,
-        newBalance: 600,
-      });
-
-      const result = await adjustUserCredits(1, 100, "Bonus credits", 2);
-      expect(result.success).toBe(true);
-      expect(result.newBalance).toBe(600);
-    });
-
-    it("should deduct credits successfully", async () => {
-      vi.mocked(adjustUserCredits).mockResolvedValue({
-        success: true,
-        newBalance: 400,
-      });
-
-      const result = await adjustUserCredits(1, -100, "Manual adjustment", 2);
-      expect(result.success).toBe(true);
-      expect(result.newBalance).toBe(400);
-    });
-
-    it("should fail when trying to deduct more than balance", async () => {
-      vi.mocked(adjustUserCredits).mockResolvedValue({
-        success: false,
-        error: "Cannot reduce balance below zero",
-      });
-
-      const result = await adjustUserCredits(1, -10000, "Large deduction", 2);
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("Cannot reduce balance below zero");
-    });
-
-    it("should fail for non-existent user", async () => {
-      vi.mocked(adjustUserCredits).mockResolvedValue({
-        success: false,
-        error: "User credits record not found",
-      });
-
-      const result = await adjustUserCredits(99999, 100, "Test", 2);
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("User credits record not found");
-    });
-  });
-
-  describe("getUserActivity", () => {
-    it("should return user's audit log entries", async () => {
-      vi.mocked(getFilteredAuditLogs).mockResolvedValue({
-        logs: [
-          {
-            id: 1,
-            userId: 1,
-            action: "auth.login",
-            resourceType: null,
-            resourceId: null,
-            metadata: {},
-            severity: "info",
-            ipAddress: "127.0.0.1",
-            userAgent: "Mozilla/5.0",
-            createdAt: new Date(),
-          },
-          {
-            id: 2,
-            userId: 1,
-            action: "model.created",
-            resourceType: "model",
-            resourceId: "123",
-            metadata: {},
-            severity: "info",
-            ipAddress: "127.0.0.1",
-            userAgent: "Mozilla/5.0",
-            createdAt: new Date(),
-          },
-        ],
-        total: 2,
-      });
-
-      const result = await getFilteredAuditLogs({ userId: 1, limit: 50 });
-      expect(result.logs).toHaveLength(2);
-      expect(result.logs[0].userId).toBe(1);
-    });
-
-    it("should return empty array for user with no activity", async () => {
-      vi.mocked(getFilteredAuditLogs).mockResolvedValue({
-        logs: [],
-        total: 0,
-      });
-
-      const result = await getFilteredAuditLogs({ userId: 99999, limit: 50 });
-      expect(result.logs).toHaveLength(0);
-    });
-  });
-
-  /*
-   * ⚠ A `Credit adjustment audit logging` DESCRIBE STOOD HERE. Its arm was
-   * commented "Simulate the audit log call that would happen in the router",
-   * called the mocked `logAuditEvent` ITSELF with a payload it typed, and then
-   * asserted `logAuditEvent` had been called with it — the test asserting its
-   * own call. It could not have failed on any change to `admin.adjustCredits`.
-   *
-   * DELETED rather than repointed, because the real thing is already asserted:
-   * the DRIVEN describe at the foot of this file runs the procedure and the
-   * audit row rides that path. Filed under 3g's D, category (3) — covered, so
-   * deleted after the cluster control rather than before it.
-   */
 });
 
 /*
