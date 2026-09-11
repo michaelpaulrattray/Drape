@@ -288,12 +288,42 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
   // subscription's pending settlement. Null on record still voids: the
   // voluntary-cancel road this exists for may clear the stored id first.
   const storedSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
+  const invoiceVoidsFailed: string[] = [];
   if (!storedSubscriptionId || storedSubscriptionId === subscription.id) {
-    const voided = await voidPendingPlanChangeSettlementsForUser(userId);
-    if (voided > 0) {
+    const voidedInvoiceIds = await voidPendingPlanChangeSettlementsForUser(userId);
+    if (voidedInvoiceIds.length > 0) {
       log.info(
-        `[Webhook] Voided ${voided} pending plan-change settlement(s) for user ${userId} — the subscription died before the change's invoice settled`,
+        `[Webhook] ${voidedInvoiceIds.length} plan-change settlement(s) for user ${userId} are void — the subscription died before the change's invoice settled`,
       );
+      // AND THE INVOICES THEY HANG ON (#765, founder ruling 2026-09-10,
+      // option A: "close the invoice too, the same as the payment-failure
+      // road"). The void row closes the CREDIT side; the invoice stayed
+      // `open` and payable through Stripe's hosted page indefinitely, so a
+      // customer who cancelled could still pay for a plan they no longer
+      // have, against credits the void row will refuse. Every one of these
+      // invoices is for credits that were never granted, so nothing was
+      // delivered for the money — which is why the fair answer and the
+      // consistent one are the same one.
+      //
+      // The list carries rows that were ALREADY void too, on purpose (PR
+      // #786 review, finding 1): `voidInvoice` reads the status first and
+      // treats a closed invoice as done, so a redelivered event is one read
+      // per row — and it is what RETRIES an invoice void that failed on a
+      // Stripe blip the first time.
+      //
+      // ⚠ AND THE REDELIVERY HAS TO BE MADE TO HAPPEN (round 2): a handler
+      // that returns success is ACKed 200 and recorded as processed, so
+      // Stripe never sends the event again and the idempotency guard would
+      // refuse it if it did. So a void that comes back `failed` is collected
+      // here and FAILS THE EVENT below — after the downgrade, which must land
+      // on the first attempt — the same way a failed settlement application
+      // fails its event loud. Stripe redelivers for ~3 days, the stale guard
+      // passes (the stored id is null by then, and null voids by design), and
+      // the void-inclusive list above is what makes the retry reach Stripe.
+      for (const invoiceId of voidedInvoiceIds) {
+        const verdict = await voidInvoice(invoiceId);
+        if (verdict === "failed") invoiceVoidsFailed.push(invoiceId);
+      }
     }
   } else {
     log.info(
@@ -313,6 +343,17 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
   });
 
   log.info(`[Webhook] Subscription deleted for user ${userId} (was ${previousPlan}), downgraded to free tier`);
+
+  if (invoiceVoidsFailed.length > 0) {
+    log.error(
+      `[Webhook] ${invoiceVoidsFailed.length} plan-change invoice(s) for user ${userId} could not be voided (${invoiceVoidsFailed.join(", ")}) — failing the event so Stripe redelivers and the void is retried; the downgrade has already landed`,
+    );
+    return {
+      success: false,
+      message: `Subscription deleted for user ${userId}, but ${invoiceVoidsFailed.length} plan-change invoice(s) could not be voided — redeliver to retry`,
+    };
+  }
+
   return { success: true, message: `Subscription deleted for user ${userId}` };
 }
 

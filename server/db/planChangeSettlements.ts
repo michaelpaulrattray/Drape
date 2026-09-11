@@ -10,7 +10,7 @@
  * The status column exists so a row that will never apply (a final payment
  * failure) says so instead of reading as queued work forever.
  */
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { planChangeSettlements, type PlanChangeSettlement } from "../../drizzle/schema";
 import { getDb } from "./connection";
 import { createModuleLogger } from "../logging/logger";
@@ -92,21 +92,70 @@ export async function resolvePlanChangeSettlement(
  * pending with no invoice event ever coming. The product holds one
  * subscription per user, so every pending row of theirs belongs to the dead
  * one. Voiding refuses movement, which is the safe direction on both
- * directions of the move. Returns how many rows moved.
+ * directions of the move.
+ *
+ * Returns the `stripeInvoiceId` of every row of theirs whose credit side is
+ * now `void` — not a count (#765): the caller closes the INVOICE side of
+ * each one too (founder ruling 2026-09-10, option A, *"close the invoice
+ * too, the same as the payment-failure road"*), and a count gave it nothing
+ * to void with. Two properties of that list, each from a PR #786 review
+ * finding:
+ *
+ * - **It includes rows that were ALREADY void**, so a redelivered event
+ *   retries an invoice void that failed transiently the first time
+ *   (finding 1). `voidInvoice` reads the status first and treats a closed
+ *   invoice as done, so the retry is one read per row and no money question.
+ *   Without this the first delivery moved the rows to void, a Stripe blip
+ *   failed the invoice void, and every redelivery found nothing pending and
+ *   left the invoice payable forever — the exact defect, surviving one error.
+ *   ⚠ The redelivery itself is the CALLER's doing (round 2): a failed invoice
+ *   void fails the webhook event after the downgrade, so Stripe sends the
+ *   same event again instead of recording it as done. This list only makes
+ *   that retry reach the invoice; it cannot cause it.
+ * - **It is read back AFTER the update, from the rows that are actually
+ *   `void`** (finding 2). A row read as pending and concurrently resolved to
+ *   `applied` by a racing `invoice.paid` is not re-voided (the update is
+ *   guarded on `pending`) and is therefore NOT in the list — so the caller
+ *   never asks Stripe to void an invoice whose credits DID move, and the
+ *   already-paid alarm downstream is true whenever it fires.
+ *
+ * MySQL's UPDATE returns no rows, which is why this is three statements.
  */
 export async function voidPendingPlanChangeSettlementsForUser(
   userId: number,
-): Promise<number> {
+): Promise<string[]> {
   const db = await getDb();
-  if (!db) return 0;
-  const result = await db
+  if (!db) return [];
+  const candidates = await db
+    .select({ stripeInvoiceId: planChangeSettlements.stripeInvoiceId })
+    .from(planChangeSettlements)
+    .where(
+      and(
+        eq(planChangeSettlements.userId, userId),
+        inArray(planChangeSettlements.status, ["pending", "void"]),
+      ),
+    );
+  const candidateIds = candidates.map((row) => row.stripeInvoiceId);
+  if (candidateIds.length === 0) return [];
+  await db
     .update(planChangeSettlements)
     .set({ status: "void", resolvedAt: new Date() })
     .where(
       and(
         eq(planChangeSettlements.userId, userId),
         eq(planChangeSettlements.status, "pending"),
+        inArray(planChangeSettlements.stripeInvoiceId, candidateIds),
       ),
     );
-  return (result as any)[0]?.affectedRows ?? (result as any).affectedRows ?? 0;
+  const voided = await db
+    .select({ stripeInvoiceId: planChangeSettlements.stripeInvoiceId })
+    .from(planChangeSettlements)
+    .where(
+      and(
+        eq(planChangeSettlements.userId, userId),
+        eq(planChangeSettlements.status, "void"),
+        inArray(planChangeSettlements.stripeInvoiceId, candidateIds),
+      ),
+    );
+  return voided.map((row) => row.stripeInvoiceId);
 }
