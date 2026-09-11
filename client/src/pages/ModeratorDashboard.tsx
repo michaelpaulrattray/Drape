@@ -180,9 +180,7 @@ export default function ModeratorDashboard() {
 
   const createChangeRequestMutation = trpc.moderator.createChangeRequest.useMutation({
     onSuccess: (result) => {
-      toast[result.slackSent ? "success" : "warning"](
-        `Change request #${result.requestId} submitted${result.slackSent ? " and admin team notified" : " but Slack notification could not be sent"}`
-      );
+      toast.success(`Change request #${result.requestId} submitted for admin review`);
       setChangeRequestOpen(false);
       resetChangeRequestForm();
       myRequestsQuery.refetch();

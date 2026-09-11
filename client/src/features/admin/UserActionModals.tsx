@@ -222,7 +222,7 @@ export function RoleChangeModal({ open, onOpenChange, targetRole, reason, onReas
           eyebrow="ACCOUNT"
           title={targetRole === "moderator" ? "Promote to moderator" : "Demote to user"}
           description={targetRole === "moderator"
-            ? "This user will gain access to the moderator dashboard with read-only audit logs, user activity, and the ability to escalate issues to admins via Slack."
+            ? "This user will gain access to the moderator dashboard with read-only audit logs, user activity, and the ability to escalate issues to admins through change requests."
             : "This user will lose moderator access and return to standard user permissions."}
         />
         <div className={STAFF_DIALOG_BODY}>
@@ -322,7 +322,7 @@ export function RoleChangeModal({ open, onOpenChange, targetRole, reason, onReas
             about the helper.
           */}
           <p className="text-[11px] leading-relaxed text-[var(--faint)]">
-            This action will be logged and reported to Slack
+            This action will be logged in the audit trail
           </p>
         </div>
         <DialogFooter className="shrink-0">

@@ -791,20 +791,20 @@
 
 - symbol: _clearPendingActions
   file: server/slack/slackApproval.ts
-  verdict: KEEP
-  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  verdict: TAKEN
+  why: was KEEP as a test-only seam; deleted with server/slack (#800, the Slack retirement) — nothing calls, nothing exports
   argued: 6c/13a
 
 - symbol: _clearDedupCache
   file: server/slack/slackCore.ts
-  verdict: KEEP
-  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  verdict: TAKEN
+  why: was KEEP as a test-only seam; deleted with server/slack (#800, the Slack retirement) — nothing calls, nothing exports
   argued: 6c/13a
 
 - symbol: getDedupCacheSize
   file: server/slack/slackCore.ts
-  verdict: KEEP
-  why: the read half beside the _clearDedupCache seam; a suite that clears a cache must be able to see it emptied
+  verdict: TAKEN
+  why: was KEEP as the read half beside the _clearDedupCache seam; deleted with server/slack (#800, the Slack retirement)
   argued: 6c
 
 - symbol: allowColdImports

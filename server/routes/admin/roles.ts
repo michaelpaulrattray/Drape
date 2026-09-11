@@ -60,7 +60,7 @@ export const rolesRouter = router({
         userAgent: ctx.req.headers["user-agent"] || null,
       });
 
-      // Log admin action with Slack notification
+      // Log admin action to the audit system (staff panels read it)
       await logAdminAction({
         adminId: ctx.user.id,
         adminName: ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`,

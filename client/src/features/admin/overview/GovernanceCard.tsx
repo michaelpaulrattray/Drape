@@ -1,6 +1,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { EmptyState, LeaderRow } from "@/foundation";
 import { tooltipStyle, useChartTokens } from "./chartTokens";
+import { STATUS_CONFIG } from "../ChangeRequestConstants";
 
 /**
  * Governance — change requests (brief 07 §7's "same treatment" clause).
@@ -31,12 +32,13 @@ export interface ChangeRequestDistribution {
   count: number;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
-  approved: "Approved",
-  rejected: "Rejected",
-  completed: "Completed",
-};
+/* Derived from the change-request page's own config (#800's law-7 sweep):
+   this was a hand-typed map holding `rejected` and `completed` — two statuses
+   the product has never had — while missing `denied`, `pending_execution`,
+   `cancelled` and `expired`, so real rows printed their raw enum. */
+const STATUS_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(STATUS_CONFIG).map(([status, config]) => [status, config.label]),
+);
 
 /** The greyscale ramp the non-pending statuses walk, in a fixed order so the
  *  donut does not repaint itself when a count changes rank. */

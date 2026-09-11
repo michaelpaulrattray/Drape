@@ -70,10 +70,6 @@ vi.mock("../auditLog", async () => {
   return { logAuditEvent: audit.logAuditEvent, AUDIT_ACTIONS: schema.AUDIT_ACTIONS };
 });
 
-vi.mock("../slack/slackNotification", () => ({
-  SlackAlerts: new Proxy({}, { get: () => vi.fn().mockResolvedValue(true) }),
-}));
-
 import {
   issueStripeRefund,
   REFUND_METADATA_USER_KEY,

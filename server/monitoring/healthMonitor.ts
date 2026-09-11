@@ -1,17 +1,46 @@
 /**
- * Health Monitor — Periodic system health checks with Slack alerting.
+ * Health Monitor — periodic system health checks that alert onto the ADMIN
+ * PANEL: each alert is a warning/critical `system.health_alert` audit row,
+ * which the admin overview's alerts feed and the staff audit log both read.
+ * (Until #800 these went to a Slack channel production never had.)
  *
  * Runs every 5 minutes and checks:
  *   1. Generation success rate (24h) — alerts when below threshold
- *   2. DB connectivity — alerts on connection failure
+ *   2. DB connectivity — alerts on high latency / query failure. ⚠ The
+ *      DB-DOWN case cannot alert onto a panel a database serves: it stays a
+ *      fatal log line, and that limit is stated here rather than shipped
+ *      quietly.
  *   3. Error spike detection — alerts when critical audit events spike
  *
  * Uses a 15-minute cooldown per alert type to prevent spam.
  */
 
-import { dispatch } from "../slack/slackDispatcher";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("monitoring/healthMonitor");
+
+/**
+ * Write one health alert as an audit row. Best-effort by construction:
+ * `logAuditEvent` swallows its own failures, so the monitor can never take
+ * the app down over a reporting failure.
+ */
+async function recordHealthAlert(options: {
+  alertType: string;
+  title: string;
+  description: string;
+  severity: "warning" | "critical";
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  const { logAuditEvent } = await import("../auditLog");
+  const { AUDIT_ACTIONS } = await import("../../drizzle/schema");
+  await logAuditEvent({
+    userId: 0,
+    action: AUDIT_ACTIONS.SYSTEM_HEALTH_ALERT,
+    resourceType: "system",
+    resourceId: options.alertType,
+    metadata: { title: options.title, description: options.description, ...options.metadata },
+    severity: options.severity,
+  });
+}
 
 // ============ Configuration ============
 
@@ -66,24 +95,22 @@ export async function checkGenerationHealth(): Promise<void> {
     if (health.total24h === 0) return;
 
     if (health.successRate < SUCCESS_RATE_THRESHOLD) {
-      await dispatch({
-        type: "system_health_generation_rate",
+      await recordHealthAlert({
+        alertType,
         title: "Generation Success Rate Below Threshold",
-        description: `The 24-hour generation success rate has dropped to *${health.successRate}%* (threshold: ${SUCCESS_RATE_THRESHOLD}%).`,
+        description: `The 24-hour generation success rate has dropped to ${health.successRate}% (threshold: ${SUCCESS_RATE_THRESHOLD}%).`,
         severity: health.successRate < 50 ? "critical" : "warning",
-        fields: [
-          { title: "Success Rate", value: `${health.successRate}%`, short: true },
-          { title: "Total (24h)", value: `${health.total24h}`, short: true },
-          { title: "Completed", value: `${health.completed24h}`, short: true },
-          { title: "Failed", value: `${health.failed24h}`, short: true },
-          { title: "Pending", value: `${health.pending}`, short: true },
-          { title: "Processing", value: `${health.processing}`, short: true },
-        ],
-        channels: ["system-alerts"],
-        skipDedup: true,
+        metadata: {
+          successRate: health.successRate,
+          total24h: health.total24h,
+          completed24h: health.completed24h,
+          failed24h: health.failed24h,
+          pending: health.pending,
+          processing: health.processing,
+        },
       });
       recordAlert(alertType);
-      log.info(`[HealthMonitor] Alert sent: generation success rate ${health.successRate}%`);
+      log.info(`[HealthMonitor] Alert recorded: generation success rate ${health.successRate}%`);
     }
   } catch (error) {
     log.error({ err: error }, "[HealthMonitor] Failed to check generation health:");
@@ -102,16 +129,11 @@ export async function checkDbConnectivity(): Promise<void> {
     const db = await getDb();
 
     if (!db) {
-      await dispatch({
-        type: "system_health_db_down",
-        title: "Database Connection Unavailable",
-        description: "The database connection pool returned null. The application cannot serve data until connectivity is restored.",
-        severity: "critical",
-        channels: ["system-alerts"],
-        skipDedup: true,
-      });
+      // A panel alert is an audit row and audit rows live in the database
+      // that just failed — this one case has no panel road, on purpose
+      // rather than by omission. The fatal log line is the record.
+      log.fatal("[HealthMonitor] Database connection unavailable — the application cannot serve data until connectivity is restored");
       recordAlert(alertType);
-      log.info("[HealthMonitor] Alert sent: DB connection unavailable");
       return;
     }
 
@@ -126,33 +148,27 @@ export async function checkDbConnectivity(): Promise<void> {
       const latencyAlertType = "db_high_latency";
       if (!canAlert(latencyAlertType)) return;
 
-      await dispatch({
-        type: "system_health_db_latency",
+      await recordHealthAlert({
+        alertType: latencyAlertType,
         title: "Database Latency Critically High",
-        description: `Database ping latency is *${latencyMs}ms* (>5000ms threshold). This may indicate connection pool exhaustion or database overload.`,
+        description: `Database ping latency is ${latencyMs}ms (>5000ms threshold). This may indicate connection pool exhaustion or database overload.`,
         severity: "warning",
-        fields: [
-          { title: "Latency", value: `${latencyMs}ms`, short: true },
-          { title: "Threshold", value: "5000ms", short: true },
-        ],
-        channels: ["system-alerts"],
-        skipDedup: true,
+        metadata: { latencyMs, thresholdMs: 5000 },
       });
       recordAlert(latencyAlertType);
-      log.info(`[HealthMonitor] Alert sent: DB latency ${latencyMs}ms`);
+      log.info(`[HealthMonitor] Alert recorded: DB latency ${latencyMs}ms`);
     }
   } catch (error) {
-    // DB query itself failed — critical alert
-    await dispatch({
-      type: "system_health_db_error",
+    // DB query itself failed — the follow-up audit write is best-effort by
+    // the same reasoning as the db-down case above
+    await recordHealthAlert({
+      alertType,
       title: "Database Query Failed",
-      description: `A health check query to the database failed with: \`${error instanceof Error ? error.message : String(error)}\``,
+      description: `A health check query to the database failed with: ${error instanceof Error ? error.message : String(error)}`,
       severity: "critical",
-      channels: ["system-alerts"],
-      skipDedup: true,
     });
     recordAlert(alertType);
-    log.error({ err: error }, "[HealthMonitor] Alert sent: DB query failed:");
+    log.error({ err: error }, "[HealthMonitor] Alert recorded: DB query failed:");
   }
 }
 
@@ -178,20 +194,15 @@ export async function checkErrorSpike(): Promise<void> {
     const criticalCount = Number((result as any)?.count ?? 0);
 
     if (criticalCount >= ERROR_SPIKE_THRESHOLD) {
-      await dispatch({
-        type: "system_health_error_spike",
+      await recordHealthAlert({
+        alertType,
         title: "Critical Event Spike Detected",
-        description: `*${criticalCount}* critical audit events logged in the last hour (threshold: ${ERROR_SPIKE_THRESHOLD}). This may indicate a security incident, system failure, or abuse pattern.`,
+        description: `${criticalCount} critical audit events logged in the last hour (threshold: ${ERROR_SPIKE_THRESHOLD}). This may indicate a security incident, system failure, or abuse pattern.`,
         severity: "critical",
-        fields: [
-          { title: "Critical Events (1h)", value: `${criticalCount}`, short: true },
-          { title: "Threshold", value: `${ERROR_SPIKE_THRESHOLD}`, short: true },
-        ],
-        channels: ["system-alerts"],
-        skipDedup: true,
+        metadata: { criticalCount1h: criticalCount, threshold: ERROR_SPIKE_THRESHOLD },
       });
       recordAlert(alertType);
-      log.info(`[HealthMonitor] Alert sent: ${criticalCount} critical events in 1h`);
+      log.info(`[HealthMonitor] Alert recorded: ${criticalCount} critical events in 1h`);
     }
   } catch (error) {
     log.error({ err: error }, "[HealthMonitor] Failed to check error spike:");
@@ -212,21 +223,15 @@ export async function checkGenerationQueue(): Promise<void> {
     // Alert if more than 20 pending or processing generations
     const queueSize = health.pending + health.processing;
     if (queueSize > 20) {
-      await dispatch({
-        type: "system_health_queue_backup",
+      await recordHealthAlert({
+        alertType,
         title: "Generation Queue Backup",
-        description: `There are *${queueSize}* generations in the queue (${health.pending} pending, ${health.processing} processing). This may indicate a processing bottleneck.`,
+        description: `There are ${queueSize} generations in the queue (${health.pending} pending, ${health.processing} processing). This may indicate a processing bottleneck.`,
         severity: "warning",
-        fields: [
-          { title: "Pending", value: `${health.pending}`, short: true },
-          { title: "Processing", value: `${health.processing}`, short: true },
-          { title: "Failed (24h)", value: `${health.failed24h}`, short: true },
-        ],
-        channels: ["system-alerts"],
-        skipDedup: true,
+        metadata: { pending: health.pending, processing: health.processing, failed24h: health.failed24h },
       });
       recordAlert(alertType);
-      log.info(`[HealthMonitor] Alert sent: queue backup ${queueSize} items`);
+      log.info(`[HealthMonitor] Alert recorded: queue backup ${queueSize} items`);
     }
   } catch (error) {
     log.error({ err: error }, "[HealthMonitor] Failed to check generation queue:");

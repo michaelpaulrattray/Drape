@@ -32,17 +32,6 @@ vi.mock("./security/adminSecurity", async (importOriginal) => {
   };
 });
 
-vi.mock("./slack/slackNotification", () => ({
-  sendAdminActionNotification: vi.fn().mockResolvedValue(true),
-  sendAuditLogEntry: vi.fn().mockResolvedValue(true),
-  sendSlackAlert: vi.fn().mockResolvedValue(true),
-  SlackAlerts: {
-    unauthorizedAdminAccess: vi.fn().mockResolvedValue(undefined),
-    sensitiveAdminAction: vi.fn().mockResolvedValue(undefined),
-    securityAlert: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
 import {
   listAllUsers,
   getUserStatistics,

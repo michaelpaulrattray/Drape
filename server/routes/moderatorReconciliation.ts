@@ -4,7 +4,6 @@ import { getDetailedCreditHistory, getDetailedGenerationHistory, getUsersWithDis
 import { computeDiscrepancy, getUserRecordCosts, type DiscrepancyReading } from "../db/discrepancyQueries";
 import { freezeUser, unfreezeUser } from "../db";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
-import { SlackAlerts } from "../slack/slackNotification";
 import { sendAccountFrozenEmail } from "../klaviyo";
 import { getDb } from "../db/connection";
 import { users } from "../../drizzle/schema";
@@ -263,13 +262,6 @@ export const moderatorReconciliationRouter = router({
 
       const reason = `Manual freeze by moderator: ${input.reason}`;
       await freezeUser(input.userId, reason, String(ctx.user.id));
-
-      await SlackAlerts.accountFrozenByStaff(
-        input.userId,
-        user.name || `User ${input.userId}`,
-        ctx.user.name || `Moderator ${ctx.user.id}`,
-        input.reason
-      );
 
       await logAuditEvent({
         userId: ctx.user.id,

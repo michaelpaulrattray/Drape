@@ -53,7 +53,7 @@ Use admin procedures for administrative operations like user management, system 
 
 ### moderatorProcedure
 
-Moderator procedures require authentication and either the `moderator` or `admin` role. Regular users receive a `FORBIDDEN` error. Moderators have read-only access to audit logs, user activity, and blocked IPs, plus the ability to escalate issues to admins via Slack.
+Moderator procedures require authentication and either the `moderator` or `admin` role. Regular users receive a `FORBIDDEN` error. Moderators have read-only access to audit logs, user activity, and blocked IPs, plus the ability to escalate issues to admins by filing change requests, which admins review on `/admin/change-requests`.
 
 ```typescript
 // Example: Moderators can view audit logs (read-only)
@@ -72,7 +72,7 @@ escalateToAdmin: moderatorProcedure
     severity: z.enum(["warning", "critical"]),
   }))
   .mutation(async ({ ctx, input }) => {
-    // Sends escalation to #admin-actions Slack channel
+    // Writes a change-request row + audit row; admins review it in the panel
   }),
 ```
 
@@ -82,7 +82,7 @@ Use moderator procedures for read-only monitoring operations and escalation work
 - View audit logs, abuse alerts, and audit statistics
 - View user details, user activity, and user lists (read-only)
 - View blocked IPs (read-only, cannot block/unblock)
-- Escalate issues to #admin-actions Slack channel with context
+- Escalate issues to admins via change requests, with context
 
 **Moderator restrictions:**
 - Cannot suspend/unsuspend users
@@ -385,100 +385,28 @@ export const ADMIN_ALLOWLIST: AdminAllowlistEntry[] = [
 
 The allowlist is checked in addition to the database role check. If the allowlist is empty (no entries configured), the system falls back to database-only role checking for backward compatibility.
 
-### Three-Channel Slack Architecture
+### Notifications land on the staff panels (the Slack integration is retired)
 
-FormaStudio routes Slack notifications across three dedicated channels, each serving a distinct audience and purpose. This separation enforces role-based visibility and prevents moderators from executing admin-only actions.
+Three sections stood here describing a three-channel Slack architecture, a
+tiered emergency-response flow, and a Slack-based approval flow ("out-of-band
+2FA") for sensitive admin actions. **All of it was retired outright on
+2026-09-11 (#800, the founder's word: "retire slack everything runs through
+moderator and admin at the moment").** None of it ever ran in production — no
+`SLACK_*` variable was ever configured — and the approval flow self-approved
+when unconfigured, so it enforced nothing from the day it was written.
 
-| Channel | Env Variable | Audience | Purpose |
-|---------|-------------|----------|--------|
-| #security-alerts | `SLACK_WEBHOOK_URL` | Moderators + Admins | Abuse detection, rate limits, unauthorized access, suspicious activity |
-| #admin-actions | `SLACK_ADMIN_ACTIONS_WEBHOOK_URL` | Admins only | Approval requests, emergency action buttons, admin activity confirmations |
-| #audit-log | `SLACK_AUDIT_LOG_WEBHOOK_URL` | Admins (read-only) | Immutable log entries, completed action records, compliance trail |
+What exists instead, and always was the real surface:
 
-### Tiered Emergency Response
-
-Security alerts use a tiered system based on severity. Non-critical alerts (warnings) appear in #security-alerts with an "Escalate to Admin" button. Critical alerts automatically send emergency action buttons (Block IP, Suspend User) to #admin-actions while simultaneously posting an informational notice to #security-alerts.
-
-This ensures moderators can investigate and escalate threats but cannot directly execute admin actions. Admins always have emergency action capability in their private channel, even if the web dashboard is unreachable during an attack.
-
-| Alert Severity | #security-alerts | #admin-actions | #audit-log |
-|---------------|-----------------|---------------|------------|
-| Info/Warning | Info + "Escalate" button | (only if escalated) | — |
-| Critical | Info notice | Emergency action buttons | — |
-| Completed action | — | Confirmation | Permanent record |
-| Unauthorized access | Info (critical) | Emergency buttons | Permanent record |
-
-### Moderator Escalation Flow
-
-1. **Moderator sees alert** in #security-alerts (e.g., "Rate limit exceeded by IP 1.2.3.4")
-2. **Moderator investigates** using the admin dashboard (view user activity, audit logs)
-3. **Moderator clicks "Escalate to Admin"** in Slack
-4. **#admin-actions receives** the alert with Block IP / Suspend User buttons
-5. **Admin clicks** the emergency action button to execute
-6. **#audit-log records** the completed action
-
-### Slack-Based Approval Flow (Out-of-Band 2FA)
-
-Certain admin actions are classified as "sensitive" and require **out-of-band approval via Slack** before execution. Approval requests are sent to the **#admin-actions** channel. This provides a second-channel security boundary: an attacker who compromises an admin web session also needs access to the Slack workspace to execute sensitive actions.
-
-| Sensitive Actions Requiring Slack Approval |
-|--------------------------------------------|
-| suspendUser |
-| unsuspendUser |
-| adjustCredits |
-| blockIP |
-| unblockIP |
-
-The approval flow works as follows:
-
-1. **Admin initiates action** in the web UI (e.g., clicks "Suspend User")
-2. **Server creates a pending action** (NOT executed yet) and sends a Slack message with Approve/Deny buttons to **#admin-actions**
-3. **Admin or another team member** clicks "Approve" or "Deny" in Slack
-4. **Admin polls for status** in the web UI, and once approved, the server executes the action
-5. **If no response within 5 minutes**, the pending action expires automatically
-6. **Approval/denial is logged** to **#audit-log** for the compliance trail
-
-If Slack is not configured (`SLACK_ADMIN_ACTIONS_WEBHOOK_URL` not set), actions are auto-approved to avoid blocking admin operations.
-
-**tRPC Endpoints:**
-
-```typescript
-// Step 1: Request approval (creates pending action, sends to #admin-actions)
-const { actionId, slackSent, expiresIn } = await trpc.admin.requestApproval.mutate({
-  action: "suspendUser",
-  targetId: "42",
-  description: "Suspend user 42 for repeated TOS violations",
-  params: { reason: "TOS violation" },
-});
-
-// Step 2: Poll for approval status
-const status = await trpc.admin.checkApprovalStatus.query({ actionId });
-// status.status: "pending" | "approved" | "denied" | "expired" | "executed" | "failed"
-
-// Step 3: Execute once approved
-if (status.status === "approved") {
-  const result = await trpc.admin.executeApproved.mutate({ actionId });
-  // result.message: "User suspended successfully"
-}
-```
-
-**Key files:**
-- `server/slackNotification.ts` — Three-channel routing, alert templates, message builders
-- `server/slackApproval.ts` — Pending action store, approval/deny logic, routes to #admin-actions
-- `server/slackInteractions.ts` — Handles all Slack button clicks (escalation, emergency actions, approve/deny)
-- `server/routers.ts` — `admin.requestApproval`, `admin.checkApprovalStatus`, `admin.executeApproved` endpoints
-
-### Admin Activity Alerts
-
-All admin actions are logged and routed to the appropriate Slack channel for real-time monitoring.
-
-| Alert Type | Channel | Trigger |
-|------------|---------|--------|
-| Admin Action | #admin-actions | Any admin operation (listUsers, getAuditLogs, etc.) |
-| Sensitive Admin Action | #admin-actions + #audit-log | High-risk operations (suspend, credit adjustment, IP blocking) |
-| Unauthorized Access | All three channels | Attempt to access admin features without proper authorization |
-
-Slack alerts include the admin's name, the action performed, the target resource, and additional context to help security teams assess the activity.
+- **Every admin action writes an audit row** (`logAdminAction`), readable on
+  the staff audit-log pages; sensitive actions carry `warning` severity, which
+  also puts them on the admin overview's alerts feed.
+- **Unauthorized admin access** writes a `critical` audit row (alerts feed).
+- **Sensitive change requests execute when an admin approves them in the
+  panel** — the review is the human decision, audited and immutable-logged in
+  the same mutation. There is no out-of-band second factor; adding a real one
+  would be a new control and a founder decision.
+- **System health and crash alerts** are `system.health_alert` /
+  `system.critical_error` audit rows (see `server/monitoring/healthMonitor.ts`).
 
 ### Immutable Audit Log
 
@@ -519,8 +447,7 @@ When adding new admin functionality, ensure these security measures are in place
 | Requirement | Implementation |
 |-------------|----------------|
 | Allowlist check | Use `validateAdminAccess()` before any admin operation |
-| Sensitive action check | Use `isSensitiveAction()` to determine if Slack approval is needed |
-| Slack approval | Use `requestApproval()` for sensitive actions (routes to #admin-actions) |
-| Slack notification | Call `logAdminAction()` for all admin operations (routes to #admin-actions) |
-| Immutable logging | Write critical events to `writeImmutableLog()` (routes to #audit-log) |
-| Unauthorized access logging | Call `logUnauthorizedAdminAccess()` for denied attempts (routes to all channels) |
+| Sensitive action check | Use `isSensitiveAction()` — it sets the audit row's severity (warning → alerts feed) |
+| Audit logging | Call `logAdminAction()` for all admin operations (staff audit-log pages) |
+| Immutable logging | Write critical events to `writeImmutableLog()` (hash-chained, in-memory + audit row) |
+| Unauthorized access logging | Call `logUnauthorizedAdminAccess()` for denied attempts (critical audit row) |

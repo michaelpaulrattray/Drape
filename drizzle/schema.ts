@@ -1349,6 +1349,11 @@ export const AUDIT_ACTIONS = {
   // webhook, so a log line is a surface nobody is subscribed to.
   STRIPE_REFUND_FAILED: "billing.stripe_refund_failed",
   INVOICE_PAID_AFTER_PLAN_ENDED: "billing.invoice_paid_after_plan_ended",
+  // #800 — the three webhook alerts whose only output used to be a Slack
+  // channel production never had. Same #771 pattern: the row is the surface.
+  BILLING_PAYMENT_FINAL_FAILURE: "billing.payment_final_failure",
+  BILLING_CHARGEBACK_FILED: "billing.chargeback_filed",
+  BILLING_CHARGEBACK_RESOLVED: "billing.chargeback_resolved",
   
   // Model events
   MODEL_CREATED: "model.created",
@@ -1419,9 +1424,16 @@ export const AUDIT_ACTIONS = {
   REFERRAL_SAME_IP_FLAG: "referral.same_ip_flagged",
   REFERRAL_MULTI_CLAIM_BLOCKED: "referral.multi_claim_blocked",
   
-  // Emergency actions (from Slack buttons)
+  // Emergency actions — historical rows only. The Slack buttons that wrote
+  // this are retired (#800); the name stays so old rows keep their label and
+  // the overview alerts feed keeps matching them.
   EMERGENCY_ACTION_EXECUTED: "security.emergency_action",
   
+  // System events (#800 — the panels are the alert surface; these land on
+  // the admin overview's alerts feed by their severity)
+  SYSTEM_HEALTH_ALERT: "system.health_alert",
+  SYSTEM_CRITICAL_ERROR: "system.critical_error",
+
   // Admin activity tracking
   ADMIN_ACTION: "admin.action",
   SECURITY_UNAUTHORIZED_ADMIN: "security.unauthorized_admin_access",
@@ -1437,6 +1449,11 @@ export const AUDIT_ACTIONS = {
   CHANGE_REQUEST_APPROVED: "admin.change_request_approved",
   CHANGE_REQUEST_DENIED: "admin.change_request_denied",
   CHANGE_REQUEST_CANCELLED: "moderator.change_request_cancelled",
+  // An approved sensitive request whose executor threw (#800). Warning
+  // severity, so it lands on the admin overview's alerts feed; the request
+  // itself stays `pending_execution` — shown as "Outcome unconfirmed", no
+  // self-serve retry, because a retry road is how a refund gets issued twice.
+  CHANGE_REQUEST_EXECUTION_FAILED: "admin.change_request_execution_failed",
   
   // Account freeze events (billing investigation)
   ACCOUNT_AUTO_FROZEN: "account.auto_frozen",
@@ -1492,8 +1509,11 @@ export type BlockedIp = typeof blockedIps.$inferSelect;
 export type InsertBlockedIp = typeof blockedIps.$inferInsert;
 
 /**
- * Emergency action tokens for Slack button interactions
- * Single-use tokens that allow emergency actions without authentication
+ * RETIRED (#800, 2026-09-11) — single-use tokens for the Slack emergency
+ * buttons, which are deleted. Nothing reads or writes this table any more
+ * and production holds zero rows (measured 2026-09-11); the declaration
+ * stays because removing it would make drizzle-kit emit a DROP TABLE, and a
+ * destructive ceremony is the founder's, not a shift's.
  */
 export const emergencyTokens = mysqlTable("emergency_tokens", {
   id: int("id").autoincrement().primaryKey(),
@@ -1584,8 +1604,10 @@ export const changeRequests = mysqlTable("change_requests", {
   reviewedByName: varchar("reviewedByName", { length: 256 }),
   reviewedAt: timestamp("reviewedAt"),
   reviewNotes: text("reviewNotes"), // Admin's notes on approval/denial
-  // Slack approval flow (for sensitive types)
-  slackApprovalId: varchar("slackApprovalId", { length: 64 }), // Links to pending Slack approval action
+  // Retired Slack approval flow (#800) — column kept because dropping a
+  // column is a destructive ceremony (founder-only); nothing writes it and
+  // production holds zero rows (measured 2026-09-11).
+  slackApprovalId: varchar("slackApprovalId", { length: 64 }),
   // Timestamps
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),

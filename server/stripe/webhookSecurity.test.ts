@@ -22,12 +22,12 @@ vi.mock("../db", () => ({
   getCreditTransactionByRef: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock("../slack/slackNotification", () => ({
-  SlackAlerts: {
-    chargebackFiled: vi.fn().mockResolvedValue(true),
-    chargebackResolved: vi.fn().mockResolvedValue(true),
-  },
-}));
+// The chargeback alerts are audit rows since #800; the writer is doubled so
+// the arms can read WHAT was recorded without a database.
+vi.mock("../auditLog", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../auditLog")>();
+  return { ...actual, logAuditEvent: vi.fn().mockResolvedValue(undefined) };
+});
 
 // Mock database connection for idempotency checks. The double RECORDS what
 // the handler asks it to record (the shape PR #786 round 2 established): a
@@ -68,8 +68,15 @@ import {
   addCredits,
   getCreditTransactionByRef,
 } from "../db";
-import { SlackAlerts } from "../slack/slackNotification";
+import { logAuditEvent } from "../auditLog";
 import type Stripe from "stripe";
+
+/** The billing-alert audit rows with the given action, in call order. */
+function alertRows(action: string) {
+  return vi.mocked(logAuditEvent).mock.calls
+    .map(([event]) => event as { action: string; resourceId?: string; severity?: string; metadata?: Record<string, unknown> })
+    .filter((event) => event.action === action);
+}
 
 function makeEvent(type: string, data: any): Stripe.Event {
   return {
@@ -153,15 +160,21 @@ describe("Webhook Security", () => {
         { toolKind: null }
       );
 
-      // Verify Slack alert was sent
-      expect(SlackAlerts.chargebackFiled).toHaveBeenCalledWith(
-        "dp_test_suspend",
-        "ch_test_xyz",
-        5000,
-        "usd",
-        "fraudulent",
-        42,
-        "John Doe"
+      // Verify the critical audit row — the alerts-feed record (#800)
+      expect(logAuditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "billing.chargeback_filed",
+          resourceId: "dp_test_suspend",
+          severity: "critical",
+          metadata: expect.objectContaining({
+            chargeId: "ch_test_xyz",
+            amountCents: 5000,
+            currency: "usd",
+            reason: "fraudulent",
+            targetUserId: 42,
+            userName: "John Doe",
+          }),
+        }),
       );
     });
 
@@ -212,7 +225,8 @@ describe("Webhook Security", () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain("not identified");
-      expect(SlackAlerts.chargebackFiled).toHaveBeenCalled();
+      expect(alertRows("billing.chargeback_filed")).toHaveLength(1);
+      expect(alertRows("billing.chargeback_filed")[0]!.metadata).toMatchObject({ identified: false });
       expect(suspendUser).not.toHaveBeenCalled();
       expect(deductCredits).not.toHaveBeenCalled();
     });
@@ -247,7 +261,7 @@ describe("Webhook Security", () => {
       expect(first.message).toContain("75 credits revoked");
       expect(first.message).toContain("redelivers");
       expect(deductCredits).toHaveBeenCalledTimes(1);
-      expect(SlackAlerts.chargebackFiled).toHaveBeenCalledTimes(1);
+      expect(alertRows("billing.chargeback_filed")).toHaveLength(1);
       expect(processedEventInserts).toHaveLength(0);
 
       /* Redelivery of the SAME event id: the ledger already holds the revoke
@@ -382,15 +396,21 @@ describe("Webhook Security", () => {
         "dispute_restore_dp_test_won"
       );
 
-      // Verify Slack alert
-      expect(SlackAlerts.chargebackResolved).toHaveBeenCalledWith(
-        "dp_test_won",
-        "ch_test_won",
-        5000,
-        "usd",
-        "won",
-        42,
-        "John Doe"
+      // Verify the audit row carries the outcome
+      expect(logAuditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "billing.chargeback_resolved",
+          resourceId: "dp_test_won",
+          severity: "warning",
+          metadata: expect.objectContaining({
+            chargeId: "ch_test_won",
+            amountCents: 5000,
+            currency: "usd",
+            status: "won",
+            targetUserId: 42,
+            userName: "John Doe",
+          }),
+        }),
       );
     });
 
@@ -489,7 +509,7 @@ describe("Webhook Security", () => {
       expect(first.message).toContain("credit restore failed");
       expect(first.message).toContain("redelivers");
       expect(unsuspendUser).toHaveBeenCalledWith(42);
-      expect(SlackAlerts.chargebackResolved).toHaveBeenCalledTimes(1);
+      expect(alertRows("billing.chargeback_resolved")).toHaveLength(1);
       expect(processedEventInserts).toHaveLength(0);
 
       /* Redelivery of the SAME event id: the restore lands on its idempotent
@@ -673,15 +693,13 @@ describe("Webhook Security", () => {
       // Should cancel Stripe subscription
       expect(cancelSubscription).toHaveBeenCalledWith("sub_test_abc123");
 
-      // Verify Slack alert
-      expect(SlackAlerts.chargebackResolved).toHaveBeenCalledWith(
-        "dp_test_lost",
-        "ch_test_lost",
-        5000,
-        "usd",
-        "lost",
-        42,
-        "John Doe"
+      // Verify the audit row carries the LOST outcome too
+      expect(logAuditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "billing.chargeback_resolved",
+          resourceId: "dp_test_lost",
+          metadata: expect.objectContaining({ status: "lost", targetUserId: 42 }),
+        }),
       );
     });
 

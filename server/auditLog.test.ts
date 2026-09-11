@@ -6,13 +6,7 @@ vi.mock("./db", () => ({
   getDb: vi.fn(),
 }));
 
-// Mock the notification system
-vi.mock("./_core/notification", () => ({
-  notifyOwner: vi.fn().mockResolvedValue(true),
-}));
-
 import { getDb } from "./db";
-import { notifyOwner } from "./_core/notification";
 
 describe("Audit Logging", () => {
   let mockDb: any;
@@ -310,11 +304,9 @@ describe("Abuse Detection", () => {
       action: AUDIT_ACTIONS.INSUFFICIENT_CREDITS,
     });
 
-    // Should only have logged the original event
+    // Should only have logged the original event — below the threshold no
+    // abuse row is written (the audit row IS the alert surface since #800)
     expect(mockInsert).toHaveBeenCalledTimes(1);
-    
-    // Should not notify owner
-    expect(notifyOwner).not.toHaveBeenCalled();
   });
 
   it("should detect rapid model deletion pattern", async () => {

@@ -74,14 +74,6 @@ vi.mock("./stripeService", () => ({
   cancelSubscription: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("../slack/slackNotification", () => ({
-  SlackAlerts: {
-    chargebackFiled: vi.fn().mockResolvedValue(true),
-    chargebackResolved: vi.fn().mockResolvedValue(true),
-    paymentFailed: vi.fn().mockResolvedValue(true),
-  },
-}));
-
 import { handleStripeWebhook } from "./webhooks";
 import { constructWebhookEvent } from "./stripeService";
 

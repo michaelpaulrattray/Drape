@@ -1,8 +1,8 @@
 /**
  * Tests for server/monitoring/healthMonitor.ts
  *
- * Covers: cooldown logic, alert dispatch decisions, check functions,
- * lifecycle management, and edge cases.
+ * Covers: cooldown logic, alert decisions (audit rows since #800), check
+ * functions, lifecycle management, and edge cases.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
@@ -134,14 +134,11 @@ describe("HealthMonitor — checkGenerationHealth", () => {
       }),
     }));
 
-    const dispatchMock = vi.fn().mockResolvedValue({ sent: true, channels: [] });
-    vi.doMock("./slack/slackDispatcher", () => ({ dispatch: dispatchMock }));
-
     // Re-import to pick up mocks
     const { checkGenerationHealth: check } = await import("./monitoring/healthMonitor");
     await check();
 
-    // dispatch should NOT have been called (success rate 95% > 80%)
+    // No alert row should be written (success rate 95% > 80%)
     // Note: due to module caching, the mock may not apply. This tests the logic path.
   });
 
@@ -174,8 +171,8 @@ describe("HealthMonitor — checkDbConnectivity", () => {
   });
 
   it("should handle DB connection returning null gracefully", async () => {
-    // The function should dispatch a critical alert when db is null
-    // This tests that it doesn't throw
+    // With the DB down there is no panel to alert onto (#800) — the function
+    // logs fatally and must not throw
     const mod = await import("./monitoring/healthMonitor");
     // Should not throw even if DB is unavailable
     await expect(mod.checkDbConnectivity()).resolves.not.toThrow();
@@ -261,27 +258,8 @@ describe("HealthMonitor — Lifecycle", () => {
   });
 });
 
-// ============ Slack Channel Routing ============
-
-describe("HealthMonitor — Slack Channel Routing", () => {
-  it("should route system_health_ events to system-alerts channel", async () => {
-    // Verify the slackCore routes system_health_ events correctly
-    // We can't easily test dispatch without real webhooks, but we can
-    // verify the event type prefix is correct
-    const eventTypes = [
-      "system_health_generation_rate",
-      "system_health_db_down",
-      "system_health_db_latency",
-      "system_health_db_error",
-      "system_health_error_spike",
-      "system_health_queue_backup",
-    ];
-
-    for (const type of eventTypes) {
-      expect(type.startsWith("system_health_")).toBe(true);
-    }
-  });
-});
+// (The "Slack Channel Routing" describe died with the integration, #800 —
+// alerts are `system.health_alert` audit rows on the admin overview now.)
 
 // ============ Alert Severity Logic ============
 

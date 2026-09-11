@@ -1,14 +1,15 @@
 /**
- * IP Blocking Domain — IP block/unblock, blocked IP listing, and emergency tokens.
+ * IP Blocking Domain — IP block/unblock and blocked IP listing.
+ * (The emergency-token helpers lived here until #800: they existed only for
+ * the Slack emergency buttons, which are retired. The `emergency_tokens`
+ * table stays declared in the schema — dropping it is a founder ceremony.)
  */
 
 import { eq, desc, sql } from "drizzle-orm";
 import {
   blockedIps,
-  emergencyTokens,
 } from "../../drizzle/schema";
 import { getDb } from "./connection";
-import { randomUUID } from "crypto";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/ipBlocking");
 
@@ -123,94 +124,5 @@ export async function getBlockedIps(
   } catch (error) {
     log.error({ err: error }, "[Database] Failed to get blocked IPs:");
     return { ips: [], total: 0 };
-  }
-}
-
-/**
- * Create an emergency action token.
- * Tokens are valid for 24 hours and single-use.
- */
-export async function createEmergencyToken(
-  action: "block_ip" | "suspend_user",
-  targetId: string,
-  metadata?: Record<string, unknown>
-): Promise<{ token: string; expiresAt: Date } | null> {
-  const db = await getDb();
-  if (!db) return null;
-
-  try {
-    const token =
-      randomUUID().replace(/-/g, "") +
-      randomUUID().replace(/-/g, "").slice(0, 32);
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await db.insert(emergencyTokens).values({
-      token,
-      action,
-      targetId,
-      metadata: metadata || null,
-      expiresAt,
-    });
-
-    return { token, expiresAt };
-  } catch (error) {
-    log.error({ err: error }, "[Database] Failed to create emergency token:");
-    return null;
-  }
-}
-
-/**
- * Validate and consume an emergency token.
- * Returns the token data if valid, null if invalid/expired/used.
- */
-export async function consumeEmergencyToken(
-  token: string,
-  usedBy?: string
-): Promise<{
-  action: "block_ip" | "suspend_user";
-  targetId: string;
-  metadata: Record<string, unknown> | null;
-} | null> {
-  const db = await getDb();
-  if (!db) return null;
-
-  try {
-    const [tokenRecord] = await db
-      .select()
-      .from(emergencyTokens)
-      .where(eq(emergencyTokens.token, token))
-      .limit(1);
-
-    if (!tokenRecord) {
-      log.warn("[EmergencyToken] Token not found");
-      return null;
-    }
-
-    if (tokenRecord.usedAt) {
-      log.warn("[EmergencyToken] Token already used");
-      return null;
-    }
-
-    if (new Date(tokenRecord.expiresAt) < new Date()) {
-      log.warn("[EmergencyToken] Token expired");
-      return null;
-    }
-
-    await db
-      .update(emergencyTokens)
-      .set({
-        usedAt: new Date(),
-        usedBy: usedBy || null,
-      })
-      .where(eq(emergencyTokens.id, tokenRecord.id));
-
-    return {
-      action: tokenRecord.action,
-      targetId: tokenRecord.targetId,
-      metadata: tokenRecord.metadata as Record<string, unknown> | null,
-    };
-  } catch (error) {
-    log.error({ err: error }, "[Database] Failed to consume emergency token:");
-    return null;
   }
 }

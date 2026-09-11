@@ -94,10 +94,6 @@ vi.mock("../auditLog", async () => {
   };
 });
 
-vi.mock("../slack/slackNotification", () => ({
-  SlackAlerts: new Proxy({}, { get: () => vi.fn().mockResolvedValue(true) }),
-}));
-
 import { billingRouter } from "../routes/billing";
 import { handleStripeWebhook } from "./webhooks";
 import { settlementLedgerRef } from "./planChangeSettlement";

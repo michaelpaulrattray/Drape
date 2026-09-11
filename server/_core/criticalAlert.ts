@@ -1,5 +1,8 @@
 /**
- * The Slack payload for an unhandled server error.
+ * The alert payload for an unhandled server error. Since #800 (the Slack
+ * retirement, 2026-09-11) its consumer writes it into a critical audit row —
+ * the admin overview's alerts feed — rather than a Slack channel; the shape
+ * is unchanged so the arms that drive it did not move.
  *
  * Lifted out of `alertCriticalError` in `_core/index.ts` BYTE-PRESERVING
  * (2026-08-25, 3g) so the message can be driven without booting the server.
@@ -13,9 +16,9 @@
  * read `expect(sent).toBe(true)` about a function that has never returned
  * anything. Working law 4: derive, never mirror.
  *
- * Only the payload is lifted. The dynamic `dispatch` import and the
- * swallow-everything `catch` stay at the call site, because a crash handler
- * that throws while reporting a crash is worse than one that says nothing.
+ * Only the payload is lifted. The dynamic imports and the swallow-everything
+ * `catch` stay at the call site, because a crash handler that throws while
+ * reporting a crash is worse than one that says nothing.
  */
 
 export interface CriticalErrorAlert {

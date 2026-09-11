@@ -24,7 +24,7 @@
  * typographic change, not an interpretation.
  */
 
-/** The fifteen with a phrase better than their identifier. */
+/** The ones with a phrase better than their identifier. */
 const NAMED: Record<string, string> = {
   "account.auto_frozen": "Auto-frozen",
   "account.frozen": "Frozen by staff",
@@ -41,6 +41,13 @@ const NAMED: Record<string, string> = {
   "billing.stripe_refund_issued": "Refund issued",
   "billing.stripe_refund_failed": "Refund failed",
   "billing.invoice_paid_after_plan_ended": "Invoice paid after plan ended",
+  // #800 — the alerts that used to go only to Slack land here now.
+  "billing.chargeback_filed": "Chargeback filed",
+  "billing.chargeback_resolved": "Chargeback resolved",
+  "billing.payment_final_failure": "Final payment failure",
+  "system.health_alert": "System health",
+  "system.critical_error": "Server crash",
+  "admin.change_request_execution_failed": "Change request execution failed",
 };
 
 export function actionLabel(action: string): string {

@@ -1,6 +1,10 @@
 /**
- * `executeChangeRequestAction` and `executeDirectAction` — the eleven cases
- * that actually do the work once an admin action is approved.
+ * `executeChangeRequestAction` — the six cases that actually do the work once
+ * an admin approves a change request in the panel. (`executeDirectAction` and
+ * its five cases were deleted by #800: their only entrances were the Slack
+ * approval router — zero client callers — and the Slack message buttons; the
+ * admin panel's own procedures in `routes/admin/users.ts` are how an admin
+ * acts directly.)
  *
  * ⚠ BOTH HANDLERS HAD ZERO TESTS. 629 lines, eleven cases, every one of them
  * doing real database work — suspensions, credit moves, IP blocks, Stripe
@@ -18,10 +22,9 @@
  *      Executing without settling is exactly what the dispatcher's silent
  *      fallthrough would cause one layer up, so it is pinned one layer down.
  *
- * Only `cr_*` cases settle. The five direct cases are admin-initiated and carry
- * no change request at all — read at the source: `updateChangeRequestStatus`
- * appears 11 times in `changeRequestActions.ts` and ZERO times in
- * `directActions.ts`, and an arm below asserts that rather than assuming it.
+ * Every `cr_*` case settles its change request on completion — read at the
+ * source: `updateChangeRequestStatus` appears 11 times in
+ * `changeRequestActions.ts`.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -58,20 +61,6 @@ vi.mock("./security/adminSecurity", async (importOriginal) => {
   return { ...actual, writeImmutableLog: vi.fn().mockResolvedValue(undefined) };
 });
 
-vi.mock("./slack/slackNotification", () => ({
-  sendAdminActionNotification: vi.fn().mockResolvedValue(true),
-  sendAuditLogEntry: vi.fn().mockResolvedValue(true),
-  sendSlackAlert: vi.fn().mockResolvedValue(true),
-  // The three the handlers and the real adminSecurity actually reach, derived
-  // by grepping `SlackAlerts.<method>` across both handler files and
-  // adminSecurity.ts rather than guessed at.
-  SlackAlerts: {
-    adminAction: vi.fn().mockResolvedValue(undefined),
-    sensitiveAdminAction: vi.fn().mockResolvedValue(undefined),
-    unauthorizedAdminAccess: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
 const CTX = {
   user: { id: 2, name: "Admin", email: "admin@example.com", role: "admin" },
   req: { headers: { "user-agent": "test" }, socket: {} },
@@ -84,7 +73,7 @@ function pending(action: string, params: Record<string, unknown> = {}, targetId 
   return {
     action,
     targetId,
-    resolvedBy: "slack-admin",
+    resolvedBy: "Admin",
     params: { changeRequestId: CR_ID, ...params },
   } as never;
 }
@@ -122,11 +111,6 @@ beforeEach(() => {
 async function runCr(action: string, params?: Record<string, unknown>, targetId?: string) {
   const { executeChangeRequestAction } = await import("./lib/adminActions/changeRequestActions");
   return executeChangeRequestAction(pending(action, params, targetId), CTX);
-}
-
-async function runDirect(action: string, params?: Record<string, unknown>, targetId?: string) {
-  const { executeDirectAction } = await import("./lib/adminActions/directActions");
-  return executeDirectAction(pending(action, params, targetId), CTX);
 }
 
 // ── cr_suspendUser ──────────────────────────────────────────────────────────
@@ -402,58 +386,5 @@ describe("cr_stripeRefund", () => {
     db.adjustUserCredits.mockResolvedValue({ success: false, error: "ledger unavailable" });
     await expect(runCr("cr_stripeRefund", PURCHASE)).resolves.toBeDefined();
     expectSettled();
-  });
-});
-
-// ── the direct half ─────────────────────────────────────────────────────────
-
-describe("executeDirectAction — admin-initiated, and it settles NOTHING", () => {
-  it("suspendUser suspends, and REFUSES an admin target", async () => {
-    await runDirect("suspendUser", { reason: "abuse" });
-    expect(db.suspendUser).toHaveBeenCalledWith(42, "abuse", 2);
-
-    vi.clearAllMocks();
-    db.getUserById.mockResolvedValue({ ...ORDINARY_USER, role: "admin" });
-    await expect(runDirect("suspendUser")).rejects.toThrow("Cannot suspend admin accounts");
-    expect(db.suspendUser).not.toHaveBeenCalled();
-  });
-
-  it("unsuspendUser, blockIP, unblockIP and adjustCredits each reach their own db action", async () => {
-    db.getUserById.mockResolvedValue({ ...ORDINARY_USER, suspendedAt: new Date("2026-08-01") });
-    await runDirect("unsuspendUser");
-    expect(db.unsuspendUser).toHaveBeenCalled();
-
-    vi.clearAllMocks();
-    db.blockIp.mockResolvedValue({ success: true });
-    await runDirect("blockIP", { reason: "brute force" }, "10.0.0.1");
-    expect(db.blockIp.mock.calls[0][0]).toBe("10.0.0.1");
-
-    vi.clearAllMocks();
-    db.unblockIp.mockResolvedValue(true);
-    await runDirect("unblockIP", {}, "10.0.0.1");
-    expect(db.unblockIp).toHaveBeenCalledWith("10.0.0.1");
-
-    vi.clearAllMocks();
-    db.getUserById.mockResolvedValue(ORDINARY_USER);
-    db.adjustUserCredits.mockResolvedValue({ success: true, newBalance: 400 });
-    await runDirect("adjustCredits", { amount: -25, reason: "correction" });
-    expect(db.adjustUserCredits).toHaveBeenCalled();
-  });
-
-  it("FROM THE DIFF — NO direct case settles a change request, because none of them has one", async () => {
-    // Asserted rather than assumed: `updateChangeRequestStatus` appears zero
-    // times in `directActions.ts`. If a direct case ever started settling, it
-    // would be settling a request that did not authorise it.
-    for (const action of ["suspendUser", "unsuspendUser", "blockIP", "unblockIP", "adjustCredits"]) {
-      vi.clearAllMocks();
-      db.getUserById.mockResolvedValue(ORDINARY_USER);
-      db.suspendUser.mockResolvedValue({ success: true });
-      db.unsuspendUser.mockResolvedValue({ success: true });
-      db.blockIp.mockResolvedValue({ success: true });
-      db.unblockIp.mockResolvedValue(true);
-      db.adjustUserCredits.mockResolvedValue({ success: true, newBalance: 400 });
-      await runDirect(action, { reason: "r", amount: -25 }, "10.0.0.1").catch(() => {});
-      expect(db.updateChangeRequestStatus, `${action} must settle nothing`).not.toHaveBeenCalled();
-    }
   });
 });

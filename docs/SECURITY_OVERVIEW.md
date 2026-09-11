@@ -10,8 +10,8 @@ This folder contains security guides for developers working on Drape. These docu
 | [AUTHENTICATION.md](./AUTHENTICATION.md) | Authentication flow and protected procedures | Before creating new API endpoints |
 | [RATE_LIMITING.md](./RATE_LIMITING.md) | Rate limiting implementation and configuration | Before exposing public endpoints |
 | [AUDIT_LOGGING.md](./AUDIT_LOGGING.md) | Audit logging for sensitive operations | Before implementing billing or deletion features |
-| [NOTIFICATIONS.md](./NOTIFICATIONS.md) | Slack alerts and emergency actions | Before setting up security monitoring |
-| [BILLING_ALERTS.md](./BILLING_ALERTS.md) | Billing-specific Slack alerts and velocity limits | Before modifying payment or credit flows |
+| [NOTIFICATIONS.md](./NOTIFICATIONS.md) | Where alerts land — the staff panels (Slack retired, #800) | Before setting up security monitoring |
+| [BILLING_ALERTS.md](./BILLING_ALERTS.md) | Billing alert audit rows on the admin panels | Before modifying payment or credit flows |
 | [specs/SECURITY_AUDIT_2026-07-25.md](./specs/SECURITY_AUDIT_2026-07-25.md) | Current security audit — open findings and what is not yet enforced | **Read first.** Before trusting any claim in the guides above |
 
 > **ADMIN_SECURITY.md was deleted on 2026-07-25.** Its central claim — that the admin allowlist stops an attacker who has changed a role in the database — is false, and it described a Slack approval flow that is not in the request path. See H3 and H4 in the current audit.
@@ -30,7 +30,7 @@ Drape follows these core security principles throughout the codebase.
 
 **Audit Everything** maintains a record of security-relevant events. The audit logging system captures billing changes, model deletions, and detected abuse patterns for investigation and compliance.
 
-**Monitor Proactively** means security-relevant events should trigger real-time alerts where the request path is actually wired to do so. Slack helpers or documented channels are not enforcement by themselves; the current audit identifies the approval, IP-blocking, and purchase-velocity controls that still need a real request-path connection or removal.
+**Monitor Proactively** means security-relevant events should trigger real-time alerts where the request path is actually wired to do so. Documented channels are not enforcement by themselves — the Slack integration was retired outright on that principle (#800, 2026-09-11: never configured, so every Slack-only "alert" reached nobody); alerts are warning/critical audit rows on the admin overview's alerts feed now. The current audit still identifies IP blocking as recorded-but-never-checked.
 
 ## Quick Reference: Endpoint Security Checklist
 

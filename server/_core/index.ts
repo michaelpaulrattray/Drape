@@ -37,23 +37,34 @@ const log = createModuleLogger("server");
 // ============================================================================
 
 /**
- * Attempt to send a critical Slack alert for unhandled errors.
- * Best-effort — if Slack itself fails, we just log to stderr.
+ * Attempt to record a critical audit row for an unhandled error, so the crash
+ * shows on the admin overview's alerts feed after the process restarts.
+ * Best-effort — a crash handler that throws while reporting a crash is worse
+ * than one that says nothing, and the database may itself be the cause.
  */
 async function alertCriticalError(label: string, error: unknown): Promise<void> {
   try {
-    const { dispatch } = await import("../slack/slackCore");
+    const { logAuditEvent } = await import("../auditLog");
+    const { AUDIT_ACTIONS } = await import("../../drizzle/schema");
     const { buildCriticalErrorAlert } = await import("./criticalAlert");
-    await dispatch(buildCriticalErrorAlert(label, error));
+    const alert = buildCriticalErrorAlert(label, error);
+    await logAuditEvent({
+      userId: 0,
+      action: AUDIT_ACTIONS.SYSTEM_CRITICAL_ERROR,
+      resourceType: "system",
+      resourceId: "server_crash",
+      metadata: { title: alert.title, description: alert.description },
+      severity: "critical",
+    });
   } catch {
-    // Slack dispatch itself failed — nothing more we can do
+    // The audit write itself failed — the log.fatal line above is the record
   }
 }
 
 process.on("uncaughtException", async (error: Error) => {
   log.fatal({ err: error }, "Uncaught exception");
   await alertCriticalError("Uncaught Exception", error);
-  // Give Slack alert a moment to send, then exit
+  // Give the audit write a moment to land, then exit
   setTimeout(() => process.exit(1), 2000);
 });
 
@@ -214,16 +225,6 @@ async function startServer() {
   const { emailVerificationRouter } = await import("../routes/emailVerification");
   app.use("/api/auth", emailVerificationRouter);
 
-  // Slack interactions endpoint (for button callbacks)
-  app.post(
-    "/api/slack/interactions",
-    express.urlencoded({ extended: true }),
-    async (req, res) => {
-      const { handleSlackInteraction } = await import("../slack/slackInteractions");
-      await handleSlackInteraction(req, res);
-    }
-  );
-  
   // Deep-check health endpoint (DB ping + latency)
   app.get("/api/health", healthHandler);
 

@@ -234,7 +234,6 @@ export async function updateChangeRequestStatus(
     reviewedById?: number;
     reviewedByName?: string;
     reviewNotes?: string;
-    slackApprovalId?: string;
   },
   fromStatus: "pending" | "pending_execution" = "pending"
 ): Promise<{ success: boolean; error?: string }> {
@@ -252,8 +251,6 @@ export async function updateChangeRequestStatus(
       setData.reviewedByName = update.reviewedByName;
     if (update.reviewNotes !== undefined)
       setData.reviewNotes = update.reviewNotes;
-    if (update.slackApprovalId !== undefined)
-      setData.slackApprovalId = update.slackApprovalId;
     if (fromStatus === "pending") setData.reviewedAt = new Date();
 
     const [result] = await db

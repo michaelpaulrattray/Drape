@@ -29,7 +29,7 @@ import type { DataFact, DataRow, RowAction } from "@/foundation";
 
 import { AttachmentsSection } from "./ChangeRequestAttachments";
 import {
-  SENSITIVE_TYPES,
+  STATUS_CONFIG,
   TYPE_CONFIG,
   formatDate,
   formatRelativeTime,
@@ -48,35 +48,12 @@ interface ChangeRequest {
 }
 
 /**
- * ⚠ **WHAT "SENSITIVE" ACTUALLY BUYS TODAY, WHICH IS LESS THAN ITS NAME.**
- *
- * A sensitive type routes through `sendApprovalToSlack`, and that function
- * **auto-approves the moment the admin-actions webhook is unconfigured** —
- * `resolvedBy: "system (Slack not configured)"`, read at
- * `server/slack/slackApproval.ts`. Production has no such webhook (CLAUDE.md's
- * "Currently not enforced" list says so, and it is why the flow is on that
- * list at all).
- *
- * So the second pair of eyes is a hope rather than a control, and a
- * consequence note promising one would be the same defect this card already
- * shipped once and corrected for the IP-block sentences. **That correction
- * stopped one instance short of its own class** (working law 7), which the
- * review of the fix caught; this is the sweep.
- *
- * It is a caveat rather than a rewrite because the wiring is real and the
- * webhook is one environment variable away — what is false is only the
- * promise that it is confirming anything today.
- */
-const SLACK_CAVEAT =
-  " It is meant to wait for a second pair of eyes in Slack; with no Slack webhook configured it runs on the next poll without one.";
-
-/**
  * The request types where APPROVING cannot be taken back from this surface —
  * money leaves, credits move, or somebody loses access.
  *
- * `SENSITIVE_TYPES` is a different question and both are needed: that one asks
- * *does Slack have to confirm it*, this one asks *can it be undone*. Suspension
- * is in both; a Stripe refund is only in this one.
+ * (Until #800 a separate `SENSITIVE_TYPES` list asked a second question —
+ * *does Slack have to confirm it* — but no second sign-off exists any more:
+ * approving a sensitive type executes it in the same mutation.)
  */
 const IRREVERSIBLE_TYPES = [
   "stripe_refund",
@@ -102,8 +79,6 @@ interface ChangeRequestListProps {
   onPageChange: (page: number) => void;
   selectedRequest: any;
   detailLoading: boolean;
-  slackStatus: string | null | undefined;
-  isSlackExecuting: boolean;
   onApprove: () => void;
   onDeny: () => void;
 }
@@ -120,8 +95,6 @@ export function ChangeRequestList({
   onPageChange,
   selectedRequest,
   detailLoading,
-  slackStatus,
-  isSlackExecuting,
   onApprove,
   onDeny,
 }: ChangeRequestListProps) {
@@ -143,7 +116,10 @@ export function ChangeRequestList({
         />,
         <StatePill
           key="status"
-          label={request.status.replace("_", " ")}
+          /* The config label, not the raw enum — `pending_execution` reads
+             "Outcome unconfirmed" since #800, and the raw words would
+             promise a wait that is not happening. */
+          label={STATUS_CONFIG[request.status]?.label ?? request.status.replace("_", " ")}
           attention={ATTENTION_STATUS.has(request.status)}
         />,
         <StatePill
@@ -172,7 +148,6 @@ export function ChangeRequestList({
 
     if (detail.status === "pending") {
       const config = getActionConfig(detail.type);
-      const sensitive = SENSITIVE_TYPES.includes(detail.type);
 
       /*
         ⚠ THE DESTRUCTIVE FLAG SITS ON **APPROVE**, NOT ON DENY, AND THE FIRST
@@ -192,9 +167,7 @@ export function ChangeRequestList({
         sentence; what changed is which button the compiler holds.
       */
       const irreversible = IRREVERSIBLE_TYPES.includes(detail.type);
-      /* The `(Slack)` suffix said a confirmation step exists. It says what it
-         is instead, and the sentence beside it carries the caveat. */
-      const label = sensitive ? `${config.approveLabel} — second sign-off` : config.approveLabel;
+      const label = config.approveLabel;
 
       if (irreversible) {
         actions.push({
@@ -218,9 +191,16 @@ export function ChangeRequestList({
     }
 
     if (detail.status === "pending_execution") {
+      /* The approve mutation records the review, then executes (#800). A
+         request still here means the outcome was never confirmed — the
+         executor threw, OR the action ran and the settle write / process
+         died before recording it (this product deploys with work in
+         flight). The label must not claim the action did not happen: acting
+         again on that belief is how a refund gets issued twice. Settling it
+         is a person's call, never a retry button. */
       actions.push({
-        key: "slack",
-        label: slackStatusLabel(slackStatus, isSlackExecuting),
+        key: "unconfirmed",
+        label: "Approved, but the outcome is unconfirmed — check the audit log and Stripe before acting again",
         disabled: true,
       });
     }
@@ -330,23 +310,10 @@ function approvalConsequence(detail: any): string {
          consulted on the request path. See that file's note. */
       return `Approving records ${detail.ipAddress} on the block list. It does not turn anyone away yet — nothing on the request path checks that list.`;
     case "suspend_user":
-      return `Approving signs this person out and blocks every sign-in until it is lifted.${SLACK_CAVEAT}`;
+      return "Approving signs this person out, immediately, and blocks every sign-in until it is lifted.";
     case "unsuspend_user":
-      return `Approving lets this person sign in again.${SLACK_CAVEAT}`;
+      return "Approving lets this person sign in again, immediately.";
     default:
       return "Denying closes this request without doing anything to the account it names.";
   }
-}
-
-/**
- * ⚠ `approved` here does NOT mean a person approved it. With no webhook
- * configured the flow marks itself approved as `system (Slack not
- * configured)`, so this label says *cleared* rather than *approved by
- * somebody* — the same correction as `SLACK_CAVEAT` above, one line over.
- */
-function slackStatusLabel(status: string | null | undefined, executing: boolean): string {
-  if (status === "approved") return executing ? "Cleared — running now" : "Cleared to run";
-  if (status === "denied") return "Refused in Slack — this will not run";
-  if (status === "expired") return "The sign-off window closed — this will not run";
-  return "Waiting on a sign-off";
 }

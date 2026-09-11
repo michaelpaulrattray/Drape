@@ -43,8 +43,8 @@
  *   moderator as the positive control) are DRIVEN in
  *   `changeRequests.test.ts`'s "Security Boundaries (DRIVEN through the real
  *   procedures)". Re-driving them here would be the mirror this file was
- *   caught being. The change-request validation, the type list, the Slack
- *   note and the audit row are likewise driven there and are gone from here.
+ *   caught being. The change-request validation, the type list and the
+ *   audit row are likewise driven there and are gone from here.
  *
  * - **NOT covered anywhere → DRIVEN here, because this is the router's own
  *   file.** Two gaps were measured before a line was written:
@@ -81,14 +81,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { moderatorRouter } from "./routes/moderator";
 import { users } from "../drizzle/schema";
-
-// Mock the slackNotification module
-vi.mock("./slack/slackNotification", () => ({
-  sendEmergencyActionsToAdminChannel: vi.fn().mockResolvedValue(true),
-  sendAdminActionNotification: vi.fn().mockResolvedValue(true),
-  sendAuditLogEntry: vi.fn().mockResolvedValue(true),
-  sendSlackAlert: vi.fn().mockResolvedValue(true),
-}));
 
 // Mock the auditLog module
 vi.mock("./auditLog", () => ({
@@ -714,7 +706,7 @@ describe("Moderator Role — every procedure on the router is accounted for, DER
   /* Driven elsewhere, read at that file before being written here. */
   const DRIVEN_ELSEWHERE: Record<string, string> = {
     createChangeRequest:
-      "changeRequests.test.ts — the db write, the audit row and the Slack note, plus the refusals",
+      "changeRequests.test.ts — the db write and the audit row, plus the refusals",
     getMyChangeRequests:
       "changeRequests.test.ts — the session's moderator id reaching the db helper, and the status filter",
   };

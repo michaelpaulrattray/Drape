@@ -45,12 +45,12 @@ vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
  *
  * ## Why "human-looking" is a quote followed by an uppercase letter
  *
- * `server/lib/adminActions/index.ts` legitimately maps SIX of these keys onto
- * approval action ids (`refund_credits: "cr_refundCredits"`). That is a
- * different fact about the same type and it must stay. The discriminator is
- * that a label starts with a capital and an identifier does not — so that file
- * is checked explicitly as a NEGATIVE control rather than trusted to be
- * excluded by luck.
+ * `CHANGE_REQUEST_ACTION_BY_TYPE` (in the shared file itself since #800)
+ * legitimately maps SIX of these keys onto executor action ids
+ * (`refund_credits: "cr_refundCredits"`). That is a different fact about the
+ * same type and it must stay. The discriminator is that a label starts with a
+ * capital and an identifier does not — so that map is checked explicitly as a
+ * NEGATIVE control rather than trusted to be excluded by luck.
  *
  * ## Why two keys and not one
  *
@@ -156,10 +156,12 @@ describe("the change-request type labels are declared once (#679)", () => {
   });
 
   it("NEGATIVE CONTROL: the action map keyed on six of these types is not a label map", () => {
-    const actions = fs.readFileSync(
-      path.join(REPO, "server", "lib", "adminActions", "index.ts"),
-      "utf8",
-    );
+    // Since #800 the action map lives in the shared file itself; the control
+    // isolates it and proves the matcher does not count identifier pairs.
+    const truth = fs.readFileSync(path.join(REPO, SOURCE_OF_TRUTH), "utf8");
+    const mapStart = truth.indexOf("export const CHANGE_REQUEST_ACTION_BY_TYPE");
+    expect(mapStart).toBeGreaterThan(-1);
+    const actions = truth.slice(mapStart, truth.indexOf("} as const", mapStart));
     // It pairs the same keys, with identifiers rather than labels.
     expect(actions).toContain("refund_credits");
     expect(labelPairsIn(code(actions))).toEqual([]);
