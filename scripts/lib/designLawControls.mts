@@ -551,6 +551,37 @@ export const CONTROLS: Control[] = [
     },
   },
   {
+    /*
+      THE PHRASE IN A STYLESHEET COMMENT (#809). In dev Vite injects every
+      stylesheet as a `<style>` in `<head>`, comments intact, and the casting
+      stylesheet carries a comment that says "unsigned sheets". The round-2
+      reader of #805 scanned `textContent` over `*`: `<head>` and `<style>`
+      were filtered out, `<html>` was not, and its `textContent` holds both —
+      so `<html>` became the section on every dev page without a real one, and
+      the sheet, `/moderator` and `/404` reddened for a comment. Both arms
+      carry the comment INSIDE the page's own `<style>` (the shape Vite makes);
+      the compliant one has nothing about sheets in the body and must read
+      *not applicable*, the offender adds a real section with no expiry copy
+      and must still be caught. Against the old bytes the compliant arm FAILS
+      on `html (no expiry copy)` — driven before this pair was believed.
+    */
+    law: "retention",
+    breaks: "an unsigned-sheets section with no expiry copy, on a page whose <style> also carries the phrase in a comment",
+    run: assertRetentionStated,
+    offender: {
+      html: page(
+        `/* ---- unsigned sheets: one row, scrolled sideways ---- */`,
+        `<section><h2>Unsigned sheets</h2><p>Three waiting.</p></section>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        `/* ---- unsigned sheets: one row, scrolled sideways ---- */`,
+        `<p>nothing about sheets on this page.</p>`,
+      ),
+    },
+  },
+  {
     /* The existential twin of law 5: a surface promising retention copy that
        renders no section at all must fail rather than report nothing here. */
     law: "retention",
@@ -560,6 +591,33 @@ export const CONTROLS: Control[] = [
     compliant: {
       html: page(``, `<section><h2>Unsigned sheets</h2><p>Kept for 7 quiet days.</p></section>`),
       requires: ["retentionCopy"],
+    },
+  },
+  {
+    /*
+      THE FAILURE COPY IN A STYLESHEET COMMENT — law 6's twin of the #809
+      pair above, because its reader had the identical shape. With `<html>`
+      as the copy, `copyTop` is 0 and every skeleton on the page is "under"
+      it: a loading strip on a page whose stylesheet merely MENTIONS the
+      refusal copy would have read as the founder's hang. Both arms carry the
+      phrase in the page's own `<style>`; the compliant one shows skeletons
+      and no failure copy in the body and must hold, the offender puts the
+      real copy above them and must be caught.
+    */
+    law: "orphan-skeletons",
+    breaks: "skeletons under real failure copy, on a page whose <style> also carries the copy in a comment",
+    run: assertNoOrphanSkeletons,
+    offender: {
+      html: page(
+        `/* the empty state says: That brief can't be cast */`,
+        `<p>That brief can't be cast.</p><div class="dp-skeleton"></div>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        `/* the empty state says: That brief can't be cast */`,
+        `<div class="dp-skeleton"></div><div class="dp-skeleton"></div>`,
+      ),
     },
   },
   {
