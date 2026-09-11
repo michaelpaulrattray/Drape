@@ -1,8 +1,8 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
@@ -217,6 +217,19 @@ describe("the two entrypoints refuse a partially-understood command line", () =>
    3. The pinned binary — bad bytes must never reach the disk as an executable
    ──────────────────────────────────────────────────────────────────────── */
 
+/* A real cache directory per arm, and every one swept — Janitor run 5 found 122
+   `drape-hf-cache-*` directories in `%TEMP%` from three days of runs, because
+   nothing here ever removed one (#694's class, from a fifth door). */
+const caches: string[] = [];
+const cacheFixture = (): string => {
+  const dir = mkdtempSync(path.join(tmpdir(), "drape-hf-cache-"));
+  caches.push(dir);
+  return dir;
+};
+afterAll(() => {
+  for (const dir of caches) rmSync(dir, { recursive: true, force: true });
+});
+
 describe("hyperfine pins", () => {
   it("pins exactly the two platforms this project runs on", () => {
     expect(Object.keys(HYPERFINE_PINS).sort()).toEqual(["linux-x64", "win32-x64"]);
@@ -252,7 +265,7 @@ describe("hyperfine pins", () => {
   });
 
   it("⚠ writes NOTHING to the cache when the download fails its checksum", async () => {
-    const cacheDir = mkdtempSync(path.join(tmpdir(), "drape-hf-cache-"));
+    const cacheDir = cacheFixture();
     await expect(
       ensureHyperfine({
         cacheDir,
@@ -266,7 +279,7 @@ describe("hyperfine pins", () => {
   });
 
   it("returns a cached binary without downloading again", async () => {
-    const cacheDir = mkdtempSync(path.join(tmpdir(), "drape-hf-cache-"));
+    const cacheDir = cacheFixture();
     const versioned = path.join(cacheDir, `hyperfine-${HYPERFINE_VERSION}`);
     const { mkdirSync, writeFileSync } = require("node:fs") as typeof import("node:fs");
     mkdirSync(versioned, { recursive: true });
