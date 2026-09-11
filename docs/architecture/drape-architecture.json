@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b67fbc45723a5ff1"
+    "sourceFingerprint": "04ab5a7ec4a103bf"
   },
   "domains": [
     {
@@ -10922,10 +10922,6 @@
     {
       "id": "test:server/adminAuditLogs.test.ts",
       "path": "server/adminAuditLogs.test.ts"
-    },
-    {
-      "id": "test:server/adminFreeze.test.ts",
-      "path": "server/adminFreeze.test.ts"
     },
     {
       "id": "test:server/adminInviteCodes.test.ts",
