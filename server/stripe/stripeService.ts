@@ -184,6 +184,42 @@ export async function getSubscriptionDetails(subscriptionId: string): Promise<{
 }
 
 /**
+ * THE WEBHOOK'S LIVE READ (#795, his word: repair 1 — fetch, don't trust).
+ *
+ * Stripe neither orders nor deduplicates delivery, so an event's payload is a
+ * snapshot of when the event was MADE, not of now — a redelivered older
+ * `subscription.updated` carries a plan the customer has since left, and
+ * since #792 the subscription roads fail events on purpose to make Stripe
+ * redeliver, which widens that window. The subscription handlers therefore
+ * treat the payload as a trigger only and apply what THIS read returns.
+ *
+ * The three outcomes stay apart on purpose: a transient failure FAILS the
+ * event so Stripe redelivers and the read is retried, while a subscription
+ * Stripe does not know cannot be retried into existence — collapsing them
+ * (as `getSubscriptionDetails`'s single `null` does) would either burn three
+ * days of redeliveries on nothing or drop a retryable read on the floor.
+ */
+export type LiveSubscriptionRead =
+  | { outcome: "found"; subscription: Stripe.Subscription }
+  | { outcome: "missing" }
+  | { outcome: "failed"; error: string };
+
+export async function retrieveLiveSubscription(
+  subscriptionId: string,
+): Promise<LiveSubscriptionRead> {
+  try {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    return { outcome: "found", subscription };
+  } catch (error) {
+    if ((error as { code?: string } | null)?.code === "resource_missing") {
+      return { outcome: "missing" };
+    }
+    log.error({ err: error }, `[Stripe] Live read of subscription ${subscriptionId} failed:`);
+    return { outcome: "failed", error: String(error) };
+  }
+}
+
+/**
  * Cancel a subscription at period end
  */
 export async function cancelSubscription(subscriptionId: string): Promise<boolean> {
