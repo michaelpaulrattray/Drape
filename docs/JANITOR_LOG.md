@@ -585,3 +585,137 @@ for: `disposable-age.mts` is #526's own recommended option 1.
 3. `output/` is now **#527's citation pass** and still needs a written manifest.
 4. `drape-tfjs-pose-spike` (§E) — a month old and holding a real `node_modules`.
 5. Re-read knip from the nightly and watch whether `files` stays at 69.
+
+## Run 5 — 2026-09-12 06:59–07:xx AEST (Janitor, patrol #5)
+
+Clock: run 4 was 2026-09-09, cadence 3 days, so this run landed **on its day**
+(`patrol-clocks.mts`: *DUE today*, not overdue — two earlier shifts the same
+day read that line and worked the category order, which is what it says).
+Master switch ON, all seven categories on, Housekeeping ON. NEXT UP empty,
+urgent band empty, no new replies (177/177), no card intents waiting.
+Inherited run 4's "Next run" list, all five items, in order.
+
+### A. THE SWEEP RUN 4 WITHHELD — 368 disposables, two readings, two waves, and a fixpoint
+
+Run 4 wrote its manifest (128) and refused to delete on a reader that had landed
+that shift. This run re-ran `scripts/disposable-age.mts` first and compared:
+
+| | run 4 (2026-09-09) | reading A (this run, 20:59Z) |
+|---|---|---|
+| untracked disposables under `scripts/` | 856 | **897** |
+| cited — KEEP | 99 | 102 |
+| anchored at a card or an edition | 403 | 426 |
+| unresolved by name — KEEP | 453 | 471 |
+| both readers old, uncited — SWEEP | 128 (manifest 131) | **359** |
+
+**Of run 4's 131 manifest lines, 126 stood in reading A; the 5 that left it all
+left in the KEEP direction** — `_327-max-author-read`, `_327-strip`,
+`_briefing-e81` (the three run 4 itself found), plus `_368-queue` and
+`_387-avatar-fixture`, kept by the reviewed reader's untracked-citer hop that
+the manifest predates. The 233 new to reading A are cards that crossed the
+7-day line since Tuesday (46 distinct cards) — **every one re-read by a second
+road, `gh issue view <n>` per card, all CLOSED before `2026-09-04T21:00Z`**
+(`output/_janitor5/anchors-independent.txt`). A wide citation grep over the
+whole working tree plus `~/.claude` skills and memory (`wide-citers.txt`) named
+only records: mailbox entries, `output/` shift drafts, the Janitor's own reads,
+and **one live instruction** — `.agents/foreman/manual-lane-brief.md:11` names
+`_399-session-disposable.mts` as the shape to mint a session from. **Kept by
+hand**, outside the manifest's authorities, because a file a live brief tells
+the relay to copy is not litter.
+
+**Wave 1: 358 deleted** (manifest `output/janitor-run5-sweep-manifest.txt`,
+written by the same invocation as reading A; zipped first to
+`C:\Users\Admin\drape-disposables-sweep-2026-09-12.zip`, 358 files / 1.77 MB).
+
+⚠ **Reading B, taken after wave 1, found 11 MORE — and that is a finding about
+the reader, not the files.** Each was KEPT in reading A only because a
+same-card sibling that wave 1 swept named it (a PR-body draft naming its
+sabotage driver, a drive script naming its control). **The reader is one pass,
+not a fixpoint**: a citation from a file that is itself sweepable is not a
+keep. **Wave 2: 10 deleted** (`…-manifest-wave2.txt`, zip `…-wave2.zip`;
+`_399-session` kept again). Reading C: 529 disposables, **1 sweepable** — the
+hand-kept `_399`. Fixpoint. The fix is either a second pass in the reader or a
+`kept only by a SWEEP candidate` column; it is a card, not this shift's work.
+
+After both waves: `tsc -p tsconfig.scripts.json` exit 0, both script guards
+18/18, `git status` shows no tracked change. **`scripts/` untracked disposables:
+897 → 529.**
+
+### B. THE ROOT FRAMES — the "still-not-mine pile" sixteen nights of foremen handed here
+
+122 law-6 screenshots (`<card>-<surface>-<theme>-1440.png`, 11 MB) untracked at
+the repository root, 26 cards. Read on the disposable-age doctrine by hand
+(`output/_janitor5/png-anchors.txt`): **31 swept** (10 cards closed before
+`2026-09-04T21:00Z`: #429 #434 #435 #487 #493 #494 #501 #505 #510 #512; 4.4 MB;
+manifest `output/janitor-run5-root-frames-manifest.txt`; zip
+`C:\Users\Admin\drape-root-frames-sweep-2026-09-12.zip`). **KEPT: the seven
+`436-*` — cited by a tracked authority, `docs/specs/STAFF_DIALOGS_436_EVIDENCE.md`**;
+#252's two (closed 22:29Z on 09-04 — ninety minutes inside the window); and
+everything newer. 91 remain; the next run's line is at `2026-09-07T21:00Z`.
+`mint.err` (174 bytes, a drive's stderr from 4 Sep, dev host only) deleted.
+`FABLE_R7_*.md` stay — run 2's ruling, unchanged.
+
+### C. `%TEMP%` — TWO NEW FAMILIES, AND THIS TIME THE CODE IS THE LEAK
+
+| item | found | done |
+|---|---|---|
+| `drape-bundle-*` | **210 dirs**, 0.6 MB, 10–12 Sep — `server/bundleFold.test.ts` `emittedDir()`, 7 per run, **no teardown at all** | swept; **PR #826** adds the sibling suites' shape (record what you made, `afterAll` sweeps it) |
+| `drape-hf-cache-*` | **122 dirs**, 0.06 MB — `server/benchCommands.test.ts`, 2 per run, **no teardown at all** | swept; same PR |
+| `drape-tfjs-pose-spike` | in `%TEMP%` (run 4 had it beside the worktrees); the "real `node_modules`" is **80 KB**, 6 Aug | swept — a month old, a spike, and not an install |
+| `drape-421*.log` ×2, `atlasdrv-*` ×3 | 2 Sep, dev-server logs and three empty driver dirs nothing in the tree names | swept |
+| `drape-rite-*`, `drape-atlas-*`, `drape-precommit-*` (#654, #694) | **none** — three days after run 4's sweep, neither family has regrown | nothing; #654's repair holds, #694's numbers stay small |
+| `playwright-artifacts-*` (44), `puppeteer_dev_chrome_profile-*` (41) | other tools' families, not `drape-*` | left and recorded — outside this seat's family; a run that wants them takes a manifest first |
+
+347 entries, ~1 MB, manifest `output/janitor-run5-temp-manifest.txt`. Measured
+rather than argued: **main's two suites add 7 + 2 per run (210 → 217, 122 →
+124); the branch adds 0.** This is NOT #694's mechanism — those three suites
+tear down and leak only when killed; these two never removed a directory in
+their lives. Law-7 sweep: `mkdtempSync` in 21 test files, **19 already remove
+what they make**; these two were the whole remainder.
+
+### D. The `Drape-census` owner question — CLOSED by zipping, the tree is gone
+
+Open since run 3. The branch `census/full-map` (`d2613b74`) is an ancestor of
+`origin/main`, so every commit is already in main; the untracked remainder was
+`output/capability-census/` — 15 probe scripts of 21–22 Aug plus `corpus.backup`
+/ `generate.backup` (early shapes of what is now `scripts/capability-atlas-*.mts`)
+— and `_vitest-full.log`; 2.3 MB, 26 files. **Zipped whole to
+`C:\Users\Admin\drape-census-scratch-2026-09-12.zip`**, then `git worktree
+remove --force` (unregisters, leaves the directory — the known 2.55 shape), then
+**the `node_modules` junction was taken out with `rmdir` BEFORE the recursive
+delete** — it pointed at the main tree's `node_modules`, and the main tree's was
+read before and after: 67 entries, `.bin/vitest` present, both times. The
+branch ref stays. Nothing is lost that the zip does not hold.
+
+### E. Dead-code reading
+
+Nightly `34631395445` (2026-09-11, `ac7c2cd7`, compact): **69 / 1 / 194 / 132 /
+19**. Files flat at 69 for a week now; duplicates flat at 19; exports and types
+single-digit drift. Row appended to `docs/JANITOR_KNIP.md` — in the table this
+time, not after it (the first append landed below the prose and was moved).
+
+### F. Anti-boredom check
+
+Every act traces to run 4's own "Next run" list (items 1, 2, 4, 5 done; 3 —
+`output/`, #527 — measured only: **7.0 GB now, 1,517 entries**, up from 6.5 GB,
+its citation pass still unwritten and a whole run on its own), to an open card
+(#694's class → PR #826), or to a finding produced on this patrol's clock (the
+one-pass reader, §A — a card proposal, not worked). **Nothing spent.**
+Production writes: the shift row, the queue counts. Every deletion has a
+manifest written by the invocation that read it and a zip outside the
+repository, so no act this run is unrecoverable.
+
+**Next run (~2026-09-15):**
+
+1. `output/` — #527's citation pass, with its own manifest. It is the only
+   litter left that is measured in gigabytes and it grows every shift.
+2. The reader's second pass (§A) — take the card if filed, or run
+   `disposable-age.mts` twice and sweep both readings' agreement, which is what
+   this run did by hand.
+3. Root frames: 91 remain; re-read at the new line. `drape-shift-frames`
+   (`C:\Users\Admin`, six #624 frames, 7 Sep, 488 KB) crosses 7 days on the 14th.
+4. Watch `%TEMP%` for `drape-bundle-*` / `drape-hf-cache-*` regrowing — after
+   #826 merges a nonzero count is a killed run, #694's shape, not a leak.
+5. `drape-pinned-42652964` — still KEEP, still cited by
+   `scripts/court-ink-carry-a-disposable.mts:19`; the question of whether that
+   court will ever run again is a founder-adjacent one and stays open.

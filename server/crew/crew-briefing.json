@@ -1,7 +1,7 @@
 {
-  "edition": 352,
-  "updatedAt": "2026-09-11T20:39:36.594Z",
-  "shift": "Machinist — patrol #3 (the weekly performance read, on its day). YOUR DESK IS CLEAR. THE READ, IN YOUR TERMS: over the last fortnight one sheet in four came back short a picture (8 of 30 rolls; 11 of 243 paid tiles did not arrive, 4.5%) — every missing tile was the engine refusing to draw it, and every one was refunded to the credit. That is HALF the rate of two weeks ago (11.3%), on a fortnight with no creature courts in it; the cause has not changed and #129 (the refusal patrol you ordered) is its brief. The Retry button ran on production for the first time — three presses, two tiles arrived in under a minute, one was refused again and said so honestly with the 20 credits back. House money: with no courts running, text spend fell to about 88 cents a day and image is now the bigger line (about $1.29/day) — roughly $2.20/day steady state. Face scans came in at $13.90 for the fortnight, which is the $30/month you priced them at. THE HOUSE'S OWN TOOLS: the type-check every shift runs before a push takes 116 seconds, and 67 of those are one pass re-checking the whole server a second time — filed as #825 with the numbers, not built. The full test suite could not be timed because it fails on main on timeouts alone (14 tonight under load; #743 already holds that). The client is still one 637 kB download, unchanged (#744). ONE FIX SHIPPED (PR #824): the ledger's shift-process figures blanked three times in four tonight because ONE dropped connection out of ~200 threw the whole reading away — it retries now, and the same read came back first time afterwards: 1.73 cards per shift and 20 gate-minutes per card over the post-rule week, both better than the September-5 baseline, neither at target yet. ALSO: #697's four remaining casting test files were read check by check — every flagged one drives the real product; nothing to rewrite (only the sign-up file, an auth path, remains). YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. The Janitor reads due today and was not taken (one patrol per shift) — the next shift takes it.",
+  "edition": 353,
+  "updatedAt": "2026-09-11T21:23:21.399Z",
+  "shift": "Janitor — patrol #5 (the 3-day litter sweep, on its day). YOUR DESK IS CLEAR. WHAT THE HOUSE LOOKS LIKE AFTERWARDS: the pile of throwaway scripts the shifts leave behind went from 897 to 529 — 368 of them deleted, every one older than a week by the card it served (checked twice, by two different roads) and named by nothing that is still alive. Each batch was zipped to your user folder first, so nothing here is unrecoverable. The 31 oldest screenshots at the repository root went the same way (with the same zip); 91 newer ones stay until their week is up. ONE FIX SHIPPED (PR #826): two test files were leaving a temporary folder behind on your machine EVERY time the tests ran — 332 folders in three days, from two suites that never cleaned up at all. They do now (measured: the old files add 9 per run, the new ones add 0). The 347 leftover temp entries were swept. ALSO: the old 'Drape-census' working copy (a month of scratch from the capability census, 2.3 MB) was zipped and removed — every commit in it was already in main. The dead-code counter is flat at 69 files for a week. ONE CARD FILED (#827): the cleaner itself reads once, and a script whose only friend was just deleted survives one more round — 11 of 369 tonight; a small fix, recommended, not built. STILL TO DO: the evidence folder (output/) is 7.0 GB and growing every shift — its keep-or-go pass is the next Janitor's whole job (#527). YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden reads due tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T20:38:49.575Z",
+      "readAt": "2026-09-11T21:22:41.305Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,13 @@
   ],
   "pipeline": [
     {
+      "id": "fixture-teardown-826",
+      "title": "Two test suites stop leaving a temporary folder behind on every run",
+      "status": "merged",
+      "prNumber": 826,
+      "note": "The bundle-size test and the benchmark test each created a temporary folder per check and never removed one — 210 and 122 folders in three days on your machine, small in bytes, unbounded in number. Both now sweep what they made when they finish, the same way the other nineteen such tests already do. Measured before and after: the old suites add 7 + 2 folders per run, the new ones add 0."
+    },
+    {
       "id": "ledger-gh-retry-824",
       "title": "The performance ledger no longer loses its shift-process figures to one dropped connection",
       "status": "merged",
@@ -5533,11 +5540,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912f-machinist",
+      "id": "queue-shape-0912g-janitor",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 53 open, none closed, one filed (#825); NEXT UP is empty; nothing waits on you",
-      "detail": "Machinist patrol #3 ran on its day: ledger read (14d/60d/7d), bundle read, house-command bench; one reader fix merged (#824); the ledger's Run 3 appended with the worst number named (one sheet in four short a picture, all refusals, #129). #825 filed with numbers: pnpm check is 116 s and 67 s of it re-checks the server a second time. #743 given tonight's wide-run reading (14 timeouts, no assertion failures, under load). #697's four castingV2 files cleared by reading — only routes/emailAuth (auth) remains. 27 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). The Janitor is DUE today by its own clock and was not taken (one patrol per shift); the next shift's reader will show it overdue, and an overdue patrol under its switch goes ahead of the category order. Warden due 13 Sep."
+      "title": "The queue: 54 open, none closed, one filed (#827); NEXT UP is empty; nothing waits on you",
+      "detail": "Janitor patrol #5 ran on its day: 368 stale disposables swept in two waves (each zipped first), 31 stale root screenshots swept, 347 %TEMP% entries swept and the two suites that made most of them fixed (#826), the Drape-census worktree zipped and removed, knip flat at 69 files for a week. #827 filed with the numbers (the cleaner is one pass, not a fixpoint). #527 (output/, 7.0 GB) measured and left for the next Janitor. 26 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Warden due 13 Sep; Machinist and Retro ran today."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5720,7 +5727,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-11T20:38:49.574Z",
+    "readAt": "2026-09-11T21:22:41.304Z",
     "items": []
   }
 }
