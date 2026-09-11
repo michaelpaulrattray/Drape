@@ -12,7 +12,7 @@ import { z } from "zod";
 export const iterateInputSchema = z.object({
   clientRequestId: z.string().uuid(),
   modelId: z.number(),
-  feedback: z.string().min(1),
+  feedback: z.string().trim().min(1), // `.trim()` before `.min(1)` (#816)
   assetId: z.number(),
   maskBase64: z.string().max(10_000_000).optional(),
   referenceImage: z.string().max(10_000_000).optional(),

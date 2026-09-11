@@ -30,8 +30,10 @@ export const announcementsRouter = router({
   createBanner: adminProcedure
     .input(
       z.object({
-        title: z.string().min(1).max(ANNOUNCEMENT_TITLE_MAX_LENGTH),
-        message: z.string().min(1).max(ANNOUNCEMENT_MESSAGE_MAX_LENGTH),
+        // `.trim()` before `.min(1)` (#816): a banner of one space is a blank strip on
+        // every customer's screen, and it used to pass the non-empty check.
+        title: z.string().trim().min(1).max(ANNOUNCEMENT_TITLE_MAX_LENGTH),
+        message: z.string().trim().min(1).max(ANNOUNCEMENT_MESSAGE_MAX_LENGTH),
         type: announcementTypeEnum,
         isActive: z.boolean().default(false),
         startsAt: z.date().nullable().default(null),
@@ -60,8 +62,8 @@ export const announcementsRouter = router({
     .input(
       z.object({
         id: z.number(),
-        title: z.string().min(1).max(ANNOUNCEMENT_TITLE_MAX_LENGTH).optional(),
-        message: z.string().min(1).max(ANNOUNCEMENT_MESSAGE_MAX_LENGTH).optional(),
+        title: z.string().trim().min(1).max(ANNOUNCEMENT_TITLE_MAX_LENGTH).optional(),
+        message: z.string().trim().min(1).max(ANNOUNCEMENT_MESSAGE_MAX_LENGTH).optional(),
         type: announcementTypeEnum.optional(),
         isActive: z.boolean().optional(),
         startsAt: z.date().nullable().optional(),

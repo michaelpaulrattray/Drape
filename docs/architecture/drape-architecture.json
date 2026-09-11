@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "28b25680a9c26ec4"
+    "sourceFingerprint": "c4799581489a3a49"
   },
   "domains": [
     {
@@ -12854,6 +12854,10 @@
     {
       "id": "test:server/founderActivity.test.ts",
       "path": "server/founderActivity.test.ts"
+    },
+    {
+      "id": "test:server/freeTextWhitespace.test.ts",
+      "path": "server/freeTextWhitespace.test.ts"
     },
     {
       "id": "test:server/gateStallAlarm.test.ts",

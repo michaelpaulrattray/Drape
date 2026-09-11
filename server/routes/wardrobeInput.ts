@@ -79,7 +79,7 @@ export const wardrobeRefineInput = z.object({
 
 /** `wardrobe.vto.classifyEdit` — is this instruction a small edit or a re-shoot? */
 export const wardrobeClassifyEditInput = z.object({
-  instruction: z.string().min(1).max(500),
+  instruction: z.string().trim().min(1).max(500), // `.trim()` before `.min(1)` (#816)
 });
 
 /** `wardrobe.outfits.save` — a named set of garments. */

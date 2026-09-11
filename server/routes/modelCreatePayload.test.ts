@@ -102,6 +102,13 @@ describe("the guarded post-headshot iteration path keeps its reference (§10.3)"
     expect(result.success && result.data.referenceImage).toBeTruthy();
   });
 
+  it("iterate refuses whitespace-only feedback and trims padded feedback (#816)", () => {
+    const base = { clientRequestId: REQUEST_ID, modelId: 1, assetId: 42 };
+    expect(iterateInputSchema.safeParse(overTheWire({ ...base, feedback: " \n\t " })).success).toBe(false);
+    const padded = iterateInputSchema.safeParse(overTheWire({ ...base, feedback: "  soften the jawline  " }));
+    expect(padded.success && padded.data.feedback).toBe("soften the jawline");
+  });
+
   it("iterate accepts a payload without a reference image", () => {
     const result = iterateInputSchema.safeParse(overTheWire({
       clientRequestId: REQUEST_ID,
