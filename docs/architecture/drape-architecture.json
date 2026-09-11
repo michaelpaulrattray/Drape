@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "2a526555a5ae44a3"
+    "sourceFingerprint": "ba7abb098a73131c"
   },
   "domains": [
     {
@@ -12918,6 +12918,10 @@
     {
       "id": "test:server/db/castingV2ReferenceLibrary.test.ts",
       "path": "server/db/castingV2ReferenceLibrary.test.ts"
+    },
+    {
+      "id": "test:server/db/creditTransactionByRef.test.ts",
+      "path": "server/db/creditTransactionByRef.test.ts"
     },
     {
       "id": "test:server/db/dailyQuota.test.ts",

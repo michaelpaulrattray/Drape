@@ -886,6 +886,16 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
   );
 
   const actions: string[] = [];
+  // ⚠ A restore that did not happen must FAIL THE EVENT (#789, PR #787's
+  // round-2 class on this road): `addCredits` catches its own errors and
+  // returns `{ success: false }`, and a handler that then returns success is
+  // ACKed 200 and recorded as processed — Stripe never redelivers, and a
+  // customer who WON their chargeback stays without their credits until a
+  // person notices. The restore is idempotent on `dispute_restore_<id>`, so
+  // Stripe's ~3 days of free redeliveries are exactly the retry it needs.
+  // The unsuspend and the alert still land on the first attempt; only the
+  // verdict at the end changes.
+  let restoreFailed = false;
 
   if (userId && status === "won") {
     // DISPUTE WON: Restore the user's account and credits
@@ -920,6 +930,7 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
         actions.push("credits already restored (duplicate)");
         log.info(`[Webhook] Credits already restored for dispute ${dispute.id} (duplicate)`);
       } else {
+        restoreFailed = true;
         actions.push(`credit restore failed: ${restoreResult.error}`);
         log.error(`[Webhook] Failed to restore credits for user ${userId}: ${restoreResult.error}`);
       }
@@ -950,6 +961,17 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
   }
 
   log.info(`[Webhook] Dispute closed: ${dispute.id}, status: ${status}, userId: ${userId || "unknown"}, actions: ${actions.join(", ")}`);
+
+  if (restoreFailed) {
+    log.error(
+      `[Webhook] Dispute ${dispute.id} won by user ${userId} but the credit restore failed — failing the event so Stripe redelivers and the restore is retried; the account is already unsuspended`,
+    );
+    return {
+      success: false,
+      message: `Dispute ${dispute.id} closed (${status}) — ${actions.join(", ")}; failing the event so Stripe redelivers and the restore is retried`,
+    };
+  }
+
   return {
     success: true,
     message: `Dispute ${dispute.id} closed (${status}) — ${userId ? actions.join(", ") : "user not identified"} — Slack alert sent`,
