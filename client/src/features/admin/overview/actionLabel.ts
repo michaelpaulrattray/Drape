@@ -24,7 +24,7 @@
  * typographic change, not an interpretation.
  */
 
-/** The thirteen with a phrase better than their identifier. */
+/** The fifteen with a phrase better than their identifier. */
 const NAMED: Record<string, string> = {
   "account.auto_frozen": "Auto-frozen",
   "account.frozen": "Frozen by staff",
@@ -39,6 +39,8 @@ const NAMED: Record<string, string> = {
   "abuse.global_attack_detected": "Global attack detected",
   "security.emergency_action": "Emergency action",
   "billing.stripe_refund_issued": "Refund issued",
+  "billing.stripe_refund_failed": "Refund failed",
+  "billing.invoice_paid_after_plan_ended": "Invoice paid after plan ended",
 };
 
 export function actionLabel(action: string): string {

@@ -278,6 +278,40 @@ export async function updateChangeRequestStatus(
 }
 
 /**
+ * Append a line to a change request's review notes WHATEVER its status —
+ * the one write on this table that is not a transition (#771). A refund
+ * change request is `approved` the moment Stripe accepts the refund, and
+ * `refund.failed` arrives days later; the note it leaves is the only thing a
+ * support person reading the request will see that says the money never
+ * went back. `updateChangeRequestStatus` refuses anything not in
+ * `pending`/`pending_execution` by design, which is right for a transition
+ * and wrong for this.
+ */
+export async function appendChangeRequestReviewNote(
+  id: number,
+  note: string,
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database not available" };
+  try {
+    const [result] = await db
+      .update(changeRequests)
+      .set({
+        reviewNotes: sql`CONCAT(COALESCE(${changeRequests.reviewNotes}, ''), ${"\n" + note})`,
+        updatedAt: new Date(),
+      })
+      .where(eq(changeRequests.id, id));
+    if (result.affectedRows === 0) {
+      return { success: false, error: "Change request not found" };
+    }
+    return { success: true };
+  } catch (error) {
+    log.error({ err: error }, "[Database] Failed to append change request review note");
+    return { success: false, error: "Failed to append review note" };
+  }
+}
+
+/**
  * Get change requests submitted by a specific moderator.
  * Convenience wrapper around listChangeRequests.
  */

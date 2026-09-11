@@ -1342,6 +1342,13 @@ export const AUDIT_ACTIONS = {
   CREDITS_DEDUCTED: "credits.admin_deducted",
   CREDITS_REFUNDED: "credits.refunded",
   STRIPE_REFUND_ISSUED: "billing.stripe_refund_issued",
+  // Money that did NOT do what the record says (#771, founder ruling
+  // 2026-09-10): a refund Stripe later reported failed, and an invoice paid on
+  // a road built to close it. Both surface on the admin overview's alerts
+  // feed and the staff audit log's billing filter — production has no Slack
+  // webhook, so a log line is a surface nobody is subscribed to.
+  STRIPE_REFUND_FAILED: "billing.stripe_refund_failed",
+  INVOICE_PAID_AFTER_PLAN_ENDED: "billing.invoice_paid_after_plan_ended",
   
   // Model events
   MODEL_CREATED: "model.created",

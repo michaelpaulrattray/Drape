@@ -13,6 +13,8 @@ import {
   getMonthlyCredits,
   cancelSubscription,
   voidInvoice,
+  REFUND_METADATA_USER_KEY,
+  REFUND_METADATA_CHANGE_REQUEST_KEY,
 } from "./stripeService";
 import { 
   updateUserSubscription, 
@@ -24,6 +26,8 @@ import {
   deductCredits,
   addCredits,
   creditReferrerOnPaidAction,
+  getCreditTransactionByRef,
+  appendChangeRequestReviewNote,
 } from "../db";
 import { SlackAlerts } from "../slack/slackNotification";
 import { SubscriptionPlan } from "./stripeProducts";
@@ -35,6 +39,7 @@ import {
   voidPlanChangeSettlement,
 } from "./planChangeSettlement";
 import { voidPendingPlanChangeSettlementsForUser } from "../db";
+import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { createModuleLogger } from "../logging/logger";
 import { checkEventEnvironment } from "./environmentTag";
 import { deploymentTag } from "../_core/env";
@@ -143,6 +148,10 @@ export async function handleStripeWebhook(
 
       case "charge.dispute.closed":
         result = await handleDisputeClosed(event.data.object as Stripe.Dispute);
+        break;
+
+      case "refund.failed":
+        result = await handleRefundFailed(event.data.object as Stripe.Refund);
         break;
 
       default:
@@ -535,6 +544,140 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
     log.info(`[Webhook] Payment failed for user ${userId}, marked as past_due (retry scheduled)`);
   }
   return { success: true, message: `Payment failed for user ${userId}` };
+}
+
+/**
+ * Handle refund.failed — THE ROAD A REAL REFUND FAILURE ACTUALLY TAKES (#771,
+ * founder ruling 2026-09-10, option C's second half: "listen for Stripe
+ * telling us later that it failed, and put the credits back").
+ *
+ * A refund on a change request deducts the customer's credits the moment
+ * Stripe ACCEPTS it, and most refunds that fail do so days later — a closed
+ * card, a bank rejection — by which time the request reads `approved`, the
+ * audit row says issued, and the credits are gone. Until this handler the
+ * event was not listened for at all, so the customer lost the credits AND
+ * never got the money.
+ *
+ * What it does, in order, each step surviving the last one failing:
+ *  1. finds who and which request from the refund's own metadata (stamped at
+ *     creation by `issueStripeRefund`); a refund we did not stamp — one made
+ *     by hand in the dashboard — is REPORTED and not guessed at;
+ *  2. puts back exactly the credits that deduction took, keyed on a ledger
+ *     reference so a redelivered event cannot restore twice;
+ *  3. writes the truth onto the change request's notes, since that is the
+ *     screen a support person reads;
+ *  4. writes a `billing.stripe_refund_failed` audit row at critical, which
+ *     is what puts it on the admin overview's alerts feed and the staff
+ *     audit log — production has no Slack webhook, so those panels are the
+ *     surface (the login-attack alarm took the same road on his ruling).
+ *
+ * Returns success even when the refund cannot be matched: the event has been
+ * recorded where staff will see it, and a redelivery would only write the
+ * same row again.
+ */
+async function handleRefundFailed(refund: Stripe.Refund): Promise<WebhookResult> {
+  const amountCents = refund.amount;
+  const currency = (refund.currency ?? "usd").toUpperCase();
+  const failureReason = refund.failure_reason ?? "not_specified";
+  const money = `$${(amountCents / 100).toFixed(2)} ${currency}`;
+
+  const userIdRaw = refund.metadata?.[REFUND_METADATA_USER_KEY];
+  const changeRequestIdRaw = refund.metadata?.[REFUND_METADATA_CHANGE_REQUEST_KEY];
+  const userId = userIdRaw ? Number(userIdRaw) : NaN;
+  const changeRequestId = changeRequestIdRaw ? Number(changeRequestIdRaw) : NaN;
+
+  if (!Number.isInteger(userId) || !Number.isInteger(changeRequestId)) {
+    // Not one of ours to unwind — no deduction is keyed to it. Said out loud
+    // on the panel rather than guessed at from the charge.
+    log.warn(
+      `[Webhook] Refund ${refund.id} FAILED (${failureReason}, ${money}) but carries no Drape tracking metadata — no credits moved; a person has to look`,
+    );
+    // Named rather than inline: `environmentTag.test.ts` scans every inline
+    // metadata literal in this directory for the Stripe env tag, and this
+    // block goes to OUR audit log, never to Stripe.
+    const untrackedDetail = {
+      stripeRefundId: refund.id,
+      failureReason,
+      refundAmountCents: amountCents,
+      currency,
+      identified: false,
+      reason: `Refund ${refund.id} failed (${failureReason}) — not a change-request refund, nothing restored`,
+    };
+    await logAuditEvent({
+      action: AUDIT_ACTIONS.STRIPE_REFUND_FAILED,
+      resourceType: "billing",
+      resourceId: refund.id,
+      metadata: untrackedDetail,
+      severity: "critical",
+    });
+    return { success: true, message: `Refund ${refund.id} failed — untracked, reported for a human` };
+  }
+
+  const deductionRef = `cr-stripe-refund:${changeRequestId}`;
+  const restoreRef = `cr-stripe-refund-failed:${changeRequestId}`;
+  const actions: string[] = [];
+
+  let creditsRestored = 0;
+  const deduction = await getCreditTransactionByRef(userId, deductionRef);
+  if (deduction && deduction.amount < 0) {
+    const creditsToRestore = Math.abs(deduction.amount);
+    const restore = await addCredits(
+      userId,
+      creditsToRestore,
+      "refund",
+      `Credits restored: Stripe refund ${refund.id} failed (${failureReason}) — ${money} never went back`,
+      restoreRef,
+    );
+    if (restore.success && !restore.duplicate) {
+      creditsRestored = creditsToRestore;
+      actions.push(`${creditsToRestore} credits restored`);
+      log.info(`[Webhook] Restored ${creditsToRestore} credits to user ${userId} — refund ${refund.id} failed`);
+    } else if (restore.duplicate) {
+      actions.push("credits already restored (duplicate)");
+      log.info(`[Webhook] Credits already restored for refund ${refund.id} (duplicate delivery)`);
+    } else {
+      actions.push(`credit restore failed: ${restore.error}`);
+      log.error(`[Webhook] Failed to restore credits to user ${userId} after refund ${refund.id} failed: ${restore.error}`);
+    }
+  } else {
+    // A refund whose request deducted nothing (balance already spent) has
+    // nothing to put back; the money still did not go, so it is still a row.
+    actions.push("no credit deduction on record to restore");
+    log.info(`[Webhook] Refund ${refund.id} failed; no deduction keyed ${deductionRef} for user ${userId} — nothing to restore`);
+  }
+
+  const noted = await appendChangeRequestReviewNote(
+    changeRequestId,
+    `⚠ Stripe refund ${refund.id} FAILED (${failureReason}) on ${new Date().toISOString()} — ${money} never went back to the customer. ${creditsRestored > 0 ? `${creditsRestored} credits restored.` : "No credits were restored."} Needs a person.`,
+  );
+  if (!noted.success) {
+    actions.push(`note not written: ${noted.error}`);
+    log.error(`[Webhook] Could not annotate change request ${changeRequestId} after refund ${refund.id} failed: ${noted.error}`);
+  }
+
+  const detail = {
+    targetUserId: userId,
+    changeRequestId,
+    stripeRefundId: refund.id,
+    failureReason,
+    refundAmountCents: amountCents,
+    currency,
+    creditsRestored,
+    identified: true,
+    reason: `Refund ${refund.id} failed (${failureReason}) — ${money} never went back; ${actions.join(", ")}`,
+  };
+  await logAuditEvent({
+    action: AUDIT_ACTIONS.STRIPE_REFUND_FAILED,
+    resourceType: "billing",
+    resourceId: refund.id,
+    metadata: detail,
+    severity: "critical",
+  });
+
+  return {
+    success: true,
+    message: `Refund ${refund.id} failed for user #${userId} (CR #${changeRequestId}) — ${actions.join(", ")}`,
+  };
 }
 
 /**

@@ -339,6 +339,15 @@ const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
     AUDIT_ACTIONS.CREDITS_PURCHASED,
     AUDIT_ACTIONS.CREDITS_DEDUCTED,
     AUDIT_ACTIONS.CREDITS_REFUNDED,
+    /*
+      THE TWO MONEY ANOMALIES (#771). Same lesson as the login alarm below:
+      without these lines the billing filter would drop the rows the moment a
+      refund fails or an invoice is paid after its plan ended, and the only
+      surface production has for them is this panel.
+    */
+    AUDIT_ACTIONS.STRIPE_REFUND_ISSUED,
+    AUDIT_ACTIONS.STRIPE_REFUND_FAILED,
+    AUDIT_ACTIONS.INVOICE_PAID_AFTER_PLAN_ENDED,
   ],
   model: [
     AUDIT_ACTIONS.MODEL_CREATED,

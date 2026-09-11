@@ -68,6 +68,8 @@ const ACTION_ICON: Record<string, typeof AlertTriangle> = {
   "abuse.global_attack_detected": Shield,
   "security.emergency_action": Shield,
   "billing.stripe_refund_issued": CreditCard,
+  "billing.stripe_refund_failed": CreditCard,
+  "billing.invoice_paid_after_plan_ended": CreditCard,
 };
 
 function getTimeAgo(date: Date): string {

@@ -293,7 +293,21 @@ export async function executeChangeRequestAction(
         throw new Error(`Nothing to refund proportionally — the customer's balance is ${currentBalance} and the calculated refund is ${refundAmountCents} cents. Use a full refund if this is goodwill.`);
       }
 
-      const refundResult = await issueStripeRefund(stripeSessionId, refundAmountCents, `Change request #${changeRequestId}`);
+      // The refund carries who and which request in its Stripe metadata, so
+      // a `refund.failed` event days later can find the deduction below and
+      // put it back (#771's asynchronous half, handleRefundFailed).
+      const refundResult = await issueStripeRefund(
+        stripeSessionId,
+        refundAmountCents,
+        `Change request #${changeRequestId}`,
+        { userId, changeRequestId },
+      );
+      // ⚠ Refused BEFORE any credit moves (#771, founder ruling 2026-09-10,
+      // option C's first half). A refund Stripe created and reported as
+      // `failed` / `canceled` in the same breath arrives here as
+      // `success: false` with the status beside it; the throw leaves the
+      // request in `pending_execution` for a human, the credits untouched,
+      // and no audit row claiming a refund was issued.
       if (!refundResult.success) {
         throw new Error(`Stripe refund failed: ${refundResult.error}`);
       }

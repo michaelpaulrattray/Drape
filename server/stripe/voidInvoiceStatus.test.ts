@@ -44,6 +44,12 @@ vi.mock("../logging/logger", () => ({
   createModuleLogger: () => logged,
 }));
 
+const audit = vi.hoisted(() => ({ logAuditEvent: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../auditLog", async () => {
+  const schema = await vi.importActual<typeof import("../../drizzle/schema")>("../../drizzle/schema");
+  return { logAuditEvent: audit.logAuditEvent, AUDIT_ACTIONS: schema.AUDIT_ACTIONS };
+});
+
 import { voidInvoice } from "./stripeService";
 
 beforeEach(() => {
@@ -87,6 +93,22 @@ describe("voidInvoice — a status that cannot take money, and the one that alre
     expect(saidAt("warn")).toContain("PAID");
     expect(saidAt("warn")).not.toContain("nothing to do");
     expect(saidAt("info")).not.toContain("nothing to do");
+    /* #771: the warn alone was a surface nobody reads — the audit row is what
+       puts it on the admin overview's alerts feed and the staff audit log. */
+    expect(audit.logAuditEvent).toHaveBeenCalledTimes(1);
+    expect(audit.logAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "billing.invoice_paid_after_plan_ended",
+        resourceId: "in_paid",
+        severity: "critical",
+      }),
+    );
+  });
+
+  it("a benign status writes NO audit row — the panel is for money that went wrong, not for redeliveries", async () => {
+    invoicesRetrieve.mockResolvedValue({ id: "in_void", status: "void" });
+    await voidInvoice("in_void");
+    expect(audit.logAuditEvent).not.toHaveBeenCalled();
   });
 
   /* The positive control: a voidable status still voids and still says so. */

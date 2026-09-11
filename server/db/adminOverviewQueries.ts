@@ -371,7 +371,9 @@ export async function getRecentAlerts(limit: number = 15): Promise<Array<{
         'abuse.billing_anomaly',
         'abuse.global_attack_detected',
         'security.emergency_action',
-        'billing.stripe_refund_issued'
+        'billing.stripe_refund_issued',
+        'billing.stripe_refund_failed',
+        'billing.invoice_paid_after_plan_ended'
       )`
     )
     .orderBy(desc(auditLogs.createdAt))

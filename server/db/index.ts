@@ -161,6 +161,7 @@ export {
   getChangeRequestById,
   listChangeRequests,
   updateChangeRequestStatus,
+  appendChangeRequestReviewNote,
   getChangeRequestsByModerator,
 } from "./changeRequests";
 

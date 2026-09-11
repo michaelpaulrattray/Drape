@@ -675,8 +675,31 @@ export async function voidInvoice(
     const status = invoice?.status ?? null;
     if (status === "paid") {
       log.warn(
-        `[Stripe] Invoice ${invoiceId} is already PAID on the final-failure road — money was taken for a plan that is being cancelled, and its credits will not move. Check this customer.`,
+        `[Stripe] Invoice ${invoiceId} is already PAID on a road that is closing the plan — money was taken for a plan that is being cancelled, and its credits will not move. Check this customer.`,
       );
+      // THE SURFACE (#771, PR #770's reviewer): production has no Slack
+      // webhook and nobody is subscribed to this log, so the warn alone was a
+      // control nobody could see. A critical audit row lands it on the admin
+      // overview's alerts feed and the staff audit log's billing filter —
+      // the same road the login-attack alarm took on his ruling. It sits
+      // HERE rather than at each caller so every road that voids an invoice
+      // (final payment failure, voluntary cancel) reports the same way.
+      // (Named, not inline: `environmentTag.test.ts` scans every inline
+      // metadata literal here for the Stripe tag; this one is ours.)
+      const { logAuditEvent, AUDIT_ACTIONS } = await import("../auditLog");
+      const detail = {
+        stripeInvoiceId: invoiceId,
+        stripeCustomerId: typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id ?? null,
+        amountPaidCents: invoice.amount_paid ?? null,
+        reason: `Invoice ${invoiceId} was already paid when the plan ended — money taken, credits will not move`,
+      };
+      await logAuditEvent({
+        action: AUDIT_ACTIONS.INVOICE_PAID_AFTER_PLAN_ENDED,
+        resourceType: "billing",
+        resourceId: invoiceId,
+        metadata: detail,
+        severity: "critical",
+      });
       return "already-paid";
     }
     if (!VOIDABLE_INVOICE_STATUSES.includes(status as never)) {
@@ -878,18 +901,58 @@ export async function getSessionChargedAmountCents(sessionId: string): Promise<n
 }
 
 /**
+ * Refund statuses that mean NO MONEY IS GOING BACK, read off the object
+ * `refunds.create` returns (#771, founder ruling 2026-09-10, option C — A
+ * first: "refuse before touching their credits, and leave it for a human").
+ *
+ * Stripe's refund statuses are `pending`, `requires_action`, `succeeded`,
+ * `failed` and `canceled`. ⚠ `pending` is COMMON AND BENIGN — a bank refund
+ * lands days later — and `requires_action` is a refund waiting on the
+ * customer, not one that has failed. So this is NOT "anything but succeeded
+ * is a failure": only the two terminal no-money statuses are refused, and a
+ * refund that fails LATER takes the `refund.failed` webhook road
+ * (`handleRefundFailed` in webhooks.ts), which is the common shape.
+ *
+ * Before this constant existed the create-time status was logged inside a
+ * sentence that said "issued" and returned `success: true` whatever it was,
+ * so the caller went on to deduct the customer's credits, mark the change
+ * request approved and write an audit row naming a refund that never paid.
+ */
+export const REFUND_CREATE_FAILED_STATUSES: ReadonlySet<string> = new Set(["failed", "canceled"]);
+
+/**
+ * What a refund is FOR, written into its Stripe metadata so the asynchronous
+ * road can find its way back: a `refund.failed` event carries the refund
+ * object and nothing of ours, and the credit deduction it must undo is keyed
+ * on the change request. Metadata values are strings on the wire.
+ */
+export type RefundTracking = {
+  userId: number;
+  changeRequestId: number;
+};
+
+export const REFUND_METADATA_USER_KEY = "drapeUserId";
+export const REFUND_METADATA_CHANGE_REQUEST_KEY = "drapeChangeRequestId";
+
+/**
  * Issue a Stripe refund for a payment.
  * Supports full or partial refunds via amountCents parameter.
- * 
+ *
  * @param sessionId - The original Stripe checkout session ID
  * @param amountCents - Refund amount in cents (omit for full refund)
  * @param reason - Reason for the refund
- * @returns Refund result with Stripe refund ID and status
+ * @param tracking - who and which change request, stamped on the refund's
+ *   metadata so a later `refund.failed` event can undo the credit deduction
+ * @returns Refund result with Stripe refund ID and status. `success: false`
+ *   with a `status` means Stripe CREATED the refund and reported it as
+ *   `failed` / `canceled` in the same breath — no money is going back, and
+ *   the caller must move nothing.
  */
 export async function issueStripeRefund(
   sessionId: string,
   amountCents?: number,
-  reason?: string
+  reason?: string,
+  tracking?: RefundTracking,
 ): Promise<{ success: boolean; refundId?: string; status?: string; error?: string }> {
   // An EXPLICIT non-positive amount is refused, never silently upgraded: the
   // falsy-check below turns 0 into "omit the amount", and an omitted amount
@@ -909,6 +972,13 @@ export async function issueStripeRefund(
       reason: "requested_by_customer",
       metadata: {
         ...environmentMetadata(),
+        ...(reason ? { reason } : {}),
+        ...(tracking
+          ? {
+              [REFUND_METADATA_USER_KEY]: String(tracking.userId),
+              [REFUND_METADATA_CHANGE_REQUEST_KEY]: String(tracking.changeRequestId),
+            }
+          : {}),
       },
     };
 
@@ -916,18 +986,28 @@ export async function issueStripeRefund(
       refundParams.amount = amountCents;
     }
 
-    if (reason) {
-      refundParams.metadata = { reason, ...environmentMetadata() };
+    const refund = await stripe.refunds.create(refundParams);
+    const status = refund.status ?? undefined;
+
+    if (status && REFUND_CREATE_FAILED_STATUSES.has(status)) {
+      const why = refund.failure_reason ? ` (${refund.failure_reason})` : "";
+      log.warn(
+        `[Stripe] Refund ${refund.id} for session ${sessionId} came back ${status}${why} — no money is going back; nothing moved`,
+      );
+      return {
+        success: false,
+        refundId: refund.id,
+        status,
+        error: `Stripe reported the refund as ${status}${why} — no money went back, so the customer's credits were left alone. Check the customer's payment method and try again, or refund another way.`,
+      };
     }
 
-    const refund = await stripe.refunds.create(refundParams);
-
-    log.info(`[Stripe] Refund ${refund.id} issued for session ${sessionId}: ${refund.status} ($${(refund.amount / 100).toFixed(2)})`);
+    log.info(`[Stripe] Refund ${refund.id} created for session ${sessionId}: ${status ?? "no status"} ($${(refund.amount / 100).toFixed(2)})`);
 
     return {
       success: true,
       refundId: refund.id,
-      status: refund.status ?? undefined,
+      status,
     };
   } catch (error: any) {
     log.error({ err: error }, `[Stripe] Failed to issue refund for session ${sessionId}:`);

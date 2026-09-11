@@ -31,7 +31,7 @@ Everything in the "Required .env vars" section of `CLAUDE.md`, plus the producti
 - `VITE_APP_ID` = `drape-production` (distinct from dev's `drape-local`, same reason)
 - `R2_BUCKET` = `drape-production`, `R2_PUBLIC_URL` = that bucket's public r2.dev URL; same account endpoint + API token as dev (token covers both buckets)
 - `VITE_ASSETS_BASE_URL` = `<prod R2_PUBLIC_URL>/assets` — overrides the dev-bucket fallback in `shared/const.ts`; must match `R2_PUBLIC_URL`'s origin or the CSP `img-src` blocks the assets. The `assets/` tree was copied from `drape-dev` on 2026-07-10.
-- `STRIPE_WEBHOOK_SECRET` — signing secret of the Stripe (test-mode) webhook endpoint `https://<domain>/api/webhooks/stripe`, subscribed to the 8 event types handled in `server/stripe/webhooks.ts`
+- `STRIPE_WEBHOOK_SECRET` — signing secret of the Stripe (test-mode) webhook endpoint `https://<domain>/api/webhooks/stripe`, subscribed to the 9 event types handled in `server/stripe/webhooks.ts` — `checkout.session.completed`, `customer.subscription.created/updated/deleted`, `invoice.payment_succeeded/failed`, `charge.dispute.created/closed`, and **`refund.failed`** (#771, 2026-09-11 — a handler nobody subscribes the endpoint to is a control that does not exist; the dashboard endpoint's event list is the registration, and adding a `case` here without adding the event there ships nothing)
 - `NODE_ENV=production`, `PORT=3000`
 - Gemini/Stripe/Resend/Google OAuth keys are currently shared with dev (Stripe in test mode)
 
