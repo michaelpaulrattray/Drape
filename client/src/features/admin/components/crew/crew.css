@@ -226,6 +226,7 @@
 /* A command he is asked to run. Mono because it is a literal to be copied. */
 .dp-crew__command {
   font: 400 11px var(--font-mono);
+  letter-spacing: normal; /* stacked on .dp-chrome (#807) — see .dp-crew__mono */
   color: var(--metaStrong);
   word-break: break-all;
 }
@@ -782,6 +783,7 @@
 .dp-crew__ref {
   flex: none;
   font: 400 10.5px var(--font-mono);
+  letter-spacing: normal; /* stacked on .dp-chrome (#807) — see .dp-crew__mono */
   color: var(--faint);
 }
 

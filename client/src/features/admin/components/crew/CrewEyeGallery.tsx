@@ -90,7 +90,7 @@ export function CrewEyeGallery({
           <article key={item.id} className="dp-crew__card">
             <div className="dp-crew__cardhead">
               <h3 className="dp-crew__title">{item.title}</h3>
-              <span className="dp-crew__ref">
+              <span className="dp-chrome dp-crew__ref">
                 {item.issueNumber !== null && <>#{item.issueNumber} · </>}
                 filed {shortDate(item.filedAt)}
               </span>

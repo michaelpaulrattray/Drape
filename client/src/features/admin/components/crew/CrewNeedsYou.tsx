@@ -93,10 +93,10 @@ export function CrewNeedsYou({
                   is what every card on this page meant until tonight.
                 */}
                 {card.state === "waiting" && (
-                  <span className="dp-crew__waitchip">Answered · still yours to do</span>
+                  <span className="dp-chrome dp-crew__waitchip">Answered · still yours to do</span>
                 )}
               </h3>
-              <span className="dp-crew__ref">
+              <span className="dp-chrome dp-crew__ref">
                 {card.issueNumber !== null && <>#{card.issueNumber} · </>}
                 filed {shortDate(card.filedAt)}
               </span>
