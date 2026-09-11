@@ -323,7 +323,7 @@ describe("card 415 — the pill is INVALIDATED by the acts that move it", () => 
     ).toEqual([]);
   });
 
-  it("the ONE resolving mutation invalidates (#800 collapsed the Slack road into it)", () => {
+  it("the ONE resolving mutation invalidates (issue 800 collapsed the Slack road into it)", () => {
     /*
       Counting them is what makes it a reading rather than a shape match.
       Until #800 there were TWO roads out of `pending` — `reviewChangeRequest`
