@@ -52,8 +52,52 @@ import { describe, expect, it } from "vitest";
 const CLIENT = new URL("../", import.meta.url);
 const REGISTER_CLASSES = ["dp-chrome", "dp-eyebrow"] as const;
 
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+/**
+ * Comments stripped, STRINGS LEFT ALONE. A regex `\/\*[\s\S]*?\*\/` eats from a
+ * `/*` that occurs inside a string literal (a glob such as `"**\/*.ts"`) to the
+ * next `*\/`, corrupting the scan toward silence — the reviewer's finding on
+ * PR #798. So this walks the text once, tracking string state, and drops only
+ * a `/* … *\/` or `// …` that begins outside a string.
+ */
+export function code(text: string): string {
+  let out = "";
+  let i = 0;
+  let quote: string | null = null;
+  while (i < text.length) {
+    const ch = text[i];
+    const next = text[i + 1];
+    if (quote) {
+      out += ch;
+      if (ch === "\\") {
+        out += next ?? "";
+        i += 2;
+        continue;
+      }
+      if (ch === quote) quote = null;
+      i += 1;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") {
+      quote = ch;
+      out += ch;
+      i += 1;
+      continue;
+    }
+    if (ch === "/" && next === "*") {
+      const end = text.indexOf("*/", i + 2);
+      i = end === -1 ? text.length : end + 2;
+      continue;
+    }
+    if (ch === "/" && next === "/") {
+      const end = text.indexOf("\n", i);
+      i = end === -1 ? text.length : end;
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  return out;
+}
 
 async function walk(dir: URL): Promise<string[]> {
   const out: string[] = [];
@@ -129,6 +173,19 @@ describe("a foundation register class stacked on a page class is ordered by cons
 
     const foundationCss = sheets.find((s) => s.file.endsWith(path.join("foundation", "foundation.css")));
     expect(foundationCss, "foundation.css must be readable").toBeDefined();
+    /*
+      THE PROXY MUST STILL BE A PROXY. "The barrel is imported earlier" stands
+      in for "foundation.css is emitted earlier" only while the barrel itself
+      imports foundation.css — and the barrel's own header records tokens.css
+      being moved OUT of it once, on purpose. If foundation.css ever takes the
+      same road, every arm below stays green while the guarantee is gone on
+      every stack at once (reviewer, PR #798). So the hop is asserted.
+    */
+    const barrel = modules.find((m) => m.file.endsWith(path.join("foundation", "index.ts")));
+    expect(barrel, "the foundation barrel must be readable").toBeDefined();
+    expect(code(barrel!.text), "foundation/index.ts must itself import ./foundation.css — the guard's proxy rests on it").toMatch(
+      /^\s*import\s+["']\.\/foundation\.css["']/m,
+    );
     const registerIndex = Math.max(...REGISTER_CLASSES.map((c) => declarationIndex(foundationCss!.text, c)));
     expect(registerIndex, ".dp-chrome and .dp-eyebrow must be declared in foundation.css").toBeGreaterThan(-1);
 
@@ -186,6 +243,17 @@ describe("a foundation register class stacked on a page class is ordered by cons
       { file: "c.tsx", text: `const k = seen ? "dp-chrome dp-crew__seen" : "dp-crew__unseen";` },
     ]);
     expect(stacks.map((s) => `${s.file}:${s.partners.join(",")}`)).toEqual(["a.tsx:dp-crew__mono", "c.tsx:dp-crew__seen"]);
+  });
+
+  it("the comment stripper leaves a `/*` inside a string alone", () => {
+    const text = `const glob = "**/*.ts"; /* real comment */ const after = "kept"; // tail
+const next = 1;`;
+    const stripped = code(text);
+    expect(stripped).toContain(`"**/*.ts"`);
+    expect(stripped).toContain(`"kept"`);
+    expect(stripped).toContain("const next = 1;");
+    expect(stripped).not.toContain("real comment");
+    expect(stripped).not.toContain("tail");
   });
 
   it("the declaration reader finds a selector in a list and not inside another name", () => {
