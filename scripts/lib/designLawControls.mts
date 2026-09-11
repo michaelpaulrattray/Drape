@@ -237,6 +237,33 @@ export const CONTROLS: Control[] = [
     },
   },
   {
+    /*
+      A SENTENCE WITH ONE INLINE SPAN (#799). His #524 ruling puts a figure in
+      the machine face inside a reading-face sentence, and the leaf-only
+      reader could not see the sentence at all — either way round. The
+      compliant twin is his shape: sans sentence, one mono figure. The
+      offender is the mirror: the sentence itself in mono, one span in sans.
+      One difference between them — which face the run is set in.
+    */
+    law: "mono-sentences",
+    breaks: "a mono sentence hiding behind one inline span — the leaf-only read saw no sentence at all",
+    run: assertNoMonoSentences,
+    offender: {
+      html: page(
+        ``,
+        `<p style="font-family: 'Roboto Mono', monospace">1 of 8 accounts scanned are above ` +
+          `<span style="font-family: Inter, sans-serif">500</span> credits.</p>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        ``,
+        `<p style="font-family: Inter, sans-serif">1 of 8 accounts scanned are above ` +
+          `<span style="font-family: 'Roboto Mono', monospace">500</span> credits.</p>`,
+      ),
+    },
+  },
+  {
     law: "priced-buttons",
     breaks: "a paid button whose label does not carry its price",
     run: assertPricedButtons,
