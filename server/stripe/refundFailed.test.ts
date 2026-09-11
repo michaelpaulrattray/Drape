@@ -376,6 +376,24 @@ describe("B · refund.failed — the later failure puts the credits back and tel
     the note and the row land FIRST (the attempt is visible), and then the
     event FAILS so it comes back. Same shape as #786's failed invoice void.
   */
+  /*
+    #789's other half, on this road: `getCreditTransactionByRef` used to answer
+    `null` for a database it could not read, and this handler took that as
+    "no deduction on record" and ACKed. It throws now; the webhook's outer
+    catch fails the event, so Stripe redelivers into a window where the
+    database is back.
+  */
+  it("a database that cannot be read FAILS THE EVENT rather than reporting 'no deduction on record' (#789)", async () => {
+    db.getCreditTransactionByRef.mockRejectedValue(new Error("Database not available"));
+
+    const result = await deliverEvent("refund.failed", failedRefund());
+
+    expect(result.success).toBe(false);
+    expect(result.message).not.toContain("no credit deduction on record");
+    expect(db.addCredits).not.toHaveBeenCalled();
+    expect(db.appendChangeRequestReviewNote).not.toHaveBeenCalled();
+  });
+
   it("a failed restore writes the note and the row, then FAILS THE EVENT so Stripe redelivers it", async () => {
     db.getCreditTransactionByRef.mockResolvedValue({ id: 1, amount: -50, referenceId: "cr-stripe-refund:7" });
     db.addCredits.mockResolvedValue({ success: false, error: "db exploded" });

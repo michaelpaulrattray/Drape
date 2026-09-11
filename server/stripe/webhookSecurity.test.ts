@@ -29,22 +29,22 @@ vi.mock("../slack/slackNotification", () => ({
   },
 }));
 
-// Mock database connection for idempotency checks
+// Mock database connection for idempotency checks. The double RECORDS what
+// the handler asks it to record (the shape PR #786 round 2 established): a
+// redelivery arm must be able to see that a FAILED event was NOT marked
+// processed, or it drives a road production cannot take.
+const processedEventInserts = vi.hoisted(() => [] as Array<{ eventId: string; eventType: string }>);
 vi.mock("../db/connection", () => ({
-  getDb: vi.fn().mockResolvedValue({
-    select: vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue([]), // No existing events (not a duplicate)
-        }),
+  getDb: vi.fn().mockImplementation(async () => ({
+    select: () => ({ from: () => ({ where: () => ({ limit: async () => [] }) }) }), // No existing events (not a duplicate)
+    insert: () => ({
+      values: (row: { eventId: string; eventType: string }) => ({
+        onDuplicateKeyUpdate: async () => {
+          processedEventInserts.push(row);
+        },
       }),
     }),
-    insert: vi.fn().mockReturnValue({
-      values: vi.fn().mockReturnValue({
-        onDuplicateKeyUpdate: vi.fn().mockResolvedValue(undefined),
-      }),
-    }),
-  }),
+  })),
 }));
 
 import { handleStripeWebhook } from "./webhooks";
@@ -96,6 +96,7 @@ const mockUser = {
 describe("Webhook Security", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    processedEventInserts.length = 0;
   });
 
   // ============================================================
@@ -346,6 +347,98 @@ describe("Webhook Security", () => {
       expect(unsuspendUser).toHaveBeenCalledWith(42);
       // Should NOT try to add credits
       expect(addCredits).not.toHaveBeenCalled();
+    });
+
+    /*
+      #789 (PR #787's round-2 class on this road): `addCredits` catches its
+      own errors and returns `{ success: false }`; the handler logged it,
+      pushed "credit restore failed" into its actions and still returned
+      success — ACKed 200, recorded, never redelivered. A customer who WON
+      stayed without their credits. The restore is idempotent on its ledger
+      ref, so Stripe's redelivery is the retry — and the arm drives the SAME
+      event id twice, with the first delivery recorded as NOT processed.
+    */
+    it("a failed credit restore on a WON dispute FAILS THE EVENT after the unsuspend, and the SAME event redelivered restores (#789)", async () => {
+      const dispute = {
+        id: "dp_test_restore_blip",
+        charge: "ch_test_rb",
+        amount: 5000,
+        currency: "usd",
+        reason: "fraudulent",
+        customer: "cus_test_user42",
+        status: "won",
+      };
+
+      const event = makeEvent("charge.dispute.closed", dispute);
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(mockUser as any);
+      vi.mocked(getCreditTransactionByRef).mockResolvedValue({
+        id: 999,
+        userId: 42,
+        amount: -75,
+        type: "refund",
+        referenceId: "dispute_dp_test_restore_blip",
+      } as any);
+      vi.mocked(addCredits).mockResolvedValueOnce({ success: false, error: "deadlock" } as any);
+
+      /* First delivery: the ledger blips. The event FAILS — that is what
+         makes Stripe send it again — but the account is already restored. */
+      const first = await handleStripeWebhook("payload", "sig");
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("credit restore failed");
+      expect(first.message).toContain("redelivers");
+      expect(unsuspendUser).toHaveBeenCalledWith(42);
+      expect(SlackAlerts.chargebackResolved).toHaveBeenCalledTimes(1);
+      expect(processedEventInserts).toHaveLength(0);
+
+      /* Redelivery of the SAME event id: the restore lands on its idempotent
+         ref and the event is recorded once. */
+      vi.mocked(addCredits).mockResolvedValueOnce({ success: true, newBalance: 75 } as any);
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      const second = await handleStripeWebhook("payload", "sig");
+      expect(second.success).toBe(true);
+      expect(second.message).toContain("75 credits restored");
+      expect(addCredits).toHaveBeenCalledTimes(2);
+      expect(addCredits).toHaveBeenLastCalledWith(
+        42,
+        75,
+        "refund",
+        expect.stringContaining("Credits restored: dispute dp_test_restore_blip won"),
+        "dispute_restore_dp_test_restore_blip"
+      );
+      expect(processedEventInserts).toHaveLength(1);
+      expect(processedEventInserts[0].eventId).toBe(event.id);
+    });
+
+    /*
+      The other half of #789: `getCreditTransactionByRef` answered `null`
+      for BOTH "no such row" and "database unavailable", and this handler
+      read it as the first — a delivery in a no-db window ACKed a real
+      deduction as "nothing to restore". It THROWS now, and the webhook's
+      outer catch turns that into a failed event, so Stripe redelivers.
+    */
+    it("a database that cannot be read on a WON dispute FAILS THE EVENT rather than answering 'nothing to restore' (#789)", async () => {
+      const dispute = {
+        id: "dp_test_no_db",
+        charge: "ch_test_nodb",
+        amount: 1000,
+        currency: "usd",
+        reason: "general",
+        customer: "cus_test_user42",
+        status: "won",
+      };
+
+      const event = makeEvent("charge.dispute.closed", dispute);
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(mockUser as any);
+      vi.mocked(getCreditTransactionByRef).mockRejectedValue(new Error("Database not available"));
+
+      const result = await handleStripeWebhook("payload", "sig");
+
+      expect(result.success).toBe(false);
+      expect(result.message).not.toContain("no revoked credits found to restore");
+      expect(addCredits).not.toHaveBeenCalled();
+      expect(processedEventInserts).toHaveLength(0);
     });
   });
 

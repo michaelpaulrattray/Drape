@@ -290,10 +290,18 @@ export async function getCreditTransactionByRef(
 ) {
   const db = await getDb();
   if (!db) {
-    log.warn(
-      "[Database] Cannot get transaction by ref: database not available"
-    );
-    return null;
+    // ⚠ THROWS, NEVER `null` (#789, PR #787's round-2 review): `null` here
+    // meant both "no such row" and "database unavailable", and the two
+    // webhook handlers that restore credits from a deduction row read it as
+    // the first — a delivery in a no-db window ACKed a real deduction as
+    // "nothing to restore" and Stripe never sent it again. A throw reaches
+    // the webhook's outer catch, which answers 400 so Stripe redelivers; the
+    // moderator's refund door reports an error instead of a false "no
+    // purchase matches"; and the two ledger callers in `admin.ts` and
+    // `billing.ts` sit inside the catch of a transaction that just ran on
+    // this same cached connection, so a null db cannot reach them.
+    log.error("[Database] Cannot get transaction by ref: database not available");
+    throw new Error("Database not available");
   }
 
   const ledgerReferenceId = normalizeCreditReferenceId(referenceId);
