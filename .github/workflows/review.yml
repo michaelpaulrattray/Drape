@@ -177,7 +177,16 @@ jobs:
           # The money check runs BEFORE the needs-fable early exit, because it
           # now also decides the READING (#161): an escalated money PR must
           # still read CLAUDE.md in full, not the charter.
-          git fetch origin "$BASE" --depth=1
+          #
+          # No --depth here (#811). The checkout above is a full clone, and a
+          # --depth=1 fetch of a tip the clone does not yet have cuts that
+          # tip's parent link in .git/shallow even though the parent is in
+          # the store — so when main MOVED between the checkout and this
+          # fetch (PR #808 merged two seconds before #810's triage fetched),
+          # `origin/$BASE...HEAD` had no merge base, the diff exited 128 and
+          # the PR merged with no verdict. The overlap rule (mark the second
+          # PR ready, merge the first) makes that window routine.
+          git fetch origin "$BASE"
           CHANGED=$(git diff --name-only "origin/$BASE"...HEAD)
 
           # Before the money check, because a money PR that also edits
