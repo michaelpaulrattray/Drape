@@ -3096,7 +3096,7 @@ export default function CastingSheet() {
               to its confirm, which is where the commitment happens.
             */}
             {price ? (
-              <span className="dpc-dock__cost">
+              <span className="dp-chrome dpc-dock__cost">
                 {/*
                   The tilde carries the same meaning it does in the sign modal:
                   generation cost varies, and a number presented as exact that

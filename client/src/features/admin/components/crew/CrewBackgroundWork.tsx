@@ -192,7 +192,7 @@ export function CrewBackgroundWork({
         <p className="dp-crew__body dp-crew__body--quiet dp-crew__gap--tight">
           The switches need their tables in this database — one command, and it is yours to run:
         </p>
-        <p className="dp-crew__command dp-crew__gap--tight">
+        <p className="dp-chrome dp-crew__command dp-crew__gap--tight">
           railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-work-switches.mts
           --production
         </p>

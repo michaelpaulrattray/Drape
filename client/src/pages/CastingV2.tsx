@@ -721,7 +721,7 @@ export default function CastingV2() {
               face and these are machine values.
             */}
             <p className="dpc-hero__receipt">
-              <span className="dpc-hero__receiptvals">
+              <span className="dp-chrome dpc-hero__receiptvals">
                 {candidatesPerRoll ? `${candidatesPerRoll} CANDIDATES` : null}
                 {price ? (
                   <>

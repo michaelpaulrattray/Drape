@@ -206,7 +206,7 @@ export function CrewProgramBanner({
             /* Composite key (PR #78 review nit): labels are writer-controlled
                and the schema does not force them unique. */
             <div key={`${index}-${chip.label}`} className="dp-crew__statecell">
-              <p className="dp-crew__statelabel">
+              <p className="dp-eyebrow dp-crew__statelabel">
                 <span
                   aria-hidden="true"
                   className={cn("dp-crew__statedot", STATE_DOT[chip.tone] ?? STATE_DOT.neutral)}
