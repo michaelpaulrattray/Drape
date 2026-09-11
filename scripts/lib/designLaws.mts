@@ -294,15 +294,28 @@ export async function assertDockVisible(
  * direction that hides a defect.
  *
  * So an element is read as the text it paints IN ITS OWN FACE: a leaf reads
- * its text; an element whose children are all inline and which has prose of
- * its own reads the whole run; an element with block children reads only its
- * own text nodes between them. The face judged is the element's own — a mono
- * child inside a sans run is a figure and is allowed, while a sentence-length
- * mono child is still read on its own and still caught. A child in the SAME
- * face as a run already read is that run's text, not a second sentence, so
- * the count stays honest. `designLawControls.mts` holds the pair the card
- * asked for: a sans sentence with one mono figure (holds) and a mono sentence
- * with one sans span (caught).
+ * its text; an element whose children are all `display: inline` reads the run
+ * — its own text nodes plus every inline child set in the same face, whether
+ * or not it has prose of its own (PR #806 review, finding 1); an element with
+ * a block or inline-block child reads only its own text nodes between them.
+ * A child in a DIFFERENT face is not part of its parent's run — it is a
+ * figure if short, and read on its own turn and caught if it is a sentence
+ * set in mono — so no word is ever counted twice (finding 2). A same-face
+ * child of a run already read is that run's text, not a second sentence.
+ *
+ * `display: inline` EXACTLY, not `inline-block`: a sentence's figure is a
+ * `<span>` on the same line box as its words, while a row of chips, pills or
+ * buttons is a row of atomic boxes, and five short mono labels in a row must
+ * not read as a five-word mono sentence — the loud direction, #523's class.
+ *
+ * Stated limit (a clean run is a floor): words inside the inline children of
+ * a MIXED container — one that also holds a block child — are not read as
+ * part of that container's run; each such child is read on its own turn and
+ * only counts if it is sentence-length by itself.
+ *
+ * `designLawControls.mts` holds the pair the card asked for: a sans sentence
+ * with one mono figure (holds) and a mono sentence with one sans span
+ * (caught), plus the no-own-text shape from the review.
  */
 export async function assertNoMonoSentences(page: Page, where: string, log: LawLog) {
   const result = await page.evaluate(() => {
@@ -335,31 +348,29 @@ export async function assertNoMonoSentences(page: Page, where: string, log: LawL
       if (el.classList.contains("dp-eyebrow") || el.classList.contains("dp-chrome")) continue;
       /*
         THE TEXT THIS ELEMENT PAINTS IN ITS OWN FACE. Own text nodes always;
-        the whole run when every child is inline and there is prose of the
-        element's own around them; nothing more when a child is block-level,
-        because that child paints its own text and is read on its own turn.
+        plus every `display: inline` child set in the same face when ALL the
+        children are inline (the run); nothing more when a child is a block or
+        an atomic inline box, because that child paints its own text and is
+        read on its own turn. A different-face child is never part of this
+        run — it is its own reading.
       */
-      const ownText = Array.from(el.childNodes)
-        .filter((n) => n.nodeType === Node.TEXT_NODE)
-        .map((n) => n.textContent ?? "")
-        .join(" ")
+      const font = getComputedStyle(el).fontFamily.toLowerCase();
+      const children = Array.from(el.children) as HTMLElement[];
+      const allInline = children.every((c) => getComputedStyle(c).display === "inline");
+      const text = Array.from(el.childNodes)
+        .map((n) => {
+          if (n.nodeType === Node.TEXT_NODE) return n.textContent ?? "";
+          if (n.nodeType !== Node.ELEMENT_NODE || !allInline) return " ";
+          const child = n as HTMLElement;
+          return getComputedStyle(child).fontFamily.toLowerCase() === font ? (child.textContent ?? "") : " ";
+        })
+        .join("")
         .replace(/\s+/g, " ")
         .trim();
-      const children = Array.from(el.children) as HTMLElement[];
-      const allInline = children.every(
-        (c) => c.tagName === "BR" || /^inline/.test(getComputedStyle(c).display),
-      );
-      const text =
-        children.length === 0
-          ? (el.textContent ?? "").replace(/\s+/g, " ").trim()
-          : allInline && ownText
-            ? (el.textContent ?? "").replace(/\s+/g, " ").trim()
-            : ownText;
       if (!text) continue;
       const words = text.split(/\s+/).length;
       const sentenceish = words >= 5 || /[.!?]$/.test(text);
       if (!sentenceish) continue;
-      const font = getComputedStyle(el).fontFamily.toLowerCase();
       /* A child in the same face as a run already read is that run's own
          text. One that changes face is its own reading — a figure if short,
          a violation if it is a sentence set in mono. */

@@ -264,6 +264,59 @@ export const CONTROLS: Control[] = [
     },
   },
   {
+    /*
+      NO OWN TEXT AT ALL (PR #806 review, finding 1). A mono sentence whose
+      every word sits inside a span — the wrapper's own text nodes are just
+      whitespace — is the card's class one shape narrower, and the first cut
+      required prose of the wrapper's own before it would read the run. The
+      compliant twin is the same markup in the reading face.
+    */
+    law: "mono-sentences",
+    breaks: "a mono sentence whose every word is inside a span, the wrapper holding no text of its own",
+    run: assertNoMonoSentences,
+    offender: {
+      html: page(
+        ``,
+        `<p style="font-family: 'Roboto Mono', monospace"><span>1 of 8 accounts</span> <span>scanned above 500 credits</span></p>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        ``,
+        `<p style="font-family: Inter, sans-serif"><span>1 of 8 accounts</span> <span>scanned above 500 credits</span></p>`,
+      ),
+    },
+  },
+  {
+    /*
+      THE ROW OF CHIPS — the loud direction. Five short mono labels in one row
+      are labels, not a sentence, and the run reading stops at `display:
+      inline`: an `inline-block` child is an atomic box on the line, not a
+      word in the sentence. The two arms hold the SAME words in the SAME face;
+      the only difference is the children's display. Without this line a
+      chip strip on the sheet would read as a five-word mono sentence (#523's
+      class — a law that reddens on a correct page is one people learn to
+      ignore).
+    */
+    law: "mono-sentences",
+    breaks: "the display line — the same five mono labels as inline spans (a run) against inline-block chips (a row)",
+    run: assertNoMonoSentences,
+    offender: {
+      html: page(
+        `.w { font-family: 'Roboto Mono', monospace; } .l { display: inline; }`,
+        `<div class="w"><span class="l">ROLL 02</span> <span class="l">SIGNED</span> <span class="l">8 KEPT</span> ` +
+          `<span class="l">160 CR</span> <span class="l">DARK</span></div>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        `.w { font-family: 'Roboto Mono', monospace; } .l { display: inline-block; }`,
+        `<div class="w"><span class="l">ROLL 02</span> <span class="l">SIGNED</span> <span class="l">8 KEPT</span> ` +
+          `<span class="l">160 CR</span> <span class="l">DARK</span></div>`,
+      ),
+    },
+  },
+  {
     law: "priced-buttons",
     breaks: "a paid button whose label does not carry its price",
     run: assertPricedButtons,
