@@ -1254,7 +1254,9 @@ export const castingV2Router = router({
         .object({
           clientRequestId: z.string(),
           sessionId: publicId,
-          briefText: z.string().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD),
+          // `.trim()` before `.min(1)` (#816): a brief of one space used to pass and roll eight
+          // priced candidates off a blank. The box already refuses it; the procedure is the control.
+          briefText: z.string().trim().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD),
           unlock: unlockList,
           overrides: overrideObject,
           /*
@@ -1316,7 +1318,7 @@ export const castingV2Router = router({
           clientRequestId: z.string(),
           sessionId: publicId,
           candidateId: publicId,
-          briefText: z.string().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD),
+          briefText: z.string().trim().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD), // #816, as createRoll
           unlock: unlockList,
           overrides: overrideObject,
           /*
@@ -1370,7 +1372,7 @@ export const castingV2Router = router({
    * next act is identical in both.
    */
   reimagine: protectedProcedure
-    .input(z.object({ briefText: z.string().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD) }).strict())
+    .input(z.object({ briefText: z.string().trim().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD) }).strict()) // #816
     .mutation(async ({ ctx, input }): Promise<{ kind: "idea"; text: string } | { kind: "nothing" }> => {
       /*
         THE FLAG FIRST, and NOT_FOUND rather than a refusal — outside

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "413c83d9b4643a1e"
+    "sourceFingerprint": "274561428228af80"
   },
   "domains": [
     {
@@ -13018,6 +13018,10 @@
     {
       "id": "test:server/prepareCommitMsgGate.test.ts",
       "path": "server/prepareCommitMsgGate.test.ts"
+    },
+    {
+      "id": "test:server/pricedRoadsWhitespace.test.ts",
+      "path": "server/pricedRoadsWhitespace.test.ts"
     },
     {
       "id": "test:server/privateEvidencePurge.test.ts",
