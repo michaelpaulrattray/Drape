@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "531afe39c316d9ba"
+    "sourceFingerprint": "3a94e41ac7bd6f7c"
   },
   "domains": [
     {
@@ -13790,6 +13790,10 @@
     {
       "id": "test:server/stripe/planChangeSettlement.test.ts",
       "path": "server/stripe/planChangeSettlement.test.ts"
+    },
+    {
+      "id": "test:server/stripe/refundFailed.test.ts",
+      "path": "server/stripe/refundFailed.test.ts"
     },
     {
       "id": "test:server/stripe/stripeRefund.test.ts",
@@ -33408,6 +33412,11 @@
     },
     {
       "from": "module:server/stripe/stripeService.ts",
+      "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripeService.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -33439,6 +33448,11 @@
     {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/_core/env.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
+      "to": "module:server/auditLog.ts",
       "kind": "imports"
     },
     {

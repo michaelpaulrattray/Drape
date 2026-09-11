@@ -257,6 +257,9 @@ describe("the bound is declared, not silent", () => {
       "customer.subscription.created",
       "customer.subscription.deleted",
       "customer.subscription.updated",
+      /* #771 — issueStripeRefund stamps every refund, and refund.failed
+         carries the other world's database ids (PR #787 review finding 1). */
+      "refund.failed",
     ]);
   });
 });

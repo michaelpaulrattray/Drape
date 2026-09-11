@@ -296,6 +296,9 @@ describe("cr_stripeRefund", () => {
       "cs_test_1",
       500,
       expect.stringContaining("#7"),
+      /* #771: who and which request ride on the refund's Stripe metadata, so
+         a `refund.failed` event days later can find the deduction below. */
+      { userId: 42, changeRequestId: CR_ID },
     );
     expect(db.adjustUserCredits).toHaveBeenCalledWith(
       42,
@@ -361,6 +364,27 @@ describe("cr_stripeRefund", () => {
     await expect(runCr("cr_stripeRefund", PURCHASE)).rejects.toThrow("charge already refunded");
     expect(db.adjustUserCredits).not.toHaveBeenCalled();
     expect(db.updateChangeRequestStatus).not.toHaveBeenCalled();
+  });
+
+  it("#771 — a refund Stripe CREATED and reported FAILED in the same breath moves NOTHING: no deduction, no approval, no audit row saying issued", async () => {
+    /* The shape `issueStripeRefund` now returns for a create-time `failed` /
+       `canceled`: success false WITH a refund id and status. Before #771 it
+       returned success true and this executor deducted the credits, marked
+       the request approved and wrote STRIPE_REFUND_ISSUED — every screen a
+       support person could reach agreeing with the wrong answer. */
+    stripe.issueStripeRefund.mockResolvedValue({
+      success: false,
+      refundId: "re_dead",
+      status: "failed",
+      error: "Stripe reported the refund as failed (expired_or_canceled_card) — no money went back",
+    });
+    await expect(runCr("cr_stripeRefund", PURCHASE)).rejects.toThrow("no money went back");
+    expect(db.adjustUserCredits).not.toHaveBeenCalled();
+    expect(db.updateChangeRequestStatus).not.toHaveBeenCalled();
+    const { logAuditEvent } = await import("./auditLog");
+    expect(logAuditEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: "billing.stripe_refund_issued" }),
+    );
   });
 
   it("FROM THE DIFF — a FAILED credit deduction after a SUCCESSFUL Stripe refund does NOT abort, and the request still settles", async () => {
