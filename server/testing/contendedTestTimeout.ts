@@ -71,6 +71,18 @@
  * and it should be taken with these numbers in front of it rather than by
  * declaring one more file.
  *
+ * ⚠ **THAT DECISION WAS TAKEN 2026-09-12 WITH THE NUMBERS IN FRONT OF IT, AND
+ * IT WAS NEITHER ROAD (#743).** The full suite three times: 112 files over a
+ * second, 76 undeclared, 13–14 reds a run — and the reds were driven by the
+ * WORKER COUNT, not by any file: vitest's default put 19 workers on this box
+ * and nine of the suites spawn `tsc` or a generator on top. Capped at 8 the
+ * same tree ran in half the wall time with one red instead of fourteen.
+ * `server/testing/workerCap.ts` carries the table and is the ceiling
+ * `vitest.config.ts` reads. So the population declared here stays the floor
+ * it was — suites MEASURED to do real work — and the 76 ordinary mocked suites
+ * that reached a second only under starvation are not declared, because a
+ * 30 s floor on a mocked unit test is the global raise one file at a time.
+ *
  * ⚠ **ONE COST OF THE DEFECT IS WORSE THAN A RED AND WAS NOT KNOWN BEFORE
  * TONIGHT: A TIMEOUT IN ONE ARM CAN MAKE ITS NEIGHBOUR FAIL AN ASSERTION.**
  * When `refineService`'s overlap arm timed out, the arm directly below it —

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ca6b5375aa29f2dc"
+    "sourceFingerprint": "47474366dd04fce7"
   },
   "domains": [
     {
@@ -148,7 +148,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 39
+      "moduleCount": 40
     },
     {
       "id": "domain:wardrobe",
@@ -5836,6 +5836,12 @@
     {
       "id": "module:server/testing/suitePointers.ts",
       "path": "server/testing/suitePointers.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/workerCap.ts",
+      "path": "server/testing/workerCap.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -13754,6 +13760,10 @@
     {
       "id": "test:server/wardrobe/vtoSession.test.ts",
       "path": "server/wardrobe/vtoSession.test.ts"
+    },
+    {
+      "id": "test:server/workerCap.test.ts",
+      "path": "server/workerCap.test.ts"
     }
   ],
   "edges": [
