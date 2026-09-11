@@ -1,7 +1,7 @@
 {
-  "edition": 341,
-  "updatedAt": "2026-09-11T03:40:10.097Z",
-  "shift": "Foreman - your Stripe click is done and off your page; the six remaining money-hiccup roads in the same file are closed, and the reviewer found two more edges on the way. WHAT CHANGED. You clicked the Stripe button and said done, so the last line waiting on you is gone. Then the class card from last night: six more places where a database hiccup at the wrong moment made us tell Stripe 'done' when nothing had happened. A plan change that never reached the account (you pay for Pro, the account still says Starter for a month). A subscription gone at Stripe with the account still reading paid. A card that finally died with the account keeping its plan. A chargeback filed with the account NOT suspended and the credits NOT frozen - the one protection that handler exists for. A customer who WON their chargeback staying suspended. A lost chargeback leaving the subscription running. All six now tell Stripe 'not done', it re-sends for three days, and the retry lands what did not - each proven with the same message sent twice, never a fresh one. One place was deliberately left alone, and the reason is written in the code: the 'payment is late' flag during Stripe's retry week. If we made Stripe re-send that one, a late copy could land AFTER the card had since been charged, mark a paying customer as late, and push them into buying a second subscription. A missing flag costs nothing the next message does not fix; a stale one costs a customer money. The reviewer read every claim at the code, called it sound twice, and found two edges I had not: a failed invoice-close re-sent after a customer had already resubscribed used to skip the close and leave the OLD invoice payable forever - fixed; and that same 'late' flag could be written over a NEW subscription by a late message about an OLD one - fixed with the same three-line guard. Nothing a customer can hit today: there are no subscriptions and no chargebacks. STILL YOURS: nothing. Two cards filed for what the reviewer named beyond this fix; three check-ups come due within a day, so the next shift is most likely a patrol.",
+  "edition": 342,
+  "updatedAt": "2026-09-11T04:38:31.160Z",
+  "shift": "Foreman - the last two money hiccups on the customer's OWN checkout road are closed, and a Slack button that lied is fixed with them. WHAT CHANGED. Last night's class card closed six places in the Stripe message handler where a database hiccup made us say 'done' over nothing done. Tonight the two places left on the customer's side of the counter. FIRST, and worse than the card said: when someone buys a plan for the first time we create their billing record at Stripe and then save its id on their account. If that save hiccuped, we went ahead and sold them the plan anyway - and because every later message from Stripe finds the account BY that id, the account could never be matched: they pay, and the account never becomes Pro, silently, for as long as the subscription runs. Now a failed save stops the purchase before Stripe is asked for anything: 'We could not set up your billing account. Nothing was charged - please try again in a moment.' The reviewer found the same hole one step over - a saved id Stripe has since deleted took the same road around the guard - and that is closed too. SECOND: when a plan change is accepted by Stripe and the account's own record fails to update, we now say so in the log and on the audit row instead of silently showing the old plan - and we do NOT tell the customer it failed, because it did not: Stripe has the change, the credits have moved, and last night's fix means Stripe keeps re-sending the confirmation until the account catches up. THIRD, found on the sweep for the same mistake: the emergency 'Suspend user' button in Slack read a yes/no answer wrongly, so a suspension that FAILED was reported as done and written into the audit log as executed. Fixed; the block-IP button beside it was always right. Nothing a customer can hit today - nobody has paid yet. STILL YOURS: nothing. Also tonight: two test files on the Process list read line by line and cleared as false alarms, no code touched. Three check-ups come due tomorrow, so the next shift is most likely a patrol.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "55 open, none waiting on you, none urgent. 2 closed today, 2 filed, 15 stale (11 Sep)."
+        "source": "54 open, none waiting on you, none urgent. 1 closed tonight, 0 filed, 15 stale (11 Sep)."
       },
       {
         "label": "Nothing is waiting on you",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T03:39:12.002Z",
+      "readAt": "2026-09-11T04:37:33.783Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4621,6 +4621,13 @@
   ],
   "pipeline": [
     {
+      "id": "billing-request-path-verdicts-796",
+      "title": "A first purchase whose billing record fails to save now stops before any charge - it used to sell a plan the account could never receive",
+      "status": "merged",
+      "prNumber": 797,
+      "note": "The two places left on the customer's own checkout road after last night's six. Before: a hiccup saving the new Stripe billing id was ignored and the purchase went ahead against an id the account did not hold - so every later Stripe message failed to find the account, and they would pay for a plan they never got, silently. Now the purchase is refused before Stripe is asked for a session, nothing is charged, and the retry starts clean; the reviewer's one finding (a saved id Stripe has since deleted skipped the guard) is closed in the same PR. A plan change whose account record fails to write is logged and marked on the audit row, and the customer is NOT told it failed, because Stripe has it and re-sends until the account catches up. And the Slack emergency Suspend button, which reported a failed suspension as done, reads its answer properly. Reviewed once, called correct; the finding taken in one push. Nobody has paid yet, so nothing a customer can hit today."
+    },
+    {
       "id": "webhook-verdicts-class-792",
       "title": "Six more money roads now make Stripe retry a hiccup instead of shrugging - and the one road left alone says why",
       "status": "merged",
@@ -5360,6 +5367,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0911h-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 54 open, one closed tonight, none filed, and 15 nobody has looked at in a week",
+      "detail": "The small-fix card on the checkout road closed with its PR; nothing new filed. Bugs and Small fixes are both empty now. Two test files on the Process list were read line by line and cleared as false alarms (no code change; recorded on the card). The three 'possibly already done' flags the counter raised (the bundle-size card and two promotion-pass cards) were each re-read against the PR that named them: all three were CITED by that PR, not fixed, and stay open. Three check-ups come due tomorrow, so the next shift is most likely a patrol."
+    },
+    {
       "id": "queue-shape-0911g-foreman",
       "severity": "info",
       "state": "open",
@@ -5910,7 +5924,7 @@
     176
   ],
   "nextUp": {
-    "readAt": "2026-09-11T03:39:12.001Z",
+    "readAt": "2026-09-11T04:37:33.782Z",
     "items": []
   }
 }
