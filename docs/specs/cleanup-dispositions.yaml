@@ -1300,3 +1300,9 @@
   verdict: KEEP
   why: "the other half of #640, on the same test-infrastructure footing: it resolves Git for Windows' own sh.exe from the git on PATH, because `sh` resolves under Git Bash and NOT under PowerShell — which is how a shift runs pnpm preflight. Without it server/prePushGate.test.ts is 6/6 green from one shell and 5/6 red from the other on the same commit, and preflight can never come back green on this machine. It refuses by name when no shell exists rather than handing back one that cannot run"
   argued: "#640"
+
+- symbol: workerCap
+  file: server/testing/workerCap.ts
+  verdict: KEEP
+  why: "server/testing/ is test infrastructure by directory (the allowColdImports precedent). It is the ceiling vitest.config.ts reads for maxWorkers — vitest's own cores − 1, capped at 8 — because 19 workers on the founder's box starved the child-process suites into 13–22 timeouts a run and doubled the wall time, measured as a back-to-back pair (301 s / 2 reds at eight against 680 s / 22 at nineteen). Read by the config, never by product code, and server/workerCap.test.ts pins the wire at the config's bytes"
+  argued: "#743"
