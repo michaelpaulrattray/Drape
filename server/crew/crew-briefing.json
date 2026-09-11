@@ -1,7 +1,7 @@
 {
-  "edition": 342,
-  "updatedAt": "2026-09-11T04:38:31.160Z",
-  "shift": "Foreman - the last two money hiccups on the customer's OWN checkout road are closed, and a Slack button that lied is fixed with them. WHAT CHANGED. Last night's class card closed six places in the Stripe message handler where a database hiccup made us say 'done' over nothing done. Tonight the two places left on the customer's side of the counter. FIRST, and worse than the card said: when someone buys a plan for the first time we create their billing record at Stripe and then save its id on their account. If that save hiccuped, we went ahead and sold them the plan anyway - and because every later message from Stripe finds the account BY that id, the account could never be matched: they pay, and the account never becomes Pro, silently, for as long as the subscription runs. Now a failed save stops the purchase before Stripe is asked for anything: 'We could not set up your billing account. Nothing was charged - please try again in a moment.' The reviewer found the same hole one step over - a saved id Stripe has since deleted took the same road around the guard - and that is closed too. SECOND: when a plan change is accepted by Stripe and the account's own record fails to update, we now say so in the log and on the audit row instead of silently showing the old plan - and we do NOT tell the customer it failed, because it did not: Stripe has the change, the credits have moved, and last night's fix means Stripe keeps re-sending the confirmation until the account catches up. THIRD, found on the sweep for the same mistake: the emergency 'Suspend user' button in Slack read a yes/no answer wrongly, so a suspension that FAILED was reported as done and written into the audit log as executed. Fixed; the block-IP button beside it was always right. Nothing a customer can hit today - nobody has paid yet. STILL YOURS: nothing. Also tonight: two test files on the Process list read line by line and cleared as false alarms, no code touched. Three check-ups come due tomorrow, so the next shift is most likely a patrol.",
+  "edition": 343,
+  "updatedAt": "2026-09-11T06:12:28.935Z",
+  "shift": "Foreman - your 4 September ruling on the typewriter type is built and live, and it looks exactly as it did. WHAT CHANGED. Our design rule says machine facts (counts, ids, times) go in the typewriter face and sentences go in the reading face. The first time that rule was run over the staff pages it flagged ten strings - nine of them counts and stamps that were right all along but were not wearing the label the rule knows, and one that really was a sentence set in typewriter type: the moderator dashboard's '1 of 8 accounts scanned are above 500 credits'. You said: use the two labels the rule already knows on the nine, treat the moderator line as a sentence with its numbers in the machine face and its words in the reading face, and do not widen the rule's exemption list. That is what shipped. On the overview, the crew page and the foundation gallery the type is measured identical before and after, in both light and dark - it was checked by reading the computed font of every affected element, not by squinting at two pictures. On the moderator dashboard the one line now reads as a sentence, '1 of 8' and '500' still in typewriter. The rule flagged 11 before and 0 after. WHAT THE LAST SHIFT WAS WORRIED ABOUT, AND WHY IT WAS FINE: stacking the two labels could have restyled four screens by accident, because which of two equally specific styles wins depends on load order. That order is not an accident - each page loads the foundation before its own styles - and a new test now proves it for every such label in the product. Its very first run caught the overview page loading its styles the wrong way round, which would have made six labels bigger. FOUND ON THE WAY: an error message on the crew page ('The server refused the request') was set in typewriter type and is now a sentence; and the rule itself cannot see a sentence once a number inside it is wrapped separately, so it now reports 'no sentences here' on the moderator dashboard - the fix is right (the picture shows it), but the instrument has a blind spot, filed as #799. STILL YOURS: nothing. Also tonight: the account-freeze test file on the Process list was read line by line - 4 arms test only their own stand-ins and 20 restate rules as arithmetic; it wants a session of its own, recorded on the card. Three check-ups come due tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,12 +128,12 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "54 open, none waiting on you, none urgent. 1 closed tonight, 0 filed, 15 stale (11 Sep)."
+        "source": "54 open, none waiting on you, none urgent. 1 closed tonight, 1 filed, 15 stale (11 Sep)."
       },
       {
         "label": "Nothing is waiting on you",
         "tone": "good",
-        "source": "Your Stripe click (#793) is done on your word today. Nothing else needs your word."
+        "source": "Your typewriter-type ruling (#524, 4 Sep) is built and live tonight. Nothing needs your word."
       },
       {
         "label": "Check-ups",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T04:37:33.783Z",
+      "readAt": "2026-09-11T06:11:15.496Z",
       "items": [
         {
           "issueNumber": 16,
@@ -732,7 +732,7 @@
         }
       ],
       "recommendation": "The first, with that one moderator sentence looked at on its own terms. The value of exempting by a named class is that the name states the intent; letting each screen invent its own and then teaching the rule about each one gives that up.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-04T19:00:03.750Z",
       "issueNumber": 524
     },
@@ -4621,6 +4621,13 @@
   ],
   "pipeline": [
     {
+      "id": "staff-mono-labels-524",
+      "title": "Your typewriter-type ruling on the staff pages is live - nine labels wear the rule's own label, the moderator line reads as a sentence, and nothing looks different",
+      "status": "merged",
+      "prNumber": 798,
+      "note": "Your words on #524 (4 Sep): use the two labels the rule already knows on all nine, treat the moderator line as a sentence with the number in the machine face and the words in the reading face, do not grow the exemption list. Done as written. Overview, crew and the foundation gallery: type measured identical before and after in both themes (the computed font of every affected element compared, 49 on the crew page alone). Moderator: '1 of 8 accounts scanned are above 500 credits' is a sentence now, with '1 of 8' and '500' still in typewriter. The rule: 11 flagged before, 0 after. The specificity worry the last shift raised is answered by a new test that proves the load order for every such label in the product - and its first run found the overview page loading styles the wrong way round. Reviewed once (pass, one low finding: the test now also checks the foundation still loads its own stylesheet), the finding taken in one push and proven by sabotage. Also fixed on the sweep: a crew-page error message set in typewriter type."
+    },
+    {
       "id": "billing-request-path-verdicts-796",
       "title": "A first purchase whose billing record fails to save now stops before any charge - it used to sell a plan the account could never receive",
       "status": "merged",
@@ -5367,6 +5374,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0911i-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 54 open, one closed tonight, one filed, and 15 nobody has looked at in a week",
+      "detail": "The typewriter-type card (#524, your 4 Sep ruling) closed with its PR. One filed: #799 - the design rule that checks for sentences in typewriter type cannot see a sentence once a number inside it is wrapped on its own, which is exactly the shape your ruling asks for; it reads leaf elements only. Not urgent, but it fails in the direction that hides a defect. Bugs and Small fixes are both empty. The account-freeze test file on the Process list was read line by line and sized as a session of its own (4 hollow arms, 20 rule recitations - recorded on #697). Three check-ups come due tomorrow, so the next shift is most likely a patrol."
+    },
+    {
       "id": "queue-shape-0911h-foreman",
       "severity": "info",
       "state": "open",
@@ -5924,7 +5938,7 @@
     176
   ],
   "nextUp": {
-    "readAt": "2026-09-11T04:37:33.782Z",
+    "readAt": "2026-09-11T06:11:15.495Z",
     "items": []
   }
 }
