@@ -14,7 +14,7 @@ export const rolesRouter = router({
       newRole: z.enum(["user", "moderator"]),
       // `.trim()` before `.min(1)` (#816) — whitespace-only is refused, not recorded blank.
       reason: z.string().trim().min(1).max(ROLE_CHANGE_REASON_MAX_LENGTH),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       const { updateUserRole, getUserById } = await import("../../db");
 

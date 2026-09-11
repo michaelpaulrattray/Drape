@@ -31,7 +31,7 @@ import {
 const mockSuspendUser = vi.fn().mockResolvedValue({ success: true });
 const mockUpdateUserRole = vi.fn().mockResolvedValue({ success: true, previousRole: "user" });
 const mockBlockIp = vi.fn().mockResolvedValue({ success: true });
-const mockUnblockIp = vi.fn().mockResolvedValue(true);
+const mockUnblockIp = vi.fn().mockResolvedValue({ success: true, removed: 1 });
 const mockGetUserById = vi.fn();
 
 vi.mock("./db", () => ({
@@ -85,7 +85,7 @@ beforeEach(() => {
   mockSuspendUser.mockResolvedValue({ success: true });
   mockUpdateUserRole.mockResolvedValue({ success: true, previousRole: "user" });
   mockBlockIp.mockResolvedValue({ success: true });
-  mockUnblockIp.mockResolvedValue(true);
+  mockUnblockIp.mockResolvedValue({ success: true, removed: 1 });
   mockGetUserById.mockResolvedValue(TARGET);
 });
 
@@ -206,5 +206,25 @@ describe("ipBlockingRouter.blockIP — the reason and the address", () => {
     await expect(caller().unblockIP({ ipAddress: " 203.0.113.9 " })).resolves.toEqual({ success: true });
     expect(mockUnblockIp).toHaveBeenCalledWith("203.0.113.9");
     expect(logAuditEvent).toHaveBeenCalledWith(expect.objectContaining({ resourceId: "203.0.113.9" }));
+  });
+
+  it("unblockIP refuses NOT_FOUND when the address matched no row — and writes no log claiming otherwise (PR #820 review)", async () => {
+    mockUnblockIp.mockResolvedValue({ success: true, removed: 0 });
+    await expect(caller().unblockIP({ ipAddress: "198.51.100.4" })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(mockUnblockIp).toHaveBeenCalledWith("198.51.100.4");
+    expect(logAuditEvent).not.toHaveBeenCalled();
+    expect(logAdminAction).not.toHaveBeenCalled();
+    expect(writeImmutableLog).not.toHaveBeenCalled();
+  });
+
+  it("the four edited schemas are strict — an undeclared key is refused, not dropped (PR #820 review, invariant 4)", async () => {
+    await expect(usersRouter.createCaller(ADMIN).suspendUser({ userId: 42, reason: "abuse", extra: 1 } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(rolesRouter.createCaller(ADMIN).changeUserRole({ userId: 42, newRole: "moderator", reason: "trusted", extra: 1 } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller().blockIP({ ipAddress: "203.0.113.9", reason: "stuffing", extra: 1 } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller().unblockIP({ ipAddress: "203.0.113.9", extra: 1 } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(mockSuspendUser).not.toHaveBeenCalled();
+    expect(mockUpdateUserRole).not.toHaveBeenCalled();
+    expect(mockBlockIp).not.toHaveBeenCalled();
+    expect(mockUnblockIp).not.toHaveBeenCalled();
   });
 });

@@ -21,7 +21,7 @@ export const usersRouter = router({
       // `.trim()` before `.min(1)` (#816): a reason of one space used to pass and land blank on
       // the record, the audit row and the immutable log. The cap is the shared constant.
       reason: z.string().trim().min(1).max(SUSPEND_REASON_MAX_LENGTH),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       const { suspendUser, getUserById } = await import("../../db");
       

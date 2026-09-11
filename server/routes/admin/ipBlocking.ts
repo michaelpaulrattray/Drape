@@ -15,7 +15,7 @@ export const ipBlockingRouter = router({
       ipAddress: z.string().trim().min(1),
       reason: z.string().trim().min(1).max(IP_BLOCK_REASON_MAX_LENGTH),
       expiresInHours: z.number().min(1).max(8760).optional(), // Max 1 year, null = permanent
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       const { blockIp } = await import("../../db");
       
@@ -79,17 +79,22 @@ export const ipBlockingRouter = router({
   unblockIP: adminProcedure
     .input(z.object({
       ipAddress: z.string().trim().min(1),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       const { unblockIp } = await import("../../db");
-      
-      const success = await unblockIp(input.ipAddress);
 
-      if (!success) {
+      const result = await unblockIp(input.ipAddress);
+
+      if (!result.success) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to unblock IP address",
         });
+      }
+      // An address that matched no row is refused BEFORE any log is written (#816, PR #820
+      // review): a log row asserting an unblock that did not happen is the class this card fixes.
+      if (result.removed === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "That IP address is not on the block list" });
       }
 
       // Log the action
