@@ -1,7 +1,7 @@
 {
-  "edition": 339,
-  "updatedAt": "2026-09-11T00:54:32.970Z",
-  "shift": "Foreman - your two money answers from last night are both built, reviewed twice each, merged and live. ONE SMALL THING IS WAITING ON YOU, and it is a click in the Stripe dashboard, not a decision. THE REFUND THAT FAILS (you said C). Before: a support person approved a refund, Stripe reported it failed, and we took the customer's credits anyway and recorded a refund that never paid. Now: if Stripe says 'failed' the moment we ask, nothing moves and the request waits for a person, with a plain sentence saying why. And for the common case - a refund that fails days later - we now listen for Stripe's message, put back exactly the credits we took, write the truth on the request, and put a red 'Refund failed' card on your admin overview, because a log line nobody reads is not a surface. The reviewer caught two things worth telling you: a refund made from a developer machine could have had its failure land on production and name the wrong customer (fixed - the refund carries which world made it, and the other world's are refused), and a restore that itself failed was being marked as handled so Stripe never retried it (fixed - Stripe now retries it for three days on its own). THE CANCEL WITH AN UNPAID INVOICE (you said A). The invoice is closed now, the same as when a card finally fails, so nobody can pay for a plan they cancelled. The reviewer found that a one-off Stripe hiccup at the moment of closing would have left it payable forever with no retry - also fixed, Stripe re-sends the event until the close lands. Neither road has ever been walked by a real customer - there are no subscriptions yet - which is exactly why they were worth closing now. Two review findings pointed at the same shape in two older handlers; those are filed as small cards, not left to memory.",
+  "edition": 340,
+  "updatedAt": "2026-09-11T02:18:58.531Z",
+  "shift": "Foreman - the two small fixes the reviewer found last night are both built, reviewed and live; the same Stripe click is still the one thing waiting on you. WHAT CHANGED. Last night's two money fixes each closed one road; the reviewer pointed at the same gap on the road next door, and those two are done now. First: when a customer's card finally fails we close their unpaid invoice so it cannot take money later - and if Stripe hiccups at that exact moment, we used to shrug and tell Stripe 'done', so it never tried again and the invoice stayed payable forever. Now we tell Stripe 'not done', it re-sends for three days, and the close lands. Second: when a customer WINS a chargeback we put their frozen credits back - and if the database hiccuped at that moment we told Stripe 'done' and the customer stayed without their credits until a person noticed. Same fix: Stripe now retries on its own. The reviewer then caught something I had missed - on that chargeback road the very first thing we do is look the customer up, and if the database was down that lookup answered 'nobody by that name' instead of 'I cannot see', and we thanked Stripe and moved on. Both readers now say 'I cannot see' out loud, so Stripe comes back when the database is. Neither road has ever been walked by a real customer - there are no subscriptions - which is why they were cheap to close today. Six more places in the same file drop a failure the same way; they are on one card with each site's question written down, not left to memory. STILL YOURS: the thirty-second Stripe click from last night (below). Nothing else waits on you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T00:53:22.756Z",
+      "readAt": "2026-09-11T02:19:01.308Z",
       "items": [
         {
           "issueNumber": 16,
@@ -275,11 +275,11 @@
   "needsYou": [
     {
       "id": "stripe-refund-failed-event-771",
-      "issueNumber": 771,
-      "state": "open",
+      "issueNumber": 793,
+      "state": "waiting",
       "filedAt": "2026-09-11T00:54:32.972Z",
       "title": "One click in Stripe: tell it to send us the 'refund failed' message",
-      "productImpact": "The new listener for refunds that fail days later only works if Stripe actually sends us that message. Stripe only sends the messages an endpoint is subscribed to, and ours is subscribed to the eight it handled before tonight. Until 'refund.failed' is added to that list in the Stripe dashboard, a late refund failure still takes the credits and nobody is told - the code is there, the wire from Stripe is not. Nothing can go wrong before there are subscriptions, so this is not urgent; it is a thing to do before launch.",
+      "productImpact": "The new listener for refunds that fail days later only works if Stripe actually sends us that message. Stripe only sends the messages an endpoint is subscribed to, and ours is subscribed to the eight it handled before last night. Until 'refund.failed' is added to that list in the Stripe dashboard, a late refund failure still takes the credits and nobody is told - the code is there, the wire from Stripe is not. Nothing can go wrong before there are subscriptions, so this is not urgent; it is a thing to do before launch. (The click now has its own card, #793, so this line stays on your page until you say it is done.)",
       "workedExample": "Stripe dashboard > Developers > Webhooks > the production endpoint (https://drape-production-0232.up.railway.app/api/webhooks/stripe) > 'Select events' > add 'refund.failed' > save. Thirty seconds. The deploy notes now list it as the ninth event so it is not lost.",
       "options": [
         {
@@ -4621,6 +4621,20 @@
   ],
   "pipeline": [
     {
+      "id": "dispute-won-restore-retries-789",
+      "title": "A won chargeback whose credit restore hiccups is retried by Stripe - and a database we cannot see no longer reads as 'nobody here'",
+      "status": "merged",
+      "prNumber": 791,
+      "note": "The sibling the reviewer found on last night's refund fix, on the chargeback road. Before: a customer wins their dispute, we try to put their credits back, the database hiccups, and we told Stripe 'done' - so it never tried again. Now we tell Stripe 'not done' and it retries for three days against a restore that can only happen once. Two review rounds: the second caught that on this road the customer LOOKUP runs first, and a database that was down answered 'nobody by that name' rather than 'I cannot see' - fixed at that read too, with a control proving a genuinely unknown customer still reads as unknown. Nothing a customer can hit today."
+    },
+    {
+      "id": "final-failure-void-retries-788",
+      "title": "When a card finally fails, a Stripe hiccup while closing the invoice is retried instead of shrugged at",
+      "status": "merged",
+      "prNumber": 790,
+      "note": "The sibling the reviewer found on last night's cancel fix, on the card-finally-failed road. Before: one transient Stripe error at the moment we closed the invoice left it payable forever, because we told Stripe 'done'. Now the cancel and the downgrade land, then we tell Stripe 'not done' so it re-sends until the close lands. One review round, verdict pass; its one note (the failure alert would re-send per retry, and production has no Slack anyway) is recorded on the class card rather than changed in one handler."
+    },
+    {
       "id": "refund-failed-built-771",
       "title": "A refund Stripe reports failed no longer takes the customer's credits - refused at once, unwound days later",
       "status": "merged",
@@ -5339,6 +5353,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0911f-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 55 open, two closed today, two filed, and 15 nobody has looked at in a week",
+      "detail": "Even again: the two small fixes filed last night closed, and two were filed - one class card holding the six remaining places in the webhook file that drop a failure the same way (each with its own retry question written on it), and one card for your Stripe click so your page cannot lose the ask when the code card closed. The fifteen untouched cards are the same older roadmap and tidy-up items. Bugs is empty; Small fixes holds the class card and your click; three patrols come due within a day, so the next shift is most likely a patrol."
+    },
+    {
       "id": "queue-shape-0911e-foreman",
       "severity": "info",
       "state": "open",
@@ -5874,7 +5895,7 @@
     175
   ],
   "nextUp": {
-    "readAt": "2026-09-11T00:53:22.755Z",
+    "readAt": "2026-09-11T02:19:01.307Z",
     "items": []
   }
 }
