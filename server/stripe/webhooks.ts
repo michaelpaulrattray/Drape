@@ -576,9 +576,15 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
  *     audit log — production has no Slack webhook, so those panels are the
  *     surface (the login-attack alarm took the same road on his ruling).
  *
- * Returns success even when the refund cannot be matched: the event has been
+ * Returns success when the refund cannot be matched (the event has been
  * recorded where staff will see it, and a redelivery would only write the
- * same row again.
+ * same row again) — but ⚠ FAILS THE EVENT when the restore itself failed for
+ * a reason that is not "already restored" (PR #787 review round 2): a
+ * handler that ACKs a restore that did not happen is answered 200, recorded,
+ * and never redelivered, so Stripe's ~3 days of free retries against an
+ * idempotent restore are forfeited and recovery falls to a person reading
+ * the panel. The note and the audit row are written FIRST, so the failed
+ * attempt is still visible; the 400 is what brings the event back.
  */
 async function handleRefundFailed(refund: Stripe.Refund): Promise<WebhookResult> {
   const amountCents = refund.amount;
@@ -623,6 +629,7 @@ async function handleRefundFailed(refund: Stripe.Refund): Promise<WebhookResult>
   const actions: string[] = [];
 
   let creditsRestored = 0;
+  let restoreFailed = false;
   const deduction = await getCreditTransactionByRef(userId, deductionRef);
   if (deduction && deduction.amount < 0) {
     const creditsToRestore = Math.abs(deduction.amount);
@@ -641,6 +648,7 @@ async function handleRefundFailed(refund: Stripe.Refund): Promise<WebhookResult>
       actions.push("credits already restored (duplicate)");
       log.info(`[Webhook] Credits already restored for refund ${refund.id} (duplicate delivery)`);
     } else {
+      restoreFailed = true;
       actions.push(`credit restore failed: ${restore.error}`);
       log.error(`[Webhook] Failed to restore credits to user ${userId} after refund ${refund.id} failed: ${restore.error}`);
     }
@@ -678,6 +686,13 @@ async function handleRefundFailed(refund: Stripe.Refund): Promise<WebhookResult>
     metadata: detail,
     severity: "critical",
   });
+
+  if (restoreFailed) {
+    return {
+      success: false,
+      message: `Refund ${refund.id} failed for user #${userId} (CR #${changeRequestId}) — ${actions.join(", ")}; failing the event so Stripe redelivers and the restore is retried`,
+    };
+  }
 
   return {
     success: true,

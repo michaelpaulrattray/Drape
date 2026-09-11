@@ -369,14 +369,22 @@ describe("B · refund.failed — the later failure puts the credits back and tel
     );
   });
 
-  it("a failed restore does not fail the event — the note and the row still land, and say so", async () => {
+  /*
+    PR #787 review round 2: an ACKed restore that did not happen is answered
+    200, recorded, and never redelivered — Stripe's ~3 days of free retries
+    against an idempotent restore forfeited, recovery left to a person. So
+    the note and the row land FIRST (the attempt is visible), and then the
+    event FAILS so it comes back. Same shape as #786's failed invoice void.
+  */
+  it("a failed restore writes the note and the row, then FAILS THE EVENT so Stripe redelivers it", async () => {
     db.getCreditTransactionByRef.mockResolvedValue({ id: 1, amount: -50, referenceId: "cr-stripe-refund:7" });
     db.addCredits.mockResolvedValue({ success: false, error: "db exploded" });
 
     const result = await deliverEvent("refund.failed", failedRefund());
 
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
     expect(result.message).toContain("credit restore failed");
+    expect(result.message).toContain("redelivers");
     expect(db.appendChangeRequestReviewNote).toHaveBeenCalledTimes(1);
     expect(audit.logAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({
