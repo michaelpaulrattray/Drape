@@ -1,9 +1,9 @@
 import { gzipSync } from "node:zlib";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 
 import {
   buildBundleSummary,
@@ -52,8 +52,10 @@ function rawData(
 }
 
 /** A real directory with real bytes — `readEmittedAssets` gzips what it finds. */
+const emitted: string[] = [];
 function emittedDir(files: Record<string, string>): string {
   const dir = mkdtempSync(path.join(tmpdir(), "drape-bundle-"));
+  emitted.push(dir);
   const assets = path.join(dir, "assets");
   mkdirSync(assets);
   for (const [name, body] of Object.entries(files)) {
@@ -61,6 +63,12 @@ function emittedDir(files: Record<string, string>): string {
   }
   return assets;
 }
+/* Every fixture is swept, and it was not until Janitor run 5: 210 `drape-bundle-*`
+   directories in `%TEMP%` in three days, one per `emittedDir` call per run, with
+   no teardown at all — #694's leak from a fourth door. */
+afterAll(() => {
+  for (const dir of emitted) rmSync(dir, { recursive: true, force: true });
+});
 
 /* ────────────────────────────────────────────────────────────────────────────
    1. ownerOfModule — the naming, including the shapes that produce phantoms
