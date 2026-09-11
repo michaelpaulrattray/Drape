@@ -295,13 +295,14 @@ export async function assertDockVisible(
  *
  * So an element is read as the text it paints IN ITS OWN FACE: a leaf reads
  * its text; an element whose children are all `display: inline` reads the run
- * — its own text nodes plus every inline child set in the same face, whether
- * or not it has prose of its own (PR #806 review, finding 1); an element with
- * a block or inline-block child reads only its own text nodes between them.
- * A child in a DIFFERENT face is not part of its parent's run — it is a
- * figure if short, and read on its own turn and caught if it is a sentence
- * set in mono — so no word is ever counted twice (finding 2). A same-face
- * child of a run already read is that run's text, not a second sentence.
+ * — its own text nodes plus every text node whose ancestors up to it are all
+ * inline, same-face and visible, at any depth, whether or not it has prose of
+ * its own (PR #806 review, rounds 1 and 2); an element with a block or
+ * inline-block child reads only its own text nodes between them. Text in a
+ * DIFFERENT face is not part of its parent's run — it is a figure if short,
+ * and read on its own turn and caught if it is a sentence set in mono — so no
+ * word is ever counted twice. A same-face child of a run already read is that
+ * run's text, not a second sentence.
  *
  * `display: inline` EXACTLY, not `inline-block`: a sentence's figure is a
  * `<span>` on the same line box as its words, while a row of chips, pills or
@@ -357,16 +358,35 @@ export async function assertNoMonoSentences(page: Page, where: string, log: LawL
       const font = getComputedStyle(el).fontFamily.toLowerCase();
       const children = Array.from(el.children) as HTMLElement[];
       const allInline = children.every((c) => getComputedStyle(c).display === "inline");
-      const text = Array.from(el.childNodes)
-        .map((n) => {
-          if (n.nodeType === Node.TEXT_NODE) return n.textContent ?? "";
-          if (n.nodeType !== Node.ELEMENT_NODE || !allInline) return " ";
-          const child = n as HTMLElement;
-          return getComputedStyle(child).fontFamily.toLowerCase() === font ? (child.textContent ?? "") : " ";
-        })
-        .join("")
-        .replace(/\s+/g, " ")
-        .trim();
+      /*
+        Every text node under the element, kept only when EVERY element
+        between it and the run root is inline, in the same face and visible —
+        at any depth, not one level (PR #806 review, round 2: a sans <em>
+        nested inside a same-face <span> was folded into a mono run and
+        quoted as mono). A dropped node leaves a space so words on either
+        side do not run together. With a block or atomic child present, only
+        the element's own text nodes count. (A walker rather than recursion:
+        the bundler wraps a named function in `__name`, which the page lacks.)
+      */
+      const parts: string[] = [];
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        let own = true;
+        for (let p = n.parentElement; p && p !== el; p = p.parentElement) {
+          const style = getComputedStyle(p);
+          if (
+            !allInline ||
+            style.display !== "inline" ||
+            style.visibility === "hidden" ||
+            style.fontFamily.toLowerCase() !== font
+          ) {
+            own = false;
+            break;
+          }
+        }
+        parts.push(own ? (n.textContent ?? "") : " ");
+      }
+      const text = parts.join("").replace(/\s+/g, " ").trim();
       if (!text) continue;
       const words = text.split(/\s+/).length;
       const sentenceish = words >= 5 || /[.!?]$/.test(text);

@@ -289,6 +289,34 @@ export const CONTROLS: Control[] = [
   },
   {
     /*
+      A FACE CHANGE TWO LEVELS DOWN (PR #806 review, round 2). A sans <em>
+      nested inside a same-face <span> inside a mono label: the one-level
+      fold took the span's whole textContent and quoted nine sans-painted
+      words as a mono sentence, on a page whose only mono text is "TOTAL
+      160 CR". The compliant arm is that page; the offender is the same
+      markup with the <em> left in mono, which really is a mono sentence.
+      One difference — the nested element's face.
+    */
+    law: "mono-sentences",
+    breaks: "a face change two levels down — a sans <em> inside a same-face <span> must not be quoted as part of a mono run",
+    run: assertNoMonoSentences,
+    offender: {
+      html: page(
+        ``,
+        `<p style="font-family: 'Roboto Mono', monospace">TOTAL <span>160 CR ` +
+          `<em>of the eight hundred you started the month with.</em></span></p>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        ``,
+        `<p style="font-family: 'Roboto Mono', monospace">TOTAL <span>160 CR ` +
+          `<em style="font-family: Inter, sans-serif">of the eight hundred you started the month with.</em></span></p>`,
+      ),
+    },
+  },
+  {
+    /*
       THE ROW OF CHIPS — the loud direction. Five short mono labels in one row
       are labels, not a sentence, and the run reading stops at `display:
       inline`: an `inline-block` child is an atomic box on the line, not a
