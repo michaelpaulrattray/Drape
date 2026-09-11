@@ -540,3 +540,209 @@ Seat: Machinist, patrol #2, one seat, shift `foreman-20260905-1010`. Clock: run
 counts from today, and `scripts/patrol-clocks.mts` reads the `## Run` heading
 above rather than a date typed anywhere else. Reader extended and its control
 driven; ledger appended; #129 given its numbers; one card filed. Nothing spent.
+
+## Run 3 — 2026-09-12 05:43–06:5x AEST (Machinist, patrol #3; weekly clock, on the day)
+
+Nothing spent: every figure is a `SELECT` over rows that already exist, a call
+to a provider's own books, a build, or a timed house command. Readers:
+`scripts/machinist-ledger-read.mts` (14d / 60d / 7d), `pnpm machinist:bundle`,
+`pnpm machinist:bench`, and two read-only disposables named where they are
+quoted. Windows: **14d** = the 14 days to 2026-09-11 19:44Z, **60d** to the
+same instant, against `hayabusa.proxy.rlwy.net:23768` (production) at
+`aaefcd39`. Raw outputs in `output/_machinist3/` (untracked).
+
+⚠ **The denominator, first, as run 2 ruled:** every operation in the 14-day
+window is user 1's. Zero customer traffic. These are dogfood rates.
+
+### A. Wall-clock per paid operation
+
+| kind | window | n | median | p95 | max | statuses |
+|---|---|---|---|---|---|---|
+| `castingV2.roll` | 14d | 30 | **52 s** | 82 s | 341 s | 22 succeeded · 8 partial |
+| `castingV2.roll` | 60d | 256 | 47 s | 126 s | 1,495 s | 229 · 22 partial · 5 failed |
+| `castingV2.refine` | 14d | **3** | 106 s | 116 s | 116 s | 3 succeeded |
+| `castingV2.refine` | 60d | 225 | 120 s | 285 s | 390 s | 192 · 33 failed |
+| `castingV2.retry` | 14d | **3** | 41 s | 46 s | 46 s | 2 succeeded · 1 failed |
+| `model.delete` | 14d | 58 | 1 s | 1 s | 20 s | 44 · 14 failed |
+
+- **The refine road is nearly idle**: 3 refines in 14 days, 6 landed since
+  2026-08-23. Its 60-day median is 120 s for the third run running; nothing new
+  can be said about it from three rows, and this ledger does not pretend to.
+  0 of 3 past the gateway wall; the 60-day count is the same 9 of 225 that
+  runs 1 and 2 read — **no refine has crossed the wall since 2026-08-21.**
+- **The roll's window p95 fell from 343 s to 82 s** — run 2's tail was the
+  eight-slice creature courts, and the courts were quiet this fortnight.
+- ⚠ **The retry road ran on production for the first time** — run 2 measured
+  zero `castingV2.retry` operations all time. Three since (05 Sep ×2, 09 Sep),
+  read at the rows (`scripts/_machinist3-retry-disposable.mts`): two arrived
+  in 41 s and 46 s; one refused again (`PRECONDITION_FAILED`, 35 s), refunded
+  20, with the honest sentence on the row — *"That tile didn't arrive again.
+  20 credits were refunded."* The population run 2's cross-check was written
+  for now exists, and the cross-check agrees over it (§B).
+- **The 14 `model.delete` failures are run 2's 14** — the windows overlap on
+  08-30/31, which is when #301/#308 stopped his Casts deleting. No delete has
+  failed since 2026-08-31. All 14 still carry the replay fence (#532's fix
+  reads them as erased rather than unexplained).
+
+### B. The roll at slice grain — the worst number, re-read
+
+| window | slices paid for | arrived | refused by the engine | stranded | **did not arrive** |
+|---|---|---|---|---|---|
+| 14d (run 3) | 243 | 232 | 9 (3.7%) | 2 (0.8%) | **11 — 4.5%** |
+| 14d (run 2) | 248 | 220 | 20 (8.1%) | 8 (3.2%) | **28 — 11.3%** |
+| 60d | 2,051 | 1,971 | 41 (2.0%) | 39 (1.9%) | **80 — 3.9%** |
+
+**Cross-check on the money ledger: 11 refunds / 220 credits (14d), 80 / 1,600
+(60d) — AGREES on both, now with a retry row in the population** (1 of the 9
+refused is the retry above). **Every classified loss is still
+`content_policy`**: 9 of 9 in the window, 25 + 1 of 41 over 60 days beside 15
+`capability`. At the sheet: **8 of 30 rolls came back short a picture** — one
+sheet in four, every missing tile a refusal. Run 2's 11.3% has more than
+halved; the class has not moved at all. **#129 (open) is still exactly its
+brief and now has a second fortnight of numbers.**
+
+### C. The carried-geometry sentence, retired with its denominator
+
+Runs 1 and 2 both printed *"rows holding carried geometry (the render's
+writer, a010923d): 0"* as though it were a finding. Read this run with the
+denominator beside it (`scripts/_machinist3-carried-disposable.mts`):
+**6 refines have landed since the writer shipped (2026-08-23), on 0 faces
+holding a library row — the library holds 2 rows over 1 face, all time.** The
+writer fires only on a face that carries a library feature, and no such face
+has been refined since it existed. **Zero over zero.** Not a dead writer, not
+a finding; the sentence is kept in the reader because the day the population
+exists it becomes one, but it is not to be quoted as a defect again without
+this denominator beside it (run 2's own rule: enumerate the writer's
+population before calling its output absent).
+
+### D. Face scans — right on his cost model
+
+**139 paid looks in 14 days = $13.90** (77 of them on 2026-09-05, 22 on 09-09).
+His model when he widened the pair was *~$0.10/scan, ~$30/power-user-month*;
+one account at $13.90 a fortnight is $30 a month, on the nose. Zero
+render-written rows — the §C denominator explains why.
+
+### E. Provider books — the ratio flipped, and the reason is the courts
+
+- **OpenRouter (text), account-wide: $10.54 over 12 active days — ≈$0.88/day**
+  (run 2: $2.82/day; run 1: $4.70/day). `grok-4.6` on three days (the #466 /
+  #477 arms); otherwise `claude-sonnet-5` only.
+- **fal (image), off our surviving rows: $18.04 — 179 roll renders + 3 edits
+  + 4 SAM reads — ≈$1.29/day.** Still a floor; but the 60-day read shows 186
+  renders total, so in THIS window nearly every row survives and the floor is
+  close to the number.
+- ⚠ **Image now out-spends text, $18.04 : $10.54 — the reverse of run 2's
+  four-to-one.** Not a change in the product: text fell because no court ran
+  this fortnight (run 2's text figure carried the author bench and the
+  reader court), and image is what dogfood rolls cost at 20 slices a sheet.
+  **With the courts quiet the house's steady-state spend is ≈$2.20/day, image
+  first.** Two windows are not a trend; recorded so the next run can say
+  whether it is.
+- Balances are a reading for the rite's receipt, never a finding (his rule).
+
+### F. The client and the house — the two readers the seat gained in #35
+
+**Bundle** (`pnpm machinist:bundle`, read 2026-09-11 19:51Z at `aaefcd39`):
+**636.9 kB gzip JS in ONE chunk**, 67.4 kB CSS — unchanged from the 09-10
+reading to the decimal. `recharts` 11.4% · `react-dom` 11.0% · casting 6.3% ·
+pages 5.8% · boards 5.5%. **#744 (open) holds it**; nothing new to add.
+
+**House commands** (`pnpm machinist:bench`, hyperfine 1.20.0, this machine,
+3 runs + 1 warmup unless stated, nothing else of mine running during the
+timed commands except the ledger reads):
+
+| command | median | σ | note |
+|---|---|---|---|
+| `pnpm check` | **116.3 s** | 0.9 s | every preflight, the gate's first red |
+| `pnpm architecture:check` | 8.7 s | 0.1 s | 09-10 read 9.4 s |
+| `pnpm capability:check` | 1.2 s | 0.0 s | 09-10 read 1.5 s |
+| `pnpm build` | 9.4 s | 0.3 s | 2 runs |
+| `pnpm test` | **refused to time** | — | see below |
+
+⚠ **`pnpm check` is 116 s, and 67 s of it is one pass that re-checks work the
+other passes already did.** Timed each of its four commands alone
+(one run each, same box): `tsc --noEmit` **26 s** · `tsc -p
+tsconfig.casting-tests.json` **14 s** · **`tsc -p tsconfig.scripts.json` 67 s**
+· `check-cleanup-dispositions --strict` 8 s. The scripts config includes
+`server/**/*` and `shared/**/*` beside `scripts/**/*`, so the whole server is
+type-checked twice per preflight and `castingV2` three times. At 2.54 gate runs
+per card (§G) and a preflight before each, that is several minutes of every
+card. **Carded, not built** — the Machinist records the number and the brief
+is its own card (filed this run, see §H).
+
+⚠ **`pnpm test` could not be timed because it FAILS on `main`**, and the bench
+refuses to time a failing command (*a failing command is fast, which would
+read as an improvement*). Run directly afterwards with the JSON reporter:
+**591 s wall, 3,519 files, 13,026 arms, 14 failed — every one of the 14 a
+timeout (durations sitting exactly on 5,000 / 30,000 / the atlas's clock),
+not one an assertion.** ⚠ That run was taken with this shift's own `pnpm
+check` in the worktree running beside it, so it is a WORSE-load reading of the
+class #743 already measured at 5 failures on a clean `main` — the same class,
+not a new one. **#743 (open) holds it**; the reading is added there. The
+consequence for this seat is stated rather than implied: **the bench's
+`pnpm test` row cannot be taken until #743 is worked**, whatever machine it
+runs on.
+
+### G. The shift process — #543's two numbers, first reading on the clock
+
+| figure | **7d — all post-rule** (since 09-04) | 14d (half pre-rule) | 3d read on #543 (09-08) | baseline (05 Sep) | target |
+|---|---|---|---|---|---|
+| cards landed per session | **1.73** (163 cards / 94 landing sessions of 97) | 1.51 | 1.73 | 1.18–1.27 | 3 |
+| gate minutes per card | **20.0** (3,260 min / 163) | 21.5 | 19.3 | 23.2–28.25 | 10 |
+| gate runs per card | **2.36** (384 / 163) | 2.54 | 2.41 | 3.1 | 1.5 |
+
+**The post-rule week holds where the 3-day read put it**: cards per session
+1.73 exactly, gate minutes per card 20.0 against 19.3, gate runs per card
+2.36 against 2.41 — better than the baseline on all three rows, at target on
+none. The 14-day column is worse on every row because half of it is
+pre-rule, which is what it should show. The spread he asked for (one
+wide-batch night moves the mean) cannot be read from this reader — it prints
+means; noted, not carded (#543 is closed on his word). The 7-day column was
+taken with the RETRIED reader on its first run after #824 merged; the same
+read had blanked before it. Unattributed in it: #596 and #824 itself (this
+shift's own row was still open when it read — the boundary artifact the
+reader prints rather than drops). Over 14 days, 27 unattributed, 26 of them
+28–30 Aug before `crew_shift_runs` existed. Overlapping runs 16/17 and
+97/98, as every reading has said.
+
+⚠ **THE INSTRUMENT, AND WHAT WAS BUILT THIS RUN (the seat's own reader, not a
+new one).** Section G printed `UNREAD` on **three of the four** full readings
+this patrol took — 14d ×2, 7d ×1 — each time because ONE of ~200 sequential
+per-PR `gh api` calls returned `connectex … did not properly respond`, and the
+reader threw the other 199 away. The 3-day read on #543 recorded the same
+shape (*"four of five attempts today"*) and asked for one retry. **PR #824**:
+every `gh` call is tried three times with a 1.5 s pause; a dead `gh` still
+refuses and its reason now says how many times it was asked; three driven
+arms, negative control exact (those three red on `main`'s reader, 24 green).
+No classifier of "transient" — an auth failure retried thrice costs a second,
+and a misread message would hand the old behaviour back on the one road this
+exists for.
+
+### H. Attempted and reverted; carded
+
+Nothing attempted on the product. Carded this run, filed not worked:
+**#825 — `pnpm check`'s scripts pass re-checks all of `server/` (67 of 116 s)** —
+the measured brief is whether project references, `incremental`, or a
+scripts-only include cuts it, measured before believed. Added to existing
+cards rather than refiled: today's 14-timeout full run on **#743**; nothing new
+on #744 (unchanged to the decimal) or #129 (the numbers above go on the card).
+
+### I. THE WORST NUMBER — run 3
+
+**One sheet in four came back short a picture — 8 of 30 rolls partial; 11 of
+243 paid slices did not arrive (4.5%), and every classified one was the engine
+refusing to draw it.** It is run 2's worst number more than halved (11.3% →
+4.5%), on a fortnight with no creature courts in it, and its class has not
+moved: `content_policy`, 9 of 9. **#129 is its brief and is open.** Runner-up,
+unchanged: the client half of the charter — page load, click-to-paint, the
+canvas — is UNREAD; the bundle reader (#35) reads bytes shipped and is not a
+proxy for any of it. Run 1 said so, run 2 said so, run 3 says so; #555 is the
+card.
+
+### J. Close
+
+Seat: Machinist, patrol #3, one seat, shift `foreman-20260912-0540`. Clock:
+run 2 was 2026-09-05, so this run is on the day; the clock counts from today.
+Reader hardened (PR #824) with its control driven; ledger appended; one card
+filed; #743 and #129 given their numbers; two read-only disposables written and
+guarded. Nothing spent.

@@ -1,7 +1,7 @@
 {
-  "edition": 351,
-  "updatedAt": "2026-09-11T19:19:50.459Z",
-  "shift": "Night shift — a batch of four PRs on two cards, all merged. YOUR DESK IS CLEAR. WHAT CHANGED FOR A CUSTOMER: (1) a brief of one blank space could be sent to the casting studio and eight priced candidates would roll off nothing — the brief box already refuses it, but the server did not (PR #823). Now the server refuses it too, before anything is charged; a padded brief is trimmed and the words are untouched. (2) The same blank-passes-as-text hole on the site banner every customer sees, on bug reports to your inbox, on outfit names in the wardrobe, on the waitlist name, on the wardrobe edit instruction and on the old studio's iterate box — all refuse a blank now (PRs #821, #823). WHAT CHANGED FOR STAFF: an admin could suspend an account, change a role or block an IP with a reason of one space, and the record, the audit row and the immutable log all carried a blank (PR #820). Refused now, trimmed before every log, and the three caps read the shared constants both ends. From the review of that PR: unblocking an IP that was never on the list used to write three log rows claiming an unblock that never happened — it now says 'not on the block list' and writes nothing. THE TEST REPAIR (#697): `adminUserManagement.test.ts` had 20 checks and 15 could not fail — they called a fake database helper and read back what they had just typed. Rewritten to drive the four real admin reads (PR #822; proven by removing each rule from the product in turn: all seven removals passed the old file silently). WHAT IS LEFT on #816: two rows only — the credit-adjustment reason (money, goes through Fable) and the sign-up name (auth). YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177.",
+  "edition": 352,
+  "updatedAt": "2026-09-11T20:39:36.594Z",
+  "shift": "Machinist — patrol #3 (the weekly performance read, on its day). YOUR DESK IS CLEAR. THE READ, IN YOUR TERMS: over the last fortnight one sheet in four came back short a picture (8 of 30 rolls; 11 of 243 paid tiles did not arrive, 4.5%) — every missing tile was the engine refusing to draw it, and every one was refunded to the credit. That is HALF the rate of two weeks ago (11.3%), on a fortnight with no creature courts in it; the cause has not changed and #129 (the refusal patrol you ordered) is its brief. The Retry button ran on production for the first time — three presses, two tiles arrived in under a minute, one was refused again and said so honestly with the 20 credits back. House money: with no courts running, text spend fell to about 88 cents a day and image is now the bigger line (about $1.29/day) — roughly $2.20/day steady state. Face scans came in at $13.90 for the fortnight, which is the $30/month you priced them at. THE HOUSE'S OWN TOOLS: the type-check every shift runs before a push takes 116 seconds, and 67 of those are one pass re-checking the whole server a second time — filed as #825 with the numbers, not built. The full test suite could not be timed because it fails on main on timeouts alone (14 tonight under load; #743 already holds that). The client is still one 637 kB download, unchanged (#744). ONE FIX SHIPPED (PR #824): the ledger's shift-process figures blanked three times in four tonight because ONE dropped connection out of ~200 threw the whole reading away — it retries now, and the same read came back first time afterwards: 1.73 cards per shift and 20 gate-minutes per card over the post-rule week, both better than the September-5 baseline, neither at target yet. ALSO: #697's four remaining casting test files were read check by check — every flagged one drives the real product; nothing to rewrite (only the sign-up file, an auth path, remains). YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. The Janitor reads due today and was not taken (one patrol per shift) — the next shift takes it.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T19:20:25.159Z",
+      "readAt": "2026-09-11T20:38:49.575Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,13 @@
   ],
   "pipeline": [
     {
+      "id": "ledger-gh-retry-824",
+      "title": "The performance ledger no longer loses its shift-process figures to one dropped connection",
+      "status": "merged",
+      "prNumber": 824,
+      "note": "Section G of the Machinist ledger (cards per shift, gate minutes per card — the two numbers #543 was settled on) makes one GitHub call per merged PR, about 200 in a row, and one dropped connection threw the other 199 away and printed UNREAD — three times in four on this patrol. Each call is now tried three times; a GitHub that is really down still refuses, and the reason says how many times it asked. Proven by three checks that were red against the old reader and green against the new."
+    },
+    {
       "id": "adminusermgmt-driven-697",
       "title": "adminUserManagement.test.ts drives the four real admin reads — 15 of 20 checks could not fail",
       "status": "merged",
@@ -5526,11 +5533,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912e-batch",
+      "id": "queue-shape-0912f-machinist",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 52 open, none closed tonight, none filed; NEXT UP is empty; nothing waits on you",
-      "detail": "Four PRs merged (#820, #821, #822, #823) — three on #816's blank-text class (customer and staff roads, including the priced casting roll) and one on #697's test repairs. Nothing a customer must learn; a blank is refused where a person already could not send one. #816 stays open for two rows outside an Opus shift's reach (a money procedure, an auth path). 25 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Machinist and Janitor read DUE today by their own clocks (not overdue) and were not taken — Bugs came first in the category order; the next shift's reader will show them OVERDUE, and an overdue patrol under its switch goes ahead of the category order. After the patrols: Process (#743, #769, #697's remaining files — rollService, packageOrchestrator, refineService), then Performance, then Housekeeping."
+      "title": "The queue: 53 open, none closed, one filed (#825); NEXT UP is empty; nothing waits on you",
+      "detail": "Machinist patrol #3 ran on its day: ledger read (14d/60d/7d), bundle read, house-command bench; one reader fix merged (#824); the ledger's Run 3 appended with the worst number named (one sheet in four short a picture, all refusals, #129). #825 filed with numbers: pnpm check is 116 s and 67 s of it re-checks the server a second time. #743 given tonight's wide-run reading (14 timeouts, no assertion failures, under load). #697's four castingV2 files cleared by reading — only routes/emailAuth (auth) remains. 27 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). The Janitor is DUE today by its own clock and was not taken (one patrol per shift); the next shift's reader will show it overdue, and an overdue patrol under its switch goes ahead of the category order. Warden due 13 Sep."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5713,7 +5720,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-11T19:20:25.158Z",
+    "readAt": "2026-09-11T20:38:49.574Z",
     "items": []
   }
 }
