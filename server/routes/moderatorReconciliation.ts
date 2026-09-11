@@ -262,7 +262,14 @@ export const moderatorReconciliationRouter = router({
       if (user.role === "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Cannot freeze admin accounts" });
 
       const reason = `Manual freeze by moderator: ${input.reason}`;
-      await freezeUser(input.userId, reason, String(ctx.user.id));
+      // The writer answers { success, error } exactly as unfreezeUser does, and until #817 the
+      // answer was dropped here: a failed write still wrote the audit row and emailed the
+      // customer that they were frozen. Refuse first; the row and the notice say "frozen"
+      // only about an account that is.
+      const frozen = await freezeUser(input.userId, reason, String(ctx.user.id));
+      if (!frozen.success) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: frozen.error || "Failed to freeze" });
+      }
 
       await logAuditEvent({
         userId: ctx.user.id,

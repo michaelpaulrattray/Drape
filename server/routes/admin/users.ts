@@ -190,7 +190,10 @@ export const usersRouter = router({
       }
 
       const reason = `Admin freeze: ${input.reason}`;
-      await freezeUser(input.userId, reason, String(ctx.user.id));
+      // Read the writer's answer, as unfreezeUser below does (#817): a failed write must not
+      // write the audit row, the admin log, or the customer's notice.
+      const frozen = await freezeUser(input.userId, reason, String(ctx.user.id));
+      if (!frozen.success) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: frozen.error || "Failed to freeze" });
 
       await logAuditEvent({
         userId: ctx.user.id,
