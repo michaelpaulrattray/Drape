@@ -1,7 +1,7 @@
 {
-  "edition": 345,
-  "updatedAt": "2026-09-11T11:32:03.613763Z",
-  "shift": "Fable — the last card in your NEXT UP queue is done and live: the subscription webhooks no longer trust the message, they check the source. WHAT IT FIXES. Stripe tells us about subscription changes by sending messages, and it makes no promise about the order they arrive in — it also re-sends any message we could not process the first time. Until today each message was applied as written, so an OLD one arriving late could overwrite a NEW truth: the worked example on your card was a customer who upgrades Pro → Ultimate and then a delayed older message writes Pro back over their Ultimate — they paid for Ultimate and see Pro. You chose repair 1 ('1', on the card): before applying any subscription message, we now ask Stripe what the subscription looks like RIGHT NOW and apply that. Order stops mattering; a late or repeated message can only ever write the current truth. THE SAME RULE, EVERYWHERE. A message claiming a subscription died is checked too — if Stripe says it is alive, we refuse to downgrade the customer (they keep their plan, the safe direction). And the 'payment failed' mark now records the live state, so a customer whose card was charged successfully a minute later can never be flagged as behind on payment by a stale message. COST, SAID OUT LOUD: one extra Stripe lookup per subscription message — cents at any volume we can imagine. PROVEN, NOT CLAIMED: your card's own Pro-over-Ultimate scenario is now a permanent test (it fails against the old code — we ran that check both ways); the independent reviewer passed the change with no defect found; production answered with the new build a minute after the merge. One narrow cousin the reviewer spotted — only reachable if a customer somehow holds two live subscriptions at once, which the product's own screens do not offer — is filed as #804 for a shift with its own design, not rushed into this one. STILL YOURS: nothing. Your NEXT UP queue is empty.",
+  "edition": 346,
+  "updatedAt": "2026-09-11T13:46:37.863Z",
+  "shift": "Opus night shift — two of the team's own checking tools were made honest tonight, and one decision is on your desk. WHAT CHANGED. The design-law walk is the thing that reads every page of the product and says whether it keeps the rules you set — price on the button, no typewriter type on sentences, no loading skeletons under a 'that brief can't be cast' message, the 7-quiet-days line wherever unsigned sheets show. Four of those rules were reading the wrong part of the page. Three read WIDER than the rule — a price on the button NEXT DOOR counted for a button with none; the '7 quiet days' line anywhere on the page satisfied a section that never said it; a loading skeleton in the page header counted as sitting under a refusal further down. One read NARROWER — the typewriter rule could not see a sentence at all once it held a single figure in the machine face, which is exactly what your #524 ruling asked for, so the moderator line you ruled on was invisible to the check meant to protect it. All four now read their own region. Each fix ships with a pair of test pages the rule must fail and must pass, and every pair was driven against the OLD rule first to prove it would have slipped through — nine new pairs, all nine slipped. PROVEN ON THE REAL APP: the walk was run over all 19 pages, both themes, before and after each change; every verdict is identical except the one that should move — the moderator page went from 'no sentences here' to 'one sentence, in the reading face'. WHAT THE SHARPER CHECK FOUND: six machine lines on three pages (the casting cost line, the sheet's cost line, the four status labels at the top of this page) that are meant to be in the machine face but never wore the label the rule knows — the same class as #524, the same treatment, filed as #807 for its own shift with the before/after type measurement your ruling required. ON YOUR DESK: one decision, #721 — the night-shift's own 'usage cap' alarm still reads a shift WRITING ABOUT caps as a shift HITTING one (3 old logs would park the team with the wrong reason). The phrase list is yours by your earlier word, so the card asks rather than decides; recommendation stated on the card. Two reviews, every finding taken. Both live on production.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,12 +128,12 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "54 open, none waiting on you, none urgent. 1 closed tonight, 1 filed, 15 stale (11 Sep)."
+        "source": "54 open, 1 waiting on you (#721), none urgent. 2 closed tonight, 1 filed, 25 stale (11 Sep)."
       },
       {
-        "label": "Nothing is waiting on you",
-        "tone": "good",
-        "source": "Your typewriter-type ruling (#524, 4 Sep) is built and live tonight. Nothing needs your word."
+        "label": "One decision waits on you",
+        "tone": "warn",
+        "source": "#721 — what counts as a 'usage cap' in a shift's log. One-word answer; recommendation on the card."
       },
       {
         "label": "Check-ups",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T11:31:19.384Z",
+      "readAt": "2026-09-11T13:45:07.895Z",
       "items": [
         {
           "issueNumber": 16,
@@ -279,6 +279,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "cap-detector-prose-721",
+      "issueNumber": 721,
+      "state": "open",
+      "filedAt": "2026-09-11T13:46:37.864Z",
+      "title": "The night-shift's 'usage cap' alarm still trips on a shift WRITING about caps — what should count as a cap?",
+      "productImpact": "When a night shift dies, the runner reads that shift's own log for the words of a usage cap and, if it finds them, parks the whole team with a STOP note saying 'Fable usage cap reached'. Measured over every shift log on disk: ten logs would have parked the team that way and ONE was a real cap. #495 fixed six of the nine false ones (card numbers and commit hashes that happened to contain '429', 'quota' hiding inside 'quotation'). Three remain and they are one class: a shift writing plainly about the cap machinery — 'the daily quota', 'the user rate limits', a report quoting 'you're out of credits'. Nothing is broken for customers. The cost is yours: the nights stop for a reason that is not true, you delete the STOP file, and nobody learns what actually failed. It is on your desk because #495's own text reserved the phrase list for you, so deciding that those three plain-English uses do not count is deciding what a cap IS.",
+      "workedExample": "The shift that BUILT the cap detector wrote a report explaining what a cap looks like, quoting the words 'you're out of credits'. That report now reads as a cap. Every future shift that documents this mechanism — including the one that works this card — joins the list. Under the recommended option, a cap only counts when it is an actual unquoted error line ('API Error: 429', 'usage limit reached'), never words inside a sentence with a verb; the one real cap on record still parks instantly, and all three false ones are read as prose.",
+      "options": [
+        {
+          "key": "A",
+          "label": "A - a cap is an error LINE, not a mention (the #360 answer)",
+          "consequence": "Strip quoted and fenced text, and require the cap words to stand as their own line rather than inside a sentence. Fixes all three; the one real cap on record still parks instantly. Keeps your seven phrases exactly as they are — only how they are read changes."
+        },
+        {
+          "key": "B",
+          "label": "B - narrow to the error shapes only",
+          "consequence": "Drop the seven prose phrases and keep only the literal error strings. Cleanest, but the most likely to miss a cap that words itself differently — which is the expensive direction, since your standing preference at the cap is to stop."
+        },
+        {
+          "key": "C",
+          "label": "C - leave it",
+          "consequence": "Legitimate: it fails toward stopping the team rather than running it, and it costs you one deleted STOP file each time. The cost is that the reason you read is wrong and you cannot tell."
+        }
+      ],
+      "recommendation": "A. It is the same repair the quiet-shift detector already had (#360: a declaration is not a mention), it touches how the phrases are READ and not which phrases they are, and it is driven against the real logs before it is believed — the three false ones must read as prose and the one real cap must still park at once. One word and a shift takes it."
+    },
     {
       "id": "stripe-refund-failed-event-771",
       "issueNumber": 793,
@@ -4627,6 +4654,20 @@
   ],
   "pipeline": [
     {
+      "id": "design-law-regions-782",
+      "title": "Three page-checking rules read their own region now, not the whole page — a neighbouring price, a footer line or a header skeleton can no longer stand in for the thing the rule is about",
+      "status": "merged",
+      "prNumber": 805,
+      "note": "Laws 4, 5 and 6 of the design-law walk. Five new offender/compliant page pairs, each driven against the old rule first and proven to slip through it. Walked the real app before and after: every verdict identical. Two review rounds, every finding taken. Live on production (build 05c6e00f)."
+    },
+    {
+      "id": "design-law-mono-runs-799",
+      "title": "The typewriter-type rule can see a sentence with a figure in it — the shape your #524 ruling asked for was invisible to the check meant to guard it",
+      "status": "merged",
+      "prNumber": 806,
+      "note": "Law 3 reads an element as the text it paints in its own face, at any depth; a figure in the machine face inside a reading-face sentence is allowed, a whole sentence in the machine face is caught, and a row of chips is not mistaken for a sentence. Four new page pairs. On the real app the moderator page went from 'no sentences here' to 'one sentence, none in typewriter'. Six machine lines it can now see are #807. Live on production (build 2f02f9e6)."
+    },
+    {
       "id": "webhook-fetch-dont-trust-795",
       "title": "Subscription messages from Stripe are checked against the source before they touch an account — a late or repeated message can only write the current truth",
       "status": "merged",
@@ -5394,11 +5435,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0911j-fable",
+      "id": "queue-shape-0911k-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 52 open, two closed today (your Slack retirement and the webhook ordering card), NEXT UP is empty",
-      "detail": "#795 closed with PR #803, deployed and read back on production. Filed: #804, a narrow cousin the reviewer found (needs two simultaneously live subscriptions, which the product's screens do not offer) — it waits for its own design shift. Your ordered queue is empty; background switches govern what runs next."
+      "title": "The queue: 54 open, two closed tonight (#782, #799), one filed (#807), one moved to your desk (#721); NEXT UP is empty",
+      "detail": "Both closed cards were the team's own checking tools, not product pages — nothing a customer sees changed. #807 is the six machine lines the sharper check now sees, small, its own shift. #721 is labelled blocked with a Waiting-on line and sits on your desk: 25 open cards have had no comment, close, reopen or commit for 7 days (read by queue-rot-read; a label alone does not reset that clock). Background switches govern what runs next; Machinist, Retro and Janitor come due 12 Sep."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5580,7 +5621,7 @@
     176
   ],
   "nextUp": {
-    "readAt": "2026-09-11T11:31:19.383Z",
+    "readAt": "2026-09-11T13:45:07.894Z",
     "items": []
   }
 }
