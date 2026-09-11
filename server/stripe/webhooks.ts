@@ -38,7 +38,10 @@ import {
   applyPlanChangeSettlement,
   voidPlanChangeSettlement,
 } from "./planChangeSettlement";
-import { voidPendingPlanChangeSettlementsForUser } from "../db";
+import {
+  voidPendingPlanChangeSettlementsForUser,
+  getVoidPlanChangeSettlementInvoiceIdsForUser,
+} from "../db";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { createModuleLogger } from "../logging/logger";
 import { checkEventEnvironment } from "./environmentTag";
@@ -348,18 +351,37 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
       // refuse it if it did. So a void that comes back `failed` is collected
       // here and FAILS THE EVENT below — after the downgrade, which must land
       // on the first attempt — the same way a failed settlement application
-      // fails its event loud. Stripe redelivers for ~3 days, the stale guard
-      // passes (the stored id is null by then, and null voids by design), and
-      // the void-inclusive list above is what makes the retry reach Stripe.
+      // fails its event loud. Stripe redelivers for ~3 days; on the way back
+      // the stored id is null (the downgrade cleared it) and the
+      // void-inclusive list above is what makes the retry reach Stripe — OR
+      // the customer has resubscribed in the meantime, the stored id is the
+      // NEW one, and the retry takes the stale arm below instead.
       for (const invoiceId of voidedInvoiceIds) {
         const verdict = await voidInvoice(invoiceId);
         if (verdict === "failed") invoiceVoidsFailed.push(invoiceId);
       }
     }
   } else {
+    // ⚠ A STALE DELIVERY STILL RETRIES THE INVOICE VOIDS (PR #794 review
+    // finding 1). The WRITER above must not run here — it would void the
+    // new subscription's pending settlement, irreversibly. But the retry
+    // this road exists for is exactly a failed invoice void redelivered
+    // into a window where the customer has resubscribed, and skipping it
+    // left the OLD plan-change invoice payable on the hosted page forever,
+    // against credits its void row will refuse — #756's two-sides-disagree
+    // state, reached through this handler's own redelivery. So the stale arm
+    // reads the rows that are ALREADY void (a read, never a write; a void
+    // row's invoice must never take money whichever subscription it hung
+    // on) and closes each invoice: one status read per row when it has
+    // already succeeded, the real void when it has not.
     log.info(
       `[Webhook] Deleted event for ${subscription.id} but user ${userId}'s subscription on record is ${storedSubscriptionId} — a stale delivery; leaving pending settlements alone`,
     );
+    const alreadyVoidInvoiceIds = await getVoidPlanChangeSettlementInvoiceIdsForUser(userId);
+    for (const invoiceId of alreadyVoidInvoiceIds) {
+      const verdict = await voidInvoice(invoiceId);
+      if (verdict === "failed") invoiceVoidsFailed.push(invoiceId);
+    }
   }
 
   // Downgrade to free tier.
@@ -944,7 +966,6 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
     // 2. Revoke credits — as a safe approach, revoke the user's entire current balance (they can be restored on win).
     //    The ledger row on `dispute_{disputeId}` is the idempotency: a
     //    redelivery that finds it already written revokes nothing more.
-    const { getCreditTransactionByRef } = await import("../db");
     const priorRevoke = await getCreditTransactionByRef(userId, disputeRef);
     const currentBalance = userCreditsBalance ?? 0;
     if (priorRevoke) {
@@ -1080,7 +1101,6 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
     // 2. Restore the revoked credits
     //    Look up how many credits were deducted by the dispute_created handler
     //    by finding the transaction with referenceId `dispute_{disputeId}`
-    const { getCreditTransactionByRef } = await import("../db");
     const revokeTransaction = await getCreditTransactionByRef(userId, disputeRef);
     if (revokeTransaction && revokeTransaction.amount < 0) {
       const creditsToRestore = Math.abs(revokeTransaction.amount);

@@ -59,6 +59,7 @@ const db = vi.hoisted(() => ({
   creditReferrerOnPaidAction: vi.fn().mockResolvedValue(false),
   getCreditTransactionByRef: vi.fn().mockResolvedValue(null),
   voidPendingPlanChangeSettlementsForUser: vi.fn().mockResolvedValue([]),
+  getVoidPlanChangeSettlementInvoiceIdsForUser: vi.fn().mockResolvedValue([]),
   getDb: vi.fn().mockResolvedValue(null),
   withTransaction: vi.fn(),
 }));
@@ -152,6 +153,7 @@ beforeEach(() => {
   db.getUserCredits.mockResolvedValue({ balance: 100_000 });
   db.refreshMonthlyCredits.mockResolvedValue({ success: true, newBalance: 1 });
   db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue([]);
+  db.getVoidPlanChangeSettlementInvoiceIdsForUser.mockResolvedValue([]);
   pricesCreate.mockResolvedValue({ id: "price_minted" });
   subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_change" });
   armStripeSubscription();
@@ -1008,6 +1010,50 @@ describe("the webhook settles what changePlan recorded", () => {
       expect(result.success).toBe(true);
       expect(db.updateUserSubscription).not.toHaveBeenCalled();
       expect(db.voidPendingPlanChangeSettlementsForUser).not.toHaveBeenCalled();
+      expect(processedEventInserts).toHaveLength(1);
+    });
+
+    it("subscription.deleted: a failed invoice void redelivered AFTER the customer resubscribed still closes the OLD invoice — and never touches the new subscription's pending row (PR #794 review finding 1)", async () => {
+      /* First delivery: sub_OLD dies on record, its settlement row goes
+         void, Stripe blips on the invoice void. The event FAILS. */
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_OLD" },
+      });
+      db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_old_change"]);
+      invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+      invoicesVoid.mockRejectedValueOnce(new Error("stripe blipped"));
+
+      const first = await deliverEvent("customer.subscription.deleted", monthlySub("sub_OLD", "canceled"));
+      expect(first.success).toBe(false);
+      expect(first.message).toContain("could not be voided");
+      expect(processedEventInserts).toHaveLength(0);
+
+      /* The customer resubscribes as sub_NEW and changes plan — a PENDING
+         settlement of theirs now exists that must survive. The redelivery
+         finds sub_NEW on record. */
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_NEW" },
+      });
+      db.voidPendingPlanChangeSettlementsForUser.mockClear();
+      db.getVoidPlanChangeSettlementInvoiceIdsForUser.mockResolvedValue(["in_old_change"]);
+      invoicesVoid.mockResolvedValue({ id: "in_old_change", status: "void" });
+
+      const second = await redeliverLastEvent();
+      expect(second.success).toBe(true);
+      /* The writer never ran on the stale road — sub_NEW's pending row is
+         untouched — and the plan is left alone: the one downgrade on record
+         is the FIRST delivery's, which landed before the void blipped. */
+      expect(db.voidPendingPlanChangeSettlementsForUser).not.toHaveBeenCalled();
+      expect(db.updateUserSubscription).toHaveBeenCalledTimes(1);
+      /* But the OLD invoice, whose credit side is already void, is closed. */
+      expect(invoicesVoid).toHaveBeenCalledTimes(2);
+      expect(invoicesVoid).toHaveBeenLastCalledWith("in_old_change");
       expect(processedEventInserts).toHaveLength(1);
     });
 

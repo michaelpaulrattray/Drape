@@ -121,6 +121,40 @@ export async function resolvePlanChangeSettlement(
  *
  * MySQL's UPDATE returns no rows, which is why this is three statements.
  */
+/**
+ * The invoice ids of every settlement of theirs whose credit side is ALREADY
+ * `void` — a READ, never a write, so it is safe on a road where the writer
+ * above is not (PR #794 review finding 1): a `subscription.deleted` event
+ * whose invoice void failed is redelivered for days, and if the customer has
+ * resubscribed by then the stale guard must keep the writer away from the NEW
+ * subscription's pending row — but the OLD subscription's invoice still has
+ * to close, or it stays payable on the hosted page against credits its void
+ * row will refuse. A void row's invoice must never take money, whichever
+ * subscription it hung on, so retrying `voidInvoice` on this list is always
+ * the safe direction. Throws on a null db rather than answering `[]` (#791's
+ * reader rule): an empty list here means "nothing to close", and a database
+ * that cannot be read must not say that.
+ */
+export async function getVoidPlanChangeSettlementInvoiceIdsForUser(
+  userId: number,
+): Promise<string[]> {
+  const db = await getDb();
+  if (!db) {
+    log.error("[Settlement] Cannot read void settlements: database not available");
+    throw new Error("Database not available");
+  }
+  const rows = await db
+    .select({ stripeInvoiceId: planChangeSettlements.stripeInvoiceId })
+    .from(planChangeSettlements)
+    .where(
+      and(
+        eq(planChangeSettlements.userId, userId),
+        eq(planChangeSettlements.status, "void"),
+      ),
+    );
+  return rows.map((row) => row.stripeInvoiceId);
+}
+
 export async function voidPendingPlanChangeSettlementsForUser(
   userId: number,
 ): Promise<string[]> {
