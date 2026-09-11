@@ -52,6 +52,7 @@ import {
   STAFF_DIALOG_BODY,
   STAFF_DIALOG_CONTENT,
 } from "@/features/staff";
+import { IP_BLOCK_REASON_MAX_LENGTH, SUSPEND_REASON_MAX_LENGTH } from "@shared/inputLimits";
 
 // ── Suspend User Modal ────────────────────────────────────
 interface SuspendModalProps {
@@ -97,6 +98,7 @@ export function SuspendUserModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Enter reason for suspension..."
+              maxLength={SUSPEND_REASON_MAX_LENGTH}
               required
             />
           </StaffField>
@@ -180,6 +182,7 @@ export function BlockIpModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Enter reason for blocking..."
+              maxLength={IP_BLOCK_REASON_MAX_LENGTH}
               required
             />
           </StaffField>
