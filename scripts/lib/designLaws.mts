@@ -95,6 +95,74 @@ export class LawLog {
  * it is the difference between the old drive printing `-- no dock on this
  * surface` for a dock that had vanished from `/casting` and this one failing.
  */
+/**
+ * THE DEEPEST PAINTED ELEMENTS WHOSE PAINTED TEXT HOLDS A PHRASE — laws 5 and
+ * 6 share this, and it runs INSIDE the page.
+ *
+ * ⚠ **WHY `textContent` OVER `*` WAS THE WRONG READ (#809).** #805 moved laws
+ * 5 and 6 from `document.body.innerText` onto a scan of every element's
+ * `textContent` with a client-rect filter. `innerText` is what is PAINTED;
+ * `textContent` is what is IN THE TREE — and the two differ loudest at a
+ * `<style>`. In dev Vite injects every stylesheet as a `<style>` in `<head>`,
+ * comments intact, and `castingV2.css` carries a comment that says
+ * "unsigned sheets: one row"; the filter dropped `<head>` (no rect) and
+ * `<style>` (by tag) and KEPT `<html>`, whose `textContent` holds both and
+ * which has a rect. So `<html>` was the one holder on every dev page without
+ * a real section, and law 5 reddened the sheet, `/moderator` and `/404` for a
+ * stylesheet comment. Law 6 has the identical shape and its phrase is one CSS
+ * comment away from the same reading — with `<html>` as the copy, `copyTop`
+ * is 0 and every skeleton on the page is "under" it.
+ *
+ * So: candidates are `document.body`'s descendants — never `html`, `head` or
+ * `body` — and an element's text is its text nodes with `SCRIPT`/`STYLE`/
+ * `TITLE`/`NOSCRIPT`/`TEMPLATE` subtrees and unpainted ancestors skipped, the
+ * reading the mono law and the price climb already make. A phrase that lives
+ * only in a `<style>`, head or body, can then hold no element at all.
+ *
+ * Deepest rather than every match, so a section is found once and not once
+ * per ancestor. The pattern crosses as source + flags because a RegExp does
+ * not serialise into the page.
+ *
+ * ⚠ **CALLED THROUGH ITS OWN SOURCE, NEVER BY NAME.** The bundler wraps a
+ * named function in `__name`, which the page does not have, so a helper
+ * declared inside `page.evaluate` throws there (#782's lesson). This one is
+ * declared at module level, where the wrapper lands OUTSIDE the function's
+ * own text, and each law passes `paintedHolders.toString()` into its evaluate
+ * and rebuilds it with `new Function` — one source, two callers, no mirror.
+ * It must therefore stay free of inner named functions and named arrows;
+ * anonymous callbacks are fine. The controls run it for real on every gate.
+ * (The string handed to `new Function` is this module's own compiled text and
+ * nothing else — no argument, no page content, no input reaches it — and it
+ * runs inside a headless tab the drive owns.)
+ */
+export function paintedHolders(patternSource: string, patternFlags: string): HTMLElement[] {
+  const pattern = new RegExp(patternSource, patternFlags);
+  const SKIP = /^(SCRIPT|STYLE|TITLE|NOSCRIPT|TEMPLATE)$/;
+  const matches: HTMLElement[] = [];
+  for (const el of Array.from(document.body.querySelectorAll<HTMLElement>("*"))) {
+    if (SKIP.test(el.tagName)) continue;
+    if (el.getClientRects().length === 0) continue;
+    if (getComputedStyle(el).visibility === "hidden") continue;
+    const parts: string[] = [];
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      let painted = true;
+      for (let p = n.parentElement; p && p !== el; p = p.parentElement) {
+        if (SKIP.test(p.tagName) || p.getClientRects().length === 0 || getComputedStyle(p).visibility === "hidden") {
+          painted = false;
+          break;
+        }
+      }
+      if (painted) parts.push(n.textContent ?? "");
+    }
+    if (pattern.test(parts.join("").replace(/\s+/g, " "))) matches.push(el);
+  }
+  return matches.filter((el) => !matches.some((other) => other !== el && el.contains(other)));
+}
+
+/** The page-side rebuild of `paintedHolders` — what each law passes into its evaluate. */
+const PAINTED_HOLDERS_SOURCE = paintedHolders.toString();
+
 function absentSubject(
   log: LawLog,
   surface: string,
@@ -640,26 +708,18 @@ export async function assertRetentionStated(
       .catch(() => undefined);
   }
 
-  const result = await page.evaluate(() => {
-    const PHRASE = /unsigned sheets/i;
+  const result = await page.evaluate((holdersSource) => {
     const EXPIRY = /7 quiet days/i;
     /*
-      THE DEEPEST PAINTED ELEMENTS WHOSE TEXT HOLDS THE PHRASE — read across
-      their text nodes, normalised, the way the wait above reads `innerText`.
-      The first cut demanded the phrase inside ONE text node, so a `<span>`
-      wrapped around one word would have turned the section invisible to this
-      law while the wait still saw it (PR #805 review, finding 1). Deepest
-      rather than every match, so the section is found once and not once per
-      ancestor.
+      THE DEEPEST PAINTED ELEMENTS WHOSE PAINTED TEXT HOLDS THE PHRASE — read
+      across their text nodes, normalised, the way the wait above reads
+      `innerText`. The first cut demanded the phrase inside ONE text node, so a
+      `<span>` wrapped around one word would have turned the section invisible
+      to this law while the wait still saw it (PR #805 review, finding 1); the
+      second read `textContent` over `*` and found the phrase in a stylesheet
+      comment through `<html>` (#809). `paintedHolders` is the reading now.
     */
-    const matches = Array.from(document.querySelectorAll<HTMLElement>("*")).filter(
-      (el) =>
-        el.getClientRects().length > 0 &&
-        getComputedStyle(el).visibility !== "hidden" &&
-        !/^(SCRIPT|STYLE|TITLE|NOSCRIPT|TEMPLATE)$/.test(el.tagName) &&
-        PHRASE.test((el.textContent ?? "").replace(/\s+/g, " ")),
-    );
-    const holders = matches.filter((el) => !matches.some((other) => other !== el && el.contains(other)));
+    const holders = (new Function(`return (${holdersSource})`)() as typeof paintedHolders)("unsigned sheets", "i");
     if (holders.length === 0) return null;
     const sections = new Set<HTMLElement>();
     for (const holder of holders) {
@@ -677,7 +737,7 @@ export async function assertRetentionStated(
       stated: EXPIRY.test(section.innerText),
     }));
     return { stated: readings.every((r) => r.stated), scopes: readings.map((r) => `${r.scope}${r.stated ? "" : " (no expiry copy)"}`) };
-  });
+  }, PAINTED_HOLDERS_SOURCE);
   if (result === null) {
     absentSubject(
       log,
@@ -720,30 +780,25 @@ export async function assertRetentionStated(
  * so instead of borrowing the card's sentence.
  */
 export async function assertNoOrphanSkeletons(page: Page, where: string, log: LawLog) {
-  const result = await page.evaluate(() => {
-    const FAILURE = /can't be cast|didn't start/i;
+  const result = await page.evaluate((holdersSource) => {
     const skeletons = Array.from(document.querySelectorAll<HTMLElement>(".dp-skeleton"));
     /*
-      THE DEEPEST PAINTED ELEMENTS WHOSE TEXT HOLDS THE FAILURE COPY — read
-      across text nodes and normalised, so `That brief <em>can't</em> be cast`
-      is still the copy. The first cut read one text node at a time and would
-      have gone green forever on the founder's own hang the day the title grew
-      inline markup (PR #805 review, finding 1); `designLawControls.mts` now
-      holds the split-phrase pair that reddens if this regresses.
+      THE DEEPEST PAINTED ELEMENTS WHOSE PAINTED TEXT HOLDS THE FAILURE COPY —
+      read across text nodes and normalised, so `That brief <em>can't</em> be
+      cast` is still the copy. The first cut read one text node at a time and
+      would have gone green forever on the founder's own hang the day the title
+      grew inline markup (PR #805 review, finding 1); `designLawControls.mts`
+      holds the split-phrase pair that reddens if this regresses. The second
+      cut read `textContent` over `*`, the shape that put a stylesheet comment
+      into `<html>` for law 5 (#809) — here it would have made `<html>` the
+      copy, `copyTop` 0, and every skeleton on the page "under" it.
     */
-    const matches = Array.from(document.querySelectorAll<HTMLElement>("*")).filter(
-      (el) =>
-        el.getClientRects().length > 0 &&
-        getComputedStyle(el).visibility !== "hidden" &&
-        !/^(SCRIPT|STYLE|TITLE|NOSCRIPT|TEMPLATE)$/.test(el.tagName) &&
-        FAILURE.test((el.textContent ?? "").replace(/\s+/g, " ")),
-    );
-    const copies = matches.filter((el) => !matches.some((other) => other !== el && el.contains(other)));
+    const copies = (new Function(`return (${holdersSource})`)() as typeof paintedHolders)("can't be cast|didn't start", "i");
     if (copies.length === 0) return { skeletons: skeletons.length, hasFailureCopy: false, under: 0 };
     const copyTop = Math.min(...copies.map((el) => el.getBoundingClientRect().top));
     const under = skeletons.filter((sk) => sk.getBoundingClientRect().top >= copyTop).length;
     return { skeletons: skeletons.length, hasFailureCopy: true, under };
-  });
+  }, PAINTED_HOLDERS_SOURCE);
   // A skeleton below a failure message is the hang: one of the two is lying.
   log.check(
     where,
