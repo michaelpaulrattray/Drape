@@ -75,6 +75,8 @@ describe("the admin READS — driven, not recited (#697)", () => {
     req: { headers: {}, socket: {} },
   } as never;
 
+  const STATS = { totalUsers: 3, activeUsers: 2, suspendedUsers: 1, lockedUsers: 0, newUsersThisMonth: 1, adminCount: 1 };
+
   async function admin() {
     const { usersRouter } = await import("./routes/admin/users");
     return usersRouter.createCaller(ADMIN);
@@ -87,7 +89,9 @@ describe("the admin READS — driven, not recited (#697)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(listAllUsers).mockResolvedValue({ users: [], total: 0 } as never);
-    vi.mocked(getUserStatistics).mockResolvedValue({ total: 3, active: 2, suspended: 1, frozen: 0, admins: 1, moderators: 0 } as never);
+    // The helper's DECLARED shape (`server/db/admin.ts` `getUserStatistics`), which is what the
+    // dashboard cards consume — not an invented one (PR #822 review).
+    vi.mocked(getUserStatistics).mockResolvedValue(STATS);
     vi.mocked(getFilteredAuditLogs).mockResolvedValue({ logs: [], total: 0 } as never);
   });
 
@@ -133,9 +137,7 @@ describe("the admin READS — driven, not recited (#697)", () => {
 
   describe("admin.getUserStats — the dashboard numbers", () => {
     it("hands the helper's summary back whole, and calls it once", async () => {
-      await expect((await admin()).getUserStats()).resolves.toEqual({
-        total: 3, active: 2, suspended: 1, frozen: 0, admins: 1, moderators: 0,
-      });
+      await expect((await admin()).getUserStats()).resolves.toEqual(STATS);
       expect(getUserStatistics).toHaveBeenCalledTimes(1);
     });
 
