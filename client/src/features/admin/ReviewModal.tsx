@@ -71,19 +71,7 @@ export function ReviewModal({
   const modalDesc = action === "approved" ? actionCfg.modalApproveDesc : actionCfg.modalDenyDesc;
   const notesPlaceholder = action === "approved" ? actionCfg.approveNotesPlaceholder : actionCfg.denyNotesPlaceholder;
   const confirmLabel = action === "approved"
-    /*
-      SENTENCE CASE, AND THE SUFFIX MOVED WITH THE CONSTANTS (#428, closing the
-      remainder brief 11 §8 declared). This block used to read "TITLE CASE ON
-      PURPOSE" — correctly, at the time: `approveLabel` was `"Approve Refund"`,
-      `"Confirm Suspend"` and so on, and lowercasing this suffix ALONE would
-      have read as a typo beside them. That is why the two had to move in one
-      commit rather than either moving first.
-
-      `Slack` keeps its capital because it is a proper noun, as do `Stripe` and
-      the `IP` initialism next door; brief 05 §"Labels" asks for sentence case,
-      not for lowercase.
-    */
-    ? (isSensitive ? `${actionCfg.approveLabel} & send to Slack` : actionCfg.approveLabel)
+    ? actionCfg.approveLabel
     : actionCfg.denyLabel;
 
   return (
@@ -102,12 +90,12 @@ export function ReviewModal({
               <span>Request <strong>#{selectedRequestId}</strong>: {modalDesc}</span>
               {action === "approved" && isSensitive && (
                 /*
-                  The purple is gone. This sentence is a warning about a second
-                  pair of eyes, so it takes the warning weight the rest of the
-                  staff surfaces use — emphasis, not a hue nobody else spends.
+                  This sentence is the warning that approving IS the act (#800
+                  — no second sign-off exists), so it takes the warning weight
+                  the rest of the staff surfaces use.
                 */
                 <span className="block mt-1 font-medium text-foreground">
-                  This is a sensitive action. A Slack confirmation will be required before execution.
+                  This is a sensitive action. It runs the moment you approve it.
                 </span>
               )}
             </>

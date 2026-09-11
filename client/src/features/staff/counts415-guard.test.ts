@@ -323,19 +323,21 @@ describe("card 415 — the pill is INVALIDATED by the acts that move it", () => 
     ).toEqual([]);
   });
 
-  it("BOTH handlers invalidate — one of two is a bar that lies half the time", () => {
+  it("the ONE resolving mutation invalidates (#800 collapsed the Slack road into it)", () => {
     /*
-      A file-level arm passes when one of a file's two resolving mutations is
-      wired. Counting them is what makes it a reading rather than a shape match:
-      `reviewChangeRequest` and `executeChangeRequestAfterSlack` are two
-      different roads out of `pending`, and the Slack road is the rarer one that
-      nobody would notice going stale.
+      Counting them is what makes it a reading rather than a shape match.
+      Until #800 there were TWO roads out of `pending` — `reviewChangeRequest`
+      and `executeChangeRequestAfterSlack` — and the Slack one was the rarer
+      that nobody would notice going stale. The retirement collapsed them:
+      approval executes inside the review mutation, so one mutation, one
+      invalidate, and this arm reddens if a second road ever returns without
+      its own invalidate.
     */
     const page = code(read("pages/AdminChangeRequests.tsx"));
     const mutations = page.match(/\.useMutation\(/g) ?? [];
     const invalidations = page.match(/utils\.admin\.getOverview\.invalidate\(\)/g) ?? [];
-    expect(mutations.length, "the two resolving mutations on this page").toBe(2);
-    expect(invalidations.length, "one per handler").toBe(2);
+    expect(mutations.length, "the one resolving mutation on this page").toBe(1);
+    expect(invalidations.length, "one invalidate for it").toBe(1);
   });
 
   it("the MODERATOR's create is deliberately outside, and the reason is structural", () => {

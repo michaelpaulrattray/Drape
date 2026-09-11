@@ -239,9 +239,10 @@ CLOSED (no lock → no guess).
 
 From CLAUDE.md "Currently not enforced": the admin allowlist admits everyone
 when empty (and it is empty in production — admin access is role-only);
-Slack approval for sensitive admin actions was never wired; IP blocking is
-recorded but never checked on a request; the "immutable" audit log's hash
-chain is in-memory and resets every deploy. A diff relying on any of these
+IP blocking is recorded but never checked on a request; the "immutable"
+audit log's hash chain is in-memory and resets every deploy. (The Slack
+approval flow for sensitive admin actions left this list by RETIREMENT —
+#800, 2026-09-11: deleted whole, panel review is the control.) A diff relying on any of these
 as a real control is a finding; a diff that would orphan one of the controls
 that DO exist is the path-three death class (law 7) — grep along the dying
 branch before approving a removal.

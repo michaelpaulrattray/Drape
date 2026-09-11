@@ -4,36 +4,12 @@ import { changeRequestsRouter } from "./routes/admin/changeRequests";
 import { CHANGE_REQUEST_ACTION_BY_TYPE } from "./lib/adminActions";
 import { CHANGE_REQUEST_TYPES } from "@shared/changeRequestLabels";
 
-// Mock the slackNotification module
-vi.mock("./slack/slackNotification", () => ({
-  sendAdminActionNotification: vi.fn().mockResolvedValue(true),
-  sendAuditLogEntry: vi.fn().mockResolvedValue(true),
-  sendSlackAlert: vi.fn().mockResolvedValue(true),
-  // Reached by the REAL `adminSecurity`, which the admin-gate arms drive
-  // rather than stub — see the note on that mock below.
-  SlackAlerts: {
-    unauthorizedAdminAccess: vi.fn().mockResolvedValue(undefined),
-    securityAlert: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
-// Mock the auditLog module
-// The Slack approval store, doubled so the post-approval procedure below can
-// be driven without a webhook. `requestApproval` is what the review procedure
-// calls; `getApprovalStatus` is what the execute procedure reads back.
-const slackApprovalStatus = vi.fn();
-vi.mock("./slack/slackApproval", () => ({
-  requestApproval: vi.fn().mockResolvedValue({ success: true, actionId: "slack-1", sent: true }),
-  getApprovalStatus: (...args: unknown[]) => slackApprovalStatus(...args),
-  markExecuted: vi.fn(),
-  markFailed: vi.fn(),
-}));
-
+// The change-request executors, doubled so the review procedure's own
+// branches are what is under test — the executors have their own suites
+// (`adminActionHandlers.test.ts`). The routing table passes through real.
 vi.mock("./lib/adminActions", async (importOriginal) => {
-  // The dispatcher itself is driven in `adminActionDispatch.test.ts`; here it
-  // is doubled so the procedure's own branches are what is under test.
   const actual = await importOriginal<typeof import("./lib/adminActions")>();
-  return { ...actual, executeApprovedAdminAction: vi.fn().mockResolvedValue({ message: "done" }) };
+  return { ...actual, executeChangeRequestAction: vi.fn().mockResolvedValue({ message: "done" }) };
 });
 
 vi.mock("./auditLog", () => ({
@@ -43,6 +19,7 @@ vi.mock("./auditLog", () => ({
     CHANGE_REQUEST_APPROVED: "admin.change_request_approved",
     CHANGE_REQUEST_DENIED: "admin.change_request_denied",
     CHANGE_REQUEST_CANCELLED: "moderator.change_request_cancelled",
+    CHANGE_REQUEST_EXECUTION_FAILED: "admin.change_request_execution_failed",
     CREDITS_REFUNDED: "credits.refunded",
     CREDITS_ADDED: "credits.admin_added",
     ACCOUNT_SUSPENDED: "admin.account_suspended",
@@ -57,7 +34,7 @@ vi.mock("./auditLog", () => ({
 // real module on purpose (3g's D). `validateAdminAccess` IS the admin gate the
 // refusal arms below drive; stubbing it would make those arms assert this mock,
 // which is the exact defect this row exists to remove. Everything else here is
-// a genuine side effect (audit writes, Slack) that a unit test must not fire.
+// a genuine side effect (audit writes) that a unit test must not fire.
 vi.mock("./security/adminSecurity", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./security/adminSecurity")>();
   return {
@@ -621,7 +598,7 @@ describe("Change Request - Types & Validation (DRIVEN and DERIVED)", () => {
  * out of a unit suite's reach; what a unit suite CAN reach is the procedures
  * that call them, and those are driven for real below (`createChangeRequest`,
  * `getMyChangeRequests`, `listChangeRequests`, `getChangeRequest`,
- * `reviewChangeRequest`, `executeChangeRequestAfterSlack`), each asserting the
+ * `reviewChangeRequest`), each asserting the
  * db call as a CONSEQUENCE of the procedure rather than of the test.
  *
  * Deleting them removes no coverage, which is the whole finding: the file
@@ -638,18 +615,19 @@ describe("Change Request - Moderator Procedures", () => {
 
   describe("createChangeRequest mutation", () => {
     /*
-     * ⚠ THIS ARM CALLED THE MOCKED `createChangeRequest`, `logAuditEvent` AND
-     * `sendAdminActionNotification` ITSELF and then asserted each had been
-     * called with what it had just passed. It never touched the procedure.
+     * ⚠ THIS ARM CALLED THE MOCKED `createChangeRequest` AND `logAuditEvent`
+     * ITSELF and then asserted each had been called with what it had just
+     * passed. It never touched the procedure.
      *
      * The real one is driven below: a live moderator creates a request, and
-     * the db write, the audit row and the Slack notification are asserted as
-     * consequences of the CALL rather than of the test. Filed under 3g's D.
+     * the db write and the audit row are asserted as consequences of the CALL
+     * rather than of the test. Filed under 3g's D. (Until #800 a Slack note
+     * followed too — to a webhook production never had; the admin panel's
+     * pending list is the notification road.)
      */
-    it("a moderator creates a change request — the db write, the audit row and the Slack note all follow", async () => {
+    it("a moderator creates a change request — the db write and the audit row both follow", async () => {
       const { createChangeRequest } = await import("./db");
       const { logAuditEvent } = await import("./auditLog");
-      const { sendAdminActionNotification } = await import("./slack/slackNotification");
 
       await moderatorRouter
         .createCaller({ user: { id: 10, role: "moderator", name: "Mod User", suspendedAt: null } } as never)
@@ -675,7 +653,6 @@ describe("Change Request - Moderator Procedures", () => {
       expect(logAuditEvent).toHaveBeenCalledWith(
         expect.objectContaining({ resourceType: "change_request" }),
       );
-      expect(sendAdminActionNotification).toHaveBeenCalled();
     });
 
     it("FROM THE DIFF — the submitter cannot be forged through the input", async () => {
@@ -747,74 +724,11 @@ describe("Change Request - Moderator Procedures", () => {
     });
 
     /*
-     * TWO ARMS STOOD HERE THAT BUILT THE SLACK PAYLOAD THEMSELVES -- declaring
-     * a `fields` array, pushing to it under the same `if` the product uses, and
-     * then asserting their own array held what they had just pushed. They were
-     * a transcription of the procedure written as a test of it.
-     *
-     * Driving the real one immediately caught something the transcription could
-     * not: the credit arm asserted a "Credit Reason" field, and the product has
-     * never sent one. `moderator.ts` pushes "Credit Amount", "IP Address" and
-     * "Evidence" and nothing else -- so the suite's only description of the
-     * admin's Slack card named a field that does not exist. That is the THIRD
-     * wrong statement about the product found in this file, after the eight-vs-
-     * nine type count and the five-vs-six sensitive list (#679).
+     * TWO ARMS AND A HELPER STOOD HERE reading the Slack card the create
+     * procedure sent. The card is gone with the integration (#800) — the
+     * admin reads the request itself on /admin/change-requests, where every
+     * field the card summarised is the row.
      */
-    async function slackFieldsFromCreate(input: Record<string, unknown>) {
-      const { sendAdminActionNotification } = await import("./slack/slackNotification");
-      vi.mocked(sendAdminActionNotification).mockClear();
-      await moderatorRouter
-        .createCaller({ user: { id: 10, role: "moderator", name: "Mod User", suspendedAt: null } } as never)
-        .createChangeRequest(input as never);
-      const call = vi.mocked(sendAdminActionNotification).mock.calls[0]?.[0] as
-        | { fields?: Array<{ title: string; value: string }> }
-        | undefined;
-      if (!call?.fields?.length) throw new Error("the create procedure sent no Slack fields to read");
-      return call.fields;
-    }
-
-    it("a credit request's Slack card carries the AMOUNT -- and no Credit Reason field, which the old arm invented", async () => {
-      const fields = await slackFieldsFromCreate({
-        type: "refund_credits",
-        priority: "normal",
-        targetUserId: 42,
-        title: "Refund credits for service disruption",
-        description: "User experienced a service disruption during generation and lost 50 credits",
-        creditAmount: 50,
-        creditReason: "Service disruption",
-      });
-      expect(fields.find((f) => f.title === "Credit Amount")?.value).toBe("50 credits");
-      expect(fields.map((f) => f.title)).not.toContain("Credit Reason");
-
-      // POSITIVE CONTROL for the absence above -- a field the card DOES carry,
-      // so "not.toContain" is not passing on an empty read (`absence-only
-      // expect passes on nothing`).
-      expect(fields.map((f) => f.title)).toContain("Title");
-    });
-
-    it("a block_ip request's Slack card carries the ADDRESS, and a non-IP request does not", async () => {
-      const withIp = await slackFieldsFromCreate({
-        type: "block_ip",
-        priority: "urgent",
-        targetUserId: 0,
-        title: "Block suspicious IP address",
-        description: "IP address has been making brute force login attempts",
-        ipAddress: "192.168.1.100",
-      });
-      expect(withIp.find((f) => f.title === "IP Address")?.value).toBe("192.168.1.100");
-
-      // NEGATIVE CONTROL -- the field is conditional, so a request without an
-      // address must not carry it. Without this the arm passes on a card that
-      // always holds every field.
-      const withoutIp = await slackFieldsFromCreate({
-        type: "note_incident",
-        priority: "normal",
-        targetUserId: 42,
-        title: "Incident note",
-        description: "Something happened that needs to be recorded",
-      });
-      expect(withoutIp.map((f) => f.title)).not.toContain("IP Address");
-    });
   });
 
   describe("getMyChangeRequests query", () => {
@@ -967,18 +881,54 @@ describe("Change Request - Admin Review Procedures", () => {
       } as never);
     }
 
-    it("approving a SENSITIVE request sets pending_execution rather than approving outright", async () => {
+    it("approving a SENSITIVE request records the review and EXECUTES it in the same mutation (#800)", async () => {
       const { updateChangeRequestStatus } = await import("./db");
-      // Fixture 1 is `refund_credits` — sensitive, so it must go to Slack for
-      // confirmation before anything is executed.
-      await adminCaller().reviewChangeRequest({
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
+      vi.mocked(executeChangeRequestAction).mockClear();
+      // Fixture 1 is `refund_credits` — sensitive, so the panel Approve IS
+      // the approval and the executor runs before the mutation returns.
+      const result = await adminCaller().reviewChangeRequest({
         id: 1,
         action: "approved",
         reviewNotes: "Approved - credits will be refunded",
       } as never);
+      // The review write is compare-and-swapped on `pending`, so two admins
+      // approving at once cannot both reach the executor.
       expect(updateChangeRequestStatus).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ status: "pending_execution", reviewedById: 1 }),
+        "pending",
+      );
+      expect(executeChangeRequestAction).toHaveBeenCalledWith(
+        expect.objectContaining({ action: "cr_refundCredits", resolvedBy: "Admin" }),
+        expect.anything(),
+      );
+      expect(result).toMatchObject({ success: true, executionResult: { executed: true } });
+    });
+
+    it("an executor failure surfaces as the mutation's error, leaves pending_execution, and writes the failure audit row", async () => {
+      const { updateChangeRequestStatus } = await import("./db");
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
+      const { logAuditEvent } = await import("./auditLog");
+      vi.mocked(executeChangeRequestAction).mockRejectedValueOnce(new Error("Stripe refund failed: card gone"));
+      vi.mocked(updateChangeRequestStatus).mockClear();
+      vi.mocked(logAuditEvent).mockClear();
+
+      await expect(
+        adminCaller().reviewChangeRequest({ id: 1, action: "approved" } as never),
+      ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+
+      // No self-serve retry: the request is NOT reverted to pending — an
+      // executor that failed midway may already have moved money, and a
+      // retry road is how a refund gets issued twice. The warning row is
+      // what lands it on the admin overview's alerts feed.
+      const statuses = vi.mocked(updateChangeRequestStatus).mock.calls.map((c) => (c[1] as { status: string }).status);
+      expect(statuses).toEqual(["pending_execution"]);
+      expect(logAuditEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "admin.change_request_execution_failed",
+          severity: "warning",
+        }),
       );
     });
 
@@ -987,14 +937,14 @@ describe("Change Request - Admin Review Procedures", () => {
        * Until #418 these params carried only `changeRequestId` and `reason`,
        * so every approved Stripe refund died at execution on "Missing Stripe
        * session ID" — the road was wired to refuse itself. Asserted at the
-       * wire (invariant 5): on what is handed to the approval store, not on a
+       * wire (invariant 5): on what is handed to the executor, not on a
        * constant near it. The AMOUNT is asserted absent on purpose — the
        * executor reads it from the charge at the moment money moves.
        */
-      const { requestApproval } = await import("./slack/slackApproval");
-      vi.mocked(requestApproval).mockClear();
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
+      vi.mocked(executeChangeRequestAction).mockClear();
       await adminCaller().reviewChangeRequest({ id: 8, action: "approved" } as never);
-      expect(requestApproval).toHaveBeenCalledWith(
+      expect(executeChangeRequestAction).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "cr_stripeRefund",
           params: expect.objectContaining({
@@ -1003,8 +953,9 @@ describe("Change Request - Admin Review Procedures", () => {
             originalCredits: 5000,
           }),
         }),
+        expect.anything(),
       );
-      const sent = vi.mocked(requestApproval).mock.calls[0][0] as unknown as { params: Record<string, unknown> };
+      const sent = vi.mocked(executeChangeRequestAction).mock.calls[0][0] as unknown as { params: Record<string, unknown> };
       expect(sent.params).not.toHaveProperty("originalAmountCents");
     });
 
@@ -1038,30 +989,22 @@ describe("Change Request - Admin Review Procedures", () => {
     });
 
     /*
-     * THREE ARMS STOOD HERE AND EACH ONE CALLED THE MOCK ITSELF: two invoked
-     * `sendAdminActionNotification` with a payload they had typed and then
-     * asserted it had been called with it, and the third did the same with
-     * `writeImmutableLog`. None of them ran `reviewChangeRequest`. The
-     * procedure genuinely sends both, so all three are driven now.
+     * The Slack announcement arms that stood here died with the integration
+     * (#800): what an admin reads now is the mutation's own response and the
+     * request row. The response is the product's word, so it is what is
+     * asserted.
      */
-    it("an approval and a denial each announce themselves, in the product's own words", async () => {
-      const { sendAdminActionNotification } = await import("./slack/slackNotification");
-
-      vi.mocked(sendAdminActionNotification).mockClear();
-      await adminCaller().reviewChangeRequest({
+    it("an approval and a denial each answer in the product's own words", async () => {
+      const approved = await adminCaller().reviewChangeRequest({
         id: 1, action: "approved", reviewNotes: "Approved - credits will be refunded",
       } as never);
-      expect(sendAdminActionNotification).toHaveBeenCalledWith(
-        expect.objectContaining({ title: expect.stringContaining("Approved") }),
-      );
+      // The sensitive road returns the executor's own message (doubled here).
+      expect(approved).toMatchObject({ success: true, message: "done" });
 
-      vi.mocked(sendAdminActionNotification).mockClear();
-      await adminCaller().reviewChangeRequest({
+      const denied = await adminCaller().reviewChangeRequest({
         id: 1, action: "denied", reviewNotes: "Insufficient evidence",
       } as never);
-      expect(sendAdminActionNotification).toHaveBeenCalledWith(
-        expect.objectContaining({ title: expect.stringContaining("Denied") }),
-      );
+      expect(denied.message).toContain("denied");
     });
 
     it("a review writes the immutable audit record, as a consequence of the procedure", async () => {
@@ -1331,9 +1274,9 @@ describe("Change Request - Replaces Escalation", () => {
  */
 
 // ============================================================
-// Slack Approval Gating for Sensitive Change Requests
+// Execute on approve, for sensitive change requests (#800)
 // ============================================================
-describe("Change Request - Slack Approval Gating", () => {
+describe("Change Request - Execute on approve (#800)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -1350,7 +1293,7 @@ describe("Change Request - Slack Approval Gating", () => {
    *
    * `stripe_refund` was missing from both. The product treats SIX types as
    * sensitive and accepts NINE, so the suite's only description of which
-   * change requests need Slack approval said a Stripe refund does not — and
+   * change requests execute on approval said a Stripe refund does not — and
    * the arm that would have caught it was counting its own literal.
    *
    * Everything below is DERIVED: the vocabulary off the running
@@ -1382,7 +1325,7 @@ describe("Change Request - Slack Approval Gating", () => {
   );
 
   describe("sensitive type classification, DERIVED", () => {
-    it("a type is sensitive EXACTLY when it has a Slack approval action", () => {
+    it("a type is sensitive EXACTLY when it has an executor action", () => {
       const sensitive = Object.keys(CHANGE_REQUEST_ACTION_BY_TYPE);
       // Quoted independently, because deriving BOTH sides would agree with
       // anything: this is the product's contract, stated once, in a test.
@@ -1418,7 +1361,7 @@ describe("Change Request - Slack Approval Gating", () => {
     });
   });
 
-  describe("CR to Slack approval action mapping", () => {
+  describe("CR to executor action mapping", () => {
     /*
      * ⚠ A FIFTH HAND-TYPED COPY OF THE MAP STOOD HERE, and it had drifted to
      * FIVE entries — `stripe_refund` missing, exactly as in the sensitive list
@@ -1463,43 +1406,25 @@ describe("Change Request - Slack Approval Gating", () => {
 
   describe("sensitive approval flow", () => {
     /*
-     * THREE ARMS STOOD HERE. One declared a `result` object with
-     * `pendingExecution: true` typed into it and asserted it was true. One
-     * iterated `SENSITIVE_TYPES` and asserted each member of that array was in
-     * that array. The third called the mocked `updateChangeRequestStatus`
-     * itself and asserted its own call.
-     *
-     * The first two are DELETED, category (3) -- the sensitive road is driven
-     * in "approving a SENSITIVE request sets pending_execution rather than
-     * approving outright" above, where the procedure actually runs. The third
-     * named a real fact nothing else asserted -- that the Slack action id is
-     * STORED on the request -- so it is driven rather than dropped.
+     * The Slack-id arm that stood here died with the integration (#800):
+     * there is no approval id to store because there is no second store. The
+     * fact worth its place instead: the executor receives the reviewing
+     * admin's name as `resolvedBy` — the panel Approve IS the approval, and
+     * the executors write it into their audit and immutable rows.
      */
-    it("the Slack approval id is stored on the request, by the procedure", async () => {
-      const { updateChangeRequestStatus } = await import("./db");
+    it("the executor is handed the reviewing admin as the approver", async () => {
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
       await givenRequest({
         id: 1, type: "refund_credits", status: "pending", submittedById: 10,
         targetUserId: 42, creditAmount: 50, title: "Refund", reviewNotes: null,
       });
-      vi.mocked(updateChangeRequestStatus).mockClear();
+      vi.mocked(executeChangeRequestAction).mockClear();
 
       await adminCallerG().reviewChangeRequest({ id: 1, action: "approved" } as never);
 
-      /*
-       * TWO writes, and the second is the one this arm is about: the procedure
-       * moves the request to `pending_execution` first, then stores the Slack
-       * action id in a SECOND call that also passes the expected current status
-       * as a third argument -- an optimistic-concurrency guard. Asserting two
-       * arguments would not have matched it at all, which is what the first
-       * shape of this arm did.
-       */
-      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({
-          status: "pending_execution",
-          slackApprovalId: expect.any(String),
-        }),
-        "pending_execution",
+      expect(executeChangeRequestAction).toHaveBeenCalledWith(
+        expect.objectContaining({ resolvedBy: "Admin", targetId: "42" }),
+        expect.anything(),
       );
     });
   });
@@ -1511,7 +1436,7 @@ describe("Change Request - Slack Approval Gating", () => {
      * they were reaching for is real and is driven here: a non-sensitive type
      * goes STRAIGHT to its final status, with no Slack hop in between.
      */
-    it("a non-sensitive approval goes straight to approved -- no pending_execution, no Slack id", async () => {
+    it("a non-sensitive approval goes straight to approved -- no pending_execution, nothing executed", async () => {
       const { updateChangeRequestStatus } = await import("./db");
       await givenRequest({
         id: 7, type: "note_incident", status: "pending", submittedById: 10,
@@ -1524,27 +1449,22 @@ describe("Change Request - Slack Approval Gating", () => {
 
       const [, update] = vi.mocked(updateChangeRequestStatus).mock.calls[0] as [number, Record<string, unknown>];
       expect(update.status).toBe("approved");
-      expect(update).not.toHaveProperty("slackApprovalId");
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
+      expect(executeChangeRequestAction).not.toHaveBeenCalled();
     });
   });
 
-  describe("denial bypasses Slack", () => {
-    /*
-     * ONE ARM DECLARED `const shouldRouteToSlack = action === "approved" && ...`
-     * and asserted its own boolean; the other called the mocked db helper
-     * itself. The claim -- that even a SENSITIVE type is denied outright,
-     * without waiting for Slack -- is worth keeping, so it is driven.
-     */
-    it("a SENSITIVE type is denied outright, with no Slack hop and nothing executed", async () => {
+  describe("denial executes nothing", () => {
+    it("a SENSITIVE type is denied outright, and the executor never runs", async () => {
       const { updateChangeRequestStatus } = await import("./db");
-      const { requestApproval } = await import("./slack/slackApproval");
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
       await givenRequest({
         id: 3, type: "suspend_user", status: "pending", submittedById: 10,
         targetUserId: 55, title: "Suspend", reviewNotes: null,
       });
       expect(SENSITIVE_TYPES).toContain("suspend_user");
       vi.mocked(updateChangeRequestStatus).mockClear();
-      vi.mocked(requestApproval).mockClear();
+      vi.mocked(executeChangeRequestAction).mockClear();
 
       await adminCallerG().reviewChangeRequest({
         id: 3, action: "denied", reviewNotes: "Insufficient evidence",
@@ -1554,141 +1474,19 @@ describe("Change Request - Slack Approval Gating", () => {
         3,
         expect.objectContaining({ status: "denied" }),
       );
-      expect(requestApproval).not.toHaveBeenCalled();
+      expect(executeChangeRequestAction).not.toHaveBeenCalled();
     });
   });
 
-  describe("checkChangeRequestSlackStatus", () => {
-    /*
-     * FOUR ARMS STOOD HERE AND ALL FOUR BUILT THEIR OWN `result` OBJECT and
-     * asserted its fields -- including the message strings, which they typed
-     * themselves. The procedure exists, is an `adminProcedure`, and was driven
-     * by nothing at all. It is driven now.
-     */
-    it("a request that is not awaiting Slack reports no Slack status", async () => {
-      await givenRequest({ id: 1, status: "approved", slackApprovalId: null });
-      const result = await adminCallerG().checkChangeRequestSlackStatus({ changeRequestId: 1 } as never);
-      expect(result).toMatchObject({ status: "approved", slackStatus: null });
-    });
-
-    it("a request awaiting Slack reports what Slack says -- pending, approved and denied", async () => {
-      await givenRequest({ id: 3, status: "pending_execution", slackApprovalId: "slack-1" });
-
-      slackApprovalStatus.mockReturnValue({ status: "pending", resolvedBy: null, resolvedAt: null });
-      expect(
-        await adminCallerG().checkChangeRequestSlackStatus({ changeRequestId: 3 } as never),
-      ).toMatchObject({ status: "pending_execution", slackStatus: "pending" });
-
-      slackApprovalStatus.mockReturnValue({ status: "approved", resolvedBy: "slack-admin" });
-      expect(
-        await adminCallerG().checkChangeRequestSlackStatus({ changeRequestId: 3 } as never),
-      ).toMatchObject({ slackStatus: "approved", resolvedBy: "slack-admin" });
-
-      slackApprovalStatus.mockReturnValue({ status: "denied", resolvedBy: "slack-admin" });
-      expect(
-        await adminCallerG().checkChangeRequestSlackStatus({ changeRequestId: 3 } as never),
-      ).toMatchObject({ slackStatus: "denied" });
-    });
-
-    it("an approval Slack has forgotten reads as not_found rather than as pending", async () => {
-      await givenRequest({ id: 3, status: "pending_execution", slackApprovalId: "slack-1" });
-      slackApprovalStatus.mockReturnValue(undefined);
-      expect(
-        await adminCallerG().checkChangeRequestSlackStatus({ changeRequestId: 3 } as never),
-      ).toMatchObject({ slackStatus: "not_found" });
-    });
-  });
-
-  describe("executeChangeRequestAfterSlack", () => {
-    /*
-     * THREE ARMS STOOD HERE and each declared a boolean and asserted it:
-     * `const shouldReject = request.status !== "pending_execution" || ...;
-     * expect(shouldReject).toBe(true)`. They restated the procedure's guard in
-     * the test's own words, one line before asserting the restatement. All
-     * three conditions are DRIVEN by the four arms below -- a denial, an
-     * expiry, an approval, and a request that was never pending Slack at all.
-     */
-    /** A request that HAS been admin-approved and is awaiting Slack. */
-    async function givenPendingExecution() {
-      const { getChangeRequestById } = await import("./db");
-      vi.mocked(getChangeRequestById).mockResolvedValue({
-        id: 3,
-        type: "refund_credits",
-        status: "pending_execution",
-        slackApprovalId: "slack-1",
-        submittedById: 10,
-        targetUserId: 42,
-        creditAmount: 50,
-        reviewNotes: "Approved pending Slack",
-      } as never);
-    }
-
-    function adminCallerFor() {
-      return changeRequestsRouter.createCaller({
-        user: { id: 1, role: "admin", email: "admin@example.com", name: "Admin", openId: null, suspendedAt: null },
-        req: { headers: {}, socket: {} },
-      } as never);
-    }
-
-    it("a Slack DENIAL marks the change request denied, and executes nothing", async () => {
-      await givenPendingExecution();
-      const { updateChangeRequestStatus } = await import("./db");
-      const { executeApprovedAdminAction } = await import("./lib/adminActions");
-      slackApprovalStatus.mockReturnValue({ status: "denied", resolvedBy: "slack-admin" });
-
-      const result = await adminCallerFor().executeChangeRequestAfterSlack({ changeRequestId: 3 } as never);
-      expect(result).toMatchObject({ success: false });
-      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
-        3,
-        expect.objectContaining({ status: "denied" }),
-        "pending_execution",
-      );
-      expect(executeApprovedAdminAction).not.toHaveBeenCalled();
-    });
-
-    it("a Slack EXPIRY marks it expired, and executes nothing", async () => {
-      await givenPendingExecution();
-      const { updateChangeRequestStatus } = await import("./db");
-      const { executeApprovedAdminAction } = await import("./lib/adminActions");
-      slackApprovalStatus.mockReturnValue({ status: "expired" });
-
-      const result = await adminCallerFor().executeChangeRequestAfterSlack({ changeRequestId: 3 } as never);
-      expect(result).toMatchObject({ success: false });
-      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
-        3,
-        expect.objectContaining({ status: "expired" }),
-        "pending_execution",
-      );
-      expect(executeApprovedAdminAction).not.toHaveBeenCalled();
-    });
-
-    it("FROM THE DIFF — a Slack APPROVAL is what reaches the dispatcher, and only then", async () => {
-      await givenPendingExecution();
-      const { executeApprovedAdminAction } = await import("./lib/adminActions");
-      slackApprovalStatus.mockReturnValue({ status: "approved", action: "cr_refundCredits", resolvedBy: "slack-admin" });
-
-      const result = await adminCallerFor().executeChangeRequestAfterSlack({ changeRequestId: 3 } as never);
-      expect(result).toMatchObject({ success: true });
-      expect(executeApprovedAdminAction).toHaveBeenCalled();
-    });
-
-    it("FROM THE DIFF — a request NOT pending Slack execution is refused before anything is read", async () => {
-      // A request still `pending` has not been admin-approved, so there is
-      // nothing for Slack to have confirmed. Set explicitly rather than relying
-      // on the shared fixture, because the arms above leave a resolved value on
-      // the mock and a fixture inherited from a neighbour is not a fixture.
-      const { getChangeRequestById } = await import("./db");
-      vi.mocked(getChangeRequestById).mockResolvedValue({
-        id: 1, type: "refund_credits", status: "pending", slackApprovalId: null,
-      } as never);
-      slackApprovalStatus.mockReturnValue({ status: "approved" });
-      await expect(
-        adminCallerFor().executeChangeRequestAfterSlack({ changeRequestId: 1 } as never),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    });
-  });
-
-  describe("Slack approval action types", () => {
+  /*
+   * TWO DESCRIBES STOOD HERE driving `checkChangeRequestSlackStatus` and
+   * `executeChangeRequestAfterSlack`. Both procedures are DELETED (#800):
+   * the poll-then-execute road existed only to wait for a Slack confirmation
+   * production could never send, and approval executes in the review
+   * mutation now. Their guards live on in the review arms above — the CAS on
+   * `pending`, the executor-failure row, and denial executing nothing.
+   */
+  describe("executor action names", () => {
     /*
      * A THIRD WRONG NUMBER, and #681 did not know about this one -- it named
      * the eight-vs-nine type count and the five-vs-six sensitive list. This arm
@@ -1707,19 +1505,9 @@ describe("Change Request - Slack Approval Gating", () => {
     });
 
     /*
-     * A FOURTH WRONG STATEMENT ABOUT THE PRODUCT, and this one is not a count.
-     * "should map cr_ actions to correct labels" declared its own label map --
-     * `cr_suspendUser: "CR: Suspend User"` -- and asserted that map contained
-     * "Suspend". The product's labels read "Change Request: Suspend User". So
-     * the suite's only description of what an admin sees in Slack used a prefix
-     * the product has never sent, and its assertions were loose enough
-     * (`toContain("Suspend")`) that the difference could not show.
-     *
-     * DELETED rather than derived, and the reason is stated so the next reader
-     * does not re-derive it: `ACTION_LABELS` is module-private in
-     * `server/slack/slackApproval.ts` and that module is mocked in this file,
-     * so there is nothing here to read. Exporting it is a product change, and
-     * this card is test-only by its own terms. Filed on #681 instead.
+     * A label-map arm was deleted here long before #800 for asserting its own
+     * literal; the Slack module whose private `ACTION_LABELS` it misquoted is
+     * now deleted whole.
      */
   });
 
@@ -1732,82 +1520,40 @@ describe("Change Request - Slack Approval Gating", () => {
    * procedure's own passthrough is already driven above.
    */
 
-  describe("end-to-end flow simulation", () => {
+  describe("end-to-end flow", () => {
     /*
-     * ⚠ TWO ARMS STOOD HERE that hand-walked the whole flow — calling the
-     * mocked `updateChangeRequestStatus` three times in the order the product
-     * calls it, then `addCredits`, then asserting
-     * `toHaveBeenCalledTimes(3)` on their own calls. They asserted the shape
-     * of a script the test itself had written, and they depended on a shared
-     * mutable fixture, which is how one of them broke the moment a neighbouring
-     * arm set its own.
-     *
-     * The flow is driven for real below: admin review, then the post-Slack
-     * execute procedure, with the dispatcher doubled (it has its own suite in
-     * `adminActionDispatch.test.ts`). Filed under 3g's D.
+     * Before #800 this walked review → poll → execute across two procedures
+     * and an in-memory Slack store. The whole road is ONE mutation now, so
+     * the flow arm and the review arms necessarily overlap; what this one
+     * adds is the ORDER — the review is recorded before the executor runs.
      */
-    it("the whole flow: admin approves a sensitive request, Slack confirms, the dispatcher runs", async () => {
+    it("approve records the review first, then the executor runs — in that order, in one mutation", async () => {
       const { getChangeRequestById, updateChangeRequestStatus } = await import("./db");
-      const { executeApprovedAdminAction } = await import("./lib/adminActions");
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
       const caller = changeRequestsRouter.createCaller({
         user: { id: 1, role: "admin", email: "admin@example.com", name: "Admin", openId: null, suspendedAt: null },
         req: { headers: {}, socket: {} },
       } as never);
 
-      // 1. the admin approves a SENSITIVE request - it goes to pending_execution.
-      //
-      // The starting row is set HERE rather than inherited. This arm used to
-      // rely on whichever fixture the preceding describe happened to leave on
-      // the mock -- `vi.clearAllMocks()` clears calls, not implementations --
-      // which is the same "a fixture inherited from a neighbour is not a
-      // fixture" note its own sibling below already carries.
       vi.mocked(getChangeRequestById).mockResolvedValue({
         id: 1, type: "refund_credits", status: "pending", submittedById: 10,
         targetUserId: 42, creditAmount: 50, title: "Refund", reviewNotes: null,
       } as never);
-      await caller.reviewChangeRequest({ id: 1, action: "approved" } as never);
-      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({ status: "pending_execution" }),
-      );
-      expect(executeApprovedAdminAction).not.toHaveBeenCalled();
 
-      // 2. Slack confirms — and only now does anything execute
-      vi.mocked(getChangeRequestById).mockResolvedValue({
-        id: 1, type: "refund_credits", status: "pending_execution",
-        slackApprovalId: "slack-1", targetUserId: 42, creditAmount: 50,
-      } as never);
-      slackApprovalStatus.mockReturnValue({ status: "approved", action: "cr_refundCredits" });
+      const order: string[] = [];
+      vi.mocked(updateChangeRequestStatus).mockImplementation(async () => {
+        order.push("review-write");
+        return { success: true };
+      });
+      vi.mocked(executeChangeRequestAction).mockImplementation(async () => {
+        order.push("execute");
+        return { message: "done" };
+      });
 
-      await caller.executeChangeRequestAfterSlack({ changeRequestId: 1 } as never);
-      expect(executeApprovedAdminAction).toHaveBeenCalled();
-    });
+      const result = await caller.reviewChangeRequest({ id: 1, action: "approved" } as never);
 
-    it("the same flow with a Slack DENIAL never reaches the dispatcher", async () => {
-      const { getChangeRequestById } = await import("./db");
-      const { executeApprovedAdminAction } = await import("./lib/adminActions");
-      const caller = changeRequestsRouter.createCaller({
-        user: { id: 1, role: "admin", email: "admin@example.com", name: "Admin", openId: null, suspendedAt: null },
-        req: { headers: {}, socket: {} },
-      } as never);
-
-      // Set the starting state explicitly: the arm above leaves a
-      // `pending_execution` fixture on the shared mock, and a fixture
-      // inherited from a neighbour is not a fixture.
-      vi.mocked(getChangeRequestById).mockResolvedValue({
-        id: 1, type: "refund_credits", status: "pending", submittedById: 10,
-        targetUserId: 42, creditAmount: 50, reviewNotes: "",
-      } as never);
-      await caller.reviewChangeRequest({ id: 1, action: "approved" } as never);
-      vi.mocked(getChangeRequestById).mockResolvedValue({
-        id: 1, type: "refund_credits", status: "pending_execution",
-        slackApprovalId: "slack-1", reviewNotes: "",
-      } as never);
-      slackApprovalStatus.mockReturnValue({ status: "denied", resolvedBy: "slack-admin" });
-
-      const result = await caller.executeChangeRequestAfterSlack({ changeRequestId: 1 } as never);
-      expect(result).toMatchObject({ success: false });
-      expect(executeApprovedAdminAction).not.toHaveBeenCalled();
+      expect(order).toEqual(["review-write", "execute"]);
+      expect(result).toMatchObject({ success: true, executionResult: { executed: true } });
     });
   });
 });

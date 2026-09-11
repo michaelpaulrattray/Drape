@@ -32,38 +32,6 @@ vi.mock("./security/adminSecurity", async (importOriginal) => {
   };
 });
 
-// Mock Slack
-vi.mock("./slack/slackNotification", () => ({
-  sendSlackAlert: vi.fn().mockResolvedValue(undefined),
-  sendAdminActionNotification: vi.fn().mockResolvedValue(undefined),
-  sendAuditLogEntry: vi.fn().mockResolvedValue(undefined),
-  sendEmergencyActionsToAdminChannel: vi.fn().mockResolvedValue(undefined),
-  // Reached by the REAL adminSecurity, which the arms below drive.
-  SlackAlerts: {
-    unauthorizedAdminAccess: vi.fn().mockResolvedValue(undefined),
-    sensitiveAdminAction: vi.fn().mockResolvedValue(undefined),
-    securityAlert: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
-// ⚠ The mock below names "./slackNotification" — a path that does not exist;
-// the module is "./slack/slackNotification", mocked above. Left in place
-// rather than deleted: it is inert either way and removing it is not this
-// row's business, but it is worth the next reader knowing it does nothing.
-vi.mock("./slackNotification", () => ({
-  sendSlackAlert: vi.fn().mockResolvedValue(undefined),
-  sendAdminActionNotification: vi.fn().mockResolvedValue(undefined),
-  sendAuditLogEntry: vi.fn().mockResolvedValue(undefined),
-  sendEmergencyActionsToAdminChannel: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("./slackApproval", () => ({
-  requestSlackApproval: vi.fn().mockResolvedValue("test-id"),
-  checkApprovalStatus: vi.fn().mockReturnValue({ status: "approved" }),
-  cleanupExpiredActions: vi.fn(),
-  getPendingActionsForAdmin: vi.fn().mockReturnValue([]),
-}));
-
 import { updateUserRole, getUserById } from "./db";
 import { rolesRouter } from "./routes/admin/roles";
 

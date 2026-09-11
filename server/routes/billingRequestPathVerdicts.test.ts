@@ -60,10 +60,6 @@ vi.mock("../auditLog", async (importOriginal) => ({
   logAuditEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../slack/slackNotification", () => ({
-  SlackAlerts: new Proxy({}, { get: () => vi.fn().mockResolvedValue(true) }),
-}));
-
 import { billingRouter } from "./billing";
 import { getSubscriptionByUserId, getUserById, updateUserSubscription } from "../db";
 import {

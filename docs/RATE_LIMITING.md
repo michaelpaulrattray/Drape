@@ -392,4 +392,4 @@ reading a counter must not become a staff surface reading credentials.
 
 ## Related Documentation
 
-For additional security context, see [AUTHENTICATION.md](./AUTHENTICATION.md) for protecting endpoints before rate limiting applies and account lockout configuration, [ATOMIC_CREDITS.md](./ATOMIC_CREDITS.md) for credit-based rate limiting on generation endpoints, [AUDIT_LOGGING.md](./AUDIT_LOGGING.md) for logging rate limit violations and abuse detection events, and [NOTIFICATIONS.md](./NOTIFICATIONS.md) for Slack alerts and emergency actions.
+For additional security context, see [AUTHENTICATION.md](./AUTHENTICATION.md) for protecting endpoints before rate limiting applies and account lockout configuration, [ATOMIC_CREDITS.md](./ATOMIC_CREDITS.md) for credit-based rate limiting on generation endpoints, [AUDIT_LOGGING.md](./AUDIT_LOGGING.md) for logging rate limit violations and abuse detection events, and [NOTIFICATIONS.md](./NOTIFICATIONS.md) for where security alerts land on the staff panels.

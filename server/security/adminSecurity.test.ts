@@ -41,8 +41,8 @@
  * was lost, but "this module is driven now" would be too big a sentence: one
  * export of it is not. It is deliberate rather than overlooked. That control is
  * already on `CLAUDE.md`'s *"Currently not enforced — do not rely on these"*
- * list (the hash chain is in-memory, resets every deploy, and its Slack backup
- * no-ops when Slack is unconfigured, which production is), so an arm proving it
+ * list (the hash chain is in-memory and resets every deploy; its former Slack
+ * backup was deleted with #800), so an arm proving it
  * behaves would be proving the behaviour of a control the product does not
  * currently get anything from. Driving it is worth doing WITH that repair, not
  * before it, and it is recorded on the follow-up card rather than left for
@@ -51,26 +51,13 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 
 /**
- * Slack is a COLLABORATOR here, never the subject. The subject is always a real
- * exported function of `adminSecurity.ts`, called for its own behaviour; the
- * mock exists so that behaviour has somewhere observable to land. That is the
- * distinction #697 is about — an arm that calls the mock itself and then
- * asserts the mock is the shape being removed, and there is none below.
- */
-vi.mock("../slack/slackNotification", () => ({
-  SlackAlerts: {
-    adminAction: vi.fn().mockResolvedValue(undefined),
-    sensitiveAdminAction: vi.fn().mockResolvedValue(undefined),
-    unauthorizedAdminAccess: vi.fn().mockResolvedValue(undefined),
-  },
-  sendSlackAlert: vi.fn().mockResolvedValue(true),
-  sendAuditLogEntry: vi.fn().mockResolvedValue(true),
-}));
-
-/**
- * The audit write is mocked for the same reason and read for the same kind of
- * fact: `logAdminAction` chooses the row's SEVERITY from the action, and
- * nothing anywhere drove that choice before this file did.
+ * The audit write is mocked as a COLLABORATOR, never the subject — the subject
+ * is always a real exported function of `adminSecurity.ts`, called for its own
+ * behaviour; the mock exists so that behaviour has somewhere observable to
+ * land. It is read for one kind of fact: `logAdminAction` chooses the row's
+ * SEVERITY from the action, and since #800 (the Slack retirement) that audit
+ * row is the ONLY place an admin action lands, so the choice carries the whole
+ * sensitive/ordinary distinction.
  */
 vi.mock("../auditLog", () => ({
   logAuditEvent: vi.fn().mockResolvedValue(undefined),
@@ -101,9 +88,8 @@ async function loadModule(env: { ownerOpenId: string; ownerName: string }) {
   vi.stubEnv("OWNER_OPEN_ID", env.ownerOpenId);
   vi.stubEnv("OWNER_NAME", env.ownerName);
   const security = await import("./adminSecurity");
-  const { SlackAlerts } = await import("../slack/slackNotification");
   const { logAuditEvent } = await import("../auditLog");
-  return { security, SlackAlerts, logAuditEvent };
+  return { security, logAuditEvent };
 }
 
 /** The suite's own world, matching the deployed one: no owner variables set. */
@@ -284,8 +270,14 @@ describe("isSensitiveAction — the list that decides which alert an action gets
 });
 
 describe("logAdminAction — where an admin action actually lands", () => {
-  it("a sensitive action reaches the SENSITIVE Slack alert, carrying the details it was given", async () => {
-    const { security, SlackAlerts } = await loadModule(EMPTY_ALLOWLIST);
+  /*
+   * Two arms here read the Slack alert the sensitive/ordinary split used to
+   * choose between; the alerts are deleted (#800) and the audit row below is
+   * the whole landing. The details themselves ride the row's metadata, which
+   * the second assertion reads.
+   */
+  it("an action's details land on the audit row's metadata", async () => {
+    const { security, logAuditEvent } = await loadModule(EMPTY_ALLOWLIST);
 
     await security.logAdminAction({
       adminId: 1,
@@ -296,37 +288,27 @@ describe("logAdminAction — where an admin action actually lands", () => {
       details: "Suspended user for abuse",
     });
 
-    /* The ARGUMENTS, not merely the fact of a call. `toHaveBeenCalled()` alone
-       cannot tell a correct alert from one that names the wrong person. */
-    expect(SlackAlerts.sensitiveAdminAction).toHaveBeenCalledWith(
-      "Test Admin", 1, "suspendUser", "user", "123", "Suspended user for abuse",
+    /* The ARGUMENTS, not merely the fact of a call — a row that names the
+       wrong person is worse than none. */
+    expect(logAuditEvent).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        userId: 1,
+        resourceType: "user",
+        resourceId: "123",
+        metadata: expect.objectContaining({
+          adminAction: "suspendUser",
+          details: "Suspended user for abuse",
+          performedBy: "Test Admin",
+        }),
+      }),
     );
-    expect(SlackAlerts.adminAction).not.toHaveBeenCalled();
-  });
-
-  it("an ordinary action reaches the ORDINARY Slack alert and never the sensitive one", async () => {
-    const { security, SlackAlerts } = await loadModule(EMPTY_ALLOWLIST);
-
-    await security.logAdminAction({
-      adminId: 1,
-      adminName: "Test Admin",
-      action: "listUsers",
-      targetType: "system",
-      targetId: "all",
-      details: "Listed all users",
-    });
-
-    expect(SlackAlerts.adminAction).toHaveBeenCalledWith(
-      "Test Admin", 1, "listUsers", "system", "all", "Listed all users",
-    );
-    expect(SlackAlerts.sensitiveAdminAction).not.toHaveBeenCalled();
   });
 
   /**
-   * The audit row's SEVERITY, which nothing drove before this file. It is the
-   * half of the sensitive/ordinary split that survives Slack being
-   * unconfigured — and Slack IS unconfigured in production, so on the deployed
-   * system this row is the only thing that records the distinction at all.
+   * The audit row's SEVERITY, which nothing drove before this file. Since
+   * #800 this row is the only thing that records the sensitive/ordinary
+   * distinction at all — warning severity is what puts a sensitive action on
+   * the admin overview's alerts feed.
    */
   it("a sensitive action is recorded at WARNING severity and an ordinary one at INFO", async () => {
     const { security, logAuditEvent } = await loadModule(EMPTY_ALLOWLIST);
@@ -348,22 +330,12 @@ describe("logAdminAction — where an admin action actually lands", () => {
 });
 
 describe("logUnauthorizedAdminAccess — the refusal that must not be silent", () => {
-  it("an unauthorized attempt alerts with the user, the attempt and the IP that made it", async () => {
-    const { security, SlackAlerts } = await loadModule(EMPTY_ALLOWLIST);
-
-    await security.logUnauthorizedAdminAccess({
-      userId: 99999,
-      userName: "attacker@example.com",
-      attemptedAction: "admin_access",
-      ipAddress: "192.168.1.100",
-      userAgent: "Mozilla/5.0",
-    });
-
-    expect(SlackAlerts.unauthorizedAdminAccess).toHaveBeenCalledWith(
-      99999, "attacker@example.com", "admin_access", "192.168.1.100",
-    );
-  });
-
+  /*
+   * The Slack-alert arm that stood beside this one died with the integration
+   * (#800). The critical audit row IS the alarm now — critical severity is
+   * what puts it on the admin overview's alerts feed — so the row's fields
+   * carry everything the alert used to.
+   */
   it("the attempt is recorded at CRITICAL severity, blocked, against the admin surface", async () => {
     const { security, logAuditEvent } = await loadModule(EMPTY_ALLOWLIST);
 

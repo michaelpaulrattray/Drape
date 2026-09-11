@@ -2,18 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7417e145abd61499"
+    "sourceFingerprint": "97958eded2cca169"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 56
-    },
-    {
-      "id": "domain:alerting",
-      "name": "alerting",
-      "moduleCount": 6
+      "moduleCount": 55
     },
     {
       "id": "domain:api",
@@ -98,7 +93,7 @@
     {
       "id": "domain:platform",
       "name": "platform",
-      "moduleCount": 17
+      "moduleCount": 16
     },
     {
       "id": "domain:profile",
@@ -153,7 +148,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 40
+      "moduleCount": 39
     },
     {
       "id": "domain:wardrobe",
@@ -2935,12 +2930,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:server/_core/notification.ts",
-      "path": "server/_core/notification.ts",
-      "domain": "platform",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:server/_core/sdk.ts",
       "path": "server/_core/sdk.ts",
       "domain": "platform",
@@ -5257,12 +5246,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:server/lib/adminActions/directActions.ts",
-      "path": "server/lib/adminActions/directActions.ts",
-      "domain": "unassigned",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:server/lib/adminActions/index.ts",
       "path": "server/lib/adminActions/index.ts",
       "domain": "unassigned",
@@ -5433,12 +5416,6 @@
     {
       "id": "module:server/routes/admin/roles.ts",
       "path": "server/routes/admin/roles.ts",
-      "domain": "admin",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/routes/admin/slackApproval.ts",
-      "path": "server/routes/admin/slackApproval.ts",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -5752,42 +5729,6 @@
       "id": "module:server/security/urlValidator.ts",
       "path": "server/security/urlValidator.ts",
       "domain": "security",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/slack/slackApproval.ts",
-      "path": "server/slack/slackApproval.ts",
-      "domain": "alerting",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/slack/slackConvenienceHelpers.ts",
-      "path": "server/slack/slackConvenienceHelpers.ts",
-      "domain": "alerting",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/slack/slackCore.ts",
-      "path": "server/slack/slackCore.ts",
-      "domain": "alerting",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/slack/slackDispatcher.ts",
-      "path": "server/slack/slackDispatcher.ts",
-      "domain": "alerting",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/slack/slackInteractions.ts",
-      "path": "server/slack/slackInteractions.ts",
-      "domain": "alerting",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/slack/slackNotification.ts",
-      "path": "server/slack/slackNotification.ts",
-      "domain": "alerting",
       "lifecycle": "active"
     },
     {
@@ -6413,26 +6354,6 @@
       "file": "server/routes/admin/roles.ts"
     },
     {
-      "id": "route:admin.checkApprovalStatus",
-      "namespace": "admin",
-      "name": "checkApprovalStatus",
-      "type": "query",
-      "auth": "admin",
-      "input": "open",
-      "rateLimited": false,
-      "file": "server/routes/admin/slackApproval.ts"
-    },
-    {
-      "id": "route:admin.checkChangeRequestSlackStatus",
-      "namespace": "admin",
-      "name": "checkChangeRequestSlackStatus",
-      "type": "query",
-      "auth": "admin",
-      "input": "open",
-      "rateLimited": false,
-      "file": "server/routes/admin/changeRequests.ts"
-    },
-    {
       "id": "route:admin.createBanner",
       "namespace": "admin",
       "name": "createBanner",
@@ -6471,26 +6392,6 @@
       "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/announcements.ts"
-    },
-    {
-      "id": "route:admin.executeApproved",
-      "namespace": "admin",
-      "name": "executeApproved",
-      "type": "mutation",
-      "auth": "admin",
-      "input": "open",
-      "rateLimited": false,
-      "file": "server/routes/admin/slackApproval.ts"
-    },
-    {
-      "id": "route:admin.executeChangeRequestAfterSlack",
-      "namespace": "admin",
-      "name": "executeChangeRequestAfterSlack",
-      "type": "mutation",
-      "auth": "admin",
-      "input": "open",
-      "rateLimited": false,
-      "file": "server/routes/admin/changeRequests.ts"
     },
     {
       "id": "route:admin.exportAuditLogs",
@@ -6671,16 +6572,6 @@
       "input": "open",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
-    },
-    {
-      "id": "route:admin.requestApproval",
-      "namespace": "admin",
-      "name": "requestApproval",
-      "type": "mutation",
-      "auth": "admin",
-      "input": "open",
-      "rateLimited": false,
-      "file": "server/routes/admin/slackApproval.ts"
     },
     {
       "id": "route:admin.reviewChangeRequest",
@@ -8733,16 +8624,6 @@
       "file": "server/_core/systemRouter.ts"
     },
     {
-      "id": "route:system.notifyOwner",
-      "namespace": "system",
-      "name": "notifyOwner",
-      "type": "mutation",
-      "auth": "admin",
-      "input": "open",
-      "rateLimited": false,
-      "file": "server/_core/systemRouter.ts"
-    },
-    {
       "id": "route:usage.getCycleSpend",
       "namespace": "usage",
       "name": "getCycleSpend",
@@ -9226,13 +9107,6 @@
       "mountedBy": "server/_core/index.ts"
     },
     {
-      "id": "express:POST /api/slack/interactions (express.urlencoded)",
-      "method": "POST",
-      "path": "/api/slack/interactions",
-      "handler": "express.urlencoded",
-      "file": "server/_core/index.ts"
-    },
-    {
       "id": "express:POST /api/webhooks/stripe (express.raw)",
       "method": "POST",
       "path": "/api/webhooks/stripe",
@@ -9622,36 +9496,6 @@
     {
       "id": "env:SIGN_JUDGE_MODEL",
       "name": "SIGN_JUDGE_MODEL",
-      "valueRecorded": false
-    },
-    {
-      "id": "env:SLACK_ADMIN_ACTIONS_WEBHOOK_URL",
-      "name": "SLACK_ADMIN_ACTIONS_WEBHOOK_URL",
-      "valueRecorded": false
-    },
-    {
-      "id": "env:SLACK_AUDIT_LOG_WEBHOOK_URL",
-      "name": "SLACK_AUDIT_LOG_WEBHOOK_URL",
-      "valueRecorded": false
-    },
-    {
-      "id": "env:SLACK_BILLING_ALERTS_WEBHOOK_URL",
-      "name": "SLACK_BILLING_ALERTS_WEBHOOK_URL",
-      "valueRecorded": false
-    },
-    {
-      "id": "env:SLACK_SIGNING_SECRET",
-      "name": "SLACK_SIGNING_SECRET",
-      "valueRecorded": false
-    },
-    {
-      "id": "env:SLACK_SYSTEM_ALERTS_WEBHOOK_URL",
-      "name": "SLACK_SYSTEM_ALERTS_WEBHOOK_URL",
-      "valueRecorded": false
-    },
-    {
-      "id": "env:SLACK_WEBHOOK_URL",
-      "name": "SLACK_WEBHOOK_URL",
       "valueRecorded": false
     },
     {
@@ -11068,10 +10912,6 @@
       "path": "server/accountFreeze.test.ts"
     },
     {
-      "id": "test:server/adminActionDispatch.test.ts",
-      "path": "server/adminActionDispatch.test.ts"
-    },
-    {
       "id": "test:server/adminActionHandlers.test.ts",
       "path": "server/adminActionHandlers.test.ts"
     },
@@ -11226,10 +11066,6 @@
     {
       "id": "test:server/billing.test.ts",
       "path": "server/billing.test.ts"
-    },
-    {
-      "id": "test:server/billingAlerts.test.ts",
-      "path": "server/billingAlerts.test.ts"
     },
     {
       "id": "test:server/boardDeletionChildren.test.ts",
@@ -13060,10 +12896,6 @@
       "path": "server/instrumentDoctrine.test.ts"
     },
     {
-      "id": "test:server/ipBlockingSlack.test.ts",
-      "path": "server/ipBlockingSlack.test.ts"
-    },
-    {
       "id": "test:server/klaviyo.test.ts",
       "path": "server/klaviyo.test.ts"
     },
@@ -13738,30 +13570,6 @@
     {
       "id": "test:server/shiftWorktree.test.ts",
       "path": "server/shiftWorktree.test.ts"
-    },
-    {
-      "id": "test:server/slack/slackApproval.test.ts",
-      "path": "server/slack/slackApproval.test.ts"
-    },
-    {
-      "id": "test:server/slack/slackChannels.test.ts",
-      "path": "server/slack/slackChannels.test.ts"
-    },
-    {
-      "id": "test:server/slack/slackDispatcher.test.ts",
-      "path": "server/slack/slackDispatcher.test.ts"
-    },
-    {
-      "id": "test:server/slack/slackSuspendVerdict.test.ts",
-      "path": "server/slack/slackSuspendVerdict.test.ts"
-    },
-    {
-      "id": "test:server/slack/slackThreeChannel.test.ts",
-      "path": "server/slack/slackThreeChannel.test.ts"
-    },
-    {
-      "id": "test:server/slack/slackWebhook.test.ts",
-      "path": "server/slack/slackWebhook.test.ts"
     },
     {
       "id": "test:server/spendingScriptArguments.test.ts",
@@ -15164,6 +14972,11 @@
     {
       "from": "module:client/src/features/admin/overview/CreditEconomyCard.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/GovernanceCard.tsx",
+      "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
       "kind": "imports"
     },
     {
@@ -20483,6 +20296,11 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/_core/context.ts",
       "kind": "imports"
     },
@@ -20499,6 +20317,11 @@
     {
       "from": "module:server/_core/index.ts",
       "to": "module:server/_core/vite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/auditLog.ts",
       "kind": "imports"
     },
     {
@@ -20638,27 +20461,7 @@
     },
     {
       "from": "module:server/_core/index.ts",
-      "to": "module:server/slack/slackCore.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/_core/index.ts",
-      "to": "module:server/slack/slackInteractions.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/_core/index.ts",
       "to": "module:server/stripe/webhooks.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/_core/notification.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/_core/notification.ts",
-      "to": "module:server/slack/slackNotification.ts",
       "kind": "imports"
     },
     {
@@ -20689,11 +20492,6 @@
     {
       "from": "module:server/_core/spokenError.ts",
       "to": "module:shared/spokenError.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/_core/systemRouter.ts",
-      "to": "module:server/_core/notification.ts",
       "kind": "imports"
     },
     {
@@ -20738,22 +20536,12 @@
     },
     {
       "from": "module:server/auditLog.ts",
-      "to": "module:server/_core/notification.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/auditLog.ts",
       "to": "module:server/db/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/auditLog.ts",
       "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/auditLog.ts",
-      "to": "module:server/slack/slackNotification.ts",
       "kind": "imports"
     },
     {
@@ -30298,42 +30086,7 @@
     },
     {
       "from": "module:server/lib/adminActions/changeRequestActions.ts",
-      "to": "module:server/slack/slackApproval.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/lib/adminActions/changeRequestActions.ts",
       "to": "module:server/stripe/stripeService.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/lib/adminActions/directActions.ts",
-      "to": "module:server/auditLog.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/lib/adminActions/directActions.ts",
-      "to": "module:server/db/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/lib/adminActions/directActions.ts",
-      "to": "module:server/lib/adminActions/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/lib/adminActions/directActions.ts",
-      "to": "module:server/security/adminSecurity.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/lib/adminActions/directActions.ts",
-      "to": "module:server/security/rateLimit.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/lib/adminActions/directActions.ts",
-      "to": "module:server/slack/slackApproval.ts",
       "kind": "imports"
     },
     {
@@ -30343,12 +30096,7 @@
     },
     {
       "from": "module:server/lib/adminActions/index.ts",
-      "to": "module:server/lib/adminActions/directActions.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/lib/adminActions/index.ts",
-      "to": "module:server/slack/slackApproval.ts",
+      "to": "module:shared/changeRequestLabels.ts",
       "kind": "imports"
     },
     {
@@ -30538,6 +30286,16 @@
     },
     {
       "from": "module:server/monitoring/healthMonitor.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/healthMonitor.ts",
+      "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/healthMonitor.ts",
       "to": "module:server/db/adminOverviewQueries.ts",
       "kind": "imports"
     },
@@ -30549,11 +30307,6 @@
     {
       "from": "module:server/monitoring/healthMonitor.ts",
       "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/monitoring/healthMonitor.ts",
-      "to": "module:server/slack/slackDispatcher.ts",
       "kind": "imports"
     },
     {
@@ -30977,26 +30730,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/routes/admin/changeRequests.ts",
-      "to": "module:server/security/rateLimit.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/admin/changeRequests.ts",
-      "to": "module:server/slack/slackApproval.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/admin/changeRequests.ts",
-      "to": "module:server/slack/slackNotification.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/admin/changeRequests.ts",
-      "to": "module:shared/changeRequestLabels.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/routes/admin/index.ts",
       "to": "module:server/_core/trpc.ts",
       "kind": "imports"
@@ -31039,11 +30772,6 @@
     {
       "from": "module:server/routes/admin/index.ts",
       "to": "module:server/routes/admin/roles.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/admin/index.ts",
-      "to": "module:server/routes/admin/slackApproval.ts",
       "kind": "imports"
     },
     {
@@ -31142,26 +30870,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/routes/admin/slackApproval.ts",
-      "to": "module:server/_core/trpc.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/admin/slackApproval.ts",
-      "to": "module:server/lib/adminActions/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/admin/slackApproval.ts",
-      "to": "module:server/security/rateLimit.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/admin/slackApproval.ts",
-      "to": "module:server/slack/slackApproval.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/routes/admin/users.ts",
       "to": "module:server/_core/trpc.ts",
       "kind": "imports"
@@ -31254,11 +30962,6 @@
     {
       "from": "module:server/routes/billing.ts",
       "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/billing.ts",
-      "to": "module:server/slack/slackNotification.ts",
       "kind": "imports"
     },
     {
@@ -31414,11 +31117,6 @@
     {
       "from": "module:server/routes/bugReports.ts",
       "to": "module:server/security/rateLimit.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/bugReports.ts",
-      "to": "module:server/slack/slackCore.ts",
       "kind": "imports"
     },
     {
@@ -32858,17 +32556,7 @@
     },
     {
       "from": "module:server/routes/moderator.ts",
-      "to": "module:server/slack/slackNotification.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/moderator.ts",
       "to": "module:server/stripe/stripeService.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/moderator.ts",
-      "to": "module:shared/changeRequestLabels.ts",
       "kind": "imports"
     },
     {
@@ -32954,11 +32642,6 @@
     {
       "from": "module:server/routes/moderatorReconciliation.ts",
       "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/moderatorReconciliation.ts",
-      "to": "module:server/slack/slackNotification.ts",
       "kind": "imports"
     },
     {
@@ -33267,11 +32950,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/security/adminSecurity.ts",
-      "to": "module:server/slack/slackNotification.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/security/deleteUserData.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -33324,71 +33002,6 @@
     {
       "from": "module:server/security/trustedImageFetch.ts",
       "to": "module:server/security/urlValidator.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackApproval.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackApproval.ts",
-      "to": "module:server/slack/slackDispatcher.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackConvenienceHelpers.ts",
-      "to": "module:server/db/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackConvenienceHelpers.ts",
-      "to": "module:server/slack/slackCore.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackCore.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackDispatcher.ts",
-      "to": "module:server/slack/slackConvenienceHelpers.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackDispatcher.ts",
-      "to": "module:server/slack/slackCore.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackInteractions.ts",
-      "to": "module:server/auditLog.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackInteractions.ts",
-      "to": "module:server/db/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackInteractions.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackInteractions.ts",
-      "to": "module:server/slack/slackApproval.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackInteractions.ts",
-      "to": "module:server/slack/slackNotification.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/slack/slackNotification.ts",
-      "to": "module:server/slack/slackDispatcher.ts",
       "kind": "imports"
     },
     {
@@ -33489,11 +33102,6 @@
     {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/stripe/webhooks.ts",
-      "to": "module:server/slack/slackNotification.ts",
       "kind": "imports"
     },
     {
@@ -34783,20 +34391,6 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:admin.checkApprovalStatus",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.checkApprovalStatus",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:admin.checkChangeRequestSlackStatus",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.checkChangeRequestSlackStatus",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:admin.createBanner",
       "severity": "warn",
       "kind": "non-strict-input",
@@ -34822,20 +34416,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:admin.deleteBanner",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:admin.executeApproved",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.executeApproved",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:admin.executeChangeRequestAfterSlack",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.executeChangeRequestAfterSlack",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -34927,13 +34507,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:admin.listUsers",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:admin.requestApproval",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.requestApproval",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
@@ -35501,13 +35074,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:referral.sendInvite",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:system.notifyOwner",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:system.notifyOwner",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {

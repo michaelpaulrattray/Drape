@@ -47,10 +47,6 @@ vi.mock("./auditLog", () => ({
   AUDIT_ACTIONS: { ACCOUNT_AUTO_FROZEN: "account.auto_frozen", ACCOUNT_FROZEN: "account.frozen", ACCOUNT_UNFROZEN: "account.unfrozen" },
 }));
 
-vi.mock("./slack/slackNotification", () => ({
-  SlackAlerts: { accountFrozenByStaff: vi.fn(async () => undefined) },
-}));
-
 vi.mock("./klaviyo", () => ({
   sendAccountFrozenEmail: vi.fn(async () => undefined),
 }));

@@ -3,13 +3,12 @@
  * 
  * Provides additional security hardening for admin functionality:
  * 1. Admin Allowlist - Only specific users can be admins
- * 2. Admin Activity Alerts - Slack notifications for all admin actions
- * 3. Admin Action Confirmation - Re-authentication for sensitive actions
- * 4. Immutable Audit Log - Append-only critical log storage
+ * 2. Admin Activity Audit - every admin action writes an audit row, read on
+ *    the staff audit-log surfaces (severity from `isSensitiveAction`)
+ * 3. Immutable Audit Log - hash-chained critical log storage
  */
 
 import crypto from "crypto";
-import { SlackAlerts, sendAuditLogEntry } from "../slack/slackNotification";
 import { logAuditEvent } from "../auditLog";
 import { AUDIT_ACTIONS } from "../../drizzle/schema";
 
@@ -147,7 +146,8 @@ export function isSensitiveAction(action: string): boolean {
 }
 
 /**
- * Log admin action and send Slack notification
+ * Log an admin action to the audit system. Sensitive actions get `warning`
+ * severity, which puts them on the admin overview's alerts feed.
  */
 export async function logAdminAction(options: {
   adminId: number;
@@ -176,27 +176,6 @@ export async function logAdminAction(options: {
     ipAddress,
     userAgent,
   });
-  
-  // Send Slack notification
-  if (isSensitiveAction(action)) {
-    await SlackAlerts.sensitiveAdminAction(
-      adminName,
-      adminId,
-      action,
-      targetType,
-      targetId,
-      details
-    );
-  } else {
-    await SlackAlerts.adminAction(
-      adminName,
-      adminId,
-      action,
-      targetType,
-      targetId,
-      details
-    );
-  }
 }
 
 /**
@@ -226,24 +205,17 @@ export async function logUnauthorizedAdminAccess(options: {
     ipAddress,
     userAgent,
   });
-  
-  // Send critical Slack alert
-  await SlackAlerts.unauthorizedAdminAccess(
-    userId,
-    userName,
-    attemptedAction,
-    ipAddress
-  );
 }
 
 /**
- * ADMIN ACTION CONFIRMATION
- * 
- * UI-only confirmation tokens have been replaced by Slack-based approval flow.
- * See server/slackApproval.ts for the out-of-band two-factor authorization system.
- * 
- * Sensitive actions now require approval via Slack before execution,
- * ensuring an attacker needs access to both the admin session AND the Slack workspace.
+ * ADMIN ACTION CONFIRMATION — there is none beyond the panel (#800).
+ *
+ * The Slack-based approval flow this section used to point at was retired
+ * 2026-09-11: it never ran in production (no webhook was ever configured, so
+ * it self-approved) and it was already on CLAUDE.md's "currently not
+ * enforced" list. The admin panel's explicit review step, plus these audit
+ * and immutable-log writes, is the control. An out-of-band second factor for
+ * sensitive admin actions would be a NEW control and a founder decision.
  */
 
 /**
@@ -252,9 +224,12 @@ export async function logUnauthorizedAdminAccess(options: {
  * Critical security events are written to a separate append-only log
  * that cannot be modified even with database access.
  * 
- * This uses a combination of:
- * 1. Hash chaining (each entry includes hash of previous entry)
- * 2. External backup via Slack (permanent record in Slack channel)
+ * This uses hash chaining (each entry includes the hash of the previous
+ * entry) plus a database audit row carrying the hash. ⚠ The chain is
+ * IN-MEMORY and resets on every deploy, and its former "external backup"
+ * (a Slack channel production never had) is retired with #800 — so there is
+ * currently NO tamper evidence, which CLAUDE.md's "currently not enforced"
+ * list says under its own name.
  */
 interface ImmutableLogEntry {
   id: string;
@@ -265,7 +240,7 @@ interface ImmutableLogEntry {
   hash: string;
 }
 
-// In-memory chain for current session (also backed up to Slack)
+// In-memory chain for current session (resets on deploy — see above)
 const immutableLogChain: ImmutableLogEntry[] = [];
 let lastHash = "GENESIS";
 
@@ -274,8 +249,7 @@ let lastHash = "GENESIS";
  * 
  * This creates a hash-chained entry that:
  * 1. Is stored in memory with hash verification
- * 2. Is backed up to Slack as permanent record
- * 3. Is written to database audit_logs with chain hash
+ * 2. Is written to database audit_logs with chain hash
  */
 export async function writeImmutableLog(
   eventType: string,
@@ -302,20 +276,7 @@ export async function writeImmutableLog(
   immutableLogChain.push(fullEntry);
   lastHash = hash;
   
-  // Backup to #audit-log Slack channel as permanent record
-  await sendAuditLogEntry({
-    title: "🔒 Immutable Security Log",
-    description: `Critical security event recorded with hash chain verification.`,
-    fields: [
-      { title: "Event Type", value: eventType, short: true },
-      { title: "Entry ID", value: entry.id, short: true },
-      { title: "Hash", value: hash.substring(0, 16) + "...", short: true },
-      { title: "Previous Hash", value: entry.previousHash.substring(0, 16) + "...", short: true },
-      { title: "Data", value: JSON.stringify(data).substring(0, 200), short: false },
-    ],
-  });
-  
-  // Also write to database audit log with hash for verification
+  // Write to database audit log with hash for verification
   await logAuditEvent({
     userId: (data.adminId as number) || 0,
     action: AUDIT_ACTIONS.SECURITY_IMMUTABLE_LOG,
@@ -333,5 +294,3 @@ export async function writeImmutableLog(
   return fullEntry;
 }
 
-
-// sendAuditLogEntry routes through the centralized dispatcher for dedup

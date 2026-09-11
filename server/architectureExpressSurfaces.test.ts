@@ -388,11 +388,13 @@ describe("the whole Express surface against invariant 5", () => {
     expect(groups).toContain("/api/ink-design");
     expect(groups).toContain("/api/reference");
 
-    /* And the surface as a whole, so the comparison below cannot be vacuous. */
+    /* And the surface as a whole, so the comparison below cannot be vacuous.
+       `/api/slack` left this list with #800 — the public-endpoint allowlist
+       shrank by exactly one, and this pin is what holds it shrunk. */
     expect(groups).toEqual([
       "/api/auth", "/api/cast", "/api/crew", "/api/evidence", "/api/health",
       "/api/hero", "/api/image-proxy", "/api/ink-design", "/api/reference",
-      "/api/slack", "/api/webhooks",
+      "/api/webhooks",
     ]);
   });
 

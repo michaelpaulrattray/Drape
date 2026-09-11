@@ -1,13 +1,5 @@
 import { adminProcedure, router } from "../../_core/trpc";
-import { getClientIp } from "../../security/rateLimit";
-import { CHANGE_REQUEST_ACTION_BY_TYPE, executeApprovedAdminAction } from "../../lib/adminActions";
-import { changeRequestTypeLabel } from "@shared/changeRequestLabels";
-import {
-  requestApproval as requestSlackApproval,
-  getApprovalStatus as getSlackApprovalStatus,
-  markExecuted as markSlackActionExecuted,
-  markFailed as markSlackActionFailed,
-} from "../../slack/slackApproval";
+import { CHANGE_REQUEST_ACTION_BY_TYPE, executeChangeRequestAction } from "../../lib/adminActions";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
@@ -44,7 +36,11 @@ export const changeRequestsRouter = router({
       return request;
     }),
 
-  // Approve or deny a change request
+  // Approve or deny a change request. The admin's Approve in the panel IS the
+  // approval — a sensitive type executes inside this same mutation. The Slack
+  // confirmation leg was retired by #800 (2026-09-11): it never ran in
+  // production (no webhook was ever configured, so it self-approved), which
+  // means the panel review was always the only human decision on this road.
   reviewChangeRequest: adminProcedure
     .input(z.object({
       id: z.number(),
@@ -53,7 +49,6 @@ export const changeRequestsRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const { getChangeRequestById, updateChangeRequestStatus } = await import("../../db");
-      const { sendAdminActionNotification } = await import("../../slack/slackNotification");
       const { logAuditEvent } = await import("../../auditLog");
       const { AUDIT_ACTIONS } = await import("../../../drizzle/schema");
       const { writeImmutableLog } = await import("../../security/adminSecurity");
@@ -69,39 +64,39 @@ export const changeRequestsRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: `Change request is already ${request.status}` });
       }
 
-      // Sensitive types require Slack approval before execution — and a type is
-      // sensitive EXACTLY WHEN it has an approval action to be approved with.
-      // That equivalence is structural rather than coincidental: two lines
-      // below, a sensitive type is looked up in `CR_TO_APPROVAL_ACTION`, so a
-      // sensitive type without an action would send `undefined` to Slack.
-      // Derived rather than re-typed (3g's D — this was a fourth hand-typed
-      // copy of the same six, and the test file's own copy had already drifted
-      // to FIVE, missing `stripe_refund`).
+      // A sensitive type executes on approval — and a type is sensitive
+      // EXACTLY WHEN it has an executor action to run. That equivalence is
+      // structural rather than coincidental: a sensitive type is looked up in
+      // `CHANGE_REQUEST_ACTION_BY_TYPE` below, so a sensitive type without an
+      // action would hand the executor `undefined`. Derived rather than
+      // re-typed (3g's D — this was a fourth hand-typed copy of the same six,
+      // and the test file's own copy had already drifted to FIVE, missing
+      // `stripe_refund`).
       const isSensitive = request.type in CHANGE_REQUEST_ACTION_BY_TYPE;
 
-      // Map change request types to Slack approval action types
-      // Derived, never re-typed: `CHANGE_REQUEST_ACTION_BY_TYPE` is the one
-      // declaration (3g's D — this was one of three hand-typed copies).
-      const CR_TO_APPROVAL_ACTION: Record<string, string> = CHANGE_REQUEST_ACTION_BY_TYPE;
-
       const actionVerb = input.action === "approved" ? "Approved" : "Denied";
-      const actionEmoji = input.action === "approved" ? "\u2705" : "\u274c";
 
-      // ─── Sensitive type + approval → route through Slack ─────────────
+      // ─── Sensitive type + approval → execute in this mutation ────────
       if (input.action === "approved" && isSensitive) {
-        // Set status to pending_execution (admin approved, awaiting Slack confirmation)
+        // Record the review FIRST, compare-and-swapped on `pending`, so two
+        // admins approving at once cannot both reach the executor — the
+        // second write finds the status already moved and refuses. The
+        // intermediate `pending_execution` status also means a crash between
+        // this write and the executor's own `→ approved` settle leaves the
+        // request visibly unsettled ("execution did not complete") rather
+        // than silently done or silently lost.
         const result = await updateChangeRequestStatus(input.id, {
           status: "pending_execution",
           reviewedById: ctx.user.id,
           reviewedByName: adminName,
           reviewNotes: input.reviewNotes,
-        });
+        }, "pending");
 
         if (!result.success) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error || "Failed to update change request" });
         }
 
-        // Build params for the Slack approval action
+        // Build params for the executor
         const approvalParams: Record<string, unknown> = {
           changeRequestId: input.id,
           reason: request.title,
@@ -120,32 +115,13 @@ export const changeRequestsRouter = router({
           approvalParams.originalCredits = request.originalCredits;
         }
 
-        // Determine targetId for the approval action
+        // Determine targetId for the executor
         const targetId = request.type === "block_ip" && request.ipAddress
           ? request.ipAddress
           : String(request.targetUserId);
 
-        // Request Slack approval
-        const approvalResult = await requestSlackApproval({
-          action: CR_TO_APPROVAL_ACTION[request.type] as any,
-          requestedBy: {
-            id: ctx.user.id,
-            name: adminName,
-            email: ctx.user.email || undefined,
-          },
-          targetId,
-          description: `Change Request #${input.id}: ${changeRequestTypeLabel(request.type)}\n\n*Title:* ${request.title}\n*Target:* ${request.targetUserName || `User ${request.targetUserId}`}${request.creditAmount ? `\n*Amount:* ${request.creditAmount} credits` : ""}${request.ipAddress ? `\n*IP:* ${request.ipAddress}` : ""}\n*Submitted By:* ${request.submittedByName || `User ${request.submittedById}`}`,
-          params: approvalParams,
-          ipAddress: getClientIp(ctx.req),
-        });
-
-        // Store the Slack approval ID on the change request
-        await updateChangeRequestStatus(input.id, {
-          status: "pending_execution",
-          slackApprovalId: approvalResult.actionId,
-        }, "pending_execution");
-
-        // Audit logging
+        // Audit the approval before execution, so a failed execution still
+        // leaves the decision on the record.
         await logAuditEvent({
           userId: ctx.user.id,
           action: AUDIT_ACTIONS.CHANGE_REQUEST_APPROVED,
@@ -154,10 +130,8 @@ export const changeRequestsRouter = router({
           metadata: {
             requestId: input.id,
             type: request.type,
-            decision: "approved_pending_slack",
+            decision: "approved",
             reviewNotes: input.reviewNotes,
-            slackApprovalId: approvalResult.actionId,
-            slackSent: approvalResult.sent,
             submittedById: request.submittedById,
             targetUserId: request.targetUserId,
             creditAmount: request.creditAmount,
@@ -166,47 +140,63 @@ export const changeRequestsRouter = router({
           req: ctx.req,
         });
 
-        // Notify #admin-actions about the pending Slack approval
-        await sendAdminActionNotification({
-          title: `\u23f3 Change Request #${input.id} Approved \u2014 Awaiting Slack Confirmation`,
-          description: `*${adminName}* approved change request #${input.id} (${changeRequestTypeLabel(request.type)}).\n\nExecution is held pending Slack confirmation.${!approvalResult.sent ? "\n\n\u26a0\ufe0f Slack not configured \u2014 action was auto-approved and will execute when polled." : ""}`,
-          severity: "info",
-          fields: [
-            { title: "Request ID", value: `#${input.id}`, short: true },
-            { title: "Type", value: changeRequestTypeLabel(request.type), short: true },
-            { title: "Reviewed By", value: adminName, short: true },
-            { title: "Status", value: "\u23f3 Awaiting Slack Approval", short: true },
-            { title: "Submitted By", value: request.submittedByName || `User ${request.submittedById}`, short: true },
-            { title: "Target User", value: request.targetUserName ? `${request.targetUserName} (ID: ${request.targetUserId})` : `User ID: ${request.targetUserId}`, short: true },
-          ],
-        });
-
-        // writeImmutableLog already sends to #audit-log via the dispatcher
         await writeImmutableLog(
-          "change_request_approved_pending_slack",
+          "change_request_approved",
           {
             adminId: ctx.user.id,
             adminName,
             targetId: String(request.targetUserId),
-            action: `Approved change request #${input.id} (${request.type}) - pending Slack confirmation`,
+            action: `Approved change request #${input.id} (${request.type})`,
             requestId: input.id,
             type: request.type,
             title: request.title,
             creditAmount: request.creditAmount,
             reviewNotes: input.reviewNotes,
-            slackApprovalId: approvalResult.actionId,
           },
         );
 
-        return {
-          success: true,
-          action: "approved" as const,
-          message: `Change request #${input.id} approved \u2014 awaiting Slack confirmation before execution`,
-          slackApprovalId: approvalResult.actionId,
-          slackSent: approvalResult.sent,
-          pendingExecution: true,
-          executionResult: { executed: false },
-        };
+        // Execute. The executor settles the request (`pending_execution` →
+        // `approved`) and writes its own audit + immutable rows. On a throw
+        // the request STAYS `pending_execution` — deliberately, and with no
+        // self-serve retry: an executor that failed midway may already have
+        // moved money or state, and a retry road here is how a refund gets
+        // issued twice. The warning audit row below lands the failure on the
+        // admin overview's alerts feed.
+        try {
+          const execResult = await executeChangeRequestAction({
+            action: CHANGE_REQUEST_ACTION_BY_TYPE[request.type as keyof typeof CHANGE_REQUEST_ACTION_BY_TYPE],
+            targetId,
+            params: approvalParams,
+            resolvedBy: adminName,
+          }, ctx);
+
+          return {
+            success: true,
+            action: "approved" as const,
+            message: execResult.message,
+            executionResult: { executed: true },
+          };
+        } catch (error: any) {
+          await logAuditEvent({
+            userId: ctx.user.id,
+            action: AUDIT_ACTIONS.CHANGE_REQUEST_EXECUTION_FAILED,
+            resourceType: "change_request",
+            resourceId: String(input.id),
+            metadata: {
+              requestId: input.id,
+              type: request.type,
+              error: error?.message || String(error),
+              targetUserId: request.targetUserId,
+              creditAmount: request.creditAmount,
+            },
+            severity: "warning",
+            req: ctx.req,
+          });
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error?.message || "Failed to execute approved change request",
+          });
+        }
       }
 
       // ─── Non-sensitive approval or denial → immediate processing ─────
@@ -220,21 +210,6 @@ export const changeRequestsRouter = router({
       if (!result.success) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error || "Failed to update change request" });
       }
-
-      // Notify #admin-actions
-      await sendAdminActionNotification({
-        title: `${actionEmoji} Change Request #${input.id} ${actionVerb}`,
-        description: `*${adminName}* ${actionVerb.toLowerCase()} change request #${input.id} (${changeRequestTypeLabel(request.type)}).\n\n*Original Title:* ${request.title}${input.reviewNotes ? `\n*Review Notes:* ${input.reviewNotes}` : ""}`,
-        severity: input.action === "approved" ? "info" : "warning",
-        fields: [
-          { title: "Request ID", value: `#${input.id}`, short: true },
-          { title: "Type", value: changeRequestTypeLabel(request.type), short: true },
-          { title: "Reviewed By", value: adminName, short: true },
-          { title: "Decision", value: `${actionEmoji} ${actionVerb}`, short: true },
-          { title: "Submitted By", value: request.submittedByName || `User ${request.submittedById}`, short: true },
-          { title: "Target User", value: request.targetUserName ? `${request.targetUserName} (ID: ${request.targetUserId})` : `User ID: ${request.targetUserId}`, short: true },
-        ],
-      });
 
       // Database audit log
       const auditAction = input.action === "approved"
@@ -282,94 +257,5 @@ export const changeRequestsRouter = router({
         message: `Change request #${input.id} has been ${actionVerb.toLowerCase()}`,
         executionResult: { executed: false },
       };
-    }),
-
-  // Check Slack approval status for a pending_execution change request
-  checkChangeRequestSlackStatus: adminProcedure
-    .input(z.object({
-      changeRequestId: z.number(),
-    }))
-    .query(async ({ ctx, input }) => {
-      const { getChangeRequestById } = await import("../../db");
-      const request = await getChangeRequestById(input.changeRequestId);
-      if (!request) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Change request not found" });
-      }
-
-      if (request.status !== "pending_execution" || !request.slackApprovalId) {
-        return {
-          status: request.status,
-          slackStatus: null,
-          message: request.status === "approved" ? "Already executed" : `Request is ${request.status}`,
-        };
-      }
-
-      const slackStatus = getSlackApprovalStatus(request.slackApprovalId);
-      if (!slackStatus) {
-        return {
-          status: "pending_execution",
-          slackStatus: "not_found",
-          message: "Slack approval request not found or expired",
-        };
-      }
-
-      return {
-        status: "pending_execution",
-        slackStatus: slackStatus.status,
-        resolvedBy: slackStatus.resolvedBy,
-        resolvedAt: slackStatus.resolvedAt,
-        expiresAt: slackStatus.expiresAt,
-        message: slackStatus.status === "approved"
-          ? "Slack approved \u2014 ready to execute"
-          : slackStatus.status === "denied"
-          ? "Slack denied \u2014 action will not execute"
-          : slackStatus.status === "expired"
-          ? "Slack approval expired"
-          : "Awaiting Slack approval",
-      };
-    }),
-
-  // Execute a change request after Slack approval
-  executeChangeRequestAfterSlack: adminProcedure
-    .input(z.object({
-      changeRequestId: z.number(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const { getChangeRequestById, updateChangeRequestStatus } = await import("../../db");
-      const request = await getChangeRequestById(input.changeRequestId);
-      if (!request) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Change request not found" });
-      }
-      if (request.status !== "pending_execution" || !request.slackApprovalId) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Change request is not pending Slack execution" });
-      }
-
-      const slackStatus = getSlackApprovalStatus(request.slackApprovalId);
-      if (!slackStatus || slackStatus.status !== "approved") {
-        // If Slack denied or expired, update the change request accordingly
-        if (slackStatus?.status === "denied") {
-          await updateChangeRequestStatus(input.changeRequestId, { status: "denied", reviewNotes: `${request.reviewNotes || ""}\n[Slack denied by ${slackStatus.resolvedBy}]` }, "pending_execution");
-          return { success: false, message: "Slack approval was denied" };
-        }
-        if (slackStatus?.status === "expired") {
-          await updateChangeRequestStatus(input.changeRequestId, { status: "expired" }, "pending_execution");
-          return { success: false, message: "Slack approval expired" };
-        }
-        throw new TRPCError({ code: "BAD_REQUEST", message: `Slack approval status: ${slackStatus?.status || "not found"}` });
-      }
-
-      // Execute via the existing executeApprovedAdminAction dispatcher
-      try {
-        const execResult = await executeApprovedAdminAction(slackStatus, ctx);
-        markSlackActionExecuted(request.slackApprovalId, execResult.message);
-        return { success: true, message: execResult.message };
-      } catch (error: any) {
-        markSlackActionFailed(request.slackApprovalId, error.message || "Execution failed");
-        // Still mark the change request as approved (execution failed but admin intent was clear)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error.message || "Failed to execute approved change request",
-        });
-      }
     }),
 });

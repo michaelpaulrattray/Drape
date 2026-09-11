@@ -24,11 +24,9 @@
  *
  * Sentence case, which is the house voice (brief 05, #421/#428) and was already
  * what the two client surfaces said. The two server copies were Title Case
- * ("Refund Credits"); they compose Slack notification copy, production has no
- * Slack webhook configured, and nothing else read them — so adopting the
- * client's wording here settles the case question everywhere at once rather
- * than leaving the panel and the notification disagreeing the day that channel
- * is wired.
+ * ("Refund Credits"); they composed Slack notification copy — an integration
+ * retired outright by #800 — and nothing else read them, so the client's
+ * wording settled the case question everywhere at once.
  *
  * `IP` keeps its capitals. It is an initialism, not a word.
  *
@@ -36,10 +34,8 @@
  *
  * - **Icons and colours** stay in `client/src/features/admin/ChangeRequestConstants.tsx`.
  *   `shared/` is imported by the server and may not depend on `lucide-react`.
- * - **`ACTION_LABELS` in `server/slack/slackApproval.ts` is a SIBLING, not an
- *   eighth copy** — it is keyed on approval *actions* (`cr_refundCredits`,
- *   `blockIP`), not on change-request *types*, and its values carry a
- *   `Change Request: ` prefix. Folding it in would be a different change.
+ * - The `ACTION_LABELS` sibling this list used to name lived in the Slack
+ *   approval module and was deleted with it (#800).
  * - **The order types are OFFERED in** is per-surface and stays with the
  *   caller: the admin filter leads with the money types (`ALL_TYPES`), the
  *   moderator's create form follows the order below. Declaration order here is
@@ -67,6 +63,38 @@ export type ChangeRequestType = keyof typeof CHANGE_REQUEST_TYPE_LABELS;
 export const CHANGE_REQUEST_TYPES = Object.keys(
   CHANGE_REQUEST_TYPE_LABELS,
 ) as ChangeRequestType[];
+
+/**
+ * The executor action each SENSITIVE change-request type becomes — THE one
+ * declaration, and also the definition of "sensitive": a type is sensitive
+ * exactly when it has an executor action, and since #800 approving a
+ * sensitive request EXECUTES it inside the same mutation.
+ *
+ * ⚠ It lives in `shared/` because both sides read it: the server routes the
+ * approved action with it (`server/lib/adminActions`), and the admin panel
+ * derives which types get the "runs the moment you approve it" warning.
+ * Before #800 the client carried a hand-typed `SENSITIVE_TYPES` of THREE
+ * names against the server's six — refund_credits, add_credits and block_ip
+ * executed without ever wearing the warning. Working law 4: derive, never
+ * mirror. (The table itself was already the survivor of three hand-typed
+ * copies, reconciled 2026-08-25, 3g's D.)
+ */
+export const CHANGE_REQUEST_ACTION_BY_TYPE = {
+  suspend_user: "cr_suspendUser",
+  unsuspend_user: "cr_unsuspendUser",
+  refund_credits: "cr_refundCredits",
+  add_credits: "cr_addCredits",
+  block_ip: "cr_blockIP",
+  stripe_refund: "cr_stripeRefund",
+} as const;
+
+export type ChangeRequestAction =
+  (typeof CHANGE_REQUEST_ACTION_BY_TYPE)[keyof typeof CHANGE_REQUEST_ACTION_BY_TYPE];
+
+/** The types whose approval executes immediately, for the panel's warning. */
+export const SENSITIVE_CHANGE_REQUEST_TYPES = Object.keys(
+  CHANGE_REQUEST_ACTION_BY_TYPE,
+) as (keyof typeof CHANGE_REQUEST_ACTION_BY_TYPE)[];
 
 /**
  * The label for a type, falling back to the raw key.

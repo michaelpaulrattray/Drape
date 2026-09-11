@@ -19,7 +19,6 @@
 
 import { getDb } from "./db";
 import { auditLogs, AUDIT_ACTIONS, type AuditAction, type AuditLog } from "../drizzle/schema";
-import { notifyOwner } from "./_core/notification";
 import { eq, and, gte, desc } from "drizzle-orm";
 import { createModuleLogger } from "./logging/logger";
 const log = createModuleLogger("auditLog");
@@ -231,11 +230,6 @@ async function handleAbuseDetection(
   const db = await getDb();
   if (!db) return;
 
-  // Get user info for notifications
-  const { getUserById } = await import("./db");
-  const user = await getUserById(userId);
-  const userName = user?.name || `User ${userId}`;
-  
   await db.insert(auditLogs).values({
     userId,
     action: AUDIT_ACTIONS.ABUSE_DETECTED,
@@ -251,74 +245,11 @@ async function handleAbuseDetection(
     severity: pattern.severity,
   });
 
-  // Send Slack notification with emergency action buttons
-  try {
-    const { SlackAlerts } = await import("./slack/slackNotification");
-    
-    if (pattern.name === "Credits Exploit Attempt") {
-      await SlackAlerts.creditsExploit(userId, userName, eventCount);
-    } else if (pattern.name === "Rapid Model Deletion") {
-      await SlackAlerts.rapidDeletion(userId, userName, eventCount);
-    } else if (pattern.name === "Billing Anomaly") {
-      await SlackAlerts.billingAnomaly(userId, userName, pattern.name, pattern.description);
-    } else {
-      // Generic alert for other patterns
-      const { sendSlackAlert } = await import("./slack/slackNotification");
-      await sendSlackAlert({
-        title: `Security Alert: ${pattern.name}`,
-        description: pattern.description,
-        severity: pattern.severity,
-        fields: [
-          { title: "User", value: userName, short: true },
-          { title: "User ID", value: String(userId), short: true },
-          { title: "Events", value: String(eventCount), short: true },
-          { title: "Threshold", value: String(pattern.threshold), short: true },
-        ],
-        userId,
-        userName,
-        alertContext: {
-          patternName: pattern.name,
-          eventCount,
-        },
-      });
-    }
-  } catch (error) {
-    log.error({ err: error }, "[AbuseDetection] Failed to send Slack alert:");
-  }
-
-  // Also notify owner via in-app notification for critical patterns
-  if (pattern.severity === "critical") {
-    try {
-      await notifyOwner({
-        title: `🚨 Security Alert: ${pattern.name}`,
-        content: `
-**Abuse Pattern Detected**
-
-**User ID:** ${userId}
-**Pattern:** ${pattern.name}
-**Severity:** ${pattern.severity.toUpperCase()}
-
-**Details:**
-${pattern.description}
-
-**Statistics:**
-- Events detected: ${eventCount}
-- Threshold: ${pattern.threshold}
-- Time window: ${pattern.windowMinutes} minutes
-
-**Recommended Actions:**
-1. Review the user's recent activity in the audit logs
-2. Consider temporarily suspending the account if abuse is confirmed
-3. Investigate the source of the activity (IP addresses, user agents)
-
-This is an automated security notification from Drape.
-        `.trim(),
-      });
-      log.info(`[AbuseDetection] Owner notified about ${pattern.name} for user ${userId}`);
-    } catch (error) {
-      log.error({ err: error }, "[AbuseDetection] Failed to notify owner:");
-    }
-  }
+  // The ABUSE_DETECTED row above IS the surface: it lands on the staff
+  // audit log and, at warning/critical severity, on the admin overview's
+  // alerts feed. The Slack alert and the Slack-only "owner notification"
+  // that used to follow were retired with #800 — production never had a
+  // webhook, so this row was always the only record anyone could read.
 }
 
 // ============ Query Helpers ============

@@ -1,5 +1,4 @@
 import { router } from "../../_core/trpc";
-import { slackApprovalRouter } from "./slackApproval";
 import { auditLogsRouter } from "./auditLogs";
 import { usersRouter } from "./users";
 import { rolesRouter } from "./roles";
@@ -18,8 +17,6 @@ import { bugReportsRouter } from "./bugReports";
  * backward compatibility with existing client code.
  */
 export const adminRouter = router({
-  // Slack Approval Flow
-  ...slackApprovalRouter._def.procedures,
   // Audit Logs
   ...auditLogsRouter._def.procedures,
   // User Management (suspend, unsuspend, list, details, credits, activity)

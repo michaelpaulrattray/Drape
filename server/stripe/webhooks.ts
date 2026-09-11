@@ -29,7 +29,6 @@ import {
   getCreditTransactionByRef,
   appendChangeRequestReviewNote,
 } from "../db";
-import { SlackAlerts } from "../slack/slackNotification";
 import { SubscriptionPlan } from "./stripeProducts";
 import { PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
@@ -686,13 +685,27 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
     const failureMessage = (invoice as any).last_finalization_error?.message
       || (invoice as any).charge?.failure_message
       || "Unknown reason";
-    await SlackAlerts.paymentFailed(
-      userId,
+    // The warning audit row IS the alert: it lands on the admin overview's
+    // alerts feed and the staff audit log's billing filter (#771's pattern;
+    // the Slack alert this replaces went to a channel production never had).
+    // (`detail` rather than an inline object literal on the metadata key —
+    // this is an AUDIT row's, not Stripe-bound, and environmentTag.test.ts
+    // reads every inline block in this directory as a Stripe write.)
+    const failureDetail = {
+      targetUserId: userId,
       userName,
-      amountDue,
-      invoiceCurrency,
-      `FINAL FAILURE — subscription auto-cancelled. Reason: ${failureMessage}`
-    );
+      amountDueCents: amountDue,
+      currency: invoiceCurrency,
+      reason: `FINAL FAILURE — subscription auto-cancelled. Reason: ${failureMessage}`,
+    };
+    await logAuditEvent({
+      userId,
+      action: AUDIT_ACTIONS.BILLING_PAYMENT_FINAL_FAILURE,
+      resourceType: "billing",
+      resourceId: subscriptionId,
+      metadata: failureDetail,
+      severity: "warning",
+    });
 
     log.info(`[Webhook] User ${userId} subscription auto-cancelled after final payment failure`);
 
@@ -910,7 +923,8 @@ async function handleRefundFailed(refund: Stripe.Refund): Promise<WebhookResult>
 
 /**
  * Handle charge.dispute.created event
- * Sends a critical Slack alert when a chargeback/dispute is filed.
+ * Writes a critical audit row (the admin alerts feed) when a chargeback is
+ * filed, then applies the protective actions.
  */
 async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookResult> {
   const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id || "unknown";
@@ -937,16 +951,25 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
     }
   }
 
-  // Send critical Slack alert (always, even if user not identified)
-  await SlackAlerts.chargebackFiled(
-    dispute.id,
+  // The critical audit row IS the alert (always written, even if the user
+  // was not identified): admin overview alerts feed + billing filter.
+  const filedDetail = {
+    targetUserId: userId,
+    userName,
     chargeId,
-    amount,
+    amountCents: amount,
     currency,
     reason,
+    identified: userId !== undefined,
+  };
+  await logAuditEvent({
     userId,
-    userName
-  );
+    action: AUDIT_ACTIONS.BILLING_CHARGEBACK_FILED,
+    resourceType: "billing",
+    resourceId: dispute.id,
+    metadata: filedDetail,
+    severity: "critical",
+  });
 
   // If we identified the user, auto-suspend and revoke credits.
   //
@@ -956,7 +979,7 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
   // ACKed 200 and recorded, so Stripe never redelivered and a chargeback
   // could leave the account NOT suspended and its credits NOT frozen: the
   // protective control this handler exists for, silently absent. A failed
-  // suspend or revoke FAILS THE EVENT below, after the alert has gone out,
+  // suspend or revoke FAILS THE EVENT below, after the audit row has been written,
   // and Stripe redelivers for ~3 days. On the way back: the suspend is one
   // idempotent UPDATE; the revoke is skipped when its ledger row already
   // exists (read by ref, below), because the amount is re-read from the
@@ -1032,7 +1055,7 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
 
   return {
     success: true,
-    message: `Dispute ${dispute.id} filed — user ${userId ? `#${userId}: ${actions.join(", ")}` : "not identified"} — Slack alert sent`,
+    message: `Dispute ${dispute.id} filed — user ${userId ? `#${userId}: ${actions.join(", ")}` : "not identified"} — audit row written`,
   };
 }
 
@@ -1065,16 +1088,26 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
     }
   }
 
-  // Send Slack alert with outcome
-  await SlackAlerts.chargebackResolved(
-    dispute.id,
+  // The warning audit row carries the outcome — worth the alerts feed
+  // whichever way it went: a win must restore credits, a loss keeps the
+  // suspension and cancels the subscription.
+  const resolvedDetail = {
+    targetUserId: userId,
+    userName,
     chargeId,
-    amount,
+    amountCents: amount,
     currency,
     status,
+    identified: userId !== undefined,
+  };
+  await logAuditEvent({
     userId,
-    userName
-  );
+    action: AUDIT_ACTIONS.BILLING_CHARGEBACK_RESOLVED,
+    resourceType: "billing",
+    resourceId: dispute.id,
+    metadata: resolvedDetail,
+    severity: "warning",
+  });
 
   const actions: string[] = [];
   // ⚠ A restore that did not happen must FAIL THE EVENT (#789, PR #787's
@@ -1177,6 +1210,6 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
 
   return {
     success: true,
-    message: `Dispute ${dispute.id} closed (${status}) — ${userId ? actions.join(", ") : "user not identified"} — Slack alert sent`,
+    message: `Dispute ${dispute.id} closed (${status}) — ${userId ? actions.join(", ") : "user not identified"} — audit row written`,
   };
 }

@@ -1,18 +1,20 @@
 /**
- * Change request action handlers — moderator-escalated actions approved via Slack.
- * These always involve a change request ID and update its status on completion.
+ * Change request action handlers — moderator-escalated actions an admin has
+ * approved in the panel. These always involve a change request ID and update
+ * its status on completion (`pending_execution` → `approved`), so a request
+ * whose execution was interrupted stays visibly unsettled rather than
+ * silently done.
  */
 
 import { logAuditEvent, AUDIT_ACTIONS } from "../../auditLog";
 import { getClientIp } from "../../security/rateLimit";
 import { writeImmutableLog } from "../../security/adminSecurity";
-import { type PendingAction } from "../../slack/slackApproval";
-import { type AdminActionContext } from "./index";
+import { type AdminActionContext, type ApprovedChangeRequestAction } from "./index";
 import { createModuleLogger } from "../../logging/logger";
 const log = createModuleLogger("lib/adminActions");
 
 export async function executeChangeRequestAction(
-  pendingAction: PendingAction,
+  pendingAction: ApprovedChangeRequestAction,
   ctx: AdminActionContext
 ): Promise<{ message: string }> {
   const params = pendingAction.params;
@@ -44,7 +46,6 @@ export async function executeChangeRequestAction(
           targetUserEmail: targetUser.email,
           reason,
           changeRequestId,
-          approvedViaSlack: true,
           approvedBy: pendingAction.resolvedBy,
         },
         severity: "critical",
@@ -59,7 +60,7 @@ export async function executeChangeRequestAction(
         targetUserEmail: targetUser.email,
         reason,
         changeRequestId,
-        slackApprovedBy: pendingAction.resolvedBy,
+        approvedBy: pendingAction.resolvedBy,
       });
 
       return { message: `User ${targetUser.email || targetUser.name} suspended via change request #${changeRequestId}` };
@@ -88,7 +89,6 @@ export async function executeChangeRequestAction(
           targetUserId: userId,
           targetUserEmail: targetUser.email,
           changeRequestId,
-          approvedViaSlack: true,
           approvedBy: pendingAction.resolvedBy,
         },
         severity: "info",
@@ -102,7 +102,7 @@ export async function executeChangeRequestAction(
         targetUserId: userId,
         targetUserEmail: targetUser.email,
         changeRequestId,
-        slackApprovedBy: pendingAction.resolvedBy,
+        approvedBy: pendingAction.resolvedBy,
       });
 
       return { message: `User ${targetUser.email || targetUser.name} unsuspended via change request #${changeRequestId}` };
@@ -135,7 +135,6 @@ export async function executeChangeRequestAction(
           reason,
           changeRequestId,
           newBalance: creditResult.newBalance,
-          approvedViaSlack: true,
           approvedBy: pendingAction.resolvedBy,
         },
         severity: "info",
@@ -152,7 +151,7 @@ export async function executeChangeRequestAction(
         reason,
         changeRequestId,
         newBalance: creditResult.newBalance,
-        slackApprovedBy: pendingAction.resolvedBy,
+        approvedBy: pendingAction.resolvedBy,
       });
 
       return { message: `Refunded ${amount} credits to ${targetUser.email || targetUser.name} via change request #${changeRequestId}` };
@@ -185,7 +184,6 @@ export async function executeChangeRequestAction(
           reason,
           changeRequestId,
           newBalance: creditResult.newBalance,
-          approvedViaSlack: true,
           approvedBy: pendingAction.resolvedBy,
         },
         severity: "info",
@@ -202,7 +200,7 @@ export async function executeChangeRequestAction(
         reason,
         changeRequestId,
         newBalance: creditResult.newBalance,
-        slackApprovedBy: pendingAction.resolvedBy,
+        approvedBy: pendingAction.resolvedBy,
       });
 
       return { message: `Added ${amount} credits to ${targetUser.email || targetUser.name} via change request #${changeRequestId}` };
@@ -227,7 +225,6 @@ export async function executeChangeRequestAction(
         metadata: {
           reason,
           changeRequestId,
-          approvedViaSlack: true,
           approvedBy: pendingAction.resolvedBy,
         },
         severity: "warning",
@@ -241,7 +238,7 @@ export async function executeChangeRequestAction(
         ipAddress,
         reason,
         changeRequestId,
-        slackApprovedBy: pendingAction.resolvedBy,
+        approvedBy: pendingAction.resolvedBy,
       });
 
       return { message: `IP ${ipAddress} blocked via change request #${changeRequestId}` };
@@ -348,7 +345,6 @@ export async function executeChangeRequestAction(
           creditsDeducted: creditsToDeduct,
           newBalance: currentBalance - creditsToDeduct,
           changeRequestId,
-          approvedViaSlack: true,
           approvedBy: pendingAction.resolvedBy,
         },
         severity: "critical",
@@ -366,7 +362,7 @@ export async function executeChangeRequestAction(
         refundType,
         creditsDeducted: creditsToDeduct,
         changeRequestId,
-        slackApprovedBy: pendingAction.resolvedBy,
+        approvedBy: pendingAction.resolvedBy,
       });
 
       return { message: `Stripe refund of $${(refundAmountCents / 100).toFixed(2)} issued (${refundType}). ${creditsToDeduct} credits deducted. Refund ID: ${refundResult.refundId}` };

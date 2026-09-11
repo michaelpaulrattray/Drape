@@ -93,21 +93,13 @@ export default function AdminChangeRequests() {
 
   const reviewMutation = trpc.admin.reviewChangeRequest.useMutation({
     onSuccess: (result: any) => {
-      if (result.pendingExecution) {
-        toast.info(`${result.message}${!result.slackSent ? " (Slack not configured — will auto-approve)" : ""}`);
-      } else {
-        const executionInfo = result.executionResult;
-        if (executionInfo?.executed && executionInfo?.success) {
-          toast.success(`${result.message} — Action auto-executed successfully.`);
-        } else if (executionInfo?.executed && !executionInfo?.success) {
-          toast.warning(`${result.message} — Auto-execution failed: ${executionInfo.error || "Unknown error"}. Manual action may be required.`);
-        } else {
-          toast.success(result.message);
-        }
-      }
+      // A sensitive approval executes inside the mutation (#800); an executor
+      // failure arrives through onError with the request left visibly
+      // unsettled ("Execution interrupted" in the list).
+      toast.success(result.message);
       setReviewDialogOpen(false);
       setReviewNotes("");
-      if (!result.pendingExecution) setSelectedRequestId(null);
+      setSelectedRequestId(null);
       listQuery.refetch();
       detailQuery.refetch();
       /* The bar's pill — see the note above `utils`. */
@@ -115,41 +107,12 @@ export default function AdminChangeRequests() {
     },
     onError: (error: { message: string }) => {
       toast.error(`Review failed: ${error.message}`);
+      listQuery.refetch();
+      detailQuery.refetch();
     },
   });
 
   const selectedRequest = detailQuery.data;
-
-  const slackStatusQuery = trpc.admin.checkChangeRequestSlackStatus.useQuery(
-    { changeRequestId: selectedRequestId! },
-    {
-      enabled: !!selectedRequestId && selectedRequest?.status === "pending_execution",
-      refetchInterval: 3000,
-    }
-  );
-
-  const executeAfterSlackMutation = trpc.admin.executeChangeRequestAfterSlack.useMutation({
-    onSuccess: (result: { success: boolean; message: string }) => {
-      toast.success(result.message);
-      setSelectedRequestId(null);
-      listQuery.refetch();
-      /* The bar's pill — see the note above `utils`. */
-      void utils.admin.getOverview.invalidate();
-    },
-    onError: (error: { message: string }) => {
-      toast.error(`Execution failed: ${error.message}`);
-    },
-  });
-
-  useEffect(() => {
-    if (
-      slackStatusQuery.data?.slackStatus === "approved" &&
-      selectedRequestId &&
-      !executeAfterSlackMutation.isPending
-    ) {
-      executeAfterSlackMutation.mutate({ changeRequestId: selectedRequestId });
-    }
-  }, [slackStatusQuery.data?.slackStatus, selectedRequestId]);
 
   const refreshControls = useStaffRefresh({
     autoRefresh,
@@ -161,12 +124,7 @@ export default function AdminChangeRequests() {
       /* #759 — the open request's own reader, same reading as its siblings,
          and this page was invisible to that card's sweep for the same reason
          (the handler is inline, not a named `handleRefresh`). Gated on the
-         selection because the input asserts over a nullable id.
-
-         `slackStatusQuery` is deliberately NOT here and it is the one query in
-         the whole sweep that needs no button: it carries its own
-         `refetchInterval: 3000`, so it is never more than three seconds old
-         and pressing Refresh could not make it fresher. */
+         selection because the input asserts over a nullable id. */
       if (selectedRequestId) detailQuery.refetch();
       toast.success("Change requests refreshed");
     },
@@ -280,8 +238,6 @@ export default function AdminChangeRequests() {
           onPageChange={setPage}
           selectedRequest={selectedRequest}
           detailLoading={detailQuery.isLoading}
-          slackStatus={slackStatusQuery.data?.slackStatus}
-          isSlackExecuting={executeAfterSlackMutation.isPending}
           onApprove={() => openReviewDialog("approved")}
           onDeny={() => openReviewDialog("denied")}
         />

@@ -42,14 +42,6 @@ vi.mock("../db", () => ({
   creditReferrerOnPaidAction: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("../slack/slackNotification", () => ({
-  SlackAlerts: {
-    chargebackFiled: vi.fn().mockResolvedValue(true),
-    chargebackResolved: vi.fn().mockResolvedValue(true),
-    paymentFailed: vi.fn().mockResolvedValue(true),
-  },
-}));
-
 vi.mock("../db/connection", () => ({
   getDb: vi.fn().mockResolvedValue({
     select: vi.fn().mockReturnValue({

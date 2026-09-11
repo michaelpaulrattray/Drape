@@ -298,9 +298,10 @@ describe("brief 11 §6/§7 — the segmented priority, the plain Slack line, one
     expect(code(audit), "duration is not segmented").not.toContain('className="dp-segmented"');
   });
 
-  it("the Slack note is a plain line, and the Stripe slab keeps its warning", () => {
+  it("the audit note is a plain line, and the Stripe slab keeps its warning", () => {
     const user = DIALOG_FILES.find((d) => d.rel.endsWith("UserActionModals.tsx"))!.src;
-    expect(code(user), "the routine fact keeps its words").toContain("This action will be logged and reported to Slack");
+    // #800 reworded the routine fact — the record is the audit trail now.
+    expect(code(user), "the routine fact keeps its words").toContain("This action will be logged in the audit trail");
     expect(code(user), "…and loses the slab (§7)").not.toContain("severityLook");
 
     const cr = DIALOG_FILES.find((d) => d.rel.endsWith("ChangeRequestModal.tsx"))!.src;

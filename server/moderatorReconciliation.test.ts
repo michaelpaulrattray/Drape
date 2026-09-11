@@ -50,10 +50,6 @@ vi.mock("./klaviyo", () => ({
   sendAccountFrozenEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("./slack/slackNotification", () => ({
-  SlackAlerts: { accountFrozenByStaff: vi.fn().mockResolvedValue(undefined) },
-}));
-
 vi.mock("./auditLog", () => ({
   logAuditEvent: vi.fn().mockResolvedValue(undefined),
   AUDIT_ACTIONS: {

@@ -109,7 +109,6 @@ function domainFor(relative: string): string {
     [/^server\/wardrobe\//, "wardrobe"],
     [/^server\/stripe\//, "billing"],
     [/^server\/security\//, "security"],
-    [/^server\/slack\//, "alerting"],
     [/^server\/logging\//, "platform"],
     [/^server\/monitoring\//, "platform"],
     [/^server\/db\//, "data"],

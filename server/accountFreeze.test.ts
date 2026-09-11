@@ -28,12 +28,6 @@ vi.mock("./auditLog", () => ({
   },
 }));
 
-vi.mock("./slack/slackNotification", () => ({
-  SlackAlerts: {
-    accountFrozenByStaff: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
 describe("Account Freeze System", () => {
   beforeEach(() => {
     vi.clearAllMocks();

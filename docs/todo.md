@@ -4611,7 +4611,7 @@ The entry and configuration files are properly set up with several enhancements 
 
 ## Correction — 2026-07-25 (security audit)
 
-Four items above were marked complete but were never wired into a request path. The helpers, the database tables, the Slack alerts and the documentation were all built; the call site was not. Entries are left as-is because this is a historical log, but they should not be read as delivered:
+Four items above were marked complete but were never wired into a request path. The helpers, the database tables, the Slack alerts and the documentation were all built; the call site was not. Entries are left as-is because this is a historical log, but they should not be read as delivered — **and as of #800 (2026-09-11) the ENTIRE Slack integration this log records being built is retired and deleted; every Slack checkbox above is history**:
 
 - `[x] Add IP blocking check to rate limiter middleware` (~line 2539) — `isIpBlocked` is never called during a request. Blocked addresses are recorded and not stopped. (H2)
 - `[x] Implement admin allowlist` (~line 2576) — returns true for everyone when the list is empty, which it is in production. (H3)

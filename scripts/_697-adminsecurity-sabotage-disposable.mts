@@ -167,7 +167,6 @@ const SABOTAGES: Sabotage[] = [
     replace: "  return false;",
     expect: [
       "every action the product declares sensitive is answered sensitive",
-      "a sensitive action reaches the SENSITIVE Slack alert, carrying the details it was given",
       "a sensitive action is recorded at WARNING severity and an ordinary one at INFO",
     ].sort(),
     before: [
@@ -182,7 +181,6 @@ const SABOTAGES: Sabotage[] = [
     replace: "  return true;",
     expect: [
       "an ordinary action is not sensitive — the control that makes the arm above mean something",
-      "an ordinary action reaches the ORDINARY Slack alert and never the sensitive one",
       "a sensitive action is recorded at WARNING severity and an ordinary one at INFO",
     ].sort(),
     before: [
@@ -199,19 +197,16 @@ const SABOTAGES: Sabotage[] = [
     before: [],
   },
   {
-    name: "the sensitive branch sends the ORDINARY alert instead",
+    /* #800: the two Slack-branch sabotages that stood here (sending the
+       ordinary alert from the sensitive branch; dropping the caller's
+       details) died with the branch they sabotaged — logAdminAction has one
+       landing now, the audit row. What replaces them guards that landing:
+       the details vanish from the row's metadata. */
+    name: "logAdminAction drops the caller's details from the audit row",
     file: SEC,
-    find: "    await SlackAlerts.sensitiveAdminAction(",
-    replace: "    await SlackAlerts.adminAction(",
-    expect: ["a sensitive action reaches the SENSITIVE Slack alert, carrying the details it was given"],
-    before: ["should use sensitive alert for sensitive actions"],
-  },
-  {
-    name: "logAdminAction drops the caller's details on the way to Slack",
-    file: SEC,
-    find: "      targetType,\n      targetId,\n      details\n    );\n  } else {",
-    replace: "      targetType,\n      targetId,\n      undefined\n    );\n  } else {",
-    expect: ["a sensitive action reaches the SENSITIVE Slack alert, carrying the details it was given"],
+    find: "      adminAction: action,\n      details,",
+    replace: "      adminAction: action,\n      details: undefined,",
+    expect: ["an action's details land on the audit row's metadata"],
     before: [],
   },
   {
@@ -220,14 +215,6 @@ const SABOTAGES: Sabotage[] = [
     find: '    severity: isSensitiveAction(action) ? "warning" : "info",',
     replace: '    severity: "info",',
     expect: ["a sensitive action is recorded at WARNING severity and an ordinary one at INFO"],
-    before: [],
-  },
-  {
-    name: "the unauthorized-access alert stops naming who attempted it",
-    file: SEC,
-    find: "  await SlackAlerts.unauthorizedAdminAccess(\n    userId,\n    userName,",
-    replace: "  await SlackAlerts.unauthorizedAdminAccess(\n    userId,\n    userName.slice(0, 0),",
-    expect: ["an unauthorized attempt alerts with the user, the attempt and the IP that made it"],
     before: [],
   },
   {

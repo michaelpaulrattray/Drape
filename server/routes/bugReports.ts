@@ -3,7 +3,6 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { checkRateLimit, getClientIp, rateLimitError } from "../security/rateLimit";
 import { createBugReport } from "../db";
-import { dispatch } from "../slack/slackCore";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("routes/bugReports");
@@ -42,26 +41,9 @@ export const bugReportsRouter = router({
         viewport: input.viewport,
       });
 
-      // Send Slack notification (non-blocking)
-      const isFeedback = input.category === "feedback";
-
-      dispatch({
-        type: "bug_report",
-        title: isFeedback ? "User Feedback Received" : "Bug Report Submitted",
-        description: input.description,
-        severity: "info",
-        channels: ["system-alerts"],
-        fields: [
-          { title: "Report ID", value: `#${bugReportId}`, short: true },
-          { title: "User", value: `${ctx.user.name || "Unknown"} (ID: ${ctx.user.id})`, short: true },
-          { title: "Category", value: input.category, short: true },
-          { title: "Page", value: input.page || "N/A", short: true },
-          ...(input.modelId ? [{ title: "Model ID", value: String(input.modelId), short: true }] : []),
-        ],
-        skipDedup: true,
-      }).catch((err) => {
-        log.error({ err }, "Failed to send bug report Slack notification");
-      });
+      // The admin bug-report inbox (#255) is the read path — the row above
+      // IS the notification. The Slack dispatch that used to sit here pointed
+      // at a webhook production never had (#800).
 
       log.info({ bugReportId, userId: ctx.user.id, category: input.category }, "Bug report submitted");
 

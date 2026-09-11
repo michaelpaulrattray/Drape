@@ -1,3 +1,4 @@
+import { SENSITIVE_CHANGE_REQUEST_TYPES } from "@shared/changeRequestLabels";
 import {
   Coins,
   Flag,
@@ -58,7 +59,10 @@ export const STATUS_CONFIG: Record<string, { label: string; className: string; i
   denied: { label: "Denied", className: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
   cancelled: { label: "Cancelled", className: "bg-gray-100 text-gray-600 border-gray-200", icon: XCircle },
   expired: { label: "Expired", className: "bg-gray-100 text-gray-600 border-gray-200", icon: Clock },
-  pending_execution: { label: "Awaiting Slack", className: "bg-purple-50 text-purple-700 border-purple-200", icon: Timer },
+  // A sensitive request executes inside the approve mutation (#800); this
+  // state survives only when that execution was interrupted or threw, and it
+  // needs a person.
+  pending_execution: { label: "Execution interrupted", className: "bg-purple-50 text-purple-700 border-purple-200", icon: Timer },
 };
 
 export const PRIORITY_CONFIG: Record<string, { label: string; className: string }> = {
@@ -85,7 +89,10 @@ export const ALL_TYPES: ChangeRequestType[] = [
 ];
 export const ALL_STATUSES = ["pending", "approved", "denied", "pending_execution", "cancelled", "expired", "all"];
 export const ALL_PRIORITIES = ["all", "low", "normal", "high", "urgent"];
-export const SENSITIVE_TYPES = ["suspend_user", "unsuspend_user", "stripe_refund"];
+// Derived from the server's own routing table (#800) — a hand-typed copy
+// here held three names against the server's six, so half the types that
+// execute on approve never wore the warning.
+export const SENSITIVE_TYPES: string[] = [...SENSITIVE_CHANGE_REQUEST_TYPES];
 
 // ─── Contextual Action Config per Type ───────────────────────────────────────
 // Defines what the approve/deny buttons should say and what the modal copy should be
