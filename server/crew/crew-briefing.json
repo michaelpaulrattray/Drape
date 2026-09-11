@@ -1,7 +1,7 @@
 {
-  "edition": 346,
-  "updatedAt": "2026-09-11T13:46:37.863Z",
-  "shift": "Opus night shift — two of the team's own checking tools were made honest tonight, and one decision is on your desk. WHAT CHANGED. The design-law walk is the thing that reads every page of the product and says whether it keeps the rules you set — price on the button, no typewriter type on sentences, no loading skeletons under a 'that brief can't be cast' message, the 7-quiet-days line wherever unsigned sheets show. Four of those rules were reading the wrong part of the page. Three read WIDER than the rule — a price on the button NEXT DOOR counted for a button with none; the '7 quiet days' line anywhere on the page satisfied a section that never said it; a loading skeleton in the page header counted as sitting under a refusal further down. One read NARROWER — the typewriter rule could not see a sentence at all once it held a single figure in the machine face, which is exactly what your #524 ruling asked for, so the moderator line you ruled on was invisible to the check meant to protect it. All four now read their own region. Each fix ships with a pair of test pages the rule must fail and must pass, and every pair was driven against the OLD rule first to prove it would have slipped through — nine new pairs, all nine slipped. PROVEN ON THE REAL APP: the walk was run over all 19 pages, both themes, before and after each change; every verdict is identical except the one that should move — the moderator page went from 'no sentences here' to 'one sentence, in the reading face'. WHAT THE SHARPER CHECK FOUND: six machine lines on three pages (the casting cost line, the sheet's cost line, the four status labels at the top of this page) that are meant to be in the machine face but never wore the label the rule knows — the same class as #524, the same treatment, filed as #807 for its own shift with the before/after type measurement your ruling required. ON YOUR DESK: one decision, #721 — the night-shift's own 'usage cap' alarm still reads a shift WRITING ABOUT caps as a shift HITTING one (3 old logs would park the team with the wrong reason). The phrase list is yours by your earlier word, so the card asks rather than decides; recommendation stated on the card. Two reviews, every finding taken. Both live on production.",
+  "edition": 347,
+  "updatedAt": "2026-09-11T15:06:46.000Z",
+  "shift": "Opus night shift — a batch of three small ones, nothing on your desk changed. WHAT CHANGED FOR YOU: nothing you can see. #807 was the six machine lines on three pages (the casting cost line, the sheet's cost line, the four status labels at the top of this page) that were meant to be in the machine face but never wore the label the page-checking rule knows. They wear it now, beside their own class, and the type was MEASURED identical before and after in both themes — 22 readings, byte for byte — which is the bar your #524 ruling set. The sweep found three more of the same class the previous walk could not see: the card stamp on your desk cards ('#721 · filed 11 Sept'), which only shows when your desk holds a card; the 'Answered · still yours to do' chip; and the command line the page prints when a table is missing. FOUND ON THE WAY, FIXED THE SAME NIGHT (#809): the page-checking rule about '7 quiet days' had started flagging three pages that have no unsigned-sheets section at all. The phrase it hunts for was sitting in a COMMENT inside a stylesheet, and the rule's last repair (two nights ago) taught it to read the page's whole tree instead of what is painted — so it found the comment. It reads painted text now, and its sibling rule (skeletons under a refusal) had the identical flaw and would have called every loading strip on a page 'the hang' the day a comment mentioned the refusal copy. Both fixed with a pair of test pages each, driven against the old rule first: both slipped through it. Live on production. AND ONE MORE (#811): the second of tonight's two fixes merged with NO reviewer verdict — the reviewer's first step died with a git error because the first fix had landed on main two seconds earlier. A one-line fix to the reviewer's own fetch, merged on the gate alone (a change to the reviewer cannot be reviewed by it, by design). Stated here rather than discovered. YOUR DESK: unchanged — #721 still waits for one word. No new replies from you since edition 346.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "54 open, 1 waiting on you (#721), none urgent. 2 closed tonight, 1 filed, 25 stale (11 Sep)."
+        "source": "53 open, 1 waiting on you (#721), none urgent. 3 closed tonight, 2 of them filed the same night."
       },
       {
         "label": "One decision waits on you",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T13:45:07.895Z",
+      "readAt": "2026-09-11T15:08:22.582Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,27 @@
   ],
   "pipeline": [
     {
+      "id": "mono-labels-807",
+      "title": "Six machine lines wear the label the page-checking rule knows — nothing moves on the page, and the check stops flagging three pages that were never wrong",
+      "status": "merged",
+      "prNumber": 808,
+      "note": "Your #524 ruling applied to the class the sharper check can now see: the casting cost line, the sheet's cost line, the four status labels on this page, and three siblings the sweep found (the desk card stamp, the 'Answered · still yours to do' chip, the printed command). Computed type measured identical before and after, both themes, 22 readings. Live on production (build f4a2cd4c)."
+    },
+    {
+      "id": "law5-painted-text-809",
+      "title": "The '7 quiet days' check reads what is painted, not a comment in a stylesheet — three pages stop being flagged for a section they do not have",
+      "status": "merged",
+      "prNumber": 810,
+      "note": "Found on the old bytes during #807's walk. The rule's previous repair read the page's whole tree, so a stylesheet comment saying 'unsigned sheets' became the section on the casting sheet, the moderator page and the 404. Its sibling (skeletons under a refusal) had the same flaw. Both read painted text now; two new test-page pairs, both proven to slip the old rule; 30 of 30 checks pass. Live on production (build 91b66f11). Merged with no reviewer verdict — see #811."
+    },
+    {
+      "id": "triage-fetch-811",
+      "title": "The reviewer no longer loses its footing when main moves seconds before it looks — tonight's second fix merged unreviewed because of it",
+      "status": "merged",
+      "prNumber": 812,
+      "note": "The reviewer's first step fetched main one commit deep onto a full clone; when main had just moved, git could find no common ancestor and the step died, so no verdict was produced and the merge went through on the gate alone. One line: fetch at full depth. Merged on the gate alone by design (a change to the reviewer self-skips it). Live on production (build 597fd978)."
+    },
+    {
       "id": "design-law-regions-782",
       "title": "Three page-checking rules read their own region now, not the whole page — a neighbouring price, a footer line or a header skeleton can no longer stand in for the thing the rule is about",
       "status": "merged",
@@ -5435,11 +5456,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0911k-foreman",
+      "id": "queue-shape-0912a-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 54 open, two closed tonight (#782, #799), one filed (#807), one moved to your desk (#721); NEXT UP is empty",
-      "detail": "Both closed cards were the team's own checking tools, not product pages — nothing a customer sees changed. #807 is the six machine lines the sharper check now sees, small, its own shift. #721 is labelled blocked with a Waiting-on line and sits on your desk: 25 open cards have had no comment, close, reopen or commit for 7 days (read by queue-rot-read; a label alone does not reset that clock). Background switches govern what runs next; Machinist, Retro and Janitor come due 12 Sep."
+      "title": "The queue: 53 open, three closed tonight (#807, #809, #811 — two of them filed and fixed the same night); NEXT UP is empty",
+      "detail": "None of tonight's three is a product change a customer would notice; two are the team's own page-checking rule and one is the reviewer's own fetch. #721 is still the one card on your desk. 25 open cards have had no comment, close, reopen or commit for 7 days (read by queue-rot-read; a label alone does not reset that clock). Machinist, Retro and Janitor are DUE today by their own clocks and none is overdue yet — the next shift very likely runs one. Background switches all on; category order after patrols is Process, then Performance, then Housekeeping."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5621,7 +5642,7 @@
     176
   ],
   "nextUp": {
-    "readAt": "2026-09-11T13:45:07.894Z",
+    "readAt": "2026-09-11T15:08:22.580Z",
     "items": []
   }
 }
