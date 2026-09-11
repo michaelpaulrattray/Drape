@@ -281,13 +281,50 @@ export async function assertDockVisible(
  * "A sentence" is approximated as visible text with several words that ends in
  * sentence punctuation, or is long enough that it cannot be a label. Eyebrows,
  * counts, ids and index labels are all short and unpunctuated, so they pass.
+ *
+ * ⚠ **A SENTENCE WITH AN INLINE CHILD IS READ AS ONE RUN (#799).** This read
+ * leaf elements only — `if (el.children.length > 0) continue;` — so a sentence
+ * holding one `<span>` for a figure, a `<strong>`, a `<code>`, was never read:
+ * its leaves are short and pass, and the sentence itself was skipped as a
+ * container. His own ruling on #524 asks for exactly that shape — *"1 of 8
+ * accounts scanned are above 500 credits"* with the figures in the machine
+ * face and the words in the reading face — and the moment #798 built it the
+ * law reported `/moderator` as holding *no sentence-length text*. Set entirely
+ * in mono with one figure wrapped, it would have read the same. Blind in the
+ * direction that hides a defect.
+ *
+ * So an element is read as the text it paints IN ITS OWN FACE: a leaf reads
+ * its text; an element whose children are all `display: inline` reads the run
+ * — its own text nodes plus every text node whose ancestors up to it are all
+ * inline, same-face and visible, at any depth, whether or not it has prose of
+ * its own (PR #806 review, rounds 1 and 2); an element with a block or
+ * inline-block child reads only its own text nodes between them. Text in a
+ * DIFFERENT face is not part of its parent's run — it is a figure if short,
+ * and read on its own turn and caught if it is a sentence set in mono — so no
+ * word is ever counted twice. A same-face child of a run already read is that
+ * run's text, not a second sentence.
+ *
+ * `display: inline` EXACTLY, not `inline-block`: a sentence's figure is a
+ * `<span>` on the same line box as its words, while a row of chips, pills or
+ * buttons is a row of atomic boxes, and five short mono labels in a row must
+ * not read as a five-word mono sentence — the loud direction, #523's class.
+ *
+ * Stated limit (a clean run is a floor): words inside the inline children of
+ * a MIXED container — one that also holds a block child — are not read as
+ * part of that container's run; each such child is read on its own turn and
+ * only counts if it is sentence-length by itself.
+ *
+ * `designLawControls.mts` holds the pair the card asked for: a sans sentence
+ * with one mono figure (holds) and a mono sentence with one sans span
+ * (caught), plus the no-own-text shape from the review.
  */
 export async function assertNoMonoSentences(page: Page, where: string, log: LawLog) {
   const result = await page.evaluate(() => {
     const bad: string[] = [];
     let sentences = 0;
+    /* Elements already read as a run, so a same-face child is not re-read. */
+    const read = new Set<HTMLElement>();
     for (const el of Array.from(document.querySelectorAll<HTMLElement>("*"))) {
-      if (el.children.length > 0) continue;
       /*
         ONLY WHAT IS ACTUALLY PAINTED.
 
@@ -310,13 +347,62 @@ export async function assertNoMonoSentences(page: Page, where: string, log: LawL
         excuse the real offenders.
       */
       if (el.classList.contains("dp-eyebrow") || el.classList.contains("dp-chrome")) continue;
-      const text = (el.textContent ?? "").trim();
+      /*
+        THE TEXT THIS ELEMENT PAINTS IN ITS OWN FACE. Own text nodes always;
+        plus every `display: inline` child set in the same face when ALL the
+        children are inline (the run); nothing more when a child is a block or
+        an atomic inline box, because that child paints its own text and is
+        read on its own turn. A different-face child is never part of this
+        run — it is its own reading.
+      */
+      const font = getComputedStyle(el).fontFamily.toLowerCase();
+      const children = Array.from(el.children) as HTMLElement[];
+      const allInline = children.every((c) => getComputedStyle(c).display === "inline");
+      /*
+        Every text node under the element, kept only when EVERY element
+        between it and the run root is inline, in the same face and visible —
+        at any depth, not one level (PR #806 review, round 2: a sans <em>
+        nested inside a same-face <span> was folded into a mono run and
+        quoted as mono). A dropped node leaves a space so words on either
+        side do not run together. With a block or atomic child present, only
+        the element's own text nodes count. (A walker rather than recursion:
+        the bundler wraps a named function in `__name`, which the page lacks.)
+      */
+      const parts: string[] = [];
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        let own = true;
+        for (let p = n.parentElement; p && p !== el; p = p.parentElement) {
+          const style = getComputedStyle(p);
+          if (
+            !allInline ||
+            style.display !== "inline" ||
+            style.visibility === "hidden" ||
+            style.fontFamily.toLowerCase() !== font
+          ) {
+            own = false;
+            break;
+          }
+        }
+        parts.push(own ? (n.textContent ?? "") : " ");
+      }
+      const text = parts.join("").replace(/\s+/g, " ").trim();
       if (!text) continue;
       const words = text.split(/\s+/).length;
       const sentenceish = words >= 5 || /[.!?]$/.test(text);
       if (!sentenceish) continue;
+      /* A child in the same face as a run already read is that run's own
+         text. One that changes face is its own reading — a figure if short,
+         a violation if it is a sentence set in mono. */
+      let shadowed = false;
+      for (let p = el.parentElement; p; p = p.parentElement) {
+        if (!read.has(p)) continue;
+        shadowed = getComputedStyle(p).fontFamily.toLowerCase() === font;
+        break;
+      }
+      if (shadowed) continue;
+      read.add(el);
       sentences += 1;
-      const font = getComputedStyle(el).fontFamily.toLowerCase();
       if (font.includes("mono")) bad.push(text.slice(0, 70));
     }
     return { bad, sentences };

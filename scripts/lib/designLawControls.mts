@@ -237,6 +237,114 @@ export const CONTROLS: Control[] = [
     },
   },
   {
+    /*
+      A SENTENCE WITH ONE INLINE SPAN (#799). His #524 ruling puts a figure in
+      the machine face inside a reading-face sentence, and the leaf-only
+      reader could not see the sentence at all — either way round. The
+      compliant twin is his shape: sans sentence, one mono figure. The
+      offender is the mirror: the sentence itself in mono, one span in sans.
+      One difference between them — which face the run is set in.
+    */
+    law: "mono-sentences",
+    breaks: "a mono sentence hiding behind one inline span — the leaf-only read saw no sentence at all",
+    run: assertNoMonoSentences,
+    offender: {
+      html: page(
+        ``,
+        `<p style="font-family: 'Roboto Mono', monospace">1 of 8 accounts scanned are above ` +
+          `<span style="font-family: Inter, sans-serif">500</span> credits.</p>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        ``,
+        `<p style="font-family: Inter, sans-serif">1 of 8 accounts scanned are above ` +
+          `<span style="font-family: 'Roboto Mono', monospace">500</span> credits.</p>`,
+      ),
+    },
+  },
+  {
+    /*
+      NO OWN TEXT AT ALL (PR #806 review, finding 1). A mono sentence whose
+      every word sits inside a span — the wrapper's own text nodes are just
+      whitespace — is the card's class one shape narrower, and the first cut
+      required prose of the wrapper's own before it would read the run. The
+      compliant twin is the same markup in the reading face.
+    */
+    law: "mono-sentences",
+    breaks: "a mono sentence whose every word is inside a span, the wrapper holding no text of its own",
+    run: assertNoMonoSentences,
+    offender: {
+      html: page(
+        ``,
+        `<p style="font-family: 'Roboto Mono', monospace"><span>1 of 8 accounts</span> <span>scanned above 500 credits</span></p>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        ``,
+        `<p style="font-family: Inter, sans-serif"><span>1 of 8 accounts</span> <span>scanned above 500 credits</span></p>`,
+      ),
+    },
+  },
+  {
+    /*
+      A FACE CHANGE TWO LEVELS DOWN (PR #806 review, round 2). A sans <em>
+      nested inside a same-face <span> inside a mono label: the one-level
+      fold took the span's whole textContent and quoted nine sans-painted
+      words as a mono sentence, on a page whose only mono text is "TOTAL
+      160 CR". The compliant arm is that page; the offender is the same
+      markup with the <em> left in mono, which really is a mono sentence.
+      One difference — the nested element's face.
+    */
+    law: "mono-sentences",
+    breaks: "a face change two levels down — a sans <em> inside a same-face <span> must not be quoted as part of a mono run",
+    run: assertNoMonoSentences,
+    offender: {
+      html: page(
+        ``,
+        `<p style="font-family: 'Roboto Mono', monospace">TOTAL <span>160 CR ` +
+          `<em>of the eight hundred you started the month with.</em></span></p>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        ``,
+        `<p style="font-family: 'Roboto Mono', monospace">TOTAL <span>160 CR ` +
+          `<em style="font-family: Inter, sans-serif">of the eight hundred you started the month with.</em></span></p>`,
+      ),
+    },
+  },
+  {
+    /*
+      THE ROW OF CHIPS — the loud direction. Five short mono labels in one row
+      are labels, not a sentence, and the run reading stops at `display:
+      inline`: an `inline-block` child is an atomic box on the line, not a
+      word in the sentence. The two arms hold the SAME words in the SAME face;
+      the only difference is the children's display. Without this line a
+      chip strip on the sheet would read as a five-word mono sentence (#523's
+      class — a law that reddens on a correct page is one people learn to
+      ignore).
+    */
+    law: "mono-sentences",
+    breaks: "the display line — the same five mono labels as inline spans (a run) against inline-block chips (a row)",
+    run: assertNoMonoSentences,
+    offender: {
+      html: page(
+        `.w { font-family: 'Roboto Mono', monospace; } .l { display: inline; }`,
+        `<div class="w"><span class="l">ROLL 02</span> <span class="l">SIGNED</span> <span class="l">8 KEPT</span> ` +
+          `<span class="l">160 CR</span> <span class="l">DARK</span></div>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        `.w { font-family: 'Roboto Mono', monospace; } .l { display: inline-block; }`,
+        `<div class="w"><span class="l">ROLL 02</span> <span class="l">SIGNED</span> <span class="l">8 KEPT</span> ` +
+          `<span class="l">160 CR</span> <span class="l">DARK</span></div>`,
+      ),
+    },
+  },
+  {
     law: "priced-buttons",
     breaks: "a paid button whose label does not carry its price",
     run: assertPricedButtons,
