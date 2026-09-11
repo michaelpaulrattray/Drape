@@ -1,7 +1,7 @@
 {
-  "edition": 347,
-  "updatedAt": "2026-09-11T15:06:46.000Z",
-  "shift": "Opus night shift — a batch of three small ones, nothing on your desk changed. WHAT CHANGED FOR YOU: nothing you can see. #807 was the six machine lines on three pages (the casting cost line, the sheet's cost line, the four status labels at the top of this page) that were meant to be in the machine face but never wore the label the page-checking rule knows. They wear it now, beside their own class, and the type was MEASURED identical before and after in both themes — 22 readings, byte for byte — which is the bar your #524 ruling set. The sweep found three more of the same class the previous walk could not see: the card stamp on your desk cards ('#721 · filed 11 Sept'), which only shows when your desk holds a card; the 'Answered · still yours to do' chip; and the command line the page prints when a table is missing. FOUND ON THE WAY, FIXED THE SAME NIGHT (#809): the page-checking rule about '7 quiet days' had started flagging three pages that have no unsigned-sheets section at all. The phrase it hunts for was sitting in a COMMENT inside a stylesheet, and the rule's last repair (two nights ago) taught it to read the page's whole tree instead of what is painted — so it found the comment. It reads painted text now, and its sibling rule (skeletons under a refusal) had the identical flaw and would have called every loading strip on a page 'the hang' the day a comment mentioned the refusal copy. Both fixed with a pair of test pages each, driven against the old rule first: both slipped through it. Live on production. AND ONE MORE (#811): the second of tonight's two fixes merged with NO reviewer verdict — the reviewer's first step died with a git error because the first fix had landed on main two seconds earlier. A one-line fix to the reviewer's own fetch, merged on the gate alone (a change to the reviewer cannot be reviewed by it, by design). Stated here rather than discovered. YOUR DESK: unchanged — #721 still waits for one word. No new replies from you since edition 346.",
+  "edition": 348,
+  "updatedAt": "2026-09-11T15:53:37.858Z",
+  "shift": "Retro — patrol #3 (the weekly check-up on the team itself), nothing on your desk changed. WHAT CHANGED FOR YOU: nothing you can see in the product. This seat reads a week of the team's own reports and merged work and asks two questions: did any shift claim something that was not true, and is the same mistake happening twice. THE ANSWERS: (1) No shift lied this week. 154 changes merged, every one traced to a card you ordered, a reply you wrote, or a check-up on its clock; 91 'card closed' claims in the reports, 91 true. (2) The one thing that WAS wrong all week was the machine that checks the shifts: the note the runner staples to each report saying 'this close is unverified' fired seven times since its last repair, and all seven were false alarms — three because a report merely MENTIONED the words it hunts for, four because it could not see a Fable shift's report at all and told the next shift its predecessor had skipped its close. Fixed tonight (#813): it now reads a sentence, not a sixty-character window, and treats anything in code quotes as a quotation. 29 of 29 checks pass, the three false alarms reproduce on the old copy, and driving both copies over the week's 97 real reports turns 3 false alarms into 0 with nothing real lost. ONE PATTERN TO NAME, no action from you: five times this week a shift declared a sweep finished by hand count and the next shift found more (the Refresh buttons, the auto-refresh lists, the payment webhooks, the page-checking rules). Two cards already ask for the mechanical checks that end that; no new law proposed. YOUR DESK: unchanged — #721 still waits for one word. No new replies from you since edition 346.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "53 open, 1 waiting on you (#721), none urgent. 3 closed tonight, 2 of them filed the same night."
+        "source": "53 open, 1 waiting on you (#721), none urgent. 1 filed and closed tonight (#813); 25 stale."
       },
       {
         "label": "One decision waits on you",
@@ -138,7 +138,7 @@
       {
         "label": "Check-ups",
         "tone": "good",
-        "source": "Nothing overdue. Machinist, Retro and Janitor come due 12 Sep; the Warden 13 Sep."
+        "source": "Retro ran tonight, on its day. Machinist and Janitor due today; the Warden 13 Sep. None overdue."
       },
       {
         "label": "Your account is no longer flagged",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T15:08:22.582Z",
+      "readAt": "2026-09-11T15:53:34.742Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,13 @@
   ],
   "pipeline": [
     {
+      "id": "retro-3-close-stamp-813",
+      "title": "Retro #3: the runner's 'unverified close' stamp fired seven times this week and every one was a false alarm — it reads sentences and quotations properly now",
+      "status": "merged",
+      "prNumber": null,
+      "note": "No product change and no PR: the checker lives in the team's local runner files, which never reach the gate, so its own 29-arm driver is the proof (three false-alarm shapes reproduced on the old copy, fixed on the new; the driver's own 'open PR' control turned out to be an issue number and is a real unmerged PR now). The audit behind it: 97 reports, 154 merges, 91 closure claims — every shift claim held; only the checker was wrong. Retro log run 3 carries the ledger."
+    },
+    {
       "id": "mono-labels-807",
       "title": "Six machine lines wear the label the page-checking rule knows — nothing moves on the page, and the check stops flagging three pages that were never wrong",
       "status": "merged",
@@ -5456,11 +5463,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912a-foreman",
+      "id": "queue-shape-0912b-retro",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 53 open, three closed tonight (#807, #809, #811 — two of them filed and fixed the same night); NEXT UP is empty",
-      "detail": "None of tonight's three is a product change a customer would notice; two are the team's own page-checking rule and one is the reviewer's own fetch. #721 is still the one card on your desk. 25 open cards have had no comment, close, reopen or commit for 7 days (read by queue-rot-read; a label alone does not reset that clock). Machinist, Retro and Janitor are DUE today by their own clocks and none is overdue yet — the next shift very likely runs one. Background switches all on; category order after patrols is Process, then Performance, then Housekeeping."
+      "title": "The queue: 53 open, one filed and closed tonight (#813); NEXT UP is empty; the Retro ran on its day",
+      "detail": "Nothing tonight is a product change a customer would notice — it is the team's own report checker. #721 is still the one card on your desk. 25 open cards have had no comment, close, reopen or commit for 7 days (read by queue-rot-read; a label alone does not reset that clock). Machinist and Janitor are DUE today by their own clocks and neither is overdue; the next shift very likely runs one. Background switches all on; category order after patrols is Process, then Performance, then Housekeeping."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5642,7 +5649,7 @@
     176
   ],
   "nextUp": {
-    "readAt": "2026-09-11T15:08:22.580Z",
+    "readAt": "2026-09-11T15:53:34.742Z",
     "items": []
   }
 }

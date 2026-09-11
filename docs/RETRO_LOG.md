@@ -243,3 +243,129 @@ after any edit to `close-stamp.ps1`.**
 Retro: run 1 2026-08-26, run 2 2026-09-05 (9 days late — the clock reader
 `scripts/patrol-clocks.mts` now derives this from the heading above, which is
 what #505 built). Next due ~2026-09-12.
+
+## Run 3 — 2026-09-12 01:29–02:2x AEST (Retro, patrol #3, run #186)
+
+**Window:** 2026-09-05 12:40 (run 2's close) → 2026-09-12 01:29. **111 mailbox
+files** — 97 seat-stamped entries (foreman/fable/retro/janitor/warden/
+machinist), 4 `runner-close-*`, 10 `runner-escalated-*`. **154 PRs merged.**
+
+**Why the Retro ran tonight.** NEXT UP empty, no replies, no taps; Bugs 0 and
+Small fixes 0 under his switches; Process next in the risk order and its seat
+**due today by its own clock** (7 days exactly — the reader says "DUE today",
+not overdue, so standing exception 3 did not fire and the category order put
+it here anyway). Janitor and Machinist are due the same day and each is its
+own shift.
+
+### A. Audit ledger
+
+**The instrument first (working law 2), read anchored on the trailer heading
+and never on a mention — run 2's own lesson, applied before believing a
+count.** A phrase grep for `UNVERIFIED CLOSE` and the anchored read happen to
+agree at **7** this week; they agreed by coincidence (three entries write
+about the guard and three others carry it), which is why the anchored read is
+the one recorded.
+
+**7 UNVERIFIED trailers this window — and all 7 are false.** Each was opened
+at its artifact:
+
+| trailer | said | true |
+|---|---|---|
+| `retro-20260905-1240` | `RECEIPT_PLACEHOLDER present` | run 2's own report, naming the literal in backticks |
+| `foreman-20260910-0710` | `RECEIPT_PLACEHOLDER present` | a sentence about #600's stub, literal in backticks |
+| `foreman-20260908-2020` | `PR #683 claimed merged, gh says OPEN` | line 65: *"**PR #683 is open**… After #682 merged"* — the claim window crossed a full stop; the entry says OPEN three times |
+| `runner-close-20260906-202021`, `-20260909-113132`, `-20260909-150822`, `-20260911-203906` | *"the shift wrote NO mailbox entry"* | `fable-*.md` written 37 s – 8 min before each stamp; the seat pattern omitted `fable-` (found and fixed by the relay 2026-09-11 20:42, recorded on #600) |
+
+**The guard's precision since its 5 Sep repair is therefore 0 of 7.** That is
+the run's main finding and it is §D.
+
+**The claim class the trailer cannot see — card closures — read in bulk and
+holds.** Every `#N … closed` pairing in the 97 entries (123 distinct numbers,
+32 of them PR numbers by the extractor's over-reach, **91 issues**): **89
+CLOSED, 2 OPEN — and both OPEN ones are the entry correctly saying so**
+(#105 "would have closed"; #697 "stays open, eleven files remain"). **0 false
+closure claims.** Run 2's figure was 68/68.
+
+**Merge claims in the entries with no false trailer:** read by driving both
+stamp copies over the corpus (§D) — every claim resolved `MERGED`.
+
+**Verdict: no false claim by a shift this period.** Every false statement in
+the record was written by the machine that checks the shifts.
+
+### B. Recurrence ledger
+
+| # | Repeat | Occurrences (evidence) | Class | Proposal | Status |
+|---|---|---|---|---|---|
+| **R6** (again) | **A guard infers a signal from PROSE** — two shapes the 5 Sep repair did not name | inline code (2: `retro-0905`, `foreman-0910-0710`); a claim window crossing a sentence (1: `foreman-0908-2020`); a seat list missing a seat (4 stubs, relay-fixed 09-11) | mention read as declaration | **Guard extended, not re-proposed**: inline code is quoting (rule a2); a merge claim is tested per SENTENCE with `open` in the polarity list; the driver's positive control becomes a real unmerged PR | **#813 FIXED tonight** (§D) |
+| **R7** | **A shift dies and leaves no report** | **zero real instances** — all four `runner-close-*` files this week were the R6 seat-pattern false alarm above | shift death | none | **Two clear weeks.** Re-read next run |
+| **R9** | **A successful `gh` read of nothing believed as a fact, on a signal that steers the team** | #725 (panel zero), #730 (park gate), #772 (desk sweep), #774 (digest **and** the standing-exceptions view, the fifth found by #775's own review) — five readers, four cards, five days | an empty answer indistinguishable from an outage | **Already converged** on one shared verdict (`emptyOrderedBandVerdict`, driven directly) rather than five patches; nothing to add | **Closed by the fixes.** Note the "fourth and last" in #775's first draft was wrong by one — see R10 |
+| **R10** | **A law-7 sweep declares its remainder complete by HAND COUNT and the next shift finds more** | Refresh button: #747 → #759 (8) → PR #763 (10) → #766 "three hand sweeps, three wrong counts"; AUTO 30s: four times → #769; webhook db-verdict: #788 → #789 → #792 (six) → #796 (request path), 24 h; design-law walk: #782 → #799 → #805 → #809; mono law: #524 → #807 (the walk missed `dp-crew__ref` because his desk was empty that night); `gh` readers: "fourth and last" → fifth | a hand count stated as coverage | **No new law** — CLAUDE.md already says *"a clean run is a floor and not coverage"*, and the two open Retro cards **#766** and **#769** are exactly the source-derived guards this class wants. The transferable rule for shift reports, worth one line in the standing orders when they are next touched: **a remainder is named with the READER that produced it, or it is called a floor** | **Watch.** Two guard cards open; no third proposed until one of them lands and is measured |
+
+**Also noted, not carded:** the seat list (`^(foreman|fable|manual|retro|janitor|warden|machinist)-`) now lives in **four** `.agents/foreman` files (`close-stamp.ps1`, `is-empty-shift.ps1`, `check-park.ps1`, the driver) — working law 4, recorded by the relay on #600. One more instance of it drifting is a card; tonight it is a line.
+
+**Recurrence rate this period: 4 repeat classes over 111 entries / 154 PRs**
+(run 2: 3 over 209 entries). One extended with a guard (R6), one closed by
+convergence (R9), one quiet (R7), one watched with its guards already carded
+(R10). **0 laws proposed.**
+
+### C. The anti-boredom read
+
+**154 PRs merged in the window, 154 trace** to a pre-existing card, a founder
+word, a patrol on its clock, or standing exception 2. Mechanically, 149 cite a
+card that predates the PR; the five that did not resolve by number all survive
+by hand: **#533** the Machinist's patrol #2 on its clock; **#540** his terminal
+order of 5 Sep, quoted verbatim in the body; **#596** the deploy-on-merge
+rollback proof (#508 step 6); **#605** a revert on his word ("not required");
+**#674** a red `server/crew` suite over a correct briefing — a gate blocking
+every merge, standing exception 2. **No boredom finding.** No "hardening" PR
+without a finding behind it.
+
+### D. What was fixed tonight — #813, and what the fix cost
+
+Filed first, then taken (a small `.agents/foreman/` change; the driver is its
+only possible coverage because `.agents/` is gitignored — the same road run 2
+and the relay took).
+
+1. **`Get-DeclarationLines` strips inline code spans** before the head-of-line
+   furniture strip (order matters: the old strip ate a span's opening backtick
+   and left the span's body standing as a line-initial claim).
+2. **The merge check runs per SENTENCE** (split at `.`/`!`/`?` + space, a
+   closing `**` allowed between), and **`open` joins the polarity list.** A
+   claim that begins the *second* sentence of a line is now caught — a true
+   positive the line-based reader missed.
+3. **The driver's positive control was not one.** `$OPEN_PR = 531` is an
+   ISSUE; `gh pr view 531` fails; every "claims an OPEN PR merged" arm was
+   passing through the `(gh failed)` road. It is **PR #779** now (closed,
+   never merged — a state that cannot change) and a control arm asserts the
+   trailer reads `gh: CLOSED`.
+
+**Measured, driven through the real script:**
+
+- **29/29 arms green** (`drive-close-stamp.ps1`, was 23): five #813 arms
+  each driven against `close-stamp.before-813.ps1` first — **the three
+  false-alarm shapes REPRODUCE on the pre-fix bytes**, the bare-placeholder
+  positive control fires on both, and the second-sentence claim is caught only
+  by the fix (`before-813: verified`). One arm's first cut reproduced nothing
+  (the quoted claim sat mid-line, where neither copy saw it) and the driver's
+  before-rule said so — kept in the arm's comment.
+- **Corpus, 97 real entries through both copies under identical conditions:
+  UNVERIFIED 3 → 0, verified → UNVERIFIED 0.** The `#683` entry is not among
+  the three because `gh` answers about today (#683 has since merged) — run
+  2's stated limit, unchanged; the driver arm carries its exact shape instead.
+- ⚠ **One verdict moved for a reason worth stating:** `foreman-20260911-1620`
+  read UNVERIFIED on the temp tree (no receipts there) under the old copy and
+  verified under the new, because its only line-initial rite phrase was a
+  *wrapped* `` `RITE EXIT STATUS: OK` `` continuing a sentence. The rite check
+  was reaching that entry by a line-wrap accident; under the inline-code rule
+  a quoted receipt token is a quotation. The trailer still prints the receipt
+  line and its during-this-shift verdict regardless, so nothing is lost from
+  the record — only an accidental trigger.
+
+**Record hygiene:** the three uncorrected `runner-close-*` stubs (09-06, 09-09
+×2) now carry the same correction trailer the relay put on the fourth,
+pointing at the real `fable-*` entry.
+
+### Clocks
+
+Retro: run 1 2026-08-26, run 2 2026-09-05, **run 3 2026-09-12** (on the day).
+Next due ~2026-09-19.
