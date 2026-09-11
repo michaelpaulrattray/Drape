@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "12378d2ef4f2c931"
+    "sourceFingerprint": "a9b1cc07f9338cf7"
   },
   "domains": [
     {
@@ -13592,6 +13592,10 @@
       "path": "server/roleManagement.test.ts"
     },
     {
+      "id": "test:server/routes/billingRequestPathVerdicts.test.ts",
+      "path": "server/routes/billingRequestPathVerdicts.test.ts"
+    },
+    {
       "id": "test:server/routes/characterSheet.test.ts",
       "path": "server/routes/characterSheet.test.ts"
     },
@@ -13742,6 +13746,10 @@
     {
       "id": "test:server/slack/slackDispatcher.test.ts",
       "path": "server/slack/slackDispatcher.test.ts"
+    },
+    {
+      "id": "test:server/slack/slackSuspendVerdict.test.ts",
+      "path": "server/slack/slackSuspendVerdict.test.ts"
     },
     {
       "id": "test:server/slack/slackThreeChannel.test.ts",

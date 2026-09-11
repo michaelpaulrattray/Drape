@@ -312,9 +312,16 @@ async function handleSuspendUserAction(
   // Suspend the user
   const { suspendUser } = await import("../db");
   const reason = `Emergency suspension via Slack by ${slackUser}. Original alert: ${(tokenData.metadata as any)?.alertTitle || "Security Alert"}`;
-  const success = await suspendUser(userId, reason, 0);
+  // ⚠ `suspendUser` answers `{ success, error }`, never a boolean (#796, the
+  // law-7 sibling of the billing sites): this line read the OBJECT as the
+  // verdict, so a failed suspension — no db, a thrown update — was always
+  // truthy, and Slack was told "✅ suspended" over an account still live,
+  // with an EMERGENCY_ACTION_EXECUTED audit row written for an action that
+  // never executed. The block-IP handler beside it read `result.success`
+  // from the day it was written.
+  const suspended = await suspendUser(userId, reason, 0);
 
-  if (!success) {
+  if (!suspended.success) {
     await sendSlackResponse(responseUrl, {
       text: `❌ *Action Failed*\nFailed to suspend user ${userName || userId}. Please try again from the admin dashboard.`,
       replace_original: false,
