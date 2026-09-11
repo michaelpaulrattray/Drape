@@ -1,8 +1,50 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import fs from "fs";
 import path from "path";
+import { FREEZE_REASON_MAX_LENGTH, UNFREEZE_NOTES_MAX_LENGTH } from "../shared/inputLimits";
 
-// ── Mock DB helpers ──
+/**
+ * THE ACCOUNT FREEZE — driven through the four real procedures (#697).
+ *
+ * ⚠ TWENTY-FOUR OF THIS FILE'S THIRTY-THREE ARMS COULD NOT FAIL, and the
+ * card's reader saw four of them. The four it flagged called the MOCKED
+ * `freezeUser` / `unfreezeUser` themselves and asserted the mock's own return
+ * (shape 2). The twenty it could not see were this, under headings that named
+ * the moderator workflow, the manual freeze, the admin freeze and the banner:
+ *
+ *     const user = { role: "admin" };
+ *     const canFreeze = user.role !== "admin";
+ *     expect(canFreeze).toBe(false);
+ *
+ * — a rule typed into the test and asserted against itself (shape 1). Nothing
+ * was imported and nothing was called. The product could refuse nobody, prefix
+ * nothing, and write no audit row, and every one of them stayed green.
+ *
+ * Measured before the repair (`scripts/_697-accountfreeze-sabotage-disposable.mts
+ * --before`): the admin-target refusal, the already-frozen refusal, the
+ * not-frozen refusal, both reason prefixes and both audit rows were each
+ * removed from the product in turn, and the old suite reddened on NONE of them.
+ *
+ * What was DRIVEN before this repair, read at the tree rather than assumed:
+ * the moderator's `freezeAccount` had two arms in
+ * `discrepancyScanListOnly.test.ts` (the positive control and the admin-target
+ * refusal) — not mirrored here. `unfreezeAccount`, `admin.users.freezeUser` and
+ * `admin.users.unfreezeUser` had NO driven caller anywhere in the repository.
+ *
+ * Three things are deliberately absent:
+ *   · The three "banner display" arms are DELETED, not rewritten. Their subject
+ *     was `!!user.frozenAt` on a literal; the banner is a client component and
+ *     this file is a server suite.
+ *   · The role gates are driven ONCE per router (a user against the moderator
+ *     road, a moderator against the admin road) — enough to prove each
+ *     procedure is declared on the gate it claims; the gates themselves are
+ *     `moderator.test.ts`'s and `adminUserManagement.test.ts`'s subject.
+ *   · `server/db/security.ts`'s `freezeUser` / `unfreezeUser` writers are the
+ *     far end here and are not driven: they need a database `vitest.setup.ts`
+ *     strips on purpose. Stated rather than papered over.
+ */
+
+// ── The far end: the writers, the audit log, the notice, the admin log ──
 const mockFreezeUser = vi.fn().mockResolvedValue({ success: true });
 const mockUnfreezeUser = vi.fn().mockResolvedValue({ success: true });
 const mockGetUserById = vi.fn();
@@ -19,54 +61,332 @@ vi.mock("./db/connection", () => ({
   getDb: vi.fn(),
 }));
 
-vi.mock("./auditLog", () => ({
-  logAuditEvent: vi.fn().mockResolvedValue(undefined),
-  AUDIT_ACTIONS: {
-    ACCOUNT_AUTO_FROZEN: "account.auto_frozen",
-    ACCOUNT_FROZEN: "account.frozen",
-    ACCOUNT_UNFROZEN: "account.unfrozen",
-  },
+// `AUDIT_ACTIONS` passes through — the action NAME an audit row carries is the
+// product's, and a stubbed table would let the arms below drift from it.
+vi.mock("./auditLog", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./auditLog")>();
+  return { ...actual, logAuditEvent: vi.fn().mockResolvedValue(undefined) };
+});
+
+vi.mock("./klaviyo", () => ({
+  sendAccountFrozenEmail: vi.fn().mockResolvedValue(undefined),
 }));
+
+// The admin gate PASSES THROUGH (the moderator-refused arm drives it); only the
+// two log writers are stubbed.
+vi.mock("./security/adminSecurity", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./security/adminSecurity")>();
+  return {
+    ...actual,
+    logAdminAction: vi.fn().mockResolvedValue(undefined),
+    writeImmutableLog: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
+// The moderator router's other imports — none of them on the freeze road.
+vi.mock("./db/moderatorQueries", () => ({
+  getUsersWithDiscrepancies: vi.fn(),
+  getDetailedCreditHistory: vi.fn(),
+  getDetailedGenerationHistory: vi.fn(),
+}));
+vi.mock("./db/discrepancyQueries", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./db/discrepancyQueries")>();
+  return { ...actual, getUserRecordCosts: vi.fn(async () => ({ unlinkedCost: 0, operationCost: 0 })) };
+});
+
+import { logAuditEvent, AUDIT_ACTIONS } from "./auditLog";
+import { sendAccountFrozenEmail } from "./klaviyo";
+import { logAdminAction } from "./security/adminSecurity";
+import { getDb } from "./db/connection";
+import { moderatorReconciliationRouter } from "./routes/moderatorReconciliation";
+import { usersRouter } from "./routes/admin/users";
+
+/** A staff context. The admin gate reads role, email and openId; both gates read suspendedAt. */
+function staffContext(role: "user" | "moderator" | "admin", id: number, name: string) {
+  return {
+    user: { id, role, email: `${role}${id}@example.com`, name, openId: null, suspendedAt: null, lockedUntil: null },
+    req: { protocol: "https", headers: {}, socket: {} },
+    res: { clearCookie: vi.fn() },
+  } as never;
+}
+const MODERATOR = staffContext("moderator", 7, "Mod");
+const ADMIN = staffContext("admin", 2, "Admin");
+const PLAIN_USER = staffContext("user", 10, "User");
+
+/** The moderator road reads its target with drizzle: `db.select().from().where().limit()` → rows. */
+function dbReturning(rows: unknown[]) {
+  const chain = { limit: async () => rows };
+  return { select: () => ({ from: () => ({ where: () => chain }) }) };
+}
+
+const TARGET = { id: 42, frozenAt: null as Date | null, frozenReason: null as string | null, name: "Target", email: "target@example.com" as string | null, role: "user" };
+const FROZEN_AT = new Date("2026-08-01T00:00:00Z");
+
+/** One refusal, and the proof that nothing was written on the way to it. */
+async function refused(call: Promise<unknown>, code: string) {
+  await expect(call).rejects.toMatchObject({ code });
+  expect(mockFreezeUser).not.toHaveBeenCalled();
+  expect(mockUnfreezeUser).not.toHaveBeenCalled();
+  expect(logAuditEvent).not.toHaveBeenCalled();
+}
+
+describe("moderatorReconciliation.freezeAccount — DRIVEN", () => {
+  const caller = () => moderatorReconciliationRouter.createCaller(MODERATOR);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFreezeUser.mockResolvedValue({ success: true });
+    vi.mocked(getDb).mockResolvedValue(dbReturning([{ ...TARGET }]) as never);
+  });
+
+  it("a plain USER is refused FORBIDDEN — it is moderatorProcedure, driven not recited", async () => {
+    const user = moderatorReconciliationRouter.createCaller(PLAIN_USER);
+    await refused(user.freezeAccount({ userId: 42, reason: "x" }), "FORBIDDEN");
+  });
+
+  it("refuses a target that is already frozen, BAD_REQUEST, and writes nothing", async () => {
+    vi.mocked(getDb).mockResolvedValue(dbReturning([{ ...TARGET, frozenAt: FROZEN_AT }]) as never);
+    await refused(caller().freezeAccount({ userId: 42, reason: "again" }), "BAD_REQUEST");
+  });
+
+  it("refuses a target that does not exist, NOT_FOUND", async () => {
+    vi.mocked(getDb).mockResolvedValue(dbReturning([]) as never);
+    await refused(caller().freezeAccount({ userId: 999, reason: "x" }), "NOT_FOUND");
+  });
+
+  it("FROM THE DIFF — refuses an empty reason and one over FREEZE_REASON_MAX_LENGTH, before the database is read", async () => {
+    for (const reason of ["", "a".repeat(FREEZE_REASON_MAX_LENGTH + 1)]) {
+      await expect(caller().freezeAccount({ userId: 42, reason })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    expect(getDb).not.toHaveBeenCalled();
+    expect(mockFreezeUser).not.toHaveBeenCalled();
+    // The bound is inclusive — the control that keeps the arm above from refusing everything.
+    await expect(caller().freezeAccount({ userId: 42, reason: "a".repeat(FREEZE_REASON_MAX_LENGTH) })).resolves.toEqual({ success: true });
+  });
+
+  it("the audit row names the moderator, the target and the trigger — and carries the reason UNPREFIXED", async () => {
+    await caller().freezeAccount({ userId: 42, reason: "repeated chargebacks" });
+    expect(logAuditEvent).toHaveBeenCalledTimes(1);
+    expect(logAuditEvent).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 7,
+      action: AUDIT_ACTIONS.ACCOUNT_FROZEN,
+      resourceType: "user",
+      resourceId: "42",
+      metadata: expect.objectContaining({
+        reason: "repeated chargebacks",
+        frozenBy: 7,
+        frozenByName: "Mod",
+        trigger: "moderator_manual",
+        targetUserEmail: "target@example.com",
+      }),
+    }));
+  });
+
+  it("the notice to the customer carries the PREFIXED reason and the moderator's name", async () => {
+    await caller().freezeAccount({ userId: 42, reason: "repeated chargebacks" });
+    expect(sendAccountFrozenEmail).toHaveBeenCalledTimes(1);
+    expect(sendAccountFrozenEmail).toHaveBeenCalledWith({
+      userEmail: "target@example.com",
+      userName: "Target",
+      freezeReason: "Manual freeze by moderator: repeated chargebacks",
+      frozenBy: "Mod",
+    });
+  });
+
+  it("no email address, no notice — and the freeze still lands", async () => {
+    vi.mocked(getDb).mockResolvedValue(dbReturning([{ ...TARGET, email: null }]) as never);
+    await expect(caller().freezeAccount({ userId: 42, reason: "x" })).resolves.toEqual({ success: true });
+    expect(sendAccountFrozenEmail).not.toHaveBeenCalled();
+    expect(mockFreezeUser).toHaveBeenCalledWith(42, "Manual freeze by moderator: x", "7");
+  });
+});
+
+describe("moderatorReconciliation.unfreezeAccount — DRIVEN, and nothing drove it before", () => {
+  const caller = () => moderatorReconciliationRouter.createCaller(MODERATOR);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUnfreezeUser.mockResolvedValue({ success: true });
+    vi.mocked(getDb).mockResolvedValue(dbReturning([{ ...TARGET, frozenAt: FROZEN_AT }]) as never);
+  });
+
+  it("refuses a target that is NOT frozen, BAD_REQUEST, and writes nothing", async () => {
+    vi.mocked(getDb).mockResolvedValue(dbReturning([{ ...TARGET }]) as never);
+    await refused(caller().unfreezeAccount({ userId: 42, notes: "reviewed" }), "BAD_REQUEST");
+  });
+
+  it("refuses a target that does not exist, NOT_FOUND", async () => {
+    vi.mocked(getDb).mockResolvedValue(dbReturning([]) as never);
+    await refused(caller().unfreezeAccount({ userId: 999, notes: "reviewed" }), "NOT_FOUND");
+  });
+
+  it("FROM THE DIFF — refuses empty notes and notes over UNFREEZE_NOTES_MAX_LENGTH, before the database is read", async () => {
+    for (const notes of ["", "a".repeat(UNFREEZE_NOTES_MAX_LENGTH + 1)]) {
+      await expect(caller().unfreezeAccount({ userId: 42, notes })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    expect(getDb).not.toHaveBeenCalled();
+    expect(mockUnfreezeUser).not.toHaveBeenCalled();
+    await expect(caller().unfreezeAccount({ userId: 42, notes: "a".repeat(UNFREEZE_NOTES_MAX_LENGTH) })).resolves.toEqual({ success: true });
+  });
+
+  it("POSITIVE — unfreezes by id, and the audit row carries the review notes and the moderator", async () => {
+    await expect(caller().unfreezeAccount({ userId: 42, notes: "discrepancy explained" })).resolves.toEqual({ success: true });
+    expect(mockUnfreezeUser).toHaveBeenCalledTimes(1);
+    expect(mockUnfreezeUser).toHaveBeenCalledWith(42);
+    expect(logAuditEvent).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 7,
+      action: AUDIT_ACTIONS.ACCOUNT_UNFROZEN,
+      resourceType: "user",
+      resourceId: "42",
+      metadata: expect.objectContaining({ reviewNotes: "discrepancy explained", unfrozenBy: 7, unfrozenByName: "Mod" }),
+    }));
+  });
+
+  it("a database refusal surfaces as INTERNAL_SERVER_ERROR and writes no audit row", async () => {
+    mockUnfreezeUser.mockResolvedValueOnce({ success: false, error: "User not found" });
+    await expect(caller().unfreezeAccount({ userId: 42, notes: "reviewed" })).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+    expect(logAuditEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe("admin.users.freezeUser — DRIVEN, and nothing drove it before", () => {
+  const caller = () => usersRouter.createCaller(ADMIN);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFreezeUser.mockResolvedValue({ success: true });
+    mockGetUserById.mockResolvedValue({ id: 1, role: "user", email: "u@example.com", name: "User", frozenAt: null, frozenReason: null });
+  });
+
+  it("a MODERATOR is refused FORBIDDEN — it is adminProcedure, driven not recited", async () => {
+    const mod = usersRouter.createCaller(MODERATOR);
+    await expect(mod.freezeUser({ userId: 1, reason: "x" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mockFreezeUser).not.toHaveBeenCalled();
+    // The gate records the ATTEMPT — that is the one audit row a refusal may write,
+    // and it is never the freeze's own.
+    for (const call of vi.mocked(logAuditEvent).mock.calls) {
+      expect(call[0].action).not.toBe(AUDIT_ACTIONS.ACCOUNT_FROZEN);
+    }
+  });
+
+  it("refuses a target that does not exist, NOT_FOUND", async () => {
+    mockGetUserById.mockResolvedValue(null);
+    await refused(caller().freezeUser({ userId: 999, reason: "x" }), "NOT_FOUND");
+  });
+
+  it("refuses a target that is already frozen, BAD_REQUEST", async () => {
+    mockGetUserById.mockResolvedValue({ id: 1, role: "user", email: "u@example.com", name: "User", frozenAt: FROZEN_AT });
+    await refused(caller().freezeUser({ userId: 1, reason: "again" }), "BAD_REQUEST");
+  });
+
+  it("refuses to freeze ANOTHER admin, FORBIDDEN — and freezes nothing", async () => {
+    mockGetUserById.mockResolvedValue({ id: 3, role: "admin", email: "other@example.com", name: "Other", frozenAt: null });
+    await refused(caller().freezeUser({ userId: 3, reason: "x" }), "FORBIDDEN");
+  });
+
+  it("an admin may freeze THEMSELVES — the one admin target the rule allows", async () => {
+    mockGetUserById.mockResolvedValue({ id: 2, role: "admin", email: "admin2@example.com", name: "Admin", frozenAt: null });
+    await expect(caller().freezeUser({ userId: 2, reason: "stepping away" })).resolves.toEqual({ success: true });
+    expect(mockFreezeUser).toHaveBeenCalledWith(2, "Admin freeze: stepping away", "2");
+  });
+
+  it("FROM THE DIFF — refuses an empty reason and one over 500, before the target is read", async () => {
+    for (const reason of ["", "a".repeat(501)]) {
+      await expect(caller().freezeUser({ userId: 1, reason })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    expect(mockGetUserById).not.toHaveBeenCalled();
+    expect(mockFreezeUser).not.toHaveBeenCalled();
+    await expect(caller().freezeUser({ userId: 1, reason: "a".repeat(500) })).resolves.toEqual({ success: true });
+  });
+
+  it("the stored reason is PREFIXED 'Admin freeze:', and the audit row carries it unprefixed at WARNING under the admin trigger", async () => {
+    await caller().freezeUser({ userId: 1, reason: "Billing investigation" });
+    expect(mockFreezeUser).toHaveBeenCalledTimes(1);
+    expect(mockFreezeUser).toHaveBeenCalledWith(1, "Admin freeze: Billing investigation", "2");
+    expect(logAuditEvent).toHaveBeenCalledTimes(1);
+    expect(logAuditEvent).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 2,
+      action: AUDIT_ACTIONS.ACCOUNT_FROZEN,
+      resourceType: "user",
+      resourceId: "1",
+      severity: "warning",
+      metadata: expect.objectContaining({
+        targetUserId: 1,
+        targetUserEmail: "u@example.com",
+        reason: "Billing investigation",
+        frozenBy: 2,
+        frozenByName: "Admin",
+        trigger: "admin_manual",
+      }),
+    }));
+  });
+
+  it("the admin action log names the act and the target", async () => {
+    await caller().freezeUser({ userId: 1, reason: "Billing investigation" });
+    expect(logAdminAction).toHaveBeenCalledTimes(1);
+    expect(logAdminAction).toHaveBeenCalledWith(expect.objectContaining({
+      adminId: 2,
+      action: "freezeUser",
+      targetType: "user",
+      targetId: "1",
+    }));
+  });
+
+  it("the notice to the customer carries the prefixed reason and the admin's name", async () => {
+    await caller().freezeUser({ userId: 1, reason: "Billing investigation" });
+    expect(sendAccountFrozenEmail).toHaveBeenCalledTimes(1);
+    expect(sendAccountFrozenEmail).toHaveBeenCalledWith({
+      userEmail: "u@example.com",
+      userName: "User",
+      freezeReason: "Admin freeze: Billing investigation",
+      frozenBy: "Admin",
+    });
+  });
+});
+
+describe("admin.users.unfreezeUser — DRIVEN, and nothing drove it before", () => {
+  const caller = () => usersRouter.createCaller(ADMIN);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUnfreezeUser.mockResolvedValue({ success: true });
+    mockGetUserById.mockResolvedValue({ id: 1, role: "user", email: "u@example.com", name: "User", frozenAt: FROZEN_AT, frozenReason: "Admin freeze: Billing investigation" });
+  });
+
+  it("refuses a target that is NOT frozen, BAD_REQUEST, and writes nothing", async () => {
+    mockGetUserById.mockResolvedValue({ id: 1, role: "user", email: "u@example.com", name: "User", frozenAt: null, frozenReason: null });
+    await refused(caller().unfreezeUser({ userId: 1, notes: "reviewed" }), "BAD_REQUEST");
+  });
+
+  it("refuses a target that does not exist, NOT_FOUND", async () => {
+    mockGetUserById.mockResolvedValue(null);
+    await refused(caller().unfreezeUser({ userId: 999, notes: "reviewed" }), "NOT_FOUND");
+  });
+
+  it("POSITIVE — unfreezes any frozen user, and the audit row carries the notes AND the reason it had been frozen for", async () => {
+    await expect(caller().unfreezeUser({ userId: 1, notes: "cleared with billing" })).resolves.toEqual({ success: true });
+    expect(mockUnfreezeUser).toHaveBeenCalledWith(1);
+    expect(logAuditEvent).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 2,
+      action: AUDIT_ACTIONS.ACCOUNT_UNFROZEN,
+      resourceId: "1",
+      severity: "info",
+      metadata: expect.objectContaining({
+        reviewNotes: "cleared with billing",
+        previousReason: "Admin freeze: Billing investigation",
+        unfrozenBy: 2,
+      }),
+    }));
+    expect(logAdminAction).toHaveBeenCalledWith(expect.objectContaining({ action: "unfreezeUser", targetId: "1" }));
+  });
+
+  it("a database refusal surfaces as INTERNAL_SERVER_ERROR and writes no audit row", async () => {
+    mockUnfreezeUser.mockResolvedValueOnce({ success: false, error: "User not found" });
+    await expect(caller().unfreezeUser({ userId: 1, notes: "reviewed" })).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+    expect(logAuditEvent).not.toHaveBeenCalled();
+    expect(logAdminAction).not.toHaveBeenCalled();
+  });
+});
 
 describe("Account Freeze System", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetUserById.mockResolvedValue({
-      id: 1,
-      name: "Test User",
-      email: "test@example.com",
-      role: "user",
-      frozenAt: null,
-      frozenReason: null,
-      frozenBy: null,
-      suspendedAt: null,
-    });
-  });
-
-  describe("freezeUser helper", () => {
-    it("should freeze a user with reason and actor", async () => {
-      await mockFreezeUser(1, "Auto-frozen: discrepancy", "system");
-      expect(mockFreezeUser).toHaveBeenCalledWith(1, "Auto-frozen: discrepancy", "system");
-    });
-
-    it("should return success on freeze", async () => {
-      const result = await mockFreezeUser(1, "Test reason", "system");
-      expect(result).toEqual({ success: true });
-    });
-  });
-
-  describe("unfreezeUser helper", () => {
-    it("should unfreeze a user", async () => {
-      const result = await mockUnfreezeUser(1);
-      expect(result).toEqual({ success: true });
-    });
-
-    it("should handle unfreeze failure gracefully", async () => {
-      mockUnfreezeUser.mockResolvedValueOnce({ success: false, error: "User not found" });
-      const result = await mockUnfreezeUser(1);
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("User not found");
-    });
   });
 
   /*
@@ -205,44 +525,6 @@ describe("Account Freeze System", () => {
     });
   });
 
-  describe("Moderator unfreeze workflow", () => {
-    it("should require review notes for unfreeze", () => {
-      const notes = "";
-      const isValid = notes.trim().length > 0;
-      expect(isValid).toBe(false);
-    });
-
-    it("should accept valid review notes", () => {
-      const notes = "Reviewed reconciliation — discrepancy explained by pre-atomic-credits failures";
-      const isValid = notes.trim().length > 0 && notes.length <= 500;
-      expect(isValid).toBe(true);
-    });
-
-    it("should reject notes exceeding 500 characters", () => {
-      const notes = "a".repeat(501);
-      const isValid = notes.trim().length > 0 && notes.length <= 500;
-      expect(isValid).toBe(false);
-    });
-
-    it("should reject whitespace-only notes", () => {
-      const notes = "   \n\t  ";
-      const isValid = notes.trim().length > 0;
-      expect(isValid).toBe(false);
-    });
-
-    it("should not allow unfreeze of a non-frozen user", () => {
-      const user = { frozenAt: null };
-      const canUnfreeze = !!user.frozenAt;
-      expect(canUnfreeze).toBe(false);
-    });
-
-    it("should allow unfreeze of a frozen user", () => {
-      const user = { frozenAt: new Date() };
-      const canUnfreeze = !!user.frozenAt;
-      expect(canUnfreeze).toBe(true);
-    });
-  });
-
   describe("AUDIT_ACTIONS for freeze events", () => {
     it("should have ACCOUNT_AUTO_FROZEN action", async () => {
       const { AUDIT_ACTIONS } = await import("../drizzle/schema");
@@ -252,106 +534,6 @@ describe("Account Freeze System", () => {
     it("should have ACCOUNT_UNFROZEN action", async () => {
       const { AUDIT_ACTIONS } = await import("../drizzle/schema");
       expect(AUDIT_ACTIONS.ACCOUNT_UNFROZEN).toBe("account.unfrozen");
-    });
-  });
-
-  describe("Moderator manual freeze", () => {
-    it("should require a reason for manual freeze", () => {
-      const reason = "";
-      const isValid = reason.trim().length > 0;
-      expect(isValid).toBe(false);
-    });
-
-    it("should accept valid freeze reason", () => {
-      const reason = "Suspicious generation pattern — freezing for investigation";
-      const isValid = reason.trim().length > 0 && reason.length <= 500;
-      expect(isValid).toBe(true);
-    });
-
-    it("should not allow freezing admin accounts", () => {
-      const user = { role: "admin" };
-      const canFreeze = user.role !== "admin";
-      expect(canFreeze).toBe(false);
-    });
-
-    it("should allow freezing regular user accounts", () => {
-      const user = { role: "user" };
-      const canFreeze = user.role !== "admin";
-      expect(canFreeze).toBe(true);
-    });
-
-    it("should allow freezing moderator accounts", () => {
-      const user = { role: "moderator" };
-      const canFreeze = user.role !== "admin";
-      expect(canFreeze).toBe(true);
-    });
-
-    it("should not allow freezing already frozen accounts", () => {
-      const user = { frozenAt: new Date() };
-      const canFreeze = !user.frozenAt;
-      expect(canFreeze).toBe(false);
-    });
-
-    it("should prefix reason with 'Manual freeze by moderator:'", () => {
-      const inputReason = "Abuse detected";
-      const storedReason = `Manual freeze by moderator: ${inputReason}`;
-      expect(storedReason).toContain("Manual freeze by moderator:");
-      expect(storedReason).toContain(inputReason);
-    });
-  });
-
-  describe("Admin freeze/unfreeze", () => {
-    it("admin should be able to freeze users", () => {
-      const adminRole = "admin";
-      const targetRole = "user";
-      const canFreeze = adminRole === "admin" && targetRole !== "admin";
-      expect(canFreeze).toBe(true);
-    });
-
-    it("admin should not be able to freeze other admins", () => {
-      const adminRole = "admin";
-      const targetRole = "admin";
-      const isSelf = false;
-      const canFreeze = adminRole === "admin" && (targetRole !== "admin" || isSelf);
-      expect(canFreeze).toBe(false);
-    });
-
-    it("admin freeze reason should be prefixed with 'Admin freeze:'", () => {
-      const inputReason = "Billing investigation";
-      const storedReason = `Admin freeze: ${inputReason}`;
-      expect(storedReason).toContain("Admin freeze:");
-      expect(storedReason).toContain(inputReason);
-    });
-
-    it("admin should be able to unfreeze any frozen user", () => {
-      const user = { frozenAt: new Date(), role: "user" };
-      const canUnfreeze = !!user.frozenAt;
-      expect(canUnfreeze).toBe(true);
-    });
-  });
-
-  describe("User frozen banner display logic", () => {
-    it("should show banner when frozenAt is set", () => {
-      const user = { frozenAt: new Date("2026-02-01"), frozenReason: "Auto-frozen: discrepancy" };
-      const showBanner = !!user.frozenAt;
-      expect(showBanner).toBe(true);
-    });
-
-    it("should not show banner when frozenAt is null", () => {
-      const user = { frozenAt: null, frozenReason: null };
-      const showBanner = !!user.frozenAt;
-      expect(showBanner).toBe(false);
-    });
-
-    it("should display frozen date in readable format", () => {
-      const frozenAt = new Date("2026-02-01T12:00:00Z");
-      const formatted = frozenAt.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-      expect(formatted).toBeTruthy();
-      expect(formatted.length).toBeGreaterThan(5);
     });
   });
 });
