@@ -560,8 +560,13 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
  *
  * What it does, in order, each step surviving the last one failing:
  *  1. finds who and which request from the refund's own metadata (stamped at
- *     creation by `issueStripeRefund`); a refund we did not stamp — one made
- *     by hand in the dashboard — is REPORTED and not guessed at;
+ *     creation by `issueStripeRefund`). ⚠ The ids are only meaningful in the
+ *     world that wrote them: dev and production share one Stripe account and
+ *     one endpoint, so `refund.failed` is in `TAGGED_EVENT_TYPES` and the env
+ *     gate before the switch refuses a foreign or untagged refund before this
+ *     handler sees it (PR #787 review finding 1). A refund that IS ours but
+ *     carries no tracking — a code road that issued it without any — is
+ *     REPORTED and not guessed at;
  *  2. puts back exactly the credits that deduction took, keyed on a ledger
  *     reference so a redelivered event cannot restore twice;
  *  3. writes the truth onto the change request's notes, since that is the

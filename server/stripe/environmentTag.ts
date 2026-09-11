@@ -22,7 +22,10 @@
  *
  * ── THE BOUND, DECLARED RATHER THAN BURIED ────────────────────────────────
  * The check covers the objects WE create, which are the ones that can carry
- * our metadata: checkout sessions and subscriptions. Invoices and disputes are
+ * our metadata: checkout sessions, subscriptions and — since #771 — refunds
+ * (`issueStripeRefund` stamps every one, and `refund.failed` arrives days
+ * later carrying dev-database ids that must never be trusted against
+ * production; PR #787 review finding 1). Invoices and disputes are
  * authored by Stripe and by banks, carry no metadata of ours, and are NOT
  * checked here. Their world discriminator is the one they already had and it
  * is structural rather than populational only in part: they resolve the user
@@ -48,6 +51,7 @@ export const TAGGED_EVENT_TYPES: ReadonlySet<string> = new Set([
   "customer.subscription.created",
   "customer.subscription.updated",
   "customer.subscription.deleted",
+  "refund.failed",
 ]);
 
 export type EnvironmentVerdict =

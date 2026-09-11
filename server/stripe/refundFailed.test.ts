@@ -288,12 +288,53 @@ describe("B · refund.failed — the later failure puts the credits back and tel
   });
 
   /*
-    ⚠ THE NEGATIVE CONTROL. A refund made by hand in the Stripe dashboard
-    carries none of our tracking. Guessing a customer from the charge and
-    moving credits on a guess is the defect this card is about, one road
-    over — so it is REPORTED for a person and nothing moves.
+    ⚠ THE CROSS-WORLD CONTROL (PR #787 review finding 1). Dev and production
+    share one Stripe account and ONE webhook endpoint — production's. A
+    refund issued from a developer machine carries dev-database ids; when it
+    fails days later the event lands on production, and trusting those ids
+    there would annotate the wrong change request, name the wrong customer
+    on NEEDS A HUMAN, and — once ids collide after launch — restore credits
+    for a refund that did not fail. The refund carries the env tag, and the
+    gate before the switch reads it.
   */
-  it("a refund WITHOUT our tracking metadata moves no credits and is reported as unidentified", async () => {
+  it("a refund stamped by ANOTHER world is refused before the handler — nothing read, nothing moved, nothing written", async () => {
+    db.getCreditTransactionByRef.mockResolvedValue({ id: 1, amount: -50, referenceId: "cr-stripe-refund:7" });
+
+    const result = await deliverEvent(
+      "refund.failed",
+      failedRefund({
+        metadata: {
+          env: "some-other-world",
+          [REFUND_METADATA_USER_KEY]: "42",
+          [REFUND_METADATA_CHANGE_REQUEST_KEY]: "7",
+        },
+      }),
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.refused).toBe(true);
+    expect(db.getCreditTransactionByRef).not.toHaveBeenCalled();
+    expect(db.addCredits).not.toHaveBeenCalled();
+    expect(db.appendChangeRequestReviewNote).not.toHaveBeenCalled();
+    expect(audit.logAuditEvent).not.toHaveBeenCalled();
+  });
+
+  it("a refund with NO env tag at all (made by hand in the dashboard) is refused the same way — the documented dashboard policy", async () => {
+    const result = await deliverEvent("refund.failed", failedRefund({ metadata: {} }));
+
+    expect(result.success).toBe(true);
+    expect(result.refused).toBe(true);
+    expect(db.addCredits).not.toHaveBeenCalled();
+    expect(audit.logAuditEvent).not.toHaveBeenCalled();
+  });
+
+  /*
+    ⚠ THE NEGATIVE CONTROL INSIDE THIS WORLD. A refund that is ours but
+    carries no tracking — a road that issued it without any — must not have a
+    customer guessed from the charge; moving credits on a guess is the defect
+    this card is about, one road over. It is REPORTED for a person.
+  */
+  it("a refund of THIS world WITHOUT tracking metadata moves no credits and is reported as unidentified", async () => {
     const result = await deliverEvent("refund.failed", failedRefund({ metadata: { env: deploymentTag() } }));
 
     expect(result.success).toBe(true);
