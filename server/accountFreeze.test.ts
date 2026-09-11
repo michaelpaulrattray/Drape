@@ -210,6 +210,14 @@ describe("moderatorReconciliation.freezeAccount — DRIVEN", () => {
     expect(sendAccountFrozenEmail).not.toHaveBeenCalled();
     expect(mockFreezeUser).toHaveBeenCalledWith(42, "Manual freeze by moderator: x", "7");
   });
+
+  it("a database refusal on FREEZE surfaces as INTERNAL_SERVER_ERROR — no audit row, no notice to the customer (#817)", async () => {
+    mockFreezeUser.mockResolvedValueOnce({ success: false, error: "Database not available" });
+    await expect(caller().freezeAccount({ userId: 42, reason: "x" })).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+    // The row and the email are the two things that would say "frozen" about an account that is not.
+    expect(logAuditEvent).not.toHaveBeenCalled();
+    expect(sendAccountFrozenEmail).not.toHaveBeenCalled();
+  });
 });
 
 describe("moderatorReconciliation.unfreezeAccount — DRIVEN, and nothing drove it before", () => {
@@ -364,6 +372,14 @@ describe("admin.users.freezeUser — DRIVEN, and nothing drove it before", () =>
       freezeReason: "Admin freeze: Billing investigation",
       frozenBy: "Admin",
     });
+  });
+
+  it("a database refusal on FREEZE surfaces as INTERNAL_SERVER_ERROR — no audit row, no admin log, no notice (#817)", async () => {
+    mockFreezeUser.mockResolvedValueOnce({ success: false, error: "Database not available" });
+    await expect(caller().freezeUser({ userId: 1, reason: "Billing investigation" })).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+    expect(logAuditEvent).not.toHaveBeenCalled();
+    expect(logAdminAction).not.toHaveBeenCalled();
+    expect(sendAccountFrozenEmail).not.toHaveBeenCalled();
   });
 });
 
