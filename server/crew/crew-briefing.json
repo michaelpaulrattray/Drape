@@ -1,7 +1,7 @@
 {
-  "edition": 344,
-  "updatedAt": "2026-09-11T10:31:05.385Z",
-  "shift": "Fable — your order from this afternoon is done and live: Slack is retired, whole. WHAT CHANGED. You said 'retire slack everything runs through moderator and admin at the moment' — and you were more right than the code was: we checked production first, and in the entire life of the product the Slack side never carried a single fact. No webhook was ever connected, zero of its messages ever reached anyone, and the three database tables it fed are empty — all time. So nothing anyone ever saw is different; what is gone is code that PROMISED a channel that did not exist. About six and a half thousand lines came out. ONE THING WORKS MORE HONESTLY NOW. When an admin approves a sensitive request from a moderator (a refund, a suspension), the old road said 'awaiting Slack confirmation' — and then quietly confirmed it itself, because there was no Slack to ask. Now the Approve button says what is true: 'This is a sensitive action. It runs the moment you approve it.' And it does, immediately, with the full record written. If the action ever fails partway, the request shows 'Outcome unconfirmed' and a warning lands on your admin overview's alerts feed — deliberately with no retry button, because retrying a half-finished refund is how money goes out twice. EVERY ALERT HAS A HOME ON YOUR PANELS. Health problems, server crashes, failed final payments and chargebacks — everything that used to be addressed to Slack now lands as rows on the admin overview's alerts feed and the audit log, the same place your login-attack alarm has lived since August. Two things have NO replacement and we say so rather than pretend: tamper-evidence for the security log (it never really had any — that gap keeps its own name on the known-gaps list), and a 'database is down' alert, which cannot live on a panel the database serves. PROVEN, NOT CLAIMED. Driven in the running app end to end (the interrupted state and the alerts-feed row in front of eyes), the independent reviewer passed it — its one real finding, a sentence that could have invited a double refund, was taken before merge — and production answered with the new build a minute after the merge. STILL YOURS: nothing new. The next card in your queue (#795, webhook ordering on the plan roads) is a design decision held for a Fable shift.",
+  "edition": 345,
+  "updatedAt": "2026-09-11T11:32:03.613763Z",
+  "shift": "Fable — the last card in your NEXT UP queue is done and live: the subscription webhooks no longer trust the message, they check the source. WHAT IT FIXES. Stripe tells us about subscription changes by sending messages, and it makes no promise about the order they arrive in — it also re-sends any message we could not process the first time. Until today each message was applied as written, so an OLD one arriving late could overwrite a NEW truth: the worked example on your card was a customer who upgrades Pro → Ultimate and then a delayed older message writes Pro back over their Ultimate — they paid for Ultimate and see Pro. You chose repair 1 ('1', on the card): before applying any subscription message, we now ask Stripe what the subscription looks like RIGHT NOW and apply that. Order stops mattering; a late or repeated message can only ever write the current truth. THE SAME RULE, EVERYWHERE. A message claiming a subscription died is checked too — if Stripe says it is alive, we refuse to downgrade the customer (they keep their plan, the safe direction). And the 'payment failed' mark now records the live state, so a customer whose card was charged successfully a minute later can never be flagged as behind on payment by a stale message. COST, SAID OUT LOUD: one extra Stripe lookup per subscription message — cents at any volume we can imagine. PROVEN, NOT CLAIMED: your card's own Pro-over-Ultimate scenario is now a permanent test (it fails against the old code — we ran that check both ways); the independent reviewer passed the change with no defect found; production answered with the new build a minute after the merge. One narrow cousin the reviewer spotted — only reachable if a customer somehow holds two live subscriptions at once, which the product's own screens do not offer — is filed as #804 for a shift with its own design, not rushed into this one. STILL YOURS: nothing. Your NEXT UP queue is empty.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T10:30:16.348Z",
+      "readAt": "2026-09-11T11:31:19.384Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4627,6 +4627,13 @@
   ],
   "pipeline": [
     {
+      "id": "webhook-fetch-dont-trust-795",
+      "title": "Subscription messages from Stripe are checked against the source before they touch an account — a late or repeated message can only write the current truth",
+      "status": "merged",
+      "prNumber": 803,
+      "note": "Your word on #795: '1' — fetch, don't trust. Every subscription webhook now re-reads the live subscription from Stripe and applies that, never the message's own snapshot; a 'subscription died' message is refused if Stripe says it is alive; the payment-failed mark records the live status so it can never flag a paying customer. Reviewer verdict: pass, no defect. Deployed and read back on production (build 8d2fe178). One narrow pre-existing cousin filed as #804."
+    },
+    {
       "id": "slack-retired-800",
       "title": "Slack is retired whole — every alert lands on your admin panels, and approving a sensitive request runs it the moment you approve it",
       "status": "merged",
@@ -5390,8 +5397,8 @@
       "id": "queue-shape-0911j-fable",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 53 open, one closed today (your Slack retirement), 15 nobody has looked at in a week",
-      "detail": "#800 closed with PR #802, deployed and read back on production. Filed: nothing new. The rot figure is the timeline reading (queue-rot-read). Next in your ordered queue: #795, held for a Fable shift because it is a design decision on the subscription money roads."
+      "title": "The queue: 52 open, two closed today (your Slack retirement and the webhook ordering card), NEXT UP is empty",
+      "detail": "#795 closed with PR #803, deployed and read back on production. Filed: #804, a narrow cousin the reviewer found (needs two simultaneously live subscriptions, which the product's screens do not offer) — it waits for its own design shift. Your ordered queue is empty; background switches govern what runs next."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5573,17 +5580,7 @@
     176
   ],
   "nextUp": {
-    "readAt": "2026-09-11T10:30:16.347Z",
-    "items": [
-      {
-        "issueNumber": 795,
-        "title": "Webhook handlers apply the event PAYLOAD with no ordering guard — a redelivered older subscription.updated writes Pro over Ultimate (the class #794 declined to fold, found at the code)",
-        "urgent": false,
-        "held": {
-          "state": "fable",
-          "because": "a DESIGN DECISION — which of the three repairs below (fetch-don't-trust / last-applied-event column / leave it) the subscription roads take. Money path; the re…"
-        }
-      }
-    ]
+    "readAt": "2026-09-11T11:31:19.383Z",
+    "items": []
   }
 }
