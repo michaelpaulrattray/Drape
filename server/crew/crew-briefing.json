@@ -1,7 +1,7 @@
 {
-  "edition": 348,
-  "updatedAt": "2026-09-11T15:53:37.858Z",
-  "shift": "Retro — patrol #3 (the weekly check-up on the team itself), nothing on your desk changed. WHAT CHANGED FOR YOU: nothing you can see in the product. This seat reads a week of the team's own reports and merged work and asks two questions: did any shift claim something that was not true, and is the same mistake happening twice. THE ANSWERS: (1) No shift lied this week. 154 changes merged, every one traced to a card you ordered, a reply you wrote, or a check-up on its clock; 91 'card closed' claims in the reports, 91 true. (2) The one thing that WAS wrong all week was the machine that checks the shifts: the note the runner staples to each report saying 'this close is unverified' fired seven times since its last repair, and all seven were false alarms — three because a report merely MENTIONED the words it hunts for, four because it could not see a Fable shift's report at all and told the next shift its predecessor had skipped its close. Fixed tonight (#813): it now reads a sentence, not a sixty-character window, and treats anything in code quotes as a quotation. 29 of 29 checks pass, the three false alarms reproduce on the old copy, and driving both copies over the week's 97 real reports turns 3 false alarms into 0 with nothing real lost. ONE PATTERN TO NAME, no action from you: five times this week a shift declared a sweep finished by hand count and the next shift found more (the Refresh buttons, the auto-refresh lists, the payment webhooks, the page-checking rules). Two cards already ask for the mechanical checks that end that; no new law proposed. YOUR DESK: unchanged — #721 still waits for one word. No new replies from you since edition 346.",
+  "edition": 349,
+  "updatedAt": "2026-09-11T16:10:01.099Z",
+  "shift": "Retro — patrol #3, second act: your one word landed and the card is done. YOUR DESK IS CLEAR. WHAT CHANGED FOR YOU: you replied 'A' on #721 at 15:52Z — a usage cap counts only when it is an actual error line, never words inside a sentence — and it was built within the hour. The night-shift runner now reads a dead shift's log the way you ruled: anything quoted (a code block, a quote, a table cell, a phrase in backticks) is ignored, and the cap wording has to lead the line the way a real error message does. Your seven phrases are exactly as they were; only how they are read changed. MEASURED BEFORE IT WAS BELIEVED: across all 3,145 shift logs on disk, the old reading called five of them a cap and the new one calls ONE — the one real report. The four it stopped calling a cap were shifts writing about the cap machinery (one of them the shift that fixed the last round, exactly as the card predicted would happen). 70 of 70 checks pass; with the old copy swapped back in, exactly the ten new checks go red and nothing else. The synthetic real cap lines — including the exact text the tool prints when your limit is hit — all still stop the team at once. EARLIER TONIGHT (edition 348): the weekly audit of the team — no shift lied this week; the only false statements in the record were the runner's own 'unverified close' stamps, seven of seven false, fixed as #813. YOUR DESK: nothing waits on you. NEXT UP is empty. Reply #177 is acknowledged here.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,12 +128,12 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "53 open, 1 waiting on you (#721), none urgent. 1 filed and closed tonight (#813); 25 stale."
+        "source": "52 open, none waiting on you, none urgent. 2 closed tonight (#813, #721 on your word); 25 stale."
       },
       {
-        "label": "One decision waits on you",
-        "tone": "warn",
-        "source": "#721 — what counts as a 'usage cap' in a shift's log. One-word answer; recommendation on the card."
+        "label": "Your desk is clear",
+        "tone": "good",
+        "source": "#721 answered 'A' at 15:52Z and built the same hour. Nothing else waits on you tonight."
       },
       {
         "label": "Check-ups",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T15:53:34.742Z",
+      "readAt": "2026-09-11T16:09:22.875Z",
       "items": [
         {
           "issueNumber": 16,
@@ -282,7 +282,7 @@
     {
       "id": "cap-detector-prose-721",
       "issueNumber": 721,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-11T13:46:37.864Z",
       "title": "The night-shift's 'usage cap' alarm still trips on a shift WRITING about caps — what should count as a cap?",
       "productImpact": "When a night shift dies, the runner reads that shift's own log for the words of a usage cap and, if it finds them, parks the whole team with a STOP note saying 'Fable usage cap reached'. Measured over every shift log on disk: ten logs would have parked the team that way and ONE was a real cap. #495 fixed six of the nine false ones (card numbers and commit hashes that happened to contain '429', 'quota' hiding inside 'quotation'). Three remain and they are one class: a shift writing plainly about the cap machinery — 'the daily quota', 'the user rate limits', a report quoting 'you're out of credits'. Nothing is broken for customers. The cost is yours: the nights stop for a reason that is not true, you delete the STOP file, and nobody learns what actually failed. It is on your desk because #495's own text reserved the phrase list for you, so deciding that those three plain-English uses do not count is deciding what a cap IS.",
@@ -4654,6 +4654,13 @@
   ],
   "pipeline": [
     {
+      "id": "cap-declaration-721",
+      "title": "Your 'A' on #721 built: a usage cap is an error line, not a mention — the runner stops calling a shift's own prose about caps a cap",
+      "status": "merged",
+      "prNumber": null,
+      "note": "No product change and no PR: it lives in the team's local runner files, so its 70-arm driver is the proof. Across all 3,145 shift logs the reading went from five caps to one, and the one is the real report; the tool's exact cap message and the real report's own shape still stop the team at once. The remainder is written in the file's header rather than left to be found: a sentence that OPENS with one of your phrases still counts, and fails toward stopping — your standing preference."
+    },
+    {
       "id": "retro-3-close-stamp-813",
       "title": "Retro #3: the runner's 'unverified close' stamp fired seven times this week and every one was a false alarm — it reads sentences and quotations properly now",
       "status": "merged",
@@ -5463,11 +5470,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912b-retro",
+      "id": "queue-shape-0912c-retro",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 53 open, one filed and closed tonight (#813); NEXT UP is empty; the Retro ran on its day",
-      "detail": "Nothing tonight is a product change a customer would notice — it is the team's own report checker. #721 is still the one card on your desk. 25 open cards have had no comment, close, reopen or commit for 7 days (read by queue-rot-read; a label alone does not reset that clock). Machinist and Janitor are DUE today by their own clocks and neither is overdue; the next shift very likely runs one. Background switches all on; category order after patrols is Process, then Performance, then Housekeeping."
+      "title": "The queue: 52 open, two closed tonight (#813; #721 on your word); NEXT UP is empty; nothing waits on you",
+      "detail": "Neither of tonight's two is a product change a customer would notice — both are the team's own checkers reading prose as fact. Your desk is clear for the first time since #721 was filed on 11 Sep. 25 open cards have had no comment, close, reopen or commit for 7 days (read by queue-rot-read; a label alone does not reset that clock). Machinist and Janitor are DUE today by their own clocks and neither is overdue; the next shift very likely runs one. Background switches all on; category order after patrols is Process, then Performance, then Housekeeping."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5646,10 +5653,11 @@
     173,
     174,
     175,
-    176
+    176,
+    177
   ],
   "nextUp": {
-    "readAt": "2026-09-11T15:53:34.742Z",
+    "readAt": "2026-09-11T16:09:22.874Z",
     "items": []
   }
 }
