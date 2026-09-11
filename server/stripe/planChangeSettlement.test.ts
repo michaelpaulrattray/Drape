@@ -1160,5 +1160,31 @@ describe("the webhook settles what changePlan recorded", () => {
       expect(db.updateUserSubscription).toHaveBeenCalledWith(7, { subscriptionStatus: "past_due" });
       expect(processedEventInserts).toHaveLength(1);
     });
+
+    it("invoice.payment_failed INTERMEDIATE: a STALE delivery (a newer subscription on record) does NOT mark the active account past_due (PR #794 round-2 finding 1)", async () => {
+      /* The write is keyed on the user; a late failure for sub_OLD landing
+         over an active sub_NEW would flip hasSubscription false on its
+         FIRST delivery and send a paying customer to a fresh checkout. */
+      db.getUserByStripeCustomerId.mockResolvedValue({
+        id: 7,
+        name: "seven",
+        email: "u@example.com",
+        credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_NEW" },
+      });
+      db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+
+      const result = await deliverEvent("invoice.payment_failed", {
+        id: "in_old_renewal",
+        customer: "cus_1",
+        subscription: "sub_OLD",
+        next_payment_attempt: NOW_SEC + 3 * DAY,
+        amount_due: 12_00,
+        currency: "usd",
+      });
+
+      expect(result.success).toBe(true);
+      expect(db.updateUserSubscription).not.toHaveBeenCalled();
+      expect(processedEventInserts).toHaveLength(1);
+    });
   });
 });

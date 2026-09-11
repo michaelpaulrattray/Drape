@@ -726,15 +726,29 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
     // fresh checkout instead of a plan change. A missing mark costs a flag
     // the next event corrects; a stale one costs a customer money. So a
     // failed write is logged loud and the event is ACKed.
-    const markResult = await updateUserSubscription(userId, {
-      subscriptionStatus: "past_due",
-    });
-    if (markResult.success) {
-      log.info(`[Webhook] Payment failed for user ${userId}, marked as past_due (retry scheduled)`);
-    } else {
-      log.error(
-        `[Webhook] Payment failed for user ${userId} but the past_due mark could not be written (${markResult.error}) — ACKing anyway: the next invoice event rewrites the status, and a redelivered mark could land over a since-successful payment`,
+    //
+    // ⚠ AND THE MARK IS UNDER THE SAME STALE GUARD AS THE DOWNGRADES (PR
+    // #794 round-2 finding 1): the write is keyed on the USER, so a late
+    // intermediate failure for an OLD subscription, landing while a NEW
+    // active one is on record, would write `past_due` over the active
+    // account on its FIRST delivery — the very harm the paragraph above
+    // declines to risk on a redelivery. Null on record still marks.
+    const storedSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
+    if (storedSubscriptionId && storedSubscriptionId !== subscriptionId) {
+      log.info(
+        `[Webhook] Leaving user ${userId}'s status alone — the failed subscription ${subscriptionId} is not the one on record (${storedSubscriptionId})`,
       );
+    } else {
+      const markResult = await updateUserSubscription(userId, {
+        subscriptionStatus: "past_due",
+      });
+      if (markResult.success) {
+        log.info(`[Webhook] Payment failed for user ${userId}, marked as past_due (retry scheduled)`);
+      } else {
+        log.error(
+          `[Webhook] Payment failed for user ${userId} but the past_due mark could not be written (${markResult.error}) — ACKing anyway: the next invoice event rewrites the status, and a redelivered mark could land over a since-successful payment`,
+        );
+      }
     }
   }
   return { success: true, message: `Payment failed for user ${userId}` };
