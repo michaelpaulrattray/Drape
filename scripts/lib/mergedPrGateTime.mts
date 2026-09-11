@@ -76,16 +76,63 @@ export type ReadMergedPrsOptions = {
    */
   limit?: number;
   gh?: GhRunner;
+  /** How many times one `gh` call is tried before its failure becomes the refusal. */
+  attempts?: number;
+  /** The pause between attempts, injectable so the arms do not wait. */
+  sleep?: (ms: number) => void;
+};
+
+/**
+ * ⚠ ONE DROPPED CONNECTION USED TO BLANK THE WHOLE SECTION (Machinist run 3,
+ * 2026-09-12). This reader makes one `gh api` call PER MERGED PR — a 14-day
+ * window is ~200 sequential calls over the founder's home connection — and a
+ * single `connectex … did not properly respond` on call 140 threw the other
+ * 139 away and printed `UNREAD`. Measured the morning it was fixed: three of
+ * four full readings lost, each to ONE call; the 3-day read on #543 recorded
+ * the same (*"four of five attempts today"*). The UNREAD line is the honest
+ * shape when `gh` genuinely cannot answer; it is the wrong shape when `gh`
+ * answered 199 times and stumbled once.
+ *
+ * So every `gh` call is tried `attempts` times (default 3) with a short pause,
+ * and the refusal — still a refusal, still with its reason — is written only
+ * when the LAST attempt fails. Deliberately no classifier deciding which
+ * errors are "transient": an auth failure retried three times costs about a
+ * second and reads the same, while a classifier that misreads one message
+ * silently gives the old behaviour back on the one road this exists for.
+ */
+const DEFAULT_ATTEMPTS = 3;
+const RETRY_PAUSE_MS = 1_500;
+const syncSleep = (ms: number) => {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 };
 
 export function readMergedPrs(sinceIso: string, options: ReadMergedPrsOptions = {}): MergedPrsResult {
   const limit = options.limit ?? 100;
   const gh = options.gh ?? realGh;
+  const attempts = Math.max(1, Math.floor(options.attempts ?? DEFAULT_ATTEMPTS));
+  const sleep = options.sleep ?? syncSleep;
   const oneLine = (error: unknown) => String((error as Error).message ?? error).split("\n")[0];
+
+  /* Every `gh` call goes through here, so no call site can be the one that
+     still blanks the section on a single stumble. The thrown error is the
+     LAST attempt's, and the reason names the count so a reader can tell a
+     dead `gh` from an unlucky one. */
+  const tried = (args: string[]): string => {
+    let last: unknown;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        return gh(args);
+      } catch (error) {
+        last = error;
+        if (attempt < attempts) sleep(RETRY_PAUSE_MS);
+      }
+    }
+    throw new Error(`${oneLine(last)} — after ${attempts} attempt(s)`);
+  };
 
   let workflowId: number;
   try {
-    const workflows = JSON.parse(gh(["api", "repos/:owner/:repo/actions/workflows?per_page=100"])) as {
+    const workflows = JSON.parse(tried(["api", "repos/:owner/:repo/actions/workflows?per_page=100"])) as {
       workflows: Array<{ id: number; path: string }>;
     };
     const gate = workflows.workflows.find((w) => w.path === GATE_WORKFLOW_PATH);
@@ -102,7 +149,7 @@ export function readMergedPrs(sinceIso: string, options: ReadMergedPrsOptions = 
   let listed: Array<{ number: number; mergedAt: string | null; createdAt: string; headRefName: string }>;
   try {
     listed = JSON.parse(
-      gh([
+      tried([
         "pr",
         "list",
         "--state",
@@ -137,7 +184,7 @@ export function readMergedPrs(sinceIso: string, options: ReadMergedPrsOptions = 
     try {
       runs = (
         JSON.parse(
-          gh([
+          tried([
             "api",
             `repos/:owner/:repo/actions/workflows/${workflowId}/runs` +
               `?branch=${encodeURIComponent(pr.headRefName)}&per_page=100`,

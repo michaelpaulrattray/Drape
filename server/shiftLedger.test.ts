@@ -214,6 +214,9 @@ describe("the GitHub half refuses rather than reporting a short list", () => {
       return responses.runs ?? JSON.stringify({ workflow_runs: [] });
     };
 
+  /** The retry pause, stubbed — an arm proving a refusal must not wait 3 s to do it. */
+  const noSleep = () => {};
+
   const listOf = (n: number, mergedAt = "2026-09-05T10:30:00Z") =>
     JSON.stringify(
       Array.from({ length: n }, (_, i) => ({
@@ -270,6 +273,7 @@ describe("the GitHub half refuses rather than reporting a short list", () => {
       gh: () => {
         throw new Error("gh: not authenticated\nmore detail");
       },
+      sleep: noSleep,
     });
     expect(result.ok).toBe(false);
     expect(!result.ok && result.why).toMatch(/could not list workflows/);
@@ -291,6 +295,7 @@ describe("the GitHub half refuses rather than reporting a short list", () => {
           throw new Error("gh: API rate limit exceeded");
         },
       }),
+      sleep: noSleep,
     });
     expect(result.ok).toBe(false);
     expect(!result.ok && result.why).toMatch(/gh pr list failed/);
@@ -315,6 +320,74 @@ describe("the GitHub half refuses rather than reporting a short list", () => {
     });
     expect(result.ok).toBe(true);
     expect(result.ok && result.prs[0]).toMatchObject({ gateRuns: 1, gateMinutes: 7 });
+  });
+
+  /*
+    ⚠ ONE DROPPED CONNECTION USED TO BLANK THE WHOLE SECTION (Machinist run 3).
+    Three of four full readings on 2026-09-12 were lost to a single
+    `connectex` on one of ~200 sequential per-PR calls. These arms drive the
+    retry from both ends: a stumble that recovers, and a `gh` that is really
+    dead — which must STILL refuse, naming how many times it was asked.
+  */
+  it("⚠ RETRIES a gh call that stumbles once — one dropped connection does not blank the reading", () => {
+    let runsCalls = 0;
+    const pauses: number[] = [];
+    const stumbleOnce: GhRunner = (args) => {
+      if (args[0] === "api" && args[1]?.includes("/runs?")) {
+        runsCalls += 1;
+        if (runsCalls === 1) throw new Error("connectex: A connection attempt failed");
+      }
+      return fakeGh({ prList: listOf(1) })(args);
+    };
+    const result = readMergedPrs("2026-09-01T00:00:00Z", {
+      limit: 50,
+      gh: stumbleOnce,
+      sleep: (ms) => pauses.push(ms),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.prs).toHaveLength(1);
+    expect(runsCalls).toBe(2);
+    /* It paused once, between the failure and the retry — never after a success. */
+    expect(pauses).toHaveLength(1);
+  });
+
+  it("STILL REFUSES when every attempt fails — and the reason says how many times it asked", () => {
+    let runsCalls = 0;
+    const pauses: number[] = [];
+    const dead: GhRunner = (args) => {
+      if (args[0] === "api" && args[1]?.includes("/runs?")) {
+        runsCalls += 1;
+        throw new Error("connectex: A connection attempt failed\nmore detail");
+      }
+      return fakeGh({ prList: listOf(1) })(args);
+    };
+    const result = readMergedPrs("2026-09-01T00:00:00Z", {
+      limit: 50,
+      gh: dead,
+      sleep: (ms) => pauses.push(ms),
+    });
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.why).toMatch(/could not read gate runs for #100/);
+    expect(!result.ok && result.why).toMatch(/connectex/);
+    expect(!result.ok && result.why).toMatch(/after 3 attempt/);
+    expect(runsCalls).toBe(3);
+    /* Two pauses for three attempts — none after the last failure. */
+    expect(pauses).toHaveLength(2);
+  });
+
+  it("with attempts: 1 the first failure is the refusal — the old shape, by choice rather than by accident", () => {
+    let runsCalls = 0;
+    const dead: GhRunner = (args) => {
+      if (args[0] === "api" && args[1]?.includes("/runs?")) {
+        runsCalls += 1;
+        throw new Error("connectex: A connection attempt failed");
+      }
+      return fakeGh({ prList: listOf(1) })(args);
+    };
+    const result = readMergedPrs("2026-09-01T00:00:00Z", { limit: 50, gh: dead, attempts: 1, sleep: noSleep });
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.why).toMatch(/after 1 attempt/);
+    expect(runsCalls).toBe(1);
   });
 });
 
