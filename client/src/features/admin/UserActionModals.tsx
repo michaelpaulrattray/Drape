@@ -49,6 +49,7 @@ import { User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ROLE_CHANGE_REASON_MAX_LENGTH, SUSPEND_REASON_MAX_LENGTH } from "@shared/inputLimits";
 import {
   Dialog,
   DialogContent,
@@ -97,6 +98,7 @@ export function SuspendModal({ open, onOpenChange, reason, onReasonChange, onCon
               value={reason}
               onChange={(e) => onReasonChange(e.target.value)}
               placeholder="Enter the reason for suspending this user..."
+              maxLength={SUSPEND_REASON_MAX_LENGTH}
               required
             />
           </StaffField>
@@ -294,6 +296,7 @@ export function RoleChangeModal({ open, onOpenChange, targetRole, reason, onReas
               id="user-role-reason"
               value={reason}
               onChange={(e) => onReasonChange(e.target.value)}
+              maxLength={ROLE_CHANGE_REASON_MAX_LENGTH}
               placeholder={targetRole === "moderator"
                 ? "e.g., Trusted community member, needs access to review reports..."
                 : "e.g., No longer needed, stepping down from moderation duties..."}

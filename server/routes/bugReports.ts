@@ -12,7 +12,8 @@ const BUG_RATE_LIMIT = { maxRequests: 5, windowMs: 60_000 * 10, prefix: "bug_rep
 export const bugReportsRouter = router({
   submit: protectedProcedure
     .input(z.object({
-      description: z.string().min(10, "Please describe the issue in at least 10 characters").max(2000),
+      // `.trim()` before the floor (#816): ten spaces used to reach the admin inbox as a report.
+      description: z.string().trim().min(10, "Please describe the issue in at least 10 characters").max(2000),
       category: z.enum(["casting", "export", "billing", "ui", "other", "feedback"]).default("other"),
       page: z.string().max(256).optional(),
       modelId: z.number().int().positive().optional(),

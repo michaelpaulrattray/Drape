@@ -396,6 +396,28 @@ describe("Change Request - Types & Validation (DRIVEN and DERIVED)", () => {
     ).resolves.toBeDefined();
   });
 
+  it("whitespace-only title and description are REFUSED, and padding is trimmed before the writer (#816)", async () => {
+    const { createChangeRequest } = await import("./db");
+    vi.mocked(createChangeRequest).mockClear();
+    // Five spaces and ten spaces used to pass the floors untrimmed.
+    await expect(
+      modCaller().createChangeRequest(validCreateInput({ title: "     " }) as never),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      modCaller().createChangeRequest(validCreateInput({ description: " ".repeat(10) }) as never),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(createChangeRequest).not.toHaveBeenCalled();
+    // POSITIVE CONTROL -- padded but real text is accepted, and the writer receives the core.
+    await expect(
+      modCaller().createChangeRequest(
+        validCreateInput({ title: "  Incident note \n", description: "\t Something happened that needs recording  " }) as never,
+      ),
+    ).resolves.toBeDefined();
+    expect(createChangeRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Incident note", description: "Something happened that needs recording" }),
+    );
+  });
+
   it("the description bounds are the product's -- too short and too long are both REFUSED", async () => {
     await expect(
       modCaller().createChangeRequest(validCreateInput({ description: "Bad user" }) as never),

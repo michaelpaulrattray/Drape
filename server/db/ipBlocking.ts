@@ -81,18 +81,23 @@ export async function blockIp(
 }
 
 /**
- * Unblock an IP address.
+ * Unblock an IP address. Answers how many rows the delete actually removed
+ * (#816, PR #820 review): the route used to log an unblock on a `true` that
+ * meant only "the statement ran", so an address that matched nothing produced
+ * three log rows claiming an act that never happened.
  */
-export async function unblockIp(ipAddress: string): Promise<boolean> {
+export async function unblockIp(
+  ipAddress: string,
+): Promise<{ success: true; removed: number } | { success: false }> {
   const db = await getDb();
-  if (!db) return false;
+  if (!db) return { success: false };
 
   try {
-    await db.delete(blockedIps).where(eq(blockedIps.ipAddress, ipAddress));
-    return true;
+    const [result] = await db.delete(blockedIps).where(eq(blockedIps.ipAddress, ipAddress));
+    return { success: true, removed: result.affectedRows };
   } catch (error) {
     log.error({ err: error }, "[Database] Failed to unblock IP:");
-    return false;
+    return { success: false };
   }
 }
 

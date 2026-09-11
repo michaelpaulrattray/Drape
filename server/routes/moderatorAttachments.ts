@@ -23,7 +23,7 @@ export const moderatorAttachmentsRouter = router({
    */
   uploadAttachment: moderatorProcedure
     .input(z.object({
-      filename: z.string().min(1).max(256),
+      filename: z.string().trim().min(1).max(256), // `.trim()` before `.min(1)` (#816)
       mimeType: z.string().refine((v) => ALLOWED_MIME_TYPES.includes(v), {
         message: "Unsupported file type. Allowed: JPEG, PNG, GIF, WebP, PDF, CSV, TXT, XLSX",
       }),
