@@ -146,7 +146,12 @@ export const billingRouter = router({
         subscription?.stripeCustomerId
       );
 
-      // Save customer ID if new.
+      // Save customer ID if new — or if it CHANGED (PR #797 review): the helper
+      // mints a fresh customer when the saved one is deleted or unretrievable
+      // in Stripe (stripeService.ts, the deleted-check and its catch), so a
+      // guard keyed on "nothing saved yet" would skip the save AND the refusal
+      // below, and mint the session against an id the account still does not
+      // hold. The comparison is the guard; the verdict read is the same.
       //
       // ⚠ THE VERDICT IS READ, NOT DROPPED (#796, the request-path remainder
       // of #792): `updateUserSubscription` never throws — a failed write comes
@@ -159,7 +164,7 @@ export const billingRouter = router({
       // just-minted Stripe customer is left empty (no subscription hangs off it)
       // and the retry mints another, which is the harmless half of the card's
       // "second customer"; the harmful half is only reachable past this throw.
-      if (!subscription?.stripeCustomerId) {
+      if (customerId !== subscription?.stripeCustomerId) {
         const saved = await updateUserSubscription(ctx.user.id, { stripeCustomerId: customerId });
         if (!saved.success) {
           log.error(

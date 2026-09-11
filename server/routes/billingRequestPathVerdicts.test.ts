@@ -125,6 +125,30 @@ describe("#796 site 1 — the stripeCustomerId save before a checkout", () => {
     expect(createSubscriptionCheckoutSession).toHaveBeenCalledTimes(1);
   });
 
+  it("a saved id that Stripe no longer honours — the helper mints a NEW one — takes the same road: saved, and refused on a failed save (PR #797 review)", async () => {
+    vi.mocked(getSubscriptionByUserId).mockResolvedValue({
+      stripeCustomerId: "cus_stale",
+    } as Awaited<ReturnType<typeof getSubscriptionByUserId>>);
+    vi.mocked(getOrCreateStripeCustomer).mockResolvedValue("cus_new");
+    vi.mocked(updateUserSubscription).mockResolvedValue({
+      success: false,
+      error: "Database not available",
+    });
+
+    await expect(caller().createSubscriptionCheckout({ plan: "starter" })).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+    });
+
+    expect(updateUserSubscription).toHaveBeenCalledWith(42, { stripeCustomerId: "cus_new" });
+    expect(createSubscriptionCheckoutSession).not.toHaveBeenCalled();
+
+    // And the successful save proceeds, against the NEW id.
+    vi.mocked(updateUserSubscription).mockResolvedValue({ success: true });
+    const out = await caller().createSubscriptionCheckout({ plan: "starter" });
+    expect(out.checkoutUrl).toBe("https://checkout.stripe.com/c/pay/test");
+    expect(vi.mocked(createSubscriptionCheckoutSession).mock.calls[0][0]).toBe("cus_new");
+  });
+
   it("a returning buyer with an id already saved never touches the save, so the guard cannot refuse them", async () => {
     vi.mocked(getSubscriptionByUserId).mockResolvedValue({
       stripeCustomerId: "cus_known",
