@@ -163,6 +163,18 @@ describe("moderatorReconciliation.freezeAccount — DRIVEN", () => {
     await expect(caller().freezeAccount({ userId: 42, reason: "a".repeat(FREEZE_REASON_MAX_LENGTH) })).resolves.toEqual({ success: true });
   });
 
+  it("refuses a WHITESPACE-ONLY reason — a blank on record is not a reason (#816)", async () => {
+    await expect(caller().freezeAccount({ userId: 42, reason: "   \n\t " })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(getDb).not.toHaveBeenCalled();
+    expect(mockFreezeUser).not.toHaveBeenCalled();
+  });
+
+  it("trims the reason it stores — surrounding whitespace never reaches the record or the notice (#816)", async () => {
+    await caller().freezeAccount({ userId: 42, reason: "  repeated chargebacks  " });
+    expect(mockFreezeUser).toHaveBeenCalledWith(42, "Manual freeze by moderator: repeated chargebacks", "7");
+    expect(logAuditEvent).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({ reason: "repeated chargebacks" }) }));
+  });
+
   it("the audit row names the moderator, the target and the trigger — and carries the reason UNPREFIXED", async () => {
     await caller().freezeAccount({ userId: 42, reason: "repeated chargebacks" });
     expect(logAuditEvent).toHaveBeenCalledTimes(1);
@@ -227,6 +239,13 @@ describe("moderatorReconciliation.unfreezeAccount — DRIVEN, and nothing drove 
     await expect(caller().unfreezeAccount({ userId: 42, notes: "a".repeat(UNFREEZE_NOTES_MAX_LENGTH) })).resolves.toEqual({ success: true });
   });
 
+  it("refuses WHITESPACE-ONLY notes, and trims the notes it records (#816)", async () => {
+    await expect(caller().unfreezeAccount({ userId: 42, notes: " \t " })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(mockUnfreezeUser).not.toHaveBeenCalled();
+    await caller().unfreezeAccount({ userId: 42, notes: "  reviewed  " });
+    expect(logAuditEvent).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({ reviewNotes: "reviewed" }) }));
+  });
+
   it("POSITIVE — unfreezes by id, and the audit row carries the review notes and the moderator", async () => {
     await expect(caller().unfreezeAccount({ userId: 42, notes: "discrepancy explained" })).resolves.toEqual({ success: true });
     expect(mockUnfreezeUser).toHaveBeenCalledTimes(1);
@@ -287,13 +306,20 @@ describe("admin.users.freezeUser — DRIVEN, and nothing drove it before", () =>
     expect(mockFreezeUser).toHaveBeenCalledWith(2, "Admin freeze: stepping away", "2");
   });
 
-  it("FROM THE DIFF — refuses an empty reason and one over 500, before the target is read", async () => {
-    for (const reason of ["", "a".repeat(501)]) {
+  it("FROM THE DIFF — refuses an empty reason and one over FREEZE_REASON_MAX_LENGTH, before the target is read", async () => {
+    for (const reason of ["", "a".repeat(FREEZE_REASON_MAX_LENGTH + 1)]) {
       await expect(caller().freezeUser({ userId: 1, reason })).rejects.toMatchObject({ code: "BAD_REQUEST" });
     }
     expect(mockGetUserById).not.toHaveBeenCalled();
     expect(mockFreezeUser).not.toHaveBeenCalled();
-    await expect(caller().freezeUser({ userId: 1, reason: "a".repeat(500) })).resolves.toEqual({ success: true });
+    await expect(caller().freezeUser({ userId: 1, reason: "a".repeat(FREEZE_REASON_MAX_LENGTH) })).resolves.toEqual({ success: true });
+  });
+
+  it("refuses a WHITESPACE-ONLY reason, and trims the reason it stores (#816)", async () => {
+    await expect(caller().freezeUser({ userId: 1, reason: "   " })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(mockFreezeUser).not.toHaveBeenCalled();
+    await caller().freezeUser({ userId: 1, reason: "  Billing investigation  " });
+    expect(mockFreezeUser).toHaveBeenCalledWith(1, "Admin freeze: Billing investigation", "2");
   });
 
   it("the stored reason is PREFIXED 'Admin freeze:', and the audit row carries it unprefixed at WARNING under the admin trigger", async () => {
@@ -357,6 +383,15 @@ describe("admin.users.unfreezeUser — DRIVEN, and nothing drove it before", () 
   it("refuses a target that does not exist, NOT_FOUND", async () => {
     mockGetUserById.mockResolvedValue(null);
     await refused(caller().unfreezeUser({ userId: 999, notes: "reviewed" }), "NOT_FOUND");
+  });
+
+  it("FROM THE DIFF — refuses empty notes, WHITESPACE-ONLY notes and notes over UNFREEZE_NOTES_MAX_LENGTH; trims what it records (#816)", async () => {
+    for (const notes of ["", " \n ", "a".repeat(UNFREEZE_NOTES_MAX_LENGTH + 1)]) {
+      await expect(caller().unfreezeUser({ userId: 1, notes })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    expect(mockUnfreezeUser).not.toHaveBeenCalled();
+    await expect(caller().unfreezeUser({ userId: 1, notes: "  cleared  " })).resolves.toEqual({ success: true });
+    expect(logAuditEvent).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({ reviewNotes: "cleared" }) }));
   });
 
   it("POSITIVE — unfreezes any frozen user, and the audit row carries the notes AND the reason it had been frozen for", async () => {

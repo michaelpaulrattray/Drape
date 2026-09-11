@@ -244,7 +244,8 @@ export const moderatorReconciliationRouter = router({
   freezeAccount: moderatorProcedure
     .input(z.object({
       userId: z.number(),
-      reason: z.string().min(1, "Reason is required").max(FREEZE_REASON_MAX_LENGTH),
+      // `.trim()` before `.min(1)`: a reason of one space is a blank on the record (#816).
+      reason: z.string().trim().min(1, "Reason is required").max(FREEZE_REASON_MAX_LENGTH),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -295,7 +296,7 @@ export const moderatorReconciliationRouter = router({
   unfreezeAccount: moderatorProcedure
     .input(z.object({
       userId: z.number(),
-      notes: z.string().min(1, "Review notes are required").max(UNFREEZE_NOTES_MAX_LENGTH),
+      notes: z.string().trim().min(1, "Review notes are required").max(UNFREEZE_NOTES_MAX_LENGTH),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();

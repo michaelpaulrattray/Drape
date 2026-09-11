@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "04ab5a7ec4a103bf"
+    "sourceFingerprint": "1b6ed49e9220d824"
   },
   "domains": [
     {
@@ -30898,6 +30898,11 @@
     {
       "from": "module:server/routes/admin/users.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/users.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {

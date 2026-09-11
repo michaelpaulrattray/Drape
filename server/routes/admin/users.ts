@@ -6,6 +6,7 @@ import { getClientIp } from "../../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../../logging/logger";
+import { FREEZE_REASON_MAX_LENGTH, UNFREEZE_NOTES_MAX_LENGTH } from "../../../shared/inputLimits";
 const log = createModuleLogger("routes/admin");
 
 export const usersRouter = router({
@@ -174,7 +175,9 @@ export const usersRouter = router({
   freezeUser: adminProcedure
     .input(z.object({
       userId: z.number(),
-      reason: z.string().min(1).max(500),
+      // `.trim()` before `.min(1)` (#816), and the cap is the shared constant the moderator road
+      // already reads — a hand-typed 500 beside it was the drift `shared/inputLimits.ts` names.
+      reason: z.string().trim().min(1).max(FREEZE_REASON_MAX_LENGTH),
     }))
     .mutation(async ({ ctx, input }) => {
       const { freezeUser, getUserById } = await import("../../db");
@@ -235,7 +238,7 @@ export const usersRouter = router({
   unfreezeUser: adminProcedure
     .input(z.object({
       userId: z.number(),
-      notes: z.string().min(1).max(500),
+      notes: z.string().trim().min(1).max(UNFREEZE_NOTES_MAX_LENGTH),
     }))
     .mutation(async ({ ctx, input }) => {
       const { unfreezeUser, getUserById } = await import("../../db");
