@@ -590,26 +590,55 @@ describe("the webhook settles what changePlan recorded", () => {
   });
 
   /*
-    A void that throws must not fail the EVENT. Stripe would redeliver, and a
-    redelivery re-runs the settlement void and the auto-cancel — both already
-    done — to retry a call that will fail the same way. The invoice staying
-    payable is the pre-existing exposure, not a new one.
+    This arm used to pin the OPPOSITE — "a failing void does not fail the
+    event", on the reasoning that a redelivery would re-run the settlement void
+    and the auto-cancel to retry a call that would fail the same way, and that
+    the invoice staying payable was a pre-existing exposure. #788 (PR #786's
+    round-2 class, one road over): a handler that returns success is ACKed 200
+    and RECORDED, so Stripe never redelivers and the invoice stays payable on
+    the hosted page indefinitely. A transient Stripe error is exactly what a
+    redelivery heals — the settlement void and the downgrade are idempotent,
+    the cancel of a dead subscription is caught, and `voidInvoice` reads the
+    status first. So a failed void now FAILS THE EVENT, after the cancel and
+    the downgrade have landed, and the arm drives the SAME event id twice
+    through the recording idempotency double — the road production takes.
   */
-  it("a failing void does not fail the event", async () => {
+  it("a failed invoice void on the FINAL-FAILURE road FAILS THE EVENT after the cancel and downgrade land, and the SAME event redelivered voids it (#788)", async () => {
     db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
     invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
-    invoicesVoid.mockRejectedValue(new Error("stripe said no"));
+    invoicesVoid.mockRejectedValueOnce(new Error("stripe blipped"));
 
-    const result = await deliverEvent("invoice.payment_failed", {
+    const failedInvoice = {
       id: "in_change",
       customer: "cus_1",
       subscription: "sub_1",
       next_payment_attempt: null,
       amount_due: 12_00,
       currency: "usd",
-    });
+    };
 
-    expect(result.success).toBe(true);
+    /* First delivery: Stripe blips on the void. The event FAILS — that is
+       what makes Stripe send it again — but the cancel and the downgrade
+       have landed, and nothing was recorded as processed. */
+    const first = await deliverEvent("invoice.payment_failed", failedInvoice);
+    expect(first.success).toBe(false);
+    expect(first.message).toContain("could not be voided");
+    expect(invoicesVoid).toHaveBeenCalledTimes(1);
+    expect(subscriptionsUpdate).toHaveBeenCalledWith("sub_1", { cancel_at_period_end: true });
+    expect(db.updateUserSubscription).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ planTier: "free", stripeSubscriptionId: null }),
+    );
+    expect(processedEventInserts).toHaveLength(0);
+
+    /* Redelivery of the SAME event id: the invoice — still open — is voided
+       and the event is recorded. */
+    invoicesVoid.mockResolvedValue({ id: "in_change", status: "void" });
+    const second = await redeliverLastEvent();
+    expect(second.success).toBe(true);
+    expect(invoicesVoid).toHaveBeenCalledTimes(2);
+    expect(invoicesVoid).toHaveBeenLastCalledWith("in_change");
+    expect(processedEventInserts).toHaveLength(1);
   });
 
   it("an INTERMEDIATE failure leaves the invoice alone — Stripe's retry needs it payable", async () => {

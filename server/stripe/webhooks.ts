@@ -542,7 +542,18 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
     // and pinned by the "void survives a late payment" arm), plan already
     // gone. It goes beside the settlement void, not after the cancel, because
     // an invoice that can still take money is the thing being closed here.
-    await voidInvoice(invoice.id as string);
+    //
+    // ⚠ AND ITS VERDICT IS READ, NOT DROPPED (#788, PR #786's round-2 class
+    // on this road): `voidInvoice` never throws — a Stripe blip comes back
+    // `"failed"` — and a handler that then returns success is ACKed 200 and
+    // recorded as processed, so Stripe never redelivers and the invoice stays
+    // payable on the hosted page indefinitely. A failed void FAILS THE EVENT
+    // below, AFTER the cancel and the downgrade have landed, so Stripe
+    // redelivers for ~3 days; on the way back the settlement void and the
+    // downgrade are idempotent, `cancelSubscription` on a dead subscription
+    // is caught, and `voidInvoice` reads the status first, so a void that has
+    // since succeeded costs one read.
+    const invoiceVoidVerdict = await voidInvoice(invoice.id as string);
 
     try {
       await cancelSubscription(subscriptionId);
@@ -576,6 +587,16 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
     );
 
     log.info(`[Webhook] User ${userId} subscription auto-cancelled after final payment failure`);
+
+    if (invoiceVoidVerdict === "failed") {
+      log.error(
+        `[Webhook] Invoice ${invoice.id} for user ${userId} could not be voided after the final payment failure — failing the event so Stripe redelivers and the void is retried; the cancel and the downgrade have already landed`,
+      );
+      return {
+        success: false,
+        message: `Payment failed for user ${userId}, subscription auto-cancelled, but invoice ${invoice.id} could not be voided — redeliver to retry`,
+      };
+    }
   } else {
     // Intermediate retry failure — mark as past_due, no alert
     await updateUserSubscription(userId, {
