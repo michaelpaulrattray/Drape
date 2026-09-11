@@ -17,7 +17,7 @@ export const waitlistRouter = router({
     // of the fields below — nothing undeclared.
     .input(z.object({
       email: z.string().email("Please enter a valid email address"),
-      name: z.string().min(1).optional(),
+      name: z.string().trim().min(1).optional(), // `.trim()` before `.min(1)` (#816)
       company: z.string().optional(),
       role: z.string().optional(),
       source: z.string().optional(),
