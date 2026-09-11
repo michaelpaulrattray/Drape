@@ -146,9 +146,31 @@ export const billingRouter = router({
         subscription?.stripeCustomerId
       );
 
-      // Save customer ID if new
+      // Save customer ID if new.
+      //
+      // ⚠ THE VERDICT IS READ, NOT DROPPED (#796, the request-path remainder
+      // of #792): `updateUserSubscription` never throws — a failed write comes
+      // back `{ success: false }` — and a checkout minted anyway is a subscription
+      // the account can never claim: `customer.subscription.created` finds the
+      // user BY `stripeCustomerId` (`getUserByStripeCustomerId`, the webhook's
+      // first read), so with the id unsaved the event fails on every redelivery
+      // and the customer pays for a plan their account never receives. Refusing
+      // here costs them a retry and nothing else — no session, no charge. The
+      // just-minted Stripe customer is left empty (no subscription hangs off it)
+      // and the retry mints another, which is the harmless half of the card's
+      // "second customer"; the harmful half is only reachable past this throw.
       if (!subscription?.stripeCustomerId) {
-        await updateUserSubscription(ctx.user.id, { stripeCustomerId: customerId });
+        const saved = await updateUserSubscription(ctx.user.id, { stripeCustomerId: customerId });
+        if (!saved.success) {
+          log.error(
+            { userId: ctx.user.id, customerId, error: saved.error },
+            "[Billing] Stripe customer id could not be saved — refusing the checkout rather than mint a session the account cannot claim",
+          );
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "We could not set up your billing account. Nothing was charged — please try again in a moment.",
+          });
+        }
       }
 
       // Create checkout session — the return URLs come from the one production
@@ -623,10 +645,28 @@ export const billingRouter = router({
       // Update local subscription record — the period dates for an interval
       // switch come from the subscription webhook, which reads them off the
       // updated Stripe object rather than guessing them here.
-      await updateUserSubscription(ctx.user.id, {
+      //
+      // ⚠ THE VERDICT IS READ, AND A FAILURE HERE IS NOT THE CUSTOMER'S (#796).
+      // By this line Stripe has ACCEPTED the change and the credits have moved
+      // (or are queued on the invoice), so throwing would tell a customer their
+      // upgrade failed when it did not — and a retry meets "You are already on
+      // this plan", because `changePlan` reads the current plan off Stripe, not
+      // off this row. The webhook is the corrector: `customer.subscription.updated`
+      // writes `planTier` and `billingInterval` from the Stripe object and, since
+      // #794, FAILS its event on a lost write so Stripe redelivers until it
+      // lands. Until then the account reads its old tier — minutes, normally.
+      // The audit row says which road the record took, so support can tell a
+      // deferred write from a written one.
+      const localRecord = await updateUserSubscription(ctx.user.id, {
         planTier: input.newPlan,
         billingInterval: stripeIntervalOf(quote.targetInterval),
       });
+      if (!localRecord.success) {
+        log.error(
+          { userId: ctx.user.id, newPlan: input.newPlan, error: localRecord.error },
+          "[Billing] plan change accepted by Stripe but the local record could not be written — the subscription.updated webhook is the corrector",
+        );
+      }
 
       // What the change actually cost: Stripe's own invoice when readable,
       // our day-granular quote otherwise — and the audit row says which.
@@ -648,6 +688,7 @@ export const billingRouter = router({
           creditAdjustment,
           creditsReturned: creditsToReturn,
           creditSettlement,
+          localRecord: localRecord.success ? "written" : "deferred-to-webhook",
           settlementInvoiceId: result.invoiceId ?? null,
           proratedAmount,
           amountSource: result.invoicedAmount != null ? "stripe-invoice" : "estimate",
