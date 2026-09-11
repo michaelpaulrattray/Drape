@@ -71,7 +71,7 @@ export function GovernanceCard({
 
       <div className="dp-countrow">
         <div className="dp-counttile">
-          <span className="dp-ov__tilelabel">PENDING</span>
+          <span className="dp-eyebrow dp-ov__tilelabel">PENDING</span>
           <span
             className={`dp-counttile__value${
               data.pendingChangeRequests > 0 ? " dp-counttile__value--alert" : ""
@@ -86,7 +86,7 @@ export function GovernanceCard({
           )}
         </div>
         <div className="dp-counttile">
-          <span className="dp-ov__tilelabel">THIS WEEK</span>
+          <span className="dp-eyebrow dp-ov__tilelabel">THIS WEEK</span>
           <span className="dp-counttile__value">{data.changeRequestsThisWeek}</span>
           <span className="dp-ov__tilefoot">
             {data.activeReferrals} active referrals
@@ -96,7 +96,7 @@ export function GovernanceCard({
 
       {hasChartData && totalRequests > 0 ? (
         <div className="dp-ov__block">
-          <span className="dp-ov__blocklabel">REQUEST STATUS</span>
+          <span className="dp-eyebrow dp-ov__blocklabel">REQUEST STATUS</span>
           <div className="dp-ov__donutrow">
             <div className="dp-ov__donut">
               <ResponsiveContainer width="100%" height="100%">

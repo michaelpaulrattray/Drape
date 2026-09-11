@@ -277,8 +277,20 @@
 .dp-inv__flaggedmeta {
   margin: 2px 0 0;
   font: 400 10.5px var(--font-mono);
+  letter-spacing: normal; /* stacked on .dp-chrome (#524): tracking would leak */
   color: var(--meta);
 }
+
+/* The one line on this card that is a SENTENCE — "1 of 8 accounts scanned are
+   above 500 credits" — reads in the reading face, with its figures in the
+   machine face (#524, his ruling). Same pair as subjectreason/subjectstamp. */
+.dp-inv__flaggedsentence {
+  margin: 0;
+  font: 400 11.5px/1.55 var(--font-sans);
+  color: var(--meta);
+}
+
+.dp-inv__flaggedcount { font-family: var(--font-mono); }
 
 .dp-inv__flaggedfigure {
   flex: none;

@@ -62,7 +62,7 @@ export function CardTitles({
                   is what lets the ellipsis work inside a flex child. */}
               <span className="dp-crew__cardname" title={`#${card.number} ${card.title}`}>
                 {/* An issue number is a measured value, so it is mono (§4). */}
-                <span className="dp-crew__mono">#{card.number}</span>
+                <span className="dp-chrome dp-crew__mono">#{card.number}</span>
                 {" "}
                 {card.title}
               </span>

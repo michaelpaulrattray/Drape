@@ -81,7 +81,7 @@ export function SystemStatusCard({ activeBanners, serverStartedAt }: SystemStatu
   return (
     <div className="dp-ov__card">
       <div className="dp-ov__cardhead">
-        <span className="dp-ov__blocklabel">SYSTEM</span>
+        <span className="dp-eyebrow dp-ov__blocklabel">SYSTEM</span>
         <span className="dp-ov__spacer" />
         {error && <span className="dp-ov__unreachable">Unreachable</span>}
       </div>

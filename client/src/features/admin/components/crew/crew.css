@@ -192,6 +192,10 @@
 */
 .dp-crew__mono {
   font: 400 10.5px var(--font-mono);
+  /* Stacked on `.dp-chrome` (#524) at equal specificity: the `font` shorthand
+     wins by source order, but chrome's 0.1em tracking would leak through an
+     undeclared letter-spacing — measured, so it is said. */
+  letter-spacing: normal;
   color: var(--faint);
 }
 
@@ -1235,11 +1239,13 @@ a.dp-crew__hold:hover {
 */
 .dp-crew__seen {
   font: 400 10.5px var(--font-mono);
+  letter-spacing: normal; /* stacked on .dp-chrome — see .dp-crew__mono */
   color: var(--meta);
 }
 
 .dp-crew__unseen {
   font: 400 10.5px var(--font-mono);
+  letter-spacing: normal; /* stacked on .dp-chrome — see .dp-crew__mono */
   color: var(--faint);
 }
 
@@ -1327,6 +1333,7 @@ a.dp-crew__hold:hover {
   padding-top: var(--s-3);
   text-align: center;
   font: 400 10.5px var(--font-mono);
+  letter-spacing: normal; /* stacked on .dp-chrome — see .dp-crew__mono */
   color: var(--faint);
 }
 

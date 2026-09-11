@@ -131,7 +131,7 @@ function RunBody({ run, now }: { run: CrewShiftRunView; now: number }) {
       <p className="dp-crew__body dp-crew__body--soft dp-crew__gap--tight">{run.intent}</p>
       {/* A shift id, a seat, an elapsed time and a branch are all measured
           values, so the whole line is mono (§4). */}
-      <p className="dp-crew__mono dp-crew__gap--tight">
+      <p className="dp-chrome dp-crew__mono dp-crew__gap--tight">
         {run.shift} · {run.seat} · {KIND_LABEL[run.workKind] ?? run.workKind} · started{" "}
         {ago(run.startedAt, now)}
         {run.branch && <> · {run.branch}</>}
@@ -167,7 +167,7 @@ function PastRun({ run, now }: { run: CrewShiftRunView; now: number }) {
         */}
         {run.prNumber && (
           <span className="dp-crew__body--quiet">
-            {" "}· PR <span className="dp-crew__mono">#{run.prNumber}</span>
+            {" "}· PR <span className="dp-chrome dp-crew__mono">#{run.prNumber}</span>
           </span>
         )}
         <span className="dp-crew__body--quiet">

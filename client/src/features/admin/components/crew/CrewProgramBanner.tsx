@@ -267,7 +267,7 @@ export function CrewProgramBanner({
                     style={{ width: `${Math.round(progress.fraction * 100)}%` }}
                   />
                 </div>
-                <p className="dp-crew__mono dp-crew__gap--tight">
+                <p className="dp-chrome dp-crew__mono dp-crew__gap--tight">
                   {milestoneCountLine(progress)}
                 </p>
               </div>
@@ -319,7 +319,7 @@ export function CrewProgramBanner({
           <div className="dp-crew__ladderhead">
             <h3 className="dp-crew__subhead">The ladder</h3>
             {ladderItems.length > 0 && (
-              <span className="dp-crew__mono">queue read {shortDate(program.ladderCards.readAt)}</span>
+              <span className="dp-chrome dp-crew__mono">queue read {shortDate(program.ladderCards.readAt)}</span>
             )}
           </div>
 
@@ -373,7 +373,7 @@ export function CrewProgramBanner({
                         {cards.length} waiting
                       </button>
                     )}
-                    <span className="dp-crew__mono">{RUNG_LABEL[rung.state] ?? rung.state}</span>
+                    <span className="dp-chrome dp-crew__mono">{RUNG_LABEL[rung.state] ?? rung.state}</span>
                   </div>
                   {open && cards.length > 0 && (
                     <ul className="dp-crew__titles dp-crew__rungdrop">

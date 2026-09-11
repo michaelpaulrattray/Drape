@@ -85,6 +85,12 @@ import {
   useStaffAutoRefresh,
   useStaffRefresh,
 } from "@/features/staff";
+/* The foundation stylesheet must precede crew.css in the cascade: crew's
+   machine-fact classes are stacked on `.dp-chrome` at equal specificity, so
+   source order is what lets `.dp-crew__mono` tune the size (#524). Until now
+   that order held only through `@/features/staff` happening to import the
+   barrel first; `registerStack-guard.test.ts` pins it, so it is said here. */
+import "@/foundation";
 import "@/features/admin/components/crew/crew.css";
 import { CrewEyeGallery } from "@/features/admin/components/crew/CrewEyeGallery";
 import { CrewGeneral } from "@/features/admin/components/crew/CrewGeneral";
@@ -328,7 +334,10 @@ export default function AdminCrew() {
               configuration fault on the server rather than anything you did — the crew will see the
               same error and fix it. Nothing you have written is lost.
             </p>
-            <p className="dp-crew__mono dp-crew__gap--tight">
+            {/* readableFailure returns OUR sentence, written for a reader (its own
+                contract) — so it takes the reading face, not the machine one
+                (#524's class: a sentence set in mono reads as output). */}
+            <p className="dp-crew__body dp-crew__body--quiet dp-crew__gap--tight">
               {readableFailure(stateQuery.error, "The server refused the request.")}
             </p>
           </div>
@@ -482,7 +491,7 @@ export default function AdminCrew() {
                 that sentence is a paragraph, and a time at the end of a
                 paragraph is a time he will not read.
             */}
-            <p className="dp-crew__stamp" data-testid="crew-edition-stamp">
+            <p className="dp-chrome dp-crew__stamp" data-testid="crew-edition-stamp">
               Briefing edition {stateQuery.data.briefing.edition}, written{" "}
               {shortDate(stateQuery.data.briefing.updatedAt)} by{" "}
               {stateQuery.data.briefing.shift}

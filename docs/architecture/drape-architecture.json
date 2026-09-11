@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a9b1cc07f9338cf7"
+    "sourceFingerprint": "7950eeb8e11210eb"
   },
   "domains": [
     {
@@ -11020,6 +11020,10 @@
       "path": "client/src/foundation/rawErrorToast.test.ts"
     },
     {
+      "id": "test:client/src/foundation/registerStack-guard.test.ts",
+      "path": "client/src/foundation/registerStack-guard.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/section00-guard.test.ts",
       "path": "client/src/foundation/section00-guard.test.ts"
     },
@@ -19640,6 +19644,11 @@
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {

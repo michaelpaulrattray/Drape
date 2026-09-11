@@ -120,8 +120,16 @@ export function FlaggedDiscrepanciesCard({
         />
       ) : (
         <>
-          <p className="dp-inv__flaggedmeta">
-            {flaggedCount} of {scannedCount} accounts scanned are above {threshold} credits
+          {/* A sentence about a state of affairs, so it is set in the reading
+              face; the figures inside it are measured values and keep the
+              machine face — his ruling on #524, and the shape
+              `.dp-inv__subjectreason` / `.dp-inv__subjectstamp` already use. */}
+          <p className="dp-inv__flaggedsentence">
+            <span className="dp-inv__flaggedcount">
+              {flaggedCount} of {scannedCount}
+            </span>{" "}
+            accounts scanned are above{" "}
+            <span className="dp-inv__flaggedcount">{threshold}</span> credits
           </p>
           <div className="dp-inv__flaggedrows">
             {visibleUsers.map((user) => (
@@ -135,7 +143,7 @@ export function FlaggedDiscrepanciesCard({
                   <span className="dp-inv__flaggedname">
                     {user.userName || `User #${user.userId}`}
                   </span>
-                  <span className="dp-inv__flaggedmeta" style={{ display: "block" }}>
+                  <span className="dp-chrome dp-inv__flaggedmeta" style={{ display: "block" }}>
                     Charged {grouped(user.grossDeductions)} · recorded{" "}
                     {grouped(user.expectedCost)}
                     {user.failedGenerations > 0 ? ` · ${user.failedGenerations} failed` : ""}

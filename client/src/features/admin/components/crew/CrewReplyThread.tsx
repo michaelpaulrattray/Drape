@@ -46,8 +46,8 @@ export function CrewReplyThread({
             <div className="dp-crew__entryhead">
               <span className="dp-crew__who">{reply.author}</span>
               {/* A time is a measured value, so it is mono (§4). */}
-              <span className="dp-crew__mono">{shortDate(String(reply.createdAt))}</span>
-              <span className={seen ? "dp-crew__seen" : "dp-crew__unseen"}>
+              <span className="dp-chrome dp-crew__mono">{shortDate(String(reply.createdAt))}</span>
+              <span className={seen ? "dp-chrome dp-crew__seen" : "dp-chrome dp-crew__unseen"}>
                 {seen ? "Seen by the crew" : "Not read yet"}
               </span>
             </div>
