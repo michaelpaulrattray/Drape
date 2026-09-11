@@ -500,7 +500,9 @@ const main = (): void => {
   if (args.includes("--list")) {
     for (const v of rows.slice().sort((a, b) => a.file.localeCompare(b.file))) {
       const held = chain.get(v.file);
-      const verdict = held
+      /* A chain verdict is only ever handed to a file that has aged out, so
+         the anchor is never `none` here; the narrowing is for the compiler. */
+      const verdict = held && v.anchor.kind !== "none"
         ? `SWEEP (chain) ${v.anchor.note} ${ageDays(v.anchor.at)}d ago — kept only by ${held.join(", ")}, itself swept`
         : v.citations.length > 0
         ? `KEEP  cited by ${v.citations.join(", ")}`
