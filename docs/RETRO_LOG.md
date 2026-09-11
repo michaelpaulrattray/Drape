@@ -369,3 +369,21 @@ pointing at the real `fable-*` entry.
 
 Retro: run 1 2026-08-26, run 2 2026-09-05, **run 3 2026-09-12** (on the day).
 Next due ~2026-09-19.
+
+### E. Addendum, same sitting — his word landed mid-shift and R6 closed a third site
+
+**Crew reply #177, 2026-09-11 15:52:52Z, on #721, verbatim and entire: "A"** —
+*a cap is an error LINE, not a mention*. Read at 16:01Z on the post-rite reply
+check, recorded at the top of the card's body with the hold struck, and built
+in the same hour under §2x (executing his ruling is not deciding): the runner's
+cap classifier (`classify-shift-failure.ps1`) now removes quotations — fenced,
+blockquote, table row, inline code — strips head furniture, and requires the
+cap wording to lead the line within 24 characters, the way an error message
+opens. **Measured on all 3,145 shift logs: CAP 5 → 1, the one being the real
+report; 70/70 driver arms; with the pre-fix copy swapped in as the subject,
+exactly the ten #721 arms redden.** A fourth false log had joined the
+population since the card was filed — the #495 shift's own report, as the card
+predicted. **So R6 closed in THREE sites tonight** (#813's two shapes in the
+close-stamp; #721 in the cap classifier), and the rule that did it is the same
+one each time: strip what is quoted, then require the claim to lead the line.
+Edition 349 carries his acknowledgement; his desk is clear.
