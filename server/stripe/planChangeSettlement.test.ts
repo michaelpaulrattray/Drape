@@ -720,6 +720,46 @@ describe("the webhook settles what changePlan recorded", () => {
     );
   });
 
+  /*
+    PR #786 review, finding 1 — the road it mirrors self-heals because it calls
+    `voidInvoice` on every redelivery; this one gated the loop on rows that
+    had JUST moved, so one transient Stripe error left the invoice payable
+    forever. The helper now hands back already-void rows too, and the caller
+    must retry them. Driven at the caller: the helper's redelivery answer is
+    the SAME id, and the void happens again.
+  */
+  it("a REDELIVERED deleted event retries an invoice void that failed the first time (review finding 1)", async () => {
+    db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_change"]);
+    db.getUserByStripeCustomerId.mockResolvedValue({
+      id: 7,
+      name: "seven",
+      email: "u@example.com",
+      credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+    });
+    const deleted = {
+      id: "sub_1",
+      customer: "cus_1",
+      metadata: { env: deploymentTag() },
+      status: "canceled",
+      items: { data: [{ id: "si_1", price: { recurring: { interval: "month" } } }] },
+    };
+
+    /* First delivery: Stripe blips on the void. */
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+    invoicesVoid.mockRejectedValueOnce(new Error("stripe blipped"));
+    const first = await deliverEvent("customer.subscription.deleted", deleted);
+    expect(first.success).toBe(true);
+    expect(invoicesVoid).toHaveBeenCalledTimes(1);
+
+    /* Redelivery: the row is already void; the helper still names its
+       invoice, and the invoice — still open — is voided this time. */
+    invoicesVoid.mockResolvedValue({ id: "in_change", status: "void" });
+    const second = await deliverEvent("customer.subscription.deleted", deleted);
+    expect(second.success).toBe(true);
+    expect(invoicesVoid).toHaveBeenCalledTimes(2);
+    expect(invoicesVoid).toHaveBeenLastCalledWith("in_change");
+  });
+
   it("a subscription DYING with NOTHING pending touches no invoice (the control)", async () => {
     db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue([]);
     db.getUserByStripeCustomerId.mockResolvedValue({

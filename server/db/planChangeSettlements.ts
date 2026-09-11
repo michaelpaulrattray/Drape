@@ -94,31 +94,45 @@ export async function resolvePlanChangeSettlement(
  * one. Voiding refuses movement, which is the safe direction on both
  * directions of the move.
  *
- * Returns the `stripeInvoiceId` of every row it voided, not a count (#765):
- * the caller closes the INVOICE side of each one too — founder ruling
- * 2026-09-10, option A, *"close the invoice too, the same as the
- * payment-failure road"* — and a count gave it nothing to void WITH. The
- * rows are read first and the update is keyed on exactly those ids, so the
- * list returned is the list moved: a row recorded between the read and the
- * write stays pending rather than being voided with no invoice to show for
- * it. MySQL's UPDATE returns no rows, which is why this is two statements.
+ * Returns the `stripeInvoiceId` of every row of theirs whose credit side is
+ * now `void` — not a count (#765): the caller closes the INVOICE side of
+ * each one too (founder ruling 2026-09-10, option A, *"close the invoice
+ * too, the same as the payment-failure road"*), and a count gave it nothing
+ * to void with. Two properties of that list, each from a PR #786 review
+ * finding:
+ *
+ * - **It includes rows that were ALREADY void**, so a redelivered event
+ *   retries an invoice void that failed transiently the first time
+ *   (finding 1). `voidInvoice` reads the status first and treats a closed
+ *   invoice as done, so the retry is one read per row and no money question.
+ *   Without this the first delivery moved the rows to void, a Stripe blip
+ *   failed the invoice void, and every redelivery found nothing pending and
+ *   left the invoice payable forever — the exact defect, surviving one error.
+ * - **It is read back AFTER the update, from the rows that are actually
+ *   `void`** (finding 2). A row read as pending and concurrently resolved to
+ *   `applied` by a racing `invoice.paid` is not re-voided (the update is
+ *   guarded on `pending`) and is therefore NOT in the list — so the caller
+ *   never asks Stripe to void an invoice whose credits DID move, and the
+ *   already-paid alarm downstream is true whenever it fires.
+ *
+ * MySQL's UPDATE returns no rows, which is why this is three statements.
  */
 export async function voidPendingPlanChangeSettlementsForUser(
   userId: number,
 ): Promise<string[]> {
   const db = await getDb();
   if (!db) return [];
-  const pending = await db
+  const candidates = await db
     .select({ stripeInvoiceId: planChangeSettlements.stripeInvoiceId })
     .from(planChangeSettlements)
     .where(
       and(
         eq(planChangeSettlements.userId, userId),
-        eq(planChangeSettlements.status, "pending"),
+        inArray(planChangeSettlements.status, ["pending", "void"]),
       ),
     );
-  const invoiceIds = pending.map((row) => row.stripeInvoiceId);
-  if (invoiceIds.length === 0) return [];
+  const candidateIds = candidates.map((row) => row.stripeInvoiceId);
+  if (candidateIds.length === 0) return [];
   await db
     .update(planChangeSettlements)
     .set({ status: "void", resolvedAt: new Date() })
@@ -126,8 +140,18 @@ export async function voidPendingPlanChangeSettlementsForUser(
       and(
         eq(planChangeSettlements.userId, userId),
         eq(planChangeSettlements.status, "pending"),
-        inArray(planChangeSettlements.stripeInvoiceId, invoiceIds),
+        inArray(planChangeSettlements.stripeInvoiceId, candidateIds),
       ),
     );
-  return invoiceIds;
+  const voided = await db
+    .select({ stripeInvoiceId: planChangeSettlements.stripeInvoiceId })
+    .from(planChangeSettlements)
+    .where(
+      and(
+        eq(planChangeSettlements.userId, userId),
+        eq(planChangeSettlements.status, "void"),
+        inArray(planChangeSettlements.stripeInvoiceId, candidateIds),
+      ),
+    );
+  return voided.map((row) => row.stripeInvoiceId);
 }

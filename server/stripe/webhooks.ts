@@ -292,7 +292,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
     const voidedInvoiceIds = await voidPendingPlanChangeSettlementsForUser(userId);
     if (voidedInvoiceIds.length > 0) {
       log.info(
-        `[Webhook] Voided ${voidedInvoiceIds.length} pending plan-change settlement(s) for user ${userId} — the subscription died before the change's invoice settled`,
+        `[Webhook] ${voidedInvoiceIds.length} plan-change settlement(s) for user ${userId} are void — the subscription died before the change's invoice settled`,
       );
       // AND THE INVOICES THEY HANG ON (#765, founder ruling 2026-09-10,
       // option A: "close the invoice too, the same as the payment-failure
@@ -302,9 +302,14 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
       // have, against credits the void row will refuse. Every one of these
       // invoices is for credits that were never granted, so nothing was
       // delivered for the money — which is why the fair answer and the
-      // consistent one are the same one. `voidInvoice` reads the status
-      // first and treats an already-closed invoice as done, so a redelivered
-      // event costs nothing; a `paid` one is its own warn.
+      // consistent one are the same one.
+      //
+      // The list carries rows that were ALREADY void too, on purpose (PR
+      // #786 review, finding 1): `voidInvoice` reads the status first and
+      // treats a closed invoice as done, so a redelivered event is one read
+      // per row — and it is what RETRIES an invoice void that failed on a
+      // Stripe blip the first time, the same self-healing the final-failure
+      // road gets from calling `voidInvoice` unconditionally.
       for (const invoiceId of voidedInvoiceIds) {
         await voidInvoice(invoiceId);
       }
