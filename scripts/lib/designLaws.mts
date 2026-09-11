@@ -385,6 +385,19 @@ export async function assertNoMonoSentences(page: Page, where: string, log: LawL
  * beside the button (the real page's shape), priced NOWHERE, and priced too far
  * away. The last is the one that stops this widening drifting back into
  * "anywhere on the page".
+ *
+ * ⚠ **AND THE ANCESTOR IS READ WITH EVERY OTHER BUTTON'S SUBTREE EXCLUDED
+ * (#782).** The climb above read the ancestor's whole `innerText`, so a bare
+ * `Cast it` sharing a control group with `Roll again · 160 cr` was satisfied
+ * by its SIBLING'S price — a price that names a different purchase. That is
+ * the same mismatch as #523 pointing the other way: the reader was wider than
+ * the law's region, and it failed toward silence. Not live on any current
+ * surface (each in-label button prices itself), which is exactly why it needs
+ * a control rather than a walk: nothing on the real app would ever say so.
+ * The price beside the button must therefore be in PROSE — a receipt line, a
+ * cost row — never in another affordance's label. `designLawControls.mts`
+ * holds the pair: a priced and an unpriced paid button under one parent, and
+ * the unpriced one must still be caught.
  */
 export async function assertPricedButtons(page: Page, where: string, log: LawLog) {
   const result = await page.evaluate(() => {
@@ -436,7 +449,25 @@ export async function assertPricedButtons(page: Page, where: string, log: LawLog
       let found = false;
       for (let level = 0; level < PRICE_GROUP_LEVELS; level += 1) {
         if (!node || node === document.body || node === document.documentElement) break;
-        if (PRICE.test(node.innerText ?? "")) {
+        /*
+          THE ANCESTOR'S PROSE, NOT ITS BUTTONS. Every text node under the
+          ancestor is read EXCEPT those inside a <button> — this one's label
+          was already tested and any other button's label is a different
+          purchase. Painted text only, which is the rule `innerText` applied
+          before this walker replaced it: a node whose element paints no box
+          is not on the affordance. (Inlined rather than a named helper: the
+          bundler wraps a named function in `__name`, which the page does not
+          have.)
+        */
+        const parts: string[] = [];
+        const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+          const parent = n.parentElement;
+          if (!parent || parent.closest("button")) continue;
+          if (parent.getClientRects().length === 0) continue;
+          parts.push(n.textContent ?? "");
+        }
+        if (PRICE.test(parts.join(" "))) {
           found = true;
           break;
         }
@@ -475,6 +506,17 @@ export async function assertPricedButtons(page: Page, where: string, log: LawLog
  *
  * A sheet that quietly disappears after a week is a worse surprise than one
  * that said so. Only asserted where the section actually renders.
+ *
+ * ⚠ **READ INSIDE THE SECTION, NEVER ACROSS THE PAGE (#782).** This tested
+ * `document.body.innerText` for the expiry phrase, so *7 quiet days* printed
+ * ANYWHERE — a footer, a help line, a different section's aside — satisfied a
+ * law whose prose says *wherever unsigned sheets surface*. Wider than its own
+ * region, failing toward silence. The reading is scoped now: each element
+ * that carries the phrase in its OWN text is resolved to its nearest sectioning
+ * ancestor (`section`, `article`, `[role=region]`, else its parent), and the
+ * expiry copy must be inside THAT. The real page is `<section class="dp-stack">`
+ * holding the eyebrow and its aside (`CastingV2.tsx`), so this is the shape it
+ * already has; a page stating retention in the wrong place reddens.
  */
 export async function assertRetentionStated(
   page: Page,
@@ -507,9 +549,27 @@ export async function assertRetentionStated(
   }
 
   const result = await page.evaluate(() => {
-    const text = document.body.innerText;
-    if (!/unsigned sheets/i.test(text)) return null;
-    return /7 quiet days/i.test(text);
+    const PHRASE = /unsigned sheets/i;
+    const EXPIRY = /7 quiet days/i;
+    /* The elements that carry the phrase in their own text nodes — the leaf
+       holders, not every ancestor whose innerText happens to contain them. */
+    const holders = Array.from(document.querySelectorAll<HTMLElement>("*")).filter(
+      (el) =>
+        el.getClientRects().length > 0 &&
+        Array.from(el.childNodes).some(
+          (n) => n.nodeType === Node.TEXT_NODE && PHRASE.test(n.textContent ?? ""),
+        ),
+    );
+    if (holders.length === 0) return null;
+    const sections = new Set<HTMLElement>();
+    for (const holder of holders) {
+      sections.add(holder.closest<HTMLElement>("section, article, [role='region']") ?? holder.parentElement ?? holder);
+    }
+    const readings = Array.from(sections).map((section) => ({
+      scope: section.tagName.toLowerCase() + (section.className ? `.${String(section.className).split(/\s+/)[0]}` : ""),
+      stated: EXPIRY.test(section.innerText),
+    }));
+    return { stated: readings.every((r) => r.stated), scopes: readings.map((r) => `${r.scope}${r.stated ? "" : " (no expiry copy)"}`) };
   });
   if (result === null) {
     absentSubject(
@@ -525,8 +585,10 @@ export async function assertRetentionStated(
   log.check(
     where,
     "retention stated where sheets surface",
-    result,
-    result ? "unsigned-sheets section states the 7 quiet days" : "unsigned-sheets section with no expiry copy",
+    result.stated,
+    result.stated
+      ? `unsigned-sheets section states the 7 quiet days (read inside ${result.scopes.join(", ")})`
+      : `unsigned-sheets section with no expiry copy inside it (${result.scopes.join(", ")})`,
   );
 }
 
@@ -536,19 +598,42 @@ export async function assertRetentionStated(
  * The founder's anime brief was refused server-side — correctly, and for free
  * — and the sheet showed eight skeletons that waited forever. The law is that
  * a failure always resolves to copy with an action.
+ *
+ * ⚠ **"UNDER" IS READ AS A POSITION NOW, NOT A CO-OCCURRENCE (#782).** This
+ * counted `.dp-skeleton` anywhere on the page against failure copy anywhere on
+ * the page, so it held no positional reading at all — a loading strip in the
+ * page header beside a refusal further down would have reddened as the
+ * founder's hang. The law's own prose is *skeletons never sit UNDER failure
+ * copy*, and that is where the real defect lives: the sheet renders the
+ * failure `EmptyState` where the tiles would have been and the grid follows
+ * it (`CastingSheet.tsx`). So the reading is the box: a skeleton whose top
+ * edge is at or below the failure copy's top edge is under it. This is the
+ * one of #782's three that read wider in the LOUD direction — it reddened a
+ * page it should not have — rather than toward silence, and the docblock says
+ * so instead of borrowing the card's sentence.
  */
 export async function assertNoOrphanSkeletons(page: Page, where: string, log: LawLog) {
   const result = await page.evaluate(() => {
-    const skeletons = document.querySelectorAll(".dp-skeleton").length;
-    const hasFailureCopy = /can't be cast|didn't start/i.test(document.body.innerText);
-    return { skeletons, hasFailureCopy };
+    const FAILURE = /can't be cast|didn't start/i;
+    const skeletons = Array.from(document.querySelectorAll<HTMLElement>(".dp-skeleton"));
+    /* The leaf holders of the failure copy — an element carrying it in its own
+       text nodes and painting a box. */
+    const copies = Array.from(document.querySelectorAll<HTMLElement>("*")).filter(
+      (el) =>
+        el.getClientRects().length > 0 &&
+        Array.from(el.childNodes).some((n) => n.nodeType === Node.TEXT_NODE && FAILURE.test(n.textContent ?? "")),
+    );
+    if (copies.length === 0) return { skeletons: skeletons.length, hasFailureCopy: false, under: 0 };
+    const copyTop = Math.min(...copies.map((el) => el.getBoundingClientRect().top));
+    const under = skeletons.filter((sk) => sk.getBoundingClientRect().top >= copyTop).length;
+    return { skeletons: skeletons.length, hasFailureCopy: true, under };
   });
-  // Skeletons and a failure message must never coexist: one of them is lying.
+  // A skeleton below a failure message is the hang: one of the two is lying.
   log.check(
     where,
     "skeletons never sit under a failure message",
-    !(result.skeletons > 0 && result.hasFailureCopy),
-    `${result.skeletons} skeleton(s), failure copy ${result.hasFailureCopy ? "present" : "absent"}`,
+    result.under === 0,
+    `${result.skeletons} skeleton(s), failure copy ${result.hasFailureCopy ? `present, ${result.under} skeleton(s) under it` : "absent"}`,
   );
 }
 

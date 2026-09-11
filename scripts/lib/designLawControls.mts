@@ -328,6 +328,34 @@ export const CONTROLS: Control[] = [
     },
   },
   {
+    /*
+      A SIBLING'S PRICE IS NOT THIS BUTTON'S PRICE (#782, from PR #781's review).
+      The climb reads the ancestor's prose with every other <button> subtree
+      excluded, so `Roll again · 160 cr` standing next to a bare `Cast it`
+      cannot price it. The compliant twin differs by one thing: the first
+      button carries its own price. Not live on any surface today — which is
+      why it is a control and not a walk: the real app would never say so.
+
+      ⚠ THE BARE BUTTON COMES FIRST, AND THE ORDER IS LOAD-BEARING. The old
+      reader tested the parent's `innerText`, which runs two inline-block
+      labels together with no separator — `160 crCast it` — so with the priced
+      button first the `\b` after `cr` failed and the offender was caught by
+      accident. Priced button LAST, the run ends `…160 cr`, the boundary holds,
+      and the old reader let the sibling's price stand in. Driven both ways
+      before this arm was believed (working law 2): the first order missed
+      nothing against the old bytes.
+    */
+    law: "priced-buttons",
+    breaks: "a sibling paid button's price standing in for a bare paid button in the same control group",
+    run: assertPricedButtons,
+    offender: {
+      html: page(``, `<div class="dp-actions"><button>Cast it</button><button>Roll again &middot; 160 cr</button></div>`),
+    },
+    compliant: {
+      html: page(``, `<div class="dp-actions"><button>Cast it &middot; 160 cr</button><button>Roll again &middot; 160 cr</button></div>`),
+    },
+  },
+  {
     law: "retention",
     breaks: "an unsigned-sheets section that never says when the sheets expire",
     run: assertRetentionStated,
@@ -371,6 +399,32 @@ export const CONTROLS: Control[] = [
     },
   },
   {
+    /*
+      THE PHRASE IN THE WRONG PLACE (#782). The old reader tested the whole
+      page for *7 quiet days*, so a footer saying it satisfied a section that
+      did not. Both arms carry the footer; only the compliant one states the
+      expiry INSIDE the unsigned-sheets section, which is where the law's own
+      prose puts it.
+    */
+    law: "retention",
+    breaks: "the expiry stated elsewhere on the page — a footer — while the unsigned-sheets section itself says nothing",
+    run: assertRetentionStated,
+    offender: {
+      html: page(
+        ``,
+        `<section><h2>Unsigned sheets</h2><p>Three waiting.</p></section>` +
+          `<footer><p>Sheets are kept for 7 quiet days.</p></footer>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        ``,
+        `<section><h2>Unsigned sheets</h2><p>Kept for 7 quiet days, then cleared.</p></section>` +
+          `<footer><p>Sheets are kept for 7 quiet days.</p></footer>`,
+      ),
+    },
+  },
+  {
     /* The existential twin of law 5: a surface promising retention copy that
        renders no section at all must fail rather than report nothing here. */
     law: "retention",
@@ -390,6 +444,30 @@ export const CONTROLS: Control[] = [
       html: page(``, `<p>That brief can't be cast.</p><div class="dp-skeleton"></div><div class="dp-skeleton"></div>`),
     },
     compliant: { html: page(``, `<div class="dp-skeleton"></div><div class="dp-skeleton"></div>`) },
+  },
+  {
+    /*
+      UNDER IS A POSITION (#782). The offender is the founder's hang — the
+      refusal copy where the tiles would be, and the tiles' skeletons below it.
+      The compliant twin is the same page with the skeleton ABOVE the copy: a
+      strip still loading in the page header while a refusal sits further down
+      is not the hang, and the old co-occurrence read reddened it anyway.
+    */
+    law: "orphan-skeletons",
+    breaks: "the position of 'under' — a skeleton below the failure copy, against one above it",
+    run: assertNoOrphanSkeletons,
+    offender: {
+      html: page(
+        `.dp-skeleton { height: 120px; background: #222; }`,
+        `<p>That brief can't be cast.</p><div class="dp-skeleton"></div>`,
+      ),
+    },
+    compliant: {
+      html: page(
+        `.dp-skeleton { height: 120px; background: #222; }`,
+        `<div class="dp-skeleton"></div><p>That brief can't be cast.</p>`,
+      ),
+    },
   },
   {
     /* Dark glass alone. The chip is named and focusable, so a miss here can
