@@ -1,7 +1,7 @@
 {
-  "edition": 338,
-  "updatedAt": "2026-09-10T23:08:49.942Z",
-  "shift": "Foreman - the checker that told four shifts your machine was clean over a running app is fixed, and then I caught my own fix half-working before it could mislead anybody. NOTHING IS WAITING ON YOU. THE ORIGINAL FAULT. Last night's leftover copy of the app was the symptom; the tool we use to find these was the fault. It knew one way of starting the app, so anything started another way was silently dropped from its list - and a dropped copy prints the same sentence as an empty machine. I reproduced it before touching anything: at the same second, Windows said a server was listening on port 3000 and the tool said the machine was clear. WHAT IT SAYS NOW. Every running copy is listed however it was started, one with nothing watching over it is marked as such, and - the useful part - if the folder it was launched from has been deleted, it says so and says it is safe to stop. And because teaching it one more way of starting the app only fixes the case that already bit us, it now checks itself against Windows' own list of what is listening: anything serving on our ports that it cannot account for is reported as a hole in the tool, in those words, with the process named. AND THEN THE PART I WANT YOU TO SEE. Before finishing I went and looked at the actual folder from last night's leftover - and found that my own new 'the folder is gone, safe to stop' line would never have fired for it. Deleting one of these working folders on this machine leaves an empty husk behind: the name still exists, so the tool stayed quiet. That is the exact same mistake as the one I had spent the night fixing, sitting inside the fix. Corrected, and the automatic reviewer then caught a second one - my correction would have called a perfectly live copy 'safe to stop' during a routine repair. Both are now decided on what was actually measured, and I proved all three cases on a real running server: healthy folder, folder mid-repair, and empty husk - silent, silent, and named. Nothing here is customer-facing; it is the machine you and the shifts share. Two rounds of review, two small changes merged, and the queue is down one card with nothing new filed.",
+  "edition": 339,
+  "updatedAt": "2026-09-11T00:54:32.970Z",
+  "shift": "Foreman - your two money answers from last night are both built, reviewed twice each, merged and live. ONE SMALL THING IS WAITING ON YOU, and it is a click in the Stripe dashboard, not a decision. THE REFUND THAT FAILS (you said C). Before: a support person approved a refund, Stripe reported it failed, and we took the customer's credits anyway and recorded a refund that never paid. Now: if Stripe says 'failed' the moment we ask, nothing moves and the request waits for a person, with a plain sentence saying why. And for the common case - a refund that fails days later - we now listen for Stripe's message, put back exactly the credits we took, write the truth on the request, and put a red 'Refund failed' card on your admin overview, because a log line nobody reads is not a surface. The reviewer caught two things worth telling you: a refund made from a developer machine could have had its failure land on production and name the wrong customer (fixed - the refund carries which world made it, and the other world's are refused), and a restore that itself failed was being marked as handled so Stripe never retried it (fixed - Stripe now retries it for three days on its own). THE CANCEL WITH AN UNPAID INVOICE (you said A). The invoice is closed now, the same as when a card finally fails, so nobody can pay for a plan they cancelled. The reviewer found that a one-off Stripe hiccup at the moment of closing would have left it payable forever with no retry - also fixed, Stripe re-sends the event until the close lands. Neither road has ever been walked by a real customer - there are no subscriptions yet - which is exactly why they were worth closing now. Two review findings pointed at the same shape in two older handlers; those are filed as small cards, not left to memory.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-10T22:25:31.368Z",
+      "readAt": "2026-09-11T00:53:22.756Z",
       "items": [
         {
           "issueNumber": 16,
@@ -274,9 +274,31 @@
   },
   "needsYou": [
     {
-      "id": "refund-failed-771",
+      "id": "stripe-refund-failed-event-771",
       "issueNumber": 771,
       "state": "open",
+      "filedAt": "2026-09-11T00:54:32.972Z",
+      "title": "One click in Stripe: tell it to send us the 'refund failed' message",
+      "productImpact": "The new listener for refunds that fail days later only works if Stripe actually sends us that message. Stripe only sends the messages an endpoint is subscribed to, and ours is subscribed to the eight it handled before tonight. Until 'refund.failed' is added to that list in the Stripe dashboard, a late refund failure still takes the credits and nobody is told - the code is there, the wire from Stripe is not. Nothing can go wrong before there are subscriptions, so this is not urgent; it is a thing to do before launch.",
+      "workedExample": "Stripe dashboard > Developers > Webhooks > the production endpoint (https://drape-production-0232.up.railway.app/api/webhooks/stripe) > 'Select events' > add 'refund.failed' > save. Thirty seconds. The deploy notes now list it as the ninth event so it is not lost.",
+      "options": [
+        {
+          "key": "A",
+          "label": "A - add it now",
+          "consequence": "The listener is live from today. No downside; the endpoint already ignores anything it does not handle."
+        },
+        {
+          "key": "B",
+          "label": "B - leave it for launch prep",
+          "consequence": "Fine while there are no subscriptions. The risk is that it is forgotten - which is why it is on this page and in the deploy notes."
+        }
+      ],
+      "recommendation": "A. It is one click and there is nothing to think about; reply 'done' here when it is in and the crew will close the line."
+    },
+    {
+      "id": "refund-failed-771",
+      "issueNumber": 771,
+      "state": "done",
       "filedAt": "2026-09-10T17:55:00Z",
       "title": "A refund that Stripe says FAILED still takes the customer's credits - what should happen instead?",
       "productImpact": "A support person approves a refund on a change request. We ask Stripe for it, Stripe answers - and whatever that answer says, we treat it as done: we take the credits off the customer, mark the request approved, and file a record naming the refund. So on a refund Stripe reports as failed, the customer loses the credits, our own record says they were paid back, and no money left our account. Every screen a support person can reach agrees with the wrong answer. Nobody has been affected - there are no live subscriptions - so this is about what we do the first time a refund does not go through.",
@@ -303,7 +325,7 @@
     {
       "id": "cancel-owed-invoice-765",
       "issueNumber": 765,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-10T17:55:00Z",
       "title": "Someone cancels while still owing for a plan change - should that invoice stay payable?",
       "productImpact": "When a customer's payment finally fails we now close their unpaid plan-change invoice, so nobody can pay for a plan that no longer exists. That case was unambiguous: Stripe had given up, the invoice was never going to be paid. This is the road next to it - the customer CHOOSES to cancel while a plan-change invoice is still sitting unpaid. We correctly cancel the credits that were waiting on it, but the invoice itself stays open and payable through Stripe's own page, indefinitely. If they paid it, money would come in for a plan they no longer have, against credits we already cancelled.",
@@ -4599,6 +4621,20 @@
   ],
   "pipeline": [
     {
+      "id": "refund-failed-built-771",
+      "title": "A refund Stripe reports failed no longer takes the customer's credits - refused at once, unwound days later",
+      "status": "merged",
+      "prNumber": 787,
+      "note": "Your answer C, built in the order recommended. Stripe answering 'failed' when we ask now means nothing moves and the request waits for a person. Stripe telling us days later means the credits go back once, the request says so, and a red 'Refund failed' card lands on your admin overview - the same road the login alarm took, because production has no Slack. Two review rounds, both real: a developer-machine refund could have landed its failure on production and named the wrong customer (the refund now carries which world made it and the other world's are refused), and a restore that itself failed was marked handled so Stripe never retried (it now retries for three days). Photographed in both themes."
+    },
+    {
+      "id": "cancel-voids-invoice-built-765",
+      "title": "Cancelling with an unpaid plan-change invoice closes the invoice too - nobody pays for a plan they no longer have",
+      "status": "merged",
+      "prNumber": 786,
+      "note": "Your answer A. The credits were already refused; the invoice stayed open and payable on Stripe's page indefinitely. Now it is closed beside them, the same as the card-failure road. Two review rounds: a one-off Stripe hiccup at the moment of closing left it payable forever with no retry - the event now fails so Stripe re-sends it until the close lands - and a row a racing payment had already settled could have raised a false alarm, so the list of invoices to close is read back from what actually moved."
+    },
+    {
       "id": "abandoned-line-could-not-fire-783b",
       "title": "The 'safe to stop' line I shipped an hour earlier could never have fired - caught before it misled anyone",
       "status": "merged",
@@ -5303,9 +5339,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0911d-foreman",
+      "id": "queue-shape-0911e-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 55 open, two closed today, two filed, and 15 nobody has looked at in a week",
+      "detail": "Even: your two money cards closed, and the two siblings the reviewer found (the same retry gap in two older handlers) were filed as small fixes rather than widened into tonight's work. One click is waiting on you (the Stripe message above); nothing else is. The fifteen untouched cards are the same older roadmap and tidy-up items as before. With Bugs and Small fixes now genuinely empty of blocked cards, the next shift's takeable work is the two new small fixes, then Process."
+    },
+    {
+      "id": "queue-shape-0911d-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 55 open, one closed tonight, and 15 nobody has looked at in a week",
       "detail": "Down one, nothing new filed. Nothing is queued by you and nothing is blocked on you. The fifteen untouched cards are the same shape as last night - mostly older roadmap and tidy-up items rather than anything a customer would feel; the oldest two have sat since 25 August. Of the switches you have on, Bugs holds one card and Small fixes holds one, and both of those are waiting on your word - so those two bands are empty in practice for a third night. The work a night shift can actually take is in Process, Housekeeping and Performance."
     },
@@ -5826,10 +5869,12 @@
     170,
     171,
     172,
-    173
+    173,
+    174,
+    175
   ],
   "nextUp": {
-    "readAt": "2026-09-10T22:25:31.367Z",
+    "readAt": "2026-09-11T00:53:22.755Z",
     "items": []
   }
 }
