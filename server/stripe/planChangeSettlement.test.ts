@@ -65,11 +65,21 @@ const db = vi.hoisted(() => ({
 
 vi.mock("../db", () => db);
 
-/* The webhook's idempotency pre-check reads the connection module directly. */
+/* The webhook's idempotency pre-check reads the connection module directly.
+   The double RECORDS what the handler asks it to record (PR #786 round 2):
+   a redelivery arm must be able to see that a failed event was NOT marked
+   processed, or it drives a road production cannot take. */
+const processedEventInserts = vi.hoisted(() => [] as Array<{ eventId: string; eventType: string }>);
 vi.mock("../db/connection", () => ({
   getDb: vi.fn().mockImplementation(async () => ({
     select: () => ({ from: () => ({ where: () => ({ limit: async () => [] }) }) }),
-    insert: () => ({ values: () => ({ onDuplicateKeyUpdate: async () => undefined }) }),
+    insert: () => ({
+      values: (row: { eventId: string; eventType: string }) => ({
+        onDuplicateKeyUpdate: async () => {
+          processedEventInserts.push(row);
+        },
+      }),
+    }),
   })),
 }));
 
@@ -314,15 +324,27 @@ describe("the webhook settles what changePlan recorded", () => {
 
   /* The service's own stripe instance was built from the double above; its
      `webhooks.constructEvent` mock is what turns a payload into our event. */
+  let lastEvent: Stripe.Event | null = null;
   async function deliverEvent(type: string, object: Record<string, unknown>) {
     const event = stripeEvent(type, object);
+    lastEvent = event;
     const svc = await import("./stripeService");
     const stripeInstance = (svc as { stripe: { webhooks: { constructEvent: unknown } } }).stripe;
     (stripeInstance.webhooks.constructEvent as ReturnType<typeof vi.fn>).mockReturnValue(event);
     return handleStripeWebhook("{}", "sig");
   }
 
+  /** Stripe sending the SAME event again — same id, not a fresh one. */
+  async function redeliverLastEvent() {
+    if (!lastEvent) throw new Error("nothing delivered yet");
+    const svc = await import("./stripeService");
+    const stripeInstance = (svc as { stripe: { webhooks: { constructEvent: unknown } } }).stripe;
+    (stripeInstance.webhooks.constructEvent as ReturnType<typeof vi.fn>).mockReturnValue(lastEvent);
+    return handleStripeWebhook("{}", "sig");
+  }
+
   beforeEach(() => {
+    processedEventInserts.length = 0;
     db.getUserByStripeCustomerId.mockResolvedValue({
       id: 7,
       name: "seven",
@@ -721,14 +743,19 @@ describe("the webhook settles what changePlan recorded", () => {
   });
 
   /*
-    PR #786 review, finding 1 — the road it mirrors self-heals because it calls
-    `voidInvoice` on every redelivery; this one gated the loop on rows that
-    had JUST moved, so one transient Stripe error left the invoice payable
-    forever. The helper now hands back already-void rows too, and the caller
-    must retry them. Driven at the caller: the helper's redelivery answer is
-    the SAME id, and the void happens again.
+    PR #786 review, finding 1 (round 1) — the road it mirrors self-heals
+    because it calls `voidInvoice` on every redelivery; this one gated the
+    loop on rows that had JUST moved, so one transient Stripe error left the
+    invoice payable forever. The helper now hands back already-void rows too.
+
+    ⚠ AND ROUND 2 READ THE MACHINERY: a handler that returns success is ACKed
+    200 and recorded, so Stripe never redelivers and the guard would refuse
+    it if it did — the retry the docblock promised could not fire. So a
+    failed void now FAILS THE EVENT (after the downgrade). The arm below
+    drives the SAME event id twice, which is the road production takes, and
+    the first delivery must NOT be recorded as processed.
   */
-  it("a REDELIVERED deleted event retries an invoice void that failed the first time (review finding 1)", async () => {
+  it("a failed invoice void FAILS THE EVENT after the downgrade lands, and the SAME event redelivered voids it (review finding 1, rounds 1 and 2)", async () => {
     db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_change"]);
     db.getUserByStripeCustomerId.mockResolvedValue({
       id: 7,
@@ -744,20 +771,28 @@ describe("the webhook settles what changePlan recorded", () => {
       items: { data: [{ id: "si_1", price: { recurring: { interval: "month" } } }] },
     };
 
-    /* First delivery: Stripe blips on the void. */
+    /* First delivery: Stripe blips on the void. The event FAILS — that is
+       what makes Stripe send it again — but the downgrade has landed. */
     invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
     invoicesVoid.mockRejectedValueOnce(new Error("stripe blipped"));
     const first = await deliverEvent("customer.subscription.deleted", deleted);
-    expect(first.success).toBe(true);
+    expect(first.success).toBe(false);
+    expect(first.message).toContain("could not be voided");
     expect(invoicesVoid).toHaveBeenCalledTimes(1);
+    expect(db.updateUserSubscription).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ planTier: "free", stripeSubscriptionId: null }),
+    );
+    expect(processedEventInserts).toHaveLength(0);
 
-    /* Redelivery: the row is already void; the helper still names its
-       invoice, and the invoice — still open — is voided this time. */
+    /* Redelivery of the SAME event id: the row is already void; the helper
+       still names its invoice, and the invoice — still open — is voided. */
     invoicesVoid.mockResolvedValue({ id: "in_change", status: "void" });
-    const second = await deliverEvent("customer.subscription.deleted", deleted);
+    const second = await redeliverLastEvent();
     expect(second.success).toBe(true);
     expect(invoicesVoid).toHaveBeenCalledTimes(2);
     expect(invoicesVoid).toHaveBeenLastCalledWith("in_change");
+    expect(processedEventInserts).toHaveLength(1);
   });
 
   it("a subscription DYING with NOTHING pending touches no invoice (the control)", async () => {
@@ -782,7 +817,7 @@ describe("the webhook settles what changePlan recorded", () => {
     expect(invoicesVoid).not.toHaveBeenCalled();
   });
 
-  it("a void that Stripe refuses on the cancel road does not fail the event — the downgrade still lands", async () => {
+  it("a void that Stripe refuses on the cancel road FAILS the event so it is redelivered — and the downgrade still lands first", async () => {
     db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue(["in_change"]);
     db.getUserByStripeCustomerId.mockResolvedValue({
       id: 7,
@@ -801,7 +836,7 @@ describe("the webhook settles what changePlan recorded", () => {
       items: { data: [{ id: "si_1", price: { recurring: { interval: "month" } } }] },
     });
 
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
     expect(db.updateUserSubscription).toHaveBeenCalledWith(
       7,
       expect.objectContaining({ planTier: "free" }),

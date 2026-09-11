@@ -108,6 +108,10 @@ export async function resolvePlanChangeSettlement(
  *   Without this the first delivery moved the rows to void, a Stripe blip
  *   failed the invoice void, and every redelivery found nothing pending and
  *   left the invoice payable forever — the exact defect, surviving one error.
+ *   ⚠ The redelivery itself is the CALLER's doing (round 2): a failed invoice
+ *   void fails the webhook event after the downgrade, so Stripe sends the
+ *   same event again instead of recording it as done. This list only makes
+ *   that retry reach the invoice; it cannot cause it.
  * - **It is read back AFTER the update, from the rows that are actually
  *   `void`** (finding 2). A row read as pending and concurrently resolved to
  *   `applied` by a racing `invoice.paid` is not re-voided (the update is
