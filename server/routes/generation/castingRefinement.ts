@@ -797,7 +797,7 @@ export const castingRefinementRouter = router({
   // restart the TS server / dev server first — it's a known stale-cache issue.
   enhance: protectedProcedure
     .input(z.object({
-      prompt: z.string().min(1).max(2000),
+      prompt: z.string().trim().min(1).max(2000), // `.trim()` before `.min(1)` (#816)
     }))
     .mutation(async ({ ctx, input }) => {
       // Rate limit free Gemini calls to protect API quota

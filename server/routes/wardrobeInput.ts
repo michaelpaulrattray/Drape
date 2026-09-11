@@ -84,7 +84,7 @@ export const wardrobeClassifyEditInput = z.object({
 
 /** `wardrobe.outfits.save` — a named set of garments. */
 export const wardrobeOutfitSaveInput = z.object({
-  name: z.string().min(1).max(OUTFIT_NAME_MAX_LENGTH),
+  name: z.string().trim().min(1).max(OUTFIT_NAME_MAX_LENGTH), // `.trim()` before `.min(1)` (#816)
   garmentIds: z.array(z.number()).min(1),
   styleNotes: z.record(z.string(), z.string()).optional(),
   resultThumbUrl: z.string().url().optional(),
