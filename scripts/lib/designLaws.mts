@@ -519,7 +519,10 @@ export async function assertPricedButtons(page: Page, where: string, log: LawLog
  * ancestor (`section`, `article`, `[role=region]`, else its parent), and the
  * expiry copy must be inside THAT. The real page is `<section class="dp-stack">`
  * holding the eyebrow and its aside (`CastingV2.tsx`), so this is the shape it
- * already has; a page stating retention in the wrong place reddens.
+ * already has; a page stating retention in the wrong place reddens. The
+ * parent fallback stops short of `<body>`: a holder whose only ancestor is
+ * the page is its own scope, so the fallback can never widen back into the
+ * page-wide read.
  */
 export async function assertRetentionStated(
   page: Page,
@@ -566,6 +569,7 @@ export async function assertRetentionStated(
     const matches = Array.from(document.querySelectorAll<HTMLElement>("*")).filter(
       (el) =>
         el.getClientRects().length > 0 &&
+        getComputedStyle(el).visibility !== "hidden" &&
         !/^(SCRIPT|STYLE|TITLE|NOSCRIPT|TEMPLATE)$/.test(el.tagName) &&
         PHRASE.test((el.textContent ?? "").replace(/\s+/g, " ")),
     );
@@ -573,7 +577,14 @@ export async function assertRetentionStated(
     if (holders.length === 0) return null;
     const sections = new Set<HTMLElement>();
     for (const holder of holders) {
-      sections.add(holder.closest<HTMLElement>("section, article, [role='region']") ?? holder.parentElement ?? holder);
+      /* Never the page: a holder with no sectioning ancestor and a parent
+         that is <body> (or the page-spanning wrapper under it) is read as its
+         own scope, which fails toward reddening rather than back into the
+         page-wide read this law used to be (PR #805 review, round 2). */
+      const nearest = holder.closest<HTMLElement>("section, article, [role='region']") ?? holder.parentElement;
+      sections.add(
+        !nearest || nearest === document.body || nearest === document.documentElement ? holder : nearest,
+      );
     }
     const readings = Array.from(sections).map((section) => ({
       scope: section.tagName.toLowerCase() + (section.className ? `.${String(section.className).split(/\s+/)[0]}` : ""),
@@ -637,6 +648,7 @@ export async function assertNoOrphanSkeletons(page: Page, where: string, log: La
     const matches = Array.from(document.querySelectorAll<HTMLElement>("*")).filter(
       (el) =>
         el.getClientRects().length > 0 &&
+        getComputedStyle(el).visibility !== "hidden" &&
         !/^(SCRIPT|STYLE|TITLE|NOSCRIPT|TEMPLATE)$/.test(el.tagName) &&
         FAILURE.test((el.textContent ?? "").replace(/\s+/g, " ")),
     );
