@@ -6,7 +6,11 @@ import { getClientIp } from "../../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../../logging/logger";
-import { FREEZE_REASON_MAX_LENGTH, UNFREEZE_NOTES_MAX_LENGTH } from "../../../shared/inputLimits";
+import {
+  FREEZE_REASON_MAX_LENGTH,
+  SUSPEND_REASON_MAX_LENGTH,
+  UNFREEZE_NOTES_MAX_LENGTH,
+} from "../../../shared/inputLimits";
 const log = createModuleLogger("routes/admin");
 
 export const usersRouter = router({
@@ -14,8 +18,10 @@ export const usersRouter = router({
   suspendUser: adminProcedure
     .input(z.object({
       userId: z.number(),
-      reason: z.string().min(1).max(500),
-    }))
+      // `.trim()` before `.min(1)` (#816): a reason of one space used to pass and land blank on
+      // the record, the audit row and the immutable log. The cap is the shared constant.
+      reason: z.string().trim().min(1).max(SUSPEND_REASON_MAX_LENGTH),
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       const { suspendUser, getUserById } = await import("../../db");
       

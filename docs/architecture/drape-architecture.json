@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "28b25680a9c26ec4"
+    "sourceFingerprint": "15e19b71b203b190"
   },
   "domains": [
     {
@@ -6339,7 +6339,7 @@
       "name": "blockIP",
       "type": "mutation",
       "auth": "admin",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/admin/ipBlocking.ts"
     },
@@ -6349,7 +6349,7 @@
       "name": "changeUserRole",
       "type": "mutation",
       "auth": "admin",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/admin/roles.ts"
     },
@@ -6589,7 +6589,7 @@
       "name": "suspendUser",
       "type": "mutation",
       "auth": "admin",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/admin/users.ts"
     },
@@ -6609,7 +6609,7 @@
       "name": "unblockIP",
       "type": "mutation",
       "auth": "admin",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
       "file": "server/routes/admin/ipBlocking.ts"
     },
@@ -13576,6 +13576,10 @@
       "path": "server/staffImageBoundary.test.ts"
     },
     {
+      "id": "test:server/staffReasonWhitespace.test.ts",
+      "path": "server/staffReasonWhitespace.test.ts"
+    },
+    {
       "id": "test:server/standingExceptions.test.ts",
       "path": "server/standingExceptions.test.ts"
     },
@@ -14471,6 +14475,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/AuditActionModals.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/AuditLogsFilters.tsx",
       "to": "module:client/src/features/admin/adminConstants.ts",
       "kind": "imports"
@@ -15118,6 +15127,11 @@
     {
       "from": "module:client/src/features/admin/UserActionModals.tsx",
       "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserActionModals.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -30821,6 +30835,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/admin/ipBlocking.ts",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/admin/overview.ts",
       "to": "module:server/_core/trpc.ts",
       "kind": "imports"
@@ -30863,6 +30882,11 @@
     {
       "from": "module:server/routes/admin/roles.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/roles.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -34378,20 +34402,6 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:admin.blockIP",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.blockIP",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:admin.changeUserRole",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.changeUserRole",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:admin.createBanner",
       "severity": "warn",
       "kind": "non-strict-input",
@@ -34518,24 +34528,10 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:admin.suspendUser",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.suspendUser",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:admin.toggleBanner",
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:admin.toggleBanner",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:admin.unblockIP",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:admin.unblockIP",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
