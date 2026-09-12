@@ -40,6 +40,7 @@ import { TRPCError } from "@trpc/server";
 
 import { DEFAULT_CASTING_PATH, type CastingPath } from "../../shared/castingPaths";
 import type { CastStyle } from "../../shared/castStyles";
+import type { CastingSession } from "../../drizzle/schema";
 import {
   captureCastingBornInkEnabled,
   captureCastingBriefFidelityEnabled,
@@ -70,6 +71,7 @@ import {
   failCandidate,
   getBriefForOwnedCandidate,
   getOwnedCandidateWithSelectedFace,
+  getOwnedCastingSession,
   getRollWardrobeForOwnedCandidate,
   getOwnedRoll,
   getRollByOperation,
@@ -330,6 +332,19 @@ async function defaultStoreImage(input: { bytes: Buffer; contentType: string; ke
   return { key };
 }
 
+/**
+ * The sentence for a sheet that resolves but cannot be rolled on (#854). Said
+ * before any text call, so it can promise nothing was charged. `expired` is
+ * the retention rule (seven quiet days, `candidateRetention.ts`); `abandoned`
+ * is the customer's own Start over. Both end the same way: the words are
+ * still theirs, and a fresh sheet is where they roll again.
+ */
+export function closedSessionRefusal(status: CastingSession["status"]): string {
+  return status === "expired"
+    ? "This sheet has expired, so it can't be rolled on. Nothing was charged — start a new sheet to roll these words again."
+    : "This sheet was closed, so it can't be rolled on. Nothing was charged — start a new sheet to roll these words again.";
+}
+
 export async function createRoll(
   dependencies: RollServiceDependencies,
   input: CreateRollInput,
@@ -352,6 +367,36 @@ export async function createRoll(
           ? "The studio is busy right now. Try that roll again in a moment — you were not charged."
           : "Casting is temporarily unavailable. Nothing was charged.",
     });
+  }
+
+  /*
+    THE SHEET ITSELF, READ BEFORE ANYTHING IS PAID FOR (#854).
+
+    The roll transaction re-proves the session owner-scoped and `open` in the
+    statement that allocates the roll (invariant 1) — that stays the authority.
+    But it runs AFTER the compile, and the compile is a paid interpreter call
+    of ~13 seconds: an expired sheet's Roll again used to spend that call and
+    only then meet the transaction's "Casting session not found", which is the
+    wrong sentence for "too old to roll on". The sheet's own `getSession` had
+    returned the status before the click, so this is not new knowledge; it is
+    the same fact read one call earlier, so an impossible roll costs nothing
+    and refuses in milliseconds.
+
+    Two refusals, two sentences. A session that does not resolve inside this
+    account keeps the ownership sentence and the ownership code — a foreign or
+    unknown id is a refusal, never a leak (invariant 1's second half). A
+    session that resolves but is no longer `open` names WHY, in the sheet's own
+    vocabulary (`retentionCopy.ts`: a sheet, expired, cleared) and never
+    "not found" for something the customer is looking at. What the dock says
+    on an expired sheet — whether Roll again is offered at all — is his call
+    and is not decided here; this is the order half only.
+  */
+  const session = await getOwnedCastingSession(input.userId, input.sessionPublicId);
+  if (!session) {
+    throw new TRPCError({ code: "NOT_FOUND", message: new CastingV2OwnershipError("session").message });
+  }
+  if (session.status !== "open") {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: closedSessionRefusal(session.status) });
   }
 
   /*
