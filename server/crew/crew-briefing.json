@@ -1,7 +1,7 @@
 {
-  "edition": 356,
-  "updatedAt": "2026-09-12T02:58:00.000Z",
-  "shift": "Foreman — two more merged on two cards, one card corrected by reading. YOUR DESK IS CLEAR. THE FIRST (PR #835): the third of the three API endpoints nobody has called since 1 September — the credit transaction list, filed yesterday as #833 so that 'where did my credits go' would be decided in writing rather than in passing — is deleted with a manifest. The reasoning, checked at the code: no design asks for a transaction list on any screen; a customer's own transactions already reach her through her data export; staff read any account's transactions by their own road; and deleting a reader nobody calls decides nothing about a future screen, because the ledger rows stay and a list a design asks for is a fresh endpoint under its own card. The reviewer read the billing file and passed it clean. THE SECOND (PR #836), your own ruling on #64 from 25 August ('the stopline total and the slots.length===0 line are one sitting together'): (1) the spend-freeze self-check now ends on a number — '15 of 15 controls passed' — instead of a sentence, so nobody counts its lines by eye again (the count drifted to a copied-forward '15' for a day once); a test runs the check and holds the number to the lines it printed. (2) When a paid refine contributes nothing to a cast's feature library, the pipeline now says so in one log line carrying why — before, the only trace was the ABSENCE of a line, which no reader can see. Nothing a customer sees changes; the reviewer passed it with no findings. CORRECTED BY READING, NOT BUILT: #62 (the hair-road court arms) said no test proved that re-doing an edit re-sends the photograph she attached; one has existed since 20 August. The card now says so and stays open only for the two arms that wait on the hair road opening. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden reads due tomorrow.",
+  "edition": 357,
+  "updatedAt": "2026-09-12T04:11:42.000Z",
+  "shift": "Foreman — one merged on one card: the staff Refresh buttons now have a guard, so the bug you would have seen three times cannot come back a fourth. YOUR DESK IS CLEAR. THE BUILD (PR #837): three times in a week a staff page's Refresh button was found to be quietly skipping one of the lists on that page — you pressed it, it said 'Data refreshed', and the list in front of you did not move (the blocked-IPs list, then eight more, then ten). Each time a shift found it by hand, and each time the hand count was wrong. Now a test reads every staff page on every commit, finds every list the page loads (28 across nine pages today), and refuses the change unless the Refresh button reaches all of them. It was proven the honest way first: the original bug was put back into two real pages and the test named exactly those two and nothing else. Nothing you see changes today; what changes is that the next page to grow a list cannot forget its button. The reviewer passed it with two small hardening notes, both taken. FOUND ON THE WAY: this card had sat under no category on your switch panel for two days, so three shifts read past it — it is filed under Small fixes now, which is what it was. NOT TAKEN, AND WHY: #481 (moving a shared form-field row into the foundation) says its three remaining users are the same shape as the component; read at the code, two of the three are not (one puts label and field on a single row, one carries the Re-imagine button on its label line), so doing it as written would change how those dialogs look. The card now says so and recommends the smaller honest step. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden reads due tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T02:54:49.418Z",
+      "readAt": "2026-09-12T04:11:07.138Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,13 @@
   ],
   "pipeline": [
     {
+      "id": "refresh-reach-guard-837",
+      "title": "The staff Refresh buttons have a guard: every list a page loads must be reached by its own button, checked on every commit",
+      "status": "merged",
+      "prNumber": 837,
+      "note": "Three hand sweeps found this bug three times (#747, #759, PR #763) and the counting was wrong every time — once it could not see a handler written one way, once the other. The guard reads the pages themselves: 28 lists across nine staff pages today, all reached, and the only two exemptions the card expected turn out not to exist (one left with Slack, one was never the page's own). Proven before it counted: the original bug put back into two real pages, and the test named exactly those two. Fable pass; two low notes on the instrument taken in one push."
+    },
+    {
       "id": "usage-history-835",
       "title": "The credit transaction list endpoint — no caller since 1 Sep — deleted with its manifest; the tree refuses it back",
       "status": "merged",
@@ -5589,11 +5596,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912j-foreman",
+      "id": "queue-shape-0912k-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 47 open, one closed (#833); NEXT UP is empty; nothing waits on you",
-      "detail": "Category order re-read at the code: Bugs (#816) still holds only its two auth/money rows and Process (#697, #769, #513) nothing an Opus shift can take; Performance's remaining cards (#555, #58) are sessions of their own. So Housekeeping #833 was the brief (merged, PR #835) with your #64 items 1+2 (Casting upkeep, ON at your word) taken in a second worktree while the first gate ran (merged, PR #836). #62 corrected by reading (its arm (a) has been driven since 20 Aug). 25 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Warden due 13 Sep; Janitor, Machinist and Retro ran today."
+      "title": "The queue: 47 open, one closed (#766); NEXT UP is empty; nothing waits on you",
+      "detail": "Category order re-read at the code: Bugs (#816) holds only its two auth/money rows; Small fixes had nothing — until #766 was read, which carried no category label at all and was the exact 'self-contained tooling fix' that switch describes, so it was labelled and taken (merged, PR #837). Process (#697, #769, #513) and Performance (#555, #58) remain sessions of their own or not an Opus shift's. Housekeeping's next, #481, was sized at the code and its premise corrected on the card rather than built. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Warden due 13 Sep; Janitor, Machinist and Retro ran today."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5776,7 +5783,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-12T02:54:49.417Z",
+    "readAt": "2026-09-12T04:11:07.137Z",
     "items": []
   }
 }
