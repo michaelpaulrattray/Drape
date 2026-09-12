@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Redirect, Route, Switch, useLocation } from "wouter";
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
+import { staffPage } from "./lib/staffPage";
 import { AnimatePresence } from "framer-motion";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { PageTransition } from "./components/PageTransition";
@@ -41,17 +42,23 @@ import { GenerationOperationBridge } from "./features/operations/GenerationOpera
  * cannot get slower from this — and a customer page going lazy is a separate
  * decision with its own measurement. `client/src/staffPagesLazy.test.ts`
  * holds both halves.
+ *
+ * `staffPage` is `lazy()` plus one thing the monolith never needed: a deploy
+ * (every merge to main, #508) removes the old chunk files, so a staff tab
+ * opened before the deploy that first visits a page after it would fail the
+ * import and land on the raw ErrorBoundary. The helper reloads once and
+ * rethrows on a second failure (`lib/staffPage.ts`).
  */
-const DrapeStudio = lazy(() => import("./pages/DrapeStudio"));
-const AdminAuditLogs = lazy(() => import("./pages/AdminAuditLogs"));
-const AdminUserManagement = lazy(() => import("./pages/AdminUserManagement"));
-const ModeratorDashboard = lazy(() => import("./pages/ModeratorDashboard"));
-const AdminChangeRequests = lazy(() => import("./pages/AdminChangeRequests"));
-const AdminOverview = lazy(() => import("./pages/AdminOverview"));
-const AdminInviteCodes = lazy(() => import("./pages/AdminInviteCodes"));
-const AdminCrew = lazy(() => import("./pages/AdminCrew"));
-const AdminBugReports = lazy(() => import("./pages/AdminBugReports"));
-const AdminFoundation = lazy(() => import("./pages/AdminFoundation"));
+const DrapeStudio = staffPage(() => import("./pages/DrapeStudio"));
+const AdminAuditLogs = staffPage(() => import("./pages/AdminAuditLogs"));
+const AdminUserManagement = staffPage(() => import("./pages/AdminUserManagement"));
+const ModeratorDashboard = staffPage(() => import("./pages/ModeratorDashboard"));
+const AdminChangeRequests = staffPage(() => import("./pages/AdminChangeRequests"));
+const AdminOverview = staffPage(() => import("./pages/AdminOverview"));
+const AdminInviteCodes = staffPage(() => import("./pages/AdminInviteCodes"));
+const AdminCrew = staffPage(() => import("./pages/AdminCrew"));
+const AdminBugReports = staffPage(() => import("./pages/AdminBugReports"));
+const AdminFoundation = staffPage(() => import("./pages/AdminFoundation"));
 
 
 /** Lobby views share one transition key so the rail doesn't remount between them. */
