@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3820b7b1b956d4d4"
+    "sourceFingerprint": "9332938812184e16"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 47
+      "moduleCount": 48
     },
     {
       "id": "domain:client-shared",
@@ -1540,6 +1540,12 @@
     {
       "id": "module:client/src/features/castingV2/chosenFrame.ts",
       "path": "client/src/features/castingV2/chosenFrame.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/closedSheet.ts",
+      "path": "client/src/features/castingV2/closedSheet.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -10578,6 +10584,10 @@
     {
       "id": "test:client/src/features/castingV2/chosenFrame.test.ts",
       "path": "client/src/features/castingV2/chosenFrame.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/closedSheet.test.ts",
+      "path": "client/src/features/castingV2/closedSheet.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/conceptUpload.test.ts",
@@ -19760,6 +19770,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/closedSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "kind": "imports"
     },
@@ -19946,6 +19961,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/castingPathCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/closedSheet.ts",
       "kind": "imports"
     },
     {

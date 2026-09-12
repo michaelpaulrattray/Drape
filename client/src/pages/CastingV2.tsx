@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { useHistoryState } from "wouter/use-browser-location";
 import { ArrowRight, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,6 +42,7 @@ import { CardMenu } from "@/foundation";
 import { DestructiveConfirm } from "@/foundation";
 import { RenameDialog } from "@/foundation";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
+import { readCarriedBrief } from "@/features/castingV2/closedSheet";
 import {
   RETENTION_EMPTY_STATE,
   isExpiryWarning,
@@ -133,7 +135,16 @@ function sheetDeleteCopy(sheet: {
 
 export default function CastingV2() {
   const [, navigate] = useLocation();
-  const [brief, setBrief] = useState("");
+  /*
+    WORDS CARRIED FROM A CLOSED SHEET (#854, his A). An expired sheet's dock
+    offers "Start a new sheet with these words" and navigates here with the
+    box's words in the browser's history state — never the address bar. They
+    are the box's INITIAL value and nothing more: read once at mount, and
+    theirs to type over from then on. A plain visit carries nothing and the
+    box opens empty, exactly as it always has.
+  */
+  const carriedBrief = readCarriedBrief(useHistoryState());
+  const [brief, setBrief] = useState(carriedBrief);
   /*
     WHICH PATH THE NEXT CAST IS BORN ON — the two paths' toggle (design §6).
 
@@ -206,6 +217,20 @@ export default function CastingV2() {
 
   const utils = trpc.useUtils();
   const config = trpc.castingV2.config.useQuery({});
+  /*
+    Carried words get the caret, the same confirmation a deck card's fill gets:
+    the box is what they came here for, and a filled box nobody is standing in
+    reads as a page that happened to remember something. The field mounts only
+    once the config answers (the page returns early until then), so the effect
+    waits on that rather than firing into a ref that is still null. Once, on
+    arrival — never again on a re-render, or the caret would keep jumping back
+    while they type.
+  */
+  const castingOpen = config.data?.enabled === true;
+  useEffect(() => {
+    if (carriedBrief && castingOpen) focusBrief();
+    // `focusBrief` is a closure over a ref, not a dependency; the arrival is the trigger.
+  }, [carriedBrief, castingOpen]);
   /*
     RE-IMAGINE on the hero's brief box (#535). The hook lives up here with the
     other unconditional hooks; the glyph itself is drawn only on the author
