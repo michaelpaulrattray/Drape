@@ -927,6 +927,15 @@ function collectOperationKinds(project: Project): Entity[] {
  */
 const PRICE_CONSTANT_NAME = /^[A-Z][A-Z0-9_]*$/;
 const PRICE_CONSTANT_SAYS_MONEY = /(COST|PRICE|CREDIT)/;
+/**
+ * A CAP is not a price, whatever its name says. `CREDIT_ADJUST_REASON_MAX_LENGTH`
+ * (`shared/inputLimits.ts`, #816) is the character limit on the reason an admin
+ * types when moving credits — and the word CREDIT put it in the price list as
+ * `credits: 500`, between real prices (PR #875's reviewer). Any honest name for
+ * that concept contains the word, so the exclusion is on the SUFFIX the limits
+ * file gives every cap, not on the name.
+ */
+const PRICE_CONSTANT_IS_A_CAP = /_MAX_LENGTH$/;
 
 /** Where prices are looked for. `drizzle/` is schema and holds no prices. */
 const PRICE_ROOTS = ["server/", "shared/", "client/src/"] as const;
@@ -1075,6 +1084,7 @@ export function creditCostsFrom(project: Project, files: readonly string[]): Ent
         const name = declaration.getName();
         if (!initializer) continue;
         if (!PRICE_CONSTANT_NAME.test(name) || !PRICE_CONSTANT_SAYS_MONEY.test(name)) continue;
+        if (PRICE_CONSTANT_IS_A_CAP.test(name)) continue;
         priced.push({ constant: name, file: relative, initializer });
       }
     }
