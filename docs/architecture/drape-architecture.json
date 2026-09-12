@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7dcbd7188dbf719e"
+    "sourceFingerprint": "5c96df6ded0ebc70"
   },
   "domains": [
     {
@@ -148,7 +148,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 40
+      "moduleCount": 41
     },
     {
       "id": "domain:wardrobe",
@@ -2734,6 +2734,12 @@
     {
       "id": "module:client/src/lib/motion.ts",
       "path": "client/src/lib/motion.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/lib/staffPage.ts",
+      "path": "client/src/lib/staffPage.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -10878,6 +10884,14 @@
       "path": "client/src/foundation/token-guard.test.ts"
     },
     {
+      "id": "test:client/src/lib/staffPage.test.ts",
+      "path": "client/src/lib/staffPage.test.ts"
+    },
+    {
+      "id": "test:client/src/staffPagesLazy.test.ts",
+      "path": "client/src/staffPagesLazy.test.ts"
+    },
+    {
       "id": "test:server/_core/invalidInputWire.test.ts",
       "path": "server/_core/invalidInputWire.test.ts"
     },
@@ -13795,6 +13809,11 @@
     {
       "from": "module:client/src/App.tsx",
       "to": "module:client/src/features/operations/GenerationOperationBridge.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/App.tsx",
+      "to": "module:client/src/lib/staffPage.ts",
       "kind": "imports"
     },
     {
