@@ -10084,8 +10084,21 @@ async function refineCandidateCounted(
     /* AND THE SAME ROW ON THE OTHER OUTCOME (5b Stage D). A kind whose asks are
        refunds is the loudest promotion case there is — *reached but not served* —
        so a table holding only the successes would report the lane working
-       perfectly on exactly the asks it happened to manage. */
-    recordOpenLaneOutcomes(editDelta, { settled: false, cropsStored: new Set() });
+       perfectly on exactly the asks it happened to manage.
+
+       Fenced like its success-road twin (#873, PR #874's second review): a
+       synchronous throw from the row composition here would escape this catch
+       BEFORE the refund, the row and the receipt — charged, no picture, no
+       refund, and the heartbeat still renewing, which is #869's stuck tile
+       through a side door. A telemetry row is never allowed to cost that. */
+    try {
+      recordOpenLaneOutcomes(editDelta, { settled: false, cropsStored: new Set() });
+    } catch (demandError) {
+      log.warn(
+        { err: demandError, operationId, variant: variant.publicId },
+        "[refineService] could not file the open-lane demand rows for the failed take — refunding regardless",
+      );
+    }
     /*
       WHOLE charge back — one image, one unit, nothing partial to keep.
 

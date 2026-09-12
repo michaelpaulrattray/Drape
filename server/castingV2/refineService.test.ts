@@ -277,6 +277,13 @@ vi.mock("./openLaneAccept", async (importOriginal) => {
   return { ...actual, namedButNotServedNote: vi.fn(actual.namedButNotServedNote) };
 });
 
+/* The open-lane demand writer, real but wrapped, so one arm can make its
+   synchronous call throw on the FAILURE road (PR #874's second review). */
+vi.mock("../db/castingV2OpenLaneDemand", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../db/castingV2OpenLaneDemand")>();
+  return { ...actual, recordOpenLaneDemand: vi.fn(actual.recordOpenLaneDemand) };
+});
+
 vi.mock("./refineRecovery", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./refineRecovery")>()),
   recoverCastingV2RefineOperation: vi.fn(async (operation: unknown) => {
@@ -8096,6 +8103,34 @@ describe("a throw from the success finalizer never reaches the compensating catc
     expect(journal).not.toContain("seal:failure");
     // The note is what was lost — and only the note.
     expect(result.kind === "rendered" && result.note).toBeFalsy();
+  });
+
+  it("the FAILURE road's open-lane row throwing still refunds and seals — the sweep's remainder (PR #874 review 2)", async () => {
+    engineThrows = new Error("the provider fell over");
+    const { recordOpenLaneDemand } = await import("../db/castingV2OpenLaneDemand");
+    vi.mocked(recordOpenLaneDemand).mockImplementationOnce(() => {
+      throw new Error("an unexpected delta shape");
+    });
+
+    await expect(refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({
+          ok: true as const,
+          delta: { open: { fangs: { noun: "fangs", words: "vampire fangs" } } },
+        }),
+      },
+      { ...input, instruction: "give her vampire fangs" },
+    )).rejects.toThrow(/Your credits have been returned/);
+
+    // The telemetry row was attempted and threw — and the money still moved,
+    // the row still failed, the receipt still sealed. Nothing escaped the catch.
+    expect(vi.mocked(recordOpenLaneDemand)).toHaveBeenCalled();
+    expect(ledger.refunds).toHaveLength(1);
+    expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
+    expect(journal).toContain("seal:failure");
+    expect(journal).not.toContain("adjudicate");
+    expect(journal).not.toContain("handoff");
   });
 });
 
