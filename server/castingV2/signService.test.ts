@@ -241,6 +241,27 @@ vi.mock("../db/generationOperations", () => ({
     journal.push("seal:recovery");
     receipts.push({ kind: "recovery", ...input });
   }),
+  handoffGenerationOperationToRecovery: vi.fn(async () => {
+    journal.push("handoff");
+  }),
+}));
+
+/*
+  The road's own adjudicator, reached in-process when the refund write throws
+  (#869). Its money law is `signRecovery.test.ts`'s and is not re-proven here:
+  each arm dictates its verdict and asserts what the service does with it.
+*/
+const adjudicator = {
+  verdict: null as null | (() => Promise<unknown>),
+};
+const adjudicatedOperations: unknown[] = [];
+vi.mock("./signRecovery", () => ({
+  recoverCastingV2SignOperation: vi.fn(async (operation: unknown) => {
+    journal.push("adjudicate");
+    adjudicatedOperations.push(operation);
+    if (!adjudicator.verdict) throw new Error("no verdict dictated");
+    return adjudicator.verdict();
+  }),
 }));
 
 vi.mock("../db/storageCleanup", () => ({
@@ -466,6 +487,96 @@ describe("Sign's money", () => {
       signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
     ).rejects.toThrow(/support will restore the balance/);
     expect(receipts.at(-1)).toMatchObject({ chargedCredits: 450, refundedCredits: 0 });
+  });
+});
+
+/**
+ * #869 — the throw from INSIDE the compensating catch.
+ *
+ * The Sign's compensable section sits in a try/catch that ends in the
+ * finalizer, so the exposed window is `recordRefund` REJECTING (a refund that
+ * returns `recorded: false` is the arm above). Before this, such a throw
+ * escaped the mutation before the finalizer: the heartbeat kept renewing, the
+ * lease never lapsed, and the sweep never came. The road's own adjudicator
+ * now runs in-process; if it throws too, the lease is handed to the sweep.
+ */
+describe("a refund write that throws is settled by the Sign's own adjudicator (#869)", () => {
+  const torn = Object.assign(new Error("read ECONNRESET"), { code: "ER_NET_READ_INTERRUPTED" });
+
+  beforeEach(() => {
+    adjudicator.verdict = null;
+    adjudicatedOperations.length = 0;
+  });
+
+  it("adjudicates in-process when the refund write throws, and says what the receipt says", async () => {
+    copyThrows = true;
+    const { recordRefund } = await import("../casting/atomicCredits");
+    vi.mocked(recordRefund).mockRejectedValueOnce(torn);
+    adjudicator.verdict = async () => ({ type: "paid_failure", chargedCredits: 450, refundedCredits: 450 });
+
+    await expect(
+      signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
+    ).rejects.toThrow(/Everything you paid was refunded/);
+
+    // The adjudicator was handed THIS operation, running, at the price charged
+    // and the price planned — the figure the running transition wrote.
+    expect(adjudicatedOperations).toEqual([
+      expect.objectContaining({
+        id: OPERATION_ID,
+        status: "running",
+        chargedCredits: 450,
+        refundedCredits: 0,
+        plannedCredits: 450,
+      }),
+    ]);
+    // It sealed the receipt itself: no second seal, no lease left to the sweep.
+    expect(journal).toContain("adjudicate");
+    expect(journal).not.toContain("seal:failure");
+    expect(journal).not.toContain("handoff");
+    // The service refunded nothing on its own — the ledger is the adjudicator's.
+    expect(ledger.refunds).toEqual([]);
+    // And the candidate is untouched: it can be signed again.
+    expect(candidateRow.status).toBe("ready");
+    expect(casts).toHaveLength(0);
+  });
+
+  it("hands the lease to the sweep when the adjudicator throws too", async () => {
+    copyThrows = true;
+    const { recordRefund } = await import("../casting/atomicCredits");
+    vi.mocked(recordRefund).mockRejectedValueOnce(torn);
+    adjudicator.verdict = async () => { throw new Error("database unavailable"); };
+
+    await expect(
+      signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
+    ).rejects.toThrow(/still being settled\. Operation/);
+
+    expect(journal).toContain("handoff");
+    expect(journal).not.toContain("seal:failure");
+    expect(ledger.refunds).toEqual([]);
+  });
+
+  it("parks with the support sentence when the adjudicator cannot decide", async () => {
+    copyThrows = true;
+    const { recordRefund } = await import("../casting/atomicCredits");
+    vi.mocked(recordRefund).mockRejectedValueOnce(torn);
+    adjudicator.verdict = async () => ({
+      type: "recovery_required", reason: "the full Sign refund did not record", chargedCredits: 450, refundedCredits: 0,
+    });
+
+    await expect(
+      signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
+    ).rejects.toThrow(/needs support review before it can be retried\. Operation/);
+    expect(journal).not.toContain("handoff");
+  });
+
+  it("CONTROL: a refund that merely fails to record still takes the receipt road, not the adjudicator", async () => {
+    copyThrows = true;
+    refundRecords = false;
+    await expect(
+      signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
+    ).rejects.toThrow(/support will restore the balance/);
+    expect(journal).toContain("seal:failure");
+    expect(journal).not.toContain("adjudicate");
   });
 });
 
