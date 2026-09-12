@@ -71,12 +71,14 @@ export default function AdminOverview() {
 
   const isAdmin = isAuthenticated && user?.role === "admin";
 
+  // staff-poll: watched — every number on the overview is raised elsewhere
   const overviewQuery = trpc.admin.getOverview.useQuery(undefined, {
     enabled: isAdmin,
     refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
     staleTime: 10_000,
   });
 
+  // staff-poll: watched — the series moves with the same events
   const timeSeriesQuery = trpc.admin.getTimeSeries.useQuery(undefined, {
     enabled: isAdmin,
     refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,

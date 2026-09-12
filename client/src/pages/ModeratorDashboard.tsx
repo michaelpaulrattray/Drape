@@ -88,6 +88,7 @@ export default function ModeratorDashboard() {
 
   const utils = trpc.useUtils();
 
+  // staff-poll: watched — audit rows are written by every session; nothing she does here brings a new one
   const logsQuery = trpc.moderator.getAuditLogs.useQuery(
     {
       limit: PAGE_SIZE,
@@ -101,11 +102,13 @@ export default function ModeratorDashboard() {
     { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
   );
 
+  // staff-poll: watched — abuse alerts are raised by other accounts' behaviour
   const alertsQuery = trpc.moderator.getAbuseAlerts.useQuery(
     { limit: 10 },
     { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
   );
 
+  // staff-poll: watched — the counts move with the rows above
   const statsQuery = trpc.moderator.getAuditStats.useQuery(
     undefined,
     { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
@@ -114,6 +117,7 @@ export default function ModeratorDashboard() {
   /* #747: it sits under AUTO 30s and the Refresh button and was reached by
      neither. `enabled` still governs whether it runs at all — a disabled query
      does not poll — so the interval costs nothing until the tab is open. */
+  // staff-poll: watched — a block placed in another session (#747)
   const blockedIpsQuery = trpc.moderator.listBlockedIPs.useQuery(
     { limit: 50, offset: 0 },
     {
@@ -122,21 +126,28 @@ export default function ModeratorDashboard() {
     }
   );
 
+  // staff-poll: watched — a new account appears from another session; the admin twin already polled (#769's fifth instance)
   const usersQuery = trpc.moderator.listUsers.useQuery(
     { limit: PAGE_SIZE, offset: userPage * PAGE_SIZE, search: userSearchQuery || undefined },
-    { enabled: activeTab === "users" }
+    {
+      enabled: activeTab === "users",
+      refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
+    }
   );
 
+  // staff-poll: owner-triggered — keyed on the account she selected; Refresh reaches it
   const userDetailsQuery = trpc.moderator.getUserFullDetails.useQuery(
     { userId: selectedUserId! },
     { enabled: !!selectedUserId }
   );
 
+  // staff-poll: owner-triggered — keyed on the account she selected; Refresh reaches it
   const userActivityQuery = trpc.moderator.getUserActivity.useQuery(
     { userId: selectedUserId!, limit: 20 },
     { enabled: !!selectedUserId }
   );
 
+  // staff-poll: owner-triggered — keyed on the account she selected; Refresh reaches it
   const creditHistoryQuery = trpc.moderator.getUserCreditHistory.useQuery(
     {
       userId: selectedUserId!, limit: 20, offset: creditPage * 20, type: creditTypeFilter as any,
@@ -145,6 +156,7 @@ export default function ModeratorDashboard() {
     { enabled: !!selectedUserId }
   );
 
+  // staff-poll: owner-triggered — keyed on the account she selected; Refresh reaches it
   const generationHistoryQuery = trpc.moderator.getUserGenerationHistory.useQuery(
     {
       userId: selectedUserId!, limit: 20, offset: genPage * 20, status: genStatusFilter as any, type: genTypeFilter as any,
@@ -159,6 +171,7 @@ export default function ModeratorDashboard() {
      asymmetry that PR would otherwise have created. Same shape and same reason
      as `blockedIpsQuery` above; `enabled` means it costs nothing off this tab.
      Its key is the {limit: 20} page and never the badge's {limit: 1}. */
+  // staff-poll: watched — flagged by the referral scan on other accounts' signups (review of #768)
   const flaggedReferralsQuery = trpc.moderator.getFlaggedReferrals.useQuery(
     { limit: 20, offset: flaggedPage * 20 },
     {
@@ -170,6 +183,7 @@ export default function ModeratorDashboard() {
   /* Same class, one step softer: these are HER requests, but their status moves
      when an ADMIN acts on one in another session — so nothing she does on this
      tab can bring her the answer she is waiting for. */
+  // staff-poll: watched — her own requests, but their status moves when an admin acts in another session
   const myRequestsQuery = trpc.moderator.getMyChangeRequests.useQuery(
     { limit: 50, offset: 0 },
     {

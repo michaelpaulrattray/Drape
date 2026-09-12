@@ -43,6 +43,7 @@ export default function AdminAuditLogs() {
   const [blockIpDuration, setBlockIpDuration] = useState<string>("permanent");
 
   // Queries
+  // staff-poll: watched — audit rows are written by every session; nothing she does here brings a new one
   const logsQuery = trpc.admin.getAuditLogs.useQuery(
     {
       limit: PAGE_SIZE,
@@ -58,16 +59,19 @@ export default function AdminAuditLogs() {
     if (logsQuery.data) setLastRefresh(new Date());
   }, [logsQuery.data]);
 
+  // staff-poll: watched — abuse alerts are raised by other accounts' behaviour
   const alertsQuery = trpc.admin.getAbuseAlerts.useQuery(
     { limit: 10 },
     { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
   );
+  // staff-poll: watched — the counts move with the rows above
   const statsQuery = trpc.admin.getAuditStats.useQuery(
     undefined,
     { refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false }
   );
   /* #747 — see the twin on ModeratorDashboard. `enabled` still decides whether
      it runs; the interval only applies once the tab is open. */
+  // staff-poll: watched — a block placed in another session (#747)
   const blockedIpsQuery = trpc.admin.listBlockedIPs.useQuery(
     { limit: 50, offset: 0 },
     {
@@ -75,6 +79,7 @@ export default function AdminAuditLogs() {
       refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
     }
   );
+  // staff-poll: owner-triggered — keyed on the log row she selected; Refresh reaches it
   const userDetailsQuery = trpc.admin.getUserDetails.useQuery(
     { userId: selectedLog?.userId || 0 },
     { enabled: !!selectedLog?.userId }

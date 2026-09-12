@@ -71,11 +71,13 @@ export default function AdminUserManagement() {
   const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
 
   // Queries
+  // staff-poll: watched — signups and approvals happen in other sessions
   const statsQuery = trpc.admin.getUserStats.useQuery(undefined, {
     enabled: isAuthenticated && user?.role === "admin",
     refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
   });
 
+  // staff-poll: watched — a new account appears from another session
   const usersQuery = trpc.admin.listUsers.useQuery({
     limit: ITEMS_PER_PAGE,
     offset: page * ITEMS_PER_PAGE,
@@ -89,11 +91,13 @@ export default function AdminUserManagement() {
     refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
   });
 
+  // staff-poll: owner-triggered — keyed on the account she selected; Refresh reaches it
   const userDetailsQuery = trpc.admin.getUserFullDetails.useQuery(
     { userId: selectedUserId! },
     { enabled: !!selectedUserId && isAuthenticated && user?.role === "admin" }
   );
 
+  // staff-poll: owner-triggered — keyed on the account she selected; Refresh reaches it
   const userActivityQuery = trpc.admin.getUserActivity.useQuery(
     { userId: selectedUserId!, limit: 50 },
     { enabled: !!selectedUserId && activeTab === "activity" && isAuthenticated && user?.role === "admin" }
