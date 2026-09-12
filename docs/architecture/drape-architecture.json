@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "dc5a3cc85c690385"
+    "sourceFingerprint": "9332938812184e16"
   },
   "domains": [
     {
@@ -35443,17 +35443,17 @@
       "message": "Names 3 of InkUpscaleResult's 5 fields (server/castingV2/inkReferenceUpscale.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:194",
+      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:198",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkUploadService.ts:194",
+      "subject": "server/castingV2/inkUploadService.ts:198",
       "message": "Names 2 of InkPlateMintRequest's 4 fields (server/castingV2/inkPlateMint.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:252",
+      "id": "finding:redeclared-shape:server/castingV2/inkUploadService.ts:268",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/inkUploadService.ts:252",
+      "subject": "server/castingV2/inkUploadService.ts:268",
       "message": "Names 2 of InkPlateMintRequest's 4 fields (server/castingV2/inkPlateMint.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

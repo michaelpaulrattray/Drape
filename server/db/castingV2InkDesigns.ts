@@ -252,6 +252,41 @@ export type StoredInkDesign = RecordedInkDesign & {
 };
 
 /**
+ * Whether this Cast is the caller's — the free question asked BEFORE anything
+ * on the upload road spends (#860).
+ *
+ * `recordInkDesign` above proves and locks the parent in the same transaction
+ * as the write, and that stays the authority. But it is the LAST step of the
+ * upload, and the cutter's two segmenter calls (the courtesy fal pool) and an
+ * R2 write sit above it — so a request carrying a foreign or unknown
+ * `candidateId` spent house money and wrote an object before it was refused.
+ * The class is #854's: a call that costs fires before the free read that
+ * would refuse it.
+ *
+ * One owner-scoped `SELECT`, no lock, no projection — a boolean is the whole
+ * answer, and a `true` here never authorises the write: the record step
+ * re-proves under its lock exactly as before.
+ */
+export async function candidateBelongsTo(input: {
+  userId: number;
+  candidatePublicId: string;
+}): Promise<boolean> {
+  if (!Number.isInteger(input.userId) || input.userId <= 0) {
+    throw new Error("userId must be a positive integer");
+  }
+  const db = await requireDb();
+  const [row] = await db
+    .select({ id: castingCandidates.id })
+    .from(castingCandidates)
+    .where(and(
+      eq(castingCandidates.publicId, input.candidatePublicId),
+      eq(castingCandidates.userId, input.userId),
+    ))
+    .limit(1);
+  return row !== undefined;
+}
+
+/**
  * Every design on this Cast, oldest first — owner-scoped in the read itself.
  *
  * An explicit projection (invariant 8): the row is never spread across the

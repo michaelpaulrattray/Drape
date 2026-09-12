@@ -14,6 +14,8 @@
  * sequence is the part that goes wrong invisibly:
  *
  *   1. the doors, before a single byte moves — a refusal costs nothing
+ *   1b. WHOSE CAST — one owner-scoped read, before anything spends or writes
+ *       (#860; the row's locked read in step 5 stays the authority)
  *   2. THE CUT, when this account is inside `CASTING_INK_CUT_SCOPE`
  *   3. the MANIFEST, naming the exact key about to be written
  *   4. the BYTES, to that key
@@ -87,6 +89,8 @@ import type { InkSide } from "../../shared/inkReleasedPlacements";
 import type { ReferenceIntent } from "../../shared/referenceIntents";
 import { withTransaction } from "../db/connection";
 import {
+  InkDesignOwnershipError,
+  candidateBelongsTo,
   recordInkDesign,
   type InkDesignToRecord,
   type RecordedInkDesign,
@@ -204,6 +208,18 @@ export type InkUploadDependencies = {
    * without a provider, a key or a network.
    */
   cut: (input: { userId: number; candidatePublicId: string; bytes: Buffer }) => Promise<CutInkDesignResult>;
+  /**
+   * WHETHER THE CAST IS HERS — the free read that goes BEFORE the cut (#860).
+   *
+   * `record` proves the owner under a lock in the same transaction as the
+   * write, and that stays the authority. But it is the last step, and until
+   * this seam existed a foreign `candidateId` reached the cutter (two
+   * segmenter calls on the courtesy pool) and the store (an R2 write) before
+   * anything asked whose Cast it was. Injected like `cut`, so the suite can
+   * drive the foreign road without a database and prove the cutter is never
+   * reached.
+   */
+  prove: (input: { userId: number; candidatePublicId: string }) => Promise<boolean>;
 };
 
 /**
@@ -340,6 +356,7 @@ const REAL: InkUploadDependencies = {
   mint: defaultMintPlate,
   cutEnabled: captureCastingInkCutEnabled,
   cut: defaultCutDesign,
+  prove: candidateBelongsTo,
 };
 
 /**
@@ -409,6 +426,20 @@ export async function uploadInkDesign(
 
     Every refusal here is free: nothing has been written and nothing charged.
   */
+  /*
+    WHOSE CAST, before anything spends or writes (#860).
+
+    The cut below buys two segmenter calls on the courtesy pool and the store
+    writes an object; until this read existed both ran on a `candidateId`
+    nobody had resolved, and the refusal came from `record` — last. The same
+    sentence `record` throws ("candidate not found"), so a foreign id is
+    answered exactly as it always was, only now for free. The transaction's
+    own locked read stays the authority: this is the free door, not the proof.
+  */
+  if (!(await dependencies.prove({ userId: request.userId, candidatePublicId: request.candidatePublicId }))) {
+    throw new InkDesignOwnershipError("candidate");
+  }
+
   let stored = request.bytes;
   let storedFormat: InkDesignFormat = decoded.format;
   let storedWidth = decoded.width ?? 0;

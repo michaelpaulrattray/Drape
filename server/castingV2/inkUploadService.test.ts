@@ -15,6 +15,7 @@ import { describe, expect, it, vi } from "vitest";
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
 import { resetInkPlateEngineForTests } from "./inkPlateEngine";
 import { defaultMintPlate, uploadInkDesign, type InkUploadDependencies } from "./inkUploadService";
+import { InkDesignOwnershipError } from "../db/castingV2InkDesigns";
 import { MANNEQUIN_DEFERRED_NOTE } from "../../shared/inkMannequinDeferral";
 
 async function pngOf(width: number, height: number): Promise<Buffer> {
@@ -89,6 +90,10 @@ function harness(overrides: Partial<InkUploadDependencies> = {}) {
     */
     cutEnabled: vi.fn(() => false),
     cut: vi.fn(async () => { throw new Error("the cutter was called on the OFF road"); }),
+    /* HERS, by default — every arm above this seam is about an owned Cast. The
+       foreign road answers `false` in its own describe and proves the cutter is
+       never reached. Recorded in `order` so the arm can say WHERE the read sits. */
+    prove: vi.fn(async () => { order.push("prove"); return true; }),
     ...overrides,
   };
   return { dependencies, order, manifests, stored, recorded, minted };
@@ -152,7 +157,8 @@ describe("attaching a design to a Cast", () => {
 
     /* And the MINT is last, after the row is committed — the only step that
        spends, and it has nothing to read until the design exists. */
-    expect(order).toEqual(["manifest", "store", "record", "mint"]);
+    /* `prove` first since #860 — the free owner read precedes every write. */
+    expect(order).toEqual(["prove", "manifest", "store", "record", "mint"]);
     expect(manifests[0]!.storageKeys).toEqual([stored[0]!.key]);
     expect(manifests[0]!.userId).toBe(1);
     /* And the row is filed against THAT manifest, so committing the row is what
@@ -255,7 +261,7 @@ describe("attaching a design to a Cast", () => {
 
     await expect(uploadInkDesign({ ...ask, bytes: await pngOf(512, 512) }, dependencies))
       .rejects.toThrow(/R2 said no/);
-    expect(order).toEqual(["manifest"]);
+    expect(order).toEqual(["prove", "manifest"]);
   });
 
   it("gives every design its own unguessable name", async () => {
@@ -426,7 +432,7 @@ describe("the plate is NOT drawn while the mannequin road is deferred", () => {
     expect(outcome.ok).toBe(true);
     /* The keeping half, unchanged — this is the assertion that stops a
        "deferral" quietly becoming a refusal. */
-    expect(order).toEqual(["manifest", "store", "record"]);
+    expect(order).toEqual(["prove", "manifest", "store", "record"]);
     expect(minted).toEqual([]);
   });
 
@@ -438,6 +444,84 @@ describe("the plate is NOT drawn while the mannequin road is deferred", () => {
     if (!outcome.ok) throw new Error("the upload should have succeeded");
     expect(outcome.plate).toEqual({ minted: false, note: MANNEQUIN_DEFERRED_NOTE });
     expect(MANNEQUIN_DEFERRED_NOTE).toContain("Nothing was charged");
+  });
+});
+
+describe("WHOSE CAST, before anything spends (#860)", () => {
+  /*
+    The class is #854's: a call that costs fires before the free read that
+    would refuse it. On this road the cutter's two segmenter calls (the
+    courtesy fal pool) and an R2 write ran on a `candidateId` nobody had
+    resolved, and the refusal came from `record` — last. Driven with the
+    cutter SPIED (law 3): a fake that behaves cannot rescue these arms.
+  */
+  it("⚠ a foreign Cast never reaches the cutter, the manifest, the store or the row", async () => {
+    const bytes = await pngOf(600, 800);
+    const cut = vi.fn(async () => { throw new Error("the cutter was reached on a foreign Cast"); });
+    const { dependencies, order, manifests, stored, recorded } = harness({
+      cutEnabled: () => true,
+      cut,
+      prove: vi.fn(async () => false),
+    });
+
+    await expect(uploadInkDesign({ ...ask, bytes }, dependencies)).rejects.toBeInstanceOf(InkDesignOwnershipError);
+
+    expect(cut).not.toHaveBeenCalled();
+    expect(manifests).toEqual([]);
+    expect(stored).toEqual([]);
+    expect(recorded).toEqual([]);
+    expect(order).toEqual([]);
+  });
+
+  it("answers a foreign Cast with the sentence the row step always used", async () => {
+    const bytes = await pngOf(600, 800);
+    const { dependencies } = harness({ prove: vi.fn(async () => false) });
+
+    await expect(uploadInkDesign({ ...ask, bytes }, dependencies)).rejects.toThrow("candidate not found");
+  });
+
+  /*
+    WHERE the read sits is the whole fix. A `prove` that ran after the cut
+    would pass the foreign arm above (the cutter double throws either way) and
+    still spend; this arm reads the order the harness recorded.
+  */
+  it("asks whose Cast it is BEFORE the cut, and before the manifest", async () => {
+    const bytes = await pngOf(600, 800);
+    const { dependencies, order } = harness({
+      cutEnabled: () => true,
+      cut: vi.fn(async () => { order.push("cut"); return { ok: false as const, refusal: { code: "unreadable" as const, message: "no" } }; }),
+    });
+
+    await uploadInkDesign({ ...ask, bytes }, dependencies);
+
+    expect(order).toEqual(["prove", "cut"]);
+  });
+
+  it("asks with the caller's own id and the Cast it named — never a number from the request body", async () => {
+    const bytes = await pngOf(600, 800);
+    const prove = vi.fn(async () => true);
+    const { dependencies } = harness({ prove });
+
+    await uploadInkDesign({ ...ask, bytes }, dependencies);
+
+    expect(prove).toHaveBeenCalledTimes(1);
+    expect(prove).toHaveBeenCalledWith({ userId: ask.userId, candidatePublicId: ask.candidatePublicId });
+  });
+
+  /* The positive control: an owned Cast still cuts, still stores, still records. */
+  it("an owned Cast reaches the cutter exactly as before", async () => {
+    const bytes = await pngOf(600, 800);
+    const cut = vi.fn(async (input: { bytes: Buffer }) => ({
+      ok: true as const,
+      cut: { route: "rideWhole" as const, bytes: input.bytes, width: 600, height: 800, inkPixels: 0, personPixels: 0, box: null, focus: null },
+    }));
+    const { dependencies, order } = harness({ cutEnabled: () => true, cut });
+
+    const outcome = await uploadInkDesign({ ...ask, bytes }, dependencies);
+
+    expect(outcome.ok).toBe(true);
+    expect(cut).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(["prove", "manifest", "store", "record"]);
   });
 });
 

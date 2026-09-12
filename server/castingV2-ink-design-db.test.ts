@@ -178,6 +178,20 @@ describeWithDatabase("the ink design store (disposable DB)", () => {
     expect(rows[0].n, "nothing was written on the way to the refusal").toBe(0);
   });
 
+  /*
+    THE FREE READ (#860) at the statement: the owner in the WHERE beside the
+    public id, and a stranger holding a real uuid reads `false` — the same
+    answer a uuid that exists nowhere gets, so a foreign id is a refusal and
+    never a leak.
+  */
+  it("answers whose Cast it is, owner-scoped, before the upload spends", async () => {
+    const cast = await newCast(owner);
+
+    expect(await designs.candidateBelongsTo({ userId: owner, candidatePublicId: cast.publicId })).toBe(true);
+    expect(await designs.candidateBelongsTo({ userId: stranger, candidatePublicId: cast.publicId })).toBe(false);
+    expect(await designs.candidateBelongsTo({ userId: owner, candidatePublicId: randomUUID() })).toBe(false);
+  });
+
   it("does not hand one account's designs to another", async () => {
     const cast = await newCast(owner);
     await designs.recordInkDesign(design(cast.publicId, owner, `casting-v2/ink/${randomUUID()}.png`));
