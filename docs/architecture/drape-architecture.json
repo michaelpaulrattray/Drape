@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7dc48db89c3732dc"
+    "sourceFingerprint": "96e09da4aec9b8ea"
   },
   "domains": [
     {
@@ -63,7 +63,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 23
+      "moduleCount": 24
     },
     {
       "id": "domain:home",
@@ -2596,6 +2596,12 @@
     {
       "id": "module:client/src/foundation/DestructiveConfirm.tsx",
       "path": "client/src/foundation/DestructiveConfirm.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/ModalField.tsx",
+      "path": "client/src/foundation/ModalField.tsx",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -14487,6 +14493,11 @@
     },
     {
       "from": "module:client/src/features/admin/AuditActionModals.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/AuditActionModals.tsx",
       "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
@@ -15116,6 +15127,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/ReviewModal.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/UserActionModals.tsx",
       "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
@@ -15138,6 +15154,11 @@
     {
       "from": "module:client/src/features/admin/UserActionModals.tsx",
       "to": "module:client/src/features/staff/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserActionModals.tsx",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -19177,6 +19198,11 @@
     },
     {
       "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/ModalField.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/primitives.tsx",
       "kind": "imports"
     },
@@ -19208,6 +19234,11 @@
     {
       "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/useAnchoredPanel.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/ModalField.tsx",
+      "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
     {
@@ -19503,6 +19534,11 @@
     {
       "from": "module:client/src/pages/AdminFoundation.tsx",
       "to": "module:client/src/components/AppChrome.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminFoundation.tsx",
+      "to": "module:client/src/components/ui/textarea.tsx",
       "kind": "imports"
     },
     {

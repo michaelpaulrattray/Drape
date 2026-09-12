@@ -32,6 +32,7 @@ import {
   Marquee,
   MediaCard,
   MediaFrame,
+  ModalField,
   Progress,
   RequiredMarker,
   ScopePill,
@@ -51,6 +52,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Popover } from "@/foundation/Popover";
 import { BORROWED, Icon, LUCIDE_FURNITURE, P, type IconName } from "@/foundation/icons";
 import { AppChrome } from "@/components/AppChrome";
+import { Textarea } from "@/components/ui/textarea";
 
 /**
  * THE COMPONENT SPECIMEN SHEET — a house tool, at a staff address (#261).
@@ -200,6 +202,23 @@ export default function AdminFoundation() {
               <RequiredMarker />
             </Field>
           </div>
+          {/*
+            #481 — the form modal's field row, promoted from the staff dialogs
+            by the section 11 pass. Shown the way its four consumers mount it:
+            the mono `.dpc-modal__label`, a shadcn control (the staff dialogs
+            are shadcn `Dialog`s by brief 11 §8, so the control inside is
+            shadcn too), and the rule as helper text beneath rather than a
+            parenthesis in the label. Its docblock names the two field devices
+            it did NOT absorb, and why.
+          */}
+          <ModalField label="Reason" htmlFor="specimen-modal-field" helper="At least 5 characters.">
+            <Textarea
+              id="specimen-modal-field"
+              placeholder="Refund requested by the customer on 12 Sep; card statement attached."
+              rows={2}
+              readOnly
+            />
+          </ModalField>
         </div>
       </section>
 

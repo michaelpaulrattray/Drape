@@ -46,6 +46,10 @@ export type { CardMenuItem } from "./CardMenu";
 export { ConfirmDialog } from "./ConfirmDialog";
 export { DestructiveConfirm } from "./DestructiveConfirm";
 export { RenameDialog } from "./RenameDialog";
+/* #481 — the form modal's field row, promoted from `features/staff/` by the
+   section 11 pass: four consumer files, no rewrite. Its docblock carries the
+   two collisions the pass logged rather than folded. */
+export { ModalField } from "./ModalField";
 /* #280 — the house icon set. A new glyph is ADDED TO `P`, never inlined at a call site. */
 export { Icon, P } from "./icons";
 export type { IconName } from "./icons";
