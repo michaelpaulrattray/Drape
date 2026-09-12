@@ -62,10 +62,13 @@
  * rendered the card at **512px**, exactly the width it was meant to leave.
  * A source read would have called it done.
  *
- * ⚠ **The same shadow is on `AuditActionModals`' two `max-w-md` dialogs** —
- * they have never been 448px above 640px, since before this brief. Left alone
- * and filed rather than fixed here: narrowing them is a visible change to two
- * dialogs whose width brief 11 does not mention.
+ * ⚠ **The same shadow WAS on `AuditActionModals`' two `max-w-md` dialogs** —
+ * they had never been 448px above 640px, since before this brief. Left alone
+ * and filed rather than fixed here (#844), because narrowing them was a
+ * visible change brief 11 did not ask for. His ruling on that card, verbatim:
+ * "leave it" — they stay at the base's 512px and the inert class is gone, so
+ * the code says what the product does; `section11-guard` now refuses a bare
+ * `max-w-*` on any staff `DialogContent`.
  *
  * ⚠ **`space-y-*` is gone in favour of `gap`, and that is a real bug too**:
  * this form hides fields by TYPE, and margin-based spacing leaves collapsed

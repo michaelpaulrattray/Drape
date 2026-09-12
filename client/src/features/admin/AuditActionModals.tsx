@@ -76,7 +76,15 @@ export function SuspendUserModal({
 }: SuspendModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${STAFF_DIALOG_CONTENT} max-w-md`}>
+      {/*
+        No width of its own (#844, his word: "leave it"). This dialog is
+        `DialogContent`'s own `sm:max-w-lg` — 512 px above 640 — and always
+        was: the `max-w-md` that used to sit here lost to that responsive
+        variant in tailwind-merge at every width from 640 up, so the code
+        asked for 448 and the product drew 512. The code says what the
+        product does now; a width of its own would be `sm:max-w-*`.
+      */}
+      <DialogContent className={STAFF_DIALOG_CONTENT}>
         {/*
           `Ban` came out of the title (brief 11 §3). No house modal carries a
           glyph beside its words, and on a destructive dialog it competes with
@@ -158,7 +166,8 @@ export function BlockIpModal({
 }: BlockIpModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${STAFF_DIALOG_CONTENT} max-w-md`}>
+      {/* Same width as Suspend above, for the same reason (#844). */}
+      <DialogContent className={STAFF_DIALOG_CONTENT}>
         <StaffDialogHeader
           eyebrow="AUDIT"
           title="Block IP address"
