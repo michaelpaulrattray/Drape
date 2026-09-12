@@ -9345,6 +9345,58 @@ describe("the render tells the library what it made of her", () => {
     expect(vi.mocked(listLineageReferences)).not.toHaveBeenCalled();
   });
 
+  /**
+   * A PAID RENDER THAT FILED NOTHING SAYS SO (#64 item 2).
+   *
+   * The compositor design's own table held this row open for a month: when the
+   * mint's slot list came back empty the branch guarded the mint and logged
+   * nothing, so a render the customer paid for could contribute nothing to her
+   * library and leave no line behind — the only trace was the ABSENCE of a mint
+   * line, which is not a thing a log read can see. The road to zero slots here
+   * is the plainest one: no verifier, so nothing was earned or confirmed, and
+   * an eye-colour delta that no caption reader worded. The arm asserts the
+   * line AND the ingredients it carries, because the reason is read off them.
+   */
+  it("says so when the mint filed nothing, with the ingredients it was handed", async () => {
+    logged.length = 0;
+    await refineCandidate({ ...onFlag, ...greenEyes }, input);
+
+    expect(mintAsks, "the road to this arm is a render that minted no slot").toHaveLength(0);
+    const line = logged.find((entry) => entry.message.includes("filed nothing in the library"));
+    expect(line, `no filed-nothing line among:\n${logged.map((entry) => entry.message).join("\n")}`).toBeDefined();
+    expect(line!.level).toBe("info");
+    expect(line!.fields).toMatchObject({
+      operationId: expect.any(String),
+      variant: expect.any(String),
+      earned: 0,
+      disputed: 0,
+      open: 0,
+      unfiled: 0,
+      unfiledOpen: 0,
+      readerUnavailable: true,
+    });
+  });
+
+  it("CONTROL — a render that DID file a slot never says it filed nothing", async () => {
+    logged.length = 0;
+    captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
+    await refineCandidate(
+      {
+        ...onFlag,
+        harvest: unmasked,
+        verifier: readerSees("dangly gold crosses at both lobes"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["dangly cross earrings"] } },
+        }),
+      },
+      { ...input, instruction: "give her dangly cross earrings" },
+    );
+
+    expect(mintAsks[0]?.slots.length ?? 0).toBeGreaterThan(0);
+    expect(logged.some((entry) => entry.message.includes("filed nothing in the library"))).toBe(false);
+  });
+
   it("a library failure never takes back the picture she is already looking at", async () => {
     captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
     vi.mocked(listLineageReferences).mockRejectedValueOnce(new Error("the database said no"));

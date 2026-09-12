@@ -686,7 +686,9 @@ if (invokedDirectly && process.argv.includes("--prove")) {
   writeFileSync(empty, "");
 
   let failures = 0;
+  let controls = 0;
   const check = (name: string, pass: boolean, detail = "") => {
+    controls += 1;
     if (!pass) failures += 1;
     console.log(`${pass ? "PASS" : "FAIL"}  ${name}${detail ? `  (${detail})` : ""}`);
   };
@@ -817,8 +819,18 @@ if (invokedDirectly && process.argv.includes("--prove")) {
   );
 
   rmSync(scratch, { recursive: true, force: true });
+  /*
+    THE TOTAL, PRINTED — so a park counts its controls off this line and never
+    by eye (#64 item 1; COMPOSITOR_SWAP_DESIGN's self-maintaining table, ruled
+    fable-255). The figure drifted once already: `12232246` took the walk from
+    10 to 14 controls, the next message wrote "15 controls" within the minute,
+    and every park copied it forward for a day before opus-197 re-counted. The
+    number below is the same counter the PASS/FAIL lines came from, and
+    `spendingScriptArguments.test.ts` holds it to those lines.
+  */
+  console.log(`\n${controls - failures} of ${controls} controls passed`);
   console.log(failures === 0
-    ? "\nThe freeze stops a spend, leaves a dry run alone, and no spender in the tree can miss it."
-    : `\n${failures} control(s) failed — the stop-the-line is not enforceable.`);
+    ? "The freeze stops a spend, leaves a dry run alone, and no spender in the tree can miss it."
+    : `${failures} control(s) failed — the stop-the-line is not enforceable.`);
   process.exit(failures === 0 ? 0 : 1);
 }

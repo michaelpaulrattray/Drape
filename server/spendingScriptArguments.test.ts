@@ -38,6 +38,7 @@
  * The extractor gets its own negative control, because a reader that quietly
  * finds nothing agrees with every expectation ever written about it.
  */
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -271,6 +272,49 @@ describe("the stop-the-line's named account spenders still exist", () => {
       expect(source, relative).toContain("spendAuthorized(");
       expect(source, relative).not.toContain("fixtureSpendAuthorized(");
     }
+  });
+});
+
+/**
+ * THE PROVER'S TOTAL LINE IS THE PROVER'S OWN COUNT (#64 item 1).
+ *
+ * `stopline --prove` ends on `N of M controls passed` now, so a park counts
+ * its controls off the line rather than by eye — the figure drifted from 14
+ * to a copied-forward "15" for a day once (fable-255). A printed total is a
+ * claim like any other: this arm runs the prover as the child process it is
+ * (the controls block runs only when the module is INVOKED, so an import
+ * cannot reach it) and holds the line to the PASS/FAIL lines above it. The
+ * sabotage that reddens it is the obvious one — a total typed as a literal,
+ * or a `check` that logs without counting.
+ */
+describe("the stop-the-line prover prints a total that agrees with its own lines", () => {
+  const output = (() => {
+    try {
+      return execFileSync("npx", ["tsx", "scripts/lib/stopline.mts", "--prove"], {
+        cwd: REPO,
+        encoding: "utf8",
+        shell: true, // npx is npx.cmd on Windows
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 60_000,
+      });
+    } catch (error) {
+      const failed = error as { stdout?: string; stderr?: string };
+      return `${failed.stdout ?? ""}\n${failed.stderr ?? ""}`;
+    }
+  })();
+  const lines = output.split(/\r?\n/);
+  const passes = lines.filter((line) => line.startsWith("PASS  ")).length;
+  const fails = lines.filter((line) => line.startsWith("FAIL  ")).length;
+  const total = /^(\d+) of (\d+) controls passed$/m.exec(output);
+
+  it("the prover ran and printed its controls, so the arm below can fail", () => {
+    expect(passes + fails, output).toBeGreaterThan(0);
+    expect(total, `no total line in:\n${output}`).not.toBeNull();
+  });
+
+  it("the total is the count of PASS lines over the count of PASS + FAIL lines", () => {
+    expect(Number(total![1])).toBe(passes);
+    expect(Number(total![2])).toBe(passes + fails);
   });
 });
 
