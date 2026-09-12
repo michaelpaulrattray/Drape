@@ -56,12 +56,30 @@ import { describe, expect, it } from "vitest";
  *
  * # Limits, stated
  *
- * A SOURCE read over the same population as `refreshReach-guard.test.ts`
- * (pages named `Admin*` / `Moderator*`), and the same three declaration
- * shapes. A query owned by a child component in another file (the
- * discrepancies card) is not seen — that card takes `autoRefreshInterval`
- * from the page and is that page's decision. A destructured query
- * (`const { data } = …`) has no name and is refused rather than bound.
+ * A SOURCE read over the pages `refreshReach-guard.test.ts` reads (named
+ * `Admin*` / `Moderator*`), and the same three declaration shapes — but
+ * anchored to ONE LINE each, where the reach guard matches body-wide. So a
+ * declaration whose head wraps after the `=` is seen there and not here;
+ * rather than silently leaving the register, that difference is COUNTED:
+ * every `trpc.<path>.useQuery(` in the comment-blanked text must be a
+ * registered entry, and a shortfall is a finding (PR #851 review, 1). A
+ * marker with no registered declaration directly beneath it — the query
+ * deleted, or a declaration slid in between — is a finding too (review, 2);
+ * a register that can carry dead entries is documentation, not a register.
+ *
+ * Outside this population, stated so nobody concludes the class's own
+ * birthplaces are uncovered (review, 3): the badge and count readers in
+ * `useStaffCounts.ts` (#457's site) and `useModeratorFlagCounts.ts` (#752's)
+ * declare their queries in hooks, not pages, and each is pinned to the shared
+ * switch and constant by `counts415-guard` / `counts416-guard`. The
+ * discrepancies card takes `autoRefreshInterval` from the page — the page's
+ * decision. Swept and cleared by reading, owner-triggered by nature and not
+ * registered: the three `enabled: false` CSV export queries (`AuditLogsTab`,
+ * `CreditsSubTab`, `GenerationsSubTab` — fired by a click), the id-keyed
+ * details in `ReconciliationSubTab` and `ChangeRequestAttachments`, and
+ * `BannerManagement`'s list, which invalidates on its own writes. A
+ * destructured query (`const { data } = …`) has no name and is refused rather
+ * than bound.
  *
  * ⚠ EVERY ABSENCE ARM IS PAIRED WITH A CONTROL THAT MUST GO RED. The fixture
  * arms below drive each finding shape on synthetic pages every run; the real
@@ -93,6 +111,8 @@ type PollEntry = {
   reason: string;
   /** The raw marker line above the declaration, or null when there is none. */
   markerLine: string | null;
+  /** Its 0-based line index, or -1 — what the orphan sweep binds on. */
+  markerIndex: number;
   /** The full call text, `(` to its matching `)`, comments blanked. */
   call: string;
 };
@@ -219,6 +239,7 @@ export function readPollRegister(raw: string): PollRegister {
       kind: marker.kind,
       reason: marker.reason,
       markerLine: marker.present ? lines[i - 1].trim() : null,
+      markerIndex: marker.present ? i - 1 : -1,
       call,
     });
   };
@@ -242,6 +263,34 @@ export function readPollRegister(raw: string): PollRegister {
     }
     offset += line.length + 1;
   }
+
+  /*
+    THE COUNT CROSS-CHECK (PR #851 review, 1). The declaration regexes above
+    are anchored to one line, so a head that wraps after the `=` would leave
+    the register with nothing going red. Every `trpc.<path>.useQuery(` in the
+    blanked text must therefore have become an entry; a shortfall is named,
+    not absorbed by the population floor.
+  */
+  const tRPCCalls = blanked.match(/\btrpc\.[\w.]+\.use(?:Infinite)?Query\s*\(/g)?.length ?? 0;
+  const tRPCEntries = entries.filter((e) => !e.viaHook).length;
+  if (tRPCCalls !== tRPCEntries) {
+    findings.push(
+      `${tRPCCalls} trpc query call(s) in the file but ${tRPCEntries} registered — a declaration this reader cannot see (a head wrapped after the \`=\`, or a query not bound to a \`const\`)`,
+    );
+  }
+
+  /*
+    ORPHANED MARKERS (review, 2). A marker whose next line is not a registered
+    declaration describes nothing — the query was deleted, or a declaration
+    slid in between. The reach guard reports its stranded markers; so does this.
+  */
+  const bound = new Set(entries.map((e) => e.markerIndex).filter((i) => i >= 0));
+  const markerRe = new RegExp(`^//\\s*${escapeRe(POLL_MARKER)}`);
+  lines.forEach((l, i) => {
+    if (markerRe.test(l.trim()) && !bound.has(i)) {
+      findings.push(`'${l.trim()}' (line ${i + 1}) sits above no registered query — an orphaned marker is not a register entry`);
+    }
+  });
 
   for (const e of entries) {
     const label = e.name
@@ -414,8 +463,36 @@ describe("poll-register — CONTROLS: the reader can fail, in every direction it
       "  // staff-poll: owner-triggered — keyed on the row she selected; Refresh reaches it\n  const userDetailsQuery",
       "  // staff-poll: owner-triggered — keyed on the row she selected; Refresh reaches it\n  const selectedId = selected?.userId ?? 0;\n  const userDetailsQuery",
     );
+    // Both halves are named: the query lost its marker AND the marker now describes nothing.
     expect(findingsOf(page)).toEqual([
+      "'// staff-poll: owner-triggered — keyed on the row she selected; Refresh reaches it' (line 15) sits above no registered query — an orphaned marker is not a register entry",
       "userDetailsQuery (admin.getUserDetails): no 'staff-poll:' marker on the line directly above it",
+    ]);
+  });
+
+  it("MUST GO RED: a query deleted with its marker left behind — an orphaned register entry (PR 851 review, 2)", () => {
+    const page = CLEAN_PAGE.replace(
+      "  const userDetailsQuery = trpc.admin.getUserDetails.useQuery({ userId: selected?.userId ?? 0 }, { enabled: !!selected });\n",
+      "",
+    );
+    expect(findingsOf(page)).toEqual([
+      "'// staff-poll: owner-triggered — keyed on the row she selected; Refresh reaches it' (line 15) sits above no registered query — an orphaned marker is not a register entry",
+    ]);
+  });
+
+  it("MUST GO RED: a declaration head wrapped after the `=` cannot leave the register silently (PR 851 review, 1)", () => {
+    /*
+      The line-anchored regexes do not see this shape (the reach guard does).
+      The count cross-check turns the silent exit into a finding; the marker
+      above it is then orphaned too, and both are said.
+    */
+    const page = CLEAN_PAGE.replace(
+      "  const userDetailsQuery = trpc.admin.getUserDetails.useQuery(",
+      "  const userDetailsQuery =\n    trpc.admin.getUserDetails.useQuery(",
+    );
+    expect(findingsOf(page)).toEqual([
+      "3 trpc query call(s) in the file but 2 registered — a declaration this reader cannot see (a head wrapped after the `=`, or a query not bound to a `const`)",
+      "'// staff-poll: owner-triggered — keyed on the row she selected; Refresh reaches it' (line 15) sits above no registered query — an orphaned marker is not a register entry",
     ]);
   });
 
@@ -490,7 +567,7 @@ describe("poll-register — CONTROLS: the reader can fail, in every direction it
     const page = CLEAN_PAGE.replace(
       "onRefresh: () => { logsQuery.refetch(); stateQuery.refetch(); }, isRefetching: stateQuery.isFetching",
       "onRefresh: () => { logsQuery.refetch(); }, isRefetching: false",
-    );
+    ).replace("  // staff-poll: watched — the briefing is written by a shift; the switch reaches the hook as live\n", "");
     const r = readPollRegister(page);
     expect(r.entries.map((e) => e.name)).not.toContain("stateQuery");
     expect(r.findings).toEqual([]);
