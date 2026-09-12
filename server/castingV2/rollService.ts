@@ -1262,7 +1262,15 @@ async function settleAbandonedDispatch(input: {
     });
   }
   if (outcome.type === "durable_success" || outcome.type === "partial") {
-    // The receipt is sealed; this is the same shape the ordinary exit returns.
+    /*
+      The receipt is sealed; this is the same SHAPE the ordinary exit returns,
+      but the totals are the ADJUDICATED ones, not the roll's: `failed` counts
+      the slices the adjudicator settled (a sibling that failed and refunded
+      itself inside its own catch is already terminal and not in it), and
+      `refundedCredits` is the receipt's figure. Both mutations discard
+      everything but `rollPublicId` and read the projection, which is built
+      from the rows and is the truth about the sheet.
+    */
     return {
       rollId: roll.id,
       rollPublicId: roll.publicId,
