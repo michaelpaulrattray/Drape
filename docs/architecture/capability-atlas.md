@@ -280,6 +280,9 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | roll.unsupported_cohort | roll-refusal |  | briefCompiler.test.ts, briefRefusalCopy.test.ts, cohortWallRetry.test.ts, creativeRegisterScope.test.ts, likenessRefusal.test.ts, styleRefusal.test.ts |
 | scope_mismatch | service-refusal |  | refineService.test.ts |
 | scope_unknown | service-refusal |  | facePanel.test.ts, refineService.test.ts |
+| session_closed | service-refusal |  | rollService.test.ts |
+| session_expired | service-refusal |  | rollService.test.ts |
+| session_missing | service-refusal |  | rollService.test.ts |
 | sideNamedWithoutScope | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | step_moved | service-refusal |  | refineService.test.ts |
 | uncatalogued | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts, vacantPhrase.test.ts |
@@ -299,7 +302,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 
 `CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATIVE_REGISTER_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SEGMENTS_DELIVERED_SCOPE` · `CASTING_SEGMENTS_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_TWO_PATHS_SCOPE` · `CASTING_V2_SCOPE`
 
-## Findings (47)
+## Findings (50)
 
 - **warn** `belief-mismatch` guard.typo — "give her a nose rign" — believed asked:did-you-mean, observed would-render
 - **info** `documented-unreachable` already_signed — no corpus row reaches it: answers a refine sent at a SIGNED cast — request state, not sentence content — a row could reach it via: a signed-cast fixture, if sign-state rows are ever wanted; pinned by its C5 service arm
@@ -326,6 +329,9 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 - **info** `documented-unreachable` roll.uninterpretable — no corpus row reaches it: answers a brief shorter than `BRIEF_TEXT_MIN` — the floor, raised by both the live compiler and the deterministic one. Its state is a REQUEST too small to be a brief, which the refine grammar has no field for — a row could reach it via: the same brief-carrying row, sending a brief under the floor; the cheapest of the five to drive and the least informative
 - **info** `documented-unreachable` roll.unsupported_cohort — no corpus row reaches it: answers a styled brief the certified adapter cannot cast — off the author road, and off it only. Its own sentence had NO pin at all before #206: it was an inline literal written out twice, so either copy could have been reworded silently — a row could reach it via: a brief-carrying row on an account OUTSIDE `CASTING_CREATIVE_REGISTER_SCOPE`, since the author road does not raise it; the flag position is part of the row's state, which no current row grammar carries
 - **info** `documented-unreachable` scope_mismatch — no corpus row reaches it: answers a scope naming nothing the instruction writes — needs a tap+sentence disagreement the interpreter usually resolves; the deterministic form is its C5 arm — a row could reach it via: pinned by its C5 service arm
+- **info** `documented-unreachable` session_closed — no corpus row reaches it: answers Roll again on a sheet the customer ABANDONED (Start over) — the same door as session_expired with the word closed — a row could reach it via: the same brief-carrying row against an abandoned fixture session; pinned by its rollService arm
+- **info** `documented-unreachable` session_expired — no corpus row reaches it: answers Roll again on a sheet the retention rule has EXPIRED (seven quiet days) — names expiry, promises nothing was charged, and fires before the interpreter it used to spend 13 s on — a row could reach it via: the same brief-carrying row against an expired fixture session; pinned by its rollService arm and driven in the app on dev session 89 (PR #859)
+- **info** `documented-unreachable` session_missing — no corpus row reaches it: answers a roll naming a sheet the account does not own, or none — the ownership sentence and code, said before any text call instead of after a paid one — a row could reach it via: the brief-carrying row the roll.* doors above wait for; pinned by its rollService arm
 - **info** `documented-unreachable` step_moved — no corpus row reaches it: answers a chip removal whose index went stale mid-click — a race no scripted sentence makes — a row could reach it via: pinned by its C5 service arm
 - **info** `documented-unreachable` unplacedInk — no corpus row reaches it: raised at the pre-claim ink door only for a DOCUMENTED ask with no placement; every master-state words ask dies earlier at the document gate (measured, drive-4), and the documented states (reference attached, delivered ink) resolve their placement before that door — a row could reach it via: a reference-attached fixture whose take carries no placement
 - **info** `documented-unreachable` version_missing — no corpus row reaches it: answers a replay marker naming a version that is not the predecessor — request shape — a row could reach it via: pinned by its C5 service arm

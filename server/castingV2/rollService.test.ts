@@ -213,6 +213,7 @@ const OPERATION_ID = "33333333-3333-4333-8333-333333333333";
 
 const { createRoll, cancelRoll } = await import("./rollService");
 const { getOwnedCastingSession } = vi.mocked(await import("../db/castingV2"));
+const { refusalTagOf } = await import("./refusalTag");
 const { BRIEF_TEXT_MAX, BRIEF_TEXT_MAX_AUTHOR_ROAD, BRIEF_TOO_LONG_AUTHOR_ROAD_MESSAGE, BRIEF_TOO_LONG_MESSAGE } = await import("./briefLength");
 const { deterministicBriefCompiler, castingBriefCompiler, READER_OUTAGE_MESSAGE } = await import("./briefCompiler");
 const { candidateChargeReference } = await import("./rollRecovery");
@@ -350,6 +351,8 @@ describe("the sequence", () => {
         (error: { code: string; message: string }) => error,
       );
       expect(refusal).toMatchObject({ code: "PRECONDITION_FAILED" });
+      // The door's own name, so the capability atlas can see it was proven to shut.
+      expect(refusalTagOf(refusal)?.reason).toBe("session_expired");
       expect(refusal.message).toMatch(/expired/i);
       // The old sentence, and the one the card is about: absence, for a sheet
       // the customer is looking at.
@@ -366,10 +369,9 @@ describe("the sequence", () => {
       getOwnedCastingSession.mockResolvedValueOnce({ id: 10, status: "abandoned" } as never);
       const { compileBrief, dependencies } = compilerReached();
 
-      await expect(createRoll(dependencies, INPUT)).rejects.toMatchObject({
-        code: "PRECONDITION_FAILED",
-        message: expect.stringMatching(/closed/i),
-      });
+      const refusal = await createRoll(dependencies, INPUT).catch((error: unknown) => error);
+      expect(refusal).toMatchObject({ code: "PRECONDITION_FAILED", message: expect.stringMatching(/closed/i) });
+      expect(refusalTagOf(refusal)?.reason).toBe("session_closed");
       expect(compileBrief).not.toHaveBeenCalled();
       expect(journal).not.toContain("claim");
     });
@@ -378,10 +380,9 @@ describe("the sequence", () => {
       getOwnedCastingSession.mockResolvedValueOnce(null);
       const { compileBrief, dependencies } = compilerReached();
 
-      await expect(createRoll(dependencies, INPUT)).rejects.toMatchObject({
-        code: "NOT_FOUND",
-        message: "Casting session not found",
-      });
+      const refusal = await createRoll(dependencies, INPUT).catch((error: unknown) => error);
+      expect(refusal).toMatchObject({ code: "NOT_FOUND", message: "Casting session not found" });
+      expect(refusalTagOf(refusal)?.reason).toBe("session_missing");
       expect(compileBrief).not.toHaveBeenCalled();
       expect(journal).not.toContain("claim");
     });

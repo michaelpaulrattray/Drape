@@ -578,6 +578,36 @@
         ]
       },
       {
+        "id": "session_closed",
+        "kind": "service-refusal",
+        "pinnedBy": [
+          "server/castingV2/rollService.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/rollService.ts:415"
+        ]
+      },
+      {
+        "id": "session_expired",
+        "kind": "service-refusal",
+        "pinnedBy": [
+          "server/castingV2/rollService.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/rollService.ts:409"
+        ]
+      },
+      {
+        "id": "session_missing",
+        "kind": "service-refusal",
+        "pinnedBy": [
+          "server/castingV2/rollService.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/rollService.ts:403"
+        ]
+      },
+      {
         "id": "sideNamedWithoutScope",
         "kind": "cannot-say",
         "charge": "refunded",
@@ -1850,6 +1880,27 @@
         "message": "no corpus row reaches it: answers a scope naming nothing the instruction writes — needs a tap+sentence disagreement the interpreter usually resolves; the deterministic form is its C5 arm — a row could reach it via: pinned by its C5 service arm"
       },
       {
+        "id": "documented:session_closed",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "session_closed",
+        "message": "no corpus row reaches it: answers Roll again on a sheet the customer ABANDONED (Start over) — the same door as session_expired with the word closed — a row could reach it via: the same brief-carrying row against an abandoned fixture session; pinned by its rollService arm"
+      },
+      {
+        "id": "documented:session_expired",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "session_expired",
+        "message": "no corpus row reaches it: answers Roll again on a sheet the retention rule has EXPIRED (seven quiet days) — names expiry, promises nothing was charged, and fires before the interpreter it used to spend 13 s on — a row could reach it via: the same brief-carrying row against an expired fixture session; pinned by its rollService arm and driven in the app on dev session 89 (PR #859)"
+      },
+      {
+        "id": "documented:session_missing",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "session_missing",
+        "message": "no corpus row reaches it: answers a roll naming a sheet the account does not own, or none — the ownership sentence and code, said before any text call instead of after a paid one — a row could reach it via: the brief-carrying row the roll.* doors above wait for; pinned by its rollService arm"
+      },
+      {
         "id": "documented:step_moved",
         "severity": "info",
         "kind": "documented-unreachable",
@@ -2947,6 +2998,27 @@
       "kind": "documented-unreachable",
       "subject": "scope_mismatch",
       "message": "no corpus row reaches it: answers a scope naming nothing the instruction writes — needs a tap+sentence disagreement the interpreter usually resolves; the deterministic form is its C5 arm — a row could reach it via: pinned by its C5 service arm"
+    },
+    {
+      "id": "documented:session_closed",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "session_closed",
+      "message": "no corpus row reaches it: answers Roll again on a sheet the customer ABANDONED (Start over) — the same door as session_expired with the word closed — a row could reach it via: the same brief-carrying row against an abandoned fixture session; pinned by its rollService arm"
+    },
+    {
+      "id": "documented:session_expired",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "session_expired",
+      "message": "no corpus row reaches it: answers Roll again on a sheet the retention rule has EXPIRED (seven quiet days) — names expiry, promises nothing was charged, and fires before the interpreter it used to spend 13 s on — a row could reach it via: the same brief-carrying row against an expired fixture session; pinned by its rollService arm and driven in the app on dev session 89 (PR #859)"
+    },
+    {
+      "id": "documented:session_missing",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "session_missing",
+      "message": "no corpus row reaches it: answers a roll naming a sheet the account does not own, or none — the ownership sentence and code, said before any text call instead of after a paid one — a row could reach it via: the brief-carrying row the roll.* doors above wait for; pinned by its rollService arm"
     },
     {
       "id": "documented:step_moved",

@@ -398,6 +398,13 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
      Each is pinned by C5's driven service arms (opus-980), which is their
      proof — the census documents why a corpus row cannot be one. ── */
   { id: "already_signed", reason: "answers a refine sent at a SIGNED cast — request state, not sentence content", becomesReachable: "a signed-cast fixture, if sign-state rows are ever wanted; pinned by its C5 service arm" },
+  /* ── the ROLL entrance's sheet doors (#854): read before the interpreter so
+     an impossible roll costs nothing. Request state, on the road no corpus
+     row can drive; each is pinned by its own driven arm in
+     `rollService.test.ts` (the compiler spied, never reached). ── */
+  { id: "session_missing", reason: "answers a roll naming a sheet the account does not own, or none — the ownership sentence and code, said before any text call instead of after a paid one", becomesReachable: "the brief-carrying row the roll.* doors above wait for; pinned by its rollService arm" },
+  { id: "session_expired", reason: "answers Roll again on a sheet the retention rule has EXPIRED (seven quiet days) — names expiry, promises nothing was charged, and fires before the interpreter it used to spend 13 s on", becomesReachable: "the same brief-carrying row against an expired fixture session; pinned by its rollService arm and driven in the app on dev session 89 (PR #859)" },
+  { id: "session_closed", reason: "answers Roll again on a sheet the customer ABANDONED (Start over) — the same door as session_expired with the word closed", becomesReachable: "the same brief-carrying row against an abandoned fixture session; pinned by its rollService arm" },
   { id: "candidate_missing", reason: "answers a request naming a cast the account does not own — request shape", becomesReachable: "deliberately never as a corpus row; pinned by its C5 service arm" },
   { id: "version_missing", reason: "answers a replay marker naming a version that is not the predecessor — request shape", becomesReachable: "pinned by its C5 service arm" },
   { id: "master_missing", reason: "answers a cast whose master object is gone — storage state no fixture manufactures honestly", becomesReachable: "pinned by its C5 service arm" },

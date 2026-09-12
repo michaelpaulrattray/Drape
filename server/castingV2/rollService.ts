@@ -48,6 +48,7 @@ import {
   captureCastingTwoPathsEnabled,
 } from "./castingV2Scope";
 import { mintBornInkRows } from "./bornInkMint";
+import { refusal } from "./refusalTag";
 import type { StatedInk } from "./castingIntent";
 
 import { CASTING_V2_COSTS } from "../casting/castingCreditCosts";
@@ -339,7 +340,7 @@ async function defaultStoreImage(input: { bytes: Buffer; contentType: string; ke
  * is the customer's own Start over. Both end the same way: the words are
  * still theirs, and a fresh sheet is where they roll again.
  */
-export function closedSessionRefusal(status: CastingSession["status"]): string {
+export function closedSessionRefusal(status: Exclude<CastingSession["status"], "open">): string {
   return status === "expired"
     ? "This sheet has expired, so it can't be rolled on. Nothing was charged — start a new sheet to roll these words again."
     : "This sheet was closed, so it can't be rolled on. Nothing was charged — start a new sheet to roll these words again.";
@@ -393,10 +394,28 @@ export async function createRoll(
   */
   const session = await getOwnedCastingSession(input.userId, input.sessionPublicId);
   if (!session) {
-    throw new TRPCError({ code: "NOT_FOUND", message: new CastingV2OwnershipError("session").message });
+    /* Tagged doors (review of PR #859, finding 1): the capability atlas reads
+       a tagged refusal with a LITERAL id as a declared door, and a bare
+       TRPCError is a customer refusal the map cannot see. All three carry an
+       `UNREACHABLE_DOORS` reason in the corpus — no corpus row can send a
+       BRIEF, the same ground every `roll.*` door stands on. One literal per
+       throw, because the reader is a grep and a ternary declares nothing. */
+    throw refusal("session_missing", {
+      code: "NOT_FOUND",
+      message: new CastingV2OwnershipError("session").message,
+    });
+  }
+  if (session.status === "expired") {
+    throw refusal("session_expired", {
+      code: "PRECONDITION_FAILED",
+      message: closedSessionRefusal(session.status),
+    });
   }
   if (session.status !== "open") {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: closedSessionRefusal(session.status) });
+    throw refusal("session_closed", {
+      code: "PRECONDITION_FAILED",
+      message: closedSessionRefusal(session.status),
+    });
   }
 
   /*
