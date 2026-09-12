@@ -1,8 +1,8 @@
 /**
- * Billing Domain — subscriptions, credit top-ups, usage stats, and daily usage charts.
+ * Billing Domain — subscriptions, credit top-ups, credit history, and cycle spend.
  */
 
-import { eq, and, desc, gte, lt, asc, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lt, sql } from "drizzle-orm";
 import {
   credits,
   creditTransactions,
@@ -404,7 +404,8 @@ export async function getCycleSpend(
   /*
     SUMMED IN THE STATEMENT, not by reading rows back. A cycle can hold
     thousands of transactions and none of them is wanted here — only the total.
-    `amount` is negative for a spend (`getDailyUsage` filters the same way), so
+    `amount` is negative for a spend (the deleted `getDailyUsage` filtered the
+    same way), so
     the sum is taken over its absolute value.
   */
   const totals = await db
