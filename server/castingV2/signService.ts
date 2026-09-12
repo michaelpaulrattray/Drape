@@ -1373,17 +1373,18 @@ async function settleAbandonedSign(input: {
       // the lease lapses on its own and the sweep takes the Sign within one lease.
       log.fatal({ operationId, err: handoffError }, "[signService] recovery handoff did not write");
     });
-    throw new TRPCError({
+    throw spokenError({
       code: "INTERNAL_SERVER_ERROR",
       message: `This Sign is still being settled. Operation ${operationId}.`,
       cause: error,
     });
   }
 
-  // The adjudicator sealed or parked the receipt itself; these words match it.
+  // The adjudicator sealed or parked the receipt itself; these words match it —
+  // through `spokenError`, so the panel shows the sentence and not its generic line.
   switch (outcome.type) {
     case "recovery_required":
-      throw new TRPCError({
+      throw spokenError({
         code: "INTERNAL_SERVER_ERROR",
         message: `This Cast needs support review before it can be retried. Operation ${operationId}.`,
       });
@@ -1394,17 +1395,17 @@ async function settleAbandonedSign(input: {
         and the promotion stands. This road knows nothing the row does not;
         the studio reads the Cast.
       */
-      throw new TRPCError({
+      throw spokenError({
         code: "PRECONDITION_FAILED",
         message: `That Cast was signed, but its settlement was interrupted. Reload the studio. Operation ${operationId}.`,
       });
     case "paid_failure":
-      throw new TRPCError({
+      throw spokenError({
         code: "PRECONDITION_FAILED",
         message: "That Cast wasn't signed. Everything you paid was refunded.",
       });
     case "free_failure":
-      throw new TRPCError({
+      throw spokenError({
         code: "PRECONDITION_FAILED",
         message: "That Cast wasn't signed. You were not charged.",
       });

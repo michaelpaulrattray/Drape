@@ -10192,17 +10192,25 @@ async function settleAbandonedRefine(input: {
       // the lease lapses on its own and the sweep takes the refine within one lease.
       log.fatal({ operationId, err: handoffError }, "[refineService] recovery handoff did not write");
     });
-    throw new TRPCError({
+    throw spokenError({
       code: "INTERNAL_SERVER_ERROR",
       message: `This refinement is still being settled. Operation ${operationId}.`,
       cause: error,
     });
   }
 
-  // The adjudicator sealed or parked the receipt itself; these words match it.
+  /*
+    The adjudicator sealed or parked the receipt itself; these words match it.
+
+    `spokenError`, never a bare TRPCError and never `refusal(...)`: these are
+    FAULTS being narrated (the road's own paid-failure receipt is the same
+    shape — `INTERNAL_SERVER_ERROR` with an authored sentence), not doors the
+    product shut, so the seam's tally must not count them and the panel must
+    still show the sentence rather than its generic line.
+  */
   switch (outcome.type) {
     case "recovery_required":
-      throw new TRPCError({
+      throw spokenError({
         code: "INTERNAL_SERVER_ERROR",
         message: `This refinement needs support review. Operation ${operationId}.`,
       });
@@ -10212,15 +10220,15 @@ async function settleAbandonedRefine(input: {
         and the charge stands. This road knows nothing the row does not; the
         sheet reads the variant.
       */
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
+      throw spokenError({
+        code: "INTERNAL_SERVER_ERROR",
         message: `That refinement arrived, but its settlement was interrupted. Reload the sheet. Operation ${operationId}.`,
       });
     case "paid_failure":
-      throw new TRPCError({ code: "PRECONDITION_FAILED", message: RECOVERED_REFINE_SENTENCE });
+      throw spokenError({ code: "INTERNAL_SERVER_ERROR", message: RECOVERED_REFINE_SENTENCE });
     case "free_failure":
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
+      throw spokenError({
+        code: "INTERNAL_SERVER_ERROR",
         message: "That refinement didn't run. You were not charged.",
       });
   }
