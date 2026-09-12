@@ -103,6 +103,14 @@ export const SUSPEND_REASON_MAX_LENGTH = 500;
 export const ROLE_CHANGE_REASON_MAX_LENGTH = 500;
 export const IP_BLOCK_REASON_MAX_LENGTH = 500;
 
+/* ── Admin: a credit adjustment — the reason ──────────────────────────────
+   `admin.users.adjustCredits`, the one staff reason that moves MONEY: it lands
+   on the audit row, the admin action log and the immutable log beside the
+   amount. Read by `server/routes/admin/users.ts` and by `CreditModal`
+   (`UserActionModals`). Until #816's last row the router hand-typed `500` and
+   the dialog had no cap at all — the same drift as the three above. */
+export const CREDIT_ADJUST_REASON_MAX_LENGTH = 500;
+
 /* ── Profile ──────────────────────────────────────────────────────────────
    `server/routes/profile.ts` and `ProfileTab`. */
 export const PROFILE_DISPLAY_NAME_MAX_LENGTH = 100;

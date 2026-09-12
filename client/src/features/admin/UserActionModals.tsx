@@ -49,7 +49,7 @@ import { User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ROLE_CHANGE_REASON_MAX_LENGTH, SUSPEND_REASON_MAX_LENGTH } from "@shared/inputLimits";
+import { CREDIT_ADJUST_REASON_MAX_LENGTH, ROLE_CHANGE_REASON_MAX_LENGTH, SUSPEND_REASON_MAX_LENGTH } from "@shared/inputLimits";
 import {
   Dialog,
   DialogContent,
@@ -154,6 +154,7 @@ export function CreditModal({ open, onOpenChange, action, amount, onAmountChange
               value={reason}
               onChange={(e) => onReasonChange(e.target.value)}
               placeholder="Enter the reason for this adjustment..."
+              maxLength={CREDIT_ADJUST_REASON_MAX_LENGTH}
               required
             />
           </ModalField>

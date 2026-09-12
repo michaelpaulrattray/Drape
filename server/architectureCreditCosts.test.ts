@@ -204,6 +204,20 @@ export const THING_PRICE = 12;`,
     expect(rows.map((row) => row.name)).toEqual(["THING_PRICE"]);
   });
 
+  it("does not emit a CAP because its name contains `credit` — a character limit is not a price", () => {
+    /* NEGATIVE CONTROL, and a real specimen: `CREDIT_ADJUST_REASON_MAX_LENGTH`
+       (#816) landed in the committed Atlas as `credits: 500` between real
+       prices, caught by PR #875's reviewer. The exclusion is the `_MAX_LENGTH`
+       suffix every cap in `shared/inputLimits.ts` carries, because any honest
+       name for that concept says "credit". */
+    const rows = creditCostsFromSources({
+      "shared/inputLimits.ts": `export const CREDIT_ADJUST_REASON_MAX_LENGTH = 500;
+export const CREDIT_TOPUP_PRICE = 900;`,
+    });
+
+    expect(rows.map((row) => row.name)).toEqual(["CREDIT_TOPUP_PRICE"]);
+  });
+
   it("keeps an unfoldable price VISIBLE, with the expression it could not fold", () => {
     /* Absence and unfoldability are different answers. A price the reader cannot
        compute must show up as an uncomputed price, never as no price. */
