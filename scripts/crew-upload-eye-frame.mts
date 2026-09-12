@@ -4,7 +4,8 @@
  *
  *   npx tsx scripts/crew-upload-eye-frame.mts <path-to-image> --bucket <name>
  *
- * Uploads the file under `crew-eye/<uuid>.<ext>` and prints the KEY. The frame
+ * Uploads the file under `crew-eye/<uuid>.<ext>` and prints the KEY — on its
+ * LAST line, so `| tail -1` keeps it (#265). The frame
  * is NOT visible to anyone until a briefing edition names that key inside an
  * `eyeItems` entry and deploys — the deployed briefing IS the serving route's
  * allowlist, so this script alone publishes nothing.
@@ -117,6 +118,11 @@ const key = `crew-eye/${crypto.randomUUID()}${ext}`;
 const result = await storagePut(key, bytes, contentType);
 
 console.log(`uploaded ${bytes.length} bytes TO BUCKET ${resolvedBucket}`);
+console.log("Next: name the key below in a briefing eyeItems entry (with its caption and arm), and deploy.");
+/* THE KEY IS THE LAST LINE, ON PURPOSE (#265). Two shifts ran this in a loop
+   piped through `| tail -1`, got the "Next:" sentence instead of the key, and
+   ran the loop AGAIN with a grep — so every frame was uploaded twice and the
+   first set became orphans nobody can name. The one line a caller needs is the
+   one the obvious pipe keeps; prose goes above it. */
 console.log(`key: ${result.key}`);
-console.log("Next: name this key in a briefing eyeItems entry (with its caption and arm), and deploy.");
 process.exit(0);

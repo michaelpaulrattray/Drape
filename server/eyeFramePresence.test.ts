@@ -165,4 +165,19 @@ describe("the upload script cannot silently write to the wrong bucket (#320 fix 
   it("prints the bucket it resolved, in capitals", () => {
     expect(upload).toContain("WRITING TO BUCKET:");
   });
+
+  /* #265 — the key is the LAST thing printed. Two shifts piped this through
+     `| tail -1`, got the "Next:" sentence, re-ran with a grep, and left five
+     orphans each in the production bucket. A source read suffices: the order of
+     two `console.log` lines before `process.exit(0)` is the whole contract. */
+  it("prints the key on its last line, after the Next: sentence, so `| tail -1` keeps it (#265)", () => {
+    const keyLine = upload.indexOf("console.log(`key: ${result.key}`)");
+    const nextLine = upload.indexOf('console.log("Next: ');
+    const exit = upload.lastIndexOf("process.exit(0)");
+    expect(keyLine).toBeGreaterThan(-1);
+    expect(nextLine).toBeGreaterThan(-1);
+    expect(keyLine).toBeGreaterThan(nextLine);
+    /* Nothing prints between the key and the exit. */
+    expect(upload.slice(keyLine, exit)).not.toMatch(/console\.(log|error|info)\([\s\S]*console\.(log|error|info)\(/);
+  });
 });
