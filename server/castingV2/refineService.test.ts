@@ -6,6 +6,7 @@ import type { CastPronouns } from "./castPronouns";
 const HER_PRONOUNS: CastPronouns = { subject: "she", object: "her", possessive: "her", plural: false };
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { TRPCError } from "@trpc/server";
 
 /*
   THE PROVENANCE KEY IS DERIVED FROM `JWT_SECRET` AT IMPORT TIME, so the value
@@ -7939,8 +7940,9 @@ describe("the record and the picture come from the same place", () => {
 /**
  * #869 — the throw from INSIDE the compensating catch.
  *
- * The refine's whole compensable section sits in a try/catch that ends in the
- * finalizer, so the only exposed window is `recordRefund` or `failVariant`
+ * The refine's whole compensable section sits in a try/catch that ends at the
+ * landing (the success finalizer sits after the catch since #873, below), so
+ * the only exposed window is `recordRefund` or `failVariant`
  * REJECTING (not returning `recorded: false` — that is carried to the receipt).
  * Before this, such a throw escaped the mutation before the finalizer: the
  * heartbeat kept renewing, the lease never lapsed, and the sweep never came.
@@ -8023,6 +8025,46 @@ describe("a compensating write that throws is settled by the road's own adjudica
     await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/could not be recorded — quote operation/);
     expect(journal).toContain("seal:failure");
     expect(journal).not.toContain("adjudicate");
+  });
+});
+
+/**
+ * #873 — the throw INTO the compensating catch, from the success finalizer.
+ *
+ * The mirror of #869's class. By the time `completeDirectOperationSuccess`
+ * runs, the variant is `ready` and selected — the landing committed. A throw
+ * from the finalizer (a latched heartbeat is the known way; it parks the
+ * operation and throws its own sentence) used to land in the compensating
+ * catch, which reads every throw as "nothing was delivered": the whole price
+ * refunded for a picture the customer keeps, `failVariant` a no-op on a
+ * `ready` row, and a failure receipt sealed over a delivered picture. The
+ * finalizer now sits after the catch, so the catch only ever sees a failure
+ * that happened before the landing.
+ */
+describe("a throw from the success finalizer never reaches the compensating catch (#873)", () => {
+  it("keeps the charge beside the picture: no refund, no failure seal, the finalizer's own sentence", async () => {
+    const { completeDirectOperationSuccess } = await import("../casting/directOperation");
+    vi.mocked(completeDirectOperationSuccess).mockImplementationOnce(async () => {
+      journal.push("seal:success");
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "The result needs support review before this action can be retried. Operation 11111111-1111-4111-8111-111111111111.",
+      });
+    });
+
+    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/needs support review before this action can be retried/);
+
+    // The landing committed and the finalizer was reached — this is a delivered picture.
+    expect(journal.indexOf("land")).toBeLessThan(journal.indexOf("seal:success"));
+    // And NOTHING compensated it: the charge stands, the row is not failed,
+    // no failure receipt, and no second settlement road was taken either.
+    expect(ledger.refunds).toEqual([]);
+    expect(journal).not.toContain("refund");
+    expect(journal).not.toContain("seal:failure");
+    expect(journal).not.toContain("adjudicate");
+    expect(journal).not.toContain("handoff");
+    const { failVariant } = await import("../db/castingV2Variants");
+    expect(vi.mocked(failVariant)).not.toHaveBeenCalled();
   });
 });
 

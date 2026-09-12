@@ -5968,8 +5968,11 @@ async function refineCandidateCounted(
     });
   }
 
-  /* ---- everything past here is compensated on any throw ---- */
+  /* ---- everything past here is compensated on any throw — UNTIL THE
+          LANDING HAS BEEN SEALED; the success finalizer sits after the catch,
+          see #873 below ---- */
 
+  let delivered: RefineResult;
   try {
     await markVariantDispatched({ userId: input.userId, variantId: variant.id });
     /*
@@ -10032,14 +10035,7 @@ async function refineCandidateCounted(
       already has.
     */
     recordOpenLaneOutcomes(editDelta, { settled: true, cropsStored: openCropsStored });
-    await completeDirectOperationSuccess({
-      userId: input.userId,
-      operationId,
-      result: result as never,
-      chargedCredits: price,
-      refundedCredits: 0,
-    });
-    return result;
+    delivered = result;
   } catch (error) {
     /*
       SAY WHY, BEFORE THE MONEY MOVES.
@@ -10139,6 +10135,39 @@ async function refineCandidateCounted(
       refundedCredits: refund.recorded ? price : 0,
     });
   }
+
+  /*
+    THE SUCCESS FINALIZER, OUTSIDE THE COMPENSATED TRY (#873).
+
+    It used to be the try's last line, so its throw landed in the catch above
+    — which reads every throw as "nothing was delivered" and refunds the whole
+    price. But by this line the variant is `ready` and selected (the landing
+    committed above), so that catch would have paid the customer back for a
+    picture they keep, `failVariant` would have no-oped on a `ready` row, and
+    the receipt would have been sealed over a delivered picture: a free image,
+    and the direction `refineRecovery.ts`'s header names as the one that costs
+    the business. The mirror of #869's class — a throw INTO a catch that
+    settles it wrongly.
+
+    The finalizer settles itself: on a receipt write it cannot make it parks
+    the operation for support and throws its own sentence, and a latched
+    heartbeat is the known way there. That is the whole story on this road,
+    and the charge stands beside the picture it bought. Nothing here reaches
+    for the adjudicator either: the operation is already parked when the
+    finalizer throws, so an in-process `recoverCastingV2RefineOperation` would
+    refuse on the running fence and the handoff would refuse after it — two
+    failing writes on the ordinary road. Where the park itself failed, the
+    heartbeat is already stopped, the lease lapses, and the sweep reads the
+    variant `ready` and seals the success with the charge kept.
+  */
+  await completeDirectOperationSuccess({
+    userId: input.userId,
+    operationId,
+    result: delivered as never,
+    chargedCredits: price,
+    refundedCredits: 0,
+  });
+  return delivered;
 }
 
 /**
