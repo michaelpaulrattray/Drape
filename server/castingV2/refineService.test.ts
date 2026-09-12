@@ -252,7 +252,30 @@ vi.mock("../db/generationOperations", () => ({
   markGenerationOperationRunning: vi.fn(async () => {
     journal.push("running");
   }),
+  handoffGenerationOperationToRecovery: vi.fn(async () => {
+    journal.push("handoff");
+  }),
 }));
+
+/*
+  The road's own adjudicator, reached in-process when a compensating write
+  throws (#869). Its money law is `refineRecovery.test.ts`'s and is not
+  re-proven here: each arm dictates its verdict and asserts what the service
+  does with it. The sentence constant is the real one.
+*/
+const adjudicator = {
+  verdict: null as null | (() => Promise<unknown>),
+};
+vi.mock("./refineRecovery", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./refineRecovery")>()),
+  recoverCastingV2RefineOperation: vi.fn(async (operation: unknown) => {
+    journal.push("adjudicate");
+    adjudicatedOperations.push(operation);
+    if (!adjudicator.verdict) throw new Error("no verdict dictated");
+    return adjudicator.verdict();
+  }),
+}));
+const adjudicatedOperations: unknown[] = [];
 
 vi.mock("../casting/directOperation", () => ({
   beginDirectOperation: vi.fn(async () => {
@@ -598,6 +621,8 @@ beforeEach(() => {
   ledger.refunds.length = 0;
   chargeSucceeds = true;
   engineThrows = null;
+  adjudicator.verdict = null;
+  adjudicatedOperations.length = 0;
   costLineThrows = false;
   renderGate = null;
   renderFault = false;
@@ -7911,6 +7936,96 @@ describe("the record and the picture come from the same place", () => {
  * All three were the same shape: a state where the ledger and the row disagree,
  * or where the receipt and the number beside it disagree. None of them threw.
  */
+/**
+ * #869 — the throw from INSIDE the compensating catch.
+ *
+ * The refine's whole compensable section sits in a try/catch that ends in the
+ * finalizer, so the only exposed window is `recordRefund` or `failVariant`
+ * REJECTING (not returning `recorded: false` — that is carried to the receipt).
+ * Before this, such a throw escaped the mutation before the finalizer: the
+ * heartbeat kept renewing, the lease never lapsed, and the sweep never came.
+ * The road's own adjudicator now runs in-process; if it throws too, the lease
+ * is handed to the sweep.
+ */
+describe("a compensating write that throws is settled by the road's own adjudicator (#869)", () => {
+  const torn = Object.assign(new Error("read ECONNRESET"), { code: "ER_NET_READ_INTERRUPTED" });
+
+  it("adjudicates in-process when the refund write throws, and says what the receipt says", async () => {
+    engineThrows = new Error("the provider fell over");
+    const { recordRefund } = await import("../casting/atomicCredits");
+    vi.mocked(recordRefund).mockRejectedValueOnce(torn);
+    adjudicator.verdict = async () => ({ type: "paid_failure", chargedCredits: 25, refundedCredits: 25 });
+
+    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/That one didn't make it\. Your credits are back\./);
+
+    // The adjudicator was handed THIS operation, running, at the price charged.
+    expect(adjudicatedOperations).toEqual([
+      expect.objectContaining({
+        id: "11111111-1111-4111-8111-111111111111",
+        status: "running",
+        chargedCredits: 25,
+        refundedCredits: 0,
+      }),
+    ]);
+    // It sealed the receipt itself: no second seal, no lease left to the sweep.
+    expect(journal).toContain("adjudicate");
+    expect(journal).not.toContain("seal:failure");
+    expect(journal).not.toContain("handoff");
+    // And the service refunded nothing on its own — the ledger is the adjudicator's.
+    expect(ledger.refunds).toEqual([]);
+  });
+
+  it("adjudicates in-process when failVariant throws after the refund recorded", async () => {
+    engineThrows = new Error("the provider fell over");
+    const { failVariant } = await import("../db/castingV2Variants");
+    vi.mocked(failVariant).mockRejectedValueOnce(torn);
+    adjudicator.verdict = async () => ({ type: "paid_failure", chargedCredits: 25, refundedCredits: 25 });
+
+    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/Your credits are back/);
+
+    // The refund DID record before the throw; the adjudicator reads it off the
+    // ledger rather than the service re-issuing it.
+    expect(ledger.refunds).toHaveLength(1);
+    expect(journal.indexOf("refund")).toBeLessThan(journal.indexOf("adjudicate"));
+    expect(journal).not.toContain("seal:failure");
+  });
+
+  it("hands the lease to the sweep when the adjudicator throws too", async () => {
+    engineThrows = new Error("the provider fell over");
+    const { recordRefund } = await import("../casting/atomicCredits");
+    vi.mocked(recordRefund).mockRejectedValueOnce(torn);
+    adjudicator.verdict = async () => { throw new Error("database unavailable"); };
+
+    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/still being settled\. Operation 11111111/);
+
+    expect(journal).toContain("handoff");
+    expect(journal).not.toContain("seal:failure");
+    expect(ledger.refunds).toEqual([]);
+  });
+
+  it("parks with the support sentence when the adjudicator cannot decide", async () => {
+    engineThrows = new Error("the provider fell over");
+    const { recordRefund } = await import("../casting/atomicCredits");
+    vi.mocked(recordRefund).mockRejectedValueOnce(torn);
+    adjudicator.verdict = async () => ({
+      type: "recovery_required", reason: "the refund did not record", chargedCredits: 25, refundedCredits: 0,
+    });
+
+    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/needs support review\. Operation 11111111/);
+    expect(journal).not.toContain("handoff");
+  });
+
+  it("CONTROL: a refund that merely fails to record still takes the receipt road, not the adjudicator", async () => {
+    engineThrows = new Error("the provider fell over");
+    const { recordRefund } = await import("../casting/atomicCredits");
+    vi.mocked(recordRefund).mockResolvedValueOnce({ recorded: false } as never);
+
+    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/could not be recorded — quote operation/);
+    expect(journal).toContain("seal:failure");
+    expect(journal).not.toContain("adjudicate");
+  });
+});
+
 describe("the landing cannot half-commit, and the receipt cannot lie", () => {
   it("registers the object for cleanup BEFORE the bytes exist", async () => {
     await refineCandidate(greenEyes, input);

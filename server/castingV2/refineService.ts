@@ -52,7 +52,15 @@ import {
 } from "../casting/directOperation";
 import { operationChargeReference } from "../casting/operationContract";
 import { deductCredits } from "../db/credits";
-import { markGenerationOperationRunning } from "../db/generationOperations";
+import {
+  handoffGenerationOperationToRecovery,
+  markGenerationOperationRunning,
+} from "../db/generationOperations";
+import {
+  RECOVERED_REFINE_SENTENCE,
+  recoverCastingV2RefineOperation,
+  type RefineRecoveryOutcome,
+} from "./refineRecovery";
 import {
   claimVariant,
   failVariant,
@@ -10058,18 +10066,41 @@ async function refineCandidateCounted(
        so a table holding only the successes would report the lane working
        perfectly on exactly the asks it happened to manage. */
     recordOpenLaneOutcomes(editDelta, { settled: false, cropsStored: new Set() });
-    /* WHOLE charge back — one image, one unit, nothing partial to keep. */
-    const refund = await (dependencies.refund ?? recordRefund)(
-      input.userId,
-      price,
-      refundDescriptionFor(error),
-      operationChargeReference(operationId),
-    );
-    await failVariant({
-      userId: input.userId,
-      variantId: variant.id,
-      failureClass: failureClassFor(error),
-    });
+    /*
+      WHOLE charge back — one image, one unit, nothing partial to keep.
+
+      AND THESE TWO WRITES CAN THROW (#869). A refund that RETURNS
+      `recorded: false` is carried to the receipt below; a refund or a
+      `failVariant` that REJECTS — a dropped connection under the write — used
+      to escape this catch before the finalizer, so the heartbeat kept
+      renewing, the lease never lapsed, and the sweep (built to wait for the
+      lease) never came: the tile stayed *casting* for the life of the process.
+      Now that throw goes to the road's own adjudicator in-process, else the
+      lease is handed over.
+    */
+    let refund: Awaited<ReturnType<typeof recordRefund>>;
+    try {
+      refund = await (dependencies.refund ?? recordRefund)(
+        input.userId,
+        price,
+        refundDescriptionFor(error),
+        operationChargeReference(operationId),
+      );
+      await failVariant({
+        userId: input.userId,
+        variantId: variant.id,
+        failureClass: failureClassFor(error),
+      });
+    } catch (settleError) {
+      return settleAbandonedRefine({
+        userId: input.userId,
+        operationId,
+        variantPublicId: variant.publicId,
+        price,
+        cause: settleError,
+        failure: error,
+      });
+    }
     return completeDirectOperationFailure({
       userId: input.userId,
       operationId,
@@ -10107,6 +10138,99 @@ async function refineCandidateCounted(
       chargedCredits: price,
       refundedCredits: refund.recorded ? price : 0,
     });
+  }
+}
+
+/**
+ * The live-process settlement of a refine whose compensating catch threw (#869)
+ * — the roll's #855 and the retry's #867, one unit narrower. Never refunds on
+ * its own: `recoverCastingV2RefineOperation` reads the ledger, decides from
+ * the variant's own status, pays what is owed and seals or parks the receipt
+ * itself, exactly as it does for a crashed refine — the same rule, run now
+ * instead of after a deploy frees the lease. If the adjudicator throws too,
+ * the lease is handed to the sweep (heartbeat stopped, lease expired) and the
+ * sweep takes it within one lease.
+ */
+async function settleAbandonedRefine(input: {
+  userId: number;
+  operationId: string;
+  variantPublicId: string;
+  price: number;
+  /** What the compensating write threw. */
+  cause: unknown;
+  /** What the refine itself failed on — logged, because the write's throw would otherwise bury it. */
+  failure: unknown;
+}): Promise<never> {
+  const { userId, operationId } = input;
+  log.error(
+    {
+      operationId,
+      variant: input.variantPublicId,
+      userId,
+      failure: input.failure instanceof Error ? input.failure.message.slice(0, 300) : String(input.failure).slice(0, 300),
+      cause: input.cause instanceof Error ? input.cause.message.slice(0, 300) : String(input.cause).slice(0, 300),
+    },
+    "[refineService] the refine's compensating write threw — adjudicating the refine in-process",
+  );
+
+  let outcome: RefineRecoveryOutcome;
+  try {
+    outcome = await recoverCastingV2RefineOperation({
+      id: operationId,
+      userId,
+      status: "running",
+      chargedCredits: input.price,
+      refundedCredits: 0,
+    });
+  } catch (error) {
+    log.error(
+      { operationId, err: error },
+      "[refineService] in-process adjudication failed too — handing the lease to the sweep",
+    );
+    await handoffGenerationOperationToRecovery({ userId, operationId }).catch((handoffError) => {
+      // The heartbeat is stopped before this write is attempted, so even here
+      // the lease lapses on its own and the sweep takes the refine within one lease.
+      log.fatal({ operationId, err: handoffError }, "[refineService] recovery handoff did not write");
+    });
+    throw spokenError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: `This refinement is still being settled. Operation ${operationId}.`,
+      cause: error,
+    });
+  }
+
+  /*
+    The adjudicator sealed or parked the receipt itself; these words match it.
+
+    `spokenError`, never a bare TRPCError and never `refusal(...)`: these are
+    FAULTS being narrated (the road's own paid-failure receipt is the same
+    shape — `INTERNAL_SERVER_ERROR` with an authored sentence), not doors the
+    product shut, so the seam's tally must not count them and the panel must
+    still show the sentence rather than its generic line.
+  */
+  switch (outcome.type) {
+    case "recovery_required":
+      throw spokenError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: `This refinement needs support review. Operation ${operationId}.`,
+      });
+    case "durable_success":
+      /*
+        The variant had landed and the throw came after — the picture exists
+        and the charge stands. This road knows nothing the row does not; the
+        sheet reads the variant.
+      */
+      throw spokenError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: `That refinement arrived, but its settlement was interrupted. Reload the sheet. Operation ${operationId}.`,
+      });
+    case "paid_failure":
+      throw spokenError({ code: "INTERNAL_SERVER_ERROR", message: RECOVERED_REFINE_SENTENCE });
+    case "free_failure":
+      throw spokenError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "That refinement didn't run. You were not charged.",
+      });
   }
 }
 

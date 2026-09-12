@@ -56,9 +56,11 @@ import { createStorageCleanupManifestIn } from "../db/storageCleanup";
 import {
   bindGenerationOperationModel,
   finalizeGenerationOperationSuccess,
+  handoffGenerationOperationToRecovery,
   markGenerationOperationRecoveryRequired,
   markGenerationOperationRunning,
 } from "../db/generationOperations";
+import { recoverCastingV2SignOperation, type SignRecoveryOutcome } from "./signRecovery";
 import {
   SignPersistenceError,
   getSignableCandidate,
@@ -548,13 +550,25 @@ export async function signCandidate(
       reference. The copied object — if the copy is what got that far — is owned
       by the cleanup manifest and the worker deletes it once this operation is
       terminal.
+
+      AND THE REFUND WRITE CAN THROW (#869). `recordRefund` returning
+      `recorded: false` is handled below; `recordRefund` REJECTING — a dropped
+      connection under the write — used to escape this catch before the
+      finalizer, so the heartbeat kept renewing, the lease never lapsed, and
+      the sweep (built to wait for the lease) never came. Now that throw goes
+      to the road's own adjudicator in-process, else the lease is handed over.
     */
-    const refund = await recordRefund(
-      input.userId,
-      price,
-      "Sign didn't complete",
-      operationChargeReference(operationId),
-    );
+    let refund: Awaited<ReturnType<typeof recordRefund>>;
+    try {
+      refund = await recordRefund(
+        input.userId,
+        price,
+        "Sign didn't complete",
+        operationChargeReference(operationId),
+      );
+    } catch (settleError) {
+      return settleAbandonedSign({ userId: input.userId, operationId, price, cause: settleError, failure: error });
+    }
     if (!refund.recorded) {
       log.error(
         { operationId, userId: input.userId, reference: refund.reference },
@@ -1304,6 +1318,97 @@ async function completeSignPackage(
       { operationId: input.operationId, modelId: input.modelId, err: error },
       "[signService] the package could not be sealed — leaving it for the recovery sweep",
     );
+  }
+}
+
+/**
+ * The live-process settlement of a Sign whose compensating catch threw (#869)
+ * — the roll's #855 and the retry's #867, one unit narrower. Never refunds on
+ * its own: `recoverCastingV2SignOperation` fences the operation, reads the
+ * ledger, pays what is owed and seals or parks the receipt itself, exactly as
+ * it does for a crashed Sign — the same rule, run now instead of after a
+ * deploy frees the lease. If the adjudicator throws too, the lease is handed
+ * to the sweep (heartbeat stopped, lease expired) and the sweep takes it
+ * within one lease.
+ */
+async function settleAbandonedSign(input: {
+  userId: number;
+  operationId: string;
+  price: number;
+  /** What the compensating write threw. */
+  cause: unknown;
+  /** What the Sign itself failed on — logged, because the refund's throw would otherwise bury it. */
+  failure: unknown;
+}): Promise<never> {
+  const { userId, operationId } = input;
+  log.error(
+    {
+      operationId,
+      userId,
+      failure: input.failure instanceof Error ? input.failure.message.slice(0, 300) : String(input.failure).slice(0, 300),
+      cause: input.cause instanceof Error ? input.cause.message.slice(0, 300) : String(input.cause).slice(0, 300),
+    },
+    "[signService] the Sign refund write threw — adjudicating the Sign in-process",
+  );
+
+  let outcome: SignRecoveryOutcome;
+  try {
+    outcome = await recoverCastingV2SignOperation({
+      id: operationId,
+      userId,
+      status: "running",
+      chargedCredits: input.price,
+      refundedCredits: 0,
+      // The same figure the running transition wrote a few statements ago —
+      // the adjudicator cross-checks it against the promised view list.
+      plannedCredits: input.price,
+    });
+  } catch (error) {
+    log.error(
+      { operationId, err: error },
+      "[signService] in-process adjudication failed too — handing the lease to the sweep",
+    );
+    await handoffGenerationOperationToRecovery({ userId, operationId }).catch((handoffError) => {
+      // The heartbeat is stopped before this write is attempted, so even here
+      // the lease lapses on its own and the sweep takes the Sign within one lease.
+      log.fatal({ operationId, err: handoffError }, "[signService] recovery handoff did not write");
+    });
+    throw spokenError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: `This Sign is still being settled. Operation ${operationId}.`,
+      cause: error,
+    });
+  }
+
+  // The adjudicator sealed or parked the receipt itself; these words match it —
+  // through `spokenError`, so the panel shows the sentence and not its generic line.
+  switch (outcome.type) {
+    case "recovery_required":
+      throw spokenError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: `This Cast needs support review before it can be retried. Operation ${operationId}.`,
+      });
+    case "durable_success":
+    case "partial":
+      /*
+        The boundary had committed and the throw came after — a Cast exists
+        and the promotion stands. This road knows nothing the row does not;
+        the studio reads the Cast.
+      */
+      throw spokenError({
+        code: "PRECONDITION_FAILED",
+        message: `That Cast was signed, but its settlement was interrupted. Reload the studio. Operation ${operationId}.`,
+      });
+    case "paid_failure":
+      throw spokenError({
+        code: "PRECONDITION_FAILED",
+        message: "That Cast wasn't signed. Everything you paid was refunded.",
+      });
+    case "free_failure":
+      throw spokenError({
+        code: "PRECONDITION_FAILED",
+        message: "That Cast wasn't signed. You were not charged.",
+      });
   }
 }
 
