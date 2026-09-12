@@ -24,6 +24,7 @@
     "capability:check": "tsx scripts/generate-capability-atlas.mts --check",
     "machinist:bundle": "tsx scripts/bundle-report.mts",
     "machinist:bench": "tsx scripts/bench-commands.mts",
+    "machinist:latency": "tsx scripts/drive-interaction-latency.mts",
     "janitor:knip": "knip --no-progress --reporter compact",
     "warden:semgrep": "semgrep scan --config p/nodejs --config p/expressjs --config p/typescript --config p/javascript --metrics=off --error"
   },

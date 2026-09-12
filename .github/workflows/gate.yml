@@ -317,6 +317,15 @@ jobs:
       - name: Design-law controls (each law must still be able to fail)
         run: npx tsx scripts/drive-design-laws.mts --controls
 
+      # The interaction-latency instrument's own controls (#555): a synthetic
+      # page with an instant action, a two-second one, one that changes nothing
+      # and one that is not there — plus a clock ticking beside them that must
+      # NOT count as the change. Same reasoning as the step above: it proves
+      # the INSTRUMENT, needs only a browser, and was driven under sabotage
+      # (the clock read as a 13 ms change) before it was trusted. ~7 s.
+      - name: Interaction-latency controls (the reader must still tell fast from slow from never)
+        run: npx tsx scripts/drive-interaction-latency.mts --controls
+
   founder-gate:
     name: founder-gate
     needs: resolve

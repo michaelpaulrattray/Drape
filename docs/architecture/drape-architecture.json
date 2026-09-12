@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1b1e75c46aed1de4"
+    "sourceFingerprint": "463794a4dbf7e311"
   },
   "domains": [
     {
@@ -12898,6 +12898,10 @@
     {
       "id": "test:server/instrumentDoctrine.test.ts",
       "path": "server/instrumentDoctrine.test.ts"
+    },
+    {
+      "id": "test:server/interactionLatency.test.ts",
+      "path": "server/interactionLatency.test.ts"
     },
     {
       "id": "test:server/klaviyo.test.ts",

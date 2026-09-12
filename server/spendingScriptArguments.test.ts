@@ -1051,6 +1051,10 @@ describe("the read-only reporters declare a vocabulary, and it is the one they r
     "scripts/drive-design-laws.mts",
     "scripts/drive-face-panel-evidence.mts",
     "scripts/drive-face-scan-evidence.mts",
+    /* #555 — spends by driving the product (Roll again, Follow, Retry under
+       `--spend`), through the spend door, so it is in the swept population by
+       construction; pinned here for the reason the eleven above are. */
+    "scripts/drive-interaction-latency.mts",
     "scripts/open-refused-crops.mts",
     "scripts/run-storage-cleanup.mts",
   ] as const;
@@ -1102,6 +1106,13 @@ describe("the read-only reporters declare a vocabulary, and it is the one they r
     ).toBe(true);
     /* And the module the spend lives in, for the same reason. */
     expect(drivesAPaidTransport(sourceOf("scripts/lib/designLaws.mts"))).toBe(true);
+    /* The second browser-driven spender (#555) reaches the population through
+       the spend door itself rather than a law name — pinned so a refactor that
+       drops `spendAuthorized` for a hand-read `--spend` is a red, not a silence. */
+    expect(
+      drivesAPaidTransport(sourceOf("scripts/drive-interaction-latency.mts")),
+      "the interaction-latency spender left the swept population",
+    ).toBe(true);
   });
 
   /**

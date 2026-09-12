@@ -124,6 +124,12 @@ export const EXCUSED_GATE_STEPS: ReadonlyArray<{
       "drives a browser against a built app; minutes and a dev server, so it belongs to the gate and to a UI shift's own law-6 pass.",
   },
   {
+    gateRun: "npx tsx scripts/drive-interaction-latency.mts --controls",
+    match: "command",
+    reason:
+      "drives a browser against a synthetic page (#555); seconds, but a browser — it belongs to the gate and to a Machinist run's own proof.",
+  },
+  {
     gateRun: "scripts/check-closing-keyword.mts",
     match: "token",
     reason:
