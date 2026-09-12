@@ -1,7 +1,7 @@
 {
-  "edition": 353,
-  "updatedAt": "2026-09-11T21:23:21.399Z",
-  "shift": "Janitor — patrol #5 (the 3-day litter sweep, on its day). YOUR DESK IS CLEAR. WHAT THE HOUSE LOOKS LIKE AFTERWARDS: the pile of throwaway scripts the shifts leave behind went from 897 to 529 — 368 of them deleted, every one older than a week by the card it served (checked twice, by two different roads) and named by nothing that is still alive. Each batch was zipped to your user folder first, so nothing here is unrecoverable. The 31 oldest screenshots at the repository root went the same way (with the same zip); 91 newer ones stay until their week is up. ONE FIX SHIPPED (PR #826): two test files were leaving a temporary folder behind on your machine EVERY time the tests ran — 332 folders in three days, from two suites that never cleaned up at all. They do now (measured: the old files add 9 per run, the new ones add 0). The 347 leftover temp entries were swept. ALSO: the old 'Drape-census' working copy (a month of scratch from the capability census, 2.3 MB) was zipped and removed — every commit in it was already in main. The dead-code counter is flat at 69 files for a week. ONE CARD FILED (#827): the cleaner itself reads once, and a script whose only friend was just deleted survives one more round — 11 of 369 tonight; a small fix, recommended, not built. STILL TO DO: the evidence folder (output/) is 7.0 GB and growing every shift — its keep-or-go pass is the next Janitor's whole job (#527). YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden reads due tomorrow.",
+  "edition": 354,
+  "updatedAt": "2026-09-12T00:05:31.063Z",
+  "shift": "Foreman — a batch of three on three cards, all merged. YOUR DESK IS CLEAR. THE ONE THAT MATTERS TO YOU (PR #828): the team's own test run was failing on YOUR machine — 13 to 22 checks a run timing out, every single one a timeout and not a real bug — because the test runner was starting 19 workers at once on your 20-core box, beside Unity, Godot, Codex and a browser. It now starts 8. Measured back to back on the same tree: 680 s and 22 reds at nineteen, 301 s and 2 reds at eight — half the time, a dozen reds gone. The two that remain are the two heaviest checks (they each run a full compile) and both pass alone; they will be a separate card only if they keep showing up. GitHub's own test runner is untouched (it has 4 cores and was never the problem: green 38 of the last 40). THE SECOND (PR #830): the type check every shift runs before pushing took 109 seconds and now takes 28 — its four passes run side by side instead of one after another. Nothing is skipped. On GitHub the same step went from ~90 s to 36 s. THE THIRD (PR #829): the script that decides which throwaway files are safe to delete now sees a file whose only friend is itself being deleted — last night's Janitor found 11 of those by running it three times; one run finds them now, and it says which friend was leaving. NOT DONE, ON PURPOSE: the card for the first fix asked for a timeout to be added to every slow test file — 76 of them. That was the wrong shape (they were slow only because they were starved), and the card itself said to stop at that count. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden reads due tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-11T21:22:41.305Z",
+      "readAt": "2026-09-12T00:05:41.274Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,27 @@
   ],
   "pipeline": [
     {
+      "id": "worker-cap-828",
+      "title": "The test run on your machine: 8 workers instead of 19 — half the time, a dozen timeouts gone",
+      "status": "merged",
+      "prNumber": 828,
+      "note": "vitest was starting one worker per core minus one — 19 on your box — and nine of the test files each spawn a full compile on top of that, so the cheap checks scheduled beside them starved and timed out. Measured back to back on the same tree in the same hour: 680 s / 22 reds at nineteen workers, 301 s / 2 at eight; every pair in the sitting read the same way. The cap is vitest's own rule with a ceiling of 8, so GitHub's 4-core runner keeps its 3 workers exactly. The card's own stop clause was honoured: 76 per-file timeouts were NOT added."
+    },
+    {
+      "id": "parallel-check-830",
+      "title": "The pre-push type check: 109 s to 28 s, four passes side by side",
+      "status": "merged",
+      "prNumber": 830,
+      "note": "pnpm check ran its four passes in series and paid their sum. They run in parallel now (the command every shift and the gate calls is unchanged). Benchmarked after then before, back to back on your box: 109.3 s → 28.0 s mean over 3 runs each. On GitHub the same step went from 88–94 s to 36 s. A red still propagates, proven with a deliberately broken scratch file."
+    },
+    {
+      "id": "chain-sweep-829",
+      "title": "The throwaway-file cleaner now sees a file whose only friend is being deleted",
+      "status": "merged",
+      "prNumber": 829,
+      "note": "The Janitor's reader kept any file another file named, without asking whether that other file was itself about to go — so after last night's sweep of 358, a second reading found 11 more, every one held only by a sibling that had just been deleted. One reading finds them now, prints which friend was leaving, and never names a keeper that the same list is deleting (the reviewer's one finding, taken in one push). Nothing is deleted by the reader itself; that is still a Janitor act with a written manifest."
+    },
+    {
       "id": "fixture-teardown-826",
       "title": "Two test suites stop leaving a temporary folder behind on every run",
       "status": "merged",
@@ -5540,11 +5561,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912g-janitor",
+      "id": "queue-shape-0912h-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 54 open, none closed, one filed (#827); NEXT UP is empty; nothing waits on you",
-      "detail": "Janitor patrol #5 ran on its day: 368 stale disposables swept in two waves (each zipped first), 31 stale root screenshots swept, 347 %TEMP% entries swept and the two suites that made most of them fixed (#826), the Drape-census worktree zipped and removed, knip flat at 69 files for a week. #827 filed with the numbers (the cleaner is one pass, not a fixpoint). #527 (output/, 7.0 GB) measured and left for the next Janitor. 26 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Warden due 13 Sep; Machinist and Retro ran today."
+      "title": "The queue: 51 open, three closed tonight (#743, #825, #827), none filed; NEXT UP is empty; nothing waits on you",
+      "detail": "Three background cards taken in category order and all three merged: #743 (Process — the test-worker cap, PR #828), #825 (Performance — the parallel type check, PR #830), #827 (Housekeeping — the cleaner's chain verdict, PR #829). Bugs (#816) and #697's last file are auth/money rows and stay for a Fable shift. 26 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Warden due 13 Sep; Janitor, Machinist and Retro ran today."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5727,7 +5748,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-11T21:22:41.304Z",
+    "readAt": "2026-09-12T00:05:41.273Z",
     "items": []
   }
 }
