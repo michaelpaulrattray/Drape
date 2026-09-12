@@ -128,3 +128,21 @@ describe("setupVite — the wire", () => {
     server.close();
   });
 });
+
+/**
+ * THE CONFIG DECLARES NO `server` KEY (#849).
+ *
+ * For six months `vite.config.ts` carried a `server` block — a host allow-list
+ * and a dotfile deny — that read as the dev server's policy and had never
+ * reached it: `setupVite` replaces the key whole, and `vite build` ignores it.
+ * Invariant 7 in a config file: two controls that were never invoked. The
+ * block is deleted; this arm reads the object the config actually exports so
+ * a policy written there again reddens instead of sitting as dead text.
+ */
+describe("vite.config — no dead server policy", () => {
+  it("exports no `server` key, because setupVite would discard it", async () => {
+    vi.resetModules();
+    const mod = (await import("../vite.config")) as { default: Record<string, unknown> };
+    expect(Object.keys(mod.default)).not.toContain("server");
+  });
+});
