@@ -89,10 +89,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { severityLook } from "@/foundation";
+import { ModalField, severityLook } from "@/foundation";
 import {
   StaffDialogHeader,
-  StaffField,
   STAFF_DIALOG_BODY,
   STAFF_DIALOG_CONTENT,
 } from "@/features/staff";
@@ -267,7 +266,7 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
         <div className={STAFF_DIALOG_BODY}>
           {/* Type + Priority */}
           <div className="grid grid-cols-2 gap-3">
-            <StaffField label="Request type">
+            <ModalField label="Request type">
               <Select value={crType} onValueChange={(v) => setCrType(v as ChangeRequestType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -278,8 +277,8 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
                   ))}
                 </SelectContent>
               </Select>
-            </StaffField>
-            <StaffField label="Priority">
+            </ModalField>
+            <ModalField label="Priority">
               <div className="dp-segmented" role="group" aria-label="Priority">
                 {PRIORITIES.map((option) => (
                   <button
@@ -293,38 +292,38 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
                   </button>
                 ))}
               </div>
-            </StaffField>
+            </ModalField>
           </div>
 
           {/* Target User */}
           <div className="grid grid-cols-2 gap-3">
             {/* ⚠ `Target user ID *` was two jobs in one string. The marker is
                 the attribute on the control now (brief 11 §5). */}
-            <StaffField label="Target user ID" htmlFor="cr-target-id">
+            <ModalField label="Target user ID" htmlFor="cr-target-id">
               <Input id="cr-target-id" value={crTargetUserId} onChange={(e) => setCrTargetUserId(e.target.value)} placeholder="e.g., 42" required />
-            </StaffField>
-            <StaffField label="Target user name" htmlFor="cr-target-name">
+            </ModalField>
+            <ModalField label="Target user name" htmlFor="cr-target-name">
               <Input id="cr-target-name" value={crTargetUserName} onChange={(e) => setCrTargetUserName(e.target.value)} placeholder="User name (optional)" />
-            </StaffField>
+            </ModalField>
           </div>
 
           {/* Credit fields */}
           {(crType === "refund_credits" || crType === "add_credits") && (
             <div className="grid grid-cols-2 gap-3">
-              <StaffField label="Credit amount" htmlFor="cr-credit-amount">
+              <ModalField label="Credit amount" htmlFor="cr-credit-amount">
                 <Input id="cr-credit-amount" type="number" value={crCreditAmount} onChange={(e) => setCrCreditAmount(e.target.value)} placeholder="e.g., 100" min="1" required />
-              </StaffField>
-              <StaffField label="Credit reason" htmlFor="cr-credit-reason">
+              </ModalField>
+              <ModalField label="Credit reason" htmlFor="cr-credit-reason">
                 <Input id="cr-credit-reason" value={crCreditReason} onChange={(e) => setCrCreditReason(e.target.value)} placeholder="e.g., Service disruption" />
-              </StaffField>
+              </ModalField>
             </div>
           )}
 
           {/* IP field */}
           {crType === "block_ip" && (
-            <StaffField label="IP address" htmlFor="cr-ip">
+            <ModalField label="IP address" htmlFor="cr-ip">
               <Input id="cr-ip" value={crIpAddress} onChange={(e) => setCrIpAddress(e.target.value)} placeholder="e.g., 192.168.1.1" required />
-            </StaffField>
+            </ModalField>
           )}
 
           {/* Stripe refund fields */}
@@ -355,14 +354,14 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
                 customer's own purchase record, both read by the server; a
                 session that matches neither is refused at submit.
               */}
-              <StaffField
+              <ModalField
                 label="Stripe session ID"
                 htmlFor="cr-stripe-session"
                 helper="The refund amount is taken from this charge and the customer's purchase record — nothing to type."
               >
                 <Input id="cr-stripe-session" value={crStripeSessionId} onChange={(e) => setCrStripeSessionId(e.target.value)} placeholder="cs_test_..." className="font-mono text-xs" required />
-              </StaffField>
-              <StaffField
+              </ModalField>
+              <ModalField
                 label="Refund type"
                 helper={crRefundType === "proportional"
                   ? "Refunds only the unused portion. Credits deducted, balance floors at 0."
@@ -375,31 +374,31 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
                     <SelectItem value="full">Full refund (goodwill)</SelectItem>
                   </SelectContent>
                 </Select>
-              </StaffField>
+              </ModalField>
             </div>
           )}
 
           {/* Title + Description */}
           {/* ⚠ `Title * (min 5 characters)` — the rule moves under the field,
               where it is read at the moment the button stays dead. */}
-          <StaffField label="Title" htmlFor="cr-title" helper="At least 5 characters.">
+          <ModalField label="Title" htmlFor="cr-title" helper="At least 5 characters.">
             <Input id="cr-title" value={crTitle} onChange={(e) => setCrTitle(e.target.value)} placeholder="Brief summary of the request" required />
-          </StaffField>
-          <StaffField
+          </ModalField>
+          <ModalField
             label="Description"
             htmlFor="cr-description"
             helper={`At least 10 characters — ${crDescription.length}/5000 used.`}
           >
             <Textarea id="cr-description" value={crDescription} onChange={(e) => setCrDescription(e.target.value)} placeholder="Detailed description of the issue and why this action is needed..." className="min-h-[80px]" required />
-          </StaffField>
+          </ModalField>
 
           {/* Evidence Summary */}
-          <StaffField label="Evidence summary" htmlFor="cr-evidence" helper="Optional.">
+          <ModalField label="Evidence summary" htmlFor="cr-evidence" helper="Optional.">
             <Textarea id="cr-evidence" value={crEvidenceSummary} onChange={(e) => setCrEvidenceSummary(e.target.value)} placeholder="Links, screenshots, or other evidence supporting this request..." className="min-h-[60px]" />
-          </StaffField>
+          </ModalField>
 
           {/* File Attachments */}
-          <StaffField
+          <ModalField
             label={`Attachments (${attachments.length}/${MAX_FILES})`}
             helper="JPEG, PNG, GIF, WebP, PDF, CSV, TXT, XLSX — max 10MB each."
           >
@@ -447,11 +446,11 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
                 ))}
               </div>
             )}
-          </StaffField>
+          </ModalField>
 
           {/* Related audit log */}
           {crRelatedAuditLogId && (
-            <StaffField label="Related audit log">
+            <ModalField label="Related audit log">
               <div>
                 <Badge className="bg-muted text-muted-foreground">
                   #{crRelatedAuditLogId}
@@ -460,7 +459,7 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
                   </button>
                 </Badge>
               </div>
-            </StaffField>
+            </ModalField>
           )}
         </div>
 

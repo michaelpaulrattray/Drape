@@ -78,6 +78,12 @@ const DIALOG_FILES = [...tsxUnder(ADMIN), ...tsxUnder(MODERATOR)]
   .map((file) => ({ file, rel: path.relative(CLIENT_SRC, file).replace(/\\/g, "/"), src: read(file) }));
 
 const GRAMMAR = read(path.resolve(HERE, "staffDialog.tsx"));
+/* #481 — the field row left this directory for the foundation in the section
+   11 promotion pass. The header and the two shell strings are still GRAMMAR;
+   the row is read from where it lives now, and the arms below hold the move
+   as much as the rule. */
+const FIELD = read(path.resolve(CLIENT_SRC, "foundation/ModalField.tsx"));
+const FOUNDATION_BARREL = read(path.resolve(CLIENT_SRC, "foundation/index.ts"));
 const MODALS_CSS = read(path.resolve(CLIENT_SRC, "foundation/modals.css"));
 
 /** The two shared shell strings, read from the grammar rather than retyped. */
@@ -236,14 +242,31 @@ describe("brief 11 §4/§5 — one eyebrow, one field label, no asterisks", () =
       /* The three treatments the brief is collapsing. A raw <label> in one of
          these files is a fourth one being born. */
       expect(stripped, `${rel} still hand-rolls a <label>`).not.toMatch(/<label\s/);
-      expect(stripped, `${rel} uses StaffField`).toContain("<StaffField");
+      expect(stripped, `${rel} uses ModalField`).toContain("<ModalField");
+    }
+  });
+
+  /* #481 — THE PROMOTION HOLDS. `promotion-guard.test.ts` stops the foundation
+     importing features/; nothing there stops a feature quietly re-declaring a
+     part the foundation already owns. So: the row is exported from the barrel,
+     every staff dialog takes it FROM the barrel, and the staff grammar module
+     declares no field of its own any more. A second `StaffField` born here is
+     the drift the pass exists to prevent, and it reddens on the day. */
+  it("the field row is the foundation's, taken from the barrel by every staff dialog", () => {
+    expect(code(FIELD)).toMatch(/export function ModalField\(/);
+    expect(code(FOUNDATION_BARREL)).toMatch(/export \{ ModalField \} from "\.\/ModalField"/);
+    expect(code(GRAMMAR), "staffDialog.tsx grew a field row back").not.toMatch(/dp-sfield|StaffField|ModalField/);
+    for (const { rel, src } of DIALOG_FILES) {
+      const stripped = code(src);
+      const fromFoundation = /import\s*\{[^}]*\bModalField\b[^}]*\}\s*from\s*"@\/foundation"/.test(stripped);
+      expect(fromFoundation, `${rel} imports ModalField from somewhere other than @/foundation`).toBe(true);
     }
   });
 
   it("the one label treatment is the foundation's own, not a second declaration", () => {
     /* `.dpc-modal__label` already existed and was already exactly the spec.
        The row zeroes its confirm-shell margin; it does not restate the font. */
-    expect(GRAMMAR).toContain('className="dpc-modal__label"');
+    expect(FIELD).toContain('className="dpc-modal__label"');
     expect(MODALS_CSS).toMatch(/\.dp-sfield > \.dpc-modal__label\s*\{[^}]*margin-top:\s*0/);
     const sfield = /\.dp-sfield\s*\{([^}]*)\}/.exec(MODALS_CSS)?.[1] ?? "";
     expect(sfield, "the row is layout only — a font here would be a fourth label").not.toMatch(/font:/);
