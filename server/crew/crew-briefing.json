@@ -1,7 +1,7 @@
 {
-  "edition": 360,
-  "updatedAt": "2026-09-12T10:32:41.834Z",
-  "shift": "Foreman — two merged on the two Small-fixes cards the last shift filed; nothing a customer can see changes. YOUR DESK IS CLEAR. THE FIRST (#842 → PR #847): the crew's throwaway test servers now serve the product's real typeface. Until today a test server started inside a shift's scratch copy of the code served NO webfonts at all — every 'both themes' photograph a shift has put in front of you from one of those servers was in the wrong lettering, with every small label about a pixel and a half shorter, and a before/after taken across two servers could show you a 12-pixel 'regression' that was never there. Read at the code before the line was written, the card's own suggested fix would have done nothing: the settings file it named is never read by the test server, which has replaced that whole block since the day the project was born. The fix went where the server actually reads, and it was driven: the font files answered 403 before and 200 after; the secrets file and the rest of the machine still answer 403; the browser confirms the mono face loads on a scratch-copy page. The reviewer passed it with no blocking findings, verified the 'that block was never read' claim at the bytes, and asked for one thing — that the leftover finding be a real card — which it is (#849, below). THE SECOND (#845 → PR #848): a permanent check on the staff dialogs' field labels could be fooled by a label built from a template — it stopped reading at the first blank-to-be-filled, so a rule written after it ('(max 5)') would have slipped past. It reads the whole label now, with a planted bad label proving it goes red. Nothing was wrong today; the check was narrower than its own sentence. FILED (#849): the test server's settings file carries a host check and a file-deny rule that have never been applied — the server overrides the whole block. Dev only, not a production surface; a small fix with a decision attached (delete the dead text, or switch it on for the first time). ALSO NOTED: a full typecheck in a scratch copy took 18 minutes this shift against 4½ on the same machine an hour earlier — not carded, the gate's own run stayed at 8 minutes. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden's check-up is tomorrow.",
+  "edition": 361,
+  "updatedAt": "2026-09-12T11:50:39.156Z",
+  "shift": "Foreman — two merged: the last Small-fixes card and a Process card that ends a bug class found by hand five times. ONE THING A MODERATOR WILL NOTICE, everything else is housekeeping. YOUR DESK IS CLEAR. THE FIRST (#849 → PR #850): the crew's test-server settings file carried a host check and a file-deny rule that had never applied — the server has replaced that whole block since the project's first commit, so the file described a policy nothing ran. The dead text is deleted with a note saying where the real settings live, and a permanent check refuses the block coming back. Driven on a test server after the change: the secrets file still refused, the fonts still served, nothing else moved. Dev only, never a production surface. THE SECOND (#769 → PR #851): on the staff pages, some lists update themselves every 30 seconds while AUTO is on (things other people cause — a new signup, a flagged referral, a blocked address) and some only when the staff member clicks (the details of the row she opened). Which is which had been decided by hand each time a page was written, and FIVE times a list that should have kept itself fresh did not — #457, #747, #752, the #768 review, and one more this shift found by reading: on the moderator dashboard the USERS tab sat still while the admin's identical list refreshed. Now every one of the 28 staff-page lists says, at the line where it is written, which kind it is and why — 20 self-refreshing, 8 click-only — and a permanent check holds each to its word, names any list that forgets to say, and reddens if the click-only set grows without a person reading it. The moderator's users tab follows AUTO from this edition. The reviewer passed it and found three ways the check itself could be fooled; all three closed in one push, each proven against the live pages by breaking them on purpose and putting them back. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden's check-up is tomorrow. Small fixes is EMPTY for the first time; Process holds one blocked card and one auth-path file; next in the background order are the Performance cards (#555 is an instrument build) and the Janitor's housekeeping list.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,12 +128,12 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "50 open, none waiting on you, none urgent. 2 PRs merged this shift; 28 untouched for 7 days."
+        "source": "47 open, none waiting on you, none urgent. 2 PRs merged this shift; 29 untouched for 7 days."
       },
       {
         "label": "Your desk is clear",
         "tone": "good",
-        "source": "Nothing waits on you. Two PRs merged this shift, no decisions; one design question filed (#841)."
+        "source": "Nothing waits on you. Two PRs merged this shift, no decisions, nothing filed."
       },
       {
         "label": "Check-ups",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T10:32:56.127Z",
+      "readAt": "2026-09-12T11:49:59.982Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,20 @@
   ],
   "pipeline": [
     {
+      "id": "poll-register-851",
+      "title": "Every staff list says whether it refreshes itself under AUTO 30s, and a check holds it to its word — the moderator's Users tab was the fifth list that had been left still",
+      "status": "merged",
+      "prNumber": 851,
+      "note": "Card #769. Five times a staff list that other people's actions raise (a signup, a flagged referral, a blocked address, a change request) stopped updating while AUTO was on, each found by a person — the last one by this shift's read: the moderator dashboard's Users tab did not refresh while the admin's identical list did. Now each of the 28 lists on the staff pages carries one line saying which kind it is and why (20 refresh themselves, 8 are click-only details of a row she opened), and a permanent check reads those lines: a self-refreshing list must take the shared 30s switch, a click-only one must not, a list that says nothing is a finding, and the click-only set is pinned so a new one is read by a person. Proven by breaking the real pages six ways and putting them back. Reviewer: pass; its three findings about the check's own blind spots closed in one push. What a moderator sees: the Users tab now keeps itself fresh under AUTO."
+    },
+    {
+      "id": "dead-vite-server-850",
+      "title": "The test server's settings file no longer describes a policy nothing runs — the dead block is gone and a check refuses its return",
+      "status": "merged",
+      "prNumber": 850,
+      "note": "Card #849, filed last shift from the #842 read. The settings file carried a host check and a dotfile deny that the server has overridden since the first commit — a document a reader would trust, describing controls that never existed. Deleted with a note pointing at where the server actually reads its options; a permanent check asserts the file exports no such block, and putting the block back turns exactly that check red. Driven on a test server after the change: secrets 403 in both copies, fonts 200, arbitrary host header answered as before. No behaviour change; dev only. Reviewer declined it as under the line (a small diff), the design working."
+    },
+    {
       "id": "worktree-fonts-847",
       "title": "The crew's scratch-copy test servers serve the real typeface now — every 'both themes' frame from one was in fallback lettering",
       "status": "merged",
@@ -5638,11 +5652,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912n-foreman",
+      "id": "queue-shape-0912o-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 48 open, two closed (#842, #845), one filed (#849); NEXT UP is empty; nothing waits on you",
-      "detail": "Category order re-read at the code: Bugs (#816) holds only its two auth/money rows; Small fixes was #842 and #845 — both merged and closed, and now holds #849 (filed this shift); Process — #697 has only its auth-path file left, #769 is a design card, #513 blocked; Performance (#555, #58) are sessions; Housekeeping next: #482, #564, #274, #527 (the Janitor's run 6), #265's bucket half (Janitor, manifest first); Security holds #762 and the Warden's clock fires 13 Sep. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock)."
+      "title": "The queue: 47 open, two closed (#849, #769), none filed; NEXT UP is empty; nothing waits on you",
+      "detail": "Category order re-read at the code: Bugs (#816) holds only its two auth/money rows; Small fixes is EMPTY; Process — #697 has only its auth-path file left, #769 merged and closed, #513 blocked; Performance (#555 an instrument build, #58 an umbrella); Housekeeping next: #482 (a promotion pass wanting both-theme frames), #274 (a re-key needing a resolver the sweep lacks), #564, #527 (the Janitor's run 6), #265's bucket half (Janitor, manifest first); Security holds #762 and the Warden's clock fires 13 Sep. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock)."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5825,7 +5839,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-12T10:32:56.126Z",
+    "readAt": "2026-09-12T11:49:59.981Z",
     "items": []
   }
 }
