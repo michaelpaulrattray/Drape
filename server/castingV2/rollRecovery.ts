@@ -11,7 +11,7 @@ import {
 } from "../db/generationOperations";
 import { claimCandidateForRecovery } from "../db/castingV2";
 import { createModuleLogger } from "../logging/logger";
-import { SLICE_REFUND_DESCRIPTION } from "./sliceRefundLedger";
+import { rollSliceRefundDescription } from "./sliceRefundLedger";
 
 const log = createModuleLogger("castingV2/rollRecovery");
 
@@ -44,6 +44,12 @@ function affectedRows(result: unknown): number {
  *    away, an expired one was delivered after a cancel, a signed one became a
  *    Cast. Only genuinely unfinished work — and the torn `ready`-without-bytes
  *    write — can be settled by this sweep, and only after its CAS wins the row.
+ *
+ *    One more torn write sits on the other side of that line (#868): a row the
+ *    live catch marked `failed` and then died before its refund recorded. The
+ *    row IS settled — no CAS, nothing to claim — but the money is not, and the
+ *    ledger alone can say so. `isTornFailure` is that reading; it pays the
+ *    slice once under the reference the live catch would have used.
  *
  * WHY THE PROVIDER QUERY EXISTS AT ALL. §H.6 says ambiguous dispatched
  * outcomes are verified against the provider "where queryable". Verified
@@ -149,6 +155,36 @@ export function isSettleable(candidate: CandidateRow): boolean {
 }
 
 /**
+ * The torn write inside the live catch (#868).
+ *
+ * `dispatchCandidate`'s catch writes `failed` and THEN records the refund. A
+ * dropped connection or a process death between the two leaves a `failed`
+ * row whose slice was never paid back — and `isSettleable` is right not to
+ * count it, because "already settled by whoever put it in that state" is
+ * what `failed` means for the CAS. Whether the MONEY landed is a different
+ * question, and only the ledger can answer it: a `failed` row that was
+ * charged for and has no refund row under its own reference is owed once.
+ *
+ * This is the retry adjudicator's rule (`retryRecovery.ts`: *already `failed`
+ * means the service settled it and died after; the ledger decides whether the
+ * refund landed, and pays it once if not*), held to on the roll's side. No CAS
+ * is needed — the row is already terminal — and the refund reference is the
+ * one the live catch would have used, so a live process racing this refund
+ * lands as the ledger's duplicate, never as a second payment.
+ */
+export function isTornFailure(
+  candidate: CandidateRow,
+  ledger: Pick<OperationLedger, "refundedReferences">,
+  operationId: string,
+): boolean {
+  return (
+    candidate.status === "failed"
+    && candidate.pointsCost > 0
+    && !ledger.refundedReferences.has(candidateRefundReference(operationId, candidate.publicId))
+  );
+}
+
+/**
  * The per-candidate refund reference.
  *
  * Derived through the shared helper from a deterministic per-slice charge key,
@@ -204,6 +240,13 @@ type OperationLedger = {
   charge: ChargeTruth;
   /** Credits already returned under this operation, by whoever returned them. */
   alreadyRefunded: number;
+  /**
+   * The per-candidate refund references that hold a refund row — the SAME rows
+   * `alreadyRefunded` sums, kept by identity so the adjudicator can ask of one
+   * `failed` candidate "did its refund land?" rather than only "how much came
+   * back in total?" (#868). A sum cannot tell a torn write from a settled one.
+   */
+  refundedReferences: ReadonlySet<string>;
 };
 
 /**
@@ -237,15 +280,24 @@ export async function readOperationLedger(
     ));
 
   const chargeRows = rows.filter((row) => row.referenceId === chargeReference);
-  const alreadyRefunded = rows
-    .filter((row) => row.referenceId !== chargeReference && row.type === "refund" && row.amount > 0)
-    .reduce((sum, row) => sum + row.amount, 0);
+  const refundRows = rows.filter(
+    (row) => row.referenceId !== chargeReference && row.type === "refund" && row.amount > 0,
+  );
+  const alreadyRefunded = refundRows.reduce((sum, row) => sum + row.amount, 0);
+  // The WHERE above pins every row to a known reference, so a null here is
+  // unreachable; the filter is for the type, not the data.
+  const refundedReferences: ReadonlySet<string> = new Set(
+    refundRows.map((row) => row.referenceId).filter((reference): reference is string => reference !== null),
+  );
 
-  if (chargeRows.length === 0) return { charge: { kind: "not_charged" }, alreadyRefunded };
+  if (chargeRows.length === 0) {
+    return { charge: { kind: "not_charged" }, alreadyRefunded, refundedReferences };
+  }
   if (chargeRows.length > 1) {
     return {
       charge: { kind: "ambiguous", reason: "duplicate charge rows for one operation" },
       alreadyRefunded,
+      refundedReferences,
     };
   }
   const [charge] = chargeRows;
@@ -253,9 +305,14 @@ export async function readOperationLedger(
     return {
       charge: { kind: "ambiguous", reason: "charge reference holds a non-charge ledger row" },
       alreadyRefunded,
+      refundedReferences,
     };
   }
-  return { charge: { kind: "charged", credits: Math.abs(charge.amount) }, alreadyRefunded };
+  return {
+    charge: { kind: "charged", credits: Math.abs(charge.amount) },
+    alreadyRefunded,
+    refundedReferences,
+  };
 }
 
 /** Fails every unfinished candidate without paying anything back. */
@@ -447,7 +504,8 @@ async function adjudicateRollOperation(
     proves work was *planned*, never that it was paid for. Everything below
     this point may only give back what the ledger shows was taken.
   */
-  const { charge, alreadyRefunded } = await readOperationLedger(db, operation, candidates);
+  const ledger = await readOperationLedger(db, operation, candidates);
+  const { charge, alreadyRefunded } = ledger;
   if (charge.kind === "ambiguous") {
     return {
       type: "recovery_required",
@@ -506,7 +564,13 @@ async function adjudicateRollOperation(
     return { type: "free_failure", reason: "operation crashed before the charge was recorded" };
   }
 
-  if (owed.length === 0) {
+  // Charged, failed, and never paid back — the torn write (#868). Read here,
+  // after the charge gate, because "owed" is a question about the ledger and
+  // the ledger has only now been read; an unpaid roll fails its rows above
+  // and never reaches this line.
+  const torn = candidates.filter((candidate) => isTornFailure(candidate, ledger, operation.id));
+
+  if (owed.length === 0 && torn.length === 0) {
     // Everything landed; the crash was after the last candidate. Nothing owed.
     await db
       .update(castingRolls)
@@ -521,6 +585,64 @@ async function adjudicateRollOperation(
   let refundedCredits = alreadyRefunded;
   let refundedCount = 0;
   let unrecorded = 0;
+
+  /**
+   * One slice back, under the candidate's own reference. Returns the
+   * escalation when the ceiling would be breached; otherwise records the
+   * refund (or counts it unrecorded) and returns nothing. Shared by the
+   * unfinished rows and the torn ones so the ceiling and the unrecorded
+   * count are one rule over both.
+   */
+  const refundSlice = async (candidate: CandidateRow): Promise<RollRecoveryOutcome | undefined> => {
+    const slice = candidate.pointsCost;
+    if (slice <= 0) return undefined;
+    if (refundedCredits + slice > charge.credits) {
+      /*
+        The ceiling. Slices are read from each candidate's own row, so a
+        corrupted or mis-seeded `pointsCost` could otherwise refund more than
+        was ever charged. Conservation is not an assertion we hope holds — it
+        is enforced here, and breaching it is a support case, not a silent
+        overpayment.
+      */
+      log.error(
+        { operationId: operation.id, candidate: candidate.publicId, slice, refundedCredits, charged: charge.credits },
+        "[rollRecovery] refund slices would exceed the recorded charge — stopping",
+      );
+      return {
+        type: "recovery_required",
+        reason: "refund slices exceed the recorded charge",
+        chargedCredits: charge.credits,
+        refundedCredits,
+      };
+    }
+    const outcome = await recordRefund(
+      operation.userId,
+      slice,
+      /*
+        Composed through the same fork the live catch uses, never a constant
+        (PR #871 review): a torn `render_fault` row carries its class, and the
+        ledger line the customer reads must name the event that happened. An
+        unfinished row has no class and lands on `candidateAbsent` as before.
+      */
+      rollSliceRefundDescription(candidate.failureClass),
+      candidateChargeReference(operation.id, candidate.publicId),
+    );
+    if (outcome.recorded) {
+      refundedCredits += outcome.amount;
+    } else {
+      /*
+        A refund that failed to record is never reported as "you weren't
+        charged" (the atomicCredits law). Count it so the operation lands in
+        recovery_required rather than quietly claiming conservation.
+      */
+      unrecorded += 1;
+      log.error(
+        { operationId: operation.id, candidate: candidate.publicId, reference: outcome.reference },
+        "[rollRecovery] refund slice did not record — user remains charged",
+      );
+    }
+    return undefined;
+  };
 
   for (const candidate of owed) {
     // Ask the provider only for work we actually dispatched. A `queued`
@@ -564,48 +686,8 @@ async function adjudicateRollOperation(
       continue;
     }
 
-    const slice = candidate.pointsCost;
-    if (slice > 0 && refundedCredits + slice > charge.credits) {
-      /*
-        The ceiling. Slices are read from each candidate's own row, so a
-        corrupted or mis-seeded `pointsCost` could otherwise refund more than
-        was ever charged. Conservation is not an assertion we hope holds — it
-        is enforced here, and breaching it is a support case, not a silent
-        overpayment.
-      */
-      log.error(
-        { operationId: operation.id, candidate: candidate.publicId, slice, refundedCredits, charged: charge.credits },
-        "[rollRecovery] refund slices would exceed the recorded charge — stopping",
-      );
-      return {
-        type: "recovery_required",
-        reason: "refund slices exceed the recorded charge",
-        chargedCredits: charge.credits,
-        refundedCredits,
-      };
-    }
-    if (slice > 0) {
-      const outcome = await recordRefund(
-        operation.userId,
-        slice,
-        SLICE_REFUND_DESCRIPTION.candidateAbsent,
-        candidateChargeReference(operation.id, candidate.publicId),
-      );
-      if (outcome.recorded) {
-        refundedCredits += outcome.amount;
-      } else {
-        /*
-          A refund that failed to record is never reported as "you weren't
-          charged" (the atomicCredits law). Count it so the operation lands in
-          recovery_required rather than quietly claiming conservation.
-        */
-        unrecorded += 1;
-        log.error(
-          { operationId: operation.id, candidate: candidate.publicId, reference: outcome.reference },
-          "[rollRecovery] refund slice did not record — user remains charged",
-        );
-      }
-    }
+    const breached = await refundSlice(candidate);
+    if (breached) return breached;
     refundedCount += 1;
 
     if (providerOutcome === "delivered") {
@@ -614,6 +696,20 @@ async function adjudicateRollOperation(
         "[rollRecovery] provider delivered work we never landed — refunded anyway, COGS absorbed",
       );
     }
+  }
+
+  for (const candidate of torn) {
+    // Already `failed`, so there is no CAS to win and nothing to ask the
+    // provider: the live process decided this slice failed and died before
+    // its refund wrote. The same reference, the same ceiling, the same
+    // unrecorded count — one money rule, not a second one.
+    log.warn(
+      { operationId: operation.id, candidate: candidate.publicId, slice: candidate.pointsCost },
+      "[rollRecovery] failed slice with no refund on the ledger — paying the torn write",
+    );
+    const breached = await refundSlice(candidate);
+    if (breached) return breached;
+    refundedCount += 1;
   }
 
   await db
