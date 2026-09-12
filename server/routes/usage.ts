@@ -1,5 +1,5 @@
 import { protectedProcedure, router } from "../_core/trpc";
-import { getCreditHistory, getUsageStats, getDailyUsage, getCycleSpend } from "../db";
+import { getCreditHistory, getCycleSpend } from "../db";
 import { z } from "zod";
 
 export const usageRouter = router({
@@ -18,23 +18,17 @@ export const usageRouter = router({
       return result;
     }),
 
-  // Get usage statistics summary
-  getStats: protectedProcedure
-    .input(z.object({
-      days: z.number().min(1).max(365).optional().default(30),
-    }).optional())
-    .query(async ({ ctx, input }) => {
-      const stats = await getUsageStats(ctx.user.id, input?.days || 30);
-      return stats;
-    }),
-
   /**
    * WHAT THIS ACCOUNT HAS SPENT THIS BILLING CYCLE — #624, his approved
    * option (a): *"(a), fix it, not urgent."*
    *
    * The three surfaces that quote a cycle's spend (the Usage pane, Change plan
    * and Add credits) used to reassemble it out of `getDailyUsage`, which
-   * answers in whole UTC days and caps at 90 of them. A real billing period
+   * answered in whole UTC days and capped at 90 of them. (`getDailyUsage` and
+   * `getStats` were DELETED with #635 — after #624 nothing called either, and
+   * no design in `docs/specs/` asks for the per-day chart the first was built
+   * for. A chart that wants day buckets is a new procedure with its own card,
+   * never a reason to sum buckets for a cycle again.) A real billing period
    * begins at a mid-day INSTANT, so the reassembly counted up to a day of the
    * previous cycle — and on an annual plan it could not cover the period at
    * all. This answers the question they are actually asking.
@@ -48,14 +42,4 @@ export const usageRouter = router({
   getCycleSpend: protectedProcedure.query(async ({ ctx }) => {
     return getCycleSpend(ctx.user.id);
   }),
-
-  // Get daily usage data for charts
-  getDailyUsage: protectedProcedure
-    .input(z.object({
-      days: z.number().min(1).max(90).optional().default(30),
-    }).optional())
-    .query(async ({ ctx, input }) => {
-      const dailyData = await getDailyUsage(ctx.user.id, input?.days || 30);
-      return dailyData;
-    }),
 });
