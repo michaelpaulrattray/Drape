@@ -318,6 +318,17 @@ describe("the self-invocation check", () => {
   });
 
   it("RUN DIRECTLY, the two with blast radius still do their job", () => {
+    /* ⚠ THIS ARM RUNS THE WHOLE ATLAS GENERATOR AND CARRIES ITS OWN FIGURE —
+       the road `childProcessTimeout.ts` names for an arm that legitimately
+       needs longer than the file's 30 s floor (`typecheckGate` 120_000,
+       `architectureAtlas` its own). `check-architecture.mts` rebuilds both maps
+       in memory: 17 s alone on this box, 74 s under the rite's own concurrent
+       checks (foreman-20260910-1730), and it crossed the 30 s floor on three
+       shifts — twice in one sitting on 2026-09-12, refusing a docs-only rite
+       push each time. The floor is a per-FILE figure sized for a `git` or a
+       `tsc`; a synchronous arm that overruns finishes anyway and is only then
+       marked red, so a tighter number buys no hang protection here and costs a
+       refused deploy. 120 s is ~7× alone and ~1.6× the worst contended reading. */
     /* The card's own bar: `generate-architecture.mts` is run by the pre-commit
        hook and by the gate's freshness check, and `check-architecture.mts` is
        that check. The negative arm above would be equally satisfied by a
@@ -334,5 +345,5 @@ describe("the self-invocation check", () => {
        self-invocation. Asserting it would hand this arm an unrelated reason to
        go red, which is how a guard stops being read. Freshness has its own
        check, on the gate, against the committed tree. */
-  });
+  }, 120_000);
 });
