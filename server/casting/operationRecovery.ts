@@ -1,4 +1,4 @@
-import { recoverCastingV2RollOperation } from "../castingV2/rollRecovery";
+import { ROLL_RECOVERY_SENTENCE, recoverCastingV2RollOperation } from "../castingV2/rollRecovery";
 import { recoverCastingV2RefineOperation } from "../castingV2/refineRecovery";
 import { RETRY_SUPPORT_REVIEW_SENTENCE, recoverCastingV2RetryOperation } from "../castingV2/retryRecovery";
 import { recoverCastingV2SignOperation } from "../castingV2/signRecovery";
@@ -941,8 +941,8 @@ export async function adjudicateStaleGenerationOperation(
       await markGenerationOperationRecoveryRequired({
         userId: operation.userId,
         operationId: operation.id,
-        publicMessage:
-          `This operation needs support review before it can be retried. Operation ${operation.id}.`,
+        // The live road (#855) parks with the same words — one sentence, two writers.
+        publicMessage: ROLL_RECOVERY_SENTENCE.supportReview(operation.id),
         chargedCredits: recovered.chargedCredits,
         refundedCredits: recovered.refundedCredits,
       });
