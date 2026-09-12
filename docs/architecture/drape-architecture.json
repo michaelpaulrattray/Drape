@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "5c96df6ded0ebc70"
+    "sourceFingerprint": "a90e3da397a85b5f"
   },
   "domains": [
     {
@@ -8642,16 +8642,6 @@
       "type": "query",
       "auth": "protected",
       "input": "none",
-      "rateLimited": false,
-      "file": "server/routes/usage.ts"
-    },
-    {
-      "id": "route:usage.getHistory",
-      "namespace": "usage",
-      "name": "getHistory",
-      "type": "query",
-      "auth": "protected",
-      "input": "open",
       "rateLimited": false,
       "file": "server/routes/usage.ts"
     },
@@ -35088,13 +35078,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:referral.sendInvite",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:usage.getHistory",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:usage.getHistory",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {

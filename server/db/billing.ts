@@ -1,8 +1,8 @@
 /**
- * Billing Domain — subscriptions, credit top-ups, credit history, and cycle spend.
+ * Billing Domain — subscriptions, credit top-ups, and cycle spend.
  */
 
-import { eq, and, desc, gte, lt, sql } from "drizzle-orm";
+import { eq, and, gte, lt, sql } from "drizzle-orm";
 import {
   credits,
   creditTransactions,
@@ -249,63 +249,6 @@ export async function getSubscriptionByUserId(userId: number) {
     .limit(1);
 
   return result.length > 0 ? result[0] : null;
-}
-
-/**
- * Get credit transaction history with pagination.
- */
-export async function getCreditHistory(
-  userId: number,
-  limit: number = 20,
-  offset: number = 0
-): Promise<{
-  transactions: Array<{
-    id: number;
-    amount: number;
-    type: string;
-    description: string | null;
-    referenceId: string | null;
-    balanceAfter: number;
-    engineUsed: string | null;
-    createdAt: Date;
-  }>;
-  total: number;
-}> {
-  const db = await getDb();
-  if (!db) {
-    return { transactions: [], total: 0 };
-  }
-
-  try {
-    const transactions = await db
-      .select({
-        id: creditTransactions.id,
-        amount: creditTransactions.amount,
-        type: creditTransactions.type,
-        description: creditTransactions.description,
-        referenceId: creditTransactions.referenceId,
-        balanceAfter: creditTransactions.balanceAfter,
-        engineUsed: creditTransactions.engineUsed,
-        createdAt: creditTransactions.createdAt,
-      })
-      .from(creditTransactions)
-      .where(eq(creditTransactions.userId, userId))
-      .orderBy(desc(creditTransactions.createdAt))
-      .limit(limit)
-      .offset(offset);
-
-    const countResult = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(creditTransactions)
-      .where(eq(creditTransactions.userId, userId));
-
-    const total = countResult[0]?.count || 0;
-
-    return { transactions, total };
-  } catch (error) {
-    log.error({ err: error }, "[Database] Failed to get credit history:");
-    return { transactions: [], total: 0 };
-  }
 }
 
 /**
