@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7b3b5a41c9cfcd1c"
+    "sourceFingerprint": "11bcb46204f36fda"
   },
   "domains": [
     {
@@ -10146,13 +10146,6 @@
       "member": "vtoIncremental",
       "credits": 300,
       "file": "server/wardrobe/creditCosts.ts"
-    },
-    {
-      "id": "cost:shared/inputLimits.ts:CREDIT_ADJUST_REASON_MAX_LENGTH",
-      "name": "CREDIT_ADJUST_REASON_MAX_LENGTH",
-      "constant": "CREDIT_ADJUST_REASON_MAX_LENGTH",
-      "credits": 500,
-      "file": "shared/inputLimits.ts"
     }
   ],
   "vocabulary": [
