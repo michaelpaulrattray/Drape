@@ -54,6 +54,12 @@ import { waitExceeds } from "@/features/castingV2/waitNotice";
 import { inFlightCandidate, refineBusy, refineGhosts, refineWait } from "@/features/castingV2/refineBusy";
 import { bridgeWithinCandidate } from "@/features/castingV2/panelBridge";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
+import {
+  START_NEW_SHEET_LABEL,
+  carriedBriefState,
+  closedSheetLine,
+  closedSheetStatus,
+} from "@/features/castingV2/closedSheet";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
 import {
   CASTING_PATH_NAMES,
@@ -2253,6 +2259,19 @@ export default function CastingSheet() {
   const expiryNotice = sheetExpiryNotice(session.data?.expiresAt ?? null);
 
   /*
+    WHETHER THIS SHEET CAN STILL BE ROLLED ON (#854, his A).
+
+    Server fact, read off the same projection the rest of the page reads —
+    `status` is `expired` once the retention sweep has cleared the sheet and
+    `abandoned` after their own Start over. On a closed sheet the dock stops
+    offering Roll again (a press that can only refuse, since PR #859 for free)
+    and offers the one thing that IS possible instead: a fresh sheet from the
+    words in the box. `closedSheet.ts` owns the words and the reason; this is
+    only the fact.
+  */
+  const closedSheet = closedSheetStatus(session.data?.status);
+
+  /*
     One slot, one line. Both new facts are properties of the ROLL being viewed,
     so walking the history rail correctly changes what the sheet confesses —
     the sheet you are looking at is the one it describes.
@@ -2837,7 +2856,11 @@ export default function CastingSheet() {
                   // Follow is a paid roll. Every tile's Follow locks the
                   // moment any one of them is clicked, or the sheet offers
                   // eight ways to buy the same thing twice.
-                  paidBusy={awaitingNewRoll}
+                  // And on a closed sheet it locks outright (#854): a kept
+                  // sibling of a signed Cast survives the sweep (§G.6), but
+                  // a follow rolls on THIS sheet, which the server refuses
+                  // (`session_closed`) — so the tile does not offer it.
+                  paidBusy={awaitingNewRoll || closedSheet !== null}
                   rollPriceCredits={price}
                   onKeep={() =>
                     onKeep(
@@ -2892,7 +2915,15 @@ export default function CastingSheet() {
             UNPATHED sheet it never falls silent at all, because there the pills
             were never a label of anything (fable-1483 ASK 1(b)).
           */}
-          {dockPathVisible && nextRollPath ? (
+          {/*
+            NEITHER CONTROL ON A CLOSED SHEET (#854). Both set up "the next
+            roll", and a closed sheet has none: a style or path chosen here
+            would land nowhere — the casting page the words travel to has its
+            own gear. Absent rather than disabled (D-180); the words travel,
+            the settings do not, and a control whose effect never lands is
+            D-107's dead control.
+          */}
+          {dockPathVisible && nextRollPath && !closedSheet ? (
             <PathToggle
               idPrefix="dpc-dock-path"
               label="How the next roll is cast"
@@ -2902,7 +2933,7 @@ export default function CastingSheet() {
             />
           ) : null}
           {/* THE GEAR (#142) for the next roll — style alone since #535. */}
-          {nextStyle ? (
+          {nextStyle && !closedSheet ? (
             <CastSettingsButton
               idPrefix="dpc-dock"
               style={nextStyle}
@@ -2984,13 +3015,32 @@ export default function CastingSheet() {
               what it is doing rather than going quiet — silence is what made
               the founder click again.
             */}
-            <Button
-              variant="primary"
-              onClick={() => dispatchRoll("roll")}
-              disabled={awaitingNewRoll}
-            >
-              {awaitingNewRoll ? "Rolling…" : "Roll again"}
-            </Button>
+            {closedSheet ? (
+              /*
+                THE ONE THING A CLOSED SHEET CAN STILL DO (#854, his A — Crew
+                reply #178, "A"). Roll again on an expired sheet could only
+                refuse (free, since #859, but a refusal every time), so it is
+                not offered; this carries the words in the box to the casting
+                page's own box, where Cast prices the roll as it always has.
+                Free — it navigates and spends nothing, which is why no price
+                sits beside it. The lobby's `startCasting` stays the ONE
+                function that starts a roll; `closedSheet.ts` says why.
+              */
+              <Button
+                variant="primary"
+                onClick={() => navigate("/casting", { state: carriedBriefState(brief) })}
+              >
+                {START_NEW_SHEET_LABEL}
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                onClick={() => dispatchRoll("roll")}
+                disabled={awaitingNewRoll}
+              >
+                {awaitingNewRoll ? "Rolling…" : "Roll again"}
+              </Button>
+            )}
           </div>
           {/* The one quiet line about what just happened to the words — under the box they happened in (#535 §1). */}
           <ReimagineLine state={reimagine} />
@@ -3021,7 +3071,17 @@ export default function CastingSheet() {
               clears it — a refund story that completes over the following
               minute should not evaporate on a timer the way a toast does.
             */}
-            {cancelLine ? (
+            {closedSheet ? (
+              /*
+                A CLOSED SHEET SAYS SO WHERE ROLL AGAIN WAS (#854). It heads
+                the chain because every line under it is about a roll that
+                can be dispatched from this dock, and on a closed sheet none
+                can — the button beside the box is the only live control, and
+                this is the sentence that explains it. One fact, stated once,
+                in the retention confession's register.
+              */
+              <Instruction>{closedSheetLine(closedSheet)}</Instruction>
+            ) : cancelLine ? (
               /*
                 THE MONEY HAS EXACTLY ONE HOME.
 
@@ -3094,8 +3154,13 @@ export default function CastingSheet() {
 
               Ceremony-gated actions are absent from it: Sign's price belongs
               to its confirm, which is where the commitment happens.
+
+              ABSENT ON A CLOSED SHEET (#854): the only press left is free, and
+              a price beside a free button is the same lie the doctrine forbids,
+              pointing the other way. The roll's price is shown where the roll
+              is started — the casting page the words travel to.
             */}
-            {price ? (
+            {price && !closedSheet ? (
               <span className="dp-chrome dpc-dock__cost">
                 {/*
                   The tilde carries the same meaning it does in the sign modal:
@@ -3174,8 +3239,17 @@ export default function CastingSheet() {
 
                 Archivo, not mono — mono is for machine facts and this is a
                 sentence.
+
+                Not on a closed sheet (#854): there is nothing left to keep —
+                the sweep cleared the candidates with the sheet — so the
+                instruction would be teaching a road that no longer exists
+                here. Sign itself stays where a kept sibling of a signed Cast
+                survived (§G.6): the server takes that Sign, so the button is
+                honest. Only the empty-state coaching goes.
               */
-              <span className="dp-secondary">Keep the one you want, then sign them</span>
+              closedSheet ? null : (
+                <span className="dp-secondary">Keep the one you want, then sign them</span>
+              )
             )}
             {/*
               Cancel follows the ACTIVE roll, not the viewed one: reading roll
