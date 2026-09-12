@@ -7,6 +7,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../../logging/logger";
 import {
+  CREDIT_ADJUST_REASON_MAX_LENGTH,
   FREEZE_REASON_MAX_LENGTH,
   SUSPEND_REASON_MAX_LENGTH,
   UNFREEZE_NOTES_MAX_LENGTH,
@@ -393,7 +394,9 @@ export const usersRouter = router({
     .input(z.object({
       userId: z.number(),
       amount: z.number().min(-100000).max(100000),
-      reason: z.string().min(1).max(500),
+      // `.trim()` before `.min(1)` (#816's money row): a one-space reason used to move credits
+      // against a blank on every log this handler writes. The cap is the shared constant.
+      reason: z.string().trim().min(1).max(CREDIT_ADJUST_REASON_MAX_LENGTH),
     }))
     .mutation(async ({ ctx, input }) => {
       const { adjustUserCredits, getUserById } = await import("../../db");

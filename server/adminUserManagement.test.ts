@@ -247,6 +247,18 @@ describe("admin.adjustCredits — DRIVEN", () => {
     ).resolves.toBeDefined();
   });
 
+  it("#816's money row — refuses a WHITESPACE-ONLY reason before any credit moves, and the reason that lands on the ledger is trimmed", async () => {
+    const caller = (await router()).createCaller(ADMIN_CTX);
+    // Red on the unfixed product: `z.string().min(1)` counted the space and 100 credits moved
+    // against a blank reason on the audit row, the admin log and the immutable log.
+    await expect(caller.adjustCredits({ userId: 1, amount: 100, reason: " \n\t " })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(adjustUserCredits).not.toHaveBeenCalled();
+    await caller.adjustCredits({ userId: 1, amount: 100, reason: "  Goodwill for the lost roll \n" });
+    expect(adjustUserCredits).toHaveBeenCalledWith(1, 100, "Goodwill for the lost roll", ADMIN_CTX.user.id);
+  });
+
   it("POSITIVE CONTROL — an admin adjusting an ordinary account SUCCEEDS, with the amount and actor passed through", async () => {
     const caller = (await router()).createCaller(ADMIN_CTX);
     await expect(

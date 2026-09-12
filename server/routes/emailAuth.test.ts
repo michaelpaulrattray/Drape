@@ -122,6 +122,27 @@ describe("Email Auth — Registration Validation", () => {
     }
   });
 
+  it("#816's auth row — rejects a WHITESPACE-ONLY name, and trims a padded one before it becomes the display name", () => {
+    // Red on the unfixed product: one space passed `.min(1)` and became the account's name.
+    const blank = registerSchema.safeParse({
+      email: "user@example.com",
+      password: "SecurePass1",
+      name: " \t ",
+      betaCode: "BETA123",
+    });
+    expect(blank.success).toBe(false);
+    if (!blank.success) {
+      expect(blank.error.issues[0]?.message).toBe("Name is required");
+    }
+    const padded = registerSchema.safeParse({
+      email: "user@example.com",
+      password: "SecurePass1",
+      name: "  Ada Lovelace \n",
+      betaCode: "BETA123",
+    });
+    expect(padded.success && padded.data.name).toBe("Ada Lovelace");
+  });
+
   it("rejects name longer than 100 characters", () => {
     const result = registerSchema.safeParse({
       email: "user@example.com",
