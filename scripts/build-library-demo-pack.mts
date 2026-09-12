@@ -24,7 +24,7 @@
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 
 import { openDatabase, utc } from "./lib/dbConnection.mjs";
 import { fetchImageBytes } from "./lib/imageBytes.mjs";
@@ -102,7 +102,7 @@ try {
   const frame = await fetchImageBytes(`${bucket}/${newest}`);
   const meta = await sharp(frame.bytes).metadata();
 
-  const layers: sharp.OverlayOptions[] = [];
+  const layers: OverlayOptions[] = [];
   const lines: string[] = [];
   for (const [index, row] of together.entries()) {
     if (meta.width !== row.refusedFrameWidth || meta.height !== row.refusedFrameHeight) {

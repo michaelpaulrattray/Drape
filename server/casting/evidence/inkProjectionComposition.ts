@@ -1,4 +1,4 @@
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 import type { CanonicalViewAngle } from "../../../shared/boardTypes";
 import { supportedImageMime } from "../../security/trustedImageFetch";
 import {
@@ -158,7 +158,7 @@ export async function buildInkEvidenceMosaic(
   if (Math.min(cellWidth, cellHeight) < 256) {
     throw new TypeError("Projection evidence set cannot remain legible");
   }
-  const composites: sharp.OverlayOptions[] = [];
+  const composites: OverlayOptions[] = [];
   for (let index = 0; index < features.length; index += 1) {
     const feature = features[index];
     const normalized = await normalizedPng(feature.witness);

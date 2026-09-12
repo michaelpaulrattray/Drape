@@ -14,7 +14,7 @@
  */
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 
 const OUT = "output/_shift113";
 mkdirSync(OUT, { recursive: true });
@@ -43,7 +43,7 @@ const ARMS = [
 
 const WIDE = 1000;
 const CAPTION = 46;
-const tiles: sharp.OverlayOptions[] = [];
+const tiles: OverlayOptions[] = [];
 let top = 0;
 for (const arm of ARMS) {
   const file = `${OUT}/${arm.id}-WHERE.png`;

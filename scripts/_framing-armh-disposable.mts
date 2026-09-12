@@ -51,7 +51,7 @@
 import "dotenv/config";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 
 import { boxOutlineSvg } from "./lib/termsPalette.mts";
 
@@ -176,7 +176,7 @@ for (const word of WORDS) {
     }
     const face = read.cell === "SUIT" ? faceTops.get(read.id) : undefined;
     if (face) boxes.push({ x: 0, y: face.top, width, height: 1 });
-    const overlays: sharp.OverlayOptions[] = boxes.length === 0
+    const overlays: OverlayOptions[] = boxes.length === 0
       ? []
       : [{ input: Buffer.from(boxOutlineSvg(width, height, boxes)), top: 0, left: 0 }];
     /* Composite THEN resize, in two passes: sharp applies `resize` before

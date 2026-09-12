@@ -20,7 +20,7 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 
 import { boxOutlineSvg } from "./lib/termsPalette.mts";
 
@@ -87,7 +87,7 @@ for (const word of ["head", "hair"] as const) {
     /* The face box's top edge, as a full-width one-pixel rule — the same white,
        distinguished by being a line across the frame rather than a rectangle. */
     if (read.faceTop !== null) boxes.push({ x: 0, y: read.faceTop, width, height: 1 });
-    const overlays: sharp.OverlayOptions[] = [
+    const overlays: OverlayOptions[] = [
       { input: Buffer.from(boxOutlineSvg(width, height, boxes)), top: 0, left: 0 },
     ];
     /*

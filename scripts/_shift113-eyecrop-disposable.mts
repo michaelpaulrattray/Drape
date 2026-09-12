@@ -16,7 +16,7 @@
  */
 import { mkdirSync } from "node:fs";
 
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 
 const OUT = "output/_shift113";
 mkdirSync(OUT, { recursive: true });
@@ -30,7 +30,7 @@ const CANDIDATES = [
   "output/_shift100-frames/53.png",
 ];
 
-const tiles: sharp.OverlayOptions[] = [];
+const tiles: OverlayOptions[] = [];
 const WIDE = 900;
 let top = 0;
 for (const file of CANDIDATES) {

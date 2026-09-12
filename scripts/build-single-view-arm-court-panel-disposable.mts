@@ -7,7 +7,7 @@
  *
  * The subject faces camera, so HER LEFT ARM IS ON THE RIGHT OF EVERY TILE.
  */
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 import path from "node:path";
 import { readdir } from "node:fs/promises";
 
@@ -28,7 +28,7 @@ const cols = Math.max(...ROWS.map((row) => row.match.length));
 const width = PAD + cols * (TILE_W + PAD);
 const height = ROWS.reduce((sum) => sum + HEAD + TILE_H + PAD, PAD);
 
-const layers: sharp.OverlayOptions[] = [];
+const layers: OverlayOptions[] = [];
 let top = PAD;
 for (const row of ROWS) {
   layers.push({
