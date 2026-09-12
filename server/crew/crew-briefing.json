@@ -1,7 +1,7 @@
 {
-  "edition": 354,
-  "updatedAt": "2026-09-12T00:05:31.063Z",
-  "shift": "Foreman — a batch of three on three cards, all merged. YOUR DESK IS CLEAR. THE ONE THAT MATTERS TO YOU (PR #828): the team's own test run was failing on YOUR machine — 13 to 22 checks a run timing out, every single one a timeout and not a real bug — because the test runner was starting 19 workers at once on your 20-core box, beside Unity, Godot, Codex and a browser. It now starts 8. Measured back to back on the same tree: 680 s and 22 reds at nineteen, 301 s and 2 reds at eight — half the time, a dozen reds gone. The two that remain are the two heaviest checks (they each run a full compile) and both pass alone; they will be a separate card only if they keep showing up. GitHub's own test runner is untouched (it has 4 cores and was never the problem: green 38 of the last 40). THE SECOND (PR #830): the type check every shift runs before pushing took 109 seconds and now takes 28 — its four passes run side by side instead of one after another. Nothing is skipped. On GitHub the same step went from ~90 s to 36 s. THE THIRD (PR #829): the script that decides which throwaway files are safe to delete now sees a file whose only friend is itself being deleted — last night's Janitor found 11 of those by running it three times; one run finds them now, and it says which friend was leaving. NOT DONE, ON PURPOSE: the card for the first fix asked for a timeout to be added to every slow test file — 76 of them. That was the wrong shape (they were slow only because they were starved), and the card itself said to stop at that count. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden reads due tomorrow.",
+  "edition": 355,
+  "updatedAt": "2026-09-12T01:52:25.277Z",
+  "shift": "Foreman — two cards merged, one closed on its own recommendation, one new card filed. YOUR DESK IS CLEAR. THE ONE THAT MATTERS TO CUSTOMERS (PR #832): until today, anyone opening the app for the first time downloaded the WHOLE product in one file before a single pixel drew — 637 kB — and that file included the admin panel and its charting library, whether they were an admin or not. The ten staff-only pages (admin, moderation, the sealed old studio) are now fetched only when a staff member opens them. A customer's first download is 452 kB: 185 kB less, 29% off, and nothing they can see changes. Measured before and after on the same machine and the same commit with the team's own bundle reader; looked at in the running app in both themes before it shipped. The reviewer passed it with three small findings, all taken: the one worth knowing is that after a deploy, a staff tab opened BEFORE the deploy could have hit an error screen when it first opened a page it had not visited — it now reloads once, quietly. THE SECOND (PR #834): two API endpoints that nobody has called since 1 September (the old per-day usage chart's data, and a usage summary) are deleted with a manifest, and the tree refuses them coming back — an endpoint nobody calls and nobody explains is how the whole-day-bucket bug (#385, #624) happened. A third one of the same kind, the credit transaction list, was found on the way and is filed as #833 rather than deleted in the same breath: 'where did my credits go' is a question a paying customer asks, so whether it stays or goes is written down first. CLOSED WITHOUT CODE: #694 (a few small leftover temp folders from test runs that were killed mid-run) — its own recommendation was to let the Janitor's regular sweep own it, which it does; confirmed live this morning. NOT DONE, ON PURPOSE: the customer's first download is still 452 kB — the casting studio and the canvas are in it. Splitting THOSE is a navigation trade (one download becomes several) that wants a measurement before it is done, and a guard now refuses it happening by accident. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden reads due tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T00:05:41.274Z",
+      "readAt": "2026-09-12T01:51:31.644Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,20 @@
   ],
   "pipeline": [
     {
+      "id": "staff-lazy-832",
+      "title": "A customer's first download: 637 kB → 452 kB — the admin panel no longer travels with the product",
+      "status": "merged",
+      "prNumber": 832,
+      "note": "The ten pages only staff can reach are fetched on first open by staff, never by customers. Measured with the team's own bundle reader on the same commit: largest chunk 636.9 kB → 451.8 kB gzip (−29%); the admin overview with its charting library is its own 116 kB file. Customer routes deliberately stay as they were — splitting one of those can make moving around the app slower and is a measured decision, not a tidy-up. A guard derives the split from the router itself and was sabotaged three ways before it counted. Reviewer: pass, three low findings, all taken in one push — a stale staff tab now reloads once instead of showing a stack trace after a deploy."
+    },
+    {
+      "id": "usage-orphans-834",
+      "title": "Two API endpoints nobody has called since 1 Sep are deleted with a manifest — and cannot quietly return",
+      "status": "merged",
+      "prNumber": 834,
+      "note": "usage.getDailyUsage (the old per-day chart's data — the whole-UTC-day buckets behind #385 and #624) and usage.getStats had no caller anywhere in the product; no design asks for the chart. Deleted with the readers behind them; an absence test refuses them coming back. Reviewer: pass, three prose notes taken. A third orphan of the same kind — the credit transaction list — is filed as #833 rather than folded in, because 'where did my credits go' is a plausible customer question and the manifest named two."
+    },
+    {
       "id": "worker-cap-828",
       "title": "The test run on your machine: 8 workers instead of 19 — half the time, a dozen timeouts gone",
       "status": "merged",
@@ -5561,11 +5575,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912h-foreman",
+      "id": "queue-shape-0912i-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 51 open, three closed tonight (#743, #825, #827), none filed; NEXT UP is empty; nothing waits on you",
-      "detail": "Three background cards taken in category order and all three merged: #743 (Process — the test-worker cap, PR #828), #825 (Performance — the parallel type check, PR #830), #827 (Housekeeping — the cleaner's chain verdict, PR #829). Bugs (#816) and #697's last file are auth/money rows and stay for a Fable shift. 26 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Warden due 13 Sep; Janitor, Machinist and Retro ran today."
+      "title": "The queue: 49 open, three closed (#744, #635, #694), one filed (#833); NEXT UP is empty; nothing waits on you",
+      "detail": "Category order worked: Bugs (#816) is down to its two auth/money rows and Process (#697, #769, #513) has nothing an Opus shift can take, so Performance #744 was the brief (merged, PR #832) with Housekeeping #635 (merged, PR #834) taken in a second worktree while the first gate ran, and #694 closed on its own recommendation. 27 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Warden due 13 Sep; Janitor, Machinist and Retro ran today."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5748,7 +5762,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-12T00:05:41.273Z",
+    "readAt": "2026-09-12T01:51:31.643Z",
     "items": []
   }
 }
