@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "39100a351120f44b"
+    "sourceFingerprint": "636a0d4858da0cdd"
   },
   "domains": [
     {
@@ -10896,6 +10896,10 @@
     {
       "id": "test:client/src/foundation/token-guard.test.ts",
       "path": "client/src/foundation/token-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/staffPagesLazy.test.ts",
+      "path": "client/src/staffPagesLazy.test.ts"
     },
     {
       "id": "test:server/_core/invalidInputWire.test.ts",
