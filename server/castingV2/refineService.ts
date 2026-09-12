@@ -9267,6 +9267,41 @@ async function refineCandidateCounted(
             "[refineService] this render's reader disputed a facet — its crop is cut for a human, not for the library",
           );
         }
+        /*
+          A PAID RENDER THAT FILED NOTHING SAYS SO (#64 item 2; the compositor
+          design's own self-maintaining table, driven at the code 2026-08-24).
+
+          Until now this branch guarded the mint and logged nothing: a render
+          the customer paid for could contribute nothing to her library and the
+          only trace was the ABSENCE of a mint line. The lines above each name
+          one road to nothing (a facet with no slot, an open kind that filed no
+          crop, a disputed facet), but a render can reach zero slots down a road
+          none of them names — a reader that was unavailable, so nothing was
+          earned or confirmed; a build that produced no caption; an ask that
+          wrote no facet at all. So the line carries the ingredients the mint
+          was handed, and the reason is read off them rather than guessed:
+          `earned` and `disputed` are this render's reader verdicts, `held` is
+          what the library already keeps, `open` the open-kind asks, and the
+          two `unfiled` counts are the lines above, repeated as numbers so one
+          log read holds the whole answer.
+        */
+        if (slots.length === 0) {
+          log.info(
+            {
+              operationId,
+              variant: variant.publicId,
+              earned: earned.length,
+              disputed: disputed.length,
+              held: live.length,
+              awaitingCarrier: awaitingCarrier.size,
+              open: openAsks.length,
+              unfiled: unfiled.length,
+              unfiledOpen: unfiledOpen.length,
+              readerUnavailable: verification.unavailable,
+            },
+            "[refineService] this render filed nothing in the library — no slot was minted",
+          );
+        }
         if (slots.length > 0) {
           const reader = dependencies.regions ?? defaultRegionReader();
           /*
