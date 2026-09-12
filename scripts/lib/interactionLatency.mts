@@ -84,6 +84,14 @@ export type Probe = {
   readonly name: string;
   readonly bar: Bar;
   readonly source: string;
+  /**
+   * A reading KNOWN to sit over its bar, with the ceiling above which it has
+   * regressed. The verdict still says OVER — the bar is the customer's — but
+   * the drive's exit code answers "did something get worse?" rather than
+   * "is the known reading still known?", so an automation wrapping it does
+   * not learn to ignore a standing 2 (PR #853's review).
+   */
+  readonly known?: { readonly ceilingMs: number; readonly why: string };
 };
 
 /** One click, one or more probes. */
@@ -126,7 +134,11 @@ const READER_SOURCE = String.raw`
   if (!target) return { kind: "absent" };
   const compiled = probes.map((p) => ({ name: p.name, read: new Function("target", p.source) }));
   const before = {};
-  for (const p of compiled) before[p.name] = JSON.stringify(p.read(target));
+  for (const p of compiled) {
+    /* Guarded like the after-read: a probe that throws on its FIRST read is a
+       per-probe reading, never a lost walk after money was spent. */
+    try { before[p.name] = JSON.stringify(p.read(target)); } catch (e) { before[p.name] = "probe threw: " + String(e); }
+  }
   return new Promise((resolve) => {
     const out = {};
     let pending = compiled.length;
@@ -307,7 +319,15 @@ export const SHEET_ACTIONS: readonly Action[] = [
         poll has seen it. A 10 s window read that as a timeout on the first
         baseline; a minute reads the number, which is the point.
       */
-      { name: "follow → family chip", bar: "server-bound", source: FOLLOWING_CHIP },
+      {
+        name: "follow → family chip",
+        bar: "server-bound",
+        source: FOLLOWING_CHIP,
+        known: {
+          ceilingMs: 45_000,
+          why: "the chip is derived from the roll on screen, which exists only after the interpreter (1–15 s measured) and the 2.5 s poll; 18–28 s read 2026-09-12",
+        },
+      },
     ],
     spends: true,
     timeoutMs: 60000,
@@ -355,6 +375,15 @@ export type ProbeSummary = {
   readonly timeouts: number;
   /** null when nothing was read; otherwise whether p95 is under the bar. */
   readonly underBar: boolean | null;
+  /**
+   * Whether p95 is over the ceiling that means WORSE — the bar, unless the
+   * probe declares a known reading, in which case that reading's ceiling.
+   * This is what the drive's exit code reads; `underBar` is what the table
+   * prints.
+   */
+  readonly regressed: boolean | null;
+  /** The declared known reading, carried into the verdict column. */
+  readonly known: Probe["known"];
   /** Why there is no number, when there is none. */
   readonly note: string;
 };
@@ -404,6 +433,8 @@ export function summarise(
         max: frames.length ? Math.max(...frames) : null,
         timeouts,
         underBar: p95 === null ? null : p95 <= BAR_MS[probe.bar],
+        regressed: p95 === null ? null : p95 > (probe.known?.ceilingMs ?? BAR_MS[probe.bar]),
+        known: probe.known,
         note,
       });
     }
@@ -419,10 +450,14 @@ export function renderTable(rows: readonly ProbeSummary[]): string {
     "|---|---|---|---|---|---|---|",
   ];
   for (const r of rows) {
+    const known =
+      r.known && r.underBar === false
+        ? ` · known: ${r.known.why} (${r.regressed ? "REGRESSED past" : "regression above"} ${r.known.ceilingMs} ms)`
+        : "";
     const verdict =
       r.underBar === null
         ? r.note || "—"
-        : `${r.underBar ? "under" : "OVER"} ${BAR_MS[r.bar]} ms${r.timeouts ? ` · ${r.timeouts} timeout(s)` : ""}${r.note ? ` · ${r.note}` : ""}`;
+        : `${r.underBar ? "under" : "OVER"} ${BAR_MS[r.bar]} ms${known}${r.timeouts ? ` · ${r.timeouts} timeout(s)` : ""}${r.note ? ` · ${r.note}` : ""}`;
     lines.push(`| ${r.probe} | ${r.bar} | ${r.n} | ${ms(r.p50)} | ${ms(r.p95)} | ${ms(r.max)} | ${verdict} |`);
   }
   return lines.join("\n");

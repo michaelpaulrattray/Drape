@@ -29,10 +29,11 @@
  *     [--only follow]                                # one action alone — re-read one paid number
  *
  * EXIT CODES:
- *     0  the walk completed and every read probe is under its bar
+ *     0  the walk completed and nothing got WORSE — every read probe is under
+ *        its bar, or under the ceiling of a reading it declares as known
  *     1  refused, or the sheet could not be reached
- *     2  the walk completed and at least one probe is OVER its bar, or never
- *        changed — a FINDING for the ledger, not a failure of the drive
+ *     2  the walk completed and at least one probe regressed past its ceiling,
+ *        or never changed — a FINDING for the ledger, not a failure of the drive
  *
  * Only the sheet's OWNER can be driven: the page's own guards send anyone
  * else to /casting, and the walk would then measure the lobby while the
@@ -243,7 +244,16 @@ try {
         /* Left to the next find, which reads it as absent and says so. */
       });
   };
-  for (let i = 0; i < (wanted(keep.name) ? SAMPLES : 0); i += 1) {
+  /* An unkeep is read WITH its keep (free, and the tile must be kept first),
+     so `--only unkeep` runs the pair — the review's finding 1: gated on keep
+     alone it read nothing and exited 0, the exact run the refusal above says
+     cannot happen. */
+  const keepWanted = wanted(keep.name) || wanted(unkeep.name);
+  if (!keepWanted) {
+    notes[keep.name] = "skipped by --only";
+    notes[unkeep.name] = "skipped by --only";
+  }
+  for (let i = 0; i < (keepWanted ? SAMPLES : 0); i += 1) {
     const kept = await measureClick(page, keepOnFreshTile);
     readings.push(kept);
     if (kept.kind === "absent") {
@@ -305,9 +315,12 @@ if (JSON_OUT) {
   console.log(`\nwritten: ${JSON_OUT}`);
 }
 
-const over = rows.filter((r) => r.underBar === false || (r.n === 0 && r.timeouts > 0));
+/* Exit 2 means WORSE: over the bar, or — for a probe with a declared known
+   reading — over that reading's ceiling. A known 18 s chip prints OVER in the
+   table and exits 0; a 50 s one exits 2. */
+const over = rows.filter((r) => r.regressed === true || (r.n === 0 && r.timeouts > 0));
 if (over.length > 0) {
-  console.log(`\n${over.length} probe(s) over the bar or never painted — a finding for the ledger:`);
+  console.log(`\n${over.length} probe(s) regressed past their ceiling or never painted — a finding for the ledger:`);
   for (const r of over) console.log(`  ${r.probe}: p95 ${r.p95 === null ? "—" : `${r.p95.toFixed(0)} ms`}, ${r.timeouts} timeout(s)`);
   process.exit(2);
 }

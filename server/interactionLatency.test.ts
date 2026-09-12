@@ -82,6 +82,30 @@ describe("summarise — one row per probe, judged against its declared bar", () 
     expect(noted!.note).toBe("not measured — renders for real; pass --spend");
   });
 
+  it("a declared KNOWN reading is OVER its bar in the table but regressed only past its own ceiling", () => {
+    /*
+      PR 853's review: the family chip cannot exist before the interpreter and
+      the poll, so it is over the 1 s bar on every run — and a drive whose exit
+      code says 2 on every run is one an automation learns to ignore. The bar
+      stays the customer's; the ceiling is what "worse" means.
+    */
+    const KNOWN: Action = {
+      ...ONE,
+      probes: [{ name: "one → b", bar: "server-bound", source: "return 1;", known: { ceilingMs: 45_000, why: "waits on the interpreter" } }],
+    };
+    const [still] = summarise([KNOWN], [{ kind: "read", action: "one", probes: { "one → b": changed(18_000) } }]);
+    expect(still).toMatchObject({ underBar: false, regressed: false });
+    expect(renderTable([still!])).toContain("OVER 1000 ms · known: waits on the interpreter (regression above 45000 ms)");
+    const [worse] = summarise([KNOWN], [{ kind: "read", action: "one", probes: { "one → b": changed(50_000) } }]);
+    expect(worse).toMatchObject({ underBar: false, regressed: true });
+    expect(renderTable([worse!])).toContain("REGRESSED past 45000 ms");
+    /* Without a declaration the ceiling IS the bar. */
+    const plain = summarise([ONE], [{ kind: "read", action: "one", probes: { "one → b": changed(900) } }]).find((r) => r.probe === "one → b");
+    expect(plain).toMatchObject({ underBar: true, regressed: false });
+    const [plainOver] = summarise([ONE], [{ kind: "read", action: "one", probes: { "one → a": changed(150) } }]);
+    expect(plainOver).toMatchObject({ underBar: false, regressed: true });
+  });
+
   it("a probe that only ever timed out says so instead of showing a dash with no reason", () => {
     const readings: ClickReading[] = [{ kind: "read", action: "one", probes: { "one → a": timeout(), "one → b": timeout() } }];
     const [a] = summarise([ONE], readings);
@@ -172,6 +196,12 @@ describe("the sources the page will compile", () => {
   it("the rendering actions are the ones that spend, and only those", () => {
     const spenders = SHEET_ACTIONS.filter((a) => a.spends).map((a) => a.name).sort();
     expect(spenders).toEqual(["follow", "retry", "roll again"]);
+  });
+
+  it("the only known reading declared today is the family chip, and its ceiling is above what was measured", () => {
+    const known = SHEET_ACTIONS.flatMap((a) => a.probes).filter((p) => p.known);
+    expect(known.map((p) => p.name)).toEqual(["follow → family chip"]);
+    expect(known[0]!.known!.ceilingMs).toBeGreaterThan(28_351); /* the slowest reading of 2026-09-12 */
   });
 
   it("every probe declares a bar the table knows", () => {
