@@ -1,7 +1,7 @@
 {
-  "edition": 355,
-  "updatedAt": "2026-09-12T01:52:25.277Z",
-  "shift": "Foreman — two cards merged, one closed on its own recommendation, one new card filed. YOUR DESK IS CLEAR. THE ONE THAT MATTERS TO CUSTOMERS (PR #832): until today, anyone opening the app for the first time downloaded the WHOLE product in one file before a single pixel drew — 637 kB — and that file included the admin panel and its charting library, whether they were an admin or not. The ten staff-only pages (admin, moderation, the sealed old studio) are now fetched only when a staff member opens them. A customer's first download is 452 kB: 185 kB less, 29% off, and nothing they can see changes. Measured before and after on the same machine and the same commit with the team's own bundle reader; looked at in the running app in both themes before it shipped. The reviewer passed it with three small findings, all taken: the one worth knowing is that after a deploy, a staff tab opened BEFORE the deploy could have hit an error screen when it first opened a page it had not visited — it now reloads once, quietly. THE SECOND (PR #834): two API endpoints that nobody has called since 1 September (the old per-day usage chart's data, and a usage summary) are deleted with a manifest, and the tree refuses them coming back — an endpoint nobody calls and nobody explains is how the whole-day-bucket bug (#385, #624) happened. A third one of the same kind, the credit transaction list, was found on the way and is filed as #833 rather than deleted in the same breath: 'where did my credits go' is a question a paying customer asks, so whether it stays or goes is written down first. CLOSED WITHOUT CODE: #694 (a few small leftover temp folders from test runs that were killed mid-run) — its own recommendation was to let the Janitor's regular sweep own it, which it does; confirmed live this morning. NOT DONE, ON PURPOSE: the customer's first download is still 452 kB — the casting studio and the canvas are in it. Splitting THOSE is a navigation trade (one download becomes several) that wants a measurement before it is done, and a guard now refuses it happening by accident. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden reads due tomorrow.",
+  "edition": 356,
+  "updatedAt": "2026-09-12T02:58:00.000Z",
+  "shift": "Foreman — two more merged on two cards, one card corrected by reading. YOUR DESK IS CLEAR. THE FIRST (PR #835): the third of the three API endpoints nobody has called since 1 September — the credit transaction list, filed yesterday as #833 so that 'where did my credits go' would be decided in writing rather than in passing — is deleted with a manifest. The reasoning, checked at the code: no design asks for a transaction list on any screen; a customer's own transactions already reach her through her data export; staff read any account's transactions by their own road; and deleting a reader nobody calls decides nothing about a future screen, because the ledger rows stay and a list a design asks for is a fresh endpoint under its own card. The reviewer read the billing file and passed it clean. THE SECOND (PR #836), your own ruling on #64 from 25 August ('the stopline total and the slots.length===0 line are one sitting together'): (1) the spend-freeze self-check now ends on a number — '15 of 15 controls passed' — instead of a sentence, so nobody counts its lines by eye again (the count drifted to a copied-forward '15' for a day once); a test runs the check and holds the number to the lines it printed. (2) When a paid refine contributes nothing to a cast's feature library, the pipeline now says so in one log line carrying why — before, the only trace was the ABSENCE of a line, which no reader can see. Nothing a customer sees changes; the reviewer passed it with no findings. CORRECTED BY READING, NOT BUILT: #62 (the hair-road court arms) said no test proved that re-doing an edit re-sends the photograph she attached; one has existed since 20 August. The card now says so and stays open only for the two arms that wait on the hair road opening. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden reads due tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,12 +128,12 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "52 open, none waiting on you, none urgent. 4 PRs merged tonight; 25 stale."
+        "source": "47 open, none waiting on you, none urgent. 2 PRs merged this shift; 25 stale."
       },
       {
         "label": "Your desk is clear",
         "tone": "good",
-        "source": "Nothing waits on you. Four PRs merged tonight, no decisions."
+        "source": "Nothing waits on you. Two PRs merged this shift, no decisions."
       },
       {
         "label": "Check-ups",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T01:51:31.644Z",
+      "readAt": "2026-09-12T02:54:49.418Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,20 @@
   ],
   "pipeline": [
     {
+      "id": "usage-history-835",
+      "title": "The credit transaction list endpoint — no caller since 1 Sep — deleted with its manifest; the tree refuses it back",
+      "status": "merged",
+      "prNumber": 835,
+      "note": "The third and last of the usage endpoints orphaned by Section 03 (the other two went yesterday, PR #834). Filed as #833 rather than folded in so the 'where did my credits go' question was answered in writing: no design asks for a transaction list, her own transactions are already in her data export, staff read any account's by the moderator road, and a future list is a new endpoint under its own card. The absence guard widened to three names and reads the export barrel too; a stub put back reddened exactly that arm before it counted. Reviewer on the billing file: clean pass, one cosmetic aside taken."
+    },
+    {
+      "id": "compositor-diag-836",
+      "title": "Your #64 sitting: the freeze self-check prints its total, and a refine that filed nothing in the library says so",
+      "status": "merged",
+      "prNumber": 836,
+      "note": "Your ruling of 25 Aug, smallest first. The spend-freeze prover ends on '15 of 15 controls passed', counted by the same closure as its PASS/FAIL lines, and a test runs it as a real process and holds the number to those lines. The refine pipeline logs one line with the mint's ingredients when a paid render minted no feature slot — the only trace used to be the absence of a line. Both driven with a control render that DID file a slot staying silent; both reddened under sabotage first. First gate went red on the child-process timeout guard (#548) — declared, green. Reviewer: pass, no findings. #64 stays open for items 3–5 (one is your line)."
+    },
+    {
       "id": "staff-lazy-832",
       "title": "A customer's first download: 637 kB → 452 kB — the admin panel no longer travels with the product",
       "status": "merged",
@@ -5575,11 +5589,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912i-foreman",
+      "id": "queue-shape-0912j-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 49 open, three closed (#744, #635, #694), one filed (#833); NEXT UP is empty; nothing waits on you",
-      "detail": "Category order worked: Bugs (#816) is down to its two auth/money rows and Process (#697, #769, #513) has nothing an Opus shift can take, so Performance #744 was the brief (merged, PR #832) with Housekeeping #635 (merged, PR #834) taken in a second worktree while the first gate ran, and #694 closed on its own recommendation. 27 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Warden due 13 Sep; Janitor, Machinist and Retro ran today."
+      "title": "The queue: 47 open, one closed (#833); NEXT UP is empty; nothing waits on you",
+      "detail": "Category order re-read at the code: Bugs (#816) still holds only its two auth/money rows and Process (#697, #769, #513) nothing an Opus shift can take; Performance's remaining cards (#555, #58) are sessions of their own. So Housekeeping #833 was the brief (merged, PR #835) with your #64 items 1+2 (Casting upkeep, ON at your word) taken in a second worktree while the first gate ran (merged, PR #836). #62 corrected by reading (its arm (a) has been driven since 20 Aug). 25 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Warden due 13 Sep; Janitor, Machinist and Retro ran today."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5762,7 +5776,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-12T01:51:31.643Z",
+    "readAt": "2026-09-12T02:54:49.417Z",
     "items": []
   }
 }
