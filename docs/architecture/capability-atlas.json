@@ -584,7 +584,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:415"
+          "server/castingV2/rollService.ts:425"
         ]
       },
       {
@@ -594,7 +594,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:409"
+          "server/castingV2/rollService.ts:419"
         ]
       },
       {
@@ -604,7 +604,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:403"
+          "server/castingV2/rollService.ts:413"
         ]
       },
       {

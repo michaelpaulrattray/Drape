@@ -64,7 +64,11 @@ import { operationChargeReference } from "../casting/operationContract";
 import { deductCredits } from "../db/credits";
 import { assertNotFrozen } from "./spendGuards";
 import { createGeneration, updateGeneration } from "../db/generations";
-import { markGenerationOperationRunning } from "../db/generationOperations";
+import {
+  handoffGenerationOperationToRecovery,
+  markGenerationOperationRecoveryRequired,
+  markGenerationOperationRunning,
+} from "../db/generationOperations";
 import {
   CastingV2OwnershipError,
   cancelQueuedCandidate,
@@ -103,7 +107,13 @@ import { rollComposedOnAuthorRoad } from "./rollProjection";
 import { briefTooLong } from "./briefLength";
 import type { ResolvedIdentity } from "./castingIntent";
 import { admitRoll, castingCreativeEngine, type AdmissionDecision } from "./rollEngine";
-import { candidateChargeReference, candidateUnseenChargeReference } from "./rollRecovery";
+import {
+  ROLL_RECOVERY_SENTENCE,
+  candidateChargeReference,
+  candidateUnseenChargeReference,
+  recoverCastingV2RollOperation,
+  type RollRecoveryOutcome,
+} from "./rollRecovery";
 
 const log = createModuleLogger("castingV2/rollService");
 
@@ -925,7 +935,21 @@ export async function createRoll(
     tile costs, which is the number the price is set against. Per tile the
     reading is what a customer actually waits for.
   */
-  const settlements = await Promise.all(
+  /*
+    THE LOOP MAY NOT OUTLIVE ITS OWN FAILURE (#855).
+
+    `allSettled`, never `all`. Two of a roll's eight slices sat `queued` on dev
+    for as long as the process lived: the remote database dropped the
+    connection inside `markCandidateDispatched`, which runs BEFORE
+    `dispatchCandidate`'s try — so no catch settled the slice, the rejection
+    fell out of `Promise.all` past every `completeDirectOperation*`, and the
+    heartbeat kept renewing a lease the sweep is designed to wait for. The
+    sweep adjudicates a DEAD process; a live one that survives its own failed
+    write was invisible to it. `allSettled` lets the other seven finish and be
+    counted, and — the part that matters for money — means nothing below
+    adjudicates a row a sibling is still about to land.
+  */
+  const outcomes = await Promise.allSettled(
     candidates.map((candidate) =>
       censusOfAttempt(() => dispatchCandidate({
         accountDown,
@@ -975,6 +999,20 @@ export async function createRoll(
       }),
     ),
   );
+
+  const abandoned = outcomes.flatMap((outcome, index) =>
+    outcome.status === "rejected" ? [{ candidate: candidates[index], reason: outcome.reason }] : [],
+  );
+  if (abandoned.length > 0) {
+    return settleAbandonedDispatch({
+      userId: input.userId,
+      operationId: gate.operationId,
+      roll,
+      price,
+      abandoned,
+    });
+  }
+  const settlements = outcomes.map((outcome) => (outcome as PromiseFulfilledResult<Settlement>).value);
 
   const ready = settlements.filter((settlement) => settlement.outcome === "ready").length;
   const failed = settlements.filter((settlement) => settlement.outcome === "failed").length;
@@ -1124,6 +1162,123 @@ export async function createRoll(
     ready,
     failed,
   };
+}
+
+/**
+ * A slice whose settlement THREW — the live-process case of the deploy
+ * collision (#855).
+ *
+ * `dispatchCandidate` settles every exit inside its try; what it cannot settle
+ * is a write that throws before the try (`markCandidateDispatched`,
+ * `createGeneration`) or inside the compensating catch itself (`failCandidate`,
+ * `updateGeneration`, `recordRefund`). Any of those leaves a row in whatever
+ * state the last successful write put it, and the loop above no longer knows
+ * what that is. So the answer is not guessed here: the operation is handed to
+ * the sweep's OWN adjudicator, in-process and now, rather than waiting for a
+ * lease that a live heartbeat would never let expire.
+ *
+ * What that buys, clause by clause, is the dead-process contract read from
+ * the rows: every `queued` / `dispatched` / torn-`ready` row is CAS'd to
+ * `failed` and refunded under the same per-candidate reference this loop
+ * uses; refunds the loop DID record are read from the ledger, never
+ * re-issued; the roll lands `partial` or `failed`; and the receipt is sealed,
+ * which is what stops the heartbeat. A re-queue or a retry is deliberately
+ * NOT on offer — `rollRecovery.ts`'s first law is that recovery adjudicates
+ * and refunds and never re-drives provider work, and a second settlement
+ * policy for the same rows would contradict the one already proven.
+ *
+ * Two dead ends, each with its own exit:
+ *   - the adjudicator RETURNS `recovery_required` (ambiguous ledger, a refund
+ *     that would not record, slices over the charge) → parked for support
+ *     exactly as the sweep parks it, which also stops the heartbeat;
+ *   - the adjudicator THROWS (the database really is gone — the specimen's
+ *     own cause) → `handoffGenerationOperationToRecovery`, the export road's
+ *     precedent: the heartbeat stops FIRST, the lease is expired, and the
+ *     sweep settles it on its next pass. The receipt and the rows are left
+ *     exactly as the sweep expects to find them.
+ * Either way the heartbeat does not outlive the loop, which is the whole
+ * defect.
+ */
+async function settleAbandonedDispatch(input: {
+  userId: number;
+  operationId: string;
+  roll: { id: number; publicId: string; sessionId: number };
+  price: number;
+  abandoned: ReadonlyArray<{ candidate: { publicId: string }; reason: unknown }>;
+}): Promise<RollResult> {
+  const { userId, operationId, roll } = input;
+  // The sheet was worked on, whatever became of the loop — the same touch the
+  // ordinary exit gives it.
+  await touchCastingSession(userId, roll.sessionId).catch(() => undefined);
+  log.error(
+    {
+      operationId,
+      rollId: roll.publicId,
+      abandoned: input.abandoned.map(({ candidate, reason }) => ({
+        candidate: candidate.publicId,
+        cause: reason instanceof Error ? reason.message.slice(0, 300) : String(reason).slice(0, 300),
+      })),
+    },
+    "[rollService] a slice's settlement threw mid-loop — adjudicating the roll in-process",
+  );
+
+  let outcome: RollRecoveryOutcome;
+  try {
+    outcome = await recoverCastingV2RollOperation({
+      id: operationId,
+      userId,
+      status: "running",
+      chargedCredits: input.price,
+      refundedCredits: 0,
+    });
+  } catch (error) {
+    log.error(
+      { operationId, rollId: roll.publicId, err: error },
+      "[rollService] in-process adjudication failed too — handing the lease to the sweep",
+    );
+    await handoffGenerationOperationToRecovery({ userId, operationId }).catch((handoffError) => {
+      // The heartbeat is stopped before this write is attempted, so even here
+      // the lease lapses on its own and the sweep takes the roll within one lease.
+      log.fatal({ operationId, err: handoffError }, "[rollService] recovery handoff did not write");
+    });
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: `This sheet is still being settled. Operation ${operationId}.`,
+      cause: error,
+    });
+  }
+
+  if (outcome.type === "recovery_required") {
+    await markGenerationOperationRecoveryRequired({
+      userId,
+      operationId,
+      publicMessage: ROLL_RECOVERY_SENTENCE.supportReview(operationId),
+      chargedCredits: outcome.chargedCredits,
+      refundedCredits: outcome.refundedCredits,
+    });
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: ROLL_RECOVERY_SENTENCE.supportReview(operationId),
+    });
+  }
+  if (outcome.type === "durable_success" || outcome.type === "partial") {
+    // The receipt is sealed; this is the same shape the ordinary exit returns.
+    return {
+      rollId: roll.id,
+      rollPublicId: roll.publicId,
+      chargedCredits: outcome.chargedCredits,
+      refundedCredits: outcome.type === "partial" ? outcome.refundedCredits : 0,
+      ready: outcome.ready,
+      failed: outcome.type === "partial" ? outcome.refunded : 0,
+    };
+  }
+  // paid_failure / free_failure — the receipt is sealed with these words.
+  throw new TRPCError({
+    code: "PRECONDITION_FAILED",
+    message: outcome.type === "paid_failure"
+      ? ROLL_RECOVERY_SENTENCE.didNotFinish
+      : ROLL_RECOVERY_SENTENCE.didNotStart,
+  });
 }
 
 export type Settlement = {

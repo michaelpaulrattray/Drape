@@ -32,6 +32,9 @@ const rows = {
 const refunds: Array<{ amount: number; reference: string }> = [];
 let refundRecords = true;
 let chargeSucceeds = true;
+/* Candidate ids whose `markCandidateDispatched` THROWS — the write before the
+   try, which is where the remote database dropped roll 111 (#855). */
+const dispatchWriteThrowsFor = new Set<number>();
 
 const dbCalls = {
   createRoll: vi.fn(),
@@ -107,6 +110,9 @@ vi.mock("../db/castingV2", async (importOriginal) => ({
   })),
   markCandidateDispatched: vi.fn(async ({ candidateId }: { candidateId: number }) => {
     dbCalls.markDispatched(candidateId);
+    if (dispatchWriteThrowsFor.has(candidateId)) {
+      throw Object.assign(new Error("Got timeout reading communication packets"), { code: "ER_NET_READ_INTERRUPTED" });
+    }
     const row = rows.candidates.find((candidate) => candidate.id === candidateId);
     if (row?.status !== "queued") return false;
     row.status = "dispatched";
@@ -187,6 +193,33 @@ vi.mock("../casting/atomicCredits", async (importOriginal) => {
   };
 });
 
+/*
+  THE SWEEP'S OWN ADJUDICATOR, as the live road (#855) reaches for it. Its
+  verdict is dictated per arm; what these arms prove is the WIRING — that a
+  throw mid-loop reaches it at all, after every sibling has finished, and that
+  each verdict maps to the exit the receipt was sealed with. The adjudicator's
+  own money law is `rollRecovery.test.ts`'s.
+*/
+const adjudicator = {
+  recover: vi.fn(async (_operation: unknown): Promise<unknown> => {
+    throw new Error("arm did not dictate a verdict");
+  }),
+  park: vi.fn(async (_input: unknown) => undefined),
+  handoff: vi.fn(async (_input: unknown) => undefined),
+};
+vi.mock("./rollRecovery", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./rollRecovery")>()),
+  recoverCastingV2RollOperation: vi.fn(async (operation: unknown) => {
+    journal.push("adjudicate");
+    return adjudicator.recover(operation);
+  }),
+}));
+vi.mock("../db/generationOperations", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../db/generationOperations")>()),
+  markGenerationOperationRecoveryRequired: vi.fn(async (input: unknown) => adjudicator.park(input)),
+  handoffGenerationOperationToRecovery: vi.fn(async (input: unknown) => adjudicator.handoff(input)),
+}));
+
 const receipts = {
   // Takes its input like the other two. It was declared with none and called
   // with one — invisible while the typecheck skipped test files.
@@ -216,7 +249,7 @@ const { getOwnedCastingSession } = vi.mocked(await import("../db/castingV2"));
 const { refusalTagOf } = await import("./refusalTag");
 const { BRIEF_TEXT_MAX, BRIEF_TEXT_MAX_AUTHOR_ROAD, BRIEF_TOO_LONG_AUTHOR_ROAD_MESSAGE, BRIEF_TOO_LONG_MESSAGE } = await import("./briefLength");
 const { deterministicBriefCompiler, castingBriefCompiler, READER_OUTAGE_MESSAGE } = await import("./briefCompiler");
-const { candidateChargeReference } = await import("./rollRecovery");
+const { candidateChargeReference, ROLL_RECOVERY_SENTENCE } = await import("./rollRecovery");
 const { ProviderError } = await import("../providers/types");
 
 function seedCandidates(count = 8) {
@@ -295,9 +328,13 @@ beforeEach(() => {
   anchorBytesAvailable = true;
   refundRecords = true;
   chargeSucceeds = true;
+  dispatchWriteThrowsFor.clear();
   seedCandidates();
   vi.clearAllMocks();
   receipts.success.mockImplementation(async () => undefined);
+  adjudicator.recover.mockImplementation(async () => {
+    throw new Error("arm did not dictate a verdict");
+  });
 });
 
 describe("the sequence", () => {
@@ -1386,5 +1423,123 @@ describe("the retired framing trim — the contracts its own suite used to hold"
     for (const [landing] of landings) {
       expect(landing.sourceKey, "no candidate carries a kept original any more").toBeNull();
     }
+  });
+});
+
+describe("a slice whose dispatch WRITE throws — the live-process collision (#855)", () => {
+  /*
+    Roll 111 on dev: the remote database dropped the connection inside
+    `markCandidateDispatched` for two of eight slices. That write runs BEFORE
+    `dispatchCandidate`'s try, so nothing settled the slice; the rejection fell
+    out of `Promise.all`, the mutation threw INTERNAL, and the operation's
+    heartbeat kept renewing a lease the sweep is built to wait for — six ready,
+    two `queued`, forty minutes and counting. Every arm here drives THAT write
+    throwing and proves the loop no longer outlives its own failure.
+  */
+  const PARTIAL = { type: "partial", ready: 7, refunded: 1, chargedCredits: 160, refundedCredits: 20 } as const;
+
+  it("hands the roll to the sweep's own adjudicator, in-process, AFTER every sibling has finished", async () => {
+    dispatchWriteThrowsFor.add(3);
+    adjudicator.recover.mockResolvedValueOnce(PARTIAL);
+
+    const result = await createRoll(baseDependencies(), INPUT);
+
+    expect(adjudicator.recover).toHaveBeenCalledTimes(1);
+    expect(adjudicator.recover).toHaveBeenCalledWith({
+      id: OPERATION_ID,
+      userId: INPUT.userId,
+      status: "running",
+      chargedCredits: 160,
+      refundedCredits: 0,
+    });
+    /* `allSettled`, not `all`: the seven that could land DID land, and all of
+       them before the adjudicator looked — so it never CAS'd a row a sibling
+       was still about to write. */
+    expect(dbCalls.land).toHaveBeenCalledTimes(7);
+    expect(journal.lastIndexOf("dispatch")).toBeLessThan(journal.indexOf("adjudicate"));
+    /* The adjudicator sealed the receipt itself; this road writes no second one. */
+    expect(receipts.success).not.toHaveBeenCalled();
+    expect(receipts.failure).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      rollId: 100,
+      rollPublicId: "roll-public",
+      chargedCredits: 160,
+      refundedCredits: 20,
+      ready: 7,
+      failed: 1,
+    });
+  });
+
+  it("throws the sentence the receipt was sealed with when nothing arrived", async () => {
+    dispatchWriteThrowsFor.add(1);
+    adjudicator.recover.mockResolvedValueOnce({
+      type: "paid_failure", refunded: 8, chargedCredits: 160, refundedCredits: 160,
+    });
+
+    await expect(createRoll(baseDependencies(() => true), INPUT)).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: ROLL_RECOVERY_SENTENCE.didNotFinish,
+    });
+    expect(receipts.failure).not.toHaveBeenCalled();
+  });
+
+  it("parks a dead-end verdict for support exactly as the sweep does — same words, heartbeat stopped by the park", async () => {
+    dispatchWriteThrowsFor.add(5);
+    adjudicator.recover.mockResolvedValueOnce({
+      type: "recovery_required", reason: "duplicate charge rows for one operation", chargedCredits: 160, refundedCredits: 40,
+    });
+
+    await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      message: ROLL_RECOVERY_SENTENCE.supportReview(OPERATION_ID),
+    });
+    expect(adjudicator.park).toHaveBeenCalledWith({
+      userId: INPUT.userId,
+      operationId: OPERATION_ID,
+      publicMessage: ROLL_RECOVERY_SENTENCE.supportReview(OPERATION_ID),
+      chargedCredits: 160,
+      refundedCredits: 40,
+    });
+    expect(adjudicator.handoff).not.toHaveBeenCalled();
+  });
+
+  it("when the adjudicator itself throws — the database really is gone — hands the lease to the sweep rather than keeping the heartbeat alive", async () => {
+    dispatchWriteThrowsFor.add(2);
+    dispatchWriteThrowsFor.add(6);
+    adjudicator.recover.mockRejectedValueOnce(
+      Object.assign(new Error("Got timeout reading communication packets"), { code: "ER_NET_READ_INTERRUPTED" }),
+    );
+
+    await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      message: `This sheet is still being settled. Operation ${OPERATION_ID}.`,
+    });
+    /* The export road's precedent: stop the heartbeat FIRST, expire the lease,
+       and the sweep — already proven on the dead-process case — settles it on
+       its next pass. No second receipt, no guessed refund. */
+    expect(adjudicator.handoff).toHaveBeenCalledWith({ userId: INPUT.userId, operationId: OPERATION_ID });
+    expect(adjudicator.park).not.toHaveBeenCalled();
+    expect(receipts.failure).not.toHaveBeenCalled();
+    expect(refunds, "nothing refunded on a guess").toHaveLength(0);
+  });
+
+  it("and a handoff that cannot write does not mask the sentence — the heartbeat was already stopped inside it", async () => {
+    dispatchWriteThrowsFor.add(4);
+    adjudicator.recover.mockRejectedValueOnce(new Error("connection lost"));
+    adjudicator.handoff.mockRejectedValueOnce(new Error("connection lost"));
+
+    await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
+      message: `This sheet is still being settled. Operation ${OPERATION_ID}.`,
+    });
+  });
+
+  it("CONTROL — a loop with no thrown write never reaches the adjudicator; the ordinary receipt seals", async () => {
+    await createRoll(baseDependencies((position) => position === 0), INPUT);
+
+    expect(adjudicator.recover).not.toHaveBeenCalled();
+    expect(adjudicator.handoff).not.toHaveBeenCalled();
+    expect(receipts.success).toHaveBeenCalledWith(
+      expect.objectContaining({ chargedCredits: 160, refundedCredits: 20, terminalStatus: "partial" }),
+    );
   });
 });

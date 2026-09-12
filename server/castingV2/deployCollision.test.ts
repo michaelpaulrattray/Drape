@@ -28,6 +28,14 @@ import { DEFAULT_GENERATION_OPERATION_LEASE_MS } from "../db/generationOperation
  * six failed-and-refunded and two delivered, 160 charged and 120 returned.
  * The gap this test does NOT cover is latency, which is a constant rather than
  * a behaviour — see `deployCollisionLatency` below.
+ *
+ * ⚠ AND IT COVERS A DEAD PROCESS ONLY. The LIVE-process case — a slice's
+ * dispatch write throws, the process survives, and its heartbeat keeps the
+ * lease the sweep is waiting for — was invisible to this file until #855
+ * (dev roll 111: six ready, two `queued`, forty minutes). Its arms live in
+ * `rollService.test.ts` under "the live-process collision": the loop hands
+ * the roll to THIS SAME adjudicator in-process, or hands the lease to the
+ * sweep when it cannot.
  */
 
 const OPERATION_ID = "7667dfb3-9061-4fcf-989b-32e02f004149";
