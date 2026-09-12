@@ -68,12 +68,9 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
   },
-  server: {
-    host: true,
-    allowedHosts: ["localhost", "127.0.0.1"],
-    fs: {
-      strict: true,
-      deny: ["**/.*"],
-    },
-  },
+  // No `server` block here, on purpose (#849). The dev server is Vite in
+  // middleware mode inside Express, and `setupVite` (server/_core/vite.ts)
+  // replaces this config's whole `server` key with its own options; the CLI
+  // only ever runs `vite build`, which ignores `server`. A dev-server policy
+  // written here is dead text — put it in `setupVite`, where it is read.
 });
