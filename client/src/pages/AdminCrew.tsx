@@ -163,6 +163,7 @@ export default function AdminCrew() {
     every reply box keeps its draft, because the boxes are keyed by card id.
   */
   const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
+  // staff-poll: watched — the briefing is written by a shift, never by this page; the switch reaches the hook as `live`
   const stateQuery = useCrewState(isAdmin, { live: autoRefresh });
   const now = useNow(stateQuery.dataUpdatedAt);
   const refreshControls = useStaffRefresh({

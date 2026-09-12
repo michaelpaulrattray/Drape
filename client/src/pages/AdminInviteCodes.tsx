@@ -85,6 +85,7 @@ export default function AdminInviteCodes() {
      `useState` it replaces, so nothing below this line changed. */
   const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
 
+  // staff-poll: watched — codes are redeemed by signups in other sessions
   const codesQuery = trpc.admin.listInviteCodes.useQuery(undefined, {
     enabled: isAdmin,
     staleTime: 10_000,

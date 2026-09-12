@@ -117,6 +117,7 @@ export default function AdminBugReports() {
      `useState` it replaces, so nothing below this line changed. */
   const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
 
+  // staff-poll: watched — customers file reports from their own sessions
   const listQuery = trpc.admin.getBugReports.useQuery(
     {
       ...(statusFilter === "all" ? {} : { status: statusFilter }),
@@ -130,6 +131,7 @@ export default function AdminBugReports() {
     }
   );
 
+  // staff-poll: watched — the tab counts move with the list above
   const countsQuery = trpc.admin.getBugReportCounts.useQuery(undefined, {
     enabled: isAdmin,
     staleTime: 10_000,

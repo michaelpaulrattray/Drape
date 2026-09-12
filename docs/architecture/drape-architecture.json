@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "76a7546cb727ac53"
+    "sourceFingerprint": "4f0c37817b9a6f96"
   },
   "domains": [
     {
@@ -10802,6 +10802,10 @@
     {
       "id": "test:client/src/features/staff/counts416-guard.test.ts",
       "path": "client/src/features/staff/counts416-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/staff/pollRegister-guard.test.ts",
+      "path": "client/src/features/staff/pollRegister-guard.test.ts"
     },
     {
       "id": "test:client/src/features/staff/refreshReach-guard.test.ts",

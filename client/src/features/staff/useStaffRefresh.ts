@@ -47,7 +47,11 @@ import type { StaffRefreshControls } from "./StaffBar";
  * reads every query a staff page declares and reddens when its `onRefresh`
  * body reaches one neither by `refetch()` nor by `invalidate()` — the class
  * #747, #759 and PR #763 each found by hand, with a count that was wrong all
- * three times.
+ * three times. **And that each query SAYS whether it follows the switch**:
+ * `pollRegister-guard.test.ts` (#769) reads the `// staff-poll:` marker on the
+ * line above every staff query and holds a `watched` one to the shared
+ * interval and an `owner-triggered` one to none — the class #457, #747, #752
+ * and the #768 review each found by hand, and this card's read found a fifth.
  *
  * # ⚠ THREE PAGES DELIBERATELY DO NOT USE THIS YET
  *

@@ -58,9 +58,11 @@ export default function AdminChangeRequests() {
      `useState` it replaces, so nothing below this line changed. */
   const [autoRefresh, setAutoRefresh] = useStaffAutoRefresh();
 
+  // staff-poll: watched — moderators raise requests from their own sessions
   const listQuery = trpc.admin.listChangeRequests.useQuery(queryInput, {
     refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
   });
+  // staff-poll: owner-triggered — keyed on the request she opened; Refresh reaches it
   const detailQuery = trpc.admin.getChangeRequest.useQuery(
     { id: selectedRequestId! },
     { enabled: !!selectedRequestId }
