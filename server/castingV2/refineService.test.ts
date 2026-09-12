@@ -6,6 +6,7 @@ import type { CastPronouns } from "./castPronouns";
 const HER_PRONOUNS: CastPronouns = { subject: "she", object: "her", possessive: "her", plural: false };
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { TRPCError } from "@trpc/server";
 
 /*
   THE PROVENANCE KEY IS DERIVED FROM `JWT_SECRET` AT IMPORT TIME, so the value
@@ -266,6 +267,23 @@ vi.mock("../db/generationOperations", () => ({
 const adjudicator = {
   verdict: null as null | (() => Promise<unknown>),
 };
+/*
+  The owed-note builders run after the landing inside the compensated try, so
+  one of them throwing is #873's class from a second door; the real module is
+  kept and one builder is wrapped so an arm can make it throw once.
+*/
+vi.mock("./openLaneAccept", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./openLaneAccept")>();
+  return { ...actual, namedButNotServedNote: vi.fn(actual.namedButNotServedNote) };
+});
+
+/* The open-lane demand writer, real but wrapped, so one arm can make its
+   synchronous call throw on the FAILURE road (PR #874's second review). */
+vi.mock("../db/castingV2OpenLaneDemand", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../db/castingV2OpenLaneDemand")>();
+  return { ...actual, recordOpenLaneDemand: vi.fn(actual.recordOpenLaneDemand) };
+});
+
 vi.mock("./refineRecovery", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./refineRecovery")>()),
   recoverCastingV2RefineOperation: vi.fn(async (operation: unknown) => {
@@ -7939,8 +7957,9 @@ describe("the record and the picture come from the same place", () => {
 /**
  * #869 — the throw from INSIDE the compensating catch.
  *
- * The refine's whole compensable section sits in a try/catch that ends in the
- * finalizer, so the only exposed window is `recordRefund` or `failVariant`
+ * The refine's whole compensable section sits in a try/catch that ends at the
+ * landing (the success finalizer sits after the catch since #873, below), so
+ * the only exposed window is `recordRefund` or `failVariant`
  * REJECTING (not returning `recorded: false` — that is carried to the receipt).
  * Before this, such a throw escaped the mutation before the finalizer: the
  * heartbeat kept renewing, the lease never lapsed, and the sweep never came.
@@ -8023,6 +8042,95 @@ describe("a compensating write that throws is settled by the road's own adjudica
     await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/could not be recorded — quote operation/);
     expect(journal).toContain("seal:failure");
     expect(journal).not.toContain("adjudicate");
+  });
+});
+
+/**
+ * #873 — the throw INTO the compensating catch, from the success finalizer.
+ *
+ * The mirror of #869's class. By the time `completeDirectOperationSuccess`
+ * runs, the variant is `ready` and selected — the landing committed. A throw
+ * from the finalizer (a latched heartbeat is the known way; it parks the
+ * operation and throws its own sentence) used to land in the compensating
+ * catch, which reads every throw as "nothing was delivered": the whole price
+ * refunded for a picture the customer keeps, `failVariant` a no-op on a
+ * `ready` row, and a failure receipt sealed over a delivered picture. The
+ * finalizer now sits after the catch; what still runs after the landing
+ * inside the try is bookkeeping (the satisfaction ledger, the owed note, the
+ * open-lane rows), each fenced by its own catch that logs and never refunds.
+ */
+describe("a throw from the success finalizer never reaches the compensating catch (#873)", () => {
+  it("keeps the charge beside the picture: no refund, no failure seal, the finalizer's own sentence", async () => {
+    const { completeDirectOperationSuccess } = await import("../casting/directOperation");
+    vi.mocked(completeDirectOperationSuccess).mockImplementationOnce(async () => {
+      journal.push("seal:success");
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "The result needs support review before this action can be retried. Operation 11111111-1111-4111-8111-111111111111.",
+      });
+    });
+
+    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/needs support review before this action can be retried/);
+
+    // The landing committed and the finalizer was reached — this is a delivered picture.
+    expect(journal).toContain("land");
+    expect(journal).toContain("seal:success");
+    expect(journal.indexOf("land")).toBeLessThan(journal.indexOf("seal:success"));
+    // And NOTHING compensated it: the charge stands, the row is not failed,
+    // no failure receipt, and no second settlement road was taken either.
+    expect(ledger.refunds).toEqual([]);
+    expect(journal).not.toContain("refund");
+    expect(journal).not.toContain("seal:failure");
+    expect(journal).not.toContain("adjudicate");
+    expect(journal).not.toContain("handoff");
+    const { failVariant } = await import("../db/castingV2Variants");
+    expect(vi.mocked(failVariant)).not.toHaveBeenCalled();
+  });
+
+  it("a note builder that throws AFTER the landing costs the note, never the picture (PR #874 review, note 1)", async () => {
+    const { namedButNotServedNote } = await import("./openLaneAccept");
+    vi.mocked(namedButNotServedNote).mockImplementationOnce(() => {
+      throw new Error("an unexpected delta shape");
+    });
+
+    const result = await refineCandidate(greenEyes, input);
+
+    // Delivered, sealed as a success, and the charge stands.
+    expect(result.kind).toBe("rendered");
+    expect(journal).toContain("land");
+    expect(journal).toContain("seal:success");
+    expect(ledger.refunds).toEqual([]);
+    expect(journal).not.toContain("seal:failure");
+    // The note is what was lost — and only the note.
+    expect(result.kind === "rendered" && result.note).toBeFalsy();
+  });
+
+  it("the FAILURE road's open-lane row throwing still refunds and seals — the sweep's remainder (PR #874 review 2)", async () => {
+    engineThrows = new Error("the provider fell over");
+    const { recordOpenLaneDemand } = await import("../db/castingV2OpenLaneDemand");
+    vi.mocked(recordOpenLaneDemand).mockImplementationOnce(() => {
+      throw new Error("an unexpected delta shape");
+    });
+
+    await expect(refineCandidate(
+      {
+        harvest: unmasked,
+        interpret: async () => ({
+          ok: true as const,
+          delta: { open: { fangs: { noun: "fangs", words: "vampire fangs" } } },
+        }),
+      },
+      { ...input, instruction: "give her vampire fangs" },
+    )).rejects.toThrow(/Your credits have been returned/);
+
+    // The telemetry row was attempted and threw — and the money still moved,
+    // the row still failed, the receipt still sealed. Nothing escaped the catch.
+    expect(vi.mocked(recordOpenLaneDemand)).toHaveBeenCalled();
+    expect(ledger.refunds).toHaveLength(1);
+    expect(ledger.charges.at(-1)?.amount).toBe(ledger.refunds.at(-1)?.amount);
+    expect(journal).toContain("seal:failure");
+    expect(journal).not.toContain("adjudicate");
+    expect(journal).not.toContain("handoff");
   });
 });
 

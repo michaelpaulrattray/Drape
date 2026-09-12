@@ -5968,8 +5968,11 @@ async function refineCandidateCounted(
     });
   }
 
-  /* ---- everything past here is compensated on any throw ---- */
+  /* ---- everything past here is compensated on any throw — UNTIL THE
+          LANDING HAS BEEN SEALED; the success finalizer sits after the catch,
+          see #873 below ---- */
 
+  let delivered: RefineResult;
   try {
     await markVariantDispatched({ userId: input.userId, variantId: variant.id });
     /*
@@ -9967,8 +9970,17 @@ async function refineCandidateCounted(
       the picture cannot show it. Same law from the other direction, same field,
       same joined line — and it goes LAST because it is about what she is looking
       at rather than about what was left out of it.
+
+      AND A LOST NOTE MUST NEVER COST A DELIVERED PICTURE (#873, from PR #874's
+      review) — the ledger write above already fails this way, and this list
+      is the other thing composed after the landing inside the compensated
+      try. These builders are pure and a throw from one is improbable, but it
+      would land in the catch below, which refunds the whole price beside a
+      picture she keeps. The picture stands without its note instead.
     */
-    const owedAboutThisTake = [
+    let owedAboutThisTake: string[] = [];
+    try {
+      owedAboutThisTake = [
       /*
         AND IT NAMES WHAT IT ACTUALLY FILED (fable-490 §1b).
 
@@ -10005,6 +10017,12 @@ async function refineCandidateCounted(
       }),
       invisibleSiteNote,
     ].filter((line): line is string => line !== null);
+    } catch (error) {
+      log.warn(
+        { err: error, operationId, variant: variant.publicId },
+        "[refineService] could not compose what she is owed about this take — the picture stands without the note",
+      );
+    }
 
     const result: RefineResult = {
       kind: "rendered",
@@ -10029,17 +10047,19 @@ async function refineCandidateCounted(
       Fire-and-forget, after the money is settled: this is telemetry riding a paid
       path and it may never take a picture back (§7). The row lost to a process
       death between here and the insert is the accepted fail-soft the writer
-      already has.
+      already has. The writer cannot reject, but the loop that composes each
+      row runs synchronously here, after the landing — so it is fenced the same
+      way as the note above (#873): a bookkeeping throw is logged, never refunded.
     */
-    recordOpenLaneOutcomes(editDelta, { settled: true, cropsStored: openCropsStored });
-    await completeDirectOperationSuccess({
-      userId: input.userId,
-      operationId,
-      result: result as never,
-      chargedCredits: price,
-      refundedCredits: 0,
-    });
-    return result;
+    try {
+      recordOpenLaneOutcomes(editDelta, { settled: true, cropsStored: openCropsStored });
+    } catch (error) {
+      log.warn(
+        { err: error, operationId, variant: variant.publicId },
+        "[refineService] could not file the open-lane demand rows — the picture stands",
+      );
+    }
+    delivered = result;
   } catch (error) {
     /*
       SAY WHY, BEFORE THE MONEY MOVES.
@@ -10064,8 +10084,21 @@ async function refineCandidateCounted(
     /* AND THE SAME ROW ON THE OTHER OUTCOME (5b Stage D). A kind whose asks are
        refunds is the loudest promotion case there is — *reached but not served* —
        so a table holding only the successes would report the lane working
-       perfectly on exactly the asks it happened to manage. */
-    recordOpenLaneOutcomes(editDelta, { settled: false, cropsStored: new Set() });
+       perfectly on exactly the asks it happened to manage.
+
+       Fenced like its success-road twin (#873, PR #874's second review): a
+       synchronous throw from the row composition here would escape this catch
+       BEFORE the refund, the row and the receipt — charged, no picture, no
+       refund, and the heartbeat still renewing, which is #869's stuck tile
+       through a side door. A telemetry row is never allowed to cost that. */
+    try {
+      recordOpenLaneOutcomes(editDelta, { settled: false, cropsStored: new Set() });
+    } catch (demandError) {
+      log.warn(
+        { err: demandError, operationId, variant: variant.publicId },
+        "[refineService] could not file the open-lane demand rows for the failed take — refunding regardless",
+      );
+    }
     /*
       WHOLE charge back — one image, one unit, nothing partial to keep.
 
@@ -10139,6 +10172,39 @@ async function refineCandidateCounted(
       refundedCredits: refund.recorded ? price : 0,
     });
   }
+
+  /*
+    THE SUCCESS FINALIZER, OUTSIDE THE COMPENSATED TRY (#873).
+
+    It used to be the try's last line, so its throw landed in the catch above
+    — which reads every throw as "nothing was delivered" and refunds the whole
+    price. But by this line the variant is `ready` and selected (the landing
+    committed above), so that catch would have paid the customer back for a
+    picture they keep, `failVariant` would have no-oped on a `ready` row, and
+    the receipt would have been sealed over a delivered picture: a free image,
+    and the direction `refineRecovery.ts`'s header names as the one that costs
+    the business. The mirror of #869's class — a throw INTO a catch that
+    settles it wrongly.
+
+    The finalizer settles itself: on a receipt write it cannot make it parks
+    the operation for support and throws its own sentence, and a latched
+    heartbeat is the known way there. That is the whole story on this road,
+    and the charge stands beside the picture it bought. Nothing here reaches
+    for the adjudicator either: the operation is already parked when the
+    finalizer throws, so an in-process `recoverCastingV2RefineOperation` would
+    refuse on the running fence and the handoff would refuse after it — two
+    failing writes on the ordinary road. Where the park itself failed, the
+    heartbeat is already stopped, the lease lapses, and the sweep reads the
+    variant `ready` and seals the success with the charge kept.
+  */
+  await completeDirectOperationSuccess({
+    userId: input.userId,
+    operationId,
+    result: delivered as never,
+    chargedCredits: price,
+    refundedCredits: 0,
+  });
+  return delivered;
 }
 
 /**
