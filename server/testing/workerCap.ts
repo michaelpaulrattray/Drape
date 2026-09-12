@@ -31,7 +31,8 @@
  * quiet. The residual reds at 8 are the two heaviest synchronous child-process
  * arms (`architectureAtlas`'s freshness check, `selfInvocationCheck`'s
  * run-directly arm); no worker count fixes an arm whose own cost is a minute
- * on a loaded box, and that is a different card.
+ * on a loaded box, and that is a different card. (It was #839: the run-directly
+ * arm passes `--fired` now and no longer builds the maps at all.)
  *
  * ⚠ IT IS A CEILING ON THE DEFAULT, NOT A NUMBER. vitest takes `maxWorkers`
  * as given — a flat `8` would spawn eight workers on the gate's 4-core runner,
