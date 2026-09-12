@@ -9970,8 +9970,17 @@ async function refineCandidateCounted(
       the picture cannot show it. Same law from the other direction, same field,
       same joined line — and it goes LAST because it is about what she is looking
       at rather than about what was left out of it.
+
+      AND A LOST NOTE MUST NEVER COST A DELIVERED PICTURE (#873, from PR #874's
+      review) — the ledger write above already fails this way, and this list
+      is the other thing composed after the landing inside the compensated
+      try. These builders are pure and a throw from one is improbable, but it
+      would land in the catch below, which refunds the whole price beside a
+      picture she keeps. The picture stands without its note instead.
     */
-    const owedAboutThisTake = [
+    let owedAboutThisTake: string[] = [];
+    try {
+      owedAboutThisTake = [
       /*
         AND IT NAMES WHAT IT ACTUALLY FILED (fable-490 §1b).
 
@@ -10008,6 +10017,12 @@ async function refineCandidateCounted(
       }),
       invisibleSiteNote,
     ].filter((line): line is string => line !== null);
+    } catch (error) {
+      log.warn(
+        { err: error, operationId, variant: variant.publicId },
+        "[refineService] could not compose what she is owed about this take — the picture stands without the note",
+      );
+    }
 
     const result: RefineResult = {
       kind: "rendered",
@@ -10032,9 +10047,18 @@ async function refineCandidateCounted(
       Fire-and-forget, after the money is settled: this is telemetry riding a paid
       path and it may never take a picture back (§7). The row lost to a process
       death between here and the insert is the accepted fail-soft the writer
-      already has.
+      already has. The writer cannot reject, but the loop that composes each
+      row runs synchronously here, after the landing — so it is fenced the same
+      way as the note above (#873): a bookkeeping throw is logged, never refunded.
     */
-    recordOpenLaneOutcomes(editDelta, { settled: true, cropsStored: openCropsStored });
+    try {
+      recordOpenLaneOutcomes(editDelta, { settled: true, cropsStored: openCropsStored });
+    } catch (error) {
+      log.warn(
+        { err: error, operationId, variant: variant.publicId },
+        "[refineService] could not file the open-lane demand rows — the picture stands",
+      );
+    }
     delivered = result;
   } catch (error) {
     /*

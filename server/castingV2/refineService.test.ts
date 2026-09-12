@@ -267,6 +267,16 @@ vi.mock("../db/generationOperations", () => ({
 const adjudicator = {
   verdict: null as null | (() => Promise<unknown>),
 };
+/*
+  The owed-note builders run after the landing inside the compensated try, so
+  one of them throwing is #873's class from a second door; the real module is
+  kept and one builder is wrapped so an arm can make it throw once.
+*/
+vi.mock("./openLaneAccept", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./openLaneAccept")>();
+  return { ...actual, namedButNotServedNote: vi.fn(actual.namedButNotServedNote) };
+});
+
 vi.mock("./refineRecovery", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./refineRecovery")>()),
   recoverCastingV2RefineOperation: vi.fn(async (operation: unknown) => {
@@ -8038,8 +8048,9 @@ describe("a compensating write that throws is settled by the road's own adjudica
  * catch, which reads every throw as "nothing was delivered": the whole price
  * refunded for a picture the customer keeps, `failVariant` a no-op on a
  * `ready` row, and a failure receipt sealed over a delivered picture. The
- * finalizer now sits after the catch, so the catch only ever sees a failure
- * that happened before the landing.
+ * finalizer now sits after the catch; what still runs after the landing
+ * inside the try is bookkeeping (the satisfaction ledger, the owed note, the
+ * open-lane rows), each fenced by its own catch that logs and never refunds.
  */
 describe("a throw from the success finalizer never reaches the compensating catch (#873)", () => {
   it("keeps the charge beside the picture: no refund, no failure seal, the finalizer's own sentence", async () => {
@@ -8055,6 +8066,8 @@ describe("a throw from the success finalizer never reaches the compensating catc
     await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/needs support review before this action can be retried/);
 
     // The landing committed and the finalizer was reached — this is a delivered picture.
+    expect(journal).toContain("land");
+    expect(journal).toContain("seal:success");
     expect(journal.indexOf("land")).toBeLessThan(journal.indexOf("seal:success"));
     // And NOTHING compensated it: the charge stands, the row is not failed,
     // no failure receipt, and no second settlement road was taken either.
@@ -8065,6 +8078,24 @@ describe("a throw from the success finalizer never reaches the compensating catc
     expect(journal).not.toContain("handoff");
     const { failVariant } = await import("../db/castingV2Variants");
     expect(vi.mocked(failVariant)).not.toHaveBeenCalled();
+  });
+
+  it("a note builder that throws AFTER the landing costs the note, never the picture (PR #874 review, note 1)", async () => {
+    const { namedButNotServedNote } = await import("./openLaneAccept");
+    vi.mocked(namedButNotServedNote).mockImplementationOnce(() => {
+      throw new Error("an unexpected delta shape");
+    });
+
+    const result = await refineCandidate(greenEyes, input);
+
+    // Delivered, sealed as a success, and the charge stands.
+    expect(result.kind).toBe("rendered");
+    expect(journal).toContain("land");
+    expect(journal).toContain("seal:success");
+    expect(ledger.refunds).toEqual([]);
+    expect(journal).not.toContain("seal:failure");
+    // The note is what was lost — and only the note.
+    expect(result.kind === "rendered" && result.note).toBeFalsy();
   });
 });
 
