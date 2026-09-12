@@ -4,7 +4,7 @@ import { promiseSchemaQueryClient } from "./privateEvidenceSchema";
 interface SchemaQueryClient {
   query(
     statement: string,
-    values?: readonly unknown[],
+    values?: unknown[],
   ): Promise<[unknown, unknown]>;
 }
 

@@ -18,6 +18,7 @@ import mysql, {
   type ResultSetHeader,
   type RowDataPacket,
 } from "mysql2/promise";
+import type { ExecuteValues } from "mysql2";
 import sharp from "sharp";
 import type { PrivateEvidenceStorageAdapter } from "../server/casting/evidence/evidenceDelivery";
 import { assertEvidenceComposerSchemaWithClient } from "../server/casting/evidence/evidenceComposerSchema";
@@ -43,7 +44,7 @@ async function applyMigrations(connection: Connection) {
 async function one(
   connection: Connection,
   sql: string,
-  params: unknown[] = [],
+  params: ExecuteValues[] = [],
 ): Promise<RowDataPacket> {
   const [rows] = await connection.execute<RowDataPacket[]>(sql, params);
   if (!rows[0]) throw new Error("Expected one row");
