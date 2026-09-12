@@ -16,11 +16,11 @@ export const usageRouter = router({
    * paginated transaction reader born beside them, followed with #833: its one
    * caller left in the same Section 03 commit, and a customer's own
    * transactions already reach her through the data export. A transaction
-   * list that a design asks for is a new procedure under its own card.) A
-   * real billing period
-   * begins at a mid-day INSTANT, so the reassembly counted up to a day of the
-   * previous cycle — and on an annual plan it could not cover the period at
-   * all. This answers the question they are actually asking.
+   * list that a design asks for is a new procedure under its own card.)
+   * A real billing period begins at a mid-day INSTANT, so the reassembly
+   * counted up to a day of the previous cycle — and on an annual plan it could
+   * not cover the period at all. This answers the question they are actually
+   * asking.
    *
    * ⚠ **IT TAKES NO INPUT, AND THAT IS THE CONTROL.** The window is the
    * account's own `currentPeriodStart` read on the server; a client-supplied
