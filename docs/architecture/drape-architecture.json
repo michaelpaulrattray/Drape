@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "392ddf3972e6bc22"
+    "sourceFingerprint": "76a7546cb727ac53"
   },
   "domains": [
     {
@@ -13690,6 +13690,10 @@
     {
       "id": "test:server/uptimeAnchor.test.ts",
       "path": "server/uptimeAnchor.test.ts"
+    },
+    {
+      "id": "test:server/viteDevFsAllow.test.ts",
+      "path": "server/viteDevFsAllow.test.ts"
     },
     {
       "id": "test:server/w1-export-truth.test.ts",
