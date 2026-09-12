@@ -93,6 +93,7 @@ vi.mock("../casting/atomicCredits", async (importOriginal) => {
 });
 
 const { recoverCastingV2RollOperation, candidateRefundReference } = await import("./rollRecovery");
+const { SLICE_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
 
 // Real UUIDs: operationChargeReference asserts the shape, which is itself a
 // guard worth keeping — an unparseable operation id must never reach the ledger.
@@ -606,6 +607,24 @@ describe("the torn write inside the live catch: `failed` written, the refund nev
     expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 2, refundedCredits: 60 });
     const total = refunds.reduce((sum, entry) => sum + entry.amount, 0) + 20;
     expect(total).toBeLessThanOrEqual(OPERATION.chargedCredits);
+  });
+
+  it("names the event the torn row recorded — a render fault's slice says so on the ledger", async () => {
+    // The live catch composes the sentence from the failure class; the sweep
+    // paying the same row must not describe a different event (PR #871 review).
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "failed", failureClass: "render_fault" }),
+      candidate({ id: 2, publicId: "c-2", status: "failed", failureClass: "capability" }),
+    ];
+    const { recordRefund } = await import("../casting/atomicCredits");
+
+    await recover();
+
+    const descriptions = vi.mocked(recordRefund).mock.calls.map((call) => call[2]);
+    expect(descriptions).toEqual([
+      SLICE_REFUND_DESCRIPTION.renderFault,
+      SLICE_REFUND_DESCRIPTION.candidateAbsent,
+    ]);
   });
 
   it("never refunds a torn slice that was never charged for (pointsCost 0)", async () => {

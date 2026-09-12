@@ -11,7 +11,7 @@ import {
 } from "../db/generationOperations";
 import { claimCandidateForRecovery } from "../db/castingV2";
 import { createModuleLogger } from "../logging/logger";
-import { SLICE_REFUND_DESCRIPTION } from "./sliceRefundLedger";
+import { rollSliceRefundDescription } from "./sliceRefundLedger";
 
 const log = createModuleLogger("castingV2/rollRecovery");
 
@@ -618,7 +618,13 @@ async function adjudicateRollOperation(
     const outcome = await recordRefund(
       operation.userId,
       slice,
-      SLICE_REFUND_DESCRIPTION.candidateAbsent,
+      /*
+        Composed through the same fork the live catch uses, never a constant
+        (PR #871 review): a torn `render_fault` row carries its class, and the
+        ledger line the customer reads must name the event that happened. An
+        unfinished row has no class and lands on `candidateAbsent` as before.
+      */
+      rollSliceRefundDescription(candidate.failureClass),
       candidateChargeReference(operation.id, candidate.publicId),
     );
     if (outcome.recorded) {
