@@ -42,7 +42,12 @@ import type { StaffRefreshControls } from "./StaffBar";
  * The queries. Each page keeps its own `refetchInterval: autoRefresh ? … :
  * false` and its own refetch list, because pages poll different readers at
  * different rates (audit stats at 60s, its logs at 30s) and folding that in
- * would be a second decision wearing this card's clothes.
+ * would be a second decision wearing this card's clothes. **What IS held is
+ * that the refetch list is COMPLETE**: `refreshReach-guard.test.ts` (#766)
+ * reads every query a staff page declares and reddens when its `onRefresh`
+ * body reaches one neither by `refetch()` nor by `invalidate()` — the class
+ * #747, #759 and PR #763 each found by hand, with a count that was wrong all
+ * three times.
  *
  * # ⚠ THREE PAGES DELIBERATELY DO NOT USE THIS YET
  *
