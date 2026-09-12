@@ -43,7 +43,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ArgumentError, parseStrictArgs } from "../scripts/lib/strictArgs.mts";
 import { readIfPresent, statIfPresent } from "../scripts/lib/listedEntry.mts";
@@ -54,6 +54,12 @@ import {
   scriptFilesUnder,
   spendWordsRefusedByTheirOwnParse, strictParseAdoptersReadingArgvByHand, unguardedSpendGates,
 } from "../scripts/lib/stopline.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite spawns the prover as a real child process (the total-line arm
+   below), which puts it in #548's population: the class's timeout, declared
+   where the guard reads it. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const REPO = join(__dirname, "..");
 
