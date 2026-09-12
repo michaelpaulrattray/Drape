@@ -42,8 +42,12 @@ const dbCalls = {
   land: vi.fn(),
 };
 
-vi.mock("../db/castingV2", () => ({
-  CastingV2OwnershipError: class extends Error {},
+vi.mock("../db/castingV2", async (importOriginal) => ({
+  /* The REAL class, not a bare `extends Error`: the #854 door arm asserts the
+     sentence a foreign session gets, and a stand-in with no message would pass
+     that arm on an empty string. The module's db connection is lazy, so
+     importing it under the stripped DATABASE_URL opens nothing. */
+  CastingV2OwnershipError: (await importOriginal<typeof import("../db/castingV2")>()).CastingV2OwnershipError,
   createRollWithCandidates: vi.fn(async (input: unknown) => {
     journal.push("rows");
     dbCalls.createRoll(input);
@@ -54,6 +58,9 @@ vi.mock("../db/castingV2", () => ({
     };
   }),
   listRollCandidates: vi.fn(async () => rows.candidates),
+  /* The sheet, read before the compile (#854). `open` is the fixture's default;
+     the door arms override it to `expired`, `abandoned` and null. */
+  getOwnedCastingSession: vi.fn(async () => ({ id: 10, status: "open" })),
   getRollByOperation: vi.fn(async () => ({
     id: 100,
     publicId: "roll-public",
@@ -205,6 +212,8 @@ vi.mock("../casting/directOperation", () => ({
 const OPERATION_ID = "33333333-3333-4333-8333-333333333333";
 
 const { createRoll, cancelRoll } = await import("./rollService");
+const { getOwnedCastingSession } = vi.mocked(await import("../db/castingV2"));
+const { refusalTagOf } = await import("./refusalTag");
 const { BRIEF_TEXT_MAX, BRIEF_TEXT_MAX_AUTHOR_ROAD, BRIEF_TOO_LONG_AUTHOR_ROAD_MESSAGE, BRIEF_TOO_LONG_MESSAGE } = await import("./briefLength");
 const { deterministicBriefCompiler, castingBriefCompiler, READER_OUTAGE_MESSAGE } = await import("./briefCompiler");
 const { candidateChargeReference } = await import("./rollRecovery");
@@ -314,6 +323,76 @@ describe("the sequence", () => {
     // work — and nothing was claimed, so there is no receipt to reconcile.
     expect(journal).not.toContain("claim");
     expect(journal).not.toContain("charge");
+  });
+
+  /*
+    THE SHEET IS READ BEFORE THE INTERPRETER (#854). An expired sheet's Roll
+    again used to spend a ~13 s paid text call and only then meet the roll
+    transaction's "Casting session not found" — the wrong sentence for "too
+    old to roll on". These arms hold the ORDER (the compiler is never reached)
+    and the SENTENCE (it names expiry, never absence), and they are driven at
+    the service with the compiler spied, so an LLM that happens to behave
+    cannot rescue them (working law 3).
+  */
+  describe("a sheet that cannot be rolled on refuses before any text call", () => {
+    const compilerReached = () => {
+      const compileBrief = vi.fn(async (compilerInput: unknown) =>
+        (baseDependencies() as { compileBrief: (input: unknown) => unknown }).compileBrief(compilerInput),
+      );
+      return { compileBrief, dependencies: { ...(baseDependencies() as object), compileBrief } as never };
+    };
+
+    it("an EXPIRED sheet: PRECONDITION_FAILED, the sentence names expiry, the compiler is never called", async () => {
+      getOwnedCastingSession.mockResolvedValueOnce({ id: 10, status: "expired" } as never);
+      const { compileBrief, dependencies } = compilerReached();
+
+      const refusal = await createRoll(dependencies, INPUT).then(
+        () => { throw new Error("rolled on an expired sheet"); },
+        (error: { code: string; message: string }) => error,
+      );
+      expect(refusal).toMatchObject({ code: "PRECONDITION_FAILED" });
+      // The door's own name, so the capability atlas can see it was proven to shut.
+      expect(refusalTagOf(refusal)?.reason).toBe("session_expired");
+      expect(refusal.message).toMatch(/expired/i);
+      // The old sentence, and the one the card is about: absence, for a sheet
+      // the customer is looking at.
+      expect(refusal.message).not.toMatch(/not found/i);
+      expect(refusal.message).toMatch(/nothing was charged/i);
+
+      expect(compileBrief).not.toHaveBeenCalled();
+      expect(journal).not.toContain("claim");
+      expect(journal).not.toContain("charge");
+      expect(getOwnedCastingSession).toHaveBeenCalledWith(INPUT.userId, INPUT.sessionPublicId);
+    });
+
+    it("an ABANDONED sheet (their own Start over): the same door, a sentence that says closed", async () => {
+      getOwnedCastingSession.mockResolvedValueOnce({ id: 10, status: "abandoned" } as never);
+      const { compileBrief, dependencies } = compilerReached();
+
+      const refusal = await createRoll(dependencies, INPUT).catch((error: unknown) => error);
+      expect(refusal).toMatchObject({ code: "PRECONDITION_FAILED", message: expect.stringMatching(/closed/i) });
+      expect(refusalTagOf(refusal)?.reason).toBe("session_closed");
+      expect(compileBrief).not.toHaveBeenCalled();
+      expect(journal).not.toContain("claim");
+    });
+
+    it("a sheet that is not this account's keeps the ownership sentence and code, still before the compiler", async () => {
+      getOwnedCastingSession.mockResolvedValueOnce(null);
+      const { compileBrief, dependencies } = compilerReached();
+
+      const refusal = await createRoll(dependencies, INPUT).catch((error: unknown) => error);
+      expect(refusal).toMatchObject({ code: "NOT_FOUND", message: "Casting session not found" });
+      expect(refusalTagOf(refusal)?.reason).toBe("session_missing");
+      expect(compileBrief).not.toHaveBeenCalled();
+      expect(journal).not.toContain("claim");
+    });
+
+    it("positive control: an OPEN sheet reaches the compiler and rolls", async () => {
+      const { compileBrief, dependencies } = compilerReached();
+      await createRoll(dependencies, INPUT);
+      expect(compileBrief).toHaveBeenCalledTimes(1);
+      expect(journal).toContain("charge");
+    });
   });
 
   it("refuses an uninterpretable brief for free", async () => {
