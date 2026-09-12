@@ -1,6 +1,6 @@
 import { ROLL_RECOVERY_SENTENCE, recoverCastingV2RollOperation } from "../castingV2/rollRecovery";
 import { recoverCastingV2RefineOperation } from "../castingV2/refineRecovery";
-import { recoverCastingV2RetryOperation } from "../castingV2/retryRecovery";
+import { RETRY_SUPPORT_REVIEW_SENTENCE, recoverCastingV2RetryOperation } from "../castingV2/retryRecovery";
 import { recoverCastingV2SignOperation } from "../castingV2/signRecovery";
 import { and, asc, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import {
@@ -981,8 +981,8 @@ export async function adjudicateStaleGenerationOperation(
       await markGenerationOperationRecoveryRequired({
         userId: operation.userId,
         operationId: operation.id,
-        publicMessage:
-          `This retry needs support review before it can be settled. Operation ${operation.id}.`,
+        // The live road (#867) parks with the same words — one sentence, two writers.
+        publicMessage: RETRY_SUPPORT_REVIEW_SENTENCE(operation.id),
         chargedCredits: recovered.chargedCredits,
         refundedCredits: recovered.refundedCredits,
       });

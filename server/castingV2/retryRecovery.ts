@@ -82,6 +82,11 @@ export function candidateIdOfLockKey(lockKey: string): number | null {
 
 /** The customer's sentence for a swept retry — named, so the sheet and the receipt agree. */
 export const RECOVERED_RETRY_SENTENCE = "That retry didn't make it. Your credits are back.";
+/** The seal's other two sentences, named for the same reason: the live road
+ *  (#867) throws the words it just sealed, and the sweep parks with them. */
+export const RECOVERED_RETRY_FREE_SENTENCE = "That retry didn't start. You were not charged.";
+export const RETRY_SUPPORT_REVIEW_SENTENCE = (operationId: string) =>
+  `This retry needs support review before it can be settled. Operation ${operationId}.`;
 
 export async function recoverCastingV2RetryOperation(
   operation: RecoverableRetryOperation,
@@ -290,14 +295,14 @@ async function sealRetryReceipt(
         userId: operation.userId,
         operationId: operation.id,
         errorCode: "PRECONDITION_FAILED",
-        publicMessage: "That retry didn't start. You were not charged.",
+        publicMessage: RECOVERED_RETRY_FREE_SENTENCE,
       });
     } else {
       await finalizeFailure({
         userId: operation.userId,
         operationId: operation.id,
         errorCode: "PRECONDITION_FAILED",
-        publicMessage: "That retry didn't start. You were not charged.",
+        publicMessage: RECOVERED_RETRY_FREE_SENTENCE,
         chargedCredits: 0,
         refundedCredits: 0,
       });

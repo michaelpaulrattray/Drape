@@ -154,6 +154,32 @@ const receipts = {
 let claimAnswer: { type: "execute"; operationId: string } | { type: "replay"; operationId: string; result: unknown } =
   { type: "execute", operationId: RETRY_OPERATION_ID };
 
+/*
+  THE RETRY'S OWN ADJUDICATOR, as the live road (#867) reaches for it. Its
+  verdict is dictated per arm; these arms prove the WIRING — that a throw past
+  the unit reaches it, and that each verdict maps to the exit the receipt was
+  sealed with. The adjudicator's own money law is `retryRecovery.test.ts`'s.
+*/
+const adjudicator = {
+  recover: vi.fn(async (_operation: unknown): Promise<unknown> => {
+    throw new Error("arm did not dictate a verdict");
+  }),
+  park: vi.fn(async (_input: unknown) => undefined),
+  handoff: vi.fn(async (_input: unknown) => undefined),
+};
+vi.mock("./retryRecovery", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./retryRecovery")>()),
+  recoverCastingV2RetryOperation: vi.fn(async (operation: unknown) => {
+    journal.push("adjudicate");
+    return adjudicator.recover(operation);
+  }),
+}));
+vi.mock("../db/generationOperations", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../db/generationOperations")>()),
+  markGenerationOperationRecoveryRequired: vi.fn(async (input: unknown) => adjudicator.park(input)),
+  handoffGenerationOperationToRecovery: vi.fn(async (input: unknown) => adjudicator.handoff(input)),
+}));
+
 vi.mock("../casting/directOperation", () => ({
   beginDirectOperation: vi.fn(async () => {
     journal.push("claim");
@@ -174,6 +200,7 @@ const {
   RETRY_NOT_THIS_KIND_MESSAGE,
 } = await import("./retryService");
 const { candidateChargeReference } = await import("./rollRecovery");
+const { RECOVERED_RETRY_SENTENCE, RETRY_SUPPORT_REVIEW_SENTENCE } = await import("./retryRecovery");
 const { ProviderError } = await import("../providers/types");
 const { CASTING_V2_RETRY_PRICE_CREDITS } = await import("../casting/castingCreditCosts");
 const { CANDIDATE_RENDER } = await import("./briefCompiler");
@@ -261,6 +288,9 @@ beforeEach(() => {
   seed();
   vi.clearAllMocks();
   receipts.success.mockImplementation(async () => undefined);
+  adjudicator.recover.mockImplementation(async () => {
+    throw new Error("arm did not dictate a verdict");
+  });
 });
 
 describe("the flag's door", () => {
@@ -571,5 +601,87 @@ describe("the anchored tile (#177 Row A) — a retried follow slice carries its 
     expect(anchorKeyOfInternal({ prompt: "p", anchorImageKey: "   " })).toBeNull();
     expect(anchorKeyOfInternal({ prompt: "p", anchorImageKey: 7 })).toBeNull();
     expect(anchorKeyOfInternal(null)).toBeNull();
+  });
+});
+
+describe("a retry whose dispatch WRITE throws — the live-process collision (#867, the retry's #855)", () => {
+  /*
+    The unit's `markCandidateDispatched` runs before its try. A dropped
+    connection there used to seal a FAILURE receipt with `refundedCredits: 0`
+    — the slice charged, never refunded, the operation terminal so the sweep
+    could never see it. Every arm drives that write throwing.
+  */
+  const dispatchWriteThrows = () =>
+    vi.mocked(db.markCandidateDispatched).mockRejectedValueOnce(
+      Object.assign(new Error("Got timeout reading communication packets"), { code: "ER_NET_READ_INTERRUPTED" }),
+    );
+
+  it("hands the retry to its own adjudicator in-process and throws the sentence the receipt was sealed with — never a failure receipt carrying 0 refunded", async () => {
+    dispatchWriteThrows();
+    adjudicator.recover.mockResolvedValueOnce({
+      type: "paid_failure", chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS, refundedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+    });
+
+    await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: RECOVERED_RETRY_SENTENCE,
+    });
+    expect(adjudicator.recover).toHaveBeenCalledWith({
+      id: RETRY_OPERATION_ID,
+      userId: INPUT.userId,
+      status: "running",
+      chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+      refundedCredits: 0,
+    });
+    /* The adjudicator sealed the receipt; this road writes no second one —
+       and in particular not the one that kept the money. */
+    expect(receipts.failure).not.toHaveBeenCalled();
+    expect(receipts.success).not.toHaveBeenCalled();
+    expect(refunds, "nothing refunded on a guess — the adjudicator reads the ledger").toHaveLength(0);
+  });
+
+  it("parks a dead-end verdict for support with the sweep's own words", async () => {
+    dispatchWriteThrows();
+    adjudicator.recover.mockResolvedValueOnce({
+      type: "recovery_required", reason: "no lock row", chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS, refundedCredits: 0,
+    });
+
+    await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      message: RETRY_SUPPORT_REVIEW_SENTENCE(RETRY_OPERATION_ID),
+    });
+    expect(adjudicator.park).toHaveBeenCalledWith({
+      userId: INPUT.userId,
+      operationId: RETRY_OPERATION_ID,
+      publicMessage: RETRY_SUPPORT_REVIEW_SENTENCE(RETRY_OPERATION_ID),
+      chargedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+      refundedCredits: 0,
+    });
+    expect(adjudicator.handoff).not.toHaveBeenCalled();
+  });
+
+  it("when the adjudicator itself throws, hands the lease to the sweep rather than sealing anything", async () => {
+    dispatchWriteThrows();
+    adjudicator.recover.mockRejectedValueOnce(new Error("connection lost"));
+
+    await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      message: `That retry is still being settled. Operation ${RETRY_OPERATION_ID}.`,
+    });
+    expect(adjudicator.handoff).toHaveBeenCalledWith({ userId: INPUT.userId, operationId: RETRY_OPERATION_ID });
+    expect(adjudicator.park).not.toHaveBeenCalled();
+    expect(receipts.failure).not.toHaveBeenCalled();
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("CONTROL — an engine failure inside the unit never reaches the adjudicator; the unit's own refund and receipt stand", async () => {
+    await expect(retryCandidate(dependencies("fails"), INPUT)).rejects.toMatchObject({
+      message: `That tile didn't arrive again. ${CASTING_V2_RETRY_PRICE_CREDITS} credits were refunded.`,
+    });
+    expect(adjudicator.recover).not.toHaveBeenCalled();
+    expect(adjudicator.handoff).not.toHaveBeenCalled();
+    expect(receipts.failure).toHaveBeenCalledWith(expect.objectContaining({
+      refundedCredits: CASTING_V2_RETRY_PRICE_CREDITS,
+    }));
   });
 });
