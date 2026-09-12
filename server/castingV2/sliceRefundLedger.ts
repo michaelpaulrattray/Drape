@@ -49,7 +49,8 @@
  *
  *   `candidateAbsent`    `rollService.ts` (the shared roll/retry dispatch)
  *                        and `rollRecovery.ts`
- *   `renderFault`        `rollService.ts`, the `render_fault` exit
+ *   `renderFault`        `rollService.ts`, the `render_fault` exit; and
+ *                        `rollRecovery.ts` paying a torn `render_fault` row (#868)
  *   `retryLandedNowhere` `retryService.ts`, the landed-nowhere exit
  *   `retryRecovered`     `retryRecovery.ts`
  *

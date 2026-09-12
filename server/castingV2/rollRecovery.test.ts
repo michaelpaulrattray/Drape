@@ -93,6 +93,7 @@ vi.mock("../casting/atomicCredits", async (importOriginal) => {
 });
 
 const { recoverCastingV2RollOperation, candidateRefundReference } = await import("./rollRecovery");
+const { SLICE_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
 
 // Real UUIDs: operationChargeReference asserts the shape, which is itself a
 // guard worth keeping — an unparseable operation id must never reach the ledger.
@@ -517,6 +518,146 @@ describe("the CAS is claimed before the money moves", () => {
     // One new refund (c-2), and a total that accounts for both.
     expect(refunds).toHaveLength(1);
     expect(outcome).toMatchObject({ type: "paid_failure", refundedCredits: 40 });
+  });
+});
+
+describe("the torn write inside the live catch: `failed` written, the refund never recorded (#868)", () => {
+  /*
+    `dispatchCandidate`'s catch does two writes in order — `failCandidate`
+    (row -> `failed`) then `recordRefund`. A dropped connection or a process
+    death between them leaves `failed` on the row and nothing in the ledger,
+    and `isSettleable` does not count a `failed` row, so the sweep used to
+    seal the roll with the slice unpaid — forever, since nothing revisits a
+    sealed receipt. The retry adjudicator already carries the rule (its header:
+    "already `failed` means the service settled it and died after: the ledger
+    decides whether the refund landed, and pays it once if not"); these arms
+    hold the roll's to the same rule.
+  */
+  it("refunds a failed slice whose refund row is missing, once, under its own reference", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "failed", failureClass: "capability" }),
+    ];
+    // The charge, and no refund row for c-2 — the torn write.
+    rows.ledger = [chargeRow()];
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0]).toMatchObject({ userId: OPERATION.userId, amount: 20 });
+    // The SAME reference the live catch would have used, so a live process
+    // racing this refund lands as the ledger's duplicate rather than a second
+    // payment.
+    expect(refunds[0].reference).toBe(`op:${OPERATION_ID}:charge:candidate:c-2`);
+    expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 1, refundedCredits: 20, chargedCredits: 160 });
+    // Its row was already terminal; nothing about it is rewritten.
+    expect(rows.candidates[1]).toMatchObject({ status: "failed", failureClass: "capability" });
+    expect(finalizers.finalizeSuccess).toHaveBeenCalledWith(
+      expect.objectContaining({ chargedCredits: 160, refundedCredits: 20 }),
+    );
+  });
+
+  it("does not refund a failed slice whose refund row is present — the idempotency control", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "failed", failureClass: "capability" }),
+    ];
+    rows.ledger = [
+      chargeRow(),
+      {
+        userId: OPERATION.userId,
+        referenceId: candidateRefundReference(OPERATION_ID, "c-2"),
+        type: "refund",
+        amount: 20,
+      },
+    ];
+
+    const outcome = await recover();
+
+    // The live catch settled it in full and died after; the sweep only reads,
+    // and with nothing owed the roll closes on the same branch it always did.
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "durable_success", ready: 1 });
+  });
+
+  it("pays the torn slice beside the unfinished ones, inside one conservation ceiling", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "failed", failureClass: "capability" }),
+      candidate({ id: 3, publicId: "c-3", status: "dispatched" }),
+      candidate({ id: 4, publicId: "c-4", status: "failed", failureClass: "capability" }),
+    ];
+    rows.ledger = [
+      chargeRow(),
+      {
+        userId: OPERATION.userId,
+        referenceId: candidateRefundReference(OPERATION_ID, "c-4"),
+        type: "refund",
+        amount: 20,
+      },
+    ];
+
+    const outcome = await recover();
+
+    // c-3 (unfinished, CAS'd) and c-2 (torn) — never c-1 (landed), never c-4 (paid).
+    expect(refunds.map((entry) => entry.reference)).toEqual([
+      `op:${OPERATION_ID}:charge:candidate:c-3`,
+      `op:${OPERATION_ID}:charge:candidate:c-2`,
+    ]);
+    expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 2, refundedCredits: 60 });
+    const total = refunds.reduce((sum, entry) => sum + entry.amount, 0) + 20;
+    expect(total).toBeLessThanOrEqual(OPERATION.chargedCredits);
+  });
+
+  it("names the event the torn row recorded — a render fault's slice says so on the ledger", async () => {
+    // The live catch composes the sentence from the failure class; the sweep
+    // paying the same row must not describe a different event (PR #871 review).
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "failed", failureClass: "render_fault" }),
+      candidate({ id: 2, publicId: "c-2", status: "failed", failureClass: "capability" }),
+    ];
+    const { recordRefund } = await import("../casting/atomicCredits");
+
+    await recover();
+
+    const descriptions = vi.mocked(recordRefund).mock.calls.map((call) => call[2]);
+    expect(descriptions).toEqual([
+      SLICE_REFUND_DESCRIPTION.renderFault,
+      SLICE_REFUND_DESCRIPTION.candidateAbsent,
+    ]);
+  });
+
+  it("never refunds a torn slice that was never charged for (pointsCost 0)", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "failed", failureClass: "capability", pointsCost: 0 }),
+    ];
+    const outcome = await recover();
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "durable_success", ready: 1 });
+  });
+
+  it("escalates instead of sealing when the torn slice's refund will not record", async () => {
+    refundRecords = false;
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "failed", failureClass: "capability" }),
+    ];
+    const outcome = await recover();
+    // The atomicCredits law: a refund that did not record is never sealed as
+    // "settled". The user stays charged and support gets the operation.
+    expect(outcome).toMatchObject({ type: "recovery_required", chargedCredits: 160, refundedCredits: 0 });
+    expect(finalizers.finalizeSuccess).not.toHaveBeenCalled();
+  });
+
+  it("holds the ceiling over the torn slice too", async () => {
+    // A mis-seeded pointsCost on a torn row must not refund past the charge.
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "failed", failureClass: "capability", pointsCost: 170 }),
+    ];
+    const outcome = await recover();
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "recovery_required", reason: "refund slices exceed the recorded charge" });
   });
 });
 
