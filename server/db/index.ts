@@ -109,7 +109,6 @@ export {
   refreshMonthlyCredits,
   addTopupCredits,
   getSubscriptionByUserId,
-  getCreditHistory,
   getCycleSpend,
   spendWindow,
 } from "./billing";
