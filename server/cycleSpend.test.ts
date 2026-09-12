@@ -203,7 +203,10 @@ describe("#624 — the wire", () => {
       #624. Putting either back is a deliberate act with a card, and a
       surface that wants day buckets writes a new procedure under its own name.
       The positive half keeps the matcher honest: the router must still carry
-      the two procedures that DO have callers.
+      `getCycleSpend` (three money surfaces call it) and `getHistory` — which
+      has NO caller either, orphaned by the same Section 03 commit, and is
+      filed as #833 rather than widened into #635's declared manifest. When
+      #833 resolves, that line moves with it.
     */
     const usage = code(read(join(HERE, "routes", "usage.ts")));
     const billing = code(read(join(HERE, "db", "billing.ts")));
