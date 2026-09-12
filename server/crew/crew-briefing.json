@@ -1,7 +1,7 @@
 {
-  "edition": 357,
-  "updatedAt": "2026-09-12T05:13:27.000Z",
-  "shift": "Foreman — two merged: the staff Refresh buttons now have a guard (#766), and the check that was refusing the crew's own deploy of this page is fixed (no card — a one-line timing fix), so the bug you would have seen three times cannot come back a fourth. YOUR DESK IS CLEAR. THE BUILD (PR #837): three times in a week a staff page's Refresh button was found to be quietly skipping one of the lists on that page — you pressed it, it said 'Data refreshed', and the list in front of you did not move (the blocked-IPs list, then eight more, then ten). Each time a shift found it by hand, and each time the hand count was wrong. Now a test reads every staff page on every commit, finds every list the page loads (28 across nine pages today), and refuses the change unless the Refresh button reaches all of them. It was proven the honest way first: the original bug was put back into two real pages and the test named exactly those two and nothing else. Nothing you see changes today; what changes is that the next page to grow a list cannot forget its button. The reviewer passed it with two small hardening notes, both taken. FOUND ON THE WAY: this card had sat under no category on your switch panel for two days, so three shifts read past it — it is filed under Small fixes now, which is what it was. NOT TAKEN, AND WHY: #481 (moving a shared form-field row into the foundation) says its three remaining users are the same shape as the component; read at the code, two of the three are not (one puts label and field on a single row, one carries the Re-imagine button on its label line), so doing it as written would change how those dialogs look. The card now says so and recommends the smaller honest step. ALSO (PR #838): the crew's deploy of this page refused twice tonight because one self-check — the one that rebuilds the whole architecture map to prove a script still runs — was given 30 seconds and takes 17 alone, over a minute when the machine is busy. Two earlier shifts had recorded the same refusal. That check now has its own two-minute budget, the same road two sibling checks already use; nothing it proves changed. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden reads due tomorrow.",
+  "edition": 358,
+  "updatedAt": "2026-09-12T07:05:00.000Z",
+  "shift": "Foreman — one merged on one card: the crew's own deploy of this page can no longer be refused by a self-check that was doing a minute of unrelated work to answer a yes/no question (#839, PR #840). YOUR DESK IS CLEAR. THE FIX: last night the crew's deploy of this page was refused three times in a row, none of them about the change being pushed. One self-check exists to prove a script still runs when you run it — a yes/no — and it was answering by rebuilding the entire architecture map (a thousand files through the compiler): 17 seconds when the machine is idle, over two minutes when it is busy, and the two-minute budget the last shift gave it was crossed by the very next deploy. Now the script has a one-word switch that makes it say 'yes, I ran' and stop, and the check asks with that word: 2 to 4 seconds measured three times under the same load that used to take over two minutes. The check can still fail — it was proven the honest way, by breaking the script on purpose and watching three checks go red, then a permanent test that does the same on a copy every time. Nothing you see changes; what changes is that the page in front of you cannot be held up by that check again. The reviewer passed it with no findings. NOT TAKEN, AND WHY: #762 (proving the new dependency watchdog actually says no — it has only ever said yes) is the Warden's card and the Warden's check-up is tomorrow; whether the watchdog blocks the test package at all depends on a setting in its own dashboard, which is a read before a throwaway pull request, so it is left for that seat with the note. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden reads due tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,17 +128,17 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "47 open, none waiting on you, none urgent. 2 PRs merged this shift; 25 stale."
+        "source": "47 open, none waiting on you, none urgent. 1 PR merged this shift; 29 untouched for 7 days."
       },
       {
         "label": "Your desk is clear",
         "tone": "good",
-        "source": "Nothing waits on you. Two PRs merged this shift, no decisions."
+        "source": "Nothing waits on you. One PR merged this shift, no decisions."
       },
       {
         "label": "Check-ups",
         "tone": "good",
-        "source": "Retro ran tonight, on its day. Machinist and Janitor due today; the Warden 13 Sep. None overdue."
+        "source": "Retro, Machinist and Janitor ran today, on their day; the Warden 13 Sep. None overdue."
       },
       {
         "label": "Your account is no longer flagged",
@@ -4654,6 +4654,13 @@
   ],
   "pipeline": [
     {
+      "id": "selfinvocation-fired-flag-840",
+      "title": "The self-check that was refusing the crew's own deploy now asks its yes/no question in seconds instead of rebuilding the whole map",
+      "status": "merged",
+      "prNumber": 840,
+      "note": "Card #839, filed by the last shift after three refusals in one sitting. The check proves a script still runs when run directly; it was proving it by running the script's whole job (the architecture map, 1,021 files) and reading the first line of output — 17 s idle, 57–74 s under the deploy's own concurrent checks, over 120 s on a busy evening. The script takes one strict word now (--fired) that prints 'I ran' and stops before the build; the check passes it. Measured three times under the same load: 2.4, 3.2, 4.1 s. Proven able to fail by breaking the real script (three checks red) and by a permanent test that breaks a copy on every run, on both roads. Fable pass, no findings."
+    },
+    {
       "id": "refresh-reach-guard-837",
       "title": "The staff Refresh buttons have a guard: every list a page loads must be reached by its own button, checked on every commit",
       "status": "merged",
@@ -5603,11 +5610,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912k-foreman",
+      "id": "queue-shape-0912l-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 47 open, one closed (#766); NEXT UP is empty; nothing waits on you",
-      "detail": "Category order re-read at the code: Bugs (#816) holds only its two auth/money rows; Small fixes had nothing — until #766 was read, which carried no category label at all and was the exact 'self-contained tooling fix' that switch describes, so it was labelled and taken (merged, PR #837). Process (#697, #769, #513) and Performance (#555, #58) remain sessions of their own or not an Opus shift's. Housekeeping's next, #481, was sized at the code and its premise corrected on the card rather than built. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Warden due 13 Sep; Janitor, Machinist and Retro ran today."
+      "title": "The queue: 47 open, one closed (#839); NEXT UP is empty; nothing waits on you",
+      "detail": "Category order re-read at the code, same as the last four entries: Bugs (#816) holds only its two auth/money rows; Small fixes held #839 alone and it is merged (PR #840); Process (#697, #769, #513) and Performance (#555, #58) remain sessions of their own or not an Opus shift's; Housekeeping's next, #481, has its honest shape on the card. Security holds one card (#762, the Warden's positive control) and the Warden's clock fires tomorrow. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read). Janitor, Machinist and Retro ran today."
     }
   ],
   "acknowledgedReplyIds": [
