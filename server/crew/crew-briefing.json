@@ -1,7 +1,7 @@
 {
-  "edition": 364,
-  "updatedAt": "2026-09-12T14:47:07.000Z",
-  "shift": "Warden (check-up #3, on its day) — NOTHING MERGED; ONE THING ON YOUR DESK, and it is a sentence you were told that turned out not to be true. THE WEEKLY PASS: every secret scan clean (3,390 commits), the code-shape scanner clean (1,850 files), the six access-control suites green (52 tests), the audit log clean (625 rows, nothing from a customer in any of them). THE FINDING: this seat read, for the first time, the list of KNOWN security holes in the packages the product is built from — 91, three of them critical, twenty-one high — and then read every road that should have told us. All three are shut. On #35 you were told 'Dependabot (already on) catches dependencies with a known CVE'; it is switched OFF on the repository and has never opened a security fix. Socket, the guard you chose in September, was tested tonight with a throwaway pull request carrying one harmless package with a critical known hole: Socket WARNED and passed it green — under its default policy it blocks known malware and nothing else. And the weekly update that would patch the image decoder, the database driver and the ORM has been failing since 7 September on two lines of our own type-checking, so the fixes sit in a pull request nobody can merge. WHAT IT MEANS FOR A CUSTOMER TODAY: little — the one hole a stranger could actually reach is in the image decoder behind the ink, reference and concept upload doors, and those doors are open to YOUR account only. It widens the day those doors widen. YOUR DESK: #858 — two GitHub switches, one word each, recommended yes on both. FILED for a shift: #857, the patch road (a security-first update, with which packages and why, reachability read line by line). CLOSED: #762 — its question is answered. Spent nothing. NEXT UP is empty. No replies since #177.",
+  "edition": 365,
+  "updatedAt": "2026-09-12T15:50:18.376Z",
+  "shift": "Foreman (build shift) — ONE merged: the bug the click-timing tool found yesterday. An old sheet whose session has expired still offers Roll again; pressing it used to spend thirteen seconds on the paid brief reader and THEN refuse with 'Casting session not found' — the wrong sentence for a sheet the person is looking at, which the page then showed as 'We lost contact'. THE FIX (#854 → PR #859): the sheet's own record is read BEFORE anything is spent. An expired sheet now refuses in a couple of seconds with 'This sheet has expired, so it can't be rolled on. Nothing was charged — start a new sheet to roll these words again.' A sheet someone closed themselves says 'closed'. A sheet that is not theirs keeps the old sentence, still before any spend. Driven on the test account's expired sheet: the reader ran ZERO times (was once, at 13.4 seconds); the frame is in your gallery. Fable reviewed it twice — its one finding, that the three new refusals were invisible to the capability map, was taken in one push; second round PASS, no defects. ONE THING FOR YOUR EYE, and it is a small design call the card names as yours: that expired sheet still shows the Roll again button. Recommended: replace it with 'Start a new sheet with these words' on an expired sheet — the one thing that is actually possible. FOUND ON THE WAY, one card, not fixed: the ink upload runs its two cut-out calls before it checks the picture's owner (#860 — cents, not credits, and only your account can reach that door today). YOUR DESK: #858 (the Warden's two switches) and now the expired-sheet button (#854). NEXT UP is empty. No replies since #177.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,9 +116,9 @@
     ],
     "chips": [
       {
-        "label": "One thing on your desk",
+        "label": "Two things on your desk",
         "tone": "warn",
-        "source": "#858: known-hole alerts are OFF (you were told on); Socket only warns. Two switches, one word each."
+        "source": "#858: two GitHub switches, one word each. #854: keep Roll again on an expired sheet? Recommended A."
       },
       {
         "label": "Secrets, shapes, access: clean",
@@ -128,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "48 open, ONE waiting on you (#858), none urgent. 2 filed, 1 closed, 0 merged; 29 untouched 7 days."
+        "source": "49 open, TWO waiting on you (#858, #854), none urgent. 1 merged, 1 filed; 29 untouched 7 days."
       },
       {
         "label": "Check-ups",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T14:47:35.063Z",
+      "readAt": "2026-09-12T15:51:05.927Z",
       "items": [
         {
           "issueNumber": 16,
@@ -279,6 +279,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "expired-sheet-dock-854",
+      "issueNumber": 854,
+      "state": "open",
+      "filedAt": "2026-09-12T15:50:18.376Z",
+      "title": "An expired sheet still shows Roll again. It now refuses politely and for free — should the button be there at all?",
+      "productImpact": "Unsigned sheets are cleared after seven quiet days. Someone who opens one of those old sheets today sees the brief box, the price line and a Roll again button exactly as on a live sheet; nothing on the page says it is closed. Since tonight, pressing it costs nothing and says so: 'This sheet has expired, so it can't be rolled on. Nothing was charged — start a new sheet to roll these words again.' That is the honest floor. The question left is the button itself: a control that can only ever refuse is a control that should not be offered, and the one thing that IS possible on an expired sheet — a fresh sheet from the same words — has no button.",
+      "workedExample": "The frame in your gallery: the test account's expired sheet 89, the brief typed, Roll again pressed. The page shows 'The roll didn't start' with the new sentence and a Back to casting button — and under it, the Roll again button still sits beside the box, at the same price. Under the recommendation the dock on an expired sheet would read 'This sheet has expired' where the price line is, and the button would say 'Start a new sheet with these words' and open a fresh sheet with the brief carried across — the same road Back to casting takes, one step shorter.",
+      "options": [
+        {
+          "key": "A",
+          "label": "A - replace Roll again with 'Start a new sheet with these words' on an expired sheet",
+          "consequence": "No dead control; the words are kept; one press gets them a live sheet. A small change to the dock and a new test; the server refusal stays as the backstop."
+        },
+        {
+          "key": "B",
+          "label": "B - keep Roll again, but say 'This sheet has expired' in the dock before they press it",
+          "consequence": "Honest and smaller, but the button still leads to a refusal every time."
+        },
+        {
+          "key": "C",
+          "label": "C - leave it as it is now",
+          "consequence": "Free and honest since tonight; the button is still a promise the sheet cannot keep."
+        }
+      ],
+      "recommendation": "A. The refusal sentence already tells them what to do; the button should just do it."
+    },
     {
       "id": "known-cve-roads-858",
       "issueNumber": 858,
@@ -2311,6 +2338,22 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "expired-sheet-854-frame",
+      "title": "An expired sheet after Roll again: the new sentence, and the button that is still there",
+      "question": "Is this the sentence? And do you want the Roll again button gone on an expired sheet (card expired-sheet-dock-854 above, recommended A)? One reply on the card closes both.",
+      "state": "open",
+      "filedAt": "2026-09-12T15:50:18.376Z",
+      "issueNumber": 854,
+      "cardId": "expired-sheet-dock-854",
+      "frames": [
+        {
+          "key": "crew-eye/c52f6f58-6dc8-4f28-85dc-6d2b3995c8ec.png",
+          "caption": "Light, 1440 wide: the test account's expired sheet 89 after Roll again — 'The roll didn't start' with the new sentence, Back to casting, and the Roll again button still in the dock below.",
+          "arm": "light"
+        }
+      ]
+    },
     {
       "id": "dialog-width-844-phone-frames",
       "title": "Block IP on a phone: edge to edge before, the house gutter after",
@@ -4706,6 +4749,13 @@
   ],
   "pipeline": [
     {
+      "id": "expired-sheet-refusal-859",
+      "title": "Roll again on an expired sheet refuses before anything is spent, and says why — the sheet is read before the brief reader, not after it",
+      "status": "merged",
+      "prNumber": 859,
+      "note": "Card #854, the order half. Before: the paid brief reader ran (13.4 s), then the roll insert refused 'Casting session not found', which the page showed as 'We lost contact while your roll was starting'. After: the sheet's record is read first, owner-scoped; an expired sheet gets 'This sheet has expired, so it can't be rolled on. Nothing was charged — start a new sheet to roll these words again.', a closed one says closed, a foreign or unknown one keeps the ownership sentence — all three before any text call, and all three on the capability map as named doors. Four tests drive it with the reader spied (three were red on the old code); driven in the app on dev session 89: zero reader calls, 2.2 s to the sentence on the remote dev database. Reviewer round 1: one finding (the doors were invisible to the map), taken; round 2: pass, no defects. The product half — whether Roll again is offered at all on an expired sheet — is on your desk."
+    },
+    {
       "id": "interaction-latency-853",
       "title": "Click-to-paint is measured now — a tool times each action on a real sheet from the click to the first visible change, its proof runs on every PR, and the first readings are in the Machinist's ledger",
       "status": "merged",
@@ -5718,9 +5768,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0913b-warden",
+      "id": "queue-shape-0913c-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 49 open, one filed (#860), one merged (#859); NEXT UP is empty; TWO cards wait on you (#858, #854)",
+      "detail": "Category order re-read at the code: Bugs — #854's order half is merged and its product half is on your desk (labelled blocked); #855 (a slice stuck queued under a live heartbeat) touches settlement and its fix has a design choice in it — fail-and-refund or re-queue — so it is not an Opus shift's without a word; #816 holds only its auth/money rows; #860 new (ink upload cuts before it proves the owner). Small fixes EMPTY; Security — #857 takeable (a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping next: #482, #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
+    },
+    {
+      "id": "queue-shape-0913b-warden",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 48 open, one closed (#762), two filed from the check-up (#857 takeable, #858 yours); NEXT UP is empty; ONE card waits on you",
       "detail": "Security: #762 closed with its readings; #857 is the takeable half (the patch road - a security-first package update, sized at a session, not a batch item); #858 is yours. Category order otherwise as the last entry: Bugs - #816 holds only its auth/money rows, #854 and #855 are casting-upkeep; Small fixes EMPTY; Process - #697's auth file, #513 blocked; Performance - #58 umbrella; Housekeeping next: #482, #274, #564, #527, #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Check-ups: Warden ran today; Janitor due 15 Sep; Machinist and Retro 19 Sep."
     },
@@ -5912,7 +5969,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-12T14:47:35.062Z",
+    "readAt": "2026-09-12T15:51:05.926Z",
     "items": []
   }
 }
