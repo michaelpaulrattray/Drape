@@ -1,5 +1,14 @@
 /**
- * The staff dialogs' shared grammar — header and field row (brief 11, #436).
+ * The staff dialogs' shared grammar — header and shell strings (brief 11, #436).
+ *
+ * ⚠ **THE FIELD ROW IS NOT HERE ANY MORE.** `StaffField` left for
+ * `foundation/ModalField.tsx` in the section 11 promotion pass (#481) — four
+ * consumer files, no rewrite, renamed on the way in. The header stays: it
+ * collides with the confirm shell's own header (`.dpc-modal__eyebrow` has five
+ * consumers there, through a different shell), and brief 11 §8 forbade folding
+ * the form dialogs onto that shell, so which chrome a form dialog gets is a
+ * design question the pass logged rather than answered. The paragraphs below
+ * are the section's own reasoning and are kept as written.
  *
  * # Why this exists, and why it is HERE and not in `foundation/`
  *
@@ -91,44 +100,6 @@ export function StaffDialogHeader({
         </DialogDescription>
       ) : null}
     </DialogHeader>
-  );
-}
-
-/**
- * One field: mono label, the control, and the rule beneath it.
- *
- * ⚠ **`required` puts no asterisk in the label, and that is the whole of brief
- * 11 §5's second half.** `Target user ID *` and `Title * (min 5 characters)`
- * were doing two jobs in one string; the marker becomes the attribute on the
- * control (so a screen reader gets it, which an asterisk never gave anyone)
- * and the rule becomes `helper`, which is read at the moment it fails rather
- * than once at the top.
- *
- * ⚠ **It changes no validation.** The disabled conditions on every confirm
- * button are untouched, and these inputs are not inside a `<form>` that
- * submits, so `required` here is an accessibility annotation and nothing else.
- */
-export function StaffField({
-  label,
-  htmlFor,
-  helper,
-  className,
-  children,
-}: {
-  label: string;
-  htmlFor?: string;
-  helper?: ReactNode;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className={cn("dp-sfield", className)}>
-      <label className="dpc-modal__label" htmlFor={htmlFor}>
-        {label}
-      </label>
-      {children}
-      {helper ? <p className="dp-sfield__help">{helper}</p> : null}
-    </div>
   );
 }
 
