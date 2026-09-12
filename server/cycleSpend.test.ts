@@ -178,10 +178,11 @@ describe("#624 — the wire", () => {
 
   it("⚠ no client file reassembles a cycle out of day buckets any more", () => {
     /*
-      THE ARM THAT SURVIVES A REWRITE. `usage.getDailyUsage` still exists and
-      still has a job (it is a chart endpoint); what must not come back is a
-      surface adding its buckets up to answer "what has this account spent this
-      cycle", which is the shape both #385's repair and #624's defect had.
+      THE ARM THAT SURVIVES A REWRITE. `usage.getDailyUsage` was deleted with
+      #635 (no caller after #624, no design asking for its chart); what must not
+      come back — under that name or a new one — is a surface adding day buckets
+      up to answer "what has this account spent this cycle", which is the shape
+      both #385's repair and #624's defect had.
     */
     const client = join(HERE, "..", "client", "src", "features");
     for (const file of [
@@ -191,5 +192,26 @@ describe("#624 — the wire", () => {
     ]) {
       expect(code(read(file)), `${file} sums day buckets again`).not.toContain("getDailyUsage");
     }
+  });
+
+  it("⚠ the two callerless usage procedures stay deleted (#635)", () => {
+    /*
+      `usage.getDailyUsage` and `usage.getStats` had no caller anywhere in the
+      product after #624 and were removed with a manifest. An endpoint nobody
+      calls and nobody has explained is the shape that gets re-wired wrongly —
+      `getDailyUsage`'s whole-UTC-day buckets were the root of #385, #622 and
+      #624. Putting either back is a deliberate act with a card, and a
+      surface that wants day buckets writes a new procedure under its own name.
+      The positive half keeps the matcher honest: the router must still carry
+      the two procedures that DO have callers.
+    */
+    const usage = code(read(join(HERE, "routes", "usage.ts")));
+    const billing = code(read(join(HERE, "db", "billing.ts")));
+    expect(usage).not.toMatch(/getDailyUsage\s*:/);
+    expect(usage).not.toMatch(/getStats\s*:/);
+    expect(billing).not.toContain("export async function getDailyUsage");
+    expect(billing).not.toContain("export async function getUsageStats");
+    expect(usage).toMatch(/getCycleSpend\s*:/);
+    expect(usage).toMatch(/getHistory\s*:/);
   });
 });

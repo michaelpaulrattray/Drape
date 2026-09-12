@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "39100a351120f44b"
+    "sourceFingerprint": "1450b6535ab77ad0"
   },
   "domains": [
     {
@@ -8640,29 +8640,9 @@
       "file": "server/routes/usage.ts"
     },
     {
-      "id": "route:usage.getDailyUsage",
-      "namespace": "usage",
-      "name": "getDailyUsage",
-      "type": "query",
-      "auth": "protected",
-      "input": "open",
-      "rateLimited": false,
-      "file": "server/routes/usage.ts"
-    },
-    {
       "id": "route:usage.getHistory",
       "namespace": "usage",
       "name": "getHistory",
-      "type": "query",
-      "auth": "protected",
-      "input": "open",
-      "rateLimited": false,
-      "file": "server/routes/usage.ts"
-    },
-    {
-      "id": "route:usage.getStats",
-      "namespace": "usage",
-      "name": "getStats",
       "type": "query",
       "auth": "protected",
       "input": "open",
@@ -35092,24 +35072,10 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
-      "id": "finding:non-strict-input:route:usage.getDailyUsage",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:usage.getDailyUsage",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
       "id": "finding:non-strict-input:route:usage.getHistory",
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:usage.getHistory",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:usage.getStats",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:usage.getStats",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
