@@ -1,7 +1,7 @@
 {
-  "edition": 366,
-  "updatedAt": "2026-09-12T17:04:55.687Z",
-  "shift": "Foreman (build shift) — TWO merged on your two replies. YOUR 'A' ON THE EXPIRED SHEET (#854 → PR #864): an old sheet no longer offers Roll again. Its dock now says 'This sheet has expired', the price line is gone because the one press left is free, and the button says 'Start a new sheet with these words' — one press carries the words in the box (the old sheet's own brief, or your edit of it) to the casting page's box, caret in it, Cast it priced beside it, exactly the way every roll has always started. Driven on the test account's expired sheets in both themes; the before and after are in your gallery. Fable: clean pass, no findings. YOUR 'C' ON THE TWO SWITCHES (#858): the relay flipped Dependabot alerts and security updates on and read them back at GitHub (alerts ON, fixes enabled: true); Socket is on Higher Noise by your hand. The card is closed; the Warden's next run reads the first alert as the proof it is live. AND THE CARD FOUND LAST NIGHT (#860 → PR #865): uploading a tattoo design to a Cast now checks the Cast is yours BEFORE it spends the two cut-out calls and writes the file — a wrong or foreign id is refused for free with the same sentence as before. Fable: clean pass. YOUR DESK IS CLEAR of decisions; one set of frames waits for your eye (the expired-sheet dock as built). NEXT UP is empty. Nothing spent.",
+  "edition": 367,
+  "updatedAt": "2026-09-12T18:25:15.977Z",
+  "shift": "Foreman (build shift) — TWO merged from the Bugs queue, both on the same fault. A STUCK TILE NO LONGER WAITS FOR A DEPLOY (#855 → PR #866): when the database hiccups on one slice of a roll, that tile used to stay a blank skeleton for as long as the server stayed up — hours, until the next deploy killed the process and the sweep could refund it — with its 20 credits held the whole time. Now the same hiccup settles in the same request: the other seven land, the one that could not is marked didn't-arrive and refunded, the sheet reads partial. The refund is the one the roll already promised; nothing new is paid or kept. Fable: clean pass, three notes, one taken. AND THE SAME FAULT ON RETRY WAS WORSE (#867 → PR #870): a Retry that hit the same hiccup was sealed as failed WITH THE 20 CREDITS KEPT, and because it was sealed nothing could ever go back for them. Now it is refunded on the spot, or handed to the sweep if the database is truly down. Fable: clean pass, no findings. Two smaller cousins are filed for the next shifts (#868, #869), not built. YOUR DESK IS CLEAR; NEXT UP is empty; the two frame sets already on your page stay until you judge them. Nothing spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -118,7 +118,7 @@
       {
         "label": "Your desk is clear",
         "tone": "warn",
-        "source": "#854 built on your A (PR #864); #858 done on your C. One set of frames for your eye."
+        "source": "Nothing waits on you. Two frame sets on your page for your eye (#854's dock, #844's phone dialog)."
       },
       {
         "label": "Secrets, shapes, access: clean",
@@ -128,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "46 open, none waiting on you, none urgent. 2 merged, 3 closed; 29 untouched 7 days."
+        "source": "46 open, none waiting on you, none urgent. 2 merged, 2 closed, 2 filed; 29 untouched 7 days."
       },
       {
         "label": "Check-ups",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T17:05:09.346Z",
+      "readAt": "2026-09-12T18:24:41.145Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4769,6 +4769,20 @@
   ],
   "pipeline": [
     {
+      "id": "stuck-slice-live-process-866",
+      "title": "A tile whose dispatch write fails settles in the same request — no more waiting for a deploy to free it",
+      "status": "merged",
+      "prNumber": 866,
+      "note": "Card #855, from the Machinist's latency run. Before: a database hiccup on one of the eight slices left that tile a skeleton for as long as the server process lived, its credits held — the recovery sweep waits for the operation's lease to lapse, and a live process kept renewing it (dev roll 111: six ready, two stuck, forty minutes, then hours). After: the loop waits for all eight, hands the roll to the sweep's own adjudicator right then (the failed slice refunded under its usual reference, the sheet partial, the receipt sealed), parks it for support on a dead-end verdict, or — if the database is really gone — stops the heartbeat and expires the lease so the sweep takes it within six minutes. The shape the card left open (re-queue vs refund) was decided by the sweep's own first law: recovery refunds, it never re-runs paid work. Six tests, five red on the old code. Fable: clean pass, three non-blocking notes, one taken as a comment."
+    },
+    {
+      "id": "retry-stuck-slice-870",
+      "title": "A Retry whose dispatch write fails is refunded on the spot — it used to be sealed as failed with the credits kept",
+      "status": "merged",
+      "prNumber": 870,
+      "note": "Card #867, found by #855's own sweep and confirmed by its reviewer at the bytes. Before: the same database hiccup on a Retry sealed a failure receipt with 0 refunded — the slice charged, never refunded, and because the operation was sealed the sweep could never see it. After: the retry's own adjudicator settles it in the same request (refund once under the retry's own reference, receipt sealed), or the lease is handed to the sweep. Four tests, three red on the old code. Fable: clean pass, no findings."
+    },
+    {
       "id": "closed-sheet-dock-864",
       "title": "An expired sheet offers 'Start a new sheet with these words' in place of Roll again — his A, built",
       "status": "merged",
@@ -5802,9 +5816,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0913d-foreman",
+      "id": "queue-shape-0913e-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 46 open, two closed (#855, #867), three filed (#868, #869 from #855's sweep — and #867 was one of them, taken the same shift); NEXT UP is empty; nothing waits on your word",
+      "detail": "Category order re-read at the code: Bugs — #868 (the roll's recovery sweep does not refund a slice marked failed whose refund never recorded; the retry's already does — a small extension of the sweep's rule, wants its own arm) and #869 (refine and sign: a failure inside the refund step itself escapes the finalizer — rarer, two writes must fail in sequence) are the two cousins left from #855's class; #816 holds only its auth/money rows. Small fixes EMPTY; Security — #857 takeable (the sharp 0.35 type fix that unblocks a 60-package patch bump; a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
+    },
+    {
+      "id": "queue-shape-0913d-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 46 open, two closed (#854, #860) and one closed by the relay (#858); NEXT UP is empty; nothing waits on your word",
       "detail": "Category order re-read at the code: Bugs — #855 (a slice stuck queued under a live heartbeat) touches settlement and its fix has a design choice in it — fail-and-refund or re-queue — so it waits for a word; #816 holds only its auth/money rows. Small fixes EMPTY; Security — #857 takeable (the sharp 0.35 type fix that unblocks a 60-package patch bump; a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (a both-theme pixel-diff promotion, not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
     },
@@ -6012,7 +6033,7 @@
     179
   ],
   "nextUp": {
-    "readAt": "2026-09-12T17:05:09.345Z",
+    "readAt": "2026-09-12T18:24:41.144Z",
     "items": []
   }
 }
