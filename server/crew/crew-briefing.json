@@ -1,7 +1,7 @@
 {
-  "edition": 368,
-  "updatedAt": "2026-09-12T20:03:38.000Z",
-  "shift": "Foreman (build shift) — the LAST TWO COUSINS of last night's fault, both merged from the Bugs queue. A LOST TILE'S CREDITS COME BACK EVEN WHEN THE REFUND ITSELF WAS THE THING THAT BROKE (#868 → PR #871): when a roll loses a tile, the server marks it failed and then writes the refund — two steps. If the database dropped between them, the tile said 'didn't arrive · refunded' while the ledger held no refund, and the 20 credits were gone for good, because the clean-up sweep only ever looked at tiles still in flight. Now the sweep (and the same-request settlement from last night) reads the ledger for every failed tile and pays the missing one once — never twice, never past what was charged. Fable: pass, one small wording finding taken (the ledger line for a bad-frame tile now says what happened). AND A REFINE OR SIGN CAN NO LONGER HANG ON A BROKEN REFUND (#869 → PR #872): the rarer cousin — a refine that failed AND whose refund write hit a dropped connection used to leave the tile 'casting' for as long as the server stayed up, credits held. Now it settles in the same request (refund or park for support) with the same sentence the receipt carries. Fable: pass, no blocking findings; one older cousin it spotted is filed as #873, not built. YOUR DESK IS CLEAR; NEXT UP is empty; the two frame sets on your page stay until you judge them. Nothing spent.",
+  "edition": 369,
+  "updatedAt": "2026-09-12T21:13:33.000Z",
+  "shift": "Foreman (build shift) — ONE MERGED from the Bugs queue, the last cousin left from this week's settlement sweep: A REFINE THAT WORKED IS NEVER REFUNDED FOR A PICTURE THE CUSTOMER KEEPS (#873 → PR #874). Before: if a refine's new picture landed and was selected on the sheet, and then the very last step — writing its receipt — failed (a dropped connection under the heartbeat is the known way), the server read that as 'nothing was delivered' and paid the whole 25 credits back for a picture the customer was already looking at. A free image, the business eats it. After: the receipt step runs after the refund-on-failure block, so a failure there parks the operation for support with the charge kept beside the picture; and the three bits of bookkeeping that still run after the picture lands (the satisfaction ledger, the 'what you are owed' note, the open-lane demand rows) each fail on their own without touching the money — on the success road AND the failure road. Three tests, each red on the old code with the defect's own words ('Your credits have been returned'). Fable: two rounds, pass both — every note taken (the reviewer found the two remaining post-landing steps and the failure road's twin; all fenced). Every one of the 16 places the product seals a success was read: this was the only unfenced one. YOUR DESK IS CLEAR; NEXT UP is empty; the two frame sets on your page stay until you judge them. Nothing spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T20:02:49.976Z",
+      "readAt": "2026-09-12T21:13:50.518Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4769,6 +4769,13 @@
   ],
   "pipeline": [
     {
+      "id": "finalizer-outside-catch-874",
+      "title": "A refine that worked is never refunded for a picture the customer keeps",
+      "status": "merged",
+      "prNumber": 874,
+      "note": "Card #873, found by PR #872's reviewer. Before: the refine road's last step — writing the success receipt — sat inside the same block whose failure handler refunds the whole price. By then the picture had landed and was selected, so a receipt-write failure (a dropped connection under the heartbeat) was read as 'nothing was delivered': 25 credits back for a picture the customer keeps, and a failure receipt over a delivered picture. After: the receipt step runs after that block; on a failure it parks the operation for support and the charge stands beside the picture. The reviewer's two rounds found the rest of the class in the same function — the 'what you are owed' note and the open-lane demand rows still ran after the landing inside the block, and the failure road's own demand-row call was unfenced too — all fenced so a bookkeeping slip is logged, never refunded and never lets a failed refine escape its refund. Three tests, each red on the old code. All 16 places the product seals a success were read; this was the only unfenced one."
+    },
+    {
       "id": "torn-refund-sweep-871",
       "title": "A lost tile's credits come back even when the refund write itself was the step that broke",
       "status": "merged",
@@ -5830,9 +5837,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0913f-foreman",
+      "id": "queue-shape-0913g-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 45 open, one closed (#873); NEXT UP is empty; nothing waits on your word",
+      "detail": "Category order re-read at the code: Bugs — only #816's two remaining rows (a credit-adjustment reason and the sign-up name, both money/auth paths, not an Opus shift's — they wait for the next Fable shift that is up for anything else). Small fixes EMPTY; Security — #857 takeable (a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
+    },
+    {
+      "id": "queue-shape-0913f-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 45 open, two closed (#868, #869), one filed (#873, from PR #872's review); NEXT UP is empty; nothing waits on your word",
       "detail": "Category order re-read at the code: Bugs — #873 new (a refine that SUCCEEDS but whose final receipt step throws is refunded for a picture the customer keeps — pre-existing, the mirror of #869's class; small, settlement path, founder-review) and #816 (only its auth/money rows, not an Opus shift's). Small fixes EMPTY; Security — #857 takeable (a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
     },
@@ -6054,7 +6068,7 @@
     179
   ],
   "nextUp": {
-    "readAt": "2026-09-12T20:02:49.975Z",
+    "readAt": "2026-09-12T21:13:50.517Z",
     "items": []
   }
 }
