@@ -37,6 +37,7 @@ The instruments and their record pages:
 | the delivery-rate report (D-236) | `server/castingV2/reliabilityReport.ts` via `scripts/drive-self-walk.mts` | did the customer GET the thing — per class, with the false-pass bucket | `DECISION_LOG.md` D-236 |
 | the client bundle read | `pnpm machinist:bundle` | how many bytes a visitor downloads, and whose they are | this file |
 | the house-command bench | `pnpm machinist:bench` | what our own commands cost — check, atlas, build, suite | this file |
+| the interaction-latency drive (#555) | `pnpm machinist:latency --base <url> --token <owner's app_session_id> --session <sheet publicId> [--samples 8] [--spend] [--only follow] [--json …]` · its own proof: `pnpm machinist:latency --controls` (in the gate) | click → first visible change on the sheet's own actions — Keep/Unkeep (free), Roll again / Follow / Retry (`--spend`), the chip edit — p50/p95 per action against a declared bar | this file |
 
 Two things the ledger read does NOT measure, stated so the absence is never
 read as a zero (doctrine entry 1): the roll's per-slice timing (rolls log
@@ -55,6 +56,14 @@ narrow, because the tempting version of it is the false one:
   bundle figure is not a proxy for any of them. A 600 kB bundle and a laggy
   canvas are different faults with different fixes; the charter's *"laggy in
   general"* half is about the second, and nothing measures it yet.
+  ⚠ **ONE OF THOSE THREE IS READ NOW — INTERACTION LATENCY, #555, 2026-09-12.**
+  The founder's own question (*"does the machinist measure things like how long
+  a click takes to register? e.g if i click keep on a cast tile it can take
+  around 2 seconds…"*) has an instrument: `pnpm machinist:latency` clicks each
+  action on a real sheet and reads click → first visible change with a
+  `MutationObserver` and `performance.now()`. **Its first readings are below.**
+  Page load and the canvas are STILL unread; this narrows the sentence by one
+  word, exactly as #35 did.
 
 **The first readings, taken on the build shift rather than on a Machinist run**
 (so they are dated evidence, not a patrol entry — the seat's Run 2 is still its
@@ -81,6 +90,71 @@ per-module `gzipLength` compresses each module against nothing but itself. The
 reader takes its totals from the files on disk for that reason and reports the
 plugin's numbers only as SHARES. **Never quote an owner's byte count as a
 size** — `scripts/lib/bundleFold.mts` carries the measurement.
+
+**The first interaction-latency readings, taken on the build shift (#555,
+2026-09-12, `team/555-latency`) rather than on a Machinist run** — dated
+evidence, not a patrol entry, for the same reason the bundle figures above are.
+The fixture: the dev server on the shift worktree (`:3190`), the dev database
+(remote, Railway), the test account `verify-bot-local` (823) on its own open
+sheet (session 90, `c19610ad…`), the HOUSE road (no register scope in the dev
+`.env`, so the sentence still draws pickers), headless Edge at 1440×900. The
+number in each row is `frameMs` — the click to the animation frame that paints
+the change; `--controls` reads an instant change at 6 ms and a 2 000 ms change
+at 2 013 ms with a 50 ms clock ticking beside the target, and was driven under
+sabotage (the clock read as a 13 ms change) before any of this was believed.
+
+| action → what changes | bar | n | p50 | p95 | max | verdict |
+|---|---|---|---|---|---|---|
+| keep → tile ring | optimistic | 6 | 26 ms | 32 ms | 32 ms | under 100 ms |
+| keep → dock face | optimistic | 6 | 26 ms | 32 ms | 32 ms | under 100 ms |
+| unkeep → tile ring | optimistic | 6 | 25 ms | 27 ms | 27 ms | under 100 ms |
+| unkeep → dock face | optimistic | 6 | 25 ms | 27 ms | 27 ms | under 100 ms |
+| roll again → first skeleton | optimistic | 1 | 34 ms | 34 ms | 34 ms | under 100 ms |
+| follow → rail pill | optimistic | 1 | 22 ms | 22 ms | 22 ms | under 100 ms |
+| follow → family chip | server-bound | 1 | 18 328 ms | 18 328 ms | 18 328 ms | **OVER 1 000 ms** |
+| retry → tile face | server-bound | 0 | — | — | — | absent — no failed tile on this sheet to retry |
+| chip edit → the box or the sentence | optimistic | 1 | 15 ms | 15 ms | 15 ms | under 100 ms |
+
+(Keep/Unkeep from the free walk at 13:20Z, 6 paired samples — two of the eight
+tiles were already kept by an earlier walk; Roll again and the chip edit from
+the spend walk at 13:25Z; Follow from the `--only follow` re-read at 13:29Z
+after the chip probe was corrected — see the cost paragraph.)
+
+**What the numbers say, in the founder's terms.** The Keep he measured at ~2 s
+(#554) paints the ring AND the dock's face in the same frame, 26 ms after the
+click — #554's fix is verified on the customer's hand, not on a reader's word.
+Every optimistic action on the sheet paints in one or two frames. **The one
+number over its bar is the family chip after a Follow: the rail's pill and the
+skeletons answer at 22 ms, but the sentence that says FOLLOWING the new face
+waits 18.3 s on this run (28.4 s on the run before it), because the chip is
+derived from the roll on screen and the roll does not exist until the
+interpreter has run (4.4 s and 14.5 s on those two runs) and the sheet's 2.5 s
+poll has seen it.** The wait is SUPERVISED — pill and skeletons carry it — so
+this is a reading, not a defect; whether the chip should move on the click
+like the pill does is a design question for the seat, and the instrument is
+what lets it be asked with a number. The remaining ~11 s between the
+interpreter's log line and the poll seeing the roll is UNREAD by this
+instrument (it reads the client; the call census reads the server) and is the
+next thing to look at if the chip is ever a brief.
+
+**What the instrument could not read, stated so an absence is never a zero
+(doctrine entry 1):** Retry, because no tile failed on any of the five rolls;
+the chip edit on the AUTHOR road (production's `users:1`), where the sentence is
+read-only since #535 and the row will read *absent* by design; page load and
+the canvas, which are not this instrument's.
+
+**What it cost, estimate → actual.** Estimated on the card before it fired:
+≈$1.70 (two rolls). Actual: **five rolls (110–114) and six interpreter calls ≈
+$4.10 of house money, and 800 dev credits off the test bot (20 000 → 19 200)**
+— the drift is the instrument's own defects found only by running it: a first
+Roll again clicked while the sheet was still loading (nothing spent, one
+interpreter call), the tile selector one level too deep (a whole spend walk
+with no Keep sample), and a chip probe reading presence on a sheet whose chip
+was already up (one extra Follow to read the text instead). Roll 111 is still
+`generating` with two slices `queued` behind a dev-database
+`ER_NET_READ_INTERRUPTED` under a lease the live process kept renewing — the
+sweep cannot see a hung slice under a live heartbeat, and that class is carded
+rather than fixed here.
 
 ---
 
@@ -520,7 +594,8 @@ numbers.
 UNREAD.** No instrument records page load, interaction latency or the canvas —
 the *"laggy in general"* half of #58. Run 1 said so; run 2 says so again with
 nothing new to add, because saying it twice is the honest alternative to letting
-silence read as health.
+silence read as health. ⚠ **Interaction latency came off this sentence on
+2026-09-12 (#555; the table is in the header). The other two have not.**
 
 **Carded this run:** two, both filed and not worked, per the anti-boredom rule —
 **#532**, the delete road's erased failure reason (§D), and **#536**, the
@@ -737,7 +812,9 @@ moved: `content_policy`, 9 of 9. **#129 is its brief and is open.** Runner-up,
 unchanged: the client half of the charter — page load, click-to-paint, the
 canvas — is UNREAD; the bundle reader (#35) reads bytes shipped and is not a
 proxy for any of it. Run 1 said so, run 2 said so, run 3 says so; #555 is the
-card.
+card. ⚠ **#555 LANDED THE SAME DAY (2026-09-12, evening): click-to-paint is
+READ — the first table is in the header's first-readings block. Page load and
+the canvas remain the runner-up.**
 
 ### J. Close
 
