@@ -62,7 +62,9 @@ import { describe, expect, it } from "vitest";
  * page's: reach it from the handler by `invalidate`, or annotate it. And a
  * handler that reaches queries through a helper (`refetchAll()`) is not read
  * through — no page does that today, and one that starts to will redden here
- * and be read by a person.
+ * and be read by a person. Exemptions bind BY NAME to the declaration beneath
+ * the marker, so a destructured query cannot be exempted — a marker above one
+ * is refused as a finding rather than bound to the next named const.
  *
  * ⚠ **EVERY ABSENCE ARM IS PAIRED WITH A CONTROL THAT MUST GO RED.** The card's
  * own bar (working law 2): delete one `refetch()` from a page and prove the
@@ -75,9 +77,59 @@ const HERE = __dirname;
 const CLIENT_SRC = path.resolve(HERE, "..", "..");
 const PAGES = path.resolve(CLIENT_SRC, "pages");
 
-/** Strip comments, so a docblock explaining a rule cannot trip the rule. */
-const code = (text: string) =>
-  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+/**
+ * Strip comments, so a docblock explaining a rule cannot trip the rule.
+ *
+ * ⚠ A SCANNER, NOT A REGEX (PR #837 review, finding 1). The sibling guards
+ * strip block comments and FULL-LINE `//` comments; a TRAILING `// …` survives
+ * them, so `foo(); // statsQuery.refetch() — off while investigating` would
+ * count as a reach, and an apostrophe in a trailing comment (`// don't`) would
+ * start a bogus quote-skip in `matchBrace` and swallow the handler's closing
+ * brace. No staff page carries a trailing `//` today; this exists so the first
+ * one cannot make the guard green for the wrong reason. Strings and template
+ * literals are walked, so `"https://…"` is not a comment.
+ */
+function code(text: string): string {
+  let out = "";
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    const next = text[i + 1];
+    if (ch === "/" && next === "*") {
+      const end = text.indexOf("*/", i + 2);
+      i = end < 0 ? text.length : end + 2;
+      continue;
+    }
+    if (ch === "/" && next === "/") {
+      const end = text.indexOf("\n", i);
+      i = end < 0 ? text.length : end;
+      continue;
+    }
+    if (ch === "'" || ch === '"') {
+      let j = i + 1;
+      while (j < text.length && text[j] !== ch && text[j] !== "\n") {
+        if (text[j] === "\\") j++;
+        j++;
+      }
+      out += text.slice(i, j + 1);
+      i = j + 1;
+      continue;
+    }
+    if (ch === "`") {
+      let j = i + 1;
+      while (j < text.length && text[j] !== "`") {
+        if (text[j] === "\\") j++;
+        j++;
+      }
+      out += text.slice(i, j + 1);
+      i = j + 1;
+      continue;
+    }
+    out += ch;
+    i++;
+  }
+  return out;
+}
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -100,6 +152,8 @@ type RefreshReach = {
   exemptions: Exemption[];
   /** Exempt markers whose reason is empty — each one is a finding. */
   bareMarkers: string[];
+  /** Exempt markers above a DESTRUCTURED query — nothing to bind to; a finding. */
+  unbindable: string[];
   /** How many `onRefresh:` sites the page has. One is the expected shape. */
   handlerSites: number;
   /** The handler body, comments stripped, or null when the page has none. */
@@ -214,17 +268,26 @@ function queryHandles(body: string): QueryHandle[] {
 }
 
 /** Exemptions, read from the RAW text: the marker binds to the next `const`. */
-function exemptions(raw: string): { exemptions: Exemption[]; bareMarkers: string[] } {
+function exemptions(raw: string): { exemptions: Exemption[]; bareMarkers: string[]; unbindable: string[] } {
   const out: Exemption[] = [];
   const bare: string[] = [];
+  const unbindable: string[] = [];
   for (const m of raw.matchAll(new RegExp(`${escapeRe(EXEMPT_MARKER)}([^\\n]*)`, "g"))) {
     const reason = m[1].replace(/\*\/.*$/, "").trim();
-    const next = /\bconst\s+(\w+)\s*=/.exec(raw.slice(m.index! + m[0].length));
+    /*
+      The marker binds BY NAME to the next `const` beneath it. A destructured
+      declaration has no name to bind to (PR #837 review, finding 2), so a
+      marker above `const { data } = …` is refused here rather than silently
+      landing on whatever named const follows — give the query a handle, or
+      reach it by `invalidate`.
+    */
+    const next = /\bconst\s+(\w+|\{)\s*/.exec(raw.slice(m.index! + m[0].length));
     const name = next?.[1] ?? "(no declaration follows)";
-    if (!reason) bare.push(name);
+    if (name === "{") unbindable.push(reason || "(no reason)");
+    else if (!reason) bare.push(name);
     else out.push({ name, reason });
   }
-  return { exemptions: out, bareMarkers: bare };
+  return { exemptions: out, bareMarkers: bare, unbindable };
 }
 
 function reached(handle: QueryHandle, handlerBody: string): boolean {
@@ -249,6 +312,7 @@ export function readRefreshReach(raw: string): RefreshReach {
     handles,
     exemptions: ex.exemptions,
     bareMarkers: ex.bareMarkers,
+    unbindable: ex.unbindable,
     handlerSites: handler.sites,
     handlerBody: handler.text,
     unreached,
@@ -304,6 +368,7 @@ describe("refresh-reach — every page-declared query is reached by the page's o
       }
       for (const h of r.unreached) lines.push(`${name}: ${describeHandle(h)} is not reached by onRefresh`);
       for (const b of r.bareMarkers) lines.push(`${name}: '${EXEMPT_MARKER}' above ${b} has no reason — a bare marker is not an exemption`);
+      for (const u of r.unbindable) lines.push(`${name}: '${EXEMPT_MARKER} ${u}' sits above a destructured query — nothing to bind to; give it a handle or reach it by invalidate`);
       return lines;
     });
     expect(
@@ -480,6 +545,25 @@ describe("refresh-reach NEGATIVE CONTROLS — the guard goes red when a reach is
     expect(r.unreached.map((h) => h.name)).toEqual(["q"]);
   });
 
+  it("a reach commented out at the END of a line is not a reach, and an apostrophe there does not swallow the handler", () => {
+    // PR #837 review, finding 1 — the shape a full-line stripper cannot see.
+    const sabotaged = NAMED_PAGE.replace(
+      "    statsQuery.refetch();\n",
+      "    logsQuery.refetch(); // statsQuery.refetch() — don't, it's off while investigating\n",
+    ).replace(
+      "  return <StaffBar",
+      "  const m = trpc.admin.x.useMutation({ onSuccess: () => { statsQuery.refetch(); } });\n  return <StaffBar",
+    );
+    const r = readRefreshReach(sabotaged);
+    expect(r.handlerBody).not.toContain("useMutation");
+    expect(r.unreached.map((h) => h.name)).toEqual(["statsQuery"]);
+  });
+
+  it("a URL inside a string is not a comment — the stripper walks strings", () => {
+    const page = NAMED_PAGE.replace("    statsQuery.refetch();\n", '    track("https://example.test/refresh"); statsQuery.refetch();\n');
+    expect(readRefreshReach(page).unreached).toEqual([]);
+  });
+
   it("a reach mentioned only in a COMMENT is not a reach", () => {
     const sabotaged = NAMED_PAGE.replace("    statsQuery.refetch();\n", "    // statsQuery.refetch(); — turned off while investigating\n");
     expect(readRefreshReach(sabotaged).unreached.map((h) => h.name)).toEqual(["statsQuery"]);
@@ -509,6 +593,18 @@ describe("refresh-reach — the exemption grammar, both halves, before it has a 
     expect(r.exemptions).toEqual([]);
     expect(r.bareMarkers).toEqual(["statsQuery"]);
     expect(r.unreached.map((h) => h.name)).toEqual(["statsQuery"]);
+  });
+
+  it("a marker above a DESTRUCTURED query binds to nothing and is a finding, never the next named const", () => {
+    // PR #837 review, finding 2.
+    const page = INLINE_PAGE.replace("void utils.admin.getFlags.invalidate();", "").replace(
+      "  const { data: flags } =",
+      `  // ${EXEMPT_MARKER} read-only flags, refreshed by their own effect\n  const { data: flags } =`,
+    );
+    const r = readRefreshReach(page);
+    expect(r.exemptions).toEqual([]);
+    expect(r.unbindable).toEqual(["read-only flags, refreshed by their own effect"]);
+    expect(r.unreached.map(describeHandle)).toEqual(["{ … } = admin.getFlags (destructured; invalidate-only)"]);
   });
 
   it("an exemption on one query does not leak onto its neighbour", () => {
