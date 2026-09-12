@@ -1,7 +1,7 @@
 {
-  "edition": 370,
-  "updatedAt": "2026-09-12T22:24:55.000Z",
-  "shift": "Foreman (build shift) — TWO MERGED, one from the Bugs queue and one from Security. (1) A BLANK REASON CAN NO LONGER MOVE CREDITS, AND A BLANK NAME CAN NO LONGER BECOME AN ACCOUNT'S NAME (#816 → PR #875, the card's last two rows; #816 CLOSED). Before: an admin's credit adjustment accepted a reason of one space — the test on the old code read 'promise resolved { success: true, newBalance: 600 } instead of rejecting': 100 credits moved with nothing on the audit row, the admin log or the immutable log to say why. And sign-up accepted a name of one space, which became the display name. The panel's buttons refuse a blank, but the server is the control, not the button. After: both are trimmed and refused before anything moves; the credit reason's length limit is one shared number the server and the dialog both read (the dialog had no limit at all). Fable: clean pass; its one real note — the new limit had landed in the architecture map's PRICE table as '500 credits' because its name says 'credit' — taken, with a test that fails without the fix. Three earlier shifts had stepped over these two rows as 'not for an Opus shift'; the last three merges before them were bigger money fixes on the same footing, so this shift took them and said so on the card. (2) THE ROAD THAT LANDS SECURITY PATCHES IS UNBLOCKED (#857 first half → PR #876). Before: Dependabot's weekly patch bundle has been red since 7 Sep on a type change in the image library's new version, so the fixes for 91 known advisories (3 critical, 21 high) sat behind it — the one reached today is the image decoder on your own upload doors. After: the code compiles against BOTH the installed version and the new one, proven by running the type check against the new version's typings fetched to scratch — 21 errors on the old tree (not the 3 the gate reported: the check bails on the first of its three projects), 0 on the new. Fable: clean pass. The actual version bump is the card's second half — a session of its own, with a browser drive of the character sheet and the upload doors because the image library's native binary moves. YOUR DESK IS CLEAR; NEXT UP is empty; the two frame sets on your page stay until you judge them. Nothing spent.",
+  "edition": 371,
+  "updatedAt": "2026-09-12T23:49:12.000Z",
+  "shift": "Foreman (build shift) — ONE MERGED, from Security, and it is the big one the last two editions were building toward: THE 91 KNOWN SECURITY ADVISORIES IN THE PRODUCT'S DEPENDENCIES ARE NOW ZERO (#857 second half → PR #877, live on production since 09:44 AEST; #857 CLOSED). Before: 91 advisories (3 critical, 21 high) sat behind a patch road that had been red for six days, and the one that actually reached the product was the image decoder on your upload doors — a customer's uploaded bytes go straight into it, and the old version carried two high-severity holes for exactly that. After: the image library, the database driver, the database layer, the storage client, the PDF library, the email client, the session signer and the web server are all on their patched versions, one dead package that nobody imported (25 advisories on its own) is deleted, and 'pnpm audit --prod' reads 'No known vulnerabilities found'. Nothing you can see changes. Proven the long way: a separate install of the new versions, every type check and all 12,854 tests green, the gate green first time, and a real browser drive of the running app on the new versions — your character sheet composed and looked at, a real picture attached through the upload door and a non-picture refused with the door's own sentence, the lobby and casting pages photographed. Fable: clean pass, no findings. Production booted clean and answers on the new build. One small thing only you can do, not urgent: the supply-chain scanner (Socket) flags the new database-layer version as 'obfuscated'; the shift read the package byte for byte (no minified files, no eval, no network calls, 26 readable changes) and the reviewer agreed with the method, but accepting a supply-chain reading is your call — replying '@SocketSecurity ignore npm/drizzle-orm@0.45.2' on PR #877 clears the badge if you accept it. YOUR DESK IS OTHERWISE CLEAR; NEXT UP is empty; the two frame sets on your page stay until you judge them. Nothing spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T22:24:15.990Z",
+      "readAt": "2026-09-12T23:49:15.034Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4769,6 +4769,13 @@
   ],
   "pipeline": [
     {
+      "id": "security-first-bump-877",
+      "title": "The 91 known security advisories in the product's dependencies are now zero — the security-first bump",
+      "status": "merged",
+      "prNumber": 877,
+      "note": "Card #857 (Warden), second half; the card is CLOSED. Before: 91 advisories (3 critical, 21 high) behind a patch road red for six days; the reached one was the image decoder on the ink/reference/concept upload doors (your account only today). After: sharp 0.35.4, mysql2 3.24.4, drizzle-orm 0.45.2, the S3 client (which no longer carries the critical XML parser at all), jspdf 4.2.1, resend 6.28, jose 6.2.12 (the session signer), express 4.22.2, and streamdown deleted — no importer, 25 advisories on its own. 'pnpm audit --prod': 91 → 0. Live on production at 7e9f07cd since 23:44Z; deploy-verify green; the boot log carries no error or warning. Seven type-only repairs where the new driver declares its value types; no runtime change. Proof: an isolated install, 0/0/0 type checks, 12,854 tests, build clean, an 8/8 browser drive of a dev server on the new versions (health, a session signed and verified by the new signer, the roster, the character sheet composed by the new image library and looked at, a real PNG kept and a non-image refused at the upload door). Fable: clean pass, no findings. Socket's 'obfuscated' warn on drizzle-orm is refuted at the bytes on the PR and left for your word."
+    },
+    {
       "id": "whitespace-money-auth-rows-875",
       "title": "A blank reason can no longer move credits, and a blank name can no longer become an account's name",
       "status": "merged",
@@ -5851,9 +5858,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0913h-foreman",
+      "id": "queue-shape-0913i-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 43 open, one closed (#857); NEXT UP is empty; nothing waits on your word",
+      "detail": "Category order re-read at the code: Bugs EMPTY (#804 needs a design decision on the billing webhook and is not an Opus shift's). Small fixes EMPTY; Security EMPTY (#857 closed; #45 parked); Process — #697's last file is the login route's test file (an auth path, a session of its own), #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
+    },
+    {
+      "id": "queue-shape-0913h-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 44 open, one closed (#816); NEXT UP is empty; nothing waits on your word",
       "detail": "Category order re-read at the code: Bugs EMPTY (#816 closed; #804 needs a design decision on the billing webhook and is not an Opus shift's). Small fixes EMPTY; Security — #857's second half, the dependency bump (a session, sized on the card); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
     },
@@ -6089,7 +6103,7 @@
     179
   ],
   "nextUp": {
-    "readAt": "2026-09-12T22:24:15.989Z",
+    "readAt": "2026-09-12T23:49:15.033Z",
     "items": []
   }
 }
