@@ -56,6 +56,19 @@ function affectedRows(result: unknown): number {
  * distinction is recorded, not billed.
  */
 
+/**
+ * The receipt's own sentences, exported so the LIVE road (#855) can throw the
+ * words it just sealed: a mutation saying one thing while the receipt it wrote
+ * says another is the mismatch `refineService`'s "MATCH the number beside it"
+ * comment exists to forbid.
+ */
+export const ROLL_RECOVERY_SENTENCE = {
+  didNotFinish: "The sheet didn't finish. Everything that didn't arrive was refunded.",
+  didNotStart: "The sheet didn't start. You were not charged.",
+  supportReview: (operationId: string) =>
+    `This operation needs support review before it can be retried. Operation ${operationId}.`,
+} as const;
+
 export type RollRecoveryOutcome =
   | { type: "durable_success"; ready: number; chargedCredits: number }
   | { type: "partial"; ready: number; refunded: number; chargedCredits: number; refundedCredits: number }
@@ -341,7 +354,7 @@ async function sealRollReceipt(
         userId: operation.userId,
         operationId: operation.id,
         errorCode: "PRECONDITION_FAILED",
-        publicMessage: "The sheet didn't finish. Everything that didn't arrive was refunded.",
+        publicMessage: ROLL_RECOVERY_SENTENCE.didNotFinish,
         chargedCredits: outcome.chargedCredits,
         refundedCredits: outcome.refundedCredits,
       });
@@ -356,14 +369,14 @@ async function sealRollReceipt(
         userId: operation.userId,
         operationId: operation.id,
         errorCode: "PRECONDITION_FAILED",
-        publicMessage: "The sheet didn't start. You were not charged.",
+        publicMessage: ROLL_RECOVERY_SENTENCE.didNotStart,
       });
     } else {
       await finalizeFailure({
         userId: operation.userId,
         operationId: operation.id,
         errorCode: "PRECONDITION_FAILED",
-        publicMessage: "The sheet didn't start. You were not charged.",
+        publicMessage: ROLL_RECOVERY_SENTENCE.didNotStart,
         chargedCredits: 0,
         refundedCredits: 0,
       });
