@@ -1,23 +1,7 @@
 import { protectedProcedure, router } from "../_core/trpc";
-import { getCreditHistory, getCycleSpend } from "../db";
-import { z } from "zod";
+import { getCycleSpend } from "../db";
 
 export const usageRouter = router({
-  // Get credit transaction history with pagination
-  getHistory: protectedProcedure
-    .input(z.object({
-      limit: z.number().min(1).max(100).optional().default(20),
-      offset: z.number().min(0).optional().default(0),
-    }).optional())
-    .query(async ({ ctx, input }) => {
-      const result = await getCreditHistory(
-        ctx.user.id,
-        input?.limit || 20,
-        input?.offset || 0
-      );
-      return result;
-    }),
-
   /**
    * WHAT THIS ACCOUNT HAS SPENT THIS BILLING CYCLE — #624, his approved
    * option (a): *"(a), fix it, not urgent."*
@@ -28,7 +12,12 @@ export const usageRouter = router({
    * `getStats` were DELETED with #635 — after #624 nothing called either, and
    * no design in `docs/specs/` asks for the per-day chart the first was built
    * for. A chart that wants day buckets is a new procedure with its own card,
-   * never a reason to sum buckets for a cycle again.) A real billing period
+   * never a reason to sum buckets for a cycle again. `getHistory`, the
+   * paginated transaction reader born beside them, followed with #833: its one
+   * caller left in the same Section 03 commit, and a customer's own
+   * transactions already reach her through the data export. A transaction
+   * list that a design asks for is a new procedure under its own card.) A
+   * real billing period
    * begins at a mid-day INSTANT, so the reassembly counted up to a day of the
    * previous cycle — and on an annual plan it could not cover the period at
    * all. This answers the question they are actually asking.

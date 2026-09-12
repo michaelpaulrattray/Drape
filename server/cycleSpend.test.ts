@@ -194,27 +194,33 @@ describe("#624 — the wire", () => {
     }
   });
 
-  it("⚠ the two callerless usage procedures stay deleted (#635)", () => {
+  it("⚠ the three callerless usage procedures stay deleted (#635, #833)", () => {
     /*
       `usage.getDailyUsage` and `usage.getStats` had no caller anywhere in the
-      product after #624 and were removed with a manifest. An endpoint nobody
-      calls and nobody has explained is the shape that gets re-wired wrongly —
-      `getDailyUsage`'s whole-UTC-day buckets were the root of #385, #622 and
-      #624. Putting either back is a deliberate act with a card, and a
-      surface that wants day buckets writes a new procedure under its own name.
-      The positive half keeps the matcher honest: the router must still carry
-      `getCycleSpend` (three money surfaces call it) and `getHistory` — which
-      has NO caller either, orphaned by the same Section 03 commit, and is
-      filed as #833 rather than widened into #635's declared manifest. When
-      #833 resolves, that line moves with it.
+      product after #624 and were removed with a manifest (#635). An endpoint
+      nobody calls and nobody has explained is the shape that gets re-wired
+      wrongly — `getDailyUsage`'s whole-UTC-day buckets were the root of #385,
+      #622 and #624. `usage.getHistory` — the paginated transaction reader born
+      beside them — lost its one caller in the SAME Section 03 commit
+      (`75c3a413`) and followed under its own manifest (#833), with its db
+      reader `getCreditHistory` and the re-export; a customer's own
+      transactions still reach her through the data export, and staff read
+      them by their own road. Putting any of the three back is a deliberate
+      act with a card, and a surface that wants day buckets or a transaction
+      list writes a new procedure under its own name. The positive half keeps
+      the matcher honest: the router must still carry `getCycleSpend` (three
+      money surfaces call it), so a rewrite that empties the file cannot pass.
     */
     const usage = code(read(join(HERE, "routes", "usage.ts")));
     const billing = code(read(join(HERE, "db", "billing.ts")));
+    const dbIndex = code(read(join(HERE, "db", "index.ts")));
     expect(usage).not.toMatch(/getDailyUsage\s*:/);
     expect(usage).not.toMatch(/getStats\s*:/);
+    expect(usage).not.toMatch(/getHistory\s*:/);
     expect(billing).not.toContain("export async function getDailyUsage");
     expect(billing).not.toContain("export async function getUsageStats");
+    expect(billing).not.toContain("export async function getCreditHistory");
+    expect(dbIndex).not.toContain("getCreditHistory");
     expect(usage).toMatch(/getCycleSpend\s*:/);
-    expect(usage).toMatch(/getHistory\s*:/);
   });
 });
