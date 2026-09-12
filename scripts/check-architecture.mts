@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 import { Ajv2020 } from "ajv/dist/2020.js";
 
 import { SCHEMA, buildAtlas, renderExplorer } from "./generate-architecture.mts";
+import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const committedDir = path.join(repoRoot, "docs", "architecture");
@@ -404,11 +405,41 @@ if (typeof import.meta.main === "undefined") {
 
 const invokedDirectly = import.meta.main;
 
+/*
+  `--fired` PRINTS AND STOPS BEFORE THE BUILD — THE CHEAP POSITIVE CONTROL (#839).
+
+  The self-invocation suite has to prove this block FIRES on a direct run (the
+  negative arm alone would be satisfied by a gate that never fires, which is the
+  silent-green failure #668 exists to remove). Until #839 it proved that by
+  running the whole check — 1,021 modules through the TypeScript compiler — and
+  reading `[atlas:check]` off the output: 17 s alone on one box, 57–74 s under
+  the deploy rite's concurrent checks, and over 120 s on a contended evening,
+  which refused three docs-only deploys in one sitting for a reason that was not
+  a finding. The arm's question is "was the block reached?", and the atlas build
+  was incidental to answering it.
+
+  So the block takes ONE flag: `--fired` prints the marker and returns before
+  `checkArchitecture()` is called. It cannot stand in for the check — nothing is
+  read, nothing is compared, and the line says so — and it cannot be satisfied
+  by an import, because an imported module never enters this block at all.
+
+  ⚠ Parsed through `strictArgs`, so a word this script does not know is REFUSED
+  rather than swallowed (#288's class). That also makes the import arm's
+  sabotage sharper: an inverted gate now fires this block on `--prove`, which is
+  not in the vocabulary, and the child exits 1 with `REFUSING:` instead of
+  quietly building the maps. Every real caller — `pnpm architecture:check` from
+  the hooks, the gate, preflight and the rite — passes nothing.
+*/
 if (invokedDirectly) {
-  const { ok, problems } = checkArchitecture();
-  if (!ok) {
-    console.error(`[atlas:check] FAILED\n  - ${problems.join("\n  - ")}`);
-    process.exit(1);
+  const args = parseStrictArgsOrRefuse(process.argv.slice(2), { value: [], boolean: ["fired"] });
+  if (args.flag("fired")) {
+    console.log("[atlas:check] fired — the command block ran on direct invocation; nothing was checked (--fired)");
+  } else {
+    const { ok, problems } = checkArchitecture();
+    if (!ok) {
+      console.error(`[atlas:check] FAILED\n  - ${problems.join("\n  - ")}`);
+      process.exit(1);
+    }
+    console.log("[atlas:check] OK — output is fresh, schema-valid, deterministic and secret-free");
   }
-  console.log("[atlas:check] OK — output is fresh, schema-valid, deterministic and secret-free");
 }

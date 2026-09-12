@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -317,33 +317,96 @@ describe("the self-invocation check", () => {
     }
   });
 
-  it("RUN DIRECTLY, the two with blast radius still do their job", () => {
-    /* ⚠ THIS ARM RUNS THE WHOLE ATLAS GENERATOR AND CARRIES ITS OWN FIGURE —
-       the road `childProcessTimeout.ts` names for an arm that legitimately
-       needs longer than the file's 30 s floor (`typecheckGate` 120_000,
-       `architectureAtlas` its own). `check-architecture.mts` rebuilds both maps
-       in memory: 17 s alone on this box, 74 s under the rite's own concurrent
-       checks (foreman-20260910-1730), and it crossed the 30 s floor on three
-       shifts — twice in one sitting on 2026-09-12, refusing a docs-only rite
-       push each time. The floor is a per-FILE figure sized for a `git` or a
-       `tsc`; a synchronous arm that overruns finishes anyway and is only then
-       marked red, so a tighter number buys no hang protection here and costs a
-       refused deploy. 120 s is ~7× alone and ~1.6× the worst contended reading. */
+  it("RUN DIRECTLY, the one with blast radius fires its command block", () => {
     /* The card's own bar: `generate-architecture.mts` is run by the pre-commit
        hook and by the gate's freshness check, and `check-architecture.mts` is
        that check. The negative arm above would be equally satisfied by a
        conversion that made the block NEVER fire — which is the silent-green
        failure this whole card is about — so the positive direction is driven
-       on the two where it would cost the most. */
-    const check = tsx(join(SCRIPTS, "check-architecture.mts"));
-    expect(check.stdout + check.stderr, "the checker must actually report").toContain("[atlas:check]");
-    /* ⚠ THE VERDICT IS DELIBERATELY NOT ASSERTED. This arm asks whether the
-       command block FIRED, and `[atlas:check]` printing is that answer. The
-       exit code answers a different question — whether the generated maps are
-       fresh — which is true or false depending on where in a branch's work
-       this happens to run, and a pending regeneration is not a finding about
-       self-invocation. Asserting it would hand this arm an unrelated reason to
-       go red, which is how a guard stops being read. Freshness has its own
-       check, on the gate, against the committed tree. */
-  }, 120_000);
+       on the one where it would cost the most.
+
+       ⚠ IT PASSES `--fired`, AND THAT IS WHAT TOOK IT OFF THE RITE'S CRITICAL
+       PATH (#839). Until then this arm ran the WHOLE atlas check — 1,021
+       modules through the TypeScript compiler — to read `[atlas:check]` off
+       the output: 17 s alone, 57–74 s under the deploy rite's concurrent
+       checks, over 120 s on a contended evening. It refused three docs-only
+       deploys in one sitting and crossed the 30 s file floor on three shifts,
+       and PR #838's own 120 s figure was crossed by the very next rite. The
+       question here is "was the block reached?", and the build was incidental
+       to answering it. `--fired` makes the block print its marker and return
+       before `checkArchitecture()` is called: the block still has to FIRE for
+       the marker to appear, an import still cannot produce it (the arm above
+       holds that), and the timeout goes back to the file's floor. The
+       sabotage arm below is what proves the shorter road still discriminates. */
+    const check = tsx(join(SCRIPTS, "check-architecture.mts"), ["--fired"]);
+    expect(check.stdout, "the command block must report that it fired").toContain("[atlas:check] fired");
+    /* Under `--fired` nothing is checked, so the exit code is no longer the
+       freshness verdict (which this arm never asserted, because a pending
+       regeneration is not a finding about self-invocation) — it is the strict
+       parser's word on the vocabulary, and a refusal here would mean the flag
+       this arm relies on stopped existing. */
+    expect(check.status, check.stderr).toBe(0);
+    /* And it must not have built anything: the OK/FAILED verdict lines are the
+       build's, and their absence is what makes this arm cheap rather than a
+       second copy of the freshness check. */
+    expect(check.stdout + check.stderr).not.toMatch(/\[atlas:check\] (OK|FAILED)/);
+  });
+
+  it("CAN FAIL — an inverted gate is caught on BOTH roads, driven on a sabotaged copy", () => {
+    /* ⚠ WORKING LAW 2, POINTED AT THE CHEAP ROAD (#839's bar). The arm above
+       no longer runs the build, so the obvious question is whether it still
+       tells a firing block from a dead one. Driven rather than reasoned: the
+       real file is copied to a scratch directory with its gate INVERTED —
+       `if (invokedDirectly)` → `if (!invokedDirectly)` — and its two relative
+       imports rewritten to the real modules by file URL, so the copy runs the
+       real parser and the real generator's module graph, and the only thing
+       that differs is the gate.
+
+       Then the two arms' own assertions are put to it:
+         - RUN DIRECTLY with `--fired`: the block never fires, so the marker
+           never prints — the arm above would redden.
+         - IMPORTED with `--prove`: the block fires on import, the strict parser
+           refuses `--prove` as a word it does not know, and the child exits 1
+           with `REFUSING:` — the import arm would redden. This is the sharper
+           half: before `--fired` an inverted gate on import would have built
+           the maps quietly for a minute and then printed a verdict, and the
+           import arm caught it only by the verdict's text. */
+    const real = readListedSource(join(SCRIPTS, "check-architecture.mts"));
+    expect(real, "the subject must be readable").not.toBeNull();
+    const gate = "if (invokedDirectly) {";
+    expect((real ?? "").split(gate).length - 1, "exactly one command-block gate to invert").toBe(1);
+    const scriptsUrl = pathToFileURL(SCRIPTS + "/").href;
+    const sabotaged = (real ?? "")
+      .replace(gate, "if (!invokedDirectly) {")
+      .replace(/from "\.\//g, `from "${scriptsUrl}`);
+    expect(sabotaged, "the import rewrite must have reached both relative imports").not.toMatch(/from "\.\//);
+
+    /* ⚠ INSIDE THE REPOSITORY'S OWN `node_modules/.cache`, NOT THE OS TEMP DIR.
+       The copy keeps its bare `ajv` import, and node resolves a bare specifier
+       by walking UP from the importing file — from `%TEMP%` that walk never
+       reaches this repository and the child dies on ERR_MODULE_NOT_FOUND
+       before the gate is ever asked (measured: the first version of this arm
+       did exactly that). `.cache` is where tooling scratch conventionally
+       lives, it is gitignored by construction, and the walk from it reaches
+       the real `node_modules` one hop up. */
+    const cache = join(REPO, "node_modules", ".cache");
+    mkdirSync(cache, { recursive: true });
+    const dir = mkdtempSync(join(cache, "drape-inverted-gate-"));
+    scratches.push(dir);
+    const subject = join(dir, "check-architecture.mts");
+    writeFileSync(subject, sabotaged);
+
+    const direct = tsx(subject, ["--fired"], dir);
+    expect(direct.status, direct.stderr).toBe(0);
+    expect(direct.stdout, "an inverted gate must NOT print the fired marker on a direct run").not.toContain(
+      "[atlas:check]",
+    );
+
+    const importer = join(dir, "importer.mts");
+    writeFileSync(importer, `await import(${JSON.stringify(pathToFileURL(subject).href)});\nconsole.log("IMPORT-ONLY OK");\n`);
+    const imported = tsx(importer, ["--prove"], dir);
+    expect(imported.status, "an inverted gate fires on import and the parser refuses --prove").toBe(1);
+    expect(imported.stderr).toContain("REFUSING: unknown argument --prove");
+    expect(imported.stdout).not.toContain("IMPORT-ONLY OK");
+  });
 });
