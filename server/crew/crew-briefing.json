@@ -1,7 +1,7 @@
 {
-  "edition": 363,
-  "updatedAt": "2026-09-12T14:06:34.289Z",
-  "shift": "Machinist (build shift) — ONE merged, and it answers a question you asked on 5 September: \"does the machinist measure things like how long a click takes to register?\" It does now. YOUR DESK IS CLEAR. THE ONE (#555 → PR #853): a measuring tool that opens a real sheet as its owner, clicks each action the way you would — Keep, un-Keep, Roll again, Follow, Retry, a chip edit — and times the click to the first thing that visibly changes on screen, in milliseconds, with a fair bar for each (an instant action under a tenth of a second; a server-bound one under a second, or the ledger says why). Its own proof runs on every pull request: a fake page with an instant button, a two-second button, a button that does nothing and a button that is not there, plus a clock ticking beside them that must NOT count — it reads 6 ms, 2 013 ms, 'never' and 'absent', and it was deliberately broken first to check it could fail. FIRST READINGS, on the test account's own sheet: the Keep you measured at about two seconds (#554) now paints the tile's ring AND the face in the dock in the same frame, 26 ms after the click — your fix, verified on the hand rather than by a reader. Every instant action on the sheet paints within one or two frames. The one number over its bar: after a Follow, the little FOLLOWING chip takes 18 seconds to name the new face (28 on another run), because the chip can only draw once the new roll exists, and the roll only exists after the brief interpreter has run and the page's next 2.5-second check has seen it — the skeletons and the rail pill carry that wait, so it is a reading for the Machinist, not a broken thing. COST: five rolls and six interpreter calls on the dev account, about $4.10 of house money against a $1.70 estimate — the difference is three mistakes in the tool that only running it revealed, each written down in the ledger. FOUND ON THE WAY, two cards, not fixed: an old sheet whose session has expired still offers Roll again and then refuses as 'not found' after a paid 13-second call (#854); and two tiles of one roll sat as skeletons for forty minutes behind a database hiccup, because the process kept renewing its lease and the sweep only looks at expired ones (#855). YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. The Warden's check-up is today (13 Sep).",
+  "edition": 364,
+  "updatedAt": "2026-09-12T14:47:07.000Z",
+  "shift": "Warden (check-up #3, on its day) — NOTHING MERGED; ONE THING ON YOUR DESK, and it is a sentence you were told that turned out not to be true. THE WEEKLY PASS: every secret scan clean (3,390 commits), the code-shape scanner clean (1,850 files), the six access-control suites green (52 tests), the audit log clean (625 rows, nothing from a customer in any of them). THE FINDING: this seat read, for the first time, the list of KNOWN security holes in the packages the product is built from — 91, three of them critical, twenty-one high — and then read every road that should have told us. All three are shut. On #35 you were told 'Dependabot (already on) catches dependencies with a known CVE'; it is switched OFF on the repository and has never opened a security fix. Socket, the guard you chose in September, was tested tonight with a throwaway pull request carrying one harmless package with a critical known hole: Socket WARNED and passed it green — under its default policy it blocks known malware and nothing else. And the weekly update that would patch the image decoder, the database driver and the ORM has been failing since 7 September on two lines of our own type-checking, so the fixes sit in a pull request nobody can merge. WHAT IT MEANS FOR A CUSTOMER TODAY: little — the one hole a stranger could actually reach is in the image decoder behind the ink, reference and concept upload doors, and those doors are open to YOUR account only. It widens the day those doors widen. YOUR DESK: #858 — two GitHub switches, one word each, recommended yes on both. FILED for a shift: #857, the patch road (a security-first update, with which packages and why, reachability read line by line). CLOSED: #762 — its question is answered. Spent nothing. NEXT UP is empty. No replies since #177.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,29 +116,29 @@
     ],
     "chips": [
       {
-        "label": "Your admin door is checked now",
-        "tone": "good",
-        "source": "Four ways to break the admin allowlist, none made a test fail. Fifteen real checks now."
+        "label": "One thing on your desk",
+        "tone": "warn",
+        "source": "#858: known-hole alerts are OFF (you were told on); Socket only warns. Two switches, one word each."
       },
       {
-        "label": "Your switch numbers say what they are",
+        "label": "Secrets, shapes, access: clean",
         "tone": "good",
-        "source": "Shipped on your word (#663). Bugs (11 on offer, 1 possibly fixed) - it never was the open count."
+        "source": "3,390 commits no leaks; 76 rules/1,850 files 0; 52 access tests green; 625 audit rows clean."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "47 open, none waiting on you, none urgent. 1 PR merged this shift, 2 filed; 29 untouched 7 days."
-      },
-      {
-        "label": "Your desk is clear",
-        "tone": "good",
-        "source": "Nothing waits on you. One PR merged (the click-timing tool you asked about); two bugs filed."
+        "source": "48 open, ONE waiting on you (#858), none urgent. 2 filed, 1 closed, 0 merged; 29 untouched 7 days."
       },
       {
         "label": "Check-ups",
         "tone": "good",
-        "source": "Retro, Machinist, Janitor ran 12 Sep on their day; Warden due 13 Sep. Machinist gained #555."
+        "source": "Warden ran 13 Sep on its day; Janitor due 15 Sep; Machinist, Retro 19 Sep. No seat overdue."
+      },
+      {
+        "label": "Your admin door is checked now",
+        "tone": "good",
+        "source": "Four ways to break the admin allowlist, none made a test fail. Fifteen real checks now."
       },
       {
         "label": "Your account is no longer flagged",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T12:22:00.814Z",
+      "readAt": "2026-09-12T14:47:35.063Z",
       "items": [
         {
           "issueNumber": 16,
@@ -279,6 +279,38 @@
     }
   },
   "needsYou": [
+    {
+      "id": "known-cve-roads-858",
+      "issueNumber": 858,
+      "state": "open",
+      "filedAt": "2026-09-12T14:47:07.000Z",
+      "title": "If a package we are built from is found to have a serious hole tomorrow, nothing tells us — you were told Dependabot did; it is switched off. Two GitHub switches for your word.",
+      "productImpact": "The Warden read the list of KNOWN security holes in the packages the product is built from: 91 advisories — 3 critical, 21 high. Then it read the three roads that should surface one: (1) GitHub's Dependabot alerts — DISABLED on the repository, so it has never flagged a hole or opened a security fix, although on #35 you were told, verbatim, 'Dependabot (already on) catches dependencies with a KNOWN CVE'; (2) Socket, the guard you chose in September — tested tonight with a throwaway pull request (#856, closed and deleted, never merged) that added one harmless well-known package carrying a CRITICAL known hole: Socket said Warn and the check passed GREEN, which is its default policy — it blocks known malware and nothing else; (3) the gate — it has no step that reads advisories at all. Meanwhile the weekly package update that would patch the image decoder (sharp), the database driver (mysql2) and the ORM (drizzle) has failed since 7 September on two lines of our own type-checking, so the fixes are stuck in a pull request nobody can merge (#857, filed beside this one and takeable by a shift). For a customer today the exposure is narrow — the one hole a stranger could reach is the image decoder behind the ink, reference and concept upload doors, and those doors are open to your account alone — but it widens with every door you widen, and nothing would tell us when the next hole lands.",
+      "workedExample": "Tonight's test: a branch added 'minimist 1.2.5' — a well-known little package with a critical known vulnerability from 2021, no install script, nothing hostile, never imported. Socket found the hole, labelled it Critical, applied 'Warn', and its check read 'Complete with warnings' in green; our merge tool read 'socket=green' and would have merged it. Under 'Higher Noise' that same pull request goes RED and stops until the package is bumped. Separately: had Dependabot alerts been on, the 91 holes would have been a list on the repository's Security tab with a fix PR for each one that has a fix, arriving through the gate like any other change.",
+      "options": [
+        {
+          "key": "A",
+          "label": "A - turn on Dependabot alerts + security updates (GitHub, one setting)",
+          "consequence": "It is the thing you were told you had. Costs nothing; a fix PR per real hole, through the gate. Say the word and the crew flips it with one command, or it is Settings > Code security on GitHub."
+        },
+        {
+          "key": "B",
+          "label": "B - move Socket's policy from Default to Higher Noise (Socket dashboard, one click - yours, the crew has no login)",
+          "consequence": "A pull request that ADDS a package with a critical known hole stops until it is bumped; high holes, typosquats, obfuscated code and telemetry still warn. Tonight's test PR would have gone red as designed. It would not have changed anything this week."
+        },
+        {
+          "key": "C",
+          "label": "C - both",
+          "consequence": "Alerts tell you about holes already in the tree; Socket stops new ones at the door. They cover different halves and cost nothing to run together."
+        },
+        {
+          "key": "D",
+          "label": "D - leave both as they are",
+          "consequence": "Known holes stay invisible until a Warden reads the list by hand once a week, and Socket keeps blocking on known malware alone. Honest, but it is the state you did not know you were in."
+        }
+      ],
+      "recommendation": "C, both — one word each. A first, because it is the one you believed was already on. A third line rides along from #762 and needs no answer: 'enforce_admins' on main is off, so every required check is advisory for the admin account the team merges with — the merge tool is what enforces; your repository, your call."
+    },
     {
       "id": "cap-detector-prose-721",
       "issueNumber": 721,
@@ -5686,9 +5718,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0913a-machinist",
+      "id": "queue-shape-0913b-warden",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 48 open, one closed (#762), two filed from the check-up (#857 takeable, #858 yours); NEXT UP is empty; ONE card waits on you",
+      "detail": "Security: #762 closed with its readings; #857 is the takeable half (the patch road - a security-first package update, sized at a session, not a batch item); #858 is yours. Category order otherwise as the last entry: Bugs - #816 holds only its auth/money rows, #854 and #855 are casting-upkeep; Small fixes EMPTY; Process - #697's auth file, #513 blocked; Performance - #58 umbrella; Housekeeping next: #482, #274, #564, #527, #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Check-ups: Warden ran today; Janitor due 15 Sep; Machinist and Retro 19 Sep."
+    },
+    {
+      "id": "queue-shape-0913a-machinist",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 47 open, one closed (#555), two filed from the run (#854, #855); NEXT UP is empty; nothing waits on you",
       "detail": "Category order re-read at the code: Bugs — #816 holds only its two auth/money rows, and the two new cards (#854 an expired sheet's Roll again; #855 a slice stuck queued under a live heartbeat) are casting-upkeep bugs found by the new instrument; Small fixes is EMPTY; Process — #697 has only its auth-path file left, #513 blocked; Performance — #555 closed, #58 an umbrella; Housekeeping next: #482 (a promotion pass wanting a both-theme pixel diff of two surfaces — read this shift and left as not small), #274, #564, #527 (Janitor run 6), #265's bucket half; Security holds #762 and the Warden's clock fires 13 Sep. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock)."
     }
@@ -5873,7 +5912,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-12T12:22:00.813Z",
+    "readAt": "2026-09-12T14:47:35.062Z",
     "items": []
   }
 }

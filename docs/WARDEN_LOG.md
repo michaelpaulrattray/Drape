@@ -207,3 +207,86 @@ chain, the empty admin allowlist and unchecked IP blocks are all on CLAUDE.md's
 
 **Side work this shift, not part of the patrol:** #420 (the staff account search
 by id) — PR #569.
+
+## Run 3 — 2026-09-13 00:25–01:1x AEST (Warden, patrol #3, crew run #201)
+
+Ran because `patrol-clocks.mts` read the seat **DUE today** (7 days since run 2)
+with his Security switch ON, NEXT UP empty, no replies, no taps. Run 2's brief
+worked in order (the scheduled secrets run, the audit rows, the surface diff),
+then the seat's own card #762.
+
+**This run FOUND things, and the biggest one was not on any list.** The two
+readings below marked ⚠ are the run's findings; everything else held.
+
+### A. Findings baseline — the readings
+
+| reading | at | verdict | done with it |
+|---|---|---|---|
+| gitleaks, full history — the 2026-09-07 scheduled run (run 2's item 1) | run **34155666238**, 2026-09-07T19:27Z, `18547497`, cron | **3390 commits, 73.57 MB, `no leaks found`** | Read at the log. Baseline 3094 → 3390 commits, still zero. Next scheduled 2026-09-14. |
+| semgrep, tree | run **34697721696** (PR #853, merged `b13c3da3`), semgrep 1.174.0 | **`Ran 76 rules on 1850 files: 0 findings`** (1 suppressed) | 1770 → 1850 files. The one suppression is `//! nosemgrep` inside the vendored design-handoff prototypes under `docs/specs/…/support.js` — prototype tooling's own annotation, not product code. CI is still the only road (run 2's note stands). |
+| access-control suites + the wired controls | `077ac809`, 00:31 local | **6 files / 52 tests green** — `approvalGate` 11, `staffImageBoundary` 5, `publicInputStrictness` **9** (was 6: the billing five's arms), `sessionIssuanceSites` 4, `loginAttackAlert` 11, `bugReportInbox` 12 | Recorded. Five mint sites still five. |
+| `audit_logs` (run 2's item 2) | production, 625 rows, 2026-07-10 → 2026-09-09 | **0 critical, 6 warning** (the same six July credit adjustments); **45 rows since run 2, all `casting.scan_miss`**, max metadata 53 chars | Boundary keys (`masterPrompt`, `technicalSchema`, `preferences`, `resultUrl`, `imageUrl`, `description`) in **0 of 625** rows. `abuse.*` still **zero all time**. Newest `auth.login` still 2026-08-25 (the 30-day session, run 2's false alarm, unchanged). Run 2's question — should the casting writers be in this table at all — is still a card nobody has written, and this patrol does not write it. |
+| `blocked_ips` / staff population | production | **0 rows / 1 admin, 3 users** | Unchanged. |
+| the security surface's diff since run 2 | `git log --since=2026-09-05` over `server/security`, `_core`, the auth routes, billing, admin, the workflows, the merge tool | **30 commits** — read by title, three opened | `dad85ae5` (#800 Slack retired): an admin's Approve executes a sensitive change request inside `reviewChangeRequest` (`adminProcedure`); the request is raised by a moderator and reviewed by an admin, and with admins inheriting the moderator surface one account can raise and approve its own — that is the "genuine second factor is a NEW control and a founder decision" sentence CLAUDE.md already carries, not a finding. `2ba128d5` (#733) and `fd0660e9` (#727) tightened the admin gate; `3111741b` (#700) closed four spread-row reads (invariant 8). Nothing to file. |
+| ⚠ **`pnpm audit --prod` — the first time this seat has read it** | `077ac809`, pnpm 10.28.2, lockfile at HEAD | **91 advisories: 3 critical, 21 high, 40 moderate, 8 low** (129 with dev) | Reachability read at the code for every high-or-worse row and written into **#857**. The reached one: **`sharp` 0.34.5** (two HIGH advisories, libvips + libheif, *"those processing untrusted input"*) decodes customer bytes at `inkUploadService.ts:354`, `referenceAttachService.ts:124` and the concept-upload road — all three doors at `users:1` on production, so today only his own uploads reach it, and every widening widens it. NOT reached: `drizzle-orm` identifier injection (zero `sql.identifier(` / dynamic `.as(` in `server/`), `path-to-regexp` ReDoS (no three-param segment), `nanoid` (no size argument), `fast-xml-parser` (R2's own XML), `protobufjs`/`ws` (gRPC path unused). `mysql2`'s auth downgrade needs a rogue server — low. **`streamdown` has no importer anywhere and carries 25 of the moderates** — delete, not patch. Express 4's `qs`/`path-to-regexp` rows are not patchable by any express 4 (4.22.2 still pins both). |
+| ⚠ **the roads that should read a known CVE** | repository settings, the gate, Socket's PR comments | **All three shut.** `GET /repos/…/vulnerability-alerts` → **404** and `dependabot_security_updates: disabled` — Dependabot ALERTS are off (version-update PRs run; no security PR has ever been opened). The gate has no audit step. Socket **Warns** on a Critical CVE (§C). | ⚠ **He was told the opposite on #35, verbatim: *"Dependabot (already on) catches dependencies with a KNOWN CVE"*** — and `.github/dependabot.yml`'s header says *"security fixes arrive as their own PRs immediately"*. Law 7c, pointed at a report he made a decision on: the settings are the artifact. On his desk as **#858** with a recommendation. |
+| the patch road | PRs #632 (7 Sep) → #748 → #831 (12 Sep), run 34698885026 | **RED six days** on `check:casting-tests`: `characterSheet.ts:235` `Cannot find namespace 'sharp'`, `termsPalette.mts:164/184` not callable — the `sharp` 0.35 type shape | The 60-package group PR that carries the `sharp`, `mysql2`, `drizzle-orm`, `@aws-sdk` and `jspdf` fixes cannot merge. **#857** (seat:warden, takeable, Opus): a security-first PR, the two type sites, delete `streamdown`, done-condition is the audit number. |
+
+### B. Instrument ledger
+
+Unchanged from run 2 and re-read at the workflow files: gitleaks in `gate.yml`,
+`actionlint + zizmor`, semgrep before install, `secrets.yml`'s Monday cron.
+`knip.yml` nightly still firing. **One row is ADDED to the seat's method, not to
+the gate**: `pnpm audit --prod` is a reading this seat takes every run from now
+on, beside the six above, and its number goes in the table. Whether it belongs
+in the gate is #858's third line and is not this seat's to decide.
+
+**And one control's honest sentence changed — Socket.** Run 2's ledger inherited
+#761's *"it refuses when told to refuse, and we have never seen it told"*. Now
+measured (§C): **it is told for Known Malware alone.** The reaction arms are
+untouched and still proven.
+
+### C. Controls — #762, the positive control, driven and closed
+
+The card asked whether Socket's verdict ever goes red here, and warned that
+the answer depended on the org's policy — which the crew cannot read (no Socket
+login). It was read at two artifacts instead:
+
+1. **PR #831** (dependabot, real): a **High** *Obfuscated code* alert on
+   `drizzle-orm@0.45.2` → action **Warn** → check **success**, *"Complete with
+   warnings"*. Rules out the Low Noise policy (no comment there) and shows a
+   High supply-chain alert does not go red.
+2. **PR #856** — a throwaway DRAFT, closed and branch deleted the moment the
+   readings were in, never merged. ONE harmless well-known dev dependency the
+   product never imports, `minimist@1.2.5` (Critical CVE-2021-44906, no install
+   script), chosen because Socket's documented policies split exactly on it:
+   Default → Warn, Higher Noise → Block. **Result: action Warn, check success,
+   `pr-merge-in-order --dry-run` prints `socket=green`.** (The card's own
+   sketch — a package with an install script — would have read NOTHING: an
+   install script is not even a Warn under the Default policy.)
+
+**So: this organisation's policy is Socket's Default — Block on Known Malware
+only; Critical CVE, typosquat, git/GitHub/HTTP dependency, protestware and
+obfuscated file all Warn, the check stays green, the merge tool merges.** A red
+reading cannot be produced here without adding malware, and it will not be.
+#762 CLOSED with both readings; the policy choice (recommend Higher Noise) is on
+his desk in #858 with the `enforce_admins` line riding along.
+
+### D. What this run leaves standing, and run 4's brief
+
+Filed: **#857** (takeable — the patch road), **#858** (his desk — the three
+shut roads and two switches). Closed: **#762**. Nothing else moved.
+
+**Run 4 (~2026-09-20) takes, in order:**
+1. `secrets.yml`'s 2026-09-14 run at its log.
+2. `pnpm audit --prod` again — the number against 91/3/21, and whether #857
+   landed; if #858 was answered, whether Dependabot's first security PR
+   appeared and what Socket did to it.
+3. The `audit_logs` read and the surface diff, as before.
+
+**Not a Warden brief, named so it is not re-proposed:** an `audit` step in the
+gate (his line on #858 first); the express 5 migration (#857 names it as its
+own card if ever wanted); the change-request self-approval shape (CLAUDE.md's
+"new control, founder decision" sentence already owns it).
+
+**Spent: nothing.** One throwaway PR, one gate run, no money, no credits.
