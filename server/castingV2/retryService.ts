@@ -42,9 +42,20 @@ import {
 import { operationChargeReference } from "../casting/operationContract";
 import { recordRefund } from "../casting/atomicCredits";
 import { candidateChargeReference } from "./rollRecovery";
+import {
+  RECOVERED_RETRY_FREE_SENTENCE,
+  RECOVERED_RETRY_SENTENCE,
+  RETRY_SUPPORT_REVIEW_SENTENCE,
+  recoverCastingV2RetryOperation,
+  type RetryRecoveryOutcome,
+} from "./retryRecovery";
 import { SLICE_REFUND_DESCRIPTION } from "./sliceRefundLedger";
 import { deductCredits } from "../db/credits";
-import { markGenerationOperationRunning } from "../db/generationOperations";
+import {
+  handoffGenerationOperationToRecovery,
+  markGenerationOperationRecoveryRequired,
+  markGenerationOperationRunning,
+} from "../db/generationOperations";
 import {
   getOwnedCandidateForRetry,
   listRollCandidateStatuses,
@@ -365,17 +376,27 @@ export async function retryCandidate(
   );
   if (error !== undefined) {
     /*
-      `dispatchCandidate` settles every exit itself — a throw past it is the
-      census wrapper's own, or something after the settlement. The money is
-      already right or already logged; the receipt says support.
+      A THROW PAST `dispatchCandidate` IS A SLICE NOBODY SETTLED (#867, the
+      retry's #855).
+
+      This block used to say the opposite — that the unit settles every exit
+      and a throw past it is the census wrapper's own — and sealed a FAILURE
+      receipt with `refundedCredits: 0`. But `markCandidateDispatched` and
+      `createGeneration` run before the unit's try, and its catch's own writes
+      can throw; a dropped connection there left the row `queued` or
+      `dispatched`, the 20 credits kept, and the operation sealed terminal so
+      the sweep could never see it. Worse than the roll's shape, which at least
+      kept the heartbeat and the operation visible.
+
+      So the road is the roll's (#855): the retry's OWN adjudicator, in-process
+      — the rule it already carries for exactly this row (*anything unfinished
+      is CAS'd to `failed:unrecovered` and refunded under the retry's own
+      reference, only if the ledger shows the charge and no prior refund*), and
+      it seals its own receipt. A dead-end verdict parks for support with the
+      sweep's words; if the adjudicator itself throws, the lease is handed to
+      the sweep — heartbeat stopped first — rather than kept alive.
     */
-    return completeDirectOperationFailure({
-      userId: input.userId,
-      operationId,
-      error,
-      chargedCredits: price,
-      refundedCredits: 0,
-    });
+    return settleAbandonedRetry({ userId: input.userId, operationId, candidatePublicId: candidate.publicId, price, cause: error });
   }
   const settlement = value as Settlement;
 
@@ -457,5 +478,81 @@ export async function retryCandidate(
     }),
     chargedCredits: price,
     refundedCredits: refunded,
+  });
+}
+
+/**
+ * The live-process settlement of a retry whose unit threw (#867) — see the
+ * block at the call site. Never refunds on its own: the adjudicator reads the
+ * ledger and decides, exactly as it does for a crashed retry.
+ */
+async function settleAbandonedRetry(input: {
+  userId: number;
+  operationId: string;
+  candidatePublicId: string;
+  price: number;
+  cause: unknown;
+}): Promise<never> {
+  const { userId, operationId } = input;
+  log.error(
+    {
+      operationId,
+      candidate: input.candidatePublicId,
+      cause: input.cause instanceof Error ? input.cause.message.slice(0, 300) : String(input.cause).slice(0, 300),
+    },
+    "[retryService] the retried tile's settlement threw — adjudicating the retry in-process",
+  );
+
+  let outcome: RetryRecoveryOutcome;
+  try {
+    outcome = await recoverCastingV2RetryOperation({
+      id: operationId,
+      userId,
+      status: "running",
+      chargedCredits: input.price,
+      refundedCredits: 0,
+    });
+  } catch (error) {
+    log.error(
+      { operationId, err: error },
+      "[retryService] in-process adjudication failed too — handing the lease to the sweep",
+    );
+    await handoffGenerationOperationToRecovery({ userId, operationId }).catch((handoffError) => {
+      // The heartbeat is stopped before this write is attempted, so even here
+      // the lease lapses on its own and the sweep takes the retry within one lease.
+      log.fatal({ operationId, err: handoffError }, "[retryService] recovery handoff did not write");
+    });
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: `That retry is still being settled. Operation ${operationId}.`,
+      cause: error,
+    });
+  }
+
+  if (outcome.type === "recovery_required") {
+    await markGenerationOperationRecoveryRequired({
+      userId,
+      operationId,
+      publicMessage: RETRY_SUPPORT_REVIEW_SENTENCE(operationId),
+      chargedCredits: outcome.chargedCredits,
+      refundedCredits: outcome.refundedCredits,
+    });
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: RETRY_SUPPORT_REVIEW_SENTENCE(operationId) });
+  }
+  if (outcome.type === "durable_success") {
+    /*
+      The tile landed and the throw came after — the receipt is sealed as a
+      success, and the sheet reads the row. The roll's own status is left to
+      the next reader: this road knows nothing the row does not.
+    */
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: `That tile arrived, but its settlement was interrupted. Reload the sheet. Operation ${operationId}.`,
+    });
+  }
+  // paid_failure / free_failure — the receipt is sealed with these words.
+  throw new TRPCError({
+    code: "PRECONDITION_FAILED",
+    message: outcome.type === "paid_failure" ? RECOVERED_RETRY_SENTENCE : RECOVERED_RETRY_FREE_SENTENCE,
   });
 }
