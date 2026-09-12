@@ -1,7 +1,7 @@
 {
-  "edition": 358,
-  "updatedAt": "2026-09-12T07:05:00.000Z",
-  "shift": "Foreman — one merged on one card: the crew's own deploy of this page can no longer be refused by a self-check that was doing a minute of unrelated work to answer a yes/no question (#839, PR #840). YOUR DESK IS CLEAR. THE FIX: last night the crew's deploy of this page was refused three times in a row, none of them about the change being pushed. One self-check exists to prove a script still runs when you run it — a yes/no — and it was answering by rebuilding the entire architecture map (a thousand files through the compiler): 17 seconds when the machine is idle, over two minutes when it is busy, and the two-minute budget the last shift gave it was crossed by the very next deploy. Now the script has a one-word switch that makes it say 'yes, I ran' and stop, and the check asks with that word: 2 to 4 seconds measured three times under the same load that used to take over two minutes. The check can still fail — it was proven the honest way, by breaking the script on purpose and watching three checks go red, then a permanent test that does the same on a copy every time. Nothing you see changes; what changes is that the page in front of you cannot be held up by that check again. The reviewer passed it with no findings. NOT TAKEN, AND WHY: #762 (proving the new dependency watchdog actually says no — it has only ever said yes) is the Warden's card and the Warden's check-up is tomorrow; whether the watchdog blocks the test package at all depends on a setting in its own dashboard, which is a read before a throwaway pull request, so it is left for that seat with the note. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden reads due tomorrow.",
+  "edition": 359,
+  "updatedAt": "2026-09-12T08:26:00.000Z",
+  "shift": "Foreman — two merged on two cards, both housekeeping, nothing you can see changes and that was the point (#481 → PR #843, #265 → PR #846). YOUR DESK IS CLEAR. THE FIRST: the four staff dialogs (suspend, block an IP, review a request, file a request) each draw their field rows — the small label above a box — from one shared part now, kept in the product's shared kit instead of inside the staff pages, so the next form dialog gets it by name rather than by copying. Proven the hard way: the request form photographed before and after in both themes, and not one pixel of 460,080 differs. Two look-alikes were found and NOT merged into it, because merging either would repaint a page you have signed off (the Profile page's fields use a different label style; three confirm boxes lay the label out three different ways) — that is a design call and it is on a card (#841), not decided by a shift. THE SECOND: the tool the crew uses to put a picture in front of your eyes now prints the one line a caller needs LAST — the reason ten duplicate pictures sit unused in the production bucket is that two shifts piped it, got the wrong line, and ran it again. FOUND ON THE WAY (#842): the crew's throwaway test servers have been serving no webfonts, so every 'both themes' photograph a shift has taken from one is in the wrong typeface — the layout right, the letters wrong; a one-line config fix, filed. Reviewer: pass, no findings. NOT TAKEN: #762 (the Warden's, its check-up is tomorrow). YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,17 +128,17 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "47 open, none waiting on you, none urgent. 1 PR merged this shift; 29 untouched for 7 days."
+        "source": "50 open, none waiting on you, none urgent. 2 PRs merged this shift; 28 untouched for 7 days."
       },
       {
         "label": "Your desk is clear",
         "tone": "good",
-        "source": "Nothing waits on you. One PR merged this shift, no decisions."
+        "source": "Nothing waits on you. Two PRs merged this shift, no decisions; one design question filed (#841)."
       },
       {
         "label": "Check-ups",
         "tone": "good",
-        "source": "Retro, Machinist and Janitor ran today, on their day; the Warden 13 Sep. None overdue."
+        "source": "Retro, Machinist and Janitor ran 12 Sep, on their day; the Warden 13 Sep. None overdue."
       },
       {
         "label": "Your account is no longer flagged",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T04:11:07.138Z",
+      "readAt": "2026-09-12T08:25:40.002Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,20 @@
   ],
   "pipeline": [
     {
+      "id": "modalfield-promotion-843",
+      "title": "The staff dialogs' field row is a shared part now (ModalField) — four dialogs, one source, and not one pixel moved",
+      "status": "merged",
+      "prNumber": 843,
+      "note": "Card #481, the section 11 promotion pass. The row (label above a box, note beneath) was written once inside the staff pages and used by four dialogs; it lives in the shared kit now and is on the specimen page at /admin/foundation. The code that draws it is byte-for-byte what it was. Photographed before and after in both themes on the request form: 0 differing pixels of 460,080. Two look-alikes were found and NOT folded in — merging either repaints a page you signed off — and that decision is card #841. The reviewer passed it with no findings."
+    },
+    {
+      "id": "eye-frame-key-last-846",
+      "title": "The eye-frame upload tool prints its key last — the pipe that made ten duplicate pictures now keeps the right line",
+      "status": "merged",
+      "prNumber": 846,
+      "note": "Card #265, its option 1. Two shifts piped the upload through 'last line only', got the friendly sentence instead of the key, and re-ran it — every picture uploaded twice. The key is the last line now; a permanent check pins the order (red on the old order, green on the new). The ten leftover objects are still in the production bucket: deleting there is the Janitor's manifest-first act and the card stays open for it."
+    },
+    {
       "id": "selfinvocation-fired-flag-840",
       "title": "The self-check that was refusing the crew's own deploy now asks its yes/no question in seconds instead of rebuilding the whole map",
       "status": "merged",
@@ -5610,11 +5624,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912l-foreman",
+      "id": "queue-shape-0912m-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 47 open, one closed (#839); NEXT UP is empty; nothing waits on you",
-      "detail": "Category order re-read at the code, same as the last four entries: Bugs (#816) holds only its two auth/money rows; Small fixes held #839 alone and it is merged (PR #840); Process (#697, #769, #513) and Performance (#555, #58) remain sessions of their own or not an Opus shift's; Housekeeping's next, #481, has its honest shape on the card. Security holds one card (#762, the Warden's positive control) and the Warden's clock fires tomorrow. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read). Janitor, Machinist and Retro ran today."
+      "title": "The queue: 50 open, one closed (#481), four filed (#841 design, #842 fonts, #844 hold, #845 small); NEXT UP is empty; nothing waits on you",
+      "detail": "Category order re-read at the code: Bugs (#816) holds only its two auth/money rows; Small fixes is empty; Process — #697 has only its auth-path file left, #769 is a design card, #513 blocked; Performance (#555, #58) are sessions; Housekeeping — #481 merged and closed, next #482, #564, #274, #527 (the Janitor's run 6), #265 (its option 1 merged; the bucket half stays); Security holds #762 and the Warden's clock fires 13 Sep. Filed this shift: #841 (the labelled field is drawn three ways — a design decision, awaiting-fable), #842 (worktree dev servers serve no webfonts — every worktree frame is in fallback type; a one-line vite fs.allow fix), #844 (the max-w-md hold split out of #481 §4, blocked on his word), #845 (the guard's label reader stops at the first interpolation — small). 28 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5797,7 +5811,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-12T04:11:07.137Z",
+    "readAt": "2026-09-12T08:25:40.001Z",
     "items": []
   }
 }
