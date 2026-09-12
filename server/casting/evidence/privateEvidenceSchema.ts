@@ -6,7 +6,7 @@ const EXPECTED_INDEX_COLUMNS = ["batchId", "storageBackend", "storageKey"];
 interface SchemaQueryClient {
   query(
     statement: string,
-    values?: readonly unknown[],
+    values?: unknown[],
   ): Promise<[unknown, unknown]>;
 }
 

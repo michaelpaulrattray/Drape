@@ -87,7 +87,7 @@ async function main(): Promise<void> {
          FROM information_schema.TABLES
         WHERE TABLE_SCHEMA = DATABASE()
           AND TABLE_NAME IN (${NEW_TABLES.map(() => "?").join(",")})`,
-      NEW_TABLES,
+      [...NEW_TABLES],
     );
     const [newColumnRows] = await pool.query<RowDataPacket[]>(
       `SELECT TABLE_NAME, COLUMN_NAME

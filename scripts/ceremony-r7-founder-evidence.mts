@@ -10,6 +10,7 @@ import mysql, {
   type Connection,
   type RowDataPacket,
 } from "mysql2/promise";
+import type { ExecuteValues } from "mysql2";
 import sharp from "sharp";
 import type { TrpcContext } from "../server/_core/context";
 import {
@@ -93,7 +94,7 @@ function numberValue(value: unknown): number {
   return result;
 }
 
-async function scalar(statement: string, params: readonly unknown[] = []): Promise<number> {
+async function scalar(statement: string, params: readonly ExecuteValues[] = []): Promise<number> {
   const [rows] = await connection.execute<RowDataPacket[]>(statement, [...params]);
   return numberValue(rows[0]?.value ?? 0);
 }

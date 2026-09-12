@@ -356,7 +356,7 @@ export async function ensureDanglingCropFixture(input: { userId: number }): Prom
     const rawDeltas = (deltasRow as Array<{ deltas: unknown }>)[0]!.deltas;
     const parsed = typeof rawDeltas === "string" ? JSON.parse(rawDeltas) : rawDeltas as { inkDelivered?: Record<string, string> };
     const named = Object.values(parsed?.inkDelivered ?? {})[0];
-    if (!named) throw new ContaminatedFixtureError("the dangling fixture's variant carries no delivered name at all");
+    if (typeof named !== "string" || !named) throw new ContaminatedFixtureError("the dangling fixture's variant carries no delivered name at all");
     const [crop] = await conn.execute(
       `SELECT COUNT(*) AS n FROM casting_ink_delivery_crops WHERE publicId = ?`, [named],
     );
