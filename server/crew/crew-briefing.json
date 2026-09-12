@@ -1,7 +1,7 @@
 {
-  "edition": 359,
-  "updatedAt": "2026-09-12T08:26:00.000Z",
-  "shift": "Foreman — two merged on two cards, both housekeeping, nothing you can see changes and that was the point (#481 → PR #843, #265 → PR #846). YOUR DESK IS CLEAR. THE FIRST: the four staff dialogs (suspend, block an IP, review a request, file a request) each draw their field rows — the small label above a box — from one shared part now, kept in the product's shared kit instead of inside the staff pages, so the next form dialog gets it by name rather than by copying. Proven the hard way: the request form photographed before and after in both themes, and not one pixel of 460,080 differs. Two look-alikes were found and NOT merged into it, because merging either would repaint a page you have signed off (the Profile page's fields use a different label style; three confirm boxes lay the label out three different ways) — that is a design call and it is on a card (#841), not decided by a shift. THE SECOND: the tool the crew uses to put a picture in front of your eyes now prints the one line a caller needs LAST — the reason ten duplicate pictures sit unused in the production bucket is that two shifts piped it, got the wrong line, and ran it again. FOUND ON THE WAY (#842): the crew's throwaway test servers have been serving no webfonts, so every 'both themes' photograph a shift has taken from one is in the wrong typeface — the layout right, the letters wrong; a one-line config fix, filed. Reviewer: pass, no findings. NOT TAKEN: #762 (the Warden's, its check-up is tomorrow). YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177.",
+  "edition": 360,
+  "updatedAt": "2026-09-12T10:32:41.834Z",
+  "shift": "Foreman — two merged on the two Small-fixes cards the last shift filed; nothing a customer can see changes. YOUR DESK IS CLEAR. THE FIRST (#842 → PR #847): the crew's throwaway test servers now serve the product's real typeface. Until today a test server started inside a shift's scratch copy of the code served NO webfonts at all — every 'both themes' photograph a shift has put in front of you from one of those servers was in the wrong lettering, with every small label about a pixel and a half shorter, and a before/after taken across two servers could show you a 12-pixel 'regression' that was never there. Read at the code before the line was written, the card's own suggested fix would have done nothing: the settings file it named is never read by the test server, which has replaced that whole block since the day the project was born. The fix went where the server actually reads, and it was driven: the font files answered 403 before and 200 after; the secrets file and the rest of the machine still answer 403; the browser confirms the mono face loads on a scratch-copy page. The reviewer passed it with no blocking findings, verified the 'that block was never read' claim at the bytes, and asked for one thing — that the leftover finding be a real card — which it is (#849, below). THE SECOND (#845 → PR #848): a permanent check on the staff dialogs' field labels could be fooled by a label built from a template — it stopped reading at the first blank-to-be-filled, so a rule written after it ('(max 5)') would have slipped past. It reads the whole label now, with a planted bad label proving it goes red. Nothing was wrong today; the check was narrower than its own sentence. FILED (#849): the test server's settings file carries a host check and a file-deny rule that have never been applied — the server overrides the whole block. Dev only, not a production surface; a small fix with a decision attached (delete the dead text, or switch it on for the first time). ALSO NOTED: a full typecheck in a scratch copy took 18 minutes this shift against 4½ on the same machine an hour earlier — not carded, the gate's own run stayed at 8 minutes. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden's check-up is tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T08:25:40.002Z",
+      "readAt": "2026-09-12T10:32:56.127Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4654,6 +4654,20 @@
   ],
   "pipeline": [
     {
+      "id": "worktree-fonts-847",
+      "title": "The crew's scratch-copy test servers serve the real typeface now — every 'both themes' frame from one was in fallback lettering",
+      "status": "merged",
+      "prNumber": 847,
+      "note": "Card #842. A test server in a shift's scratch copy resolves the font files through a shortcut to the main copy's packages, and the server refused to serve anything from outside its own folder — every webfont 403, every small label 1.4 px shorter. The card pointed the one-line fix at a settings block the server has never read (it replaces that whole block; dead since the project's first commit) — read at the code first, the fix went where the server actually looks. Driven: fonts 403 → 200; the secrets file in both copies, the main copy's server code and the home folder still 403 — the door widened to the packages folder and nothing else. Browser: the mono face loads on a scratch-copy page. Reviewer: pass, no blocking findings; its one ask (that the leftover be a real card) is #849."
+    },
+    {
+      "id": "label-reader-848",
+      "title": "The staff-dialog label check reads a templated label to its end — a rule hidden after a blank no longer slips past",
+      "status": "merged",
+      "prNumber": 848,
+      "note": "Card #845, split out of #481 last shift. The check that keeps '(min …)'/'(max …)' rules out of field labels stopped reading a templated label at its first fill-in, so a rule after it was invisible. It reads the whole label now; a planted bad label turns it red and the old reader swapped back turns the new arms red. Nothing was wrong in the product today. Reviewer declined it as under the line (a test-only change), which is the design working."
+    },
+    {
       "id": "modalfield-promotion-843",
       "title": "The staff dialogs' field row is a shared part now (ModalField) — four dialogs, one source, and not one pixel moved",
       "status": "merged",
@@ -5624,11 +5638,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912m-foreman",
+      "id": "queue-shape-0912n-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 50 open, one closed (#481), four filed (#841 design, #842 fonts, #844 hold, #845 small); NEXT UP is empty; nothing waits on you",
-      "detail": "Category order re-read at the code: Bugs (#816) holds only its two auth/money rows; Small fixes is empty; Process — #697 has only its auth-path file left, #769 is a design card, #513 blocked; Performance (#555, #58) are sessions; Housekeeping — #481 merged and closed, next #482, #564, #274, #527 (the Janitor's run 6), #265 (its option 1 merged; the bucket half stays); Security holds #762 and the Warden's clock fires 13 Sep. Filed this shift: #841 (the labelled field is drawn three ways — a design decision, awaiting-fable), #842 (worktree dev servers serve no webfonts — every worktree frame is in fallback type; a one-line vite fs.allow fix), #844 (the max-w-md hold split out of #481 §4, blocked on his word), #845 (the guard's label reader stops at the first interpolation — small). 28 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
+      "title": "The queue: 48 open, two closed (#842, #845), one filed (#849); NEXT UP is empty; nothing waits on you",
+      "detail": "Category order re-read at the code: Bugs (#816) holds only its two auth/money rows; Small fixes was #842 and #845 — both merged and closed, and now holds #849 (filed this shift); Process — #697 has only its auth-path file left, #769 is a design card, #513 blocked; Performance (#555, #58) are sessions; Housekeeping next: #482, #564, #274, #527 (the Janitor's run 6), #265's bucket half (Janitor, manifest first); Security holds #762 and the Warden's clock fires 13 Sep. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock)."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5811,7 +5825,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-12T08:25:40.001Z",
+    "readAt": "2026-09-12T10:32:56.126Z",
     "items": []
   }
 }
