@@ -1,7 +1,7 @@
 {
-  "edition": 367,
-  "updatedAt": "2026-09-12T18:25:15.977Z",
-  "shift": "Foreman (build shift) — TWO merged from the Bugs queue, both on the same fault. A STUCK TILE NO LONGER WAITS FOR A DEPLOY (#855 → PR #866): when the database hiccups on one slice of a roll, that tile used to stay a blank skeleton for as long as the server stayed up — hours, until the next deploy killed the process and the sweep could refund it — with its 20 credits held the whole time. Now the same hiccup settles in the same request: the other seven land, the one that could not is marked didn't-arrive and refunded, the sheet reads partial. The refund is the one the roll already promised; nothing new is paid or kept. Fable: clean pass, three notes, one taken. AND THE SAME FAULT ON RETRY WAS WORSE (#867 → PR #870): a Retry that hit the same hiccup was sealed as failed WITH THE 20 CREDITS KEPT, and because it was sealed nothing could ever go back for them. Now it is refunded on the spot, or handed to the sweep if the database is truly down. Fable: clean pass, no findings. Two smaller cousins are filed for the next shifts (#868, #869), not built. YOUR DESK IS CLEAR; NEXT UP is empty; the two frame sets already on your page stay until you judge them. Nothing spent.",
+  "edition": 368,
+  "updatedAt": "2026-09-12T20:03:38.000Z",
+  "shift": "Foreman (build shift) — the LAST TWO COUSINS of last night's fault, both merged from the Bugs queue. A LOST TILE'S CREDITS COME BACK EVEN WHEN THE REFUND ITSELF WAS THE THING THAT BROKE (#868 → PR #871): when a roll loses a tile, the server marks it failed and then writes the refund — two steps. If the database dropped between them, the tile said 'didn't arrive · refunded' while the ledger held no refund, and the 20 credits were gone for good, because the clean-up sweep only ever looked at tiles still in flight. Now the sweep (and the same-request settlement from last night) reads the ledger for every failed tile and pays the missing one once — never twice, never past what was charged. Fable: pass, one small wording finding taken (the ledger line for a bad-frame tile now says what happened). AND A REFINE OR SIGN CAN NO LONGER HANG ON A BROKEN REFUND (#869 → PR #872): the rarer cousin — a refine that failed AND whose refund write hit a dropped connection used to leave the tile 'casting' for as long as the server stayed up, credits held. Now it settles in the same request (refund or park for support) with the same sentence the receipt carries. Fable: pass, no blocking findings; one older cousin it spotted is filed as #873, not built. YOUR DESK IS CLEAR; NEXT UP is empty; the two frame sets on your page stay until you judge them. Nothing spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "46 open, none waiting on you, none urgent. 2 merged, 2 closed, 2 filed; 29 untouched 7 days."
+        "source": "45 open, none waiting on you, none urgent. 2 merged, 2 closed, 1 filed; 29 untouched 7 days."
       },
       {
         "label": "Check-ups",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T18:24:41.145Z",
+      "readAt": "2026-09-12T20:02:49.976Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4769,6 +4769,20 @@
   ],
   "pipeline": [
     {
+      "id": "torn-refund-sweep-871",
+      "title": "A lost tile's credits come back even when the refund write itself was the step that broke",
+      "status": "merged",
+      "prNumber": 871,
+      "note": "Card #868, found by #855's sweep last night. Before: losing a tile is two writes — mark it failed, then refund — and a database drop between them left a tile that read 'didn't arrive · refunded' with no refund on the ledger and no way for anything to notice, because the clean-up sweep only counted tiles still in flight. After: the sweep (and last night's same-request settlement, which runs the same code) reads the ledger for every failed tile and pays a missing refund once, under the same reference the live path would have used, inside the same never-more-than-charged ceiling. The retry road already had this rule; the roll's now matches it. Seven tests, four red on the old code; the two controls (a refund already present is not paid again; a free tile is never paid) green both ways. Fable: pass, one low finding taken in one push — the ledger sentence for a bad-frame tile now names that event rather than 'did not arrive'."
+    },
+    {
+      "id": "catch-handoff-refine-sign-872",
+      "title": "A refine or Sign whose refund step itself breaks is settled in the same request — no more hanging on a live heartbeat",
+      "status": "merged",
+      "prNumber": 872,
+      "note": "Card #869, the narrower cousin of last night's #855. Before: a refine that failed AND whose refund write hit a dropped connection escaped the settlement entirely — the tile stayed 'casting' for as long as the server process lived, credits held, and the sheet's 'still working' line named an outcome that never came until a deploy. Same on a Sign. After: the road's own clean-up adjudicator runs right then (refund what is owed, or park it for support), and if even that cannot write, the lease is handed to the sweep so it settles within six minutes. The sentence the person reads is the one the receipt carries. Nine tests, seven red on the old code. Fable: pass, no blocking findings — it named one older cousin (a refine that succeeded but whose last receipt step threw would be refunded for a picture the customer keeps), filed as #873."
+    },
+    {
       "id": "stuck-slice-live-process-866",
       "title": "A tile whose dispatch write fails settles in the same request — no more waiting for a deploy to free it",
       "status": "merged",
@@ -5816,9 +5830,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0913e-foreman",
+      "id": "queue-shape-0913f-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 45 open, two closed (#868, #869), one filed (#873, from PR #872's review); NEXT UP is empty; nothing waits on your word",
+      "detail": "Category order re-read at the code: Bugs — #873 new (a refine that SUCCEEDS but whose final receipt step throws is refunded for a picture the customer keeps — pre-existing, the mirror of #869's class; small, settlement path, founder-review) and #816 (only its auth/money rows, not an Opus shift's). Small fixes EMPTY; Security — #857 takeable (a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
+    },
+    {
+      "id": "queue-shape-0913e-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 46 open, two closed (#855, #867), three filed (#868, #869 from #855's sweep — and #867 was one of them, taken the same shift); NEXT UP is empty; nothing waits on your word",
       "detail": "Category order re-read at the code: Bugs — #868 (the roll's recovery sweep does not refund a slice marked failed whose refund never recorded; the retry's already does — a small extension of the sweep's rule, wants its own arm) and #869 (refine and sign: a failure inside the refund step itself escapes the finalizer — rarer, two writes must fail in sequence) are the two cousins left from #855's class; #816 holds only its auth/money rows. Small fixes EMPTY; Security — #857 takeable (the sharp 0.35 type fix that unblocks a 60-package patch bump; a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
     },
@@ -6033,7 +6054,7 @@
     179
   ],
   "nextUp": {
-    "readAt": "2026-09-12T18:24:41.144Z",
+    "readAt": "2026-09-12T20:02:49.975Z",
     "items": []
   }
 }
