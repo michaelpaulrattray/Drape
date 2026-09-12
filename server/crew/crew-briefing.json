@@ -1,7 +1,7 @@
 {
-  "edition": 361,
-  "updatedAt": "2026-09-12T11:50:39.156Z",
-  "shift": "Foreman — two merged: the last Small-fixes card and a Process card that ends a bug class found by hand five times. ONE THING A MODERATOR WILL NOTICE, everything else is housekeeping. YOUR DESK IS CLEAR. THE FIRST (#849 → PR #850): the crew's test-server settings file carried a host check and a file-deny rule that had never applied — the server has replaced that whole block since the project's first commit, so the file described a policy nothing ran. The dead text is deleted with a note saying where the real settings live, and a permanent check refuses the block coming back. Driven on a test server after the change: the secrets file still refused, the fonts still served, nothing else moved. Dev only, never a production surface. THE SECOND (#769 → PR #851): on the staff pages, some lists update themselves every 30 seconds while AUTO is on (things other people cause — a new signup, a flagged referral, a blocked address) and some only when the staff member clicks (the details of the row she opened). Which is which had been decided by hand each time a page was written, and FIVE times a list that should have kept itself fresh did not — #457, #747, #752, the #768 review, and one more this shift found by reading: on the moderator dashboard the USERS tab sat still while the admin's identical list refreshed. Now every one of the 28 staff-page lists says, at the line where it is written, which kind it is and why — 20 self-refreshing, 8 click-only — and a permanent check holds each to its word, names any list that forgets to say, and reddens if the click-only set grows without a person reading it. The moderator's users tab follows AUTO from this edition. The reviewer passed it and found three ways the check itself could be fooled; all three closed in one push, each proven against the live pages by breaking them on purpose and putting them back. YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden's check-up is tomorrow. Small fixes is EMPTY for the first time; Process holds one blocked card and one auth-path file; next in the background order are the Performance cards (#555 is an instrument build) and the Janitor's housekeeping list.",
+  "edition": 362,
+  "updatedAt": "2026-09-12T12:22:03.817Z",
+  "shift": "Foreman — a third merge on your mid-shift ruling, on top of the two in edition 361. YOUR DESK IS CLEAR. THE THIRD (#844 → PR #852): you said 'leave it' on the two audit-log dialogs that draw 512 wide while their code asked for 448, so the code now says what the product does — the width they never got is deleted, a permanent check refuses that shape coming back, and the dialogs measure 512 before and 512 after on a desktop. ONE THING TO KNOW, found at the frames and not in the card: the same clash had also been stripping those two dialogs' phone margins, so on a phone they ran edge to edge where every other staff dialog keeps a gutter. They keep it now, like the other three — two phone frames are in the gallery so you can see the before and after; nothing needed from you unless you want the old edge-to-edge back. THE FIRST TWO stand as edition 361 said them: the test server's dead settings block (#849 → PR #850), and every staff list now saying whether it refreshes itself under AUTO 30s, with the moderator's Users tab as the fifth list that had been left still (#769 → PR #851). YOUR DESK: nothing waits on you. NEXT UP is empty. No replies since #177. Warden's check-up is tomorrow. Small fixes is now genuinely empty (edition 361 said so an hour early — #844 had just become one on your word); Process holds one blocked card and one auth-path file; next in the background order are the Performance cards and the Janitor's housekeeping list.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,12 +128,12 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "47 open, none waiting on you, none urgent. 2 PRs merged this shift; 29 untouched for 7 days."
+        "source": "46 open, none waiting on you, none urgent. 3 PRs merged this shift; 29 untouched for 7 days."
       },
       {
         "label": "Your desk is clear",
         "tone": "good",
-        "source": "Nothing waits on you. Two PRs merged this shift, no decisions, nothing filed."
+        "source": "Nothing waits on you. Three PRs merged this shift, one on your own ruling; nothing filed."
       },
       {
         "label": "Check-ups",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T11:49:59.982Z",
+      "readAt": "2026-09-12T12:22:00.814Z",
       "items": [
         {
           "issueNumber": 16,
@@ -2279,6 +2279,26 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "dialog-width-844-phone-frames",
+      "title": "Block IP on a phone: edge to edge before, the house gutter after",
+      "question": "Nothing needed unless you disagree. Desktop is unchanged at 512 (your 'leave it'). On a phone the dialog used to touch both screen edges — a side effect of the same dead class — and now keeps the 16 px gutter the other three staff dialogs have. Say so if you want the old edge-to-edge back.",
+      "state": "open",
+      "filedAt": "2026-09-12T12:22:03.818Z",
+      "issueNumber": 844,
+      "frames": [
+        {
+          "key": "crew-eye/3e19caed-4155-4f99-b9b3-303c95ee6aa9.png",
+          "caption": "Before, 375 wide: the dialog touches both edges.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/7971ccc2-15f3-4ee6-afc0-6e0011fa099d.png",
+          "caption": "After, 375 wide: the same dialog with the house gutter, as the other staff dialogs have.",
+          "arm": "light"
+        }
+      ]
+    },
     {
       "id": "follow-glyph-557-frames",
       "title": "Follow: three marks, at the size they are really drawn",
@@ -4654,6 +4674,13 @@
   ],
   "pipeline": [
     {
+      "id": "dialog-width-852",
+      "title": "The audit log's Suspend and Block IP dialogs stop asking for a width they never got — your 'leave it', with the phone gutter back as a side effect",
+      "status": "merged",
+      "prNumber": 852,
+      "note": "Card #844, your ruling 'leave it'. The two dialogs asked for 448 wide and have always drawn 512; the class that asked never applied. Deleted, with a note naming the width that does; a permanent check refuses the same shape on any staff dialog. Measured on a desktop: 512 before, 512 after. On a phone the same clash had been removing the dialog's side gutter — 375 wide on a 375 screen — where every other staff dialog keeps it; these two keep it now (343). Stated here rather than slipped past; both phone frames in the gallery."
+    },
+    {
       "id": "poll-register-851",
       "title": "Every staff list says whether it refreshes itself under AUTO 30s, and a check holds it to its word — the moderator's Users tab was the fifth list that had been left still",
       "status": "merged",
@@ -5652,11 +5679,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0912o-foreman",
+      "id": "queue-shape-0912p-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 47 open, two closed (#849, #769), none filed; NEXT UP is empty; nothing waits on you",
-      "detail": "Category order re-read at the code: Bugs (#816) holds only its two auth/money rows; Small fixes is EMPTY; Process — #697 has only its auth-path file left, #769 merged and closed, #513 blocked; Performance (#555 an instrument build, #58 an umbrella); Housekeeping next: #482 (a promotion pass wanting both-theme frames), #274 (a re-key needing a resolver the sweep lacks), #564, #527 (the Janitor's run 6), #265's bucket half (Janitor, manifest first); Security holds #762 and the Warden's clock fires 13 Sep. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock)."
+      "title": "The queue: 46 open, three closed this shift (#849, #769, #844), none filed; NEXT UP is empty; nothing waits on you",
+      "detail": "Category order re-read at the code: Bugs (#816) holds only its two auth/money rows; Small fixes is EMPTY; Process — #697 has only its auth-path file left, #513 blocked; Performance (#555 an instrument build, #58 an umbrella); Housekeeping next: #482 (a promotion pass wanting both-theme frames), #274 (a re-key needing a resolver the sweep lacks), #564, #527 (the Janitor's run 6), #265's bucket half (Janitor, manifest first); Security holds #762 and the Warden's clock fires 13 Sep. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock)."
     }
   ],
   "acknowledgedReplyIds": [
@@ -5839,7 +5866,7 @@
     177
   ],
   "nextUp": {
-    "readAt": "2026-09-12T11:49:59.981Z",
+    "readAt": "2026-09-12T12:22:00.813Z",
     "items": []
   }
 }
