@@ -87,7 +87,7 @@ import "dotenv/config";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 
 import { createFalCreativeEngine } from "../server/providers/falImages";
 import { readFalBalance } from "./lib/falSpend.mts";
@@ -624,7 +624,7 @@ if (tiles.length > 0) {
   })));
   const tileH = (await sharp(resized[0]!.buf).metadata()).height ?? 510;
   const rowOf = (cellId: string) => CELLS.findIndex((c) => c.id === cellId);
-  const composites: sharp.OverlayOptions[] = resized.map((t) => ({
+  const composites: OverlayOptions[] = resized.map((t) => ({
     input: t.buf, left: GUTTER + t.column * TILE_W, top: rowOf(t.cell) * tileH,
   }));
   try {

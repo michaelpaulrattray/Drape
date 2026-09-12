@@ -1,4 +1,4 @@
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 
 import type { CastViewAngle } from "../../shared/boardTypes";
 
@@ -232,7 +232,7 @@ export async function composeCharacterSheet(
 
   const ordered = orderCells(cells);
   const geometry = sheetGeometry(cells);
-  const composites: sharp.OverlayOptions[] = [];
+  const composites: OverlayOptions[] = [];
 
   for (let index = 0; index < ordered.length; index += 1) {
     const cell = ordered[index];

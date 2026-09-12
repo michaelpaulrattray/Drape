@@ -31,7 +31,7 @@
 import "dotenv/config";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 
 import { createFalCreativeEngine } from "../server/providers/falImages";
 import { readFalBalance } from "./lib/falSpend.mts";
@@ -200,7 +200,7 @@ await Promise.all(Array.from({ length: CONCURRENCY }, async () => { while (next 
 
 /* ─── STRIP — row 0 = his reference (letterboxed, never cropped), then rows = arms, eight tiles each ─── */
 const TILE_W = 300; const GUTTER = 260; const tileH = Math.round(TILE_W * 1.5);
-const composites: sharp.OverlayOptions[] = [];
+const composites: OverlayOptions[] = [];
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 const label = (id: string, sub: string, row: number) => {
   const svg = `<svg width="${GUTTER}" height="${tileH}"><rect width="100%" height="100%" fill="#141414"/><text x="14" y="${Math.round(tileH / 2) - 10}" font-family="sans-serif" font-size="34" fill="#EBEBEB">${esc(id)}</text><text x="14" y="${Math.round(tileH / 2) + 26}" font-family="sans-serif" font-size="17" fill="#9a9a9a">${esc(sub).slice(0, 34)}</text></svg>`;

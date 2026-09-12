@@ -17,7 +17,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 
 const OUT = "output/_shift113";
 mkdirSync(OUT, { recursive: true });
@@ -41,7 +41,7 @@ const GRID = [
 
 const COL = 620;
 const CAP = 40;
-const tiles: sharp.OverlayOptions[] = [];
+const tiles: OverlayOptions[] = [];
 let rowTop = 0;
 let cellHeight = 0;
 

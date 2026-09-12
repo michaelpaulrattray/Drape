@@ -62,7 +62,7 @@ import "dotenv/config";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 
 import { createFalCreativeEngine } from "../server/providers/falImages";
 import { createOpenRouterTextEngine } from "../server/providers/openrouterText";
@@ -683,7 +683,7 @@ const TILE_W = 300; const GUTTER = 230;
 for (const b of briefs) {
   const arms = armsOf(b.id);
   const tileH = Math.round(TILE_W * 1.5);
-  const composites: sharp.OverlayOptions[] = [];
+  const composites: OverlayOptions[] = [];
   for (const [row, arm] of arms.entries()) {
     const svg = `<svg width="${GUTTER}" height="${tileH}"><rect width="100%" height="100%" fill="#141414"/><text x="14" y="${Math.round(tileH / 2)}" font-family="sans-serif" font-size="30" fill="#EBEBEB">${arm}</text></svg>`;
     composites.push({ input: Buffer.from(svg), left: 0, top: row * tileH });

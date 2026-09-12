@@ -15,7 +15,7 @@
 import { readdirSync, mkdirSync } from "node:fs";
 import path from "node:path";
 
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 
 const SOURCES = ["output/_shift100-frames", "output/_shift104-widening"];
 const OUT = "output/_shift113";
@@ -36,7 +36,7 @@ for (const dir of SOURCES) {
 if (cells.length === 0) throw new Error("no frames found — the survey would print an empty sheet and read as 'nothing available'");
 
 const rows = Math.ceil(cells.length / COLS);
-const composites: sharp.OverlayOptions[] = [];
+const composites: OverlayOptions[] = [];
 for (const [index, cell] of cells.entries()) {
   const thumb = await sharp(cell.file).resize(CELL, CELL, { fit: "contain", background: "#111" }).png().toBuffer();
   composites.push({ input: thumb, left: (index % COLS) * CELL, top: Math.floor(index / COLS) * (CELL + 22) });

@@ -74,6 +74,11 @@
  * passes database bbox integers today, and an assumption that is free to
  * enforce should not be left as one.
  */
+// Type-only, erased at runtime: this module still takes `sharp` INJECTED so it never loads the
+// native binary itself. `typeof import("sharp")` stopped being callable at sharp 0.35, whose ESM
+// typings put the function on the default export (#857).
+import type sharp from "sharp";
+
 export const boxOutlineSvg = (
   width: number,
   height: number,
@@ -158,7 +163,7 @@ export async function magnifyExhibit(options: {
   box: { left: number; top: number; width: number; height: number };
   zoom: number;
   termAt: (x: number, y: number) => TermClass | null;
-  sharp: typeof import("sharp");
+  sharp: typeof sharp;
 }): Promise<Buffer> {
   const { composed, box, zoom, termAt } = options;
   const magnified = await options.sharp(composed)

@@ -49,7 +49,7 @@
 import "dotenv/config";
 import { mkdirSync, writeFileSync } from "node:fs";
 
-import sharp from "sharp";
+import sharp, { type OverlayOptions, type Sharp } from "sharp";
 
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import type { Mask } from "../server/castingV2/maskedComposite";
@@ -110,7 +110,7 @@ function drawnAt(box: Box): { width: number; height: number } {
 }
 
 /** One cutout: the frame cut to the box and stencilled by the mask. */
-async function cutout(frame: Buffer, mask: Mask, box: Box): Promise<sharp.Sharp> {
+async function cutout(frame: Buffer, mask: Mask, box: Box): Promise<Sharp> {
   /* `.raw()` is load-bearing and its absence was visible: without it sharp
      picks an output format for a raw input and the alpha comes back at the
      wrong stride, which drew every tile in horizontal stripes. The frame's own
@@ -155,12 +155,12 @@ async function cutout(frame: Buffer, mask: Mask, box: Box): Promise<sharp.Sharp>
 }
 
 /** A candidate tile, drawn at the panel's own size then blown up to be looked at. */
-async function tileOf(parts: { image: sharp.Sharp; box: Box }[]): Promise<Buffer> {
+async function tileOf(parts: { image: Sharp; box: Box }[]): Promise<Buffer> {
   const side = TILE * ZOOM;
   /* Each part gets an equal share of the tile's width, contained inside it —
      the same `contain` the stylesheet applies, once per part. */
   const share = Math.floor(side / parts.length);
-  const composited: sharp.OverlayOptions[] = [];
+  const composited: OverlayOptions[] = [];
   for (const [at, part] of parts.entries()) {
     const fitted = await part.image
       .resize(share, side, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: "nearest" })
