@@ -53,6 +53,19 @@ const read = (absolute: string) => fs.readFileSync(absolute, "utf8");
 const code = (text: string) =>
   text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
+/**
+ * §5's label reader — every `label=` attribute's WHOLE string (#845).
+ *
+ * A quoted string, or a braced quoted string, or a braced template literal
+ * read to its CLOSING backtick with its interpolations left in. The reader
+ * this replaced (`/label=\{?[`"']([^`"'}]+)/`) stopped at the first `}` — i.e.
+ * the first `${…}` — so a rule written after an interpolation escaped the arm.
+ * Found by PR #480's reviewer; the arm now has a positive control for it.
+ */
+const LABEL_ATTR = /label=(?:"([^"]*)"|'([^']*)'|\{\s*(?:"([^"]*)"|'([^']*)'|`((?:[^`\\]|\\.)*)`)\s*\})/g;
+const labelsIn = (src: string): string[] =>
+  [...code(src).matchAll(LABEL_ATTR)].map((m) => m[1] ?? m[2] ?? m[3] ?? m[4] ?? m[5] ?? "");
+
 function tsxUnder(dir: string): string[] {
   const out: string[] = [];
   const walk = (d: string) => {
@@ -274,8 +287,7 @@ describe("brief 11 §4/§5 — one eyebrow, one field label, no asterisks", () =
 
   it("no required marker is smuggled back into a label string", () => {
     for (const { rel, src } of DIALOG_FILES) {
-      const labels = [...code(src).matchAll(/label=\{?[`"']([^`"'}]+)/g)].map((m) => m[1]);
-      for (const label of labels) {
+      for (const label of labelsIn(src)) {
         expect(label, `${rel}: "${label}" carries an asterisk (§5)`).not.toMatch(/\*/);
         expect(label, `${rel}: "${label}" carries a parenthesised rule (§5)`).not.toMatch(/\(min\s|\(max\s/);
       }
@@ -286,10 +298,26 @@ describe("brief 11 §4/§5 — one eyebrow, one field label, no asterisks", () =
      the arm above is passing over an empty list. */
   it("the label reader finds the request form's own labels", () => {
     const cr = DIALOG_FILES.find((d) => d.rel.endsWith("ChangeRequestModal.tsx"))!;
-    const labels = [...code(cr.src).matchAll(/label=\{?[`"']([^`"'}]+)/g)].map((m) => m[1]);
+    const labels = labelsIn(cr.src);
     expect(labels).toContain("Target user ID");
     expect(labels).toContain("Title");
     expect(labels.length).toBeGreaterThan(8);
+    // The one template-literal label in the population is read to its closing
+    // backtick, interpolations and all — not cut at the first `${`.
+    const attachments = labels.find((label) => label.startsWith("Attachments ("));
+    expect(attachments).toBe("Attachments (${attachments.length}/${MAX_FILES})");
+  });
+
+  /* POSITIVE CONTROL for #845 — a parenthesised rule written AFTER an
+     interpolation must reach the arm. The reader this replaced stopped a
+     template literal at its first `${…}`, so `(max 5)` here was never seen and
+     the arm above was narrower than its sentence. */
+  it("the label reader carries a rule that sits after an interpolation", () => {
+    const fixture = "<ModalField label={`Attachments (${n}/${MAX}) (max 5)`} />";
+    expect(labelsIn(fixture)).toEqual(["Attachments (${n}/${MAX}) (max 5)"]);
+    expect(labelsIn(fixture)[0]).toMatch(/\(min\s|\(max\s/);
+    // The other three attribute shapes the population writes still read.
+    expect(labelsIn('label="Title" label={"Body"} label={\'Note\'}')).toEqual(["Title", "Body", "Note"]);
   });
 
   it("form fields are spaced by gap, never by margin between siblings", () => {
