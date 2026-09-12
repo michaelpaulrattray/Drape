@@ -175,6 +175,31 @@ describe("brief 11 §2 — the primary action never sits in the scrolling region
     }
   });
 
+  it("no staff dialog hands DialogContent a bare max-w-* — it loses to the base's sm:max-w-lg and reads as a regression (#844)", () => {
+    /*
+      `DialogContent`'s own class list carries `sm:max-w-lg`; `cn()` is
+      tailwind-merge, and a responsive variant and a base variant are different
+      groups to it, so a bare `max-w-md` never applies above 640 px. Two admin
+      dialogs asked for 448 and drew 512 for months (his word: leave it, and
+      make the code say so). A width of its own is written `sm:max-w-*`; the
+      request form's `sm:max-w-2xl` is the shape that works.
+    */
+    const bare = /(?<![:\w-])max-w-(?!\[calc)/;
+    for (const { rel, src } of DIALOG_FILES) {
+      for (const line of code(src).split("\n")) {
+        if (!/<DialogContent\b/.test(line)) continue;
+        expect(line, `${rel}: a bare max-w-* on DialogContent never applies above 640 px — write sm:max-w-*`).not.toMatch(bare);
+      }
+    }
+  });
+
+  it("the bare-width matcher fires on the shape the defect had", () => {
+    const bare = /(?<![:\w-])max-w-(?!\[calc)/;
+    expect("<DialogContent className={`${STAFF_DIALOG_CONTENT} max-w-md`}>").toMatch(bare);
+    expect("<DialogContent className={`${STAFF_DIALOG_CONTENT} sm:max-w-2xl`}>").not.toMatch(bare);
+    expect("<DialogContent className={STAFF_DIALOG_CONTENT}>").not.toMatch(bare);
+  });
+
   it("the shell is a flex column that hides its own overflow, and the body is the only scroller", () => {
     const content = /STAFF_DIALOG_CONTENT\s*=\s*\n?\s*"([^"]+)"/.exec(GRAMMAR)?.[1] ?? "";
     const body = /STAFF_DIALOG_BODY\s*=\s*\n?\s*"([^"]+)"/.exec(GRAMMAR)?.[1] ?? "";
