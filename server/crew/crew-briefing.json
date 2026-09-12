@@ -1,7 +1,7 @@
 {
-  "edition": 369,
-  "updatedAt": "2026-09-12T21:13:33.000Z",
-  "shift": "Foreman (build shift) — ONE MERGED from the Bugs queue, the last cousin left from this week's settlement sweep: A REFINE THAT WORKED IS NEVER REFUNDED FOR A PICTURE THE CUSTOMER KEEPS (#873 → PR #874). Before: if a refine's new picture landed and was selected on the sheet, and then the very last step — writing its receipt — failed (a dropped connection under the heartbeat is the known way), the server read that as 'nothing was delivered' and paid the whole 25 credits back for a picture the customer was already looking at. A free image, the business eats it. After: the receipt step runs after the refund-on-failure block, so a failure there parks the operation for support with the charge kept beside the picture; and the three bits of bookkeeping that still run after the picture lands (the satisfaction ledger, the 'what you are owed' note, the open-lane demand rows) each fail on their own without touching the money — on the success road AND the failure road. Three tests, each red on the old code with the defect's own words ('Your credits have been returned'). Fable: two rounds, pass both — every note taken (the reviewer found the two remaining post-landing steps and the failure road's twin; all fenced). Every one of the 16 places the product seals a success was read: this was the only unfenced one. YOUR DESK IS CLEAR; NEXT UP is empty; the two frame sets on your page stay until you judge them. Nothing spent.",
+  "edition": 370,
+  "updatedAt": "2026-09-12T22:24:55.000Z",
+  "shift": "Foreman (build shift) — TWO MERGED, one from the Bugs queue and one from Security. (1) A BLANK REASON CAN NO LONGER MOVE CREDITS, AND A BLANK NAME CAN NO LONGER BECOME AN ACCOUNT'S NAME (#816 → PR #875, the card's last two rows; #816 CLOSED). Before: an admin's credit adjustment accepted a reason of one space — the test on the old code read 'promise resolved { success: true, newBalance: 600 } instead of rejecting': 100 credits moved with nothing on the audit row, the admin log or the immutable log to say why. And sign-up accepted a name of one space, which became the display name. The panel's buttons refuse a blank, but the server is the control, not the button. After: both are trimmed and refused before anything moves; the credit reason's length limit is one shared number the server and the dialog both read (the dialog had no limit at all). Fable: clean pass; its one real note — the new limit had landed in the architecture map's PRICE table as '500 credits' because its name says 'credit' — taken, with a test that fails without the fix. Three earlier shifts had stepped over these two rows as 'not for an Opus shift'; the last three merges before them were bigger money fixes on the same footing, so this shift took them and said so on the card. (2) THE ROAD THAT LANDS SECURITY PATCHES IS UNBLOCKED (#857 first half → PR #876). Before: Dependabot's weekly patch bundle has been red since 7 Sep on a type change in the image library's new version, so the fixes for 91 known advisories (3 critical, 21 high) sat behind it — the one reached today is the image decoder on your own upload doors. After: the code compiles against BOTH the installed version and the new one, proven by running the type check against the new version's typings fetched to scratch — 21 errors on the old tree (not the 3 the gate reported: the check bails on the first of its three projects), 0 on the new. Fable: clean pass. The actual version bump is the card's second half — a session of its own, with a browser drive of the character sheet and the upload doors because the image library's native binary moves. YOUR DESK IS CLEAR; NEXT UP is empty; the two frame sets on your page stay until you judge them. Nothing spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T21:13:50.518Z",
+      "readAt": "2026-09-12T22:24:15.990Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4769,6 +4769,20 @@
   ],
   "pipeline": [
     {
+      "id": "whitespace-money-auth-rows-875",
+      "title": "A blank reason can no longer move credits, and a blank name can no longer become an account's name",
+      "status": "merged",
+      "prNumber": 875,
+      "note": "Card #816's last two rows; the card is CLOSED. Before: the admin credit adjustment took a reason of one space — 100 credits moved with a blank on every log the action writes — and sign-up took a name of one space as the display name. The buttons refuse a blank; the server did not. After: both trimmed and refused before anything moves; the credit reason's cap is one shared number read by the server and by the dialog, which had no cap at all. One test each, red on the old code first. Fable: clean pass; its note that the new cap had landed in the architecture map's price table as '500 credits' was taken (caps are excluded from that table now, with a test that fails without it). The whitespace class is closed on the product — every remaining untrimmed field is a code, an id, a password or a payload, re-checked by the reviewer."
+    },
+    {
+      "id": "sharp-types-both-shapes-876",
+      "title": "The road that lands security patches is unblocked — the code compiles against the image library's new version",
+      "status": "merged",
+      "prNumber": 876,
+      "note": "Card #857 (Warden), first half. Before: Dependabot's weekly patch bundle (#632 → #748 → #831) had been red since 7 Sep on two type errors from sharp 0.35's new typings, and 91 known advisories (3 critical, 21 high) waited behind it — the reached one is sharp's own decoder on the ink/reference/concept upload doors, which stand at your account only today. After: 17 files read sharp's types the way both versions export them; the type check runs clean against the installed 0.34 AND against 0.35.4's typings fetched to scratch, with a negative control (21 errors on the unfixed tree — the gate had reported 3, because 'pnpm check' bails on the first of its three projects). No runtime change. The bump itself stays on the card: a session, with the character-sheet and upload-door browser drive because the native binary moves."
+    },
+    {
       "id": "finalizer-outside-catch-874",
       "title": "A refine that worked is never refunded for a picture the customer keeps",
       "status": "merged",
@@ -5837,9 +5851,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0913g-foreman",
+      "id": "queue-shape-0913h-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 44 open, one closed (#816); NEXT UP is empty; nothing waits on your word",
+      "detail": "Category order re-read at the code: Bugs EMPTY (#816 closed; #804 needs a design decision on the billing webhook and is not an Opus shift's). Small fixes EMPTY; Security — #857's second half, the dependency bump (a session, sized on the card); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
+    },
+    {
+      "id": "queue-shape-0913g-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 45 open, one closed (#873); NEXT UP is empty; nothing waits on your word",
       "detail": "Category order re-read at the code: Bugs — only #816's two remaining rows (a credit-adjustment reason and the sign-up name, both money/auth paths, not an Opus shift's — they wait for the next Fable shift that is up for anything else). Small fixes EMPTY; Security — #857 takeable (a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
     },
@@ -6068,7 +6089,7 @@
     179
   ],
   "nextUp": {
-    "readAt": "2026-09-12T21:13:50.517Z",
+    "readAt": "2026-09-12T22:24:15.989Z",
     "items": []
   }
 }
