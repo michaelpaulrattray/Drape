@@ -175,7 +175,7 @@ describe("brief 11 §2 — the primary action never sits in the scrolling region
     }
   });
 
-  it("no staff dialog hands DialogContent a bare max-w-* — it loses to the base's sm:max-w-lg and reads as a regression (#844)", () => {
+  it("no staff dialog hands DialogContent a bare max-w-* — it loses to the base's sm:max-w-lg and reads as a regression (card 844)", () => {
     /*
       `DialogContent`'s own class list carries `sm:max-w-lg`; `cn()` is
       tailwind-merge, and a responsive variant and a base variant are different
