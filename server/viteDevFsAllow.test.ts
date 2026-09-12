@@ -50,8 +50,10 @@ afterEach(() => {
 });
 
 /**
- * A fixture root is a package root: `searchForWorkspaceRoot` starts from the
- * nearest `package.json` ABOVE the path it is given, so a bare temp dir would
+ * A fixture root is a package root: `searchForWorkspaceRoot` walks UP from the
+ * path it is given looking for a workspace marker (`pnpm-workspace.yaml`,
+ * `lerna.json`, a `workspaces` package.json) and, finding none, falls back to
+ * the nearest `package.json` at or above that path — so a bare temp dir would
  * resolve to whatever ancestor happens to hold one (on this machine, the
  * operator's home folder) and the arm would be reading that instead.
  */
