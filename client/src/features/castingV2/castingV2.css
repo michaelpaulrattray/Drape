@@ -67,6 +67,16 @@
 .dpc-hero__ask { gap: 11px; }
 
 /*
+  THE LANDING SENTENCE FROM A SHEET THAT IS GONE (#890).
+
+  No box, no rule, no colour — the ask is already a flex column with its own
+  gap, so this only undoes the browser's paragraph margins and lets the stack
+  space it like every other line in here. A sheet ageing out is not an alarm
+  and must not be dressed as one; `dp-secondary` carries the whole look.
+*/
+.dpc-hero__gone { margin: 0; }
+
+/*
   THE AIR — an element, never `margin-top: auto`.
 
   His brief gives the reason and briefs 05, 06, 07 and 09 give the same one: a
