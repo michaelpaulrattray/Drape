@@ -1,7 +1,7 @@
 {
-  "edition": 379,
-  "updatedAt": "2026-09-13T08:45:41.926Z",
-  "shift": "Foreman (build shift) - TONIGHT CHANGES NOTHING YOU CAN SEE, AND THAT IS THE HONEST HEADLINE. It puts back a safety net on the paid edit path that had been switched off without anyone knowing. WHAT THE SAFETY NET IS FOR: when you change a cast's hair style, hair colour, eye colour, facial hair or skin texture, the server writes two things - the value you picked, and the written description that goes with it. Both have to land. If only the first one does, the OLD description stays on the record and fights the new value: you ask for black hair, the words 'sun-bleached blonde' are still sitting underneath it, and the cast argues with itself. WHAT WAS WRONG: the code says in its own notes that this mistake 'cannot compile' - meaning the machine refuses to build the app if anyone ever writes it. I tested that claim by deliberately breaking it, and the app built perfectly fine. One line had silenced the check. So for all five of those settings the only thing standing between you and that bug was a test somebody had remembered to write. WHAT IT ALREADY COST: this is exactly how, last night, we found a description of a cast's hair and a test of the same hair asserting OPPOSITE things - both passing, for months. Neither could see the other, because the check that would have compared them was the one switched off. WHAT IS TRUE NOW: I broke it six different ways on purpose and every one of them stops the build, including that exact contradiction. If anyone adds a sixth setting and forgets its description, they find out in seconds instead of never. Three copies of the same list were deleted on the way - they existed only to feed the broken check, and a copied list always drifts from the original eventually. NOTHING ELSE MOVED: 6,550 tests pass, the same ones as before, and no behaviour changed. ONE THING I FILED FOR YOU: one of our own billing cards (#804, filed 11 September - a stale payment update can overwrite a newer one on a customer's record) is labelled in a way that puts it under NONE of your seven background switches. It shows on your page but no shift can pick it up, and none has. Filed as #893 with the fix and the reason not to simply relabel it tonight. STILL WAITING ON YOU: the outside reviewer has now failed TEN times running across three nights. It is an outage, not a rejection, and you already said to wait it out. #882 (email sign-in) and #885 (Google sign-in) still need your word. Tonight's change was neither sign-in nor money, so it merged on the machine checks alone. Nothing spent.",
+  "edition": 380,
+  "updatedAt": "2026-09-13T09:36:01.220Z",
+  "shift": "Foreman (build shift) - TONIGHT IS ABOUT THE THING THAT DECIDES WHAT GETS WORKED ON, AND A BILLING BUG IT COULD NOT SEE. WHAT YOUR SWITCH PANEL ACTUALLY DOES: each of your seven background switches counts the queue by one label - Bugs counts cards tagged 'bug', Housekeeping counts the Janitor's, and so on. A shift is only allowed to pick up work a switch reaches. That is deliberate and it is your control. THE HOLE IN IT: a card can carry NONE of those seven labels. When that happens it still shows on your page, in the Debt group, looking exactly like a card nobody has got to yet - but no shift can ever be offered it. Nothing anywhere said so. IT HAD ALREADY HAPPENED, ONCE. #804, filed on 11 September: a payment update that arrives late can overwrite a NEWER one on a customer's subscription record. It came out of a review of our own billing code, it is real, and it was labelled 'debt' and nothing else. Every shift since has read the queue, worked your category order, and correctly never seen it. That is two days of nights walking past a billing defect, each one behaving properly. WHAT I BUILT: the queue counter - the thing that fills in the numbers under your switches at the start and end of every shift - now finishes with one more line, naming every open card that no switch can reach. Run against the real queue after the merge, it reads: 'reachable by no switch - 1 open card(s)', and then names #804 by number and title. If the answer is none, it says none out loud rather than going quiet; a line that only appears when there is bad news is indistinguishable, on a good night, from a line that has stopped working. IT CANNOT DRIFT: the list of which kinds of card count as 'work nobody can take' is not typed into the counter. It is one field on the group definitions your page already uses, so the counter and your panel read the same source. If somebody adds a fourteenth kind of card next month and forgets, the compiler asks them for the answer instead of quietly leaving it out. WHY I DID NOT JUST RELABEL #804 TONIGHT: Bugs is FIRST in your category order, so relabelling it would make it the very next thing a shift picks up - and it is a money change, which means it cannot be merged while the outside reviewer is down. That would park a finished change indefinitely. It gets its label from the shift that intends to actually land it. Meanwhile it is named out loud every single shift start, so it cannot be lost again. STILL WAITING ON YOU: the outside reviewer has now failed ELEVEN times running across four nights - an outage, not a rejection, and you already said to wait it out. #882 (email sign-in) and #885 (Google sign-in) are finished and held on your word. Tonight's change was neither sign-in nor money, so it merged on the machine checks alone. NOTHING A CUSTOMER SEES CHANGED, nothing was spent, and your desk is clear.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-13T08:43:28.305Z",
+      "readAt": "2026-09-13T09:36:11.536Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4794,6 +4794,13 @@
   ],
   "pipeline": [
     {
+      "id": "unreachable-cards-893",
+      "title": "The queue counter now names the cards no switch can reach - a billing card had been invisible to every shift for two days",
+      "status": "merged",
+      "prNumber": 894,
+      "note": "Card #893, filed last night while closing #888 and worked tonight. NOTHING A CUSTOMER SEES CHANGES - this is the team's own tooling. THE DEFECT: your background-work panel offers a shift only the cards a switch reaches, and each switch reaches exactly one label. A card carrying none of the seven is therefore untakeable, however real it is, and nothing reported that this had happened. MEASURED AT THE LABELS: exactly one. #804 - a trailing Stripe 'updated' event for an old but still-live subscription can overwrite a newer one on the record - filed 11 September out of PR #803's review, labelled 'debt' and nothing else. Visible on your page in the Debt group the whole time, offered to nobody. WHAT LANDS: one line at the end of the counter's log, at every shift start and every shift close. Driven against the real production queue after the merge, not asserted - it printed 'reachable by no switch - 1 open card(s) that no shift can be offered (groups: debt, toolbelt, other, unfiled)' and named #804 underneath. IT IS DERIVED, NOT A SECOND LIST: the group definitions your pipeline panel already uses gain one field - would a shift be able to work this card if only a switch reached it - and the counter filters on that. It reads the population it had already fetched, in the same response at the same instant: no extra call to GitHub, and no hand-typed list of exceptions that could drift from the real one. A fourteenth group added later and forgotten would make the number silently too small, which is this very defect in a different coat. TWO PROPERTIES ON PURPOSE: it prints ZERO as a real answer, and it never refuses. A card with no category is a triage judgement, not a broken number, so nothing about your panel goes red because of it. PROVEN, NOT CLAIMED: four arms drive the whole reading end to end - #804's real shape named, the zero printed, a card waiting on YOU (roadmap, parked, scope change) deliberately NOT reported, and an unlabelled card named. Two more hold the derivation. Then two sabotages, both green before and red after: the debt group's new field flipped to false, and the zero line made conditional. WHAT IS NOT DONE, deliberately: #804 keeps its labels until the reviewer is back, because Bugs is first in your order and a money change cannot merge while the reviewer is out. #893 stays open carrying that one act, and a note sits on the reviewer card where the returning shift will read it."
+    },
+    {
       "id": "typed-patch-guarantee-888",
       "title": "The safety net on paid identity edits is real again - it had been silenced by one line, and nothing could tell",
       "status": "merged",
@@ -5932,9 +5939,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0913o-foreman",
+      "id": "queue-shape-0913p-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 46 open, none closed tonight, none filed; NEXT UP is empty and none are urgent; 29 untouched for 7 days",
+      "detail": "Category order re-read at the code before choosing, as your rule requires. Bugs holds only #884, the reviewer outage - external, nothing to build. Small fixes and Security are EMPTY. Process: #893 was the takeable one and is tonight's work; #513 is blocked on an outside listing, and #697 and #883 wait on the two held sign-in changes. Performance: #58, the umbrella. Housekeeping: #274, #482, #527 and #564 each declare themselves a full sitting in their own card, and #265 is the Janitor's on 15 September. So there was again no small second card to run beside this one while the checks ran; that idle stretch is on the shift record rather than hidden. #893 stays OPEN rather than closing tonight: its first ask - giving #804 a category - is deliberately held until the reviewer is back, and closing a card whose first item is undone is the sort of thing that rots a queue. 29 cards have had no comment, close or commit for seven days - the same figure as the last two nights. That reading counts real engagement, never a label applied in bulk."
+    },
+    {
+      "id": "queue-shape-0913o-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 46 open, one closed tonight (#888), one filed (#893); NEXT UP is empty and none are urgent; 29 untouched for 7 days",
       "detail": "Category order re-read at the code before choosing. Bugs holds only #884, the reviewer outage, which is external and has nothing to build. Small fixes and Security are EMPTY. Process: #513 is blocked on an outside listing, #697 and #883 wait on the two held sign-in changes. Performance: #58, the umbrella. Housekeeping: #274, #482, #527 and #564 - each one declares itself a full sitting in its own card, and #265 is the Janitor's on 15 September. So tonight was #888, taken on my predecessor's sizing, and there was genuinely no small second card to run beside it while the checks ran; that idle stretch is on the shift record rather than hidden. THE ONE NEW THING, and it is why #893 exists: #888 carried no work-switch label at all, so until tonight no shift could have taken it under your switch panel. I checked whether that had happened to anything else and it has, once - #804, a billing card from 11 September. 29 cards have had no comment, close or commit for seven days, the same figure as last night; that reading counts real engagement and not a label applied in bulk."
     },
@@ -6214,7 +6228,7 @@
     181
   ],
   "nextUp": {
-    "readAt": "2026-09-13T08:43:28.304Z",
+    "readAt": "2026-09-13T09:36:11.535Z",
     "items": []
   }
 }
