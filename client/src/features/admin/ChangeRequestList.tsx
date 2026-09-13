@@ -379,29 +379,37 @@ function approvalConsequence(detail: any): string {
       return `Approving issues a ${detail.refundAmountCents ? `$${(detail.refundAmountCents / 100).toFixed(2)}` : "—"} Stripe refund to the customer's card and takes ${detail.creditsToDeduct ?? "—"} credits back off their balance, floored at zero. Neither half can be undone from here.`;
     case "block_ip":
       /*
-        ⚠ **THE LAW-7 SIBLING, FOUND BY SWEEPING #913's CLASS ACROSS THIS
-        FUNCTION — AND IT IS THE WORSE OF THE TWO.** It read
-        `Approving records ${detail.ipAddress} on the block list`, which
-        renders `undefined` on an address-less request; that is the same
-        display defect as the credits one. What is NOT the same is what
-        pressing the button then does. `server/routes/admin/changeRequests.ts`
-        computes the executor's target as
-        `request.type === "block_ip" && request.ipAddress ? request.ipAddress
-        : String(request.targetUserId)` — so with no address it falls back to
-        the TARGET USER'S ID, and `cr_blockIP` blocks it happily: the block
-        list gains a row reading `42`, with an `IP_BLOCKED` audit row and an
-        immutable log entry saying *"IP 42 blocked"*. Unlike the credit
-        executors, nothing refuses it.
-        **The server half is carded separately — this sentence tells the truth
-        about what the product does TODAY**, which is the only thing that can
-        help the admin looking at it.
+        ⚠ **THE LAW-7 SIBLING OF #913, AND IT WAS THE WORSE OF THE TWO — THE
+        BEHAVIOUR HALF IS NOW FIXED (#921) AND THIS SENTENCE MOVED WITH IT.**
+
+        The original read `Approving records ${detail.ipAddress} on the block
+        list`, which rendered `undefined` on an address-less request. That was
+        the same display defect as the credits one; what was NOT the same is
+        what pressing the button then did. The review procedure computed the
+        executor's target as `request.type === "block_ip" && request.ipAddress
+        ? request.ipAddress : String(request.targetUserId)`, so with no address
+        it fell back to the TARGET USER'S ID and `cr_blockIP` blocked it
+        happily — a block-list row reading `42`, an `IP_BLOCKED` audit row, an
+        immutable entry saying *"IP 42 blocked"*, and the request settling to
+        `approved` so this panel reported success.
+
+        ⚠ **BETWEEN #913 AND #921 THIS BRANCH CARRIED A DIFFERENT SENTENCE,
+        DESCRIBING THAT FALLBACK** (*"approving would still write a row to the
+        block list: this person's account number"*). It was true of the product
+        the day it shipped and it is FALSE NOW — which is why #921's card named
+        this line as part of its own diff rather than leaving it to be found. A
+        warning that outlives the behaviour it warns about is worse than none:
+        it teaches an admin to distrust the page.
+
+        `server/routes/admin/changeRequests.ts` now refuses the approval BEFORE
+        the compare-and-swap, so the request stays `pending` and deniable. That
+        is what this says, and the deny half is the part the admin can act on.
       */
       if (detail.ipAddress == null) {
         return (
-          `No IP address was recorded on this request, so there is nothing to block — but ` +
-          `approving would still write a row to the block list: this person's account number, ` +
-          `which is what the approve path falls back to. Deny it and ask for a new request ` +
-          `with the address on it.`
+          `No IP address was recorded on this request, so there is nothing to block: approving ` +
+          `is refused and the request stays as it is. Deny it and ask for a new request with ` +
+          `the address on it.`
         );
       }
       /* Same correction as `AuditLogTable`'s: the block is RECORDED and never
