@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "98554db186876ad7"
+    "sourceFingerprint": "449ab1b77a0bcd7e"
   },
   "domains": [
     {
@@ -30350,11 +30350,6 @@
     {
       "from": "module:server/lib/boardOps.ts",
       "to": "module:shared/boardTypes.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/lib/boardOps.ts",
-      "to": "module:shared/mergeCastingPreferenceChanges.ts",
       "kind": "imports"
     },
     {

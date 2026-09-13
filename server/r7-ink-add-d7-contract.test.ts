@@ -107,11 +107,10 @@ describe("R7-7D D7 product-ready and evidence-aware Fork contract", () => {
   });
 
   it("has exactly one production caller and keeps the copy module provider-, credit-, and quota-free", async () => {
-    const [route, fork, quota, serverMerge] = await Promise.all([
+    const [route, fork, quota] = await Promise.all([
       source("./routes/boardOps.ts"),
       source("./casting/evidence/evidenceFork.ts"),
       source("./db/dailyQuota.ts"),
-      source("./lib/boardOps.ts"),
     ]);
     expect(route.match(/forkEvidenceAwareCast\(/g)).toHaveLength(1);
     expect(fork).not.toMatch(
@@ -121,6 +120,13 @@ describe("R7-7D D7 product-ready and evidence-aware Fork contract", () => {
     expect(quota).toContain("generationOperations.kind");
     expect(quota).toContain("'evidence_fork_copy'");
     expect(quota).toContain("THEN NULL");
-    expect(serverMerge).toContain("mergeCastingPreferenceChanges(current, changes)");
+    // A fifth assertion used to read `lib/boardOps.ts` for
+    // `mergeCastingPreferenceChanges(current, changes)`. It pinned the SOURCE
+    // TEXT of a wrapper that no request path called, which is what kept a dead
+    // export alive for 47 days (#886). The server-side half of this contract
+    // is owned by the identity handlers and is driven, not grepped, in
+    // server/casting/identity/identityContract.test.ts — the rule-1, rule-2
+    // and ethnicity dual-write arms there. The client half stays above
+    // (`expect(workspace).toContain("mergeCastingPreferenceChanges")`).
   });
 });

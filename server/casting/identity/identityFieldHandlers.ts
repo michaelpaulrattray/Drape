@@ -258,7 +258,12 @@ export const IDENTITY_FIELD_HANDLERS = {
   "person.skin.texture": overridePairHandler("person.skin.texture", "skinTexture", "skinTextureOverride", null),
   // hair.style additionally owns the verified rule-2 resets: a style change
   // resets its sub-selectors so the engine re-derives them for the new
-  // silhouette (mergeAttributeChanges rule 2, now handler-owned).
+  // silhouette. This is the SOLE owner of that rule since R6 Batch C
+  // (8b514bed); the boardOps wrapper it was transcribed from is deleted (#886).
+  // NOTE the deliberate narrowing, pinned by identityContract.test.ts: texture
+  // is NOT reset. A cut changes the geometry, not what her hair is made of —
+  // identityDependencies.ts keeps texture out of the coupled list on the same
+  // reasoning.
   "person.hair.style": overridePairHandler(
     "person.hair.style", "hairStyle", "hairStyleOverride", "subject.hair_style",
     (value, current) => {

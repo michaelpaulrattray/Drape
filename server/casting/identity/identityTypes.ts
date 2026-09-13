@@ -282,11 +282,19 @@ export type WritableIdentitySchemaPath =
 //  mark territory and non-identity context respectively.)
 
 /** ONE complete field→preference-keys map — exhaustively keyed. Override
- *  pairs list BOTH members, so a patch that omits the override twin fails to
- *  compile and a stale override cannot survive (§5.5). person.gender and
- *  person.hair.style additionally list the cross-field keys the verified
- *  merge rules already reset (lib/boardOps.ts mergeAttributeChanges) — the
- *  handler owns those resets deterministically. */
+ *  pairs list BOTH members and a stale override cannot survive (§5.5).
+ *  person.gender and person.hair.style additionally list the cross-field keys
+ *  their handler resets deterministically; those handlers are the SOLE owner
+ *  of those rules since R6 Batch C (8b514bed).
+ *
+ *  ⚠ The "fails to compile" this used to promise DOES NOT HOLD for the
+ *  override-pair fields, and it is measured rather than suspected: every
+ *  override-pair patch is built by `overridePairHandler`, which returns
+ *  `… as TypedPreferencePatchFor<F>`, and an assertion silences `Required`.
+ *  Driven 2026-09-13 — deleting `[overrideKey]` from that builder leaves
+ *  `pnpm check` GREEN (the runtime arms in identityContract.test.ts are what
+ *  actually catch it: 6 red). Filed as #888; until that is closed, a NEW
+ *  override-pair field is protected by its test arm and by nothing else. */
 export type PreferenceKeysByField = {
   "person.face.faceShape": "faceShape";
   "person.face.jawline": "jawline";
@@ -299,8 +307,12 @@ export type PreferenceKeysByField = {
   "person.face.browShape": "eyebrowStyle";
   "person.face.facialHair": "facialHair" | "facialHairOverride";
   "person.hair.style": "hairStyle" | "hairStyleOverride"
-    | "hairLength" | "hairTexture" | "hairFringe" | "hairParting"
+    | "hairLength" | "hairFringe" | "hairParting"
     | "hairVolume" | "hairTuck" | "hairFlyaways" | "hairFade"; // rule-2 resets
+    // hairTexture was listed here and the handler has never written it: the
+    // key was transcribed from the retired merge, and the cast above meant
+    // nothing could notice the type and identityContract.test.ts asserting
+    // opposite things. The TEST is the ruling — texture is protected (#886).
   "person.hair.color": "hairColor" | "hairColorOverride";
   "person.hair.length": "hairLength";
   "person.hair.texture": "hairTexture";
