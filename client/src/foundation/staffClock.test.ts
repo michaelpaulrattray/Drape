@@ -54,6 +54,15 @@ import { describe, expect, it } from "vitest";
  * 3. a **bare `toLocaleString()` on a `new Date(…)`** — date *and* time, locale
  *    default for both.
  *
+ * ⚠ **AND SHAPE 1 MEANS `toLocaleDateString` TOO, WHICH IT DID NOT UNTIL #912
+ * — INSTANCE 5, AND THE ONE THIS FILE ITSELF LET THROUGH.** `isClock` opened
+ * by returning `false` for every `toLocaleDateString`, on a comment asserting
+ * the method never prints a clock. It does, whenever `hour:` is asked for, and
+ * two admin surfaces were rendering `Sep 14, 2026, 09:08 AM` from that shape
+ * the whole time this guard was green. The wrong belief was pinned as a
+ * negative control, which is why reading the file could not find it — see
+ * `isClock`'s own docblock for the driven string.
+ *
  * And one shape that must NEVER be flagged, with a negative control: a bare
  * `toLocaleString()` on a NUMBER. `creditsBalance.toLocaleString()` is a
  * thousands separator, not a clock — section 08's floor arm records getting
@@ -188,11 +197,39 @@ const calls = (text: string): Call[] => {
   return out;
 };
 
-/** Does this call render a time-of-day at all? */
+/**
+ * Does this call render a time-of-day at all?
+ *
+ * ⚠ **THIS FUNCTION USED TO OPEN WITH A PREMISE THAT IS FALSE, AND IT COST
+ * INSTANCE 5 (#912): `if (c.kind === "Date") return false; // toLocaleDateString
+ * never prints a clock`.**
+ *
+ * It does. `toLocaleDateString` honours `hour` and `minute` like any other
+ * option — driven, not reasoned:
+ *
+ * ```
+ * new Date("2026-09-13T23:08:12Z").toLocaleDateString("en-US",
+ *   { month: "short", day: "numeric", year: "numeric",
+ *     hour: "2-digit", minute: "2-digit" })
+ * → "Sep 14, 2026, 09:08 AM"
+ * ```
+ *
+ * That is the exact string the admin Users page and the admin Change requests
+ * page rendered, while the moderator console beside them had been brought to
+ * the house notation by #900 and #903. **The method name was doing the hiding**
+ * — from a reader, and from this matcher, which had the wrong belief pinned as
+ * a NEGATIVE CONTROL and therefore could never discover it.
+ *
+ * **The order of the tests is the repair.** An explicit `hour:` now decides
+ * first, WHICHEVER method asked for it; the `kind === "Date"` line survives
+ * only for the BARE call, where it is still exactly right — a
+ * `toLocaleDateString()` with no arguments prints no clock, and that shape is
+ * `offendsLocaleDate`'s business rather than this one's.
+ */
 const isClock = (c: Call): boolean => {
-  if (c.kind === "Date") return false; // toLocaleDateString never prints a clock
-  if (/hour:/.test(c.args)) return true; // explicit hour field
+  if (/hour:/.test(c.args)) return true; // an explicit hour field prints a clock, whatever the method is called
   if (c.args.trim() !== "") return false; // options given, and no hour asked for
+  if (c.kind === "Date") return false; // a BARE toLocaleDateString — no clock; see `offendsLocaleDate`
   if (c.kind === "Time") return true; // bare toLocaleTimeString() — Date only
   return /^new Date\(/.test(c.receiver); // bare toLocaleString() on a Date
 };
@@ -203,11 +240,18 @@ const offends = (c: Call): boolean => isClock(c) && !/hour12:\s*false/.test(c.ar
 /**
  * ⚠ **THE SECOND RULE, AND IT IS A SEPARATE PREDICATE ON PURPOSE (#903).**
  *
- * The clock rule above ends at `isClock`'s first line — *"toLocaleDateString
- * never prints a clock"* — and a negative control below pins that. It is
- * correct and must stay: widening `offends` to reach a date would make the
- * word "clock" mean two things in one function, and the arm that proves the
- * matcher can tell them apart would go red for the wrong reason.
+ * The clock rule above ends at `isClock`'s BARE `toLocaleDateString` line, and
+ * a negative control below pins that. It is correct and must stay: widening
+ * `offends` to reach a date would make the word "clock" mean two things in one
+ * function, and the arm that proves the matcher can tell them apart would go
+ * red for the wrong reason.
+ *
+ * ⚠ **THAT SENTENCE USED TO SAY "`isClock`'s FIRST line" AND NAMED THE PREMISE
+ * #912 DISPROVED.** The two rules are still disjoint and the disjointness arm
+ * still holds — but the reason is narrower than it was written: it is not that
+ * `toLocaleDateString` prints no clock, it is that a **bare** one does not. A
+ * `toLocaleDateString` carrying `hour:` is now the CLOCK rule's, and it can
+ * never be this rule's, because this rule requires an empty argument list.
  *
  * But the DATE half of the same defect then shipped. `MyRequestsTab` rendered
  * its `Raised` column from a bare `toLocaleDateString()` and read `03/09/2026`
@@ -248,6 +292,9 @@ describe("the staff clock guard — the population", () => {
     expect(names).toContain("features/moderator/moderatorConstants.ts");
     expect(names).toContain("features/moderator/MyRequestsTab.tsx");
     expect(names).toContain("pages/AdminBugReports.tsx");
+    /* The two #912 repaired — named for the same reason the six above are. */
+    expect(names).toContain("features/admin/UserBadges.tsx");
+    expect(names).toContain("features/admin/ChangeRequestConstants.tsx");
     /* The nested one, proving the walk recurses rather than reading a top level. */
     expect(names).toContain("features/admin/components/crew/CrewWorkingNow.tsx");
     /* The promoted one, proving the foundation hop resolves (#898). */
@@ -323,6 +370,44 @@ describe("the staff clock guard — the matcher", () => {
 
   it("POSITIVE CONTROL 3 — a bare toLocaleString on a new Date (the SystemStatusCard shape)", () => {
     expect(offends(only("new Date(serverStartedAt).toLocaleString()"))).toBe(true);
+  });
+
+  /*
+    The shape that shipped as instance 5 — card 912, the admin Users page's
+    `Frozen Sep 14, 2026, 09:08 AM` and the change-request `RAISED` row.
+
+    ⚠ **THIS IS THE ARM THE FILE DID NOT HAVE, AND ITS ABSENCE IS WHY THE
+    DEFECT WAS INVISIBLE RATHER THAN MERELY UNCAUGHT.** The old `isClock`
+    returned false for every `toLocaleDateString`, so this string passed the
+    verdict AND satisfied a negative control that said it should. Both strings
+    below are the real ones, copied out of the two files before the repair.
+  */
+  it("POSITIVE CONTROL 5 — toLocaleDateString DOES print a clock when asked for an hour", () => {
+    const changeRequests =
+      'd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })';
+    const userBadges =
+      'new Date(dateStr).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })';
+    expect(isClock(only(changeRequests))).toBe(true);
+    expect(offends(only(changeRequests))).toBe(true);
+    expect(isClock(only(userBadges))).toBe(true);
+    expect(offends(only(userBadges))).toBe(true);
+
+    /*
+      ⚠ AND THE TWO RULES STAY DISJOINT ON IT. This shape has a full argument
+      list, so the date rule — whose whole test is an EMPTY one — can never
+      reach it. Merging the predicates would break this in both directions.
+    */
+    expect(offendsLocaleDate(only(changeRequests))).toBe(false);
+    expect(offendsLocaleDate(only(userBadges))).toBe(false);
+
+    /* The repair passes, which is what the two files now write. */
+    expect(
+      offends(
+        only(
+          'd.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })',
+        ),
+      ),
+    ).toBe(false);
   });
 
   it("NEGATIVE CONTROL — a number is not a clock", () => {
