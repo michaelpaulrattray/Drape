@@ -82,6 +82,12 @@ const ATTENTION_STATUS = new Set(["new"]);
 
 const PAGE_SIZE = 25;
 
+/**
+ * ⚠ **24-HOUR, FORCED (#900).** `hour: "numeric"` under `en-US` renders
+ * `10:30 PM`; every other time on a staff surface is 24-hour, and this page
+ * sits behind the same bar whose own stamp this sweep fixed. Only `hour12`
+ * changes.
+ */
 function formatWhen(d: string | Date): string {
   return new Date(d).toLocaleString("en-US", {
     month: "short",
@@ -89,6 +95,7 @@ function formatWhen(d: string | Date): string {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    hour12: false,
   });
 }
 

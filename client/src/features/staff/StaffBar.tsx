@@ -130,6 +130,38 @@ const CREW_TAB = { value: "/admin/crew", label: "Crew" };
 const CHANGE_REQUESTS_TAB = "/admin/change-requests";
 
 /**
+ * The auto-refresh stamp — **24-hour, forced**, and it is the THIRD instance of
+ * a class this product has ruled on twice (#900).
+ *
+ * `CrewWorkingNow`'s `clockTime` carries the ruling: *"the locale default here
+ * is `03:48 pm` … every other time in his world is 24-hour — the runner's
+ * close-stamps, the shift rows, his own #295 report quoting `19:46` and
+ * `20:17` — so the one clock he would be comparing against was the one written
+ * differently."* #329 then swept the crew page and found two siblings.
+ *
+ * ⚠ **BOTH OF THOSE SWEEPS STOPPED AT THE CREW DIRECTORY, AND THIS BAR RENDERS
+ * ON THE SAME SCREEN ONE FOLDER AWAY.** The founder read `10:30:33 pm` here
+ * directly above content reading `25 Aug, 19:17` — two clocks, one frame, two
+ * notations. The class is *a clock on a staff surface taking the locale
+ * default*, and the folder was never its boundary.
+ *
+ * ⚠ **Seconds are KEPT.** This is the only clock in his world that ticks: it
+ * says when the page last refreshed, against a 30s cadence, so the seconds are
+ * the part that tells him whether `AUTO 30s` is actually running.
+ *
+ * The guard is `foundation/staffClock.test.ts` — deliberately NOT a per-section
+ * one, because two section-shaped sweeps have now each missed a sibling.
+ */
+function staffClock(stamp: Date): string {
+  return stamp.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+}
+
+/**
  * ⚠ **`/admin/foundation` IS NOT HERE AND MUST NOT BE ADDED.** It is the
  * component specimen sheet — a house tool that happens to sit behind an admin
  * guard, not a staff surface. The founder ruled it in the brief itself: *"It
@@ -270,7 +302,7 @@ function StaffBarRight({
     <>
       {cluster && (
         <span className="dp-staffbar__refresh">
-          {stamp && <span className="dp-staffbar__stamp">{stamp.toLocaleTimeString()}</span>}
+          {stamp && <span className="dp-staffbar__stamp">{staffClock(stamp)}</span>}
           {stamp && hasToggle && <span aria-hidden="true" className="dp-staffbar__rule" />}
           {hasToggle && (
             <button

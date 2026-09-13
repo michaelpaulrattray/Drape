@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { LeaderRow } from "@/foundation";
 
+import { formatDate } from "../adminConstants";
+
 /**
  * SYSTEM (brief 07 §8) — leader rows, mono values, no status badge ramp.
  *
@@ -98,9 +100,15 @@ export function SystemStatusCard({ activeBanners, serverStartedAt }: SystemStatu
         <LeaderRow label="Active banners" value={activeBanners} />
       </div>
 
-      <p className="dp-ov__stamp">
-        Server started {new Date(serverStartedAt).toLocaleString()}
-      </p>
+      {/*
+        ⚠ **#900 — this was a bare `toLocaleString()`**, so it took the
+        machine's locale in full and rendered `13/09/2026, 10:30:33 pm`: a
+        12-hour clock, and a numeric date, on a page whose every other stamp
+        reads `Sep 13`. It draws from the admin house formatter now rather
+        than gaining a fourth copy of the options — one fewer formatter, not
+        one more.
+      */}
+      <p className="dp-ov__stamp">Server started {formatDate(serverStartedAt)}</p>
     </div>
   );
 }
