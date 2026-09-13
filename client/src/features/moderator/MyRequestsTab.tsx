@@ -23,7 +23,7 @@ import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
 import { changeRequestTypeLabel } from "@shared/changeRequestLabels";
-import { formatFullDate } from "./moderatorConstants";
+import { formatDate, formatFullDate } from "./moderatorConstants";
 
 
 /** Waiting on somebody is the only state a moderator needs to act on. */
@@ -79,7 +79,24 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
         label={request.priority}
         attention={ATTENTION_PRIORITY.has(request.priority)}
       />,
-      <span key="when">{new Date(request.createdAt).toLocaleDateString()}</span>,
+      /*
+        ⚠ **#903 — this was a bare `toLocaleDateString()`**, so it took the
+        machine's locale in full and rendered `03/09/2026` on an en-AU browser.
+        One click away, this same console's Audit logs tab draws its own `When`
+        column from `formatDate` and reads `Sep 13, 11:08`. Two date notations
+        on one piece of furniture, which is #900's ruling in its DATE half:
+        *"the one clock he would be comparing against was the one written
+        differently."*
+
+        ⚠ **IT GAINS A CLOCK, AND THAT WAS THE DECISION IN THE CARD.** The
+        column had a date alone; the house formatter carries the time too. The
+        neighbour column it is being matched to has always carried one, and the
+        fact block below already prints the full stamp, so the clock is this
+        console's own idiom rather than something new arriving with the fix. A
+        date-only house formatter would have been a third shape — which is the
+        thing #900 and #902 both exist to stop.
+      */
+      <span key="when">{formatDate(new Date(request.createdAt))}</span>,
     ],
     facts: [
       /*

@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { UNFREEZE_NOTES_MAX_LENGTH } from "@shared/inputLimits";
 
 import { negated, signed } from "./figures";
+import { formatDate } from "./moderatorConstants";
 import { downloadReconciliationCsv } from "./reconciliation-csv";
 import "./investigations.css";
 
@@ -152,8 +153,17 @@ export function ReconciliationSubTab({
               {frozenAt && (
                 <>
                   Frozen{" "}
+                  {/*
+                    ⚠ **#903's SIBLING, found by the sweep and not named on the
+                    card.** This was a bare `toLocaleDateString()` too — the
+                    same console, one tab over from `MyRequestsTab`, reading
+                    `Frozen 03/09/2026` while the Audit logs tab beside it read
+                    `Sep 13, 11:08`. A freeze is an event a moderator dates
+                    against the audit rows around it, so it wants the hour the
+                    house formatter already carries.
+                  */}
                   <span className="dp-inv__subjectstamp">
-                    {new Date(frozenAt).toLocaleDateString()}
+                    {formatDate(new Date(frozenAt))}
                   </span>
                 </>
               )}

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "618e21e005aa0c4a"
+    "sourceFingerprint": "e1cac2ae6aaacc44"
   },
   "domains": [
     {
@@ -17709,6 +17709,11 @@
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
       "to": "module:client/src/features/moderator/figures.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
+      "to": "module:client/src/features/moderator/moderatorConstants.ts",
       "kind": "imports"
     },
     {
