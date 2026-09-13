@@ -140,6 +140,20 @@
   flex: none;
 }
 
+/*
+  ⚠ ONE OF FIVE DECLARATIONS OF THE HOUSE HAIRLINE — see
+  `docs/specs/PROMOTION_PASS_SECTION_10.md` §3 before writing a sixth.
+
+  The foundation owns this device (`TableHead` + `.dp-tablehead__rule`, 27
+  consumer files) and section 10's pass found the collision. It is deliberately
+  NOT folded: these values are mono `400`/`.03em` and NOT uppercase because they
+  are machine values rather than a label, where the house eyebrow is `500`
+  uppercase in `--meta`. Converging repaints his judged hero, so it is a design
+  card rather than a promotion.
+
+  `min-width: 0` is belt-and-braces: the rule is empty, so `auto` already
+  resolves to 0 — `.dpc-deck__rule` omits it and draws identically.
+*/
 .dpc-hero__receiptrule {
   flex: 1;
   height: 1px;
@@ -349,6 +363,27 @@
   color: var(--faint);
 }
 
+/*
+  ⚠ THE FOUNDATION IS ALREADY DRAWING THIS EXACT THING, AND THE PAIR ABOVE IS A
+  BYTE-FOR-BYTE SECOND COPY OF IT — `docs/specs/PROMOTION_PASS_SECTION_10.md` §3.
+
+  `.dp-menugroup__label` + `.dp-menugroup__rule` in `foundation/foundation.css`
+  are `500 8.5px var(--font-mono)` / `letter-spacing: .13em` / `color:
+  var(--faint)` beside `flex: 1; height: 1px; background: var(--rule)`, in a
+  container with `gap: var(--s-3)` — and `--s-3` is 8px. Every one of those is
+  what `.dpc-deck__eyebrow` and this rule declare. Two more call sites draw it
+  (`LobbyUtilityMenu`, `UserCard`), so the deck is the third.
+
+  It is NOT folded here, and the reason is the pass's own naming rule read in
+  the direction nobody reads it: having casting reach into `.dp-menugroup__*`
+  would put the MENU's vocabulary on the casting hero, which is the same mistake
+  as a promoted component keeping casting's. The fold wants a renamed foundation
+  component that all three take, which is a foundation-wide act rather than
+  section 10's — carded, with this measurement on it.
+
+  `section10-guard.test.ts` holds the two type declarations equal until then, so
+  they cannot quietly become three scales.
+*/
 .dpc-deck__rule {
   flex: 1;
   height: 1px;

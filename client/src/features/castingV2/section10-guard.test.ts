@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -557,5 +557,157 @@ describe("what the hero must NOT grow back (§2f)", () => {
     expect(page).toContain("conceptUploadEnabled ? (");
     const actions = page.slice(page.indexOf('className="dpc-hero__actions"'));
     expect(actions.slice(0, 900)).not.toContain("disabled");
+  });
+});
+
+/*
+  THE HOUSE HAIRLINE'S POPULATION — section 10's promotion pass (#482),
+  `docs/specs/PROMOTION_PASS_SECTION_10.md` §3.
+
+  ⚠ THIS ARM EXISTS BECAUSE A DOCUMENT CANNOT NOTICE A FIFTH COPY. The pass
+  found that the foundation already owns "a label, then a rule that runs through
+  the rest of the row" (`TableHead`, 27 consumer files) while casting drew it
+  twice more — and it found it only because somebody swept for the DRAWING. The
+  card's own collision check had grepped for casting's CLASS NAMES, twice, and
+  returned a clean answer over a device with 27 consumers. A name-shaped grep can
+  only ever find a copy of your own spelling.
+
+  So the population is pinned here rather than described there. A fifth
+  declaration is not forbidden — it is a signal that the convergence question
+  (§3: is the hero's eyebrow the house eyebrow at a smaller size?) has grown
+  another stakeholder and wants re-reading before it grows a sixth.
+
+  It is NOT a style rule and it does not assert the values. The three type scales
+  differ on purpose and folding them repaints a founder-judged surface; that is
+  the design card's to settle, not this arm's.
+*/
+const STYLESHEET_ROOT = new URL("../../", import.meta.url);
+
+/** Every `.css` under `client/src`, so the sweep cannot miss a feature. */
+const stylesheets = async (dir: URL): Promise<URL[]> => {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const found: URL[] = [];
+  for (const entry of entries) {
+    if (entry.name === "node_modules") continue;
+    if (entry.isDirectory()) found.push(...(await stylesheets(new URL(`${entry.name}/`, dir))));
+    else if (entry.name.endsWith(".css")) found.push(new URL(entry.name, dir));
+  }
+  return found;
+};
+
+/**
+ * The selectors of every INNERMOST rule block that draws the fill hairline.
+ *
+ * Innermost by construction — `[^{}]` on both sides — so a rule nested in an
+ * `@media` is read as itself rather than swallowed with its wrapper.
+ */
+const fillHairlineSelectors = (css: string) => {
+  const found: string[] = [];
+  for (const match of code(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const body = match[2];
+    if (!/\bflex:\s*1\b/.test(body)) continue;
+    if (!/\bheight:\s*1px\b/.test(body)) continue;
+    /*
+      ⚠ `var(--rule)` AND NOT MERELY `background:` — the discriminator, and it
+      was found by the looser matcher collecting `.dpc-deck__tick`, which #482
+      had already named as the near-miss: a progress tick is `flex: 1` and 1px
+      too, but there are N of them dividing a row rather than one filling the
+      remainder, and it paints `var(--border)`. The token is what says "this is
+      a RULE"; the geometry alone cannot.
+    */
+    if (!/\bbackground:\s*var\(--rule\)/.test(body)) continue;
+    found.push(match[1].trim().split(/\s+/).join(" "));
+  }
+  return found;
+};
+
+describe("the house hairline is declared five times and the pass knows all five", () => {
+  it("sweeps every stylesheet and finds exactly the five the record names", async () => {
+    const sheets = await stylesheets(STYLESHEET_ROOT);
+    /*
+      THE POSITIVE CONTROL FIRST. An empty sweep would satisfy any assertion
+      about what is NOT there, and a moved directory looks exactly like a tidy
+      codebase — which is the failure mode the read() helper above was written
+      against, one level up.
+    */
+    expect(sheets.length, "the stylesheet sweep found nothing — the root moved").toBeGreaterThan(4);
+
+    const found = new Set<string>();
+    for (const sheet of sheets) {
+      for (const selector of fillHairlineSelectors(await readFile(sheet, "utf8"))) {
+        found.add(selector);
+      }
+    }
+
+    expect(
+      [...found].sort(),
+      "a fill hairline was added or removed — read PROMOTION_PASS_SECTION_10.md section 3 before a sixth",
+    ).toEqual([
+      ".dp-crew__skelrule",
+      ".dp-menugroup__rule",
+      ".dp-tablehead__rule",
+      ".dpc-deck__rule",
+      ".dpc-hero__receiptrule",
+    ]);
+  });
+
+  /*
+    ⚠ THE ARM THE WHOLE PASS TURNS ON, and it is the one a name-shaped grep can
+    never write. `.dp-menugroup__label` and `.dpc-deck__eyebrow` are the SAME
+    TYPE to the byte — `500 8.5px` mono, `.13em`, `--faint` — with the same 8px
+    gap and the same rule beside them. The foundation is already drawing the
+    casting deck's eyebrow, under the menu's vocabulary, at two other call
+    sites.
+
+    This is pinned rather than folded tonight for the reason on the card: doing
+    it properly means a RENAMED foundation component that the lobby menu, the
+    account card and the deck all take, because having casting reach into
+    `.dp-menugroup__*` would put menu vocabulary on the casting hero — the
+    naming rule running the other way. If these two ever stop agreeing, this
+    arm is what says so before a third scale appears.
+  */
+  it("the deck's eyebrow and the foundation's menu label are still the same type", async () => {
+    const foundation = await read(new URL("../../foundation/foundation.css", import.meta.url));
+    const casting = await read(CSS);
+
+    const declarations = (block: string) =>
+      block
+        .split(";")
+        .map((line) => line.trim())
+        .filter((line) => /^(font|letter-spacing|color):/.test(line))
+        .sort();
+
+    const menu = declarations(rule(foundation, ".dp-menugroup__label"));
+    const deck = declarations(rule(casting, ".dpc-deck__eyebrow"));
+
+    // Positive control: an empty list would make the equality below vacuous.
+    expect(menu.length, ".dp-menugroup__label declares no type — the arm below would be vacuous").toBe(3);
+
+    expect(
+      deck,
+      "the deck eyebrow and the foundation menu label have diverged — read PROMOTION_PASS_SECTION_10.md section 3",
+    ).toEqual(menu);
+  });
+
+  it("the matcher fires on a fabricated fifth, and ignores a near-miss", () => {
+    /*
+      ⚠ THE ARM ABOVE IS AN EQUALITY OVER A SWEEP, so it is green both when the
+      reader works and when the reader has gone blind. Driven here against
+      fabricated CSS instead, because a reader proven only against the tree it
+      was written for has been proven against nothing.
+    */
+    expect(fillHairlineSelectors(".dp-new__rule { flex: 1; height: 1px; background: var(--rule); }")).toEqual([
+      ".dp-new__rule",
+    ]);
+
+    // A progress track is the near-miss this must NOT collect: it has a
+    // background and a height, and it is 6px and a block, not a filling rule.
+    expect(fillHairlineSelectors(".dp-set__bar { display: block; height: 6px; background: var(--rule); }")).toEqual(
+      [],
+    );
+
+    // And the comments this pass just WROTE name all four selectors. A reader
+    // that did not strip them would collect its own explanation.
+    expect(fillHairlineSelectors("/* .dp-x__rule { flex: 1; height: 1px; background: red; } */")).toEqual([]);
   });
 });
