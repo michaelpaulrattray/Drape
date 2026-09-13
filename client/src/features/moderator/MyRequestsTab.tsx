@@ -23,6 +23,7 @@ import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
 import { changeRequestTypeLabel } from "@shared/changeRequestLabels";
+import { formatFullDate } from "./moderatorConstants";
 
 
 /** Waiting on somebody is the only state a moderator needs to act on. */
@@ -81,7 +82,14 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
       <span key="when">{new Date(request.createdAt).toLocaleDateString()}</span>,
     ],
     facts: [
-      { label: "RAISED", value: new Date(request.createdAt).toLocaleString() },
+      /*
+        ⚠ **#900 — these two were bare `toLocaleString()`**, rendering
+        `13/09/2026, 10:30:33 pm` inside a fact block whose siblings on
+        `ActivitySubTab` and `AuditLogsTab` already read `September 13, 2026 at
+        22:30:33` from `formatFullDate`. Same "WHEN" idiom, three files, one of
+        them writing it differently. It calls the shared one now.
+      */
+      { label: "RAISED", value: formatFullDate(new Date(request.createdAt)) },
       { label: "ABOUT", value: request.targetUserName || `User #${request.targetUserId}` },
       ...(request.creditAmount
         ? [{ label: "CREDITS", value: `${request.creditAmount}` }]
@@ -91,7 +99,7 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
             { label: "REVIEWED BY", value: request.reviewedByName },
             {
               label: "REVIEWED",
-              value: request.reviewedAt ? new Date(request.reviewedAt).toLocaleString() : "—",
+              value: request.reviewedAt ? formatFullDate(new Date(request.reviewedAt)) : "—",
             },
           ]
         : []),

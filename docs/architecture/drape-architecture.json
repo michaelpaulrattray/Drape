@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0d738db52dd452f4"
+    "sourceFingerprint": "618e21e005aa0c4a"
   },
   "domains": [
     {
@@ -10898,6 +10898,10 @@
       "path": "client/src/foundation/section02-guard.test.ts"
     },
     {
+      "id": "test:client/src/foundation/staffClock.test.ts",
+      "path": "client/src/foundation/staffClock.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/theme.test.ts",
       "path": "client/src/foundation/theme.test.ts"
     },
@@ -15139,6 +15143,11 @@
     },
     {
       "from": "module:client/src/features/admin/overview/SystemStatusCard.tsx",
+      "to": "module:client/src/features/admin/adminConstants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/SystemStatusCard.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
@@ -17675,6 +17684,11 @@
     {
       "from": "module:client/src/features/moderator/moderatorConstants.ts",
       "to": "module:shared/changeRequestLabels.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
+      "to": "module:client/src/features/moderator/moderatorConstants.ts",
       "kind": "imports"
     },
     {

@@ -42,12 +42,26 @@ export interface AuditLog {
 // ── Helpers ───────────────────────────────────────────────
 export const PAGE_SIZE = 20;
 
+/**
+ * ⚠ **24-HOUR, FORCED — the admin half of the #900 sweep.**
+ *
+ * `hour: "2-digit"` under an explicit `en-US` locale renders `10:30 PM`, and
+ * these two functions are what the audit log and every admin fact-row draw
+ * their times from. The ruling is `CrewWorkingNow`'s `clockTime`: *"every other
+ * time in his world is 24-hour — the runner's close-stamps, the shift rows, his
+ * own #295 report quoting `19:46` and `20:17` — so the one clock he would be
+ * comparing against was the one written differently."*
+ *
+ * Only `hour12` changes. The locale, the field list and the order are the same,
+ * because this sweep is about the notation and nothing else.
+ */
 export function formatDate(date: Date | string): string {
   return new Date(date).toLocaleString("en-US", {
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   });
 }
 
@@ -59,6 +73,7 @@ export function formatFullDate(date: Date | string): string {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+    hour12: false,
   });
 }
 
