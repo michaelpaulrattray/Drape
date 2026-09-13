@@ -142,6 +142,24 @@ vi.mock("./db", () => ({
         createdAt: new Date("2026-01-15T10:00:00Z"), updatedAt: new Date("2026-01-15T10:00:00Z"),
       });
     }
+    // #921 — a `block_ip` request with NO address. The product cannot create
+    // this state (`moderator.createChangeRequest` refuses it, and there is an
+    // arm above proving that), so this fixture exists to drive the SECOND
+    // line of defence: what the review procedure does if a row like this ever
+    // reaches it. Every other field matches fixture 5 so the only difference
+    // between the refusal arm and its positive control is the address itself.
+    if (id === 9) {
+      return Promise.resolve({
+        id: 9, type: "block_ip", status: "pending", priority: "urgent",
+        submittedById: 10, submittedByName: "Mod User",
+        targetUserId: 823, targetUserName: "Attacker",
+        title: "Block malicious IP", description: "Brute force attack detected",
+        evidenceSummary: "500+ failed login attempts", relatedAuditLogId: null,
+        creditAmount: null, creditReason: null, ipAddress: null,
+        reviewedById: null, reviewedByName: null, reviewedAt: null, reviewNotes: null,
+        createdAt: new Date("2026-01-15T10:00:00Z"), updatedAt: new Date("2026-01-15T10:00:00Z"),
+      });
+    }
     // Mock for add_credits auto-execute test
     if (id === 6) {
       return Promise.resolve({
@@ -979,6 +997,123 @@ describe("Change Request - Admin Review Procedures", () => {
       );
       const sent = vi.mocked(executeChangeRequestAction).mock.calls[0][0] as unknown as { params: Record<string, unknown> };
       expect(sent.params).not.toHaveProperty("originalAmountCents");
+    });
+
+    /*
+     * ⚠ #921 — THE ADDRESS-LESS `block_ip` APPROVAL, AND THE PLACE THE
+     * REFUSAL SITS IS THE WHOLE CLAIM.
+     *
+     * Before this, approving a `block_ip` request with no `ipAddress` did not
+     * fail. The target handed to the executor was
+     * `request.type === "block_ip" && request.ipAddress ? request.ipAddress
+     * : String(request.targetUserId)`, so it fell through to the TARGET USER'S
+     * NUMERIC ID and `cr_blockIP` blocked that — a block-list row reading
+     * `823`, an `IP_BLOCKED` audit row, an immutable entry saying *"IP 823
+     * blocked"*, and the request settling to `approved` so the panel reported
+     * success. The block list is exactly the record somebody reads months
+     * later with no way to know the row was an account number.
+     *
+     * Three things are asserted, and the second is the one that matters:
+     *   1. it throws BAD_REQUEST;
+     *   2. `updateChangeRequestStatus` is NEVER CALLED — the refusal is before
+     *      the compare-and-swap, so the request stays `pending` and DENIABLE.
+     *      The credit executors refuse the same class of missing field AFTER
+     *      the CAS, which wedges the request at `pending_execution` where no
+     *      control on the panel can clear it; that is the cost this avoids,
+     *      and asserting on the throw alone would not tell the two apart;
+     *   3. the executor is never reached, so nothing is written anywhere.
+     */
+    it("#921 — approving an address-less block_ip is refused BEFORE the CAS, so it stays pending and deniable", async () => {
+      const { updateChangeRequestStatus } = await import("./db");
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
+      vi.mocked(updateChangeRequestStatus).mockClear();
+      vi.mocked(executeChangeRequestAction).mockClear();
+
+      await expect(
+        adminCaller().reviewChangeRequest({ id: 9, action: "approved" } as never),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+
+      expect(
+        updateChangeRequestStatus,
+        "the request was moved out of `pending` — it is now wedged and cannot be denied",
+      ).not.toHaveBeenCalled();
+      expect(executeChangeRequestAction).not.toHaveBeenCalled();
+    });
+
+    it("#921 — the refusal names the missing field and what to do, not a code", async () => {
+      /* The message is read by an admin in a toast, so it is part of the fix
+         rather than decoration: it must say WHICH field is absent and give the
+         action that works (deny). Asserted on meaning, not on the exact
+         sentence — a reworded sentence should not redden. */
+      await expect(
+        adminCaller().reviewChangeRequest({ id: 9, action: "approved" } as never),
+      ).rejects.toMatchObject({ message: expect.stringMatching(/IP address/i) });
+      await expect(
+        adminCaller().reviewChangeRequest({ id: 9, action: "approved" } as never),
+      ).rejects.toMatchObject({ message: expect.stringMatching(/deny it/i) });
+    });
+
+    it("#921 POSITIVE CONTROL — a block_ip request WITH an address still approves and blocks the address", async () => {
+      /* Without this the arm above is satisfied by a guard that refuses every
+         block request, which would be a worse bug than the one being fixed.
+         Fixture 5 differs from fixture 9 only in carrying an address. */
+      const { updateChangeRequestStatus } = await import("./db");
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
+      vi.mocked(updateChangeRequestStatus).mockClear();
+      vi.mocked(executeChangeRequestAction).mockClear();
+
+      const result = await adminCaller().reviewChangeRequest({ id: 5, action: "approved" } as never);
+
+      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
+        5,
+        expect.objectContaining({ status: "pending_execution" }),
+        "pending",
+      );
+      expect(executeChangeRequestAction).toHaveBeenCalledWith(
+        expect.objectContaining({ action: "cr_blockIP", targetId: "192.168.1.100" }),
+        expect.anything(),
+      );
+      expect(result).toMatchObject({ success: true });
+    });
+
+    it("#921 POSITIVE CONTROL — the credit and suspend roads are untouched by the guard", async () => {
+      /* The guard sits in the same mutation that moves a customer's credit
+         balance. This is the arm that says it did not catch anything it was
+         not aimed at — every OTHER sensitive type still reaches its executor
+         with the target it always had. Driven, not reasoned about. */
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
+      const expected: Array<[number, string, string]> = [
+        [1, "cr_refundCredits", "42"],
+        [3, "cr_suspendUser", "55"],
+        [4, "cr_unsuspendUser", "55"],
+        [6, "cr_addCredits", "42"],
+        [8, "cr_stripeRefund", "42"],
+      ];
+      for (const [id, action, targetId] of expected) {
+        vi.mocked(executeChangeRequestAction).mockClear();
+        await adminCaller().reviewChangeRequest({ id, action: "approved" } as never);
+        expect(
+          executeChangeRequestAction,
+          `fixture ${id} (${action}) no longer reaches its executor`,
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({ action, targetId }),
+          expect.anything(),
+        );
+      }
+    });
+
+    it("#921 — an address-less block_ip can still be DENIED, which is the whole point of refusing early", async () => {
+      const { updateChangeRequestStatus } = await import("./db");
+      vi.mocked(updateChangeRequestStatus).mockClear();
+      await adminCaller().reviewChangeRequest({
+        id: 9,
+        action: "denied",
+        reviewNotes: "No address on the request",
+      } as never);
+      expect(updateChangeRequestStatus).toHaveBeenCalledWith(
+        9,
+        expect.objectContaining({ status: "denied", reviewedById: 1 }),
+      );
     });
 
     it("denying a request marks it denied, and executes nothing", async () => {

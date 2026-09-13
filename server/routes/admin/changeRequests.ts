@@ -76,6 +76,53 @@ export const changeRequestsRouter = router({
 
       const actionVerb = input.action === "approved" ? "Approved" : "Denied";
 
+      // ─── The approval cannot proceed without the field it acts ON ────
+      //
+      // #921. `block_ip` is the one type whose executor target is NOT the
+      // target user: every other sensitive type acts on `targetUserId`, which
+      // is `.notNull()` in the schema and therefore always there. So the
+      // target computed below reads
+      //   `request.type === "block_ip" && request.ipAddress
+      //      ? request.ipAddress : String(request.targetUserId)`
+      // — and with no address that fallback handed `cr_blockIP` the target
+      // user's NUMERIC ID, which it blocked happily: a row on the block list
+      // reading `823`, an `IP_BLOCKED` audit row, an immutable entry saying
+      // *"IP 823 blocked"*, and the request settling to `approved` so the
+      // panel reported success. A block-list row is exactly the record read
+      // months later by somebody with no way to know it was an account number.
+      //
+      // ⚠ REFUSED HERE, BEFORE THE COMPARE-AND-SWAP BELOW, AND THAT PLACE IS
+      // THE WHOLE POINT. The credit executors refuse the same class of missing
+      // field (`cr_addCredits`/`cr_refundCredits` open on
+      // `if (typeof amount !== "number" || amount <= 0) throw`) — but they do
+      // it AFTER the CAS has already moved the request to `pending_execution`,
+      // where it wedges at "Outcome unconfirmed" and nothing on the panel can
+      // clear it, because this procedure deliberately refuses anything that is
+      // not `pending`. Refusing before the CAS leaves the request `pending`
+      // and still DENIABLE, which is a state an admin can act on.
+      //
+      // ⚠ The two wedging siblings above are the same class failing LOUDLY
+      // rather than wrongly, and they are NOT repaired here: moving the credit
+      // executors' refusal earlier is a behaviour change on the credit money
+      // path and is its own decision. Carded, with this line as its pointer.
+      //
+      // Reachability, measured rather than assumed (2026-09-14, both worlds):
+      // `moderator.createChangeRequest` is the only creation road in the
+      // product and it already refuses a `block_ip` with no address, so this
+      // state cannot be reached through the app today; production holds zero
+      // `change_requests` rows of any type, all time, and zero `blocked_ips`
+      // rows. This is depth on a staff path, not a live incident — and the
+      // guard is what keeps the creation road from being the only thing
+      // standing between a missing field and a permanent wrong record.
+      if (input.action === "approved" && request.type === "block_ip" && !request.ipAddress) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "This block request has no IP address recorded, so there is nothing to block. " +
+            "Deny it and ask for a new request with the address on it.",
+        });
+      }
+
       // ─── Sensitive type + approval → execute in this mutation ────────
       if (input.action === "approved" && isSensitive) {
         // Record the review FIRST, compare-and-swapped on `pending`, so two
@@ -115,7 +162,16 @@ export const changeRequestsRouter = router({
           approvalParams.originalCredits = request.originalCredits;
         }
 
-        // Determine targetId for the executor
+        // Determine targetId for the executor.
+        //
+        // ⚠ The `&& request.ipAddress` half of this condition is now
+        // UNREACHABLE on the approve road — #921's guard above refuses an
+        // address-less `block_ip` before this line can run. It is kept rather
+        // than simplified away because it is the thing that would go wrong if
+        // the guard were ever removed: a reader deleting the guard would find
+        // a bare `request.ipAddress` here and have to think about the null,
+        // where a cleaned-up ternary would silently hand the executor
+        // `undefined`. Belt and braces, and the braces are the guard.
         const targetId = request.type === "block_ip" && request.ipAddress
           ? request.ipAddress
           : String(request.targetUserId);
