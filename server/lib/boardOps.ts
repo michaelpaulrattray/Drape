@@ -87,7 +87,6 @@ import type {
 } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete } from "../storage";
-import { mergeCastingPreferenceChanges } from "../../shared/mergeCastingPreferenceChanges";
 
 const log = createModuleLogger("lib/boardOps");
 
@@ -795,17 +794,6 @@ export async function listCastableModels(
 //            cross-field invalidation rules, the headshot regenerates, THIS
 //            node restamps (image + version row `tool:'attributes'`), and
 //            downstream edge targets go stale (R5 renders them richly).
-
-/**
- * Cross-field invalidation (audit D1) + ethnicity dual-write (audit B4),
- * applied server-side so no surface can bypass them. Exported for tests.
- */
-export function mergeAttributeChanges(
-  current: Record<string, unknown>,
-  changes: Record<string, unknown>,
-): ModelPreferences {
-  return mergeCastingPreferenceChanges(current, changes) as ModelPreferences;
-}
 
 export async function planApplyModelEdit(input: { itemId: number }) {
   const item = await getBoardItemById(input.itemId);
