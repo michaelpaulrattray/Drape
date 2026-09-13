@@ -360,9 +360,35 @@ describe("brief 09 §7 — the nine things not to do", () => {
   });
 
   it("no `account in good standing` card — the band is conditional", () => {
-    const source = code(RECONCILIATION);
-    expect(source).toContain("{isFrozen && (");
-    expect(source).not.toMatch(/good standing/i);
+    /*
+      §4a: *"When the account is not frozen, no band. Do not add an 'account in
+      good standing' card."*
+
+      ⚠ **THIS ARM READ `RECONCILIATION` UNTIL #908** and asserted the literal
+      `{isFrozen && (` — a second named-file pin, and the second one this
+      change turned red for a correct reason. That file no longer draws the
+      band at all (the duplicate is deleted), so its conditional went with it;
+      the rule did not move, only the file holding it.
+
+      Both halves are derived now: the conditional is asserted on whichever
+      file draws the band, and "good standing" is absent from the WHOLE
+      section rather than from one file that could stop being the one to watch.
+    */
+    const drawn = section().filter(({ text }) =>
+      /<p className="dp-inv__subjecttitle">/.test(code(text)),
+    );
+    expect(drawn.length, "no file draws the subject band — the arm has no subject").toBe(1);
+    const source = code(drawn[0]!.text);
+    /* No band without a state to report — the frozen and suspended bands are
+       each behind their own truthiness check on the timestamp itself. */
+    expect(source).toContain("{user.frozenAt && (");
+    expect(source).toContain("{user.suspendedAt && (");
+
+    for (const { name, text } of section()) {
+      expect(code(text), `${name} has an 'account in good standing' card`).not.toMatch(
+        /good standing/i,
+      );
+    }
     expect("Account in good standing").toMatch(/good standing/i);
   });
 });
@@ -566,11 +592,23 @@ describe("brief 09 §6 — type and tokens", () => {
 });
 
 describe("brief 09 §4a, §9 — the promoted dialog and the promoted row", () => {
-  it("the confirm dialog owns the required note, and both consumers use it", () => {
+  it("the confirm dialog owns the required note, and it clears the promotion bar", () => {
     /*
       His §4a asked for *"the promoted confirm dialog, with the notes field
-      inside it"*. Two real consumers land with it, which is what
-      `PROMOTION-PASS.md` asks of a foundation addition.
+      inside it"*, and `PROMOTION-PASS.md` asks a foundation addition for two
+      REAL consumers.
+
+      ⚠ **THIS ARM NAMED ITS TWO CONSUMERS BY FILE UNTIL #908, AND THAT IS THE
+      DRIFT SHAPE THIS SUITE EXISTS TO AVOID.** It read
+      `expect(code(RECONCILIATION)).toContain("<ConfirmDialog")` — so when the
+      duplicate frozen band on Reconciliation was deleted, taking the SECOND
+      unfreeze confirm with it, this arm went red for a change that was
+      correct. A named-file assertion cannot tell "the rule was broken" from
+      "that file is legitimately no longer a consumer", and the tempting repair
+      — strike the line — would have quietly lowered the bar to one.
+
+      So the bar is COUNTED instead, across the whole client. Four files mount
+      it today (billing, moderator, admin foundation, casting); the rule is two.
     */
     const dialog = read(path.resolve(CLIENT_SRC, "foundation/ConfirmDialog.tsx"));
     expect(dialog).toContain("notes?: { label: string; placeholder: string; maxLength: number }");
@@ -578,8 +616,87 @@ describe("brief 09 §4a, §9 — the promoted dialog and the promoted row", () =
     expect(dialog, "the trap must include the textarea it now contains").toContain(
       'querySelectorAll<HTMLElement>("button, textarea")',
     );
-    expect(code(RECONCILIATION)).toContain("<ConfirmDialog");
-    expect(code(WIDGETS)).toContain("<ConfirmDialog");
+
+    const consumers: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (entry.name.endsWith(".tsx") && !entry.name.includes(".test.")) {
+          if (code(read(full)).includes("<ConfirmDialog")) {
+            consumers.push(path.relative(CLIENT_SRC, full).split(path.sep).join("/"));
+          }
+        }
+      }
+    };
+    walk(CLIENT_SRC);
+    expect(consumers.length, `promoted, but mounted by ${consumers.join(", ") || "nothing"}`)
+      .toBeGreaterThanOrEqual(2);
+    // …and this console is still one of them, which is what §4a asked for.
+    expect(consumers).toContain("features/moderator/UserInvestigationWidgets.tsx");
+  });
+
+  /**
+   * ⚠ **§5's "One band, NOT REPEATED IN THREE WIDGETS", as an assertion (#908).**
+   *
+   * The console drew the subject band TWICE — the investigation shell drew one
+   * for every subtab, and `ReconciliationSubTab` drew its own §4a SUBJECT on
+   * top of it. On Reconciliation, and only there, a moderator read two
+   * "Account frozen" titles stacked, with two different Unfreeze buttons and
+   * only the lower one carrying the date, while deciding whether to restore a
+   * paying customer's access.
+   *
+   * ⚠ **It was invisible to this suite for the reason its own header warns
+   * about**: every arm here asked whether a rule was broken INSIDE a file, and
+   * this defect was two files each of which was individually fine. So the
+   * count is across the section, not within a file.
+   */
+  it("§5 — the subject band is declared ONCE across the whole console", () => {
+    const drawn = section().filter(({ text }) =>
+      /<p className="dp-inv__subjecttitle">/.test(code(text)),
+    );
+    expect(
+      drawn.map((f) => f.name),
+      "two files drawing the subject band is the #908 defect",
+    ).toEqual(["UserInvestigationWidgets.tsx"]);
+
+    /* POSITIVE CONTROL — the matcher can see a band at all, so the arm above is
+       not green because it has stopped matching (working law 2). */
+    expect(
+      /<p className="dp-inv__subjecttitle">/.test(
+        code('<div><p className="dp-inv__subjecttitle">Account frozen</p></div>'),
+      ),
+    ).toBe(true);
+
+    /* …and the surviving band carries the DATE, which is the half the deleted
+       one had and this one lacked. Losing it in the deletion was the silent
+       failure available here. */
+    expect(code(WIDGETS)).toContain('<span className="dp-inv__subjectstamp">');
+    expect(code(WIDGETS)).toContain("formatDate(new Date(user.frozenAt))");
+  });
+
+  /**
+   * ⚠ **THE CONTROL THE #908 DELETION COULD HAVE TAKEN WITH IT.**
+   *
+   * `FreezeAction` read `if (isAdmin) return null` — hiding the freeze button
+   * (right: `freezeAccount` refuses an admin) AND the unfreeze button (wrong).
+   * A frozen admin was therefore unfreezable from this console only through the
+   * duplicate band that #908 deletes. The clause is `isAdmin && !isFrozen` now,
+   * matching what `admin/UserTable` already does — `Unfreeze` on `frozenAt`
+   * with no role condition, `Freeze` disabled for an admin.
+   */
+  it("an admin hides the freeze, never the unfreeze", () => {
+    expect(code(WIDGETS), "the both-buttons-hidden clause is back").not.toMatch(
+      /if\s*\(\s*isAdmin\s*\)\s*return null/,
+    );
+    expect(code(WIDGETS)).toMatch(/if\s*\(\s*isAdmin\s*&&\s*!isFrozen\s*\)\s*return null/);
+
+    /* The surface this was derived from must still say the same thing — if the
+       admin panel ever hides its own unfreeze, these two have diverged again
+       and the reasoning above has quietly expired. */
+    const adminTable = read(path.resolve(CLIENT_SRC, "features/admin/UserTable.tsx"));
+    expect(adminTable).toMatch(/key:\s*"unfreeze"/);
+    expect(adminTable).toMatch(/key:\s*"freeze"[\s\S]{0,240}?disabled:[^\n]*role === "admin"/);
   });
 
   it("the confirm is inert until the note is typed, and the counter cannot drift", () => {
