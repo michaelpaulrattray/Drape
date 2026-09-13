@@ -1,7 +1,7 @@
 {
-  "edition": 380,
-  "updatedAt": "2026-09-13T09:36:01.220Z",
-  "shift": "Foreman (build shift) - TONIGHT IS ABOUT THE THING THAT DECIDES WHAT GETS WORKED ON, AND A BILLING BUG IT COULD NOT SEE. WHAT YOUR SWITCH PANEL ACTUALLY DOES: each of your seven background switches counts the queue by one label - Bugs counts cards tagged 'bug', Housekeeping counts the Janitor's, and so on. A shift is only allowed to pick up work a switch reaches. That is deliberate and it is your control. THE HOLE IN IT: a card can carry NONE of those seven labels. When that happens it still shows on your page, in the Debt group, looking exactly like a card nobody has got to yet - but no shift can ever be offered it. Nothing anywhere said so. IT HAD ALREADY HAPPENED, ONCE. #804, filed on 11 September: a payment update that arrives late can overwrite a NEWER one on a customer's subscription record. It came out of a review of our own billing code, it is real, and it was labelled 'debt' and nothing else. Every shift since has read the queue, worked your category order, and correctly never seen it. That is two days of nights walking past a billing defect, each one behaving properly. WHAT I BUILT: the queue counter - the thing that fills in the numbers under your switches at the start and end of every shift - now finishes with one more line, naming every open card that no switch can reach. Run against the real queue after the merge, it reads: 'reachable by no switch - 1 open card(s)', and then names #804 by number and title. If the answer is none, it says none out loud rather than going quiet; a line that only appears when there is bad news is indistinguishable, on a good night, from a line that has stopped working. IT CANNOT DRIFT: the list of which kinds of card count as 'work nobody can take' is not typed into the counter. It is one field on the group definitions your page already uses, so the counter and your panel read the same source. If somebody adds a fourteenth kind of card next month and forgets, the compiler asks them for the answer instead of quietly leaving it out. WHY I DID NOT JUST RELABEL #804 TONIGHT: Bugs is FIRST in your category order, so relabelling it would make it the very next thing a shift picks up - and it is a money change, which means it cannot be merged while the outside reviewer is down. That would park a finished change indefinitely. It gets its label from the shift that intends to actually land it. Meanwhile it is named out loud every single shift start, so it cannot be lost again. STILL WAITING ON YOU: the outside reviewer has now failed ELEVEN times running across four nights - an outage, not a rejection, and you already said to wait it out. #882 (email sign-in) and #885 (Google sign-in) are finished and held on your word. Tonight's change was neither sign-in nor money, so it merged on the machine checks alone. NOTHING A CUSTOMER SEES CHANGED, nothing was spent, and your desk is clear.",
+  "edition": 381,
+  "updatedAt": "2026-09-13T10:29:23.000Z",
+  "shift": "Janitor seat (background: Housekeeping) - TONIGHT I FIXED THE GUARD THAT DECIDES WHETHER IT IS SAFE TO DELETE OLD CODE. WHAT THE GUARD IS FOR: the old casting studio will eventually be taken out of the product, and before anything is deleted a checker has to answer one question - is this piece of code still used by anything? Answer it wrongly and we either delete something live, or we carry dead weight forever. WHAT IT WAS ACTUALLY DOING: it asked that question by NAME ONLY. So when two different files happen to use the same name for something - which is ordinary and common - the checker could not tell them apart and gave one answer for both. I MEASURED IT INSTEAD OF ASSUMING: ELEVEN names in our code are used in two different server files each. For every one of those, the second file was completely invisible to the checker - it could never be seen going unused, and the safety arm meant to shout 'I cannot see this one' could not fire either, because the NAME looked perfectly visible. AND ONE CASE WAS LIVE. Our product name is written in two places: the real one the app uses, and an old leftover in the legacy casting code that nothing reads any more. The checker said the leftover had TWO things using it - and both of those were the app reading the REAL one. A dead leftover kept alive on the strength of a different file's traffic. WHAT IS TRUE NOW: the checker asks about a file AND a name together, so there is one answer per actual thing. The leftover is correctly recorded as unused and waiting on the legacy retirement - a verdict the old checker literally could not accept; I tried it, and it refused. HOW I KNOW IT WORKS RATHER THAN HOPE SO: I deliberately broke the fix five different ways and each time the right alarm went off, including putting the old behaviour back and watching the real table refuse exactly as the card predicted. I also made one harmless change that should set nothing off, and it didn't - an alarm that fires at everything tells you nothing. ONE FINDING WORTH YOUR TIME: the test fixture for this guard was itself written the old way, and the programming language accepted it silently - so the whole repair would have compiled perfectly with every test passing, while the tests quietly checked the wrong thing. That is the same mistake as the original bug, hiding inside the fix for it. Caught and pinned. I ALSO CORRECTED FOUR OF OUR OWN DOCUMENTS that described limits this change removes; they would have told the next person something untrue about the tool. STILL WAITING ON YOU: the outside reviewer has now failed TWELVE times running across four nights. That is an outage, not a rejection, and you already said to wait it out. #882 (email sign-in) and #885 (Google sign-in) are finished and held on your word. Tonight's change was neither sign-in nor money, so it merged on the machine checks alone. NOTHING A CUSTOMER SEES CHANGED, nothing was spent, and your desk is clear.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -118,7 +118,7 @@
       {
         "label": "Your desk is clear",
         "tone": "warn",
-        "source": "Both your replies acted on. One new frame set for your eye: the expired-sheet landing (#890)."
+        "source": "No new replies (181 of 181 acted on). No cards you marked 'not relevant' are waiting."
       },
       {
         "label": "Secrets, shapes, access: clean",
@@ -128,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "46 open, none waiting on you, none urgent. Tonight 1 merged, 1 closed, 0 filed. 29 untouched 7d."
+        "source": "46 open, none waiting on you, none urgent. Tonight 1 merged, 0 closed, 0 filed. 29 untouched 7d."
       },
       {
         "label": "Check-ups",
@@ -4794,6 +4794,13 @@
   ],
   "pipeline": [
     {
+      "id": "deletion-door-274",
+      "title": "The safety guard on deleting old code could not tell two things apart if they shared a name - eleven of ours do",
+      "status": "merged",
+      "prNumber": 895,
+      "note": "Card #274, its second half; the first half shipped a week ago and the card itself said the rest was its own sitting. NOTHING A CUSTOMER SEES CHANGES - this is the tool that protects us while the legacy studio is retired. THE DEFECT: the checker answering 'is this still used by anything?' asked by NAME, not by name-and-file, so two different files using the same name got ONE answer between them. MEASURED BEFORE TOUCHING IT: eleven names are declared in two different server files each, and in every case the second file did not exist to the checker at all - it could never be seen going unused, and the 'I cannot see this' safety arm could not fire either, because the name looked visible. THE LIVE CASE: the product name exists twice - the real one the app uses, and an old leftover in the legacy casting code. The checker credited the leftover with TWO users, and both were the app reading the real one. NOW: one answer per actual file, so the leftover is correctly recorded as unused and waiting on the legacy retirement - a verdict the old checker refused outright, which I drove both ways to prove. PROVEN RATHER THAN CLAIMED: five deliberate breakages, each setting off the right alarm, plus a harmless change that correctly set off nothing. WORTH KNOWING: the guard's own test fixture was written the old way and the language accepted it silently - the whole repair would have compiled green while the tests checked the wrong thing. Caught and pinned. Four of our own documents stating limits this removes are corrected in the same change. Machine checks green on the FIRST run. The outside reviewer produced no verdict again (twelfth time); this was neither sign-in nor money, so it merged on the machine checks alone. The card stays OPEN for one last piece - a second, independent checker - and why that is its own sitting is written on the card rather than glossed over."
+    },
+    {
       "id": "unreachable-cards-893",
       "title": "The queue counter now names the cards no switch can reach - a billing card had been invisible to every shift for two days",
       "status": "merged",
@@ -5938,6 +5945,13 @@
     }
   ],
   "problems": [
+    {
+      "id": "queue-shape-0913q-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 46 open, none closed tonight, none filed; NEXT UP is empty and none are urgent; 29 untouched for 7 days",
+      "detail": "Category order re-read at the code before choosing, as your rule requires. Bugs holds only #884, the reviewer outage - external, nothing to build. Small fixes and Security are EMPTY. Process: #893 keeps one held act (relabelling #804, which waits on the reviewer); #513 is blocked on an outside listing; and #697 and #883 both close the moment the two held sign-in changes merge - I opened both cards and confirmed that at the code rather than trusting last night's handoff. Performance: #58, the umbrella. Housekeeping: #482, #527, #564 and #265 each declare themselves a full sitting; #841 waits on a design decision from you. So tonight was #274's door half, which the card itself had sized as its own sitting. ONE THING WORTH NOTING: your queue counter flagged THREE Housekeeping cards as 'may already be done', because later merged changes mentioned them by number. I checked all three at the code and all three were genuinely still open - those changes cited the cards without fixing them. The flag earns its place by prompting the check; it is not a verdict, and no card should be closed on it."
+    },
     {
       "id": "queue-shape-0913p-foreman",
       "severity": "info",
