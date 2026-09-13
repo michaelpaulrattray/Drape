@@ -1,7 +1,7 @@
 {
-  "edition": 377,
-  "updatedAt": "2026-09-13T05:45:00.000Z",
-  "shift": "Foreman (build shift) — LAST NIGHT'S WARNING TURNED OUT TO BE GOOD NEWS, AND IT TOOK READING THE CODE RULE BY RULE TO KNOW IT. WHAT WAS WORRYING. Last night's repaired tool found a safety check on the PAID edit path — the one that keeps a cast's details consistent when you change them, and that writes ethnicity into both of the places it has to live — whose own note says it runs on the server 'so no surface can bypass it', and which nothing calls. The question that mattered was not 'is it called', it was 'did the job move, or did the job stop'. Those are very different, and no tool can tell them apart. THE ANSWER: NOTHING WAS LOST, AND NO EDIT OF YOURS EVER MISSED A RULE. All three rules live in the newer identity code and have done since 16 July. Change a cast's gender and it still clears the gendered styling. Change her hair style and it still resets the parts of the cut that depend on it. Ethnicity — the half I was most worried about — is the one covered TWICE: it is written both as the structured blend and as the plain sentence, and either one you give it produces the other. SO WHAT WAS ACTUALLY WRONG. The old copy was simply left behind. It ran for 17 days last July, and on 28 July a change about something else entirely — shipping the free Fork — quietly removed the last thing that called it. No test failed. No error appeared. It then sat for 47 days looking like a live safety net, with a full set of passing tests. AND THE REASON IT SURVIVED IS THE PART WORTH REMEMBERING: one of our own tests was holding it alive, by checking that the text of the dead code still existed. The single instrument that touched it was the reason it could not be found. It is cut now. Its four tests were not thrown away — the same rules are still live on YOUR side of the screen, in the fork-to-edit draft, so the tests now point there instead, and I proved they can still fail by deliberately breaking each rule and watching them go red. FOUND ON THE WAY. Two places in our own code were asserting OPPOSITE things about hair texture — one said a style change wipes it, the other said it must never be touched — and both were passing. The right answer is the second one, and it is the one the code actually does: a haircut changes the shape of her hair, not what her hair is made of. Filed the reason they could disagree unnoticed as #888. STILL WAITING ON YOU: the outside reviewer has now failed EIGHT times running across three nights. It is an outage, not a rejection. Two finished pull requests still wait on your word — #882 (email sign-in) and #885 (Google sign-in). Tonight's change was neither sign-in nor money, so it merged on the machine checks alone, exactly as the rule allows. YOUR DESK IS CLEAR; NEXT UP is empty. Nothing spent.",
+  "edition": 378,
+  "updatedAt": "2026-09-13T07:46:54.571Z",
+  "shift": "Foreman (build shift) - YOUR 'NO' ON THE EXPIRED SHEET IS BUILT, AND IT TOOK A PAGE AWAY RATHER THAN ADDING ONE. WHAT YOU SAID: 'I would rather if the sheet is expired its not reachable its gone.' That overturned the dock you approved on Friday, which kept an expired sheet as a place you could still stand - your words in the box, and one button offering to start again with them. WHAT HAPPENS NOW. Opening an expired sheet by any road - the address, a bookmark, the back button, a tab you left open last week - puts you on the casting page with one quiet line above the brief box: 'That sheet expired and was cleared. Start a new one.' Nothing else. No price, no button, and your old words are NOT carried across, because the sheet is gone and handing its brief back would be the same dock in a different coat. A sheet you closed yourself with Start over reads 'That sheet was closed and cleared' - it never claims something expired when it did not. WHERE THE REFUSAL SITS, AND WHY IT MATTERS. The page is refused by the server, at the moment it looks the sheet up and before it builds any of it. That is deliberate: the tab you left open last week is running last week's code, and anything decided in the browser is exactly what old code walks around. This cannot be walked around. SOMETHING I FOUND BY ACTUALLY OPENING IT. The refusal was being retried three times before the page gave up, so your ruling took FOURTEEN SECONDS to reach you - fourteen seconds looking at a page that is not there. It is two and a half now. I only saw it because I drove it rather than trusting the tests. WHAT I CHECKED WITH MY OWN EYES, both light and dark: an expired sheet lands correctly; a sheet you closed yourself lands with its own sentence; a LIVE sheet still opens normally with Roll again and its price - that one matters most, because a change like this goes wrong by locking people out of work they still have; and a sheet that expires WHILE YOU ARE SITTING ON IT walks you out three seconds later on its own, which is the half of your card that opening a link cannot show. Frames for all of it are on your page. NOT DONE, BECAUSE YOU SAID NOT TO: the sheet's record stays in the database - it holds what that sheet cost and what came back, and the money arithmetic reads it. Gone means you cannot reach it from anywhere in the product, which is what you meant. YOUR OTHER REPLY: 'Good.' on the phone dialog - taken, that one is closed. STILL WAITING ON YOU: the outside reviewer has now failed NINE times running across three nights. It is an outage, not a rejection. #882 (email sign-in) and #885 (Google sign-in) still need your word. Tonight's change was neither sign-in nor money, so it merged on the machine checks alone. Nothing spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -118,7 +118,7 @@
       {
         "label": "Your desk is clear",
         "tone": "warn",
-        "source": "Nothing waits on you. Two frame sets on your page for your eye (#854's dock, #844's phone dialog)."
+        "source": "Both your replies acted on. One new frame set for your eye: the expired-sheet landing (#890)."
       },
       {
         "label": "Secrets, shapes, access: clean",
@@ -128,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "46 open, none waiting on you, none urgent. Tonight 1 merged, 1 closed, 1 filed. 28 untouched 7d."
+        "source": "46 open, none waiting on you, none urgent. Tonight 1 merged, 1 closed, 0 filed. 29 untouched 7d."
       },
       {
         "label": "Check-ups",
@@ -136,18 +136,18 @@
         "source": "Warden ran 13 Sep on its day; Janitor due 15 Sep; Machinist, Retro 19 Sep. No seat overdue."
       },
       {
-        "label": "That safety check: nothing was broken",
+        "label": "An expired sheet is gone now",
         "tone": "good",
-        "source": "All three rules moved to newer code on 16 July. The leftover copy is cut (#886)."
+        "source": "Your 'its gone' built: the address lands on casting with one line. Friday's dock deleted (#890)."
       },
       {
         "label": "Your account is no longer flagged",
         "tone": "good",
-        "source": "Re-read tonight after the fix: out by 150, under the 500 mark. The list is empty."
+        "source": "Re-read after the fix: out by 150, under the 500 mark. The list is empty."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-13T05:38:42.041Z",
+      "readAt": "2026-09-13T07:48:23.976Z",
       "items": [
         {
           "issueNumber": 16,
@@ -2342,7 +2342,7 @@
       "id": "closed-sheet-dock-864-frames",
       "title": "The expired-sheet dock as built on your A — and where the press lands",
       "question": "Is this the dock you meant? 'This sheet has expired' under the box, no price, one button — and after the press, the casting page with the words carried into the box and Cast it priced beside it. A reply here is your eye on it; nothing else waits.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-12T17:04:55.687Z",
       "issueNumber": 854,
       "frames": [
@@ -2378,7 +2378,7 @@
       "id": "dialog-width-844-phone-frames",
       "title": "Block IP on a phone: edge to edge before, the house gutter after",
       "question": "Nothing needed unless you disagree. Desktop is unchanged at 512 (your 'leave it'). On a phone the dialog used to touch both screen edges — a side effect of the same dead class — and now keeps the 16 px gutter the other three staff dialogs have. Say so if you want the old edge-to-edge back.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-12T12:22:03.818Z",
       "issueNumber": 844,
       "frames": [
@@ -4765,6 +4765,31 @@
           "arm": "light"
         }
       ]
+    },
+    {
+      "id": "sheet-gone-890-frames",
+      "title": "The expired sheet, now: where the address lands and what it says",
+      "question": "This is your 'its gone' as built. Opening an expired sheet puts you here - one line above the box, no button, your old words not carried. Is that sentence the one you want a customer to read? A reply is your eye on it; nothing else waits.",
+      "state": "open",
+      "filedAt": "2026-09-13T07:46:54.572Z",
+      "issueNumber": 890,
+      "frames": [
+        {
+          "key": "crew-eye/de455bf1-2ca8-4214-9a97-238e99e3c980.png",
+          "caption": "Light, 1440 wide: the test account's expired sheet 88 asked for by address. The page is the casting page - 'That sheet expired and was cleared. Start a new one.' above the brief box, the box EMPTY, no dock and no price. The address bar reads /casting.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/f89860b5-9534-4226-9ca3-9c2cb212c309.png",
+          "caption": "Dark, 1440 wide: the same landing, same sentence, same empty box.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/d16c462a-c33b-48bf-8140-30e69af8aedf.png",
+          "caption": "Light: a sheet CLOSED BY THE CUSTOMER with Start over, not aged out - 'That sheet was closed and cleared.' It never claims an expiry that did not happen.",
+          "arm": "light"
+        }
+      ]
     }
   ],
   "pipeline": [
@@ -5889,9 +5914,23 @@
       "status": "merged",
       "prNumber": 889,
       "note": "WHAT A CUSTOMER WOULD SEE: nothing, and that is the finding. Last night's tool raised a warning about the PAID edit path and this reads it properly.\n\nTHE WORRY, IN PLAIN TERMS. When you change a cast's details, some changes have to drag others with them. Change her gender and the gendered styling has to clear. Change her hair style and the parts of the cut that hang off it have to reset. And ethnicity has to be written in two places at once, because the product stores it both as a structured blend and as a plain sentence. A piece of code claiming to enforce all of that, and saying in its own note that nothing can get around it, was being called by nothing at all.\n\nTHE ANSWER, READ RULE BY RULE RATHER THAN GUESSED. All three moved into the newer identity code on 16 July and have run there ever since. The ethnicity half — the one I was least willing to assume — is covered twice over: give it the blend and it writes the sentence; give it the sentence and it builds the blend. So no paid edit has ever been missing these rules.\n\nWHAT WAS ACTUALLY WRONG, AND WHEN. The old copy was left behind. It was genuinely live for 17 days (11-28 July). On 28 July a change about shipping the free Fork removed the last thing that called it. Nothing failed and nothing complained; it has been dead for 47 days while looking like a working safety net.\n\nWHY NOBODY FOUND IT, WHICH IS THE LESSON. One of our own tests was keeping it alive — it checked that the TEXT of that code still existed in the file. So the only thing in the whole codebase that touched the dead safety check was a test insisting it stay. A test that cannot fail when its subject stops working is bad enough; this one actively protected it.\n\nNO TESTS WERE THROWN AWAY. The same rules ARE still live on your side of the screen — the fork-to-edit draft merges through them — so the four tests now point at that, directly. I proved they still work by breaking each rule on purpose and checking the tests went red, then restoring and checking they went green.\n\nFOUND ON THE WAY. Two places in our code were saying OPPOSITE things about hair texture: one listed it as something a style change wipes, the other insisted it must never be touched. Both were passing. The code does the second, and the second is right — a haircut changes the shape of her hair, not what her hair is made of. The stale one is removed. The reason the two could disagree with nothing noticing is filed as #888.\n\nI also swept for the same shape elsewhere — other code claiming a guarantee nothing can bypass. One other place says it, and it is genuinely wired up. No second instance."
+    },
+    {
+      "id": "pr-891-sheet-gone-890",
+      "title": "An expired sheet is gone, not a page - your overturn of Friday's dock, built (#890)",
+      "status": "merged",
+      "prNumber": 891,
+      "note": "WHAT YOU WOULD SEE: open an expired sheet by any road and you land on the casting page with one line - 'That sheet expired and was cleared. Start a new one.' - and nothing else. No price, no button, and your old words are not carried, because the sheet is gone.\n\nWHAT THIS REPLACES. The dock you approved on Friday (#854, PR #864) kept an expired sheet as a page you could stand on. Your reply on the frames overturned it, so that dock, its ten tests and the carrying of the words are DELETED rather than left switched off - copy nobody can reach is a lie waiting to be read.\n\nA SHEET YOU CLOSED YOURSELF reads 'That sheet was closed and cleared' instead. I checked at the code rather than assuming: closing a sheet with Start over releases its pictures in the same breath, so it is gone in exactly the same way an expired one is.\n\nWHERE THE REFUSAL SITS. On the server, at the lookup, before any of the sheet is built. A tab left open for a week is running last week's code, so anything decided in the browser is what old code walks around.\n\nFOUND BY DRIVING IT: the refusal was retried three times before the page gave up, so your ruling took 14.3 seconds to reach a customer. It is 2.4 seconds now, measured three times.\n\nCHECKED WITH EYES, both themes: expired lands; closed-by-you lands with its own sentence; a LIVE sheet still opens with Roll again in under half a second and its price line intact; and a sheet that expires while somebody is reading it walks them out 2.9 seconds later on its own.\n\nNOT DONE, per your card: the sheet's row stays in the database - it carries what that sheet cost and what was refunded, and the money arithmetic reads it. Unreachable from every screen is the deletion you meant.\n\nSixteen tests, and I broke the fix three different ways to prove each one can fail. Machine checks green on the first run; the outside reviewer produced no verdict for the ninth time, and this was neither sign-in nor money, so it merged on the machine checks as the rule allows."
     }
   ],
   "problems": [
+    {
+      "id": "queue-shape-0913n-foreman",
+      "severity": "info",
+      "state": "resolved",
+      "title": "The queue: 46 open, one closed tonight (#890), none filed; NEXT UP is empty and none are urgent; 29 untouched for 7 days",
+      "detail": "Category order re-read at the code. Bugs holds only #884, the reviewer outage, which is external and has nothing to build. Small fixes and Security are EMPTY. Process: #513 blocked, #697 and #883 wait on the two held sign-in pull requests. Performance: #58, the umbrella. Housekeeping: #564, #527, #482, #274, #265. #888 - the type-check hole found last night - was sized at the code tonight and is NOT a filler item: it is a change across five identity fields plus two more families the card says to read first, so it is the next shift's whole unit rather than something to squeeze in beside a build. #265's card body was corrected tonight: half of it shipped in PR #846 and the body still described the whole thing as open; what remains is the bucket sweep, which is the Janitor's on 15 Sep."
+    },
     {
       "id": "queue-shape-0913m-foreman",
       "severity": "info",
@@ -6156,10 +6195,12 @@
     176,
     177,
     178,
-    179
+    179,
+    180,
+    181
   ],
   "nextUp": {
-    "readAt": "2026-09-13T05:38:42.040Z",
+    "readAt": "2026-09-13T07:48:23.975Z",
     "items": []
   }
 }
