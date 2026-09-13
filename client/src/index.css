@@ -358,27 +358,27 @@ html {
 }
 
 @layer utilities {
-  /* Animation keyframes */
-  @keyframes fade-in-up {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+  /*
+    ONE animation pair lives here, and it is the one with a real consumer:
+    `.animate-slide-up` (Navigation.tsx). Its `slide-up` keyframes has no copy
+    in animations.css, so nothing shadows it.
 
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
+    The fade-in, fade-in-up and marquee pairs that used to sit beside it were
+    cut in #919. Each was declared TWICE -- once here inside `@layer utilities`
+    and once, unlayered, in styles/animations.css, which this file imports at
+    the top. An unlayered rule beats a layered one whatever the source order,
+    so the copies here were inert and the animations.css ones were what ran.
 
+    That was MEASURED in the running app rather than reasoned from the cascade:
+    `.animate-marquee` computed 30s (the animations.css value) and not the 25s
+    written here, and `.animate-fade-in` computed `cubic-bezier(0, 0, 0.2, 1)`
+    (animations.css's `var(--ease-out)`) and not the plain `ease-out` written
+    here. `.animate-slide-up` was the control -- it computed `ease-out`, which
+    proves a layered rule in this block does apply when nothing shadows it.
+
+    So if you add a utility here and it appears to do nothing, look in
+    animations.css first: this block loses every collision with that file.
+  */
   @keyframes slide-up {
     from {
       transform: translateY(10px);
@@ -390,34 +390,8 @@ html {
     }
   }
 
-  .animate-fade-in-up {
-    animation: fade-in-up 0.8s ease-out forwards;
-  }
-
-  .animate-fade-in {
-    animation: fade-in 0.5s ease-out forwards;
-  }
-
   .animate-slide-up {
     animation: slide-up 0.5s ease-out forwards;
-  }
-
-  /* Marquee animation for scrolling logos */
-  @keyframes marquee {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-50%);
-    }
-  }
-
-  .animate-marquee {
-    animation: marquee 25s linear infinite;
-  }
-
-  .animate-marquee:hover {
-    animation-play-state: paused;
   }
 }
 
@@ -436,33 +410,6 @@ html {
 .cursor-crosshair {
   cursor: crosshair;
 }
-
-/* Floating Particle Effect for Empty States */
-@keyframes float-particle {
-  0%, 100% {
-    transform: translateY(0) translateX(0);
-    opacity: 0.3;
-  }
-  50% {
-    transform: translateY(-20px) translateX(10px);
-    opacity: 0.6;
-  }
-}
-
-.particle {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  animation: float-particle 4s ease-in-out infinite;
-}
-
-.particle:nth-child(2) { animation-delay: 0.5s; left: 20%; top: 30%; }
-.particle:nth-child(3) { animation-delay: 1s; left: 70%; top: 20%; }
-.particle:nth-child(4) { animation-delay: 1.5s; left: 40%; top: 60%; }
-.particle:nth-child(5) { animation-delay: 2s; left: 80%; top: 70%; }
-.particle:nth-child(6) { animation-delay: 2.5s; left: 10%; top: 80%; }
 
 /*
   Shimmer animation for generating skeleton nodes.
