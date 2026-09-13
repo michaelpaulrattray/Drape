@@ -108,6 +108,12 @@ export function buildReexportMap(sources: Map<string, string>, root: string): Re
  * the bound exists only to make a cyclic barrel terminate rather than to
  * express a policy. `client/src/foundation/index.ts` -> `./brand` is one hop;
  * the deepest chain measured in this tree is two.
+ *
+ * ⚠ **AND THAT ARGUMENT WAS WRONG ABOUT `importerCountDiff` TOO — it uses this
+ * walk as of #274.** Its own zero also licenses a deletion now, because
+ * `check-cleanup-dispositions` reads it; and a barrel of barrels reading zero at
+ * BOTH trees is a silence, not a conservative finding. All three instruments
+ * follow the same chain, which is what this module was written for.
  */
 const MAX_HOPS = 8;
 
