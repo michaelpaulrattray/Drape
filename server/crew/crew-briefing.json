@@ -1,7 +1,7 @@
 {
-  "edition": 378,
-  "updatedAt": "2026-09-13T07:46:54.571Z",
-  "shift": "Foreman (build shift) - YOUR 'NO' ON THE EXPIRED SHEET IS BUILT, AND IT TOOK A PAGE AWAY RATHER THAN ADDING ONE. WHAT YOU SAID: 'I would rather if the sheet is expired its not reachable its gone.' That overturned the dock you approved on Friday, which kept an expired sheet as a place you could still stand - your words in the box, and one button offering to start again with them. WHAT HAPPENS NOW. Opening an expired sheet by any road - the address, a bookmark, the back button, a tab you left open last week - puts you on the casting page with one quiet line above the brief box: 'That sheet expired and was cleared. Start a new one.' Nothing else. No price, no button, and your old words are NOT carried across, because the sheet is gone and handing its brief back would be the same dock in a different coat. A sheet you closed yourself with Start over reads 'That sheet was closed and cleared' - it never claims something expired when it did not. WHERE THE REFUSAL SITS, AND WHY IT MATTERS. The page is refused by the server, at the moment it looks the sheet up and before it builds any of it. That is deliberate: the tab you left open last week is running last week's code, and anything decided in the browser is exactly what old code walks around. This cannot be walked around. SOMETHING I FOUND BY ACTUALLY OPENING IT. The refusal was being retried three times before the page gave up, so your ruling took FOURTEEN SECONDS to reach you - fourteen seconds looking at a page that is not there. It is two and a half now. I only saw it because I drove it rather than trusting the tests. WHAT I CHECKED WITH MY OWN EYES, both light and dark: an expired sheet lands correctly; a sheet you closed yourself lands with its own sentence; a LIVE sheet still opens normally with Roll again and its price - that one matters most, because a change like this goes wrong by locking people out of work they still have; and a sheet that expires WHILE YOU ARE SITTING ON IT walks you out three seconds later on its own, which is the half of your card that opening a link cannot show. Frames for all of it are on your page. NOT DONE, BECAUSE YOU SAID NOT TO: the sheet's record stays in the database - it holds what that sheet cost and what came back, and the money arithmetic reads it. Gone means you cannot reach it from anywhere in the product, which is what you meant. YOUR OTHER REPLY: 'Good.' on the phone dialog - taken, that one is closed. STILL WAITING ON YOU: the outside reviewer has now failed NINE times running across three nights. It is an outage, not a rejection. #882 (email sign-in) and #885 (Google sign-in) still need your word. Tonight's change was neither sign-in nor money, so it merged on the machine checks alone. Nothing spent.",
+  "edition": 379,
+  "updatedAt": "2026-09-13T08:45:41.926Z",
+  "shift": "Foreman (build shift) - TONIGHT CHANGES NOTHING YOU CAN SEE, AND THAT IS THE HONEST HEADLINE. It puts back a safety net on the paid edit path that had been switched off without anyone knowing. WHAT THE SAFETY NET IS FOR: when you change a cast's hair style, hair colour, eye colour, facial hair or skin texture, the server writes two things - the value you picked, and the written description that goes with it. Both have to land. If only the first one does, the OLD description stays on the record and fights the new value: you ask for black hair, the words 'sun-bleached blonde' are still sitting underneath it, and the cast argues with itself. WHAT WAS WRONG: the code says in its own notes that this mistake 'cannot compile' - meaning the machine refuses to build the app if anyone ever writes it. I tested that claim by deliberately breaking it, and the app built perfectly fine. One line had silenced the check. So for all five of those settings the only thing standing between you and that bug was a test somebody had remembered to write. WHAT IT ALREADY COST: this is exactly how, last night, we found a description of a cast's hair and a test of the same hair asserting OPPOSITE things - both passing, for months. Neither could see the other, because the check that would have compared them was the one switched off. WHAT IS TRUE NOW: I broke it six different ways on purpose and every one of them stops the build, including that exact contradiction. If anyone adds a sixth setting and forgets its description, they find out in seconds instead of never. Three copies of the same list were deleted on the way - they existed only to feed the broken check, and a copied list always drifts from the original eventually. NOTHING ELSE MOVED: 6,550 tests pass, the same ones as before, and no behaviour changed. ONE THING I FILED FOR YOU: one of our own billing cards (#804, filed 11 September - a stale payment update can overwrite a newer one on a customer's record) is labelled in a way that puts it under NONE of your seven background switches. It shows on your page but no shift can pick it up, and none has. Filed as #893 with the fix and the reason not to simply relabel it tonight. STILL WAITING ON YOU: the outside reviewer has now failed TEN times running across three nights. It is an outage, not a rejection, and you already said to wait it out. #882 (email sign-in) and #885 (Google sign-in) still need your word. Tonight's change was neither sign-in nor money, so it merged on the machine checks alone. Nothing spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-13T07:48:23.976Z",
+      "readAt": "2026-09-13T08:43:28.305Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4794,6 +4794,13 @@
   ],
   "pipeline": [
     {
+      "id": "typed-patch-guarantee-888",
+      "title": "The safety net on paid identity edits is real again - it had been silenced by one line, and nothing could tell",
+      "status": "merged",
+      "prNumber": 892,
+      "note": "Card #888, found last night while closing #886 and worked tonight. NOTHING A CUSTOMER SEES CHANGES. WHAT IT IS ABOUT: changing a cast's hair style, hair colour, eye colour, facial hair or skin texture writes a pair - the value, and the written description beneath it. Write only the value and the old description survives and fights the new one. The module promises, in its own words, that the machine refuses to build the app if that pair is ever broken. MEASURED BEFORE TOUCHING ANYTHING: I deleted the description half and ran the full type check. It passed, exit 0. Only the runtime tests noticed - 6 of 24 went red. So the promise was doing nothing, and had been for as long as those two builder functions have existed. WHY: both builders assembled the pair with a computed key and then told the compiler to trust the result. That one instruction silences the whole check, including the part that says both halves are required. THE FIX: each of the 23 fields now states its own destination at the point it is registered, where the compiler can see exactly which field it is and check it. No trust-me instruction remains on any of these writes. PROVEN, NOT CLAIMED: six deliberate breakages, each green before and red after - the original one; a dropped hair reset; a field writing the WRONG destination; a schema path set to nothing where one exists; the hair-texture contradiction #886 found, re-created; and one on the five settings that were ALREADY safe, driven rather than assumed so the card's open question is answered with evidence instead of a reading. ALSO FIXED IN THE SAME PASS: three hand-copies of the same list of destinations, which existed only to feed the broken check and would have drifted; and a gap where a field that HAS a schema mirror could be handed nothing at all. DECLARED: two trust-me instructions remain, on a different write whose input is now pinned by the fix above - that is a choice, written on the pull request, not an oversight. 6,550 tests pass, 107 skipped. Merged on the machine checks: the reviewer gave no verdict for the tenth time, and this is neither a sign-in nor a money change."
+    },
+    {
       "id": "googleauth-driven-883",
       "title": "Sign in with Google now has real tests — and 35 ways of breaking it used to go completely unnoticed",
       "status": "blocked",
@@ -5925,6 +5932,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0913o-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 46 open, one closed tonight (#888), one filed (#893); NEXT UP is empty and none are urgent; 29 untouched for 7 days",
+      "detail": "Category order re-read at the code before choosing. Bugs holds only #884, the reviewer outage, which is external and has nothing to build. Small fixes and Security are EMPTY. Process: #513 is blocked on an outside listing, #697 and #883 wait on the two held sign-in changes. Performance: #58, the umbrella. Housekeeping: #274, #482, #527 and #564 - each one declares itself a full sitting in its own card, and #265 is the Janitor's on 15 September. So tonight was #888, taken on my predecessor's sizing, and there was genuinely no small second card to run beside it while the checks ran; that idle stretch is on the shift record rather than hidden. THE ONE NEW THING, and it is why #893 exists: #888 carried no work-switch label at all, so until tonight no shift could have taken it under your switch panel. I checked whether that had happened to anything else and it has, once - #804, a billing card from 11 September. 29 cards have had no comment, close or commit for seven days, the same figure as last night; that reading counts real engagement and not a label applied in bulk."
+    },
+    {
       "id": "queue-shape-0913n-foreman",
       "severity": "info",
       "state": "resolved",
@@ -5934,7 +5948,7 @@
     {
       "id": "queue-shape-0913m-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 46 open, one closed (#886), one merged (#889), one filed (#888); NEXT UP is empty; nothing waits on your word",
       "detail": "Category order re-read at the code, not from card titles. BUGS — two rows, and I took the one that could be built: #886 (read and closed tonight) and #884 (the reviewer outage, an external failure with nothing to build, so I added tonight's eighth run to it and moved on). SMALL FIXES and SECURITY — both empty. PROCESS — #513 is blocked on an outside model listing; #697 and #883 are both finished work waiting on the two held pull requests, so neither is takeable. PERFORMANCE — #58 only, the umbrella card, not a night's work. HOUSEKEEPING — #564 (97 colour values written out by hand, a session), #527 (its own note says wait for #526), #482, #274, #265. NOTHING SMALL WAS TAKEABLE ALONGSIDE tonight's card, and that is a measured statement rather than a shrug: I sized #482 at the code during the seven minutes the checks were running, and it is a promotion pass over the casting hero — it needs the app running and before/after pictures in both themes on a screen with real customers. That is its own night, not a filler. 28 cards have had no comment, close or commit for 7 days — unchanged from last night."
     },
@@ -5949,8 +5963,8 @@
       "id": "fable-reviewer-no-verdict-884",
       "severity": "urgent",
       "state": "open",
-      "title": "The outside reviewer has produced NO VERDICT eight times running, over three nights — and it still holds TWO finished pull requests",
-      "detail": "Card #884. Re-checked at the start of tonight's shift and again on tonight's own pull request (#889): the EIGHTH failure, and it failed the same way as the seven before it. WHAT IT IS: an outage, not a rejection. It never reaches a model at all — the failure is on the first call, so there is no opinion to read, good or bad. WHAT IT COSTS YOU RIGHT NOW: two finished pieces of work are sitting one sentence from merging — #882 (the email sign-in route) and #885 (Google sign-in). Both are sign-in paths, and the rule is that sign-in and money changes do not merge on the machine checks alone. Both are test-only: no product code was touched by either. NOT RE-DIAGNOSED TONIGHT, ON PURPOSE: the card already carries eight runs and two narrowings, and re-reading it a ninth time buys nothing. WHAT WOULD UNBLOCK IT: your word on those two, or the reviewer coming back."
+      "title": "The outside reviewer has produced NO VERDICT TEN times running, over three nights - you said to wait, and two sign-in changes wait with it",
+      "detail": "Unchanged in cause since edition 377, and the count is now ten. Every failed run dies in under a second, on one turn, having spent nothing and never reached a model - the signature of a credential that cannot start, not of a reviewer that read the change and disliked it. YOUR RULING, 13 September: 'wait'. Nothing has been re-pasted and nothing re-diagnosed. WHAT IT COSTS: #882 (the email sign-in and sign-up routes driven for the first time) and #885 (the same for Google sign-in) are finished, machine-green, test-only changes that have now been held four nights. The first review run that produces a real verdict is the signal; the shift that sees it merges those two in order and closes #884. Everything else merges normally on the machine checks - two changes have done so since, including tonight's."
     },
     {
       "id": "queue-shape-0913k-foreman",
@@ -6200,7 +6214,7 @@
     181
   ],
   "nextUp": {
-    "readAt": "2026-09-13T07:48:23.975Z",
+    "readAt": "2026-09-13T08:43:28.304Z",
     "items": []
   }
 }
