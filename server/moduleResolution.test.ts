@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
@@ -73,6 +73,59 @@ describe("resolveSpecifier", () => {
     const root = tree(files);
     expect(resolveSpecifier(join(root, "client/src/pages/Any.tsx"), "@/foundation", root))
       .toBe(join(root, "client/src/foundation/index.ts"));
+  });
+
+  /*
+    ⚠ THE SECOND ALIAS, MISSING UNTIL 2026-09-14 WHILE THE DOCBLOCK SAID
+    "the client's `@/…` alias" IN THE SINGULAR. `tsconfig.json` has declared
+    `@shared/*` beside `@/*` the whole time, and 176 import statements use it —
+    every one of them arriving here as an unplaceable specifier and crediting
+    every in-scope declaration of the name.
+  */
+  it("places the `@shared/` alias, which 176 import statements in this tree use", () => {
+    const root = tree({ ...files, "shared/const.ts": `export const COOKIE_NAME = "app_session_id";\n` });
+    expect(resolveSpecifier(join(root, "server/routes/login.ts"), "@shared/const", root))
+      .toBe(join(root, "shared/const.ts"));
+  });
+
+  /*
+    THE LIST IS NOT LEFT TO HOLD BY SOMEBODY REMEMBERING — working law 4, and
+    the same shape as `atlasCommitHook.test.ts` reading `SCANNED_ROOTS` out of
+    the generator. `tsconfig.json`'s `paths` is the source of truth; a third
+    alias added there and forgotten here would over-credit silently, exactly as
+    `@shared/` did.
+  */
+  it("knows every path alias `tsconfig.json` declares — read there, not typed here", () => {
+    const repo = resolve(import.meta.dirname, "..");
+    const tsconfig = JSON.parse(readFileSync(join(repo, "tsconfig.json"), "utf8")) as {
+      compilerOptions?: { paths?: Record<string, string[]> };
+    };
+    const declared = Object.entries(tsconfig.compilerOptions?.paths ?? {});
+    expect(declared.length).toBeGreaterThan(0);
+
+    /* A real tree so the assertion is "it placed the file", not "it returned a string". */
+    const root = tree({
+      ...files,
+      "shared/const.ts": `export const COOKIE_NAME = "x";\n`,
+      "client/src/lib/utils.ts": `export const cn = () => "";\n`,
+    });
+    const probes: Record<string, string> = {
+      "@/*": "@/lib/utils",
+      "@shared/*": "@shared/const",
+    };
+    for (const [pattern] of declared) {
+      const probe = probes[pattern];
+      expect(
+        probe,
+        `tsconfig declares the path alias \`${pattern}\` and this test has no probe for it`
+        + " — add one, and add the alias to REPO_ALIASES if the resolver cannot place it.",
+      ).toBeTruthy();
+      expect(
+        resolveSpecifier(join(root, "server/routes/login.ts"), probe!, root),
+        `the resolver cannot place \`${probe}\`, so every import through \`${pattern}\` credits`
+        + " every declaration of its name. Add it to REPO_ALIASES.",
+      ).not.toBeNull();
+    }
   });
 
   /*
@@ -203,13 +256,19 @@ describe("creditedDeclarations — the twin that hid a road", () => {
   /*
     ---- THE FAIL-SAFE DIRECTION ----
 
-    Three ways of not knowing, and all three must credit EVERYTHING. If any of
-    them returned [] the caller would report a live export as imported by
-    nobody, which is how a deletion list acquires a symbol production calls.
+    Ways of not knowing, and every one of them must credit EVERYTHING. If any
+    returned [] the caller would report a live export as imported by nobody,
+    which is how a deletion list acquires a symbol production calls.
+
+    ⚠ **`"some-package"` WAS IN THIS LOOP UNTIL 2026-09-14 AND IT DOES NOT
+    BELONG.** A package is not a way of not knowing — it is an answer, and the
+    arm below is where it now lives. The list here is what it always should have
+    been: a path that is not on disk, and a specifier there was no literal to
+    read.
   */
   it("credits every declaration when the specifier cannot be placed at all", () => {
     const { root, reexports } = build();
-    for (const spec of ["some-package", "./does-not-exist", ""]) {
+    for (const spec of ["./does-not-exist", ""]) {
       expect(creditedDeclarations({
         fromFile: join(root, "client/src/features/staff/StaffBar.tsx"),
         spec,
@@ -219,6 +278,53 @@ describe("creditedDeclarations — the twin that hid a road", () => {
         root,
       })).toEqual([serverTwin(root)]);
     }
+  });
+
+  /*
+    ---- THE PACKAGE IS AN ANSWER (#274, 2026-09-14) ----
+
+    Found by the Atlas cross-reader, not by reading: `canvasZoom.ts` imports
+    `createContext` from `"react"` and was recorded as a production importer of
+    `server/_core/context.ts` — the tRPC request context — because that is the
+    one `server/` declaration of the name. No specifier of the form `react` can
+    reach a file in this tree, so crediting it is a phantom rather than caution.
+  */
+  it("credits NOTHING for a bare package specifier — the phantom the Atlas caught", () => {
+    const { root, reexports } = build();
+    for (const spec of ["react", "zod", "@anthropic-ai/sdk", "node:fs"]) {
+      expect(creditedDeclarations({
+        fromFile: join(root, "client/src/features/staff/StaffBar.tsx"),
+        spec,
+        declaringFiles: [serverTwin(root)],
+        allDeclaringFiles: [serverTwin(root), clientTwin(root)],
+        reexports,
+        root,
+      })).toEqual([]);
+    }
+  });
+
+  /*
+    ⚠ THE DANGEROUS HALF OF THE SAME REPAIR, driven so it cannot come back.
+    `@shared/` LOOKS like a scoped package and is an in-repo alias; treating it
+    as one would credit nothing for 176 real imports — inventing dead symbols,
+    which is the direction that puts a live export on a deletion list.
+  */
+  it("does NOT read an in-repo alias as a package, even when it wears a scope", () => {
+    const files2 = {
+      "shared/modelRegistry.ts": `export const IMAGE_PRO = "x";\n`,
+      "server/casting/aiService.ts": `import { IMAGE_PRO } from "@shared/modelRegistry";\n`,
+    };
+    const root = tree(files2);
+    const reexports = buildReexportMap(sourcesOf(root, files2), root);
+    const shared = join(root, "shared/modelRegistry.ts");
+    expect(creditedDeclarations({
+      fromFile: join(root, "server/casting/aiService.ts"),
+      spec: "@shared/modelRegistry",
+      declaringFiles: [shared],
+      allDeclaringFiles: [shared],
+      reexports,
+      root,
+    })).toEqual([shared]);
   });
 
   it("credits every declaration when the chain resolves but reaches no declaration of the name", () => {
