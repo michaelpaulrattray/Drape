@@ -1,7 +1,7 @@
 {
-  "edition": 375,
-  "updatedAt": "2026-09-13T03:40:00.000Z",
-  "shift": "Foreman (build shift) — the OTHER front door now has real tests too, and it is held by the same thing. Last night it was the email sign-in; tonight it is SIGN IN WITH GOOGLE. The file that claimed to test it never once loaded the sign-in code — seventeen of its eighteen checks could not fail whatever the product did. MEASURED, NOT ASSERTED: I broke the real Google sign-in code 37 different ways and ran the old tests after each one. THIRTY-FIVE WERE COMPLETELY SILENT. Among them: the approval gate deleted, so anyone with a Google account signs straight in; the anti-forgery check reduced to reading a token without checking it was really ours; 'suspended' and 'locked out' swapped so each was reported as the other; the session cookie never set, so a successful sign-in signs nobody in; a session handed to the wrong account; an invite code whose redemption FAILED still handing out a session, so one invite gets spent twice. The two the old tests did catch were both caught by its single honest check. With the new file all 38 behave exactly as predicted, named one by one in advance, and a do-nothing control stays green so the measurement is honest about itself. No product code touched — tests only, and no defect found: every door behaved correctly once something finally asked it. WHY IT HAS NOT MERGED: the outside reviewer has now failed to produce a verdict SIX times running across three nights — an outage, not a rejection; it never reaches a model at all. Anything touching sign-in or money waits for a real review even when everything else is green, so TWO finished pull requests now wait: #882 (email sign-in) and #885 (Google sign-in). Both are one click from merging the moment the reviewer is back, or on your word. YOUR DESK IS CLEAR; NEXT UP is empty. Nothing spent.",
+  "edition": 376,
+  "updatedAt": "2026-09-13T04:45:00.000Z",
+  "shift": "Foreman (build shift) — SOMETHING MERGED TONIGHT, the first in three nights, and it found a real problem on its way in. THE TOOL THAT WAS WRONG. We keep a list that answers one question: is anything still using this piece of code? It is what we read before deleting anything. It was matching on NAME ALONE — so when two different pieces of code happened to share a name, anything using one of them counted as using BOTH. One live piece could hide a dead one indefinitely, and a dead one is exactly what the list exists to find. HOW WRONG, MEASURED: the same list, run before and after the fix on the identical code. TWENTY-EIGHT things it called 'used by nobody at all' are used on every visit. Two of them are the check that locks an account after repeated failed sign-ins — sitting on a list headed 'not used anywhere'. Three more faults turned up while fixing it, each one found by walking into it: the tool was reading its own written NOTES as if they were code (eleven times over ten files); it was confusing two different files that shared a short name; and it could not see a whole common style of loading code, so dozens of real uses were invisible. AND THE FIXED TOOL IMMEDIATELY FOUND SOMETHING WORTH KNOWING. There is a safety check on the PAID edit path — the one that keeps your cast's details consistent when you change them, and that writes ethnicity into both of the places it has to live. Its own note says it runs on the server 'so no surface can bypass it'. NOTHING CALLS IT. It has a full set of tests, all passing, and they are testing something no real edit reaches. It may simply have moved elsewhere and been left behind — there is a comment suggesting part of it did — but whether ALL of it moved has never been checked, and the half that worries me is the ethnicity one. That read is now card #886 and it is the next thing worth doing. STILL WAITING: the outside reviewer has now failed SEVEN times running across three nights. It is an outage, not a rejection — it never reaches a model at all. Two finished pull requests still wait on it: #882 (email sign-in) and #885 (Google sign-in), both one click from merging on your word. Tonight's change was not sign-in or money, so it merged on the machine checks alone, exactly as the rule allows. YOUR DESK IS CLEAR; NEXT UP is empty. Nothing spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "45 open, none waiting on you, none urgent. Tonight 0 merged, 0 closed, 0 filed. 29 untouched 7d."
+        "source": "46 open, none waiting on you, none urgent. Tonight 1 merged, 1 filed. 28 untouched 7d."
       },
       {
         "label": "Check-ups",
@@ -136,9 +136,9 @@
         "source": "Warden ran 13 Sep on its day; Janitor due 15 Sep; Machinist, Retro 19 Sep. No seat overdue."
       },
       {
-        "label": "Your admin door is checked now",
-        "tone": "good",
-        "source": "Four ways to break the admin allowlist, none made a test fail. Fifteen real checks now."
+        "label": "A safety check may not be running",
+        "tone": "warn",
+        "source": "It claims nothing can bypass it on paid edits. Nothing calls it. Being read now: #886."
       },
       {
         "label": "Your account is no longer flagged",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-13T02:29:21.758Z",
+      "readAt": "2026-09-13T04:38:35.564Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5875,20 +5875,34 @@
       "status": "merged",
       "prNumber": 777,
       "note": "THIS ONE CLOSED A CARD BY DECIDING NOT TO BUILD IT, WITH THE NUMBERS TO SAY WHY.\n\nWHAT IT IS. On your BACKGROUND WORK panel, some cards carry 'possibly fixed'. It is a hint to the night shift - re-read these first, the work may already be done. It marks a card whenever a merged change mentions it and nobody has touched the card since.\n\nTHE PROBLEM. Shifts mention cards constantly when they are FILING them, not fixing them - that is the discipline we ask for. So the hint fires hardest on exactly the well-behaved changes. The proposed fix was to teach it English phrases - 'filed as', 'logged, not done here' - and tell the two apart by wording.\n\nWHAT I DID INSTEAD. Measured it, over all 57 open cards and the last 326 merged changes. Ten cards are marked today. Exactly ONE of the ten is marked correctly. And the proposed phrase list, driven against the nine wrong ones, catches THREE.\n\nThe other six are ordinary sentences with nothing in common - 'that is #743's population exactly', 'records against #8 and #108 are on those cards'. Any rule wide enough to catch those would also catch the one card that is marked RIGHT, because the change that genuinely fixed it talks about it in the same everyday way.\n\nSO: a permanent guessing-at-English machine, bought for ten marks becoming seven, while the thing that actually protects you - a shift re-reads any card at the code before touching it - is unchanged either way. We have been bitten by this exact class before, when a word filter blocked one of your own requests because it owned a real English word. Declined, and the measurement is written into the code so the question does not quietly come back as new work in three weeks.\n\nONE REAL FAULT CAME OUT OF IT AND IS FILED. A reply YOU write on this page has its own number, and those numbers collide with the card numbers. One card is marked 'possibly fixed' today purely because a change quoted 'Crew reply #105'. That needs no guessing about English at all - it is just whether the number refers to a card - so it is worth fixing, and it is on the queue."
+    },
+    {
+      "id": "pr-887-twin-key-274",
+      "title": "The 'is anything still using this?' list was matching on name alone — 28 live things were on it (#274)",
+      "status": "merged",
+      "prNumber": 887,
+      "note": "WHAT A CUSTOMER WOULD SEE: nothing directly. This is one of our own tools, not a screen. But it is the tool we read before deleting anything, so when it is wrong it is wrong in the most expensive direction — it protects dead code and, it turns out, slanders live code.\n\nTHE BUG IN ONE SENTENCE: it asked WHAT an import was called and never WHERE it pointed. So if two different files each exported something called BRAND_NAME, anything using either one counted as using both, and a dead one could shelter behind a live one forever.\n\nMEASURED RATHER THAN ASSERTED — the same list run before and after, on the identical code:\n  things called 'used only by a test'   129 -> 121\n  things called 'used by nobody at all'  60 -> 41\nTWENTY-EIGHT of those were plain wrong: every one is called on the live path. Among them the account lockout that runs on every failed sign-in, the credit adjustment, and the IP block. Three new ones arrived, correctly.\n\nTHREE MORE FAULTS, each found by the repair walking into it, and each already there before tonight:\n  1. It read our own written NOTES as code. An explanatory comment containing an example counted as a real use — eleven times, over ten files. I found it because a sentence I wrote DESCRIBING this bug broke the tool while I was fixing it.\n  2. It confused files with the same short name, which is the same bug in a different coat.\n  3. It could not see a whole common style of loading code, so dozens of genuine uses were invisible.\n\nAND IT FOUND A REAL ONE ON ITS FIRST CORRECT RUN — card #886, which is on your page as a warning: a server-side safety check on the paid edit path, whose own note says nothing can bypass it, that nothing calls.\n\nHONEST ABOUT WHAT IS LEFT: this fixes the list. The DOOR that reads the list still matches on name alone too, and fixing that means re-keying a third tool that other things depend on. That is a separate sitting and #274 stays open for it, rather than being half-done and called finished.\n\nThe new code has 12 tests of its own, and I proved they can fail by deliberately breaking the fix four different ways and checking each one went red."
     }
   ],
   "problems": [
     {
+      "id": "queue-shape-0913l-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 46 open, one merged (#887), one filed (#886); NEXT UP is empty; nothing waits on your word",
+      "detail": "Category order re-read at the code, not from card titles. BUGS — #884 only (the reviewer outage; an external failure with nothing to build, so I added tonight's seventh run to it and moved on). SMALL FIXES and SECURITY — both empty. PROCESS — #513 is blocked on OpenRouter listing a model; #697 closes the moment #882 merges; #883 closes the moment #885 merges. Nothing takeable. PERFORMANCE — #58, the umbrella, not small. HOUSEKEEPING — this is where tonight's work came from. Oldest first: #265 I opened at the code and found HALF ALREADY DONE (its one-line half shipped in PR #846 back on the 11th and nobody had said so on the card); its remainder is a storage sweep that belongs to the Janitor, whose check-up is due 15 Sep. So the next one was #274, which is what I took. #886 is new tonight, filed by the fixed tool rather than by a person having an idea. ROT: 28 cards have had no comment, close or commit in seven days — down one from last night, and the one that moved is #274 itself."
+    },
+    {
       "id": "fable-reviewer-no-verdict-884",
       "severity": "urgent",
       "state": "open",
-      "title": "The outside reviewer has produced NO VERDICT six times running, over three nights — and it is now holding TWO finished pull requests",
-      "detail": "Card #884, updated tonight with two more runs and two new readings. THE FACTS, read from the run logs rather than the red tick: the last real verdict this repository has is from 23:44 on Friday night. Every attempt since — six of them now, across three different branches and both kinds of trigger, including three deliberate hand retries — fails identically in well under a second, with one turn, zero cost and no model used at all. That is the signature of a reviewer that never started, not one that looked and said no. TWO THINGS TONIGHT'S RUNS NARROWED. First, the failure is NOT our setup: the run installs cleanly, checks out the code, builds the prompt and reports 'initialized' — and then errors 595 milliseconds later on its very first model call. So it is the credential or the model, not the workflow. Second, and this is the one worth your attention: THE ERROR MESSAGE IS BEING THROWN AWAY BY OUR OWN CONFIGURATION. The action prints 'full output hidden for security' and suppresses whatever the model call actually said — an allowance message, a rejection, an overload; we cannot tell. Turning that on is a one-line change, but it also widens what a public build log prints on a repository that already treats pull-request contents as untrusted, so it is your call rather than a shift's. A narrower version exists: turn it on only for a deliberate manual re-run. WHAT IT COSTS YOU: most work is unaffected — a PR that does not touch sign-in or money merges on the machine checks alone. But anything touching sign-in, sessions or billing must wait for a real review, and there are now TWO such PRs finished and waiting: #882 (the email sign-in and sign-up routes) and #885 (the Google sign-in route). Both are gate-green, both change no product code at all, and between them they are the first driven tests either front door has ever had. IF IT IS THE FABLE ALLOWANCE it will clear on its own and both merge immediately. You can also just say the word and they merge tonight."
+      "title": "The outside reviewer has produced NO VERDICT seven times running, over three nights — and it still holds TWO finished pull requests",
+      "detail": "Card #884. Re-checked at the start of tonight's shift and again on tonight's own pull request: the seventh failure is #887's, and it failed the same way as the six before it. WHAT IT IS: the reviewer starts, sets itself up correctly, reaches the point of asking the model — and errors 595 milliseconds later, having spent nothing and used no model at all. That is an OUTAGE, not a rejection: nothing in any of those pull requests was judged and found wanting. WHAT IT COSTS YOU: most work is unaffected — tonight's change merged on the machine checks alone, which is what the rule says to do when the reviewer is down and the change is not sign-in or money. But anything touching SIGN-IN or MONEY waits for a real review, so #882 (email sign-in tests) and #885 (Google sign-in tests) are both finished, both green on every machine check, and both still sitting there. Neither changes any product code — they are tests only. You can release both with one word. WHAT WE CANNOT SEE FROM HERE: whether your Fable allowance has run out. That is the one likely cause a shift cannot check, and it is why this is still on your page rather than being fixed."
     },
     {
       "id": "queue-shape-0913k-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 45 open, two new cards filed tonight; NEXT UP is empty; nothing waits on your word",
       "detail": "Category order re-read at the code. Bugs — #884 (the reviewer outage, filed tonight); #804 still needs a design decision on the billing webhook. Small fixes EMPTY. Security EMPTY (#45 parked). Process — #697 is finished pending the merge of PR #882; #883 filed tonight is its sibling (the Google sign-in route has the same problem — 17 of its 18 checks cannot fail, and the other two session mints live behind them); #513 blocked. Performance — #58 umbrella. Housekeeping — #482 (not small), #274 (a sitting, not an hour), #564, #527 (Janitor due 15 Sep), #265 (re-read at the code tonight: the one-line half of it already landed as PR #846 and is recorded; what is left is a bucket sweep the Janitor does with a manifest first). Casting upkeep — #242, #209, #179, #129, #64, #62, #60, none small on a read. 29 open cards have had no comment, close, reopen or commit for 7 days. No patrol seat is overdue."
     },
@@ -6131,7 +6145,7 @@
     179
   ],
   "nextUp": {
-    "readAt": "2026-09-13T02:29:21.758Z",
+    "readAt": "2026-09-13T04:38:35.563Z",
     "items": []
   }
 }
