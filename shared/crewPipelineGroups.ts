@@ -128,6 +128,24 @@ export type CrewPipelineGroup = {
    * homed `here` (the consistency is pinned by `crewPipelineGroups.test.ts`).
    */
   readonly elsewhere: string | null;
+  /**
+   * ⚠ **WOULD A SHIFT BE ABLE TO WORK THIS CARD, IF ONLY A SWITCH REACHED IT?**
+   * (#893.) `true` means the group holds ordinary background work; `false`
+   * means its cards are waiting on something by design — his word, his order,
+   * a rung, or a blocker the card names.
+   *
+   * **Every group here except `switched` is unreached by every switch, by
+   * construction** — `pipelineGroupFor` files a card carrying any switch label
+   * under `switched` before it looks at anything else. So the `true` groups ARE
+   * the population no shift can take: `CREW_UNREACHABLE_GROUP_KEYS` below is
+   * that reading, and the queue counter prints it every shift start.
+   *
+   * It is a field here rather than a list in the counter for working law 4's
+   * reason: a fourteenth group added there and forgotten in a hand-typed
+   * exclusion list would make the untakeable count silently too small, which is
+   * the same shape as the defect #893 was filed about — a card nothing can see.
+   */
+  readonly backgroundWork: boolean;
 };
 
 /**
@@ -157,6 +175,8 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "Reached by the switches above — this is the only group that is switchable.",
     home: "switches",
     elsewhere: "on offer above",
+    /* Already reachable — the only group that is. */
+    backgroundWork: false,
   },
   {
     key: "ordered",
@@ -165,6 +185,8 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "You asked for these by name — they are in NEXT UP and taken first.",
     home: "next-up",
     elsewhere: "in NEXT UP",
+    /* Taken FIRST, ahead of every switch — reachable by his own clause. */
+    backgroundWork: false,
   },
   {
     key: "blocked",
@@ -173,6 +195,9 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "Waiting on something the card names.",
     home: "here",
     elsewhere: null,
+    /* Waiting by design. When the blocker clears the card is relabelled, and
+       that is the act that makes it takeable. */
+    backgroundWork: false,
   },
   {
     key: "parked",
@@ -181,6 +206,8 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "Stopped on your own ruling — the card names which.",
     home: "ladder",
     elsewhere: "parked",
+    /* His ruling. */
+    backgroundWork: false,
   },
   {
     key: "design-unbuilt",
@@ -189,6 +216,8 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "Feature work. The team never selects the next feature — this one is yours.",
     home: "ladder",
     elsewhere: "unbuilt designs",
+    /* MAINTENANCE MODE's own law — the team never selects the next feature. */
+    backgroundWork: false,
   },
   {
     key: "roadmap",
@@ -197,6 +226,8 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "Sequenced work — it waits for its rung on the ladder.",
     home: "ladder",
     elsewhere: "on the ladder",
+    /* Waits for its rung. */
+    backgroundWork: false,
   },
   {
     key: "debt",
@@ -205,6 +236,11 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "Carded cleanup — it needs your word because the scope varies.",
     home: "here",
     elsewhere: null,
+    /* ⚠ THE SPECIMEN. #804 — a billing defect out of a PR review — sat here
+       carrying `debt` and nothing else from 11 September, real work that no
+       shift could take. Carded cleanup IS background work; it is unreachable
+       only because nobody gave it a seat or a category. */
+    backgroundWork: true,
   },
   {
     key: "lost-and-found",
@@ -213,6 +249,9 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "Catalogued intentions, not a queue — things found while doing something else.",
     home: "here",
     elsewhere: null,
+    /* Its own blurb: a catalogue, not a queue. An item here becomes work when
+       somebody promotes it, which is a judgement and not a missing label. */
+    backgroundWork: false,
   },
   {
     key: "scope-change",
@@ -221,6 +260,8 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "A change to what we agreed we are building — yours to rule on.",
     home: "here",
     elsewhere: null,
+    /* His to rule on. */
+    backgroundWork: false,
   },
   {
     key: "toolbelt",
@@ -229,6 +270,8 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "The team's own tools — nothing a customer sees.",
     home: "here",
     elsewhere: null,
+    /* The team's own tools are exactly the work a shift may do on its own. */
+    backgroundWork: true,
   },
   {
     key: "patrol",
@@ -237,6 +280,10 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "A seat's standing round — it runs on its own clock, not on a switch.",
     home: "here",
     elsewhere: null,
+    /* Reached by its CLOCK rather than by a switch — `patrol-clocks.mts` is
+       that road, and standing exception 3 puts an overdue seat ahead of the
+       category order. Not switch-reachable, and not unreachable either. */
+    backgroundWork: false,
   },
   {
     key: "other",
@@ -245,6 +292,8 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "Labelled, but with nothing this panel names — worth a look, they may want a category.",
     home: "here",
     elsewhere: null,
+    /* Its own blurb asks for a look, and nothing offers it to anyone. */
+    backgroundWork: true,
   },
   {
     key: "unfiled",
@@ -253,6 +302,8 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     blurb: "No label at all — nobody can find these, and they want triaging.",
     home: "here",
     elsewhere: null,
+    /* Its own blurb: nobody can find these. */
+    backgroundWork: true,
   },
 ] as const;
 
@@ -295,6 +346,29 @@ export const CREW_PIPELINE_ORPHAN_GROUPS: readonly CrewPipelineGroup[] =
  */
 export const CREW_LADDER_GROUP_KEYS: readonly string[] =
   CREW_PIPELINE_GROUPS.filter((group) => group.home === "ladder").map((group) => group.key);
+
+/**
+ * ⚠ **THE GROUPS WHOSE CARDS ARE REAL WORK THAT NO SWITCH CAN OFFER** (#893).
+ *
+ * The standing orders say it in as many words: *"Background work runs ONLY
+ * where a switch says so."* A card carrying none of the seven switch labels is
+ * therefore not takeable by any shift, however real it is — and until this
+ * reading existed, nothing anywhere said so.
+ *
+ * **Measured the night it was built: exactly one, and it had been there two
+ * days.** `#804` — *handleSubscriptionUpdated has no which-sub-is-newer guard*,
+ * a billing defect that came out of a PR review on 11 September — carried
+ * `debt` and nothing else. Every shift since had read the queue, worked the
+ * category order, and correctly never seen it. A card in that state looks
+ * exactly like a card nobody has got to yet.
+ *
+ * ⚠ **Derived from `backgroundWork`, and it can only be read at the counter's
+ * own population** — the numbers are the cards `countPipelineGroups` already
+ * filed, in the same response at the same instant, never a second `gh` call
+ * asking a different question of a different moment.
+ */
+export const CREW_UNREACHABLE_GROUP_KEYS: readonly string[] =
+  CREW_PIPELINE_GROUPS.filter((group) => group.backgroundWork).map((group) => group.key);
 
 /**
  * THE RUNG LABEL — `rung:N3` places a card under ladder rung N3 (#493).
