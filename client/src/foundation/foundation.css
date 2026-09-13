@@ -2190,6 +2190,33 @@ a.dp-segmented__seg {
   gap: 11px;
 }
 
+/*
+  ⚠ THE HOUSE HAIRLINE, AND IT IS NOT THE ONLY ONE IN THE TREE (section 10's
+  promotion pass, `docs/specs/PROMOTION_PASS_SECTION_10.md` §3).
+
+  "A label, then a rule that runs through the rest of the row" is drawn FIVE
+  times: here (27 consumer files via `TableHead`), `.dp-menugroup__rule` a few
+  hundred lines down THIS FILE, `.dpc-deck__rule` and `.dpc-hero__receiptrule`
+  in `features/castingV2/castingV2.css`, and `.dp-crew__skelrule`, whose own
+  comment says it is mimicking this one.
+
+  ⚠ **They are not one device at five addresses — they are TWO type scales**,
+  and that is what the pass had to establish before anything could be folded.
+  This one and the crew skeleton are the 10.5px `--meta` eyebrow.
+  `.dp-menugroup__label` and `.dpc-deck__eyebrow` are the 8.5px `--faint` one,
+  byte-identical to each other. The casting receipt is neither — `400` and not
+  uppercase, because it carries machine values rather than a label.
+
+  So this is the winner by rule 6 within ITS scale only, and nothing is folded
+  across the two: converging the 8.5px pair onto the 10.5px one would repaint
+  the founder-judged casting hero, and whether his eyebrow IS the house eyebrow
+  at a smaller size is a design decision rather than a no-behaviour-change
+  pass's. The 8.5px pair's own fold is real and carded.
+
+  `min-width: 20px` is the one property that is genuinely this one's own: it
+  keeps a visible stub of rule when a wrapping filter cluster crowds the row.
+  Neither casting site has filters, which is why neither wants it.
+*/
 .dp-tablehead__rule {
   flex: 1;
   min-width: 20px;
@@ -2436,6 +2463,25 @@ a.dp-segmented__seg {
   color: var(--faint);
 }
 
+/*
+  ⚠ THIS TRIO IS THE CASTING DECK'S EYEBROW, TO THE BYTE — and neither surface
+  knew (`docs/specs/PROMOTION_PASS_SECTION_10.md` §3).
+
+  `.dpc-deck__eyebrow` + `.dpc-deck__rule` declare the same `500 8.5px` mono,
+  the same `.13em`, the same `--faint`, the same 8px gap and the same hairline.
+  There are THREE real call sites for one drawing — `LobbyUtilityMenu`,
+  `UserCard` and `HeroDeck` — and no component anywhere: the first two write the
+  three elements out by hand, and casting wrote its own classes.
+
+  That clears the promotion pass's bar of two with a file to spare. It is carded
+  rather than taken in that pass, because the component has to be RENAMED on the
+  way in — the casting hero's eyebrow is not a "menu group", and pointing it at
+  this class would carry the menu's vocabulary onto it.
+
+  The `padding` on `.dp-menugroup` is the one thing that does NOT belong to the
+  device: the deck's eyebrow is spaced by `.dpc-deck__brief` instead. It goes to
+  the call sites when this is folded, not into the shared part.
+*/
 .dp-menugroup__rule {
   flex: 1;
   height: 1px;
