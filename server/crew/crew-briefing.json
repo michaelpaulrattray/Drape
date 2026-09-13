@@ -1,7 +1,7 @@
 {
-  "edition": 371,
-  "updatedAt": "2026-09-12T23:49:12.000Z",
-  "shift": "Foreman (build shift) — ONE MERGED, from Security, and it is the big one the last two editions were building toward: THE 91 KNOWN SECURITY ADVISORIES IN THE PRODUCT'S DEPENDENCIES ARE NOW ZERO (#857 second half → PR #877, live on production since 09:44 AEST; #857 CLOSED). Before: 91 advisories (3 critical, 21 high) sat behind a patch road that had been red for six days, and the one that actually reached the product was the image decoder on your upload doors — a customer's uploaded bytes go straight into it, and the old version carried two high-severity holes for exactly that. After: the image library, the database driver, the database layer, the storage client, the PDF library, the email client, the session signer and the web server are all on their patched versions, one dead package that nobody imported (25 advisories on its own) is deleted, and 'pnpm audit --prod' reads 'No known vulnerabilities found'. Nothing you can see changes. Proven the long way: a separate install of the new versions, every type check and all 12,854 tests green, the gate green first time, and a real browser drive of the running app on the new versions — your character sheet composed and looked at, a real picture attached through the upload door and a non-picture refused with the door's own sentence, the lobby and casting pages photographed. Fable: clean pass, no findings. Production booted clean and answers on the new build. One small thing only you can do, not urgent: the supply-chain scanner (Socket) flags the new database-layer version as 'obfuscated'; the shift read the package byte for byte (no minified files, no eval, no network calls, 26 readable changes) and the reviewer agreed with the method, but accepting a supply-chain reading is your call — replying '@SocketSecurity ignore npm/drizzle-orm@0.45.2' on PR #877 clears the badge if you accept it. YOUR DESK IS OTHERWISE CLEAR; NEXT UP is empty; the two frame sets on your page stay until you judge them. Nothing spent.",
+  "edition": 372,
+  "updatedAt": "2026-09-13T01:20:00.000Z",
+  "shift": "Foreman (build shift) — ONE MERGED, from Security, and it finishes the sentence the last edition started. Last night's bump took the advisories that reach the PRODUCT to zero. GitHub's own banner still said 29, on every push, and that number is now ZERO TOO (#879 → PR #881, live on production since 11:08 AEST; #879 CLOSED). The two numbers were never in conflict: 'what does the running service load?' had been clean since yesterday, and 'what is in the lockfile at all?' still counted the tools that BUILD and TEST Drape on this machine and in CI — vite, vitest, esbuild and friends, none of which ship inside the running service. All 29 of those are now closed as well, so both readings agree at zero and nobody has to hold two numbers in their head again. Nothing you can see changes; no product code was touched, only the two dependency files. THE PART WORTH YOUR TIME IS WHAT WAS UNDERNEATH: two of the thirteen packages were held vulnerable BY OUR OWN CONFIGURATION. One was a floor we set ourselves (we pinned the archive library at 'at least 7.5.7' and then the advisories moved to 7.5.18 — our own floor was the thing holding it back). The other was worse: a line pinning a package 'inside tailwind' that tailwind has not depended on for a whole major version — it matched nothing, while the real vulnerable copy came in somewhere else entirely, and anyone reading the file would have concluded it was handled. Both fixed. Proven the long way again: a separate install of the new tools, every type check, all 12,860 tests, the gate green first time, Socket green on both checks, and a real browser drive — the casting studio photographed in BOTH themes from the bumped tree, nothing moved. One honest note below: the Fable reviewer produced no verdict on this PR, twice, and it is an outage rather than a rejection. YOUR DESK IS CLEAR; NEXT UP is empty; the two frame sets on your page stay until you judge them. Nothing spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-12T23:49:15.034Z",
+      "readAt": "2026-09-13T01:15:14.496Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4769,6 +4769,13 @@
   ],
   "pipeline": [
     {
+      "id": "devscope-bump-881",
+      "title": "GitHub's 29 advisories are now zero too — and two of the thirteen were held by our own configuration",
+      "status": "merged",
+      "prNumber": 881,
+      "note": "Card #879 (Warden), filed by last night's shift while closing #857; the card is CLOSED. Before: 'pnpm audit --prod' clean since #877, GitHub's banner still 29 (1 critical, 16 high, 10 moderate, 2 low) — every one of them development-scope, i.e. the build and test toolchain, which runs here and in CI and never inside the Railway container. After: all 29 closed, read back through GitHub's own API at ZERO, and 'pnpm audit' clean in BOTH scopes. Three declared tool ranges move (esbuild, vite, vitest) and nothing else in the manifest; no production dependency specifier is touched. THE TWO SELF-INFLICTED ONES: our 'tar: >=7.5.7' override was itself the floor keeping tar back from the 7.5.18 the advisories asked for; and 'tailwindcss>nanoid: 3.3.7' was DEAD — tailwind 4.1.14 declares zero dependencies, so it matched nothing while the vulnerable copy arrived through postcss, reading as handled to anyone who grepped the file. An override floor is a number that rots, and a dead override is worse than none because it reads as coverage. Two things the card did not predict: the Dependabot group PR it expected to do most of this (#831) had already closed itself as superseded, and a plain 'pnpm update' is the WRONG tool here — it moves wouter, a patched production dependency, past its patch, so it was backed out and the transitives refreshed by name instead. One extra advisory closed that GitHub never reported (brace-expansion, found only by 'pnpm audit'), so the two readers disagree in both directions — which is the sentence #879 was filed to get written down. Proof: an isolated install, type checks, atlas and capability checks, script guards 18/18, build clean on the new vite/rollup/esbuild, 12,860 tests, gate green first run in 7m32s, Socket green on both checks, and the casting studio photographed at 1440×900 in both themes from a dev server booted on the bumped tree — rail, cards, tokens and type all intact. Live on production at 2ba68f03; deploy-verify green; health reads the new build with the database up."
+    },
+    {
       "id": "security-first-bump-877",
       "title": "The 91 known security advisories in the product's dependencies are now zero — the security-first bump",
       "status": "merged",
@@ -5858,11 +5865,18 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0913i-foreman",
+      "id": "fable-reviewer-no-verdict-881",
+      "severity": "warning",
+      "state": "open",
+      "title": "The Fable reviewer produced NO VERDICT on tonight's PR — twice — and it is an outage, not a rejection",
+      "detail": "On PR #881 the review job went red both times it ran: once on 'ready for review' and once on a deliberate re-trigger. Read at the action log rather than at the red tick, it never made a model call at all — 711 ms, one turn, zero cost, no model usage — which is the known init-failure shape (#219), NOT a reviewer saying no. Nothing in the diff was judged. It was merged on the green machine gate, which the standing orders allow for a PR that is not on a money or auth path: this one changes two dependency files and no product code, and it carried no founder-review label. Worth your eye because it is NEW tonight — #877 got a clean Fable pass ninety minutes earlier — so it is most likely your Fable allowance rather than anything in the repository. If it is the allowance, it will clear on its own and nothing needs doing; if PRs keep merging unreviewed for several nights, that is a real gap and should become a card."
+    },
+    {
+      "id": "queue-shape-0913j-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 43 open, one closed (#857); NEXT UP is empty; nothing waits on your word",
-      "detail": "Category order re-read at the code: Bugs EMPTY (#804 needs a design decision on the billing webhook and is not an Opus shift's). Small fixes EMPTY; Security EMPTY (#857 closed; #45 parked); Process — #697's last file is the login route's test file (an auth path, a session of its own), #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
+      "title": "The queue: 43 open, one closed (#879); NEXT UP is empty; nothing waits on your word",
+      "detail": "Category order re-read at the code. Bugs EMPTY (#804 still needs a design decision on the billing webhook). Small fixes EMPTY. Security EMPTY (#879 closed tonight; #45 parked). Process — #697's last file is the login route's test file (an auth path, a session of its own), #513 blocked. Performance — #58 umbrella. Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. Casting upkeep — #242, #209, #179, #129, #64, #62, #60, none small on a read. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read). No patrol seat is overdue."
     },
     {
       "id": "queue-shape-0913h-foreman",
@@ -6103,7 +6117,7 @@
     179
   ],
   "nextUp": {
-    "readAt": "2026-09-12T23:49:15.033Z",
+    "readAt": "2026-09-13T01:15:14.494Z",
     "items": []
   }
 }
