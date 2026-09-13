@@ -23,6 +23,8 @@
  * half-built here before he wrote it down. They are now the note on the
  * Approve action, which is where they were always trying to sit.
  */
+import { CHANGE_REQUEST_NOT_RECORDED } from "@shared/changeRequestLabels";
+
 import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { DataTable } from "@/foundation";
 import type { DataFact, DataRow, RowAction } from "@/foundation";
@@ -275,8 +277,26 @@ function requestFacts(detail: any): DataFact[] {
     { label: "UPDATED", value: formatDate(detail.updatedAt) },
   ];
 
-  if ((detail.type === "refund_credits" || detail.type === "add_credits") && detail.creditAmount) {
-    facts.push({ label: "CREDITS", value: `${detail.creditAmount}` });
+  /*
+    ⚠ **THE CREDITS ROW APPEARS EVEN WHEN THERE IS NO AMOUNT, AND SAYING SO IS
+    THE POINT (#913).** It used to be inside `&& detail.creditAmount`, so a
+    credit request with no amount showed no credits fact at all — while the
+    consequence sentence under the Approve button read *"Approving adds null
+    credits to this account"*. The page therefore told an admin nothing about
+    the number and then asserted a JavaScript word for it, in one panel.
+
+    An absent amount is a FACT about a money request, not a reason to draw
+    nothing: the row now says `not recorded`, which is what the admin needs to
+    know before they decide.
+  */
+  if (detail.type === "refund_credits" || detail.type === "add_credits") {
+    facts.push({
+      label: "CREDITS",
+      value:
+        detail.creditAmount == null
+          ? CHANGE_REQUEST_NOT_RECORDED
+          : `${detail.creditAmount}`,
+    });
     if (detail.creditReason) facts.push({ label: "CREDIT REASON", value: detail.creditReason });
   }
 
@@ -293,8 +313,14 @@ function requestFacts(detail: any): DataFact[] {
     }
   }
 
-  if (detail.type === "block_ip" && detail.ipAddress) {
-    facts.push({ label: "IP ADDRESS", value: detail.ipAddress });
+  /* The same rule as the credits row above, and for the same reason: on a
+     request whose whole subject is an address, the address not being there is
+     the most important thing on the panel. */
+  if (detail.type === "block_ip") {
+    facts.push({
+      label: "IP ADDRESS",
+      value: detail.ipAddress ?? CHANGE_REQUEST_NOT_RECORDED,
+    });
   }
 
   if (detail.reviewedById) {
@@ -308,15 +334,76 @@ function requestFacts(detail: any): DataFact[] {
   return facts;
 }
 
+/**
+ * ⚠ **AN AMOUNT-LESS CREDIT REQUEST CANNOT BE APPROVED, AND THE SENTENCE SAYS
+ * SO RATHER THAN NAMING A NUMBER IT DOES NOT HAVE (#913).**
+ *
+ * Read at the server before this was written, because what the sentence may
+ * promise is whatever the executor actually does: `cr_addCredits` and
+ * `cr_refundCredits` both open with
+ * `if (typeof amount !== "number" || amount <= 0) throw new Error("Invalid
+ * credit amount")` (`server/lib/adminActions/changeRequestActions.ts`). So
+ * approving does not move a strange amount of credits — it moves none, and the
+ * review mutation has already CAS'd the request to `pending_execution` by
+ * then, which the panel draws as *"Outcome unconfirmed"* and which no control
+ * on this page can clear (the review procedure refuses anything that is not
+ * `pending`, deliberately: an executor that failed midway may have moved money
+ * already, and a retry road here is how a refund gets issued twice).
+ *
+ * **The road in is closed too, which is why nobody has been hurt by this.**
+ * `moderator.createChangeRequest` is the only creation road in the product and
+ * it refuses a credit request with no amount. Measured the day this was fixed:
+ * production holds **zero** `change_requests` rows of any type, all time; the
+ * seven amount-less rows that produced the frame on the card are dev fixtures
+ * from 2026-09-02, one of which is already wedged in `pending_execution`.
+ *
+ * So this is a display defect on an unreachable row — and it is still worth
+ * repairing, because the last thing an admin reads before pressing a button
+ * that moves a paying customer's balance must not be the word `null`.
+ */
 function approvalConsequence(detail: any): string {
+  /* Both credit branches, one sentence — the class, not the instance. */
+  const noAmount =
+    `No amount was recorded on this request, so approving cannot move any credits: it stops at ` +
+    `execution and leaves the request reading "Outcome unconfirmed", which nothing on this page ` +
+    `can clear. Deny it and ask for a new request with the amount on it.`;
+
   switch (detail.type) {
     case "refund_credits":
+      if (detail.creditAmount == null) return noAmount;
       return `Approving refunds ${detail.creditAmount} credits to this account. Denying leaves the balance as it is and closes the request.`;
     case "add_credits":
+      if (detail.creditAmount == null) return noAmount;
       return `Approving adds ${detail.creditAmount} credits to this account. Denying leaves the balance as it is and closes the request.`;
     case "stripe_refund":
       return `Approving issues a ${detail.refundAmountCents ? `$${(detail.refundAmountCents / 100).toFixed(2)}` : "—"} Stripe refund to the customer's card and takes ${detail.creditsToDeduct ?? "—"} credits back off their balance, floored at zero. Neither half can be undone from here.`;
     case "block_ip":
+      /*
+        ⚠ **THE LAW-7 SIBLING, FOUND BY SWEEPING #913's CLASS ACROSS THIS
+        FUNCTION — AND IT IS THE WORSE OF THE TWO.** It read
+        `Approving records ${detail.ipAddress} on the block list`, which
+        renders `undefined` on an address-less request; that is the same
+        display defect as the credits one. What is NOT the same is what
+        pressing the button then does. `server/routes/admin/changeRequests.ts`
+        computes the executor's target as
+        `request.type === "block_ip" && request.ipAddress ? request.ipAddress
+        : String(request.targetUserId)` — so with no address it falls back to
+        the TARGET USER'S ID, and `cr_blockIP` blocks it happily: the block
+        list gains a row reading `42`, with an `IP_BLOCKED` audit row and an
+        immutable log entry saying *"IP 42 blocked"*. Unlike the credit
+        executors, nothing refuses it.
+        **The server half is carded separately — this sentence tells the truth
+        about what the product does TODAY**, which is the only thing that can
+        help the admin looking at it.
+      */
+      if (detail.ipAddress == null) {
+        return (
+          `No IP address was recorded on this request, so there is nothing to block — but ` +
+          `approving would still write a row to the block list: this person's account number, ` +
+          `which is what the approve path falls back to. Deny it and ask for a new request ` +
+          `with the address on it.`
+        );
+      }
       /* Same correction as `AuditLogTable`'s: the block is RECORDED and never
          consulted on the request path. See that file's note. */
       return `Approving records ${detail.ipAddress} on the block list. It does not turn anyone away yet — nothing on the request path checks that list.`;

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f30f8f075c47399d"
+    "sourceFingerprint": "541a73f86e9b4e6d"
   },
   "domains": [
     {
@@ -14629,6 +14629,11 @@
     {
       "from": "module:client/src/features/admin/ChangeRequestList.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/ChangeRequestList.tsx",
+      "to": "module:shared/changeRequestLabels.ts",
       "kind": "imports"
     },
     {

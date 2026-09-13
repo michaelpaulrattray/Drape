@@ -22,7 +22,11 @@ import { useState } from "react";
 import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
-import { changeRequestStatusLabel, changeRequestTypeLabel } from "@shared/changeRequestLabels";
+import {
+  CHANGE_REQUEST_NOT_RECORDED,
+  changeRequestStatusLabel,
+  changeRequestTypeLabel,
+} from "@shared/changeRequestLabels";
 import { formatDate, formatFullDate } from "./moderatorConstants";
 
 
@@ -122,8 +126,30 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
       */
       { label: "RAISED", value: formatFullDate(new Date(request.createdAt)) },
       { label: "ABOUT", value: request.targetUserName || `User #${request.targetUserId}` },
-      ...(request.creditAmount
-        ? [{ label: "CREDITS", value: `${request.creditAmount}` }]
+      /*
+        ⚠ **THE LAW-7 SIBLING OF #913, AND IT IS THE QUIETER HALF OF THE SAME
+        SHAPE.** The admin panel omitted its CREDITS fact when the amount was
+        absent and then asserted `null` for it in the sentence under Approve;
+        here there is no button, so the omission had no contradiction beside it
+        — the row simply vanished and the moderator who raised the request was
+        never told the number had not been kept.
+
+        `request.creditAmount` is only ever absent on a row the product cannot
+        create today (`moderator.createChangeRequest` refuses an amount-less
+        credit request), so like its sibling this is depth rather than a live
+        fault. The rule is the same either way: on a credit request the amount
+        is a fact, and "not recorded" is a fact worth drawing.
+      */
+      ...(request.type === "refund_credits" || request.type === "add_credits"
+        ? [
+            {
+              label: "CREDITS",
+              value:
+                request.creditAmount == null
+                  ? CHANGE_REQUEST_NOT_RECORDED
+                  : `${request.creditAmount}`,
+            },
+          ]
         : []),
       ...(request.reviewedByName
         ? [
