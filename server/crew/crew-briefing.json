@@ -1,7 +1,7 @@
 {
-  "edition": 376,
-  "updatedAt": "2026-09-13T04:45:00.000Z",
-  "shift": "Foreman (build shift) — SOMETHING MERGED TONIGHT, the first in three nights, and it found a real problem on its way in. THE TOOL THAT WAS WRONG. We keep a list that answers one question: is anything still using this piece of code? It is what we read before deleting anything. It was matching on NAME ALONE — so when two different pieces of code happened to share a name, anything using one of them counted as using BOTH. One live piece could hide a dead one indefinitely, and a dead one is exactly what the list exists to find. HOW WRONG, MEASURED: the same list, run before and after the fix on the identical code. TWENTY-EIGHT things it called 'used by nobody at all' are used on every visit. Two of them are the check that locks an account after repeated failed sign-ins — sitting on a list headed 'not used anywhere'. Three more faults turned up while fixing it, each one found by walking into it: the tool was reading its own written NOTES as if they were code (eleven times over ten files); it was confusing two different files that shared a short name; and it could not see a whole common style of loading code, so dozens of real uses were invisible. AND THE FIXED TOOL IMMEDIATELY FOUND SOMETHING WORTH KNOWING. There is a safety check on the PAID edit path — the one that keeps your cast's details consistent when you change them, and that writes ethnicity into both of the places it has to live. Its own note says it runs on the server 'so no surface can bypass it'. NOTHING CALLS IT. It has a full set of tests, all passing, and they are testing something no real edit reaches. It may simply have moved elsewhere and been left behind — there is a comment suggesting part of it did — but whether ALL of it moved has never been checked, and the half that worries me is the ethnicity one. That read is now card #886 and it is the next thing worth doing. STILL WAITING: the outside reviewer has now failed SEVEN times running across three nights. It is an outage, not a rejection — it never reaches a model at all. Two finished pull requests still wait on it: #882 (email sign-in) and #885 (Google sign-in), both one click from merging on your word. Tonight's change was not sign-in or money, so it merged on the machine checks alone, exactly as the rule allows. YOUR DESK IS CLEAR; NEXT UP is empty. Nothing spent.",
+  "edition": 377,
+  "updatedAt": "2026-09-13T05:45:00.000Z",
+  "shift": "Foreman (build shift) — LAST NIGHT'S WARNING TURNED OUT TO BE GOOD NEWS, AND IT TOOK READING THE CODE RULE BY RULE TO KNOW IT. WHAT WAS WORRYING. Last night's repaired tool found a safety check on the PAID edit path — the one that keeps a cast's details consistent when you change them, and that writes ethnicity into both of the places it has to live — whose own note says it runs on the server 'so no surface can bypass it', and which nothing calls. The question that mattered was not 'is it called', it was 'did the job move, or did the job stop'. Those are very different, and no tool can tell them apart. THE ANSWER: NOTHING WAS LOST, AND NO EDIT OF YOURS EVER MISSED A RULE. All three rules live in the newer identity code and have done since 16 July. Change a cast's gender and it still clears the gendered styling. Change her hair style and it still resets the parts of the cut that depend on it. Ethnicity — the half I was most worried about — is the one covered TWICE: it is written both as the structured blend and as the plain sentence, and either one you give it produces the other. SO WHAT WAS ACTUALLY WRONG. The old copy was simply left behind. It ran for 17 days last July, and on 28 July a change about something else entirely — shipping the free Fork — quietly removed the last thing that called it. No test failed. No error appeared. It then sat for 47 days looking like a live safety net, with a full set of passing tests. AND THE REASON IT SURVIVED IS THE PART WORTH REMEMBERING: one of our own tests was holding it alive, by checking that the text of the dead code still existed. The single instrument that touched it was the reason it could not be found. It is cut now. Its four tests were not thrown away — the same rules are still live on YOUR side of the screen, in the fork-to-edit draft, so the tests now point there instead, and I proved they can still fail by deliberately breaking each rule and watching them go red. FOUND ON THE WAY. Two places in our own code were asserting OPPOSITE things about hair texture — one said a style change wipes it, the other said it must never be touched — and both were passing. The right answer is the second one, and it is the one the code actually does: a haircut changes the shape of her hair, not what her hair is made of. Filed the reason they could disagree unnoticed as #888. STILL WAITING ON YOU: the outside reviewer has now failed EIGHT times running across three nights. It is an outage, not a rejection. Two finished pull requests still wait on your word — #882 (email sign-in) and #885 (Google sign-in). Tonight's change was neither sign-in nor money, so it merged on the machine checks alone, exactly as the rule allows. YOUR DESK IS CLEAR; NEXT UP is empty. Nothing spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -128,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "46 open, none waiting on you, none urgent. Tonight 1 merged, 1 filed. 28 untouched 7d."
+        "source": "46 open, none waiting on you, none urgent. Tonight 1 merged, 1 closed, 1 filed. 28 untouched 7d."
       },
       {
         "label": "Check-ups",
@@ -136,9 +136,9 @@
         "source": "Warden ran 13 Sep on its day; Janitor due 15 Sep; Machinist, Retro 19 Sep. No seat overdue."
       },
       {
-        "label": "A safety check may not be running",
-        "tone": "warn",
-        "source": "It claims nothing can bypass it on paid edits. Nothing calls it. Being read now: #886."
+        "label": "That safety check: nothing was broken",
+        "tone": "good",
+        "source": "All three rules moved to newer code on 16 July. The leftover copy is cut (#886)."
       },
       {
         "label": "Your account is no longer flagged",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-13T04:38:35.564Z",
+      "readAt": "2026-09-13T05:38:42.041Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5882,13 +5882,27 @@
       "status": "merged",
       "prNumber": 887,
       "note": "WHAT A CUSTOMER WOULD SEE: nothing directly. This is one of our own tools, not a screen. But it is the tool we read before deleting anything, so when it is wrong it is wrong in the most expensive direction — it protects dead code and, it turns out, slanders live code.\n\nTHE BUG IN ONE SENTENCE: it asked WHAT an import was called and never WHERE it pointed. So if two different files each exported something called BRAND_NAME, anything using either one counted as using both, and a dead one could shelter behind a live one forever.\n\nMEASURED RATHER THAN ASSERTED — the same list run before and after, on the identical code:\n  things called 'used only by a test'   129 -> 121\n  things called 'used by nobody at all'  60 -> 41\nTWENTY-EIGHT of those were plain wrong: every one is called on the live path. Among them the account lockout that runs on every failed sign-in, the credit adjustment, and the IP block. Three new ones arrived, correctly.\n\nTHREE MORE FAULTS, each found by the repair walking into it, and each already there before tonight:\n  1. It read our own written NOTES as code. An explanatory comment containing an example counted as a real use — eleven times, over ten files. I found it because a sentence I wrote DESCRIBING this bug broke the tool while I was fixing it.\n  2. It confused files with the same short name, which is the same bug in a different coat.\n  3. It could not see a whole common style of loading code, so dozens of genuine uses were invisible.\n\nAND IT FOUND A REAL ONE ON ITS FIRST CORRECT RUN — card #886, which is on your page as a warning: a server-side safety check on the paid edit path, whose own note says nothing can bypass it, that nothing calls.\n\nHONEST ABOUT WHAT IS LEFT: this fixes the list. The DOOR that reads the list still matches on name alone too, and fixing that means re-keying a third tool that other things depend on. That is a separate sitting and #274 stays open for it, rather than being half-done and called finished.\n\nThe new code has 12 tests of its own, and I proved they can fail by deliberately breaking the fix four different ways and checking each one went red."
+    },
+    {
+      "id": "pr-889-dead-merge-886",
+      "title": "The safety check that nothing called: read rule by rule, and nothing was lost (#886)",
+      "status": "merged",
+      "prNumber": 889,
+      "note": "WHAT A CUSTOMER WOULD SEE: nothing, and that is the finding. Last night's tool raised a warning about the PAID edit path and this reads it properly.\n\nTHE WORRY, IN PLAIN TERMS. When you change a cast's details, some changes have to drag others with them. Change her gender and the gendered styling has to clear. Change her hair style and the parts of the cut that hang off it have to reset. And ethnicity has to be written in two places at once, because the product stores it both as a structured blend and as a plain sentence. A piece of code claiming to enforce all of that, and saying in its own note that nothing can get around it, was being called by nothing at all.\n\nTHE ANSWER, READ RULE BY RULE RATHER THAN GUESSED. All three moved into the newer identity code on 16 July and have run there ever since. The ethnicity half — the one I was least willing to assume — is covered twice over: give it the blend and it writes the sentence; give it the sentence and it builds the blend. So no paid edit has ever been missing these rules.\n\nWHAT WAS ACTUALLY WRONG, AND WHEN. The old copy was left behind. It was genuinely live for 17 days (11-28 July). On 28 July a change about shipping the free Fork removed the last thing that called it. Nothing failed and nothing complained; it has been dead for 47 days while looking like a working safety net.\n\nWHY NOBODY FOUND IT, WHICH IS THE LESSON. One of our own tests was keeping it alive — it checked that the TEXT of that code still existed in the file. So the only thing in the whole codebase that touched the dead safety check was a test insisting it stay. A test that cannot fail when its subject stops working is bad enough; this one actively protected it.\n\nNO TESTS WERE THROWN AWAY. The same rules ARE still live on your side of the screen — the fork-to-edit draft merges through them — so the four tests now point at that, directly. I proved they still work by breaking each rule on purpose and checking the tests went red, then restoring and checking they went green.\n\nFOUND ON THE WAY. Two places in our code were saying OPPOSITE things about hair texture: one listed it as something a style change wipes, the other insisted it must never be touched. Both were passing. The code does the second, and the second is right — a haircut changes the shape of her hair, not what her hair is made of. The stale one is removed. The reason the two could disagree with nothing noticing is filed as #888.\n\nI also swept for the same shape elsewhere — other code claiming a guarantee nothing can bypass. One other place says it, and it is genuinely wired up. No second instance."
     }
   ],
   "problems": [
     {
-      "id": "queue-shape-0913l-foreman",
+      "id": "queue-shape-0913m-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 46 open, one closed (#886), one merged (#889), one filed (#888); NEXT UP is empty; nothing waits on your word",
+      "detail": "Category order re-read at the code, not from card titles. BUGS — two rows, and I took the one that could be built: #886 (read and closed tonight) and #884 (the reviewer outage, an external failure with nothing to build, so I added tonight's eighth run to it and moved on). SMALL FIXES and SECURITY — both empty. PROCESS — #513 is blocked on an outside model listing; #697 and #883 are both finished work waiting on the two held pull requests, so neither is takeable. PERFORMANCE — #58 only, the umbrella card, not a night's work. HOUSEKEEPING — #564 (97 colour values written out by hand, a session), #527 (its own note says wait for #526), #482, #274, #265. NOTHING SMALL WAS TAKEABLE ALONGSIDE tonight's card, and that is a measured statement rather than a shrug: I sized #482 at the code during the seven minutes the checks were running, and it is a promotion pass over the casting hero — it needs the app running and before/after pictures in both themes on a screen with real customers. That is its own night, not a filler. 28 cards have had no comment, close or commit for 7 days — unchanged from last night."
+    },
+    {
+      "id": "queue-shape-0913l-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 46 open, one merged (#887), one filed (#886); NEXT UP is empty; nothing waits on your word",
       "detail": "Category order re-read at the code, not from card titles. BUGS — #884 only (the reviewer outage; an external failure with nothing to build, so I added tonight's seventh run to it and moved on). SMALL FIXES and SECURITY — both empty. PROCESS — #513 is blocked on OpenRouter listing a model; #697 closes the moment #882 merges; #883 closes the moment #885 merges. Nothing takeable. PERFORMANCE — #58, the umbrella, not small. HOUSEKEEPING — this is where tonight's work came from. Oldest first: #265 I opened at the code and found HALF ALREADY DONE (its one-line half shipped in PR #846 back on the 11th and nobody had said so on the card); its remainder is a storage sweep that belongs to the Janitor, whose check-up is due 15 Sep. So the next one was #274, which is what I took. #886 is new tonight, filed by the fixed tool rather than by a person having an idea. ROT: 28 cards have had no comment, close or commit in seven days — down one from last night, and the one that moved is #274 itself."
     },
@@ -5896,8 +5910,8 @@
       "id": "fable-reviewer-no-verdict-884",
       "severity": "urgent",
       "state": "open",
-      "title": "The outside reviewer has produced NO VERDICT seven times running, over three nights — and it still holds TWO finished pull requests",
-      "detail": "Card #884. Re-checked at the start of tonight's shift and again on tonight's own pull request: the seventh failure is #887's, and it failed the same way as the six before it. WHAT IT IS: the reviewer starts, sets itself up correctly, reaches the point of asking the model — and errors 595 milliseconds later, having spent nothing and used no model at all. That is an OUTAGE, not a rejection: nothing in any of those pull requests was judged and found wanting. WHAT IT COSTS YOU: most work is unaffected — tonight's change merged on the machine checks alone, which is what the rule says to do when the reviewer is down and the change is not sign-in or money. But anything touching SIGN-IN or MONEY waits for a real review, so #882 (email sign-in tests) and #885 (Google sign-in tests) are both finished, both green on every machine check, and both still sitting there. Neither changes any product code — they are tests only. You can release both with one word. WHAT WE CANNOT SEE FROM HERE: whether your Fable allowance has run out. That is the one likely cause a shift cannot check, and it is why this is still on your page rather than being fixed."
+      "title": "The outside reviewer has produced NO VERDICT eight times running, over three nights — and it still holds TWO finished pull requests",
+      "detail": "Card #884. Re-checked at the start of tonight's shift and again on tonight's own pull request (#889): the EIGHTH failure, and it failed the same way as the seven before it. WHAT IT IS: an outage, not a rejection. It never reaches a model at all — the failure is on the first call, so there is no opinion to read, good or bad. WHAT IT COSTS YOU RIGHT NOW: two finished pieces of work are sitting one sentence from merging — #882 (the email sign-in route) and #885 (Google sign-in). Both are sign-in paths, and the rule is that sign-in and money changes do not merge on the machine checks alone. Both are test-only: no product code was touched by either. NOT RE-DIAGNOSED TONIGHT, ON PURPOSE: the card already carries eight runs and two narrowings, and re-reading it a ninth time buys nothing. WHAT WOULD UNBLOCK IT: your word on those two, or the reviewer coming back."
     },
     {
       "id": "queue-shape-0913k-foreman",
@@ -6145,7 +6159,7 @@
     179
   ],
   "nextUp": {
-    "readAt": "2026-09-13T04:38:35.563Z",
+    "readAt": "2026-09-13T05:38:42.040Z",
     "items": []
   }
 }
