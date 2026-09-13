@@ -10,9 +10,15 @@
  * trees in a test, without a `git worktree` — the arms that CAN run cheaply
  * should not need the ones that cannot.
  */
-import { existsSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { readIfPresent, statIfPresent } from "./listedEntry.mts";
 import { join, resolve } from "node:path";
+import {
+  buildReexportMap,
+  creditedDeclarations,
+  reachableModules,
+  resolveSpecifier,
+} from "./moduleResolution.mts";
 
 /** Windows path separator, by code point: see the entrypoint's §heredoc note. */
 const SEP = String.fromCharCode(92);
@@ -50,14 +56,77 @@ export function walk(dir: string, out: string[] = []): string[] {
 
 export const isTestFile = (file: string) => /\.(test|integration\.test)\.tsx?$/.test(file);
 
+/**
+ * THE KEY — a declaration is a (file, symbol) PAIR, never a bare name (#274).
+ *
+ * Measured at the tree on 2026-09-13: **11 names are declared TWICE under
+ * `server/`** — `generateMasterPrompt`, `enhanceUserPrompt`,
+ * `generateCastingImage`, `generateFullBody`, `generateRemainingViews`,
+ * `diagnoseResponse`, `hairRegion`, `intersectMasks`, `subtractMask`,
+ * `sameChain`, `bugReportsRouter`. Under a name key the first one walked wins
+ * and **the second does not exist to this reader at all**, so it can never be
+ * seen to lose an importer and `check-cleanup-dispositions`'s `unreadable` arm
+ * cannot catch it either: it reads as whatever its visible twin reads.
+ */
+export const declKey = (file: string, symbol: string) => `${file}::${symbol}`;
+
 export type Tree = {
-  /** symbol -> declaring file, repo-relative with forward slashes */
-  decl: Map<string, string>;
-  /** symbol -> production files importing it, excluding its own declaring file */
-  prodImporters: Map<string, string[]>;
-  /** symbol -> mentions inside its own declaring file, the declaration excluded */
-  selfUses: Map<string, number>;
+  /**
+   * symbol -> EVERY declaring file under `server/`, repo-relative with forward
+   * slashes, in walk order. A one-entry list is the ordinary case.
+   */
+  decls: Map<string, string[]>;
+  /** `declKey` -> production files importing THAT declaration */
+  prodImportersAt: Map<string, string[]>;
+  /** `declKey` -> mentions inside that declaring file, the declaration excluded */
+  selfUsesAt: Map<string, number>;
+  /**
+   * Every declaration of every exported name ANYWHERE in the walked tree,
+   * `client/` and `shared/` included — the out-of-scope ones are what turn *"I
+   * could not follow this chain"* into *"this import belongs to someone else"*.
+   * See `creditedDeclarations`' own `allDeclaringFiles` docblock.
+   */
+  declsAnywhere: Map<string, string[]>;
   files: number;
+};
+
+/* ---------------------------------------------------- the name-keyed views */
+
+/*
+  DERIVED, NEVER MIRRORED (working law 4). The timeline below asks a NAME-level
+  question across trees — *did this symbol stop being imported* — and a file key
+  cannot answer it, because a declaration that MOVES file would read as one
+  symbol deleted and another born. So the name-level reading stays, and it is
+  computed from the file-keyed store on demand rather than stored beside it.
+
+  ⚠ Where the name has two declarations these views are a UNION, and that is
+  the old conflation surviving on purpose for the one caller that needs it.
+  A caller asking about a specific declaration uses the `…At` functions.
+*/
+
+/** The declaring file a bare name resolves to: the FIRST walked, as before. */
+export const declFileOf = (tree: Tree, symbol: string): string | undefined =>
+  tree.decls.get(symbol)?.[0];
+
+/** Production importers of ONE declaration. */
+export const importersAt = (tree: Tree, file: string, symbol: string): string[] =>
+  tree.prodImportersAt.get(declKey(file, symbol)) ?? [];
+
+/** Production importers of ANY declaration of the name, deduplicated. */
+export function importersOfName(tree: Tree, symbol: string): string[] {
+  const out: string[] = [];
+  for (const file of tree.decls.get(symbol) ?? []) {
+    for (const importer of importersAt(tree, file, symbol)) {
+      if (!out.includes(importer)) out.push(importer);
+    }
+  }
+  return out;
+}
+
+/** Self-uses of the FIRST declaration — the name-level reading, unchanged. */
+export const selfUsesOfName = (tree: Tree, symbol: string): number => {
+  const file = declFileOf(tree, symbol);
+  return file === undefined ? 0 : (tree.selfUsesAt.get(declKey(file, symbol)) ?? 0);
 };
 
 /**
@@ -89,24 +158,70 @@ export function readTree(rootArgument: string): Tree {
   const root = resolve(rootArgument);
   const all = ["server", "client", "shared"].flatMap((r) => walk(join(root, r)));
   const show = (f: string) => f.slice(root.length + 1).split(SEP).join("/");
-  const decl = new Map<string, string>();
+  const decls = new Map<string, string[]>();
+  const declsAnywhere = new Map<string, string[]>();
+  /** `declKey` -> the source of the file that declares it */
   const declSource = new Map<string, string>();
   const sources = new Map<string, string>();
 
   const exportPattern =
     /^export\s+(?:async\s+)?(?:const|let|function|class|enum)\s+([A-Za-z_$][\w$]*)/gm;
+  /*
+    ⚠ TWO INDEXES, AND THE SECOND IS NOT A MIRROR OF THE FIRST (#274).
+
+    `decls` is the population this reader REPORTS on — `server/` only, the same
+    scope `sweep-uncalled-exports-disposable.mts` takes, so the two instruments
+    name the same symbols. `declsAnywhere` is wider and is never reported: it
+    exists solely so `creditedDeclarations` can tell *"this import reached a
+    declaration of the name that is not one of mine"* from *"I could not follow
+    this chain"*. Collapsing them was the first version of the sweep's own fix
+    failing on this card's specimen — with only one in-scope declaration there
+    was nothing to disambiguate, and two client files went on crediting the
+    legacy server constant.
+  */
   for (const file of all) {
     const src = readIfPresent(file);
     if (src === null) continue; /* left between the walk and the read (#589) */
     sources.set(file, src);
     if (isTestFile(file)) continue;
-    if (!show(file).startsWith("server/")) continue;
+    const here = show(file);
     for (const match of src.matchAll(exportPattern)) {
-      if (decl.has(match[1])) continue;
-      decl.set(match[1], show(file));
-      declSource.set(match[1], src);
+      const name = match[1]!;
+      const anywhere = declsAnywhere.get(name) ?? [];
+      if (!anywhere.includes(here)) anywhere.push(here);
+      declsAnywhere.set(name, anywhere);
+      if (!here.startsWith("server/")) continue;
+      const inScope = decls.get(name) ?? [];
+      if (inScope.includes(here)) continue;
+      inScope.push(here);
+      decls.set(name, inScope);
+      declSource.set(declKey(here, name), src);
     }
   }
+
+  /** Absolute paths, which is the currency `creditedDeclarations` trades in. */
+  const absolute = (rel: string) => join(root, ...rel.split("/"));
+  const reexports = buildReexportMap(sources, root);
+
+  /**
+   * Which declarations of `name` this one import statement may credit.
+   *
+   * ⚠ It fails toward the import STILL COUNTING: an unplaceable specifier, or a
+   * barrel chain this walk could not follow, credits every in-scope declaration
+   * exactly as the bare-name reading did. So the re-key can only ever remove a
+   * use that is provably somebody else's — it cannot manufacture a dead symbol
+   * out of a resolution miss, which is the direction that would put a live
+   * export on a deletion list.
+   */
+  const credited = (fromFile: string, spec: string, name: string): string[] =>
+    creditedDeclarations({
+      fromFile,
+      spec,
+      declaringFiles: (decls.get(name) ?? []).map(absolute),
+      allDeclaringFiles: (declsAnywhere.get(name) ?? []).map(absolute),
+      reexports,
+      root,
+    }).map((file) => show(resolve(file)));
 
   /*
     ⚠ A DEAD IMPORT IS NOT AN IMPORTER — and this was not a hypothetical bias.
@@ -139,8 +254,8 @@ export function readTree(rootArgument: string): Tree {
     direction it must never fail in. Splicing out the matched statements
     themselves cannot over-reach by construction.
   */
-  const NAMED_IMPORT = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["'][^"']+["']/g;
-  const prodImporters = new Map<string, string[]>();
+  const NAMED_IMPORT = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["']([^"']+)["']/g;
+  const prodImportersAt = new Map<string, string[]>();
   for (const [file, src] of sources) {
     if (isTestFile(file)) continue;
     const here = show(file);
@@ -167,14 +282,29 @@ export function readTree(rootArgument: string): Tree {
           and their consumers were using them under new names.
         */
         const local = (parts[1] ?? parts[0])!.trim();
-        if (!name || !decl.has(name)) continue;
-        /* A module importing from itself is not a consumer. */
-        if (decl.get(name) === here) continue;
-        /* Nor is a module that imports it and never mentions it again. */
+        if (!name || !decls.has(name)) continue;
+        /* A module that imports it and never mentions it again is not one. */
         if (!local || !new RegExp(String.raw`\b` + local + String.raw`\b`).test(body)) continue;
-        const list = prodImporters.get(name) ?? [];
-        if (!list.includes(here)) list.push(here);
-        prodImporters.set(name, list);
+        /*
+          ⚠ AND THE SPECIFIER DECIDES WHICH DECLARATION IS CREDITED (#274).
+
+          This narrowing used to be absent, and its absence is the whole card:
+          the only test was `decl.has(name)`, so `import { BRAND_NAME } from
+          "@/foundation"` in a CLIENT file credited an importer to the legacy
+          `server/casting/geminiPrompts.ts` constant. Measured the day this
+          landed — two client files (`StaffBar.tsx`, `AdminFoundation.tsx`) kept
+          a server export that nothing reaches reading as live with TWO
+          importers, which is the `rewired` arm of
+          `check-cleanup-dispositions` answering about the wrong file.
+        */
+        for (const declaredAt of credited(file, match[2]!, name)) {
+          /* A module importing from itself is not a consumer. */
+          if (declaredAt === here) continue;
+          const key = declKey(declaredAt, name);
+          const list = prodImportersAt.get(key) ?? [];
+          if (!list.includes(here)) list.push(here);
+          prodImportersAt.set(key, list);
+        }
       }
     }
   }
@@ -202,33 +332,20 @@ export function readTree(rootArgument: string): Tree {
 
     The resolution is deliberately narrow, because a loose one would count
     `foo.map` as an importer of any `map` the server happens to export: the
-    binding must be a RELATIVE import, and the member must be declared in that
-    exact module or in a module it re-exports from. One re-export hop, which is
-    what a barrel is (`server/db/index.ts` -> `./security`); a barrel of
-    barrels is not resolved and would read as no importer, which is the safe
-    direction for this reader to be wrong in.
+    member must be declared in the module the specifier names or in one it
+    re-exports from.
+
+    ⚠ **TWO THINGS IN THAT SENTENCE CHANGED WITH #274, BOTH TOWARD COUNTING
+    MORE.** It used to require a RELATIVE specifier and follow exactly ONE
+    re-export hop, on the stated argument that a barrel of barrels reading as
+    no importer is the safe direction for THIS reader. Both limits were a
+    hand-rolled resolver's, not a policy's: the shared `resolveSpecifier` knows
+    the client's `@/` alias and `reachableModules` walks the chain transitively
+    with a visited set. Widening them can only ADD importers, which is the same
+    safe direction — and it removes the second copy of a rule that
+    `lib/moduleResolution.mts` exists to hold once (working law 4, the drift
+    that put `drizzle` in one copy of `CONSUMER_ROOTS` and not the other).
   */
-  const resolveSpec = (fromFile: string, spec: string): string | null => {
-    if (!spec.startsWith(".")) return null;
-    const base = join(fromFile, "..", spec);
-    for (const candidate of [`${base}.ts`, `${base}.tsx`, join(base, "index.ts"), join(base, "index.tsx")]) {
-      if (existsSync(candidate)) return show(candidate);
-    }
-    return null;
-  };
-
-  /** repo-relative module -> the modules it re-exports from */
-  const reexports = new Map<string, string[]>();
-  for (const [file, src] of sources) {
-    for (const match of src.matchAll(/export\s+(?:type\s+)?(?:\{[^}]*\}|\*)\s*from\s*["']([^"']+)["']/g)) {
-      const target = resolveSpec(file, match[1]!);
-      if (!target) continue;
-      const list = reexports.get(show(file)) ?? [];
-      list.push(target);
-      reexports.set(show(file), list);
-    }
-  }
-
   for (const [file, src] of sources) {
     if (isTestFile(file)) continue;
     const here = show(file);
@@ -236,35 +353,47 @@ export function readTree(rootArgument: string): Tree {
     for (const match of src.matchAll(
       /import\s+(?:type\s+)?(?:\*\s+as\s+)?([A-Za-z_$][\w$]*)\s+from\s*["']([^"']+)["']/g,
     )) {
-      const target = resolveSpec(file, match[2]!);
+      const target = resolveSpecifier(file, match[2]!, root);
       if (target) bindings.set(match[1]!, target);
     }
     for (const [alias, target] of bindings) {
-      const reachable = new Set<string>([target, ...(reexports.get(target) ?? [])]);
-      for (const match of src.matchAll(new RegExp(String.raw`\b` + alias + String.raw`\.([A-Za-z_$][\w$]*)`, "g"))) {
+      const reachable = reachableModules(target, reexports);
+      const member = new RegExp(String.raw`\b` + alias + String.raw`\.([A-Za-z_$][\w$]*)`, "g");
+      for (const match of src.matchAll(member)) {
         const name = match[1]!;
-        const declaredAt = decl.get(name);
-        if (!declaredAt || !reachable.has(declaredAt)) continue;
-        /* A module importing from itself is not a consumer. */
-        if (declaredAt === here) continue;
-        const list = prodImporters.get(name) ?? [];
-        if (!list.includes(here)) list.push(here);
-        prodImporters.set(name, list);
+        /*
+          ⚠ EVERY declaration of the name the binding reaches, not the first
+          one walked (#274). `decl.get(name)` answered with one file, so a
+          member access that genuinely reached the SECOND declaration of a
+          twinned name was discarded as unreachable — eleven names are declared
+          twice under `server/` in this tree.
+        */
+        for (const declaredAt of decls.get(name) ?? []) {
+          if (!reachable.has(resolve(join(root, ...declaredAt.split("/"))))) continue;
+          /* A module importing from itself is not a consumer. */
+          if (declaredAt === here) continue;
+          const key = declKey(declaredAt, name);
+          const list = prodImportersAt.get(key) ?? [];
+          if (!list.includes(here)) list.push(here);
+          prodImportersAt.set(key, list);
+        }
       }
     }
   }
 
-  const selfUses = new Map<string, number>();
-  for (const [name, src] of declSource) {
+  const selfUsesAt = new Map<string, number>();
+  for (const [key, src] of declSource) {
+    const name = key.slice(key.lastIndexOf("::") + 2);
     const hits = src.match(new RegExp(String.raw`\b` + name + String.raw`\b`, "g"))?.length ?? 0;
     /* One hit in the declaring file is the declaration itself. */
-    selfUses.set(name, Math.max(0, hits - 1));
+    selfUsesAt.set(key, Math.max(0, hits - 1));
   }
 
-  return { decl, prodImporters, selfUses, files: all.length };
+  return { decls, prodImportersAt, selfUsesAt, declsAnywhere, files: all.length };
 }
 
-export const importerCount = (tree: Tree, name: string) => (tree.prodImporters.get(name) ?? []).length;
+/** Production importers of ANY declaration of the name — the derived view. */
+export const importerCount = (tree: Tree, name: string) => importersOfName(tree, name).length;
 
 export type Unwiring = {
   name: string;
@@ -290,15 +419,15 @@ export type Unwiring = {
  */
 export function unwiredBetween(before: Tree, after: Tree): Unwiring[] {
   const found: Unwiring[] = [];
-  for (const name of before.decl.keys()) {
-    if (!after.decl.has(name)) continue;
+  for (const name of before.decls.keys()) {
+    if (!after.decls.has(name)) continue;
     if (importerCount(before, name) === 0) continue;
     if (importerCount(after, name) > 0) continue;
-    const selfUses = after.selfUses.get(name) ?? 0;
+    const selfUses = selfUsesOfName(after, name);
     found.push({
       name,
-      lostImporters: before.prodImporters.get(name) ?? [],
-      declaredAt: after.decl.get(name)!,
+      lostImporters: importersOfName(before, name),
+      declaredAt: declFileOf(after, name)!,
       selfUses,
       kind: selfUses > 0 ? "self-consulted" : "fully-dark",
     });
@@ -357,10 +486,10 @@ export const newTimeline = (): Timeline => ({
 });
 
 export function observeTree(timeline: Timeline, index: number, tree: Tree): void {
-  for (const name of tree.decl.keys()) {
+  for (const name of tree.decls.keys()) {
     timeline.everDeclared.add(name);
-    const importers = tree.prodImporters.get(name);
-    if (importers && importers.length > 0) {
+    const importers = importersOfName(tree, name);
+    if (importers.length > 0) {
       timeline.lastWiredIdx.set(name, index);
       timeline.lastWiredImporters.set(name, importers);
       if (!timeline.firstWiredIdx.has(name)) timeline.firstWiredIdx.set(name, index);
@@ -407,7 +536,7 @@ export function classifyTimeline(timeline: Timeline, head: Tree): TimelineRow[] 
   const rows: TimelineRow[] = [];
   for (const name of timeline.everDeclared) {
     const wiredIdx = timeline.lastWiredIdx.get(name);
-    const declaredAtHead = head.decl.has(name);
+    const declaredAtHead = head.decls.has(name);
     const importersAtHead = declaredAtHead ? importerCount(head, name) : 0;
 
     let kind: TimelineKind;
@@ -419,12 +548,12 @@ export function classifyTimeline(timeline: Timeline, head: Tree): TimelineRow[] 
     rows.push({
       name,
       kind,
-      declaredAt: declaredAtHead ? head.decl.get(name)! : null,
+      declaredAt: declaredAtHead ? declFileOf(head, name)! : null,
       lastWiredIndex: wiredIdx ?? null,
       firstWiredIndex: timeline.firstWiredIdx.get(name) ?? null,
       darkAfterWiredIndex: timeline.darkAfterWiredIdx.get(name) ?? null,
       lostImporters: timeline.lastWiredImporters.get(name) ?? [],
-      selfUsesAtHead: declaredAtHead ? (head.selfUses.get(name) ?? 0) : 0,
+      selfUsesAtHead: declaredAtHead ? selfUsesOfName(head, name) : 0,
     });
   }
   return rows;
