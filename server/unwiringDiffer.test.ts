@@ -572,18 +572,37 @@ describe("two declarations of one name", () => {
 
   it("credits EVERY in-scope declaration when the specifier cannot be placed — it fails toward counting", () => {
     /*
-      A package specifier resolves to nothing this resolver can read. The old
-      over-generous reading must survive exactly there, because the alternative
-      is inventing a dead symbol out of a resolution miss — and a dead symbol is
-      what the door turns into a deletion.
+      A relative path that is not on disk resolves to nothing this resolver can
+      read. The old over-generous reading must survive exactly there, because
+      the alternative is inventing a dead symbol out of a resolution miss — and
+      a dead symbol is what the door turns into a deletion.
+
+      ⚠ **THIS ARM USED `"some-package"` UNTIL 2026-09-14 AND A PACKAGE IS NOT
+      A MISS (#274).** `react` reaches no file in this tree, so crediting every
+      declaration of the name was a phantom rather than caution — measured on
+      the real tree, `canvasZoom.ts`'s `import { createContext } from "react"`
+      was a production importer of the tRPC request context. The package case
+      is the arm below; this one keeps the fail-safe direction it was written
+      for.
     */
     const source = tree({
       "server/a.ts": CUT,
       "server/b.ts": CUT,
-      "server/caller.ts": USE("some-package"),
+      "server/caller.ts": USE("./does-not-exist"),
     });
     const t = readTree(source);
     expect(importersAt(t, "server/a.ts", "cutShape")).toEqual(["server/caller.ts"]);
     expect(importersAt(t, "server/b.ts", "cutShape")).toEqual(["server/caller.ts"]);
+  });
+
+  it("credits NOTHING for a bare package specifier — it is an answer, not a miss", () => {
+    const source = tree({
+      "server/a.ts": CUT,
+      "server/b.ts": CUT,
+      "server/caller.ts": USE("react"),
+    });
+    const t = readTree(source);
+    expect(importersAt(t, "server/a.ts", "cutShape")).toEqual([]);
+    expect(importersAt(t, "server/b.ts", "cutShape")).toEqual([]);
   });
 });

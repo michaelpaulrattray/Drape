@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8b047e1eb9d849ae"
+    "sourceFingerprint": "9d47d929f45d5ae4"
   },
   "domains": [
     {
@@ -12816,6 +12816,10 @@
     {
       "id": "test:server/debugUtility.test.ts",
       "path": "server/debugUtility.test.ts"
+    },
+    {
+      "id": "test:server/deletionDoorSecondReader.test.ts",
+      "path": "server/deletionDoorSecondReader.test.ts"
     },
     {
       "id": "test:server/deployTriggerClaims.test.ts",

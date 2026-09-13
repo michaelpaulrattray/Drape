@@ -20,29 +20,63 @@
  *
  * Every caller uses this to NARROW a use from "any declaration of this name"
  * to "this one". So an unresolved specifier must never silently narrow to
- * nothing: `resolveSpecifier` returns `null` for anything it cannot place (a
- * package, an alias nobody taught it, a path that is not on disk), and the
- * callers' contract is that `null` means **credit every declaration, exactly
- * as before**. The fix can therefore only ever REMOVE a use that is provably
- * somebody else's — it cannot invent a dead symbol out of a resolution miss,
- * which is the direction that would put a live export on a deletion list.
+ * nothing: `resolveSpecifier` returns `null` for anything it cannot place, and
+ * the callers' contract is that `null` means **credit every declaration,
+ * exactly as before**. The fix can therefore only ever REMOVE a use that is
+ * provably somebody else's — it cannot invent a dead symbol out of a
+ * resolution miss, which is the direction that would put a live export on a
+ * deletion list.
  *
  * That asymmetry is the whole safety argument, and `server/moduleResolution.test.ts`
  * drives it in both directions.
+ *
+ * ⚠ **THE PARAGRAPH ABOVE USED TO LIST "a package" AMONG THE THINGS `null`
+ * MEANS, AND THAT WAS THE ONE ITEM ON THE LIST THAT IS NOT A QUESTION**
+ * (2026-09-14). A bare specifier is an ANSWER — `react` reaches no file here —
+ * so it now credits NOTHING, through `isPackageSpecifier`, and the fail-safe
+ * fallback is left for what it was written for: a chain this walk could not
+ * follow. Two things were needed in the same commit and the order matters:
+ * `@shared/` is an in-repo alias this module had never been taught, and calling
+ * it a package would have invented dead symbols out of 176 real imports. Found
+ * by an independent reader — `server/deletionDoorSecondReader.test.ts` — and
+ * its measured consequence at HEAD is ONE phantom credit that moved no verdict.
  */
 import { existsSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 
 /**
- * The client's `@/…` alias, from `tsconfig.json`'s `paths` and `vite.config.ts`.
+ * EVERY in-repo path alias, and there are TWO of them.
  *
- * Named here because the sweep reads `client/` as a consumer root and the
- * house style there is `@/foundation`, never a relative walk — a resolver that
- * did not know this word would return `null` for nearly every client import and
- * the fix would quietly do nothing on the half of the tree that needed it most.
+ * They are named here because the sweep reads `client/` as a consumer root and
+ * the house style there is `@/foundation`, never a relative walk — a resolver
+ * that did not know the word would return `null` for nearly every client import
+ * and the fix would quietly do nothing on the half of the tree that needed it
+ * most.
+ *
+ * ⚠ **`@shared/` WAS MISSING UNTIL 2026-09-14 AND NOTHING SAID SO.** The
+ * docblock above this list read *"The client's `@/…` alias"* — singular — while
+ * `tsconfig.json` has declared `@shared/*` beside `@/*` the whole time.
+ * Measured at HEAD the hour it was added: **176 import statements across
+ * `server/`, `client/` and `shared/` use it**, and every one of them arrived at
+ * `creditedDeclarations` as an unplaceable specifier and credited EVERY
+ * in-scope declaration of the name. That is the over-crediting this module was
+ * built to end, surviving inside the module that ends it.
+ *
+ * ⚠ **The consequence today is nil and that is said plainly rather than left
+ * to be assumed**: not one of those 176 names also has a `server/` declaration,
+ * so no credit and no verdict on the real table moves. It was latent, not live.
+ *
+ * `server/moduleResolution.test.ts` reads `tsconfig.json`'s own `paths` and
+ * reddens if an alias declared there is missing from this list — a mirror of a
+ * source of truth drifts (working law 4), so the list is not left to hold by
+ * somebody remembering. `vite.config.ts`'s third alias, `@assets`, is
+ * deliberately absent: it points at `attached_assets/`, which holds no
+ * TypeScript, so nothing there can declare an export to credit.
  */
-const ALIAS_PREFIX = "@/";
-const ALIAS_ROOT = "client/src";
+const REPO_ALIASES: { prefix: string; root: string }[] = [
+  { prefix: "@/", root: "client/src" },
+  { prefix: "@shared/", root: "shared" },
+];
 
 /** Extensions and index files tried, in the order the bundlers try them. */
 const CANDIDATES = (base: string) => [
@@ -58,15 +92,66 @@ export const repoRelative = (root: string, file: string) =>
   resolve(file).slice(resolve(root).length + 1).split(sep).join("/");
 
 /**
+ * Is this specifier addressing a PACKAGE rather than a file in this repository?
+ *
+ * ⚠ **THE TWO MEANINGS OF `null` WERE ONE MEANING UNTIL 2026-09-14, AND THE
+ * COMMENT THAT NAMED THE DIFFERENCE SAT INSIDE THE FUNCTION THAT COLLAPSED
+ * IT.** `resolveSpecifier` returned `null` for `"react"` under the words *"A
+ * bare specifier is a package. Not ours, and not a miss worth reporting"* —
+ * and `creditedDeclarations` read that same `null` as *"I could not follow this
+ * chain"* and credited every in-scope declaration.
+ *
+ * They are not the same. *I could not follow this chain* is a question mark and
+ * must fail toward the import still counting. *This is a package* is an
+ * ANSWER: no specifier of the form `react` can reach a file in this tree, so
+ * crediting a declaration here is not conservatism, it is a phantom.
+ *
+ * **Found by the Atlas cross-reader on its first run** (`server/deletionDoorSecondReader.test.ts`):
+ * `client/src/features/boards/canvas/canvasZoom.ts` imports `createContext`
+ * **from `"react"`**, and it was recorded as a production importer of
+ * `server/_core/context.ts::createContext` — the tRPC request context — because
+ * that is the one `server/` declaration of the name. The Atlas holds no import
+ * path whatever between those two modules, which is how the reading could be
+ * shown wrong by something that does not share this resolver.
+ *
+ * ⚠ **The honest size, both ways**: measured at HEAD, **861 package import
+ * statements and 176 in-repo alias ones** reach this function, and **exactly
+ * ONE** of them produces a phantom credit — the specimen above. It keeps a
+ * declaration reading as live that has a real importer anyway, so **no verdict
+ * on `cleanup-dispositions.yaml` moves and nothing was ever at risk.** This is
+ * a latent defect repaired, not a live one caught, and saying otherwise would
+ * be the population overstatement #909 is about.
+ *
+ * ⚠ **THE ALIAS RULE MUST LAND FIRST OR THIS ONE IS DANGEROUS.** `@shared/x`
+ * is not a package, and classifying it as one would credit NOTHING for 176 real
+ * imports — inventing dead symbols out of a resolution the resolver simply had
+ * not been taught. That is the direction that puts a live export on a deletion
+ * list, which is why `REPO_ALIASES` and this predicate are one change.
+ *
+ * An EMPTY specifier is neither: the sweep passes `""` for a computed
+ * `await import(expr)` that has no literal to read, and that is a miss of the
+ * first kind. It keeps the credit-everything fallback.
+ */
+export const isPackageSpecifier = (spec: string): boolean =>
+  spec !== ""
+  && !spec.startsWith(".")
+  && !REPO_ALIASES.some((alias) => spec.startsWith(alias.prefix));
+
+/**
  * The absolute file an import specifier names, or `null` when it cannot be
  * placed. `null` is never "nothing is there" — see the header.
  */
 export function resolveSpecifier(fromFile: string, spec: string, root: string): string | null {
-  let base: string;
-  if (spec.startsWith(ALIAS_PREFIX)) base = join(resolve(root), ALIAS_ROOT, spec.slice(ALIAS_PREFIX.length));
-  else if (spec.startsWith(".")) base = join(resolve(fromFile), "..", spec);
-  /* A bare specifier is a package. Not ours, and not a miss worth reporting. */
-  else return null;
+  let base: string | null = null;
+  for (const alias of REPO_ALIASES) {
+    if (!spec.startsWith(alias.prefix)) continue;
+    base = join(resolve(root), alias.root, spec.slice(alias.prefix.length));
+    break;
+  }
+  if (base === null && spec.startsWith(".")) base = join(resolve(fromFile), "..", spec);
+  /* A bare specifier is a package — see `isPackageSpecifier`, which is where
+     the callers learn that this `null` is an ANSWER rather than a question. */
+  if (base === null) return null;
   for (const candidate of CANDIDATES(base)) if (existsSync(candidate)) return candidate;
   return null;
 }
@@ -175,6 +260,15 @@ export function creditedDeclarations(input: {
 }): string[] {
   const { fromFile, spec, declaringFiles, allDeclaringFiles, reexports, root } = input;
   if (declaringFiles.length === 0) return [];
+
+  /*
+    A PACKAGE IS AN ANSWER, NOT A MISS (#274, 2026-09-14). `import { x } from
+    "react"` cannot reach a file in this repository, so crediting every
+    declaration of `x` is a phantom rather than the safe fallback below. See
+    `isPackageSpecifier` for the specimen, the measured population and why the
+    `@shared/` alias had to be taught in the same commit.
+  */
+  if (isPackageSpecifier(spec)) return [];
 
   const target = resolveSpecifier(fromFile, spec, root);
   if (!target) return declaringFiles;
