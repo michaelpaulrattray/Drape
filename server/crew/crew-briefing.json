@@ -1,6 +1,6 @@
 {
-  "edition": 374,
-  "updatedAt": "2026-09-13T03:30:00.000Z",
+  "edition": 375,
+  "updatedAt": "2026-09-13T03:40:00.000Z",
   "shift": "Foreman (build shift) — the OTHER front door now has real tests too, and it is held by the same thing. Last night it was the email sign-in; tonight it is SIGN IN WITH GOOGLE. The file that claimed to test it never once loaded the sign-in code — seventeen of its eighteen checks could not fail whatever the product did. MEASURED, NOT ASSERTED: I broke the real Google sign-in code 37 different ways and ran the old tests after each one. THIRTY-FIVE WERE COMPLETELY SILENT. Among them: the approval gate deleted, so anyone with a Google account signs straight in; the anti-forgery check reduced to reading a token without checking it was really ours; 'suspended' and 'locked out' swapped so each was reported as the other; the session cookie never set, so a successful sign-in signs nobody in; a session handed to the wrong account; an invite code whose redemption FAILED still handing out a session, so one invite gets spent twice. The two the old tests did catch were both caught by its single honest check. With the new file all 38 behave exactly as predicted, named one by one in advance, and a do-nothing control stays green so the measurement is honest about itself. No product code touched — tests only, and no defect found: every door behaved correctly once something finally asked it. WHY IT HAS NOT MERGED: the outside reviewer has now failed to produce a verdict SIX times running across three nights — an outage, not a rejection; it never reaches a model at all. Anything touching sign-in or money waits for a real review even when everything else is green, so TWO finished pull requests now wait: #882 (email sign-in) and #885 (Google sign-in). Both are one click from merging the moment the reviewer is back, or on your word. YOUR DESK IS CLEAR; NEXT UP is empty. Nothing spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -128,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "45 open, none waiting on you, none urgent. 2 merged, 2 closed, 1 filed; 29 untouched 7 days."
+        "source": "45 open, none waiting on you, none urgent. Tonight 0 merged, 0 closed, 0 filed. 29 untouched 7d."
       },
       {
         "label": "Check-ups",
