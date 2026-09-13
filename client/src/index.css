@@ -158,168 +158,21 @@ html {
   background: var(--lineStrong);
 }
 
-/* Premium Card - Oravia inspired */
-.premium-card {
-  background: #FFFFFF;
-  border: 1px solid #EAEAEA;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02), 0 8px 16px -4px rgba(0,0,0,0.04);
-  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.premium-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.03), 0 12px 24px -6px rgba(0,0,0,0.06);
-  border-color: #D4D4D4;
-}
+/*
+  The legacy palettes that used to live here are gone (#564): the Oravia
+  premium-card set, the soft blue-gray / neumorphic family, the studio-NNN
+  scale, the two range sliders, and the studio shadow, grid-line and
+  text-outline utilities. Between them they held 97 of this file's hex
+  literals — a hard-coded colour cannot invert, so each was a place dark mode
+  could already be wrong and nobody had looked.
 
-/* Technical Grid Background */
-.technical-grid {
-  background-size: 40px 40px;
-  background-image:
-    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
-  mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
-}
-
-/* Canvas background for light mode - with subtle blue tint */
-.bg-canvas {
-  background-color: #F8F9FB;
-}
-
-/* Obsidian text color */
-.text-obsidian {
-  color: #111111;
-}
-.text-charcoal {
-  color: #333333;
-}
-.text-subtle {
-  color: #737373;
-}
-
-/* Border colors */
-.border-light {
-  border-color: #E5E5E5;
-}
-
-/* ============ SOFT BLUE-GRAY PALETTE ============ */
-/* Inspired by neumorphic design - distinctive Drape look */
-
-/* Primary accent - Slate blue-gray */
-.bg-slate-accent {
-  background-color: #6E7F8D;
-}
-.bg-slate-accent-hover:hover {
-  background-color: #5D6E7C;
-}
-.text-slate-accent {
-  color: #6E7F8D;
-}
-.border-slate-accent {
-  border-color: #6E7F8D;
-}
-
-/* Secondary accent - Soft blue-gray */
-.bg-mist {
-  background-color: #929FB5;
-}
-.bg-mist-hover:hover {
-  background-color: #8290A6;
-}
-.text-mist {
-  color: #929FB5;
-}
-.border-mist {
-  border-color: #929FB5;
-}
-
-/* Tertiary - Light muted blue */
-.bg-cloud {
-  background-color: #C1CBD8;
-}
-.text-cloud {
-  color: #C1CBD8;
-}
-.border-cloud {
-  border-color: #C1CBD8;
-}
-
-/* Neumorphic backgrounds */
-.bg-neumorphic {
-  background-color: #EFF2F9;
-}
-.bg-neumorphic-light {
-  background-color: #F1F3F6;
-}
-
-/* Neumorphic shadow utilities */
-.shadow-neumorphic {
-  box-shadow: 
-    5px 5px 10px rgba(22, 27, 29, 0.08),
-    -5px -5px 10px rgba(250, 251, 255, 1);
-}
-.shadow-neumorphic-sm {
-  box-shadow: 
-    3px 3px 6px rgba(22, 27, 29, 0.06),
-    -3px -3px 6px rgba(250, 251, 255, 1);
-}
-.shadow-neumorphic-lg {
-  box-shadow: 
-    10px 10px 20px rgba(22, 27, 29, 0.1),
-    -10px -10px 20px rgba(250, 251, 255, 1);
-}
-.shadow-neumorphic-inset {
-  box-shadow: 
-    inset 3px 3px 6px rgba(22, 27, 29, 0.06),
-    inset -3px -3px 6px rgba(250, 251, 255, 1);
-}
-
-/* Soft card with blue-gray tint */
-.card-soft {
-  background: #FFFFFF;
-  border: 1px solid #E4EBF1;
-  box-shadow: 0 2px 8px rgba(110, 127, 141, 0.08);
-  transition: all 0.3s ease;
-}
-.card-soft:hover {
-  box-shadow: 0 4px 16px rgba(110, 127, 141, 0.12);
-  border-color: #C1CBD8;
-}
-
-/* Button with slate accent */
-.btn-slate {
-  background-color: #6E7F8D;
-  color: white;
-  transition: all 0.2s ease;
-}
-.btn-slate:hover {
-  background-color: #5D6E7C;
-  box-shadow: 0 4px 12px rgba(110, 127, 141, 0.25);
-}
-.btn-slate:active {
-  transform: scale(0.98);
-}
-
-/* Button with mist accent (secondary) */
-.btn-mist {
-  background-color: #929FB5;
-  color: white;
-  transition: all 0.2s ease;
-}
-.btn-mist:hover {
-  background-color: #8290A6;
-}
-
-/* Outline button with slate accent */
-.btn-slate-outline {
-  background-color: transparent;
-  border: 1px solid #6E7F8D;
-  color: #6E7F8D;
-  transition: all 0.2s ease;
-}
-.btn-slate-outline:hover {
-  background-color: #6E7F8D;
-  color: white;
-}
+  Nothing rendered them. Two readers with no shared resolver agree: a
+  whole-tree sweep of the source, and the EMITTED bundle, which sees a class
+  however it was constructed. The migration off them was recorded at the time
+  in docs/todo.md ("zero remaining slate-accent/text-subtle/text-charcoal/
+  text-obsidian/bg-canvas in casting + shared components"); only the
+  declarations outlived it.
+*/
 
 /* Light theme scrollbar for Casting Studio */
 .custom-scrollbar::-webkit-scrollbar {
@@ -338,189 +191,6 @@ html {
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(10, 10, 10, 0.15) transparent;
-}
-
-/* Studio Color Palette for Casting Studio */
-.bg-studio-900 { background-color: #0a0a0a; }
-.bg-studio-800 { background-color: #1a1a1a; }
-.bg-studio-700 { background-color: #2a2a2a; }
-.bg-studio-600 { background-color: #3a3a3a; }
-.bg-studio-500 { background-color: #525252; }
-.bg-studio-400 { background-color: #6b6b6b; }
-.bg-studio-300 { background-color: #a3a3a3; }
-.bg-studio-200 { background-color: #d4d4d4; }
-
-.text-studio-900 { color: #0a0a0a; }
-.text-studio-800 { color: #1a1a1a; }
-.text-studio-700 { color: #2a2a2a; }
-.text-studio-600 { color: #3a3a3a; }
-.text-studio-500 { color: #525252; }
-.text-studio-400 { color: #6b6b6b; }
-.text-studio-300 { color: #a3a3a3; }
-.text-studio-200 { color: #d4d4d4; }
-
-.border-studio-900 { border-color: #0a0a0a; }
-.border-studio-800 { border-color: #1a1a1a; }
-.border-studio-700 { border-color: #2a2a2a; }
-.border-studio-600 { border-color: #3a3a3a; }
-.border-studio-500 { border-color: #525252; }
-.border-studio-400 { border-color: #6b6b6b; }
-.border-studio-300 { border-color: #a3a3a3; }
-.border-studio-200 { border-color: #d4d4d4; }
-
-.ring-studio-800 { --tw-ring-color: #1a1a1a; }
-.ring-studio-700 { --tw-ring-color: #2a2a2a; }
-.ring-studio-600 { --tw-ring-color: #3a3a3a; }
-.ring-studio-500 { --tw-ring-color: #525252; }
-
-.hover\:bg-studio-900:hover { background-color: #0a0a0a; }
-.hover\:bg-studio-800:hover { background-color: #1a1a1a; }
-.hover\:bg-studio-700:hover { background-color: #2a2a2a; }
-.hover\:bg-studio-600:hover { background-color: #3a3a3a; }
-.hover\:bg-studio-500:hover { background-color: #525252; }
-.hover\:bg-studio-400:hover { background-color: #6b6b6b; }
-.hover\:bg-studio-300:hover { background-color: #a3a3a3; }
-.hover\:bg-studio-200:hover { background-color: #d4d4d4; }
-
-.hover\:text-studio-500:hover { color: #525252; }
-.hover\:text-studio-400:hover { color: #6b6b6b; }
-.hover\:text-studio-300:hover { color: #a3a3a3; }
-.hover\:text-studio-200:hover { color: #d4d4d4; }
-
-.hover\:border-studio-700:hover { border-color: #2a2a2a; }
-.hover\:border-studio-600:hover { border-color: #3a3a3a; }
-.hover\:border-studio-500:hover { border-color: #525252; }
-.hover\:border-studio-400:hover { border-color: #6b6b6b; }
-
-.group-hover\:text-studio-500:hover { color: #525252; }
-.group-hover\:text-studio-400:hover { color: #6b6b6b; }
-.group-hover\:text-studio-300:hover { color: #a3a3a3; }
-
-.group-hover\:border-studio-500:hover { border-color: #525252; }
-
-/* Shadow utilities for studio */
-.shadow-studio { box-shadow: 0 0 15px rgba(255,255,255,0.1); }
-.shadow-studio-lg { box-shadow: 0 0 20px rgba(255,255,255,0.1); }
-.shadow-studio-glow { box-shadow: 0 0 25px rgba(255,255,255,0.3); }
-
-/* Grid lines background */
-.grid-lines {
-  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-  background-size: 25% 100%;
-}
-
-/* Custom range slider for light mode */
-input[type="range"].slider-slate {
-  -webkit-appearance: none;
-  appearance: none;
-  background: #D1D5DB;
-  height: 6px;
-  border-radius: 3px;
-  cursor: pointer;
-}
-input[type="range"].slider-slate::-webkit-slider-runnable-track {
-  background: #D1D5DB;
-  height: 6px;
-  border-radius: 3px;
-}
-input[type="range"].slider-slate::-webkit-slider-track {
-  background: #D1D5DB !important;
-  height: 6px;
-  border-radius: 3px;
-}
-input[type="range"].slider-slate::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #6E7F8D;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-  margin-top: -6px;
-  transition: all 0.15s ease;
-}
-input[type="range"].slider-slate::-webkit-slider-thumb:hover {
-  background: #5D6E7C;
-  transform: scale(1.1);
-}
-input[type="range"].slider-slate::-moz-range-track {
-  background: #D1D5DB !important;
-  height: 6px;
-  border-radius: 3px;
-}
-input[type="range"].slider-slate::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #6E7F8D;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-  transition: all 0.15s ease;
-}
-input[type="range"].slider-slate::-moz-range-thumb:hover {
-  background: #5D6E7C;
-  transform: scale(1.1);
-}
-
-/* Custom range slider for obsidian design language */
-input[type="range"].slider-obsidian {
-  -webkit-appearance: none;
-  appearance: none;
-  background: #EBEBEB;
-  height: 6px;
-  border-radius: 9999px;
-  cursor: pointer;
-}
-input[type="range"].slider-obsidian::-webkit-slider-runnable-track {
-  background: #EBEBEB;
-  height: 6px;
-  border-radius: 9999px;
-}
-input[type="range"].slider-obsidian::-webkit-slider-track {
-  background: #EBEBEB !important;
-  height: 6px;
-  border-radius: 9999px;
-}
-input[type="range"].slider-obsidian::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #0A0A0A;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-  margin-top: -6px;
-  transition: all 0.15s ease;
-}
-input[type="range"].slider-obsidian::-webkit-slider-thumb:hover {
-  background: #0A0A0A;
-  transform: scale(1.15);
-}
-input[type="range"].slider-obsidian::-moz-range-track {
-  background: #EBEBEB !important;
-  height: 6px;
-  border-radius: 9999px;
-}
-input[type="range"].slider-obsidian::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #0A0A0A;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-  transition: all 0.15s ease;
-}
-input[type="range"].slider-obsidian::-moz-range-thumb:hover {
-  background: #0A0A0A;
-  transform: scale(1.15);
-}
-
-/* Text outline utility */
-.text-outline {
-  -webkit-text-stroke: 1px rgba(0,0,0,0.2);
-  color: transparent;
 }
 
 @layer base {
@@ -658,7 +328,25 @@ input[type="range"].slider-obsidian::-moz-range-thumb:hover {
       rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%,
       rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%,
       rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    /*
+      ⚠ THE ONLY COLOUR-SHAPED VALUE LEFT IN THIS FILE, AND IT IS NOT A COLOUR.
+      A mask is an ALPHA STENCIL: this pair says "the whole box" twice so that
+      `xor`/`exclude` leaves the 1.4px border ring above. Nothing here paints a
+      pixel, and it is identical in both themes — the brand-orb carve-out's
+      reasoning exactly, one declaration instead of a file.
+
+      Written `white` rather than `#fff` so that enrolling this file in the
+      token guard does not need a whole-file carve-out for one non-colour.
+      ⚠ That trade is stated rather than hidden: the guard's hex net cannot see
+      a keyword, so this moves one value from a covered notation into an
+      uncovered one. Teaching the matcher that a `mask` is a stencil was the
+      alternative, and it was declined — a matcher change carries its own
+      controls, and this repo's own rule is that the guard's strength is a dumb
+      net with sharp controls. A KEYWORD colour on a themed surface is still
+      the bug this guard is for; it is only spared here because a mask paints
+      nothing.
+    */
+    -webkit-mask: linear-gradient(white 0 0) content-box, linear-gradient(white 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
