@@ -393,6 +393,83 @@ describe("brief 06 §5 — a destructive action cannot be written without its co
     }
   });
 
+  it("no consequence note names a value the request may not carry", () => {
+    /*
+      ⚠ **#913 — THE SENTENCE UNDER THE APPROVE BUTTON SAID "Approving adds
+      null credits to this account".** Four money branches of
+      `approvalConsequence` interpolate an optional column; two of them already
+      guarded (`refundAmountCents ? … : "—"`, `creditsToDeduct ?? "—"`) and two
+      did not, so the last thing an admin read before moving a paying
+      customer's balance was a JavaScript word. Sweeping the class across the
+      function found a third: `block_ip` interpolated `ipAddress` raw.
+
+      **THE POPULATION IS DERIVED FROM THE TABLE, NOT TYPED HERE.** The columns
+      that may be absent are the ones `drizzle/schema.ts` declares on
+      `change_requests` WITHOUT `.notNull()` — so a tenth nullable column, or
+      an existing one losing its `.notNull()`, joins this arm with nobody
+      remembering to add it. A hand-list would have had the same blind spot the
+      original code did (working law 4, and the Atlas's own four collectors).
+
+      **What counts as guarded** is any of the three shapes the file actually
+      uses, asked of the `case` block the interpolation sits in: a ternary on
+      the value, a `??` default, or an early `== null` return. That is a
+      structural claim about the branch rather than a judgement about English.
+    */
+    const SCHEMA = fs.readFileSync(
+      path.resolve(CLIENT_SRC, "..", "..", "drizzle", "schema.ts"),
+      "utf8",
+    );
+    const table = SCHEMA.slice(
+      SCHEMA.indexOf('export const changeRequests = mysqlTable("change_requests"'),
+    );
+    const tableBody = table.slice(0, table.indexOf("\n});"));
+    const nullable = new Set<string>();
+    for (const line of tableBody.split("\n")) {
+      const declared = line.match(/^\s{2}(\w+):\s*\w+\(/);
+      if (!declared) continue;
+      if (line.includes(".notNull()")) continue;
+      nullable.add(declared[1]);
+    }
+    expect(nullable.size, "the nullable-column reading found nothing").toBeGreaterThanOrEqual(8);
+    expect(nullable, "the reading missed the column the card was about").toContain("creditAmount");
+    /* NEGATIVE CONTROL on the reading itself: a `.notNull()` column must not
+       be in it, or every branch would look like it needed a guard. */
+    expect(nullable.has("targetUserId"), "a notNull column read as nullable").toBe(false);
+
+    const source = code(read("features/admin/ChangeRequestList.tsx"));
+    const fn = source.slice(source.indexOf("function approvalConsequence("));
+    const body = fn.slice(0, fn.indexOf("\n}"));
+    expect(body, "the arm is reading nothing").toContain('case "stripe_refund":');
+
+    const guarded = (block: string, column: string) =>
+      new RegExp(`detail\\.${column}\\s*(?:\\?\\?|\\?[^.]|[=!]=\\s*null)`).test(block);
+
+    const blocks = body.split(/case "/).slice(1);
+    let checked = 0;
+    for (const block of blocks) {
+      const type = block.slice(0, block.indexOf('"'));
+      for (const column of nullable) {
+        if (!new RegExp(`\\$\\{[^}]*detail\\.${column}\\b`).test(block)) continue;
+        checked += 1;
+        expect(
+          guarded(block, column),
+          `${type} interpolates detail.${column}, which the table lets be absent, with no guard — that renders "null" or "undefined" in the sentence beside the button`,
+        ).toBe(true);
+      }
+    }
+    expect(checked, "no branch interpolated an optional column at all").toBeGreaterThanOrEqual(4);
+
+    /* POSITIVE CONTROL — the two sentences that shipped the defect fail it. */
+    const SHIPPED_CREDITS =
+      'add_credits":\n      return `Approving adds ${detail.creditAmount} credits to this account.`;';
+    const SHIPPED_IP =
+      'block_ip":\n      return `Approving records ${detail.ipAddress} on the block list.`;';
+    expect(guarded(SHIPPED_CREDITS, "creditAmount"), "the matcher is blind").toBe(false);
+    expect(guarded(SHIPPED_IP, "ipAddress"), "the matcher is blind").toBe(false);
+    /* …and the two that were always right pass it, so it is not simply strict. */
+    expect(guarded(body.slice(body.indexOf('stripe_refund"')), "refundAmountCents")).toBe(true);
+  });
+
   it("every destructive action in the product carries a real sentence", () => {
     /*
       The type proves a string is PRESENT. This proves the strings are not the

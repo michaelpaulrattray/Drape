@@ -186,3 +186,25 @@ export const CHANGE_REQUEST_STATUSES = Object.keys(
 export function changeRequestStatusLabel(status: string): string {
   return CHANGE_REQUEST_STATUS_LABELS[status as ChangeRequestStatus] ?? status;
 }
+
+/**
+ * WHAT A REQUEST'S OWN SUBJECT READS AS WHEN NOBODY RECORDED IT (#913).
+ *
+ * Two staff surfaces draw a change request's type-specific facts — the admin's
+ * Change requests table and the moderator's own *My requests* tab — and until
+ * this constant existed both of them drew NOTHING when the value was absent:
+ * the CREDITS row on a credit request, the IP ADDRESS row on a block request.
+ * On the admin side that silence sat directly above a sentence reading
+ * *"Approving adds null credits to this account"*, on the button that moves a
+ * paying customer's balance.
+ *
+ * **An absent value is a fact about the request, not a reason to draw
+ * nothing.** It lives here for the same reason the type and status words do:
+ * the moment two surfaces write the same words they drift (working law 4), and
+ * this file is where the change-request vocabulary is declared once.
+ *
+ * ⚠ **Not `"—"`.** A dash is tidier and says nothing — an admin reading it
+ * cannot tell "no amount was recorded" from "the panel did not fetch it", and
+ * the whole value of a fact block is that it is readable as a sentence.
+ */
+export const CHANGE_REQUEST_NOT_RECORDED = "not recorded";
