@@ -66,6 +66,16 @@ import { describe, expect, it } from "vitest";
  * rule is complete as of this commit and is not complete by construction. The
  * honest repair if that changes is to ban the bare form on these roots outright.
  *
+ * ## ⚠ TWO RULES LIVE HERE NOW, AND THE SECOND ARRIVED THE SAME WAY
+ *
+ * **Instance 4** — #903: the DATE half. `MyRequestsTab` read `03/09/2026` while
+ * the tab one click away read `Sep 13, 11:08`. This file could not see it, and
+ * correctly so: a bare `toLocaleDateString()` prints no clock, and the negative
+ * control below says exactly that. So the date rule is a SEPARATE predicate
+ * (`offendsLocaleDate`) rather than a wider `offends` — its reasoning is in its
+ * own docblock, and an arm asserts the two rules stay disjoint on the shape
+ * that shipped.
+ *
  * ## What a source read cannot answer
  *
  * Whether the rendered bar and the content beneath it actually agree, in both
@@ -190,6 +200,35 @@ const isClock = (c: Call): boolean => {
 /** A clock that is not forced to 24-hour. */
 const offends = (c: Call): boolean => isClock(c) && !/hour12:\s*false/.test(c.args);
 
+/**
+ * ⚠ **THE SECOND RULE, AND IT IS A SEPARATE PREDICATE ON PURPOSE (#903).**
+ *
+ * The clock rule above ends at `isClock`'s first line — *"toLocaleDateString
+ * never prints a clock"* — and a negative control below pins that. It is
+ * correct and must stay: widening `offends` to reach a date would make the
+ * word "clock" mean two things in one function, and the arm that proves the
+ * matcher can tell them apart would go red for the wrong reason.
+ *
+ * But the DATE half of the same defect then shipped. `MyRequestsTab` rendered
+ * its `Raised` column from a bare `toLocaleDateString()` and read `03/09/2026`
+ * while the Audit logs tab **of the same console, one click away** read
+ * `Sep 13, 11:08` from the house formatter. Same furniture, two notations —
+ * which is the ruling's own comparative reasoning, in a shape this file could
+ * not see. `ReconciliationSubTab`'s `Frozen 03/09/2026` was its sibling and was
+ * found by the sweep rather than by the card.
+ *
+ * **The rule is NO ARGUMENTS AT ALL**, which is the narrowest thing that
+ * catches both instances: an empty argument list hands the locale, the field
+ * list and the order to whatever machine the page is open on. A call that names
+ * a locale or an options object has made a decision, and judging that decision
+ * is a different question from this one.
+ *
+ * `toLocaleDateString` exists only on `Date`, so a bare one is always a date
+ * and always at the machine's default — the same argument shape 2 above makes
+ * for `toLocaleTimeString`, and it needs no receiver test.
+ */
+const offendsLocaleDate = (c: Call): boolean => c.kind === "Date" && c.args.trim() === "";
+
 /* ================================================================
    THE POPULATION IS REAL
    ================================================================ */
@@ -300,6 +339,32 @@ describe("the staff clock guard — the matcher", () => {
     expect(offends(only('d.toLocaleString("en-US", { month: "short", day: "numeric" })'))).toBe(false);
   });
 
+  /*
+    The date rule's own controls. The first string is what shipped in
+    `MyRequestsTab` and rendered `03/09/2026`; the second is the sibling the
+    sweep found in `ReconciliationSubTab`.
+  */
+  it("POSITIVE CONTROL 4 — a bare toLocaleDateString takes the machine's locale", () => {
+    expect(offendsLocaleDate(only("new Date(request.createdAt).toLocaleDateString()"))).toBe(true);
+    expect(offendsLocaleDate(only("new Date(frozenAt).toLocaleDateString()"))).toBe(true);
+    /*
+      ⚠ **AND THE TWO RULES ARE DISJOINT ON IT, ASSERTED RATHER THAN ASSUMED.**
+      This is the shape the clock rule is right to ignore. If a later hand
+      widens `isClock` to cover it, this goes red and they read why the rules
+      were split instead of merged.
+    */
+    expect(offends(only("new Date(request.createdAt).toLocaleDateString()"))).toBe(false);
+  });
+
+  it("NEGATIVE CONTROL — a date that named a locale or a field list has decided", () => {
+    expect(
+      offendsLocaleDate(only('new Date(v).toLocaleDateString("en-US", { month: "short" })')),
+    ).toBe(false);
+    expect(offendsLocaleDate(only('d.toLocaleDateString("en-GB")'))).toBe(false);
+    /* A number can never reach this rule — the method name is the whole test. */
+    expect(offendsLocaleDate(only("creditsBalance.toLocaleString()"))).toBe(false);
+  });
+
   it("NEGATIVE CONTROL — a forced 24-hour clock passes", () => {
     expect(
       offends(only('then.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false })')),
@@ -317,6 +382,25 @@ describe("every clock in his world is 24-hour", () => {
     for (const file of population()) {
       for (const call of calls(file.text)) {
         if (offends(call)) offenders.push(`${file.name}: ${call.whole.slice(0, 70)}…`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("no staff surface takes the locale default for a date either", () => {
+    /*
+      ⚠ **THIS ARM SHARES THE POPULATION ABOVE AND THEREFORE SHARES ITS FLOOR**
+      — it does not get a second one, and that is a decision rather than an
+      omission. The floor beneath measures whether the SWEEP still reaches real
+      files; if the resolver, the walk or the regex breaks, it reddens and both
+      verdicts are known broken at once. A second floor counting bare dates
+      would be a floor of zero the moment this card lands, which is a number
+      that can never fall.
+    */
+    const offenders: string[] = [];
+    for (const file of population()) {
+      for (const call of calls(file.text)) {
+        if (offendsLocaleDate(call)) offenders.push(`${file.name}: ${call.whole.slice(0, 70)}…`);
       }
     }
     expect(offenders).toEqual([]);
