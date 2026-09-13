@@ -1,7 +1,7 @@
 {
-  "edition": 396,
-  "updatedAt": "2026-09-13T23:22:26.241Z",
-  "shift": "YOU ANSWERED THREE THINGS WHILE I WAS CLOSING, AND ALL THREE ARE DONE. Nothing a customer sees changed tonight and nothing was spent. Edition 395 went out a minute before your first reply landed, so this one exists to tell you what happened to it.\n\n1 - DATES: \"Day first everywhere\". Recorded on the job, and the hold that was on it is gone. Your admin Overview, audit log and moderation console will change from 'Sep 14' to '14 Sept', and the Crew page stops depending on whose computer is reading it and gets pinned to the same thing for everybody. Every clock stays 24-hour.\n\n⚠ ONE THING I DID NOT DO, AND THE REASON IS THE WHOLE POINT OF THE JOB IT SITS ON. I did not start changing the dates tonight. Those three screens are fed by two date helpers that are the same helper written out twice - once for admin, once for moderation - and there is an open job to make them one. Applying your ruling now means making one change in two files, which is exactly the fault that job exists to fix and the fault that cost a shift last week. Merge them first, then your notation goes in once, in one place, and the look-at-it check covers all three screens at a stroke.\n\n2 - THE CUSTOMER CLOCKS: \"Leave it\". Done - nothing is touched, not the clock and not the date order. ⚠ AND I DELIBERATELY DID NOT LET YOUR OTHER ANSWER LEAK INTO THIS ONE: \"day first everywhere\" was your answer about YOUR screens, and \"leave it\" was your answer about the customer's, three minutes later. The narrower word governs its own subject. The check that watches these already has an alarm saying it must never reach the customer's board history, and that alarm is now backed by your word rather than by caution.\n\n3 - THE BOARDS CANVAS: you handed the timing back to me, so here is the call and the reasoning, because you should be able to overrule it in one word.\n\nYOUR WORDS SETTLED THE QUESTION THE JOB ACTUALLY ASKED. It asked whether the light-only canvas is deliberate - a canvas is paper, and Figma and Miro keep theirs light on purpose - or simply unfinished. You said the rebuilt canvas will have a dark mode, so it is unfinished. That was the part no shift was allowed to decide.\n\n⭐ MY DECISION: WAIT FOR THE REDESIGN. Three reasons, and the first decides it. A dark canvas is not a switch to flip - somebody has to CHOOSE sixteen dark colours, and a customer's artwork sitting on greys that were guessed at 3am reads worse than artwork on honest white paper. That is a judgement for the redesign, with your eye on it. Second, it would be built twice, and in the meantime it puts a second set of colour definitions in the app carrying a second dark palette - the precise mess the colour check exists to prevent. Third, the cost of waiting is known and I will not dress it up: someone working at night in dark mode opens a board and gets a bright rectangle in a dark app. That is real. It is also on the surface you have just told me is being replaced, and it is how boards have looked since they shipped.\n\nWHAT I WILL DO INSTEAD IS SMALL AND CHANGES NO PIXEL: write into that file that it is light-only ON PURPOSE FOR NOW, quoting your reply and naming the redesign as where it closes. Today the file says nothing at all, so the next person cannot tell an unfinished thing from an intended one - which is the exact ambiguity that put it on your desk. Same for the colour check: it gets an exemption WITH ITS EXPIRY WRITTEN IN, which is a different object from an exemption that quietly accepts two colour systems forever.\n\nIf you would rather have the bright rectangle fixed now regardless, say so and it is done - this is a timing call you gave me, not a refusal.\n\nEARLIER TONIGHT, and it is in full on the job below: the check that stops us designing the same thing twice had been asking the wrong question, and it had already missed one. Your casting hero's small grey heading with the line running off it is the SAME drawing as your account menu's and your lobby menu's - identical to the last number - written out separately in three files. The check never saw it because it searched for the names casting uses rather than for the drawing. Five copies across the app, in two sizes. I did not take the ten-minute fix because it would have put the word 'menu' on your casting hero; the proper version is filed with every measurement taken. And I proved 'nothing to see' by building the app twice and comparing the stylesheets byte for byte, rather than by reading the diff and saying so.\n\nThe reviewer failed a twenty-seventh time - 640 milliseconds, one turn, zero dollars, an error on the first step, all of them still from 1am on the 12th. Your \"wait\" stands and I did not re-diagnose it. Your two sign-in changes, the subscription money bug and the credit-request repair are all still held exactly as you ruled. NEXT UP is empty.",
+  "edition": 397,
+  "updatedAt": "2026-09-13T23:32:07.674Z",
+  "shift": "FIVE ANSWERS FROM YOU IN SIX MINUTES, ALL FIVE DONE, AND YOUR DESK IS NOW EMPTY. Nothing a customer sees changed tonight and nothing was spent. Three of them are written up in the edition below; these are the last two.\n\nTHE REVIEWER HEAD-TO-HEAD: \"Keep ours, change nothing\". Closed. The reviewer stays as it is - no change to the checks, no second reviewer, nothing swapped. That is exactly what the job said would decide it: your eye on the scoresheet, not a benchmark claim.\n\n⚠ ONE THING I WROTE ONTO THAT JOB BEFORE CLOSING IT, because in six months somebody will read your three words and take them too far: \"change nothing\" is about the REVIEWER, not about the bugs the comparison found. The rival did find a real money bug in how we handle a subscription update arriving out of order, and that is still an open job on its own. Closing the contest does not close the bug it turned up.\n\nTHE EXPIRED SHEET: \"Good.\" Thank you - that one had been sitting on your page for a reason. The rule is that a picture only leaves your screen when YOU have looked at it, not when the work behind it finished, so the check has been holding it there and telling every shift to leave it alone until you said something. You have, so it comes off.\n\nAND THE THREE FROM TEN MINUTES EARLIER, in short. DATES: \"day first everywhere\" is recorded and the hold is gone - but I did not start changing them tonight, because the two date helpers behind those screens are the same helper written out twice, and there is an open job to make them one. Applying your ruling first would mean making one change in two files, which is the exact fault that job exists to fix. Merge, then change once. CUSTOMER CLOCKS: \"leave it\" - nothing touched, and I deliberately did not let your \"day first\" answer leak onto the customer's screen, because that was your answer about YOUR screens and this was your answer about theirs. BOARDS CANVAS: you handed the timing to me and I chose to wait for the redesign - a dark canvas means somebody CHOOSING sixteen dark colours, and artwork sitting on greys guessed at 3am reads worse than artwork on honest white paper. The full reasoning and the one small thing I will do instead are in the edition below. One word from you reverses it.\n\nEARLIER TONIGHT: the check that stops us designing the same thing twice had been asking the wrong question, and it had already missed one. Your casting hero's small grey heading with the line running off it is the SAME drawing as your account menu's and your lobby menu's - identical to the last number - written out separately in three files. The check never saw it because it searched for the names casting uses rather than for the drawing. I did not take the ten-minute fix because it would have put the word 'menu' on your casting hero; the proper version is filed with every measurement already taken. And I proved 'nothing to see' by building the app twice and comparing the stylesheets byte for byte rather than by reading the diff and saying so.\n\nThe reviewer failed a twenty-seventh time - 640 milliseconds, one turn, zero dollars, an error on the first step, all of them still from 1am on the 12th. Your \"wait\" stands and I did not re-diagnose it. Your two sign-in changes, the subscription money bug and the credit-request repair are all still held exactly as you ruled. NEXT UP is empty.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,9 +116,9 @@
     ],
     "chips": [
       {
-        "label": "Your desk is clear",
+        "label": "Your desk is empty",
         "tone": "good",
-        "source": "3 replies tonight, all acted on (184 of 184). Dates, customer clocks, boards canvas."
+        "source": "5 replies in 6 minutes, all acted on (186 of 186). Nothing is waiting on you."
       },
       {
         "label": "Secrets, shapes, access: clean",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-13T20:27:03.582Z",
+      "readAt": "2026-09-13T23:33:08.095Z",
       "items": [
         {
           "issueNumber": 16,
@@ -353,7 +353,7 @@
     {
       "id": "reviewer-court-513",
       "issueNumber": 513,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-13T11:22:25.808Z",
       "title": "The reviewer head-to-head is done: each one found a real bug the other missed, and the rival found a money bug. Do you want to change anything?",
       "productImpact": "Every code change that ships to your customers is read by an AI reviewer first - it is the last thing between a bug and them. You asked back in early September whether a different model would do it better, and blocked it on one condition: 'leave it for when openrouter is available through openrouter.' That cleared this morning, so I ran the comparison on TEN changes ours had already reviewed, and checked every claim either of them made by opening the real code. THE RESULT IS GENUINELY CLOSE, AND THAT IS THE USEFUL ANSWER. The rival found THREE real problems ours passed over. Ours found one real problem the rival walked past, and invented nothing. The rival invented two problems that are not real - it is faster and more willing to say something is wrong, which is why it catches more AND why it is wrong more. Ours is slower, five times longer, and actually verifies what it claims - it traces the code, confirms a test really fails before the fix, re-runs the checks. The rival never attempts that and structurally cannot. ONE OF THE RIVAL'S CATCHES IS A REAL MONEY BUG and it is now its own card (#896): in a rare crash, a customer can be charged for a picture that never arrives and never get the credits back - and nothing ever notices, because the row looks settled. Nobody has hit it. WHAT I AM NOT DOING: nothing has changed. No reviewer was switched, no setting moved. Your own card says that decision is yours and not a shift's, so this is the scoresheet and the decision is the only thing outstanding. My recommendation is to KEEP OURS and change nothing: the rival's three extra catches are real, but two invented findings per nine reviews is a tax paid by whoever reads them, and our reviewer's habit of verifying its claims is what makes a clean pass mean something. The more interesting question this raises is what the rival would find if it could open files and run commands the way ours does - it was working from the change alone. That is a different test if you want it.",
@@ -4868,7 +4868,7 @@
       "id": "sheet-gone-890-frames",
       "title": "The expired sheet, now: where the address lands and what it says",
       "question": "This is your 'its gone' as built. Opening an expired sheet puts you here - one line above the box, no button, your old words not carried. Is that sentence the one you want a customer to read? A reply is your eye on it; nothing else waits.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-13T07:46:54.572Z",
       "issueNumber": 890,
       "frames": [
@@ -6564,10 +6564,12 @@
     181,
     182,
     183,
-    184
+    184,
+    185,
+    186
   ],
   "nextUp": {
-    "readAt": "2026-09-13T23:22:26.242Z",
+    "readAt": "2026-09-13T23:33:08.094Z",
     "items": []
   }
 }
