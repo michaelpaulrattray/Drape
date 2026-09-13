@@ -114,7 +114,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { importerCount, readTree } from "./lib/importerCountDiff.mts";
+import { declKey, importersAt, readTree } from "./lib/importerCountDiff.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const REPO = resolve(import.meta.dirname, "..");
@@ -223,15 +223,33 @@ export function auditTable(input: {
   listed: Array<{ symbol: string; file: string }>;
   declares: (file: string, symbol: string) => boolean;
   /**
-   * Production importers of a symbol, or `null` when the reader cannot see the
-   * symbol at all. The two answers are deliberately different — see `rewired`
-   * and `unreadable` below.
+   * Production importers of ONE DECLARATION — the (file, symbol) pair the row
+   * names — or `null` when the reader cannot see that declaration at all. The
+   * two answers are deliberately different: see `rewired` and `unreadable`.
+   *
+   * ⚠ THE `file` ARGUMENT IS #274's WHOLE REPAIR AND IT WAS ABSENT.
+   * This used to be `(symbol) => …`, so one row necessarily answered every
+   * declaration sharing its name. Measured at the tree the day it was fixed:
+   * the `BRAND_NAME` row names `server/casting/geminiPrompts.ts`, nothing in
+   * the product reaches that constant, and the reader returned **2** — two
+   * CLIENT files importing `client/src/foundation/brand.ts` through
+   * `@/foundation`. A `HELD` verdict on the server twin was therefore
+   * impossible: `rewired` would refuse it on the client twin's importers, which
+   * is the card's second failure mode (*toward the wrong address*) live.
    */
-  importers: (symbol: string) => number | null;
+  importers: (file: string, symbol: string) => number | null;
   /** Overridden by the controls so the ceiling can be driven both ways. */
   ceiling?: number;
 }): Verdicts {
-  const byName = new Map(input.rows.map((row) => [row.symbol, row]));
+  /*
+    KEYED ON THE PAIR, NOT THE NAME (#274). `unread` asks *is this listed
+    (file, symbol) dispositioned* — under a name key a row about the CLIENT
+    twin answered a listing for the SERVER one and the symbol silently left
+    the reading list.
+  */
+  const byKey = new Map(input.rows.map((row) => [declKey(row.file, row.symbol), row]));
+  /** The pair, as both the table and the sweep spell it. */
+  const keyOf = (entry: { file: string; symbol: string }) => declKey(entry.file, entry.symbol);
   /*
     AN EMPTY VERDICT IS UNREAD, NOT ROTTEN. The two failure modes must not be
     confused: a row nobody has filled in is the milestone's remaining work, and
@@ -242,7 +260,8 @@ export function auditTable(input: {
   const empty = input.rows.filter((row) => row.verdict.trim() === "").map((row) => row.symbol);
   return {
     unread: [
-      ...input.listed.filter((entry) => !byName.has(entry.symbol)).map((entry) => entry.symbol),
+      ...input.listed.filter((entry) => !byKey.has(keyOf(entry)))
+        .map((entry) => `${entry.symbol} (${entry.file})`),
       ...empty,
     ],
     stale: input.rows
@@ -267,8 +286,8 @@ export function auditTable(input: {
     */
     rewired: input.rows
       .filter((row) => AWAITING_DELETION.has(row.verdict))
-      .filter((row) => (input.importers(row.symbol) ?? 0) > 0)
-      .map((row) => `${row.symbol} (${input.importers(row.symbol)})`),
+      .filter((row) => (input.importers(row.file, row.symbol) ?? 0) > 0)
+      .map((row) => `${row.symbol} (${input.importers(row.file, row.symbol)})`),
     /*
       AND THE ARM MUST NOT PASS BY BEING BLIND. A HELD row whose symbol the
       importer reader cannot see would sail through `rewired` for ever, which
@@ -277,8 +296,8 @@ export function auditTable(input: {
     */
     unreadable: input.rows
       .filter((row) => AWAITING_DELETION.has(row.verdict))
-      .filter((row) => input.importers(row.symbol) === null)
-      .map((row) => row.symbol),
+      .filter((row) => input.importers(row.file, row.symbol) === null)
+      .map((row) => `${row.symbol} (${row.file})`),
     /*
       THE SHRINK-ONLY DOOR. Compared for EQUALITY, so reviewing a row reddens
       here until UNREVIEWED_CEILING comes down beside it in the same commit.
@@ -295,15 +314,35 @@ export function auditTable(input: {
 /* ---- controls: driven directly, against tables that cannot come clean ---- */
 
 function controls(log: (line: string) => void): boolean {
+  /*
+    The fabricated source reader. `twin` is declared in BOTH files, which is the
+    shape #274 is about and the one the `stale` arm must keep tolerating: a row
+    on either twin names a file that really does declare it.
+  */
   const declares = (file: string, symbol: string): boolean =>
-    file === "live.ts" && symbol.startsWith("live");
+    symbol === "twin"
+      ? file === "live.ts" || file === "dead.ts"
+      : file === "live.ts" && symbol.startsWith("live");
   /*
     The fabricated importer reader. `liveWired` is the one symbol something
     calls; `liveInvisible` is the one the reader cannot see at all, which is a
     THIRD answer and not a quiet zero.
+
+    ⚠ IT IS KEYED ON THE PAIR, AND THE TWIN BELOW IS WHY (#274). It took one
+    argument until today, and the re-key would have compiled CLEAN with it left
+    alone — TypeScript accepts a one-parameter function where two are wanted, so
+    every control would have gone on passing while silently receiving the FILE
+    as its symbol. That is this card's own defect class, inside the arms meant
+    to prove the card's fix, and it is the reason `twinDead`/`twinLive` exist:
+    they are the only cases that can tell a reader consulting the file from one
+    ignoring it.
   */
-  const importers = (symbol: string): number | null => {
+  const importers = (file: string, symbol: string): number | null => {
     if (symbol === "liveInvisible") return null;
+    /* The twin: one name, two files, and only ONE of them is reached. */
+    if (symbol === "twin") return file === "live.ts" ? 2 : 0;
+    /* A declaration the reader has never heard of is not a quiet zero either. */
+    if (file !== "live.ts") return null;
     return symbol === "liveWired" ? 2 : 0;
   };
   const clean: Row[] = [
@@ -425,6 +464,36 @@ function controls(log: (line: string) => void): boolean {
       listed,
       expect: "unreadable",
     },
+    /*
+      ⚠ THE TWO ARMS #274 IS ABOUT, AND THEY ONLY MEAN SOMETHING AS A PAIR.
+      One name, two declaring files, one of them reached. Under the old
+      name-keyed reading BOTH of these answered with the same number, so one of
+      them was necessarily wrong — and which one depended on nothing but which
+      declaration the reader happened to walk first.
+    */
+    {
+      name: "a HELD row on the DEAD twin is CLEAN — its own file has no importer",
+      rows: [...clean, { symbol: "twin", file: "dead.ts", verdict: "HELD", why: "w", argued: "§34", blocker: "legacy retirement", line: 16 }],
+      listed: [...listed, { symbol: "twin", file: "dead.ts" }],
+      expect: null,
+    },
+    {
+      name: "a HELD row on the LIVE twin is REWIRED — same name, the other file",
+      rows: [...clean, { symbol: "twin", file: "live.ts", verdict: "HELD", why: "w", argued: "§34", blocker: "legacy retirement", line: 17 }],
+      listed: [...listed, { symbol: "twin", file: "live.ts" }],
+      expect: "rewired",
+    },
+    /*
+      AND `unread` CARRIES THE FILE TOO. A row about one twin must not
+      disposition a listing for the other — that is how a symbol leaves the
+      reading list without anybody deciding anything about it.
+    */
+    {
+      name: "a row on one twin does NOT disposition a listing for the other",
+      rows: [...clean, { symbol: "twin", file: "live.ts", verdict: "KEEP", why: "w", argued: "§6", line: 18 }],
+      listed: [...listed, { symbol: "twin", file: "dead.ts" }],
+      expect: "unread",
+    },
   ];
 
   let ok = true;
@@ -527,8 +596,15 @@ if (import.meta.main) {
     path, and that is the same call the differ makes.
   */
   const tree = readTree(REPO);
-  const importers = (symbol: string): number | null =>
-    tree.decl.has(symbol) ? importerCount(tree, symbol) : null;
+  /*
+    ⚠ AND IT ASKS ABOUT THE ROW'S OWN FILE (#274). `tree.decl.has(symbol)` was
+    the visibility test, so a row naming the SECOND of two declarations that
+    share a name read as perfectly visible and was answered with the FIRST
+    one's importers — never `null`, so `unreadable` could not catch it either.
+    Eleven names are declared twice under `server/` in this tree.
+  */
+  const importers = (file: string, symbol: string): number | null =>
+    (tree.decls.get(symbol) ?? []).includes(file) ? importersAt(tree, file, symbol).length : null;
 
   const audit = auditTable({ rows, listed, declares, importers });
   const counted = rows.reduce<Record<string, number>>((tally, row) => {

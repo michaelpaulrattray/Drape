@@ -4,7 +4,14 @@ import { dirname, join } from "node:path";
 
 import { afterAll, describe, expect, it } from "vitest";
 
-import { importerCount, readTree, unwiredBetween } from "../scripts/lib/importerCountDiff.mts";
+import {
+  declFileOf,
+  importerCount,
+  importersAt,
+  importersOfName,
+  readTree,
+  unwiredBetween,
+} from "../scripts/lib/importerCountDiff.mts";
 
 /**
  * THE UN-WIRING DIFFER — the arms that need no `git worktree`.
@@ -165,7 +172,7 @@ describe("the un-wiring differ", () => {
     try {
       process.chdir(source);
       const relative = readTree(".");
-      expect(relative.decl.size, "a relative root read no declarations at all").toBe(absolute.decl.size);
+      expect(relative.decls.size, "a relative root read no declarations at all").toBe(absolute.decls.size);
       expect(importerCount(relative, "isSensitiveAction")).toBe(
         importerCount(absolute, "isSensitiveAction"),
       );
@@ -338,7 +345,7 @@ describe("the namespace hop", () => {
   it("counts a symbol reached through `import * as db` — the login lockout's own shape", () => {
     const source = tree({ "server/db.ts": LOCKOUT, "server/emailAuth.ts": NS_CALL });
     expect(importerCount(readTree(source), "isAccountLocked")).toBe(1);
-    expect(readTree(source).prodImporters.get("isAccountLocked")).toEqual(["server/emailAuth.ts"]);
+    expect(importersOfName(readTree(source), "isAccountLocked")).toEqual(["server/emailAuth.ts"]);
   });
 
   it("⚠ and REPORTS it when that call site disappears — the arm the blindness made impossible", () => {
@@ -359,24 +366,37 @@ describe("the namespace hop", () => {
       "server/emailAuth.ts": NS_CALL,
     });
     const t = readTree(source);
-    expect(t.decl.get("isAccountLocked")).toBe("server/db/security.ts");
+    expect(declFileOf(t, "isAccountLocked")).toBe("server/db/security.ts");
     expect(importerCount(t, "isAccountLocked")).toBe(1);
   });
 
-  it("does NOT follow a barrel of barrels — the stated limit, pinned rather than assumed", () => {
-    /*
-      A second hop would need a transitive closure and every extra hop widens
-      what an alias may claim. Unresolved reads as NO importer, which is the
-      safe direction for this reader: it can produce a finding that turns out
-      to be alive, never a silence about something that died.
-    */
+  /*
+    ⚠ THIS ARM USED TO PIN THE OPPOSITE ANSWER, AND THE REVERSAL IS DELIBERATE
+    (#274). It asserted 0 on a barrel of barrels and argued that unresolved
+    reading as NO importer was *"the safe direction for this reader: it can
+    produce a finding that turns out to be alive, never a silence about
+    something that died."*
+
+    **The second half of that sentence is false, and CLAUDE.md says so in the
+    very paragraph this module's namespace hop was written for:** *"a symbol
+    already counted at zero can never be seen to FALL to zero"*. A barrel of
+    barrels reads zero at BOTH trees, so the differ is silent about it dying —
+    which is exactly the shape that hid the account lockout for months.
+
+    It is now unsafe twice over, because this reader acquired a second consumer:
+    `check-cleanup-dispositions`'s door, where zero importers means **propose
+    for deletion**. `lib/moduleResolution.mts` had already made this call for
+    the sweep, in those words. Following the chain transitively makes all three
+    instruments answer identically, which is why that module exists.
+  */
+  it("follows a barrel OF barrels — the old one-hop limit was a silence, not a safeguard", () => {
     const source = tree({
       "server/db/inner/deep.ts": LOCKOUT,
       "server/db/inner/index.ts": `export { isAccountLocked } from "./deep";\n`,
       "server/db/index.ts": `export { isAccountLocked } from "./inner";\n`,
       "server/emailAuth.ts": NS_CALL,
     });
-    expect(importerCount(readTree(source), "isAccountLocked")).toBe(0);
+    expect(importerCount(readTree(source), "isAccountLocked")).toBe(1);
     /* the same shape with ONE hop instead of two, so this arm cannot pass by
        the hop machinery being dead */
     const oneHop = tree({
@@ -385,6 +405,24 @@ describe("the namespace hop", () => {
       "server/emailAuth.ts": NS_CALL,
     });
     expect(importerCount(readTree(oneHop), "isAccountLocked")).toBe(1);
+  });
+
+  /*
+    AND THE WIDENING MUST TERMINATE. A transitive walk is only safe with a
+    visited set; a cyclic barrel — ordinary in this house style, and a shape the
+    one-hop reader could never meet — would otherwise hang every caller. Driven
+    rather than trusted to `MAX_HOPS`, because a walk that silently stops at
+    eight hops is a different behaviour from one that cannot loop, and only one
+    of those two is what the code says it does.
+  */
+  it("terminates on a CYCLIC barrel, and still credits the member", () => {
+    const source = tree({
+      "server/db/security.ts": LOCKOUT,
+      "server/db/index.ts": `export { isAccountLocked } from "./security";\nexport * from "./ring";\n`,
+      "server/db/ring.ts": `export * from "./index";\n`,
+      "server/emailAuth.ts": NS_CALL,
+    });
+    expect(importerCount(readTree(source), "isAccountLocked")).toBe(1);
   });
 
   it("does NOT credit an alias that resolves to a module without the symbol", () => {
@@ -427,5 +465,125 @@ describe("the namespace hop", () => {
     /* byte-for-byte the same consumer, named as production — counted */
     const production = tree({ "server/db.ts": LOCKOUT, "server/dbUse.ts": suite });
     expect(importerCount(readTree(production), "isAccountLocked")).toBe(1);
+  });
+});
+
+/**
+ * THE TWIN — ONE NAME, TWO DECLARATIONS, AND THEY MUST NOT ANSWER FOR EACH
+ * OTHER (#274).
+ *
+ * The reader kept `decl: Map<name, file>` and dropped every declaration after
+ * the first it walked, so the second did not exist to it at all: it could never
+ * be seen to lose an importer, and `check-cleanup-dispositions`'s `unreadable`
+ * arm could not catch it either, because the name read as perfectly visible.
+ *
+ * **This is not hypothetical and it is not rare.** Measured at the tree on
+ * 2026-09-13: **ELEVEN names are declared twice under `server/`** —
+ * `generateMasterPrompt`, `enhanceUserPrompt`, `generateCastingImage`,
+ * `generateFullBody`, `generateRemainingViews`, `diagnoseResponse`,
+ * `hairRegion`, `intersectMasks`, `subtractMask`, `sameChain`,
+ * `bugReportsRouter` — and a twelfth, `BRAND_NAME`, straddles `server/` and
+ * `client/`, which is the card's own specimen.
+ *
+ * Each arm varies ONE property and asserts the un-varied direction beside it.
+ */
+describe("two declarations of one name", () => {
+  const CUT = `export function cutShape(id: string) {\n  return id;\n}\n`;
+  const USE = (from: string) =>
+    `import { cutShape } from "${from}";\nexport const go = (id: string) => cutShape(id);\n`;
+
+  it("keeps BOTH declarations, and credits each importer to the file it actually reached", () => {
+    const source = tree({
+      "server/castingV2/inkReferenceCrop.ts": CUT,
+      "server/castingV2/maskGeometry.ts": CUT,
+      "server/castingV2/inkRoad.ts": USE("./inkReferenceCrop"),
+      "server/castingV2/maskRoad.ts": USE("./maskGeometry"),
+    });
+    const t = readTree(source);
+    expect(t.decls.get("cutShape")).toEqual([
+      "server/castingV2/inkReferenceCrop.ts",
+      "server/castingV2/maskGeometry.ts",
+    ]);
+    expect(importersAt(t, "server/castingV2/inkReferenceCrop.ts", "cutShape"))
+      .toEqual(["server/castingV2/inkRoad.ts"]);
+    expect(importersAt(t, "server/castingV2/maskGeometry.ts", "cutShape"))
+      .toEqual(["server/castingV2/maskRoad.ts"]);
+    /* the name-level view is a UNION of the two, and that is the old reading */
+    expect(importersOfName(t, "cutShape")).toHaveLength(2);
+  });
+
+  it("⚠ reports a DEAD twin standing behind a live one — the reading the name key could not produce", () => {
+    const source = tree({
+      /* walked first, so this is the one the old `decl` map kept */
+      "server/castingV2/inkReferenceCrop.ts": CUT,
+      "server/castingV2/maskGeometry.ts": CUT,
+      /* and only the FIRST is reached */
+      "server/castingV2/inkRoad.ts": USE("./inkReferenceCrop"),
+    });
+    const t = readTree(source);
+    /*
+      ⚠ IT IS DECLARED AND READ AS ZERO, WHICH IS NOT THE SAME AS UNSEEN — and
+      asserting the first half is what makes this arm fail under the old
+      first-declaration-wins map. There, `maskGeometry.ts` is absent from
+      `decls` entirely, so `importersAt` returns `[]` for exactly the wrong
+      reason and this arm would pass on a reader that cannot see the file at
+      all. The door's own `importers()` tells the two apart by asking `decls`
+      first: absent means `null`, which trips `unreadable` rather than quietly
+      licensing a deletion.
+    */
+    expect(t.decls.get("cutShape")).toContain("server/castingV2/maskGeometry.ts");
+    expect(importersAt(t, "server/castingV2/maskGeometry.ts", "cutShape")).toEqual([]);
+    /* the un-varied direction: the live twin really is live, so this arm
+       cannot pass by the whole reading being blind */
+    expect(importersAt(t, "server/castingV2/inkReferenceCrop.ts", "cutShape")).toHaveLength(1);
+    /*
+      AND THE NAME-LEVEL VIEW STILL SAYS 1, WHICH IS THE BUG PRESERVED ON
+      PURPOSE for the differ's cross-tree question. It is exactly why the door
+      must ask `importersAt`: a row naming `maskGeometry.ts` that consulted the
+      name would read 1 and pass, about a file nothing imports.
+    */
+    expect(importersOfName(t, "cutShape")).toHaveLength(1);
+  });
+
+  it("does not let a CLIENT declaration credit an importer to a server twin of the same name", () => {
+    const source = tree({
+      "server/casting/geminiPrompts.ts": `export const BRAND_NAME = "DRAPE";\n`,
+      "client/src/foundation/brand.ts": `export const BRAND_NAME = "Klieg";\n`,
+      "client/src/foundation/index.ts": `export { BRAND_NAME } from "./brand";\n`,
+      "client/src/pages/AdminFoundation.tsx":
+        `import { BRAND_NAME } from "@/foundation";\nexport const n = BRAND_NAME;\n`,
+    });
+    expect(importersAt(readTree(source), "server/casting/geminiPrompts.ts", "BRAND_NAME")).toEqual([]);
+    /*
+      THE UN-VARIED DIRECTION, AND IT IS THE SAFETY ARGUMENT. The same client
+      file importing from a specifier that reaches the SERVER declaration is
+      still counted — the narrowing removes a use that is provably somebody
+      else's and never one it merely failed to place.
+    */
+    const reaching = tree({
+      "server/casting/geminiPrompts.ts": `export const BRAND_NAME = "DRAPE";\n`,
+      "client/src/foundation/brand.ts": `export const BRAND_NAME = "Klieg";\n`,
+      "server/casting/use.ts":
+        `import { BRAND_NAME } from "./geminiPrompts";\nexport const n = BRAND_NAME;\n`,
+    });
+    expect(importersAt(readTree(reaching), "server/casting/geminiPrompts.ts", "BRAND_NAME"))
+      .toEqual(["server/casting/use.ts"]);
+  });
+
+  it("credits EVERY in-scope declaration when the specifier cannot be placed — it fails toward counting", () => {
+    /*
+      A package specifier resolves to nothing this resolver can read. The old
+      over-generous reading must survive exactly there, because the alternative
+      is inventing a dead symbol out of a resolution miss — and a dead symbol is
+      what the door turns into a deletion.
+    */
+    const source = tree({
+      "server/a.ts": CUT,
+      "server/b.ts": CUT,
+      "server/caller.ts": USE("some-package"),
+    });
+    const t = readTree(source);
+    expect(importersAt(t, "server/a.ts", "cutShape")).toEqual(["server/caller.ts"]);
+    expect(importersAt(t, "server/b.ts", "cutShape")).toEqual(["server/caller.ts"]);
   });
 });

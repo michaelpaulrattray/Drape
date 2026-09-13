@@ -63,9 +63,14 @@
  *
  * # LIMITS, inherited and stated
  *
- * Everything `lib/importerCountDiff.mts` states: one hop (a dead importer still
- * counts), a call site after an early return is invisible, dynamic specifiers
- * unresolved, one row per symbol NAME across the tree. Two of its own:
+ * Everything `lib/importerCountDiff.mts` states: a dead importer still counts,
+ * a call site after an early return is invisible, dynamic specifiers
+ * unresolved, and **one row per symbol NAME across the tree — which since #274
+ * is a DERIVED view over a (file, symbol) store rather than the store itself.
+ * Where a name is declared twice the row unions both**, so a timeline verdict
+ * about a twinned name is about the pair and not about either file; eleven names
+ * are twinned under `server/` in this tree. (The "one hop" this sentence used to
+ * carry is gone: the barrel walk is transitive.) Two of its own:
  * `dark-born` includes symbols whose only consumer is a ceremony or audit
  * script (13 of 19 control-shaped names, measured), and a finer stride shrinks
  * the born-and-killed-inside-one-tile gap without ever closing it.
@@ -139,7 +144,7 @@ for (let i = 0; i < boundaries.length; i++) {
   if (i % 20 === 0 || i === boundaries.length - 1) {
     console.log(
       `  [${String(i).padStart(3)}/${boundaries.length - 1}] ${sha.slice(0, 8)} ${dates[i]!.slice(0, 10)}` +
-        `  ${tree.files} files / ${tree.decl.size} exports  (${((Date.now() - started) / 1000).toFixed(0)}s)`,
+        `  ${tree.files} files / ${tree.decls.size} exports  (${((Date.now() - started) / 1000).toFixed(0)}s)`,
     );
   }
 }
@@ -171,13 +176,13 @@ const check = (label: string, ok: boolean, detail: string) => {
 console.log("\nCONTROLS");
 check(
   "sanity    the tiling read real trees",
-  headTree.decl.size > 500 && boundaries.length > 20,
-  `${boundaries.length} boundaries · HEAD ${headTree.files} files / ${headTree.decl.size} exports`,
+  headTree.decls.size > 500 && boundaries.length > 20,
+  `${boundaries.length} boundaries · HEAD ${headTree.files} files / ${headTree.decls.size} exports`,
 );
 check(
   "sanity    the population is more than one tree's",
-  timeline.everDeclared.size > headTree.decl.size,
-  `${timeline.everDeclared.size} names ever declared vs ${headTree.decl.size} at HEAD`,
+  timeline.everDeclared.size > headTree.decls.size,
+  `${timeline.everDeclared.size} names ever declared vs ${headTree.decls.size} at HEAD`,
 );
 check("positive  REAL: a topup credit grant", rowOf("addTopupCredits")?.kind === "died", describe("addTopupCredits"));
 check("positive  REAL: a credit-velocity cap", rowOf("getRecentTopupCredits")?.kind === "deleted", describe("getRecentTopupCredits"));
