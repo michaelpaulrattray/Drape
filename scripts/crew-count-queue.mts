@@ -78,6 +78,34 @@
  * found nothing, never that nothing is stale. The re-read-before-take standing
  * order is the control; this says which to re-read FIRST.
  *
+ * # THE CARDS NO SWITCH CAN OFFER ANYBODY (#893)
+ *
+ * The counts above answer *what is on offer*. The last line of the log answers
+ * the question nothing asked until now: **which open cards are real work that
+ * no switch reaches, so no shift can ever take them.**
+ *
+ * The standing orders say it plainly — *"Background work runs ONLY where a
+ * switch says so"* — so a card carrying none of the seven switch labels is
+ * untakeable however real it is. **Measured the night this landed: exactly one,
+ * two days old.** `#804`, a billing defect out of a PR review, filed 11
+ * September, labelled `debt` and nothing else. It was on his page the whole
+ * time, in the Debt group; every shift since had read the queue, worked the
+ * category order, and correctly never seen it. **Visible and takeable are
+ * different things.**
+ *
+ * ⚠ **It is DERIVED from the same population the groups were filed from** —
+ * `shared/crewPipelineGroups.ts`'s `backgroundWork` field says which groups
+ * hold work rather than something waiting on him, and every group but
+ * `switched` is switch-unreachable by construction. No second `gh` call, no
+ * hand-typed exclusion list (working law 4: a fourteenth group added there and
+ * forgotten here would make the count silently too small — the same shape as
+ * the defect itself).
+ *
+ * ⚠ **It reports and never refuses**, and it prints ZERO as a real answer. A
+ * card with no category is a triage judgement, not a broken number; and a line
+ * that appears only when it has something to say is indistinguishable, on the
+ * night it says nothing, from a reading that stopped being taken.
+ *
  * # ⚠ THIS IS A WRITER, AND IT IS THE ONLY TABLE IT MAY NAME
  *
  * `crew_queue_counts` and nothing else; no DDL, no DELETE. In particular it may

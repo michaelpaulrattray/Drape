@@ -43,6 +43,7 @@ import { execFileSync } from "node:child_process";
 
 import {
   CREW_PIPELINE_GROUPS,
+  CREW_UNREACHABLE_GROUP_KEYS,
   pipelineGroupFor,
   pipelineGroupRowKey,
 } from "../../shared/crewPipelineGroups.js";
@@ -991,6 +992,47 @@ export async function refreshQueueCounts(
       };
     }
     log(`  ${"".padEnd(16)} ${String(sum).padStart(3)} — sums to the queue's own total ✓`);
+
+    /*
+      ⚠ THE CARDS NO SWITCH CAN OFFER ANYBODY (#893).
+
+      The groups above tell him where every card SITS. This tells the SHIFT
+      which of them are real work that the mechanism deciding what gets worked
+      cannot see at all — the standing orders' *"Background work runs ONLY where
+      a switch says so"*, read the other way round.
+
+      **It found #804 two days late**: a billing defect out of a PR review,
+      filed 11 September, carrying `debt` and nothing else. Visible on his page
+      in the Debt group the whole time, and takeable by nobody — which are
+      different things, and only one of them gets work done.
+
+      ⚠ **ZERO IS A REAL ANSWER AND IS PRINTED** — the panel's own rule since
+      #277. A line that appears only when there is something to say is
+      indistinguishable, on the night it says nothing, from a reading that
+      stopped being taken.
+
+      ⚠ **AND EVERY ONE IS NAMED, UNCAPPED.** The switch counts cap their titles
+      at five because his panel has a width; this is a shift's log at 3am and
+      the whole point is that somebody can act on it. A population big enough to
+      be noisy here is itself the finding.
+
+      It reports and never refuses: a card with no category is a triage
+      judgement, not a broken number, and nothing about his panel is wrong
+      because of it.
+    */
+    const unreachable = CREW_UNREACHABLE_GROUP_KEYS
+      .flatMap((key) => (pipeline.byGroup.get(key) ?? []).map((card) => ({ ...card, group: key })))
+      .sort((left, right) => left.number - right.number);
+    log(
+      `\n  reachable by no switch — ${unreachable.length} open card(s) that no shift can be offered`
+      + ` (groups: ${CREW_UNREACHABLE_GROUP_KEYS.join(", ")})`,
+    );
+    if (unreachable.length === 0) {
+      log("      none — every open card is either on offer above or waiting on him by design.");
+    }
+    for (const card of unreachable) {
+      log(`      ⚠ #${card.number} [${card.group}] ${card.title}`);
+    }
   }
 
   /* Read back rather than trusted (working law 1 — the changed rows are the fact). */

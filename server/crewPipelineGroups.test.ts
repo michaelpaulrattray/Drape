@@ -33,6 +33,7 @@ import {
   CREW_LADDER_GROUP_KEYS,
   CREW_PIPELINE_GROUPS,
   CREW_PIPELINE_ORPHAN_GROUPS,
+  CREW_UNREACHABLE_GROUP_KEYS,
   PIPELINE_GROUP_KEY_PREFIX,
   PIPELINE_SWITCHED_KEY,
   onePlaceViolations,
@@ -293,6 +294,41 @@ describe("the partition", () => {
     /* POSITIVE CONTROL — `other` is not what everything falls to. A declared
        label still reaches its own group. */
     expect(pipelineGroupFor(["debt"])).toBe("debt");
+  });
+
+  it("⚠ #893 — the switch-unreachable groups are DERIVED, and every one of them really is unreachable", () => {
+    /* The property the reading rests on, driven rather than reasoned: a card in
+       any group flagged `backgroundWork` carries no switch label, because
+       `pipelineGroupFor` files a card that does under `switched` first. If that
+       ever stopped being true, the untakeable list would name cards a shift
+       could already have taken — noise, which is how a finding stops being
+       read. */
+    expect(CREW_UNREACHABLE_GROUP_KEYS.length).toBeGreaterThan(0);
+    expect(CREW_UNREACHABLE_GROUP_KEYS).not.toContain(PIPELINE_SWITCHED_KEY);
+    for (const key of CREW_UNREACHABLE_GROUP_KEYS) {
+      const group = CREW_PIPELINE_GROUPS.find((entry) => entry.key === key);
+      expect(group, `${key} is not a declared group`).toBeDefined();
+      /* A group defined by a label: that label alone must not reach a switch. */
+      if (group?.queueLabel) expect(pipelineGroupFor([group.queueLabel])).toBe(key);
+    }
+    /* ⚠ POSITIVE CONTROL — it is not simply every group. The ones waiting on
+       him by design are OUT, or the line would report his own roadmap back to
+       him as work nobody can take. */
+    for (const key of ["ordered", "parked", "design-unbuilt", "roadmap", "scope-change", "blocked", "patrol"]) {
+      expect(CREW_UNREACHABLE_GROUP_KEYS, `${key} waits on him or on its own clock`).not.toContain(key);
+    }
+  });
+
+  it("⚠ #893 — #804's real shape lands in a group the reading reports", () => {
+    /* The specimen, at its measured labels: `debt` and nothing else, from 11
+       September. Two days of shifts read the queue and correctly never saw it.
+       This arm is what makes the next one impossible to add silently. */
+    const group = pipelineGroupFor(["debt"]);
+    expect(group).toBe("debt");
+    expect(CREW_UNREACHABLE_GROUP_KEYS).toContain(group);
+    /* And the moment somebody gives it a category it leaves the list — which is
+       the whole remedy, and it must not need a code change. */
+    expect(CREW_UNREACHABLE_GROUP_KEYS).not.toContain(pipelineGroupFor(["debt", "bug"]));
   });
 
   it("no label at all is its own answer, and is not `other`", () => {
