@@ -220,7 +220,18 @@ export function ChangeRequestList({
     <DataTable
       columns={[
         { label: "Request", width: "1 1 0" },
-        { label: "Status", width: "0 0 118px" },
+        /*
+          ⚠ **118px HELD THE WORDS BUT NOT THE WIDEST ONE — found by #907's
+          sweep, and it had been true here since #800.** This list has said
+          `Outcome unconfirmed` for `pending_execution` for as long as that
+          state has existed, and the pill renders at **139.1px** against a
+          118px cell: `.dp-table__cell` is `overflow: hidden` with no ellipsis,
+          so an admin reading the Outcome-unconfirmed filter saw the label cut
+          mid-word. The card was filed about the moderator's console; this is
+          the same defect one role over, which is why it is fixed in the same
+          commit rather than filed as a sibling.
+        */
+        { label: "Status", width: "0 0 152px" },
         { label: "Priority", width: "0 0 92px" },
         { label: "Raised", width: "0 0 118px" },
       ]}

@@ -107,3 +107,82 @@ export const SENSITIVE_CHANGE_REQUEST_TYPES = Object.keys(
 export function changeRequestTypeLabel(type: string): string {
   return CHANGE_REQUEST_TYPE_LABELS[type as ChangeRequestType] ?? type;
 }
+
+/**
+ * ONE declaration of what a change-request STATUS is called (#907).
+ *
+ * # What a moderator was reading
+ *
+ * The admin panel has said `Outcome unconfirmed` for `pending_execution` since
+ * #800. The moderator's own *My requests* tab passed `request.status` straight
+ * into its pill, so the same row on the same request read **`PENDING_EXECUTI`**
+ * — a raw database enum, in machine case, hard-clipped mid-word by a 104px
+ * column. Its neighbours read `PENDING` and `DENIED`, so the broken one was the
+ * only one that looked like a leak.
+ *
+ * ⚠ **The clipping was the symptom; the enum was the defect.** Widening the
+ * column to fit `PENDING_EXECUTION` would have made a machine word legible,
+ * which is working law 8 exactly — *this is a visual studio, not a maths
+ * class*: the user's ontology governs, and a person should not have to
+ * interpret `pending_execution`.
+ *
+ * # Why all six, and not just the broken one
+ *
+ * Mapping one status and leaving five raw would have left the column in two
+ * vocabularies — which is the mistake #900 was filed about, one shape over.
+ * The five that read acceptably in caps read acceptably as words too, so the
+ * whole column is settled here rather than half of it.
+ *
+ * # Why it lives in `shared/`
+ *
+ * The type labels above are here for exactly this reason and the status labels
+ * had drifted the same way: one surface knew the words, the other did not.
+ * **Icons and colours stay in `client/src/features/admin/ChangeRequestConstants.tsx`**
+ * — `shared/` is imported by the server and may not depend on `lucide-react`
+ * — and that file now derives its labels from this map, the way `TYPE_CONFIG`
+ * already derives its own.
+ *
+ * Sentence case, matching the type labels and the house voice (brief 05).
+ *
+ * Guarded by `server/changeRequestLabels.test.ts`, which fails if a second
+ * declaration of these pairs appears anywhere in the tree, and which reads the
+ * accepted statuses off the `change_requests` table's own enum — so a status
+ * added to the column without a word here reddens in the file that owns the
+ * words.
+ */
+export const CHANGE_REQUEST_STATUS_LABELS = {
+  pending: "Pending",
+  approved: "Approved",
+  denied: "Denied",
+  cancelled: "Cancelled",
+  expired: "Expired",
+  /**
+   * ⚠ **Not "Failed", and the wording is load-bearing.** A sensitive request
+   * executes inside the approve mutation (#800); this state survives when the
+   * execution threw — OR when the action RAN and only the settle write or the
+   * process died (a deploy landing mid-request). So the label must not claim
+   * the action did not happen: the outcome is UNKNOWN and a person checks the
+   * record before acting again. The sentence was written for the admin panel
+   * and is carried here verbatim rather than re-decided.
+   */
+  pending_execution: "Outcome unconfirmed",
+} as const;
+
+export type ChangeRequestStatus = keyof typeof CHANGE_REQUEST_STATUS_LABELS;
+
+/** Every status, in the order the request moves through them. */
+export const CHANGE_REQUEST_STATUSES = Object.keys(
+  CHANGE_REQUEST_STATUS_LABELS,
+) as ChangeRequestStatus[];
+
+/**
+ * The label for a status, falling back to the raw key.
+ *
+ * The fallback matches `changeRequestTypeLabel` above and exists for the same
+ * reason: a row whose status this build does not know about is better shown by
+ * its key than swallowed. It should be unreachable — the guard's wire arm is
+ * what keeps it so.
+ */
+export function changeRequestStatusLabel(status: string): string {
+  return CHANGE_REQUEST_STATUS_LABELS[status as ChangeRequestStatus] ?? status;
+}

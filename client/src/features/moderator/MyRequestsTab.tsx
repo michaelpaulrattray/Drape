@@ -22,7 +22,7 @@ import { useState } from "react";
 import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
-import { changeRequestTypeLabel } from "@shared/changeRequestLabels";
+import { changeRequestStatusLabel, changeRequestTypeLabel } from "@shared/changeRequestLabels";
 import { formatDate, formatFullDate } from "./moderatorConstants";
 
 
@@ -69,9 +69,23 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
         }
         meta={`${changeRequestTypeLabel(request.type)} · about ${request.targetUserName || `user ${request.targetUserId}`}`}
       />,
+      /*
+        ⚠ **#907 — this was the bare `request.status`**, so the pill rendered
+        the database enum in machine case and the 104px column cut it mid-word:
+        `PENDING_EXECUTI`. Its neighbours read `PENDING` and `DENIED`, so the
+        broken one was the only one that looked like a leak — and the admin
+        list one role away has said `Outcome unconfirmed` for that same state
+        since #800.
+
+        ⚠ **All six statuses take the words, not just the broken one.** Mapping
+        one and leaving five raw would have left this column in two
+        vocabularies, which is the mistake #900 was filed about. The words are
+        `shared/changeRequestLabels.ts`'s, the same declaration the admin
+        panel's `STATUS_CONFIG` reads, so the two surfaces cannot drift again.
+      */
       <StatePill
         key="status"
-        label={request.status}
+        label={changeRequestStatusLabel(request.status)}
         attention={ATTENTION_STATUS.has(request.status)}
       />,
       <StatePill
@@ -154,7 +168,22 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
       <DataTable
         columns={[
           { label: "Request", width: "1 1 0" },
-          { label: "Status", width: "0 0 104px" },
+          /*
+            ⚠ **152px, and the number is MEASURED rather than chosen (#907).**
+            The widest status is `Outcome unconfirmed`, which renders at
+            **142.8px** as a pill (9.5px mono, uppercase, 0.08em tracking, 9px
+            padding either side). The column was 104px and `.dp-table__cell`
+            is `overflow: hidden` with no ellipsis, so it was a hard cut
+            mid-word — which is how `PENDING_EXECUTI` came to be on screen.
+
+            ⚠ **Widening it is NOT the repair the card warned against.** That
+            warning was about widening to make `PENDING_EXECUTION` legible —
+            fitting a machine word into the furniture. The words changed first;
+            this is the column being made big enough for the widest real word,
+            and it is the same 152px the admin list now uses, because the same
+            label was being cut there too.
+          */
+          { label: "Status", width: "0 0 152px" },
           { label: "Priority", width: "0 0 92px" },
           { label: "Raised", width: "0 0 118px" },
         ]}
