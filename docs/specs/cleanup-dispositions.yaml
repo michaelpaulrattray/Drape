@@ -1306,3 +1306,10 @@
   verdict: KEEP
   why: "server/testing/ is test infrastructure by directory (the allowColdImports precedent). It is the ceiling vitest.config.ts reads for maxWorkers — vitest's own cores − 1, capped at 8 — because 19 workers on the founder's box starved the child-process suites into 13–22 timeouts a run and doubled the wall time, measured as a back-to-back pair (301 s / 2 reds at eight against 680 s / 22 at nineteen). Read by the config, never by product code, and server/workerCap.test.ts pins the wire at the config's bytes"
   argued: "#743"
+
+- symbol: mergeAttributeChanges
+  file: server/lib/boardOps.ts
+  verdict: FILED
+  why: "SURFACED BY #274's FIXED SWEEP AND NOT YET ARGUED — it was invisible while boardOps.ts was namespace-imported, because the sweep excluded every export of such a module wholesale rather than reading `ops.NAME`. Read at the code: declared at boardOps.ts:803, the ONLY mention in its own module, and its sole importer is server/casting/promptParser.test.ts via `await import(\"../lib/boardOps\")` — there is no `ops.mergeAttributeChanges` anywhere. Its own docblock says it carries cross-field invalidation (audit D1) and the ethnicity dual-write (audit B4) `applied server-side so no surface can bypass them`, which is invariant 7's sentence pointed at a paid path. It looks SUPERSEDED rather than never-wired — identityFieldHandlers.ts:261 says `silhouette (mergeAttributeChanges rule 2, now handler-owned)` — but whether ALL the rules moved, the ethnicity dual-write in particular, has not been checked, and that is the difference between a dead export and a live gap"
+  argued: "#274"
+  owner: "#886 — read the identity handlers against it rule by rule; TAKE with the superseding commit named if every rule moved, and it stops being a cleanup card if one did not"

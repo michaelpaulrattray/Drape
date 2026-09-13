@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0e5c2ecce6a94893"
+    "sourceFingerprint": "98554db186876ad7"
   },
   "domains": [
     {
@@ -12972,6 +12972,10 @@
     {
       "id": "test:server/moderatorReconciliation.test.ts",
       "path": "server/moderatorReconciliation.test.ts"
+    },
+    {
+      "id": "test:server/moduleResolution.test.ts",
+      "path": "server/moduleResolution.test.ts"
     },
     {
       "id": "test:server/nextUpEmptyBand.test.ts",
