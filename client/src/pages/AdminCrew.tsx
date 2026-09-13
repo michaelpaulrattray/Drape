@@ -100,7 +100,8 @@ import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
 import { CrewBackgroundWork } from "@/features/admin/components/crew/CrewBackgroundWork";
 import { CrewNextUp } from "@/features/admin/components/crew/CrewNextUp";
 import { CrewSkeleton } from "@/features/admin/components/crew/CrewSkeleton";
-import { CrewProgramBanner, shortDate } from "@/features/admin/components/crew/CrewProgramBanner";
+import { CrewProgramBanner } from "@/features/admin/components/crew/CrewProgramBanner";
+import { shortDate } from "@/foundation/shortDate";
 import { CrewWorkingNow } from "@/features/admin/components/crew/CrewWorkingNow";
 import { useCrewState } from "@/features/admin/components/crew/useCrewState";
 

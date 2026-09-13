@@ -44,7 +44,7 @@ import { crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { CrewEyeViewer } from "./CrewEyeViewer";
 import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
-import { shortDate } from "./CrewProgramBanner";
+import { shortDate } from "@/foundation/shortDate";
 import { eyeFrameSrc } from "./eyeFrameSrc";
 import { TableHead } from "@/foundation";
 import type { CrewEyeItem, CrewReplyView } from "./crewTypes";

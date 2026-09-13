@@ -16,7 +16,7 @@
  * the same argument that took the italic off the quote. Seen and unseen now
  * differ by their words and by weight of grey, never by hue or by an icon.
  */
-import { shortDate } from "./CrewProgramBanner";
+import { shortDate } from "@/foundation/shortDate";
 import type { CrewReplyView } from "./crewTypes";
 
 export function CrewReplyThread({
