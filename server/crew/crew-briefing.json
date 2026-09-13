@@ -1,7 +1,7 @@
 {
-  "edition": 372,
-  "updatedAt": "2026-09-13T01:20:00.000Z",
-  "shift": "Foreman (build shift) — ONE MERGED, from Security, and it finishes the sentence the last edition started. Last night's bump took the advisories that reach the PRODUCT to zero. GitHub's own banner still said 29, on every push, and that number is now ZERO TOO (#879 → PR #881, live on production since 11:08 AEST; #879 CLOSED). The two numbers were never in conflict: 'what does the running service load?' had been clean since yesterday, and 'what is in the lockfile at all?' still counted the tools that BUILD and TEST Drape on this machine and in CI — vite, vitest, esbuild and friends, none of which ship inside the running service. All 29 of those are now closed as well, so both readings agree at zero and nobody has to hold two numbers in their head again. Nothing you can see changes; no product code was touched, only the two dependency files. THE PART WORTH YOUR TIME IS WHAT WAS UNDERNEATH: two of the thirteen packages were held vulnerable BY OUR OWN CONFIGURATION. One was a floor we set ourselves (we pinned the archive library at 'at least 7.5.7' and then the advisories moved to 7.5.18 — our own floor was the thing holding it back). The other was worse: a line pinning a package 'inside tailwind' that tailwind has not depended on for a whole major version — it matched nothing, while the real vulnerable copy came in somewhere else entirely, and anyone reading the file would have concluded it was handled. Both fixed. Proven the long way again: a separate install of the new tools, every type check, all 12,860 tests, the gate green first time, Socket green on both checks, and a real browser drive — the casting studio photographed in BOTH themes from the bumped tree, nothing moved. One honest note below: the Fable reviewer produced no verdict on this PR, twice, and it is an outage rather than a rejection. YOUR DESK IS CLEAR; NEXT UP is empty; the two frame sets on your page stay until you judge them. Nothing spent.",
+  "edition": 373,
+  "updatedAt": "2026-09-13T02:35:00.000Z",
+  "shift": "Foreman (build shift) — NOTHING MERGED TONIGHT, and that is the news rather than a shortfall. The work is DONE and sitting in a finished pull request (#882): the sign-in and sign-up routes — the two front doors of the product — now have real tests behind them for the first time. WHAT WAS THERE BEFORE: a test file 451 lines long, headed with a claim that it covered 'beta code enforcement, password hashing, and session creation', which never once loaded the sign-in code. Eighteen of its checks could not fail no matter what the product did. MEASURED, NOT ASSERTED: I broke the real login and register code twenty-eight different ways — deleted the approval gate so an unapproved account could sign in, deleted the email-verification gate, dropped the admin exemption, skipped the suspension and lockout check, swapped 'suspended' and 'locked' so each was reported as the other, stopped the session cookie being set at all, and stored the password in PLAIN TEXT instead of hashing it — and ran the old tests after every single one. ALL TWENTY-EIGHT PASSED. The suite could not see any of it. With the new file, all twenty-eight go red, exactly where they should, and a do-nothing control stays green so the measurement itself is honest. No product code was touched — this is tests only. WHY IT HAS NOT MERGED: the outside reviewer has now failed to produce a verdict FOUR times in a row across two nights (twice last night, twice tonight, including a deliberate retry). It is an outage, not a rejection — it never reaches a model at all. The rules say a PR touching sign-in or billing waits for a real review even when everything else is green, so it waits. It is one click from merging the moment the reviewer is back, or on your word. Filed as a card with the full evidence. YOUR DESK IS CLEAR; NEXT UP is empty. Nothing spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-13T01:15:14.496Z",
+      "readAt": "2026-09-13T02:29:21.758Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4769,6 +4769,13 @@
   ],
   "pipeline": [
     {
+      "id": "emailauth-driven-882",
+      "title": "The sign-in and sign-up routes finally have real tests — and 28 ways of breaking them used to go unnoticed",
+      "status": "blocked",
+      "prNumber": 882,
+      "note": "Card #697 (the law-7 class card), and this was its LAST file — the card's table is now exhausted. WHAT WAS WRONG: server/routes/emailAuth.test.ts held 39 checks under a docblock claiming it covered 'beta code enforcement, password hashing, and session creation'. It never loaded the route. Eighteen checks could not fail about this product: nine proved a helper knows that guerrillamail.com is a throwaway address (true, and already proved by twelve identical checks in another file) but never that the signup form ASKS it; five drove the rate limiter using numbers the test itself made up, under a key the product never uses; four tested that the bcrypt library is the bcrypt library, at a strength of 4 where the product uses 12. WHAT IS THERE NOW: 57 checks, every new one a real HTTP request through the real router on a real server — the same road a customer's browser takes. THE MEASUREMENT, which is the whole point: 29 sabotages of the real login and register code (28 real breakages plus one do-nothing control), each one repaired before the next. Against the OLD suite, 28 of 28 breakages were completely silent — the approval gate deleted, the email-verification gate deleted, the admin exemption dropped, the suspension/lockout check skipped, suspended and locked swapped, the session cookie never set, the plain password stored instead of a hash, the strength dropped from 12 to 6, both rate limits loosened tenfold, and the 'wrong email or password' refusal rewritten to say WHICH was wrong (which is how attackers learn who banks with you). Against the new suite, all 29 behaved exactly as predicted, named one by one in advance. Gate green on its FIRST run. No product code changed. One prediction of mine was wrong and is written into the file rather than quietly corrected: I expected the dev-mode session to be minted against a fixture, and the product was right to mint it against the account it had just created. HELD, not stuck — see the reviewer problem below."
+    },
+    {
       "id": "devscope-bump-881",
       "title": "GitHub's 29 advisories are now zero too — and two of the thirteen were held by our own configuration",
       "status": "merged",
@@ -5865,18 +5872,18 @@
   ],
   "problems": [
     {
-      "id": "fable-reviewer-no-verdict-881",
-      "severity": "warning",
+      "id": "fable-reviewer-no-verdict-884",
+      "severity": "urgent",
       "state": "open",
-      "title": "The Fable reviewer produced NO VERDICT on tonight's PR — twice — and it is an outage, not a rejection",
-      "detail": "On PR #881 the review job went red both times it ran: once on 'ready for review' and once on a deliberate re-trigger. Read at the action log rather than at the red tick, it never made a model call at all — 711 ms, one turn, zero cost, no model usage — which is the known init-failure shape (#219), NOT a reviewer saying no. Nothing in the diff was judged. It was merged on the green machine gate, which the standing orders allow for a PR that is not on a money or auth path: this one changes two dependency files and no product code, and it carried no founder-review label. Worth your eye because it is NEW tonight — #877 got a clean Fable pass ninety minutes earlier — so it is most likely your Fable allowance rather than anything in the repository. If it is the allowance, it will clear on its own and nothing needs doing; if PRs keep merging unreviewed for several nights, that is a real gap and should become a card."
+      "title": "The outside reviewer has produced NO VERDICT four times running, over two nights — and it is now holding finished work",
+      "detail": "Last night's edition flagged this as a warning and said that if PRs kept merging unreviewed for several nights it should become a card. It has, and it is #884. THE FACTS, read from the run logs rather than the red tick: the last real verdict this repository has is from 23:44 last night. Every attempt since — four of them, two on last night's PR and two on tonight's, including two deliberate hand retries — fails identically in under a second, with one turn, zero cost and no model used at all. That is the signature of a reviewer that never started, not one that looked and said no. WHAT IT COSTS YOU: most work is unaffected — a PR that does not touch sign-in or money merges on the machine checks alone, which is what happened correctly last night. But anything touching sign-in, sessions or billing is required to wait for a real review, and tonight's PR #882 is exactly that. It is finished, its gate is green on the first run, it changes no product code at all (tests only) — and it waits. THE LIKELY CAUSE IS ONE I CANNOT CHECK FROM HERE: zero cost with no model usage is what an exhausted or rejected Fable allowance looks like from inside the action, which is the same reading that took two shifts to diagnose once before. Ruled out from this side: it is not the reviewer refusing to review its own change, not a cancelled run, not the one-shot-label trap, and not a missing run. IF IT IS YOUR ALLOWANCE it will clear on its own and #882 merges immediately; if it is not, the action log named on the card is the next thing to read. You can also just say the word and it merges tonight."
     },
     {
-      "id": "queue-shape-0913j-foreman",
+      "id": "queue-shape-0913k-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 43 open, one closed (#879); NEXT UP is empty; nothing waits on your word",
-      "detail": "Category order re-read at the code. Bugs EMPTY (#804 still needs a design decision on the billing webhook). Small fixes EMPTY. Security EMPTY (#879 closed tonight; #45 parked). Process — #697's last file is the login route's test file (an auth path, a session of its own), #513 blocked. Performance — #58 umbrella. Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. Casting upkeep — #242, #209, #179, #129, #64, #62, #60, none small on a read. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read). No patrol seat is overdue."
+      "title": "The queue: 45 open, two new cards filed tonight; NEXT UP is empty; nothing waits on your word",
+      "detail": "Category order re-read at the code. Bugs — #884 (the reviewer outage, filed tonight); #804 still needs a design decision on the billing webhook. Small fixes EMPTY. Security EMPTY (#45 parked). Process — #697 is finished pending the merge of PR #882; #883 filed tonight is its sibling (the Google sign-in route has the same problem — 17 of its 18 checks cannot fail, and the other two session mints live behind them); #513 blocked. Performance — #58 umbrella. Housekeeping — #482 (not small), #274 (a sitting, not an hour), #564, #527 (Janitor due 15 Sep), #265 (re-read at the code tonight: the one-line half of it already landed as PR #846 and is recorded; what is left is a bucket sweep the Janitor does with a manifest first). Casting upkeep — #242, #209, #179, #129, #64, #62, #60, none small on a read. 29 open cards have had no comment, close, reopen or commit for 7 days. No patrol seat is overdue."
     },
     {
       "id": "queue-shape-0913h-foreman",
@@ -6117,7 +6124,7 @@
     179
   ],
   "nextUp": {
-    "readAt": "2026-09-13T01:15:14.494Z",
+    "readAt": "2026-09-13T02:29:21.758Z",
     "items": []
   }
 }
