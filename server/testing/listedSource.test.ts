@@ -329,6 +329,10 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
     + " to compare against",
     "server/lib/adminActions/index.ts — the NEGATIVE control's fixed name; an"
     + " absent negative control is a matcher nobody is checking",
+    "SOURCE_OF_TRUTH again, for the STATUS vocabulary's positive control (#907)"
+    + " — same fixed name, same reason: that arm asserts the shared file reads as"
+    + " a map of all six statuses, and a swept-away subject must throw rather"
+    + " than report a clean tree",
   ],
   "server/patrolClocks.test.ts": [
     "REAL_LOGS — the four patrol logs by fixed name; one going missing is the defect and must throw",
