@@ -244,6 +244,72 @@ const GUARDED_PATHS = [
   */
   "features/admin",
   "pages/AdminUserManagement.tsx",
+
+  /*
+    #564, the declared remainder of #542 — and the reason that card exists is
+    the reviewer's one finding on #542's PR: *"if the card exists, link its
+    number on this PR — if it does not, the sweep is half done the moment this
+    merges and the 97 become undiscoverable again."*
+
+    ⚠ **THE FILE THE `::selection` BUG SHIPPED IN, AND IT WAS OUTSIDE EVERY
+    GUARD.** `background: #111111; color: white` sat here long enough for the
+    founder to photograph it, because this list is the only thing that decides
+    what is measured and `index.css` was never on it. The original docblock's
+    reason was honest — *"it grows with adoption rather than trying to boil the
+    ~600 lines of legacy utility CSS on day one"* — and #542 is what that cost.
+
+    **The 97 were not converted; they were DELETED, and that is the finding.**
+    Every one of them lived in a class nothing renders: the Oravia premium-card
+    set, the soft blue-gray / neumorphic family, the `studio-NNN` scale, the two
+    range sliders, and the studio shadow / grid-line / text-outline utilities.
+    Measured by two readers with no shared resolver — a whole-tree sweep of the
+    source and the EMITTED bundle, which carries a class however it was
+    constructed — with `custom-scrollbar` and `liquid-glass` as live positive
+    controls on both. So the honest classification was the card's third option
+    (*dead — the rule no longer applies to anything*), not its first.
+
+    ⚠ **This is a FILE row and not a directory row, and the narrowness is the
+    point**: `client/src/` is the whole client. What is enrolled is exactly the
+    file that was read to zero.
+  */
+  "index.css",
+
+  /*
+    #564's law-7 class sweep. The CLASS is not "a hex literal" — it is **a
+    stylesheet that sits outside every guard**, which is what `index.css` was
+    and what let #542 ship. So every `.css` file under `client/src/` was read,
+    comments stripped, on the day this row landed:
+
+    | file                        | hex | state                                 |
+    |-----------------------------|-----|---------------------------------------|
+    | foundation/tokens.css       |  72 | carved out — the token source         |
+    | foundation/brand-orb.css    |   7 | carved out — artwork, both themes     |
+    | styles/canvas-tokens.css    |  16 | ⚠ NOT GUARDED — see below             |
+    | styles/animations.css       |   0 | this row                              |
+    | the other seven             |   0 | already guarded by a row above        |
+
+    `animations.css` is enrolled by NAME rather than taking the `styles`
+    directory, and the reason is the file beside it.
+
+    ⚠ **`styles/canvas-tokens.css` IS A SECOND TOKEN SOURCE, AND IT HAS NO DARK
+    BLOCK AT ALL.** Its sixteen literals are all `--color-canvas-*` declarations
+    — read at the file: no `[data-theme]`, no `prefers-color-scheme`, nothing,
+    against three theme blocks in `tokens.css`. Every board surface therefore
+    draws one fixed light palette, in 172 places in the emitted bundle.
+
+    Neither available move is a shift's to make. Enrolling it reddens on sixteen
+    declarations that are doing exactly what a token file is for; carving it out
+    writes down that this product has two token sources, when the row at the top
+    of `HEX_CARVE_OUTS` calls `tokens.css` *"the one place a colour may exist"*
+    and this file's own docblock names *"three parallel token systems"* as the
+    origin of the whole bug class. And whether a canvas SHOULD follow the theme
+    is a design question with a defensible answer either way — paper is paper.
+
+    So it is filed with its measurement rather than decided here, and this row
+    is the file list's remainder counted rather than forgotten — the shape
+    `features/moderator` used before its remainder closed.
+  */
+  "styles/animations.css",
 ];
 
 /**
