@@ -34,7 +34,7 @@
  */
 import { cn } from "@/lib/utils";
 import { TableHead } from "@/foundation";
-import { shortDate } from "./CrewProgramBanner";
+import { shortDate } from "@/foundation/shortDate";
 import { heldCount, nextUpRows } from "./crewTypes";
 import type { CrewBriefingView, CrewNeedsYouCard } from "./crewTypes";
 

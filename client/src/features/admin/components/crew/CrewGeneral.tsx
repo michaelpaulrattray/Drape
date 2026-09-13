@@ -37,7 +37,7 @@
  */
 import { useState } from "react";
 import { CrewReplyBox } from "./CrewReplyBox";
-import { shortDate } from "./CrewProgramBanner";
+import { shortDate } from "@/foundation/shortDate";
 import { TableHead } from "@/foundation";
 import { foldTimeline, replyFallsToGeneral } from "./crewTypes";
 import type { CrewReplyView, CrewThreadHost } from "./crewTypes";

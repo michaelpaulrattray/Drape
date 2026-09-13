@@ -58,6 +58,52 @@ const section = (): { name: string; text: string }[] => {
 /** The rendering surfaces only — the two helper modules draw nothing. */
 const surfaces = () => section().filter((f) => f.name.endsWith(".tsx"));
 
+/**
+ * ⚠ **THE FORMATTER POPULATION FOLLOWS THE FORMATTER OUT OF THE DIRECTORY
+ * (#898).** The two formatter arms below used to sweep `surfaces()` alone, and
+ * that was right for exactly as long as every date on this page was formatted
+ * inside this directory. `shortDate` has now been promoted to
+ * `foundation/shortDate.ts` — six importers, the promotion pass's shape — and
+ * a directory-shaped sweep cannot see it there.
+ *
+ * **Both arms would have gone quietly wrong in DIFFERENT directions, which is
+ * why this is not a count to lower:** the floor arm reddens (2 → 1, and its
+ * own docblock says a fall to one is the arm working), while the 24-hour arm
+ * stays GREEN with nothing left to check — the page's principal date formatter
+ * would have left the guard's sight entirely, and the next hand to drop
+ * `hour12: false` from it would put `07:17 pm` back above a row reading
+ * `20:17`, which is the exact defect these arms were written for. An absence
+ * arm whose population has emptied is the failure working law 2 is about.
+ *
+ * **It is DERIVED, not a path typed in beside the fix** (the header's own rule,
+ * and working law 4): the shared modules swept are the `@/foundation/…` ones
+ * this section's own files import. Promote the next formatter anywhere the page
+ * actually draws from and it is measured the moment it exists; delete the
+ * import and it correctly leaves again.
+ */
+const sharedModules = (): { name: string; text: string }[] => {
+  const specifiers = new Set<string>();
+  for (const file of section()) {
+    for (const match of code(file.text).matchAll(/from\s+["']@\/foundation\/([\w./-]+)["']/g)) {
+      specifiers.add(match[1].replace(/\.(ts|tsx)$/, ""));
+    }
+  }
+  const found: { name: string; text: string }[] = [];
+  for (const specifier of [...specifiers].sort()) {
+    for (const extension of [".ts", ".tsx"]) {
+      const file = path.resolve(CLIENT_SRC, "foundation", `${specifier}${extension}`);
+      if (fs.existsSync(file)) {
+        found.push({ name: `foundation/${specifier}${extension}`, text: read(file) });
+        break;
+      }
+    }
+  }
+  return found;
+};
+
+/** Everything that can render a date ON this page — its surfaces and what they draw from. */
+const formatterSources = () => [...surfaces(), ...sharedModules()];
+
 describe("brief 08 — the population is real", () => {
   it("finds every Crew component plus the page", () => {
     const names = section().map((f) => f.name);
@@ -274,7 +320,7 @@ describe("§1 — a quote is rendered verbatim and never trimmed", () => {
   */
   it("every time formatter on the page is forced to 24-hour", () => {
     const offenders: string[] = [];
-    for (const file of surfaces()) {
+    for (const file of formatterSources()) {
       const body = code(file.text);
       const calls = body.match(/toLocale(?:Time)?String\([\s\S]{0,240}?\)/g) ?? [];
       for (const call of calls) {
@@ -283,6 +329,44 @@ describe("§1 — a quote is rendered verbatim and never trimmed", () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it("the sweep actually reaches the promoted formatter, by name", () => {
+    /*
+      POSITIVE CONTROL FOR THE POPULATION ITSELF (the promotion, card 898), not for the matcher.
+
+      The floor arm below counts to two and would count to two whether or not
+      `sharedModules()` resolves anything at all — `CrewWorkingNow`'s
+      `clockTime` plus any one survivor satisfies it. So the count is not
+      evidence that the promotion is covered; the NAME is. Without this arm a
+      broken specifier regex, a renamed foundation file or a missing extension
+      would leave the page's principal date formatter unswept, and every arm
+      here would still be green.
+    */
+    const names = sharedModules().map((f) => f.name);
+    expect(names).toContain("foundation/shortDate.ts");
+
+    const promoted = sharedModules().find((f) => f.name === "foundation/shortDate.ts");
+    expect(promoted?.text).toContain("hour12: false");
+  });
+
+  it("the shared-module resolver reports only what the section imports", () => {
+    /*
+      NEGATIVE CONTROL — the resolver must not simply return the foundation
+      directory. `foundation/` holds ~20 modules; this section imports a
+      handful, and a resolver that swept all of them would be measuring other
+      sections' code and would go red on their formatters.
+    */
+    const names = sharedModules().map((f) => f.name);
+    expect(names.length).toBeGreaterThan(0);
+    expect(names).not.toContain("foundation/theme.ts");
+    for (const name of names) {
+      const specifier = name.replace(/^foundation\//, "").replace(/\.(ts|tsx)$/, "");
+      const imported = section().some((f) =>
+        code(f.text).includes(`@/foundation/${specifier}`),
+      );
+      expect(imported, `${name} is swept but nothing in the section imports it`).toBe(true);
+    }
   });
 
   it("the 24-hour matcher fires on the shape that was actually shipped", () => {
@@ -321,7 +405,7 @@ describe("§1 — a quote is rendered verbatim and never trimmed", () => {
     editing this number.
   */
   it("the formatter sweep has a real population, spread across files", () => {
-    const perFile = surfaces()
+    const perFile = formatterSources()
       .map((f) => ({
         name: f.name,
         n: (code(f.text).match(/toLocale(?:Time)?String\([\s\S]{0,240}?hour:/g) ?? []).length,

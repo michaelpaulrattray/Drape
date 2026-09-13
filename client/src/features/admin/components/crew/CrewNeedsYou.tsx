@@ -34,7 +34,7 @@
 import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
 import { crewCardNeedsHim } from "../../../../../../shared/crewCardState";
-import { shortDate } from "./CrewProgramBanner";
+import { shortDate } from "@/foundation/shortDate";
 import { TableHead } from "@/foundation";
 import type { CrewNeedsYouCard, CrewReplyView } from "./crewTypes";
 
