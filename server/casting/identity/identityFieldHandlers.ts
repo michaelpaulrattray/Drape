@@ -136,16 +136,22 @@ function renderPairValue(v: EnumWithOverrideValue): string {
   return v.override.trim() !== "" ? v.override : v.base;
 }
 
-/** A simple descriptor leaf: one preference key, optional schema mirror. */
-function descriptorHandler<F extends SupportedIdentityLeaf & keyof PrefKeySingle>(
+/** A simple descriptor leaf: one preference key, optional schema mirror.
+ *
+ *  ⚠ The destination is a BUILDER supplied by the registry below, never a key
+ *  passed in to be spread. A computed-key object literal (`{ [prefKey]: v }`)
+ *  is `Record<string, …>`, so the `as TypedPreferencePatchFor<F>` this used to
+ *  carry silenced `Required` entirely — measured #888: the patch type and the
+ *  handler could assert opposite things with `pnpm check` green. Here `F` is
+ *  inferred from the literal first argument, so each builder is checked
+ *  against that field's CONCRETE patch type at its own call site. */
+function descriptorHandler<F extends Exclude<SupportedIdentityLeaf, OverridePairField>>(
   field: F,
-  prefKey: PrefKeySingle[F],
+  buildPreferencePatch: (value: NormalizedValueFor<F>) => TypedPreferencePatchFor<F>,
   schemaPath: SchemaPathOf<F>,
 ): IdentityFieldHandler<F> {
   return {
-    buildPreferencePatch(value) {
-      return { [prefKey]: value } as TypedPreferencePatchFor<F>;
-    },
+    buildPreferencePatch,
     buildSchemaWrite(value) {
       return (schemaPath === null
         ? null
@@ -163,23 +169,27 @@ function descriptorHandler<F extends SupportedIdentityLeaf & keyof PrefKeySingle
 
 /** A §5.5 base/override pair: BOTH members always written — the override is
  *  the new prose or explicitly "" when the value is fully enum-representable,
- *  so an old override can never fight the new value. */
+ *  so an old override can never fight the new value.
+ *
+ *  ⚠ "BOTH members always written" is now a COMPILE-TIME fact rather than a
+ *  sentence in this comment. The builder comes from the registry, where `F` is
+ *  a literal, so `TypedPreferencePatchFor<F>` resolves to the concrete
+ *  `Required<Pick<…>>` and a missing member is an error. It was a sentence
+ *  only until #888: the old factory spread computed keys and asserted the
+ *  result, and deleting the override line left `pnpm check` at exit 0.
+ *  The rule-2 resets are on the same footing — they used to arrive as a bare
+ *  `Record<string, string>` from `Object.fromEntries`, which is why the patch
+ *  type could list `hairTexture` for years while the handler never wrote it. */
 function overridePairHandler<F extends OverridePairField>(
   field: F,
-  baseKey: BasePrefKeyOf<F>,
-  overrideKey: OverridePrefKeyOf<F>,
+  buildPreferencePatch: (
+    value: NormalizedValueFor<F>,
+    current: ModelPreferences,
+  ) => TypedPreferencePatchFor<F>,
   schemaPath: SchemaPathOf<F>,
-  extraResets?: (value: EnumWithOverrideValue, current: ModelPreferences) => Record<string, string>,
 ): IdentityFieldHandler<F> {
   return {
-    buildPreferencePatch(value, current) {
-      const v = value as EnumWithOverrideValue;
-      return {
-        [baseKey]: v.base,
-        [overrideKey]: v.override,
-        ...(extraResets ? extraResets(v, current) : {}),
-      } as TypedPreferencePatchFor<F>;
-    },
+    buildPreferencePatch,
     buildSchemaWrite(value) {
       return (schemaPath === null
         ? null
@@ -195,43 +205,22 @@ function overridePairHandler<F extends OverridePairField>(
   };
 }
 
-// Internal key-typing helpers so the generic builders stay honest:
-type PrefKeySingle = {
-  "person.face.faceShape": "faceShape";
-  "person.face.jawline": "jawline";
-  "person.face.cheekbones": "cheekbones";
-  "person.face.cheeks": "cheeks";
-  "person.face.eyeShape": "eyeShape";
-  "person.face.noseShape": "noseShape";
-  "person.face.lipShape": "lipShape";
-  "person.face.browShape": "eyebrowStyle";
-  "person.hair.length": "hairLength";
-  "person.hair.texture": "hairTexture";
-  "person.hair.fringe": "hairFringe";
-  "person.hair.parting": "hairParting";
-  "person.hair.volume": "hairVolume";
-  "person.hair.fade": "hairFade";
-  "person.hair.hairline": "hairHairline";
-  "person.hair.tuck": "hairTuck";
-  "person.hair.flyaways": "hairFlyaways";
-  "person.skin.finish": "skinFinish";
-};
-type BasePrefKeyOf<F extends OverridePairField> = {
-  "person.hair.style": "hairStyle";
-  "person.hair.color": "hairColor";
-  "person.face.eyeColor": "eyeColor";
-  "person.face.facialHair": "facialHair";
-  "person.skin.texture": "skinTexture";
-}[F];
-type OverridePrefKeyOf<F extends OverridePairField> = {
-  "person.hair.style": "hairStyleOverride";
-  "person.hair.color": "hairColorOverride";
-  "person.face.eyeColor": "eyeColorOverride";
-  "person.face.facialHair": "facialHairOverride";
-  "person.skin.texture": "skinTextureOverride";
-}[F];
+// ⚠ THREE key-typing helpers stood here until #888 — `PrefKeySingle`,
+// `BasePrefKeyOf` and `OverridePrefKeyOf` — and all three were hand-copies of
+// `PreferenceKeysByField`, which is working law 4 (a second list shadowing a
+// source of truth always drifts from it). They existed only to feed the
+// computed keys the factories spread. The builders read the real map through
+// `TypedPreferencePatchFor<F>`, so the copies are deleted rather than kept in
+// step: a destination is now stated once, in `identityTypes.ts`.
+
+/** ⚠ `null` is permitted ONLY where the field genuinely has no mirror. The
+ *  plain `… | null` this used to be let a field WITH a path be handed `null`,
+ *  and `buildSchemaWrite`'s own assertion then swallowed the mismatch — the
+ *  same shape as the patch hole #888 measured, one field over. */
 type SchemaPathOf<F extends AuthorizableIdentityField> =
-  import("./identityTypes").SchemaPathByField[F] | null;
+  [import("./identityTypes").SchemaPathByField[F]] extends [never]
+    ? null
+    : import("./identityTypes").SchemaPathByField[F];
 
 function setSchema(path: string, value: string) {
   return { path, value };
@@ -242,20 +231,36 @@ void setSchema;
 
 export const IDENTITY_FIELD_HANDLERS = {
   // Face descriptor leaves
-  "person.face.faceShape": descriptorHandler("person.face.faceShape", "faceShape", "facial_features.face_shape"),
-  "person.face.jawline": descriptorHandler("person.face.jawline", "jawline", "facial_features.jawline"),
-  "person.face.cheekbones": descriptorHandler("person.face.cheekbones", "cheekbones", "facial_features.cheekbones"),
-  "person.face.cheeks": descriptorHandler("person.face.cheeks", "cheeks", "facial_features.cheeks_shape"),
-  "person.face.eyeShape": descriptorHandler("person.face.eyeShape", "eyeShape", "facial_features.eye_shape"),
-  "person.face.noseShape": descriptorHandler("person.face.noseShape", "noseShape", "facial_features.nose_shape"),
-  "person.face.lipShape": descriptorHandler("person.face.lipShape", "lipShape", "facial_features.lips_shape"),
-  "person.face.browShape": descriptorHandler("person.face.browShape", "eyebrowStyle", "facial_features.eyebrows"),
+  "person.face.faceShape": descriptorHandler("person.face.faceShape", (v) => ({ faceShape: v }), "facial_features.face_shape"),
+  "person.face.jawline": descriptorHandler("person.face.jawline", (v) => ({ jawline: v }), "facial_features.jawline"),
+  "person.face.cheekbones": descriptorHandler("person.face.cheekbones", (v) => ({ cheekbones: v }), "facial_features.cheekbones"),
+  "person.face.cheeks": descriptorHandler("person.face.cheeks", (v) => ({ cheeks: v }), "facial_features.cheeks_shape"),
+  "person.face.eyeShape": descriptorHandler("person.face.eyeShape", (v) => ({ eyeShape: v }), "facial_features.eye_shape"),
+  "person.face.noseShape": descriptorHandler("person.face.noseShape", (v) => ({ noseShape: v }), "facial_features.nose_shape"),
+  "person.face.lipShape": descriptorHandler("person.face.lipShape", (v) => ({ lipShape: v }), "facial_features.lips_shape"),
+  "person.face.browShape": descriptorHandler("person.face.browShape", (v) => ({ eyebrowStyle: v }), "facial_features.eyebrows"),
 
-  // Base/override pairs (§5.5)
-  "person.face.eyeColor": overridePairHandler("person.face.eyeColor", "eyeColor", "eyeColorOverride", "subject.eye_color"),
-  "person.face.facialHair": overridePairHandler("person.face.facialHair", "facialHair", "facialHairOverride", null),
-  "person.hair.color": overridePairHandler("person.hair.color", "hairColor", "hairColorOverride", "subject.hair_color"),
-  "person.skin.texture": overridePairHandler("person.skin.texture", "skinTexture", "skinTextureOverride", null),
+  // Base/override pairs (§5.5) — both members written, and now compile-checked
+  "person.face.eyeColor": overridePairHandler(
+    "person.face.eyeColor",
+    (v) => ({ eyeColor: v.base, eyeColorOverride: v.override }),
+    "subject.eye_color",
+  ),
+  "person.face.facialHair": overridePairHandler(
+    "person.face.facialHair",
+    (v) => ({ facialHair: v.base, facialHairOverride: v.override }),
+    null,
+  ),
+  "person.hair.color": overridePairHandler(
+    "person.hair.color",
+    (v) => ({ hairColor: v.base, hairColorOverride: v.override }),
+    "subject.hair_color",
+  ),
+  "person.skin.texture": overridePairHandler(
+    "person.skin.texture",
+    (v) => ({ skinTexture: v.base, skinTextureOverride: v.override }),
+    null,
+  ),
   // hair.style additionally owns the verified rule-2 resets: a style change
   // resets its sub-selectors so the engine re-derives them for the new
   // silhouette. This is the SOLE owner of that rule since R6 Batch C
@@ -265,29 +270,42 @@ export const IDENTITY_FIELD_HANDLERS = {
   // identityDependencies.ts keeps texture out of the coupled list on the same
   // reasoning.
   "person.hair.style": overridePairHandler(
-    "person.hair.style", "hairStyle", "hairStyleOverride", "subject.hair_style",
-    (value, current) => {
-      const changed = renderPairValue(value) !== (current.hairStyleOverride || current.hairStyle || "");
-      const resets = ["hairLength", "hairFringe", "hairParting", "hairVolume", "hairTuck", "hairFlyaways", "hairFade"] as const;
-      return Object.fromEntries(
-        resets.map((k) => [k, changed ? "" : ((current[k] as string | undefined) ?? "")]),
-      );
+    "person.hair.style",
+    (v, current) => {
+      const changed = renderPairValue(v) !== (current.hairStyleOverride || current.hairStyle || "");
+      // A changed cut clears its sub-selectors; an unchanged one carries them
+      // through untouched. Each reset is named, so the patch type and this
+      // handler can no longer disagree about which keys the rule owns.
+      const reset = (key: keyof ModelPreferences): string =>
+        changed ? "" : ((current[key] as string | undefined) ?? "");
+      return {
+        hairStyle: v.base,
+        hairStyleOverride: v.override,
+        hairLength: reset("hairLength"),
+        hairFringe: reset("hairFringe"),
+        hairParting: reset("hairParting"),
+        hairVolume: reset("hairVolume"),
+        hairTuck: reset("hairTuck"),
+        hairFlyaways: reset("hairFlyaways"),
+        hairFade: reset("hairFade"),
+      };
     },
+    "subject.hair_style",
   ),
 
   // Hair descriptor leaves (prompt+pref only)
-  "person.hair.length": descriptorHandler("person.hair.length", "hairLength", null),
-  "person.hair.texture": descriptorHandler("person.hair.texture", "hairTexture", null),
-  "person.hair.fringe": descriptorHandler("person.hair.fringe", "hairFringe", null),
-  "person.hair.parting": descriptorHandler("person.hair.parting", "hairParting", null),
-  "person.hair.volume": descriptorHandler("person.hair.volume", "hairVolume", null),
-  "person.hair.fade": descriptorHandler("person.hair.fade", "hairFade", null),
-  "person.hair.hairline": descriptorHandler("person.hair.hairline", "hairHairline", null),
-  "person.hair.tuck": descriptorHandler("person.hair.tuck", "hairTuck", null),
-  "person.hair.flyaways": descriptorHandler("person.hair.flyaways", "hairFlyaways", null),
+  "person.hair.length": descriptorHandler("person.hair.length", (v) => ({ hairLength: v }), null),
+  "person.hair.texture": descriptorHandler("person.hair.texture", (v) => ({ hairTexture: v }), null),
+  "person.hair.fringe": descriptorHandler("person.hair.fringe", (v) => ({ hairFringe: v }), null),
+  "person.hair.parting": descriptorHandler("person.hair.parting", (v) => ({ hairParting: v }), null),
+  "person.hair.volume": descriptorHandler("person.hair.volume", (v) => ({ hairVolume: v }), null),
+  "person.hair.fade": descriptorHandler("person.hair.fade", (v) => ({ hairFade: v }), null),
+  "person.hair.hairline": descriptorHandler("person.hair.hairline", (v) => ({ hairHairline: v }), null),
+  "person.hair.tuck": descriptorHandler("person.hair.tuck", (v) => ({ hairTuck: v }), null),
+  "person.hair.flyaways": descriptorHandler("person.hair.flyaways", (v) => ({ hairFlyaways: v }), null),
 
   // Skin finish (structured-editor field; free-text one-offs are image.retouch)
-  "person.skin.finish": descriptorHandler("person.skin.finish", "skinFinish", null),
+  "person.skin.finish": descriptorHandler("person.skin.finish", (v) => ({ skinFinish: v }), null),
 
   // Structured person-level fields — REAL closed value types (§5.4)
   "person.build": {

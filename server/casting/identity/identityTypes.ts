@@ -287,14 +287,22 @@ export type WritableIdentitySchemaPath =
  *  their handler resets deterministically; those handlers are the SOLE owner
  *  of those rules since R6 Batch C (8b514bed).
  *
- *  ⚠ The "fails to compile" this used to promise DOES NOT HOLD for the
- *  override-pair fields, and it is measured rather than suspected: every
- *  override-pair patch is built by `overridePairHandler`, which returns
- *  `… as TypedPreferencePatchFor<F>`, and an assertion silences `Required`.
- *  Driven 2026-09-13 — deleting `[overrideKey]` from that builder leaves
- *  `pnpm check` GREEN (the runtime arms in identityContract.test.ts are what
- *  actually catch it: 6 red). Filed as #888; until that is closed, a NEW
- *  override-pair field is protected by its test arm and by nothing else. */
+ *  ⚠ THIS MAP IS ENFORCED AGAINST THE HANDLERS AGAIN — #888, closed
+ *  2026-09-13. It was not, for as long as the two handler factories existed:
+ *  both spread computed keys and returned `… as TypedPreferencePatchFor<F>`,
+ *  and an assertion silences `Required`, so deleting `[overrideKey]` from the
+ *  pair factory left `pnpm check` at exit 0 (only the runtime arms in
+ *  identityContract.test.ts went red: 6 of 24). That is how this map came to
+ *  list `hairTexture` under `person.hair.style` while the handler never wrote
+ *  it and a test asserted it MUST NOT be written — a type and a test claiming
+ *  opposite things, both green.
+ *
+ *  The destinations are built at each registry entry now, where `F` is a
+ *  literal and this map resolves to a concrete `Required<Pick<…>>`. So a key
+ *  ADDED here without a handler write is a compile error, and a write deleted
+ *  from a handler is a compile error — both driven as sabotages on the closing
+ *  commit. A new override-pair field is protected by the compiler first and
+ *  its test arm second, which is the order this docblock always claimed. */
 export type PreferenceKeysByField = {
   "person.face.faceShape": "faceShape";
   "person.face.jawline": "jawline";
