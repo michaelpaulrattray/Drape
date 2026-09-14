@@ -1,7 +1,7 @@
 {
-  "edition": 411,
-  "updatedAt": "2026-09-14T18:06:17.112Z",
-  "shift": "NOTHING A CUSTOMER SEES CHANGED TONIGHT. This was one of our own tools telling night shifts something untrue, and it had already cost us two wasted diagnoses in twenty-four hours.\n\nWHAT WAS WRONG. When a shift ships work to you, the last thing it runs is a checking tool that reads every small script in the change. If anything looks wrong it refuses to ship — which is right, and stays right. The problem was the sentence it printed afterwards. It always said the same thing: \"one of your scripts is broken, go and fix the named one.\" It has no way of knowing that. It cannot tell a genuinely broken script from its own checks stumbling on the machine, because both arrive looking identical.\n\nIT SAID THAT TWICE IN A DAY ABOUT PERFECTLY GOOD WORK. Once on Sunday, when one of the checks simply ran out of time because the machine was busy. Once last night, when the check could not create a temporary folder it needed. Both times a shift read \"go fix the named script\", went looking for it, found nothing wrong, and lost an evening to it. The first shift even wrote the finding down in its own report — \"there is no named script to fix\" — and then the job was closed by fixing the other half of it. The sentence was left standing and caught the next shift a day later.\n\nWHAT I CHANGED. The refusal is exactly as strict as it was: it still will not ship, and that is deliberate — a tool that cannot see what it is checking must stop. What it stops doing is accusing. It now says plainly that this is one of two things, shows the evidence, and lets the reader see which: either a script in the change really is broken, or a check failed on the machine rather than on the work, in which case nothing in the change is wrong and running it again is the answer. And for the one case where the tool genuinely cannot start at all, there is now a separate message that clears the change outright. Before tonight that case did not print a refusal at all — it crashed with a wall of technical text and no explanation.\n\nTHE JOB DESCRIPTION I WAS GIVEN WAS WRONG, AND CHECKING MATTERED. The card said the checks \"never ran\". I opened the actual record from last night's failed attempt rather than taking its word, and the checks HAD run — there was exactly one failure, and it was inside the checking tool's own self-test. That changes the fix: a check that never ran can be detected automatically; a check that ran and stumbled cannot. So the answer was never a cleverer detector. It was to stop claiming.\n\nI TRIED TO FIND THE UNDERLYING CAUSE AND FAILED, AND I AM SAYING SO. I wrote a test that hammers the suspect part of the tool — 110 attempts under heavy load, across two rounds — and it did not go wrong once. I have a plausible explanation and no proof, so I have filed it as its own job rather than changing a genuinely dangerous piece of code on a hunch. That empty result is actually the argument for what I did build: a cause nobody can reproduce is exactly the one a refusal must never assert.\n\nAND I FIXED ITS TWIN BEFORE IT BIT. The same tool runs a second, near-identical check one step earlier, built the same way, able to fail the same way, and it would have blamed your work in the same words. Nothing has ever seen it do so. I fixed it anyway in the same change, and said in the code that it was fixed as a precaution rather than after an incident — so nobody later reads it as a second thing that went wrong.",
+  "edition": 412,
+  "updatedAt": "2026-09-14T19:27:30.639Z",
+  "shift": "NOTHING A CUSTOMER SEES CHANGED TONIGHT. Both jobs were about the crew's own tools, and the second one was quietly costing you a whole day of upkeep every time it came round.\n\nFIRST — A HUNT THAT ENDED IN A NO, AND THAT IS THE POINT. Last night's shift hit a shipping refusal it could not explain and left a suspicion behind: the tool that checks work makes temporary copies of the code, and it deletes stale ones as it goes, so perhaps a delete was catching a copy that was still being made. It tried 140 times to make that happen and could not. Tonight I answered it properly. The answer is no, and it cannot happen: the program we use to make those copies locks each one while it is being built, and the delete respects the lock. I proved the lock is real by turning it on and off by hand, and then raced the two against each other on purpose — 13 copies made while another process tried to delete 1,460 times — and nothing went wrong once.\n\nWHY THAT IS WORTH MORE THAN LAST NIGHT'S 140 TRIES. A test that never actually made the two things collide reports exactly the same clean result as one that did. So before trusting any of it I made the tool break on purpose, to prove my test could SEE a problem when there was one. It could. And it caught me out immediately — my own test was miscounting one side of the race and reporting a zero that meant nothing. It refused to print a result rather than hand me a false clean bill of health, which is the only reason that number is not in the record as a second wasted night.\n\nAND THE NOTE IN THE CODE THAT INVITED THE CHASE WAS HALF A CAUSE. Three places in our code carry the same explanatory sentence about when these stale copies get cleaned up, and all three say something that turns out not to be quite true. Left alone, the next person reads it and goes hunting exactly as the last two did. All three now carry the real explanation. Twenty-four hours ago we closed a job by fixing its symptom and left its finding sitting in a note — and that note caught the next shift a day later. I was not going to do it twice.\n\nSECOND — OUR HOUSEKEEPING ROUNDS WERE RUNNING A DAY LATE, EVERY TIME. The crew has four routine rounds on timers: tidying every three days, and security, performance and process reviews weekly. A little reader tells each shift which round is due. It was printing 'Janitor — DUE today' and then, four lines below, 'nothing is due, get on with something else'. Two answers to the same question, and shifts believed the second one.\n\nWHAT THAT COST. The three-day tidying round was really a four-day round, and the three weekly rounds were eight-day rounds. Worse, that reader is the ONLY way a routine round ever gets picked up ahead of ordinary jobs — so on the day it was due it was invisible. It has said 'due today' at the start of the last six shifts and been skipped every one of them. Three days ago the same thing happened: two shifts skipped the tidying round on that line and a third overruled the tool by hand, wrote down that it had been wrong, and got on with it — and nobody filed it, so it came straight back.\n\nIT IS FIXED, AND IT IS A ONE-WORD CHANGE WITH A CAREFUL EDGE. A round whose day has arrived now counts as due, which is what our own rulebook has always said. I deliberately kept the difference between 'due today' and 'three days late' visible, because the reader uses it to decide which round is worst — and I added a check proving a round that is genuinely late still outranks one that has only just come up. I also wrote down, beside that check, the one thing it cannot prove and why, rather than leaving it looking stronger than it is. The immediate effect: the tidying round is now first in line for the next shift, three days after it should have been.\n\nNOTHING NEW NEEDS YOU. The five finished jobs held back for the outside reviewer are still held, unchanged — tonight's two touched no money or sign-in code, so they went through on our own checks under your ruling.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -4941,6 +4941,20 @@
   ],
   "pipeline": [
     {
+      "id": "prune-race-969",
+      "title": "A suspected fault in our shipping tool does not exist — proved, rather than not-found",
+      "status": "merged",
+      "prNumber": 970,
+      "note": "Card #969, filed by last night's shift and closed tonight. NOTHING A CUSTOMER SEES CHANGED — comments only, no behaviour touched. The suspicion was that our checking tool's cleanup of stale temporary copies could catch a copy still being made. It cannot: the program that makes them locks each one during creation and the cleanup respects the lock. Driven both ways by hand, then raced on purpose — 13 copies against 1,460 deletion attempts, nothing went wrong. Last night's 140 clean tries proved nothing by comparison, because a test that never made the two collide reports the same clean result; this one was built to refuse unless it could first be shown to SEE a problem, and it caught my own miscount doing exactly that. The explanatory note that invited the chase was wrong in three places and now carries the real cause, so the next reader does not hunt it a third time."
+    },
+    {
+      "id": "clock-fires-971",
+      "title": "Our housekeeping rounds were running a day late, every time — and the tidying round had been skipped six shifts running",
+      "status": "merged",
+      "prNumber": 972,
+      "note": "Found and fixed tonight (#971). NOTHING A CUSTOMER SEES CHANGED — this is the crew's own scheduling reader. It printed 'Janitor — DUE today' and then, four lines below, 'nothing is due'. Shifts believed the second line, so the three-day tidying round was really four days and the three weekly rounds were eight. That reader is the only road a routine round has to get picked up ahead of ordinary work, so on its due day it was invisible. The same contradiction was overruled by hand three days ago and never filed, so it came straight back. A round whose day has arrived now counts as due, which is what the rulebook always said; the difference between 'due today' and 'days late' is deliberately kept, because the reader ranks rounds by it. Effect: the tidying round is first in line for the next shift."
+    },
+    {
       "id": "guard-voice-967",
       "title": "Our shipping tool was telling night shifts to fix a file that was not broken — twice in a day",
       "status": "merged",
@@ -6346,16 +6360,30 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0915c-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 49 open — two closed tonight and one filed; NEXT UP is still empty and nothing new waits on you",
+      "detail": "Two jobs closed tonight (#969 and #971) and one filed and finished in the same shift (#971). Nothing is running, nothing is marked urgent, and your NEXT UP list is empty. 27 cards have gone a week with no comment, close or commit against them — the same 27 as last night, and the oldest is 20 days old. The five finished jobs held for the outside reviewer are the only thing waiting on you, and they are unchanged."
+    },
+    {
+      "id": "reviewer-declined-0915c",
+      "severity": "info",
+      "state": "open",
+      "title": "The outside reviewer did not run tonight — and for once that is it working correctly, not failing",
+      "detail": "Both of tonight's changes were small and touched no money or sign-in code, so the triage step looked at them and decided a paid review was not warranted. That is a decision, not a breakdown — worth saying plainly, because the last few nights this row has reported the reviewer dying on its first call. Nothing about your Fable allowance has changed, and your 'wait' on the five held money jobs stands exactly as it did."
+    },
+    {
       "id": "fable-reviewer-no-verdict-884-0915",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The outside reviewer failed again tonight, identically, and your 'wait' stands",
       "detail": "Tonight's job touched no money and no sign-in code, so it merged on our own checks under your 2026-08-29 ruling. The reviewer job died after 977 milliseconds on its first call having spent six tenths of a cent — the same shape as every other failed run, which is #884's reading: everything about it is identical either side of the boundary, and the only unread thing left is your Fable allowance. Nothing here needs you unless you want to look at that."
     },
     {
       "id": "queue-shape-0915b-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 50 open — level with last night; NEXT UP is still empty and nothing new waits on you",
       "detail": "50 open, unchanged: one closed tonight (#967) and one filed (#969, the cause I could not prove). Nothing is marked urgent and NEXT UP — the jobs you have personally ordered — is empty, so tonight ran on the background switches in their fixed order. 27 cards have gone a week with nobody touching them, unchanged for the seventh night; the oldest is #28 at 20 days. That figure is not getting worse, and it is not getting better either."
     },
