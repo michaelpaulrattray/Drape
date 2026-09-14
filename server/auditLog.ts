@@ -20,6 +20,10 @@
 import { getDb } from "./db";
 import { auditLogs, AUDIT_ACTIONS, type AuditAction, type AuditLog } from "../drizzle/schema";
 import { eq, and, gte, lte, desc, inArray, count as countRows, type SQL } from "drizzle-orm";
+import {
+  ACTION_CATEGORIES,
+  type AuditCategory,
+} from "../shared/auditActionCategories";
 import { createModuleLogger } from "./logging/logger";
 const log = createModuleLogger("auditLog");
 
@@ -262,128 +266,25 @@ export { AUDIT_ACTIONS };
 // ============ Admin Dashboard Query Helpers ============
 
 /*
-  Action category mappings for filtering.
+  Action category mappings for filtering — DECLARED in
+  `shared/auditActionCategories.ts` and re-exported here (#940).
 
-  EXPORTED for `server/auditLogCategoryAgreement.test.ts` (#939), which holds
-  this list against the chip the panels draw. It is exported rather than
-  re-read with a regex because a guard that parses the thing it guards shares
-  the guarded file's blind spots — four Atlas collectors were found doing
-  exactly that, and the rule from it is in CLAUDE.md: do not shape-match where
-  a declaration exists.
+  It moved because the audit panels' category CHIP is derived from it now
+  instead of being re-implemented as a prefix rule in two client files. The
+  client cannot import this module (it opens a database connection), so the
+  one list lives in `shared/` and both sides read it.
+
+  Still exported here for `server/auditLogCategoryAgreement.test.ts` (#939)
+  and `server/auditLogFilterSql.test.ts`, and because this module is where
+  every existing server caller already looks for it.
 */
-export const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
-  billing: [
-    AUDIT_ACTIONS.SUBSCRIPTION_CREATED,
-    AUDIT_ACTIONS.SUBSCRIPTION_CANCELED,
-    AUDIT_ACTIONS.SUBSCRIPTION_UPDATED,
-    AUDIT_ACTIONS.CREDITS_PURCHASED,
-    AUDIT_ACTIONS.CREDITS_DEDUCTED,
-    AUDIT_ACTIONS.CREDITS_REFUNDED,
-    /*
-      THE TWO MONEY ANOMALIES (#771). Same lesson as the login alarm below:
-      without these lines the billing filter would drop the rows the moment a
-      refund fails or an invoice is paid after its plan ended, and the only
-      surface production has for them is this panel.
-    */
-    AUDIT_ACTIONS.STRIPE_REFUND_ISSUED,
-    AUDIT_ACTIONS.STRIPE_REFUND_FAILED,
-    AUDIT_ACTIONS.INVOICE_PAID_AFTER_PLAN_ENDED,
-    /*
-      #939. The panel already draws a "Billing" chip on this row — its
-      `getActionCategory` sends every `credits.*` to billing — so the row
-      claimed a category whose filter dropped it. The three siblings above it
-      are already here; this is the missing line, not a new reading.
-    */
-    AUDIT_ACTIONS.CREDITS_ADDED,
-  ],
-  model: [
-    AUDIT_ACTIONS.MODEL_CREATED,
-    AUDIT_ACTIONS.MODEL_DELETED,
-    AUDIT_ACTIONS.MODEL_MINTED,
-  ],
-  security: [
-    AUDIT_ACTIONS.LOGIN_SUCCESS,
-    AUDIT_ACTIONS.LOGIN_FAILED,
-    AUDIT_ACTIONS.RATE_LIMIT_EXCEEDED,
-    AUDIT_ACTIONS.INSUFFICIENT_CREDITS,
-    /*
-      #939 — ELEVEN MORE OF THE SAME DEFECT THE ABUSE COMMENT BELOW DESCRIBES.
-      The four lines above establish this bucket's reading: `auth.*` AND
-      `security.*` are both security here, which is also exactly what the
-      panel's own `getActionCategory` has always told staff. Every action
-      below was drawing a red "Security" chip while the Security filter — and
-      the Security CSV export (`routes/moderatorExports.ts`) — dropped it.
-      Eight of the thirteen in #939 have a live writer, and all eight are in
-      this bucket.
-
-      `security.emergency_action` writes nothing today (the Slack buttons were
-      retired in #800) and is here for the reason its schema comment gives:
-      the historical rows are still in the table and still carry the label.
-    */
-    AUDIT_ACTIONS.LOGIN_BLOCKED_SUSPENDED,
-    AUDIT_ACTIONS.LOGIN_BLOCKED_LOCKED,
-    AUDIT_ACTIONS.ACCOUNT_LOCKOUT,
-    AUDIT_ACTIONS.IP_BLOCKED_REQUEST,
-    AUDIT_ACTIONS.EMERGENCY_ACTION_EXECUTED,
-    AUDIT_ACTIONS.SECURITY_UNAUTHORIZED_ADMIN,
-    AUDIT_ACTIONS.SECURITY_IMMUTABLE_LOG,
-    AUDIT_ACTIONS.EMAIL_VERIFICATION_SENT,
-    AUDIT_ACTIONS.EMAIL_VERIFICATION_RESENT,
-    AUDIT_ACTIONS.EMAIL_VERIFIED,
-    AUDIT_ACTIONS.EMAIL_VERIFICATION_FAILED,
-  ],
-  /*
-    HIS RULING, Crew reply #187, 2026-09-14, verbatim and entire: *"Give
-    moderator actions their own category"* (#938).
-
-    The three `moderator.*` actions had no bucket at all, so choosing ANY
-    category — Abuse included — dropped them on both panels, while the
-    moderator console's own chip rule labelled them `abuse`. One panel told a
-    moderator the row was abuse and the Abuse filter was the one thing that
-    would never show it.
-
-    ⚠ THE OTHER REPAIR WAS TO DELETE THAT BRANCH, AND IT WAS NOT TAKEN. It
-    would have made the two copies agree and left the rows unfilterable, which
-    is the shape the ABUSE_GLOBAL_ATTACK comment below exists to refuse. A
-    change request is not abuse, and #939 deliberately stopped here rather than
-    inventing a category: a new one is a staff-visible control, so it was his.
-
-    ⚠ A NEW BUCKET IS UNREACHABLE UNTIL THE ROUTE ENUMS OFFER IT — three files,
-    and `server/auditLogCategoryAgreement.test.ts` has an arm pointed at
-    exactly that landmine.
-  */
-  moderator: [
-    AUDIT_ACTIONS.MODERATOR_ESCALATION,
-    AUDIT_ACTIONS.CHANGE_REQUEST_CREATED,
-    AUDIT_ACTIONS.CHANGE_REQUEST_CANCELLED,
-  ],
-  abuse: [
-    AUDIT_ACTIONS.ABUSE_DETECTED,
-    AUDIT_ACTIONS.ABUSE_PATTERN_CREDITS,
-    AUDIT_ACTIONS.ABUSE_PATTERN_DELETION,
-    AUDIT_ACTIONS.ABUSE_PATTERN_BILLING,
-    /*
-      THE SITE-WIDE LOGIN ALARM (founder ruling 2026-08-19, relayed fable-1018).
-      Without this line the panel's own abuse filter would drop every row the
-      alarm writes — the wire would exist, the row would exist, and staff would
-      never see it. `getAbuseAlertsSummary` filters on this same list.
-    */
-    AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK,
-    /*
-      #939. The comment above was written about one action and was true of six.
-      This is the sixth: the panel sends every `abuse.*` to the abuse chip, so
-      the day something writes a credential-stuffing row it would have been
-      dropped by the Abuse filter exactly as described.
-    */
-    AUDIT_ACTIONS.ABUSE_CREDENTIAL_STUFFING,
-  ],
-};
+export { ACTION_CATEGORIES };
 
 export interface FilteredAuditLogsOptions {
   limit: number;
   offset: number;
   severity?: "info" | "warning" | "critical";
-  actionCategory?: "billing" | "model" | "security" | "moderator" | "abuse";
+  actionCategory?: AuditCategory;
   userId?: number;
   startDate?: Date;
   endDate?: Date;

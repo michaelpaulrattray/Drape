@@ -200,19 +200,29 @@ describe("the alarm lands where STAFF actually look (founder ruling, fable-1018)
       it — and it was never in that list, so a row written without this line
       would exist in the table and appear on no panel.
 
-      Read from the source rather than through the query, because the query
-      needs a database this suite does not have — and the list is the thing that
-      decides.
+      ⚠ THIS ARM USED TO READ `auditLog.ts` AS TEXT — slicing out the `abuse: [`
+      block and searching it for the constant's NAME. It went red on a correct
+      tree the day the list moved to `shared/auditActionCategories.ts` (#940),
+      which is the cheapest possible demonstration of why a substring reader is
+      the wrong instrument: it was pinned to where the list lived rather than to
+      what it says. The agreement guard next door
+      (`server/auditLogCategoryAgreement.test.ts`) had already written the rule
+      down — *do not shape-match where a declaration exists* — and named this
+      very arm as the specimen.
+
+      It imports the list now. `shared/auditActionCategories.ts` opens no
+      database, so the original reason for reading text does not apply to it;
+      and the arm got STRONGER on the way across, because it compares the action
+      VALUE the wire writes rather than the spelling of the constant beside it.
     */
-    const AUDIT_SOURCE = readFileSync(
-      path.resolve(__dirname, "../auditLog.ts"),
-      "utf8",
-    );
-    const abuseBlock = AUDIT_SOURCE.slice(
-      AUDIT_SOURCE.indexOf("  abuse: ["),
-      AUDIT_SOURCE.indexOf("};", AUDIT_SOURCE.indexOf("  abuse: [")),
-    );
-    expect(abuseBlock).toContain("AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK");
+    const { ACTION_CATEGORIES } = await import("../../shared/auditActionCategories");
+    const { AUDIT_ACTIONS } = await import("../../shared/auditActions");
+
+    expect(ACTION_CATEGORIES.abuse).toContain(AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK);
+
+    /* The positive control: an empty or missing bucket would satisfy no
+       `toContain`, so the population is asserted real first. */
+    expect(ACTION_CATEGORIES.abuse.length).toBeGreaterThan(1);
   });
 
   it("does not reach for Slack on this path at all", async () => {
