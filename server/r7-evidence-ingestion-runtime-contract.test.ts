@@ -2,6 +2,15 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { allowTreeSweeps } from "./testing/suiteClocks";
+
+/* Family 2 — a HAND-ROLLED walk (`runtimeSources` below), which is why
+   `sourceSweepSuites.ts` cannot see it and #743 names that remainder. Measured
+   casualty, #962's load run: 134 / 122 / 125 ms quiet, **5,062 ms** under
+   fourteen busy CPU loops — a 40x blow-up onto the wrong side of the 5 s
+   default. Same shape as `clientInputCaps`: IO against the tree. */
+allowTreeSweeps();
+
 async function runtimeSources(root: string): Promise<string[]> {
   const entries = await readdir(root, { withFileTypes: true });
   const nested = await Promise.all(entries.map(async (entry) => {

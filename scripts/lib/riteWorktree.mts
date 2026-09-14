@@ -130,7 +130,29 @@ export const inWorktreeOf = <T,>(root: string, commit: string, body: (tree: stri
        there, so the remove says "is not a working tree" and gives up. The
        non-recursive `rmdir` then fails too, because the tree is inside. That
        leak stood at 7.8 GB across 32 checkouts in %TEMP% when #654 measured it
-       and had regrown to 4 within a day of being swept by hand. */
+       and had regrown to 4 within a day of being swept by hand.
+
+       ⚠ THE SENTENCE ABOVE IS INCOMPLETE, AND THE MISSING HALF IS WHAT YOU
+       WOULD ACTUALLY GO LOOKING FOR (#969, driven on git 2.55). A tree with
+       BOTH its directory and its own `.git` file present SURVIVES a prune —
+       so "whose directory is still there" is not by itself a state prune
+       collects. Prune resolves each registration THROUGH the tree's `.git`
+       pointer, and collects the registration when that cannot be resolved;
+       the directory still standing does not prevent it. Both routes end at
+       the same `"is not a working tree"`, which is why the symptom reads the
+       same and the cause does not.
+
+       ⚠ AND THE RACE THIS COMMENT INVITES YOU TO SUSPECT DOES NOT EXIST —
+       settled so the next reader does not chase it a third time. Every
+       throwaway tree here is named `tree`, so concurrent runs collide into
+       `tree`, `tree1`, … and it is tempting to read a `tree1` in a failure as
+       this global prune having raced a sibling's `add`. It cannot: `git
+       worktree add` writes a `locked` marker into the registration while it
+       is being built and prune honours it. Driven both ways on one
+       registration (marked survives, unmarked is collected) and raced
+       directly — 13 adds of a ~1.1 s checkout against 1,460 prunes from a
+       second OS process, zero failures — after a positive control proved the
+       harness could see a prune interfere at all. #969 closed on that. */
     removeThrowawayDir(dir, junction);
   }
 };

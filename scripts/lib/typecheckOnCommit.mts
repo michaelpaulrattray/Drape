@@ -50,29 +50,63 @@ export type TypecheckVerdict = {
   seconds: number;
   /** The last few lines the compiler printed — enough to name the file and line at fault. */
   printed: string;
+  /**
+   * SET WHEN THE CHECK COULD NOT BE ATTEMPTED (#967) — the worktree could not
+   * be made, so `tsc` never saw the commit.
+   *
+   * ⚠ **THIS IS THE SIBLING OF `ScriptGuardVerdict.couldNotRun`, AND IT IS HERE
+   * BECAUSE OF LAW 7 RATHER THAN BECAUSE IT HAS BEEN SEEN.** #967 was measured
+   * on the script guards; this module reaches the same `inWorktreeOf` by the
+   * same call shape, one block earlier in the same rite, so it can fail the
+   * same way and would have reported it the same wrong way. Declared as a swept
+   * sibling, not as a second incident: nothing has yet observed it here.
+   *
+   * `ok` is false either way — blind refuses (invariant 7). What it changes is
+   * who is accused: a red implicates the COMMIT, this implicates the MACHINE.
+   */
+  couldNotRun?: string;
 };
 
 /**
  * Run `pnpm check` against `commit` in a throwaway worktree of `root`.
  *
- * Throws if the worktree cannot be made — a blind check must refuse rather
- * than pass (invariant 7).
+ * A worktree that cannot be made returns `ok: false` with `couldNotRun` set —
+ * a blind check refuses rather than passing (invariant 7), and says which kind
+ * of refusal it is rather than dying on an uncaught stack trace above the
+ * rite's own receipt line (#967).
  */
 export const runTypecheckOnCommit = (root: string, commit: string, options: {
   check?: (cwd: string) => { status: number | null; output: string };
 } = {}): TypecheckVerdict => {
   const check = options.check ?? defaultCheck;
   const started = Date.now();
-  return inWorktreeOf(root, commit, (tree) => {
-    const result = check(tree);
+  let ran = false;
+  try {
+    return inWorktreeOf(root, commit, (tree) => {
+      ran = true;
+      const result = check(tree);
+      return {
+        ok: result.status === 0,
+        seconds: Math.round((Date.now() - started) / 1000),
+        printed: result.output.trim().split(/\r?\n/)
+          .filter((line) => line.trim() !== "")
+          .slice(-12).join("\n"),
+      };
+    });
+  } catch (error: unknown) {
+    /* Once the body has been entered the tree existed, so a throw from here on
+       belongs to the compiler or the teardown — not to a run that never
+       happened. Re-thrown rather than given the commit's alibi. */
+    if (ran) throw error;
+    const stderr = String((error as { stderr?: unknown })?.stderr ?? "").trim();
+    const message = (stderr !== "" ? stderr : String((error as Error)?.message ?? error)).trim();
     return {
-      ok: result.status === 0,
+      ok: false,
       seconds: Math.round((Date.now() - started) / 1000),
-      printed: result.output.trim().split(/\r?\n/)
-        .filter((line) => line.trim() !== "")
-        .slice(-12).join("\n"),
+      printed: message,
+      couldNotRun: message.split(/\r?\n/).slice(0, 4).join("\n"),
     };
-  });
+  }
 };
 
 /**
