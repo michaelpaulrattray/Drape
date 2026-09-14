@@ -121,9 +121,6 @@ export type {
 /* Section 00 (brief 00 §4, §5) — the severity look and popover discipline. */
 export { showsMenuCount } from "./menuCount";
 export { severityLook } from "./severity";
-/* #898 — the promotion pass: a pure date formatter that lived in a crew
-   component file with six importers. Byte-identical; the move is the change. */
-export { shortDate } from "./shortDate";
 export type { Severity } from "./severity";
 /*
   THE ONE OWNER of how a panel opens, closes and lands (#304, his "Option one").

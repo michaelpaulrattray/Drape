@@ -34,7 +34,7 @@
  */
 import { cn } from "@/lib/utils";
 import { TableHead } from "@/foundation";
-import { shortDate } from "@/foundation/shortDate";
+import { staffDateTime } from "@/foundation/staffDate";
 import { heldCount, nextUpRows } from "./crewTypes";
 import type { CrewBriefingView, CrewNeedsYouCard } from "./crewTypes";
 
@@ -54,7 +54,7 @@ export function CrewNextUp({
           rides beside it — both are measured values, so both are mono. */}
       <TableHead eyebrow="Next up">
         {rows.length > 0 && <span className="dp-crew__meta">{rows.length} open</span>}
-        <span className="dp-chrome dp-crew__mono">queue read {shortDate(nextUp.readAt)}</span>
+        <span className="dp-chrome dp-crew__mono">queue read {staffDateTime(nextUp.readAt)}</span>
       </TableHead>
 
       {rows.length === 0 ? (

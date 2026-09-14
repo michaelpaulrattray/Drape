@@ -2,6 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import {
+  STAFF_LOCALE,
+  staffDateOnly,
+  staffDateTime,
+  staffDateTimeWithYear,
+  staffFullDateTime,
+} from "./staffDate";
+
 /**
  * THE STAFF WORLD'S CLOCK IS 24-HOUR — a house rule, not a section rule.
  *
@@ -18,7 +26,8 @@ import { describe, expect, it } from "vitest";
  * - **Instance 1** — `clockTime` itself, fixed with the reasoning written down.
  * - **Instance 2** — #329: the fix had reached one of three formatters on the
  *   crew page, so his own confirming quote rendered `07:17 pm` directly above a
- *   shift strip reading `20:17`. `shortDate` and `readStamp` were the siblings.
+ *   shift strip reading `20:17`. `shortDate` and `readStamp` were the siblings;
+ *   both are now calls to `staffDateTime` (#329, #933).
  * - **Instance 3** — #900: he read `10:30:33 pm` in the admin bar directly above
  *   content reading `25 Aug, 19:17`. **One screen, one frame, two notations.**
  *   `features/staff/StaffBar.tsx` renders a folder away from the crew page and
@@ -145,7 +154,10 @@ const staffPages = (): { name: string; text: string }[] => {
  * the promotion pass working as designed, and a root-shaped population cannot
  * see it afterwards: `shortDate` left `features/admin/components/crew/` for
  * `foundation/` and the crew guard's absence arm would have gone quietly green
- * with nothing left to examine.
+ * with nothing left to examine. **`shortDate` itself is gone since #933** — it
+ * and `staffDateTime` were the same device once #903 pinned the locale — so the
+ * module the hop now has to reach is `foundation/staffDate.ts`, which is the
+ * same lesson one collapse later.
  *
  * Derived from the `@/foundation/…` specifiers the staff world itself imports —
  * **not a path typed in beside the fix** (working law 4). Promote the next
@@ -310,8 +322,10 @@ describe("the staff clock guard — the population", () => {
     expect(names).toContain("features/admin/ChangeRequestConstants.tsx");
     /* The nested one, proving the walk recurses rather than reading a top level. */
     expect(names).toContain("features/admin/components/crew/CrewWorkingNow.tsx");
-    /* The promoted one, proving the foundation hop resolves (#898). */
-    expect(names).toContain("foundation/shortDate.ts");
+    /* The promoted one, proving the foundation hop resolves (#898 promoted
+       `shortDate` here; #933 folded it into `staffDateTime`, so the hop is
+       proven against the module that survived). */
+    expect(names).toContain("foundation/staffDate.ts");
   });
 
   it("does not reach the customer's surfaces", () => {
@@ -536,22 +550,49 @@ describe("every clock in his world is 24-hour", () => {
     ⚠ **A FALL BELOW EITHER IS THE ARM DOING ITS JOB. It means a real collapse
     worth thinking about or the sweep breaking, and those two must not be told
     apart by editing this number.**
+
+    ⚠ **IT FELL AGAIN THE VERY NEXT NIGHT — 5 → 4 (#933) — AND IT WAS A REAL
+    COLLAPSE, WHICH IS WHY THE NUMBER MOVED AND WHY THAT IS NOT THE WHOLE
+    REPAIR.** `foundation/shortDate.ts` was deleted: once #903 pinned
+    `STAFF_LOCALE` it and `staffDateTime` were the same device, differing only
+    in a NaN guard, and the guard travelled into the survivor.
+
+    **What is left is FOUR, and they are four different questions rather than
+    four survivors** — which is the thing a number cannot say and this
+    paragraph can:
+
+      `features/staff/StaffBar.tsx`                    the bar clock, time only
+      `features/admin/components/crew/CrewWorkingNow`  the live shift strip
+      `pages/AdminBugReports.tsx`                      the local near-miss the
+                                                       promotion bar left alone
+      `foundation/staffDate.ts`                        all three staff shapes
+
+    **All four are named below now, where three were named before.** #898's
+    lesson was *a floor of N is satisfied by any N survivors*; with every
+    survivor named, the floor can no longer be satisfied by coincidence at all,
+    and the next fall is answered by a name rather than by a subtraction.
   */
   it("the sweep has a real population, spread across files", () => {
     const perFile = population()
       .map((f) => ({ name: f.name, n: calls(f.text).filter(isClock).length }))
       .filter((f) => f.n > 0);
-    expect(perFile.length).toBeGreaterThanOrEqual(5);
+    expect(perFile.length).toBeGreaterThanOrEqual(4);
   });
 
-  it("and it still reaches the three clocks it may never lose, BY NAME", () => {
+  it("and it still reaches every clock it may never lose, BY NAME", () => {
     /*
-      The count above is satisfied by any five files. These three are not:
+      The count above is satisfied by any four files. These four are not:
       `StaffBar` is the bar clock on every staff page, `CrewWorkingNow` is the
-      live shift strip, and `foundation/staffDate.ts` is now where every staff
-      table's timestamp is drawn. If the walk, the `@/foundation` resolver or
-      the matcher breaks, at least one of them falls silent here before the
-      verdict arms above can report a clean product.
+      live shift strip, `AdminBugReports` is the near-miss the promotion bar
+      correctly left in its own file, and `foundation/staffDate.ts` is where
+      every staff table's timestamp is drawn. If the walk, the `@/foundation`
+      resolver or the matcher breaks, at least one of them falls silent here
+      before the verdict arms above can report a clean product.
+
+      ⚠ **THIS LIST IS THE WHOLE CLOCK-CARRYING POPULATION AS OF #933, NOT A
+      SAMPLE OF IT.** A fifth file growing a clock is not a failure here — the
+      verdict arms above are what judge it — but a name DISAPPEARING from this
+      list is, and that is the direction the floor above cannot see.
     */
     const carrying = new Set(
       population()
@@ -560,6 +601,7 @@ describe("every clock in his world is 24-hour", () => {
     );
     expect(carrying).toContain("features/staff/StaffBar.tsx");
     expect(carrying).toContain("features/admin/components/crew/CrewWorkingNow.tsx");
+    expect(carrying).toContain("pages/AdminBugReports.tsx");
     expect(carrying).toContain("foundation/staffDate.ts");
   });
 
@@ -608,5 +650,108 @@ describe("every clock in his world is 24-hour", () => {
     expect(LOCALE_LITERAL.test('stamp.toLocaleTimeString(undefined, { hour: "2-digit" })')).toBe(false);
     /* NEGATIVE — a number's thousands separator names no locale at all. */
     expect(LOCALE_LITERAL.test("balance.toLocaleString()")).toBe(false);
+  });
+});
+
+/* ================================================================
+   AND THE FORMATTERS THEMSELVES, DRIVEN — every arm above is a SOURCE READ
+   ================================================================ */
+
+/*
+  ⚠ **EVERYTHING ABOVE THIS LINE READS SOURCE. NOTHING CALLED THE FUNCTIONS**
+  — which meant the two house rules this file exists to hold were being proven
+  by the presence of the characters `hour12: false` in a file, not by a staff
+  timestamp coming out 24-hour. A rule proven at the bytes is one refactor away
+  from being proven about nothing.
+
+  It cost nothing to notice and it is written here because #933 is what exposed
+  it: that card moved `shortDate`'s NaN guard into `staffDateTime`, and there
+  was **no arm anywhere that would have gone red if the guard had been dropped
+  on the way**. A behaviour carried between two functions with nothing driving
+  it is a behaviour that has not actually arrived.
+
+  ⚠ **WHAT THESE ARMS DELIBERATELY DO NOT ASSERT IS THE MONTH'S SPELLING.**
+  `Sept` versus `Sep` is ICU's business and it has moved between Node releases;
+  pinning it would make this suite fail on a runtime upgrade while the product
+  was perfectly correct. What is pinned is what he actually ruled on — **the
+  day comes first** and **the clock is 24-hour** — plus the guard, and every
+  date is built from local parts so the assertions do not depend on the
+  machine's time zone either.
+*/
+describe("the staff formatters, called rather than read", () => {
+  /* 14 September 2026, 23:08:12 — local parts, so no TZ enters the reading. */
+  const WHEN = new Date(2026, 8, 14, 23, 8, 12);
+
+  it("puts the day first — his ruling, at the output", () => {
+    /* The digits `14` precede the letters, in all four shapes. */
+    for (const [name, rendered] of [
+      ["staffDateTime", staffDateTime(WHEN)],
+      ["staffDateTimeWithYear", staffDateTimeWithYear(WHEN)],
+      ["staffFullDateTime", staffFullDateTime(WHEN)],
+      ["staffDateOnly", staffDateOnly(WHEN)],
+    ] as const) {
+      expect(rendered.startsWith("14"), `${name} rendered "${rendered}"`).toBe(true);
+    }
+  });
+
+  it("and the clock is 24-hour, with no meridiem anywhere", () => {
+    for (const [name, rendered] of [
+      ["staffDateTime", staffDateTime(WHEN)],
+      ["staffDateTimeWithYear", staffDateTimeWithYear(WHEN)],
+      ["staffFullDateTime", staffFullDateTime(WHEN)],
+    ] as const) {
+      expect(rendered, `${name} rendered "${rendered}"`).toContain("23:08");
+      expect(rendered.toLowerCase(), `${name} rendered "${rendered}"`).not.toContain(" am");
+      expect(rendered.toLowerCase(), `${name} rendered "${rendered}"`).not.toContain(" pm");
+    }
+    /* The axis shape has no clock at all — that is its whole difference. */
+    expect(staffDateOnly(WHEN)).not.toContain(":");
+  });
+
+  it("⚠ POSITIVE CONTROL — a day-LAST locale renders the other way, so the arms above are reading something", () => {
+    /*
+      Law 2. Without this, both arms pass equally well against a formatter that
+      had quietly stopped formatting. `en-US` is the exact literal all eleven
+      pre-#902 declarations carried, so this is also what the ruling replaced.
+    */
+    expect(STAFF_LOCALE).toBe("en-GB");
+    const dayLast = WHEN.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    expect(dayLast.startsWith("14"), `en-US rendered "${dayLast}"`).toBe(false);
+    expect(
+      WHEN.toLocaleString("en-US", { hour: "numeric", minute: "2-digit" }).toLowerCase(),
+    ).toContain("pm");
+  });
+
+  /* The guard card 933 carried across from `shortDate` — the number lives in
+     this comment because the hex guard reads `#933` in a test NAME as a colour
+     literal, and it is right to: the two are indistinguishable in a string. */
+  it("⚠ the NaN guard carried across from the deleted twin, and its two answers", () => {
+    /*
+      `shortDate` returned an unparseable STRING unchanged, which is what the
+      Crew page has always done with a stamp it cannot read, and that is kept.
+      A `Date` that will not parse has no such fallback — there is no original
+      text to hand back — so it takes the `—` the year-carrying sibling already
+      uses. Both beat `Invalid Date` in a staff table.
+    */
+    expect(staffDateTime("not a date")).toBe("not a date");
+    expect(staffDateTime("")).toBe("");
+    expect(staffDateTime(new Date("nope"))).toBe("—");
+    /* Positive control: a real value does NOT take either branch. */
+    expect(staffDateTime(WHEN)).toContain("23:08");
+    expect(staffDateTime("2026-09-14T13:08:12.000Z")).not.toBe("2026-09-14T13:08:12.000Z");
+  });
+
+  it("the year-carrying shape keeps its own null guard, and the others do not claim it", () => {
+    expect(staffDateTimeWithYear(null)).toBe("—");
+    expect(staffDateTimeWithYear(undefined)).toBe("—");
+    expect(staffDateTimeWithYear(WHEN)).toContain("2026");
+    /* The dense shape carries no year — that is the pair's whole difference. */
+    expect(staffDateTime(WHEN)).not.toContain("2026");
   });
 });

@@ -18,7 +18,7 @@
  *
  * | shape | renders | was declared in | outcome |
  * |---|---|---|---|
- * | `staffDateTime` | `14 Sept, 23:08` | `adminConstants.formatDate`, `moderatorConstants.formatDate` | promoted — **12** consumer files |
+ * | `staffDateTime` | `14 Sept, 23:08` | `adminConstants.formatDate`, `moderatorConstants.formatDate`, and `foundation/shortDate` from #933 | promoted — **19** consumer files |
  * | `staffDateTimeWithYear` | `14 Sept 2026, 23:08` | `UserBadges.formatDate`, `ChangeRequestConstants.formatDate` | promoted — 2 |
  * | `staffFullDateTime` | `14 September 2026 at 23:08:12` | `adminConstants.formatFullDate`, `moderatorConstants.formatFullDate` | promoted — 4 |
  * | `staffDateOnly` | `14 Sept` | `UserTable.shortTime`, `ChangeRequestConstants.formatRelativeTime`'s tail, and `formatDateLabel` in **three** Overview cards | promoted — 5 |
@@ -130,9 +130,37 @@ export const STAFF_LOCALE = "en-GB";
  * The densest of the three and the one most tables use — a WHEN column, a
  * BLOCKED cell, a last-signed-in. No year, because a row in an audit log is
  * being read against the rows above it rather than against a calendar.
+ *
+ * ⚠ **`foundation/shortDate` WAS THIS FUNCTION AND IS NOW A CALL TO IT
+ * (#933).** It was the Crew page's own date formatter, promoted out of a
+ * component in #898; it was never a duplicate of this one until #903 pinned
+ * `STAFF_LOCALE`, and then it was — same field set, same 24-hour forcing, same
+ * locale, differing only in a NaN guard and a narrower parameter.
+ *
+ * **It was found by sweeping the DRAWING rather than the name**, which is
+ * #482's lesson: grepping the foundation for a caller's own class names asks
+ * *"has the foundation copied us?"*, and it never has. Sweeping for the option
+ * set found this in about a minute, and it is the second time in two weeks
+ * that shape-over-name has found what name-over-shape could not.
+ *
+ * **The name that survived is this one** — it says WHAT it renders where
+ * `shortDate` said how long it is — and the two files did not merely differ in
+ * age: `shortDate` had seven importers on `/admin/crew` and this one has
+ * twelve across the staff tables, so the promotion pass's *"the one with REAL
+ * CUSTOMERS wins"* does not settle it and the reason above does.
+ *
+ * ⚠ **THE GUARD BELOW CAME FROM `shortDate` AND IS A STRICT SUPERSET, NOT A
+ * BEHAVIOUR CHANGE FOR ANYONE.** Every current caller of this function passes
+ * a real date; what it prevents is the next one rendering `Invalid Date` in a
+ * staff table. A string that will not parse comes back as itself, which is what
+ * the Crew page has always done with a stamp it cannot read; a `Date` that will
+ * not parse has no such fallback and takes the `—` the year-carrying sibling
+ * already uses.
  */
 export function staffDateTime(date: Date | string): string {
-  return new Date(date).toLocaleString(STAFF_LOCALE, {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return typeof date === "string" ? date : "—";
+  return parsed.toLocaleString(STAFF_LOCALE, {
     month: "short",
     day: "numeric",
     hour: "2-digit",

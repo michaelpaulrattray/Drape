@@ -37,7 +37,7 @@
  */
 import { useState } from "react";
 import { CrewReplyBox } from "./CrewReplyBox";
-import { shortDate } from "@/foundation/shortDate";
+import { staffDateTime } from "@/foundation/staffDate";
 import { TableHead } from "@/foundation";
 import { foldTimeline, replyFallsToGeneral } from "./crewTypes";
 import type { CrewReplyView, CrewThreadHost } from "./crewTypes";
@@ -95,7 +95,7 @@ export function CrewGeneral({
             <li key={`reply-${item.reply.id}`} className="dp-crew__entry">
               <div className="dp-crew__entryhead">
                 <span className="dp-crew__who">{item.reply.author}</span>
-                <span className="dp-chrome dp-crew__mono">{shortDate(String(item.reply.createdAt))}</span>
+                <span className="dp-chrome dp-crew__mono">{staffDateTime(String(item.reply.createdAt))}</span>
                 {item.orphanedFrom !== null && (
                   <span className="dp-chrome dp-crew__unseen">
                     {cardTitles.has(item.orphanedFrom)

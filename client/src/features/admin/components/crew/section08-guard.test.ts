@@ -62,9 +62,11 @@ const surfaces = () => section().filter((f) => f.name.endsWith(".tsx"));
  * ⚠ **THE FORMATTER POPULATION FOLLOWS THE FORMATTER OUT OF THE DIRECTORY
  * (#898).** The two formatter arms below used to sweep `surfaces()` alone, and
  * that was right for exactly as long as every date on this page was formatted
- * inside this directory. `shortDate` has now been promoted to
- * `foundation/shortDate.ts` — six importers, the promotion pass's shape — and
- * a directory-shaped sweep cannot see it there.
+ * inside this directory. `shortDate` was promoted to `foundation/shortDate.ts`
+ * — six importers, the promotion pass's shape — and a directory-shaped sweep
+ * cannot see it there. ⚠ **Since #933 that module is gone and this page's date
+ * is `staffDate.staffDateTime`**: the two were the same device once #903 pinned
+ * the locale, so the name below follows the formatter a second time.
  *
  * **Both arms would have gone quietly wrong in DIFFERENT directions, which is
  * why this is not a count to lower:** the floor arm reddens (2 → 1, and its
@@ -344,9 +346,9 @@ describe("§1 — a quote is rendered verbatim and never trimmed", () => {
       here would still be green.
     */
     const names = sharedModules().map((f) => f.name);
-    expect(names).toContain("foundation/shortDate.ts");
+    expect(names).toContain("foundation/staffDate.ts");
 
-    const promoted = sharedModules().find((f) => f.name === "foundation/shortDate.ts");
+    const promoted = sharedModules().find((f) => f.name === "foundation/staffDate.ts");
     expect(promoted?.text).toContain("hour12: false");
   });
 
@@ -390,7 +392,8 @@ describe("§1 — a quote is rendered verbatim and never trimmed", () => {
 
     ⚠ **AND IT WAS PINNED AT THREE ANYWAY, AND THIS ARM WENT RED WHEN THE THIRD
     FORMATTER WAS DELETED ON PURPOSE (#329).** `CrewNextUp`'s `readStamp` was
-    BYTE-IDENTICAL to `CrewProgramBanner`'s `shortDate` — the duplication this
+    BYTE-IDENTICAL to `CrewProgramBanner`'s `shortDate` (now `staffDateTime`,
+    #933) — the duplication this
     page's own docblocks record as the reason a 24-hour fix once reached one
     formatter of three — so it became a call to it and the spread fell 3 → 2.
 
@@ -416,8 +419,8 @@ describe("§1 — a quote is rendered verbatim and never trimmed", () => {
   });
 
   it("keeps the attribution and the date, and the date is absolute", () => {
-    expect(banner).toContain("shortDate(program.focus.quotedAt)");
-    /* §7: no relative timestamps on anything decided. `shortDate` is the
+    expect(banner).toContain("staffDateTime(program.focus.quotedAt)");
+    /* §7: no relative timestamps on anything decided. `staffDateTime` is the
        absolute one; `ago()` is the status strip's and must not appear here. */
     expect(banner).not.toMatch(/\bago\s*\(/);
   });
