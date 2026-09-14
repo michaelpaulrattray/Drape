@@ -21,7 +21,7 @@
  * a moving target.
  */
 import { describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import {
   agedOut, chainSweep, citationsFrom, internalCitationLines, nameAnchorOf, sweepable,
@@ -43,7 +43,7 @@ const ago = (days: number) => new Date(NOW.getTime() - days * DAY);
 describe("untrackedDisposables — the population, and only the population", () => {
   const PORCELAIN = [
     "?? scripts/_429-plan-disposable.mts",
-    "?? scripts/court-ink-plate-disposable.mts",
+    "?? scripts/court-fixture-plate-disposable.mts",
     "?? scripts/_briefing-e88-disposable.mts",
     /* NOT disposables: an untracked helper the team means to keep. */
     "?? scripts/lib/sabotage.mts",
@@ -59,7 +59,7 @@ describe("untrackedDisposables — the population, and only the population", () 
   it("takes every untracked disposable under scripts/", () => {
     expect(untrackedDisposables(PORCELAIN)).toEqual([
       "scripts/_429-plan-disposable.mts",
-      "scripts/court-ink-plate-disposable.mts",
+      "scripts/court-fixture-plate-disposable.mts",
       "scripts/_briefing-e88-disposable.mts",
     ]);
   });
@@ -103,7 +103,7 @@ describe("untrackedDisposables — the population, and only the population", () 
     const got = untrackedUnderScripts(PORCELAIN);
     expect(got.paths).toEqual([
       "scripts/_429-plan-disposable.mts",
-      "scripts/court-ink-plate-disposable.mts",
+      "scripts/court-fixture-plate-disposable.mts",
       "scripts/_briefing-e88-disposable.mts",
       "scripts/lib/sabotage.mts",
       "scripts/_429-notes.md",
@@ -127,11 +127,11 @@ describe("nameAnchorOf — what artifact does the name point at", () => {
        matched TWO files in the live population while 27 others carried a
        readable edition and fell into the permanent-KEEP bucket. Every name here
        was in `scripts/` on the day this arm was written. */
-    expect(nameAnchorOf("scripts/_edition337-disposable.mts")).toEqual({ kind: "edition", id: 337 });
-    expect(nameAnchorOf("scripts/_edition61-disposable.py")).toEqual({ kind: "edition", id: 61 });
-    expect(nameAnchorOf("scripts/_foreman-edition354-disposable.mts")).toEqual({ kind: "edition", id: 354 });
-    expect(nameAnchorOf("scripts/_janitor5-edition353-disposable.mts")).toEqual({ kind: "edition", id: 353 });
-    expect(nameAnchorOf("scripts/_shift93-briefing-e96-disposable.mts")).toEqual({ kind: "edition", id: 96 });
+    expect(nameAnchorOf("scripts/_edition99337-disposable.mts")).toEqual({ kind: "edition", id: 99337 });
+    expect(nameAnchorOf("scripts/_edition99061-disposable.py")).toEqual({ kind: "edition", id: 99061 });
+    expect(nameAnchorOf("scripts/_foreman-edition99354-disposable.mts")).toEqual({ kind: "edition", id: 99354 });
+    expect(nameAnchorOf("scripts/_janitor5-edition99353-disposable.mts")).toEqual({ kind: "edition", id: 99353 });
+    expect(nameAnchorOf("scripts/_shift99093-briefing-e99096-disposable.mts")).toEqual({ kind: "edition", id: 99096 });
   });
 
   it("a name carrying BOTH a card number and an edition number resolves by the CARD (#973)", () => {
@@ -142,9 +142,9 @@ describe("nameAnchorOf — what artifact does the name point at", () => {
        draft of #973 claimed these matched both shapes and inverted the order to
        protect them; swapping the order back left this arm green, which is how
        the claim was caught. The arm stays as the pin on the real behaviour. */
-    expect(nameAnchorOf("scripts/_155-edition179-disposable.mts")).toEqual({ kind: "card", id: 155 });
-    expect(nameAnchorOf("scripts/_921-edition393-disposable.mts")).toEqual({ kind: "card", id: 921 });
-    expect(nameAnchorOf("scripts/_412-edition-disposable.mts")).toEqual({ kind: "card", id: 412 });
+    expect(nameAnchorOf("scripts/_9155-edition99179-disposable.mts")).toEqual({ kind: "card", id: 9155 });
+    expect(nameAnchorOf("scripts/_9921-edition99393-disposable.mts")).toEqual({ kind: "card", id: 9921 });
+    expect(nameAnchorOf("scripts/_9412-edition-disposable.mts")).toEqual({ kind: "card", id: 9412 });
   });
 
   it("NEGATIVE CONTROL — the widening did not reach a name that only LOOKS like an edition (#973)", () => {
@@ -153,12 +153,12 @@ describe("nameAnchorOf — what artifact does the name point at", () => {
        would be dated at an artifact it has nothing to do with by a looser
        pattern — `_court177-…` most of all, which is a court and not an edition. */
     for (const name of [
-      "scripts/_court177-briefing-edit-disposable.py",
-      "scripts/_court177-grid-disposable.mts",
-      "scripts/_shift101-court-mouth-disposable.mts",
-      "scripts/_381b-edition-disposable.py",
-      "scripts/_shift191-edition-disposable.py",
-      "scripts/_briefing-e76b-disposable.mts",
+      "scripts/_court99177-briefing-edit-disposable.py",
+      "scripts/_court99177-grid-disposable.mts",
+      "scripts/_shift99101-court-mouth-disposable.mts",
+      "scripts/_9381b-edition-disposable.py",
+      "scripts/_shift99191-edition-disposable.py",
+      "scripts/_briefing-e99076b-disposable.mts",
       "scripts/_edition-disposable.mts",
     ]) expect(nameAnchorOf(name), name).toBeNull();
   });
@@ -171,7 +171,7 @@ describe("nameAnchorOf — what artifact does the name point at", () => {
     for (const name of [
       "scripts/_read-rows-disposable.mts",
       "scripts/_probe-wall-disposable.mts",
-      "scripts/court-ink-plate-disposable.mts",
+      "scripts/court-fixture-plate-disposable.mts",
       "scripts/_shift93-tables-disposable.mts",
       "scripts/_-disposable.mts",
     ]) expect(nameAnchorOf(name), name).toBeNull();
@@ -188,16 +188,16 @@ describe("citationsFrom — a KEEP is a citation", () => {
   const POPULATION = [
     "scripts/_429-plan-disposable.mts",
     "scripts/_430-other-disposable.mts",
-    "scripts/court-ink-plate-disposable.mts",
+    "scripts/court-fixture-plate-disposable.mts",
   ];
 
   it("POSITIVE CONTROL — finds the tracked file that names one", () => {
     const grep = [
-      "docs/specs/INK_COURT.md:12:the strip was built by `scripts/court-ink-plate-disposable.mts`",
+      "docs/specs/INK_COURT.md:12:the strip was built by `scripts/court-fixture-plate-disposable.mts`",
       "docs/JANITOR_LOG.md:400:| `scripts/_429-plan-disposable.mts` | kept |",
     ].join("\n");
     const found = citationsFrom(grep, POPULATION);
-    expect(found.get("scripts/court-ink-plate-disposable.mts")).toEqual(["docs/specs/INK_COURT.md"]);
+    expect(found.get("scripts/court-fixture-plate-disposable.mts")).toEqual(["docs/specs/INK_COURT.md"]);
     expect(found.get("scripts/_429-plan-disposable.mts")).toEqual(["docs/JANITOR_LOG.md"]);
   });
 
@@ -211,7 +211,7 @@ describe("citationsFrom — a KEEP is a citation", () => {
     );
     expect(found.get("scripts/_430-other-disposable.mts")).toEqual(["docs/x.md"]);
     expect(found.get("scripts/_429-plan-disposable.mts")).toBeUndefined();
-    expect(found.get("scripts/court-ink-plate-disposable.mts")).toBeUndefined();
+    expect(found.get("scripts/court-fixture-plate-disposable.mts")).toBeUndefined();
   });
 
   it("counts one citing file once however many times it names the file", () => {
@@ -506,5 +506,75 @@ describe("verdictOf — the one sentence both outputs print, and it never names 
   it("sweptSet is the union the JSON reader used to have to compute itself", () => {
     const rows = [prbody, sabotage];
     expect([...sweptSet(rows, 7, NOW, chainSweep(rows, 7, NOW))].sort()).toEqual([prbody.file, sabotage.file].sort());
+  });
+});
+
+/*
+  THE ARM THAT STOPS THIS SUITE PINNING THE POPULATION IT MEASURES (#975).
+
+  #973 widened the reader's edition anchor and wrote its arms with REAL names
+  out of the live population, deliberately, so the evidence would be honest.
+  The citation sweep then did exactly what it is built to do — *a KEEP is a
+  citation, never a judgement of value* — and because this file is TRACKED and
+  stays, every name it quoted became a permanent KEEP:
+
+      KEEP  cited by server/disposableAge.test.ts   scripts/_edition337-disposable.mts
+      …
+
+  Measured across that merge: sweepable 4 -> 2, `cited by a file that stays`
+  101 -> 114. So the fix recovered 27 files from *undatable* and, in the same
+  commit, pinned 13 of them as *permanently kept*. **A citation never ages**, so
+  nothing about that decays on its own.
+
+  ⚠ **RE-MEASURED BEFORE THIS WAS TAKEN (#909's rule) AND THE CARD'S FIGURE IS
+  THE RELEASE COUNT, NOT THE POPULATION: this suite cited FIFTEEN rows, of which
+  thirteen were cited by nothing else.** The other two — `_shift101-court-mouth-`
+  and `court-ink-plate-` — are also named by `docs/specs/INK_COURT.md` and
+  `scripts/build-ink-court-panel-disposable.mts`, so they stay KEEP on their own
+  merits and renaming here neither releases nor harms them.
+
+  ⚠ **THE READER IS NOT WEAKENED TO FIX THIS, AND THAT WAS THE CARD'S OWN
+  RECOMMENDATION.** Excluding this suite from the citation authority would trade
+  a safety reader for a naming problem, and the next tracked file to quote a
+  disposable path will not be this suite. The names moved instead.
+
+  The fixtures now sit in a reserved range that respects both of the reader's
+  own digit rules, read at `nameAnchorOf` rather than assumed: a CARD id is
+  `\d{1,4}` (so `9155`, and a five-digit card deliberately reads as null — the
+  reader treats it as a date or a pixel width), while an EDITION id is unbounded
+  (so `99337`, five digits, far above the ~413 editions that exist). Every
+  SHAPE under test is preserved exactly; only the numbers moved, which is why
+  the forty arms above pass unchanged.
+
+  ⚠ **AND ITS LIMIT IS STATED: this arm reads the DISK, so on a clean checkout —
+  which is what CI runs — nothing exists and it is VACUOUS.** It has teeth on a
+  shift's own tree, which is the only place the population lives at all. That is
+  not a weakness to fix here; it is what the subject is.
+*/
+describe("this suite's own fixtures name no file that exists (#975)", () => {
+  const SELF = path.join(import.meta.dirname, "disposableAge.test.ts");
+  /* `*-disposable.<ext>` is the population's shape. `scripts/disposable-age.mts`
+     is the READER and does not match it, which is deliberate — that one must
+     exist, and an arm indicting it would be this guard crying wolf on day one. */
+  const QUOTED = /[\w./\-]*-disposable\.[a-z]+/g;
+
+  it("reads its own source, and finds the fixtures it is about", () => {
+    /* The floor (working law 2): an absence arm over an empty list is green
+       when the reader breaks, and this one reads a file by a computed path. */
+    const names = [...new Set(readFileSync(SELF, "utf8").match(QUOTED) ?? [])];
+    expect(names.length, "the reader found no disposable names in its own source").toBeGreaterThan(20);
+    expect(names).toContain("scripts/_edition99337-disposable.mts");
+  });
+
+  it("and not one of them is a file in the live population", () => {
+    const names = [...new Set(readFileSync(SELF, "utf8").match(QUOTED) ?? [])];
+    const REPO = path.resolve(import.meta.dirname, "..");
+    const live = names.filter((name) => existsSync(path.join(REPO, name)));
+
+    expect(
+      live,
+      "a fixture name here is a real file, so this suite has pinned it as a permanent KEEP — "
+        + "rename the fixture (cards 9xxx, editions 99xxx), never the file:\n" + live.join("\n"),
+    ).toEqual([]);
   });
 });
