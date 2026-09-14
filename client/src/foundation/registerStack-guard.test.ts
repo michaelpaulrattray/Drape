@@ -153,7 +153,17 @@ export function foundationPrecedesStylesheet(moduleText: string, stylesheetBase:
 }
 
 /* Issue 524 — the number stays out of string literals for the token guard. */
-describe("a foundation register class stacked on a page class is ordered by construction (issue 524)", () => {
+/*
+  Family 2's clock, written as the client side writes it (`castingV2CssEmitters`
+  carries the same bare `60_000`, and no client suite imports the server's
+  helper). It walks `client/src` with a hand-rolled `readdir` and reads every
+  stylesheet it finds, so `sourceSweepSuites.ts` cannot see it — #743's stated
+  remainder. Measured casualty, #962's load run: 2,932 / 2,863 / 3,593 ms quiet
+  and **7,368 ms** under fourteen busy CPU loops. Unlike the two r7 walkers it
+  was ALREADY within sight of the default at rest, which is the shape the
+  doctrine warns is one bad draw from red.
+*/
+describe("a foundation register class stacked on a page class is ordered by construction (issue 524)", { timeout: 60_000 }, () => {
   it("every stack's page stylesheet follows foundation.css in the cascade", async () => {
     const files = await walk(CLIENT);
     const tsx = files.filter((f) => f.endsWith(".tsx") && !/\.test\.tsx?$/.test(f));

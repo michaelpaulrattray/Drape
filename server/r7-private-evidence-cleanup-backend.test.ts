@@ -2,6 +2,14 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { allowTreeSweeps } from "./testing/suiteClocks";
+
+/* Family 2 — a HAND-ROLLED walk (`runtimeSources` below), invisible to
+   `sourceSweepSuites.ts` for the reason #743 records. Measured casualty,
+   #962's load run: 161 / 187 / 162 ms quiet, **5,038 ms** under fourteen busy
+   CPU loops — 31x, and over the 5 s default by 38 ms. */
+allowTreeSweeps();
+
 async function runtimeSources(root: string): Promise<Array<{ file: string; source: string }>> {
   const found: Array<{ file: string; source: string }> = [];
   for (const entry of await readdir(root, { withFileTypes: true })) {
