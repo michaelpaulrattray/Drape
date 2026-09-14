@@ -65,9 +65,38 @@ describe("the typecheck verdict (#263)", () => {
     expect(lines[0]).toBe("line 29");
   }, 60_000);
 
-  it("throws when the commit cannot be checked out — blind refuses, never allows", () => {
-    expect(() => runTypecheckOnCommit(ROOT, "no-such-commit-0000", { check: fakeCheck(0, "fine") }))
-      .toThrow();
+  /*
+    ⚠ THIS ARM ASSERTED A THROW UNTIL #967 AND ITS PROPERTY IS UNCHANGED: a
+    check that could not be made must REFUSE, never allow. What moved is the
+    SHAPE of the refusal — a verdict the rite can narrate, rather than an
+    exception that ended the process above its own receipt line.
+
+    Swept here from the script guards under law 7, not observed here: both
+    modules reach one `inWorktreeOf` by one call shape, so they could fail the
+    same way and would both have blamed the commit for it.
+  */
+  it("a commit that cannot be checked out REFUSES, and clears the commit of blame", () => {
+    const verdict = runTypecheckOnCommit(ROOT, "no-such-commit-0000", { check: fakeCheck(0, "fine") });
+    /* The half the old `toThrow()` was really protecting: a blind run is not a
+       pass, whatever the stubbed checker said. */
+    expect(verdict.ok, "blind refuses, never allows").toBe(false);
+    expect(verdict.couldNotRun, "the verdict must SAY it could not run").toBeTruthy();
+    expect(verdict.couldNotRun).toMatch(/no-such-commit-0000|invalid reference|not a valid object/i);
+  }, 60_000);
+
+  it("POSITIVE CONTROL — a real compiler failure is NOT dressed as 'could not run'", () => {
+    /* The dangerous direction: if this field were set on every red, the rite
+       would tell a shift to re-run over a genuinely broken commit. */
+    const verdict = runTypecheckOnCommit(ROOT, "HEAD", { check: fakeCheck(2, "server/x.ts(1,1): error TS2304\n") });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.couldNotRun, "the compiler RAN — the commit is implicated").toBeUndefined();
+    expect(verdict.printed).toContain("TS2304");
+  }, 60_000);
+
+  it("a throw from the CHECKER still propagates — it cannot borrow the commit's alibi", () => {
+    expect(() => runTypecheckOnCommit(ROOT, "HEAD", {
+      check: () => { throw new Error("the checker exploded"); },
+    })).toThrow(/the checker exploded/);
   }, 60_000);
 });
 
