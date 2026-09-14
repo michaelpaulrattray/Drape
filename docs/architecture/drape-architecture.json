@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "3e869e7a9c0796c6"
+    "sourceFingerprint": "160295a88aeeafda"
   },
   "domains": [
     {
@@ -11032,6 +11032,10 @@
     {
       "id": "test:server/auditLog.test.ts",
       "path": "server/auditLog.test.ts"
+    },
+    {
+      "id": "test:server/auditLogCategoryAgreement.test.ts",
+      "path": "server/auditLogCategoryAgreement.test.ts"
     },
     {
       "id": "test:server/auth.logout.test.ts",

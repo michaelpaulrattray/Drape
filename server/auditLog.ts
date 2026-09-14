@@ -261,8 +261,17 @@ export { AUDIT_ACTIONS };
 
 // ============ Admin Dashboard Query Helpers ============
 
-// Action category mappings for filtering
-const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
+/*
+  Action category mappings for filtering.
+
+  EXPORTED for `server/auditLogCategoryAgreement.test.ts` (#939), which holds
+  this list against the chip the panels draw. It is exported rather than
+  re-read with a regex because a guard that parses the thing it guards shares
+  the guarded file's blind spots — four Atlas collectors were found doing
+  exactly that, and the rule from it is in CLAUDE.md: do not shape-match where
+  a declaration exists.
+*/
+export const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
   billing: [
     AUDIT_ACTIONS.SUBSCRIPTION_CREATED,
     AUDIT_ACTIONS.SUBSCRIPTION_CANCELED,
@@ -279,6 +288,13 @@ const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
     AUDIT_ACTIONS.STRIPE_REFUND_ISSUED,
     AUDIT_ACTIONS.STRIPE_REFUND_FAILED,
     AUDIT_ACTIONS.INVOICE_PAID_AFTER_PLAN_ENDED,
+    /*
+      #939. The panel already draws a "Billing" chip on this row — its
+      `getActionCategory` sends every `credits.*` to billing — so the row
+      claimed a category whose filter dropped it. The three siblings above it
+      are already here; this is the missing line, not a new reading.
+    */
+    AUDIT_ACTIONS.CREDITS_ADDED,
   ],
   model: [
     AUDIT_ACTIONS.MODEL_CREATED,
@@ -290,6 +306,31 @@ const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
     AUDIT_ACTIONS.LOGIN_FAILED,
     AUDIT_ACTIONS.RATE_LIMIT_EXCEEDED,
     AUDIT_ACTIONS.INSUFFICIENT_CREDITS,
+    /*
+      #939 — ELEVEN MORE OF THE SAME DEFECT THE ABUSE COMMENT BELOW DESCRIBES.
+      The four lines above establish this bucket's reading: `auth.*` AND
+      `security.*` are both security here, which is also exactly what the
+      panel's own `getActionCategory` has always told staff. Every action
+      below was drawing a red "Security" chip while the Security filter — and
+      the Security CSV export (`routes/moderatorExports.ts`) — dropped it.
+      Eight of the thirteen in #939 have a live writer, and all eight are in
+      this bucket.
+
+      `security.emergency_action` writes nothing today (the Slack buttons were
+      retired in #800) and is here for the reason its schema comment gives:
+      the historical rows are still in the table and still carry the label.
+    */
+    AUDIT_ACTIONS.LOGIN_BLOCKED_SUSPENDED,
+    AUDIT_ACTIONS.LOGIN_BLOCKED_LOCKED,
+    AUDIT_ACTIONS.ACCOUNT_LOCKOUT,
+    AUDIT_ACTIONS.IP_BLOCKED_REQUEST,
+    AUDIT_ACTIONS.EMERGENCY_ACTION_EXECUTED,
+    AUDIT_ACTIONS.SECURITY_UNAUTHORIZED_ADMIN,
+    AUDIT_ACTIONS.SECURITY_IMMUTABLE_LOG,
+    AUDIT_ACTIONS.EMAIL_VERIFICATION_SENT,
+    AUDIT_ACTIONS.EMAIL_VERIFICATION_RESENT,
+    AUDIT_ACTIONS.EMAIL_VERIFIED,
+    AUDIT_ACTIONS.EMAIL_VERIFICATION_FAILED,
   ],
   abuse: [
     AUDIT_ACTIONS.ABUSE_DETECTED,
@@ -303,6 +344,13 @@ const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
       never see it. `getAbuseAlertsSummary` filters on this same list.
     */
     AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK,
+    /*
+      #939. The comment above was written about one action and was true of six.
+      This is the sixth: the panel sends every `abuse.*` to the abuse chip, so
+      the day something writes a credential-stuffing row it would have been
+      dropped by the Abuse filter exactly as described.
+    */
+    AUDIT_ACTIONS.ABUSE_CREDENTIAL_STUFFING,
   ],
 };
 
