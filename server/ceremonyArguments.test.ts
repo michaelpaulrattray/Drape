@@ -51,14 +51,24 @@ import { parseFounderEvidenceCeremonyArgs } from "./casting/evidence/founderEvid
 import { runHook } from "./testing/hookDriver";
 import { readListedSource } from "./testing/listedSource";
 
-import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 /* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
    encode — and under the parallel run that cost multiplies by fifteen or twenty
    against vitest's 5,000 ms default. The measurement, and the two roads that
    were rejected, are in `contendedTestTimeout.ts` (#741). File level, never
-   per arm: a number typed onto one `it(…)` is not inherited by its neighbour. */
-vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+   per arm: a number typed onto one `it(…)` is not inherited by its neighbour.
+
+   ⚠ THE CHILD-PROCESS CONSTANT, NOT THE CONTENDED ONE, SINCE #979 PUT A
+   `git ls-files` IN THIS FILE. It is now in BOTH derived populations, and the
+   two guards do not accept the same thing: `declaresTheFloor` (#741) takes
+   either constant, `declaresTheTimeout` (#548) takes only its own by name. So
+   the child-process spelling is the one that satisfies both — which is exactly
+   what `contendedTestTimeouts.test.ts` does for exactly this reason, and it
+   says so in its own header. **Both constants are 30_000; nothing about the
+   length changed.** The contended reasoning above is still the reason this
+   file needs a floor at all, so it stays. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const REPO = resolve(import.meta.dirname, "..");
 const SCRIPTS = join(REPO, "scripts");
