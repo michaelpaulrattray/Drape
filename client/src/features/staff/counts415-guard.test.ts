@@ -452,7 +452,7 @@ describe("card 415 §3 — Crew states its freshness exactly once, and still nam
     const stampElement = crew.match(/<p className="[^"]*dp-crew__stamp"[^]*?<\/p>/)?.[0] ?? "";
     expect(stampElement, "the stamp element itself must be findable").toContain("crew-edition-stamp");
     expect(stampElement, "the write stamp comes from the briefing, not the page's clock")
-      .toMatch(/shortDate\(stateQuery\.data\.briefing\.updatedAt\)/);
+      .toMatch(/staffDateTime\(stateQuery\.data\.briefing\.updatedAt\)/);
     expect(stampElement, "the page's own elapsed clock must not return to this line")
       .not.toMatch(/checkedAgo|dataUpdatedAt|Date\.now/);
   });

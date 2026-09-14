@@ -32,7 +32,7 @@ import { indexIntentsByCard } from "@shared/crewCardIntents";
 import type { CrewQueueTitle } from "@shared/crewQueueTitles";
 import { cn } from "@/lib/utils";
 import { TableHead } from "@/foundation";
-import { shortDate } from "@/foundation/shortDate";
+import { staffDateTime } from "@/foundation/staffDate";
 import { CardTitles } from "./CrewCardTitles";
 import { milestoneCountLine, milestoneProgress } from "./crewTypes";
 import type { CrewBriefingView, CrewCardIntentsView } from "./crewTypes";
@@ -245,7 +245,7 @@ export function CrewProgramBanner({
           <blockquote className="dp-crew__quote">
             “{program.focus.quote}”
             {program.focus.quotedAt && (
-              <span className="dp-crew__quoteWho"> — you, {shortDate(program.focus.quotedAt)}</span>
+              <span className="dp-crew__quoteWho"> — you, {staffDateTime(program.focus.quotedAt)}</span>
             )}
           </blockquote>
         )}
@@ -320,7 +320,7 @@ export function CrewProgramBanner({
           <div className="dp-crew__ladderhead">
             <h3 className="dp-crew__subhead">The ladder</h3>
             {ladderItems.length > 0 && (
-              <span className="dp-chrome dp-crew__mono">queue read {shortDate(program.ladderCards.readAt)}</span>
+              <span className="dp-chrome dp-crew__mono">queue read {staffDateTime(program.ladderCards.readAt)}</span>
             )}
           </div>
 

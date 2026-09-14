@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b6b7016e6544775e"
+    "sourceFingerprint": "b9ba47b64e33ee35"
   },
   "domains": [
     {
@@ -63,7 +63,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 26
+      "moduleCount": 25
     },
     {
       "id": "domain:home",
@@ -2686,12 +2686,6 @@
     {
       "id": "module:client/src/foundation/severity.ts",
       "path": "client/src/foundation/severity.ts",
-      "domain": "foundation",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/foundation/shortDate.ts",
-      "path": "client/src/foundation/shortDate.ts",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -14768,7 +14762,7 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
-      "to": "module:client/src/foundation/shortDate.ts",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14808,7 +14802,7 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
-      "to": "module:client/src/foundation/shortDate.ts",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14833,7 +14827,7 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
-      "to": "module:client/src/foundation/shortDate.ts",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14853,7 +14847,7 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
-      "to": "module:client/src/foundation/shortDate.ts",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14908,7 +14902,7 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
-      "to": "module:client/src/foundation/shortDate.ts",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14938,7 +14932,7 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewReplyThread.tsx",
-      "to": "module:client/src/foundation/shortDate.ts",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -19373,11 +19367,6 @@
     },
     {
       "from": "module:client/src/foundation/index.ts",
-      "to": "module:client/src/foundation/shortDate.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/theme.ts",
       "kind": "imports"
     },
@@ -19439,11 +19428,6 @@
     {
       "from": "module:client/src/foundation/RenameDialog.tsx",
       "to": "module:shared/inputLimits.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/foundation/shortDate.ts",
-      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -19683,7 +19667,7 @@
     },
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
-      "to": "module:client/src/foundation/shortDate.ts",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {

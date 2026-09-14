@@ -44,7 +44,7 @@ import { crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { CrewEyeViewer } from "./CrewEyeViewer";
 import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
-import { shortDate } from "@/foundation/shortDate";
+import { staffDateTime } from "@/foundation/staffDate";
 import { eyeFrameSrc } from "./eyeFrameSrc";
 import { TableHead } from "@/foundation";
 import type { CrewEyeItem, CrewReplyView } from "./crewTypes";
@@ -92,7 +92,7 @@ export function CrewEyeGallery({
               <h3 className="dp-crew__title">{item.title}</h3>
               <span className="dp-chrome dp-crew__ref">
                 {item.issueNumber !== null && <>#{item.issueNumber} · </>}
-                filed {shortDate(item.filedAt)}
+                filed {staffDateTime(item.filedAt)}
               </span>
             </div>
 

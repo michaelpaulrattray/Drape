@@ -34,7 +34,7 @@
 import { CrewReplyBox } from "./CrewReplyBox";
 import { CrewReplyThread } from "./CrewReplyThread";
 import { crewCardNeedsHim } from "../../../../../../shared/crewCardState";
-import { shortDate } from "@/foundation/shortDate";
+import { staffDateTime } from "@/foundation/staffDate";
 import { TableHead } from "@/foundation";
 import type { CrewNeedsYouCard, CrewReplyView } from "./crewTypes";
 
@@ -98,7 +98,7 @@ export function CrewNeedsYou({
               </h3>
               <span className="dp-chrome dp-crew__ref">
                 {card.issueNumber !== null && <>#{card.issueNumber} · </>}
-                filed {shortDate(card.filedAt)}
+                filed {staffDateTime(card.filedAt)}
               </span>
             </div>
 
