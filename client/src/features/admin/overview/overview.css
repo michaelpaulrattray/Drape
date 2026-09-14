@@ -235,6 +235,40 @@
   height: 150px;
 }
 
+/*
+  ⚠ THE ONE RULE IN THIS FILE THAT IS NOT ABOUT OUR OWN MARKUP (#931).
+
+  Recharts decides where the LAST tick on an x-axis sits by measuring the
+  label's width and pulling it left until it fits inside the plot. It does
+  that measurement in a hidden span it appends to `<body>` with this id, and
+  it copies only `font-size` and `letter-spacing` onto it from the real tick —
+  never `font-family` (`recharts/util/DOMUtils.js` `getStringSize`, called
+  from `cartesian/getTicks.js`). So the span measures in the page's body font
+  while our ticks render in mono, and recharts under-measures every one of
+  them.
+
+  Measured in the running app at 1440px, 14 Sept 2026:
+
+      "14 Sept" rendered (mono, 10px)   42.00px
+      "14 Sept" as recharts measures it 34.98px
+      half the difference, hanging past the plot's right edge   3.51px
+
+  That is the whole of the defect his day-first ruling exposed: the label was
+  always overhanging, and `Sep 14` was narrow enough that the overhang stayed
+  inside the chart's 4px right margin. Giving the chart more margin only moves
+  the goalposts, because the overhang is a constant the margin knows nothing
+  about — so the fix is to stop lying to the measurement, not to buy room for
+  the lie.
+
+  Every tick in this product is mono (`chartTokens.ts` `axisTick`), so one
+  declaration is the whole of it. `server/rechartsMeasurementSpan.test.ts`
+  fails if recharts ever renames this id, because a stale selector here would
+  go back to clipping in silence.
+*/
+#recharts_measurement_span {
+  font-family: var(--font-mono);
+}
+
 /* Legend dots become 8px squares at the series colour (§7). */
 .dp-ov__legend {
   display: flex;

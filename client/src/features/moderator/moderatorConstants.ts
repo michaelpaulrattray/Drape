@@ -37,6 +37,10 @@ export const CATEGORY_COLORS = {
   billing: "bg-emerald-50 text-emerald-700",
   model: "bg-purple-50 text-purple-700",
   security: "bg-orange-50 text-orange-700",
+  /* #938 — deliberately the quiet one. A change request is staff housekeeping,
+     not an alarm, and giving it a warning colour would say the opposite of
+     what the founder's ruling separated it from. */
+  moderator: "bg-slate-100 text-slate-700",
   abuse: "bg-red-50 text-red-700",
 } as const;
 
@@ -44,31 +48,20 @@ export const PAGE_SIZE = 20;
 
 // ── Utility Functions ──
 
-export function formatDate(date: Date): string {
-  return new Date(date).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-export function formatFullDate(date: Date): string {
-  return new Date(date).toLocaleString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
+/*
+ * The date formatters that lived here — `formatDate` and `formatFullDate` —
+ * are now `staffDateTime` and `staffFullDateTime` in `@/foundation/staffDate`
+ * (#902). This file's copies were byte-for-byte the admin file's, which is why
+ * #900 had to make one identical change twice; the module docblock there
+ * carries the 24-hour ruling and the promotion's reasoning.
+ */
 
 export function getActionCategory(action: string): keyof typeof CATEGORY_COLORS | null {
   if (action.startsWith("subscription.") || action.startsWith("credits.")) return "billing";
   if (action.startsWith("model.")) return "model";
   if (action.startsWith("auth.") || action.startsWith("security.")) return "security";
-  if (action.startsWith("abuse.") || action.startsWith("moderator.")) return "abuse";
+  if (action.startsWith("moderator.")) return "moderator";
+  if (action.startsWith("abuse.")) return "abuse";
   return null;
 }
 

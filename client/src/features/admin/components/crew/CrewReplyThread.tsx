@@ -16,7 +16,7 @@
  * the same argument that took the italic off the quote. Seen and unseen now
  * differ by their words and by weight of grey, never by hue or by an icon.
  */
-import { shortDate } from "./CrewProgramBanner";
+import { staffDateTime } from "@/foundation/staffDate";
 import type { CrewReplyView } from "./crewTypes";
 
 export function CrewReplyThread({
@@ -46,7 +46,7 @@ export function CrewReplyThread({
             <div className="dp-crew__entryhead">
               <span className="dp-crew__who">{reply.author}</span>
               {/* A time is a measured value, so it is mono (§4). */}
-              <span className="dp-chrome dp-crew__mono">{shortDate(String(reply.createdAt))}</span>
+              <span className="dp-chrome dp-crew__mono">{staffDateTime(String(reply.createdAt))}</span>
               <span className={seen ? "dp-chrome dp-crew__seen" : "dp-chrome dp-crew__unseen"}>
                 {seen ? "Seen by the crew" : "Not read yet"}
               </span>

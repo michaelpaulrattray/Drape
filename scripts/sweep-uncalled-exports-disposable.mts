@@ -75,7 +75,14 @@ import {
   CONSUMER_ROOTS,
   REPO_ROOT,
   runMentionControls,
+  withoutComments,
 } from "./lib/productionMention.mts";
+import {
+  buildReexportMap,
+  creditedDeclarations,
+  reachableModules,
+  resolveSpecifier,
+} from "./lib/moduleResolution.mts";
 
 const repoRoot = resolve(import.meta.dirname, "..");
 
@@ -146,25 +153,166 @@ for (const file of scanFiles) {
 }
 
 /*
+  Read once, keep the text. The re-export graph below needs every consumer
+  file's source, and this loop already had them all open — reading the tree a
+  second time would be a second answer to "which files are there".
+
+  ⚠ AND IT IS THE CODE, NOT THE PROSE — found while fixing #274, by this file's
+  own docblock breaking this file's own reading. A sentence added above
+  describing the bug being fixed contained an EXAMPLE namespace import, and
+  `scripts/` is a consumer root, so the sweep read its own explanation as a
+  live import and excluded a real module: `pairSlots` — genuinely named by
+  nobody — silently left the list.
+
+  Measured at the tree before the repair, so this is main's defect and not
+  mine: **11 named-import statements across 10 files live inside comments**
+  (`logger.ts`, `outsider.mts`, `importerCountDiff.mts`, `motion.ts`,
+  `sweep-shadowed-exports-disposable.mts` ×2 …), and each one credits a symbol
+  with an importer that is a paragraph. That is the SILENCE direction — a
+  symbol whose only consumer is a docblock reads as live and never reaches the
+  reading list.
+
+  `withoutComments` is the house answer and this file already trusted it for
+  the intersection below; the import scan simply never called it. It preserves
+  line count, so nothing downstream shifts.
+*/
+const consumerSource = new Map<string, string>();
+for (const file of consumerFiles) consumerSource.set(file, withoutComments(readFileSync(file, "utf8")));
+
+/* Which modules re-export from which — how a barrel import finds its declaration. */
+const reexports = buildReexportMap(consumerSource, repoRoot);
+
+/*
   A module that is namespace-imported anywhere is EXCLUDED whole — `ns.NAME` is
   a use this scan cannot resolve, and a finding that might be wrong is worse
   than a finding that is missing.
+
+  ⚠ THE EXCLUSION USED TO BE KEYED ON THE MODULE'S BASENAME (#274), which is
+  the same mistake as the bare-symbol `uses` map below wearing a different
+  hat: `import * as x from "./facePanel"` in the client excluded
+  `server/castingV2/facePanel.ts` too, and neither file had ever heard of the
+  other. Resolvable specifiers are now held as PATHS.
+
+  ⚠ AND THE BASENAME SET SURVIVES FOR THE UNRESOLVABLE ONES, on purpose. An
+  exclusion that disappears produces a NEW finding, and a new finding about a
+  live symbol is the one error this sweep must not make; so a specifier the
+  resolver cannot place (a package, a generated alias) keeps its old,
+  over-generous reading rather than silently dropping its cover.
 */
-const namespaceImported = new Set<string>();
-for (const file of consumerFiles) {
-  const source = readFileSync(file, "utf8");
+const namespaceImportedFiles = new Set<string>();
+const namespaceImportedNames = new Set<string>();
+/** Namespace bindings whose members CAN be read — resolved after `uses` exists. */
+const namespaceMembers: Array<{ file: string; alias: string; reached: Set<string> }> = [];
+for (const [file, source] of consumerSource) {
   for (const match of source.matchAll(/import\s+\*\s+as\s+[\w$]+\s+from\s+["']([^"']+)["']/g)) {
-    namespaceImported.add(match[1].replace(/^.*\//, "").replace(/\.(m?ts|tsx|js)$/, ""));
+    const target = resolveSpecifier(file, match[1]!, repoRoot);
+    if (!target) {
+      namespaceImportedNames.add(match[1]!.replace(/^.*\//, "").replace(/\.(m?ts|tsx|js)$/, ""));
+      continue;
+    }
+    /*
+      ⚠ A WHOLESALE EXCLUSION IS THE FALLBACK NOW, NOT THE RULE — and only
+      where the member cannot be read. See `namespaceMembers` below.
+
+      It still has to follow the BARREL, because `import * as db from "../db"`
+      resolves to `server/db/index.ts`, which declares almost nothing: every
+      symbol a `db.` call reaches is re-exported from a sibling. Excluding the
+      resolved file alone left `server/db/security.ts` uncovered, and the first
+      run of this repair put `isAccountLocked` on the list — the lockout both
+      login routes call, which CLAUDE.md names as production-wired.
+
+      That symbol had been covered by ACCIDENT: the old basename key held
+      "security" from an unrelated `import * as … from "./security"`, and that
+      collision — the very bug being fixed here — was the only thing hiding it.
+      Making the key precise removed the cover and exposed the `ns.NAME` blind
+      spot underneath, which is why that blind spot is now closed rather than
+      papered over.
+    */
+    const reached = reachableModules(target, reexports);
+    /*
+      A COMPUTED MEMBER IS UNREADABLE, SO THAT ALIAS KEEPS THE OLD COVER.
+      `gemini[key]` can name any export in the reachable surface and no scan
+      can say which, so the whole surface stays excluded for that file — the
+      conservative answer, unchanged from before this repair.
+    */
+    const alias = match[0].match(/import\s+\*\s+as\s+([\w$]+)\s/)?.[1];
+    if (!alias || new RegExp(String.raw`\b${alias}\s*\[`).test(source)) {
+      for (const module of reached) namespaceImportedFiles.add(module);
+      continue;
+    }
+    namespaceMembers.push({ file, alias, reached });
   }
 }
 
-/* Who names each symbol, and from where. */
+/*
+  Who names each symbol, and from where — KEYED ON (declaring file, name).
+
+  ⚠ THE KEY WAS THE BARE NAME UNTIL #274, AND IT FAILED TOWARD SILENCE. A
+  `Map<name, Use[]>` credits every importer of a name to every declaration of
+  that name, so a live twin hid a dead one for as long as it had one consumer
+  and the dead one never appeared on this list at all. The specimen:
+  `StaffBar.tsx` imports the CLIENT `BRAND_NAME` ("Klieg") through
+  `@/foundation`, and that single import was counting as a consumer of the
+  legacy server `BRAND_NAME = 'DRAPE'`, which nothing has read for months.
+
+  The key is now `declFile::name`, and which declaration an import credits is
+  `creditedDeclarations` — which falls back to ALL of them whenever it cannot
+  place the specifier, so an unresolved import can never manufacture a dead
+  symbol. See `lib/moduleResolution.mts`.
+*/
 type Use = { file: string; test: boolean };
 const uses = new Map<string, Use[]>();
+const declaringFiles = new Map<string, string[]>();
+for (const decl of declarations) {
+  const list = declaringFiles.get(decl.name) ?? [];
+  if (!list.includes(decl.file)) list.push(decl.file);
+  declaringFiles.set(decl.name, list);
+}
+const useKey = (file: string, name: string) => `${resolve(file)}::${name}`;
 const wanted = new Set(declarations.map((d) => d.name));
 
-for (const file of consumerFiles) {
-  const source = readFileSync(file, "utf8");
+/*
+  EVERY declaration of every name, including the roots this sweep does NOT scan.
+
+  `scanRoots` is `server`/`shared`, but `consumerRoots` reaches into `client`
+  and `drizzle` — so a name can be declared in a place this sweep reads for
+  importers and never reads for declarations. That asymmetry is what let the
+  client's `BRAND_NAME` credit the server's: with one in-scope declaration
+  there was nothing to disambiguate against. Knowing the OUT-of-scope twin
+  exists is what makes "this import is somebody else's" a statement the
+  resolver can make. It costs one pass over sources already in memory.
+*/
+const allDeclaringFiles = new Map<string, string[]>();
+for (const [file, source] of consumerSource) {
+  if (isTestFile(file)) continue;
+  for (const match of source.matchAll(exportPattern)) {
+    const list = allDeclaringFiles.get(match[2]) ?? [];
+    if (!list.includes(file)) list.push(file);
+    allDeclaringFiles.set(match[2], list);
+  }
+}
+
+/** Record one imported name against whichever declaration(s) the specifier reaches. */
+const credit = (from: string, spec: string | undefined, name: string) => {
+  const targets = creditedDeclarations({
+    fromFile: from,
+    /* No literal specifier (a computed `await import(expr)`) is unresolvable,
+       which `creditedDeclarations` reads as "credit them all" — the same
+       conservative answer this scan gave before it could resolve anything. */
+    spec: spec ?? "",
+    declaringFiles: declaringFiles.get(name) ?? [],
+    allDeclaringFiles: allDeclaringFiles.get(name) ?? [],
+    reexports,
+    root: repoRoot,
+  });
+  for (const target of targets) {
+    const list = uses.get(useKey(target, name)) ?? [];
+    list.push({ file: from, test: isTestFile(from) });
+    uses.set(useKey(target, name), list);
+  }
+};
+
+for (const [file, source] of consumerSource) {
   /*
     Only IMPORT statements count — a local variable of the same name is not a use.
 
@@ -174,24 +322,75 @@ for (const file of consumerFiles) {
     `import("…").then(({ startX }) => …)`, which no `from "…"` scan can see.
     A blind spot that flags a running worker as uncalled is worse than no scan.
   */
+  /* The specifier is captured in BOTH arms now, because crediting the right
+     declaration needs to know where the import pointed. It stays OPTIONAL in
+     the second arm: `await import(someExpr)` has no literal to read, and
+     requiring one would drop the match entirely — turning a conservative
+     "credit everything" into a finding.
+
+     ⚠ AND THE BRACE CLASS EXCLUDES `{`, WHICH IT DID NOT BEFORE (#274). With
+     `[^}]*` the match could OPEN at an unrelated brace — an enclosing function
+     body — and run to the first `}` in the file, so the captured "names" came
+     back as `const { getChangeRequestById` and matched no symbol at all. Every
+     `const { x } = await import(…)` inside a function body read as no import,
+     which is this sweep's whole house style for lazy server imports:
+     `server/routes/admin/changeRequests.ts` alone has six. Excluding `{` makes
+     the engine start at the destructuring brace itself, which is the only one
+     that can be followed by `= await import(`. */
   const destructuredDynamic =
-    /(?:import\(\s*["'][^"']+["']\s*\)\s*\.then\s*\(\s*(?:async\s*)?\(?\s*\{([^}]*)\}|\{([^}]*)\}\s*=\s*await\s+import\s*\()/g;
+    /(?:import\(\s*["']([^"']+)["']\s*\)\s*\.then\s*\(\s*(?:async\s*)?\(?\s*\{([^{}]*)\}|\{([^{}]*)\}\s*=\s*await\s+import\s*\(\s*(?:["']([^"']+)["'])?)/g;
   for (const match of source.matchAll(destructuredDynamic)) {
-    for (const raw of (match[1] ?? match[2] ?? "").split(",")) {
+    const spec = match[1] ?? match[4];
+    for (const raw of (match[2] ?? match[3] ?? "").split(",")) {
       const name = raw.trim().split(":")[0].trim();
       if (!name || !wanted.has(name)) continue;
-      const list = uses.get(name) ?? [];
-      list.push({ file, test: isTestFile(file) });
-      uses.set(name, list);
+      credit(file, spec, name);
     }
   }
-  for (const match of source.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["'][^"']+["']/g)) {
+  for (const match of source.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["']([^"']+)["']/g)) {
     for (const raw of match[1].split(",")) {
       const name = raw.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0].trim();
       if (!name || !wanted.has(name)) continue;
-      const list = uses.get(name) ?? [];
+      credit(file, match[2], name);
+    }
+  }
+}
+
+/*
+  ⚠ `ns.NAME` IS READ NOW — the blind spot this file's header has declared
+  since it was written, closed because #274's repair walked straight into it.
+
+  The header says namespace imports are "counted as a wildcard consumer of
+  every export in that module". That was the only honest thing to do while a
+  specifier could not be resolved — but it is also what kept the card's own
+  specimen invisible. `server/casting/geminiPrompts.ts` is reached by
+  `import * as gemini from "./geminiService"` through a re-export, so the whole
+  module was excluded, so the legacy `BRAND_NAME = 'DRAPE'` — declared once,
+  re-exported once, read by nothing anywhere — could not appear on a list of
+  things nothing reads, no matter how the `uses` map was keyed.
+
+  The resolution is the one `lib/importerCountDiff.mts` already proves out: the
+  binding must resolve to a real module, and the member must be declared in
+  that module or in one it re-exports from. Exactly the same walk the named
+  imports above take, so the two cannot answer differently. An alias whose
+  members are reached COMPUTED (`gemini[key]`) keeps the old wholesale
+  exclusion — see above — because there the wildcard reading is still the only
+  true one.
+
+  This makes the scan strictly better informed, never more aggressive: every
+  `alias.NAME` it can read becomes a USE, which can only remove findings; the
+  findings it gains are the ones the old wholesale exclusion was hiding.
+*/
+for (const { file, alias, reached } of namespaceMembers) {
+  const source = consumerSource.get(file)!;
+  for (const match of source.matchAll(new RegExp(String.raw`\b${alias}\.([A-Za-z_$][\w$]*)`, "g"))) {
+    const name = match[1]!;
+    if (!wanted.has(name)) continue;
+    for (const target of declaringFiles.get(name) ?? []) {
+      if (!reached.has(resolve(target))) continue;
+      const list = uses.get(useKey(target, name)) ?? [];
       list.push({ file, test: isTestFile(file) });
-      uses.set(name, list);
+      uses.set(useKey(target, name), list);
     }
   }
 }
@@ -227,10 +426,10 @@ for (const decl of declarations) {
   /* Types and interfaces are contracts, not call sites — out of scope. */
   if (decl.kind === "type" || decl.kind === "interface") continue;
   const moduleName = decl.file.replace(/^.*[\\/]/, "").replace(/\.(m?ts|tsx)$/, "");
-  if (namespaceImported.has(moduleName)) continue;
+  if (namespaceImportedFiles.has(resolve(decl.file)) || namespaceImportedNames.has(moduleName)) continue;
   if ((selfReferences.get(`${decl.file}::${decl.name}`) ?? 0) > 0) continue;
 
-  const seen = (uses.get(decl.name) ?? []).filter((use) => use.file !== decl.file);
+  const seen = (uses.get(useKey(decl.file, decl.name)) ?? []).filter((use) => use.file !== decl.file);
   if (seen.length === 0) {
     unimported.push(decl);
     continue;

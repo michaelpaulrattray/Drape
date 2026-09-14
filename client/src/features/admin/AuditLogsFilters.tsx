@@ -1,11 +1,8 @@
 import { RowId, StatePill } from "@/features/staff";
 import { Button, DataTable, Skeleton, TableFilter, TableHead, TableSearch } from "@/foundation";
 import type { DataRow } from "@/foundation";
-import {
-  formatAction,
-  formatDate,
-  type AuditLog,
-} from "./adminConstants";
+import { staffDateTime } from "@/foundation/staffDate";
+import { formatAction, type AuditLog } from "./adminConstants";
 
 interface StatsData {
   totalLogs: number;
@@ -113,12 +110,12 @@ export function AbuseAlertsPanel({
       <StatePill key="severity" label={alert.severity} attention />,
       <span key="action">{formatAction(alert.action)}</span>,
       <RowId key="user">{alert.userId ? `#${alert.userId}` : "system"}</RowId>,
-      <span key="when">{formatDate(alert.createdAt)}</span>,
+      <span key="when">{staffDateTime(alert.createdAt)}</span>,
     ],
     facts: [
       { label: "ENTRY", value: `#${alert.id}` },
       { label: "ACTION", value: alert.action },
-      { label: "WHEN", value: formatDate(alert.createdAt) },
+      { label: "WHEN", value: staffDateTime(alert.createdAt) },
       { label: "USER", value: alert.userId ? `#${alert.userId}` : "system" },
     ],
   }));
@@ -196,6 +193,7 @@ export function AuditFiltersBar({
           { value: "billing", label: "Billing" },
           { value: "model", label: "Model" },
           { value: "security", label: "Security" },
+          { value: "moderator", label: "Moderator" },
           { value: "abuse", label: "Abuse" },
         ]}
       />

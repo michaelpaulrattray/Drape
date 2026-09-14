@@ -35,9 +35,11 @@
  * reaches nothing would print every declaration as dead.
  */
 import { execSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { readdir } from "node:fs/promises";
-import { dirname, join, relative, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
+
+import { resolveSpecifier } from "./lib/moduleResolution.mts";
 
 const REPO = resolve(import.meta.dirname, "..");
 
@@ -65,29 +67,18 @@ async function sourcesUnder(root: string): Promise<string[]> {
 
 const isTest = (file: string): boolean => /\.test\.tsx?$/.test(file);
 
-/** The file a specifier names, or null when it names a package. */
-function resolveSpecifier(fromFile: string, specifier: string): string | null {
-  let base: string;
-  if (specifier.startsWith(".")) base = resolve(dirname(fromFile), specifier);
-  else if (specifier.startsWith("@/")) base = join(REPO, "client/src", specifier.slice(2));
-  else if (specifier.startsWith("@shared/")) base = join(REPO, "shared", specifier.slice(8));
-  else return null;
-  for (const candidate of [
-    base,
-    `${base}.ts`,
-    `${base}.tsx`,
-    `${base}.mts`,
-    join(base, "index.ts"),
-    join(base, "index.tsx"),
-  ]) {
-    if (existsSync(candidate) && !candidate.endsWith("/")) {
-      try {
-        if (readFileSync(candidate).length >= 0) return candidate;
-      } catch { /* a directory — keep looking */ }
-    }
-  }
-  return null;
-}
+/**
+ * The file a specifier names, or null when it names a package.
+ *
+ * ⚠ IT IS THE SHARED RESOLVER NOW (#274, 2026-09-14). This file used to carry
+ * its own copy, and the copy was the MORE complete one — it knew `@shared/`
+ * while `lib/moduleResolution.mts`, the resolver three deletion instruments
+ * consult, did not. That is working law 4 with the drift in the dangerous
+ * direction: the copy nobody reads stayed right and the shared one went wrong.
+ * Swapped only after running this sweep both ways and diffing its whole output.
+ */
+const resolveHere = (fromFile: string, specifier: string): string | null =>
+  resolveSpecifier(fromFile, specifier, REPO);
 
 /* ---- controls ---------------------------------------------------------- */
 
@@ -95,10 +86,10 @@ const refineService = join(REPO, "server/castingV2/refineService.ts");
 const anyRoute = join(REPO, "server/routes/castingV2.ts");
 
 const relativeControl =
-  repoPath(resolveSpecifier(refineService, "./maskGeometry") ?? "") === "server/castingV2/maskGeometry.ts";
+  repoPath(resolveHere(refineService, "./maskGeometry") ?? "") === "server/castingV2/maskGeometry.ts";
 const indexControl =
-  repoPath(resolveSpecifier(anyRoute, "../db") ?? "") === "server/db/index.ts";
-const packageControl = resolveSpecifier(refineService, "react") === null;
+  repoPath(resolveHere(anyRoute, "../db") ?? "") === "server/db/index.ts";
+const packageControl = resolveHere(refineService, "react") === null;
 
 console.log("RESOLVER CONTROLS (structural — not facts about today's dead code)");
 console.log(`  positive  a relative specifier resolves to its file   ${relativeControl ? "PASS" : "FAIL"}`);
@@ -143,7 +134,7 @@ for (const file of files) {
   const source = readFileSync(file, "utf8");
   const target = isTest(file) ? reachedTest : reachedProduction;
   for (const match of source.matchAll(named)) {
-    const resolved = resolveSpecifier(file, match[2]!);
+    const resolved = resolveHere(file, match[2]!);
     if (!resolved) continue;
     for (const raw of match[1]!.split(",")) {
       const name = raw.trim().split(/\s+as\s+/)[0]!.replace(/^type\s+/, "").trim();
@@ -172,7 +163,7 @@ for (const file of files) {
   */
   const destructured = new Set<string>();
   for (const match of source.matchAll(destructuredDynamic)) {
-    const resolved = resolveSpecifier(file, match[2]!);
+    const resolved = resolveHere(file, match[2]!);
     if (!resolved) continue;
     destructured.add(match[2]!);
     for (const raw of match[1]!.split(",")) {
@@ -181,12 +172,12 @@ for (const file of files) {
     }
   }
   for (const match of source.matchAll(starred)) {
-    const resolved = resolveSpecifier(file, match[1]!);
+    const resolved = resolveHere(file, match[1]!);
     if (resolved) namespaceTargets.add(resolved);
   }
   for (const match of source.matchAll(dynamic)) {
     if (destructured.has(match[1]!)) continue;
-    const resolved = resolveSpecifier(file, match[1]!);
+    const resolved = resolveHere(file, match[1]!);
     if (resolved) namespaceTargets.add(resolved);
   }
 }
@@ -207,7 +198,7 @@ const starReExport = /export\s+\*\s+(?:as\s+[\w$]+\s+)?from\s*["']([^"']+)["']/g
 for (const file of files) {
   const source = readFileSync(file, "utf8");
   for (const match of source.matchAll(namedReExport)) {
-    const resolved = resolveSpecifier(file, match[2]!);
+    const resolved = resolveHere(file, match[2]!);
     if (!resolved) continue;
     reExports.push({
       from: file,
@@ -219,7 +210,7 @@ for (const file of files) {
     });
   }
   for (const match of source.matchAll(starReExport)) {
-    const resolved = resolveSpecifier(file, match[1]!);
+    const resolved = resolveHere(file, match[1]!);
     if (resolved) reExports.push({ from: file, to: resolved, names: "all" });
   }
 }
@@ -370,7 +361,7 @@ for (const file of files) {
     ? "tests"
     : tracked.has(repoPath(file)) ? "trackedProduction" : "untrackedScript";
   for (const match of source.matchAll(named)) {
-    const resolved = resolveSpecifier(file, match[2]!);
+    const resolved = resolveHere(file, match[2]!);
     if (!resolved) continue;
     for (const raw of match[1]!.split(",")) {
       const name = raw.trim().split(/\s+as\s+/)[0]!.replace(/^type\s+/, "").trim();

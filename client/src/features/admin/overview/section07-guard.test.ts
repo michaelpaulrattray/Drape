@@ -776,3 +776,103 @@ describe("#419 — the leader row is defined once", () => {
     expect(decls).not.toContain("margin-right");
   });
 });
+
+/**
+ * #931 — the last date on a chart's axis, and the measurement behind it.
+ *
+ * His *"Day first everywhere"* ruling made the last tick read `14 Sept` where
+ * it had read `Sep 14`, and the final `t` started falling off the end of the
+ * two wide charts. The cause is not our layout: recharts decides where that
+ * last tick sits by measuring the label in a hidden span it appends to
+ * `<body>`, and it copies only `font-size` and `letter-spacing` onto that span
+ * from the real tick — never `font-family`. Our ticks are mono, the span is
+ * not, so recharts under-measures every label it places.
+ *
+ *     "14 Sept" rendered (mono, 10px)     42.00px
+ *     "14 Sept" as recharts measured it   34.98px
+ *
+ * `overview.css` gives the span the mono family, which is the whole fix. The
+ * risk that buys is a SILENT one — if recharts ever renames that element, the
+ * selector stops matching, nothing errors, and the clipping comes back on a
+ * page nobody re-measures. So the id is read out of the dependency itself
+ * here, from BOTH of its builds, rather than restated.
+ */
+describe("#931 — the recharts measurement span is given our tick font", () => {
+  /** The id recharts actually uses, read from the installed package. */
+  const rechartsSpanId = (): string => {
+    const root = path.dirname(path.dirname(require.resolve("recharts")));
+    const found = new Map<string, string>();
+    for (const rel of ["lib/util/DOMUtils.js", "es6/util/DOMUtils.js"]) {
+      const file = path.join(root, rel);
+      /* REFUSE rather than skip: a build that has moved is a finding about
+         this guard, and a short read here would pass by measuring nothing. */
+      if (!fs.existsSync(file)) throw new Error(`recharts no longer ships ${rel} — re-read this guard`);
+      const m = read(file).match(/MEASUREMENT_SPAN_ID\s*=\s*['"]([^'"]+)['"]/);
+      if (!m) throw new Error(`recharts ${rel} no longer declares MEASUREMENT_SPAN_ID`);
+      found.set(rel, m[1]);
+    }
+    const ids = [...new Set(found.values())];
+    expect(ids, `recharts' two builds disagree: ${JSON.stringify([...found])}`).toHaveLength(1);
+    return ids[0];
+  };
+
+  /**
+   * Does this stylesheet give that id a font-family?
+   *
+   * Read by index rather than by a built regex: the id is interpolated, and a
+   * pattern assembled around someone else's string is one escape away from
+   * matching nothing and reporting "no rule" — which is the exact false green
+   * this guard exists to prevent.
+   */
+  const spanRuleFont = (css: string, id: string): string | null => {
+    const text = code(css);
+    const at = text.indexOf("#" + id);
+    if (at < 0) return null;
+    /* The id must END there — `#foo` must not answer for `#foobar`. */
+    const after = text[at + id.length + 1];
+    if (after && !/[\s{,]/.test(after)) return null;
+    const open = text.indexOf("{", at);
+    const close = text.indexOf("}", at);
+    if (open < 0 || close < 0 || open > close) return null;
+    const decls = text.slice(open + 1, close);
+    const key = "font-family:";
+    const k = decls.indexOf(key);
+    if (k < 0) return null;
+    const end = decls.indexOf(";", k);
+    return decls.slice(k + key.length, end < 0 ? undefined : end).trim();
+  };
+
+  it("the id is still the one our selector names", () => {
+    expect(spanRuleFont(CSS, rechartsSpanId())).not.toBeNull();
+  });
+
+  it("and the font it is given is the same token the ticks render in", () => {
+    const font = spanRuleFont(CSS, rechartsSpanId());
+    expect(font).toBe("var(--font-mono)");
+    /* The other half of the pair, derived rather than assumed: the tick's own
+       family is declared once, in `axisTick`, and it must be that same token —
+       a tick that changed font would make the measurement wrong again with
+       this arm still green. */
+    const tokens = code(read(path.join(HERE, "chartTokens.ts")));
+    expect(tokens).toContain('fontFamily: "var(--font-mono)"');
+  });
+
+  it("no card declares a tick font of its own", () => {
+    /* Derived over the directory: a second declaration is the drift, and it
+       would be invisible to both arms above. */
+    const offenders = section()
+      .filter((f) => f.name !== "chartTokens.ts" && code(f.text).includes("fontFamily"))
+      .map((f) => f.name);
+    expect(offenders).toEqual([]);
+  });
+
+  it("⚠ the matcher can fail — a renamed id and a wrong font are both caught", () => {
+    const id = rechartsSpanId();
+    /* Positive control: it reads the real rule out of the real stylesheet. */
+    expect(spanRuleFont(CSS, id)).toBe("var(--font-mono)");
+    /* Negative controls, the two ways this fix dies silently. */
+    expect(spanRuleFont(CSS, "recharts_renamed_span")).toBeNull();
+    expect(spanRuleFont(`#${id} { font-family: var(--font-sans); }`, id)).toBe("var(--font-sans)");
+    expect(spanRuleFont(`#${id} { color: red; }`, id)).toBeNull();
+  });
+});

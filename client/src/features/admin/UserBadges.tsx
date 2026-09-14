@@ -23,8 +23,9 @@
  *   went: seven tints on a monochrome surface, and `admin` wearing one accent
  *   by his ruling is not a return to that.
  *
- * `UserTable.tsx` imports `formatDate` and `getUserStatus` from this module and
- * nothing else, so the table is untouched by the deletion.
+ * `UserTable.tsx` imports `getUserStatus` from this module and nothing else
+ * (it took `formatDate` too until #902 promoted it), so the table is untouched
+ * by the deletion.
  */
 export const getUserStatus = (user: {
   suspendedAt: string | Date | null;
@@ -37,12 +38,9 @@ export const getUserStatus = (user: {
   return "active";
 };
 
-export const formatDate = (dateStr: string | Date) => {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+/*
+ * `formatDate` lived here and is now `staffDateTimeWithYear` in
+ * `@/foundation/staffDate` (#902) — `ChangeRequestConstants` held a
+ * byte-identical copy, which is why #912's one-property fix had to be made
+ * twice. The 24-hour ruling and the null-guard note moved with it.
+ */

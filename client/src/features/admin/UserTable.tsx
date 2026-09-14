@@ -24,8 +24,9 @@
 import { StatePill, RolePill, RowId, RowStack, pageRange, SUSPEND_CONSEQUENCE } from "@/features/staff";
 import { DataTable, MiniList } from "@/foundation";
 import type { DataRow, RowAction } from "@/foundation";
+import { staffDateOnly, staffDateTimeWithYear } from "@/foundation/staffDate";
 
-import { formatDate, getUserStatus } from "./UserBadges";
+import { getUserStatus } from "./UserBadges";
 
 interface UserRow {
   id: number;
@@ -155,15 +156,15 @@ export function UserTable({
         />,
         <StatePill key="status" label={status} attention={ATTENTION.has(status)} />,
         <RolePill key="role" role={user.role} />,
-        <span key="joined">{formatDate(user.createdAt)}</span>,
-        <span key="active">{formatDate(user.lastSignedIn)}</span>,
+        <span key="joined">{staffDateTimeWithYear(user.createdAt)}</span>,
+        <span key="active">{staffDateTimeWithYear(user.lastSignedIn)}</span>,
       ],
       facts: loaded
         ? [
             { label: "USER ID", value: loaded.user.id },
             { label: "OPEN ID", value: loaded.user.openId },
-            { label: "JOINED", value: formatDate(loaded.user.createdAt) },
-            { label: "LAST ACTIVE", value: formatDate(loaded.user.lastSignedIn) },
+            { label: "JOINED", value: staffDateTimeWithYear(loaded.user.createdAt) },
+            { label: "LAST ACTIVE", value: staffDateTimeWithYear(loaded.user.lastSignedIn) },
             { label: "CASTS", value: loaded.stats.totalModels },
             { label: "GENERATIONS", value: loaded.stats.totalGenerations },
           ]
@@ -298,7 +299,7 @@ function stateNote(detail: UserDetail): string | undefined {
   const parts: string[] = [];
   if (u.suspendedAt) {
     parts.push(
-      `Suspended ${formatDate(u.suspendedAt)} — ${u.suspendedReason || "no reason recorded"}.`,
+      `Suspended ${staffDateTimeWithYear(u.suspendedAt)} — ${u.suspendedReason || "no reason recorded"}.`,
     );
   }
   if (u.frozenAt) {
@@ -309,12 +310,12 @@ function stateNote(detail: UserDetail): string | undefined {
           ? `admin #${u.frozenBy}`
           : "an admin";
     parts.push(
-      `Frozen ${formatDate(u.frozenAt)} by ${by} — ${u.frozenReason || "no reason recorded"}.`,
+      `Frozen ${staffDateTimeWithYear(u.frozenAt)} by ${by} — ${u.frozenReason || "no reason recorded"}.`,
     );
   }
   if (u.lockedUntil && new Date(u.lockedUntil) > new Date()) {
     parts.push(
-      `Locked out until ${formatDate(u.lockedUntil)} after ${u.failedLoginAttempts} failed sign-in attempts. This one clears itself.`,
+      `Locked out until ${staffDateTimeWithYear(u.lockedUntil)} after ${u.failedLoginAttempts} failed sign-in attempts. This one clears itself.`,
     );
   }
   return parts.length > 0 ? parts.join(" ") : undefined;
@@ -373,7 +374,7 @@ function UserPanel({
         empty="No recorded activity for this account."
         entries={(activityLogs ?? []).map((log) => ({
           key: String(log.id),
-          when: shortTime(log.createdAt),
+          when: staffDateOnly(log.createdAt),
           what: log.resourceType ? `${log.action} · ${log.resourceType} ${log.resourceId ?? ""}` : log.action,
           amount: log.severity,
           alert: log.severity === "critical" || log.severity === "warning",
@@ -387,6 +388,3 @@ function UserPanel({
   return null;
 }
 
-function shortTime(value: string | Date): string {
-  return new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}

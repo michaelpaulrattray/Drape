@@ -19,7 +19,7 @@
 
 import { getDb } from "./db";
 import { auditLogs, AUDIT_ACTIONS, type AuditAction, type AuditLog } from "../drizzle/schema";
-import { eq, and, gte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, inArray, sql, count as countRows, type SQL } from "drizzle-orm";
 import { createModuleLogger } from "./logging/logger";
 const log = createModuleLogger("auditLog");
 
@@ -261,8 +261,17 @@ export { AUDIT_ACTIONS };
 
 // ============ Admin Dashboard Query Helpers ============
 
-// Action category mappings for filtering
-const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
+/*
+  Action category mappings for filtering.
+
+  EXPORTED for `server/auditLogCategoryAgreement.test.ts` (#939), which holds
+  this list against the chip the panels draw. It is exported rather than
+  re-read with a regex because a guard that parses the thing it guards shares
+  the guarded file's blind spots — four Atlas collectors were found doing
+  exactly that, and the rule from it is in CLAUDE.md: do not shape-match where
+  a declaration exists.
+*/
+export const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
   billing: [
     AUDIT_ACTIONS.SUBSCRIPTION_CREATED,
     AUDIT_ACTIONS.SUBSCRIPTION_CANCELED,
@@ -279,6 +288,13 @@ const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
     AUDIT_ACTIONS.STRIPE_REFUND_ISSUED,
     AUDIT_ACTIONS.STRIPE_REFUND_FAILED,
     AUDIT_ACTIONS.INVOICE_PAID_AFTER_PLAN_ENDED,
+    /*
+      #939. The panel already draws a "Billing" chip on this row — its
+      `getActionCategory` sends every `credits.*` to billing — so the row
+      claimed a category whose filter dropped it. The three siblings above it
+      are already here; this is the missing line, not a new reading.
+    */
+    AUDIT_ACTIONS.CREDITS_ADDED,
   ],
   model: [
     AUDIT_ACTIONS.MODEL_CREATED,
@@ -290,6 +306,56 @@ const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
     AUDIT_ACTIONS.LOGIN_FAILED,
     AUDIT_ACTIONS.RATE_LIMIT_EXCEEDED,
     AUDIT_ACTIONS.INSUFFICIENT_CREDITS,
+    /*
+      #939 — ELEVEN MORE OF THE SAME DEFECT THE ABUSE COMMENT BELOW DESCRIBES.
+      The four lines above establish this bucket's reading: `auth.*` AND
+      `security.*` are both security here, which is also exactly what the
+      panel's own `getActionCategory` has always told staff. Every action
+      below was drawing a red "Security" chip while the Security filter — and
+      the Security CSV export (`routes/moderatorExports.ts`) — dropped it.
+      Eight of the thirteen in #939 have a live writer, and all eight are in
+      this bucket.
+
+      `security.emergency_action` writes nothing today (the Slack buttons were
+      retired in #800) and is here for the reason its schema comment gives:
+      the historical rows are still in the table and still carry the label.
+    */
+    AUDIT_ACTIONS.LOGIN_BLOCKED_SUSPENDED,
+    AUDIT_ACTIONS.LOGIN_BLOCKED_LOCKED,
+    AUDIT_ACTIONS.ACCOUNT_LOCKOUT,
+    AUDIT_ACTIONS.IP_BLOCKED_REQUEST,
+    AUDIT_ACTIONS.EMERGENCY_ACTION_EXECUTED,
+    AUDIT_ACTIONS.SECURITY_UNAUTHORIZED_ADMIN,
+    AUDIT_ACTIONS.SECURITY_IMMUTABLE_LOG,
+    AUDIT_ACTIONS.EMAIL_VERIFICATION_SENT,
+    AUDIT_ACTIONS.EMAIL_VERIFICATION_RESENT,
+    AUDIT_ACTIONS.EMAIL_VERIFIED,
+    AUDIT_ACTIONS.EMAIL_VERIFICATION_FAILED,
+  ],
+  /*
+    HIS RULING, Crew reply #187, 2026-09-14, verbatim and entire: *"Give
+    moderator actions their own category"* (#938).
+
+    The three `moderator.*` actions had no bucket at all, so choosing ANY
+    category — Abuse included — dropped them on both panels, while the
+    moderator console's own chip rule labelled them `abuse`. One panel told a
+    moderator the row was abuse and the Abuse filter was the one thing that
+    would never show it.
+
+    ⚠ THE OTHER REPAIR WAS TO DELETE THAT BRANCH, AND IT WAS NOT TAKEN. It
+    would have made the two copies agree and left the rows unfilterable, which
+    is the shape the ABUSE_GLOBAL_ATTACK comment below exists to refuse. A
+    change request is not abuse, and #939 deliberately stopped here rather than
+    inventing a category: a new one is a staff-visible control, so it was his.
+
+    ⚠ A NEW BUCKET IS UNREACHABLE UNTIL THE ROUTE ENUMS OFFER IT — three files,
+    and `server/auditLogCategoryAgreement.test.ts` has an arm pointed at
+    exactly that landmine.
+  */
+  moderator: [
+    AUDIT_ACTIONS.MODERATOR_ESCALATION,
+    AUDIT_ACTIONS.CHANGE_REQUEST_CREATED,
+    AUDIT_ACTIONS.CHANGE_REQUEST_CANCELLED,
   ],
   abuse: [
     AUDIT_ACTIONS.ABUSE_DETECTED,
@@ -303,6 +369,13 @@ const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
       never see it. `getAbuseAlertsSummary` filters on this same list.
     */
     AUDIT_ACTIONS.ABUSE_GLOBAL_ATTACK,
+    /*
+      #939. The comment above was written about one action and was true of six.
+      This is the sixth: the panel sends every `abuse.*` to the abuse chip, so
+      the day something writes a credential-stuffing row it would have been
+      dropped by the Abuse filter exactly as described.
+    */
+    AUDIT_ACTIONS.ABUSE_CREDENTIAL_STUFFING,
   ],
 };
 
@@ -310,10 +383,53 @@ export interface FilteredAuditLogsOptions {
   limit: number;
   offset: number;
   severity?: "info" | "warning" | "critical";
-  actionCategory?: "billing" | "model" | "security" | "abuse";
+  actionCategory?: "billing" | "model" | "security" | "moderator" | "abuse";
   userId?: number;
   startDate?: Date;
   endDate?: Date;
+}
+
+/*
+  EVERY condition a staff member's filter choice means, as ONE statement.
+
+  EXPORTED so `server/auditLogFilterSql.test.ts` can render the SQL this
+  actually sends (invariant 5, *assert at the wire*) — and so the page query
+  and the COUNT query behind the pager cannot drift into asking two different
+  questions, which is working law 4 at the scale of two lines.
+
+  ⚠ THE CATEGORY LINE IS THE #941 FIX AND IT BELONGS HERE, NOT AFTER THE
+  FETCH. Until 2026-09-14 the category was applied in JavaScript to whichever
+  rows the page happened to contain, so "Security" did not mean *the security
+  rows* — it meant *whichever of the newest 20 rows were security rows*.
+  Measured on the dev table the day it was fixed: 3,047 rows, 19 of them
+  `auth.login`, and the Security filter returned 8 at a page size of 20 and 11
+  at a page size of 100. **The answer changed with the page size**, no page
+  size reached the login rows at all, and the CSV export
+  (`routes/moderatorExports.ts`) shipped that same partial slice as a
+  confident file.
+*/
+export function auditLogFilterConditions(
+  options: Omit<FilteredAuditLogsOptions, "limit" | "offset">,
+): SQL | undefined {
+  const { severity, actionCategory, userId, startDate, endDate } = options;
+  const conditions: SQL[] = [];
+
+  if (severity) conditions.push(eq(auditLogs.severity, severity));
+  if (userId) conditions.push(eq(auditLogs.userId, userId));
+  if (startDate) conditions.push(gte(auditLogs.createdAt, startDate));
+  if (endDate) conditions.push(lte(auditLogs.createdAt, endDate));
+
+  /*
+    An empty bucket would render `IN ()`, which MySQL rejects outright — so an
+    unknown category is refused here by returning no rows rather than by
+    silently dropping the filter and returning EVERY row, which is the failure
+    direction that would look like the feature working.
+  */
+  if (actionCategory) {
+    conditions.push(inArray(auditLogs.action, ACTION_CATEGORIES[actionCategory] ?? []));
+  }
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
 /**
@@ -327,57 +443,84 @@ export async function getFilteredAuditLogs(options: FilteredAuditLogsOptions): P
   const db = await getDb();
   if (!db) return { logs: [], total: 0, hasMore: false };
 
-  const { limit, offset, severity, actionCategory, userId, startDate, endDate } = options;
+  const { limit, offset } = options;
+  const where = auditLogFilterConditions(options);
 
-  // Build conditions array
-  const conditions: ReturnType<typeof eq>[] = [];
+  const logs = await db
+    .select()
+    .from(auditLogs)
+    .where(where)
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  if (severity) {
-    conditions.push(eq(auditLogs.severity, severity));
-  }
+  /*
+    A REAL count of the matching rows. It used to be
+    `offset + logs.length + (hasMore ? 1 : 0)` — a number computed from the
+    page it was describing, so the footer read "Showing 1–8" of a total it had
+    invented, and paging forward re-filtered a different slice. The pager can
+    only stop lying if this counts the same population the page is drawn from,
+    which is why both take the identical `where`.
+  */
+  const [counted] = await db
+    .select({ value: countRows() })
+    .from(auditLogs)
+    .where(where);
+  const total = counted?.value ?? 0;
 
-  if (userId) {
-    conditions.push(eq(auditLogs.userId, userId));
-  }
-
-  if (startDate) {
-    conditions.push(gte(auditLogs.createdAt, startDate));
-  }
-
-  if (endDate) {
-    const { lte } = await import("drizzle-orm");
-    conditions.push(lte(auditLogs.createdAt, endDate));
-  }
-
-  // Get logs with filters
-  let query = db.select().from(auditLogs);
-  
-  if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as typeof query;
-  }
-
-  let logs = await query.orderBy(desc(auditLogs.createdAt)).limit(limit + 1).offset(offset);
-
-  // Filter by action category if specified (done in JS since it's an array match)
-  if (actionCategory && ACTION_CATEGORIES[actionCategory]) {
-    const categoryActions = ACTION_CATEGORIES[actionCategory];
-    logs = logs.filter((log: AuditLog) => categoryActions.includes(log.action as AuditAction));
-  }
-
-  // Check if there are more results
-  const hasMore = logs.length > limit;
-  if (hasMore) {
-    logs = logs.slice(0, limit);
-  }
-
-  // Get total count (simplified - just return current batch info)
-  const total = offset + logs.length + (hasMore ? 1 : 0);
-
-  return { logs, total, hasMore };
+  return { logs, total, hasMore: offset + logs.length < total };
 }
 
+/*
+  #950 — THE PANEL'S ROWS ARE ORDERED BY SEVERITY FIRST, AND THE ORDERING
+  BELONGS IN THIS STATEMENT RATHER THAN ON EITHER CONSOLE.
+
+  Both staff consoles draw `alerts.slice(0, 5)` under a heading that reads
+  "Needs looking at", and both render that panel only when `criticalCount > 0`.
+  The rows came back newest-first, so the panel could appear FOR a critical
+  alert and then list five warnings. Driven on #946's own rig: one critical
+  row with twelve newer warning rows on top of it rendered the panel, said
+  "1 critical", and showed none.
+
+  ⚠ SORTING THE FIVE DRAWN ROWS WOULD NOT HAVE FIXED IT, and that is why
+  this is here. `limit` is applied by this statement, so in the driven case the
+  critical row was never among the ten it returned — a console can only
+  reorder rows it was given. The ordering has to sit where the limit is
+  applied, which is also the one place both consoles share (#940's lesson, one
+  card later: derive it once, never copy the rule into two files).
+
+  THE RANK IS WRITTEN OUT rather than leaning on `severity`'s ENUM ordinal.
+  MySQL sorts an enum by its declared position, so `desc(severity)` would give
+  the same answer today purely because `drizzle/schema.ts` happens to declare
+  ["info", "warning", "critical"] in that order — and would silently invert
+  the panel if anyone reordered that declaration. `server/auditLogFilterSql.test.ts`
+  reads this at the rendered statement.
+*/
+export const ABUSE_ALERT_SEVERITY_RANK = sql`case ${auditLogs.severity} when 'critical' then 0 when 'warning' then 1 else 2 end`;
+
 /**
- * Get abuse alerts summary for admin dashboard
+ * Get abuse alerts summary for admin dashboard.
+ *
+ * ⚠ `limit` GOVERNS THE LIST AND NOTHING ELSE — #946. Every count here used to
+ * be taken over the rows this function happened to return, which is #941's
+ * class one layer up: a number that silently depends on a page size.
+ *
+ *  - `criticalCount` / `warningCount` are COUNTs over every abuse row, so a
+ *    tile reading `10` can no longer mean ten or five hundred.
+ *  - `alerts` is `limit` abuse rows, MOST SEVERE FIRST and newest within a
+ *    severity (#950 — see the ordering note above). That is a LIST and a
+ *    limit is the right thing to ask of it; what the limit must not do is pick
+ *    WHICH severities a staff member gets to see.
+ *
+ * ⚠ THERE IS NO TIME WINDOW HERE AND THERE NEVER WAS — the moderator strip
+ * said *"N critical in the last day"* over a function with no date condition
+ * in it. #946 filed a windowed count as the repair; the copy lost the phrase
+ * instead. The reason is the panel's own job: it renders only when that number
+ * is above zero, so a window is a rule for HIDING an alarm, and the founder
+ * ruling this bucket already carries points the other way — *"the wire would
+ * exist, the row would exist, and staff would never see it."* One unbounded
+ * number, one meaning, on both consoles; the rows carry their own timestamps
+ * for "is this happening now".
  */
 export async function getAbuseAlertsSummary(limit: number = 10): Promise<{
   alerts: AuditLog[];
@@ -386,26 +529,63 @@ export async function getAbuseAlertsSummary(limit: number = 10): Promise<{
   recentPatterns: { pattern: string; count: number }[];
 }> {
   const db = await getDb();
-  if (!db) return { alerts: [], criticalCount: 0, warningCount: 0, recentPatterns: [] };
+  if (!db) {
+    return { alerts: [], criticalCount: 0, warningCount: 0, recentPatterns: [] };
+  }
 
-  // Get recent abuse-related events
-  const abuseActions = ACTION_CATEGORIES.abuse;
-  const alerts = await db
+  /*
+    ⚠ THE LAW-7 SIBLING OF #941, AND IT WAS THE WORSE OF THE TWO. This read
+    the newest 100 rows of the WHOLE table and then kept the abuse ones — with
+    no `where` clause at all — so a site-wide credential-stuffing alarm could
+    fire, land correctly in the abuse bucket, and still show up nowhere a
+    person looks, purely because a hundred ordinary rows arrived after it. On
+    the dev table `casting.refusal` is 2,927 of 3,047 rows, which is how fast
+    a hundred rows arrive.
+
+    That is precisely the failure the founder ruling above this bucket exists
+    to prevent — *"the wire would exist, the row would exist, and staff would
+    never see it"* — reached by a different road.
+
+    ⚠ AND THE COUNTS BELOW WERE STILL THAT SHAPE UNTIL #946. They described
+    "the alerts being SHOWN" — the newest ten — which is the same defect one
+    layer up: ten newer warning rows pushed a critical one to position eleven,
+    `criticalCount` read 0, and on the moderator console **the whole "Needs
+    looking at" panel stopped rendering**, with the critical row correctly in
+    the table and correctly in the bucket. They are database COUNTs now, and
+    `limit` reaches the list alone.
+  */
+  const isAbuse = inArray(auditLogs.action, ACTION_CATEGORIES.abuse);
+
+  const abuseAlerts = await db
     .select()
     .from(auditLogs)
-    .orderBy(desc(auditLogs.createdAt))
-    .limit(100);
+    .where(isAbuse)
+    .orderBy(ABUSE_ALERT_SEVERITY_RANK, desc(auditLogs.createdAt))
+    .limit(limit);
 
-  // Filter to abuse events
-  const abuseAlerts = alerts.filter((log: AuditLog) => 
-    abuseActions.includes(log.action as AuditAction)
-  ).slice(0, limit);
+  /*
+    Two COUNTs rather than one grouped read: a grouped query would be unpacked
+    into these same two numbers, and each of these is a single indexed count
+    against the severity index the table already carries.
+  */
+  const [[critical], [warning]] = await Promise.all([
+    db.select({ value: countRows() }).from(auditLogs)
+      .where(and(isAbuse, eq(auditLogs.severity, "critical"))),
+    db.select({ value: countRows() }).from(auditLogs)
+      .where(and(isAbuse, eq(auditLogs.severity, "warning"))),
+  ]);
 
-  // Count by severity
-  const criticalCount = abuseAlerts.filter((a: AuditLog) => a.severity === "critical").length;
-  const warningCount = abuseAlerts.filter((a: AuditLog) => a.severity === "warning").length;
+  const criticalCount = critical?.value ?? 0;
+  const warningCount = warning?.value ?? 0;
 
-  // Count by pattern (from metadata)
+  /*
+    ⚠ THESE PATTERNS DESCRIBE THE ROWS ABOVE, WHICH ARE NOW THE MOST SEVERE
+    `limit` RATHER THAN THE NEWEST (#950). The field is named `recentPatterns`
+    and has no consumer on either console — it is read only by
+    `server/adminAuditLogs.test.ts` — so the name is left alone rather than
+    changed through two routers for nobody, and what it actually counts is
+    stated here instead of being left to be discovered.
+  */
   const patternCounts = new Map<string, number>();
   for (const alert of abuseAlerts) {
     const metadata = alert.metadata as Record<string, unknown> | null;
@@ -465,9 +645,17 @@ export async function getAuditStatistics(): Promise<{
   const byCategory = Array.from(categoryCounts.entries())
     .map(([category, count]) => ({ category, count }));
 
-  // Get total count (approximate)
-  const allLogs = await db.select().from(auditLogs).limit(10000);
-  const totalLogs = allLogs.length;
+  /*
+    #941's third sibling, same class as the two above: a COUNT taken by
+    fetching rows. This pulled up to 10,000 whole rows across the wire and
+    returned their length, so the "Total entries" tile on both staff panels
+    stopped counting at exactly 10,000 however large the table grew — a number
+    that looks precise and silently stops moving. The row counts above
+    (`bySeverity`, `byCategory`) are NOT in this class: they aggregate the
+    complete 24-hour set, not a page of it.
+  */
+  const [countedAll] = await db.select({ value: countRows() }).from(auditLogs);
+  const totalLogs = countedAll?.value ?? 0;
 
   return { totalLogs, last24Hours, bySeverity, byCategory };
 }

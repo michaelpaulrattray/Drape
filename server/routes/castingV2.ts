@@ -103,6 +103,7 @@ import {
   scannedFaceIfReady,
 } from "../castingV2/faceScanService";
 import { pronounsForSex } from "../castingV2/castPronouns";
+import { sheetGoneSentence, sheetIsGone } from "../castingV2/sheetGone";
 import { currentValueOfFacet } from "../castingV2/refineDelta";
 import { readResolvedIdentity } from "../castingV2/rollService";
 import {
@@ -1223,6 +1224,27 @@ export const castingV2Router = router({
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingPoll);
       const session = await getOwnedCastingSession(ctx.user.id, input.sessionId);
       if (!session) throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+      /*
+        THE SHEET IS GONE, SO THERE IS NO SHEET TO SEND (#890, his word).
+
+        Raised HERE — beside the owner-scoped read, before a single field of
+        the sheet is projected — because the road this closes is a stale tab
+        and a bookmark, and a client-side check is the one thing a stale
+        bundle skips. `sheetGone.ts` carries the ruling and why `abandoned`
+        rides with `expired`.
+
+        `NOT_FOUND` is deliberate and is the code the ownership refusal one
+        line above already uses: from where the customer stands those two are
+        the same fact, which is that this is not a place they can stand.
+        `spokenError` is what tells them apart ON THE WIRE — the client needs
+        to know this sentence was written for a person before it shows it,
+        and the ownership refusal, the flag refusal and the rate limit are all
+        unspoken. That marker is the whole discriminator, so the redirect
+        cannot fire on a refusal it was not written for.
+      */
+      if (sheetIsGone(session.status)) {
+        throw spokenError({ code: "NOT_FOUND", message: sheetGoneSentence(session.status) });
+      }
 
       const rolls = await listSessionRolls(ctx.user.id, session.id);
       const rollIndexById = new Map(rolls.map((roll) => [roll.id, roll.rollIndex]));

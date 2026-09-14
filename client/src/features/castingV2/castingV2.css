@@ -67,6 +67,16 @@
 .dpc-hero__ask { gap: 11px; }
 
 /*
+  THE LANDING SENTENCE FROM A SHEET THAT IS GONE (#890).
+
+  No box, no rule, no colour — the ask is already a flex column with its own
+  gap, so this only undoes the browser's paragraph margins and lets the stack
+  space it like every other line in here. A sheet ageing out is not an alarm
+  and must not be dressed as one; `dp-secondary` carries the whole look.
+*/
+.dpc-hero__gone { margin: 0; }
+
+/*
   THE AIR — an element, never `margin-top: auto`.
 
   His brief gives the reason and briefs 05, 06, 07 and 09 give the same one: a
@@ -130,6 +140,21 @@
   flex: none;
 }
 
+/*
+  ⚠ ONE OF FIVE DECLARATIONS OF THE HOUSE HAIRLINE — see
+  `docs/specs/PROMOTION_PASS_SECTION_10.md` §3 before writing a sixth.
+
+  The foundation owns this device (`TableHead` + `.dp-tablehead__rule`, 27
+  consumer files) and section 10's pass found the collision. It is deliberately
+  NOT folded: these values are mono `400`/`.03em` and NOT uppercase because they
+  are machine values rather than a label, where the house eyebrow is `500`
+  uppercase in `--meta`. Converging repaints his judged hero, so it is a design
+  card rather than a promotion.
+
+  `min-width: 0` is belt-and-braces: the rule is empty, so `auto` already
+  resolves to 0 — the foundation's `.dp-eyebrow__rule` omits it and draws
+  identically.
+*/
 .dpc-hero__receiptrule {
   flex: 1;
   height: 1px;
@@ -329,21 +354,24 @@
   padding: 0 18px 18px;
 }
 
-.dpc-deck__eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font: 500 8.5px var(--font-mono);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
+/*
+  ⚠ `.dpc-deck__eyebrow` AND `.dpc-deck__rule` WERE HERE AND ARE GONE (#928).
 
-.dpc-deck__rule {
-  flex: 1;
-  height: 1px;
-  background: var(--rule);
-}
+  They were a byte-for-byte second copy of the foundation's eyebrow —
+  `500 8.5px var(--font-mono)` / `letter-spacing: .13em` / `color: var(--faint)`
+  beside `flex: 1; height: 1px; background: var(--rule)`, in a container with an
+  8px gap — written under a second name because neither surface knew the other
+  existed (`docs/specs/PROMOTION_PASS_SECTION_10.md` §3).
+
+  `HeroDeck` takes `foundation/Eyebrow` now, and the shared part was RENAMED on
+  the way in (`.dp-menugroup__*` → `.dp-eyebrow__*`) rather than casting being
+  pointed at the menu's vocabulary — the pass's naming rule read in the
+  direction nobody reads it.
+
+  The deck passes no position class. Its eyebrow is spaced by
+  `.dpc-deck__brief` below, which is exactly why the menu's `padding` could not
+  travel onto the device.
+*/
 
 .dpc-deck__quote {
   margin: 0;

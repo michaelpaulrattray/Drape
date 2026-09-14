@@ -17,6 +17,7 @@ import {
 import { Shuffle } from "lucide-react";
 import { Button, DataTable, Field, IconButton, Input, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
+import { STAFF_LOCALE } from "@/foundation/staffDate";
 import { INVITE_CODE_MAX_LENGTH, INVITE_CODE_NOTE_MAX_LENGTH } from "@shared/inputLimits";
 
 /* ─── helpers ─── */
@@ -49,9 +50,20 @@ function generateRandomCode(): string {
   return `DRAPE-${seg()}-${seg()}`;
 }
 
+/*
+ * ⚠ **STAYS LOCAL ON THE PROMOTION PASS'S OWN BAR OF TWO (#902): one
+ * declaration, one consumer — this page.** `staffDateOnly` is the same shape
+ * without the year, and an invite code's CREATED and EXPIRES are routinely a
+ * year apart, so the year is the fact being read here.
+ *
+ * **The NOTATION is not local**, though — it comes from `STAFF_LOCALE`, so his
+ * *"Day first everywhere"* ruling reaches this page without anyone having to
+ * remember the page exists. A shape may stay local; the rule may not be
+ * written twice.
+ */
 function formatDate(d: string | Date | null): string {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-US", {
+  return new Date(d).toLocaleDateString(STAFF_LOCALE, {
     month: "short",
     day: "numeric",
     year: "numeric",

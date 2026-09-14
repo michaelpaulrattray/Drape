@@ -42,10 +42,11 @@ import { toast } from "sonner";
 import { RolePill, RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { Button, ConfirmDialog, DataTable } from "@/foundation";
 import type { DataRow } from "@/foundation";
+import { staffDateTime } from "@/foundation/staffDate";
 import { trpc } from "@/lib/trpc";
 import { FREEZE_REASON_MAX_LENGTH, UNFREEZE_NOTES_MAX_LENGTH } from "@shared/inputLimits";
 
-import { formatDate, type OpenChangeRequestOptions } from "./moderatorConstants";
+import { type OpenChangeRequestOptions } from "./moderatorConstants";
 import "./investigations.css";
 
 /**
@@ -134,10 +135,10 @@ export function UserTable({
       { label: "ACCOUNT", value: `#${u.id}` },
       { label: "EMAIL", value: u.email || "—" },
       { label: "ROLE", value: u.role },
-      { label: "JOINED", value: u.createdAt ? formatDate(new Date(u.createdAt)) : "—" },
+      { label: "JOINED", value: u.createdAt ? staffDateTime(new Date(u.createdAt)) : "—" },
       {
         label: "LAST ACTIVE",
-        value: u.lastSignedIn ? formatDate(new Date(u.lastSignedIn)) : "Never",
+        value: u.lastSignedIn ? staffDateTime(new Date(u.lastSignedIn)) : "Never",
       },
     ],
     cells: [
@@ -170,7 +171,7 @@ export function UserTable({
         active* that cannot say anything but "Never" is not a number to
         preserve. Found by driving the surface, not by reading it.
       */
-      <span key="seen">{u.lastSignedIn ? formatDate(new Date(u.lastSignedIn)) : "Never"}</span>,
+      <span key="seen">{u.lastSignedIn ? staffDateTime(new Date(u.lastSignedIn)) : "Never"}</span>,
     ],
   }));
 
@@ -239,7 +240,27 @@ function FreezeAction({
     onError: (err) => toast.error(err.message || "Failed to unfreeze account"),
   });
 
-  if (isAdmin) return null;
+  /*
+    ⚠ **AN ADMIN HIDES THE *FREEZE*, NEVER THE *UNFREEZE* (#908), AND THIS
+    CLAUSE IS THE CONTROL THE BANNER DELETION WOULD OTHERWISE HAVE TAKEN.**
+
+    This read `if (isAdmin) return null` — both buttons gone. That is right for
+    freezing (`freezeAccount` REFUSES an admin outright, so the button could
+    only ever have produced an error) and wrong for unfreezing: a frozen admin
+    was unfreezable from this console only through the duplicate banner on
+    Reconciliation, which #908 deletes. Removing that button without this line
+    would have quietly ended a capability the moderator console has today —
+    working law 7's ruling sweep, asked at the closing commit rather than found
+    six months later.
+
+    **It is not a widening.** `unfreezeAccount` is a `moderatorProcedure` with
+    no role check, so the server has always permitted this; only the button was
+    hidden. And the shape is DERIVED rather than invented — `admin/UserTable`
+    already offers `Unfreeze` on `frozenAt` with no role condition while
+    disabling `Freeze` for an admin. This makes the moderator's control agree
+    with the admin panel's, which is the surface that had it right.
+  */
+  if (isAdmin && !isFrozen) return null;
 
   const busy = freezeMutation.isPending || unfreezeMutation.isPending;
   const displayName = userName || `User #${userId}`;
@@ -322,11 +343,29 @@ export function UserDetailCard({
         A state band only when there IS a state. His §4a: *"When the account is
         not frozen, no band. Do not add an 'account in good standing' card."*
       */}
+      {/*
+        ⚠ **THIS IS THE ONLY "Account frozen" BAND IN THE CONSOLE NOW (#908).**
+        `ReconciliationSubTab` drew a SECOND one, so that one subtab stacked two
+        identical titles with two different Unfreeze buttons and only the lower
+        one carrying the date — a moderator deciding whether to unfreeze a
+        paying customer had one fact rendered twice, differently, with no way to
+        know which button was the real one.
+
+        **The shell's band is the one that survived, and §5 is why:** *"Subject
+        first … One band, NOT REPEATED IN THREE WIDGETS."* This band is drawn
+        for every subtab, so keeping it is the version a moderator always sees;
+        keeping the subtab's would have meant the fact appearing on one tab of
+        four. What came ACROSS from the deleted one is the date, which is the
+        half it had and this one lacked.
+      */}
       {user.suspendedAt && (
         <div className="dp-inv__subject">
           <div className="dp-inv__subjectbody">
             <p className="dp-inv__subjecttitle">Account suspended</p>
-            <p className="dp-inv__subjectreason">{user.suspendedReason || "No reason recorded"}</p>
+            <p className="dp-inv__subjectreason">
+              <span className="dp-inv__subjectstamp">{staffDateTime(new Date(user.suspendedAt))}</span>
+              {user.suspendedReason ? ` — ${user.suspendedReason}` : " — No reason recorded"}
+            </p>
           </div>
         </div>
       )}
@@ -334,7 +373,10 @@ export function UserDetailCard({
         <div className="dp-inv__subject">
           <div className="dp-inv__subjectbody">
             <p className="dp-inv__subjecttitle">Account frozen</p>
-            <p className="dp-inv__subjectreason">{user.frozenReason || "No reason recorded"}</p>
+            <p className="dp-inv__subjectreason">
+              <span className="dp-inv__subjectstamp">{staffDateTime(new Date(user.frozenAt))}</span>
+              {user.frozenReason ? ` — ${user.frozenReason}` : " — No reason recorded"}
+            </p>
           </div>
         </div>
       )}

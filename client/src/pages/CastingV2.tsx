@@ -42,7 +42,7 @@ import { CardMenu } from "@/foundation";
 import { DestructiveConfirm } from "@/foundation";
 import { RenameDialog } from "@/foundation";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
-import { readCarriedBrief } from "@/features/castingV2/closedSheet";
+import { readSheetGone } from "@/features/castingV2/sheetGone";
 import {
   RETENTION_EMPTY_STATE,
   isExpiryWarning,
@@ -136,15 +136,19 @@ function sheetDeleteCopy(sheet: {
 export default function CastingV2() {
   const [, navigate] = useLocation();
   /*
-    WORDS CARRIED FROM A CLOSED SHEET (#854, his A). An expired sheet's dock
-    offers "Start a new sheet with these words" and navigates here with the
-    box's words in the browser's history state — never the address bar. They
-    are the box's INITIAL value and nothing more: read once at mount, and
-    theirs to type over from then on. A plain visit carries nothing and the
-    box opens empty, exactly as it always has.
+    THE SHEET THEY ASKED FOR IS GONE, AND THIS IS WHERE THEY LAND (#890, his
+    word 13 Sep, overturning the #854 dock).
+
+    The sheet page is refused at the reader and sends them here with the
+    server's own sentence in the browser's history state — never the address
+    bar, which would put a refusal in a URL they might share. One line, read
+    once at mount, and the box below it opens EMPTY: their words are not
+    carried, because the sheet is gone and handing its brief back would be the
+    retired dock wearing a different coat. A plain visit carries nothing and
+    the page is exactly what it has always been.
   */
-  const carriedBrief = readCarriedBrief(useHistoryState());
-  const [brief, setBrief] = useState(carriedBrief);
+  const sheetGone = readSheetGone(useHistoryState());
+  const [brief, setBrief] = useState("");
   /*
     WHICH PATH THE NEXT CAST IS BORN ON — the two paths' toggle (design §6).
 
@@ -228,9 +232,9 @@ export default function CastingV2() {
   */
   const castingOpen = config.data?.enabled === true;
   useEffect(() => {
-    if (carriedBrief && castingOpen) focusBrief();
+    if (sheetGone && castingOpen) focusBrief();
     // `focusBrief` is a closure over a ref, not a dependency; the arrival is the trigger.
-  }, [carriedBrief, castingOpen]);
+  }, [sheetGone, castingOpen]);
   /*
     RE-IMAGINE on the hero's brief box (#535). The hook lives up here with the
     other unconditional hooks; the glyph itself is drawn only on the author
@@ -649,6 +653,24 @@ export default function CastingV2() {
             <span className="dpc-hero__air" aria-hidden="true" />
 
             <div className="dpc-hero__ask">
+
+            {/*
+              WHAT HAPPENED TO THE SHEET THEY ASKED FOR (#890).
+
+              Above the box because it is the answer to the address they typed,
+              and the box under it is the one thing left to do — which is the
+              whole sentence: what happened, that it was cleared, start a new
+              one. Nothing else travels with it. No price, no words carried, no
+              apology; the retention confession's own quiet register
+              (`retentionCopy.ts`), which is the register a sheet ageing out
+              deserves.
+
+              The sentence is the SERVER'S. The reader refuses before it knows
+              enough to project anything, so `expired` and `abandoned` reach us
+              only as the sentence written about them — relaying it is what
+              keeps one fact from being worded twice.
+            */}
+            {sheetGone ? <p className="dp-secondary dpc-hero__gone">{sheetGone}</p> : null}
 
             {/*
               THE BOX YOU CAN READ WHAT YOU ARE ABOUT TO BUY IN.

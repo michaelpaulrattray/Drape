@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "623fc2f5e78eb665"
+    "sourceFingerprint": "d4288d86d452bbf7"
   },
   "domains": [
     {
@@ -33,7 +33,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 186
+      "moduleCount": 187
     },
     {
       "id": "domain:castingV2",
@@ -63,7 +63,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 24
+      "moduleCount": 26
     },
     {
       "id": "domain:home",
@@ -1544,12 +1544,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/castingV2/closedSheet.ts",
-      "path": "client/src/features/castingV2/closedSheet.ts",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "path": "client/src/features/castingV2/components/BriefEcho.tsx",
       "domain": "castingV2",
@@ -1744,6 +1738,12 @@
     {
       "id": "module:client/src/features/castingV2/retryFace.ts",
       "path": "client/src/features/castingV2/retryFace.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/sheetGone.ts",
+      "path": "client/src/features/castingV2/sheetGone.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -2606,6 +2606,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/foundation/Eyebrow.tsx",
+      "path": "client/src/foundation/Eyebrow.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/foundation/ModalField.tsx",
       "path": "client/src/foundation/ModalField.tsx",
       "domain": "foundation",
@@ -2686,6 +2692,12 @@
     {
       "id": "module:client/src/foundation/severity.ts",
       "path": "client/src/foundation/severity.ts",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/staffDate.ts",
+      "path": "client/src/foundation/staffDate.ts",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -4708,6 +4720,12 @@
     {
       "id": "module:server/castingV2/sharpness.ts",
       "path": "server/castingV2/sharpness.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/sheetGone.ts",
+      "path": "server/castingV2/sheetGone.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -10586,10 +10604,6 @@
       "path": "client/src/features/castingV2/chosenFrame.test.ts"
     },
     {
-      "id": "test:client/src/features/castingV2/closedSheet.test.ts",
-      "path": "client/src/features/castingV2/closedSheet.test.ts"
-    },
-    {
       "id": "test:client/src/features/castingV2/conceptUpload.test.ts",
       "path": "client/src/features/castingV2/conceptUpload.test.ts"
     },
@@ -10712,6 +10726,10 @@
     {
       "id": "test:client/src/features/castingV2/section10-guard.test.ts",
       "path": "client/src/features/castingV2/section10-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/sheetGone.test.ts",
+      "path": "client/src/features/castingV2/sheetGone.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/sheetNotice.test.ts",
@@ -10886,6 +10904,10 @@
       "path": "client/src/foundation/section02-guard.test.ts"
     },
     {
+      "id": "test:client/src/foundation/staffClock.test.ts",
+      "path": "client/src/foundation/staffClock.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/theme.test.ts",
       "path": "client/src/foundation/theme.test.ts"
     },
@@ -10912,6 +10934,10 @@
     {
       "id": "test:server/_core/numericEnv.test.ts",
       "path": "server/_core/numericEnv.test.ts"
+    },
+    {
+      "id": "test:server/abuseStripHonesty.test.ts",
+      "path": "server/abuseStripHonesty.test.ts"
     },
     {
       "id": "test:server/access.test.ts",
@@ -11016,6 +11042,14 @@
     {
       "id": "test:server/auditLog.test.ts",
       "path": "server/auditLog.test.ts"
+    },
+    {
+      "id": "test:server/auditLogCategoryAgreement.test.ts",
+      "path": "server/auditLogCategoryAgreement.test.ts"
+    },
+    {
+      "id": "test:server/auditLogFilterSql.test.ts",
+      "path": "server/auditLogFilterSql.test.ts"
     },
     {
       "id": "test:server/auth.logout.test.ts",
@@ -12594,6 +12628,10 @@
       "path": "server/castingV2InkUpload.test.ts"
     },
     {
+      "id": "test:server/castingV2SheetGone.test.ts",
+      "path": "server/castingV2SheetGone.test.ts"
+    },
+    {
       "id": "test:server/ceremonyArguments.test.ts",
       "path": "server/ceremonyArguments.test.ts"
     },
@@ -12730,6 +12768,10 @@
       "path": "server/crewQueueTitles.test.ts"
     },
     {
+      "id": "test:server/crewQueueUnreachable.test.ts",
+      "path": "server/crewQueueUnreachable.test.ts"
+    },
+    {
       "id": "test:server/crewReplyAcknowledgement.test.ts",
       "path": "server/crewReplyAcknowledgement.test.ts"
     },
@@ -12792,6 +12834,10 @@
     {
       "id": "test:server/debugUtility.test.ts",
       "path": "server/debugUtility.test.ts"
+    },
+    {
+      "id": "test:server/deletionDoorSecondReader.test.ts",
+      "path": "server/deletionDoorSecondReader.test.ts"
     },
     {
       "id": "test:server/deployTriggerClaims.test.ts",
@@ -12972,6 +13018,10 @@
     {
       "id": "test:server/moderatorReconciliation.test.ts",
       "path": "server/moderatorReconciliation.test.ts"
+    },
+    {
+      "id": "test:server/moduleResolution.test.ts",
+      "path": "server/moduleResolution.test.ts"
     },
     {
       "id": "test:server/nextUpEmptyBand.test.ts",
@@ -14539,6 +14589,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/AuditLogsFilters.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/AuditLogTable.tsx",
       "to": "module:client/src/features/admin/adminConstants.ts",
       "kind": "imports"
@@ -14554,8 +14609,8 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/BlockedIPsTab.tsx",
-      "to": "module:client/src/features/admin/adminConstants.ts",
+      "from": "module:client/src/features/admin/AuditLogTable.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14566,6 +14621,11 @@
     {
       "from": "module:client/src/features/admin/BlockedIPsTab.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/BlockedIPsTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14576,6 +14636,11 @@
     {
       "from": "module:client/src/features/admin/ChangeRequestConstants.tsx",
       "to": "module:client/src/components/ui/badge.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/ChangeRequestConstants.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14601,6 +14666,16 @@
     {
       "from": "module:client/src/features/admin/ChangeRequestList.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/ChangeRequestList.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/ChangeRequestList.tsx",
+      "to": "module:shared/changeRequestLabels.ts",
       "kind": "imports"
     },
     {
@@ -14675,11 +14750,6 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
-      "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
       "kind": "imports"
     },
@@ -14701,6 +14771,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewEyeGallery.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14725,11 +14800,6 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
-      "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
       "kind": "imports"
     },
@@ -14744,8 +14814,8 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
-      "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14770,12 +14840,12 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
-      "to": "module:shared/crewCardState.ts",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
-      "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "from": "module:client/src/features/admin/components/crew/CrewNeedsYou.tsx",
+      "to": "module:shared/crewCardState.ts",
       "kind": "imports"
     },
     {
@@ -14786,6 +14856,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14840,6 +14915,11 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
@@ -14860,12 +14940,12 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewReplyThread.tsx",
-      "to": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewReplyThread.tsx",
-      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -15024,6 +15104,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/overview/CreditEconomyCard.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/overview/GovernanceCard.tsx",
       "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
       "kind": "imports"
@@ -15046,6 +15131,11 @@
     {
       "from": "module:client/src/features/admin/overview/HealthMetrics.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/HealthMetrics.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -15114,6 +15204,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/overview/SystemStatusCard.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/overview/UserGrowthCard.tsx",
       "to": "module:client/src/features/admin/overview/chartTokens.ts",
       "kind": "imports"
@@ -15121,6 +15216,11 @@
     {
       "from": "module:client/src/features/admin/overview/UserGrowthCard.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/UserGrowthCard.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -15206,6 +15306,11 @@
     {
       "from": "module:client/src/features/admin/UserTable.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserTable.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -16969,6 +17074,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/HeroDeck.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "kind": "imports"
@@ -17091,6 +17201,11 @@
     {
       "from": "module:client/src/features/castingV2/referenceAttachCopy.ts",
       "to": "module:shared/inkProvenance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/sheetGone.ts",
+      "to": "module:shared/spokenError.ts",
       "kind": "imports"
     },
     {
@@ -17419,6 +17534,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/ActivitySubTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
       "to": "module:client/src/features/moderator/moderatorConstants.ts",
       "kind": "imports"
@@ -17431,6 +17551,11 @@
     {
       "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -17440,17 +17565,17 @@
     },
     {
       "from": "module:client/src/features/moderator/BlockedIPsTab.tsx",
-      "to": "module:client/src/features/moderator/moderatorConstants.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/BlockedIPsTab.tsx",
       "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/BlockedIPsTab.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/BlockedIPsTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -17530,6 +17655,11 @@
     },
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -17569,8 +17699,8 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
-      "to": "module:client/src/features/moderator/moderatorConstants.ts",
+      "from": "module:client/src/features/moderator/FlaggedReferralsTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -17581,6 +17711,11 @@
     {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -17655,6 +17790,11 @@
     },
     {
       "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
       "to": "module:shared/changeRequestLabels.ts",
       "kind": "imports"
     },
@@ -17676,11 +17816,6 @@
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
-      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -17736,6 +17871,11 @@
     {
       "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -19169,6 +19309,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/foundation/Eyebrow.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/AppShell.tsx",
       "kind": "imports"
@@ -19206,6 +19351,11 @@
     {
       "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/DestructiveConfirm.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/Eyebrow.tsx",
       "kind": "imports"
     },
     {
@@ -19425,6 +19575,11 @@
     },
     {
       "from": "module:client/src/pages/AdminBugReports.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminBugReports.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -19540,6 +19695,11 @@
     },
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
@@ -19591,6 +19751,11 @@
     {
       "from": "module:client/src/pages/AdminInviteCodes.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminInviteCodes.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -19770,11 +19935,6 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
-      "to": "module:client/src/features/castingV2/closedSheet.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/BriefEcho.tsx",
       "kind": "imports"
     },
@@ -19885,6 +20045,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/sheetGone.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/sheetNotice.ts",
       "kind": "imports"
     },
@@ -19965,11 +20130,6 @@
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:client/src/features/castingV2/closedSheet.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/BriefField.tsx",
       "kind": "imports"
     },
@@ -20011,6 +20171,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/retentionCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/sheetGone.ts",
       "kind": "imports"
     },
     {
@@ -28124,6 +28289,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/sheetGone.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/sidePhrasing.ts",
       "to": "module:server/castingV2/referenceSlots.ts",
       "kind": "imports"
@@ -30350,11 +30520,6 @@
     },
     {
       "from": "module:server/lib/boardOps.ts",
-      "to": "module:shared/mergeCastingPreferenceChanges.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/lib/boardOps.ts",
       "to": "module:shared/modelLifecycle.ts",
       "kind": "imports"
     },
@@ -31441,6 +31606,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/segmentsOnFace.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/sheetGone.ts",
       "kind": "imports"
     },
     {

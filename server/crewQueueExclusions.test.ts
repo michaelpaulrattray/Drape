@@ -35,9 +35,15 @@ describe("the exclusion vocabulary", () => {
     /* `shared/crewWorkSwitches.ts`'s anti-drift design, one level out: a card
        relabelled in GitHub must move between offered and excluded with nobody
        touching this file. Both labels below were already in use — the relay
-       applies `founder-ordered`, and `parked` is on six open cards today. */
+       applies `founder-ordered`, `parked` is on six open cards today, and
+       `blocked` is written by `crew-desk-sweep.mts` on every shift close.
+
+       ⚠ **THIS ARM WENT RED WHEN `blocked` WAS ADDED, AND THAT IS ITS JOB.**
+       It is the only thing standing between the vocabulary and a reason added
+       quietly, so the repair is to state the new list here with its reasoning
+       — never to loosen the assertion to a length or a `toContain`. */
     expect(QUEUE_EXCLUSION_REASONS.map((reason) => reason.queueLabel))
-      .toEqual(["founder-ordered", "parked"]);
+      .toEqual(["founder-ordered", "parked", "blocked"]);
   });
 
   it("names a card he has already queued", () => {
@@ -46,6 +52,21 @@ describe("the exclusion vocabulary", () => {
 
   it("names a card parked on his own ruling", () => {
     expect(exclusionFor(["debt", "parked"])).toBe("parked");
+  });
+
+  it("names a card waiting on him or on another card", () => {
+    /* The live shape the card was filed about: `#513` carries a Process seat
+       and `blocked`, so the row said five when four could be worked. */
+    expect(exclusionFor(["seat:retro", "blocked"])).toBe("blocked");
+  });
+
+  it("⚠ `parked` outranks `blocked`, and `ordered` outranks both", () => {
+    /* First match wins, so the ORDER of the array is what his page says about a
+       card carrying two of them. His own act is the more useful fact: a card he
+       parked reads as parked, not as waiting. No open card carries both today —
+       the order is written down before it is needed, not after. */
+    expect(exclusionFor(["parked", "blocked"])).toBe("parked");
+    expect(exclusionFor(["founder-ordered", "blocked"])).toBe("ordered");
   });
 
   it("⚠ a card carrying BOTH labels is counted ONCE, as ordered", () => {
@@ -66,8 +87,17 @@ describe("the exclusion vocabulary", () => {
 
 describe("the stored value", () => {
   it("round-trips the reasons that took something out", () => {
-    const stored = serializeQueueExclusions({ ordered: 2, parked: 1 });
-    expect(parseQueueExclusions(stored)).toEqual({ ordered: 2, parked: 1 });
+    const stored = serializeQueueExclusions({ ordered: 2, parked: 1, blocked: 1 });
+    expect(parseQueueExclusions(stored)).toEqual({ ordered: 2, parked: 1, blocked: 1 });
+  });
+
+  it("⚠ a row stored BEFORE the new reason existed still reads, missing that key", () => {
+    /* No migration rides with this change, so every `crew_queue_counts` row on
+       production was written by a counter that had never heard of `blocked`.
+       Those rows must keep reading as what they are — a count with two reasons
+       in it — until the next shift's counter rewrites them, which happens at
+       every shift start. */
+    expect(parseQueueExclusions('{"ordered":2,"parked":1}')).toEqual({ ordered: 2, parked: 1 });
   });
 
   it("drops a reason that excluded nothing rather than storing a zero", () => {
@@ -99,6 +129,21 @@ describe("the sentence the panel says", () => {
 
   it("says both, in the vocabulary's order", () => {
     expect(queueExclusionSentence({ parked: 1, ordered: 2 })).toBe("2 already queued, 1 parked");
+  });
+
+  it("⚠ the true sentence for the Process row that read five when four were takeable", () => {
+    /* `Process (4 on offer, 1 blocked)`. The count was not broken — it was
+       honest about the label and wrong about the product, which is the same
+       shape as the Security row below and the opposite sign. */
+    expect(queueExclusionSentence({ blocked: 1 })).toBe("1 blocked");
+  });
+
+  it("says all three in the vocabulary's order, never the caller's", () => {
+    /* The keys are handed over deliberately shuffled: the sentence must follow
+       the array, or two categories could read their exclusions in different
+       orders on one page. */
+    expect(queueExclusionSentence({ blocked: 1, parked: 3, ordered: 2 }))
+      .toBe("2 already queued, 3 parked, 1 blocked");
   });
 
   it("⚠ says NOTHING for the ordinary row, so `Process (12)` is unchanged", () => {

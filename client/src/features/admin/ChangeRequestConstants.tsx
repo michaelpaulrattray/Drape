@@ -1,4 +1,5 @@
 import { SENSITIVE_CHANGE_REQUEST_TYPES } from "@shared/changeRequestLabels";
+import { staffDateOnly } from "@/foundation/staffDate";
 import {
   Coins,
   Flag,
@@ -15,8 +16,11 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
+  CHANGE_REQUEST_STATUSES,
+  CHANGE_REQUEST_STATUS_LABELS,
   CHANGE_REQUEST_TYPES,
   CHANGE_REQUEST_TYPE_LABELS,
+  type ChangeRequestStatus,
   type ChangeRequestType,
 } from "@shared/changeRequestLabels";
 
@@ -53,19 +57,32 @@ export const TYPE_CONFIG: Record<string, { label: string; icon: typeof Coins; co
     ]),
   );
 
-export const STATUS_CONFIG: Record<string, { label: string; className: string; icon: typeof Clock }> = {
-  pending: { label: "Pending", className: "bg-amber-50 text-amber-700 border-amber-200", icon: Clock },
-  approved: { label: "Approved", className: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle },
-  denied: { label: "Denied", className: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
-  cancelled: { label: "Cancelled", className: "bg-gray-100 text-gray-600 border-gray-200", icon: XCircle },
-  expired: { label: "Expired", className: "bg-gray-100 text-gray-600 border-gray-200", icon: Clock },
-  // A sensitive request executes inside the approve mutation (#800). This
-  // state survives when the execution threw — OR when the action ran and only
-  // the settle write or the process died (a deploy lands mid-request), so the
-  // label must not claim the action did not happen: the outcome is UNKNOWN
-  // and a person checks the record before acting again.
-  pending_execution: { label: "Outcome unconfirmed", className: "bg-purple-50 text-purple-700 border-purple-200", icon: Timer },
+/**
+ * What each status LOOKS like. What it is CALLED lives in
+ * `shared/changeRequestLabels.ts` and is imported below (#907) -- the same
+ * shape `TYPE_PRESENTATION` above already has, and for the same reason: the
+ * words had drifted to one surface. The admin panel said `Outcome unconfirmed`
+ * while the moderator's own list said `PENDING_EXECUTI`.
+ *
+ * Keyed on `ChangeRequestStatus`, so adding a status to the shared list
+ * without choosing a colour and an icon for it is a typecheck failure here.
+ */
+const STATUS_PRESENTATION: Record<ChangeRequestStatus, { className: string; icon: typeof Clock }> = {
+  pending: { className: "bg-amber-50 text-amber-700 border-amber-200", icon: Clock },
+  approved: { className: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle },
+  denied: { className: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
+  cancelled: { className: "bg-gray-100 text-gray-600 border-gray-200", icon: XCircle },
+  expired: { className: "bg-gray-100 text-gray-600 border-gray-200", icon: Clock },
+  pending_execution: { className: "bg-purple-50 text-purple-700 border-purple-200", icon: Timer },
 };
+
+export const STATUS_CONFIG: Record<string, { label: string; className: string; icon: typeof Clock }> =
+  Object.fromEntries(
+    CHANGE_REQUEST_STATUSES.map((status) => [
+      status,
+      { label: CHANGE_REQUEST_STATUS_LABELS[status], ...STATUS_PRESENTATION[status] },
+    ]),
+  );
 
 export const PRIORITY_CONFIG: Record<string, { label: string; className: string }> = {
   low: { label: "Low", className: "bg-gray-100 text-gray-600 border-gray-200" },
@@ -89,7 +106,15 @@ export const ALL_TYPES: ChangeRequestType[] = [
   "refund_credits", "add_credits", "stripe_refund", "flag_account", "note_incident",
   "suspend_user", "unsuspend_user", "block_ip", "other",
 ];
-export const ALL_STATUSES = ["pending", "approved", "denied", "pending_execution", "cancelled", "expired", "all"];
+/**
+ * The admin status filter's own ORDER, plus its `all` sentinel -- the same
+ * one-list-not-visited exposure `ALL_TYPES` above carries, and it is now typed
+ * and guarded the same way (#907). A status added to the shared map and the
+ * table's enum, but not to this array, would silently never be offered here.
+ */
+export const ALL_STATUSES: (ChangeRequestStatus | "all")[] = [
+  "pending", "approved", "denied", "pending_execution", "cancelled", "expired", "all",
+];
 export const ALL_PRIORITIES = ["all", "low", "normal", "high", "urgent"];
 // Derived from the server's own routing table (#800) — a hand-typed copy
 // here held three names against the server's six, so half the types that
@@ -251,17 +276,10 @@ export function TypeIcon({ type }: { type: string }) {
 
 // ─── Formatters ──────────────────────────────────────────────────────────────
 
-export function formatDate(dateStr: string | Date | null | undefined) {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+/*
+ * `formatDate` lived here and is now `staffDateTimeWithYear` in
+ * `@/foundation/staffDate` (#902), with `UserBadges`' byte-identical copy.
+ */
 
 export function formatRelativeTime(dateStr: string | Date | null | undefined) {
   if (!dateStr) return "";
@@ -275,5 +293,5 @@ export function formatRelativeTime(dateStr: string | Date | null | undefined) {
   if (diffHours < 24) return `${diffHours}h ago`;
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 30) return `${diffDays}d ago`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return staffDateOnly(d);
 }

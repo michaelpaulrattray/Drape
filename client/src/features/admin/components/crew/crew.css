@@ -596,7 +596,11 @@
   height: 9px;
 }
 
-/* The rule `TableHead` draws to the right of its eyebrow. */
+/* The rule `TableHead` draws to the right of its eyebrow. It is one of five
+   declarations of the house hairline and the only one that is honest about
+   being a mimic — `docs/specs/PROMOTION_PASS_SECTION_10.md` §3 has the whole
+   population and which of the two type scales each belongs to. It cannot simply
+   BE `TableHead`: a skeleton has no eyebrow text to pass it. */
 .dp-crew__skelrule {
   flex: 1;
   height: 1px;

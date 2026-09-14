@@ -21,8 +21,9 @@
 import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { DataTable } from "@/foundation";
 import type { DataRow } from "@/foundation";
+import { staffDateTime } from "@/foundation/staffDate";
 
-import { formatDate, type OpenChangeRequestOptions } from "./moderatorConstants";
+import { type OpenChangeRequestOptions } from "./moderatorConstants";
 
 const PAGE_SIZE = 20;
 
@@ -84,7 +85,7 @@ export function FlaggedReferralsTab({
         <span key="credits">
           {item.referrerCredited || item.referredCredited ? `${item.creditsAwarded} cr` : "—"}
         </span>,
-        <span key="when">{formatDate(item.createdAt)}</span>,
+        <span key="when">{staffDateTime(item.createdAt)}</span>,
       ],
       facts: [
         {
@@ -107,8 +108,8 @@ export function FlaggedReferralsTab({
           label: "REFEREE PAID",
           value: item.referredCredited ? `${item.creditsAwarded} credits` : "not paid",
         },
-        { label: "STARTED", value: formatDate(item.createdAt) },
-        { label: "COMPLETED", value: item.completedAt ? formatDate(item.completedAt) : "—" },
+        { label: "STARTED", value: staffDateTime(item.createdAt) },
+        { label: "COMPLETED", value: item.completedAt ? staffDateTime(item.completedAt) : "—" },
       ],
       evidence: exactMatch
         ? "Both sides signed up from the same IP address within 24 hours. That is one household, one office, or one person with two accounts — the flag cannot tell them apart, which is why it is a queue and not a block."
