@@ -1,7 +1,7 @@
 {
-  "edition": 406,
-  "updatedAt": "2026-09-14T12:00:37.660Z",
-  "shift": "YOUR CANVAS QUESTION IS CLOSED THE WAY YOU HANDED IT BACK — AND THE PILE WAITING ON YOUR ONE WORD IS FIVE JOBS, NOT FOUR.\n\nTHE ONE THING THAT NEEDS YOU. Last night's card said FOUR finished jobs were stacked behind the rule about money and sign-in work. Counted again tonight, it is FIVE — the subscription fix was already in the pile and the card did not name it. That is corrected on your desk below, with all five listed. Nothing is at risk; the work simply sits, and each one drifts a little further out of step with the live code every day, which is a re-merge each before it can land. Three options and a recommendation are on the card, unchanged from last night.\n\nWHAT I DID WITH YOUR CANVAS ANSWER. You said the canvas will get a dark mode when you rebuild it, and that whether to do it now or then was my call. The answer is THEN, and nothing on your screen changed tonight — that is the point.\n\nHere is what was actually wrong, and it was not the missing dark mode. The file that holds the canvas's colours said, in writing, that the light-only palette was ON PURPOSE. So the next person to read it — a shift, or me in a month — would have seen a decision where there is a gap. Your reply is now in that file word for word, along with where it closes: your rebuild.\n\nAND THE REASON IT GAVE FOR BEING LIGHT HAD GONE STALE. It justified itself twice by saying \"the app defaults to dark\" — which stopped being true in early September when you ruled light is the default. The decision it rested on is still right and still doing its job; its reason was six days dead. Both sentences fixed, and I swept the rest of the code for the same dead reason and found no other live copy.\n\nWHY NOT JUST BUILD THE DARK CANVAS. Sixteen hand-picked greys is a design act, not a mechanical one, and a customer's artwork sitting on greys somebody guessed at 3am is worse than artwork on honest paper. It would also be thrown away at your rebuild, and until then it would quietly make that file a second dark palette competing with the real one — which is the exact bug class we have been digging out of this codebase for a fortnight. The check now refuses the day that file grows a dark block, and tells whoever hit it to put the colours in the real place instead.\n\nALSO TONIGHT. Two cards from last night's sweep (#955, #956) were sitting in the queue looking takeable while both actually depend on one of the five held jobs — a shift could have spent a night on a collision. Both are now marked blocked, in their labels and in their text, so nobody starts them by accident.\n\nAND ONE FINDING ABOUT OUR OWN TOOLING (#960, filed not fixed). The summary every shift reads at the start tells it what changed since the last shift. It picks \"the last shift\" by the name of a file, and those names have drifted into two different clocks — so twice now it has pointed a shift at the wrong predecessor and reported \"nothing changed\" when things had. It fails silently and always in the direction of \"nothing happened\", which is the worst direction for that particular sentence. Measured: 37 of 376 entries disagree about their own order, and two right now carry a stamp that would do it again.",
+  "edition": 407,
+  "updatedAt": "2026-09-14T12:58:39.299Z",
+  "shift": "NOTHING ON YOUR SCREEN CHANGED TONIGHT — I FIXED THE CREW'S OWN EYESIGHT.\n\nTHE ONE THING THAT NEEDS YOU is unchanged from last night: five finished jobs are stacked up waiting on your one word about the outside reviewer. The card on your desk lists all five, with three options and a recommendation. Nothing is at risk; they just sit, and each drifts a little further out of step with the live code every day.\n\nWHAT WAS WRONG, IN PLAIN TERMS. Every night shift starts by reading a short summary of the state of things, and one line in it says what changed since the shift before. That line could say \"nothing changed\" when things had — confidently, with no sign anything was wrong.\n\nHere is the mechanism, because it is simple and it is nasty. The summary worked out which shift came before it by reading the TIME IN A FILENAME — and those filenames are typed by hand at the end of each night. Over 377 of them they have drifted into two different clocks, plus one that matches neither. So the summary regularly picked the wrong predecessor. Worse: when the name reads as a time that has not happened yet, the question it then asks the code history can only ever come back empty. Not \"nothing changed\" — nothing CAN be returned. And that empty answer gets printed as a clean, confident \"none\".\n\nIT HAPPENED ON TONIGHT'S OWN LAUNCH, which is how I could prove it rather than argue it. My own summary said nothing had changed. Two things had.\n\nWHY IT MATTERS TO YOU. A shift that believes the tree stood still builds on a stale picture — redoes work that landed hours earlier, misses a ruling of yours that arrived overnight, or merges against a tree that has moved under it. It fails silently and always in the same direction: toward \"nothing happened\", which is the worst possible direction for that particular sentence.\n\nTHE FIX. It now uses the time the computer itself recorded when the file was written, instead of a time somebody typed at 3am. That cannot drift and cannot be in the wrong clock. The old reading is kept as a second opinion and the summary says out loud when the two disagree — it tells the shift which other entry a handoff might mean, rather than quietly picking one. And if the time it gets is somehow still in the future, it now REFUSES and says so instead of printing a false \"nothing\".\n\nWHAT I DELIBERATELY DID NOT DO, and it was the tempting fix: rename the 377 old files, or tighten the rule about how shifts name them. A naming rule is a thing a shift can get wrong again next week — and 38 of the 377 already disagree. The filesystem already knows the answer, so I used that.\n\nONE MORE THING WORTH KNOWING. That summary line has been the first thing every shift reads for a fortnight and had NO test behind it at all — it was written in a place nothing could check. It has fifteen now, and I broke the fix seven different ways to confirm each of them actually catches its own problem.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-14T11:58:55.127Z",
+      "readAt": "2026-09-14T12:58:53.791Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4941,6 +4941,13 @@
   ],
   "pipeline": [
     {
+      "id": "shift-digest-clock-960",
+      "title": "The night shifts could be told 'nothing changed' when things had — the summary each one reads now uses a clock that cannot drift",
+      "status": "merged",
+      "prNumber": 961,
+      "note": "Card #960, filed by last night's shift and closed tonight. NOTHING A CUSTOMER SEES CHANGED — this is the crew's own tooling. WHAT WAS WRONG: the summary a shift reads at launch works out which shift came before it, and it did so by reading a time typed into a filename by hand. Across 377 entries those names have drifted into two clocks plus one that matches neither, so it picked the wrong predecessor at 38 positions — and when the name reads as a time that has not happened yet, the question it asks the code history can only come back empty, printed as a confident 'none'. It fired on this shift's own launch: my summary said nothing had changed and two things had. THE FIX: it reads the time the computer recorded when the file was written, which cannot drift and cannot be in the wrong clock; it keeps the old reading as a second opinion and says out loud when they disagree instead of quietly picking; and a time in the future is now REFUSED rather than printed as 'nothing'. NOT DONE ON PURPOSE: renaming the 377 old files or tightening the naming rule — a convention is a thing a shift can get wrong again next week. THE PART WORTH KNOWING: this line had no test behind it at all, because it lived where nothing could check it. It has fifteen now, and the fix was broken seven ways to prove each one catches its own problem."
+    },
+    {
       "id": "canvas-light-gap-916",
       "title": "Your boards still ignore the theme — but the file no longer claims that is on purpose, and it now says where it ends: your rebuild",
       "status": "merged",
@@ -6318,16 +6325,30 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0914m-foreman",
+      "id": "queue-shape-0914n-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 48 open, one closed tonight and none filed; NEXT UP is empty, and this was the one takeable card on the board",
+      "detail": "48 open, one fewer than last night — #960 closed, nothing new filed, which is the honest direction on a night whose job found no new faults. 27 cards have had no comment, close or commit for seven days, unchanged for the fourth night; the oldest is #28 at 20 days. The category order was re-read at the code rather than off card titles: Bugs — all four are either finished and held on your word (#804, #940) or blocked on one of the held jobs (#923, #955); Small fixes and Security — empty; Process — three are held PRs, one is the Retro's own, and #960 was the takeable one; Performance — the Machinist's programme; Housekeeping — the Janitor's clock does not fire until tomorrow; Casting upkeep — seven, none small. Worth saying plainly: the raw 48 badly overstates what a shift can pick up. Nothing waits on you but the five held jobs."
+    },
+    {
+      "id": "fable-reviewer-no-verdict-884-0914d",
+      "severity": "warning",
+      "state": "open",
+      "title": "The outside reviewer failed again tonight — the 31st in a row, identical to the other thirty, and your 'wait' stands",
+      "detail": "Tonight's job touched no money and no sign-in code, so it merged on our own checks as your rule allows — but the reviewer still ran and still died the same way: it reached the point of asking the model, failed in half a second, used nothing and spent nothing. Read out of the run's own log rather than off the red tick, which is the only reading that can tell this apart from a genuine bad verdict. Nothing here is new and nothing was re-diagnosed: you closed #884 saying the only unread thing left is your own Fable allowance. The five finished jobs behind it are on your desk."
+    },
+    {
+      "id": "queue-shape-0914m-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 49 open, one closed tonight and one filed; NEXT UP is empty, and almost nothing in it is actually takeable",
       "detail": "49 open, level with last night — one closed (#916, on your canvas reply) and one filed (#960, about our own shift tooling). 27 cards have had no comment, close, reopen or commit for seven days, unchanged from last night; the oldest untouched is #28 at 20 days. None are urgent and NEXT UP is empty.\n\n⚠ WORTH KNOWING RATHER THAN THE RAW NUMBER: tonight the queue read as busy and was nearly empty of work anyone could start. Of the bug cards, three are finished and sitting in the held pile and one is blocked on the reviewer. Two more (#955, #956) turned out to depend on a held job — they are now marked blocked so no shift starts them by accident. Four of the housekeeping cards are reserved for the cleanup patrol, which is next due tomorrow, and two more ask for a decision rather than a fix. Your one word on the held pile is what actually moves this list."
     },
     {
       "id": "fable-reviewer-no-verdict-884-0914c",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The outside reviewer failed again tonight, the same way, and your 'wait' stands",
       "detail": "Tonight's job was not money or sign-in work, so it merged on our own checks as the rule allows — but the reviewer still ran and still failed, identically to every other one: it reached the point of starting, died on its first question in 0.5 seconds, and spent nothing. Read at the run's own record rather than at the red tick, which is the only way to tell a failure from a verdict. You have said the reviewer card is not relevant and it is closed; I did not re-diagnose it. Nothing new here — it is recorded so the run of failures stays countable."
     },
@@ -6760,7 +6781,7 @@
     187
   ],
   "nextUp": {
-    "readAt": "2026-09-14T11:58:55.126Z",
+    "readAt": "2026-09-14T12:58:53.791Z",
     "items": []
   }
 }
