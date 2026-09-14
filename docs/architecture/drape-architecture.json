@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1d2edc4cb225b52b"
+    "sourceFingerprint": "e17138ed9f229aa1"
   },
   "domains": [
     {
@@ -13630,6 +13630,10 @@
     {
       "id": "test:server/sessionPersistence.test.ts",
       "path": "server/sessionPersistence.test.ts"
+    },
+    {
+      "id": "test:server/sharpTestCeiling.test.ts",
+      "path": "server/sharpTestCeiling.test.ts"
     },
     {
       "id": "test:server/shiftDigest.test.ts",
