@@ -12,7 +12,7 @@ export const moderatorExportsRouter = router({
   exportAuditLogsCsv: moderatorProcedure
     .input(z.object({
       severity: z.enum(["info", "warning", "critical", "all"]).optional().default("all"),
-      actionCategory: z.enum(["billing", "model", "security", "abuse", "all"]).optional().default("all"),
+      actionCategory: z.enum(["billing", "model", "security", "moderator", "abuse", "all"]).optional().default("all"),
       userId: z.number().optional(),
       startDate: z.string().optional(),
       endDate: z.string().optional(),

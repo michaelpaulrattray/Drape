@@ -332,6 +332,31 @@ export const ACTION_CATEGORIES: Record<string, AuditAction[]> = {
     AUDIT_ACTIONS.EMAIL_VERIFIED,
     AUDIT_ACTIONS.EMAIL_VERIFICATION_FAILED,
   ],
+  /*
+    HIS RULING, Crew reply #187, 2026-09-14, verbatim and entire: *"Give
+    moderator actions their own category"* (#938).
+
+    The three `moderator.*` actions had no bucket at all, so choosing ANY
+    category — Abuse included — dropped them on both panels, while the
+    moderator console's own chip rule labelled them `abuse`. One panel told a
+    moderator the row was abuse and the Abuse filter was the one thing that
+    would never show it.
+
+    ⚠ THE OTHER REPAIR WAS TO DELETE THAT BRANCH, AND IT WAS NOT TAKEN. It
+    would have made the two copies agree and left the rows unfilterable, which
+    is the shape the ABUSE_GLOBAL_ATTACK comment below exists to refuse. A
+    change request is not abuse, and #939 deliberately stopped here rather than
+    inventing a category: a new one is a staff-visible control, so it was his.
+
+    ⚠ A NEW BUCKET IS UNREACHABLE UNTIL THE ROUTE ENUMS OFFER IT — three files,
+    and `server/auditLogCategoryAgreement.test.ts` has an arm pointed at
+    exactly that landmine.
+  */
+  moderator: [
+    AUDIT_ACTIONS.MODERATOR_ESCALATION,
+    AUDIT_ACTIONS.CHANGE_REQUEST_CREATED,
+    AUDIT_ACTIONS.CHANGE_REQUEST_CANCELLED,
+  ],
   abuse: [
     AUDIT_ACTIONS.ABUSE_DETECTED,
     AUDIT_ACTIONS.ABUSE_PATTERN_CREDITS,
@@ -358,7 +383,7 @@ export interface FilteredAuditLogsOptions {
   limit: number;
   offset: number;
   severity?: "info" | "warning" | "critical";
-  actionCategory?: "billing" | "model" | "security" | "abuse";
+  actionCategory?: "billing" | "model" | "security" | "moderator" | "abuse";
   userId?: number;
   startDate?: Date;
   endDate?: Date;

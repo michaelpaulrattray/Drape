@@ -24,6 +24,10 @@ export const CATEGORY_COLORS = {
   billing: "bg-emerald-50 text-emerald-700",
   model: "bg-purple-50 text-purple-700",
   security: "bg-orange-50 text-orange-700",
+  /* #938 — deliberately the quiet one. A change request is staff housekeeping,
+     not an alarm, and giving it a warning colour would say the opposite of
+     what the founder's ruling separated it from. */
+  moderator: "bg-slate-100 text-slate-700",
   abuse: "bg-red-50 text-red-700",
 } as const;
 
@@ -58,6 +62,7 @@ export function getActionCategory(action: string): keyof typeof CATEGORY_COLORS 
   if (action.startsWith("subscription.") || action.startsWith("credits.")) return "billing";
   if (action.startsWith("model.")) return "model";
   if (action.startsWith("auth.") || action.startsWith("security.")) return "security";
+  if (action.startsWith("moderator.")) return "moderator";
   if (action.startsWith("abuse.")) return "abuse";
   return null;
 }

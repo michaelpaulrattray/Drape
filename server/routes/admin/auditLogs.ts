@@ -8,7 +8,7 @@ export const auditLogsRouter = router({
       limit: z.number().min(1).max(100).optional().default(20),
       offset: z.number().min(0).optional().default(0),
       severity: z.enum(["info", "warning", "critical", "all"]).optional().default("all"),
-      actionCategory: z.enum(["billing", "model", "security", "abuse", "all"]).optional().default("all"),
+      actionCategory: z.enum(["billing", "model", "security", "moderator", "abuse", "all"]).optional().default("all"),
       userId: z.number().optional(),
       startDate: z.string().optional(),
       endDate: z.string().optional(),
@@ -55,7 +55,7 @@ export const auditLogsRouter = router({
   exportAuditLogs: adminProcedure
     .input(z.object({
       severity: z.enum(["info", "warning", "critical", "all"]).optional().default("all"),
-      actionCategory: z.enum(["billing", "model", "security", "abuse", "all"]).optional().default("all"),
+      actionCategory: z.enum(["billing", "model", "security", "moderator", "abuse", "all"]).optional().default("all"),
       userId: z.number().optional(),
       startDate: z.string().optional(),
       endDate: z.string().optional(),

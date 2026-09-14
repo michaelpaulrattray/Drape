@@ -193,6 +193,7 @@ export function AuditFiltersBar({
           { value: "billing", label: "Billing" },
           { value: "model", label: "Model" },
           { value: "security", label: "Security" },
+          { value: "moderator", label: "Moderator" },
           { value: "abuse", label: "Abuse" },
         ]}
       />
