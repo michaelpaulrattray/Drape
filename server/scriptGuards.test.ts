@@ -200,6 +200,14 @@ describe("the verdict is the runner's exit status on the pushed tree", () => {
       a working tree"*, throws into the swallowing `catch`, and leaves the
       directory. The registration was gone either way.
 
+      ⚠ That last sentence is the SYMPTOM read correctly and the CAUSE read
+      short (#969, driven on git 2.55): a tree whose directory AND whose own
+      `.git` file are both present survives a prune. Prune resolves the
+      registration through that `.git` pointer and collects it when the
+      pointer does not resolve — the standing directory does not protect it.
+      Nothing here changes; the numbers above were measured at the outcome,
+      which is what this arm asserts.
+
       So the two properties genuinely come apart, and only one of them is this
       guard's business: a leaked registration breaks the next run, a leftover
       temp directory is litter. The litter is real — **7.8 GB** across 32
