@@ -488,7 +488,7 @@ button.dp-invite:focus-visible .dp-memberstack__add {
 
 /*
   ⚠ **THE TWO RULES BELOW ARE SCOPED TO THIS MENU ON PURPOSE.** `.dp-menuitem`
-  and `.dp-menugroup` are the row grammar SHARED with `LobbyUtilityMenu` (00b's
+  and `.dp-menu__group` are the row grammar SHARED with `LobbyUtilityMenu` (00b's
   whole point — the two shipped the same hover twice and drifted). Section 04's
   departures belong to the account menu alone: the
   utility menu is inset by its own 6px shell padding, so its rows keep their
@@ -510,7 +510,7 @@ button.dp-invite:focus-visible .dp-memberstack__add {
   border-radius: 0;
 }
 
-.dp-account-menu .dp-menugroup {
+.dp-account-menu .dp-menu__group {
   padding: 9px 13px 5px;
   border-top: 1px solid var(--fillStrong);
 }
@@ -2194,17 +2194,21 @@ a.dp-segmented__seg {
   ⚠ THE HOUSE HAIRLINE, AND IT IS NOT THE ONLY ONE IN THE TREE (section 10's
   promotion pass, `docs/specs/PROMOTION_PASS_SECTION_10.md` §3).
 
-  "A label, then a rule that runs through the rest of the row" is drawn FIVE
-  times: here (27 consumer files via `TableHead`), `.dp-menugroup__rule` a few
-  hundred lines down THIS FILE, `.dpc-deck__rule` and `.dpc-hero__receiptrule`
-  in `features/castingV2/castingV2.css`, and `.dp-crew__skelrule`, whose own
-  comment says it is mimicking this one.
+  "A label, then a rule that runs through the rest of the row" was drawn FIVE
+  times when the pass measured it: here (27 consumer files via `TableHead`),
+  `.dp-menugroup__rule` a few hundred lines down THIS FILE, `.dpc-deck__rule`
+  and `.dpc-hero__receiptrule` in `features/castingV2/castingV2.css`, and
+  `.dp-crew__skelrule`, whose own comment says it is mimicking this one.
 
-  ⚠ **They are not one device at five addresses — they are TWO type scales**,
+  ⚠ **FOUR SINCE #928** — the 8.5px pair was folded into `.dp-eyebrow__rule`,
+  which is what that card was for. `.dpc-deck__rule` is gone and the casting
+  hero takes `foundation/Eyebrow`.
+
+  ⚠ **They were never one device at five addresses — they are TWO type scales**,
   and that is what the pass had to establish before anything could be folded.
-  This one and the crew skeleton are the 10.5px `--meta` eyebrow.
-  `.dp-menugroup__label` and `.dpc-deck__eyebrow` are the 8.5px `--faint` one,
-  byte-identical to each other. The casting receipt is neither — `400` and not
+  This one and the crew skeleton are the 10.5px `--meta` eyebrow. `.dp-eyebrow`
+  is the 8.5px `--faint` one — the two spellings that used to be byte-identical
+  to each other are now one part. The casting receipt is neither — `400` and not
   uppercase, because it carries machine values rather than a label.
 
   So this is the winner by rule 6 within ITS scale only, and nothing is folded
@@ -2445,47 +2449,65 @@ a.dp-segmented__seg {
 .dp-menuitem--stub:hover svg { color: var(--muted); }
 
 /*
-  The group heading. It was two bare dividers with no label, which reads as an
-  accident rather than a section. Mono, because the eyebrow grammar everywhere
-  else in the product is mono (handoff 10 → Section header).
+  THE RULED EYEBROW (#928) — a short mono label, a gap, then a hairline that
+  finishes the row. Mono, because the eyebrow grammar everywhere else in the
+  product is mono (handoff 10 → Section header). Its component is
+  `foundation/Eyebrow.tsx`, and its three consumers are `LobbyUtilityMenu`,
+  `UserCard` and the casting hero's `HeroDeck`.
+
+  ⚠ IT WAS `.dp-menugroup` UNTIL #928, AND THE CASTING DECK WAS DRAWING THE
+  SAME THING UNDER ITS OWN SPELLING — byte for byte, with neither surface
+  knowing (`docs/specs/PROMOTION_PASS_SECTION_10.md` §3). `.dpc-deck__eyebrow` +
+  `.dpc-deck__rule` declared the same `500 8.5px` mono, the same `.13em`, the
+  same `--faint`, the same 8px gap and the same hairline; two of the three call
+  sites wrote the elements out by hand and the third had invented a second
+  vocabulary for them.
+
+  The rename happened ON THE WAY IN rather than after, which is the pass's rule
+  and the only moment it is cheap: the casting hero's eyebrow is not a "menu
+  group", so folding casting into `.dp-menugroup__*` would have carried the
+  menu's vocabulary onto it — the naming rule running the other way.
+
+  ⚠ THE PADDING IS NOT PART OF THE DEVICE AND NO LONGER LIVES HERE. It was the
+  menu's own spacing baked into the shared drawing, and the deck — spaced by
+  `.dpc-deck__brief` — wanted none of it. That is precisely how a second context
+  ends up writing its own copy. Position is `.dp-menu__group` below, applied by
+  the two menu call sites; the deck passes no position class at all.
 */
-.dp-menugroup {
+.dp-eyebrow {
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  padding: var(--s-4) var(--s-5) var(--s-2);
+  /*
+    The deck set this on its container while the two menus typed their caps into
+    the markup. Carried here because it is a no-op for text that is already
+    capitals — all three surfaces are unchanged — and because a call site that
+    passes sentence case should get the eyebrow, not a different look.
+  */
+  text-transform: uppercase;
 }
 
-.dp-menugroup__label {
+.dp-eyebrow__label {
   flex: none;
   font: 500 8.5px var(--font-mono);
   letter-spacing: 0.13em;
   color: var(--faint);
 }
 
-/*
-  ⚠ THIS TRIO IS THE CASTING DECK'S EYEBROW, TO THE BYTE — and neither surface
-  knew (`docs/specs/PROMOTION_PASS_SECTION_10.md` §3).
-
-  `.dpc-deck__eyebrow` + `.dpc-deck__rule` declare the same `500 8.5px` mono,
-  the same `.13em`, the same `--faint`, the same 8px gap and the same hairline.
-  There are THREE real call sites for one drawing — `LobbyUtilityMenu`,
-  `UserCard` and `HeroDeck` — and no component anywhere: the first two write the
-  three elements out by hand, and casting wrote its own classes.
-
-  That clears the promotion pass's bar of two with a file to spare. It is carded
-  rather than taken in that pass, because the component has to be RENAMED on the
-  way in — the casting hero's eyebrow is not a "menu group", and pointing it at
-  this class would carry the menu's vocabulary onto it.
-
-  The `padding` on `.dp-menugroup` is the one thing that does NOT belong to the
-  device: the deck's eyebrow is spaced by `.dpc-deck__brief` instead. It goes to
-  the call sites when this is folded, not into the shared part.
-*/
-.dp-menugroup__rule {
+.dp-eyebrow__rule {
   flex: 1;
   height: 1px;
   background: var(--rule);
+}
+
+/*
+  WHERE THE MENU PUTS IT — position, not device (#928). These are the two
+  paddings `.dp-menugroup` and `.dp-account-menu .dp-menugroup` carried before
+  the promotion, at the same specificity relationship, so the contextual
+  override still wins for the same reason it always did.
+*/
+.dp-menu__group {
+  padding: var(--s-4) var(--s-5) var(--s-2);
 }
 
 /* Omitted at zero by the component — this never renders `(0)`. */

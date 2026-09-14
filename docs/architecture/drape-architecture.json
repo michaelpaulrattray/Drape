@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b0755047c347c404"
+    "sourceFingerprint": "61e462a197aae34a"
   },
   "domains": [
     {
@@ -63,7 +63,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 25
+      "moduleCount": 26
     },
     {
       "id": "domain:home",
@@ -2602,6 +2602,12 @@
     {
       "id": "module:client/src/foundation/DestructiveConfirm.tsx",
       "path": "client/src/foundation/DestructiveConfirm.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/Eyebrow.tsx",
+      "path": "client/src/foundation/Eyebrow.tsx",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -14537,11 +14543,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/adminConstants.ts",
-      "to": "module:client/src/foundation/staffDate.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/admin/AuditActionModals.tsx",
       "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
@@ -17077,6 +17078,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/HeroDeck.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "kind": "imports"
@@ -19307,6 +19313,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/foundation/Eyebrow.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/AppShell.tsx",
       "kind": "imports"
@@ -19344,6 +19355,11 @@
     {
       "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/DestructiveConfirm.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/Eyebrow.tsx",
       "kind": "imports"
     },
     {

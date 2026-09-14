@@ -80,7 +80,7 @@
  *    both labels name a place.
  */
 import { useLocation } from 'wouter';
-import { Icon, P, WORKSPACE_ROLE_LABEL } from '@/foundation';
+import { Eyebrow, Icon, P, WORKSPACE_ROLE_LABEL } from '@/foundation';
 import { showsMenuCount } from '@/foundation/menuCount';
 import { isStaffRole } from '@/features/staff/staffRole';
 
@@ -172,10 +172,7 @@ export function UserCard({
 
       {isModerator && (
         <>
-          <div className="dp-menugroup">
-            <span className="dp-menugroup__label">STAFF</span>
-            <span className="dp-menugroup__rule" aria-hidden="true" />
-          </div>
+          <Eyebrow label="STAFF" className="dp-menu__group" />
           {isAdmin && (
             <UserMenuItem
               glyph={P.grid}
