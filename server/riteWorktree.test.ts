@@ -150,6 +150,16 @@ describe("inWorktreeOf leaves no directory behind on the failure shape #654 meas
         because the tree is inside. Deleting the admin entry from under it
         puts git in exactly that state deterministically, instead of hoping
         for the 6.7%.
+
+        ⚠ And deleting the admin entry is the RIGHT stand-in for a reason
+        this comment did not have when it was written (#969, driven on git
+        2.55): prune does not collect a registration merely because a
+        directory is still standing — a tree with its directory and its own
+        `.git` file both present survives one. Prune resolves the
+        registration through that `.git` pointer and collects it when the
+        pointer does not resolve, which is the same end state this arm
+        creates directly. The arm is unchanged; only the reason it is
+        faithful is now written down.
       */
       const admin = readFileSync(path.join(tree, ".git"), "utf8").replace(/^gitdir:\s*/, "").trim();
       expect(admin.length, "the tree must carry a gitdir pointer to unregister").toBeGreaterThan(0);
