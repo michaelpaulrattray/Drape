@@ -75,8 +75,65 @@ function tsxAsync(file: string, args: string[] = [], cwd = REPO) {
 }
 
 /**
- * Every `.mts` under `scripts/`, excluding disposables (a shift's own scratch
- * files, never tracked).
+ * The tracked `.mts` files under `scripts/`, as a set of paths relative to it.
+ *
+ * ⚠ `git ls-files`, NOT `readdirSync` — AND THAT IS THE WHOLE OF #979. The walk
+ * below used to admit everything on the disk and then drop a shift's scratch by
+ * FILENAME: `name.startsWith("_") && name.includes("disposable")`. Measured on a
+ * real shift tree the morning the card was worked: 998 `.mts` under `scripts/`,
+ * 522 of them tracked, and **124 of the 476 untracked ones do not start with an
+ * underscore** — three distinct naming shapes are in live use and only one of
+ * them carries it. Every one of those 124 was swept, and the suite was green
+ * only because none of them happened to carry the idiom. That is luck, not a
+ * guard, and the next scratch file named without the underscore is a coin toss.
+ *
+ * ⚠ THE 124 ARE DELIBERATELY NOT NAMED HERE. `disposable-age`'s reader matches
+ * on BASENAME, so a live scratch filename quoted in a tracked file's prose pins
+ * that file against the age sweep for good — which is the defect #981 was
+ * opened to undo, committed by the docblocks explaining it. The count is the
+ * evidence; the names would be a side effect.
+ *
+ * The repository already knows which files it contains. A guard asking a
+ * filename to stand in for that is a second list shadowing `git ls-files` —
+ * working law 4 — and the house has already written down why the decision
+ * decays (`sourceSweepSuites.ts`: *"an exception keyed on a FILENAME is the
+ * thing that stops a guard watching the moment somebody fixes one file"*).
+ *
+ * ⚠ IT REFUSES RATHER THAN RETURNING A SHORT LIST, and that is the whole safety
+ * of it. The arm that consumes this asserts an EMPTY offender list, so a filter
+ * that failed open — no git, a wrong cwd, a swallowed throw — would not make
+ * this suite noisy, it would make it BLIND, and a blind sweep passes. That is
+ * invariant 7's shape and it is the direction this file cannot afford to fail
+ * in. Both refusals are the ones #976 wrote for the same reason.
+ *
+ * Paths are returned WITH `/` separators and WITHOUT the `scripts/` prefix, so
+ * they are the same `rel` the walk below produces on either platform.
+ */
+function trackedScriptModules(): Set<string> {
+  const listing = runHook("git", ["ls-files", "-z", "--", "scripts"], { cwd: REPO });
+  if (listing.status !== 0) {
+    throw new Error(
+      `git ls-files failed (status ${listing.status}) — the swept population cannot be `
+        + `decided, and an undecided population would silently pass the offender arm.\n${listing.stderr}`,
+    );
+  }
+  const names = listing.stdout
+    .split("\0")
+    .filter((name) => name.endsWith(".mts"))
+    .map((name) => name.slice("scripts/".length));
+  if (names.length === 0) {
+    throw new Error(
+      "git ls-files returned no .mts under scripts/ — refusing rather than sweeping an "
+        + "empty population, which would pass the offender arm below.",
+    );
+  }
+  return new Set(names);
+}
+
+const TRACKED = trackedScriptModules();
+
+/**
+ * Every `.mts` the REPOSITORY CONTAINS under `scripts/`.
  *
  * ⚠ IT USED TO ADMIT ONLY FILES DECLARING `const invokedDirectly`, WHICH KEYED
  * THE POPULATION TO A NAME RATHER THAN TO THE IDIOM (PR #672 review, round 2).
@@ -87,13 +144,17 @@ function tsxAsync(file: string, args: string[] = [], cwd = REPO) {
  * to reuse the retired variable name. The list-stops-being-the-list class in
  * miniature.
  *
- * So the walk admits everything and `offencesIn` decides. That is safe rather
- * than merely wider: measured at the tree, NO `.mts` under `scripts/` reads
- * `process.argv[1]` outside a comment, so a file that wants argv has the
+ * So the walk admits every tracked file and `offencesIn` decides. That is safe
+ * rather than merely wider: measured at the tree, NO `.mts` under `scripts/`
+ * reads `process.argv[1]` outside a comment, so a file that wants argv has the
  * strict parser and a file that hand-rolls this question is an offender by
  * construction.
+ *
+ * ⚠ `tracked` IS A PARAMETER, NOT A CLOSED-OVER CONSTANT, for one reason: an
+ * arm below narrows it deliberately to prove the filter is CONSULTED. A filter
+ * nothing can be seen to change is invariant 7's shape (#976's model).
  */
-function scriptModules(): string[] {
+function scriptModules(tracked: Set<string> = TRACKED): string[] {
   const found: string[] = [];
   const walk = (dir: string, rel: string) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -103,8 +164,8 @@ function scriptModules(): string[] {
         continue;
       }
       if (!entry.name.endsWith(".mts")) continue;
-      /* Disposables are a shift's own scratch files and are never tracked. */
-      if (entry.name.startsWith("_") && entry.name.includes("disposable")) continue;
+      /* The repository's own answer to "is this file ours?" — see above. */
+      if (!tracked.has(childRel)) continue;
       /* ⚠ `readListedSource`, NOT a bare read — this walk LISTS then READS,
          and this working tree is shared by several sessions and carries
          hundreds of untracked disposables (#8). A file that leaves between the
@@ -120,20 +181,6 @@ function scriptModules(): string[] {
   return found.sort();
 }
 
-/**
- * The offences one module's source carries, if any.
- *
- * ⚠ FACTORED OUT SO A FIXTURE CAN DRIVE THE REAL DETECTOR. A positive control
- * that matches the pattern against an inline string proves the REGEX and not
- * the pipeline: the comment-strip below could stop reaching a declaration and
- * the arm would report a clean tree forever (working law 2, PR #672 review).
- * Everything after the read goes through here, so the control and the walk
- * cannot diverge.
- *
- * Comments are stripped first because several of these files deliberately
- * QUOTE the retired idiom to explain what changed — quoting a defect must
- * never read as committing it.
- */
 /**
  * The modules that actually carry a self-invocation check.
  *
@@ -203,7 +250,7 @@ describe("the self-invocation check", () => {
     const modules = scriptModules();
     /* A floor, because a walk that silently returned nothing would satisfy
        `offenders === []` forever. It is well above the nine files that carry
-       the check, since the population is now the whole directory. */
+       the check, since the population is now the whole tracked directory. */
     expect(modules.length, "the walk must actually be reading scripts/").toBeGreaterThan(40);
 
     const offenders: string[] = [];
@@ -239,6 +286,57 @@ describe("the self-invocation check", () => {
     expect(offencesIn("clean.mts", "const invokedDirectly = import.meta.main;\n")).toEqual([]);
     expect(
       offencesIn("quoting.mts", "/* it used to read process.argv[1] here */\nconst invokedDirectly = import.meta.main;\n"),
+    ).toEqual([]);
+  });
+
+  /*
+    THE FILTER'S OWN POSITIVE CONTROL (#979, working law 2). The offender arm
+    above asserts an EMPTY list, so a filter that silently dropped everything —
+    or one that was never consulted at all — reads as a pass there. This is the
+    only arm that can tell those apart, and it fires on a clean CI checkout
+    exactly as it does on a shift's dirty tree, which the arm below it cannot.
+
+    The subject is `disposable-age.mts`: tracked, and named here safely because
+    it is a tracked TOOL rather than a piece of scratch — the pinning hazard the
+    population docblock warns about applies to untracked scratch basenames only.
+  */
+  it("the tracked listing is CONSULTED — narrowing it narrows the population", () => {
+    const wide = scriptModules();
+    const narrow = scriptModules(new Set(["disposable-age.mts"]));
+
+    expect(wide.length, "the wide walk should read the whole tracked tree").toBeGreaterThan(100);
+    expect(
+      narrow,
+      "narrowing the tracked listing to one file changed nothing — the filter is not wired in",
+    ).toEqual(["disposable-age.mts"]);
+  });
+
+  /*
+    ⚠ ITS LIMIT IS STATED RATHER THAN DISCOVERED, and it is the same limit
+    #976's twin carries: on a clean checkout git reports no untracked files and
+    this arm is VACUOUS — which is precisely the state CI runs in, and precisely
+    why #979's hole was invisible to the gate for as long as it existed. It has
+    teeth only on a shift's own tree, where the population it excludes was 476
+    files the morning it was written. The arm above is the one that holds
+    everywhere; this one is the direct statement of the defect.
+  */
+  it("reads nothing git calls untracked — the #979 hole, stated directly", () => {
+    const listing = runHook("git", ["ls-files", "--others", "--exclude-standard", "-z", "--", "scripts"], {
+      cwd: REPO,
+    });
+    expect(listing.status, `git ls-files --others failed:\n${listing.stderr}`).toBe(0);
+
+    const untracked = new Set(
+      listing.stdout
+        .split("\0")
+        .filter((name) => name.endsWith(".mts"))
+        .map((name) => name.slice("scripts/".length)),
+    );
+    const sweptAnyway = scriptModules().filter((rel) => untracked.has(rel));
+
+    expect(
+      sweptAnyway,
+      `the walk read files the repository does not contain:\n${sweptAnyway.join("\n")}`,
     ).toEqual([]);
   });
 

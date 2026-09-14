@@ -850,12 +850,51 @@ function productionUrl(): string | undefined {
   `scripts/lib/scriptGuards.mts` is the owner; `server/scriptGuards.test.ts`
   the arms. Seconds, like the atlas and capability checks.
 */
+/*
+  ⚠ AND THE REFUSAL NAMES WHAT IT CAN READ, NEVER A CULPRIT IT GUESSED (#967).
+
+  This line used to end `repair: fix the named script in the commit`, which
+  asserts a cause the rite cannot determine. TWICE in twenty-four hours it was
+  wrong, from two unrelated causes, and both times it sent a shift hunting a
+  broken disposable that did not exist:
+
+    · #943 (2026-09-14, edition 400) — `selfInvocationCheck`'s import arm
+      crossed its 30 s cap under the rite's own concurrent load. The card's own
+      words: *"There is no named script to fix."*
+    · #967 (2026-09-14, edition 410) — the one failure of the run was
+      `server/scriptGuards.test.ts` itself, whose arms make real worktrees; one
+      could not be made (`fatal: not a git repository: …/.git/worktrees/tree1`).
+      The same rite, re-run unchanged on the same commit, went green.
+
+  ⚠ **THE RITE CANNOT TELL THESE FROM A REAL BREACH, AND THAT IS NOT FIXABLE
+  HERE.** Both arrive as a vitest exit of 1 naming a test file, which is also
+  exactly how a disposable breaching `scriptExitDiscipline` arrives. So the
+  repair is not a cleverer classifier — it is to stop claiming. The refusal is
+  UNCHANGED (invariant 7: blind refuses); only the sentence changes, from one
+  road asserted to two roads named with the evidence between them.
+
+  The one state that IS mechanically distinguishable gets its own refusal above
+  it: a worktree that could not be made never handed a suite a tree, so nothing
+  in the commit is implicated and the rite now says so instead of dying on an
+  uncaught stack trace with no receipt line at all.
+*/
 {
   const verdict = runScriptGuardsOnCommit(path.resolve(import.meta.dirname, ".."), sha);
+  if (verdict.couldNotRun !== undefined) {
+    die(`the script guards could not be RUN on ${shortSha} — the rite is blind, so the push does not fire.\n`
+      + verdict.couldNotRun.split("\n").map((line) => `    ${line}`).join("\n")
+      + "\n  NOTHING IN THE COMMIT IS IMPLICATED: no suite was ever handed a tree."
+      + "\n  repair: re-run the rite unchanged. A refusal that repeats on the same commit is a real fault in the machine, not a stumble.");
+  }
   if (!verdict.ok) {
-    die(`the script guards are RED on ${shortSha}, the tree being pushed — the push does not fire.\n`
+    die(`the script guards did not PASS on ${shortSha}, the tree being pushed — the push does not fire.\n`
       + verdict.printed.split("\n").map((line) => `    ${line}`).join("\n")
-      + "\n  repair: fix the named script in the commit (the shape is scripts/SKELETON-disposable.mts), commit, re-run");
+      + "\n  ⚠ this is ONE OF TWO THINGS and the rite cannot tell them apart — the lines above can:"
+      + "\n    · a script in the commit breached a contract — fix the named script"
+      + " (the shape is scripts/SKELETON-disposable.mts), commit, re-run;"
+      + "\n    · a guard suite failed on the machine rather than on the commit — a timeout under load,"
+      + " a worktree it could not make. Nothing in the commit is wrong. Re-run the rite unchanged;"
+      + " a refusal that repeats on the same commit is the first kind.");
   }
   say(`  script guards: ok (${verdict.suites.length} suites on ${shortSha})`);
 }
@@ -885,6 +924,15 @@ function productionUrl(): string | undefined {
 */
 {
   const verdict = runTypecheckOnCommit(path.resolve(import.meta.dirname, ".."), sha);
+  /* #967's sibling, swept rather than observed: this step reaches the same
+     `inWorktreeOf` as the script guards below, so it can be blind the same way.
+     A blind step names the machine and clears the commit. */
+  if (verdict.couldNotRun !== undefined) {
+    die(`\`pnpm check\` could not be RUN on ${shortSha} — the rite is blind, so the push does not fire.\n`
+      + verdict.couldNotRun.split("\n").map((line) => `    ${line}`).join("\n")
+      + "\n  NOTHING IN THE COMMIT IS IMPLICATED: the compiler never saw it."
+      + "\n  repair: re-run the rite unchanged. A refusal that repeats on the same commit is a real fault in the machine, not a stumble.");
+  }
   if (!verdict.ok) {
     die(`\`pnpm check\` is RED on ${shortSha}, the tree being pushed — the push does not fire.\n`
       + verdict.printed.split("\n").map((line) => `    ${line}`).join("\n")

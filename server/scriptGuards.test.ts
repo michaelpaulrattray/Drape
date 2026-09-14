@@ -6,6 +6,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { grepAtCommit, listScriptGuardSuites, ORIGIN_SUITE, PUSH_PATH_SUITES, runScriptGuardsOnCommit } from "../scripts/lib/scriptGuards.mts";
+import { gitTreeReader } from "../scripts/lib/pushPaths.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 /* This suite drives a real child process, so it declares the class's timeout
@@ -199,6 +200,14 @@ describe("the verdict is the runner's exit status on the pushed tree", () => {
       a working tree"*, throws into the swallowing `catch`, and leaves the
       directory. The registration was gone either way.
 
+      ⚠ That last sentence is the SYMPTOM read correctly and the CAUSE read
+      short (#969, driven on git 2.55): a tree whose directory AND whose own
+      `.git` file are both present survives a prune. Prune resolves the
+      registration through that `.git` pointer and collects it when the
+      pointer does not resolve — the standing directory does not protect it.
+      Nothing here changes; the numbers above were measured at the outcome,
+      which is what this arm asserts.
+
       So the two properties genuinely come apart, and only one of them is this
       guard's business: a leaked registration breaks the next run, a leftover
       temp directory is litter. The litter is real — **7.8 GB** across 32
@@ -223,9 +232,91 @@ describe("the verdict is the runner's exit status on the pushed tree", () => {
     */
   }, 60_000);
 
-  it("throws when the commit cannot be checked out — blind refuses, never allows", () => {
-    expect(() => runScriptGuardsOnCommit(ROOT, "no-such-commit-0000", {
+  /*
+    ⚠ THIS ARM USED TO ASSERT A THROW, AND #967 MOVED THE CONTRACT UNDER IT.
+
+    The property it was written for is unchanged and is asserted below: a run
+    that could not be made must REFUSE, never allow. What changed is the shape
+    the refusal arrives in — a verdict the rite can read and narrate, instead
+    of an exception that reached the rite's top level, ended the process on a
+    raw stack trace, and printed no refusal line into the receipt at all.
+  */
+  it("a commit that cannot be checked out REFUSES, and says the commit is not the culprit", () => {
+    const verdict = runScriptGuardsOnCommit(ROOT, "no-such-commit-0000", {
       suites: [ORIGIN_SUITE], vitest: () => ({ status: 0, output: "" }),
-    })).toThrow();
+    });
+    /* The load-bearing half, and the one the old `toThrow()` was really for:
+       a blind run is NOT a pass, whatever the stubbed runner said. */
+    expect(verdict.ok, "blind refuses, never allows").toBe(false);
+    expect(verdict.couldNotRun, "the verdict must SAY it could not run").toBeTruthy();
+    expect(verdict.couldNotRun).toMatch(/no-such-commit-0000|invalid reference|not a valid object/i);
+  });
+
+  it("POSITIVE CONTROL — a real finding is NOT dressed as 'could not run'", () => {
+    /* Without this arm the field above could be set on every red and the rite
+       would narrate every breach as a machine stumble — which is #967's own
+       defect pointing the other way, and the more dangerous direction: it
+       would tell a shift to re-run over a genuinely broken script. */
+    const verdict = runScriptGuardsOnCommit(ROOT, "HEAD", {
+      suites: [ORIGIN_SUITE],
+      vitest: () => ({ status: 1, output: "FAIL server/scriptExitDiscipline.test.ts\n" }),
+    });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.couldNotRun, "the suites RAN and found something — the commit is implicated").toBeUndefined();
+    expect(verdict.printed).toContain("scriptExitDiscipline");
+  });
+
+  it("a throw from the RUNNER still propagates — it cannot borrow the commit's alibi", () => {
+    /* The tree existed and the body was entered, so this is the runner or the
+       teardown failing, not a run that never happened. Catching it into
+       `couldNotRun` would hand the commit an alibi it has not earned. */
+    expect(() => runScriptGuardsOnCommit(ROOT, "HEAD", {
+      suites: [ORIGIN_SUITE],
+      vitest: () => { throw new Error("the runner exploded"); },
+    })).toThrow(/the runner exploded/);
+  });
+});
+
+/**
+ * THE RITE'S SENTENCE, READ AT ITS BYTES (#967).
+ *
+ * `die()` ends the process, so the only way to hold these two refusals to their
+ * contract is to read the source that produces them. The property is narrow and
+ * it is the whole card: the guard refusal must not assert ONE cause, because
+ * twice in twenty-four hours it asserted the wrong one (#943, then #967) and
+ * sent a shift after a broken script that did not exist.
+ */
+describe("the rite's guard refusal names what it can read, not a culprit it guessed", () => {
+  const rite = gitTreeReader(ROOT).read("scripts/deploy-rite.mts");
+
+  /* THE FLOOR: every assertion below is about one block, so a rename that moves
+     the block must redden here rather than silently making the arms vacuous. */
+  const block = rite.slice(rite.indexOf("runScriptGuardsOnCommit(path.resolve"));
+  it("the block this suite is about is still findable", () => {
+    expect(rite).toContain("runScriptGuardsOnCommit(path.resolve");
+    expect(block.length).toBeGreaterThan(200);
+  });
+
+  it("refuses separately when the guards could not be RUN, and clears the commit", () => {
+    expect(block).toContain("verdict.couldNotRun");
+    expect(block).toMatch(/could not be RUN/);
+    expect(block).toMatch(/NOTHING IN THE COMMIT IS IMPLICATED/);
+  });
+
+  it("names BOTH roads on a red, and never the one road alone", () => {
+    expect(block).toMatch(/ONE OF TWO THINGS/);
+    /* The superseded sentence, pinned by its own shape: a `repair:` that goes
+       straight to "fix the named script" with no second road beside it. */
+    const repairLine = block.slice(block.indexOf("did not PASS"));
+    expect(repairLine).toContain("breached a contract");
+    expect(repairLine).toMatch(/failed on the machine rather than on the commit/);
+  });
+
+  it("POSITIVE CONTROL — the assertions fail on the sentence they replaced", () => {
+    const before = block
+      .replace(/⚠ this is ONE OF TWO THINGS[\s\S]*?a refusal that repeats on the same commit is the first kind\."\);/,
+        '  repair: fix the named script in the commit, commit, re-run");');
+    expect(before).not.toEqual(block); // the sabotage landed
+    expect(before).not.toMatch(/ONE OF TWO THINGS/);
   });
 });
