@@ -719,3 +719,120 @@ repository, so no act this run is unrecoverable.
 5. `drape-pinned-42652964` — still KEEP, still cited by
    `scripts/court-ink-carry-a-disposable.mts:19`; the question of whether that
    court will ever run again is a founder-adjacent one and stays open.
+
+---
+
+## Run 6 — 2026-09-15 05:46–06:30 AEST (Janitor, patrol #6, cards #925 + #265)
+
+Clock fired on the day (`patrol-clocks.mts`: *"1 seat's clock has fired: Janitor
+(due today)"*), Housekeeping switch ON, so standing exception 3 outranked the
+category order. Run 5's "Next run" list is the provenance for items 2 and 3.
+
+### A. The branch sweep (#925) — and the naive instrument was wrong about 108 of 126
+
+Re-measured at the code rather than taken from the card, which was one day old
+and already stale: **126** local `team/*`, not 113.
+
+| reading | count |
+|---|---|
+| `git branch --list 'team/*' --merged origin/main` | **7** |
+| the branch's own PR is MERGED | **115** |
+
+⚠ **A safety check the card did not ask for, because a merged PR does not prove
+a branch stopped moving**: each of the 115 tips compared against its PR's
+`mergedAt`. **0 of 115** carry work past their merge. Its first run said **118 of
+115** — `%cI` emits a local `+10:00` offset and `mergedAt` is UTC `Z`, so a
+string compare disagreed by a whole day. Redone in epoch seconds and **driven
+with a positive control** (a `commit-tree` commit made after a real merge), which
+fired at +471 min. *A checker that cannot be seen to fire is not a check.*
+
+**115 deleted, 126 → 11.** Manifest `output/janitor/run6-branch-manifest.txt`
+with every tip sha. The 11 kept: five with OPEN PRs (both held auth branches
+`team/emailauth-697` #882 and `team/googleauth-883` #885 among them), six whose
+PR closed unmerged or never existed. **245 remote `origin/team/*` refs measured
+and NOT swept** — local deletion was safe partly *because* origin still holds
+them, and sweeping both in one act removes that net. Run 7's, with its own
+manifest.
+
+### B. The disposables (#925) — 580 → 568 across two passes
+
+`scripts/disposable-age.mts` (#526) is the reader; mtime is still worthless here
+(**417 of 580 share one timestamp**). Swept **10** with the zip taken and read
+back first (`C:\Users\Admin\drape-janitor-run6-disposables-2026-09-15.zip`, 10
+entries verified), manifest `output/janitor/run6-disposable-manifest.txt`. Two
+more in an addendum after §D merged. Sweepable **0**, chain casualties **0**.
+
+**453 of the population cannot be DATED at all** — their names carry no card
+number, so the reader keeps them forever and the pile can only grow. That is the
+structural finding behind this card's "grown every time it has been counted".
+
+### C. The production bucket (#265) — it was 31, not five
+
+Listed with `--service Drape` (`--service MySQL` injects database variables only
+and R2 falls back to the LOCAL dev bucket — the wrong world entirely).
+
+| | |
+|---|---|
+| objects under `crew-eye/` | **344** |
+| named by some committed briefing edition or the tracked tree | **317** |
+| **orphans** | **31**, 14,099,549 bytes |
+
+The card's rule, built rather than listed: **430 commits of
+`server/crew/crew-briefing.json` read at every revision**, unioned with a
+`git grep` at HEAD. No second store exists (no schema column, no code path), so
+a key outside that union has never been servable by
+`/api/crew/eye-frame/:frameName` and cannot become so without a commit.
+
+All 31 downloaded first — *asked 31, saved 31, byte total matching the listing
+exactly* — then deleted, then **re-listed rather than trusted: 344 → 313,
+orphans 0**. And the check that matters more: all **289** frame keys the live
+edition names are still present, *referenced but not in the bucket: 0*.
+
+⚠ **Seven upload bursts, 26 Aug – 6 Sep** — so this was never one shift's
+`| tail -1` accident, which is why fixing that half (PR #846) did not stop the
+count growing. **4 referenced keys are absent from the bucket**; none is named by
+the live edition and two are test fixtures. Recorded for run 7, not acted on.
+
+### D. #973 — the dater was reading a name nobody types (PR #974, `6393caa0`)
+
+Found while classifying §B. The edition anchor was the single literal
+`_briefing-e<N>`, which matched **2** files while **27** carried a readable
+edition and sat in the permanent-KEEP bucket. Widened to the families actually in
+the tree; deliberately **not** to a number-anywhere pattern, which would date
+`_court177-grid-…` at a briefing edition. Anchored **67 → 94**.
+
+Sabotage-driven with an unsabotaged control first: control 40/40, narrowing back
+reddens 1 arm, loosening reddens 5, restored 40/40. ⚠ **A correction rode in the
+docblock and the sabotage is what caught it** — the draft claimed
+`_155-edition179-…` matched both shapes and inverted the test order to protect
+it; driving the swap left the arm green, so the order went back as it was.
+
+### E. The bill for §D, filed against itself (#975)
+
+⚠ **The new arms quote 13 live disposable filenames, and the citation sweep
+correctly reads a mention as a citation** — so those 13 are now permanent KEEPs.
+Sweepable **4 → 2** across the merge; `cited by a file that stays` **101 → 114**.
+The fix is real but worth about half what it looks like. Recommendation on the
+card: fixture names in the arms, not a weakened citation reader. **The class is
+wider than the arms — any tracked file quoting a `*-disposable.*` path pins it
+forever, and a `cited by` line may be a mention rather than a use.**
+
+### F. Anti-boredom check
+
+Every act traces to an open card (#925, #265), to run 5's own "Next run" list, or
+to a finding produced on this patrol's clock (#973, #975 — the second filed
+against this shift's own work). **Nothing spent.** Production writes: the shift
+row, the queue counts, and the 31 bucket deletions, each with a manifest and a
+verified recovery copy outside the repository.
+
+**Next run (~2026-09-18):**
+
+1. **#975 first** — it is this run's own debt and it releases 13 files.
+2. **245 remote `origin/team/*` refs**, manifest first, PR-state criterion, the
+   five open-PR branches on the do-not-touch line.
+3. `output/` — #527's citation pass, still the only litter measured in gigabytes
+   (7.0 GB at run 5) and still unwritten. It is a whole run on its own.
+4. The **4 referenced-but-absent** `crew-eye/` keys in
+   `output/janitor/run6-crew-eye-manifest.txt` — two are test fixtures, two are
+   not, and none is on his page today.
+5. Root frames and `%TEMP%` families, as run 5 left them.
