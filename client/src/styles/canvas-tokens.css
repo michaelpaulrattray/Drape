@@ -3,8 +3,43 @@
  *
  * Spec: docs/specs/DESIGN_SYSTEM.md §2. These are the ONLY colors, radii, and
  * type sizes canvas code may use; new values get argued into the spec first.
- * Values are absolute (light-first) on purpose — the canvas does not read the
- * app-shell theme variables (D-22).
+ * Values are absolute (light-first) — the canvas does not read the app-shell
+ * theme variables (D-22), and `.canvas-scope` below pins the subtree light.
+ *
+ * ⚠ THIS FILE HAS NO DARK BLOCK, AND THAT IS A KNOWN GAP WITH AN EXPIRY —
+ * NOT A DECISION THAT A BOARD SHOULD IGNORE THE THEME (#916).
+ *
+ * Read at the file: no `[data-theme]`, no `prefers-color-scheme`, nothing,
+ * against three theme blocks in `foundation/tokens.css`. So a customer in dark
+ * mode opens a board and gets a bright rectangle in a dark app. The founder was
+ * asked whether that was intent, and it is not — Crew reply #183, 2026-09-13,
+ * verbatim and entire:
+ *
+ *   "Eventually we will be re-designing the canvas and re-building it and it
+ *    will have a dark mode but that's not what we are working on at the moment.
+ *    Whether its worth implementing now or when we re-design is a decision for
+ *    you."
+ *
+ * The timing was handed back and the answer is WAIT FOR THE REDESIGN. The
+ * sixteen values here are hand-chosen greys, an ink, a border and three accent
+ * washes; picking their dark counterparts is a design act, it would be done
+ * twice, and in the meantime it would make this file a second DARK palette as
+ * well as a second light one. The gap closes in the canvas rebuild he names.
+ *
+ * ⚠ D-22's DECISION stands and its stated REASON does not. It reads "the app
+ * shell defaults dark (ThemeProvider defaultTheme='dark')"; light has been the
+ * default since #686 (`foundation/theme.ts` DEFAULT_THEME = "light", and
+ * `App.tsx` passes no override). The light scope is still correct and still
+ * live — it is what keeps native controls and primitives inside the board from
+ * resolving dark against light paper — but it is no longer a consequence of a
+ * dark shell, and nothing about the shell's default will close this gap.
+ *
+ * ⚠ AND THIS FILE IS A SECOND TOKEN SOURCE, written down rather than implied:
+ * `foundation/token-guard.test.ts` carries it as a hex carve-out whose reason
+ * names this paragraph as its expiry, because `tokens.css`'s own carve-out
+ * calls itself "the one place a colour may exist" and two files cannot both be
+ * that. A carve-out with a date on it is a different object from one that
+ * quietly normalises two token systems.
  */
 
 @theme {
@@ -80,10 +115,13 @@
 }
 
 /* Light scope for the canvas and refinement studio (D-22).
-   The app shell defaults dark; canvas surfaces are token-absolute so they
-   don't inherit darkness, but native form controls, scrollbars, and any
-   primitive rendered inside this subtree should resolve light. Portal-mounted
-   primitives (dialogs, dropdowns) are handled when they arrive (M6). */
+   Canvas surfaces are token-absolute so they don't inherit the shell's theme,
+   but native form controls, scrollbars, and any primitive rendered inside this
+   subtree should resolve light. Portal-mounted primitives (dialogs, dropdowns)
+   are handled when they arrive (M6).
+   ⚠ D-22 words this as "the app shell defaults dark"; it has defaulted LIGHT
+   since #686, so this scope now matters when the customer CHOOSES dark rather
+   than by default. The scope is right either way — see the file header. */
 .canvas-scope {
   color-scheme: light;
   background: var(--color-canvas-bg);

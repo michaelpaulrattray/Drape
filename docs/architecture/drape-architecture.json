@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e95a549224728346"
+    "sourceFingerprint": "40f87009f8c313e2"
   },
   "domains": [
     {
@@ -63,7 +63,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 25
+      "moduleCount": 26
     },
     {
       "id": "domain:home",
@@ -2602,6 +2602,12 @@
     {
       "id": "module:client/src/foundation/DestructiveConfirm.tsx",
       "path": "client/src/foundation/DestructiveConfirm.tsx",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/Eyebrow.tsx",
+      "path": "client/src/foundation/Eyebrow.tsx",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -10942,6 +10948,10 @@
       "path": "server/_core/numericEnv.test.ts"
     },
     {
+      "id": "test:server/abuseStripHonesty.test.ts",
+      "path": "server/abuseStripHonesty.test.ts"
+    },
+    {
       "id": "test:server/access.test.ts",
       "path": "server/access.test.ts"
     },
@@ -14542,11 +14552,6 @@
     },
     {
       "from": "module:client/src/features/admin/adminConstants.ts",
-      "to": "module:client/src/foundation/staffDate.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/adminConstants.ts",
       "to": "module:shared/auditActionCategories.ts",
       "kind": "imports"
     },
@@ -17086,6 +17091,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/HeroDeck.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "kind": "imports"
@@ -19321,6 +19331,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/foundation/Eyebrow.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/AppShell.tsx",
       "kind": "imports"
@@ -19358,6 +19373,11 @@
     {
       "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/DestructiveConfirm.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/Eyebrow.tsx",
       "kind": "imports"
     },
     {

@@ -33,11 +33,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { LAW_SURFACES } from "./lib/lawText.mts";
 import { OPEN_QUEUE_LIMIT, bandFromOpenQueue } from "./lib/nextUpItems.mts";
+import { mailboxEntries } from "./lib/mailboxEntries.mts";
 import {
   buildDigest,
+  choosePreviousShift,
   DigestRefusal,
+  isUnreadable,
   parseMoneyAuthMap,
   type NextUpRow,
+  type PreviousShift,
   type Unreadable,
 } from "./lib/shiftDigest.mts";
 
@@ -50,7 +54,6 @@ const PROGRAM = ".agents/foreman/PROGRAM.md";
    access-control section. */
 const CHARTER = "docs/REVIEWER_CHARTER.md";
 const PROMPT = ".agents/foreman/prompt.md";
-const MAILBOX = ".agents/mailbox";
 
 class Refusal extends Error {}
 
@@ -117,35 +120,14 @@ function topLevelDirectories(root: string): string[] {
 }
 
 /**
- * The newest mailbox entry, by the timestamp in its own FILENAME.
- *
- * The names are `foreman-20260904-2340.md` / `retro-…` / `runner-close-…`, and
- * the stamp is LOCAL time — the same convention the standing orders set. Only
- * the winning file is opened, so there is no list-then-read race to lose (#223).
+ * Which entry was the previous shift — the collector in `mailboxEntries.mts`,
+ * the decision in `choosePreviousShift`. Neither half lives here, so both can
+ * be driven: this file ends in `process.exit`, so nothing may import it (#960).
  */
-function previousShift(root: string): { label: string; iso: string; utc: string } | Unreadable {
-  const dir = path.join(root, MAILBOX);
-  if (!existsSync(dir)) return { unreadable: `${MAILBOX} is not there` };
-  const NAME = /^([a-z-]+)-(\d{8})-(\d{4})\.md$/;
-  let best: { label: string; stamp: string } | null = null;
-  for (const name of readdirSync(dir)) {
-    const match = NAME.exec(name);
-    if (!match) continue;
-    const stamp = `${match[2]}${match[3]}`;
-    if (!best || stamp > best.stamp) best = { label: name, stamp };
-  }
-  if (!best) return { unreadable: `no timestamped entry in ${MAILBOX}` };
-  const [, , date, time] = NAME.exec(best.label) as RegExpExecArray;
-  /* The stamp is LOCAL time — the standing orders' own convention — so it is
-     parsed as local and converted once. A `gh` search takes a UTC date and a
-     ten-hour machine offset is exactly how a whole shift's commits go missing
-     from "what changed": the same zone mistake #504's park gate was carrying. */
-  const iso = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}T${time.slice(0, 2)}:${time.slice(2, 4)}:00`;
-  const parsed = new Date(iso);
-  if (Number.isNaN(parsed.getTime())) {
-    return { unreadable: `${best.label} does not carry a real date` };
-  }
-  return { label: best.label, iso, utc: parsed.toISOString() };
+function previousShift(root: string): PreviousShift | Unreadable {
+  const entries = mailboxEntries(root);
+  if (isUnreadable(entries)) return entries;
+  return choosePreviousShift(entries, Date.now());
 }
 
 function run(command: string, args: string[], cwd: string): string {
@@ -332,11 +314,13 @@ function main(argv: string[]): number {
     const moneyAuthMap = parseMoneyAuthMap(readRequired(root, CHARTER));
 
     const since = previousShift(root);
-    const sinceIso = "iso" in since ? since.iso : null;
-    const sinceUtc = "utc" in since ? since.utc : null;
+    /* ONE absolute instant to both readers. The old road handed git a naive
+       local ISO and `gh` a UTC one, which is two answers to one question and is
+       how a ten-hour offset silently eats a shift's commits (#960). */
+    const sinceIso = isUnreadable(since) ? null : since.iso;
 
     const queue = nextUp(root, options.network);
-    const closed = closedSince(root, sinceUtc, options.network);
+    const closed = closedSince(root, sinceIso, options.network);
 
     digest = buildDigest({
       now: new Date(),

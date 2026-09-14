@@ -216,7 +216,9 @@ export function severityLook(sev: "info" | "warning" | "critical")
 
 Category is carried by the mono action string (`stripe.refund.manual`), not by colour. Delete `CATEGORY_COLORS` rather than porting it.
 
-Keep `formatDate`, `formatFullDate`, `formatRelativeTime`, `getActionCategory`, `formatAction`, `PAGE_SIZE`. They are fine.
+Keep `getActionCategory`, `formatAction`, `PAGE_SIZE`. They are fine.
+
+⚠ This line named three date formatters as keepers and none of the three is in that file any more. `formatDate` and `formatFullDate` became `staffDateTime` / `staffFullDateTime` in `@/foundation/staffDate` (#902) — reach for those. `adminConstants.formatRelativeTime` was deleted (#932): it had no consumers, the ones it appeared to have belonged to the same-named function in `ChangeRequestConstants.tsx`, which is live and untouched.
 
 ## 5. Two rules already written down — enforce them in code here
 

@@ -19,7 +19,7 @@
 
 import { getDb } from "./db";
 import { auditLogs, AUDIT_ACTIONS, type AuditAction, type AuditLog } from "../drizzle/schema";
-import { eq, and, gte, lte, desc, inArray, count as countRows, type SQL } from "drizzle-orm";
+import { eq, and, gte, lte, desc, inArray, sql, count as countRows, type SQL } from "drizzle-orm";
 import {
   ACTION_CATEGORIES,
   type AuditCategory,
@@ -372,8 +372,56 @@ export async function getFilteredAuditLogs(options: FilteredAuditLogsOptions): P
   return { logs, total, hasMore: offset + logs.length < total };
 }
 
+/*
+  #950 — THE PANEL'S ROWS ARE ORDERED BY SEVERITY FIRST, AND THE ORDERING
+  BELONGS IN THIS STATEMENT RATHER THAN ON EITHER CONSOLE.
+
+  Both staff consoles draw `alerts.slice(0, 5)` under a heading that reads
+  "Needs looking at", and both render that panel only when `criticalCount > 0`.
+  The rows came back newest-first, so the panel could appear FOR a critical
+  alert and then list five warnings. Driven on #946's own rig: one critical
+  row with twelve newer warning rows on top of it rendered the panel, said
+  "1 critical", and showed none.
+
+  ⚠ SORTING THE FIVE DRAWN ROWS WOULD NOT HAVE FIXED IT, and that is why
+  this is here. `limit` is applied by this statement, so in the driven case the
+  critical row was never among the ten it returned — a console can only
+  reorder rows it was given. The ordering has to sit where the limit is
+  applied, which is also the one place both consoles share (#940's lesson, one
+  card later: derive it once, never copy the rule into two files).
+
+  THE RANK IS WRITTEN OUT rather than leaning on `severity`'s ENUM ordinal.
+  MySQL sorts an enum by its declared position, so `desc(severity)` would give
+  the same answer today purely because `drizzle/schema.ts` happens to declare
+  ["info", "warning", "critical"] in that order — and would silently invert
+  the panel if anyone reordered that declaration. `server/auditLogFilterSql.test.ts`
+  reads this at the rendered statement.
+*/
+export const ABUSE_ALERT_SEVERITY_RANK = sql`case ${auditLogs.severity} when 'critical' then 0 when 'warning' then 1 else 2 end`;
+
 /**
- * Get abuse alerts summary for admin dashboard
+ * Get abuse alerts summary for admin dashboard.
+ *
+ * ⚠ `limit` GOVERNS THE LIST AND NOTHING ELSE — #946. Every count here used to
+ * be taken over the rows this function happened to return, which is #941's
+ * class one layer up: a number that silently depends on a page size.
+ *
+ *  - `criticalCount` / `warningCount` are COUNTs over every abuse row, so a
+ *    tile reading `10` can no longer mean ten or five hundred.
+ *  - `alerts` is `limit` abuse rows, MOST SEVERE FIRST and newest within a
+ *    severity (#950 — see the ordering note above). That is a LIST and a
+ *    limit is the right thing to ask of it; what the limit must not do is pick
+ *    WHICH severities a staff member gets to see.
+ *
+ * ⚠ THERE IS NO TIME WINDOW HERE AND THERE NEVER WAS — the moderator strip
+ * said *"N critical in the last day"* over a function with no date condition
+ * in it. #946 filed a windowed count as the repair; the copy lost the phrase
+ * instead. The reason is the panel's own job: it renders only when that number
+ * is above zero, so a window is a rule for HIDING an alarm, and the founder
+ * ruling this bucket already carries points the other way — *"the wire would
+ * exist, the row would exist, and staff would never see it."* One unbounded
+ * number, one meaning, on both consoles; the rows carry their own timestamps
+ * for "is this happening now".
  */
 export async function getAbuseAlertsSummary(limit: number = 10): Promise<{
   alerts: AuditLog[];
@@ -382,7 +430,9 @@ export async function getAbuseAlertsSummary(limit: number = 10): Promise<{
   recentPatterns: { pattern: string; count: number }[];
 }> {
   const db = await getDb();
-  if (!db) return { alerts: [], criticalCount: 0, warningCount: 0, recentPatterns: [] };
+  if (!db) {
+    return { alerts: [], criticalCount: 0, warningCount: 0, recentPatterns: [] };
+  }
 
   /*
     ⚠ THE LAW-7 SIBLING OF #941, AND IT WAS THE WORSE OF THE TWO. This read
@@ -397,22 +447,46 @@ export async function getAbuseAlertsSummary(limit: number = 10): Promise<{
     to prevent — *"the wire would exist, the row would exist, and staff would
     never see it"* — reached by a different road.
 
-    The severity counts below are unchanged in meaning: they still describe
-    the alerts being SHOWN. What changed is that the alerts being shown are
-    now genuinely the newest abuse rows.
+    ⚠ AND THE COUNTS BELOW WERE STILL THAT SHAPE UNTIL #946. They described
+    "the alerts being SHOWN" — the newest ten — which is the same defect one
+    layer up: ten newer warning rows pushed a critical one to position eleven,
+    `criticalCount` read 0, and on the moderator console **the whole "Needs
+    looking at" panel stopped rendering**, with the critical row correctly in
+    the table and correctly in the bucket. They are database COUNTs now, and
+    `limit` reaches the list alone.
   */
+  const isAbuse = inArray(auditLogs.action, ACTION_CATEGORIES.abuse);
+
   const abuseAlerts = await db
     .select()
     .from(auditLogs)
-    .where(inArray(auditLogs.action, ACTION_CATEGORIES.abuse))
-    .orderBy(desc(auditLogs.createdAt))
+    .where(isAbuse)
+    .orderBy(ABUSE_ALERT_SEVERITY_RANK, desc(auditLogs.createdAt))
     .limit(limit);
 
-  // Count by severity
-  const criticalCount = abuseAlerts.filter((a: AuditLog) => a.severity === "critical").length;
-  const warningCount = abuseAlerts.filter((a: AuditLog) => a.severity === "warning").length;
+  /*
+    Two COUNTs rather than one grouped read: a grouped query would be unpacked
+    into these same two numbers, and each of these is a single indexed count
+    against the severity index the table already carries.
+  */
+  const [[critical], [warning]] = await Promise.all([
+    db.select({ value: countRows() }).from(auditLogs)
+      .where(and(isAbuse, eq(auditLogs.severity, "critical"))),
+    db.select({ value: countRows() }).from(auditLogs)
+      .where(and(isAbuse, eq(auditLogs.severity, "warning"))),
+  ]);
 
-  // Count by pattern (from metadata)
+  const criticalCount = critical?.value ?? 0;
+  const warningCount = warning?.value ?? 0;
+
+  /*
+    ⚠ THESE PATTERNS DESCRIBE THE ROWS ABOVE, WHICH ARE NOW THE MOST SEVERE
+    `limit` RATHER THAN THE NEWEST (#950). The field is named `recentPatterns`
+    and has no consumer on either console — it is read only by
+    `server/adminAuditLogs.test.ts` — so the name is left alone rather than
+    changed through two routers for nobody, and what it actually counts is
+    stated here instead of being left to be discovered.
+  */
   const patternCounts = new Map<string, number>();
   for (const alert of abuseAlerts) {
     const metadata = alert.metadata as Record<string, unknown> | null;

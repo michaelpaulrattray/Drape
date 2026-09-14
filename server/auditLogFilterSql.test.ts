@@ -132,6 +132,35 @@ function whereOf(statement: Sent): string {
   return clause;
 }
 
+/** The `ORDER BY` clause alone — no paging. "" when there is none. */
+function orderByOf(statement: Sent): string {
+  const at = statement.sql.indexOf(" order by ");
+  if (at === -1) return "";
+  let clause = statement.sql.slice(at + " order by ".length);
+  for (const tail of [" limit ", " offset "]) {
+    const end = clause.indexOf(tail);
+    if (end !== -1) clause = clause.slice(0, end);
+  }
+  return clause;
+}
+
+/*
+  The severity ranks the rendered `ORDER BY` actually carries, read out of it
+  as `{ critical: 0, warning: 1 }` rather than compared to a literal string.
+
+  ⚠ A STRING MATCH WOULD PASS ON A REVERSED RANK. `when 'critical' then 2
+  when 'warning' then 1` contains every token a `toContain` arm would look
+  for and puts the criticals LAST — which is the whole defect #950 is about,
+  reintroduced. The numbers are what decides, so the numbers are what is read.
+*/
+function severityRanksOf(statement: Sent): Record<string, number> {
+  const ranks: Record<string, number> = {};
+  for (const [, severity, rank] of orderByOf(statement).matchAll(/when '(\w+)' then (\d+)/g)) {
+    ranks[severity] = Number(rank);
+  }
+  return ranks;
+}
+
 /*
   The values bound to the WHERE clause, without the paging ones.
 
@@ -284,6 +313,119 @@ describe("the abuse alerts summary, at the statement it sends (#941, law-7 sibli
   it("honours a smaller limit at the statement", async () => {
     const [statement] = await statementsOf(() => getAbuseAlertsSummary(5));
     expect(statement.params.at(-1)).toBe(5);
+  });
+
+  /*
+    #950 — THE PANEL APPEARED FOR AN ALERT IT DID NOT SHOW.
+
+    The two arms above put a `WHERE` on the list and the counts on the table.
+    The LIST was still ordered by recency alone, while the panel it feeds is
+    headed "Needs looking at" and renders only when there is a critical row.
+    Driven on #946's rig: one critical row with twelve newer warnings on top
+    rendered the panel, said "1 critical", and listed five warnings.
+
+    ⚠ THIS IS READ AT THE STATEMENT AND NOT AT THE FIVE ROWS DRAWN, because
+    a console-side sort cannot fix it and an arm written there would have
+    "passed" while the defect stood: the limit is applied HERE, so in the
+    driven case the critical row never reached either console.
+  */
+  it("orders the list by severity BEFORE recency, criticals first", async () => {
+    const [statement] = await statementsOf(() => getAbuseAlertsSummary(10));
+    const clause = orderByOf(statement);
+
+    expect(clause, "the abuse list sends no ORDER BY at all").not.toBe("");
+
+    const ranks = severityRanksOf(statement);
+    expect(ranks.critical, "the statement does not rank `critical`").toBeTypeOf("number");
+    expect(ranks.warning, "the statement does not rank `warning`").toBeTypeOf("number");
+    expect(ranks.critical, "warnings sort ahead of criticals — #950 inverted")
+      .toBeLessThan(ranks.warning);
+
+    /*
+      `info` is the `else` branch, so it has no `when` of its own — what has
+      to hold is that both named ranks beat whatever the fallback is. Read off
+      the rendered expression rather than assumed.
+    */
+    const fallback = Number(/else (\d+) end/.exec(clause)?.[1]);
+    expect(fallback, "the rank has no else branch for `info`").toBeTypeOf("number");
+    expect(ranks.warning, "`info` rows can outrank warnings").toBeLessThan(fallback);
+
+    /*
+      Severity must come FIRST: recency inside a severity, never the reverse.
+
+      The rendered column is `createdAt`, not `created_at` — that is the
+      table's real column name (`drizzle/schema.ts`), read off the statement
+      rather than assumed. The first draft of this arm asserted the snake_case
+      spelling and went red on a correct tree, which is the arm doing its job
+      to the person writing it.
+    */
+    expect(clause.indexOf("case"), "recency is ranked before severity")
+      .toBeLessThan(clause.indexOf("`createdAt`"));
+    expect(clause, "the list lost its recency tiebreak").toContain("`createdAt` desc");
+  });
+
+  /*
+    THE POSITIVE CONTROL for the arm above, in this file's own shape: the audit
+    TABLE is a log and is correctly newest-first, so the severity rank is
+    measuring this change rather than something every statement here carries.
+    If a future edit ranks the whole log by severity, this reddens — which is
+    the right outcome, because the table answers *what happened*.
+  */
+  it("does NOT rank the audit table by severity — that page is a log", async () => {
+    const [page] = await statementsOf(() => getFilteredAuditLogs({ limit: 20, offset: 0 }));
+
+    expect(orderByOf(page)).toContain("`createdAt` desc");
+    expect(severityRanksOf(page), "the log page has been reordered by severity").toEqual({});
+  });
+
+  /*
+    #946 — THE SAME CLASS ONE LAYER UP, AND IT SURVIVED THE FIX ABOVE.
+
+    The arm above put a `WHERE` on the LIST. The severity counts were still
+    taken in JavaScript over whatever that list returned, so `criticalCount`
+    could never exceed the limit — and on the moderator console the entire
+    "Needs looking at" panel renders only when that count is above zero. Ten
+    newer warning rows pushed a critical alert to position eleven and took its
+    own panel off the page.
+
+    Read at the wire for the same reason as everything else here: a count taken
+    in JS and a count taken in SQL look alike in the source and are different
+    products.
+  */
+  it("counts every critical abuse row, not the criticals on the page — #946", async () => {
+    const statements = await statementsOf(() => getAbuseAlertsSummary(10));
+
+    const counts = statements.filter((s) => s.sql.includes("count("));
+    expect(counts, "the severity counts are still taken in JS over the page").toHaveLength(2);
+
+    for (const statement of counts) {
+      const where = whereOf(statement);
+      expect(where, "a severity count is not restricted to abuse rows")
+        .toContain("`audit_logs`.`action` in (");
+      expect(where, "a severity count is not restricted to one severity")
+        .toContain("`audit_logs`.`severity` = ?");
+      /* The whole point: a COUNT that carries a LIMIT is the defect wearing SQL. */
+      expect(statement.sql, "a severity count still carries a limit").not.toContain(" limit ");
+      expect(whereParamsOf(statement).slice(0, ACTION_CATEGORIES.abuse.length))
+        .toEqual([...ACTION_CATEGORIES.abuse]);
+    }
+
+    const severities = counts.map((s) => s.params.at(-1));
+    expect(severities.sort()).toEqual(["critical", "warning"]);
+  });
+
+  it("keeps the LIST capped while the counts are not — #946", async () => {
+    /*
+      The pairing arm, and it is the one that stops the fix being "remove the
+      limit". `alerts` is a list on a panel and is meant to be short; only the
+      COUNTS had to stop depending on it.
+    */
+    const statements = await statementsOf(() => getAbuseAlertsSummary(3));
+    const list = statements.find((s) => !s.sql.includes("count("));
+
+    expect(list, "no list statement was sent at all").toBeDefined();
+    expect(list!.sql, "the alerts list lost its limit").toContain(" limit ");
+    expect(list!.params.at(-1)).toBe(3);
   });
 });
 

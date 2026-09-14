@@ -276,8 +276,11 @@ describe("the count pill omits at zero", () => {
 
 describe("the staff group is a section rather than an accident", () => {
   it("carries the STAFF label and the mono eyebrow grammar", () => {
-    expect(USER_CARD).toMatch(/<span className="dp-menugroup__label">STAFF<\/span>/);
-    const label = block(FOUNDATION_CSS, ".dp-menugroup__label");
+    /* #928 — the three elements were inlined here and are the foundation's
+       `Eyebrow` now. The label still has to BE `STAFF` and still has to be the
+       8.5px mono eyebrow, which is what this arm has always been about. */
+    expect(USER_CARD).toMatch(/<Eyebrow label="STAFF" className="dp-menu__group" \/>/);
+    const label = block(FOUNDATION_CSS, ".dp-eyebrow__label");
     expect(label).toMatch(/font:\s*500 8\.5px var\(--font-mono\)/);
     expect(label).toMatch(/letter-spacing:\s*0?\.13em/);
     expect(label).toMatch(/color:\s*var\(--faint\)/);

@@ -33,16 +33,29 @@
  * the real file skips itself with a printed reason when it is absent, and is a
  * FLOOR rather than coverage.
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { LAW_SURFACES } from "../scripts/lib/lawText.mts";
 import {
   baseName,
   buildDigest,
+  choosePreviousShift,
   DigestRefusal,
   isMoneyAuthPath,
   isOnMoneyAuthMap,
+  isUnreadable,
   mentionedFileNames,
   parseMoneyAuthMap,
   mentionedFlags,
@@ -53,7 +66,10 @@ import {
   splitProgram,
   splitSections,
   type DigestInputs,
+  type MailboxEntry,
+  type PreviousShift,
 } from "../scripts/lib/shiftDigest.mts";
+import { mailboxEntries } from "../scripts/lib/mailboxEntries.mts";
 import {
   OPEN_QUEUE_LIMIT,
   bandFromOpenQueue,
@@ -141,7 +157,7 @@ function digestInputs(overrides: Partial<DigestInputs> = {}): DigestInputs {
     roots: ROOTS,
     nextUp: [],
     patrolClocks: "no seat is overdue",
-    since: { label: "foreman-20260904-2340.md", iso: "2026-09-04T23:40:00" },
+    since: { label: "foreman-20260904-2340.md", iso: "2026-09-04T13:40:00.000Z", notes: [] },
     commits: [],
     closedCards: [],
     request: { paths: [], flags: [] },
@@ -786,5 +802,192 @@ describe("emptyOrderedBandVerdict — the two shapes are stated, never guessed",
   it("refuses a witness that could not be taken at all", () => {
     expect(emptyOrderedBandVerdict(null, 200).believable).toBe(false);
     expect(emptyOrderedBandVerdictOnLabels(null, 200).believable).toBe(false);
+  });
+});
+
+/**
+ * WHICH ENTRY WAS THE PREVIOUS SHIFT (#960) — the section every shift reads
+ * first, and the one that failed toward *nothing happened*.
+ *
+ * The old reader took the maximum FILENAME stamp and parsed it as LOCAL time.
+ * Measured on the machine that filed the card: the mtime and filename orderings
+ * disagree at 38 of 377 positions, the filename winner sat 8th by write time,
+ * and one stamp was in the FUTURE of local now — which makes `git log --since=`
+ * return zero rows *by construction*, rendered as a confident `none`.
+ *
+ * ⚠ **The refusal is the guard; the mtime switch is what stops it firing.** So
+ * both are armed, and so is the negative control the suite would be worthless
+ * without: the reader must still say `none` when none is TRUE. An arm that only
+ * proves a refusal fires passes just as happily on a reader that refuses always.
+ *
+ * The IO half (`mailboxEntries`) is driven over a REAL temporary directory
+ * carrying both naming conventions, because `.agents/` is gitignored and no arm
+ * in CI can ever read the real mailbox.
+ */
+describe("choosePreviousShift — the mailbox is read by mtime, cross-examined by the filename", () => {
+  const NOW = Date.parse("2026-09-14T12:20:00Z");
+  const at = (iso: string) => Date.parse(iso);
+
+  /** The live specimen: `…-2345` has the highest filename stamp and was written first. */
+  const SPECIMEN: MailboxEntry[] = [
+    { name: "foreman-20260914-2345.md", mtimeMs: at("2026-09-14T03:03:00Z"), filenameStamp: "202609142345" },
+    { name: "foreman-20260914-1032.md", mtimeMs: at("2026-09-14T11:19:00Z"), filenameStamp: "202609141032" },
+    { name: "foreman-20260914-2207.md", mtimeMs: at("2026-09-14T12:09:38Z"), filenameStamp: "202609142207" },
+  ];
+
+  it("picks the entry written LAST, not the one whose name sorts highest", () => {
+    const picked = choosePreviousShift(SPECIMEN, NOW);
+    expect(isUnreadable(picked)).toBe(false);
+    expect((picked as PreviousShift).label).toBe("foreman-20260914-2207.md");
+  });
+
+  it("hands out ONE absolute UTC instant, and it is the write time", () => {
+    const picked = choosePreviousShift(SPECIMEN, NOW) as PreviousShift;
+    expect(picked.iso).toBe("2026-09-14T12:09:38.000Z");
+    /* The point of the assertion: a naive local ISO would round-trip to a
+       different instant on this machine, and that is the whole bug. */
+    expect(Date.parse(picked.iso)).toBe(at("2026-09-14T12:09:38Z"));
+  });
+
+  it("⚠ NAMES the disagreement rather than resolving it silently", () => {
+    const picked = choosePreviousShift(SPECIMEN, NOW) as PreviousShift;
+    expect(picked.notes.join("\n")).toContain("foreman-20260914-2345.md");
+    expect(picked.notes.join("\n")).toContain("3 of 3 by write time");
+  });
+
+  it("⚠ says out loud when the OLD reader would have asked for a future --since", () => {
+    const picked = choosePreviousShift(SPECIMEN, NOW) as PreviousShift;
+    /* `…-2345` read as local is 23:45 on a machine whose now is 22:20 local —
+       the exact reading that printed a false `none` on the night this was
+       filed. The note names the instant, so a shift can check it itself. */
+    expect(picked.notes.join("\n")).toContain("FUTURE of now");
+    expect(picked.notes.join("\n")).toContain("2026-09-14T23:45:00");
+  });
+
+  it("⚠ THE NEGATIVE CONTROL: it is SILENT when the two readers agree", () => {
+    const agreeing: MailboxEntry[] = [
+      { name: "foreman-20260913-0900.md", mtimeMs: at("2026-09-13T09:00:00Z"), filenameStamp: "202609130900" },
+      { name: "foreman-20260914-1000.md", mtimeMs: at("2026-09-14T10:00:00Z"), filenameStamp: "202609141000" },
+    ];
+    const picked = choosePreviousShift(agreeing, NOW) as PreviousShift;
+    expect(picked.label).toBe("foreman-20260914-1000.md");
+    expect(picked.notes).toEqual([]);
+  });
+
+  it("⚠ REFUSES an entry written in the FUTURE rather than a --since nothing can answer", () => {
+    const skewed: MailboxEntry[] = [
+      { name: "foreman-20260914-1000.md", mtimeMs: at("2026-09-14T10:00:00Z"), filenameStamp: "202609141000" },
+      { name: "foreman-20260914-2359.md", mtimeMs: at("2026-09-14T14:00:00Z"), filenameStamp: "202609142359" },
+    ];
+    const verdict = choosePreviousShift(skewed, NOW);
+    expect(isUnreadable(verdict)).toBe(true);
+    expect((verdict as { unreadable: string }).unreadable).toContain("FUTURE");
+    expect((verdict as { unreadable: string }).unreadable).toContain("foreman-20260914-2359.md");
+  });
+
+  it("refuses an empty mailbox rather than picking nothing and calling it quiet", () => {
+    expect(isUnreadable(choosePreviousShift([], NOW))).toBe(true);
+    expect(
+      isUnreadable(choosePreviousShift([{ name: "NOTES.md", mtimeMs: NOW, filenameStamp: null }], NOW)),
+    ).toBe(true);
+  });
+
+  it("breaks an exact mtime tie by name, so two runs cannot disagree", () => {
+    const tied: MailboxEntry[] = [
+      { name: "foreman-20260914-0100.md", mtimeMs: at("2026-09-14T10:00:00Z"), filenameStamp: "202609140100" },
+      { name: "retro-20260914-0100.md", mtimeMs: at("2026-09-14T10:00:00Z"), filenameStamp: "202609140100" },
+    ];
+    expect((choosePreviousShift(tied, NOW) as PreviousShift).label).toBe("retro-20260914-0100.md");
+    expect((choosePreviousShift([...tied].reverse(), NOW) as PreviousShift).label).toBe(
+      "retro-20260914-0100.md",
+    );
+  });
+});
+
+describe("mailboxEntries — the IO half, driven over a real directory", () => {
+  /* `.agents/` is gitignored, so this is the only way an arm in CI can see the
+     collector at all: a temporary mailbox carrying both conventions. */
+  const withMailbox = (write: (dir: string) => void): string => {
+    const root = mkdtempSync(path.join(tmpdir(), "drape-digest-mailbox-"));
+    mkdirSync(path.join(root, ".agents", "mailbox"), { recursive: true });
+    write(path.join(root, ".agents", "mailbox"));
+    return root;
+  };
+
+  const writeAt = (dir: string, name: string, iso: string) => {
+    const file = path.join(dir, name);
+    writeFileSync(file, `# ${name}\n`);
+    utimesSync(file, new Date(iso), new Date(iso));
+  };
+
+  it("reads the write time off the filesystem and carries the filename stamp as a STRING", () => {
+    const root = withMailbox((dir) => {
+      writeAt(dir, "foreman-20260914-2345.md", "2026-09-14T03:03:00Z");
+      writeAt(dir, "foreman-20260914-1032.md", "2026-09-14T11:19:00Z");
+      writeFileSync(path.join(dir, "README.md"), "not a shift entry");
+    });
+    try {
+      const entries = mailboxEntries(root);
+      expect(isUnreadable(entries)).toBe(false);
+      const rows = entries as MailboxEntry[];
+      /* `README.md` carries no stamp and is not a candidate. */
+      expect(rows.map((row) => row.name).sort()).toEqual([
+        "foreman-20260914-1032.md",
+        "foreman-20260914-2345.md",
+      ]);
+      const picked = choosePreviousShift(rows, Date.parse("2026-09-14T12:20:00Z")) as PreviousShift;
+      expect(picked.label).toBe("foreman-20260914-1032.md");
+      expect(picked.iso).toBe("2026-09-14T11:19:00.000Z");
+      expect(picked.notes.join("\n")).toContain("foreman-20260914-2345.md");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("says the mailbox is not there rather than reporting an empty one", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "drape-digest-nomailbox-"));
+    try {
+      expect(isUnreadable(mailboxEntries(root))).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("§3 renders the second reader", () => {
+  it("labels the instant as a WRITE time, so it cannot be read as the filename stamp", () => {
+    const text = buildDigest(digestInputs());
+    expect(text).toContain("Previous entry: foreman-20260904-2340.md (written 2026-09-04T13:40:00.000Z)");
+  });
+
+  it("carries a disagreement note into the section a shift reads first", () => {
+    const text = buildDigest(
+      digestInputs({
+        since: {
+          label: "foreman-20260914-2207.md",
+          iso: "2026-09-14T12:09:38.000Z",
+          notes: ["⚠ the newest FILENAME stamp is a DIFFERENT entry — foreman-20260914-2345.md"],
+        },
+      }),
+    );
+    expect(text).toContain("⚠ the newest FILENAME stamp is a DIFFERENT entry");
+  });
+
+  it("⚠ and prints NO warning line when the readers agree — a quiet interval still reads as quiet", () => {
+    const text = buildDigest(digestInputs({ commits: [], closedCards: [] }));
+    const section = text.slice(text.indexOf("## 3 ·"), text.indexOf("## 4 "));
+    expect(section).not.toContain("⚠");
+    expect(section).toContain("Commits on main since then:\n  none");
+  });
+
+  it("renders an unreadable previous entry as UNREADABLE, never as a clean none", () => {
+    const text = buildDigest(
+      digestInputs({
+        since: { unreadable: "foreman-20260914-2359.md was written 100 minute(s) in the FUTURE" },
+        commits: { unreadable: "no previous entry to measure from" },
+      }),
+    );
+    expect(text).toContain("Previous entry: UNREADABLE — foreman-20260914-2359.md was written");
+    expect(text).toContain("UNREADABLE — no previous entry to measure from");
   });
 });

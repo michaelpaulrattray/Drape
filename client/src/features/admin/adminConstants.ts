@@ -1,5 +1,3 @@
-import { staffDateTime } from "@/foundation/staffDate";
-
 import {
   Info,
   AlertTriangle,
@@ -58,8 +56,12 @@ export const PAGE_SIZE = 20;
  * (#902), together with the moderator file's byte-identical pair. The module
  * docblock there carries the 24-hour ruling and the promotion's reasoning.
  *
- * `formatRelativeTime` below stayed: it is a different question (how long ago)
- * and it has one root's worth of consumers, which is under the promotion bar.
+ * A third, `formatRelativeTime`, stayed behind at that promotion on the
+ * reasoning that it asked a different question (how long ago) and had one
+ * root's worth of consumers. It had NONE — the consumers belonged to the
+ * same-named function in `ChangeRequestConstants.tsx`, which is live and
+ * stays. It is deleted here (#932), and the two names are worth keeping apart
+ * in the mind: a `grep` for `formatRelativeTime` still finds the other one.
  */
 
 /**
@@ -85,17 +87,3 @@ export function formatAction(action: string): string {
     .join(" → ");
 }
 
-export function formatRelativeTime(date: Date | string): string {
-  const now = new Date();
-  const d = new Date(date);
-  const diff = now.getTime() - d.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return staffDateTime(date);
-}
