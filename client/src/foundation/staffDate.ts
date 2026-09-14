@@ -18,15 +18,15 @@
  *
  * | shape | renders | was declared in | outcome |
  * |---|---|---|---|
- * | `staffDateTime` | `Sep 14, 23:08` | `adminConstants.formatDate`, `moderatorConstants.formatDate` | promoted — **12** consumer files |
- * | `staffDateTimeWithYear` | `Sep 14, 2026, 23:08` | `UserBadges.formatDate`, `ChangeRequestConstants.formatDate` | promoted — 2 |
- * | `staffFullDateTime` | `September 14, 2026 at 23:08:12` | `adminConstants.formatFullDate`, `moderatorConstants.formatFullDate` | promoted — 4 |
- * | `staffDateOnly` | `Sep 14` | `UserTable.shortTime`, `ChangeRequestConstants.formatRelativeTime`'s tail, and `formatDateLabel` in **three** Overview cards | promoted — 5 |
+ * | `staffDateTime` | `14 Sept, 23:08` | `adminConstants.formatDate`, `moderatorConstants.formatDate` | promoted — **12** consumer files |
+ * | `staffDateTimeWithYear` | `14 Sept 2026, 23:08` | `UserBadges.formatDate`, `ChangeRequestConstants.formatDate` | promoted — 2 |
+ * | `staffFullDateTime` | `14 September 2026 at 23:08:12` | `adminConstants.formatFullDate`, `moderatorConstants.formatFullDate` | promoted — 4 |
+ * | `staffDateOnly` | `14 Sept` | `UserTable.shortTime`, `ChangeRequestConstants.formatRelativeTime`'s tail, and `formatDateLabel` in **three** Overview cards | promoted — 5 |
  *
  * **TWO STAYED WHERE THEY WERE, ON THE PASS'S OWN BAR OF TWO**, and both now
  * draw `STAFF_LOCALE` from here so the notation is still one rule:
  *
- * - `pages/AdminInviteCodes.formatDate` — `Sep 14, 2026`, date-only with a
+ * - `pages/AdminInviteCodes.formatDate` — `14 Sept 2026`, date-only with a
  *   year. **One declaration, one consumer.**
  * - `pages/AdminBugReports.formatWhen` — a NEAR-MISS of `staffDateTimeWithYear`
  *   that asks `hour: "numeric"` where every other staff clock asks
@@ -80,24 +80,52 @@
  * ⚠ **THE ONE LINE THAT DECIDES THE NOTATION ON EVERY STAFF SCREEN, AND IT IS
  * HOISTED HERE DELIBERATELY RATHER THAN REPEATED IN THREE BODIES.**
  *
- * All six functions this module replaces passed `"en-US"` as a literal, which
- * is why #900 and #912 each had to make one change twice. **It is unchanged by
- * this commit — the promotion is a move and nothing you can see** — and it is
- * a named constant so that his *"Day first everywhere"* ruling (Crew reply
- * #182, 2026-09-13) is applied to this line and to nothing else.
+ * ✅ **HIS RULING, 2026-09-13 23:16:09Z — Crew reply #182, verbatim and entire:**
  *
- * `en-US` renders `Sep 14`; a day-first locale renders `14 Sept`. Driven at
- * both shapes rather than reasoned about, because a locale's field ORDER is
- * the locale's business and the options object cannot state it.
+ * > **Day first everywhere**
+ *
+ * Answering *"Your admin pages write `Sep 14` and your Crew page writes
+ * `14 Sept` — the same fact, two ways, on two of your own screens. Which one
+ * wins?"* **`14 Sept` wins, and this line is where it wins.**
+ *
+ * All eleven declarations #902 replaced passed `"en-US"` as a literal, which is
+ * why #900's fix and #912's fix each had to be made twice and why #903 is a
+ * card at all. **His two words are one character change here because that card
+ * landed first** — which is exactly what it recommended: *"promote first, then
+ * apply his notation once, in the promoted formatter."*
+ *
+ * ## Why `en-GB`, and why the choice is not load-bearing
+ *
+ * Driven rather than reasoned, at all four shapes:
+ *
+ * ```
+ * en-US  Sep 14, 23:08   Sep 14, 2026, 23:08   September 14, 2026 at 23:08:12
+ * en-GB  14 Sept, 23:08  14 Sept 2026, 23:08   14 September 2026 at 23:08:12
+ * en-AU  — identical to en-GB —        en-IE  — identical to en-GB —
+ * ```
+ *
+ * Three day-first English locales render these shapes to the same character, so
+ * `en-GB` is the conventional one rather than the decisive one. What matters is
+ * that it is **PINNED**: a locale is now a house decision and not a property of
+ * whichever machine has the page open.
+ *
+ * ⚠ **THE ONE THING HIS TWO WORDS DO NOT SETTLE, SAID RATHER THAN ASSUMED
+ * (law 7b): THIS IS THE STAFF WORLD ONLY.** He answered the staff-notation card
+ * with *"Day first everywhere"* and then, **three minutes later**, answered the
+ * CUSTOMER-clock card (#903 item 2) with *"Leave it"* — so the later, narrower
+ * word governs its own subject and `features/boards`' `VersionHistoryModal`
+ * keeps the reader's own machine notation. `staffClock.test.ts` carries that
+ * boundary as a negative control, and it is **founder-backed now rather than
+ * cautious**.
  *
  * **Exported** so that the two formatters the promotion bar correctly left in
- * place (see the module docblock) still take the notation from here. A shape
- * may stay local; the RULE may not be written twice.
+ * their own files still take the notation from here. A shape may stay local;
+ * the RULE may not be written twice.
  */
-export const STAFF_LOCALE = "en-US";
+export const STAFF_LOCALE = "en-GB";
 
 /**
- * A staff timestamp inside the current year: `Sep 14, 23:08`.
+ * A staff timestamp inside the current year: `14 Sept, 23:08`.
  *
  * The densest of the three and the one most tables use — a WHEN column, a
  * BLOCKED cell, a last-signed-in. No year, because a row in an audit log is
@@ -114,7 +142,7 @@ export function staffDateTime(date: Date | string): string {
 }
 
 /**
- * A staff timestamp that spans years: `Sep 14, 2026, 23:08`.
+ * A staff timestamp that spans years: `14 Sept 2026, 23:08`.
  *
  * The admin Users table and the change-request fact rows, where a JOINED date
  * or a RAISED date is routinely years old and the year is the fact being read.
@@ -136,7 +164,7 @@ export function staffDateTimeWithYear(date: Date | string | null | undefined): s
 
 /**
  * The unabbreviated one, for a fact panel rather than a row:
- * `September 14, 2026 at 23:08:12`.
+ * `14 September 2026 at 23:08:12`.
  *
  * Its seconds are the point — an audit row's expanded detail is where someone
  * is reconstructing an order of events, which is the one place a staff surface
@@ -155,7 +183,7 @@ export function staffFullDateTime(date: Date | string): string {
 }
 
 /**
- * A staff date with no clock and no year: `Sep 14`.
+ * A staff date with no clock and no year: `14 Sept`.
  *
  * ⚠ **THE MOST-COPIED SHAPE IN THE STAFF WORLD — FIVE DECLARATIONS, AND THREE
  * OF THEM WERE THE SAME FUNCTION UNDER THE SAME NAME IN THREE SIBLING FILES**

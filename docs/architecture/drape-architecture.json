@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f7c10294d9e21f28"
+    "sourceFingerprint": "b6b7016e6544775e"
   },
   "domains": [
     {
@@ -19439,6 +19439,11 @@
     {
       "from": "module:client/src/foundation/RenameDialog.tsx",
       "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/shortDate.ts",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {

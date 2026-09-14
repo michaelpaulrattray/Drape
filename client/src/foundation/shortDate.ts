@@ -1,3 +1,5 @@
+import { STAFF_LOCALE } from "./staffDate";
+
 /**
  * A date he can read at a glance. Never a relative "2 hours ago" — a ruling's
  * date is a fact and relative time makes it a moving one.
@@ -41,10 +43,34 @@
  * importers** — the promotion pass's shape, against its bar of two. The body
  * is byte-identical to the one that moved; the move is the whole change.
  */
+/**
+ * ⚠ **IT USED TO PASS `undefined` — THE READER'S OWN MACHINE — AND HIS
+ * RULING IS WHAT CLOSED THAT (Crew reply #182, 2026-09-13: "Day first
+ * everywhere").**
+ *
+ * The `14 Sept` he reads on this page was never a house decision: it was an
+ * Australian browser's default, and the same page opened in the United States
+ * said `Sep 14`. **That is precisely the question he was answering** — his admin
+ * pages said `Sep 14` and this one said `14 Sept`, one fact written two ways —
+ * and pinning `STAFF_LOCALE` answers both halves at once: the order is day
+ * first, and it no longer depends on whose computer is open.
+ *
+ * ⚠ **NOTHING CHANGES ON HIS OWN SCREEN, AND THAT IS WHY THIS IS EASY TO MISS.**
+ * Driven: `en-AU` (this machine) and `en-GB` render this shape to the same
+ * character. The change is invisible to him and real for every other reader,
+ * which is the honest way round for a notation rule.
+ *
+ * ⚠ **AND AFTER THE PIN, THIS FUNCTION AND `staffDate.staffDateTime` ARE THE
+ * SAME DEVICE, WHICH IS A FINDING RATHER THAN A TIDY-UP.** Same field set, same
+ * locale, same 24-hour forcing — they differ only in a NaN guard and a
+ * parameter type. They are NOT collapsed here: this one has seven importers on
+ * a page the founder judges by eye, folding it is a rename across all of them,
+ * and doing it inside a one-line notation change would bury it. **Filed.**
+ */
 export function shortDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(STAFF_LOCALE, {
     day: "numeric",
     month: "short",
     hour: "2-digit",
