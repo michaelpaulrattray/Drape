@@ -273,6 +273,19 @@ const offends = (c: Call): boolean => isClock(c) && !/hour12:\s*false/.test(c.ar
  */
 const offendsLocaleDate = (c: Call): boolean => c.kind === "Date" && c.args.trim() === "";
 
+/**
+ * ⚠ **THE THIRD RULE'S MATCHER, AND IT IS DECLARED ONCE ON PURPOSE (#902).**
+ *
+ * A staff surface naming its own locale — `toLocaleString("en-US", …)` — is the
+ * shape that made #900's fix and #912's fix each have to be made twice. It sits
+ * at module scope rather than inside its `it()` because the first draft of this
+ * rule declared it **twice**, once in the verdict and once in the positive
+ * control — and a control testing its own copy of a regex proves nothing about
+ * the one the verdict uses. That is working law 4, inside a file whose whole
+ * subject is working law 4.
+ */
+const LOCALE_LITERAL = /\.toLocale(Date|Time)?String\(\s*["'][a-z]{2}-[A-Z]{2}["']/;
+
 /* ================================================================
    THE POPULATION IS REAL
    ================================================================ */
@@ -501,18 +514,99 @@ describe("every clock in his world is 24-hour", () => {
     the absence arm stayed GREEN with nothing left to examine.
 
     **The floor is stated as a spread across FILES, not a total**, because a
-    total is satisfied by one file with many calls. Seven files carry a clock
-    today; six is the floor, so collapsing one duplicate pair — which this
-    change explicitly recommends and does not do — is not a red.
+    total is satisfied by one file with many calls.
 
-    ⚠ **A FALL BELOW IT IS THE ARM DOING ITS JOB. It means either a real
-    collapse worth thinking about or the sweep breaking, and those two must not
-    be told apart by editing this number.**
+    ⚠ **IT FELL FROM SEVEN FILES TO FIVE ON 2026-09-14 AND THAT IS #902 — A
+    REAL COLLAPSE, NOT A BROKEN SWEEP, AND THIS PARAGRAPH IS THE DECISION ITS
+    OWN PREVIOUS WORDING DEMANDED.** The clause here used to end *"six is the
+    floor, so collapsing one duplicate pair — which this change explicitly
+    recommends and does not do — is not a red"*, and it under-predicted its own
+    card threefold: the promotion collapsed **four** duplicate groups, not one,
+    so `adminConstants`, `moderatorConstants`, `UserBadges` and
+    `ChangeRequestConstants` all stopped carrying a clock while
+    `foundation/staffDate.ts` started carrying three.
+
+    ⚠ **LOWERING THE NUMBER IS THE WEAKER HALF OF THE REPAIR, SO IT IS NOT THE
+    ONLY HALF.** #898's own recorded lesson is that *a floor of N is satisfied by
+    any N survivors*, and a floor this small is one correct promotion away from
+    being satisfied by accident. The arm beneath names the three subjects the
+    sweep may never lose sight of — the two live strips and the promoted module
+    — which is a statement no number of survivors can satisfy by coincidence.
+
+    ⚠ **A FALL BELOW EITHER IS THE ARM DOING ITS JOB. It means a real collapse
+    worth thinking about or the sweep breaking, and those two must not be told
+    apart by editing this number.**
   */
   it("the sweep has a real population, spread across files", () => {
     const perFile = population()
       .map((f) => ({ name: f.name, n: calls(f.text).filter(isClock).length }))
       .filter((f) => f.n > 0);
-    expect(perFile.length).toBeGreaterThanOrEqual(6);
+    expect(perFile.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("and it still reaches the three clocks it may never lose, BY NAME", () => {
+    /*
+      The count above is satisfied by any five files. These three are not:
+      `StaffBar` is the bar clock on every staff page, `CrewWorkingNow` is the
+      live shift strip, and `foundation/staffDate.ts` is now where every staff
+      table's timestamp is drawn. If the walk, the `@/foundation` resolver or
+      the matcher breaks, at least one of them falls silent here before the
+      verdict arms above can report a clean product.
+    */
+    const carrying = new Set(
+      population()
+        .filter((f) => calls(f.text).some(isClock))
+        .map((f) => f.name),
+    );
+    expect(carrying).toContain("features/staff/StaffBar.tsx");
+    expect(carrying).toContain("features/admin/components/crew/CrewWorkingNow.tsx");
+    expect(carrying).toContain("foundation/staffDate.ts");
+  });
+
+  /*
+    ⚠ **THE THIRD RULE, AND IT IS THE ONE #902 EXISTS TO MAKE POSSIBLE: A STAFF
+    SURFACE MAY NOT NAME ITS OWN LOCALE.**
+
+    #900 had to make one identical one-property change twice, #912 had to make
+    it twice more, and #903 is what happens when a copy is missed. The cause was
+    never carelessness — it was **eleven declarations each carrying the literal
+    `"en-US"`**, so every ruling about notation had to be applied eleven times
+    and was never going to be.
+
+    They read `STAFF_LOCALE` from `@/foundation/staffDate` now, including the
+    two shapes the promotion pass's bar of two correctly left in their own files
+    (`AdminInviteCodes`, `AdminBugReports`). **A shape may stay local; the RULE
+    may not be written twice** — and this arm is what keeps that true, so that
+    his *"Day first everywhere"* (Crew reply #182) lands on one line rather than
+    on a list somebody has to maintain.
+
+    The `undefined` locale is deliberately NOT an offence here: it is a
+    different question (whose machine decides), it is what `StaffBar` and
+    `CrewWorkingNow` legitimately do for a time-only clock, and answering it
+    inside a rule about duplication would put two rules in one predicate — the
+    mistake `offendsLocaleDate` was split out to avoid.
+  */
+  it("no staff surface names its own locale — the notation is one rule, in one place", () => {
+    const offenders = population()
+      .filter((f) => f.name !== "foundation/staffDate.ts")
+      .filter((f) => LOCALE_LITERAL.test(code(f.text)))
+      .map((f) => f.name);
+    expect(offenders).toEqual([]);
+  });
+
+  it("POSITIVE CONTROL — the locale rule can fail", () => {
+    /*
+      Law 2, and it tests the SAME constant the verdict above uses rather than a
+      copy of it. The first two strings are the exact shape all eleven
+      declarations had before #902; if the matcher stops recognising them, the
+      arm above is decorative.
+    */
+    expect(LOCALE_LITERAL.test('new Date(d).toLocaleString("en-US", { month: "short" })')).toBe(true);
+    expect(LOCALE_LITERAL.test('d.toLocaleDateString("en-GB", { day: "numeric" })')).toBe(true);
+    /* NEGATIVE — the promoted constant and a machine-locale call are not offences. */
+    expect(LOCALE_LITERAL.test('new Date(d).toLocaleString(STAFF_LOCALE, { month: "short" })')).toBe(false);
+    expect(LOCALE_LITERAL.test('stamp.toLocaleTimeString(undefined, { hour: "2-digit" })')).toBe(false);
+    /* NEGATIVE — a number's thousands separator names no locale at all. */
+    expect(LOCALE_LITERAL.test("balance.toLocaleString()")).toBe(false);
   });
 });

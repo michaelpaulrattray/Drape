@@ -44,40 +44,13 @@ export const PAGE_SIZE = 20;
 
 // ── Utility Functions ──
 
-/**
- * ⚠ **24-HOUR, FORCED — the moderator half of the #900 sweep.**
- *
- * Byte-for-byte the same pair as `features/admin/adminConstants.ts`, and the
- * duplication is the reason this fix had to be made twice. Filed as a
- * promotion-pass candidate rather than collapsed here: merging two formatters
- * is its own written card (standing orders §2c), and this change is the
- * notation only.
- *
- * The ruling is `CrewWorkingNow`'s `clockTime` — every other time in his world
- * is 24-hour, so a `10:30 PM` in an audit row is the one clock written
- * differently from everything it sits beside.
+/*
+ * The date formatters that lived here — `formatDate` and `formatFullDate` —
+ * are now `staffDateTime` and `staffFullDateTime` in `@/foundation/staffDate`
+ * (#902). This file's copies were byte-for-byte the admin file's, which is why
+ * #900 had to make one identical change twice; the module docblock there
+ * carries the 24-hour ruling and the promotion's reasoning.
  */
-export function formatDate(date: Date): string {
-  return new Date(date).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
-
-export function formatFullDate(date: Date): string {
-  return new Date(date).toLocaleString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-}
 
 export function getActionCategory(action: string): keyof typeof CATEGORY_COLORS | null {
   if (action.startsWith("subscription.") || action.startsWith("credits.")) return "billing";

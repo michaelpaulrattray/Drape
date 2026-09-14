@@ -15,15 +15,9 @@
 import { RawPayload, RowId, StatePill, pageRange, SUSPEND_CONSEQUENCE } from "@/features/staff";
 import { DataTable } from "@/foundation";
 import type { DataRow, RowAction } from "@/foundation";
+import { staffDateTime, staffFullDateTime } from "@/foundation/staffDate";
 
-import {
-  PAGE_SIZE,
-  formatAction,
-  formatDate,
-  formatFullDate,
-  getActionCategory,
-  type AuditLog,
-} from "./adminConstants";
+import { PAGE_SIZE, formatAction, getActionCategory, type AuditLog } from "./adminConstants";
 
 interface UserDetails {
   name: string | null;
@@ -84,11 +78,11 @@ export function AuditLogTable({
         </span>,
         <RowId key="user">{log.userId ? `#${log.userId}` : "system"}</RowId>,
         <RowId key="ip">{log.ipAddress || "—"}</RowId>,
-        <span key="when">{formatDate(log.createdAt)}</span>,
+        <span key="when">{staffDateTime(log.createdAt)}</span>,
       ],
       facts: [
         { label: "ENTRY", value: `#${log.id}` },
-        { label: "WHEN", value: formatFullDate(log.createdAt) },
+        { label: "WHEN", value: staffFullDateTime(log.createdAt) },
         { label: "ACTION", value: log.action },
         { label: "RESOURCE", value: log.resourceType ? `${log.resourceType} ${log.resourceId ?? ""}` : "—" },
         { label: "IP", value: log.ipAddress || "—" },

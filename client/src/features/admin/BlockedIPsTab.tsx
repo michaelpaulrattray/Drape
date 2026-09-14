@@ -14,8 +14,7 @@
 import { RowId, StatePill, pageRange } from "@/features/staff";
 import { Button, DataTable } from "@/foundation";
 import type { DataRow } from "@/foundation";
-
-import { formatDate } from "./adminConstants";
+import { staffDateTime } from "@/foundation/staffDate";
 
 interface BlockedIP {
   id: number;
@@ -55,15 +54,15 @@ export function BlockedIPsTab({
              has already lapsed is a resting state. */
           attention={!lifted}
         />,
-        <span key="blocked">{formatDate(new Date(ip.createdAt))}</span>,
+        <span key="blocked">{staffDateTime(new Date(ip.createdAt))}</span>,
       ],
       facts: [
         { label: "ADDRESS", value: ip.ipAddress },
         { label: "BLOCKED BY", value: `Admin #${ip.blockedBy}` },
-        { label: "BLOCKED", value: formatDate(new Date(ip.createdAt)) },
+        { label: "BLOCKED", value: staffDateTime(new Date(ip.createdAt)) },
         {
           label: "EXPIRES",
-          value: ip.expiresAt ? formatDate(new Date(ip.expiresAt)) : "Never",
+          value: ip.expiresAt ? staffDateTime(new Date(ip.expiresAt)) : "Never",
         },
       ],
       evidence: ip.reason,

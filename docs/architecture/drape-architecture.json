@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "34bf313f9ad9de28"
+    "sourceFingerprint": "f7c10294d9e21f28"
   },
   "domains": [
     {
@@ -63,7 +63,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 25
+      "moduleCount": 26
     },
     {
       "id": "domain:home",
@@ -2692,6 +2692,12 @@
     {
       "id": "module:client/src/foundation/shortDate.ts",
       "path": "client/src/foundation/shortDate.ts",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/staffDate.ts",
+      "path": "client/src/foundation/staffDate.ts",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -14521,6 +14527,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/adminConstants.ts",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/AuditActionModals.tsx",
       "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
@@ -14571,6 +14582,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/AuditLogsFilters.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/AuditLogTable.tsx",
       "to": "module:client/src/features/admin/adminConstants.ts",
       "kind": "imports"
@@ -14586,8 +14602,8 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/BlockedIPsTab.tsx",
-      "to": "module:client/src/features/admin/adminConstants.ts",
+      "from": "module:client/src/features/admin/AuditLogTable.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14598,6 +14614,11 @@
     {
       "from": "module:client/src/features/admin/BlockedIPsTab.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/BlockedIPsTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14608,6 +14629,11 @@
     {
       "from": "module:client/src/features/admin/ChangeRequestConstants.tsx",
       "to": "module:client/src/components/ui/badge.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/ChangeRequestConstants.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -14633,6 +14659,11 @@
     {
       "from": "module:client/src/features/admin/ChangeRequestList.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/ChangeRequestList.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -15066,6 +15097,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/overview/CreditEconomyCard.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/overview/GovernanceCard.tsx",
       "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
       "kind": "imports"
@@ -15088,6 +15124,11 @@
     {
       "from": "module:client/src/features/admin/overview/HealthMetrics.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/HealthMetrics.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -15152,12 +15193,12 @@
     },
     {
       "from": "module:client/src/features/admin/overview/SystemStatusCard.tsx",
-      "to": "module:client/src/features/admin/adminConstants.ts",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/admin/overview/SystemStatusCard.tsx",
-      "to": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -15168,6 +15209,11 @@
     {
       "from": "module:client/src/features/admin/overview/UserGrowthCard.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/overview/UserGrowthCard.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -15253,6 +15299,11 @@
     {
       "from": "module:client/src/features/admin/UserTable.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserTable.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -17471,6 +17522,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/ActivitySubTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
       "to": "module:client/src/features/moderator/moderatorConstants.ts",
       "kind": "imports"
@@ -17483,6 +17539,11 @@
     {
       "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -17492,17 +17553,17 @@
     },
     {
       "from": "module:client/src/features/moderator/BlockedIPsTab.tsx",
-      "to": "module:client/src/features/moderator/moderatorConstants.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/BlockedIPsTab.tsx",
       "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/BlockedIPsTab.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/BlockedIPsTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -17582,6 +17643,11 @@
     },
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -17621,8 +17687,8 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
-      "to": "module:client/src/features/moderator/moderatorConstants.ts",
+      "from": "module:client/src/features/moderator/FlaggedReferralsTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -17633,6 +17699,11 @@
     {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -17697,17 +17768,17 @@
     },
     {
       "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
-      "to": "module:client/src/features/moderator/moderatorConstants.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
       "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/MyRequestsTab.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -17788,6 +17859,11 @@
     {
       "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/UserInvestigationWidgets.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {
@@ -19482,6 +19558,11 @@
     },
     {
       "from": "module:client/src/pages/AdminBugReports.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminBugReports.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -19653,6 +19734,11 @@
     {
       "from": "module:client/src/pages/AdminInviteCodes.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminInviteCodes.tsx",
+      "to": "module:client/src/foundation/staffDate.ts",
       "kind": "imports"
     },
     {

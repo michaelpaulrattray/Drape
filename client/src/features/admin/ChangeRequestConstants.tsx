@@ -1,4 +1,5 @@
 import { SENSITIVE_CHANGE_REQUEST_TYPES } from "@shared/changeRequestLabels";
+import { staffDateOnly } from "@/foundation/staffDate";
 import {
   Coins,
   Flag,
@@ -275,31 +276,10 @@ export function TypeIcon({ type }: { type: string }) {
 
 // ─── Formatters ──────────────────────────────────────────────────────────────
 
-/**
- * ⚠ **24-HOUR, FORCED — instance 5 of his clock ruling (#912), the change-request half.**
- *
- * This drew `Sep 14, 2026, 09:08 AM` in the `RAISED` and `UPDATED` fact rows
- * of every change-request detail on the admin page, and in the reviewed-by
- * line beneath them. Its sibling is `UserBadges.formatDate`, which carries the
- * full reasoning; the short version is that `toLocaleDateString` honours an
- * `hour` option, so the method name hid a clock from the reader and from
- * `foundation/staffClock.test.ts` alike.
- *
- * `toLocaleString` for the same reason and with the same measured result —
- * identical bytes, only the `AM`/`PM` marker gone.
+/*
+ * `formatDate` lived here and is now `staffDateTimeWithYear` in
+ * `@/foundation/staffDate` (#902), with `UserBadges`' byte-identical copy.
  */
-export function formatDate(dateStr: string | Date | null | undefined) {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr);
-  return d.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
 
 export function formatRelativeTime(dateStr: string | Date | null | undefined) {
   if (!dateStr) return "";
@@ -313,5 +293,5 @@ export function formatRelativeTime(dateStr: string | Date | null | undefined) {
   if (diffHours < 24) return `${diffHours}h ago`;
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 30) return `${diffDays}d ago`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return staffDateOnly(d);
 }

@@ -39,10 +39,11 @@ import { toast } from "sonner";
 import { RowId, StatePill, pageRange } from "@/features/staff";
 import { Button, DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
+import { staffDateTime } from "@/foundation/staffDate";
 import { trpc } from "@/lib/trpc";
 
 import { grouped, signed } from "./figures";
-import { formatDate, type OpenChangeRequestOptions } from "./moderatorConstants";
+import { type OpenChangeRequestOptions } from "./moderatorConstants";
 
 const PAGE_SIZE = 20;
 
@@ -137,14 +138,14 @@ export function CreditsSubTab({
         <span className="dp-table__pairmain">{tx.description || "—"}</span>
       </span>,
       <RowId key="balance">{grouped(tx.balanceAfter)}</RowId>,
-      <span key="when">{formatDate(new Date(tx.createdAt))}</span>,
+      <span key="when">{staffDateTime(new Date(tx.createdAt))}</span>,
     ],
     facts: [
       { label: "TRANSACTION", value: `#${tx.id}` },
       { label: "KIND", value: sentenceCase(tx.type) },
       { label: "AMOUNT", value: `${signed(tx.amount)} credits` },
       { label: "BALANCE AFTER", value: grouped(tx.balanceAfter) },
-      { label: "WHEN", value: formatDate(new Date(tx.createdAt)) },
+      { label: "WHEN", value: staffDateTime(new Date(tx.createdAt)) },
       ...(tx.referenceId ? [{ label: "REFERENCE", value: String(tx.referenceId) }] : []),
     ],
     evidence: tx.description || undefined,

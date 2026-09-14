@@ -10,8 +10,7 @@
 import { RowId, StatePill, pageRange } from "@/features/staff";
 import { DataTable } from "@/foundation";
 import type { DataRow } from "@/foundation";
-
-import { formatDate } from "./moderatorConstants";
+import { staffDateTime } from "@/foundation/staffDate";
 
 interface BlockedIPsTabProps {
   blockedIpsQuery: any;
@@ -32,13 +31,13 @@ export function BlockedIPsTab({ blockedIpsQuery }: BlockedIPsTabProps) {
           label={lifted ? "expired" : ip.expiresAt ? "temporary" : "permanent"}
           attention={!lifted}
         />,
-        <span key="blocked">{formatDate(new Date(ip.createdAt))}</span>,
+        <span key="blocked">{staffDateTime(new Date(ip.createdAt))}</span>,
       ],
       facts: [
         { label: "ADDRESS", value: ip.ipAddress },
         { label: "BLOCKED BY", value: `Admin #${ip.blockedBy}` },
-        { label: "BLOCKED", value: formatDate(new Date(ip.createdAt)) },
-        { label: "EXPIRES", value: ip.expiresAt ? formatDate(new Date(ip.expiresAt)) : "Never" },
+        { label: "BLOCKED", value: staffDateTime(new Date(ip.createdAt)) },
+        { label: "EXPIRES", value: ip.expiresAt ? staffDateTime(new Date(ip.expiresAt)) : "Never" },
       ],
       evidence: ip.reason,
     };

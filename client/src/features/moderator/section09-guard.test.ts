@@ -672,7 +672,9 @@ describe("brief 09 §4a, §9 — the promoted dialog and the promoted row", () =
        one had and this one lacked. Losing it in the deletion was the silent
        failure available here. */
     expect(code(WIDGETS)).toContain('<span className="dp-inv__subjectstamp">');
-    expect(code(WIDGETS)).toContain("formatDate(new Date(user.frozenAt))");
+    /* `formatDate` until #902 promoted the moderator console's formatters into
+       `@/foundation/staffDate`; the name is what moved, not the stamp. */
+    expect(code(WIDGETS)).toContain("staffDateTime(new Date(user.frozenAt))");
   });
 
   /**

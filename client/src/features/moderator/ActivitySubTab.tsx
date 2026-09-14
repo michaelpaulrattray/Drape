@@ -19,13 +19,9 @@
 import { RawPayload, StatePill } from "@/features/staff";
 import { DataTable } from "@/foundation";
 import type { DataRow, RowAction } from "@/foundation";
+import { staffDateTime, staffFullDateTime } from "@/foundation/staffDate";
 
-import {
-  formatDate,
-  formatAction,
-  formatFullDate,
-  type OpenChangeRequestOptions,
-} from "./moderatorConstants";
+import { formatAction, type OpenChangeRequestOptions } from "./moderatorConstants";
 
 interface ActivitySubTabProps {
   userActivityQuery: any;
@@ -44,11 +40,11 @@ export function ActivitySubTab({ userActivityQuery, onOpenChangeRequest }: Activ
         attention={log.severity === "critical" || log.severity === "warning"}
       />,
       <span key="action">{formatAction(log.action)}</span>,
-      <span key="when">{formatDate(log.createdAt)}</span>,
+      <span key="when">{staffDateTime(log.createdAt)}</span>,
     ],
     facts: [
       { label: "ENTRY", value: `#${log.id}` },
-      { label: "WHEN", value: formatFullDate(log.createdAt) },
+      { label: "WHEN", value: staffFullDateTime(log.createdAt) },
       { label: "ACTION", value: log.action },
       {
         label: "RESOURCE",

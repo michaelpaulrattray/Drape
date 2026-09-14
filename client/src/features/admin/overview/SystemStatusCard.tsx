@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { LeaderRow } from "@/foundation";
-
-import { formatDate } from "../adminConstants";
+import { staffDateTime } from "@/foundation/staffDate";
 
 /**
  * SYSTEM (brief 07 §8) — leader rows, mono values, no status badge ramp.
@@ -108,7 +107,7 @@ export function SystemStatusCard({ activeBanners, serverStartedAt }: SystemStatu
         than gaining a fourth copy of the options — one fewer formatter, not
         one more.
       */}
-      <p className="dp-ov__stamp">Server started {formatDate(serverStartedAt)}</p>
+      <p className="dp-ov__stamp">Server started {staffDateTime(serverStartedAt)}</p>
     </div>
   );
 }
