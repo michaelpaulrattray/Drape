@@ -232,17 +232,35 @@ describe("Admin Audit Logs", () => {
       });
     });
 
-    it("should count alerts by severity", async () => {
+    /*
+      ⚠ THIS ARM ASSERTED `criticalCount === 2` FROM THREE MOCK ROWS, AND THAT
+      WAS THE DEFECT #946 FIXED — it was true only because the counts were
+      taken in JavaScript over the rows the page returned. So a tile could
+      never read higher than the limit, and the moderator's whole "Needs
+      looking at" panel — which renders only when that count is above zero —
+      disappeared as soon as ten newer warning rows arrived.
+
+      Inverted rather than deleted: the fake is handed a page containing TWO
+      criticals and a COUNT answering SEVEN, and the contract is that the
+      answer is seven. An implementation that went back to counting the page
+      would score 2 and fail here. Which STATEMENTS are sent is
+      `server/auditLogFilterSql.test.ts`'s question; this one is about what
+      comes back.
+    */
+    it("takes the severity counts from the COUNT, never from the page — #946", async () => {
       mockDb.state.rows = [
         { id: 1, action: "abuse.detected", severity: "critical", createdAt: new Date(), metadata: { patternName: "Test" } },
         { id: 2, action: "abuse.detected", severity: "warning", createdAt: new Date(), metadata: { patternName: "Test" } },
         { id: 3, action: "abuse.detected", severity: "critical", createdAt: new Date(), metadata: { patternName: "Other" } },
       ];
+      mockDb.state.count = 7;
 
       const result = await getAbuseAlertsSummary(10);
 
-      expect(result.criticalCount).toBe(2);
-      expect(result.warningCount).toBe(1);
+      expect(result.criticalCount, "the critical count came back off the page").toBe(7);
+      expect(result.warningCount, "the warning count came back off the page").toBe(7);
+      /* The pairing half: the LIST is still the page, and still capped. */
+      expect(result.alerts).toHaveLength(3);
     });
 
     it("should aggregate patterns from metadata", async () => {

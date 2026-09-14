@@ -285,6 +285,56 @@ describe("the abuse alerts summary, at the statement it sends (#941, law-7 sibli
     const [statement] = await statementsOf(() => getAbuseAlertsSummary(5));
     expect(statement.params.at(-1)).toBe(5);
   });
+
+  /*
+    #946 — THE SAME CLASS ONE LAYER UP, AND IT SURVIVED THE FIX ABOVE.
+
+    The arm above put a `WHERE` on the LIST. The severity counts were still
+    taken in JavaScript over whatever that list returned, so `criticalCount`
+    could never exceed the limit — and on the moderator console the entire
+    "Needs looking at" panel renders only when that count is above zero. Ten
+    newer warning rows pushed a critical alert to position eleven and took its
+    own panel off the page.
+
+    Read at the wire for the same reason as everything else here: a count taken
+    in JS and a count taken in SQL look alike in the source and are different
+    products.
+  */
+  it("counts every critical abuse row, not the criticals on the page — #946", async () => {
+    const statements = await statementsOf(() => getAbuseAlertsSummary(10));
+
+    const counts = statements.filter((s) => s.sql.includes("count("));
+    expect(counts, "the severity counts are still taken in JS over the page").toHaveLength(2);
+
+    for (const statement of counts) {
+      const where = whereOf(statement);
+      expect(where, "a severity count is not restricted to abuse rows")
+        .toContain("`audit_logs`.`action` in (");
+      expect(where, "a severity count is not restricted to one severity")
+        .toContain("`audit_logs`.`severity` = ?");
+      /* The whole point: a COUNT that carries a LIMIT is the defect wearing SQL. */
+      expect(statement.sql, "a severity count still carries a limit").not.toContain(" limit ");
+      expect(whereParamsOf(statement).slice(0, ACTION_CATEGORIES.abuse.length))
+        .toEqual([...ACTION_CATEGORIES.abuse]);
+    }
+
+    const severities = counts.map((s) => s.params.at(-1));
+    expect(severities.sort()).toEqual(["critical", "warning"]);
+  });
+
+  it("keeps the LIST capped while the counts are not — #946", async () => {
+    /*
+      The pairing arm, and it is the one that stops the fix being "remove the
+      limit". `alerts` is a list on a panel and is meant to be short; only the
+      COUNTS had to stop depending on it.
+    */
+    const statements = await statementsOf(() => getAbuseAlertsSummary(3));
+    const list = statements.find((s) => !s.sql.includes("count("));
+
+    expect(list, "no list statement was sent at all").toBeDefined();
+    expect(list!.sql, "the alerts list lost its limit").toContain(" limit ");
+    expect(list!.params.at(-1)).toBe(3);
+  });
 });
 
 describe("the audit statistics total, at the statement it sends (#941, third sibling)", () => {
