@@ -43,12 +43,12 @@
  * observable instead of killing the runner.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { openCeremonyWorld } from "../scripts/lib/ceremony.mts";
 import { codeWithoutBlockComments } from "../scripts/lib/stopline.mts";
 import { parseFounderEvidenceCeremonyArgs } from "./casting/evidence/founderEvidenceCeremony";
+import { runHook } from "./testing/hookDriver";
 import { readListedSource } from "./testing/listedSource";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
@@ -62,6 +62,63 @@ vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const REPO = resolve(import.meta.dirname, "..");
 const SCRIPTS = join(REPO, "scripts");
+
+/**
+ * The tracked top-level `.mts` names under `scripts/` — the population both
+ * derived arms below are drawn from.
+ *
+ * ⚠ `git ls-files`, NOT A FILENAME RULE (#979, the sibling of the
+ * `selfInvocationCheck` repair). Both arms below used to read the disk and drop
+ * a shift's scratch by name — one on `!name.includes("disposable")`, the other
+ * on a `ceremony-` prefix that excludes it only incidentally. Measured at a real
+ * shift tree: `scripts/` held 998 `.mts`, **476 of them untracked**, and the
+ * word-match happened to catch all 476 — so unlike its sibling this arm was not
+ * broken on the day. It is converted because it is the same DECISION, and the
+ * house has written down why that decision decays (`sourceSweepSuites.ts`:
+ * *"an exception keyed on a FILENAME is the thing that stops a guard watching
+ * the moment somebody fixes one file"*). A guard asking a filename to stand in
+ * for what the repository contains is a second list shadowing `git ls-files` —
+ * working law 4.
+ *
+ * ⚠ THE SWAP IS NOT NEUTRAL AND THAT WAS READ BEFORE IT WAS MADE. Two TRACKED
+ * files carry "disposable" in the name and call `openCeremonyWorld` — the word
+ * filter excluded them, the repository does not, so the adoption arm's
+ * population grows by two. Both hand over the whole `process.argv` in the
+ * sanctioned shape and neither reads argv anywhere else, so they pass; but they
+ * are inside the guard now, which is the correct place for a tracked file.
+ *
+ * ⚠ IT REFUSES RATHER THAN RETURNING A SHORT LIST. Both arms below assert an
+ * empty stray-argv list, so a filter that failed open — no git, a wrong cwd, a
+ * swallowed throw — would not make this suite noisy, it would make it BLIND.
+ * The floors underneath are the second half of that protection, and neither is
+ * enough alone.
+ *
+ * Top-level only, because `readdirSync(SCRIPTS)` was: a nested path keeps its
+ * separator and is dropped, which is what `scripts/lib/` and `scripts/ceremony`
+ * helpers were already outside of.
+ */
+function trackedScriptNames(): Set<string> {
+  const listing = runHook("git", ["ls-files", "-z", "--", "scripts"], { cwd: REPO });
+  if (listing.status !== 0) {
+    throw new Error(
+      `git ls-files failed (status ${listing.status}) — the swept population cannot be `
+        + `decided, and an undecided population would silently pass both arms below.\n${listing.stderr}`,
+    );
+  }
+  const names = listing.stdout
+    .split("\0")
+    .map((name) => name.slice("scripts/".length))
+    .filter((name) => name.endsWith(".mts") && !name.includes("/"));
+  if (names.length === 0) {
+    throw new Error(
+      "git ls-files returned no top-level .mts under scripts/ — refusing rather than "
+        + "sweeping an empty population, which would pass both arms below.",
+    );
+  }
+  return new Set(names);
+}
+
+const TRACKED = trackedScriptNames();
 
 /**
  * Handing the WHOLE `process.argv` to the shared reader — with or without an
@@ -293,8 +350,8 @@ describe("the nineteenth ceremony", () => {
        is shared by parallel suites, so a file can leave between the listing and
        the read (#223). Caught by `listedSource`'s own guard on this change's
        first preflight, which is that guard doing exactly its job. */
-    const callers = readdirSync(SCRIPTS)
-      .filter((name) => name.endsWith(".mts") && !name.includes("disposable"))
+    const callers = [...TRACKED]
+      .sort()
       .map((name) => ({ name, body: readListedSource(join(SCRIPTS, name)) }))
       .filter((entry): entry is { name: string; body: string } =>
         entry.body !== null && entry.body.includes("openCeremonyWorld("));
@@ -341,8 +398,9 @@ describe("the nineteenth ceremony", () => {
       onto this reader would be a change to what they DO, made by a guard, which
       is not what a guard is for.
     */
-    const ceremonies = readdirSync(SCRIPTS)
-      .filter((name) => name.startsWith("ceremony-") && name.endsWith(".mts"))
+    const ceremonies = [...TRACKED]
+      .sort()
+      .filter((name) => name.startsWith("ceremony-"))
       .map((name) => ({ name, body: readListedSource(join(SCRIPTS, name)) }))
       .filter((entry): entry is { name: string; body: string } => entry.body !== null);
 
