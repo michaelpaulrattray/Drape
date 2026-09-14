@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+
 /**
  * ⚠ **#531 — THE ORDERED GUARD. His order (Crew reply #130, 2026-09-04),
  * verbatim:**
@@ -46,6 +48,42 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  *   quotes this defect and his order verbatim; it is prose he reads about the
  *   product, not a destination the product sends a customer to.
  */
+
+/*
+  THE CONTENDED FLOOR, DECLARED BY MEASURED CASUALTY (#741's family, found
+  while answering #964).
+
+  This suite walks `client/src`, `server`, `shared` and `drizzle` and reads
+  every product file it finds — ~1,700 of them — inside the vitest worker. That
+  is #741's class exactly, and on 2026-09-15 it was MEASURED as a casualty of
+  it: three full `pnpm test` runs of an unchanged `main` (`3e81fcc1`) under the
+  #743 worker cap, and in the third the ordered sweep below
+
+      "HIS TEST — no product file names a retired drape domain"
+
+  timed out at **6,466 ms** against vitest's 5,000 ms default. Read at the
+  artifact (`Error: STACK_TRACE_ERROR`, the shape #962 named), not inferred from
+  the file being slow.
+
+  ⚠ **THE ENROLLMENT RULE IS MEASURED CASUALTY, NEVER A STOPWATCH ON AN IDLE
+  MACHINE** — `suiteClocks.ts` carries the reason: `clientInputCaps` had 4,166 ms
+  of quiet margin and fell, while `characterSheet`, with the smallest margin in
+  the suite, got FASTER under load. This file passed its other two runs; the
+  variance IS the phenomenon.
+
+  ⚠ **AND THE GUARD THAT POLICES THIS CLASS CANNOT SEE THIS FILE.** The
+  population in `sourceSweepSuites.ts` is derived from the `readListedSource`
+  import, and the walk above is hand-rolled (`fs.readdirSync` + `fs.readFileSync`).
+  That module states the limit itself — *"a hand-rolled walk is invisible here …
+  a clean reading here is a FLOOR and not coverage"* — and this is its **second
+  named instance**, after `registerStack-guard.test.ts`, which #963 hand-declared
+  the same way for the same reason. The declaration is therefore hand-written and
+  unenforced, exactly as that precedent, and it is left that way ON PURPOSE:
+  moving this walk onto `readListedSource` would change what a FOUNDER-ORDERED
+  money-path guard (#531) silently skips, which is its own change with its own
+  controls rather than a rider on a clock.
+*/
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const PRODUCT_ROOTS = ["client/src", "server", "shared", "drizzle"];

@@ -92,6 +92,47 @@
  * timeout and does not look like contention; it looks like a real defect in
  * the refine road**, and a shift would have gone looking for one.
  *
+ * ⚠ **EVERY `Test timed out in 5000ms` QUOTED IN THIS FILE IS A STRING THE
+ * SUITE NO LONGER PRINTS TO THE READER THE TEAM USES (#962, 2026-09-15).**
+ * On vitest 4.1.11 the SAME failure reads two different ways, and the
+ * difference is the whole diagnosis:
+ *
+ *   default (console) reporter   `Error: Test timed out in 5000ms.`
+ *   **json reporter**            **`Error: STACK_TRACE_ERROR`** — no message
+ *
+ * `makeTimeoutError` builds the right message and then does
+ * `error.stack = stackTraceError.stack.replace(error.message, …)`, which is a
+ * no-op because the timeout message is not in the sentinel's stack; the
+ * default reporter prints `.message` and the json reporter serialises
+ * `.stack`. **An ASSERTION failure is identical in both**, so the blind spot
+ * belongs to this class alone. It also explains a misreading that looks like a
+ * finding: such a stack's last user frame is the `it(` line — the REGISTRATION
+ * site — not the line that was slow.
+ *
+ * ⚠ **AND THE JSON REPORTER IS THE ONE THIS VERY DOCTRINE PRESCRIBES** (#741's
+ * duration reading, #743's step 1), so the instrument the team was told to
+ * reach for is the one that hides the answer. It cost the shift that filed
+ * #962 a wrong hypothesis in a filed card and three extra full-suite runs.
+ * **`server/timeoutFailureIdentity.test.ts` drives the identity** over a real
+ * child run with an assertion failure as its negative control — so if vitest
+ * repairs this upstream, that guard reddens and these paragraphs get corrected
+ * instead of quietly rotting, which is how the eight citations got stale in
+ * the first place.
+ *
+ * ⚠ **THE SAME CARD MEASURED SOMETHING THAT CHANGES HOW ENROLLMENT READS:
+ * STARVATION IS AN ABSOLUTE STALL, NOT A MULTIPLIER.** Under fourteen busy CPU
+ * loops on this box, `atlasCommitHook` lost **71 seconds** of wall time on one
+ * arm (2.2–3.0 s quiet → 74.3 s) while `inkReferenceCrop`'s photograph arm, in
+ * the same run, moved only 53 → 124 ms. The blow-up is a lottery on which
+ * worker gets descheduled, not a property of the file — so the "1.2–1.5× when
+ * slow, 4.6–7.2× when quick" envelope in `suiteClocks.ts` describes the
+ * typical case and badly understates the tail. **A worker stalled for five
+ * seconds kills a 46 ms arm and a 4,900 ms arm alike**, which is the mechanism
+ * behind this file's existing and correct rule that quiet duration is not the
+ * enrollment test. It is NOT an argument for the global raise: what actually
+ * moved the reds from fourteen to one was the worker ceiling (#743), and this
+ * measurement is consistent with that rather than against it.
+ *
  * ⚠ **AND THE PER-ARM ROAD FAILED IN FRONT OF ME WHILE THIS WAS BEING PROVEN,
  * WHICH IS BETTER EVIDENCE THAN THE ARGUMENT FOR IT.** Four confirming runs
  * with twenty-three suites declared: three green, and the fourth red on

@@ -31,6 +31,14 @@
  *      const { accountRouter } = await import("./routes/account");
  * ```
  *
+ * ⚠ **THAT CAPTURE CAME OFF THE DEFAULT REPORTER AND THE JSON ONE SAYS
+ * SOMETHING ELSE ENTIRELY (#962):** the same failure reads `Error:
+ * STACK_TRACE_ERROR`, with no message and with the `it(` registration line
+ * where you expect the slow line. An assertion failure is identical in both
+ * reporters, so this is specific to the timeout class these three files
+ * govern. Driven by `server/timeoutFailureIdentity.test.ts`; the mechanism is
+ * written out in `contendedTestTimeout.ts`.
+ *
  * Every member of the family is a dynamic `import()` or a source read inside
  * vitest's default five seconds. Under full-suite parallel load on a developer
  * machine, cold-transforming a large barrel exceeds it — so the set roams with

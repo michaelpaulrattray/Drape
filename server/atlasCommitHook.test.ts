@@ -100,6 +100,50 @@ function repoWithMap(): string {
 
 const headMap = (dir: string) => armed(dir, "show", `HEAD:${MAP}`).stdout;
 
+/*
+  WHY 60_000 HERE AND NOT THE FAMILY'S 30_000 — the answer to #964, and the
+  number was never written down before it was asked for.
+
+  The file declares `CHILD_PROCESS_TEST_TIMEOUT_MS` (30 s) above, which is the
+  floor `childProcessTestTimeouts` requires of every suite that spawns. This
+  describe then stands a bare `60_000` over it, and a per-describe option wins.
+  That literal PREDATES the family helper — `childProcessTimeout.ts` records it
+  as already present when #548 measured this file — so it is inheritance, not a
+  second opinion about the right length.
+
+  ⚠ **#964 SAID THIS FILE DECLARES `allowTreeSweeps()` AND AT THE BYTES IT DOES
+  NOT.** It is not in `suiteClocks.ts`'s tree-sweep family at all: its arms spawn
+  real `git` through `runHook`, which is the CHILD-PROCESS family. The number
+  the card quoted is right and the family it named is wrong, which matters
+  because the two families have different enrollment rules.
+
+  # The verdict on #964: NOTHING. The clock is fine and the instrument was cruel.
+
+  Measured 2026-09-15 on this box, in the state shifts actually run in — the
+  #743 worker cap, `pnpm test` whole, three runs of an unchanged `main`:
+
+  | condition | worst arm here | of this clock |
+  |---|---|---|
+  | this file alone, 3 runs | 1,679 / 1,643 / 1,673 ms | **2.8%** |
+  | full suite, worker-capped, 3 runs | 3,863 / 3,182 / 2,611 ms | **6.4 / 5.3 / 4.4%** |
+  | #962's load run (14 spinners ON TOP of the cap) | **74,287 ms** | **124% — RED** |
+
+  `suiteClocks.ts` splits the population by utilisation: 67% FELL, 51% survived,
+  **≤48% survived**. At 4–6% this file is not near its clock under any condition
+  a shift meets; the 124% came from an instrument the card itself called harsher
+  than a shift's box (447 s wall against 156 s quiet, ~3×).
+
+  So no number moved. Raising it would buy nothing a shift can observe, and a
+  family raise would charge every `allowTreeSweeps()` call site for it.
+
+  ⚠ **AND THE CLOCK IS NOT A WATCHDOG FOR THESE ARMS AT ALL, WHICH IS THE PART
+  WORTH KEEPING.** `runHook` is `spawnSync`, so an arm here BLOCKS the event
+  loop and vitest's timer cannot fire while it runs. The 74,287 ms reading is
+  not "the clock stopped it at 60 s" — it is the arm running to completion for
+  seventy-four seconds and being marked failed afterwards. **For a synchronous
+  arm the clock is a post-hoc verdict, not an abort**, so a bigger number here
+  would not hide a hang any faster or slower; nothing would.
+*/
 describe("the pre-commit atlas arm (#501)", { timeout: 60_000 }, () => {
   beforeAll(() => {
     for (const hook of ["atlas-stage", "pre-commit"]) {

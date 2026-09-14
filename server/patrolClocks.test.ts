@@ -85,24 +85,79 @@ describe("patrol-clocks reader", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("OVERDUE by 3 days");
     expect(result.stdout).toContain("last run 2026-08-25 (10d ago)");
-    expect(result.stdout).toContain("4 seats are overdue");
+    expect(result.stdout).toContain("4 seats' clocks have fired");
+    expect(result.stdout).toContain("Janitor (overdue by 3)");
   });
 
-  it("negative control: a seat inside its clock is not overdue and exception 3 does not fire", () => {
+  it("negative control: a seat inside its clock has not fired and exception 3 does not fire", () => {
     writeAll(logFile(7, ["2026-09-02"]));
     const result = run("--dir", dir, "--today", "2026-09-04");
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("due in 5 days");
     expect(result.stdout).not.toContain("OVERDUE");
-    expect(result.stdout).toContain("No seat is overdue");
+    expect(result.stdout).toContain("No seat's clock has fired");
   });
 
   it("the day the clock lands reads DUE today, not overdue and not due in 0", () => {
     writeAll(logFile(7, ["2026-08-28"]));
     const result = run("--dir", dir, "--today", "2026-09-04");
     expect(result.status).toBe(0);
+    /* This arm's own property, unchanged: the ROW LABEL for a landed clock is
+       `DUE today` and never `due in 0 days` or `OVERDUE by 0`. */
     expect(result.stdout).toContain("DUE today");
-    expect(result.stdout).toContain("No seat is overdue");
+    expect(result.stdout).not.toContain("OVERDUE");
+    expect(result.stdout).not.toContain("due in 0 day");
+  });
+
+  /*
+    #971 — THE ARM THE ONE ABOVE USED TO CARRY BACKWARDS. It asserted `"No seat
+    is overdue"` on a landed clock, which pinned the verdict as *quiet* on the
+    exact day PROGRAM.md's standing exception 3 says a patrol's clock FIRES.
+    That was never the arm's stated purpose (its title is about the row label);
+    it rode along, and it made the Janitor a 4-day seat on a 3-day clock.
+
+    Measured before it was changed: `janitor-20260912-0730` §A records two
+    shifts skipping the seat on that verdict and a third overriding it from
+    PROGRAM.md — *"It had fired."* — and five further launches read `DUE today`
+    and skipped, because standing exception 3 is the only road that reaches a
+    patrol ahead of the category order.
+  */
+  it("a clock that lands today HAS fired — the verdict names it and does not call it overdue", () => {
+    writeAll(logFile(7, ["2026-08-28"]));
+    const result = run("--dir", dir, "--today", "2026-09-04");
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("4 seats' clocks have fired");
+    expect(result.stdout).toContain("Janitor (due today)");
+    /* The seat is named with the state it is actually IN. A verdict that
+       called a landed clock "overdue" would be the same defect mirrored. */
+    expect(result.stdout).not.toContain("Janitor (overdue");
+    expect(result.stdout).toContain("NEXT: Janitor");
+  });
+
+  it("a landed clock ranks BELOW a genuinely overdue one, so the worst seat is still NEXT", () => {
+    /*
+      WHAT THIS ARM GUARDS, AND WHAT IT CANNOT: it proves the WIDENED `fired`
+      set is still ordered and that `NEXT` is the worst seat in it — a landed
+      clock joining the set must not displace a seat two clocks gone, and
+      `next = fired[0]` must be the ranked head rather than whatever order the
+      seats were declared in.
+
+      It deliberately does NOT claim to discriminate the two ranking metrics,
+      because on this fixture it cannot: a landed clock is exactly 1.00 clocks
+      elapsed and 0 days overdue, and an overdue seat always exceeds BOTH, so
+      the orderings can never disagree about a landed-vs-overdue pair. Driven:
+      swapping the comparator to raw days overdue leaves this arm green and
+      reddens the arm above, which is the one written to tell them apart.
+    */
+    writeAll(logFile(7, ["2026-09-02"]));
+    writeFileSync(join(dir, "JANITOR_LOG.md"), logFile(3, ["2026-09-01"]), "utf8");
+    writeFileSync(join(dir, "WARDEN_LOG.md"), logFile(7, ["2026-08-21"]), "utf8");
+    const result = run("--dir", dir, "--today", "2026-09-04");
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Janitor    DUE today");
+    expect(result.stdout).toContain("Warden     OVERDUE by 7 days");
+    expect(result.stdout).toContain("NEXT: Warden");
+    expect(result.stdout.indexOf("Warden ")).toBeLessThan(result.stdout.indexOf("Janitor "));
   });
 
   it("ranks by clocks elapsed, not by raw days overdue", () => {
