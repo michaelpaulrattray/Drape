@@ -1,7 +1,7 @@
 {
-  "edition": 404,
-  "updatedAt": "2026-09-14T10:03:16.368Z",
-  "shift": "THREE FINISHED JOBS ARE SITTING UNMERGED AND THEY NEED ONE WORD FROM YOU — AND THE REVIEWER CARD YOU WAVED AWAY IS CLOSED, WITH THE ANSWER IN IT.\n\nYOUR TAP, FIRST. You marked the outside-reviewer job \"not relevant\". Before closing it I read it against the real run logs rather than its own write-up, and the reading finished it rather than making it stale.\n\nEverything about that reviewer is identical either side of the day it stopped: the same version, the same internals, the same machine, the same instructions we send it. It reaches the point of starting work and then dies on its very first question, in under a second, having spent nothing. The last time it worked it spent $4.40. So it is not our code, our settings or our machines — it is the account it bills to, which is the one thing a shift cannot see and the one thing you can. You have said it is not relevant, so the team stops asking. Closed.\n\nTwo things in that job's own write-up were wrong and are corrected on the way out, because anyone scanning the list would repeat them: it named the wrong \"last good\" run (that one produced no verdict at all), and there is a green-looking run from yesterday morning that also reviewed nothing. Both read as recoveries and neither is one.\n\nWHAT THAT COSTS, AND IT IS THE ONE THING ON YOUR DESK. Our own rule says a job touching money or sign-in is built but NOT merged until the reviewer gives a verdict. Three now qualify: the refund-label fix from two nights ago, and two sets of real tests for the sign-in and sign-up routes. All three passed every automatic check. All three are finished. And all three have now drifted out of step with the live code, so each extra day adds a re-merge on top of the wait. The desk card asks you one question: merge them on the automatic checks alone, or keep holding. My recommendation is on the card.\n\nTHE BILLING FAULT FROM LAST NIGHT IS BUILT. A customer who cancels keeps their subscription alive to the end of the period — so for a few weeks they can hold two live subscriptions at once. A stray message about the OLD one used to overwrite the NEW one on their record, and weeks later, when the old one finally died, the record pointed at it and the account was quietly dropped to free while the new subscription was alive and billing.\n\nThe repair asks Stripe which of the two is newer, and only when the two differ, so the ordinary message costs nothing extra. Nine checks drive the real webhook. Proved by breaking it: with the guard removed three of the nine go red, and the six that must stay green — above all a genuine resubscribe — stay green. A guard that refused everything would have passed the first three and been a disaster.\n\nAND A TIDY-UP WHERE NOTHING SHOULD LOOK DIFFERENT. A small mono heading with a line running off it — the one above STAFF in your account menu, above HELP in the help menu, and above the quote on the casting page — was written out three separate times, and the casting one had invented its own name for a drawing that was already identical to the other two. It is one shared part now. I ran both versions of the site side by side, opened all three, in both light and dark, and measured them: every position identical to the hundredth of a pixel. Then I looked at all six pairs. Nothing moved.\n\nNOTHING WAS SPENT.",
+  "edition": 407,
+  "updatedAt": "2026-09-14T12:58:39.299Z",
+  "shift": "NOTHING ON YOUR SCREEN CHANGED TONIGHT — I FIXED THE CREW'S OWN EYESIGHT.\n\nTHE ONE THING THAT NEEDS YOU is unchanged from last night: five finished jobs are stacked up waiting on your one word about the outside reviewer. The card on your desk lists all five, with three options and a recommendation. Nothing is at risk; they just sit, and each drifts a little further out of step with the live code every day.\n\nWHAT WAS WRONG, IN PLAIN TERMS. Every night shift starts by reading a short summary of the state of things, and one line in it says what changed since the shift before. That line could say \"nothing changed\" when things had — confidently, with no sign anything was wrong.\n\nHere is the mechanism, because it is simple and it is nasty. The summary worked out which shift came before it by reading the TIME IN A FILENAME — and those filenames are typed by hand at the end of each night. Over 377 of them they have drifted into two different clocks, plus one that matches neither. So the summary regularly picked the wrong predecessor. Worse: when the name reads as a time that has not happened yet, the question it then asks the code history can only ever come back empty. Not \"nothing changed\" — nothing CAN be returned. And that empty answer gets printed as a clean, confident \"none\".\n\nIT HAPPENED ON TONIGHT'S OWN LAUNCH, which is how I could prove it rather than argue it. My own summary said nothing had changed. Two things had.\n\nWHY IT MATTERS TO YOU. A shift that believes the tree stood still builds on a stale picture — redoes work that landed hours earlier, misses a ruling of yours that arrived overnight, or merges against a tree that has moved under it. It fails silently and always in the same direction: toward \"nothing happened\", which is the worst possible direction for that particular sentence.\n\nTHE FIX. It now uses the time the computer itself recorded when the file was written, instead of a time somebody typed at 3am. That cannot drift and cannot be in the wrong clock. The old reading is kept as a second opinion and the summary says out loud when the two disagree — it tells the shift which other entry a handoff might mean, rather than quietly picking one. And if the time it gets is somehow still in the future, it now REFUSES and says so instead of printing a false \"nothing\".\n\nWHAT I DELIBERATELY DID NOT DO, and it was the tempting fix: rename the 377 old files, or tighten the rule about how shifts name them. A naming rule is a thing a shift can get wrong again next week — and 38 of the 377 already disagree. The filesystem already knows the answer, so I used that.\n\nONE MORE THING WORTH KNOWING. That summary line has been the first thing every shift reads for a fortnight and had NO test behind it at all — it was written in a place nothing could check. It has fifteen now, and I broke the fix seven different ways to confirm each of them actually catches its own problem.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-14T10:03:41.678Z",
+      "readAt": "2026-09-14T12:58:53.791Z",
       "items": [
         {
           "issueNumber": 16,
@@ -284,27 +284,27 @@
       "issueNumber": null,
       "state": "open",
       "filedAt": "2026-09-14T10:03:16.369Z",
-      "title": "Three finished jobs are sitting unmerged waiting for a reviewer that has not answered in two days. Merge them on our own checks, or keep holding?",
-      "productImpact": "We have a rule: a job that touches money or signing in gets built and opened, but is NOT merged until the outside reviewer has looked at it. Every other job merges once our own automatic checks pass.\n\nThat reviewer has produced no verdict since Friday night. Tonight I established what it is not — not our code, not our settings, not the version we use, not the machines; the run reaches the point of starting and then dies on its first question in under a second, having spent nothing, where the last working run spent $4.40. That points at the account it bills to, and you have said that job is not relevant, so I closed it and the team has stopped asking.\n\nBut the rule is still running, and three finished jobs are now stacked behind it:\n\n- the refund-label fix for your Billing filter (two nights old),\n- real tests for the email sign-up and sign-in routes,\n- real tests for Sign in with Google.\n\nAll three pass every automatic check we have. All three are done. Two of the three are TEST-ONLY — they change no product behaviour at all — and a shift deliberately did not invent an exception for that, because the rule does not carve one out and inventing exceptions is how rules stop meaning anything.\n\nThere is a cost to waiting that grows: all three have now drifted out of step with the live code, so each one needs a re-merge before it can go in, and every further day of live changes makes that slightly worse. Nothing is at risk today; the work simply sits.",
+      "title": "FIVE finished jobs are now sitting unmerged waiting for a reviewer that has not answered in four days. Merge them on our own checks, or keep holding?",
+      "productImpact": "We have a rule: a job that touches money or signing in gets built and opened, but is NOT merged until the outside reviewer has looked at it. Every other job merges once our own automatic checks pass.\n\nThat reviewer has produced no verdict since Friday night — four days now. It was established two nights ago what this is NOT: not our code, not our settings, not the version we use, not the machines. The run reaches the point of starting and then dies on its first question in under a second having spent nothing, where the last working run spent $4.40. That points at the account it bills to. You have said that card is not relevant, so it is closed and the team has stopped asking.\n\n⚠ THE COUNT WAS WRONG LAST NIGHT AND IT IS CORRECTED HERE. This card said FOUR and listed four. Counted again tonight, straight off the open jobs carrying the hold: it is FIVE. The subscription fix was already in the pile and the card had not named it — so you were being asked about a smaller problem than the one you have.\n\nThe five, oldest first:\n\n- real tests for the email sign-up and sign-in routes (changes no product behaviour),\n- real tests for Sign in with Google (changes no product behaviour),\n- the refund-label fix for your Billing filter (a label on a staff screen),\n- the subscription fix — an older update from Stripe can no longer overwrite a newer one,\n- the refund fix — a customer charged for a tile that never arrived now gets the credits back.\n\nAll five pass every automatic check we have. All five are done. Two are TEST-ONLY and a shift deliberately did not invent an exception for that, because the rule does not carve one out and inventing exceptions is how rules stop meaning anything.\n\n⚠ THE AUTOMATIC HALF OF THIS RULE IS NOT WORKING, found two nights ago. The check that is supposed to flag a money job for you looked at the refund fix and said no money was touched — it works from a list of file names that covers where money is stored and bought but none of the places where money is DECIDED. 21 of the 27 parts of the system that move credits are outside it. Those jobs were labelled and held BY HAND, on the written rule. That is filed separately (#958); it does not change the question here, but it does mean the pile has been protected by shifts reading the rule rather than by the machine.\n\nThere is a cost to waiting that grows: all five have drifted out of step with the live code, so each needs a re-merge before it can go in, and every further day makes that slightly worse. Nothing is at risk today; the work simply sits.",
       "workedExample": "The refund-label fix is the concrete one. Right now, three kinds of money record — a failed Stripe refund, an issued refund, and an invoice paid after its plan ended — show up when you filter your audit log by Billing but draw no Billing label on the row. The fix is written, checked and waiting. It is the only record you keep of that money moving, and it has been sitting finished for two days because a reviewer we cannot reach has not said a word about it.",
       "options": [
         {
           "key": "merge-on-our-checks",
-          "label": "Merge all three on our own automatic checks, and keep doing that while the reviewer is silent",
-          "consequence": "The three go in tonight or next shift. We keep every check we run ourselves — types, the full test suite, the secret scan, the architecture checks — and we lose the second pair of eyes on money and sign-in code until the reviewer is back. Two of the three change no product behaviour whatsoever; the third is a label on a staff screen."
+          "label": "Merge all five on our own automatic checks, and keep doing that while the reviewer is silent",
+          "consequence": "The five go in tonight or next shift. We keep every check we run ourselves — types, the full test suite, the secret scan, the architecture checks — and we lose the second pair of eyes on money and sign-in code until the reviewer is back. Two of the five change no product behaviour whatsoever; a third is a label on a staff screen."
         },
         {
           "key": "keep-holding",
           "label": "Keep holding them until the reviewer answers",
-          "consequence": "The rule stays exactly as written and nothing merges that a second reader has not seen. The pile grows — tonight's subscription fix is a fourth — and each one needs a re-merge before it can land. If the reviewer is down for a week, a week of money and sign-in work waits."
+          "consequence": "The rule stays exactly as written and nothing merges that a second reader has not seen. The pile grows — three two nights ago, five tonight — and two of the five decide how much money a customer gets back. Each needs a re-merge before it can land. If the reviewer is down for a week, a week of money and sign-in work waits."
         },
         {
           "key": "hold-only-behaviour",
           "label": "Hold only the jobs that change money behaviour; let test-only ones through",
-          "consequence": "Two of the three merge now and the label fix merges too, since it is a staff screen rather than a payment road. Tonight's subscription fix keeps waiting, which is right — it is the one that actually changes what happens to a customer's money. The cost is that someone has to judge 'does this change behaviour' each time, and that judgement is exactly what the rule was written to avoid."
+          "consequence": "The two test jobs merge now and the label fix merges too, since it is a staff screen rather than a payment road. The subscription fix and the refund fix keep waiting, which is right — they are the two that actually change what happens to a customer's money. The cost is that someone has to judge 'does this change behaviour' each time, and that judgement is exactly what the rule was written to avoid."
         }
       ],
-      "recommendation": "The third one. It keeps the protection where it is actually worth something — the code that decides what happens to a customer's money — and stops us holding two sets of TESTS hostage to an outage nobody can put a date on. If you would rather not have shifts making that judgement call at all, say the first and I will note that it applies only while the reviewer is silent."
+      "recommendation": "Still the third one, and the corrected count strengthens it rather than changing it. Two of the five are TESTS and change nothing a customer can see; a third is a label on one of your staff screens. The other two are exactly what the protection is for and should keep waiting. If you would rather no shift ever makes that judgement call, say the first and I will note that it applies only while the reviewer is silent."
     },
     {
       "id": "moderator-audit-category-938",
@@ -358,7 +358,7 @@
     {
       "id": "boards-canvas-no-dark-916",
       "issueNumber": 916,
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-13T17:50:02.682Z",
       "title": "Your boards do not follow the theme - the canvas has no dark version at all. Is that on purpose, or a gap? One sentence either way.",
       "productImpact": "Flip Drape to dark and everything inverts - the studio, the lobby, your staff screens. Open a board and the canvas stays light. It is not a half-finished dark version; there is none at all.\n\nI found this while checking every stylesheet in the app for the same gap that caused the highlight fault you photographed. The boards canvas keeps its colours in its own separate file, and that file has no dark version in it - not one line. The rest of the app's colours live in a file with three.\n\nTHERE IS A GOOD ANSWER ON BOTH SIDES, WHICH IS WHY THIS IS YOURS AND NOT MINE. Either way the work afterwards is small, and about the same size in both directions. What is missing is only the sentence.\n\nONE THING WORTH KNOWING BEFORE YOU ANSWER: the board colours are a SECOND set, kept apart from the app's main palette. That is not wrong in itself, but it is why this stayed invisible - the automatic check that watches for hard-coded colours cannot be pointed at that file without either flagging sixteen perfectly correct lines, or officially recording that Drape has two palettes. Your answer settles which of those is true.",
@@ -4941,12 +4941,39 @@
   ],
   "pipeline": [
     {
+      "id": "shift-digest-clock-960",
+      "title": "The night shifts could be told 'nothing changed' when things had — the summary each one reads now uses a clock that cannot drift",
+      "status": "merged",
+      "prNumber": 961,
+      "note": "Card #960, filed by last night's shift and closed tonight. NOTHING A CUSTOMER SEES CHANGED — this is the crew's own tooling. WHAT WAS WRONG: the summary a shift reads at launch works out which shift came before it, and it did so by reading a time typed into a filename by hand. Across 377 entries those names have drifted into two clocks plus one that matches neither, so it picked the wrong predecessor at 38 positions — and when the name reads as a time that has not happened yet, the question it asks the code history can only come back empty, printed as a confident 'none'. It fired on this shift's own launch: my summary said nothing had changed and two things had. THE FIX: it reads the time the computer recorded when the file was written, which cannot drift and cannot be in the wrong clock; it keeps the old reading as a second opinion and says out loud when they disagree instead of quietly picking; and a time in the future is now REFUSED rather than printed as 'nothing'. NOT DONE ON PURPOSE: renaming the 377 old files or tightening the naming rule — a convention is a thing a shift can get wrong again next week. THE PART WORTH KNOWING: this line had no test behind it at all, because it lived where nothing could check it. It has fifteen now, and the fix was broken seven ways to prove each one catches its own problem."
+    },
+    {
+      "id": "canvas-light-gap-916",
+      "title": "Your boards still ignore the theme — but the file no longer claims that is on purpose, and it now says where it ends: your rebuild",
+      "status": "merged",
+      "prNumber": 959,
+      "note": "Card #916, closed on your own reply. NOTHING ON ANY SCREEN CHANGED, and that was checked rather than claimed: the app was built before and after and every stylesheet came out byte for byte identical. WHAT WAS WRONG: the file holding the canvas's sixteen colours said in writing that the light-only palette was on purpose. You had just told us the opposite — that the rebuild will have a dark mode — so the next reader would have seen a settled decision where there is a gap. Your words are in that file now, along with where the gap closes. FOUND ON THE WAY: the file justified itself twice with a reason that died on 8 September — \"the app defaults to dark\", which stopped being true when you ruled light is the default. The decision it rests on is still right and still working; its reason was stale. Both fixed, and the rest of the code swept for the same dead reason with no other live copy found. WHY NOT BUILD THE DARK CANVAS NOW: sixteen hand-picked greys is a design act, it would be thrown away at your rebuild, and in the meantime it would make that file a second dark palette competing with the real one. The check now refuses the day it grows one, and says to put the colours in the real place instead — proved by breaking it six ways, each one caught."
+    },
+    {
+      "id": "lost-claim-refund-896",
+      "title": "A tile that fails in the split second the recovery sweep is looking at it now gets its credits back — it used to be charged and forgotten",
+      "status": "blocked",
+      "prNumber": 954,
+      "note": "Card #896, filed out of the reviewer head-to-head you already have on your desk. HELD, not merged — it changes how many credits a customer gets back, so our own rule keeps it waiting for the outside reviewer. WHAT IT IS: when a sheet dies halfway, a sweep gives back the credits for every tile that never arrived. It takes one look at the eight tiles, works out which are owed, then walks them one at a time. If the machine that died is still twitching and marks a tile \"failed\" in the split second between that look and the sweep reaching it, the sweep says \"someone else settled this\" and moves on — and if that other machine died between marking the tile failed and handing the money back, nobody ever pays. The sheet says \"didn't arrive · refunded\" and there is no refund. Twenty credits, gone, and nothing looks again because a closed sheet is never re-examined. NOW: before it closes the books it re-reads every tile it was beaten to, and your credit record with it, and pays whatever the other machine did not. It cannot pay twice — if the other refund landed, your record says so. PROVED BY BREAKING IT THREE WAYS: fix removed, five checks go red; fix made greedy so it pays every tile it was beaten to, four go red and three of those are the ones whose whole job is to stop a double payment; and the subtlest mistake of all — reading your credit record from the stale look rather than a fresh one — reddens exactly one check, the right one. HAS IT HIT YOU? No: I read the live database, and every failed tile has its refund. TWO MORE OF THE SHAPE were found while sweeping for siblings and filed rather than swept in (#955, #956) — the cancel road, which no reader can see at all, and the receipt's own counts."
+    },
+    {
+      "id": "dead-relative-time-932",
+      "title": "A dead piece of code that looked alive is gone — and the reason it looked alive is worth knowing",
+      "status": "merged",
+      "prNumber": 957,
+      "note": "Card #932, filed by an earlier housekeeping pass. NOTHING A CUSTOMER OR YOU CAN SEE CHANGES. WHAT IT IS: a small function in the admin code that turns a date into \"3h ago\". A recent clean-up moved two of its neighbours into the shared foundation and left this one behind, writing down the reason: \"it has one screen's worth of users.\" It had NONE. The users belonged to a function with EXACTLY the same name in a different file two doors away, which is alive, is used by your change-request list, and is untouched. A plain search for the name finds ten files and looks busy; reading what each file actually imports finds nobody at all using this one. IT ALSO LOOKED ALIVE FROM THE INSIDE: it was the only reason its file reached into the shared foundation, so the file appeared to be a foundation user for the sake of a function nobody called. Both are gone. WHAT WAS CORRECTED RATHER THAN CUT: the note explaining why it stayed (its reason was the other function's users), and a design brief that lists all three date functions as keepers — already wrong about the first two, and now true. THE CHECK THAT PROVED IT: not a second search, which is the tool that was wrong the first time. The compiler — with the function gone, anything still reaching for it fails to build. It built, the admin screens' 219 checks passed, and so did all 12,990."
+    },
+    {
       "id": "eyebrow-promotion-928",
       "title": "The small mono heading above STAFF, HELP and the casting quote is one shared part now — and nothing moved",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 953,
-      "note": "Card #928, filed by last night's design-components check. NOTHING A CUSTOMER SEES CHANGES — that is the whole point of this kind of job. WHAT IT IS: a short heading in the small mono lettering, then a hairline running off to the end of the row. Three places draw it, and none of them shared any code: your help menu had its own private copy, your account menu had the same three pieces typed out by hand, and the casting page had invented a second NAME for a drawing that was already identical to the other two, down to the byte. It is one part now, named for what it is rather than for whichever screen got there first. TWO THINGS THE JOB DID NOT KNOW, and I found both by reading the code before starting. First, the spacing it said to move was actually TWO different spacings — your account menu overrides it and adds the divider line above STAFF — so moving it carelessly would have dropped that divider, which no test would have caught. Second, a fifth check names this drawing and does not live anywhere near it. HOW I KNOW NOTHING MOVED: two versions of the site running side by side, all three places, light and dark, measured rather than glanced at — every position identical to the hundredth of a pixel, including the account menu's divider. Then I looked at all six pairs.",
-      "cardId": null
+      "note": "Card #928, filed by last night's design-components check. NOTHING A CUSTOMER SEES CHANGES — that is the whole point of this kind of job. WHAT IT IS: a short heading in the small mono lettering, then a hairline running off to the end of the row. Three places draw it, and none of them shared any code: your help menu had its own private copy, your account menu had the same three pieces typed out by hand, and the casting page had invented a second NAME for a drawing that was already identical to the other two, down to the byte. It is one part now, named for what it is rather than for whichever screen got there first. TWO THINGS THE JOB DID NOT KNOW, and I found both by reading the code before starting. First, the spacing it said to move was actually TWO different spacings — your account menu overrides it and adds the divider line above STAFF — so moving it carelessly would have dropped that divider, which no test would have caught. Second, a fifth check names this drawing and does not live anywhere near it. HOW I KNOW NOTHING MOVED: two versions of the site running side by side, all three places, light and dark, measured rather than glanced at — every position identical to the hundredth of a pixel, including the account menu's divider. Then I looked at all six pairs."
     },
     {
       "id": "subscription-newer-guard-804",
@@ -6298,6 +6325,48 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0914n-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 48 open, one closed tonight and none filed; NEXT UP is empty, and this was the one takeable card on the board",
+      "detail": "48 open, one fewer than last night — #960 closed, nothing new filed, which is the honest direction on a night whose job found no new faults. 27 cards have had no comment, close or commit for seven days, unchanged for the fourth night; the oldest is #28 at 20 days. The category order was re-read at the code rather than off card titles: Bugs — all four are either finished and held on your word (#804, #940) or blocked on one of the held jobs (#923, #955); Small fixes and Security — empty; Process — three are held PRs, one is the Retro's own, and #960 was the takeable one; Performance — the Machinist's programme; Housekeeping — the Janitor's clock does not fire until tomorrow; Casting upkeep — seven, none small. Worth saying plainly: the raw 48 badly overstates what a shift can pick up. Nothing waits on you but the five held jobs."
+    },
+    {
+      "id": "fable-reviewer-no-verdict-884-0914d",
+      "severity": "warning",
+      "state": "open",
+      "title": "The outside reviewer failed again tonight — the 31st in a row, identical to the other thirty, and your 'wait' stands",
+      "detail": "Tonight's job touched no money and no sign-in code, so it merged on our own checks as your rule allows — but the reviewer still ran and still died the same way: it reached the point of asking the model, failed in half a second, used nothing and spent nothing. Read out of the run's own log rather than off the red tick, which is the only reading that can tell this apart from a genuine bad verdict. Nothing here is new and nothing was re-diagnosed: you closed #884 saying the only unread thing left is your own Fable allowance. The five finished jobs behind it are on your desk."
+    },
+    {
+      "id": "queue-shape-0914m-foreman",
+      "severity": "info",
+      "state": "resolved",
+      "title": "The queue: 49 open, one closed tonight and one filed; NEXT UP is empty, and almost nothing in it is actually takeable",
+      "detail": "49 open, level with last night — one closed (#916, on your canvas reply) and one filed (#960, about our own shift tooling). 27 cards have had no comment, close, reopen or commit for seven days, unchanged from last night; the oldest untouched is #28 at 20 days. None are urgent and NEXT UP is empty.\n\n⚠ WORTH KNOWING RATHER THAN THE RAW NUMBER: tonight the queue read as busy and was nearly empty of work anyone could start. Of the bug cards, three are finished and sitting in the held pile and one is blocked on the reviewer. Two more (#955, #956) turned out to depend on a held job — they are now marked blocked so no shift starts them by accident. Four of the housekeeping cards are reserved for the cleanup patrol, which is next due tomorrow, and two more ask for a decision rather than a fix. Your one word on the held pile is what actually moves this list."
+    },
+    {
+      "id": "fable-reviewer-no-verdict-884-0914c",
+      "severity": "warning",
+      "state": "resolved",
+      "title": "The outside reviewer failed again tonight, the same way, and your 'wait' stands",
+      "detail": "Tonight's job was not money or sign-in work, so it merged on our own checks as the rule allows — but the reviewer still ran and still failed, identically to every other one: it reached the point of starting, died on its first question in 0.5 seconds, and spent nothing. Read at the run's own record rather than at the red tick, which is the only way to tell a failure from a verdict. You have said the reviewer card is not relevant and it is closed; I did not re-diagnose it. Nothing new here — it is recorded so the run of failures stays countable."
+    },
+    {
+      "id": "queue-shape-0914l-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 49 open, one closed tonight and three filed; NEXT UP is empty and nothing new waits on you",
+      "detail": "49 open, up from 47 — one card closed (#932) and three filed, which is the honest direction when a job's own sweep finds real things. Two of the three (#955, #956) are the same fault as tonight's fix down two other roads, both measured on the live database as having hurt nobody yet; the third (#958) is about our own safety gate and is the sharpest of them. The main job (#896) is built and waiting on the reviewer rather than closed, which is why the number did not fall further. 27 cards have had no comment, close, reopen or commit for seven days — one more than last night. None are urgent, NEXT UP is empty, and the oldest untouched card is #28 at 20 days."
+    },
+    {
+      "id": "fable-reviewer-no-verdict-884-0914b",
+      "severity": "warning",
+      "state": "open",
+      "title": "The outside reviewer failed again tonight — at least 40 failed runs, and your 'wait' stands",
+      "detail": "Counted rather than carried over: of the last 100 reviewer runs, 40 ended in failure, the oldest of those on 13 September — and the list does not reach back far enough to see the start, so 40 is a floor. Tonight's run on the refund fix died the same way as all of them: it reached the point of starting work, failed on its first question in 0.8 seconds, and spent nothing. You have said the reviewer card is not relevant and it is closed; I did not re-diagnose it. ONE THING WORTH KNOWING FOR ANYONE SCANNING THE LIST: a reviewer run tonight shows GREEN, and it reviewed nothing — the green means 'we looked at this job and decided it did not need a review'. A run finishing is not a verdict."
+    },
+    {
       "id": "queue-shape-0914k-foreman",
       "severity": "info",
       "state": "open",
@@ -6314,14 +6383,14 @@
     {
       "id": "queue-shape-0914j-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 50 open, two closed tonight and one filed; NEXT UP is empty and nothing waits on you",
       "detail": "50 open, down one on last night — two cards closed (#931, #933) and one filed (#938), which is a night that finished both things it started and found one more while inside the second. 26 have had no comment, close, reopen or commit for seven days, unchanged for the third night running. None are urgent, NEXT UP is empty, and the oldest untouched card is #28 at 19 days. The one filed card carries its measurements and the decision it needs written into it, so whoever takes it re-derives nothing."
     },
     {
       "id": "fable-reviewer-no-verdict-884-30",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The outside reviewer has now failed 30 times in a row, all from the same moment — your 'wait' stands",
       "detail": "Both of tonight's changes failed the same way as the twenty-eight before them: 563 milliseconds, one turn, zero dollars, an error on the very first step, every one of them still tracing to 1am on the 12th. I read each run's own numbers rather than the red tick beside it. You said wait, so I did not re-diagnose it. Neither change touched money or sign-in — the machine confirmed that by applying no label — so both merged on the machine checks alone."
     },
@@ -6712,7 +6781,7 @@
     187
   ],
   "nextUp": {
-    "readAt": "2026-09-14T10:03:41.677Z",
+    "readAt": "2026-09-14T12:58:53.791Z",
     "items": []
   }
 }
