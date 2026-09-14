@@ -19,7 +19,7 @@
 
 import { getDb } from "./db";
 import { auditLogs, AUDIT_ACTIONS, type AuditAction, type AuditLog } from "../drizzle/schema";
-import { eq, and, gte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, inArray, count as countRows, type SQL } from "drizzle-orm";
 import { createModuleLogger } from "./logging/logger";
 const log = createModuleLogger("auditLog");
 
@@ -364,6 +364,49 @@ export interface FilteredAuditLogsOptions {
   endDate?: Date;
 }
 
+/*
+  EVERY condition a staff member's filter choice means, as ONE statement.
+
+  EXPORTED so `server/auditLogFilterSql.test.ts` can render the SQL this
+  actually sends (invariant 5, *assert at the wire*) — and so the page query
+  and the COUNT query behind the pager cannot drift into asking two different
+  questions, which is working law 4 at the scale of two lines.
+
+  ⚠ THE CATEGORY LINE IS THE #941 FIX AND IT BELONGS HERE, NOT AFTER THE
+  FETCH. Until 2026-09-14 the category was applied in JavaScript to whichever
+  rows the page happened to contain, so "Security" did not mean *the security
+  rows* — it meant *whichever of the newest 20 rows were security rows*.
+  Measured on the dev table the day it was fixed: 3,047 rows, 19 of them
+  `auth.login`, and the Security filter returned 8 at a page size of 20 and 11
+  at a page size of 100. **The answer changed with the page size**, no page
+  size reached the login rows at all, and the CSV export
+  (`routes/moderatorExports.ts`) shipped that same partial slice as a
+  confident file.
+*/
+export function auditLogFilterConditions(
+  options: Omit<FilteredAuditLogsOptions, "limit" | "offset">,
+): SQL | undefined {
+  const { severity, actionCategory, userId, startDate, endDate } = options;
+  const conditions: SQL[] = [];
+
+  if (severity) conditions.push(eq(auditLogs.severity, severity));
+  if (userId) conditions.push(eq(auditLogs.userId, userId));
+  if (startDate) conditions.push(gte(auditLogs.createdAt, startDate));
+  if (endDate) conditions.push(lte(auditLogs.createdAt, endDate));
+
+  /*
+    An empty bucket would render `IN ()`, which MySQL rejects outright — so an
+    unknown category is refused here by returning no rows rather than by
+    silently dropping the filter and returning EVERY row, which is the failure
+    direction that would look like the feature working.
+  */
+  if (actionCategory) {
+    conditions.push(inArray(auditLogs.action, ACTION_CATEGORIES[actionCategory] ?? []));
+  }
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
 /**
  * Get filtered and paginated audit logs for admin dashboard
  */
@@ -375,53 +418,32 @@ export async function getFilteredAuditLogs(options: FilteredAuditLogsOptions): P
   const db = await getDb();
   if (!db) return { logs: [], total: 0, hasMore: false };
 
-  const { limit, offset, severity, actionCategory, userId, startDate, endDate } = options;
+  const { limit, offset } = options;
+  const where = auditLogFilterConditions(options);
 
-  // Build conditions array
-  const conditions: ReturnType<typeof eq>[] = [];
+  const logs = await db
+    .select()
+    .from(auditLogs)
+    .where(where)
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  if (severity) {
-    conditions.push(eq(auditLogs.severity, severity));
-  }
+  /*
+    A REAL count of the matching rows. It used to be
+    `offset + logs.length + (hasMore ? 1 : 0)` — a number computed from the
+    page it was describing, so the footer read "Showing 1–8" of a total it had
+    invented, and paging forward re-filtered a different slice. The pager can
+    only stop lying if this counts the same population the page is drawn from,
+    which is why both take the identical `where`.
+  */
+  const [counted] = await db
+    .select({ value: countRows() })
+    .from(auditLogs)
+    .where(where);
+  const total = counted?.value ?? 0;
 
-  if (userId) {
-    conditions.push(eq(auditLogs.userId, userId));
-  }
-
-  if (startDate) {
-    conditions.push(gte(auditLogs.createdAt, startDate));
-  }
-
-  if (endDate) {
-    const { lte } = await import("drizzle-orm");
-    conditions.push(lte(auditLogs.createdAt, endDate));
-  }
-
-  // Get logs with filters
-  let query = db.select().from(auditLogs);
-  
-  if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as typeof query;
-  }
-
-  let logs = await query.orderBy(desc(auditLogs.createdAt)).limit(limit + 1).offset(offset);
-
-  // Filter by action category if specified (done in JS since it's an array match)
-  if (actionCategory && ACTION_CATEGORIES[actionCategory]) {
-    const categoryActions = ACTION_CATEGORIES[actionCategory];
-    logs = logs.filter((log: AuditLog) => categoryActions.includes(log.action as AuditAction));
-  }
-
-  // Check if there are more results
-  const hasMore = logs.length > limit;
-  if (hasMore) {
-    logs = logs.slice(0, limit);
-  }
-
-  // Get total count (simplified - just return current batch info)
-  const total = offset + logs.length + (hasMore ? 1 : 0);
-
-  return { logs, total, hasMore };
+  return { logs, total, hasMore: offset + logs.length < total };
 }
 
 /**
@@ -436,18 +458,29 @@ export async function getAbuseAlertsSummary(limit: number = 10): Promise<{
   const db = await getDb();
   if (!db) return { alerts: [], criticalCount: 0, warningCount: 0, recentPatterns: [] };
 
-  // Get recent abuse-related events
-  const abuseActions = ACTION_CATEGORIES.abuse;
-  const alerts = await db
+  /*
+    ⚠ THE LAW-7 SIBLING OF #941, AND IT WAS THE WORSE OF THE TWO. This read
+    the newest 100 rows of the WHOLE table and then kept the abuse ones — with
+    no `where` clause at all — so a site-wide credential-stuffing alarm could
+    fire, land correctly in the abuse bucket, and still show up nowhere a
+    person looks, purely because a hundred ordinary rows arrived after it. On
+    the dev table `casting.refusal` is 2,927 of 3,047 rows, which is how fast
+    a hundred rows arrive.
+
+    That is precisely the failure the founder ruling above this bucket exists
+    to prevent — *"the wire would exist, the row would exist, and staff would
+    never see it"* — reached by a different road.
+
+    The severity counts below are unchanged in meaning: they still describe
+    the alerts being SHOWN. What changed is that the alerts being shown are
+    now genuinely the newest abuse rows.
+  */
+  const abuseAlerts = await db
     .select()
     .from(auditLogs)
+    .where(inArray(auditLogs.action, ACTION_CATEGORIES.abuse))
     .orderBy(desc(auditLogs.createdAt))
-    .limit(100);
-
-  // Filter to abuse events
-  const abuseAlerts = alerts.filter((log: AuditLog) => 
-    abuseActions.includes(log.action as AuditAction)
-  ).slice(0, limit);
+    .limit(limit);
 
   // Count by severity
   const criticalCount = abuseAlerts.filter((a: AuditLog) => a.severity === "critical").length;
@@ -513,9 +546,17 @@ export async function getAuditStatistics(): Promise<{
   const byCategory = Array.from(categoryCounts.entries())
     .map(([category, count]) => ({ category, count }));
 
-  // Get total count (approximate)
-  const allLogs = await db.select().from(auditLogs).limit(10000);
-  const totalLogs = allLogs.length;
+  /*
+    #941's third sibling, same class as the two above: a COUNT taken by
+    fetching rows. This pulled up to 10,000 whole rows across the wire and
+    returned their length, so the "Total entries" tile on both staff panels
+    stopped counting at exactly 10,000 however large the table grew — a number
+    that looks precise and silently stops moving. The row counts above
+    (`bySeverity`, `byCategory`) are NOT in this class: they aggregate the
+    complete 24-hour set, not a page of it.
+  */
+  const [countedAll] = await db.select({ value: countRows() }).from(auditLogs);
+  const totalLogs = countedAll?.value ?? 0;
 
   return { totalLogs, last24Hours, bySeverity, byCategory };
 }
