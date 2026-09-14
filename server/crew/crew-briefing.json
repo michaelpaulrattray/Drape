@@ -1,7 +1,7 @@
 {
-  "edition": 403,
-  "updatedAt": "2026-09-14T09:05:34.358Z",
-  "shift": "THE ALARM PANEL NOW SHOWS YOU THE ALARM IT APPEARED FOR — AND A BILLING FAULT THAT NO SHIFT COULD SEE IS BACK IN THE QUEUE.\n\nTHE ONE THAT MATTERS, AND IT IS THE TAIL OF LAST NIGHT'S. Your moderation console has a panel headed \"Needs looking at\". Last night I fixed the reason it was vanishing. Tonight: when it appears, it shows you the thing it appeared for.\n\nIt appears only when there is a serious alert. But the five rows it then listed were simply the five most RECENT abuse entries — so with a burst of minor entries on top, the panel would appear, say \"1 critical\", and list five minor ones. The alert that summoned it was not on it.\n\nProven the same way as last night, not argued. One serious alert, twelve newer minor ones on top, both staff screens, both light and dark, two versions of the site side by side over one test database. Before: the panel says \"1 critical\" and lists warning, warning, warning, warning, warning. After: the panel says \"1 critical\" and lists CRITICAL, then the four most recent minor ones. Eight screenshots, looked at. The seeded rows were deleted afterwards and checked back to zero.\n\nONE THING THE JOB ITSELF GOT WRONG, AND IT MATTERED. The job I wrote last night suggested this could be fixed by sorting the five rows on the screen. It could not. The screen only ever receives ten entries, and in the test the serious one was not among them — it was thirteenth. A screen can only reorder what it was handed. So the order is set where the ten are chosen, which is also the single place BOTH your staff screens share: the admin audit page and the moderation console are both fixed by the one change, and neither screen was touched.\n\nTHE SECOND ONE: A BILLING FAULT NOBODY COULD PICK UP. Your background-work panel has seven switches, and each counts jobs carrying one particular tag. A job carrying none of them is invisible to the machinery that decides what gets worked — it sits on your page looking like a job nobody has got to yet, and no shift can ever be offered it.\n\nExactly one job was in that state, and it is a money one: a Stripe event for an old subscription can still overwrite a newer one on a customer's record. Filed 11 September, and every shift since has read the queue, worked the order, and correctly never seen it. It now carries the Bugs tag and the count that spots this reads zero again.\n\nWorth knowing before it gets picked up: it is a money change, so under our own rule its work will be built and then HELD unmerged while the outside reviewer is down — same as the refund-label job from last night, which is still sitting ready.\n\nAND THE HALF OF THAT JOB I DID NOT HAVE TO BUILD. It asked for two things: retag the billing fault, and build something that notices when this happens again. The second was already built and working — I only failed to see it at first because I read the command's output through a filter that cut off its last few lines. The mechanism was doing its job and was invisible to the one reader it was written for. Nothing to change; worth writing down.\n\nNOTHING WAS SPENT. Your desk is empty.",
+  "edition": 404,
+  "updatedAt": "2026-09-14T10:03:16.368Z",
+  "shift": "THREE FINISHED JOBS ARE SITTING UNMERGED AND THEY NEED ONE WORD FROM YOU — AND THE REVIEWER CARD YOU WAVED AWAY IS CLOSED, WITH THE ANSWER IN IT.\n\nYOUR TAP, FIRST. You marked the outside-reviewer job \"not relevant\". Before closing it I read it against the real run logs rather than its own write-up, and the reading finished it rather than making it stale.\n\nEverything about that reviewer is identical either side of the day it stopped: the same version, the same internals, the same machine, the same instructions we send it. It reaches the point of starting work and then dies on its very first question, in under a second, having spent nothing. The last time it worked it spent $4.40. So it is not our code, our settings or our machines — it is the account it bills to, which is the one thing a shift cannot see and the one thing you can. You have said it is not relevant, so the team stops asking. Closed.\n\nTwo things in that job's own write-up were wrong and are corrected on the way out, because anyone scanning the list would repeat them: it named the wrong \"last good\" run (that one produced no verdict at all), and there is a green-looking run from yesterday morning that also reviewed nothing. Both read as recoveries and neither is one.\n\nWHAT THAT COSTS, AND IT IS THE ONE THING ON YOUR DESK. Our own rule says a job touching money or sign-in is built but NOT merged until the reviewer gives a verdict. Three now qualify: the refund-label fix from two nights ago, and two sets of real tests for the sign-in and sign-up routes. All three passed every automatic check. All three are finished. And all three have now drifted out of step with the live code, so each extra day adds a re-merge on top of the wait. The desk card asks you one question: merge them on the automatic checks alone, or keep holding. My recommendation is on the card.\n\nTHE BILLING FAULT FROM LAST NIGHT IS BUILT. A customer who cancels keeps their subscription alive to the end of the period — so for a few weeks they can hold two live subscriptions at once. A stray message about the OLD one used to overwrite the NEW one on their record, and weeks later, when the old one finally died, the record pointed at it and the account was quietly dropped to free while the new subscription was alive and billing.\n\nThe repair asks Stripe which of the two is newer, and only when the two differ, so the ordinary message costs nothing extra. Nine checks drive the real webhook. Proved by breaking it: with the guard removed three of the nine go red, and the six that must stay green — above all a genuine resubscribe — stay green. A guard that refused everything would have passed the first three and been a disaster.\n\nAND A TIDY-UP WHERE NOTHING SHOULD LOOK DIFFERENT. A small mono heading with a line running off it — the one above STAFF in your account menu, above HELP in the help menu, and above the quote on the casting page — was written out three separate times, and the casting one had invented its own name for a drawing that was already identical to the other two. It is one shared part now. I ran both versions of the site side by side, opened all three, in both light and dark, and measured them: every position identical to the hundredth of a pixel. Then I looked at all six pairs. Nothing moved.\n\nNOTHING WAS SPENT.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-14T09:06:17.222Z",
+      "readAt": "2026-09-14T10:03:41.678Z",
       "items": [
         {
           "issueNumber": 16,
@@ -279,6 +279,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "held-money-prs-reviewer-down",
+      "issueNumber": null,
+      "state": "open",
+      "filedAt": "2026-09-14T10:03:16.369Z",
+      "title": "Three finished jobs are sitting unmerged waiting for a reviewer that has not answered in two days. Merge them on our own checks, or keep holding?",
+      "productImpact": "We have a rule: a job that touches money or signing in gets built and opened, but is NOT merged until the outside reviewer has looked at it. Every other job merges once our own automatic checks pass.\n\nThat reviewer has produced no verdict since Friday night. Tonight I established what it is not — not our code, not our settings, not the version we use, not the machines; the run reaches the point of starting and then dies on its first question in under a second, having spent nothing, where the last working run spent $4.40. That points at the account it bills to, and you have said that job is not relevant, so I closed it and the team has stopped asking.\n\nBut the rule is still running, and three finished jobs are now stacked behind it:\n\n- the refund-label fix for your Billing filter (two nights old),\n- real tests for the email sign-up and sign-in routes,\n- real tests for Sign in with Google.\n\nAll three pass every automatic check we have. All three are done. Two of the three are TEST-ONLY — they change no product behaviour at all — and a shift deliberately did not invent an exception for that, because the rule does not carve one out and inventing exceptions is how rules stop meaning anything.\n\nThere is a cost to waiting that grows: all three have now drifted out of step with the live code, so each one needs a re-merge before it can go in, and every further day of live changes makes that slightly worse. Nothing is at risk today; the work simply sits.",
+      "workedExample": "The refund-label fix is the concrete one. Right now, three kinds of money record — a failed Stripe refund, an issued refund, and an invoice paid after its plan ended — show up when you filter your audit log by Billing but draw no Billing label on the row. The fix is written, checked and waiting. It is the only record you keep of that money moving, and it has been sitting finished for two days because a reviewer we cannot reach has not said a word about it.",
+      "options": [
+        {
+          "key": "merge-on-our-checks",
+          "label": "Merge all three on our own automatic checks, and keep doing that while the reviewer is silent",
+          "consequence": "The three go in tonight or next shift. We keep every check we run ourselves — types, the full test suite, the secret scan, the architecture checks — and we lose the second pair of eyes on money and sign-in code until the reviewer is back. Two of the three change no product behaviour whatsoever; the third is a label on a staff screen."
+        },
+        {
+          "key": "keep-holding",
+          "label": "Keep holding them until the reviewer answers",
+          "consequence": "The rule stays exactly as written and nothing merges that a second reader has not seen. The pile grows — tonight's subscription fix is a fourth — and each one needs a re-merge before it can land. If the reviewer is down for a week, a week of money and sign-in work waits."
+        },
+        {
+          "key": "hold-only-behaviour",
+          "label": "Hold only the jobs that change money behaviour; let test-only ones through",
+          "consequence": "Two of the three merge now and the label fix merges too, since it is a staff screen rather than a payment road. Tonight's subscription fix keeps waiting, which is right — it is the one that actually changes what happens to a customer's money. The cost is that someone has to judge 'does this change behaviour' each time, and that judgement is exactly what the rule was written to avoid."
+        }
+      ],
+      "recommendation": "The third one. It keeps the protection where it is actually worth something — the code that decides what happens to a customer's money — and stops us holding two sets of TESTS hostage to an outage nobody can put a date on. If you would rather not have shifts making that judgement call at all, say the first and I will note that it applies only while the reviewer is silent."
+    },
     {
       "id": "moderator-audit-category-938",
       "issueNumber": 938,
@@ -4914,6 +4941,22 @@
   ],
   "pipeline": [
     {
+      "id": "eyebrow-promotion-928",
+      "title": "The small mono heading above STAFF, HELP and the casting quote is one shared part now — and nothing moved",
+      "status": "in-review",
+      "prNumber": 953,
+      "note": "Card #928, filed by last night's design-components check. NOTHING A CUSTOMER SEES CHANGES — that is the whole point of this kind of job. WHAT IT IS: a short heading in the small mono lettering, then a hairline running off to the end of the row. Three places draw it, and none of them shared any code: your help menu had its own private copy, your account menu had the same three pieces typed out by hand, and the casting page had invented a second NAME for a drawing that was already identical to the other two, down to the byte. It is one part now, named for what it is rather than for whichever screen got there first. TWO THINGS THE JOB DID NOT KNOW, and I found both by reading the code before starting. First, the spacing it said to move was actually TWO different spacings — your account menu overrides it and adds the divider line above STAFF — so moving it carelessly would have dropped that divider, which no test would have caught. Second, a fifth check names this drawing and does not live anywhere near it. HOW I KNOW NOTHING MOVED: two versions of the site running side by side, all three places, light and dark, measured rather than glanced at — every position identical to the hundredth of a pixel, including the account menu's divider. Then I looked at all six pairs.",
+      "cardId": null
+    },
+    {
+      "id": "subscription-newer-guard-804",
+      "title": "A stray message about an old subscription can no longer overwrite a newer one — and drop a paying customer to free weeks later",
+      "status": "blocked",
+      "prNumber": 952,
+      "note": "Card #804, the billing fault that had been invisible to every shift until last night's retag. BUILT AND HELD — it touches money, and our rule holds those unmerged while the outside reviewer is down. WHAT A CUSTOMER COULD HIT: cancelling does not end a subscription immediately, it runs to the end of the period. So for a few weeks someone can hold two live subscriptions — the old one winding down and a new one they have just taken. A stray message about the OLD one passed every check we had, because the old one genuinely IS still live, and wrote its plan and its identity over the new one. The damage landed later: when the old one finally died, the record pointed at it, so the account was dropped to free while the new subscription was alive and billing. THE FIX: when the two identities differ, ask Stripe which was created first, and refuse to let an older one win. Only when they differ, so the ordinary message costs nothing extra. A subscription Stripe no longer knows, or one it says is dead, still proceeds — otherwise the record would freeze on something that no longer exists. PROVED BY BREAKING IT: with the guard removed, three of the nine checks go red and the six that must stay green — above all an ordinary resubscribe — stay green. That second half is the real test: a guard that simply refused everything would have passed the first three.",
+      "cardId": null
+    },
+    {
       "id": "abusecounts-946",
       "title": "Your moderation console was hiding its own alarm panel — ten newer minor entries were enough to do it",
       "status": "merged",
@@ -6669,7 +6712,7 @@
     187
   ],
   "nextUp": {
-    "readAt": "2026-09-14T09:06:17.222Z",
+    "readAt": "2026-09-14T10:03:41.677Z",
     "items": []
   }
 }
