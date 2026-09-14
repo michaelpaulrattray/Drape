@@ -118,9 +118,51 @@ describe("nameAnchorOf — what artifact does the name point at", () => {
     expect(nameAnchorOf("scripts/_7_probe-disposable.mts")).toEqual({ kind: "card", id: 7 });
   });
 
-  it("reads a briefing edition, and the edition shape wins over the card shape", () => {
+  it("reads a briefing edition in the shape the reader was born with", () => {
     expect(nameAnchorOf("scripts/_briefing-e88-disposable.mts")).toEqual({ kind: "edition", id: 88 });
   });
+
+  it("reads the edition shapes shifts ACTUALLY write (#973)", () => {
+    /* The reader's edition anchor was the single literal `_briefing-e<N>`, which
+       matched TWO files in the live population while 27 others carried a
+       readable edition and fell into the permanent-KEEP bucket. Every name here
+       was in `scripts/` on the day this arm was written. */
+    expect(nameAnchorOf("scripts/_edition337-disposable.mts")).toEqual({ kind: "edition", id: 337 });
+    expect(nameAnchorOf("scripts/_edition61-disposable.py")).toEqual({ kind: "edition", id: 61 });
+    expect(nameAnchorOf("scripts/_foreman-edition354-disposable.mts")).toEqual({ kind: "edition", id: 354 });
+    expect(nameAnchorOf("scripts/_janitor5-edition353-disposable.mts")).toEqual({ kind: "edition", id: 353 });
+    expect(nameAnchorOf("scripts/_shift93-briefing-e96-disposable.mts")).toEqual({ kind: "edition", id: 96 });
+  });
+
+  it("a name carrying BOTH a card number and an edition number resolves by the CARD (#973)", () => {
+    /* The widening must not silently re-date these. It cannot: the edition
+       pattern is anchored at `^_` with an optional `[a-z]+\d*-` prefix, so it
+       can never begin with digits, and these resolve by the card whichever order
+       the two lines are tested in. That was DRIVEN rather than assumed — the
+       draft of #973 claimed these matched both shapes and inverted the order to
+       protect them; swapping the order back left this arm green, which is how
+       the claim was caught. The arm stays as the pin on the real behaviour. */
+    expect(nameAnchorOf("scripts/_155-edition179-disposable.mts")).toEqual({ kind: "card", id: 155 });
+    expect(nameAnchorOf("scripts/_921-edition393-disposable.mts")).toEqual({ kind: "card", id: 921 });
+    expect(nameAnchorOf("scripts/_412-edition-disposable.mts")).toEqual({ kind: "card", id: 412 });
+  });
+
+  it("NEGATIVE CONTROL — the widening did not reach a name that only LOOKS like an edition (#973)", () => {
+    /* This is the arm that stops the fix trading hoarding for deletion. Each of
+       these was in the live population beside the 24 that now resolve, and each
+       would be dated at an artifact it has nothing to do with by a looser
+       pattern — `_court177-…` most of all, which is a court and not an edition. */
+    for (const name of [
+      "scripts/_court177-briefing-edit-disposable.py",
+      "scripts/_court177-grid-disposable.mts",
+      "scripts/_shift101-court-mouth-disposable.mts",
+      "scripts/_381b-edition-disposable.py",
+      "scripts/_shift191-edition-disposable.py",
+      "scripts/_briefing-e76b-disposable.mts",
+      "scripts/_edition-disposable.mts",
+    ]) expect(nameAnchorOf(name), name).toBeNull();
+  });
+
 
   it("NEGATIVE CONTROL — a name it cannot read anchors at NOTHING, never at a guess", () => {
     /* Every one of these is in the live population, and every one of them must
