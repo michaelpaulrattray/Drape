@@ -180,6 +180,13 @@ export function AuditLogsTab({
 
   return (
     <div className="dp-stack" style={{ gap: 16 }}>
+      {/*
+        This condition is why #946 was a real defect rather than a wrong number:
+        the panel headed "Needs looking at" renders ONLY here, and until the
+        count became a real COUNT it was taken over the newest ten abuse rows —
+        so ten newer warnings hid a critical alert's own panel. Same shape as
+        the founder ruling above the abuse bucket in `server/auditLog.ts`.
+      */}
       {(alertsQuery.data?.criticalCount || 0) > 0 ? (
         <AbuseAlerts alertsQuery={alertsQuery} onOpenChangeRequest={onOpenChangeRequest} />
       ) : null}
@@ -313,7 +320,17 @@ function AbuseAlerts({
       <div className="dp-tablehead">
         <span className="dp-eyebrow">Needs looking at</span>
         <span className="dp-tablehead__rule" />
-        <span className="dp-small">{alertsQuery.data?.criticalCount} critical in the last day</span>
+        {/*
+          ⚠ "IN THE LAST DAY" IS GONE, AND THERE WAS NEVER A DAY BEHIND IT
+          (#946). `getAbuseAlertsSummary` has no time condition in it; the
+          number was the criticals among the newest TEN abuse rows, so it could
+          never exceed ten and it fell to zero the moment ten newer warnings
+          arrived — which also took this whole panel off the page, because it
+          renders on that same number. The count is now every critical abuse
+          row, and the sentence says what it counts. Each row below carries its
+          own timestamp, which is where "when" belongs.
+        */}
+        <span className="dp-small">{alertsQuery.data?.criticalCount} critical</span>
       </div>
       {alertsQuery.data?.alerts.slice(0, 5).map((alert: any) => (
         <div key={alert.id} className="dp-alertpanel__row">

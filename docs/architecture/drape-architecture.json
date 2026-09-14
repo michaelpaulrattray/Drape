@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ef5c5707bf78c341"
+    "sourceFingerprint": "71e1691b3bffaf18"
   },
   "domains": [
     {
@@ -10928,6 +10928,10 @@
     {
       "id": "test:server/_core/numericEnv.test.ts",
       "path": "server/_core/numericEnv.test.ts"
+    },
+    {
+      "id": "test:server/abuseStripHonesty.test.ts",
+      "path": "server/abuseStripHonesty.test.ts"
     },
     {
       "id": "test:server/access.test.ts",
