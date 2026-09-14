@@ -728,7 +728,10 @@ describe("the staff formatters, called rather than read", () => {
     ).toContain("pm");
   });
 
-  it("⚠ the NaN guard #933 carried across, and the two answers it gives", () => {
+  /* The guard card 933 carried across from `shortDate` — the number lives in
+     this comment because the hex guard reads `#933` in a test NAME as a colour
+     literal, and it is right to: the two are indistinguishable in a string. */
+  it("⚠ the NaN guard carried across from the deleted twin, and its two answers", () => {
     /*
       `shortDate` returned an unparseable STRING unchanged, which is what the
       Crew page has always done with a stamp it cannot read, and that is kept.
