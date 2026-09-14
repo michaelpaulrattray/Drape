@@ -28,12 +28,12 @@ import { CHANGE_REQUEST_NOT_RECORDED } from "@shared/changeRequestLabels";
 import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { DataTable } from "@/foundation";
 import type { DataFact, DataRow, RowAction } from "@/foundation";
+import { staffDateTimeWithYear } from "@/foundation/staffDate";
 
 import { AttachmentsSection } from "./ChangeRequestAttachments";
 import {
   STATUS_CONFIG,
   TYPE_CONFIG,
-  formatDate,
   formatRelativeTime,
   getActionConfig,
 } from "./ChangeRequestConstants";
@@ -273,8 +273,8 @@ function requestFacts(detail: any): DataFact[] {
         ? `${detail.targetUserName} (#${detail.targetUserId})`
         : `User #${detail.targetUserId}`,
     },
-    { label: "RAISED", value: formatDate(detail.createdAt) },
-    { label: "UPDATED", value: formatDate(detail.updatedAt) },
+    { label: "RAISED", value: staffDateTimeWithYear(detail.createdAt) },
+    { label: "UPDATED", value: staffDateTimeWithYear(detail.updatedAt) },
   ];
 
   /*
@@ -326,7 +326,7 @@ function requestFacts(detail: any): DataFact[] {
   if (detail.reviewedById) {
     facts.push({
       label: "REVIEWED",
-      value: `${detail.reviewedByName || `Admin ${detail.reviewedById}`} · ${formatDate(detail.reviewedAt)}`,
+      value: `${detail.reviewedByName || `Admin ${detail.reviewedById}`} · ${staffDateTimeWithYear(detail.reviewedAt)}`,
     });
     if (detail.reviewNotes) facts.push({ label: "REVIEW NOTES", value: detail.reviewNotes });
   }

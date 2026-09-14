@@ -42,10 +42,11 @@ import { toast } from "sonner";
 import { RolePill, RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { Button, ConfirmDialog, DataTable } from "@/foundation";
 import type { DataRow } from "@/foundation";
+import { staffDateTime } from "@/foundation/staffDate";
 import { trpc } from "@/lib/trpc";
 import { FREEZE_REASON_MAX_LENGTH, UNFREEZE_NOTES_MAX_LENGTH } from "@shared/inputLimits";
 
-import { formatDate, type OpenChangeRequestOptions } from "./moderatorConstants";
+import { type OpenChangeRequestOptions } from "./moderatorConstants";
 import "./investigations.css";
 
 /**
@@ -134,10 +135,10 @@ export function UserTable({
       { label: "ACCOUNT", value: `#${u.id}` },
       { label: "EMAIL", value: u.email || "—" },
       { label: "ROLE", value: u.role },
-      { label: "JOINED", value: u.createdAt ? formatDate(new Date(u.createdAt)) : "—" },
+      { label: "JOINED", value: u.createdAt ? staffDateTime(new Date(u.createdAt)) : "—" },
       {
         label: "LAST ACTIVE",
-        value: u.lastSignedIn ? formatDate(new Date(u.lastSignedIn)) : "Never",
+        value: u.lastSignedIn ? staffDateTime(new Date(u.lastSignedIn)) : "Never",
       },
     ],
     cells: [
@@ -170,7 +171,7 @@ export function UserTable({
         active* that cannot say anything but "Never" is not a number to
         preserve. Found by driving the surface, not by reading it.
       */
-      <span key="seen">{u.lastSignedIn ? formatDate(new Date(u.lastSignedIn)) : "Never"}</span>,
+      <span key="seen">{u.lastSignedIn ? staffDateTime(new Date(u.lastSignedIn)) : "Never"}</span>,
     ],
   }));
 
@@ -362,7 +363,7 @@ export function UserDetailCard({
           <div className="dp-inv__subjectbody">
             <p className="dp-inv__subjecttitle">Account suspended</p>
             <p className="dp-inv__subjectreason">
-              <span className="dp-inv__subjectstamp">{formatDate(new Date(user.suspendedAt))}</span>
+              <span className="dp-inv__subjectstamp">{staffDateTime(new Date(user.suspendedAt))}</span>
               {user.suspendedReason ? ` — ${user.suspendedReason}` : " — No reason recorded"}
             </p>
           </div>
@@ -373,7 +374,7 @@ export function UserDetailCard({
           <div className="dp-inv__subjectbody">
             <p className="dp-inv__subjecttitle">Account frozen</p>
             <p className="dp-inv__subjectreason">
-              <span className="dp-inv__subjectstamp">{formatDate(new Date(user.frozenAt))}</span>
+              <span className="dp-inv__subjectstamp">{staffDateTime(new Date(user.frozenAt))}</span>
               {user.frozenReason ? ` — ${user.frozenReason}` : " — No reason recorded"}
             </p>
           </div>

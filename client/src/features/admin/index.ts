@@ -21,6 +21,5 @@ export {
   StatusBadge as CRStatusBadge,
   PriorityBadge,
   TypeIcon,
-  formatDate as crFormatDate,
   formatRelativeTime as crFormatRelativeTime,
 } from "./ChangeRequestConstants";

@@ -26,9 +26,8 @@ import { toast } from "sonner";
 import { RowId, StatePill, pageRange } from "@/features/staff";
 import { Button, DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
+import { staffDateTime } from "@/foundation/staffDate";
 import { trpc } from "@/lib/trpc";
-
-import { formatDate } from "./moderatorConstants";
 
 const PAGE_SIZE = 20;
 
@@ -102,14 +101,14 @@ export function GenerationsSubTab({
       </span>,
       <RowId key="id">#{gen.id}</RowId>,
       <span key="cost">{gen.pointsCost > 0 ? `${gen.pointsCost} cr` : "—"}</span>,
-      <span key="when">{formatDate(new Date(gen.createdAt))}</span>,
+      <span key="when">{staffDateTime(new Date(gen.createdAt))}</span>,
     ],
     facts: [
       { label: "GENERATION", value: `#${gen.id}` },
       { label: "KIND", value: gen.type || "unknown" },
       { label: "CAST", value: gen.modelName || "—" },
       { label: "COST", value: gen.pointsCost > 0 ? `${gen.pointsCost} credits` : "free" },
-      { label: "STARTED", value: formatDate(new Date(gen.createdAt)) },
+      { label: "STARTED", value: staffDateTime(new Date(gen.createdAt)) },
       {
         label: "TOOK",
         value:

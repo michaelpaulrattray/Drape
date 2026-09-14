@@ -23,8 +23,9 @@
  *   went: seven tints on a monochrome surface, and `admin` wearing one accent
  *   by his ruling is not a return to that.
  *
- * `UserTable.tsx` imports `formatDate` and `getUserStatus` from this module and
- * nothing else, so the table is untouched by the deletion.
+ * `UserTable.tsx` imports `getUserStatus` from this module and nothing else
+ * (it took `formatDate` too until #902 promoted it), so the table is untouched
+ * by the deletion.
  */
 export const getUserStatus = (user: {
   suspendedAt: string | Date | null;
@@ -37,34 +38,9 @@ export const getUserStatus = (user: {
   return "active";
 };
 
-/**
- * ⚠ **24-HOUR, FORCED — instance 5 of his clock ruling (#912).**
- *
- * This drew `Sep 14, 2026, 09:08 AM` on every row of the admin Users page:
- * the JOINED and LAST ACTIVE columns, and the `Suspended …` / `Frozen …` /
- * `Locked out until …` sentences. The moderator console one click away had
- * already been brought to the house notation by #900 and #903, so the
- * `Frozen` fact was rendered two ways on two staff pages — which is the
- * ruling's own comparative reasoning:
- *
- * > *"every other time in his world is 24-hour … so the one clock he would be
- * > comparing against was the one written differently."*
- *
- * ⚠ **`toLocaleDateString` DOES print a clock when you ask it for `hour`** —
- * the method name is what made this invisible, both to a reader and to
- * `foundation/staffClock.test.ts`, whose matcher opened by asserting the
- * opposite. It is `toLocaleString` here because that is the honest method for
- * a string containing a clock; **the output is byte-identical either way**,
- * measured both ways before the change. Only `hour12` moved — the locale, the
- * field list, the order and the year are untouched.
+/*
+ * `formatDate` lived here and is now `staffDateTimeWithYear` in
+ * `@/foundation/staffDate` (#902) — `ChangeRequestConstants` held a
+ * byte-identical copy, which is why #912's one-property fix had to be made
+ * twice. The 24-hour ruling and the null-guard note moved with it.
  */
-export const formatDate = (dateStr: string | Date) => {
-  return new Date(dateStr).toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-};

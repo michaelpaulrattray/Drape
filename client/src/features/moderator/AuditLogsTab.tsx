@@ -25,16 +25,10 @@ import { toast } from "sonner";
 import { RawPayload, RowId, StatePill, pageRange } from "@/features/staff";
 import { Button, DataTable, TableFilter, TableHead, TableSearch } from "@/foundation";
 import type { DataRow, RowAction } from "@/foundation";
+import { staffDateTime, staffFullDateTime } from "@/foundation/staffDate";
 import { trpc } from "@/lib/trpc";
 
-import {
-  AuditLog,
-  formatDate,
-  formatAction,
-  formatFullDate,
-  getActionCategory,
-  type OpenChangeRequestOptions,
-} from "./moderatorConstants";
+import { AuditLog, formatAction, getActionCategory, type OpenChangeRequestOptions } from "./moderatorConstants";
 
 const PAGE_SIZE = 20;
 
@@ -138,11 +132,11 @@ export function AuditLogsTab({
         </span>,
         <RowId key="user">{log.userId ? `#${log.userId}` : "system"}</RowId>,
         <RowId key="ip">{log.ipAddress || "—"}</RowId>,
-        <span key="when">{formatDate(log.createdAt)}</span>,
+        <span key="when">{staffDateTime(log.createdAt)}</span>,
       ],
       facts: [
         { label: "ENTRY", value: `#${log.id}` },
-        { label: "WHEN", value: formatFullDate(log.createdAt) },
+        { label: "WHEN", value: staffFullDateTime(log.createdAt) },
         { label: "ACTION", value: log.action },
         {
           label: "RESOURCE",
@@ -324,7 +318,7 @@ function AbuseAlerts({
         <div key={alert.id} className="dp-alertpanel__row">
           <StatePill label={alert.severity} attention />
           <span className="dp-alertpanel__what">{formatAction(alert.action)}</span>
-          <span className="dp-table__id">{formatDate(alert.createdAt)}</span>
+          <span className="dp-table__id">{staffDateTime(alert.createdAt)}</span>
           <Button
             variant="secondary"
             size="small"

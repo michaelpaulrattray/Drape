@@ -22,13 +22,12 @@ import { useState } from "react";
 import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
+import { staffDateTime, staffFullDateTime } from "@/foundation/staffDate";
 import {
   CHANGE_REQUEST_NOT_RECORDED,
   changeRequestStatusLabel,
   changeRequestTypeLabel,
 } from "@shared/changeRequestLabels";
-import { formatDate, formatFullDate } from "./moderatorConstants";
-
 
 /** Waiting on somebody is the only state a moderator needs to act on. */
 const ATTENTION_STATUS = new Set(["pending"]);
@@ -101,7 +100,7 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
         ⚠ **#903 — this was a bare `toLocaleDateString()`**, so it took the
         machine's locale in full and rendered `03/09/2026` on an en-AU browser.
         One click away, this same console's Audit logs tab draws its own `When`
-        column from `formatDate` and reads `Sep 13, 11:08`. Two date notations
+        column from `staffDateTime` and reads `Sep 13, 11:08`. Two date notations
         on one piece of furniture, which is #900's ruling in its DATE half:
         *"the one clock he would be comparing against was the one written
         differently."*
@@ -114,17 +113,17 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
         date-only house formatter would have been a third shape — which is the
         thing #900 and #902 both exist to stop.
       */
-      <span key="when">{formatDate(new Date(request.createdAt))}</span>,
+      <span key="when">{staffDateTime(new Date(request.createdAt))}</span>,
     ],
     facts: [
       /*
         ⚠ **#900 — these two were bare `toLocaleString()`**, rendering
         `13/09/2026, 10:30:33 pm` inside a fact block whose siblings on
         `ActivitySubTab` and `AuditLogsTab` already read `September 13, 2026 at
-        22:30:33` from `formatFullDate`. Same "WHEN" idiom, three files, one of
+        22:30:33` from `staffFullDateTime`. Same "WHEN" idiom, three files, one of
         them writing it differently. It calls the shared one now.
       */
-      { label: "RAISED", value: formatFullDate(new Date(request.createdAt)) },
+      { label: "RAISED", value: staffFullDateTime(new Date(request.createdAt)) },
       { label: "ABOUT", value: request.targetUserName || `User #${request.targetUserId}` },
       /*
         ⚠ **THE LAW-7 SIBLING OF #913, AND IT IS THE QUIETER HALF OF THE SAME
@@ -156,7 +155,7 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
             { label: "REVIEWED BY", value: request.reviewedByName },
             {
               label: "REVIEWED",
-              value: request.reviewedAt ? formatFullDate(new Date(request.reviewedAt)) : "—",
+              value: request.reviewedAt ? staffFullDateTime(new Date(request.reviewedAt)) : "—",
             },
           ]
         : []),

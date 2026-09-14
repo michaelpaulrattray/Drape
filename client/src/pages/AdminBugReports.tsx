@@ -51,6 +51,7 @@ import {
 } from "@/features/staff";
 import { DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow, RowAction } from "@/foundation";
+import { STAFF_LOCALE } from "@/foundation/staffDate";
 
 /* ─── vocabulary ───
    Read from `shared/`, never retyped here. #27 is the standing card for the
@@ -87,9 +88,17 @@ const PAGE_SIZE = 25;
  * `10:30 PM`; every other time on a staff surface is 24-hour, and this page
  * sits behind the same bar whose own stamp this sweep fixed. Only `hour12`
  * changes.
+ *
+ * ⚠ **A NEAR-MISS OF `staffDateTimeWithYear`, AND IT STAYED HERE ON PURPOSE
+ * (#902).** Every field matches that promoted shape except `hour`, which is
+ * `"numeric"` here and `"2-digit"` there — so this page renders `9:08` where
+ * the rest of the staff world renders `09:08`. Folding it in would change what
+ * this page prints, and a promotion is not the place to change what a page
+ * prints. **The NOTATION still comes from `STAFF_LOCALE`**, so his *"Day first
+ * everywhere"* ruling reaches it either way.
  */
 function formatWhen(d: string | Date): string {
-  return new Date(d).toLocaleString("en-US", {
+  return new Date(d).toLocaleString(STAFF_LOCALE, {
     month: "short",
     day: "numeric",
     year: "numeric",
