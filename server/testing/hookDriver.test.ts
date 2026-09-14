@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-import { HookRun, SpawnFailure, requireShell, resolveShell, runHook } from "./hookDriver";
+import { HookRun, SpawnFailure, requireShell, resolveShell, runHook, runHookAsync, runWithLimit } from "./hookDriver";
 import { readListedSource } from "./listedSource";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./childProcessTimeout";
 
@@ -223,7 +223,33 @@ describe("the class is keyed on the SHAPE now, because three greps were keyed on
       "DECLARED REMAINDER: asserts EXACT codes (toBe(2)), so a non-run fails loudly rather than passing — the loud half of the class, worth migrating but not silent",
     "server/shiftWorktree.test.ts":
       "DECLARED REMAINDER: asserts EXACT codes (toBe(0)) on filesystem helpers (mklink, rm) rather than on a gate's verdict — same loud half",
+    "server/testing/hookDriver.test.ts":
+      "THIS FILE — it carries the reader's own positive controls, which are source-shaped strings the reader necessarily matches (#943). It drives nothing directly: every child here goes through runHook or runHookAsync, which are its subjects",
   };
+
+  /**
+   * Does this suite's source drive a child process itself, rather than through
+   * the driver?
+   *
+   * TWO clauses, and the second one is new (#943):
+   *
+   *  - the SYNCHRONOUS shape — it spawns something AND reads a `.status`. Both
+   *    halves must hold: a suite that only spawns is not asserting a verdict
+   *    from one.
+   *  - ⚠ the ASYNCHRONOUS shape — a bare `spawn(` / `exec(` / `execFile(`.
+   *    **`.status` cannot be the key for these: an async child reports its code
+   *    on a `close` event, so the clause above is blind to the whole family.**
+   *    That was a harmless hole while nothing here spawned asynchronously;
+   *    `runHookAsync` makes it a road somebody will take, and the hole would
+   *    have been invisible on the day it was walked. Measured at the tree the
+   *    day this clause landed: **no suite matches it**, so it costs nothing
+   *    today and catches the first one tomorrow.
+   */
+  function drivesAChildDirectly(body: string): boolean {
+    const synchronous = /\b(spawnSync|execFileSync|execSync)\(/.test(body) && /\.status\b/.test(body);
+    const asynchronous = /(?<![.\w])(spawn|exec|execFile)\(/.test(body);
+    return synchronous || asynchronous;
+  }
 
   it("no suite drives a child process and reads its status outside the declared list", () => {
     const walk = (dir: string): string[] =>
@@ -234,19 +260,32 @@ describe("the class is keyed on the SHAPE now, because three greps were keyed on
       });
 
     const found = walk(join(REPO, "server"))
-      .filter((file) => {
-        const body = readListedSource(file);
-        if (body === null) return false;
-        /* Both halves must hold: it spawns something AND it reads a status.
-           A suite that only spawns is not asserting a verdict from one. */
-        return /\b(spawnSync|execFileSync|execSync)\(/.test(body) && /\.status\b/.test(body);
-      })
+      .filter((file) => readListedSource(file) !== null)
+      .filter((file) => drivesAChildDirectly(readListedSource(file) ?? ""))
       .map((file) => file.slice(REPO.length + 1).replace(/\\/g, "/"))
       .sort();
 
     /* The positive control: an empty population would pass an `every` and prove
        nothing — this suite's own subject guarantees at least two members. */
     expect(found.length, "the reader found nothing — it cannot say yes").toBeGreaterThanOrEqual(2);
+
+    /*
+      ⚠ AND THE READER ITSELF GETS BOTH CONTROLS, because a sweep that has
+      stopped matching reports a clean tree forever. The fixtures go through the
+      real predicate, not a second copy of the regex (working law 2).
+    */
+    expect(
+      drivesAChildDirectly('const r = spawnSync("git", []);\nexpect(r.status).toBe(0);'),
+      "the synchronous clause has stopped matching",
+    ).toBe(true);
+    expect(
+      drivesAChildDirectly('const c = spawn("git", []);\nc.on("close", (code) => done(code));'),
+      "the ASYNCHRONOUS clause has stopped matching — the #943 hole is open again",
+    ).toBe(true);
+    expect(
+      drivesAChildDirectly('const r = runHook("git", []);\nexpect(r.status).toBe(0);'),
+      "the reader flags a suite that uses the driver — it would flag everything",
+    ).toBe(false);
 
     const undeclared = found.filter((file) => !(file in DECLARED));
     expect(
@@ -275,5 +314,145 @@ describe("stderr survives a SUCCESSFUL run", () => {
     ]);
     expect(warned.status).toBe(0);
     expect(warned.stderr).toContain("partial stage");
+  });
+});
+
+describe("runHookAsync: the overlappable twin keeps every one of runHook's promises (#943)", () => {
+  /*
+    ⚠ WORKING LAW 2, AND THE REASON THIS BLOCK IS LONG. `runHookAsync` exists so
+    `server/selfInvocationCheck.test.ts` can overlap eight `tsx` starts instead
+    of queueing them — that arm was 5.9 s on an IDLE machine against a 30 s cap,
+    and the deploy rite crossed the cap under its own load and REFUSED a correct
+    tree.
+
+    A second driver is a second chance to reintroduce #640. `spawnSync` hands
+    back one object carrying `signal`, `error` and `status` together; the async
+    child emits them as separate events in either order, and for a failed spawn
+    `close` may never arrive at all. So every direction is DRIVEN here rather
+    than argued from the sync twin's arms, and each is paired with its opposite.
+  */
+
+  it("THROWS on a binary that does not exist — it never resolves to a number", async () => {
+    await expect(runHookAsync(ABSENT, ["--version"])).rejects.toBeInstanceOf(SpawnFailure);
+  });
+
+  it("names the executable and says the DRIVER failed, not the hook", async () => {
+    const failure = await runHookAsync(ABSENT, []).then(
+      (run) => run as never,
+      (error: unknown) => error as SpawnFailure,
+    );
+    expect(failure).toBeInstanceOf(SpawnFailure);
+    expect(failure.file).toBe(ABSENT);
+    expect(failure.message).toContain("could not start");
+    expect(failure.message).toContain("This is the DRIVER failing, not the hook");
+    /* The negative half: a non-start must not be narrated as a child that ran. */
+    expect(failure.message).not.toContain("It RAN");
+    expect(failure.signal).toBeUndefined();
+  });
+
+  it("a signal-killed child rejects, and says it RAN rather than blaming the PATH", async () => {
+    /*
+      ⚠ THE ORDERING ARM, AND IT IS SHARPER HERE THAN ON THE SYNC TWIN. A
+      timeout kills the child AND surfaces an `error` — so an implementation
+      that settled inside the `error` handler would narrate a process that ran,
+      and may have done half its work, as a missing binary. The kill is a
+      TIMEOUT rather than `process.kill` because Windows has no real signals and
+      a self-kill there comes back as an ordinary exit code, which would pass
+      this arm over nothing on the machine the shifts actually run on.
+    */
+    const failure = await runHookAsync(process.execPath, ["-e", "setTimeout(() => {}, 30000)"], {
+      timeout: 300,
+    }).then(
+      (run) => run as never,
+      (error: unknown) => error as SpawnFailure,
+    );
+    expect(failure, "a killed child must not come back as an exit code").toBeInstanceOf(SpawnFailure);
+    expect(failure.signal, "the signal is kept, not flattened away").toBeTruthy();
+    expect(failure.message).toContain("was killed by");
+    expect(failure.message).toContain("It RAN");
+    expect(failure.message).not.toContain("could not start");
+  });
+
+  it("POSITIVE CONTROL: a process that DOES run reports its real exit code and BOTH streams", async () => {
+    const ok = await runHookAsync(process.execPath, [
+      "-e",
+      "process.stdout.write('ran'); process.stderr.write('warned'); process.exit(0)",
+    ]);
+    expect(ok.status).toBe(0);
+    expect(ok.stdout).toBe("ran");
+    /* stderr on a SUCCESSFUL run — the limitation that bit `execFileSync`. */
+    expect(ok.stderr).toBe("warned");
+
+    const refused = await runHookAsync(process.execPath, [
+      "-e",
+      "process.stderr.write('nope'); process.exit(3)",
+    ]);
+    expect(refused.status).toBe(3);
+    expect(refused.stderr).toContain("nope");
+  });
+
+  it("captures output larger than one pipe buffer — a truncated read is a silent wrong answer", async () => {
+    /*
+      The sync twin gets one buffer handed to it; this one accumulates chunks,
+      which is where a partial read would hide. 200 KB is well past any single
+      chunk, and the assertion is on the LENGTH as well as the ends, because a
+      middle that went missing would still start and finish correctly.
+    */
+    const big = await runHookAsync(process.execPath, [
+      "-e",
+      "process.stdout.write('A'.repeat(200000)); process.stdout.write('END')",
+    ]);
+    expect(big.status).toBe(0);
+    expect(big.stdout).toHaveLength(200003);
+    expect(big.stdout.endsWith("END")).toBe(true);
+  });
+});
+
+describe("runWithLimit: the cap that keeps the overlap from becoming its own starvation (#943)", () => {
+  it("never exceeds the limit, and returns results in the INPUT order", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const jobs = Array.from({ length: 9 }, (_, i) => async () => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      /* Staggered, so a correct implementation genuinely overlaps and a
+         sequential one would still pass the ORDER arm but not the peak one. */
+      await new Promise((done) => setTimeout(done, 20 + (i % 3) * 10));
+      inFlight -= 1;
+      return i;
+    });
+
+    const results = await runWithLimit(jobs, 4);
+
+    expect(results, "the results must come back in the jobs' own order").toEqual([
+      0, 1, 2, 3, 4, 5, 6, 7, 8,
+    ]);
+    expect(peak, "more children were in flight than the cap allows").toBeLessThanOrEqual(4);
+    /* THE POSITIVE CONTROL for the arm above: a sequential implementation
+       satisfies `<= 4` trivially, so overlap is asserted too. */
+    expect(peak, "nothing overlapped — the cap is not being used at all").toBeGreaterThan(1);
+  });
+
+  it("propagates a rejection rather than losing it to an unhandled promise", async () => {
+    /*
+      ⚠ THE REASON THIS IS NOT `Promise.all`. A `SpawnFailure` from one child
+      must reach the arm that asked; under `Promise.all` the siblings' rejections
+      become unhandled and vitest reports them against whatever file is running
+      at the time — a red with no relationship to the diff, which is the class
+      #943 is about.
+    */
+    const jobs = [
+      async () => "first",
+      async () => {
+        throw new SpawnFailure("nope", "ENOENT");
+      },
+      async () => "third",
+    ];
+
+    await expect(runWithLimit(jobs, 2)).rejects.toBeInstanceOf(SpawnFailure);
+  });
+
+  it("REFUSES a limit that would run nothing, rather than hanging", async () => {
+    await expect(runWithLimit([async () => 1], 0)).rejects.toThrow("would run nothing");
   });
 });

@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { existsSync } from "node:fs";
 
@@ -145,6 +145,143 @@ export function runHook(
     stdout: String(run.stdout ?? ""),
     stderr: String(run.stderr ?? ""),
   };
+}
+
+/**
+ * `runHook`'s twin for arms that drive MANY children and can overlap them.
+ *
+ * # Why it exists (#943)
+ *
+ * `server/selfInvocationCheck.test.ts` spawns one `tsx` process per module in
+ * a sequential `for` loop, with a floor of eight modules. Measured on an idle
+ * machine: **5.9 s for that one arm**, against this class's 30 s cap — and the
+ * deploy rite, which runs the script guards before it pushes, crossed the cap
+ * under its own concurrent load and **REFUSED a correct tree**, printing a
+ * repair for a named script that did not exist.
+ *
+ * ⚠ **RAISING THE CAP WAS THE WRONG REPAIR AND IS WHY THIS IS HERE.** The arm
+ * is eight independent child processes that happen to be sequential; nothing
+ * about it needs ordering. Overlapping them cuts the real time, which is the
+ * only change that improves the margin without costing the arm its ability to
+ * report a genuine hang.
+ *
+ * # The contract is `runHook`'s, and identically so
+ *
+ * A process that produced no exit code REJECTS with `SpawnFailure` and never
+ * resolves to a number — the whole point of #640. The discriminator is Node's
+ * own, in the same load-bearing order, and `server/testing/hookDriver.test.ts`
+ * drives both twins over the same three failure directions rather than
+ * asserting this paragraph.
+ *
+ * ⚠ **THE ORDERING PROBLEM IS REAL AND DIFFERENT HERE.** `spawnSync` hands
+ * back one object carrying `signal`, `error` and `status` together; the async
+ * child emits `error` and `close` as separate events, in either order, and for
+ * a failed spawn `close` MAY NOT ARRIVE AT ALL. So the settle is latched: the
+ * first honest verdict wins and the second is dropped, and a spawn error is
+ * allowed to settle on its own rather than waiting for a `close` that is not
+ * promised.
+ *
+ * `input` is not supported. `runHook`'s one stdin consumer is the pre-push
+ * hook, which is a single sequential drive — adding a write-then-close dance
+ * here would be machinery with no caller, and an unused road in a shared
+ * instrument is how the last four dead controls started.
+ */
+export function runHookAsync(
+  file: string,
+  args: string[],
+  options: { cwd?: string; env?: NodeJS.ProcessEnv; shell?: boolean; timeout?: number } = {},
+): Promise<HookRun> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(file, args, { ...options, stdio: ["ignore", "pipe", "pipe"] });
+
+    let stdout = "";
+    let stderr = "";
+    let spawnError: Error | undefined;
+    let settled = false;
+    const fail = (failure: SpawnFailure) => {
+      if (settled) return;
+      settled = true;
+      reject(failure);
+    };
+
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => {
+      stdout += chunk;
+    });
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk: string) => {
+      stderr += chunk;
+    });
+
+    child.on("error", (error) => {
+      /*
+        A spawn that never happened has no `close` to wait for, so it settles
+        here. An `error` on a child that DID start only records: `close`, which
+        carries the signal, gets to narrate — otherwise a process that ran and
+        was killed would be reported as a missing binary, which is #640's wrong
+        narration arriving by a second road.
+
+        ⚠ **THAT SECOND BRANCH IS NOT DRIVEN, AND SAYING SO IS THE POINT.**
+        A sabotage pass replaced this whole handler with the unconditional
+        settle it is guarding against, and **every arm still passed** — because
+        neither platform produces it: `spawn`'s `timeout` kills the child and
+        emits `close` with a signal and NO `error`, unlike `spawnSync`, which
+        hands back `error: ETIMEDOUT` and `signal` together. So the `pid` test
+        costs nothing, cannot currently be reached, and exists so the narration
+        is right if a future Node line does reach it. It is a declared,
+        untested defensive branch rather than a silently untested one.
+      */
+      spawnError = error;
+      if (child.pid === undefined) {
+        fail(new SpawnFailure(file, String((error as NodeJS.ErrnoException).code ?? error.message)));
+      }
+    });
+
+    child.on("close", (code, signal) => {
+      if (settled) return;
+      if (signal) return fail(new SpawnFailure(file, `killed by ${signal}`, signal));
+      if (spawnError) {
+        const reason = String((spawnError as NodeJS.ErrnoException).code ?? spawnError.message);
+        return fail(new SpawnFailure(file, reason));
+      }
+      if (typeof code !== "number") {
+        return fail(new SpawnFailure(file, "no exit code and no signal were reported"));
+      }
+      settled = true;
+      resolve({ status: code, stdout, stderr });
+    });
+  });
+}
+
+/**
+ * Run `jobs` with at most `limit` in flight, preserving the input order in the
+ * result.
+ *
+ * ⚠ **A CAP, NOT `Promise.all`, AND THE CARD ASKED FOR IT THAT WAY.** Eight
+ * `tsx` starts at once on a machine already running the rest of the suite
+ * trades one starvation problem for another; the whole subject of #943 is a
+ * guard whose verdict depends on what else is running.
+ *
+ * ⚠ **A REJECTION MUST NOT BE LOST.** `Promise.all` would surface the first
+ * rejection and leave the rest unhandled; here every job is awaited inside its
+ * worker, so a `SpawnFailure` propagates out of `runWithLimit` and nothing
+ * becomes an unhandled rejection that vitest reports against another file.
+ */
+export async function runWithLimit<T>(jobs: (() => Promise<T>)[], limit: number): Promise<T[]> {
+  if (limit < 1) throw new Error(`runWithLimit: a limit of ${limit} would run nothing`);
+  const results = new Array<T>(jobs.length);
+  let next = 0;
+
+  const worker = async () => {
+    for (;;) {
+      const index = next++;
+      if (index >= jobs.length) return;
+      results[index] = await jobs[index]();
+    }
+  };
+
+  await Promise.all(Array.from({ length: Math.min(limit, jobs.length) }, worker));
+  return results;
 }
 
 /**
