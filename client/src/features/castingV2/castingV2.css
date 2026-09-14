@@ -152,7 +152,8 @@
   card rather than a promotion.
 
   `min-width: 0` is belt-and-braces: the rule is empty, so `auto` already
-  resolves to 0 — `.dpc-deck__rule` omits it and draws identically.
+  resolves to 0 — the foundation's `.dp-eyebrow__rule` omits it and draws
+  identically.
 */
 .dpc-hero__receiptrule {
   flex: 1;
@@ -353,42 +354,24 @@
   padding: 0 18px 18px;
 }
 
-.dpc-deck__eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font: 500 8.5px var(--font-mono);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-
 /*
-  ⚠ THE FOUNDATION IS ALREADY DRAWING THIS EXACT THING, AND THE PAIR ABOVE IS A
-  BYTE-FOR-BYTE SECOND COPY OF IT — `docs/specs/PROMOTION_PASS_SECTION_10.md` §3.
+  ⚠ `.dpc-deck__eyebrow` AND `.dpc-deck__rule` WERE HERE AND ARE GONE (#928).
 
-  `.dp-menugroup__label` + `.dp-menugroup__rule` in `foundation/foundation.css`
-  are `500 8.5px var(--font-mono)` / `letter-spacing: .13em` / `color:
-  var(--faint)` beside `flex: 1; height: 1px; background: var(--rule)`, in a
-  container with `gap: var(--s-3)` — and `--s-3` is 8px. Every one of those is
-  what `.dpc-deck__eyebrow` and this rule declare. Two more call sites draw it
-  (`LobbyUtilityMenu`, `UserCard`), so the deck is the third.
+  They were a byte-for-byte second copy of the foundation's eyebrow —
+  `500 8.5px var(--font-mono)` / `letter-spacing: .13em` / `color: var(--faint)`
+  beside `flex: 1; height: 1px; background: var(--rule)`, in a container with an
+  8px gap — written under a second name because neither surface knew the other
+  existed (`docs/specs/PROMOTION_PASS_SECTION_10.md` §3).
 
-  It is NOT folded here, and the reason is the pass's own naming rule read in
-  the direction nobody reads it: having casting reach into `.dp-menugroup__*`
-  would put the MENU's vocabulary on the casting hero, which is the same mistake
-  as a promoted component keeping casting's. The fold wants a renamed foundation
-  component that all three take, which is a foundation-wide act rather than
-  section 10's — carded, with this measurement on it.
+  `HeroDeck` takes `foundation/Eyebrow` now, and the shared part was RENAMED on
+  the way in (`.dp-menugroup__*` → `.dp-eyebrow__*`) rather than casting being
+  pointed at the menu's vocabulary — the pass's naming rule read in the
+  direction nobody reads it.
 
-  `section10-guard.test.ts` holds the two type declarations equal until then, so
-  they cannot quietly become three scales.
+  The deck passes no position class. Its eyebrow is spaced by
+  `.dpc-deck__brief` below, which is exactly why the menu's `padding` could not
+  travel onto the device.
 */
-.dpc-deck__rule {
-  flex: 1;
-  height: 1px;
-  background: var(--rule);
-}
 
 .dpc-deck__quote {
   margin: 0;

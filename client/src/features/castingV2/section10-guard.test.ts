@@ -644,31 +644,30 @@ describe("the house hairline is declared five times and the pass knows all five"
       "a fill hairline was added or removed — read PROMOTION_PASS_SECTION_10.md section 3 before a sixth",
     ).toEqual([
       ".dp-crew__skelrule",
-      ".dp-menugroup__rule",
+      ".dp-eyebrow__rule",
       ".dp-tablehead__rule",
-      ".dpc-deck__rule",
       ".dpc-hero__receiptrule",
     ]);
   });
 
   /*
-    ⚠ THE ARM THE WHOLE PASS TURNS ON, and it is the one a name-shaped grep can
-    never write. `.dp-menugroup__label` and `.dpc-deck__eyebrow` are the SAME
-    TYPE to the byte — `500 8.5px` mono, `.13em`, `--faint` — with the same 8px
-    gap and the same rule beside them. The foundation is already drawing the
-    casting deck's eyebrow, under the menu's vocabulary, at two other call
-    sites.
+    ⚠ THE ARM THE WHOLE PASS TURNS ON, AND ITS SUBJECT MOVED RATHER THAN DIED
+    (#928). It used to hold `.dp-menugroup__label` and `.dpc-deck__eyebrow` equal
+    to the byte — `500 8.5px` mono, `.13em`, `--faint` — because the foundation
+    was already drawing the casting deck's eyebrow under the menu's vocabulary,
+    at two other call sites, and neither surface knew.
 
-    This is pinned rather than folded tonight for the reason on the card: doing
-    it properly means a RENAMED foundation component that the lobby menu, the
-    account card and the deck all take, because having casting reach into
-    `.dp-menugroup__*` would put menu vocabulary on the casting hero — the
-    naming rule running the other way. If these two ever stop agreeing, this
-    arm is what says so before a third scale appears.
+    They are ONE part now: `.dp-eyebrow`, taken by all three. So an equality
+    between two blocks has nothing left to compare, and DELETING the arm is the
+    wrong repair — that is the folder-shaped absence that goes green with
+    nothing to check. What the arm asks instead is the thing the fold bought:
+    **casting declares no second copy of this device, and the hero takes the
+    foundation's.** A third scale reappearing here is exactly what it fires on.
   */
-  it("the deck's eyebrow and the foundation's menu label are still the same type", async () => {
+  it("casting draws the eyebrow from the foundation and declares no copy of it", async () => {
     const foundation = await read(new URL("../../foundation/foundation.css", import.meta.url));
     const casting = await read(CSS);
+    const heroDeck = await read(new URL("./components/HeroDeck.tsx", import.meta.url));
 
     const declarations = (block: string) =>
       block
@@ -677,16 +676,26 @@ describe("the house hairline is declared five times and the pass knows all five"
         .filter((line) => /^(font|letter-spacing|color):/.test(line))
         .sort();
 
-    const menu = declarations(rule(foundation, ".dp-menugroup__label"));
-    const deck = declarations(rule(casting, ".dpc-deck__eyebrow"));
-
-    // Positive control: an empty list would make the equality below vacuous.
-    expect(menu.length, ".dp-menugroup__label declares no type — the arm below would be vacuous").toBe(3);
-
+    /* Positive control: the foundation really does declare the type, so the
+       absence arms below are about casting rather than about a broken reader. */
+    const shared = declarations(rule(foundation, ".dp-eyebrow__label"));
     expect(
-      deck,
-      "the deck eyebrow and the foundation menu label have diverged — read PROMOTION_PASS_SECTION_10.md section 3",
-    ).toEqual(menu);
+      shared.length,
+      ".dp-eyebrow__label declares no type — the arms below would be vacuous",
+    ).toBe(3);
+
+    /* Casting's own spellings are gone from its stylesheet — as SELECTORS. The
+       file's comments still name them, deliberately, which is why this reads
+       the rule heads rather than the text. */
+    const selectors = [...casting.matchAll(/^\.([\w-]+)\s*\{/gm)].map((m) => m[1]);
+    expect(selectors).not.toContain("dpc-deck__eyebrow");
+    expect(selectors).not.toContain("dpc-deck__rule");
+    /* …and the reader can see a selector at all. */
+    expect(selectors).toContain("dpc-hero__receiptrule");
+
+    /* And the hero takes the foundation's component rather than redrawing it. */
+    expect(heroDeck).toMatch(/import \{ Eyebrow \} from "@\/foundation";/);
+    expect(heroDeck).toMatch(/<Eyebrow label="Cast from these words" \/>/);
   });
 
   it("the matcher fires on a fabricated fifth, and ignores a near-miss", () => {

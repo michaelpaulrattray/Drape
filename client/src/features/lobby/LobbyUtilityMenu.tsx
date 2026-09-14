@@ -60,7 +60,7 @@
  */
 import { useEffect, useState } from 'react';
 import { BookOpen, Keyboard, MessageSquare } from 'lucide-react';
-import { Icon as HouseIcon, IconButton, P, useAnchoredPanel } from '@/foundation';
+import { Eyebrow, Icon as HouseIcon, IconButton, P, useAnchoredPanel } from '@/foundation';
 
 import { FeedbackForm } from './FeedbackForm';
 
@@ -130,7 +130,7 @@ export function LobbyUtilityMenu() {
             <FeedbackForm mode="feedback" onDone={close} />
           ) : (
             <>
-              <MenuGroup label="HELP" />
+              <Eyebrow label="HELP" className="dp-menu__group" />
               <MenuItem icon={MessageSquare} label="Send feedback" onClick={() => setFeedback(true)} />
               <StubItem icon={BookOpen} label="Documentation" />
               <StubItem icon={Keyboard} label="Keyboard shortcuts" />
@@ -143,15 +143,6 @@ export function LobbyUtilityMenu() {
 }
 
 type Glyph = React.ComponentType<{ size?: number | string; strokeWidth?: number | string }>;
-
-function MenuGroup({ label }: { label: string }) {
-  return (
-    <div className="dp-menugroup">
-      <span className="dp-menugroup__label">{label}</span>
-      <span className="dp-menugroup__rule" aria-hidden="true" />
-    </div>
-  );
-}
 
 /*
   ⚠ The house set is imported here as `HouseIcon`, NOT as `Icon` (#321).
