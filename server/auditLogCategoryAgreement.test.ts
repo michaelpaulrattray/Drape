@@ -71,20 +71,21 @@ const ALLOWED: Record<string, { chip: string | null; bucket: string | null; card
 };
 
 /**
- * The moderator console's copy of `getActionCategory` carries one extra branch
- * the admin console's does not: it sends `moderator.*` to the abuse chip. That
- * family is in no bucket, so those rows disagree on THAT PANEL ONLY.
+ * ⚠ `MODERATOR_ONLY_ALLOWED` LIVED HERE AND IS GONE — #938 IS CLOSED, on his
+ * own word (Crew reply #187, verbatim and entire: *"Give moderator actions
+ * their own category"*).
  *
- * It is not fixed here on purpose. Every action in #939 went into a bucket its
- * own siblings already occupied — no new category, no decision. `moderator.*`
- * has no sibling anywhere, so the answer is a NEW category, which is a
- * staff-visible control and therefore the founder's: #938.
+ * It held three actions the moderator console chipped `abuse` while the server
+ * had them in no bucket at all, so every category choice — Abuse included —
+ * dropped them on both panels. They have their own `moderator` bucket now, both
+ * chip rules send them there, and the three route enums offer it.
+ *
+ * The lines are DELETED rather than left as a passing allowance: this file's
+ * "keeps no exception that has stopped being one" arm asserts that every
+ * remaining allowance still DISAGREES, so an exception whose defect was fixed
+ * reddens the suite until somebody removes it. That is the half that makes this
+ * list shrink instead of accumulate, and it did its job here.
  */
-const MODERATOR_ONLY_ALLOWED: Record<string, { chip: string | null; card: string }> = {
-  "moderator.escalation": { chip: "abuse", card: "#938" },
-  "moderator.change_request_created": { chip: "abuse", card: "#938" },
-  "moderator.change_request_cancelled": { chip: "abuse", card: "#938" },
-};
 
 describe("the audit panel's chip and the server's category filter", () => {
   it("reads a real population from both sources", () => {
@@ -99,6 +100,7 @@ describe("the audit panel's chip and the server's category filter", () => {
       "abuse",
       "billing",
       "model",
+      "moderator",
       "security",
     ]);
     for (const [bucket, actions] of Object.entries(ACTION_CATEGORIES)) {
@@ -132,10 +134,7 @@ describe("the audit panel's chip and the server's category filter", () => {
 
   it("agrees on every declared action, on the MODERATOR console", () => {
     const disagreements = DECLARED.filter(
-      (action) =>
-        moderatorChip(action) !== serverBucket(action) &&
-        !(action in ALLOWED) &&
-        !(action in MODERATOR_ONLY_ALLOWED),
+      (action) => moderatorChip(action) !== serverBucket(action) && !(action in ALLOWED),
     ).map((action) => `${action}: chip ${moderatorChip(action)} vs bucket ${serverBucket(action)}`);
 
     expect(disagreements).toEqual([]);
@@ -155,13 +154,6 @@ describe("the audit panel's chip and the server's category filter", () => {
       expect(expected.chip, `${action} (${expected.card}) no longer disagrees`).not.toBe(
         expected.bucket,
       );
-    }
-    for (const [action, expected] of Object.entries(MODERATOR_ONLY_ALLOWED)) {
-      expect(DECLARED, `${action} (${expected.card}) is no longer declared`).toContain(action);
-      expect(moderatorChip(action), `${action} (${expected.card})`).toBe(expected.chip);
-      expect(serverBucket(action), `${action} (${expected.card}) now has a bucket`).toBeNull();
-      // the admin console must NOT have grown the moderator branch behind our back
-      expect(adminChip(action), `${action}: the admin copy has drifted`).toBeNull();
     }
   });
 
@@ -197,6 +189,50 @@ describe("the audit panel's chip and the server's category filter", () => {
     }
   });
 
+  it("keeps the moderator THREE in their own bucket, by name — his ruling (#938)", () => {
+    /*
+      The same rule as the thirteen above, for the same reason: both agreement
+      arms are satisfied by both lists losing an action, so deleting the
+      `moderator.` branch from the two chip rules AND the bucket from the server
+      would restore perfect agreement and put these rows back where they were —
+      chipped nothing, filterable by nothing.
+
+      His ruling is what this arm holds, so it names the three rather than
+      counting them: *"Give moderator actions their own category"* (Crew reply
+      #187, 2026-09-14).
+
+      ⚠ AND IT ASSERTS BOTH PANELS, because the two copies disagreed about this
+      exact family before the ruling — the moderator console said `abuse`, the
+      admin console said nothing. An arm reading one of them would pass over
+      half a fix.
+    */
+    const MODERATOR: string[] = [
+      "moderator.escalation",
+      "moderator.change_request_created",
+      "moderator.change_request_cancelled",
+    ];
+    expect(MODERATOR).toHaveLength(3);
+
+    for (const action of MODERATOR) {
+      expect(DECLARED, `${action} is no longer declared`).toContain(action);
+      expect(serverBucket(action), `${action} has fallen out of the moderator bucket`).toBe(
+        "moderator",
+      );
+      expect(adminChip(action), `${action}'s ADMIN chip has changed`).toBe("moderator");
+      expect(moderatorChip(action), `${action}'s MODERATOR chip has changed`).toBe("moderator");
+    }
+
+    /*
+      The negative half, and it is the one his ruling actually turned on: these
+      rows must no longer read as abuse on either panel. A change request is not
+      abuse, which is why the other repair — deleting the branch — was declined.
+    */
+    for (const action of MODERATOR) {
+      expect(moderatorChip(action), `${action} is still labelled abuse`).not.toBe("abuse");
+      expect(serverBucket(action), `${action} is still filed under abuse`).not.toBe("abuse");
+    }
+  });
+
   it("offers every bucket as a choice on the routes that filter", async () => {
     /*
       The landmine #938 walks onto. A new bucket in ACTION_CATEGORIES is
@@ -224,6 +260,49 @@ describe("the audit panel's chip and the server's category filter", () => {
         }
         expect(offered, `${relative} lost the "all" option`).toContain("all");
       }
+    }
+  });
+
+  it("offers every bucket as a choice a STAFF MEMBER can actually pick", async () => {
+    /*
+      ⚠ THE LAST HOP, AND IT WAS UNGUARDED UNTIL #938. The arm above proves the
+      server would ACCEPT a category; it says nothing about whether anyone can
+      choose it. The two panels spell their Category options out by hand, so a
+      bucket can exist, be filterable, be offered by every route enum, and still
+      be unreachable because no dropdown lists it — which is invariant 7 wearing
+      a different hat: a control nothing can invoke does not exist.
+
+      Read at the panels' own source, and derived from ACTION_CATEGORIES so a
+      sixth bucket is covered without an edit here.
+
+      `client/src/pages/AdminFoundation.tsx` carries a THIRD list and is
+      deliberately not in this population: it is the design-system specimen
+      page, its options are illustrative (it offers a "Refunds" category the
+      product does not have), and holding a specimen to the product's buckets
+      would make it a second source of truth for them.
+    */
+    const { readFileSync } = await import("node:fs");
+    const path = await import("node:path");
+    const PANELS = [
+      "../client/src/features/admin/AuditLogsFilters.tsx",
+      "../client/src/features/moderator/AuditLogsTab.tsx",
+    ];
+
+    for (const relative of PANELS) {
+      const source = readFileSync(path.resolve(__dirname, relative), "utf8");
+      const start = source.indexOf('{ value: "all", label: "All categories" }');
+      expect(start, `${relative} has no Category options list`).toBeGreaterThan(-1);
+      const block = source.slice(start, source.indexOf("]", start));
+      const offered = [...block.matchAll(/value:\s*"([^"]+)"/g)].map((m) => m[1]);
+
+      /* The positive control: a block that stopped being found would read as an
+         empty list and pass nothing. */
+      expect(offered.length, `${relative} offers no categories at all`).toBeGreaterThan(1);
+
+      for (const bucket of Object.keys(ACTION_CATEGORIES)) {
+        expect(offered, `${relative} gives staff no way to choose "${bucket}"`).toContain(bucket);
+      }
+      expect(offered, `${relative} lost the "all" option`).toContain("all");
     }
   });
 });
