@@ -1,7 +1,7 @@
 {
-  "edition": 400,
-  "updatedAt": "2026-09-14T04:02:54.590Z",
-  "shift": "YOUR AUDIT LOG HAS BEEN HIDING ITS OWN SECURITY ROWS, AND IT SAID SO ON EVERY ROW WHILE DOING IT.\n\nWHAT YOU WOULD SEE. Open the admin audit log and pick \"Security\" in the category dropdown. Until tonight you got \"No audit entries match those filters.\" — on a page whose rows are visibly labelled \"security\". Now you get the rows. Pick any other category and nothing has changed.\n\nTHE ROWS IT WAS HIDING ARE NOT MINOR ONES. Someone trying to reach the admin panel without permission. The tamper-evidence records. Every blocked sign-in. Every email-verification event. Each of those appears with a red \"Security\" tag beside it — and the Security filter was the one thing in the product guaranteed never to show it to you.\n\nHOW MANY. I counted all 77 kinds of event the product records against the four filters. Sixty-one agreed. Sixteen did not. Thirteen of them showed you a tag whose own filter hid the row, and eight of those thirteen are being written on your live site right now. The other three are the mirror image — findable, but showing no tag — and they are money rows, so they have their own job (#940).\n\n⚠ THIS IS A NOTE THAT WAS ALREADY WRITTEN IN OUR OWN CODE, ABOUT ONE ROW, AND IT WAS TRUE OF FOURTEEN. Back in August, when we wired the sign-in-attack alarm on your instruction, someone left a warning beside it: without this line \"the wire would exist, the row would exist, and staff would never see it.\" That warning was correct and nobody counted how far it reached.\n\nNO DECISION WAS TAKEN AND NONE WAS NEEDED. Every one of the thirteen went into the same group its own siblings were already in — sign-in events were already filed under Security, so the blocked ones join them. No new filter, no new option on your screen, no new colour. The screen's own label was already the promise; this makes the filter keep it.\n\nWHAT IT COST AND WHAT IT CHANGED ELSEWHERE. Nothing was spent. One other number on your Overview moved, and it moved toward the truth: the \"last 24 hours by category\" breakdown was reading as EMPTY on a day with four events, and now correctly says two of them were security.\n\n⚠ AND I FOUND SOMETHING BIGGER ON THE WAY, WHICH I HAVE NOT FIXED AND WANT YOU TO KNOW ABOUT. The filter works on whatever page of results happens to be on screen, rather than on the whole log. So after tonight's fix, \"Security\" shows eight rows — and there are forty in the table. \"Model\" shows none, and there is one. The CSV export you can download has the same fault, which is the part I like least: a \"Security\" export is not the security rows, it is a slice, and nothing on the file says so. It is written up with the numbers (#941) and it is the next thing I would take.\n\nONE THING NEEDS YOU, AND IT IS SMALL. A moderator raising a change request writes a row that one of your two staff screens tags \"abuse\" and the other tags nothing. A change request is not abuse, so I could not just pick one. Card on your desk below — two options, my recommendation stated, and it is the only family of events left without an answer.\n\nThe reviewer failed for the thirty-first time — 605 milliseconds, one turn, zero dollars, an error on the very first step, still from 1am on the 12th. I read the run's own numbers rather than its red tick, as before. Your \"wait\" stands and I did not re-diagnose it. This change touched no money and no sign-in, so it merged on the machine checks. Your two sign-in changes, the subscription money bug and the credit-request repair are all still held exactly as you ruled. NEXT UP is empty.",
+  "edition": 401,
+  "updatedAt": "2026-09-14T07:00:00.000Z",
+  "shift": "YOUR AUDIT LOG'S CATEGORY FILTER WAS ONLY EVER SEARCHING ONE PAGE — AND YOU ANSWERED THE ONE QUESTION I HAD LEFT, SO THAT IS BUILT TOO.\n\nWHAT YOU WOULD SEE. Open the admin audit log and pick \"Security\". Last night that showed you eight rows. Tonight it shows you forty, and the forty are all of them. Nothing about your screen changed — the filter simply started asking the whole table instead of asking whichever twenty rows happened to be on screen.\n\nTHE ONES IT COULD NEVER REACH. Your site has recorded 19 sign-ins. Not one of them could be found under \"Security\" at any page size, ever. They are there now. The footer used to read \"Showing 1-8\" with a dead Next button; it now reads \"Showing 1-20\", then \"Showing 21-40\", and the Next button switches off when you actually reach the end.\n\nTHE SAME FAULT WAS SITTING SOMEWHERE WORSE, and I would not have looked if the first one had not sent me. The panel headed \"Needs looking at\" — your abuse alerts — was reading the newest hundred rows of the WHOLE log and then keeping the abuse ones. On this database 2,927 of 3,047 rows are refusals from the casting studio. So a genuine alarm could land correctly, be tagged correctly, and still be invisible simply because a hundred ordinary rows arrived after it. That is the exact thing our own code carries a warning about, reached by a different road. Fixed in the same change.\n\nAND YOUR \"TOTAL ENTRIES\" TILE HAD A CEILING OF EXACTLY 10,000. It counted by fetching rows and measuring the pile, and the pile was capped. You are at 3,050, so you would not have noticed for a while — it would simply have stopped moving one day and looked precise while doing it.\n\nYOUR RULING LANDED WHILE I WAS WORKING, AND IT IS BUILT. You wrote: \"Give moderator actions their own category.\" It is live. A moderator's change request now carries a quiet \"Moderator\" tag on both your staff screens — the moderation console used to draw it RED, as abuse — and \"Moderator\" is a choice in the category dropdown on both. I checked it on screen in both light and dark before merging; there were no such rows in the test database, so I wrote three, photographed them, and deleted them again.\n\nONE MORE THING I FOUND AND DID NOT TOUCH. The abuse strip says \"N critical in the last day\". There is no \"last day\" behind it — that number has no time limit at all, and it also stops at ten. Worse, the whole \"Needs looking at\" panel only appears when that number is above zero, so ten newer minor rows can hide a critical one's own panel. Filed as #946 rather than guessed at, because three different screens want three different answers from that one number.\n\nALSO TONIGHT: the deploy tool refused a perfectly good commit last night because one internal check ran eight small jobs in a queue and ran out of time. They run four at a time now — the check went from six seconds to two — and the time limit is untouched, so it can still catch a real hang.\n\nNOTHING WAS SPENT. Your desk is empty again.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -118,7 +118,7 @@
       {
         "label": "Your desk is empty",
         "tone": "good",
-        "source": "5 replies in 6 minutes, all acted on (186 of 186). Nothing is waiting on you."
+        "source": "You answered #938 at 06:03 and it was built, merged and live by 06:57. 187 of 187 acted on."
       },
       {
         "label": "Secrets, shapes, access: clean",
@@ -128,7 +128,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "51 open, none waiting on you, none urgent. Tonight 1 merged, 1 closed, 1 filed. 26 untouched 7d."
+        "source": "51 open, none waiting on you, none urgent. Tonight 3 merged, 3 closed, 1 filed. 26 untouched 7d."
       },
       {
         "label": "Check-ups",
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-14T04:01:18.087Z",
+      "readAt": "2026-09-14T06:59:27.248Z",
       "items": [
         {
           "issueNumber": 16,
@@ -282,7 +282,7 @@
     {
       "id": "moderator-audit-category-938",
       "issueNumber": 938,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-14T04:02:54.591Z",
       "title": "A moderator's change request is tagged 'abuse' on one of your staff screens and tagged nothing on the other. Which is right?",
       "productImpact": "Tonight's audit-log fix cleared thirteen kinds of event whose tag and filter disagreed. There is one family left, and it is the only one I could not settle without you.\n\nWhen a moderator raises a change request — asking an admin to approve something they cannot do themselves — the product records it. Then:\n\n- on the MODERATOR console that row is tagged \"abuse\";\n- on the ADMIN console the same row is tagged nothing at all;\n- and on both, picking any category in the filter — including Abuse — makes it vanish.\n\nSo one of your screens tells a moderator that raising a change request is abuse, and the Abuse filter is the one place that will never show it to them.\n\nWHY I DID NOT JUST PICK ONE. Every other event I fixed tonight went into a group its own siblings were already in — a blocked sign-in joins the sign-ins, so nothing new appeared on your screen and no judgement was involved. This family has no siblings anywhere. Answering it means either deleting the \"abuse\" tag or creating a new category, and a new category is a new option in your staff filters. That is a change to your screens, so it is yours.\n\nIt is not urgent and nothing is broken for a customer. Three of these events exist and at least one is written on the live site.",
@@ -4914,6 +4914,27 @@
   ],
   "pipeline": [
     {
+      "id": "modcat-938",
+      "title": "A moderator's change request now has its own quiet tag on both staff screens — your ruling, built the same night you gave it",
+      "status": "merged",
+      "prNumber": 947,
+      "note": "Card #938, on your word — Crew reply #187, in full: \"Give moderator actions their own category\". That was the recommendation, so this was transcription rather than a decision. WHAT YOU WOULD SEE: a moderator raises a change request; the moderation console used to tag that row RED, as abuse, the admin console tagged it nothing at all, and on both screens picking any category — Abuse included — made it vanish. It now carries a quiet \"Moderator\" tag on both, and \"Moderator\" is a choice in the dropdown on both. THE COLOUR IS DELIBERATELY THE QUIET ONE: a change request is staff housekeeping, not an alarm, and a warning colour would say the opposite of what your ruling separated it from. FIVE PLACES HAD TO CHANGE TOGETHER or the category exists and reaches nobody — the server's own list, the tag rule on each console, the accepted values in three route files, and the dropdown on both panels. DRIVEN BEFORE MERGING on both screens in both themes: there were no such rows in the test database, so I wrote three, photographed them, and deleted them again — verified back to zero. EIGHT DELIBERATE BREAKAGES, all eight caught, including the sly one: deleting the tag rule AND the server list together, which makes the two agree perfectly while putting the rows straight back where they started. ONE GAP THAT HAD NEVER BEEN CHECKED IS NOW CHECKED — the old check proved the server would ACCEPT a category; nothing proved anyone could CHOOSE one, and the dropdowns are written out by hand. Nothing was spent."
+    },
+    {
+      "id": "selfinvoke-943",
+      "title": "The deploy tool refused a perfectly good commit last night — one internal check was running eight small jobs in a queue",
+      "status": "merged",
+      "prNumber": 945,
+      "note": "Card #943, filed by last night's shift after it happened to them. WHAT IT COST: the deploy refused to run and said the checks were RED, which reads exactly like a real fault and sent the shift looking for a broken file. Nothing was wrong. One check starts eight small background jobs one after another, each takes about a second, and under the load of everything else the deploy was doing they collectively ran past a 30-second limit. THE OBVIOUS FIX WAS THE WRONG ONE: raising the limit stops the failure and also stops the check being useful — that limit is what catches something genuinely stuck. The jobs are independent, so they now run four at a time. MEASURED: that check went from 5.9 seconds to 2.1, and the whole file from 10.0 to 6.4 — the margin against the limit went from about five times to about fourteen, and the limit itself is untouched. EIGHT DELIBERATE BREAKAGES, seven caught. THE EIGHTH IS REPORTED RATHER THAN HIDDEN: one defensive branch turned out to be unreachable on either Windows or Linux, so no test can see it. It is kept, and the code now SAYS it is untested rather than pretending otherwise. HONEST LIMIT: this widens the margin, it does not remove the underlying problem — a full test run on a busy machine still occasionally fails a few checks on time alone, and it did that twice tonight on two different trees. That is a separate job."
+    },
+    {
+      "id": "auditwhere-941",
+      "title": "Your audit log's category filter was only ever searching one page — 'Security' reached 8 rows of 40, and never a single sign-in",
+      "status": "merged",
+      "prNumber": 944,
+      "note": "Card #941, found while photographing last night's fix. WHAT YOU WOULD SEE: picking \"Security\" did not mean the security rows — it meant whichever of the newest twenty rows happened to be security rows. MEASURED ON THE SAME DATABASE AT THE SAME MOMENT: 8 rows at a page size of 20, 11 at a page size of 100. The answer changed with the page size, which is the whole fault in one line. It now shows 20 of 40 with a working Next. YOUR 19 SIGN-INS were unreachable under that filter at ANY page size; they are there now. Billing went 1 to 5, Model 0 to 1. THE FOOTER WAS LYING TOO — \"Showing 1-8\" with a dead Next, because the total was worked out from the page it was describing. It is a real count now: \"Showing 1-20\", then \"Showing 21-40\", Next off at the end. THE CSV EXPORT INHERITED ALL OF IT — a \"Security\" export was a slice of one page with nothing on the file saying so. THE SAME FAULT WAS SOMEWHERE WORSE and I only looked because this one sent me: your abuse-alerts panel read the newest hundred rows of the WHOLE log and then kept the abuse ones — and 2,927 of your 3,047 rows are casting refusals, so a genuine alarm could be pushed out of sight by ordinary traffic. Fixed in the same change. AND YOUR \"TOTAL ENTRIES\" TILE HAD A CEILING OF 10,000 — it counted by fetching rows and measuring the pile. DRIVEN BEFORE MERGING with two copies of the app side by side, both themes. EIGHT DELIBERATE BREAKAGES, seven caught first time; the eighth taught me something — the old and new ways of deciding whether there is a next page only disagree when the last page is exactly full, which is precisely when you would get a dead Next button. That check exists now. Nothing was spent."
+    },
+    {
       "id": "auditcat-939",
       "title": "Your audit log stopped hiding its own security rows — thirteen kinds of event carried a tag whose filter dropped them",
       "status": "merged",
@@ -6602,10 +6623,11 @@
     183,
     184,
     185,
-    186
+    186,
+    187
   ],
   "nextUp": {
-    "readAt": "2026-09-14T04:01:18.086Z",
+    "readAt": "2026-09-14T06:59:27.247Z",
     "items": []
   }
 }
