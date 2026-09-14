@@ -1295,6 +1295,18 @@
   why: "server/testing/ is test infrastructure by directory (the readListedSource precedent, 13a), so a production-importer reading of it is zero by construction and says nothing. Three hook suites drive their gates through it — prePushGate, preCommitGate, atlasMergeDriver — and it is the whole repair of #640: it THROWS when a process cannot be started rather than returning the old `-1`, so a driver that never ran the hook cannot answer the question the arms are asking. Deleting it returns all three suites to reporting a spawn failure as a hook verdict"
   argued: "#640"
 
+- symbol: runHookAsync
+  file: server/testing/hookDriver.ts
+  verdict: KEEP
+  why: "runHook's overlappable twin, and on the same test-infrastructure footing as its sibling above (server/testing/ is test infrastructure by directory, the readListedSource precedent 13a — a production-importer reading of it is zero by construction and says nothing). server/selfInvocationCheck.test.ts drives it: that suite spawns one tsx child per module, and sequentially it took 5.9s on an IDLE machine against this class's 30s cap. The deploy rite runs the script guards before it pushes, crossed the cap under its own load, and REFUSED a correct tree with a message reading like a real violation. Deleting this returns that arm to the sequential loop and puts the rite back one bad moment from refusing a clean commit — and the repair it replaces, raising the cap, would cost the arm its ability to report a genuine hang"
+  argued: "#943"
+
+- symbol: runWithLimit
+  file: server/testing/hookDriver.ts
+  verdict: KEEP
+  why: "the cap that keeps runHookAsync's overlap from becoming its own starvation, same footing. Eight tsx starts at once on a machine already running the rest of the suite trades one starvation problem for another, which is #943's whole subject — so the import arm runs four in flight, not Promise.all. It is also what keeps a SpawnFailure from being lost: every job is awaited inside its worker, where Promise.all would surface the first rejection and leave the siblings unhandled, and vitest reports an unhandled rejection against whatever file happens to be running"
+  argued: "#943"
+
 - symbol: requireShell
   file: server/testing/hookDriver.ts
   verdict: KEEP
