@@ -518,8 +518,17 @@ describe("verdictOf — the one sentence both outputs print, and it never names 
   citation, never a judgement of value* — and because this file is TRACKED and
   stays, every name it quoted became a permanent KEEP:
 
-      KEEP  cited by server/disposableAge.test.ts   scripts/_edition337-disposable.mts
-      …
+      KEEP  cited by server/disposableAge.test.ts   scripts/_edition337-*
+      ...
+
+  ⚠ **AND THE SUFFIX IS CLIPPED IN THAT LINE ON PURPOSE — THE ARM BELOW CAUGHT
+  THIS DOCBLOCK DOING THE VERY THING IT DESCRIBES.** The first version of this
+  comment quoted the offender in full, as evidence; `citationsFrom` matches on
+  the BASENAME, so the explanation re-pinned the file the change had just
+  released. It shipped, and the arm went red on the next tree that had a
+  population to read. **A name is a citation wherever it appears — prose is not
+  an exemption**, which is the card's own last paragraph arriving by
+  demonstration rather than by argument.
 
   Measured across that merge: sweepable 4 -> 2, `cited by a file that stays`
   101 -> 114. So the fix recovered 27 files from *undatable* and, in the same
@@ -529,9 +538,17 @@ describe("verdictOf — the one sentence both outputs print, and it never names 
   ⚠ **RE-MEASURED BEFORE THIS WAS TAKEN (#909's rule) AND THE CARD'S FIGURE IS
   THE RELEASE COUNT, NOT THE POPULATION: this suite cited FIFTEEN rows, of which
   thirteen were cited by nothing else.** The other two — `_shift101-court-mouth-`
-  and `court-ink-plate-` — are also named by `docs/specs/INK_COURT.md` and
-  `scripts/build-ink-court-panel-disposable.mts`, so they stay KEEP on their own
-  merits and renaming here neither releases nor harms them.
+  and `court-ink-plate-` — are also named by `docs/specs/INK_COURT.md` and by
+  `scripts/build-ink-court-panel-*`, so they stay KEEP on their own merits and
+  renaming here neither releases nor harms them.
+
+  ⚠ **AND THE MEASURED RELEASE WAS ELEVEN, NOT THIRTEEN, BECAUSE OF THE TWO
+  NAMES THIS DOCBLOCK ITSELF SPENT.** Read at the artifact after the merge:
+  `cited by a file that stays` 114 -> 103. The missing two are `_edition337-*`,
+  re-pinned by the example above, and `build-ink-court-panel-*`, which was not
+  pinned by anything before and was pinned by this paragraph and by
+  `sharpTestCeiling.test.ts`'s at the same time. Both suffixes are clipped now
+  and the arm below is the thing that says so if it happens again.
 
   ⚠ **THE READER IS NOT WEAKENED TO FIX THIS, AND THAT WAS THE CARD'S OWN
   RECOMMENDATION.** Excluding this suite from the citation authority would trade

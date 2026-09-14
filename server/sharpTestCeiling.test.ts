@@ -59,8 +59,16 @@
  * says why that decays — *"an exception keyed on a FILENAME is the thing that
  * stops a guard watching"* — and `selfInvocationCheck`'s copy is the worked
  * example, since it also demands a leading `_` and therefore sweeps
- * `court-ink-plate-disposable.mts` and `build-ink-court-panel-disposable.mts`
- * today (filed, not fixed here).
+ * `court-ink-plate-*` and `build-ink-court-panel-*` today — two live untracked
+ * files whose names carry no leading underscore (#979, filed not fixed here).
+ *
+ * ⚠ **THOSE TWO SUFFIXES ARE CLIPPED ON PURPOSE AND THE REASON IS THIS FILE'S
+ * OWN SUBJECT.** Written in full they were a CITATION: `disposable-age.mts`
+ * matches on the basename, so naming a live disposable in a tracked file's
+ * prose pins it as a permanent KEEP. The first version of this docblock did
+ * exactly that — an explanation of the class, committing an instance of it —
+ * and `disposableAge.test.ts`'s own arm (#975) is what caught it, on the next
+ * tree that had a population to read. **Prose is not an exemption.**
  *
  * So the listing is derived rather than typed: ONE `git ls-files` through
  * `runHook`, which satisfies the `hookDriver` guard, and the clock moves to
