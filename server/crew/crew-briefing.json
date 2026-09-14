@@ -1,7 +1,7 @@
 {
-  "edition": 410,
-  "updatedAt": "2026-09-14T17:11:35.538Z",
-  "shift": "NOTHING A CUSTOMER SEES CHANGED TONIGHT. I took the second of the two jobs last night's shift wrote down and left alone — an image setting nobody had ever chosen — measured it properly, and it turned out to be worth having.\n\nWHAT WAS WRONG. The software we use to open and resize photographs decides for itself how much of the machine to use, and left alone it asks for one thread per processor core — twenty on this machine. We run eight test jobs side by side, so eight copies of it were each asking for twenty. Nobody chose that; it is simply what the library does when it assumes it is the only thing running. We have been bitten by exactly this shape before, with our image provider.\n\nTHE PART I ALMOST GOT WRONG, AND IT IS THE REASON THIS TOOK A WHILE. My first measurement said the setting made no difference at all. I counted the actual threads while running the one test that had gone red last night, and the answer was nineteen versus eighteen — nothing. Had I stopped there I would have closed the job as 'nothing to do'. But that was one test out of forty-six that use this software, so I measured all forty-six together, and there it plainly does make a difference. The whole effect lives in tests nobody would have picked by looking.\n\nWHAT IT BUYS, HONESTLY. Across those forty-six tests, they finish in 14.5 seconds instead of 17 — about fifteen percent — and the machine holds a hundred and twenty fewer threads while doing it. Across the WHOLE test run, which is what actually matters to how long a shift waits, it is much smaller: about three and a half percent, roughly five seconds off two and a half minutes, and the fast and slow runs overlap. I ran the whole suite twelve times to get that number, because one instrument said five and a half percent and another said under two — quoting either on its own would have been picking whichever run flattered it.\n\nI CHOSE THE NUMBER BY MEASURING RATHER THAN ARGUING. The job as written warned that the obvious answer might not be the right one, and it was right to: I tried four settings, three times each. All thirteen thousand tests pass identically under every one of them.\n\nWHAT I AM NOT CLAIMING. This is not a fix for the random test failures. One red appeared in one of six runs with the setting on, did not come back in six more, and I never captured what it was — so I am reporting the count and not reading anything into it. The suite goes red occasionally without this change too; that is what last night was about.\n\nOUR OWN SAFETY NET CAUGHT ME TWICE, WHICH IS THE BEST PART OF TONIGHT. My first attempt broke two existing house rules — the check I wrote was launching a separate program to search our files, which is exactly the thing that makes tests fail randomly under load. Both complaints were correct. I rewrote it to do the searching itself, and then a third rule told me I had filed it under the wrong category of time limit. All three were right and all three cost one extra seven-minute wait, which is what they are for.\n\nAND THE JOB DESCRIPTION ITSELF WAS WRONG ABOUT ITS OWN SIZE — it said thirty files use this software; it is forty-six. That is the third time in a fortnight a job has understated how big it was, which is already written down as something to watch for.",
+  "edition": 411,
+  "updatedAt": "2026-09-14T18:06:17.112Z",
+  "shift": "NOTHING A CUSTOMER SEES CHANGED TONIGHT. This was one of our own tools telling night shifts something untrue, and it had already cost us two wasted diagnoses in twenty-four hours.\n\nWHAT WAS WRONG. When a shift ships work to you, the last thing it runs is a checking tool that reads every small script in the change. If anything looks wrong it refuses to ship — which is right, and stays right. The problem was the sentence it printed afterwards. It always said the same thing: \"one of your scripts is broken, go and fix the named one.\" It has no way of knowing that. It cannot tell a genuinely broken script from its own checks stumbling on the machine, because both arrive looking identical.\n\nIT SAID THAT TWICE IN A DAY ABOUT PERFECTLY GOOD WORK. Once on Sunday, when one of the checks simply ran out of time because the machine was busy. Once last night, when the check could not create a temporary folder it needed. Both times a shift read \"go fix the named script\", went looking for it, found nothing wrong, and lost an evening to it. The first shift even wrote the finding down in its own report — \"there is no named script to fix\" — and then the job was closed by fixing the other half of it. The sentence was left standing and caught the next shift a day later.\n\nWHAT I CHANGED. The refusal is exactly as strict as it was: it still will not ship, and that is deliberate — a tool that cannot see what it is checking must stop. What it stops doing is accusing. It now says plainly that this is one of two things, shows the evidence, and lets the reader see which: either a script in the change really is broken, or a check failed on the machine rather than on the work, in which case nothing in the change is wrong and running it again is the answer. And for the one case where the tool genuinely cannot start at all, there is now a separate message that clears the change outright. Before tonight that case did not print a refusal at all — it crashed with a wall of technical text and no explanation.\n\nTHE JOB DESCRIPTION I WAS GIVEN WAS WRONG, AND CHECKING MATTERED. The card said the checks \"never ran\". I opened the actual record from last night's failed attempt rather than taking its word, and the checks HAD run — there was exactly one failure, and it was inside the checking tool's own self-test. That changes the fix: a check that never ran can be detected automatically; a check that ran and stumbled cannot. So the answer was never a cleverer detector. It was to stop claiming.\n\nI TRIED TO FIND THE UNDERLYING CAUSE AND FAILED, AND I AM SAYING SO. I wrote a test that hammers the suspect part of the tool — 110 attempts under heavy load, across two rounds — and it did not go wrong once. I have a plausible explanation and no proof, so I have filed it as its own job rather than changing a genuinely dangerous piece of code on a hunch. That empty result is actually the argument for what I did build: a cause nobody can reproduce is exactly the one a refusal must never assert.\n\nAND I FIXED ITS TWIN BEFORE IT BIT. The same tool runs a second, near-identical check one step earlier, built the same way, able to fail the same way, and it would have blamed your work in the same words. Nothing has ever seen it do so. I fixed it anyway in the same change, and said in the code that it was fixed as a precaution rather than after an incident — so nobody later reads it as a second thing that went wrong.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-14T17:10:11.751Z",
+      "readAt": "2026-09-14T18:04:58.531Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4941,6 +4941,13 @@
   ],
   "pipeline": [
     {
+      "id": "guard-voice-967",
+      "title": "Our shipping tool was telling night shifts to fix a file that was not broken — twice in a day",
+      "status": "merged",
+      "prNumber": 968,
+      "note": "Card #967, filed by last night's shift and closed tonight. NOTHING A CUSTOMER SEES CHANGED. The tool that refuses to ship broken work still refuses exactly as before; it has stopped naming a culprit it has no way of identifying. Two shifts in twenty-four hours lost an evening to that sentence, both on perfectly good work, and the first of them had already written the finding down (#943) before the job was closed on its other half. The cause of last night's stumble was chased for 110 attempts and did NOT reproduce — filed as #969 rather than fixed on a hunch. Its near-identical twin one step earlier was fixed in the same change as a precaution, and says so in the code."
+    },
+    {
       "id": "sharp-ceiling-965",
       "title": "The test run was asking for a hundred and sixty threads on a twenty-core machine — nobody had ever chosen that",
       "status": "merged",
@@ -6339,16 +6346,30 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0915-foreman",
+      "id": "fable-reviewer-no-verdict-884-0915",
+      "severity": "warning",
+      "state": "open",
+      "title": "The outside reviewer failed again tonight, identically, and your 'wait' stands",
+      "detail": "Tonight's job touched no money and no sign-in code, so it merged on our own checks under your 2026-08-29 ruling. The reviewer job died after 977 milliseconds on its first call having spent six tenths of a cent — the same shape as every other failed run, which is #884's reading: everything about it is identical either side of the boundary, and the only unread thing left is your Fable allowance. Nothing here needs you unless you want to look at that."
+    },
+    {
+      "id": "queue-shape-0915b-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 50 open — level with last night; NEXT UP is still empty and nothing new waits on you",
+      "detail": "50 open, unchanged: one closed tonight (#967) and one filed (#969, the cause I could not prove). Nothing is marked urgent and NEXT UP — the jobs you have personally ordered — is empty, so tonight ran on the background switches in their fixed order. 27 cards have gone a week with nobody touching them, unchanged for the seventh night; the oldest is #28 at 20 days. That figure is not getting worse, and it is not getting better either."
+    },
+    {
+      "id": "queue-shape-0915-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 50 open — one closed and two filed tonight; NEXT UP is still empty and nothing new waits on you",
       "detail": "50 open, two more than last night, and the direction is honest rather than bad: #962 was closed and two new jobs (#964, #965) were filed out of what tonight's measurements turned up. 27 cards have had no comment, close or commit for seven days — unchanged for a fifth night — and the oldest is #28 at 20 days. The category order was re-read at the code rather than off card titles: Bugs — #962 was the one takeable card and it is done, the rest are finished-and-held on your word (#804, #940) or blocked on one of those (#923, #955); Small fixes and Security — empty; Process — both are the Retro's own seat and its clock does not fire for four days; Performance — the Machinist's programme, and the two jobs I filed tonight join it; Housekeeping — the Janitor's, due today but not yet overdue; Casting upkeep — seven, none of them small. Worth saying plainly: the raw 50 badly overstates what a shift can pick up. After this card there was genuinely nothing else takeable tonight, which is why no second job was started — that is a correct night, not a slow one. The five held jobs remain the only thing waiting on you, and all five were re-checked tonight and are still one click from going in."
     },
     {
       "id": "fable-reviewer-no-verdict-884-0914d",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The outside reviewer failed again tonight — the 31st in a row, identical to the other thirty, and your 'wait' stands",
       "detail": "Tonight's job touched no money and no sign-in code, so it merged on our own checks as your rule allows — but the reviewer still ran and still died the same way: it reached the point of asking the model, failed in half a second, used nothing and spent nothing. Read out of the run's own log rather than off the red tick, which is the only reading that can tell this apart from a genuine bad verdict. Nothing here is new and nothing was re-diagnosed: you closed #884 saying the only unread thing left is your own Fable allowance. The five finished jobs behind it are on your desk."
     },
@@ -6795,7 +6816,7 @@
     187
   ],
   "nextUp": {
-    "readAt": "2026-09-14T17:10:11.750Z",
+    "readAt": "2026-09-14T18:04:58.531Z",
     "items": []
   }
 }
