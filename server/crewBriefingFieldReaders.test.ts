@@ -92,8 +92,9 @@ describe("the stamp says when, and says it differently from the bar", () => {
 
   it("draws updatedAt through the page's own formatter, not a fourth copy", () => {
     /* Three hand-rolled formatters is how one 24-hour fix reached one of them
-       (#415's residue, recorded in `shortDate`'s docblock). */
-    expect(stamp).toContain("shortDate(stateQuery.data.briefing.updatedAt)");
+       (#415's residue, recorded in `staffDateTime`'s docblock, which is where
+       `shortDate`'s went when the two collapsed into one). */
+    expect(stamp).toContain("staffDateTime(stateQuery.data.briefing.updatedAt)");
   });
 
   it("keeps the author, which is the half #415 deliberately left here", () => {
