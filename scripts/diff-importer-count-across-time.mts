@@ -87,13 +87,20 @@
  * sentence names, plus 28 board operations reached through one `ops.` alias.
  * A symbol already counted at zero can never be seen to FALL to zero, so this
  * differ would have reported silence on the day the lockout died. The hop is
- * resolved now (`lib/importerCountDiff.mts`, seven arms in
- * `server/unwiringDiffer.test.ts`) and it is deliberately narrow: a RELATIVE
- * binding, and the member must be declared in that module or one it re-exports
- * from, ONE hop. A barrel of barrels still reads as no importer — pinned by
- * its own arm rather than left to be assumed, and it is the safe direction:
- * this reader may produce a finding that turns out alive, never a silence
- * about something that died.
+ * resolved now (`lib/importerCountDiff.mts`, arms in
+ * `server/unwiringDiffer.test.ts`) and the member must be declared in the
+ * module the specifier names or one it re-exports from.
+ *
+ * ⚠ **THE "ONE HOP" AND "RELATIVE ONLY" LIMITS THIS PARAGRAPH USED TO STATE ARE
+ * GONE (#274), AND THE SENTENCE THAT JUSTIFIED THEM WAS WRONG.** It read *"a
+ * barrel of barrels still reads as no importer … it is the safe direction: this
+ * reader may produce a finding that turns out alive, never a silence about
+ * something that died."* **The second clause contradicts the paragraph directly
+ * above it**: a barrel of barrels reads zero at BOTH trees, which is a silence,
+ * and it is the same silence that hid the lockout. The walk is transitive with a
+ * visited set now and the specifier resolver knows the client's `@/` alias —
+ * both widen what counts as an importer, which is the genuinely safe direction
+ * for a reader whose zero means *nothing calls this*.
  *
  * **(2) TOWARD SILENCE — born AND un-wired inside one window, invisible.** A
  * symbol absent from the `before` tree is skipped, because it cannot have lost
@@ -215,13 +222,13 @@ const found = (name: string) => findings.some((f) => f.name === name);
 console.log("CONTROLS");
 check(
   "sanity    both trees read",
-  before.decl.size > 100 && after.decl.size > 100,
-  `${before.files} files / ${before.decl.size} exports  ->  ${after.files} files / ${after.decl.size} exports`,
+  before.decls.size > 100 && after.decls.size > 100,
+  `${before.files} files / ${before.decls.size} exports  ->  ${after.files} files / ${after.decls.size} exports`,
 );
 check(
   "sanity    the two trees are DIFFERENT trees",
-  before.decl.size !== after.decl.size || before.files !== after.files,
-  `${after.decl.size - before.decl.size} exports, ${after.files - before.files} files`,
+  before.decls.size !== after.decls.size || before.files !== after.files,
+  `${after.decls.size - before.decls.size} exports, ${after.files - before.files} files`,
 );
 if (controlSet === "february") {
   check(

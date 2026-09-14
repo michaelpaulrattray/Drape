@@ -1284,16 +1284,28 @@
 
 - symbol: BRAND_NAME
   file: server/casting/geminiPrompts.ts
-  verdict: KEEP
-  why: "TWO declarations share this name and the door is keyed on the name alone, so this row necessarily answers both. It was HELD from 2026-08-30, when section 02 dropped the topbar wordmark and left the CLIENT twin (`client/src/foundation/brand.ts`, \"Klieg\") with no importer — which had been the only thing standing in front of the legacy server twin `BRAND_NAME = 'DRAPE'`, production-unreferenced for as long as that was true. ⚠ SECTION 03 GAVE THE CLIENT TWIN REAL CONSUMERS AGAIN (2026-09-01): the settings modal's header writes the workspace as `{BRAND_NAME} · {plan} plan` and the Profile section's workspace-name stub names it, so the door reads it as REWIRED rather than held. The verdict moves to KEEP because that is what the name-keyed door can say about a live symbol; nothing about the SERVER twin has changed and its blocker is unchanged — it is still unreferenced and it still dies with #29, which is why the sentence below stays"
+  verdict: HELD
+  why: "⚠ THIS ROW IS ABOUT THE SERVER TWIN ALONE, AND AS OF 2026-09-13 IT CAN BE (#274, the door half). It answered BOTH declarations of the name for as long as the door was keyed on a bare symbol, and its own text said so. The reading now, measured at the tree through `importersAt(file, symbol)`: `server/casting/geminiPrompts.ts`'s legacy `BRAND_NAME = 'DRAPE'` has **0** production importers — `geminiService.ts` re-exports it and nothing imports it back. It read as **2** the hour before, and both of those were `client/src/features/staff/StaffBar.tsx` and `client/src/pages/AdminFoundation.tsx` importing the CLIENT constant `client/src/foundation/brand.ts` (\"Klieg\") through `@/foundation` — two live consumers of a different file keeping a dead server export off every list. It was KEEP for exactly that reason and the verdict is HELD again now, which is what it was from 2026-08-30 until section 03 re-wired the client twin. The client constant is NOT this row's business any more and needs none: the sweep reads `client/` for importers and not for declarations, so it is never listed"
   argued: 34
-  blocker: "two, one per twin, and neither is a dependency: the server constant belongs to the legacy casting studio, whose retirement is #29 — the program's FINISH LINE, begun only on the founder's word, with the Atlas governing every deletion; the client constant is the single place the product's name is written, and the public rebrand (plan O-2, M5b) is a live founder-executed workstream that needs exactly such a place"
+  blocker: "#29, the legacy-studio retirement — the program's FINISH LINE, begun only on the founder's word, with the Atlas's retirement views governing every deletion. One blocker now, not the two this row used to carry: the second was the CLIENT twin's, and a row keyed on (file, symbol) no longer speaks for it"
 
 - symbol: runHook
   file: server/testing/hookDriver.ts
   verdict: KEEP
   why: "server/testing/ is test infrastructure by directory (the readListedSource precedent, 13a), so a production-importer reading of it is zero by construction and says nothing. Three hook suites drive their gates through it — prePushGate, preCommitGate, atlasMergeDriver — and it is the whole repair of #640: it THROWS when a process cannot be started rather than returning the old `-1`, so a driver that never ran the hook cannot answer the question the arms are asking. Deleting it returns all three suites to reporting a spawn failure as a hook verdict"
   argued: "#640"
+
+- symbol: runHookAsync
+  file: server/testing/hookDriver.ts
+  verdict: KEEP
+  why: "runHook's overlappable twin, and on the same test-infrastructure footing as its sibling above (server/testing/ is test infrastructure by directory, the readListedSource precedent 13a — a production-importer reading of it is zero by construction and says nothing). server/selfInvocationCheck.test.ts drives it: that suite spawns one tsx child per module, and sequentially it took 5.9s on an IDLE machine against this class's 30s cap. The deploy rite runs the script guards before it pushes, crossed the cap under its own load, and REFUSED a correct tree with a message reading like a real violation. Deleting this returns that arm to the sequential loop and puts the rite back one bad moment from refusing a clean commit — and the repair it replaces, raising the cap, would cost the arm its ability to report a genuine hang"
+  argued: "#943"
+
+- symbol: runWithLimit
+  file: server/testing/hookDriver.ts
+  verdict: KEEP
+  why: "the cap that keeps runHookAsync's overlap from becoming its own starvation, same footing. Eight tsx starts at once on a machine already running the rest of the suite trades one starvation problem for another, which is #943's whole subject — so the import arm runs four in flight, not Promise.all. It is also what keeps a SpawnFailure from being lost: every job is awaited inside its worker, where Promise.all would surface the first rejection and leave the siblings unhandled, and vitest reports an unhandled rejection against whatever file happens to be running"
+  argued: "#943"
 
 - symbol: requireShell
   file: server/testing/hookDriver.ts
@@ -1306,3 +1318,9 @@
   verdict: KEEP
   why: "server/testing/ is test infrastructure by directory (the allowColdImports precedent). It is the ceiling vitest.config.ts reads for maxWorkers — vitest's own cores − 1, capped at 8 — because 19 workers on the founder's box starved the child-process suites into 13–22 timeouts a run and doubled the wall time, measured as a back-to-back pair (301 s / 2 reds at eight against 680 s / 22 at nineteen). Read by the config, never by product code, and server/workerCap.test.ts pins the wire at the config's bytes"
   argued: "#743"
+
+- symbol: mergeAttributeChanges
+  file: server/lib/boardOps.ts
+  verdict: TAKEN
+  why: "ARGUED AND CUT. #886 asked the one question #274 could not: did ALL the rules move, or was one lost on the paid path? Read rule by rule against the handlers - rule-1 (a gender change clears hairStyle/hairFade/facialHair) is `person.gender.buildPreferencePatch`; rule-2 (a style change resets its sub-selectors) is the `person.hair.style` extraResets; the ethnicity dual-write is `person.ethnicity.buildPreferencePatch` writing BOTH `ethnicityBlend` and the derived legacy string, with structuredEdit.ts:205 deriving the blend from prose for the other direction. All three arrived in 8b514bed (R6 Batch C, 2026-07-16), so NOTHING WAS LOST and this was a dead export, not a live gap. ITS ROAD IS PATH THREE, read at the bytes and not from the import graph: born WIRED in a5b1ddf0 (2026-07-11) with a real call site on the paid path - `resolveEngineChoices(mergeAttributeChanges(current, input.changes))` inside applyModelEdit - and UN-WIRED by c7cdc7ad (2026-07-28, `R7-7D D7: ship free evidence-aware Fork`), a commit aimed at something else entirely, which left no failing test and no error. Live 17 days, dead 47. It was invisible because boardOps.ts is namespace-imported (#274) AND because r7-ink-add-d7-contract.test.ts asserted its SOURCE TEXT, so the one instrument that touched it was holding it alive. The shared rules it delegated to are NOT dead - CastingWorkspace.tsx:229 merges the fork-to-edit draft through them - so the four test arms moved to shared/mergeCastingPreferenceChanges directly and every assertion is kept"
+  argued: "#886"

@@ -383,6 +383,38 @@ describeWithDatabase("Casting V2 roll domain (disposable DB)", () => {
       expect(listed.map((entry) => entry.publicId)).toEqual([session.publicId]);
     });
 
+    /*
+      A SHEET THAT IS GONE IS NOT ON THE LIST EITHER (#890, his word 13 Sep).
+
+      The lobby already filtered on `open`, so this changes nothing and pins
+      something: it is the half of *"its not reachable its gone"* that was
+      ALREADY true, and the half most likely to be undone by accident later —
+      a filter widened to show a customer "their recent sheets" would quietly
+      put an address back on a page his ruling removed. Both closed states,
+      because `abandoned` releases its candidates inline exactly as the sweep
+      does and is the same "gone".
+
+      ⚠ Runs only with a disposable `TEST_DATABASE_URL` (the whole file does),
+      so it is not a CI backstop and is not claimed as one. The door that is
+      driven in CI is `server/castingV2SheetGone.test.ts`.
+    */
+    for (const status of ["expired", "abandoned"] as const) {
+      it(`drops a ${status} sheet off the lobby's list`, async () => {
+        const session = await newSession(owner);
+        await newRoll(owner, session.publicId);
+        /* The positive control: it IS listed while open, or the assertion below
+           passes against a sheet the roll filter had already hidden. */
+        expect((await db.listOpenCastingSessions(owner)).map((entry) => entry.publicId))
+          .toEqual([session.publicId]);
+
+        await connection.execute("UPDATE casting_sessions SET status = ? WHERE id = ?", [
+          status,
+          session.id,
+        ]);
+        expect(await db.listOpenCastingSessions(owner)).toEqual([]);
+      });
+    }
+
     it("still lists a sheet whose candidates have all failed", async () => {
       /*
         Deliberately NOT hidden. That sheet has a brief, a roll and a charge

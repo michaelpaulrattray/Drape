@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
-import { runHook } from "./testing/hookDriver";
+import { runHook, runHookAsync, runWithLimit } from "./testing/hookDriver";
 import { readListedSource } from "./testing/listedSource";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
@@ -67,6 +67,11 @@ afterAll(() => {
 const TSX_CLI = join(REPO, "node_modules", "tsx", "dist", "cli.mjs");
 function tsx(file: string, args: string[] = [], cwd = REPO) {
   return runHook(process.execPath, [TSX_CLI, file, ...args], { cwd });
+}
+
+/** The same drive, overlappable — see the import arm's own note (#943). */
+function tsxAsync(file: string, args: string[] = [], cwd = REPO) {
+  return runHookAsync(process.execPath, [TSX_CLI, file, ...args], { cwd });
 }
 
 /**
@@ -271,7 +276,7 @@ describe("the self-invocation check", () => {
     }
   });
 
-  it("IMPORTED, not one of them runs its command block — the arm that matters", () => {
+  it("IMPORTED, not one of them runs its command block — the arm that matters", async () => {
     /* ⚠ THE NEGATIVE ARM, AND IT USES A REAL IMPORT RATHER THAN A FIXTURE.
        The importer that must never be made to run a checker is the test suite,
        which imports several of these. If a conversion were inverted, the block
@@ -294,7 +299,28 @@ describe("the self-invocation check", () => {
     const dir = mkdtempSync(join(tmpdir(), "drape-import-only-"));
     scratches.push(dir);
 
-    for (const rel of modules) {
+    /* ⚠ THE CHILDREN OVERLAP NOW, AND #943 IS WHY — read that card before
+       making this sequential again to "keep it simple". One `tsx` start is
+       most of a second on this machine, and eight of them in a row put this
+       arm at 5.9 s on an IDLE box against the class's 30 s cap. The deploy
+       rite runs the script guards before it pushes; under its own concurrent
+       load this arm crossed the cap and REFUSED a correct tree, with a message
+       that reads like a real violation and a printed repair naming a script
+       that does not exist.
+
+       Raising the cap was the wrong repair: it would make the arm stop failing
+       and stop being informative, because a genuine hang is the thing the cap
+       exists to catch. Overlapping cuts the real time instead. The children are
+       independent by construction — one temporary importer each, one module
+       each, nothing shared but the read-only repository — so ordering was never
+       carrying anything.
+
+       FOUR, not `Promise.all`: eight `tsx` starts at once on a machine already
+       running the rest of the suite trades one starvation problem for another,
+       and starvation is this card's whole subject. */
+    const IN_FLIGHT = 4;
+
+    const jobs = modules.map((rel) => {
       const importer = join(dir, `import-${rel.replace(/[\\/]/g, "-")}`);
       /* A bare Windows path is not a legal ESM specifier — node refuses it
          with ERR_UNSUPPORTED_ESM_URL_SCHEME ("Received protocol 'c:'"), which
@@ -309,7 +335,12 @@ describe("the self-invocation check", () => {
          waits for is present, which is also the real incident (#345): `npx tsx
          scripts/drive-self-walk.mts --prove` ran an imported module's controls
          and exited before the driver's own parse ever saw the word. */
-      const run = tsx(importer, ["--prove"], REPO);
+      return async () => ({ rel, run: await tsxAsync(importer, ["--prove"], REPO) });
+    });
+
+    /* Every child is awaited and every verdict is read — the results come back
+       in the modules' own order, so a failure names the right file. */
+    for (const { rel, run } of await runWithLimit(jobs, IN_FLIGHT)) {
       expect(run.status, `${rel} — importing it must not fail: ${run.stderr}`).toBe(0);
       expect(run.stdout.trim(), `${rel} — importing it must print nothing of its own`).toBe(
         "IMPORT-ONLY OK",
@@ -352,7 +383,7 @@ describe("the self-invocation check", () => {
     expect(check.stdout + check.stderr).not.toMatch(/\[atlas:check\] (OK|FAILED)/);
   });
 
-  it("CAN FAIL — an inverted gate is caught on BOTH roads, driven on a sabotaged copy", () => {
+  it("CAN FAIL — an inverted gate is caught on BOTH roads, driven on a sabotaged copy", async () => {
     /* ⚠ WORKING LAW 2, POINTED AT THE CHEAP ROAD (#839's bar). The arm above
        no longer runs the build, so the obvious question is whether it still
        tells a firing block from a dead one. Driven rather than reasoned: the
@@ -404,7 +435,13 @@ describe("the self-invocation check", () => {
 
     const importer = join(dir, "importer.mts");
     writeFileSync(importer, `await import(${JSON.stringify(pathToFileURL(subject).href)});\nconsole.log("IMPORT-ONLY OK");\n`);
-    const imported = tsx(importer, ["--prove"], dir);
+    /* ⚠ `tsxAsync`, DELIBERATELY — this half must run the SAME driver the
+       import arm runs (#943). Proving the assertions discriminate through the
+       sync twin would leave the async one unproven on the road that matters:
+       a twin that dropped a child's stdout would let the import arm pass over
+       a firing block while this arm still reddened, which is a guard whose
+       honesty rests on an instrument it does not use. */
+    const imported = await tsxAsync(importer, ["--prove"], dir);
     expect(imported.status, "an inverted gate fires on import and the parser refuses --prove").toBe(1);
     expect(imported.stderr).toContain("REFUSING: unknown argument --prove");
     expect(imported.stdout).not.toContain("IMPORT-ONLY OK");

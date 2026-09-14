@@ -668,6 +668,121 @@ export function splitProgram(programMd: string): ProgramSplit {
   return { carried, named };
 }
 
+/**
+ * One mailbox entry as the CLI reads it off disk — the input to the reader
+ * below, so the DECISION is pure and CI can drive it without a `.agents/`.
+ */
+export type MailboxEntry = {
+  readonly name: string;
+  /**
+   * The filesystem's own write time, epoch ms. ⚠ **This is the authoritative
+   * reader and the reason is not convenience**: it is written by the operating
+   * system rather than typed by a shift at 3am, and it is an absolute instant,
+   * so the local/UTC question that produced #960 cannot be asked of it.
+   */
+  readonly mtimeMs: number;
+  /** The `YYYYMMDDHHMM` stamp in the FILENAME, or null when the name has none. */
+  readonly filenameStamp: string | null;
+};
+
+export type PreviousShift = {
+  readonly label: string;
+  /**
+   * The instant handed to `git log --since=` and to the `gh` card query, always
+   * UTC. ⚠ **ONE string goes to both.** The old road computed a naive local ISO
+   * for git and a UTC one for `gh`, which is two answers to one question.
+   */
+  readonly iso: string;
+  /** Said out loud in §3. Empty when the two readers agree. */
+  readonly notes: readonly string[];
+};
+
+/**
+ * WHICH ENTRY WAS THE PREVIOUS SHIFT — read by `mtime`, cross-examined by the
+ * FILENAME, and REFUSED rather than dated in the future (#960).
+ *
+ * The road it replaces took the maximum FILENAME stamp and parsed it as LOCAL
+ * time. Measured over the 377 timestamped entries on the machine that filed the
+ * card: the two orderings disagree at **38 positions**, the filename winner sat
+ * **8th** in mtime order, and **one** stamp was in the future of local now —
+ * `…-1032`'s stamp is UTC, `…-2345`'s own header says it opened `01:52Z`, so it
+ * is neither UTC nor local. The names have drifted into at least two
+ * conventions plus one that matches nothing.
+ *
+ * ⚠ **WHY THE REFUSAL IS THE ACTUAL GUARD AND THE MTIME SWITCH ONLY STOPS IT
+ * FIRING.** A `--since` that is ahead of now returns zero rows *by
+ * construction* — not "nothing changed", but nothing CAN be returned — and §3
+ * then prints a confident `none / none` that no shift can tell from a genuinely
+ * quiet interval. It fails silently and always in the same direction: toward
+ * the tree having stood still. So a future instant is refused here whatever
+ * produced it, including a skewed clock that mtime cannot protect against.
+ *
+ * ⚠ **The filename is kept as a SECOND READER rather than deleted.** It is the
+ * reading the handoff chain and the entry titles are written in, so when it
+ * names a different entry a shift needs telling — the digest says which and
+ * does not pick (the same shape as the atlas hook naming a partial stage
+ * instead of claiming the map matches). It is never used to choose.
+ *
+ * ⚠ **And it is NOT repaired by renaming the entries or tightening the naming
+ * convention in the standing orders.** 377 files exist, 38 orderings already
+ * disagree, and a convention is a thing a shift can get wrong again next week —
+ * working law 4, a second list shadowing a source of truth. The filesystem
+ * already knows.
+ */
+export function choosePreviousShift(
+  entries: readonly MailboxEntry[],
+  nowMs: number,
+): PreviousShift | Unreadable {
+  const timestamped = entries.filter((entry) => entry.filenameStamp !== null);
+  if (timestamped.length === 0) return { unreadable: "no timestamped entry in the mailbox" };
+
+  /* Ties broken by name so two entries written in the same millisecond cannot
+     make the digest non-deterministic between runs. */
+  const byMtime = [...timestamped].sort((a, b) =>
+    b.mtimeMs - a.mtimeMs || (a.name < b.name ? 1 : a.name > b.name ? -1 : 0),
+  );
+  const picked = byMtime[0];
+
+  if (picked.mtimeMs > nowMs) {
+    const ahead = Math.round((picked.mtimeMs - nowMs) / 60000);
+    return {
+      unreadable:
+        `${picked.name} was written ${ahead} minute(s) in the FUTURE — a --since ahead of now ` +
+        `returns nothing by construction, and "none" would be a lie rather than a reading`,
+    };
+  }
+
+  const notes: string[] = [];
+  const byName = [...timestamped].sort((a, b) =>
+    (a.filenameStamp as string) < (b.filenameStamp as string) ? 1 : (a.filenameStamp as string) > (b.filenameStamp as string) ? -1 : 0,
+  );
+  const nameWinner = byName[0];
+  if (nameWinner.name !== picked.name) {
+    const rank = byMtime.findIndex((entry) => entry.name === nameWinner.name) + 1;
+    notes.push(
+      `⚠ the newest FILENAME stamp is a DIFFERENT entry — ${nameWinner.name}, which sits ${rank} of ` +
+        `${byMtime.length} by write time. The filenames are not one clock (#960), so this reading is ` +
+        `by mtime; if a handoff names that other entry, open both.`,
+    );
+    const nameIso = isoFromStamp(nameWinner.filenameStamp as string);
+    if (nameIso !== null && new Date(nameIso).getTime() > nowMs) {
+      notes.push(
+        `⚠ and that filename stamp is in the FUTURE of now — the old reader would have asked git for ` +
+          `changes since ${nameIso} and printed "none" because nothing can be returned.`,
+      );
+    }
+  }
+
+  return { label: picked.name, iso: new Date(picked.mtimeMs).toISOString(), notes };
+}
+
+/** `YYYYMMDDHHMM` read as LOCAL time — the convention the filenames CLAIM. */
+function isoFromStamp(stamp: string): string | null {
+  if (!/^\d{12}$/.test(stamp)) return null;
+  const iso = `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}T${stamp.slice(8, 10)}:${stamp.slice(10, 12)}:00`;
+  return Number.isNaN(new Date(iso).getTime()) ? null : iso;
+}
+
 export type NextUpRow = {
   readonly number: number;
   readonly title: string;
@@ -685,7 +800,7 @@ export type DigestInputs = {
   readonly nextUp: NextUpRow[] | Unreadable;
   /** `patrol-clocks.mts`'s own output, embedded rather than reimplemented. */
   readonly patrolClocks: string | Unreadable;
-  readonly since: { readonly label: string; readonly iso: string } | Unreadable;
+  readonly since: PreviousShift | Unreadable;
   readonly commits: string[] | Unreadable;
   readonly closedCards: string[] | Unreadable;
   readonly request: LawRequest;
@@ -826,7 +941,21 @@ export function buildDigest(inputs: DigestInputs): string {
 
   out.push("## 3 · WHAT CHANGED SINCE THE LAST SHIFT");
   out.push("");
-  out.push(line("Previous entry", isUnreadable(inputs.since) ? inputs.since : `${inputs.since.label} (${inputs.since.iso})`));
+  /* The instant is the entry's WRITE time, which is why it is labelled as one:
+     a reader who sees a bare ISO beside a filename carrying a different stamp
+     has no way to tell which of the two it is (#960). */
+  out.push(
+    line(
+      "Previous entry",
+      isUnreadable(inputs.since) ? inputs.since : `${inputs.since.label} (written ${inputs.since.iso})`,
+    ),
+  );
+  /* The second reader speaks when it disagrees and is silent when it does not.
+     A disagreement is NAMED rather than resolved: the mtime read is the one
+     used, and the shift is told which other entry a handoff might mean. */
+  if (!isUnreadable(inputs.since)) {
+    for (const note of inputs.since.notes) out.push(`  ${note}`);
+  }
   out.push("");
   out.push("Commits on main since then:");
   if (isUnreadable(inputs.commits)) {

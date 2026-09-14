@@ -1,10 +1,7 @@
-import { useState } from "react";
-import { toast } from "sonner";
 import { X } from "lucide-react";
 
-import { Button, ConfirmDialog, EmptyState, LeaderRow, Skeleton, TableHead } from "@/foundation";
+import { Button, EmptyState, LeaderRow, Skeleton, TableHead } from "@/foundation";
 import { trpc } from "@/lib/trpc";
-import { UNFREEZE_NOTES_MAX_LENGTH } from "@shared/inputLimits";
 
 import { negated, signed } from "./figures";
 import { downloadReconciliationCsv } from "./reconciliation-csv";
@@ -26,10 +23,18 @@ import "./investigations.css";
  * ## What did NOT change, deliberately
  *
  * His §5 and §7: every query, mutation, CSV export and date filter is the one
- * that was here. `getUserReconciliation`, `getUserDetails`, `unfreezeAccount`
- * and `downloadReconciliationCsv` are untouched, and the three-way headline
- * logic is kept because — his §4b — *"it is well judged. Only the tone
- * changes."*
+ * that was here. `getUserReconciliation` and `downloadReconciliationCsv` are
+ * untouched, and the three-way headline logic is kept because — his §4b —
+ * *"it is well judged. Only the tone changes."*
+ *
+ * ⚠ **THAT SENTENCE ALSO NAMED `getUserDetails` AND `unfreezeAccount` UNTIL
+ * #908, AND BOTH ARE GONE FROM THIS FILE NOW.** It was true of the restructure
+ * it describes; it stopped being true the day the duplicate subject band was
+ * deleted, and it is corrected here rather than left to contradict the file it
+ * sits in (law 7c — when a document and the tree disagree, the tree wins and
+ * the document is the bug). **Neither capability was lost:** the investigation
+ * shell reads the same `getUserDetails` for the same user and draws the one
+ * surviving band, and its `FreezeAction` owns the one remaining unfreeze.
  *
  * ## ⚠ Five colours became one
  *
@@ -74,31 +79,21 @@ export function ReconciliationSubTab({
   endDate,
   setEndDate,
 }: ReconciliationSubTabProps) {
-  const [confirmingUnfreeze, setConfirmingUnfreeze] = useState(false);
-
-  const utils = trpc.useUtils();
-
   const { data, isLoading } = trpc.moderatorReconciliation.getUserReconciliation.useQuery(
     { userId, startDate: startDate || undefined, endDate: endDate || undefined },
     { enabled: !!userId }
   );
 
-  const userQuery = trpc.moderator.getUserDetails.useQuery({ userId }, { enabled: !!userId });
-  const isFrozen = !!userQuery.data?.user?.frozenAt;
-  const frozenAt = userQuery.data?.user?.frozenAt;
-  const frozenReason = userQuery.data?.user?.frozenReason;
-
-  const unfreezeMutation = trpc.moderatorReconciliation.unfreezeAccount.useMutation({
-    onSuccess: () => {
-      toast.success("Account unfrozen");
-      setConfirmingUnfreeze(false);
-      utils.moderator.getUserDetails.invalidate({ userId });
-      utils.moderatorReconciliation.getFlaggedUsers.invalidate();
-    },
-    onError: (err) => {
-      toast.error(err.message || "Failed to unfreeze account");
-    },
-  });
+  /*
+    ⚠ **THE `getUserDetails` QUERY WENT WITH THE BAND (#908), AND NO FACT WENT
+    WITH IT.** It was read here for one thing only — the frozen title, date and
+    reason of the duplicate band above. The investigation shell that draws the
+    surviving band runs the same query for the same user, so the account's
+    frozen state is still read, still fresh, and now read once. This subtab's
+    docblock lists `getUserDetails` under *what did NOT change*; that sentence
+    was true of the restructure it describes and is corrected by this commit
+    rather than left to contradict the file it sits in.
+  */
 
   if (isLoading) {
     return (
@@ -143,30 +138,27 @@ export function ReconciliationSubTab({
 
   return (
     <div className="dp-inv__stack">
-      {/* ── 1 · SUBJECT — only when there is something to say (§4a) ── */}
-      {isFrozen && (
-        <div className="dp-inv__subject">
-          <div className="dp-inv__subjectbody">
-            <p className="dp-inv__subjecttitle">Account frozen</p>
-            <p className="dp-inv__subjectreason">
-              {frozenAt && (
-                <>
-                  Frozen{" "}
-                  <span className="dp-inv__subjectstamp">
-                    {new Date(frozenAt).toLocaleDateString()}
-                  </span>
-                </>
-              )}
-              {frozenReason ? ` — ${frozenReason}` : ""}
-            </p>
-            <div className="dp-inv__subjectaction">
-              <Button variant="secondary" size="small" onClick={() => setConfirmingUnfreeze(true)}>
-                Unfreeze account
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/*
+        ── 1 · SUBJECT — DELETED, and the band it drew lives in the shell (#908).
+
+        ⚠ **This subtab used to draw its own "Account frozen" band**, and
+        because the investigation shell draws one too, Reconciliation — and
+        only Reconciliation — stacked TWO of them: same title, same reason, two
+        different Unfreeze buttons, and only this one carrying the date. A
+        moderator deciding whether to unfreeze a paying customer read one fact
+        twice, with different completeness, and no way to tell which button was
+        the real one.
+
+        **The shell's survived because §5 says so** — *"One band, NOT REPEATED
+        IN THREE WIDGETS"* — and because it is drawn for every subtab, where
+        this one appeared on a quarter of them. The date came across with the
+        deletion rather than being lost with it, and the Unfreeze button is the
+        shell's `FreezeAction`, which was corrected in the same commit so a
+        frozen ADMIN keeps an unfreeze control here. Nothing was dropped.
+
+        §4a still holds and is now held in one place: no band when there is no
+        state to report.
+      */}
 
       {/* ── 2 · VERDICT — the answer, and the largest figure in the pane (§4b) ── */}
       <div className={verdictClass}>
@@ -356,28 +348,13 @@ export function ReconciliationSubTab({
       </div>
 
       {/*
-        UNFREEZE — through the promoted dialog, with the review notes inside it
-        (§4a). It was an inline form with a `bg-emerald-600` confirm: *"a green
-        primary on a security action, and the only place in the product that
-        would be green."*
+        UNFREEZE — the dialog that stood here went with the duplicate band
+        above (#908). It was the SECOND unfreeze confirm in this console; the
+        shell's `FreezeAction` owns the one that remains, with the same promoted
+        `ConfirmDialog`, the same required review notes and the same
+        `UNFREEZE_NOTES_MAX_LENGTH`. Deleting a dialog is not the same as
+        deleting a capability, and the difference is that sentence.
       */}
-      {confirmingUnfreeze && (
-        <ConfirmDialog
-          title="Unfreeze this account?"
-          body="They will be able to generate and spend credits again immediately."
-          notes={{
-            label: "Review notes (required)",
-            placeholder: "Explain why the account is being unfrozen…",
-            maxLength: UNFREEZE_NOTES_MAX_LENGTH,
-          }}
-          cancelLabel="Cancel"
-          confirmLabel="Unfreeze account"
-          busyLabel="Unfreezing…"
-          busy={unfreezeMutation.isPending}
-          onCancel={() => setConfirmingUnfreeze(false)}
-          onConfirm={(notes) => unfreezeMutation.mutate({ userId, notes })}
-        />
-      )}
     </div>
   );
 }

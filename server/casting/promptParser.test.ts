@@ -164,8 +164,17 @@ describe("resolveEngineChoices — fire-time brand resolution (D-41)", () => {
   });
 });
 
-describe("mergeAttributeChanges — cross-field invalidation + dual-write (R3, audit D1/B4)", async () => {
-  const { mergeAttributeChanges } = await import("../lib/boardOps");
+// These four arms used to reach the shared merge through a server wrapper
+// (`boardOps.mergeAttributeChanges`) that no request path called — the server's
+// own copies of these rules moved into the identity handlers in R6 Batch C
+// (8b514bed) and the last call site went with `c7cdc7ad`. The rules themselves
+// are still LIVE, on the client: CastingWorkspace holds the fork-to-edit draft
+// and merges through this module. So the arms point at the module directly now
+// rather than at a wrapper kept alive only by being tested (#886).
+describe("mergeCastingPreferenceChanges — cross-field invalidation + dual-write (audit D1/B4)", async () => {
+  const { mergeCastingPreferenceChanges: mergeAttributeChanges } = await import(
+    "../../shared/mergeCastingPreferenceChanges"
+  );
 
   it("gender change clears gendered styling unless the change set replaces it", () => {
     const out = mergeAttributeChanges(

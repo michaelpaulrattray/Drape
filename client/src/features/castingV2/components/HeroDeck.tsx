@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { Eyebrow } from "@/foundation";
 import {
   SHOWCASE_DECK,
   deckOffsets,
@@ -101,16 +102,21 @@ export function HeroDeck({ onUseBrief }: { onUseBrief: (brief: string) => void }
       </div>
 
       <div className="dpc-deck__brief">
-        <span className="dpc-deck__eyebrow">
-          {/*
-            One eyebrow, because there is one deck. It says the true thing about
-            these six frames — those words produced that face — and it cannot be
-            read as a claim about the viewer's roster, because the caption on the
-            centre card says `Example` in the same breath.
-          */}
-          Cast from these words
-          <span className="dpc-deck__rule" aria-hidden="true" />
-        </span>
+        {/*
+          One eyebrow, because there is one deck. It says the true thing about
+          these six frames — those words produced that face — and it cannot be
+          read as a claim about the viewer's roster, because the caption on the
+          centre card says `Example` in the same breath.
+
+          #928: it is the foundation's `Eyebrow` now. It always WAS the
+          foundation's drawing — `.dpc-deck__eyebrow` and `.dp-menugroup__label`
+          were byte-identical and neither surface knew — and the promotion
+          renamed the shared part rather than pointing the casting hero at the
+          menu's vocabulary. The deck passes no position class: it is spaced by
+          `.dpc-deck__brief`, which is exactly why the padding could not stay on
+          the device.
+        */}
+        <Eyebrow label="Cast from these words" />
         <p className="dpc-deck__quote">&ldquo;{centre.brief}&rdquo;</p>
         {/*
           THE TICKS SPAN THE COLUMN (#240, his amendment with a reference frame

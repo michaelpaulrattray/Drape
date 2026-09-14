@@ -23,8 +23,11 @@
  *
  * # WHY A VOCABULARY RATHER THAN A COLUMN PER REASON
  *
- * Two reasons ship today and a third is already carded (#325 groups the other
- * 71 open cards by the labels they carry). A column per reason is working law
+ * Three reasons ship today (#325 groups the other open cards by the labels they
+ * carry). **The third one is the proof the shape was right**: `blocked` arrived
+ * as ONE entry in the array below and nothing else — no migration, no reader
+ * change, no panel edit, because every consumer walks this list. A column per
+ * reason would have been four edits and a ceremony. A column per reason is working law
  * 4's second list wearing a schema: the reasons would live once in the DDL,
  * once in the writer, once in the reader and once in the panel. One JSON value
  * keyed by reason means a new reason is a row in the array BELOW and nothing
@@ -32,7 +35,8 @@
  *
  * ⚠ **AND THE REASONS ARE DERIVED FROM LABELS THAT ALREADY EXIST**, exactly as
  * `shared/crewWorkSwitches.ts`'s categories are: `founder-ordered` is the
- * relay's own label and `parked` is the queue's. Not one was invented here, so
+ * relay's own label, `parked` is the queue's, and `blocked` is the one the desk
+ * sweep and the standing orders already write. Not one was invented here, so
  * a card relabelled in GitHub moves between offered and excluded on his page
  * with nobody touching this file.
  *
@@ -78,6 +82,41 @@ export const QUEUE_EXCLUSION_REASONS = [
      * sentence, and the one that stops being reassuring when it should.
      */
     blurb: "Stopped on your own ruling — the card names which.",
+  },
+  {
+    key: "blocked",
+    queueLabel: "blocked",
+    label: "blocked",
+    /**
+     * ⚠ **`Process (5)` WAS TRUE OF THE LABEL AND FALSE OF THE PRODUCT, AND IT
+     * IS THE `Security (0)` DEFECT ABOVE WEARING THE OTHER SIGN.** That one was
+     * a count too SMALL to be alarming; this one is a count too LARGE to be
+     * true. Measured on the live panel: five cards carried a Process seat and
+     * **four could be worked** — `#513` waits on an external condition nobody
+     * here controls, so a shift flipping Process on was promised a card it
+     * would then have to put back. The row reads `Process (4 on offer, 1
+     * blocked)` now.
+     *
+     * ⚠ **AND THE POPULATION IS EXPECTED TO GROW, WHICH IS WHY THIS IS A ROW
+     * AND NOT A ONE-OFF.** `blocked` is not an occasional hand label:
+     * `crew-desk-sweep.mts` re-derives holds from his desk every close and
+     * applies it, and the standing orders instruct shifts to apply it in two
+     * more places. **Every card that joins it inflated a count by one.**
+     *
+     * ⚠ **IT IS LAST, SO `parked` OUTRANKS IT — the same argument the clause
+     * above makes.** First match wins, so a card carrying both counts once,
+     * and what he needs to know about a card he PARKED is that he parked it;
+     * `blocked` is a circumstance, `parked` is his own ruling. There is no such
+     * card today (measured: zero open cards carry both), so the order is
+     * written down here rather than discovered later.
+     *
+     * ⚠ **ONE LABEL, TWO MEANINGS, DELIBERATELY NOT SPLIT.** `blocked` covers
+     * *waiting on him* and *waiting on another card*. For COUNTING they are the
+     * same fact — a shift cannot take either — and the card names which. If the
+     * panel should ever say them differently that is a second label and a
+     * separate decision, not a second row here.
+     */
+    blurb: "Waiting on something the card names — you, or another card.",
   },
 ] as const;
 

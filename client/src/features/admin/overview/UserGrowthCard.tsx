@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { LeaderRow } from "@/foundation";
+import { staffDateOnly } from "@/foundation/staffDate";
 import { axisTick, tooltipStyle, useChartTokens } from "./chartTokens";
 
 /**
@@ -44,9 +45,10 @@ export interface DailySignupStats {
   signups: number;
 }
 
+/* The chart's own axis needs a midnight-local date; the NOTATION is the
+   house one (#902). */
 function formatDateLabel(date: string): string {
-  const d = new Date(date + "T00:00:00");
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return staffDateOnly(new Date(date + "T00:00:00"));
 }
 
 /**

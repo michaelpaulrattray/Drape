@@ -32,6 +32,7 @@ import { indexIntentsByCard } from "@shared/crewCardIntents";
 import type { CrewQueueTitle } from "@shared/crewQueueTitles";
 import { cn } from "@/lib/utils";
 import { TableHead } from "@/foundation";
+import { staffDateTime } from "@/foundation/staffDate";
 import { CardTitles } from "./CrewCardTitles";
 import { milestoneCountLine, milestoneProgress } from "./crewTypes";
 import type { CrewBriefingView, CrewCardIntentsView } from "./crewTypes";
@@ -244,7 +245,7 @@ export function CrewProgramBanner({
           <blockquote className="dp-crew__quote">
             “{program.focus.quote}”
             {program.focus.quotedAt && (
-              <span className="dp-crew__quoteWho"> — you, {shortDate(program.focus.quotedAt)}</span>
+              <span className="dp-crew__quoteWho"> — you, {staffDateTime(program.focus.quotedAt)}</span>
             )}
           </blockquote>
         )}
@@ -319,7 +320,7 @@ export function CrewProgramBanner({
           <div className="dp-crew__ladderhead">
             <h3 className="dp-crew__subhead">The ladder</h3>
             {ladderItems.length > 0 && (
-              <span className="dp-chrome dp-crew__mono">queue read {shortDate(program.ladderCards.readAt)}</span>
+              <span className="dp-chrome dp-crew__mono">queue read {staffDateTime(program.ladderCards.readAt)}</span>
             )}
           </div>
 
@@ -430,47 +431,4 @@ export function CrewProgramBanner({
       )}
     </section>
   );
-}
-
-/**
- * A date he can read at a glance. Never a relative "2 hours ago" — a ruling's
- * date is a fact and relative time makes it a moving one.
- *
- * ⚠ **24-HOUR, FORCED — AND THIS IS THE SECOND INSTANCE OF A CLASS THE PAGE
- * HAD ALREADY RULED ON.** `CrewWorkingNow`'s `clockTime` carries the ruling in
- * its own docblock: *"the locale default here is `03:48 pm` … every other time
- * in his world is 24-hour — the runner's close-stamps, the shift rows, his own
- * #295 report quoting `19:46` and `20:17` — so the one clock he would be
- * comparing against was the one written differently."*
- *
- * That fix reached one of the three formatters on this page. This one and
- * `CrewNextUp`'s `readStamp` were its siblings and were missed, so his own
- * confirming quote read *"— you, 25 Aug, 07:17 pm"* directly above a shift
- * strip printing `20:17`. Found by LOOKING at the rendered page during brief
- * 08's drive, which is how the first instance was found too.
- *
- * ⚠ **`readStamp` IS GONE — it was byte-identical to this and is now a call to
- * it (#329's sweep).** Three formatters is what let one fix reach one of them;
- * a page that renders a date in two places from two copies will disagree in
- * one of them eventually, and this one already had. **TWO remain and they
- * answer different questions**: this (day + time, for anything DATED) and
- * `CrewWorkingNow`'s `clockTime` (time only, for a live strip whose rows are
- * all today). That is a difference of purpose, not a duplicate — collapsing it
- * would put a date on every row of a strip that is minutes old.
- *
- * It lives in a component file with six importers, which is the promotion pass's
- * shape for a move into a shared module. **That move is NOT made here**: it is
- * six import lines in a change about a missing timestamp, and the pass is a
- * carded activity (#481/#482). Logged rather than done.
- */
-export function shortDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString(undefined, {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
 }

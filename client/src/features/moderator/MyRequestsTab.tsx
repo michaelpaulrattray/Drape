@@ -22,8 +22,12 @@ import { useState } from "react";
 import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
-import { changeRequestTypeLabel } from "@shared/changeRequestLabels";
-
+import { staffDateTime, staffFullDateTime } from "@/foundation/staffDate";
+import {
+  CHANGE_REQUEST_NOT_RECORDED,
+  changeRequestStatusLabel,
+  changeRequestTypeLabel,
+} from "@shared/changeRequestLabels";
 
 /** Waiting on somebody is the only state a moderator needs to act on. */
 const ATTENTION_STATUS = new Set(["pending"]);
@@ -68,9 +72,23 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
         }
         meta={`${changeRequestTypeLabel(request.type)} · about ${request.targetUserName || `user ${request.targetUserId}`}`}
       />,
+      /*
+        ⚠ **#907 — this was the bare `request.status`**, so the pill rendered
+        the database enum in machine case and the 104px column cut it mid-word:
+        `PENDING_EXECUTI`. Its neighbours read `PENDING` and `DENIED`, so the
+        broken one was the only one that looked like a leak — and the admin
+        list one role away has said `Outcome unconfirmed` for that same state
+        since #800.
+
+        ⚠ **All six statuses take the words, not just the broken one.** Mapping
+        one and leaving five raw would have left this column in two
+        vocabularies, which is the mistake #900 was filed about. The words are
+        `shared/changeRequestLabels.ts`'s, the same declaration the admin
+        panel's `STATUS_CONFIG` reads, so the two surfaces cannot drift again.
+      */
       <StatePill
         key="status"
-        label={request.status}
+        label={changeRequestStatusLabel(request.status)}
         attention={ATTENTION_STATUS.has(request.status)}
       />,
       <StatePill
@@ -78,20 +96,66 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
         label={request.priority}
         attention={ATTENTION_PRIORITY.has(request.priority)}
       />,
-      <span key="when">{new Date(request.createdAt).toLocaleDateString()}</span>,
+      /*
+        ⚠ **#903 — this was a bare `toLocaleDateString()`**, so it took the
+        machine's locale in full and rendered `03/09/2026` on an en-AU browser.
+        One click away, this same console's Audit logs tab draws its own `When`
+        column from `staffDateTime` and reads `Sep 13, 11:08`. Two date notations
+        on one piece of furniture, which is #900's ruling in its DATE half:
+        *"the one clock he would be comparing against was the one written
+        differently."*
+
+        ⚠ **IT GAINS A CLOCK, AND THAT WAS THE DECISION IN THE CARD.** The
+        column had a date alone; the house formatter carries the time too. The
+        neighbour column it is being matched to has always carried one, and the
+        fact block below already prints the full stamp, so the clock is this
+        console's own idiom rather than something new arriving with the fix. A
+        date-only house formatter would have been a third shape — which is the
+        thing #900 and #902 both exist to stop.
+      */
+      <span key="when">{staffDateTime(new Date(request.createdAt))}</span>,
     ],
     facts: [
-      { label: "RAISED", value: new Date(request.createdAt).toLocaleString() },
+      /*
+        ⚠ **#900 — these two were bare `toLocaleString()`**, rendering
+        `13/09/2026, 10:30:33 pm` inside a fact block whose siblings on
+        `ActivitySubTab` and `AuditLogsTab` already read `September 13, 2026 at
+        22:30:33` from `staffFullDateTime`. Same "WHEN" idiom, three files, one of
+        them writing it differently. It calls the shared one now.
+      */
+      { label: "RAISED", value: staffFullDateTime(new Date(request.createdAt)) },
       { label: "ABOUT", value: request.targetUserName || `User #${request.targetUserId}` },
-      ...(request.creditAmount
-        ? [{ label: "CREDITS", value: `${request.creditAmount}` }]
+      /*
+        ⚠ **THE LAW-7 SIBLING OF #913, AND IT IS THE QUIETER HALF OF THE SAME
+        SHAPE.** The admin panel omitted its CREDITS fact when the amount was
+        absent and then asserted `null` for it in the sentence under Approve;
+        here there is no button, so the omission had no contradiction beside it
+        — the row simply vanished and the moderator who raised the request was
+        never told the number had not been kept.
+
+        `request.creditAmount` is only ever absent on a row the product cannot
+        create today (`moderator.createChangeRequest` refuses an amount-less
+        credit request), so like its sibling this is depth rather than a live
+        fault. The rule is the same either way: on a credit request the amount
+        is a fact, and "not recorded" is a fact worth drawing.
+      */
+      ...(request.type === "refund_credits" || request.type === "add_credits"
+        ? [
+            {
+              label: "CREDITS",
+              value:
+                request.creditAmount == null
+                  ? CHANGE_REQUEST_NOT_RECORDED
+                  : `${request.creditAmount}`,
+            },
+          ]
         : []),
       ...(request.reviewedByName
         ? [
             { label: "REVIEWED BY", value: request.reviewedByName },
             {
               label: "REVIEWED",
-              value: request.reviewedAt ? new Date(request.reviewedAt).toLocaleString() : "—",
+              value: request.reviewedAt ? staffFullDateTime(new Date(request.reviewedAt)) : "—",
             },
           ]
         : []),
@@ -129,7 +193,22 @@ export function MyRequestsTab({ data, isLoading }: MyRequestsTabProps) {
       <DataTable
         columns={[
           { label: "Request", width: "1 1 0" },
-          { label: "Status", width: "0 0 104px" },
+          /*
+            ⚠ **152px, and the number is MEASURED rather than chosen (#907).**
+            The widest status is `Outcome unconfirmed`, which renders at
+            **142.8px** as a pill (9.5px mono, uppercase, 0.08em tracking, 9px
+            padding either side). The column was 104px and `.dp-table__cell`
+            is `overflow: hidden` with no ellipsis, so it was a hard cut
+            mid-word — which is how `PENDING_EXECUTI` came to be on screen.
+
+            ⚠ **Widening it is NOT the repair the card warned against.** That
+            warning was about widening to make `PENDING_EXECUTION` legible —
+            fitting a machine word into the furniture. The words changed first;
+            this is the column being made big enough for the widest real word,
+            and it is the same 152px the admin list now uses, because the same
+            label was being cut there too.
+          */
+          { label: "Status", width: "0 0 152px" },
           { label: "Priority", width: "0 0 92px" },
           { label: "Raised", width: "0 0 118px" },
         ]}

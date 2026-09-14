@@ -43,6 +43,10 @@ export { BRAND_NAME, WORKSPACE_NAME, WORKSPACE_ROLE_LABEL } from "./brand";
 export { CastingModal, firstNameOf } from "./CastingModal";
 export { CardMenu } from "./CardMenu";
 export type { CardMenuItem } from "./CardMenu";
+/* #928 — the ruled eyebrow, promoted by section 10's pass: three consumer
+   files (the lobby menu, the account card, the casting hero) drawing one device
+   with no component anywhere, and casting under a second spelling. */
+export { Eyebrow } from "./Eyebrow";
 export { ConfirmDialog } from "./ConfirmDialog";
 export { DestructiveConfirm } from "./DestructiveConfirm";
 export { RenameDialog } from "./RenameDialog";
