@@ -14,6 +14,12 @@
  * nothing to do with the diff, and a DIFFERENT set of arms each run, which is
  * the tell that this is starvation and not a broken assertion.
  *
+ * ⚠ **YOU WILL ONLY SEE THAT STRING IN THE DEFAULT REPORTER. IN THE JSON ONE
+ * THE IDENTICAL FAILURE READS `Error: STACK_TRACE_ERROR` WITH NO MESSAGE**
+ * (#962) — and the json reporter is what the shift instructions tell you to
+ * use. The mechanism, the negative control and the driven proof are in
+ * `contendedTestTimeout.ts` and `server/timeoutFailureIdentity.test.ts`.
+ *
  * MEASURED AT THE ARTIFACT rather than reasoned about — the full 12,495-test
  * run on this machine, 2026-09-07:
  *
