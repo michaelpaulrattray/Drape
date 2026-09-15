@@ -47,6 +47,12 @@ export type PrReading = {
   mergeStateStatus: string;
   /** Every path the PR touches, for the shared-file prediction below. */
   files: readonly string[];
+  /**
+   * Each changed file's unified-diff PATCH, from the same REST payload `files`
+   * is read from — the money hold's second half reads the changed lines (#987).
+   * `patch` is `null` where GitHub omits it (binary files, very large diffs).
+   */
+  patches: readonly FilePatch[];
   gate: GateState;
   /**
    * SOCKET'S OWN SUPPLY-CHAIN VERDICT on this head (`Socket Security: Pull
@@ -141,12 +147,9 @@ export const MONEY_DECLARATION_PATH = ".github/money-surfaces.sh";
  *
  *     MONEY_PATHS='^server/routes/(billing|credits|auth|…)|…'
  *
- * ⚠ THIS TOOL READS THE PATH HALF ONLY, AND SAYS SO RATHER THAN IMPLYING
- * COVERAGE IT HAS NOT GOT. The declaration also carries `MONEY_SYMBOLS`, a
- * reading of the DIFF's added and removed lines that catches the casting
- * refund adjudicators the paths miss — measured at 5 of the 60 newest merged
- * PRs. This tool holds on file NAMES (`readPrFiles`), so it cannot apply that
- * half without also fetching each file's patch. Filed, not silently skipped.
+ * This is the PATH half. The declaration also carries `MONEY_SYMBOLS`, a
+ * reading of the diff's added and removed lines — see `extractMoneySymbols`
+ * below. Until #987 this tool read the path half only and said so here.
  *
  * The extraction REFUSES rather than returning a default when the shape moves,
  * because a pattern that quietly matches nothing would let every money PR
@@ -169,6 +172,77 @@ export function extractMoneyPattern(declarationText: string): string {
 export function touchesMoney(files: readonly string[], moneyPattern: string): boolean {
   const re = new RegExp(moneyPattern);
   return files.some((f) => re.test(f));
+}
+
+/**
+ * THE SECOND HALF OF THE MONEY RULE — WHERE MONEY IS DECIDED (#987).
+ *
+ * `MONEY_PATHS` answers where money is stored and bought. `MONEY_SYMBOLS` names
+ * the credit API, and the gate and `review.yml` both ask whether an added or
+ * removed line mentions it (`git diff -G"$MONEY_SYMBOLS"`). Until #987 this
+ * tool asked only the path question, so a casting refund fix the gate LABELS
+ * `founder-review` passed its money hold as an ordinary diff. Measured on the
+ * card the day it was taken: 5 of the 60 newest merged PRs — #986, #954,
+ * #924, #874, #872.
+ *
+ * Extracted from the same declaration, never copied, and it REFUSES when the
+ * line is missing for the same reason `extractMoneyPattern` does.
+ */
+export function extractMoneySymbols(declarationText: string): string {
+  const match = /^\s*MONEY_SYMBOLS='([^']+)'\s*$/m.exec(declarationText);
+  if (!match) {
+    throw new Error(
+      `could not find the MONEY_SYMBOLS='…' line in ${MONEY_DECLARATION_PATH}. It is the ` +
+        `half of the money rule that names the credit API, and this tool refuses to ` +
+        `run its money hold on the path half alone without saying so.`,
+    );
+  }
+  return match[1]!;
+}
+
+/**
+ * ⚠ THE DIRECTORIES THE GATE SCOPES ITS SYMBOL READING TO — A MIRROR, AND HELD.
+ *
+ * Both workflows run `git diff -G"$MONEY_SYMBOLS" … -- server shared`. The
+ * scope is a literal in each of them rather than a line in the declaration, so
+ * this constant is a third copy of it; `server/prMergeOrder.test.ts` reads the
+ * pathspec back out of BOTH workflows and reddens if any of the three differ.
+ * Without the scope this tool would hold a PR the gate does not label (a
+ * script or a client file mentioning `addCredits`), which is two readers of
+ * one rule giving two answers.
+ */
+export const MONEY_SYMBOL_ROOTS: readonly string[] = ["server", "shared"];
+
+/** One changed file from `GET pulls/:n/files`. */
+export type FilePatch = { filename: string; patch: string | null };
+
+/**
+ * The files under `MONEY_SYMBOL_ROOTS` whose added or removed lines name the
+ * credit API — this tool's reading of `git diff -G"$MONEY_SYMBOLS" -- server shared`.
+ *
+ * The same shape as `-G`: the `+`/`-` marker is stripped and the rest of the
+ * line is tested, hunk headers (`@@ … @@ function recordRefund`) and the
+ * `\ No newline at end of file` marker are not changed lines, and a line
+ * removed and re-added with the symbol on both sides still counts.
+ *
+ * ⚠ ITS ONE STATED LIMIT: GitHub OMITS `patch` for binary files and for very
+ * large diffs. Such a file contributes no symbol hit and falls back to the path
+ * reading — which is exactly this tool's behaviour before #987, so the failure
+ * direction is unchanged rather than widened. The gate's `git diff` has no such
+ * limit, so on that one shape the gate can label a PR this tool does not hold.
+ */
+export function moneySymbolHits(patches: readonly FilePatch[], symbolPattern: string): string[] {
+  const re = new RegExp(symbolPattern);
+  return patches
+    .filter((f) => MONEY_SYMBOL_ROOTS.some((root) => f.filename.startsWith(`${root}/`)))
+    .filter(
+      (f) =>
+        f.patch !== null &&
+        f.patch
+          .split(/\r?\n/)
+          .some((line) => (line.startsWith("+") || line.startsWith("-")) && re.test(line.slice(1))),
+    )
+    .map((f) => f.filename);
 }
 
 export function touchesReviewerWorkflow(files: readonly string[]): boolean {
@@ -271,6 +345,8 @@ export function sharesFiles(a: readonly string[], b: readonly string[]): string[
 export type MergeContext = {
   /** From `extractMoneyPattern`, so the money rule cannot drift. */
   moneyPattern: string;
+  /** From `extractMoneySymbols` — the rule's second half (#987). */
+  moneySymbols: string;
 };
 
 /**
@@ -463,11 +539,21 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
           `yourself, then re-run with --acknowledge ${pr.number}.`,
       };
     }
-    if (touchesMoney(pr.files, ctx.moneyPattern) && !acknowledged) {
+    // #987: either half of the money rule holds, never only the first. A PR the
+    // path list misses but whose changed lines name the credit API is the
+    // casting refund fix the gate labels `founder-review` — say which file, so
+    // the shift is not left hunting for why an unfamiliar path is money.
+    const symbolHits = moneySymbolHits(pr.patches, ctx.moneySymbols);
+    const byPath = touchesMoney(pr.files, ctx.moneyPattern);
+    if ((byPath || symbolHits.length > 0) && !acknowledged) {
       return {
         kind: "stop",
         reason:
-          "it touches a money/auth surface and NO reviewer verdict exists" +
+          (byPath
+            ? "it touches a money/auth surface"
+            : `it touches a money/auth surface — a changed line in ${symbolHits[0]} names the ` +
+              "credit API") +
+          " and NO reviewer verdict exists" +
           reviewAbsenceClause(pr.review) +
           ". The standing orders merge an ordinary PR on the gate alone when the reviewer is " +
           "down, and hold a money/auth one. Get a verdict (remove then re-add `needs-fable`, " +
