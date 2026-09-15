@@ -49,7 +49,7 @@ function mask(width: number, height: number, claim: (x: number, y: number) => bo
 
 const composite: Raster = { data: Buffer.alloc(8 * 8 * 3, 120), width: 8, height: 8 };
 
-const cuts = cutSegments({
+const { cuts } = cutSegments({
   composite,
   applied: mask(8, 8, (x, y) => x >= 2 && x < 6 && y >= 2 && y < 6),
   facetRegions: new Map([["marks", "face skin"]]),

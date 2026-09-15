@@ -197,16 +197,57 @@ export async function catalogueBornWorn(input: {
       one segment shaped like another (law 4) — including its refusal to file a
       zero-pixel cut.
     */
-    const cuts = cutSegments({
+    const { cuts, dropped } = cutSegments({
       composite: master,
       applied: wholeFrame(master.width, master.height),
       facetRegions,
       regionMasks,
     });
-    for (const facet of Array.from(facetRegions.keys())) {
-      if (!cuts.some((cut) => cut.facet === facet)) {
-        excluded.push({ facet, reason: "emptyCut", detail: "the detection claimed no pixels once cut" });
-      }
+    /*
+      THE DROPS COME FROM THE CUTTER NOW, NOT FROM A SECOND WALK OF THE INPUTS.
+
+      This used to re-derive the list by asking, facet by facet, whether the
+      returned cuts happened to contain one — a second list shadowing a source
+      of truth, which is working law 4. It could only ever recover the FACT of
+      a drop and never its reason, so a detection whose region was never
+      segmented and one whose mask claimed nothing came out under identical
+      words. `cutSegments` knew which was which all along and had nowhere to
+      say it (#64 item 3).
+
+      `emptyCut` stays as the reason because it is this function's own result
+      contract and its callers read it; the cutter's finer answer rides in the
+      detail, where a person diagnosing a catalogue reads it and no code
+      branches on it.
+
+      ⚠ AND THIS LOOP IS UNREACHABLE FROM THIS FUNCTION'S OWN FRONT DOOR TODAY,
+      which is stated rather than left to be discovered. Two things have to be
+      true for the cutter to drop a facet here and neither can be: the region
+      map and the facet map are built together in the loop above, so no facet
+      can name a region that was never segmented; and `applied` is the WHOLE
+      FRAME, so a detection is dropped only if its mask claims zero pixels —
+      which `bornWornDetector`'s per-kind coverage floor, every one of them
+      above zero, has already turned into an `absent` rather than a detection.
+      The hand-written version was unreachable for exactly the same two
+      reasons, so this is not a capability being lost.
+
+      It is kept, and derived rather than shadowed, because both of those
+      reasons are things that MOVE — a measured floor is a constant somebody
+      re-measures, and the maps above are two lines apart today and need not
+      stay so. What changes is that the day one of them moves, this reports the
+      cutter's real answer instead of one word covering three different events.
+      The cutter's own drop arms are driven and sabotage-proven in
+      `segmentCuts.test.ts`; there is deliberately no arm here, because an arm
+      that has to reach past the front door to fire would be testing a fixture
+      rather than this function.
+    */
+    for (const drop of dropped) {
+      excluded.push({
+        facet: drop.facet,
+        reason: "emptyCut",
+        detail: drop.reason === "regionNotSegmented"
+          ? `the ${drop.region} region was never segmented`
+          : `the detection claimed no pixels once cut (${drop.reason}, ${drop.lostPixels} px lost)`,
+      });
     }
     if (cuts.length === 0) return { outcome: "nothing-found", segments: [], excluded };
 
