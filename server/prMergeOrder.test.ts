@@ -28,6 +28,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   type MergeContext,
   type PrReading,
+  MONEY_DECLARATION_PATH,
   REVIEWER_WORKFLOW_PATH,
   decideMergeAction,
   describeAction,
@@ -70,8 +71,11 @@ import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const REPO_ROOT = join(__dirname, "..");
+// #958: the declaration moved out of review.yml, which was carrying a copy of
+// gate.yml's copy. Three readers, one file.
 const reviewYml = readFileSync(join(REPO_ROOT, REVIEWER_WORKFLOW_PATH), "utf8");
-const MONEY = extractMoneyPattern(reviewYml);
+const moneyDeclaration = readFileSync(join(REPO_ROOT, MONEY_DECLARATION_PATH), "utf8");
+const MONEY = extractMoneyPattern(moneyDeclaration);
 const ctx: MergeContext = { moneyPattern: MONEY };
 
 const pr = (over: Partial<PrReading> = {}): PrReading => ({
@@ -93,14 +97,14 @@ const pr = (over: Partial<PrReading> = {}): PrReading => ({
 });
 
 // ---------------------------------------------------------------------------
-describe("the money rule is read out of the reviewer's own workflow", () => {
-  it("extracts a pattern from the real review.yml", () => {
+describe("the money rule is read out of the one file that declares it", () => {
+  it("extracts a pattern from the real .github/money-surfaces.sh", () => {
     expect(MONEY.length).toBeGreaterThan(20);
     expect(() => new RegExp(MONEY)).not.toThrow();
   });
 
   it("that pattern still matches the surfaces the workflow's own comment names", () => {
-    // If review.yml's MONEY line is edited to stop covering these, this arm is
+    // If the MONEY_PATHS line is edited to stop covering these, this arm is
     // the thing that says so — the tool's money hold is only as good as it.
     for (const path of [
       "server/routes/billing.ts",
@@ -127,9 +131,13 @@ describe("the money rule is read out of the reviewer's own workflow", () => {
   });
 
   it("REFUSES when the declaration moves, rather than returning a pattern that matches nothing", () => {
-    expect(() => extractMoneyPattern("jobs:\n  triage:\n    steps: []\n")).toThrow(/MONEY=/);
+    expect(() => extractMoneyPattern("# nothing declared here\n")).toThrow(/MONEY_PATHS=/);
     // A commented-out or renamed line must not be silently accepted either.
-    expect(() => extractMoneyPattern("          # MONEY_OLD='^server/'\n")).toThrow(/MONEY=/);
+    expect(() => extractMoneyPattern("# MONEY_OLD='^server/'\n")).toThrow(/MONEY_PATHS=/);
+    // ⚠ And the OLD home must not still answer: review.yml declaring its own
+    // copy again is the drift #958 removed, and this tool quietly reading it
+    // is how that copy would stay alive unnoticed.
+    expect(() => extractMoneyPattern("          MONEY='^server/stripe/'\n")).toThrow(/MONEY_PATHS=/);
   });
 });
 

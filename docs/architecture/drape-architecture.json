@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "35c5e9d1e5eeb4f0"
+    "sourceFingerprint": "4a59bea2c922340b"
   },
   "domains": [
     {
@@ -13034,6 +13034,10 @@
     {
       "id": "test:server/moduleResolution.test.ts",
       "path": "server/moduleResolution.test.ts"
+    },
+    {
+      "id": "test:server/moneySurfaceClassifier.test.ts",
+      "path": "server/moneySurfaceClassifier.test.ts"
     },
     {
       "id": "test:server/nextUpEmptyBand.test.ts",
