@@ -262,6 +262,14 @@ vi.mock("./db", () => ({
     },
   }),
   updateChangeRequestStatus: vi.fn().mockResolvedValue({ success: true }),
+  // #991: an approval reads the TARGET before the compare-and-swap. The default
+  // is a target every executor accepts: found, not an admin, suspended (so an
+  // unsuspend has something to lift), with a credit balance. An arm that wants
+  // a target that has changed queues one.
+  getUserById: vi.fn().mockImplementation((id: number) =>
+    Promise.resolve({ id, role: "user", email: `user${id}@example.com`, name: "User", suspendedAt: new Date("2026-01-15T10:00:00Z") }),
+  ),
+  getUserCredits: vi.fn().mockImplementation((userId: number) => Promise.resolve({ userId, balance: 500 })),
   addCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 150 }),
   suspendUser: vi.fn().mockResolvedValue({ success: true }),
   unsuspendUser: vi.fn().mockResolvedValue({ success: true }),
@@ -1216,6 +1224,69 @@ describe("Change Request - Admin Review Procedures", () => {
           expect.anything(),
         );
       }
+    });
+
+    /*
+     * ⚠ #991 — THE SAME WEDGE FROM THE TARGET'S SIDE. The request is complete,
+     * but the person it is about changed after a moderator raised it. The one
+     * reachable today: somebody lifts the suspension from the Users page, then
+     * an admin approves the moderator's unsuspend request. The executor refuses
+     * ("User is not suspended") having written nothing — but only after the
+     * CAS, so the request used to wedge at "Outcome unconfirmed".
+     */
+    it("#991 — approving an unsuspend whose suspension was already lifted is refused BEFORE the CAS, and says decline", async () => {
+      const { updateChangeRequestStatus, getUserById } = await import("./db");
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
+      vi.mocked(updateChangeRequestStatus).mockClear();
+      vi.mocked(executeChangeRequestAction).mockClear();
+      vi.mocked(getUserById).mockResolvedValueOnce({ id: 55, role: "user", suspendedAt: null } as never);
+
+      await expect(
+        adminCaller().reviewChangeRequest({ id: 4, action: "approved" } as never),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST", message: expect.stringMatching(/not suspended any more.*Decline it/s) });
+
+      expect(
+        updateChangeRequestStatus,
+        "the request was moved out of `pending` — it is now wedged and cannot be denied",
+      ).not.toHaveBeenCalled();
+      expect(executeChangeRequestAction).not.toHaveBeenCalled();
+    });
+
+    it("#991 — a target that cannot be found refuses every user-targeted approval before the CAS, and the request can still be DENIED", async () => {
+      const { updateChangeRequestStatus, getUserById } = await import("./db");
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
+      for (const id of [1, 3, 4, 6, 8]) {
+        vi.mocked(updateChangeRequestStatus).mockClear();
+        vi.mocked(executeChangeRequestAction).mockClear();
+        vi.mocked(getUserById).mockResolvedValueOnce(null as never);
+        await expect(
+          adminCaller().reviewChangeRequest({ id, action: "approved" } as never),
+          `fixture ${id}`,
+        ).rejects.toMatchObject({ code: "BAD_REQUEST", message: expect.stringMatching(/cannot be found/) });
+        expect(updateChangeRequestStatus, `fixture ${id} was moved out of pending`).not.toHaveBeenCalled();
+        expect(executeChangeRequestAction).not.toHaveBeenCalled();
+
+        /* Declining reads no target at all, so the one road out cannot depend
+           on the state that blocked the other. */
+        vi.mocked(getUserById).mockClear();
+        await adminCaller().reviewChangeRequest({ id, action: "denied" } as never);
+        expect(updateChangeRequestStatus).toHaveBeenCalledWith(
+          id,
+          expect.objectContaining({ status: "denied", reviewedById: 1 }),
+        );
+        expect(getUserById, `declining fixture ${id} read the target`).not.toHaveBeenCalled();
+      }
+    });
+
+    it("#991 — a non-sensitive approval reads no target", async () => {
+      /* The read is for types that EXECUTE. `note_incident` (fixture 7)
+         executes nothing, so the target's state is not its business. */
+      const { updateChangeRequestStatus, getUserById } = await import("./db");
+      vi.mocked(updateChangeRequestStatus).mockClear();
+      vi.mocked(getUserById).mockClear();
+      await adminCaller().reviewChangeRequest({ id: 7, action: "approved" } as never);
+      expect(updateChangeRequestStatus).toHaveBeenCalledWith(7, expect.objectContaining({ status: "approved" }));
+      expect(getUserById).not.toHaveBeenCalled();
     });
 
     it("denying a request marks it denied, and executes nothing", async () => {

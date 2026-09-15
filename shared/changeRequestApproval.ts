@@ -40,8 +40,10 @@
  *
  * - **The target row's STATE** — a deleted account, an admin target, an
  *   unsuspend on somebody no longer suspended. Those executors also refuse
- *   before writing, but a state read here would go stale between this check
- *   and the executor, so it is a different fix and its own card.
+ *   before writing, but this file is read by the panel and cannot read a
+ *   database, and a state read goes stale between the check and the executor.
+ *   The server asks it separately, right after this: #991,
+ *   `server/lib/adminActions/approvalStateBlocker.ts`.
  * - **`refundType`.** The Stripe executor defaults it to `proportional` rather
  *   than refusing, so its absence cannot wedge anything.
  */
