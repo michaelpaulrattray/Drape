@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { ACTION_CATEGORIES } from "./auditLog";
 import { AUDIT_ACTIONS } from "../drizzle/schema";
+import { getActionCategory as sharedChip } from "../shared/auditActionCategories";
 import { getActionCategory as adminChip } from "@/features/admin/adminConstants";
 import { getActionCategory as moderatorChip } from "@/features/moderator/moderatorConstants";
 
@@ -39,6 +40,27 @@ import { getActionCategory as moderatorChip } from "@/features/moderator/moderat
  * list fails; an entry on the list that has stopped disagreeing ALSO fails, so
  * the list can only shrink and a fixed exception cannot linger as documentation
  * of a defect that is gone.
+ *
+ * ⚠ THE LIST IS EMPTY NOW (#940), AND THAT CHANGES WHAT THIS FILE CAN PROVE —
+ * SAID HERE RATHER THAN LEFT TO BE NOTICED.
+ *
+ * The chip is no longer a second list. Both panels re-export the ONE derivation
+ * in `shared/auditActionCategories.ts`, which reads the same `ACTION_CATEGORIES`
+ * the filter reads, so the two agreement arms below CANNOT fail while that
+ * holds: they compare a value against itself. A green arm that cannot go red is
+ * the thing this repository keeps being bitten by, so it is not left standing on
+ * its own reputation — two arms were added that CAN fail and are what actually
+ * hold the repair:
+ *
+ *   - "both panels export the ONE derivation" — identity, not behaviour. A
+ *     panel that goes back to declaring its own rule fails here even if the new
+ *     rule happens to agree today.
+ *   - "neither console re-implements the chip" — a source read for
+ *     `startsWith(`, which catches the same regression one file earlier.
+ *
+ * And the disagreement reader itself has a positive control ("the disagreement
+ * reader can actually fail"), because with an empty exception list the
+ * "keeps no exception" arm iterates nothing and would pass over a broken reader.
  */
 
 /** Every action string the product declares. Derived, never transcribed. */
@@ -58,17 +80,42 @@ function serverBucket(action: string): string | null {
  */
 const ALLOWED: Record<string, { chip: string | null; bucket: string | null; card: string }> = {
   /*
-    #771's two money anomalies plus the late-invoice row. They ARE filterable
-    under Billing — the client's prefix rule simply has no `billing.` branch, so
-    the row shows no chip at all. That is the mirror image of #939's defect and
-    the smaller half of it: findable, unlabelled. Filed separately because the
-    repair is to derive the chip from this list rather than add a fourth prefix
-    to a pair of copies that #932 wants merged and #938 wants ruled on.
+    ⚠ EMPTY, AND IT EMPTIED ITSELF — #940 IS CLOSED.
+
+    It held #771's two money anomalies plus the late-invoice row: findable under
+    Billing, and labelled with nothing, because the client's prefix rule had no
+    `billing.` branch. The repair was not to add the branch — that would have
+    widened the copy that caused both defects — but to DERIVE the chip from
+    `ACTION_CATEGORIES`, which is what filters. The three rows now draw a Billing
+    chip because they are in the Billing bucket, which is the same sentence.
+
+    The lines were deleted rather than left passing: the "keeps no exception"
+    arm below asserts every remaining allowance still DISAGREES, so it went red
+    the moment the fix landed and stayed red until they went. That is the half
+    that makes this list shrink instead of accumulate, and it has now done its
+    job twice (#938's moderator three, then these).
+
+    Nothing is added here without a card that owns it.
   */
-  "billing.stripe_refund_issued": { chip: null, bucket: "billing", card: "#940" },
-  "billing.stripe_refund_failed": { chip: null, bucket: "billing", card: "#940" },
-  "billing.invoice_paid_after_plan_ended": { chip: null, bucket: "billing", card: "#940" },
 };
+
+/**
+ * The actions where the chip and the bucket disagree, ignoring the allowances.
+ *
+ * EXTRACTED so it can be driven with a deliberately wrong pair below. With
+ * `ALLOWED` empty the arms that use it are comparing the derivation against
+ * itself, so nothing else in this file would notice if this reader stopped
+ * reading.
+ */
+function disagreements(
+  chip: (action: string) => string | null,
+  bucket: (action: string) => string | null,
+  population: string[] = DECLARED,
+): string[] {
+  return population
+    .filter((action) => chip(action) !== bucket(action) && !(action in ALLOWED))
+    .map((action) => `${action}: chip ${chip(action)} vs bucket ${bucket(action)}`);
+}
 
 /**
  * ⚠ `MODERATOR_ONLY_ALLOWED` LIVED HERE AND IS GONE — #938 IS CLOSED, on his
@@ -125,19 +172,104 @@ describe("the audit panel's chip and the server's category filter", () => {
   });
 
   it("agrees on every declared action, on the ADMIN console", () => {
-    const disagreements = DECLARED.filter(
-      (action) => adminChip(action) !== serverBucket(action) && !(action in ALLOWED),
-    ).map((action) => `${action}: chip ${adminChip(action)} vs bucket ${serverBucket(action)}`);
-
-    expect(disagreements).toEqual([]);
+    expect(disagreements(adminChip, serverBucket)).toEqual([]);
   });
 
   it("agrees on every declared action, on the MODERATOR console", () => {
-    const disagreements = DECLARED.filter(
-      (action) => moderatorChip(action) !== serverBucket(action) && !(action in ALLOWED),
-    ).map((action) => `${action}: chip ${moderatorChip(action)} vs bucket ${serverBucket(action)}`);
+    expect(disagreements(moderatorChip, serverBucket)).toEqual([]);
+  });
 
-    expect(disagreements).toEqual([]);
+  it("the disagreement reader can actually fail", () => {
+    /*
+      THE POSITIVE CONTROL FOR THE TWO ARMS ABOVE, and since #940 it is the only
+      thing that makes them mean anything: both panels now read the same derived
+      list the server filters on, so they compare a value against itself and are
+      green by construction.
+
+      Driven against the real population with a chip rule that is wrong the way
+      the old prefix rule was wrong — it sends `billing.*` nowhere — so this arm
+      reproduces the defect #940 fixed and asserts the reader sees it.
+    */
+    const prefixRuleAsItWas = (action: string): string | null => {
+      if (action.startsWith("subscription.") || action.startsWith("credits.")) return "billing";
+      if (action.startsWith("model.")) return "model";
+      if (action.startsWith("auth.") || action.startsWith("security.")) return "security";
+      if (action.startsWith("moderator.")) return "moderator";
+      if (action.startsWith("abuse.")) return "abuse";
+      return null;
+    };
+
+    const found = disagreements(prefixRuleAsItWas, serverBucket);
+
+    expect(found).toContain("billing.stripe_refund_issued: chip null vs bucket billing");
+    expect(found).toContain("billing.stripe_refund_failed: chip null vs bucket billing");
+    expect(found).toContain("billing.invoice_paid_after_plan_ended: chip null vs bucket billing");
+  });
+
+  it("both panels export the ONE derivation — #940", () => {
+    /*
+      IDENTITY, NOT BEHAVIOUR, and that is the point. The agreement arms are
+      satisfied by any rule that happens to give the same answers today; this
+      one fails the moment a console goes back to declaring a rule of its own,
+      which is how both #939 and #940 happened.
+    */
+    expect(adminChip).toBe(sharedChip);
+    expect(moderatorChip).toBe(sharedChip);
+  });
+
+  it("neither console re-implements the chip in its own source", async () => {
+    /*
+      The same regression caught one file earlier, and by a different reader —
+      the identity arm above resolves through the module graph, this one reads
+      the bytes. A prefix rule added BESIDE the re-export (rather than replacing
+      it) would keep the identity arm green while a caller importing the local
+      name got the copy.
+
+      No regex for the shape itself: `startsWith(` is its whole signature, and
+      this repository has been bitten by regexes assembled around interpolated
+      values.
+
+      ⚠ COMMENTS ARE STRIPPED FIRST, AND THAT IS NOT TIDINESS — this arm failed
+      on its first run against a correct tree, because the docblock explaining
+      the repair QUOTES the rule it removed. A reader that cannot tell a mention
+      from a declaration makes the file undocumentable, which is the same lesson
+      the shift runner's quiet-entry detector arrived at (#360): quoting is never
+      declaring.
+    */
+    const withoutComments = (source: string): string =>
+      source
+        .split("\n")
+        .filter((line) => !line.trimStart().startsWith("*") && !line.trimStart().startsWith("//"))
+        .join("\n")
+        .split("/*")
+        .map((chunk, index) => (index === 0 ? chunk : chunk.slice(chunk.indexOf("*/") + 2)))
+        .join("");
+    const { readFileSync } = await import("node:fs");
+    const path = await import("node:path");
+    const CONSOLES = [
+      "../client/src/features/admin/adminConstants.ts",
+      "../client/src/features/moderator/moderatorConstants.ts",
+    ];
+
+    for (const relative of CONSOLES) {
+      const source = readFileSync(path.resolve(__dirname, relative), "utf8");
+
+      /* Positive control: a path that stopped resolving would read as "" and
+         contain no forbidden string, passing by having read nothing. */
+      expect(source.length, `${relative} read as empty`).toBeGreaterThan(200);
+      expect(source, `${relative} no longer imports the derivation`).toContain(
+        'from "@shared/auditActionCategories"',
+      );
+
+      const code = withoutComments(source);
+      /*
+        The stripper's own positive control: it must not have eaten the file. If
+        it returned "" the assertion below would pass having read nothing, which
+        is the exact failure this suite exists to prevent one level down.
+      */
+      expect(code, `${relative} stripped to nothing`).toContain("CATEGORY_COLORS");
+      expect(code, `${relative} re-implements the category chip`).not.toContain("startsWith(");
+    }
   });
 
   it("keeps no exception that has stopped being one", () => {
@@ -186,6 +318,35 @@ describe("the audit panel's chip and the server's category filter", () => {
       expect(DECLARED, `${action} is no longer declared`).toContain(action);
       expect(serverBucket(action), `${action} has fallen out of its bucket`).toBe(bucket);
       expect(adminChip(action), `${action}'s chip has changed`).toBe(bucket);
+    }
+  });
+
+  it("keeps the money THREE chipped and filterable, by name — #940", () => {
+    /*
+      The same rule as the thirteen and the moderator three above, and it is not
+      a formality: the agreement arms are satisfied by both lists losing an
+      action, so deleting these from the billing bucket would restore perfect
+      agreement and put the rows back exactly where #940 found them — findable
+      by nothing, labelled with nothing.
+
+      These are the rows #771 added because they are the ONLY surface production
+      has for money that did not do what the record says: a refund that failed,
+      a refund that was issued, an invoice paid after its plan ended.
+    */
+    const MONEY: string[] = [
+      "billing.stripe_refund_issued",
+      "billing.stripe_refund_failed",
+      "billing.invoice_paid_after_plan_ended",
+    ];
+    expect(MONEY).toHaveLength(3);
+
+    for (const action of MONEY) {
+      expect(DECLARED, `${action} is no longer declared`).toContain(action);
+      expect(serverBucket(action), `${action} has fallen out of the billing bucket`).toBe("billing");
+      expect(adminChip(action), `${action} draws no chip on the ADMIN console`).toBe("billing");
+      expect(moderatorChip(action), `${action} draws no chip on the MODERATOR console`).toBe(
+        "billing",
+      );
     }
   });
 
