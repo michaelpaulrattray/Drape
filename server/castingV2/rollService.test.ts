@@ -213,6 +213,10 @@ vi.mock("./rollRecovery", async (importOriginal) => ({
     journal.push("adjudicate");
     return adjudicator.recover(operation);
   }),
+  /* The live seal's ledger reading (#994). Its money law is `rollRecovery.test.ts`'s;
+     here it answers "nothing cancelled" unless an arm dictates otherwise, and the
+     arms prove the receipt carries ITS figure rather than the rows'. */
+  settleCancelledSlices: vi.fn(async (_input: unknown) => ({ refundedCredits: 0, unrecorded: 0 })),
 }));
 vi.mock("../db/generationOperations", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../db/generationOperations")>()),
@@ -249,7 +253,14 @@ const { getOwnedCastingSession } = vi.mocked(await import("../db/castingV2"));
 const { refusalTagOf } = await import("./refusalTag");
 const { BRIEF_TEXT_MAX, BRIEF_TEXT_MAX_AUTHOR_ROAD, BRIEF_TOO_LONG_AUTHOR_ROAD_MESSAGE, BRIEF_TOO_LONG_MESSAGE } = await import("./briefLength");
 const { deterministicBriefCompiler, castingBriefCompiler, READER_OUTAGE_MESSAGE } = await import("./briefCompiler");
-const { candidateChargeReference, ROLL_RECOVERY_SENTENCE } = await import("./rollRecovery");
+const {
+  candidateChargeReference,
+  candidateUnseenChargeReference,
+  settleCancelledSlices,
+  ROLL_RECOVERY_SENTENCE,
+} = await import("./rollRecovery");
+const { recordRefund } = await import("../casting/atomicCredits");
+const { ROLL_UNSEEN_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
 const { ProviderError } = await import("../providers/types");
 
 function seedCandidates(count = 8) {
@@ -768,6 +779,63 @@ describe("cancel", () => {
     const failureReference = candidateChargeReference(OPERATION_ID, "cand-1");
     expect(refunds[0].reference).not.toBe(failureReference);
     expect(refunds[0].reference).toContain("unseen");
+  });
+
+  it("writes the unseen refund in the sentence recovery pays it with (#994)", async () => {
+    rows.candidates = [
+      { id: 1, publicId: "cand-1", position: 0, pointsCost: 20, status: "queued", cancelledMidFlight: true },
+    ];
+    await expect(createRoll(baseDependencies(), INPUT)).rejects.toThrow();
+
+    const calls = vi.mocked(recordRefund).mock.calls;
+    expect(calls.map((call) => call[2])).toEqual([ROLL_UNSEEN_REFUND_DESCRIPTION]);
+    expect(calls[0][3]).toBe(candidateUnseenChargeReference(OPERATION_ID, "cand-1"));
+  });
+
+  /*
+    THE RECEIPT'S CANCEL SHARE (#994). It summed the `cancelled` rows' prices;
+    it now carries what the live seal read off the ledger. The seal's own money
+    law is `rollRecovery.test.ts`'s — these prove the wiring.
+  */
+  it("puts the ledger's cancel refunds on the receipt, not the cancelled rows' prices", async () => {
+    rows.candidates[7].status = "cancelled";
+    vi.mocked(settleCancelledSlices).mockResolvedValueOnce({ refundedCredits: 0, unrecorded: 1 });
+
+    await createRoll(baseDependencies(), INPUT);
+
+    expect(settleCancelledSlices).toHaveBeenCalledWith({
+      userId: 7,
+      operationId: OPERATION_ID,
+      candidates: rows.candidates,
+    });
+    // The row is priced at 20. The ledger says nothing came back, so neither
+    // does the receipt.
+    expect(receipts.success).toHaveBeenCalledWith(
+      expect.objectContaining({ chargedCredits: 160, refundedCredits: 0, terminalStatus: "partial" }),
+    );
+  });
+
+  it("quotes the operation, never 'refunded', when a whole-sheet cancel's refund will not record", async () => {
+    rows.candidates.forEach((candidate) => {
+      candidate.status = "cancelled";
+    });
+    vi.mocked(settleCancelledSlices).mockResolvedValueOnce({ refundedCredits: 140, unrecorded: 1 });
+
+    await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
+      message: `That roll was cancelled. Part of the refund could not be recorded — quote operation ${OPERATION_ID} and support will restore the balance.`,
+    });
+    expect(receipts.failure).toHaveBeenCalledWith(expect.objectContaining({ refundedCredits: 140 }));
+  });
+
+  it("THE CONTROL: says the credits came back when the ledger holds every cancel refund", async () => {
+    rows.candidates.forEach((candidate) => {
+      candidate.status = "cancelled";
+    });
+    vi.mocked(settleCancelledSlices).mockResolvedValueOnce({ refundedCredits: 160, unrecorded: 0 });
+
+    await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
+      message: "That roll was cancelled. 160 credits were refunded.",
+    });
   });
 
   it("is a no-op on a terminal roll rather than a refusal", async () => {

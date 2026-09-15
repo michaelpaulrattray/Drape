@@ -92,8 +92,18 @@ vi.mock("../casting/atomicCredits", async (importOriginal) => {
   };
 });
 
-const { recoverCastingV2RollOperation, candidateRefundReference } = await import("./rollRecovery");
-const { ROLL_CANCEL_REFUND_DESCRIPTION, SLICE_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
+const {
+  recoverCastingV2RollOperation,
+  candidateRefundReference,
+  candidateUnseenChargeReference,
+  candidateUnseenRefundReference,
+  settleCancelledSlices,
+} = await import("./rollRecovery");
+const {
+  ROLL_CANCEL_REFUND_DESCRIPTION,
+  ROLL_UNSEEN_REFUND_DESCRIPTION,
+  SLICE_REFUND_DESCRIPTION,
+} = await import("./sliceRefundLedger");
 
 // Real UUIDs: operationChargeReference asserts the shape, which is itself a
 // guard worth keeping — an unparseable operation id must never reach the ledger.
@@ -1031,6 +1041,269 @@ describe("the torn write inside the cancel: `cancelled` written, the refund neve
     expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 0, refundedCredits: 0 });
   });
 });
+
+describe("the torn write inside the unseen landing: `expired` written, the generosity refund never recorded (#994)", () => {
+  /*
+    A tile already with the provider when its roll was cancelled finishes, and
+    `landCandidate` writes `expired` + `expiredReason = 'cancelled_unseen'` in
+    one statement. The refund is a SECOND write. A death between them left the
+    slice charged, and the sweep counted every `expired` row as delivered —
+    because until migration 0018 it could not tell this landing from a retention
+    expiry. Production held 0 such rows when this was written (24 unseen
+    refunds have paid, all time), so these arms are the only road that drives it.
+  */
+  const unseenRefund = (publicId: string, amount = 20) => ({
+    userId: OPERATION.userId,
+    referenceId: candidateUnseenRefundReference(OPERATION_ID, publicId),
+    type: "refund",
+    amount,
+  });
+  it("THE DEFECT: pays an unseen landing whose refund row is missing, once, under the :unseen reference", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      unseen({ id: 2, publicId: "c-2" }),
+    ];
+    const { recordRefund } = await import("../casting/atomicCredits");
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(1);
+    // The landing's own reference, so a refund from the live process that was
+    // only slow lands as the ledger's duplicate, never a second payment.
+    expect(refunds[0]).toMatchObject({
+      userId: OPERATION.userId,
+      amount: 20,
+      reference: candidateUnseenChargeReference(OPERATION_ID, "c-2"),
+    });
+    expect(vi.mocked(recordRefund).mock.calls.map((call) => call[2])).toEqual([ROLL_UNSEEN_REFUND_DESCRIPTION]);
+    expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 1, refundedCredits: 20 });
+    expect(rows.candidates[1]).toMatchObject({ status: "expired", expiredReason: "cancelled_unseen" });
+  });
+
+  it("THE CONTROL: pays nothing when the unseen refund did land", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      unseen({ id: 2, publicId: "c-2" }),
+    ];
+    rows.ledger = [chargeRow(), unseenRefund("c-2")];
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "durable_success", ready: 1 });
+  });
+
+  it("THE CONTROL: never pays a retention expiry — the customer looked at it for a week", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      unseen({ id: 2, publicId: "c-2", expiredReason: "retention" }),
+    ];
+    const outcome = await recover();
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "durable_success", ready: 1 });
+  });
+
+  it("THE CONTROL: never pays an `expired` row with no reason — the status alone is not the reading", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      unseen({ id: 2, publicId: "c-2", expiredReason: null }),
+    ];
+    const outcome = await recover();
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "durable_success", ready: 1 });
+  });
+
+  it("THE CONTROL: pays nothing for an unseen landing when the roll was never charged", async () => {
+    rows.candidates = [unseen({ id: 1, publicId: "c-1" })];
+    rows.ledger = [];
+    const outcome = await recover();
+    expect(refunds).toHaveLength(0);
+    expect(outcome.type).toBe("free_failure");
+  });
+
+  it("never pays an unseen landing that cost nothing", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      unseen({ id: 2, publicId: "c-2", pointsCost: 0 }),
+    ];
+    await recover();
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("escalates instead of sealing when the unseen refund will not record", async () => {
+    refundRecords = false;
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      unseen({ id: 2, publicId: "c-2" }),
+    ];
+    const outcome = await recover();
+    expect(outcome).toMatchObject({ type: "recovery_required", chargedCredits: 160, refundedCredits: 0 });
+    expect(finalizers.finalizeSuccess).not.toHaveBeenCalled();
+  });
+
+  /*
+    THE LEDGER READ WIDENED WITH IT. An unseen refund that DID land was absent
+    from `alreadyRefunded`, so it sat outside the conservation ceiling and off
+    recovery's receipt, while the live receipt counted it.
+  */
+  it("counts an unseen refund already on the ledger toward the ceiling", async () => {
+    rows.candidates = [
+      unseen({ id: 1, publicId: "c-1", pointsCost: 150 }),
+      candidate({ id: 2, publicId: "c-2", status: "queued", pointsCost: 20 }),
+    ];
+    rows.ledger = [chargeRow(), unseenRefund("c-1", 150)];
+
+    const outcome = await recover();
+
+    // 150 already back; a 20 slice would take the total past the 160 charged.
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "recovery_required", reason: "refund slices exceed the recorded charge" });
+  });
+
+  it("puts an unseen refund already on the ledger on recovery's receipt", async () => {
+    rows.candidates = [
+      unseen({ id: 1, publicId: "c-1" }),
+      candidate({ id: 2, publicId: "c-2", status: "queued" }),
+    ];
+    rows.ledger = [chargeRow(), unseenRefund("c-1")];
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(1);
+    expect(outcome).toMatchObject({ refundedCredits: 40 });
+  });
+
+  it("never counts a refund row under a reference this operation does not own", async () => {
+    // The harness answers every row whatever the WHERE says, so this is the
+    // arm that proves the sum is pinned to the reference set in code.
+    rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "queued" })];
+    rows.ledger = [
+      chargeRow(),
+      { userId: OPERATION.userId, referenceId: candidateRefundReference(OTHER_OPERATION_ID, "c-1"), type: "refund", amount: 20 },
+    ];
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(1);
+    expect(outcome).toMatchObject({ type: "paid_failure", refundedCredits: 20 });
+  });
+
+  it("THE DEFECT, BY THE LOST CLAIM: pays a tile that landed unseen and died before its refund", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched" }),
+    ];
+    casLostTo.set(2, (row) => {
+      Object.assign(row, { status: "expired", expiredReason: "cancelled_unseen", imageKey: "k2" });
+    });
+
+    const outcome = await recover();
+
+    expect(refunds.map((refund) => refund.reference)).toEqual([candidateUnseenChargeReference(OPERATION_ID, "c-2")]);
+    expect(outcome).toMatchObject({ refunded: 1, refundedCredits: 20 });
+  });
+
+  it("THE CONTROL, BY THE LOST CLAIM: pays nothing when the unseen landing finished its refund", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched" }),
+    ];
+    casLostTo.set(2, (row) => {
+      Object.assign(row, { status: "expired", expiredReason: "cancelled_unseen", imageKey: "k2" });
+      rows.ledger.push(unseenRefund("c-2"));
+    });
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ refunded: 0, refundedCredits: 0 });
+  });
+});
+
+describe("the live seal asks the ledger, not the rows, what a cancel refunded (#994)", () => {
+  /*
+    `createRoll`'s receipt summed every `cancelled` row's price as refunded. A
+    row proves the cancel won its CAS, never that its refund recorded — and the
+    live seal is the operation's last reader, so a slice a cancel failed to
+    refund was stranded under a receipt saying it had come back.
+  */
+  const seal = () =>
+    settleCancelledSlices({
+      userId: OPERATION.userId,
+      operationId: OPERATION_ID,
+      candidates: rows.candidates as never,
+    });
+  const cancelRefund = (publicId: string) => ({
+    userId: OPERATION.userId,
+    referenceId: candidateRefundReference(OPERATION_ID, publicId),
+    type: "refund",
+    amount: 20,
+  });
+
+  it("counts a cancel refund the ledger holds, and pays nothing", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "cancelled" }),
+    ];
+    rows.ledger = [chargeRow(), cancelRefund("c-2")];
+
+    expect(await seal()).toEqual({ refundedCredits: 20, unrecorded: 0 });
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("THE DEFECT: pays a cancelled slice the ledger shows unpaid, once, in the cancel's words", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "cancelled" }),
+      candidate({ id: 2, publicId: "c-2", status: "cancelled" }),
+    ];
+    rows.ledger = [chargeRow(), cancelRefund("c-1")];
+    const { recordRefund } = await import("../casting/atomicCredits");
+
+    expect(await seal()).toEqual({ refundedCredits: 40, unrecorded: 0 });
+    expect(refunds.map((refund) => refund.reference)).toEqual([`op:${OPERATION_ID}:charge:candidate:c-2`]);
+    expect(vi.mocked(recordRefund).mock.calls.map((call) => call[2])).toEqual([ROLL_CANCEL_REFUND_DESCRIPTION]);
+  });
+
+  it("never reports a refund that will not record as refunded", async () => {
+    refundRecords = false;
+    rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "cancelled" })];
+
+    expect(await seal()).toEqual({ refundedCredits: 0, unrecorded: 1 });
+  });
+
+  it("pays nothing, and reports every slice unrecorded, when the ledger shows no charge", async () => {
+    rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "cancelled" })];
+    rows.ledger = [];
+
+    expect(await seal()).toEqual({ refundedCredits: 0, unrecorded: 1 });
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("pays nothing, and reports every slice unrecorded, when the ledger cannot be read", async () => {
+    rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "cancelled" })];
+    // Not an array, so the ledger read throws where a dropped connection would.
+    ledgerSequence = [{} as never];
+
+    expect(await seal()).toEqual({ refundedCredits: 0, unrecorded: 1 });
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("ignores rows that are not cancelled and slices that cost nothing", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "failed" }),
+      unseen({ id: 2, publicId: "c-2" }),
+      candidate({ id: 3, publicId: "c-3", status: "cancelled", pointsCost: 0 }),
+    ];
+
+    expect(await seal()).toEqual({ refundedCredits: 0, unrecorded: 0 });
+    expect(refunds).toHaveLength(0);
+  });
+});
+
+/** A tile that landed into a cancelled roll, as `landCandidate` writes it. */
+function unseen(overrides: Record<string, unknown>) {
+  return candidate({ status: "expired", expiredReason: "cancelled_unseen", imageKey: "k-unseen", ...overrides });
+}
 
 describe("a charge that lands while we adjudicate an unpaid roll", () => {
   it("escalates rather than sealing 'you were not charged' over a real charge", async () => {

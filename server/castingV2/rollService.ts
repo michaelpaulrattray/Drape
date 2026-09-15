@@ -90,7 +90,11 @@ import { storageDelete, storagePut, storageReadBytes } from "../storage";
 import { thumbnailOf } from "./thumbnails";
 import { createModuleLogger } from "../logging/logger";
 import { detectRenderFault } from "./renderFault";
-import { ROLL_CANCEL_REFUND_DESCRIPTION, rollSliceRefundDescription } from "./sliceRefundLedger";
+import {
+  ROLL_CANCEL_REFUND_DESCRIPTION,
+  ROLL_UNSEEN_REFUND_DESCRIPTION,
+  rollSliceRefundDescription,
+} from "./sliceRefundLedger";
 import { ProviderError } from "../providers/types";
 import type { CreativeEngine } from "../providers/types";
 import {
@@ -112,6 +116,7 @@ import {
   candidateChargeReference,
   candidateUnseenChargeReference,
   recoverCastingV2RollOperation,
+  settleCancelledSlices,
   type RollRecoveryOutcome,
 } from "./rollRecovery";
 
@@ -1016,28 +1021,38 @@ export async function createRoll(
 
   const ready = settlements.filter((settlement) => settlement.outcome === "ready").length;
   const failed = settlements.filter((settlement) => settlement.outcome === "failed").length;
-  const unrecordedRefunds = settlements.filter((settlement) => settlement.refundUnrecorded);
-
   /*
     Slices this call refunded, plus slices a concurrent cancel refunded under
     the same charge. Both belong on this operation's receipt: the receipt is
     the operation's account of one charge, and a reader comparing charged
     against refunded must not see a cancel's compensation go missing simply
     because a different request performed it.
+
+    ⚠ THE CANCEL'S SHARE IS THE LEDGER'S, NOT THE ROWS' (#994). This summed
+    every `cancelled` row's price, and a `cancelled` row proves only that the
+    cancel won its CAS — not that its refund recorded. This seal is the last
+    reader of the operation, so a slice the ledger shows unpaid is paid here,
+    once, under the cancel's own reference, and one that still will not record
+    joins the unrecorded count below.
   */
   const settled = await listRollCandidates(input.userId, roll.id);
-  const cancelledCredits = settled
-    .filter((candidate) => candidate.status === "cancelled")
-    .reduce((sum, candidate) => sum + candidate.pointsCost, 0);
+  const cancelSettlement = await settleCancelledSlices({
+    userId: input.userId,
+    operationId: gate.operationId,
+    candidates: settled,
+  });
   refundedCredits =
-    settlements.reduce((sum, settlement) => sum + settlement.refundedCredits, 0) + cancelledCredits;
+    settlements.reduce((sum, settlement) => sum + settlement.refundedCredits, 0)
+    + cancelSettlement.refundedCredits;
+  const unrecordedRefunds =
+    settlements.filter((settlement) => settlement.refundUnrecorded).length + cancelSettlement.unrecorded;
 
   await touchCastingSession(input.userId, roll.sessionId).catch(() => undefined);
 
-  if (unrecordedRefunds.length > 0) {
+  if (unrecordedRefunds > 0) {
     // A refund that did not record is never reported as "you weren't charged".
     log.error(
-      { operationId: gate.operationId, slices: unrecordedRefunds.length },
+      { operationId: gate.operationId, slices: unrecordedRefunds },
       "[rollService] refund slices failed to record — sealing for support",
     );
   }
@@ -1056,7 +1071,7 @@ export async function createRoll(
   if (ready === 0) {
     // The CAS refuses if cancel already moved the roll to its terminal state.
     await setRollStatus({ userId: input.userId, rollId: roll.id, status: "failed" });
-    const refundSentence = unrecordedRefunds.length === 0
+    const refundSentence = unrecordedRefunds === 0
       ? `${refundedCredits} credits were refunded.`
       // Never "you weren't charged" when the ledger says otherwise: quote the
       // operation so support can reconcile it by hand.
@@ -1555,21 +1570,20 @@ export async function dispatchCandidate(input: {
         cancelling cannot buy anyone a free image.
 
         The window between the landing CAS and this refund is the same one the
-        failure path below lives with — a crash inside it leaves the slice
-        unrefunded, and the recovery sweep cannot pick it up because `expired`
-        is also written by the 7-day retention sweep over work the user did
-        receive.
-
-        SCHEDULED: migration 0018 (M7) adds the column that separates those two
-        meanings, at which point this refund becomes idempotent and recovery
-        can adjudicate `expired` safely. Until then the window is real and
-        documented — see the migration slices in the plan.
+        failure path below lives with: a crash inside it leaves the slice
+        unrefunded. ⚠ This comment called the repair SCHEDULED until #994, long
+        after migration 0018 had landed. `landCandidate` writes
+        `expiredReason = 'cancelled_unseen'` in the landing's own statement, so
+        recovery tells this row from a retention expiry and pays it
+        (`isTornUnseen`) under the same reference and in the same words as below
+        — a refund from here that was only slow meets it as the ledger's
+        duplicate.
       */
       if (candidate.pointsCost <= 0) return { outcome: "expired", refundedCredits: 0 };
       const refund = await recordRefund(
         userId,
         candidate.pointsCost,
-        "Cancelled before you saw it",
+        ROLL_UNSEEN_REFUND_DESCRIPTION,
         candidateUnseenChargeReference(operationId, candidate.publicId),
       );
       log.info(
