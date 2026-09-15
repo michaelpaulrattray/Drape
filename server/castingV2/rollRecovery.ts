@@ -65,7 +65,11 @@ function affectedRows(result: unknown): number {
  *    CASes a `queued` row to `cancelled` and THEN records its refund. So a
  *    `cancelled` row is torn on exactly the terms a `failed` one is, and
  *    `isTornCancel` is the same reading of the same ledger — at the snapshot
- *    and at the lost-claim re-read alike.
+ *    and at the lost-claim re-read alike. Since #995 the cancel's refund is
+ *    written only when the ledger already shows the charge
+ *    (`readCancelCharge`). A cancel that beat the deduct leaves its row
+ *    `cancelled` with no refund, and this reading pays it once the charge
+ *    exists.
  *
  *    And the landing into a cancelled roll has them too (#994): `landCandidate`
  *    writes `expired` with `expiredReason = 'cancelled_unseen'` in one
@@ -226,8 +230,9 @@ export function isTornFailure(
  * Only `queued` rows are ever cancelled, so a `cancelled` row never reached
  * the provider and cannot have been delivered; the one question is the money,
  * and the ledger answers it under the reference the cancel itself uses. The
- * charge gate has already run by the time this is asked, so a cancel that beat
- * the deduct is never paid from here.
+ * charge gate has already run by the time this is asked, so a slice on an
+ * operation that was never charged is never paid from here. A cancel that beat
+ * a deduct which DID land wrote no refund (#995), and this is what pays it.
  */
 export function isTornCancel(
   candidate: CandidateRow,
@@ -532,6 +537,56 @@ export async function settleCancelledSlices(input: {
     else unrecorded += 1;
   }
   return { refundedCredits, unrecorded };
+}
+
+/**
+ * MAY A CANCEL REFUND YET? — asked by `cancelRoll` after its CAS wins (#995).
+ *
+ * `createRoll` commits the roll and its eight rows BEFORE it charges, and a
+ * roll is cancellable while `pending`. So a cancel could land between the two
+ * and refund credits that had not been taken. If the deduct then succeeded it
+ * netted out, but the ledger held a refund older than its own charge. If the
+ * deduct failed, the customer kept credits for a roll nobody paid for, which is
+ * the crash-mint this module's `not_charged` branch refuses.
+ *
+ * So the cancel refunds only on the same reading everything else here uses: a
+ * clean charge row on the ledger. On `not_charged` it records nothing. Nothing
+ * was taken, and the charge road pays the cancelled slices after its own charge
+ * (`settleCancelledSlices` at the live seal, `isTornCancel` in the sweep). If
+ * the deduct fails, nothing is owed and nothing is written.
+ *
+ * ⚠ **It must be asked AFTER the CAS, never before.** The seal lists the rows
+ * after the deduct. A charge that commits after this read therefore always
+ * finds the `cancelled` row. A read before the CAS could miss both.
+ *
+ * ⚠ **`unknown` fails toward "not refunded"**, like the seal: a ledger it cannot
+ * read, or one holding an ambiguous charge, pays nothing, and the caller
+ * reports the refund as unrecorded rather than claiming it.
+ */
+export async function readCancelCharge(input: {
+  userId: number;
+  operationId: string;
+}): Promise<"charged" | "not_charged" | "unknown"> {
+  const operation = { id: input.operationId, userId: input.userId };
+  try {
+    const db = await getDb();
+    if (!db) {
+      log.error({ operationId: operation.id }, "[rollRecovery] no database to read the charge a cancel would refund");
+      return "unknown";
+    }
+    const { charge } = await readOperationLedger(db, operation, []);
+    if (charge.kind === "ambiguous") {
+      log.error(
+        { operationId: operation.id, reason: charge.reason },
+        "[rollRecovery] a cancel found an ambiguous charge — refunding nothing, left for support",
+      );
+      return "unknown";
+    }
+    return charge.kind;
+  } catch (error) {
+    log.error({ operationId: operation.id, err: error }, "[rollRecovery] the charge a cancel would refund could not be read");
+    return "unknown";
+  }
 }
 
 /** Fails every unfinished candidate without paying anything back. */

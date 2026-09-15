@@ -102,9 +102,10 @@ export function rollSliceRefundDescription(failureClass: string | null | undefin
 /**
  * The cancel's sentence — a slice the customer cancelled before it started.
  *
- * Two writers, one sentence: `rollService.ts`'s `cancelRoll`, and
+ * Three writers, one sentence: `rollService.ts`'s `cancelRoll`;
  * `rollRecovery.ts` paying a cancelled slice whose refund never recorded
- * (#955). The sweep writes the words the cancel would have written, so a
+ * (#955); and the live seal's `settleCancelledSlices`, which also pays a slice
+ * cancelled before the charge landed (#994, #995). The sweep writes the words the cancel would have written, so a
  * customer reads the same line whichever of the two paid them back — it is not
  * a new sentence, it is the old one moved out of an inline literal so the two
  * writers cannot drift.
