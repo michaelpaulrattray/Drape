@@ -578,6 +578,12 @@ async function adjudicateRollOperation(
 
   if (owed.length === 0 && torn.length === 0) {
     // Everything landed; the crash was after the last candidate. Nothing owed.
+    //
+    // `landed` is the SNAPSHOT's count here and that is correct rather than an
+    // oversight of #956: an empty `owed` means no row was `queued`, `dispatched`
+    // or `ready`-without-key when we looked, so every row was already terminal
+    // and nothing can land after. The seal below re-reads because it is reached
+    // only when something WAS still in flight.
     await db
       .update(castingRolls)
       .set({ status: "complete" })
@@ -782,9 +788,60 @@ async function adjudicateRollOperation(
     }
   }
 
+  /*
+    THE COUNTS ARE RE-READ ONCE, HERE, AND EVERYTHING THE CUSTOMER IS TOLD IS
+    COUNTED FROM THAT ONE READING (#956).
+
+    `landed` and `delivered` above came from the snapshot taken at the top of
+    this function, and the CAS exists precisely because a live process may
+    still be running: it can land a candidate between that SELECT and this
+    statement. When it did, the sweep sealed the roll `failed` over a roll that
+    had delivered an image, and undercounted `ready` on the receipt — the
+    customer keeps the tile and is told it never arrived.
+
+    ⚠ NO MONEY IS COUNTED FROM THIS READ, AND THAT IS THE WHOLE SHAPE OF THE
+    FIX. `owed`, `torn`, the charge gate, `refundedCredits` and the
+    conservation ceiling all stay on the original snapshot and its ledger,
+    because they are this sweep's own arithmetic about what it paid. What moves
+    is only what the roll and the receipt REPORT. A row that arrived late is
+    not owed anything by us; it just has to be counted.
+
+    ONE reading, not a conditional one. #896's fresh read exists a few lines
+    above but runs only when a claim was lost, so counting from it would make
+    the receipt mean two different things depending on a race — worse than one
+    reading that is occasionally behind. This read is placed after every refund
+    this sweep writes, so it sees the finished world rather than a midpoint.
+
+    ⚠ IT FAILS TOWARD TODAY'S ANSWER. An empty result cannot mean every
+    candidate vanished — the snapshot proved rows exist and nothing here
+    deletes them — so it is a read that went wrong, and believing it would
+    flip a delivered roll to `failed`, which is the exact harm this fix is
+    about. On zero rows the snapshot's counts stand.
+  */
+  const atSeal = await db
+    .select()
+    .from(castingCandidates)
+    .where(and(eq(castingCandidates.rollId, roll.id), eq(castingCandidates.userId, operation.userId)));
+  const sealRows = atSeal.length > 0 ? atSeal : candidates;
+  const sealLanded = sealRows.filter(hasLanded);
+  const sealDelivered = sealRows.filter(wasDelivered);
+
+  if (sealLanded.length !== landed.length || sealDelivered.length !== delivered.length) {
+    log.info(
+      {
+        operationId: operation.id,
+        landedAtStart: landed.length,
+        landedAtSeal: sealLanded.length,
+        deliveredAtStart: delivered.length,
+        deliveredAtSeal: sealDelivered.length,
+      },
+      "[rollRecovery] candidates moved while this sweep ran — sealing on the re-read, not the snapshot",
+    );
+  }
+
   await db
     .update(castingRolls)
-    .set({ status: delivered.length > 0 ? "partial" : "failed" })
+    .set({ status: sealDelivered.length > 0 ? "partial" : "failed" })
     .where(and(eq(castingRolls.id, roll.id), inArray(castingRolls.status, ["pending", "generating"])));
 
   if (unrecorded > 0) {
@@ -801,11 +858,12 @@ async function adjudicateRollOperation(
 
   // `delivered`, not `landed`: a roll whose only survivor was discarded by its
   // owner still delivered something, and calling that a total failure would
-  // misreport both the roll and the receipt.
-  return delivered.length > 0
+  // misreport both the roll and the receipt. Both are the re-read's figures,
+  // so the receipt and the roll status can never disagree with each other.
+  return sealDelivered.length > 0
     ? {
         type: "partial",
-        ready: landed.length,
+        ready: sealLanded.length,
         refunded: refundedCount,
         chargedCredits: charge.credits,
         refundedCredits,

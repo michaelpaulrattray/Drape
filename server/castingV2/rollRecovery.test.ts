@@ -767,6 +767,13 @@ describe("the CAS lost to a process that then died before its refund (#896)", ()
   it("THE CONTROL: pays nothing when the winner LANDED the candidate", async () => {
     // The original reason the CAS comes first: the process that beat us to the
     // row gave the user their image. Refunding here is delivered-and-refunded.
+    //
+    // ⚠ THE OUTCOME ON THIS ARM CHANGED WITH #956, AND THE MONEY DID NOT. It
+    // read `paid_failure` until the counts were re-read at the seal, which is
+    // this suite having pinned the defect as correct behaviour: the user is
+    // holding the image the winner landed, and the receipt called the roll a
+    // total failure because the snapshot predated the landing. `refunds` is
+    // the assertion that must not move, and it has not.
     rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "dispatched" })];
     casLostTo.set(1, (row) => {
       row.status = "ready";
@@ -776,7 +783,7 @@ describe("the CAS lost to a process that then died before its refund (#896)", ()
     const outcome = await recover();
 
     expect(refunds).toHaveLength(0);
-    expect(outcome).toMatchObject({ type: "paid_failure", refunded: 0 });
+    expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 0 });
   });
 
   it("THE CONTROL: pays nothing when the winner left the row settleable", async () => {
@@ -868,5 +875,139 @@ describe("a charge that lands while we adjudicate an unpaid roll", () => {
 
     expect(outcome).toMatchObject({ type: "recovery_required" });
     expect(refunds).toHaveLength(0);
+  });
+});
+
+describe("the counts are re-read at the seal, so a late landing is not reported missing (#956)", () => {
+  /*
+    The half of #896's class that moves no money. A candidate that lands
+    between this sweep's SELECT and its seal is in the customer's hands, and
+    the sweep counted it from the snapshot — so the roll was written `failed`
+    over a roll that delivered, and the receipt undercounted `ready`.
+
+    EVERY ARM HERE ASSERTS `refunds` TOO. The fix touches what the customer is
+    TOLD and must not touch what they are PAID: a re-read that started feeding
+    the refund arithmetic would pay for rows this sweep never adjudicated, and
+    that assertion is the only thing standing between the two.
+
+    The race is injected through the CAS, where the real one happens.
+  */
+
+  /** The live process wins the row and lands the image the sweep never saw. */
+  const landsTheImage = (key: string) => (row: Record<string, unknown>) => {
+    row.status = "ready";
+    row.imageKey = key;
+  };
+
+  it("THE DEFECT: a roll whose only slice landed mid-sweep is sealed partial, not failed", async () => {
+    rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "dispatched" })];
+    casLostTo.set(1, landsTheImage("k1"));
+
+    const outcome = await recover();
+
+    expect(outcome).toMatchObject({ type: "partial", ready: 1 });
+    expect(rows.rolls[0].status).toBe("partial");
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("the receipt counts the late landing beside the one already there", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched" }),
+    ];
+    casLostTo.set(2, landsTheImage("k2"));
+
+    const outcome = await recover();
+
+    // `ready: 2` is the whole point — the snapshot saw one.
+    expect(outcome).toMatchObject({ type: "partial", ready: 2, refunded: 0 });
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("counts a late DISCARD as delivered, exactly as the snapshot road does", async () => {
+    // `wasDelivered` is wider than `hasLanded` on purpose: a candidate the
+    // owner threw away was still delivered. The re-read must use the same
+    // predicate, not a narrower one, or a discard mid-sweep reads as a failure.
+    rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "dispatched" })];
+    casLostTo.set(1, (row) => {
+      row.status = "discarded";
+    });
+
+    const outcome = await recover();
+
+    expect(outcome).toMatchObject({ type: "partial", ready: 0 });
+    expect(rows.rolls[0].status).toBe("partial");
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("THE CONTROL: a roll that really delivered nothing is still sealed failed", async () => {
+    /*
+      Without this arm the defect could be "fixed" by sealing every recovered
+      roll `partial`, which tells a customer who got nothing that they got
+      something — the opposite lie, and a likelier one to ship.
+    */
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "queued" }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched" }),
+    ];
+
+    const outcome = await recover();
+
+    expect(outcome).toMatchObject({ type: "paid_failure" });
+    expect(rows.rolls[0].status).toBe("failed");
+    // Both slices unfinished and unpaid: the money road is untouched by #956.
+    expect(refunds).toHaveLength(2);
+  });
+
+  it("THE CONTROL: the re-read never pays anybody, even when it sees a torn row", async () => {
+    /*
+      A row that goes `failed` with no refund IS owed money — and it is owed it
+      by #896's lost-claim block, which reads the ledger. If the seal re-read
+      ever became a second money reader, this row would be paid twice. One
+      refund is the correct answer and the count is the assertion.
+    */
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched" }),
+    ];
+    casLostTo.set(2, (row) => {
+      row.status = "failed";
+      row.failureClass = "render_fault";
+    });
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0].reference).toBe(`op:${OPERATION_ID}:charge:candidate:c-2`);
+    expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 1 });
+  });
+
+  it("THE CONTROL: an empty re-read is disbelieved and the snapshot's count stands", async () => {
+    /*
+      The failure direction, driven rather than asserted in a comment. An empty
+      result cannot mean every candidate vanished — the snapshot proved rows
+      exist and nothing in this sweep deletes them — so it is a read that went
+      wrong. Believing it would flip a delivered roll to `failed`, which is the
+      exact harm this fix is about, arriving by the fix's own road.
+    */
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched" }),
+    ];
+    const snapshot = rows.candidates;
+    casLostTo.set(2, (row) => {
+      row.status = "failed";
+      row.failureClass = "render_fault";
+      // The table answers empty from here on — every later read, including the
+      // seal's.
+      rows.candidates = [];
+    });
+
+    const outcome = await recover();
+
+    // The landed row is still reported, from the snapshot, because the empty
+    // read was not believed.
+    expect(outcome).toMatchObject({ type: "partial", ready: 1 });
+    expect(snapshot[0]).toMatchObject({ status: "ready" });
   });
 });
