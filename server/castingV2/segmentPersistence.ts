@@ -131,7 +131,7 @@ export async function keepSegmentsFromRender(input: {
       : null;
 
     const composite = await readRaster(input.image.bytes);
-    const cuts = cutSegments({
+    const { cuts, dropped } = cutSegments({
       composite,
       applied: input.image.evidence.applied,
       facetRegions,
@@ -163,6 +163,40 @@ export async function keepSegmentsFromRender(input: {
           })),
         },
         "[segments] delivered-anchored ground",
+      );
+    }
+
+    /*
+      AND THE OTHER DIRECTION, WHICH IS NOT GATED ON THE UNION AT ALL.
+
+      The line above answers "what did the delivered reading buy", so it is
+      correctly silent when nobody asked the delivered frame. This one answers
+      "what did the ASK refuse", which is true of every render the cutter has
+      ever run — master-anchored ones included, and they are most of them (#64
+      item 3). Gating it on `deliveredRead` would have hidden the number on
+      exactly the population that has it.
+
+      A facet here is not a failed render. It is a facet whose permanence this
+      render did not earn, and the only reason it has never been readable is
+      that the cutter had nowhere to put it.
+    */
+    if (dropped.length > 0 || cuts.some((cut) => cut.lostPixels > 0)) {
+      log.info(
+        {
+          userId: input.userId,
+          variantId: input.variantId,
+          operationId: input.operationId,
+          kept: cuts
+            .filter((cut) => cut.lostPixels > 0)
+            .map((cut) => ({ facet: cut.facet, region: cut.region, pixels: cut.pixels, lost: cut.lostPixels })),
+          dropped: dropped.map((drop) => ({
+            facet: drop.facet,
+            region: drop.region,
+            reason: drop.reason,
+            lost: drop.lostPixels,
+          })),
+        },
+        "[segments] what the ask refused — ground lost, and the facets that filed nothing",
       );
     }
 
