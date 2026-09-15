@@ -92,11 +92,47 @@ type Reading = {
   lastRun: string;
   /** Whole days since the last run — negative is impossible and refused. */
   elapsedDays: number;
-  /** Positive = overdue by this many days. Zero or less = not yet due. */
+  /**
+   * Days past the clock. Positive = overdue by this many. **Zero = the clock
+   * LANDED today, which is a fired clock and not a quiet one** (#971) —
+   * see `hasFired` below, which is the question the verdict asks.
+   */
   overdueDays: number;
   /** elapsed / clock. One clock elapsed = 1.0. Ranks seats on unlike clocks. */
   clocksElapsed: number;
 };
+
+/**
+ * HAS THIS SEAT'S CLOCK FIRED? — the one question the verdict asks, and the
+ * one this reader used to answer two different ways in the same breath (#971).
+ *
+ * It printed `Janitor DUE today` and, four lines below, *"No seat is overdue.
+ * Standing exception 3 does not fire"*. The row and the verdict were two
+ * answers to one question because the verdict tested `overdueDays > 0`, so a
+ * clock landing exactly on its day scored 0 and was counted as quiet — making
+ * the Janitor a 4-day seat on a 3-day clock and the three weekly seats 8-day
+ * seats.
+ *
+ * `PROGRAM.md`'s standing exception 3 is the authority and its words are
+ * *"patrol duties when their clock fires"*; a clock every N days fires on day
+ * N. #505's build line and the standing orders say "overdue", which describes
+ * the ordinary case — **no ruling anywhere grants a landed clock a grace day**,
+ * and the seats' own logs never behaved as though one existed: the most recent
+ * run of all four seats was made on the exact day its clock landed, and
+ * `MACHINIST_LEDGER.md` Run 3 heads itself "weekly clock, on the day".
+ *
+ * It had already been settled once by hand and the finding was not filed:
+ * `janitor-20260912-0730` §A records two shifts skipping the seat on this
+ * verdict and a third overriding it from PROGRAM.md — *"It had fired."* Five
+ * further launches read `DUE today` and skipped, because standing exception 3
+ * is the ONLY road that reaches a patrol ahead of the category order, and the
+ * category order has not reached Housekeeping in days.
+ *
+ * The ROW LABELS are deliberately untouched: `DUE today` and `OVERDUE by N`
+ * stay distinct, because they are distinct facts and the ranking below uses
+ * the difference. Only the verdict's question changed.
+ */
+const hasFired = (row: Reading): boolean => row.overdueDays >= 0;
 
 function readSeat(
   dir: string,
@@ -292,20 +328,31 @@ function main(argv: string[]): number {
     );
   }
 
-  const overdue = readings.filter((row) => row.overdueDays > 0);
+  const fired = readings.filter(hasFired);
   console.log("");
-  if (overdue.length === 0) {
-    console.log("No seat is overdue. Standing exception 3 does not fire; work the category order.");
+  if (fired.length === 0) {
+    console.log("No seat's clock has fired. Standing exception 3 does not fire; work the category order.");
   } else {
-    const next = overdue[0];
+    const next = fired[0];
+    /* Each seat is named with the state it is actually in. The old line said
+       "overdue" of every seat it listed, which would now be false of a seat
+       whose clock landed today — and printing one word over two states is the
+       defect this repair exists to remove, not a shape to carry forward. */
+    const named = fired
+      .map((row) =>
+        row.overdueDays > 0
+          ? `${row.seat} (overdue by ${row.overdueDays})`
+          : `${row.seat} (due today)`,
+      )
+      .join(", ");
     console.log(
-      `${overdue.length} seat${overdue.length === 1 ? " is" : "s are"} overdue: ${overdue.map((row) => row.seat).join(", ")}.`,
+      `${fired.length} seat${fired.length === 1 ? "'s clock has" : "s' clocks have"} fired: ${named}.`,
     );
     console.log(
-      `NEXT: ${next.seat} (${next.log}) — furthest through its own clock. An overdue patrol whose`,
+      `NEXT: ${next.seat} (${next.log}) — furthest through its own clock. A patrol whose clock has`,
     );
     console.log(
-      `switch is ON takes precedence over the category order (#505); ${next.seat}'s switch is ${next.category}.`,
+      `fired and whose switch is ON takes precedence over the category order (#505); ${next.seat}'s switch is ${next.category}.`,
     );
     console.log("Ranked by clocks elapsed, ties alphabetical. Read the switches to decide.");
   }

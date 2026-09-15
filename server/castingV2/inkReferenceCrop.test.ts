@@ -15,8 +15,9 @@
 import { resolve } from "node:path";
 
 import sharp from "sharp";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
 import {
   INK_REGION,
@@ -35,6 +36,44 @@ import {
 } from "./inkReferenceCrop";
 import type { Mask } from "./maskedComposite";
 import { imageHalfClause, imageHalfOf, pictureHalfPhrase } from "./sidePhrasing";
+
+/*
+  THE CONTENDED FLOOR, AND THIS FILE IS AN AWKWARD MEMBER — SO BOTH SIDES ARE
+  WRITTEN DOWN RATHER THAN ONE (#962).
+
+  It went red once under full-suite load on 2026-09-14, on the REAL-photograph
+  arm below, and passed 45/45 alone twice straight afterwards. Read at the
+  runner's bytes, the captured `Error: STACK_TRACE_ERROR` IS a test timeout —
+  `server/timeoutFailureIdentity.test.ts` drives that identity and holds it.
+
+  ⚠ **AGAINST enrolling it: it is nowhere near its clock and never was.** Four
+  full-suite runs, that arm: **53 / 72 / 57 ms quiet, and 124 ms under fourteen
+  busy CPU loops** — under 2.5% of the 5 s default at its worst. The doctrine
+  it joins explicitly refuses the seventy-six suites that reach a second only
+  under starvation, because *"a 30 s floor on a mocked unit test is the global
+  raise one file at a time"*, and on duration alone this file is far below even
+  those.
+
+  ✅ **FOR, and it is what decides it: enrollment here is by measured casualty
+  and by the SHAPE of the work, and `contendedTestTimeout.ts` says in its own
+  first paragraph that quiet duration is NOT the test** — `clientInputCaps`
+  had 4,166 ms of quiet margin and fell anyway. This file is a measured
+  casualty, and its shape is the one that doctrine names in the same breath as
+  a tree walk: **a `sharp` encode**. It is the only arm in the suite that
+  decodes a real 1.5 MB photograph through libvips, so it is the only one that
+  can be blocked by a NATIVE thread pool as well as by the CPU — and that pool
+  is oversubscribed on this box by construction (`sharp.concurrency()` is 20
+  per process against 8 vitest forks on 20 cores). A mocked assertion cannot
+  stall that way; this can.
+
+  ⚠ **AND THE CARD'S OWN ALTERNATIVE IS MEASURED OUT RATHER THAN ARGUED
+  AWAY.** #962 asked whether the honest repair was *"in how the test gets its
+  picture"*. The picture costs 53–124 ms. Reshaping how it is loaded buys
+  perhaps seventy milliseconds against a five-second clock, and would cost the
+  arm the thing fable-1216 §1 bought it for — a REAL photograph rather than a
+  synthetic frame. There is nothing to win there.
+*/
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /** A mask with a solid rectangle lit in it. */
 function maskWithBox(

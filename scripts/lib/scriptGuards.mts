@@ -153,6 +153,18 @@ export type ScriptGuardVerdict = {
   suites: string[];
   /** The last few lines the runner printed — enough to name the file at fault. */
   printed: string;
+  /**
+   * SET WHEN THE RUN COULD NOT BE ATTEMPTED AT ALL (#967) — the worktree could
+   * not be made, so no suite was ever handed a tree.
+   *
+   * ⚠ **This is not a milder `ok: false`. It is a different KIND of answer**,
+   * and keeping them apart is the whole of this card. `ok` is false either way,
+   * because a rite that cannot see the tree must refuse exactly as hard as one
+   * that saw a breach (invariant 7) — what changes is who is implicated. A
+   * finding implicates the COMMIT; this implicates the MACHINE, and the commit
+   * is not accused of anything.
+   */
+  couldNotRun?: string;
 };
 
 /**
@@ -161,6 +173,17 @@ export type ScriptGuardVerdict = {
  * and its teardown live in `riteWorktree.mts`, shared with the typecheck
  * custody check (#263) — the junction teardown is the dangerous part and it is
  * written once.
+ *
+ * ⚠ **A THROW FROM THE WORKTREE MACHINERY BECOMES A VERDICT, NOT AN EXCEPTION
+ * (#967).** `inWorktreeOf` throws when it cannot make the tree — correctly, and
+ * its own docblock says why. Before this, that throw travelled out of here,
+ * out of the rite's top level, and ended the process on a raw stack trace with
+ * no refusal line and no receipt sentence. The refusal is unchanged (`ok` is
+ * false and the caller must not push); what is added is that the rite can now
+ * SAY which of the two happened instead of guessing.
+ *
+ * It is deliberately narrow: only the tree-making throw is caught here. A throw
+ * from inside `vitest` is the runner's own business and still propagates.
  */
 export const runScriptGuardsOnCommit = (root: string, commit: string, options: {
   suites?: string[];
@@ -168,14 +191,27 @@ export const runScriptGuardsOnCommit = (root: string, commit: string, options: {
 } = {}): ScriptGuardVerdict => {
   const suites = options.suites ?? listScriptGuardSuites(root, (r) => grepAtCommit(r, commit));
   const vitest = options.vitest ?? defaultVitest;
-  return inWorktreeOf(root, commit, (tree) => {
-    const result = vitest(tree, suites);
-    return {
-      ok: result.status === 0,
-      suites,
-      printed: result.output.trim().split(/\r?\n/).filter((line) => line.trim() !== "").slice(-12).join("\n"),
-    };
-  });
+  let ran = false;
+  try {
+    return inWorktreeOf(root, commit, (tree) => {
+      ran = true;
+      const result = vitest(tree, suites);
+      return {
+        ok: result.status === 0,
+        suites,
+        printed: result.output.trim().split(/\r?\n/).filter((line) => line.trim() !== "").slice(-12).join("\n"),
+      };
+    });
+  } catch (error: unknown) {
+    /* `ran` is the load-bearing half: once the body has been entered the tree
+       existed, so a throw from here on is NOT "could not run" — it is the
+       runner or the teardown, and mislabelling it would hand the commit an
+       alibi it has not earned. Re-thrown rather than dressed up. */
+    if (ran) throw error;
+    const stderr = String((error as { stderr?: unknown })?.stderr ?? "").trim();
+    const message = (stderr !== "" ? stderr : String((error as Error)?.message ?? error)).trim();
+    return { ok: false, suites, printed: message, couldNotRun: message.split(/\r?\n/).slice(0, 4).join("\n") };
+  }
 };
 
 const defaultVitest = (cwd: string, suites: string[]) => {
