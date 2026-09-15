@@ -23,7 +23,7 @@
  *
  * # WHY A VOCABULARY RATHER THAN A COLUMN PER REASON
  *
- * Three reasons ship today (#325 groups the other open cards by the labels they
+ * Three reasons shipped first (#325 groups the other open cards by the labels they
  * carry). **The third one is the proof the shape was right**: `blocked` arrived
  * as ONE entry in the array below and nothing else — no migration, no reader
  * change, no panel edit, because every consumer walks this list. A column per
@@ -40,6 +40,16 @@
  * a card relabelled in GitHub moves between offered and excluded on his page
  * with nobody touching this file.
  *
+ * ⚠ **AND THE HOLD ROWS ARE NOT TYPED HERE ANY MORE (#999, 2026-09-16).**
+ * `blocked` was a literal in this file while `shared/crewNextUpHold.ts` owns the
+ * whole hold vocabulary — `blocked`, `awaiting-fable`, `needs-sitting` — so
+ * the two lists had already drifted: a card held for a Fable session or a
+ * sitting was COUNTED AS ON OFFER. Measured the night it was found: `#841`
+ * (`seat:janitor` + `awaiting-fable`) sat in *Housekeeping (3 on offer)*, a
+ * number the park gate reads as work, so the nights kept launching sessions to
+ * rediscover that no Opus shift may take it. Each hold row now reads its label
+ * from `CREW_HOLD_LABELS`, and an arm holds every hold label to having a row.
+ *
  * # ⚠ THE PARSE IS HOSTILE-INPUT SAFE, FOR `crewQueueTitles.ts`'s REASON
  *
  * The column holds a JSON string written by a script, and his ENTIRE Crew tab
@@ -47,6 +57,8 @@
  * the founder. So a malformed, truncated or half-written value degrades to NO
  * EXCLUSIONS, which draws exactly the panel he has today.
  */
+
+import { CREW_HOLD_LABELS } from "./crewNextUpHold";
 
 /**
  * One reason a card carrying a category's label is nevertheless not offered.
@@ -85,7 +97,7 @@ export const QUEUE_EXCLUSION_REASONS = [
   },
   {
     key: "blocked",
-    queueLabel: "blocked",
+    queueLabel: CREW_HOLD_LABELS.blocked,
     label: "blocked",
     /**
      * ⚠ **`Process (5)` WAS TRUE OF THE LABEL AND FALSE OF THE PRODUCT, AND IT
@@ -117,6 +129,35 @@ export const QUEUE_EXCLUSION_REASONS = [
      * separate decision, not a second row here.
      */
     blurb: "Waiting on something the card names — you, or another card.",
+  },
+  {
+    key: "fable",
+    queueLabel: CREW_HOLD_LABELS.fable,
+    label: "awaiting Fable",
+    /**
+     * ⚠ **THE `blocked` DEFECT AGAIN, ONE LABEL OVER (#999).** `#541`'s rule
+     * makes this label mean *a design decision, or a change to what he judges*,
+     * and the standing orders bar an Opus shift from both. Nothing launches a
+     * Fable session for a BACKGROUND card — `next-up-escalation.mts` reads
+     * NEXT UP only — so a switch-reached card carrying it is not on offer to
+     * the nights as they run. Counting it kept `check-park.ps1` from parking on
+     * nights where it was the only card left.
+     *
+     * After `blocked`, so a card carrying both reads as blocked: a Fable
+     * session could not take it either while the thing it waits on stands.
+     */
+    blurb: "Needs a Fable session to decide something first — the card says what.",
+  },
+  {
+    key: "sitting",
+    queueLabel: CREW_HOLD_LABELS.sitting,
+    label: "awaiting a sitting",
+    /**
+     * The third hold label, included for the same reason and found by the same
+     * sweep: no open card carries it today (`#279` did, and closed), so this row
+     * costs nothing until one does, and then it cannot inflate a count by one.
+     */
+    blurb: "Waits on you at the machine — the card says what.",
   },
 ] as const;
 
