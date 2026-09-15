@@ -290,6 +290,72 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
     return { success: true, message: `Subscription ${live.id} is ${live.status} at Stripe — nothing applied` };
   }
 
+  // ⚠ AN OLDER SUBSCRIPTION NEVER OVERWRITES A NEWER ONE (#804, PR #803
+  // review finding 1 — the last unguarded sibling of #794's class).
+  //
+  // The other three roads carry the #794 stored-id guard as a flat
+  // `storedId !== eventSubId → skip`. THIS road cannot: it is the road that
+  // legitimately installs a new subscription's id when a customer
+  // resubscribes, and that guard would break every resubscribe.
+  //
+  // What it must refuse instead is narrower. `cancelSubscription` is
+  // period-end, so a cancelled subscription stays `active` at Stripe for
+  // weeks (the dispute-lost road cancels the same way). A customer can
+  // therefore hold two LIVE subscriptions at once — old A winding down,
+  // new B on record — and A's trailing `updated` events pass the live read
+  // above (A really is alive) and used to write A's id, tier, interval and
+  // period straight over B's. When A finally died, its `deleted` event found
+  // A on record, read *not stale*, and downgraded a paying account to free
+  // while B was alive and billing.
+  //
+  // So the question is not "is this the subscription on record" but "is this
+  // the NEWER one", and the only honest answer comes from Stripe: the stored
+  // subscription is read live and the two `created` stamps are compared. The
+  // read happens ONLY when the ids differ, so the ordinary event — the same
+  // subscription reporting a change — costs nothing extra.
+  //
+  // Three of the four answers proceed, and each for its own reason: a stored
+  // subscription Stripe does not know is gone; a stored subscription Stripe
+  // says is dead has already lost the account (the deleted/final-failure
+  // roads own it, and refusing here would freeze the record on a corpse);
+  // and a stored subscription genuinely OLDER than this one is the
+  // resubscribe this road exists to serve. A transient read failure fails
+  // the event so Stripe's redelivery is the retry — the same choice the live
+  // read above makes, for the same reason: guessing is the one thing that
+  // cannot be retried.
+  //
+  // The comparison is strictly greater on purpose. Two subscriptions created
+  // in the same second are not orderable by this reading, and on a tie the
+  // handler keeps today's behaviour rather than inventing a winner — this
+  // change only ever ADDS a refusal, in the case where the record provably
+  // holds something newer.
+  const storedSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
+  if (storedSubscriptionId && storedSubscriptionId !== live.id) {
+    const storedRead = await retrieveLiveSubscription(storedSubscriptionId);
+    if (storedRead.outcome === "failed") {
+      log.error(
+        `[Webhook] Subscription ${live.id} for user ${userId} differs from the one on record (${storedSubscriptionId}) but that one could not be read live from Stripe — failing the event so Stripe redelivers and the comparison is retried`,
+      );
+      return {
+        success: false,
+        message: `Subscription ${storedSubscriptionId} on record could not be read live from Stripe — redeliver to retry`,
+      };
+    }
+    if (
+      storedRead.outcome === "found" &&
+      !DEAD_SUBSCRIPTION_STATUSES.has(storedRead.subscription.status) &&
+      storedRead.subscription.created > live.created
+    ) {
+      log.info(
+        `[Webhook] Leaving user ${userId}'s record alone — subscription ${live.id} is alive but OLDER than ${storedSubscriptionId}, which is on record and also alive`,
+      );
+      return {
+        success: true,
+        message: `Subscription ${live.id} is older than ${storedSubscriptionId} on record — nothing applied`,
+      };
+    }
+  }
+
   const plan = live.metadata?.plan as SubscriptionPlan | undefined;
   // #391: a metadata.plan naming a tier the product no longer declares (a
   // folded rung on a stale checkout session) maps to null — keep the

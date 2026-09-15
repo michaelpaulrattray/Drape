@@ -124,10 +124,10 @@ console.log(`  hair on the DELIVERED   ${coverage(hairOnDelivered).toLocaleStrin
 const facetRegions = new Map([["hairWorn", "hair"]]);
 const regionMasks = new Map([["hair", hairOnMaster]]);
 
-const [before] = cutSegments({
+const { cuts: [before] } = cutSegments({
   composite: down.raster, applied, facetRegions, regionMasks,
 });
-const [after] = cutSegments({
+const { cuts: [after] } = cutSegments({
   composite: down.raster,
   applied,
   facetRegions,
@@ -140,7 +140,10 @@ const row = (label: string, cut: typeof before) => {
   if (!cut) return console.log(`${label.padEnd(22)}  NO SEGMENT — the region never met the applied mask`);
   console.log(
     `${label.padEnd(22)}  ${String(cut.pixels).padStart(9)} px  ${percent(cut.pixels, deliveredPixels).padStart(6)} of what she bought`
-    + `   arrived ${cut.arrivedPixels.toLocaleString()} · departed ${cut.departedPixels.toLocaleString()}`,
+    + `   arrived ${cut.arrivedPixels.toLocaleString()} · departed ${cut.departedPixels.toLocaleString()}`
+    /* What the ask refused this reading, which this measurement could not see
+       when it was taken (#64 item 3). */
+    + `   lost ${cut.lostPixels.toLocaleString()}`,
   );
 };
 
