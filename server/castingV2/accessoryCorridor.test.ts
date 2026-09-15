@@ -446,7 +446,7 @@ describe("an accessory segment is cut, kept and carried like any other facet", (
     const harvested = await harvestHoops();
     const composite = await readRaster(harvested.bytes);
 
-    const cuts = cutSegments({
+    const { cuts } = cutSegments({
       composite,
       applied: harvested.evidence!.applied,
       /* Exactly what the service sends: the facet has no `REGION_OF_FACET`
@@ -473,13 +473,18 @@ describe("an accessory segment is cut, kept and carried like any other facet", (
     expect(regionNameOf(facetOfSubject("statedAccessories")), "there is no facet-only answer").toBeNull();
 
     const harvested = await harvestHoops();
-    const cuts = cutSegments({
+    const { cuts, dropped } = cutSegments({
       composite: await readRaster(harvested.bytes),
       applied: harvested.evidence!.applied,
       facetRegions: new Map(),
       regionMasks: harvested.evidence!.masterRegions,
     });
     expect(cuts).toEqual([]);
+    /* And nothing was DROPPED either, which is the distinction #64 item (3)
+       bought: the facet was never asked for, so there is no facet to report
+       having lost. A drop row here would mean the corridor had named ground
+       after all. */
+    expect(dropped).toEqual([]);
   });
 
   it("keeps it through the store's own front door, verdict and all", async () => {
@@ -544,7 +549,7 @@ describe("a kept accessory is judged by arithmetic like every other carried fact
 
   const carriedCandidate = async () => {
     const harvested = await harvestHoops();
-    const [cut] = cutSegments({
+    const { cuts: [cut] } = cutSegments({
       composite: await readRaster(harvested.bytes),
       applied: harvested.evidence!.applied,
       facetRegions: new Map([[CARRIED, "earring"]]),
