@@ -1,7 +1,7 @@
 {
-  "edition": 423,
-  "updatedAt": "2026-09-15T08:00:00.000Z",
-  "shift": "ONE JOB DONE: THE TOOL THAT MERGES THE NIGHT SHIFTS' OWN WORK NOW NOTICES A REFUND CHANGE, NOT ONLY A BILLING-FOLDER CHANGE. THE RELAY HAND-REVIEWED IT, PASSED IT AND MERGED IT, AND IT IS LIVE.\n\nWHAT IT WAS. Last night's fix taught the automatic check to flag any job that changes how many credits a customer gets back, not only jobs in the billing and sign-in folders. But the shifts merge their own jobs with a separate tool, and that tool still only looked at folder names. So a refund change living in the casting code would have been treated by that tool as an ordinary job and merged without a reviewer, even though the check had flagged it for your eye. Five of the last sixty finished jobs were exactly that kind.\n\nWHAT CHANGED. The tool now reads the changed lines too, using the very same rule the check uses, from the one file that rule lives in — no second copy to drift. It costs nothing extra: the lines were already in what the tool downloads, and it was throwing them away.\n\nHOW I KNOW IT IS RIGHT. I ran the new reading over the last sixty finished jobs and compared it with the check's own answer, file by file. They agree on all sixty. Then I broke the new part five different ways on purpose, and each break turned the tests red. It flagged its own job for your eye, which is the right answer, since its tests talk about credits.\n\nREVIEWED BY HAND, AS YOU ASKED. While the reviewer is out of credits I opened it marked for the relay rather than holding it. The relay read the whole change, passed it with no blocking findings, and merged it within minutes; production is running it.\n\nNOTHING ELSE WAS TAKEABLE. The two remaining bug jobs are one that needs your decision on refund wording (not urgent: it has never happened) and one that is blocked on the reviewer. The casting jobs each need your word or your money, as the last three nights also found.\n\nCOST: nothing. No credits, no renders, no paid calls.",
+  "edition": 424,
+  "updatedAt": "2026-09-15T09:20:40.000Z",
+  "shift": "ONE JOB DONE, HAND-REVIEWED BY THE RELAY AND MERGED: A MODERATOR'S CREDIT OR REFUND REQUEST THAT IS MISSING ITS AMOUNT CAN NO LONGER BE PRESSED INTO A DEAD END. IT NOW SAYS SO BEFORE ANYONE PRESSES, AND STAYS OPEN SO IT CAN BE DECLINED.\n\nWHAT IT WAS. On the Change requests page, approving a credit request with no amount on it, or a Stripe refund with no session on it, moved no money, but it left the request stuck at \"Outcome unconfirmed\". From there neither Approve nor Decline works, and nothing on the page can clear it. Your IP-block request had the same shape and was fixed two nights ago; this is its money half.\n\nWHAT CHANGED. Approving is refused while the request is still open, with one plain sentence: what is missing, and to decline it and ask for a new request. The same sentence now sits under the Approve button and in the confirm box, so the page cannot promise one thing while the button does another. Looking at it in the running app turned up one more wrong sentence the job did not mention: the confirm box said \"This will add the specified credits to the user's account\" on a request with no credits in it. That is fixed too. The words say \"decline\", because that is what the button says.\n\nHOW I KNOW IT IS RIGHT. A new check runs every kind of request with each of its details emptied, one at a time, through the real code that moves credits and refunds, and fails if any of them would still end up stuck. I broke the fix five ways on purpose and every break was caught. I also pressed Approve on a test request in both themes and read the database afterwards: still open. An ordinary request with 250 credits on it still reads \"Approving adds 250 credits\", unchanged.\n\nREVIEWED BY HAND, AS YOU ASKED. I opened it for the relay rather than holding it. The relay read the whole change, passed it and merged it within minutes of the automatic checks going green, with one small style note and nothing to fix.\n\nNOBODY HAS HIT THIS. The form a moderator uses cannot create these requests, and your live site has never had a change request of any kind.\n\nONE RELATED JOB FILED, NOT DONE. The same read found nine other ways a request can get stuck, and one of them can really happen: a moderator asks to unsuspend someone, somebody lifts the suspension directly, then an admin approves. That one needs a different fix, so it is #991.\n\nA CORRECTION TO LAST NIGHT'S PAGE. It said the refund-wording job and this job could not be taken. This one could: it was only waiting for a reviewer, and your standing word says the relay reviews by hand for now. The refund-wording job (#955) is takeable too, and it is a full night's work.\n\nCOST: nothing. No credits, no renders, no paid calls.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-15T07:46:07.369Z",
+      "readAt": "2026-09-15T09:20:48.694Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4974,6 +4974,13 @@
   ],
   "pipeline": [
     {
+      "id": "change-request-wedge-923",
+      "title": "A credit or refund request missing its amount no longer gets stuck when approved — it is refused and stays open",
+      "status": "merged",
+      "prNumber": 992,
+      "note": "Approving a moderator's credit request with no amount, or a Stripe refund with no session, used to leave it at 'Outcome unconfirmed' where nothing can clear it. Now it is refused while still open, with the same sentence under the button, in the confirm box and in the refusal. A new check runs every request type with each detail emptied through the real credit and refund code; broken five ways on purpose, every break caught. Seen in both themes, database read after pressing: still open. Every automatic check green first time. Hand-reviewed by the relay under your standing word: passed, merged. The nine related ways to get stuck are filed as #991."
+    },
+    {
       "id": "merge-tool-symbols-987",
       "title": "The tool that merges the shifts' jobs now spots a refund change, not only a billing-folder change",
       "status": "merged",
@@ -6490,9 +6497,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0915g-foreman",
+      "id": "queue-shape-0915h-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 39 open — one job built and merged tonight (its card closes when the relay reads it back live), one filed; NEXT UP holds only your reviewer instruction",
+      "detail": "One job built tonight (#923, the stuck credit request) and the relay hand-reviewed and merged it. One new job filed (#991) — nine other ways a change request can get stuck, one of them reachable. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days — the oldest is 21 days. The refund-wording job (#955) is now correctly read as takeable: it is money work and a full night on its own, and the sentence question it carries comes to you with the fix in hand, as the job itself says. Your casting upkeep list stays at 5."
+    },
+    {
+      "id": "queue-shape-0915g-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 43 open — one job built and waiting on a merge, one filed, two unblocked; NEXT UP is empty",
       "detail": "One job built tonight (#958, the money flag) and it is finished, green and waiting for a merge decision rather than for work. One new job filed (#987) — the tool that merges finished work still reads only half the money check, and the other half is free in data it already fetches. Two jobs unblocked: #955 and #956 were waiting on your refund fix #954, which finished at 3:37 this morning; I read the code to confirm it landed and took the hold off both. Nothing is marked urgent and NEXT UP is empty. 22 cards have gone a week with no comment, close or commit against them — the oldest is 20 days. Your casting upkeep list stays at 5 and all five need your word or your money; three nights running have now read every one of them at the code rather than the title."
     },
@@ -7011,7 +7025,7 @@
     189
   ],
   "nextUp": {
-    "readAt": "2026-09-15T07:46:07.368Z",
+    "readAt": "2026-09-15T09:20:48.693Z",
     "items": [
       {
         "issueNumber": 988,
