@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "5d69dfe004c7f911"
+    "sourceFingerprint": "1ee9fe6c6d182243"
   },
   "domains": [
     {
@@ -13702,6 +13702,10 @@
     {
       "id": "test:server/stripe/stripeRefund.test.ts",
       "path": "server/stripe/stripeRefund.test.ts"
+    },
+    {
+      "id": "test:server/stripe/subscriptionNewerGuard.test.ts",
+      "path": "server/stripe/subscriptionNewerGuard.test.ts"
     },
     {
       "id": "test:server/stripe/voidInvoiceStatus.test.ts",
