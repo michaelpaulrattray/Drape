@@ -1,4 +1,5 @@
 import { Info, AlertTriangle, AlertCircle } from "lucide-react";
+import type { AuditCategory } from "@shared/auditActionCategories";
 
 /**
  * Shared constants, types, and utility functions for the Moderator Dashboard.
@@ -42,7 +43,9 @@ export const CATEGORY_COLORS = {
      what the founder's ruling separated it from. */
   moderator: "bg-slate-100 text-slate-700",
   abuse: "bg-red-50 text-red-700",
-} as const;
+  /* Typed against the bucket list so a sixth category cannot ship without a
+     colour here — the completeness check is the compiler's, not a reviewer's. */
+} as const satisfies Record<AuditCategory, string>;
 
 export const PAGE_SIZE = 20;
 
@@ -56,14 +59,21 @@ export const PAGE_SIZE = 20;
  * carries the 24-hour ruling and the promotion's reasoning.
  */
 
-export function getActionCategory(action: string): keyof typeof CATEGORY_COLORS | null {
-  if (action.startsWith("subscription.") || action.startsWith("credits.")) return "billing";
-  if (action.startsWith("model.")) return "model";
-  if (action.startsWith("auth.") || action.startsWith("security.")) return "security";
-  if (action.startsWith("moderator.")) return "moderator";
-  if (action.startsWith("abuse.")) return "abuse";
-  return null;
-}
+/**
+ * THE CHIP IS DERIVED, NOT RE-IMPLEMENTED (#940).
+ *
+ * This was a prefix rule — `action.startsWith("credits.")` and four more —
+ * written out identically in this file and in the other console's. Two lists
+ * describing one thing, and both drifted from the server bucket list that
+ * actually filters: #939 found thirteen rows wearing a chip their own filter
+ * dropped, and #940 the mirror, three refund rows the Billing filter finds and
+ * the prefix rule labelled with nothing.
+ *
+ * It reads `ACTION_CATEGORIES` now, which is the list the filter uses, so the
+ * chip and the dropdown cannot disagree again. The reasoning and the one
+ * behaviour change are in the shared module's docblock.
+ */
+export { getActionCategory } from "@shared/auditActionCategories";
 
 export function formatAction(action: string): string {
   return action

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7f16c07c07583430"
+    "sourceFingerprint": "35c5e9d1e5eeb4f0"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 56
+      "moduleCount": 58
     },
     {
       "id": "domain:staff",
@@ -5986,6 +5986,18 @@
     {
       "id": "module:shared/annualBilling.ts",
       "path": "shared/annualBilling.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/auditActionCategories.ts",
+      "path": "shared/auditActionCategories.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/auditActions.ts",
+      "path": "shared/auditActions.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -14551,6 +14563,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/adminConstants.ts",
+      "to": "module:shared/auditActionCategories.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/AuditActionModals.tsx",
       "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
@@ -17787,6 +17804,11 @@
     },
     {
       "from": "module:client/src/features/moderator/moderatorConstants.ts",
+      "to": "module:shared/auditActionCategories.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/moderatorConstants.ts",
       "to": "module:shared/changeRequestLabels.ts",
       "kind": "imports"
     },
@@ -20447,6 +20469,11 @@
     },
     {
       "from": "module:drizzle/schema.ts",
+      "to": "module:shared/auditActions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:drizzle/schema.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
       "kind": "imports"
     },
@@ -20808,6 +20835,11 @@
     {
       "from": "module:server/auditLog.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/auditLog.ts",
+      "to": "module:shared/auditActionCategories.ts",
       "kind": "imports"
     },
     {
@@ -33733,6 +33765,11 @@
     {
       "from": "module:server/wardrobe/vtoSession.ts",
       "to": "module:shared/modelRegistry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/auditActionCategories.ts",
+      "to": "module:shared/auditActions.ts",
       "kind": "imports"
     },
     {
