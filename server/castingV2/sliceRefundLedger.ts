@@ -118,3 +118,19 @@ export function rollSliceRefundDescription(failureClass: string | null | undefin
  * "a subset is a wrong reading" failure pointed the other way.
  */
 export const ROLL_CANCEL_REFUND_DESCRIPTION = "Casting roll cancelled before this candidate started";
+
+/**
+ * The generosity slice's sentence — a tile that was already rendering when the
+ * customer cancelled, finished anyway, and was never shown (founder ruling,
+ * 2026-07-31).
+ *
+ * Two writers, one sentence, on #955's pattern: `rollService.ts` at the landing
+ * that knows it landed unseen, and `rollRecovery.ts` paying that refund when a
+ * process death came between the landing and the refund (#994). It is the
+ * inline literal moved out, not a new sentence.
+ *
+ * ⚠ **Also deliberately NOT in {@link SLICE_REFUND_DESCRIPTIONS}**, for the
+ * cancel's reason: that list is counted against slices that did not ARRIVE,
+ * and an unseen tile did arrive — it simply went unshown.
+ */
+export const ROLL_UNSEEN_REFUND_DESCRIPTION = "Cancelled before you saw it";

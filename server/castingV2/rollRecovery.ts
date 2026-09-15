@@ -11,7 +11,11 @@ import {
 } from "../db/generationOperations";
 import { claimCandidateForRecovery } from "../db/castingV2";
 import { createModuleLogger } from "../logging/logger";
-import { ROLL_CANCEL_REFUND_DESCRIPTION, rollSliceRefundDescription } from "./sliceRefundLedger";
+import {
+  ROLL_CANCEL_REFUND_DESCRIPTION,
+  ROLL_UNSEEN_REFUND_DESCRIPTION,
+  rollSliceRefundDescription,
+} from "./sliceRefundLedger";
 
 const log = createModuleLogger("castingV2/rollRecovery");
 
@@ -62,6 +66,12 @@ function affectedRows(result: unknown): number {
  *    `cancelled` row is torn on exactly the terms a `failed` one is, and
  *    `isTornCancel` is the same reading of the same ledger — at the snapshot
  *    and at the lost-claim re-read alike.
+ *
+ *    And the landing into a cancelled roll has them too (#994): `landCandidate`
+ *    writes `expired` with `expiredReason = 'cancelled_unseen'` in one
+ *    statement and the generosity refund follows as a second write.
+ *    `isTornUnseen` reads that row by its reason — never by `expired` alone,
+ *    which the retention sweep also writes — under the unseen reference.
  *
  * WHY THE PROVIDER QUERY EXISTS AT ALL. §H.6 says ambiguous dispatched
  * outcomes are verified against the provider "where queryable". Verified
@@ -131,10 +141,16 @@ function hasLanded(candidate: CandidateRow): boolean {
  * back for work they received, which is exactly what the sweep correction
  * (44748ae5) forbade.
  *
- * That overload is scheduled to end: migration 0018 (M7) adds the column that
- * distinguishes an unseen landing from an aged-out one. When it lands, this
- * function stops being the last word on `expired` and the sweep can settle the
- * generosity slice a crash left behind.
+ * ⚠ **That overload ended with migration 0018, and this paragraph said it was
+ * still scheduled until #994.** `expiredReason` separates the two meanings, and
+ * `landCandidate` writes it in the same statement as the status. So this
+ * function is no longer the last word on the MONEY of an `expired` row:
+ * `isTornUnseen` pays a `cancelled_unseen` slice whose refund never wrote.
+ *
+ * What stays here is the CLASSIFICATION, deliberately unchanged. An unseen
+ * landing is a finished render, and whether a cancelled roll's recovery receipt
+ * reads as partial or failed is a question about the sentence the customer
+ * sees, not about money — a different change from #994's.
  */
 function wasDelivered(candidate: CandidateRow): boolean {
   return (
@@ -225,13 +241,71 @@ export function isTornCancel(
   );
 }
 
-/** Either torn write: settled on the row, never paid on the ledger. */
+/**
+ * The torn write inside the unseen landing (#994) — the third sibling.
+ *
+ * A tile already with the provider when its roll was cancelled runs to the
+ * end and lands `expired`; the generosity ruling (2026-07-31) pays it back
+ * under its own `:unseen` reference, as a second write after the landing. A
+ * process death between the two left the slice charged, and the sweep could
+ * not see it: `expired` was also what the retention sweep writes over tiles the
+ * customer looked at for a week.
+ *
+ * ⚠ **It asks the REASON, never the status alone.** `expiredReason` is written
+ * in the landing's own statement (migration 0018), so `cancelled_unseen` is
+ * exactly the landing that owes the refund. `retention` is delivered work, and
+ * a NULL reason is a row that predates the column: both stay unpaid, because a
+ * status alone is precisely the reading the sweep correction (44748ae5)
+ * forbade.
+ */
+export function isTornUnseen(
+  candidate: CandidateRow,
+  ledger: Pick<OperationLedger, "refundedReferences">,
+  operationId: string,
+): boolean {
+  return (
+    candidate.status === "expired"
+    && candidate.expiredReason === "cancelled_unseen"
+    && candidate.pointsCost > 0
+    && !ledger.refundedReferences.has(candidateUnseenRefundReference(operationId, candidate.publicId))
+  );
+}
+
+/** Any torn write: settled on the row, never paid on the ledger. */
 function isTornSettlement(
   candidate: CandidateRow,
   ledger: Pick<OperationLedger, "refundedReferences">,
   operationId: string,
 ): boolean {
-  return isTornFailure(candidate, ledger, operationId) || isTornCancel(candidate, ledger, operationId);
+  return (
+    isTornFailure(candidate, ledger, operationId)
+    || isTornCancel(candidate, ledger, operationId)
+    || isTornUnseen(candidate, ledger, operationId)
+  );
+}
+
+/**
+ * The one place a settled row's refund is named: which charge reference it is
+ * returned under, and the sentence the customer reads beside it. The live
+ * writers use the same pair, so a late refund from a process that was only slow
+ * lands as the ledger's duplicate, never a second payment.
+ */
+function sliceRefund(
+  candidate: CandidateRow,
+  operationId: string,
+): { chargeReference: string; description: string } {
+  if (candidate.status === "expired") {
+    return {
+      chargeReference: candidateUnseenChargeReference(operationId, candidate.publicId),
+      description: ROLL_UNSEEN_REFUND_DESCRIPTION,
+    };
+  }
+  return {
+    chargeReference: candidateChargeReference(operationId, candidate.publicId),
+    description: candidate.status === "cancelled"
+      ? ROLL_CANCEL_REFUND_DESCRIPTION
+      : rollSliceRefundDescription(candidate.failureClass),
+  };
 }
 
 /**
@@ -268,6 +342,10 @@ export function candidateUnseenChargeReference(
   candidatePublicId: string,
 ): string {
   return `${candidateChargeReference(operationId, candidatePublicId)}:unseen`;
+}
+
+export function candidateUnseenRefundReference(operationId: string, candidatePublicId: string): string {
+  return refundReferenceFor(candidateUnseenChargeReference(operationId, candidatePublicId));
 }
 
 /**
@@ -317,8 +395,18 @@ export async function readOperationLedger(
   candidates: readonly CandidateRow[],
 ): Promise<OperationLedger> {
   const chargeReference = operationChargeReference(operation.id);
-  const refundReferences = candidates.map((candidate) =>
-    candidateRefundReference(operation.id, candidate.publicId),
+  /*
+    Both references a slice can be returned under (#994). The `:unseen` one was
+    missing, so a generosity refund that DID land was left out of
+    `alreadyRefunded` — out of the conservation ceiling and out of recovery's
+    receipt, while the live receipt counted it — and one that did NOT land could
+    never be told from one that did.
+  */
+  const refundReferences = new Set(
+    candidates.flatMap((candidate) => [
+      candidateRefundReference(operation.id, candidate.publicId),
+      candidateUnseenRefundReference(operation.id, candidate.publicId),
+    ]),
   );
 
   const rows = await db
@@ -326,12 +414,18 @@ export async function readOperationLedger(
     .from(creditTransactions)
     .where(and(
       eq(creditTransactions.userId, operation.userId),
-      inArray(creditTransactions.referenceId, [chargeReference, ...refundReferences]),
+      inArray(creditTransactions.referenceId, [chargeReference, ...Array.from(refundReferences)]),
     ));
 
   const chargeRows = rows.filter((row) => row.referenceId === chargeReference);
+  // Re-pinned to the reference set rather than "anything that is not the
+  // charge", so the sum cannot quietly depend on the WHERE having been applied.
   const refundRows = rows.filter(
-    (row) => row.referenceId !== chargeReference && row.type === "refund" && row.amount > 0,
+    (row) =>
+      row.referenceId !== null
+      && refundReferences.has(row.referenceId)
+      && row.type === "refund"
+      && row.amount > 0,
   );
   const alreadyRefunded = refundRows.reduce((sum, row) => sum + row.amount, 0);
   // The WHERE above pins every row to a known reference, so a null here is
@@ -363,6 +457,81 @@ export async function readOperationLedger(
     alreadyRefunded,
     refundedReferences,
   };
+}
+
+/**
+ * THE CANCEL'S REFUNDS, READ AT THE LIVE SEAL (#994) — `isTornCancel`'s rule,
+ * asked by `createRoll` before it writes the receipt.
+ *
+ * The receipt used to add up the `cancelled` ROWS and call that refunded. A row
+ * says the cancel won its CAS; it cannot say the refund after it recorded. And
+ * the live seal is the LAST reader of this operation: once `createRoll` writes
+ * the receipt, the operation is terminal and recovery never sees it. So a cancel
+ * whose `recordRefund` came back `recorded: false` left the slice charged with
+ * nothing anywhere left to notice, under a receipt saying it had been returned.
+ *
+ * So the ledger answers, and a slice it shows unpaid is paid here, once, under
+ * the cancel's own reference and in the cancel's words. A cancel that is only
+ * SLOW (its CAS won, its refund not yet written) meets this as the ledger's
+ * duplicate, and whichever writes second is told `recorded` without a second
+ * payment.
+ *
+ * ⚠ **It fails toward "not refunded".** A ledger it cannot read, or one that
+ * shows no charge, counts every cancelled slice as unrecorded: the receipt then
+ * quotes the operation for support rather than claiming credits came back that
+ * nothing has shown were returned.
+ */
+export async function settleCancelledSlices(input: {
+  userId: number;
+  operationId: string;
+  candidates: readonly CandidateRow[];
+}): Promise<{ refundedCredits: number; unrecorded: number }> {
+  const cancelled = input.candidates.filter(
+    (candidate) => candidate.status === "cancelled" && candidate.pointsCost > 0,
+  );
+  if (cancelled.length === 0) return { refundedCredits: 0, unrecorded: 0 };
+  const unread = { refundedCredits: 0, unrecorded: cancelled.length };
+  const operation = { id: input.operationId, userId: input.userId };
+
+  let ledger: OperationLedger;
+  try {
+    const db = await getDb();
+    if (!db) {
+      log.error({ operationId: operation.id }, "[rollRecovery] no database to read the cancel's refunds at the seal");
+      return unread;
+    }
+    ledger = await readOperationLedger(db, operation, cancelled);
+  } catch (error) {
+    log.error({ operationId: operation.id, err: error }, "[rollRecovery] the cancel's refunds could not be read at the seal");
+    return unread;
+  }
+  if (ledger.charge.kind !== "charged") {
+    // The live seal runs only after the deduct succeeded, so this is the
+    // sequence broken somewhere. Nothing is paid on a ledger that disagrees.
+    log.error(
+      { operationId: operation.id, charge: ledger.charge.kind },
+      "[rollRecovery] the live seal found no clean charge — cancelled slices left for support",
+    );
+    return unread;
+  }
+
+  let refundedCredits = 0;
+  let unrecorded = 0;
+  for (const candidate of cancelled) {
+    if (!isTornCancel(candidate, ledger, operation.id)) {
+      refundedCredits += candidate.pointsCost;
+      continue;
+    }
+    log.warn(
+      { operationId: operation.id, candidate: candidate.publicId, slice: candidate.pointsCost },
+      "[rollRecovery] a cancelled slice has no refund on the ledger at the seal — paying it",
+    );
+    const { chargeReference, description } = sliceRefund(candidate, operation.id);
+    const outcome = await recordRefund(operation.userId, candidate.pointsCost, description, chargeReference);
+    if (outcome.recorded) refundedCredits += outcome.amount;
+    else unrecorded += 1;
+  }
+  return { refundedCredits, unrecorded };
 }
 
 /** Fails every unfinished candidate without paying anything back. */
@@ -615,7 +784,8 @@ async function adjudicateRollOperation(
   }
 
   // Charged, settled on the row, and never paid back — the torn write, from
-  // the live catch (#868) or the cancel (#955). Read here, after the charge
+  // the live catch (#868), the cancel (#955) or the unseen landing (#994).
+  // Read here, after the charge
   // gate, because "owed" is a question about the ledger and the ledger has
   // only now been read; an unpaid roll fails its rows above and never reaches
   // this line.
@@ -678,22 +848,18 @@ async function adjudicateRollOperation(
         refundedCredits,
       };
     }
-    const outcome = await recordRefund(
-      operation.userId,
-      slice,
-      /*
-        Composed through the same fork the live catch uses, never a constant
-        (PR #871 review): a torn `render_fault` row carries its class, and the
-        ledger line the customer reads must name the event that happened. An
-        unfinished row has no class and lands on `candidateAbsent` as before.
-        A torn cancel says what the cancel would have said (#955) — the
-        customer cancelled it, and "did not arrive" would be the wrong event.
-      */
-      candidate.status === "cancelled"
-        ? ROLL_CANCEL_REFUND_DESCRIPTION
-        : rollSliceRefundDescription(candidate.failureClass),
-      candidateChargeReference(operation.id, candidate.publicId),
-    );
+    /*
+      Composed through the same fork the live writers use, never a constant
+      (PR #871 review): a torn `render_fault` row carries its class, and the
+      ledger line the customer reads must name the event that happened. An
+      unfinished row has no class and lands on `candidateAbsent` as before.
+      A torn cancel says what the cancel would have said (#955), and a torn
+      unseen landing what the landing would have said, under its own `:unseen`
+      reference (#994) — the customer cancelled both, and "did not arrive"
+      would be the wrong event.
+    */
+    const { chargeReference, description } = sliceRefund(candidate, operation.id);
+    const outcome = await recordRefund(operation.userId, slice, description, chargeReference);
     if (outcome.recorded) {
       refundedCredits += outcome.amount;
     } else {
@@ -773,7 +939,7 @@ async function adjudicateRollOperation(
   }
 
   for (const candidate of torn) {
-    // Already `failed` or `cancelled`, so there is no CAS to win and nothing
+    // Already `failed`, `cancelled` or unseen-`expired`, so there is no CAS to win and nothing
     // to ask the provider: the live process settled this slice and died
     // before its refund wrote. The same reference, the same ceiling, the same
     // unrecorded count — one money rule, not a second one.
@@ -827,7 +993,9 @@ async function adjudicateRollOperation(
     for (const lost of lostClaims) {
       const now = settledById.get(lost.id);
       // A `queued` row whose CAS we lost may have lost it to a CANCEL that then
-      // died (#955) — the same stranding by the cancel's road.
+      // died (#955) — the same stranding by the cancel's road. And a
+      // `dispatched` one may have lost it to a landing into a cancelled roll
+      // whose process died before the unseen refund (#994).
       if (!now || !isTornSettlement(now, settledLedger, operation.id)) continue;
       log.warn(
         { operationId: operation.id, candidate: now.publicId, slice: now.pointsCost },
