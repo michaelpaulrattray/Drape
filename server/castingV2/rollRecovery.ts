@@ -51,6 +51,12 @@ function affectedRows(result: unknown): number {
  *    ledger alone can say so. `isTornFailure` is that reading; it pays the
  *    slice once under the reference the live catch would have used.
  *
+ *    And the same reading is owed to a row that becomes `failed` while this
+ *    sweep is mid-loop (#896). Losing the CAS says another process moved the
+ *    row; it does not say that process finished. Those rows are collected and
+ *    re-asked of a FRESH snapshot before the receipt is sealed, because the
+ *    `torn` set was derived from the stale one and can never contain them.
+ *
  * WHY THE PROVIDER QUERY EXISTS AT ALL. §H.6 says ambiguous dispatched
  * outcomes are verified against the provider "where queryable". Verified
  * 2026-07-31 on fal: a request stays queryable after completion even under
@@ -585,6 +591,12 @@ async function adjudicateRollOperation(
   let refundedCredits = alreadyRefunded;
   let refundedCount = 0;
   let unrecorded = 0;
+  /**
+   * Rows whose CAS we lost (#896). Held rather than dropped: the winner may
+   * have died between writing `failed` and recording its refund, which is the
+   * one case where "their settlement stands" is false. Re-read once, below.
+   */
+  const lostClaims: CandidateRow[] = [];
 
   /**
    * One slice back, under the candidate's own reference. Returns the
@@ -679,10 +691,17 @@ async function adjudicateRollOperation(
         providerOutcome === "delivered" ? "provider_delivered_unlanded" : "unrecovered",
     });
     if (!claimed) {
+      /*
+        Losing the CAS proves somebody else moved the row. It does NOT prove
+        their settlement finished, and assuming it did is how a slice is
+        stranded (#896) — so the row is set aside and re-asked of the ledger
+        below, after everything this sweep means to pay has been paid.
+      */
       log.info(
         { operationId: operation.id, candidate: candidate.publicId },
-        "[rollRecovery] candidate settled by a live process first — not refunding",
+        "[rollRecovery] candidate settled by a live process first — re-reading before sealing",
       );
+      lostClaims.push(candidate);
       continue;
     }
 
@@ -710,6 +729,57 @@ async function adjudicateRollOperation(
     const breached = await refundSlice(candidate);
     if (breached) return breached;
     refundedCount += 1;
+  }
+
+  /*
+    THE CLAIMS WE LOST, RE-ASKED OF THE LEDGER (#896).
+
+    `torn` was derived from the snapshot taken at the top of this function, so
+    it can only ever hold rows that were ALREADY `failed` when we looked. A row
+    that was `dispatched` then and is `failed` now was in neither set: it went
+    to the owed loop, lost its CAS, and — before this block existed — fell
+    through `continue` into a sealed receipt with its slice unpaid. That is the
+    same ending as #868 by a different road, and once the operation is terminal
+    nothing looks at it again: `isSettleable` cannot see a `failed` row, so no
+    later sweep recovers it.
+
+    The reading is the torn write's own rule applied to a fresh snapshot, not a
+    second money policy: re-read the rows, re-read the ledger, and pay only
+    what `isTornFailure` says is owed. A winner whose refund DID land is
+    excluded by the ledger, exactly as it is in the loop above.
+
+    ORDER MATTERS. This runs after the torn loop so the fresh ledger read
+    already contains every refund this sweep wrote, which is what stops a row
+    being paid twice by two readings of the same fact.
+
+    `refundedCredits` is deliberately NOT re-seeded from the fresh ledger — it
+    is this sweep's own arithmetic for the conservation ceiling, and the fresh
+    `alreadyRefunded` includes the payments it has just made.
+
+    A read that throws here abandons the adjudication exactly as a throw from
+    the ledger gate above does. That is the safe direction: refunds are
+    idempotent under their references, so the next sweep re-runs this whole
+    function and pays what is still owed, once.
+  */
+  if (lostClaims.length > 0) {
+    const settled = await db
+      .select()
+      .from(castingCandidates)
+      .where(and(eq(castingCandidates.rollId, roll.id), eq(castingCandidates.userId, operation.userId)));
+    const settledLedger = await readOperationLedger(db, operation, settled);
+    const settledById = new Map(settled.map((row) => [row.id, row]));
+
+    for (const lost of lostClaims) {
+      const now = settledById.get(lost.id);
+      if (!now || !isTornFailure(now, settledLedger, operation.id)) continue;
+      log.warn(
+        { operationId: operation.id, candidate: now.publicId, slice: now.pointsCost },
+        "[rollRecovery] the process that beat us to this row died before its refund — paying the slice",
+      );
+      const breached = await refundSlice(now);
+      if (breached) return breached;
+      refundedCount += 1;
+    }
   }
 
   await db

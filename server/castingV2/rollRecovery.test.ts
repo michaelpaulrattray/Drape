@@ -117,7 +117,23 @@ const OPERATION = {
  * user's sheet spinning — so "which finalizer ran" is part of the contract.
  */
 let casWins = true;
+/**
+ * The race itself, injected per candidate.
+ *
+ * A CAS is lost because some OTHER process got to the row first, and what that
+ * process managed to write before it died is the whole question. So a test
+ * registers what the winner does — and it happens at exactly the moment the
+ * real race happens, between this sweep's SELECT and its compare-and-swap.
+ * Asserting on a row pre-set to `failed` would test a different defect (#868).
+ */
+const casLostTo = new Map<number, (row: Record<string, unknown>) => void>();
 const claimCandidate = vi.fn(async ({ candidateId, failureClass }: { candidateId: number; failureClass: string }) => {
+  const winner = casLostTo.get(candidateId);
+  if (winner) {
+    const stolen = rows.candidates.find((candidate) => candidate.id === candidateId);
+    if (stolen) winner(stolen);
+    return false;
+  }
   if (!casWins) return false;
   const row = rows.candidates.find((candidate) => candidate.id === candidateId);
   if (!row) return false;
@@ -177,6 +193,7 @@ beforeEach(() => {
   refunds.length = 0;
   refundRecords = true;
   casWins = true;
+  casLostTo.clear();
   ledgerSequence = [];
   vi.clearAllMocks();
 });
@@ -658,6 +675,182 @@ describe("the torn write inside the live catch: `failed` written, the refund nev
     const outcome = await recover();
     expect(refunds).toHaveLength(0);
     expect(outcome).toMatchObject({ type: "recovery_required", reason: "refund slices exceed the recorded charge" });
+  });
+});
+
+describe("the CAS lost to a process that then died before its refund (#896)", () => {
+  /*
+    The same ending as #868 down a narrower road, and the road is what makes it
+    invisible. #868 is the row that was ALREADY `failed` when this sweep took
+    its snapshot. This is the row that was `dispatched` then and `failed` now:
+    it went into `owed`, never into `torn` (which is derived from that same
+    stale snapshot), lost its CAS to the dying process, and — before the fix —
+    was skipped with a log line while the receipt sealed around it. Nothing
+    revisits it afterwards: `isSettleable` cannot see a `failed` row.
+
+    Every arm here injects the race at the moment the race happens, through the
+    CAS itself. Pre-setting a row to `failed` would be #868's test, not this
+    one.
+  */
+
+  /** The live process wins the row, writes `failed`, and dies. */
+  const diesBeforeRefunding = (row: Record<string, unknown>) => {
+    row.status = "failed";
+    row.failureClass = "render_fault";
+  };
+
+  /** The live process wins the row and completes its settlement. */
+  const settlesInFull = (publicId: string) => (row: Record<string, unknown>) => {
+    diesBeforeRefunding(row);
+    rows.ledger.push({
+      userId: OPERATION.userId,
+      referenceId: candidateRefundReference(OPERATION_ID, publicId),
+      type: "refund",
+      amount: 20,
+    });
+  };
+
+  it("THE DEFECT: pays the slice the winner never paid, once, under its own reference", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched" }),
+    ];
+    casLostTo.set(2, diesBeforeRefunding);
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0]).toMatchObject({ userId: OPERATION.userId, amount: 20 });
+    expect(refunds[0].reference).toBe(`op:${OPERATION_ID}:charge:candidate:c-2`);
+    expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 1, refundedCredits: 20 });
+    // The winner's row is read, never rewritten — it is already terminal and
+    // its failure class is the winner's to state.
+    expect(rows.candidates[1]).toMatchObject({ status: "failed", failureClass: "render_fault" });
+  });
+
+  it("names the event the winner recorded, not a constant", async () => {
+    rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "dispatched" })];
+    casLostTo.set(1, diesBeforeRefunding);
+
+    await recover();
+
+    const { recordRefund } = await import("../casting/atomicCredits");
+    expect(recordRefund).toHaveBeenCalledWith(
+      OPERATION.userId,
+      20,
+      SLICE_REFUND_DESCRIPTION.renderFault,
+      `op:${OPERATION_ID}:charge:candidate:c-1`,
+    );
+  });
+
+  it("THE CONTROL: pays nothing when the winner's refund did land", async () => {
+    /*
+      Without this arm the defect could be "fixed" by refunding every lost CAS,
+      which pays a second time for every settlement that completed — the exact
+      outcome the CAS-before-refund ordering exists to prevent.
+    */
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched" }),
+    ];
+    casLostTo.set(2, settlesInFull("c-2"));
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(0);
+    // `partial`, not `durable_success`: the row WAS unfinished when this sweep
+    // looked, so the early everything-landed branch is not the one taken. What
+    // matters is the money, and no money moved.
+    expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 0, refundedCredits: 0 });
+  });
+
+  it("THE CONTROL: pays nothing when the winner LANDED the candidate", async () => {
+    // The original reason the CAS comes first: the process that beat us to the
+    // row gave the user their image. Refunding here is delivered-and-refunded.
+    rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "dispatched" })];
+    casLostTo.set(1, (row) => {
+      row.status = "ready";
+      row.imageKey = "k1";
+    });
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "paid_failure", refunded: 0 });
+  });
+
+  it("THE CONTROL: pays nothing when the winner left the row settleable", async () => {
+    // A CAS can fail without the row moving at all. Nothing is owed on a row
+    // still reading `dispatched`; the next sweep adjudicates it.
+    rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "dispatched" })];
+    casLostTo.set(1, () => {});
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "paid_failure", refunded: 0 });
+  });
+
+  it("pays the stranded slice exactly once when the unfinished rows are paid too", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "queued" }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched" }),
+    ];
+    casLostTo.set(2, diesBeforeRefunding);
+
+    const outcome = await recover();
+
+    expect(refunds.map((refund) => refund.reference)).toEqual([
+      `op:${OPERATION_ID}:charge:candidate:c-1`,
+      `op:${OPERATION_ID}:charge:candidate:c-2`,
+    ]);
+    expect(outcome).toMatchObject({ type: "paid_failure", refunded: 2, refundedCredits: 40 });
+  });
+
+  it("holds the conservation ceiling over a stranded slice too", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "queued", pointsCost: 150 }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched", pointsCost: 20 }),
+    ];
+    casLostTo.set(2, diesBeforeRefunding);
+
+    const outcome = await recover();
+
+    // 150 back, then a 20 slice that would take the total past the 160 charged.
+    expect(refunds).toHaveLength(1);
+    expect(outcome).toMatchObject({
+      type: "recovery_required",
+      reason: "refund slices exceed the recorded charge",
+    });
+  });
+
+  it("never pays a stranded slice that was never charged for", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched", pointsCost: 0 }),
+    ];
+    casLostTo.set(2, diesBeforeRefunding);
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 0, refundedCredits: 0 });
+  });
+
+  it("escalates instead of sealing when the stranded slice's refund will not record", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "dispatched" }),
+    ];
+    casLostTo.set(2, diesBeforeRefunding);
+    refundRecords = false;
+
+    const outcome = await recover();
+
+    // The atomicCredits law reaches this road too: a refund that did not write
+    // is never sealed as settled.
+    expect(outcome).toMatchObject({ type: "recovery_required", refundedCredits: 0 });
+    expect(finalizers.finalizeSuccess).not.toHaveBeenCalled();
   });
 });
 
