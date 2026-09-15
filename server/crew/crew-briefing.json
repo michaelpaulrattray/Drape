@@ -1,7 +1,7 @@
 {
-  "edition": 427,
-  "updatedAt": "2026-09-15T13:28:12.000Z",
-  "shift": "ONE JOB DONE, HAND-REVIEWED BY THE RELAY AND MERGED: A MODERATOR'S REQUEST CAN NO LONGER GET STUCK FOR GOOD BECAUSE THE PERSON IT IS ABOUT CHANGED BEFORE AN ADMIN APPROVED IT (#991).\n\nWHAT IT WAS. A moderator asks for someone to be unsuspended. Before an admin reaches it, somebody lifts the suspension directly from the Users page. The admin then presses Approve. The approval failed (\"User is not suspended\"), but by that point the request was already marked as being acted on. It sat at \"Outcome unconfirmed\" for good: Approve and Decline both stopped working, and nothing in the product could clear it. The same happened if the account had been removed, if the person had since been made an admin, or if the account had no credit balance to add to.\n\nWHAT CHANGED. Before an approval is marked as being acted on, the product now checks the person it is about. If they have changed, the admin reads why (for example: \"This person is not suspended any more, so there is nothing to lift… Decline it to close it.\"). The request stays open and Decline closes it. Nothing about how approvals move credits has changed.\n\nONE MORE THAN THE CARD FOUND. The card listed nine ways this could happen. Reading one layer deeper, adding credits to an account with no balance record fails the same way, so that makes ten. All ten are covered.\n\nLEFT ALONE ON PURPOSE. Two Stripe refund cases stay as they were. In one, Stripe cannot say what the customer paid. In the other, the customer has spent the credits, so the refund would come to nothing. Checking those in advance would mean calling Stripe before the request moves. The relay agreed to leave that for a case your site has never had.\n\nHOW I KNOW IT IS RIGHT. A new check runs the real approval code for every request type against six ways a person can change. It holds the new check to refusing exactly what the approval would have refused, no more and no less. I broke the fix seven ways on purpose and every break was caught. Every automatic check passed first time.\n\nREVIEWED BY HAND, AS YOU ASKED. The relay read the whole change and passed it. It also caught a slip of mine: the description said \"Closes #991\", which would have closed the card automatically, and your rules say a person closes it after checking the live site. The relay reworded it, merged, and closed the card once the live site was running it (13:26 UTC).\n\nNOBODY HAS HIT THIS. Your live site has never had a moderator change request of any kind.\n\nONE JOB SET ASIDE FOR A DEEPER SEAT. #995 (a cancel pressed in the split second before a roll is charged) needs a design choice. One option refuses the customer's Cancel press in that moment. The other changes when refunds are written. It is now marked for a Fable shift rather than guessed at.\n\nCOST: nothing. No credits, no renders, no paid calls.",
+  "edition": 428,
+  "updatedAt": "2026-09-15T16:15:34.000Z",
+  "shift": "ONE JOB DONE, HAND-REVIEWED BY THE RELAY AND MERGED: A CANCEL PRESSED IN THE MOMENT BEFORE A ROLL IS CHARGED NO LONGER HANDS BACK CREDITS THAT WERE NEVER TAKEN (#995).\n\nWHAT IT WAS. When you press Roll, the eight tiles are set up first and your credits are taken a moment later. A Cancel pressed in between (from a second tab, say) refunded the tiles straight away, before anything had been charged. Usually that evened out once the charge landed, but the credit history showed money coming back before it went out. And if the charge then failed, the customer kept credits for a roll nobody paid for.\n\nWHAT CHANGED. Cancel still stops every tile, straight away, exactly as before. It now checks the credit history first. If the roll has been charged, the credits come back as they always did. If not, nothing is written yet: the charge lands, and the credits for the cancelled tiles go back right after it, once each, with the same words a normal cancel uses. If the charge never lands, nothing was taken and nothing is owed. The customer sees the same thing either way: Cancel works, and the credits come back.\n\nWHO DECIDED THE SHAPE. The relay picked this over the other option, which was refusing the Cancel press in that moment, because a customer should never have to understand a window they cannot see. I built what was decided.\n\nHOW I KNOW IT IS RIGHT. New checks recreate the exact moment: a cancel arrives while the charge is still being written. They read the credit history afterwards. The charge comes first, then one refund per tile, never two. A charge that fails leaves no refund at all. A cancel after the charge still refunds as before. I broke the fix four ways on purpose and every break was caught. Every automatic check passed first time.\n\nREVIEWED BY HAND, AS YOU ASKED. The relay read the whole change, passed it with no blocking findings, merged it and closed the card. Your live site has been running it since 16:13 UTC.\n\nNOBODY HAS HIT THIS. Your live site holds 51 roll tiles and none of them were ever cancelled.\n\nCOST: nothing. No credits, no renders, no paid calls.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-15T13:27:31.189Z",
+      "readAt": "2026-09-15T16:15:37.890Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4998,6 +4998,13 @@
   ],
   "pipeline": [
     {
+      "id": "cancel-before-charge-995",
+      "title": "A cancel pressed in the moment before a roll is charged no longer hands back credits that were never taken",
+      "status": "merged",
+      "prNumber": 998,
+      "note": "Cancel still stops every tile straight away. It now refunds only once the credit history shows the charge; before that, the credits for the cancelled tiles go back right after the charge lands, once each. If the charge fails, nothing was taken and nothing is written. The customer sees the same thing. Shape decided by the relay. Broken four ways on purpose, every break caught; every automatic check green first time. Hand-reviewed by the relay under your standing word: passed, merged, card closed. Live since 16:13 UTC."
+    },
+    {
       "id": "state-wedge-991",
       "title": "A moderator's request no longer gets stuck for good when the person it is about changed before an admin approved it",
       "status": "merged",
@@ -6542,9 +6549,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0915k-foreman",
+      "id": "queue-shape-0916a-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 36 open. One job built and merged tonight and its card is closed. NEXT UP is empty",
+      "detail": "One job built tonight (#995, a cancel pressed before the charge). The relay hand-reviewed it, merged it and closed it. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days; the oldest is #28. Bugs is now empty. Performance holds one large program (#58) and casting upkeep one patrol build (#129); the housekeeping cards are parked. The reviewer instruction (#988) still stands until the outside reviewer is back."
+    },
+    {
+      "id": "queue-shape-0915k-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 37 open. One job built and merged tonight and its card is closed. NEXT UP is empty",
       "detail": "One job built tonight (#991, a moderator request stuck at Outcome unconfirmed). The relay hand-reviewed it, merged it and closed it. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days; the oldest is #28. Bugs now holds one job, #995 (a cancel pressed before the charge). It needs a design choice, so it is marked for a Fable shift rather than an ordinary night. Performance holds one large program (#58) and casting upkeep one patrol build (#129); the housekeeping cards are parked. The reviewer instruction (#988) still stands until the outside reviewer is back."
     },
@@ -7091,7 +7105,7 @@
     189
   ],
   "nextUp": {
-    "readAt": "2026-09-15T13:27:31.188Z",
+    "readAt": "2026-09-15T16:15:37.889Z",
     "items": []
   }
 }
