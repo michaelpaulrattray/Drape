@@ -40,6 +40,7 @@ import {
   STAFF_DIALOG_CONTENT,
 } from "@/features/staff";
 import { SENSITIVE_TYPES, getActionConfig } from "./ChangeRequestConstants";
+import type { ChangeRequestApprovalBlocker } from "@shared/changeRequestApproval";
 
 interface ReviewModalProps {
   open: boolean;
@@ -51,6 +52,8 @@ interface ReviewModalProps {
   isPending: boolean;
   selectedRequestId: number | null;
   selectedRequestType: string | undefined;
+  /** The field this request lacks for approving to run, if any (#923). */
+  approvalBlocker: ChangeRequestApprovalBlocker | null;
 }
 
 export function ReviewModal({
@@ -63,12 +66,24 @@ export function ReviewModal({
   isPending,
   selectedRequestId,
   selectedRequestType,
+  approvalBlocker,
 }: ReviewModalProps) {
   const isSensitive = selectedRequestType ? SENSITIVE_TYPES.includes(selectedRequestType) : false;
   const actionCfg = getActionConfig(selectedRequestType || "other");
 
   const modalTitle = action === "approved" ? actionCfg.modalApproveTitle : actionCfg.modalDenyTitle;
-  const modalDesc = action === "approved" ? actionCfg.modalApproveDesc : actionCfg.modalDenyDesc;
+  /*
+    ⚠ #923: a request missing the field its executor needs is refused by the
+    server before anything runs. The per-type description (*"This will add the
+    specified credits to the user's account"*) would promise the opposite on
+    the last screen before the press, so the refusal sentence the panel shows
+    under the button replaces it — and the "runs the moment you approve"
+    warning below is withheld, because nothing will run.
+  */
+  const blockedApproval = action === "approved" ? approvalBlocker : null;
+  const modalDesc = blockedApproval
+    ? blockedApproval.sentence
+    : action === "approved" ? actionCfg.modalApproveDesc : actionCfg.modalDenyDesc;
   const notesPlaceholder = action === "approved" ? actionCfg.approveNotesPlaceholder : actionCfg.denyNotesPlaceholder;
   const confirmLabel = action === "approved"
     ? actionCfg.approveLabel
@@ -88,7 +103,7 @@ export function ReviewModal({
                 interpolated rather than literal, so `token-guard` never sees it.
               */}
               <span>Request <strong>#{selectedRequestId}</strong>: {modalDesc}</span>
-              {action === "approved" && isSensitive && (
+              {action === "approved" && isSensitive && !blockedApproval && (
                 /*
                   This sentence is the warning that approving IS the act (#800
                   — no second sign-off exists), so it takes the warning weight

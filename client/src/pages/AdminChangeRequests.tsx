@@ -14,6 +14,7 @@ import {
 import { TableFilter, TableHead } from "@/foundation";
 import { ChangeRequestList } from "@/features/admin/ChangeRequestList";
 import { ReviewModal } from "@/features/admin/ReviewModal";
+import { changeRequestApprovalBlocker } from "@shared/changeRequestApproval";
 import {
   StaffBarAdmin,
   StaffLoading,
@@ -255,6 +256,7 @@ export default function AdminChangeRequests() {
         isPending={reviewMutation.isPending}
         selectedRequestId={selectedRequestId}
         selectedRequestType={selectedRequest?.type}
+        approvalBlocker={selectedRequest ? changeRequestApprovalBlocker(selectedRequest) : null}
       />
     </StaffSurface>
   );

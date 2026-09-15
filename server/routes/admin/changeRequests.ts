@@ -1,5 +1,7 @@
 import { adminProcedure, router } from "../../_core/trpc";
 import { CHANGE_REQUEST_ACTION_BY_TYPE, executeChangeRequestAction } from "../../lib/adminActions";
+import { approvalExecution } from "../../lib/adminActions/approvalExecution";
+import { changeRequestApprovalBlocker } from "@shared/changeRequestApproval";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
@@ -81,7 +83,7 @@ export const changeRequestsRouter = router({
       // #921. `block_ip` is the one type whose executor target is NOT the
       // target user: every other sensitive type acts on `targetUserId`, which
       // is `.notNull()` in the schema and therefore always there. So the
-      // target computed below reads
+      // target (`approvalExecution`, `lib/adminActions/approvalExecution.ts`) reads
       //   `request.type === "block_ip" && request.ipAddress
       //      ? request.ipAddress : String(request.targetUserId)`
       // — and with no address that fallback handed `cr_blockIP` the target
@@ -101,26 +103,29 @@ export const changeRequestsRouter = router({
       // not `pending`. Refusing before the CAS leaves the request `pending`
       // and still DENIABLE, which is a state an admin can act on.
       //
-      // ⚠ The two wedging siblings above are the same class failing LOUDLY
-      // rather than wrongly, and they are NOT repaired here: moving the credit
-      // executors' refusal earlier is a behaviour change on the credit money
-      // path and is its own decision. Carded, with this line as its pointer.
+      // ⚠ #923 CLOSED THE TWO WEDGING SIBLINGS THE SAME WAY. `add_credits` /
+      // `refund_credits` with no usable `creditAmount`, and `stripe_refund`
+      // with no `stripeSessionId` or `originalCredits`, used to reach the
+      // CAS and throw in the executor. The rule for all four fields is now
+      // ONE declaration in `shared/changeRequestApproval.ts`, which the
+      // panel's sentence under Approve reads too, and
+      // `server/changeRequestApprovalBlocker.test.ts` drives the REAL
+      // executors over every nullable column so a new field refusal cannot
+      // quietly bring the wedge back. The executors keep their own refusals.
       //
       // Reachability, measured rather than assumed (2026-09-14, both worlds):
       // `moderator.createChangeRequest` is the only creation road in the
-      // product and it already refuses a `block_ip` with no address, so this
-      // state cannot be reached through the app today; production holds zero
+      // product and it already refuses every one of these, so the states
+      // cannot be reached through the app today; production holds zero
       // `change_requests` rows of any type, all time, and zero `blocked_ips`
       // rows. This is depth on a staff path, not a live incident — and the
       // guard is what keeps the creation road from being the only thing
       // standing between a missing field and a permanent wrong record.
-      if (input.action === "approved" && request.type === "block_ip" && !request.ipAddress) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message:
-            "This block request has no IP address recorded, so there is nothing to block. " +
-            "Deny it and ask for a new request with the address on it.",
-        });
+      if (input.action === "approved") {
+        const blocker = changeRequestApprovalBlocker(request);
+        if (blocker) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: blocker.sentence });
+        }
       }
 
       // ─── Sensitive type + approval → execute in this mutation ────────
@@ -143,38 +148,8 @@ export const changeRequestsRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: result.error || "Failed to update change request" });
         }
 
-        // Build params for the executor
-        const approvalParams: Record<string, unknown> = {
-          changeRequestId: input.id,
-          reason: request.title,
-        };
-        if (request.creditAmount) approvalParams.creditAmount = request.creditAmount;
-        if (request.creditReason) approvalParams.creditReason = request.creditReason;
-        if (request.ipAddress) approvalParams.reason = `${request.title} (IP: ${request.ipAddress})`;
-        // ⚠ The stripe_refund executor reads these three off the approval
-        // params, and until #418 nothing put them there — every approved
-        // Stripe refund would have died at execution on "Missing Stripe
-        // session ID". The AMOUNT is deliberately not carried: the executor
-        // reads it from the charge itself at the moment money moves.
-        if (request.type === "stripe_refund") {
-          approvalParams.stripeSessionId = request.stripeSessionId;
-          approvalParams.refundType = request.refundType;
-          approvalParams.originalCredits = request.originalCredits;
-        }
-
-        // Determine targetId for the executor.
-        //
-        // ⚠ The `&& request.ipAddress` half of this condition is now
-        // UNREACHABLE on the approve road — #921's guard above refuses an
-        // address-less `block_ip` before this line can run. It is kept rather
-        // than simplified away because it is the thing that would go wrong if
-        // the guard were ever removed: a reader deleting the guard would find
-        // a bare `request.ipAddress` here and have to think about the null,
-        // where a cleaned-up ternary would silently hand the executor
-        // `undefined`. Belt and braces, and the braces are the guard.
-        const targetId = request.type === "block_ip" && request.ipAddress
-          ? request.ipAddress
-          : String(request.targetUserId);
+        // Build the executor's target and params from the stored row.
+        const { targetId, params: approvalParams } = approvalExecution(request);
 
         // Audit the approval before execution, so a failed execution still
         // leaves the decision on the record.

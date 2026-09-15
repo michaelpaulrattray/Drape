@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "92be7d5460e44250"
+    "sourceFingerprint": "8a9b99621d7082a6"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 58
+      "moduleCount": 59
     },
     {
       "id": "domain:staff",
@@ -148,7 +148,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 41
+      "moduleCount": 42
     },
     {
       "id": "domain:wardrobe",
@@ -5276,6 +5276,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/lib/adminActions/approvalExecution.ts",
+      "path": "server/lib/adminActions/approvalExecution.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/lib/adminActions/changeRequestActions.ts",
       "path": "server/lib/adminActions/changeRequestActions.ts",
       "domain": "unassigned",
@@ -6070,6 +6076,12 @@
     {
       "id": "module:shared/castingVocabularies.ts",
       "path": "shared/castingVocabularies.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/changeRequestApproval.ts",
+      "path": "shared/changeRequestApproval.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12656,6 +12668,10 @@
       "path": "server/ceremonySkeleton.test.ts"
     },
     {
+      "id": "test:server/changeRequestApprovalBlocker.test.ts",
+      "path": "server/changeRequestApprovalBlocker.test.ts"
+    },
+    {
       "id": "test:server/changeRequestLabels.test.ts",
       "path": "server/changeRequestLabels.test.ts"
     },
@@ -14708,6 +14724,11 @@
     },
     {
       "from": "module:client/src/features/admin/ChangeRequestList.tsx",
+      "to": "module:shared/changeRequestApproval.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/ChangeRequestList.tsx",
       "to": "module:shared/changeRequestLabels.ts",
       "kind": "imports"
     },
@@ -15284,6 +15305,11 @@
     {
       "from": "module:client/src/features/admin/ReviewModal.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/ReviewModal.tsx",
+      "to": "module:shared/changeRequestApproval.ts",
       "kind": "imports"
     },
     {
@@ -19659,6 +19685,11 @@
     {
       "from": "module:client/src/pages/AdminChangeRequests.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminChangeRequests.tsx",
+      "to": "module:shared/changeRequestApproval.ts",
       "kind": "imports"
     },
     {
@@ -31048,12 +31079,22 @@
     },
     {
       "from": "module:server/routes/admin/changeRequests.ts",
+      "to": "module:server/lib/adminActions/approvalExecution.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/changeRequests.ts",
       "to": "module:server/lib/adminActions/index.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/routes/admin/changeRequests.ts",
       "to": "module:server/security/adminSecurity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/changeRequests.ts",
+      "to": "module:shared/changeRequestApproval.ts",
       "kind": "imports"
     },
     {

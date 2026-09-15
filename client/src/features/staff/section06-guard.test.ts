@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { CHANGE_REQUEST_APPROVAL_REQUIREMENTS } from "@shared/changeRequestApproval";
 
 /**
  * Brief 06's rules, as assertions rather than as review memory
@@ -444,6 +445,25 @@ describe("brief 06 §5 — a destructive action cannot be written without its co
     const guarded = (block: string, column: string) =>
       new RegExp(`detail\\.${column}\\s*(?:\\?\\?|\\?[^.]|[=!]=\\s*null)`).test(block);
 
+    /*
+      ⚠ **A FOURTH GUARDED SHAPE SINCE #923: THE SHARED BLOCKER, RETURNED
+      BEFORE THE SWITCH.** The per-branch `== null` checks became one call to
+      `changeRequestApprovalBlocker(detail)` at the top of the function, whose
+      requirement table (`shared/changeRequestApproval.ts`) is the one the
+      server refuses with. A column counts as guarded by it ONLY when that
+      table lists the column for the branch's type — so a table that stops
+      covering `creditAmount` reddens this arm, rather than one early return
+      vouching for every column in every branch.
+    */
+    const preamble = body.slice(0, body.indexOf("switch (detail.type)"));
+    const leadsWithBlocker =
+      /const blocker = changeRequestApprovalBlocker\(detail\);\s*if \(blocker\) return blocker\.sentence;/.test(
+        preamble,
+      );
+    const blockerGuards = (type: string, column: string) =>
+      leadsWithBlocker &&
+      (CHANGE_REQUEST_APPROVAL_REQUIREMENTS[type] ?? []).some((r) => r.field === column);
+
     const blocks = body.split(/case "/).slice(1);
     let checked = 0;
     for (const block of blocks) {
@@ -452,7 +472,7 @@ describe("brief 06 §5 — a destructive action cannot be written without its co
         if (!new RegExp(`\\$\\{[^}]*detail\\.${column}\\b`).test(block)) continue;
         checked += 1;
         expect(
-          guarded(block, column),
+          guarded(block, column) || blockerGuards(type, column),
           `${type} interpolates detail.${column}, which the table lets be absent, with no guard — that renders "null" or "undefined" in the sentence beside the button`,
         ).toBe(true);
       }
@@ -468,6 +488,12 @@ describe("brief 06 §5 — a destructive action cannot be written without its co
     expect(guarded(SHIPPED_IP, "ipAddress"), "the matcher is blind").toBe(false);
     /* …and the two that were always right pass it, so it is not simply strict. */
     expect(guarded(body.slice(body.indexOf('stripe_refund"')), "refundAmountCents")).toBe(true);
+    /* The blocker shape is actually read, and it vouches only for what its
+       table lists: `refundAmountCents` is no type's requirement, so the
+       leading return must NOT count as guarding it. */
+    expect(leadsWithBlocker, "approvalConsequence no longer returns on the shared blocker").toBe(true);
+    expect(blockerGuards("add_credits", "creditAmount")).toBe(true);
+    expect(blockerGuards("stripe_refund", "refundAmountCents")).toBe(false);
   });
 
   it("every destructive action in the product carries a real sentence", () => {
