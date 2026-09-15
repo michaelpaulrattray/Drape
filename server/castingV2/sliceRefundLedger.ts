@@ -98,3 +98,23 @@ export function rollSliceRefundDescription(failureClass: string | null | undefin
     ? SLICE_REFUND_DESCRIPTION.renderFault
     : SLICE_REFUND_DESCRIPTION.candidateAbsent;
 }
+
+/**
+ * The cancel's sentence — a slice the customer cancelled before it started.
+ *
+ * Two writers, one sentence: `rollService.ts`'s `cancelRoll`, and
+ * `rollRecovery.ts` paying a cancelled slice whose refund never recorded
+ * (#955). The sweep writes the words the cancel would have written, so a
+ * customer reads the same line whichever of the two paid them back — it is not
+ * a new sentence, it is the old one moved out of an inline literal so the two
+ * writers cannot drift.
+ *
+ * ⚠ **Deliberately NOT in {@link SLICE_REFUND_DESCRIPTION}, and so not in
+ * {@link SLICE_REFUND_DESCRIPTIONS}.** That enumeration is what
+ * `machinist-ledger-read.mts` counts against slices that did NOT ARRIVE
+ * (failed or stranded). A cancelled slice is not in that population — it was
+ * never dispatched and has no generation row — so adding its sentence there
+ * would manufacture a disagreement out of every cancel, which is the header's
+ * "a subset is a wrong reading" failure pointed the other way.
+ */
+export const ROLL_CANCEL_REFUND_DESCRIPTION = "Casting roll cancelled before this candidate started";

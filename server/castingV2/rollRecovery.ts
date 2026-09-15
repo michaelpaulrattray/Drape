@@ -11,7 +11,7 @@ import {
 } from "../db/generationOperations";
 import { claimCandidateForRecovery } from "../db/castingV2";
 import { createModuleLogger } from "../logging/logger";
-import { rollSliceRefundDescription } from "./sliceRefundLedger";
+import { ROLL_CANCEL_REFUND_DESCRIPTION, rollSliceRefundDescription } from "./sliceRefundLedger";
 
 const log = createModuleLogger("castingV2/rollRecovery");
 
@@ -56,6 +56,12 @@ function affectedRows(result: unknown): number {
  *    row; it does not say that process finished. Those rows are collected and
  *    re-asked of a FRESH snapshot before the receipt is sealed, because the
  *    `torn` set was derived from the stale one and can never contain them.
+ *
+ *    The cancel has the same two writes in the same order (#955): `cancelRoll`
+ *    CASes a `queued` row to `cancelled` and THEN records its refund. So a
+ *    `cancelled` row is torn on exactly the terms a `failed` one is, and
+ *    `isTornCancel` is the same reading of the same ledger — at the snapshot
+ *    and at the lost-claim re-read alike.
  *
  * WHY THE PROVIDER QUERY EXISTS AT ALL. §H.6 says ambiguous dispatched
  * outcomes are verified against the provider "where queryable". Verified
@@ -188,6 +194,44 @@ export function isTornFailure(
     && candidate.pointsCost > 0
     && !ledger.refundedReferences.has(candidateRefundReference(operationId, candidate.publicId))
   );
+}
+
+/**
+ * The torn write inside the cancel (#955) — `isTornFailure`'s sibling, not a
+ * second policy.
+ *
+ * `cancelRoll` CASes a `queued` row to `cancelled` and then records the
+ * refund. A process death between the two leaves the row terminal and the
+ * slice charged, and until this reading nothing could see it: `isSettleable`
+ * excludes `cancelled` (correctly, for the CAS), `isTornFailure` asked only
+ * about `failed`, and `wasDelivered` does not name it — so the slice sat in no
+ * set at all.
+ *
+ * Only `queued` rows are ever cancelled, so a `cancelled` row never reached
+ * the provider and cannot have been delivered; the one question is the money,
+ * and the ledger answers it under the reference the cancel itself uses. The
+ * charge gate has already run by the time this is asked, so a cancel that beat
+ * the deduct is never paid from here.
+ */
+export function isTornCancel(
+  candidate: CandidateRow,
+  ledger: Pick<OperationLedger, "refundedReferences">,
+  operationId: string,
+): boolean {
+  return (
+    candidate.status === "cancelled"
+    && candidate.pointsCost > 0
+    && !ledger.refundedReferences.has(candidateRefundReference(operationId, candidate.publicId))
+  );
+}
+
+/** Either torn write: settled on the row, never paid on the ledger. */
+function isTornSettlement(
+  candidate: CandidateRow,
+  ledger: Pick<OperationLedger, "refundedReferences">,
+  operationId: string,
+): boolean {
+  return isTornFailure(candidate, ledger, operationId) || isTornCancel(candidate, ledger, operationId);
 }
 
 /**
@@ -570,11 +614,12 @@ async function adjudicateRollOperation(
     return { type: "free_failure", reason: "operation crashed before the charge was recorded" };
   }
 
-  // Charged, failed, and never paid back — the torn write (#868). Read here,
-  // after the charge gate, because "owed" is a question about the ledger and
-  // the ledger has only now been read; an unpaid roll fails its rows above
-  // and never reaches this line.
-  const torn = candidates.filter((candidate) => isTornFailure(candidate, ledger, operation.id));
+  // Charged, settled on the row, and never paid back — the torn write, from
+  // the live catch (#868) or the cancel (#955). Read here, after the charge
+  // gate, because "owed" is a question about the ledger and the ledger has
+  // only now been read; an unpaid roll fails its rows above and never reaches
+  // this line.
+  const torn = candidates.filter((candidate) => isTornSettlement(candidate, ledger, operation.id));
 
   if (owed.length === 0 && torn.length === 0) {
     // Everything landed; the crash was after the last candidate. Nothing owed.
@@ -641,8 +686,12 @@ async function adjudicateRollOperation(
         (PR #871 review): a torn `render_fault` row carries its class, and the
         ledger line the customer reads must name the event that happened. An
         unfinished row has no class and lands on `candidateAbsent` as before.
+        A torn cancel says what the cancel would have said (#955) — the
+        customer cancelled it, and "did not arrive" would be the wrong event.
       */
-      rollSliceRefundDescription(candidate.failureClass),
+      candidate.status === "cancelled"
+        ? ROLL_CANCEL_REFUND_DESCRIPTION
+        : rollSliceRefundDescription(candidate.failureClass),
       candidateChargeReference(operation.id, candidate.publicId),
     );
     if (outcome.recorded) {
@@ -724,13 +773,13 @@ async function adjudicateRollOperation(
   }
 
   for (const candidate of torn) {
-    // Already `failed`, so there is no CAS to win and nothing to ask the
-    // provider: the live process decided this slice failed and died before
-    // its refund wrote. The same reference, the same ceiling, the same
+    // Already `failed` or `cancelled`, so there is no CAS to win and nothing
+    // to ask the provider: the live process settled this slice and died
+    // before its refund wrote. The same reference, the same ceiling, the same
     // unrecorded count — one money rule, not a second one.
     log.warn(
       { operationId: operation.id, candidate: candidate.publicId, slice: candidate.pointsCost },
-      "[rollRecovery] failed slice with no refund on the ledger — paying the torn write",
+      "[rollRecovery] settled slice with no refund on the ledger — paying the torn write",
     );
     const breached = await refundSlice(candidate);
     if (breached) return breached;
@@ -777,7 +826,9 @@ async function adjudicateRollOperation(
 
     for (const lost of lostClaims) {
       const now = settledById.get(lost.id);
-      if (!now || !isTornFailure(now, settledLedger, operation.id)) continue;
+      // A `queued` row whose CAS we lost may have lost it to a CANCEL that then
+      // died (#955) — the same stranding by the cancel's road.
+      if (!now || !isTornSettlement(now, settledLedger, operation.id)) continue;
       log.warn(
         { operationId: operation.id, candidate: now.publicId, slice: now.pointsCost },
         "[rollRecovery] the process that beat us to this row died before its refund — paying the slice",

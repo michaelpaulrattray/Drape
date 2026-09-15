@@ -90,7 +90,7 @@ import { storageDelete, storagePut, storageReadBytes } from "../storage";
 import { thumbnailOf } from "./thumbnails";
 import { createModuleLogger } from "../logging/logger";
 import { detectRenderFault } from "./renderFault";
-import { rollSliceRefundDescription } from "./sliceRefundLedger";
+import { ROLL_CANCEL_REFUND_DESCRIPTION, rollSliceRefundDescription } from "./sliceRefundLedger";
 import { ProviderError } from "../providers/types";
 import type { CreativeEngine } from "../providers/types";
 import {
@@ -1363,9 +1363,14 @@ export async function dispatchCandidate(input: {
   if (!claimed) {
     /*
       Someone cancelled this roll between the charge and this statement. The
-      cancel path already refunded exactly the slices its CAS won, including
-      this one — refunding again here is how a "never both refunded and
-      delivered" system quietly becomes a "sometimes refunded twice" one.
+      cancel path refunds exactly the slices its CAS won, including this one —
+      refunding again here is how a "never both refunded and delivered" system
+      quietly becomes a "sometimes refunded twice" one.
+
+      Losing this CAS says the cancel MOVED the row, never that it finished
+      (#955): a cancel that dies between its CAS and its refund leaves a
+      `cancelled` row with no refund, and it is the recovery sweep that pays
+      it (`isTornCancel`), not this line.
     */
     return { outcome: "skipped", refundedCredits: 0 };
   }
@@ -1746,7 +1751,10 @@ export async function cancelRoll(input: {
     const refund = await recordRefund(
       input.userId,
       candidate.pointsCost,
-      "Casting roll cancelled before this candidate started",
+      ROLL_CANCEL_REFUND_DESCRIPTION,
+      // The reference recovery pays a torn cancel under (#955): if this
+      // process dies after the CAS above and before this line, the sweep's
+      // refund and a late one from here meet as the ledger's duplicate.
       candidateChargeReference(roll.operationId, candidate.publicId),
     );
     if (refund.recorded) refundedCredits += refund.amount;

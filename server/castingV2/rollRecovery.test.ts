@@ -93,7 +93,7 @@ vi.mock("../casting/atomicCredits", async (importOriginal) => {
 });
 
 const { recoverCastingV2RollOperation, candidateRefundReference } = await import("./rollRecovery");
-const { SLICE_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
+const { ROLL_CANCEL_REFUND_DESCRIPTION, SLICE_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
 
 // Real UUIDs: operationChargeReference asserts the shape, which is itself a
 // guard worth keeping — an unparseable operation id must never reach the ledger.
@@ -468,9 +468,28 @@ describe("delivered work is never refunded, however the crash arrives", () => {
       candidate({ id: 1, publicId: "c-1", status: "expired", imageKey: "k1" }),
       candidate({ id: 2, publicId: "c-2", status: "cancelled" }),
     ];
+    /*
+      ⚠ THE LEDGER ROW FOR c-2 WAS ADDED WITH #955, AND THE ASSERTION DID NOT
+      MOVE. This arm held a `cancelled` row with NO refund on the ledger and
+      asserted nothing was paid, on the stated ground that the cancel path had
+      already refunded it — which is the one thing a `cancelled` row cannot
+      prove. The arm was pinning the defect as correct. A cancel that finished
+      leaves its refund under the slice's own reference, and that is the state
+      this arm is about; the state without it is #955's own block below.
+    */
+    rows.ledger = [
+      chargeRow(),
+      {
+        userId: OPERATION.userId,
+        referenceId: candidateRefundReference(OPERATION_ID, "c-2"),
+        type: "refund",
+        amount: 20,
+      },
+    ];
     await recover();
     // `expired` is delivered-but-unshown (§F, §H.6): the provider was paid and
-    // the user cancelled. `cancelled` was already refunded by the cancel path.
+    // the user cancelled. `cancelled` was refunded by the cancel path, and the
+    // ledger says so.
     expect(refunds).toHaveLength(0);
   });
 
@@ -858,6 +877,158 @@ describe("the CAS lost to a process that then died before its refund (#896)", ()
     // is never sealed as settled.
     expect(outcome).toMatchObject({ type: "recovery_required", refundedCredits: 0 });
     expect(finalizers.finalizeSuccess).not.toHaveBeenCalled();
+  });
+});
+
+describe("the torn write inside the cancel: `cancelled` written, the refund never recorded (#955)", () => {
+  /*
+    `cancelRoll` does the live catch's two writes in the live catch's order —
+    the `queued -> cancelled` CAS, then `recordRefund`. A process death between
+    them left a slice in none of the sweep's sets: `isSettleable` excludes
+    `cancelled`, `isTornFailure` asked only about `failed`, and `wasDelivered`
+    does not name it. So the receipt sealed with the slice charged and nothing
+    ever looked again. Production has never held a `cancelled` candidate, so
+    these arms are the only road that has ever driven it.
+  */
+  const cancelRefund = (publicId: string, amount = 20) => ({
+    userId: OPERATION.userId,
+    referenceId: candidateRefundReference(OPERATION_ID, publicId),
+    type: "refund",
+    amount,
+  });
+
+  it("THE DEFECT: pays a cancelled slice whose refund row is missing, once, under the cancel's reference", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "cancelled" }),
+    ];
+    rows.ledger = [chargeRow()];
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0]).toMatchObject({ userId: OPERATION.userId, amount: 20 });
+    // The reference `cancelRoll` passes, so a late refund from a cancel that
+    // was only slow lands as the ledger's duplicate, never a second payment.
+    expect(refunds[0].reference).toBe(`op:${OPERATION_ID}:charge:candidate:c-2`);
+    expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 1, refundedCredits: 20, chargedCredits: 160 });
+    // Terminal already; the sweep reads it and never rewrites it.
+    expect(rows.candidates[1]).toMatchObject({ status: "cancelled" });
+  });
+
+  it("says what the cancel would have said — the customer cancelled it, it did not fail to arrive", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "cancelled" }),
+      candidate({ id: 2, publicId: "c-2", status: "failed", failureClass: "capability" }),
+    ];
+    const { recordRefund } = await import("../casting/atomicCredits");
+
+    await recover();
+
+    const descriptions = vi.mocked(recordRefund).mock.calls.map((call) => call[2]);
+    expect(descriptions).toEqual([
+      ROLL_CANCEL_REFUND_DESCRIPTION,
+      SLICE_REFUND_DESCRIPTION.candidateAbsent,
+    ]);
+  });
+
+  it("THE CONTROL: pays nothing when the cancel's refund did land", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "cancelled" }),
+    ];
+    rows.ledger = [chargeRow(), cancelRefund("c-2")];
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "durable_success", ready: 1 });
+  });
+
+  it("THE CONTROL: pays nothing for a cancelled slice when the roll was never charged", async () => {
+    // The charge gate runs before any torn reading, so recovery never pays
+    // back money the ledger does not show was taken.
+    rows.candidates = [candidate({ id: 1, publicId: "c-1", status: "cancelled" })];
+    rows.ledger = [];
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(0);
+    expect(outcome.type).toBe("free_failure");
+  });
+
+  it("never pays a cancelled slice that cost nothing", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "cancelled", pointsCost: 0 }),
+    ];
+    const outcome = await recover();
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "durable_success", ready: 1 });
+  });
+
+  it("holds the conservation ceiling over a torn cancel, counting refunds already on the ledger", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "cancelled", pointsCost: 150 }),
+      candidate({ id: 2, publicId: "c-2", status: "cancelled", pointsCost: 20 }),
+    ];
+    rows.ledger = [chargeRow(), cancelRefund("c-1", 150)];
+
+    const outcome = await recover();
+
+    // 150 already back; a 20 slice would take the total past the 160 charged.
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "recovery_required", reason: "refund slices exceed the recorded charge" });
+  });
+
+  it("escalates instead of sealing when the torn cancel's refund will not record", async () => {
+    refundRecords = false;
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "cancelled" }),
+    ];
+    const outcome = await recover();
+    expect(outcome).toMatchObject({ type: "recovery_required", chargedCredits: 160, refundedCredits: 0 });
+    expect(finalizers.finalizeSuccess).not.toHaveBeenCalled();
+  });
+
+  /*
+    And #896's road, taken by a cancel: the row was `queued` in the snapshot,
+    went into `owed`, and lost its CAS to a cancel that died before refunding.
+    `torn` came from the stale snapshot and cannot hold it — only the re-read
+    can. Injected through the CAS, at the moment the race happens.
+  */
+  it("THE DEFECT, BY THE LOST CLAIM: pays a slice a cancel won and never refunded", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "queued" }),
+    ];
+    casLostTo.set(2, (row) => {
+      row.status = "cancelled";
+    });
+    const { recordRefund } = await import("../casting/atomicCredits");
+
+    const outcome = await recover();
+
+    expect(refunds.map((refund) => refund.reference)).toEqual([`op:${OPERATION_ID}:charge:candidate:c-2`]);
+    expect(vi.mocked(recordRefund).mock.calls.map((call) => call[2])).toEqual([ROLL_CANCEL_REFUND_DESCRIPTION]);
+    expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 1, refundedCredits: 20 });
+  });
+
+  it("THE CONTROL, BY THE LOST CLAIM: pays nothing when the cancel that won finished its refund", async () => {
+    rows.candidates = [
+      candidate({ id: 1, publicId: "c-1", status: "ready", imageKey: "k1" }),
+      candidate({ id: 2, publicId: "c-2", status: "queued" }),
+    ];
+    casLostTo.set(2, (row) => {
+      row.status = "cancelled";
+      rows.ledger.push(cancelRefund("c-2"));
+    });
+
+    const outcome = await recover();
+
+    expect(refunds).toHaveLength(0);
+    expect(outcome).toMatchObject({ type: "partial", ready: 1, refunded: 0, refundedCredits: 0 });
   });
 });
 
