@@ -1,7 +1,7 @@
 {
-  "edition": 425,
-  "updatedAt": "2026-09-15T10:58:28.000Z",
-  "shift": "ONE JOB DONE, HAND-REVIEWED BY THE RELAY AND MERGED: IF A CUSTOMER CANCELS A ROLL AND THE SERVER DIES IN THE SAME INSTANT, THE TILES THEY CANCELLED ARE NOW PAID BACK. BEFORE THIS, NOTHING EVER NOTICED THEY WEREN'T.\n\nWHAT IT WAS. Cancelling a roll does two things for each tile that hasn't started: it marks the tile cancelled, then it gives the tile's credits back. If the server stops between those two steps (a deploy is the likely way), the tile says cancelled and the credits never come back. We already have a clean-up pass that settles rolls interrupted like this. It knew about tiles that failed and tiles still running. It did not know about cancelled ones, so it closed the roll with that money still taken. This is the job you know as the refund-wording job (#955).\n\nTHE QUESTION IT WAS GOING TO BRING YOU IS GONE. The job said the fix would need a new line on the customer's credit history, which is your call. Reading the code, the line already exists: a normal cancel writes \"Casting roll cancelled before this candidate started\". The clean-up pass now writes those exact words. Whichever of the two pays them, the customer reads the same line. No new wording, nothing for you to approve.\n\nHOW I KNOW IT IS RIGHT. Nine new checks recreate the crash at each point it can happen and read what gets paid. They cover the defect itself, a cancel that did finish (pays nothing), a roll that was never charged (pays nothing), and a refund that would pay back more than was charged (stops and flags it for support). One old check had been written to expect the bug: it held a cancelled tile with no refund and passed only because nothing was paid. It now holds the refund a finished cancel leaves. I broke the fix five ways on purpose and every break was caught. Every automatic check passed first time.\n\nREVIEWED BY HAND, AS YOU ASKED. I opened it for the relay rather than holding it. The relay read the whole change, passed it with no findings, and merged it within a minute of the automatic checks going green. The outside reviewer is still out of credits, so its check is red, as expected.\n\nNOBODY HAS HIT THIS. Your live site has never had a cancelled tile.\n\nTWO RELATED JOBS FILED, NOT DONE. (1) #994: a tile that was already rendering when the customer cancelled finishes unseen and gets its credits back under a separate rule. That refund has the same gap. The code beside it says the fix is waiting on a database change that has in fact already shipped. The same card covers a receipt that counts cancelled tiles as refunded without checking the money actually moved. (2) #995: a cancel pressed in the split second before a roll is charged gives credits back before they were taken. In almost every case it evens out once the charge lands, but if the charge then errors, the customer keeps the credits. How reachable that is has not been measured yet.\n\nCOST: nothing. No credits, no renders, no paid calls.",
+  "edition": 426,
+  "updatedAt": "2026-09-15T12:19:53.000Z",
+  "shift": "ONE JOB DONE, HAND-REVIEWED BY THE RELAY AND MERGED: TWO MORE WAYS A CANCELLED ROLL COULD KEEP A CUSTOMER'S CREDITS ARE CLOSED. BOTH WERE FOUND LAST NIGHT (#994).\n\nWHAT IT WAS, PART ONE. If a customer cancels while a tile is already rendering, the tile still finishes, is never shown, and the credits go back (\"Cancelled before you saw it\"). That refund is a separate step from the tile finishing. If the server stopped between the two, the credits stayed taken. The clean-up pass that settles interrupted rolls could not tell this tile apart from a picture the customer had looked at for a week, so it left it alone. The code beside it said a database change would fix that one day. That change shipped weeks ago and nobody had used it.\n\nWHAT IT WAS, PART TWO. When a roll finished, its receipt counted every cancelled tile as refunded, going by the tile alone. If the cancel's refund had failed to save, the receipt still said the credits came back. Nothing looked at that roll again, so the customer stayed charged.\n\nWHAT CHANGED. The clean-up pass now reads why a tile expired. A tile that finished after a cancel and was never paid back gets paid once, with the same words a normal cancel writes. A tile that expired after a week is never paid. When a roll finishes, it checks the credit history, not the tiles: it pays any cancelled tile whose refund is missing, once, and never claims credits came back that it cannot see. No new wording, nothing for you to approve.\n\nHOW I KNOW IT IS RIGHT. 29 new checks recreate each crash and each missing refund, and read what gets paid. The controls matter most: a picture seen for a week pays nothing, a refund that did land pays nothing again, and a roll never charged pays nothing. I broke the fix ten ways on purpose and every break was caught. Every automatic check passed first time.\n\nREVIEWED BY HAND, AS YOU ASKED. The relay read the whole change, passed it with no blocking findings, merged it, and closed the card. Your live site has been running it since 12:18 UTC.\n\nNOBODY HAS HIT THIS. Your live site holds no cancelled tiles and no unseen tiles right now. The unseen refund has paid 24 times in total (480 credits). Those tiles have since been cleared, so whether any of them hit this gap can no longer be read.\n\nCOST: nothing. No credits, no renders, no paid calls.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-15T10:59:10.236Z",
+      "readAt": "2026-09-15T12:19:55.920Z",
       "items": [
         {
           "issueNumber": 16,
@@ -168,6 +168,18 @@
           "rung": "N2"
         },
         {
+          "issueNumber": 62,
+          "title": "L&F: Hair-road owed court arms — gate hair.open, and the flag register cannot see them",
+          "kind": "roadmap",
+          "rung": "N2"
+        },
+        {
+          "issueNumber": 179,
+          "title": "Legacy author-road rows (96 per DB) still hold unmarked unsent identity records — data ceremony to mark them (#176 residue)",
+          "kind": "roadmap",
+          "rung": "N2"
+        },
+        {
           "issueNumber": 180,
           "title": "N2: THE GHOST AUDIT — enumerate every piece of old-lane machinery still running under the author road (categories, dice, archetypes, personas); the Follow ghost (#176) is specimen #1 (founder flag, 2026-08-27)",
           "kind": "parked",
@@ -177,6 +189,12 @@
           "issueNumber": 203,
           "title": "N2: RETIRE the wardrobe/basics two-paths machinery — founder ruling in advance ('yeah we will retire the wardrobe/basics path obviously', 2026-08-28)",
           "kind": "parked",
+          "rung": "N2"
+        },
+        {
+          "issueNumber": 209,
+          "title": "The remainder of #206: the ID-LESS refusals need a name before the map can hold them, and the ~70 non-doors may be correct as they are",
+          "kind": "roadmap",
           "rung": "N2"
         },
         {
@@ -212,6 +230,12 @@
         {
           "issueNumber": 61,
           "title": "L&F: Outfit-card thumbnails via the point-cutter — the ordered roadmap promise never written",
+          "kind": "roadmap",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 64,
+          "title": "L&F: Compositor diagnostics umbrella — five takeable-but-untaken items on the live repaint path",
           "kind": "roadmap",
           "rung": "N3"
         },
@@ -4974,6 +4998,13 @@
   ],
   "pipeline": [
     {
+      "id": "torn-unseen-994",
+      "title": "Two more ways a cancelled roll could keep a customer's credits are closed: an unseen tile lost to a server stop, and a receipt that trusted the tiles over the credit history",
+      "status": "merged",
+      "prNumber": 996,
+      "note": "A tile that finished unseen after a cancel is now paid back by the clean-up pass if the server stopped before its refund. It reads why the tile expired, so a picture seen for a week is never paid. A finished roll's receipt now checks the credit history for each cancelled tile and pays any refund that is missing, once. 29 new checks, broken ten ways on purpose, every break caught; every automatic check green first time. Hand-reviewed by the relay under your standing word: passed, merged, card closed. Live since 12:18 UTC."
+    },
+    {
       "id": "torn-cancel-955",
       "title": "A cancelled tile whose refund never went through, because the server stopped mid-cancel, is now paid back by the clean-up pass",
       "status": "merged",
@@ -6504,9 +6535,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0915i-foreman",
+      "id": "queue-shape-0915j-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 38 open. One job built and merged tonight and its card is closed. NEXT UP is empty",
+      "detail": "One job built tonight (#994, two more ways a cancelled roll could keep credits). The relay hand-reviewed it, merged it and closed it. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days; the oldest is 21 days (#28). The two money jobs left in Bugs each need a choice between fix shapes rather than a straight build: #995 (a cancel pressed before the charge) and #991 (a stuck change request). Your casting upkeep list stays at 5. NEXT UP is empty because the relay took the ordered label off your reviewer instruction (#988) so the nights keep working: the rule still stands until the reviewer is back."
+    },
+    {
+      "id": "queue-shape-0915i-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 40 open. One job built and merged tonight (its card closes when the relay reads it back live), two related jobs filed. NEXT UP holds only your reviewer instruction",
       "detail": "One job built tonight (#955, a cancelled tile's refund lost to a server stop). The relay hand-reviewed and merged it. Two related jobs filed from the same read (#994, #995), both about money coming back when a roll is cancelled, and neither has hit anyone. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days; the oldest is 21 days (#28). The other stuck-request job (#991) needs a choice between two fix shapes on a money page, so it is left for a deliberate pass rather than squeezed in. Your casting upkeep list stays at 5."
     },
@@ -7039,13 +7077,7 @@
     189
   ],
   "nextUp": {
-    "readAt": "2026-09-15T10:59:10.235Z",
-    "items": [
-      {
-        "issueNumber": 988,
-        "title": "STANDING until the reviewer is back (Wed 16 Sep pm): money/auth PRs are hand-reviewed by the relay — open them ready, do not hold them (his word, 15 Sep)",
-        "urgent": false
-      }
-    ]
+    "readAt": "2026-09-15T12:19:55.919Z",
+    "items": []
   }
 }
