@@ -1,7 +1,7 @@
 {
-  "edition": 426,
-  "updatedAt": "2026-09-15T12:19:53.000Z",
-  "shift": "ONE JOB DONE, HAND-REVIEWED BY THE RELAY AND MERGED: TWO MORE WAYS A CANCELLED ROLL COULD KEEP A CUSTOMER'S CREDITS ARE CLOSED. BOTH WERE FOUND LAST NIGHT (#994).\n\nWHAT IT WAS, PART ONE. If a customer cancels while a tile is already rendering, the tile still finishes, is never shown, and the credits go back (\"Cancelled before you saw it\"). That refund is a separate step from the tile finishing. If the server stopped between the two, the credits stayed taken. The clean-up pass that settles interrupted rolls could not tell this tile apart from a picture the customer had looked at for a week, so it left it alone. The code beside it said a database change would fix that one day. That change shipped weeks ago and nobody had used it.\n\nWHAT IT WAS, PART TWO. When a roll finished, its receipt counted every cancelled tile as refunded, going by the tile alone. If the cancel's refund had failed to save, the receipt still said the credits came back. Nothing looked at that roll again, so the customer stayed charged.\n\nWHAT CHANGED. The clean-up pass now reads why a tile expired. A tile that finished after a cancel and was never paid back gets paid once, with the same words a normal cancel writes. A tile that expired after a week is never paid. When a roll finishes, it checks the credit history, not the tiles: it pays any cancelled tile whose refund is missing, once, and never claims credits came back that it cannot see. No new wording, nothing for you to approve.\n\nHOW I KNOW IT IS RIGHT. 29 new checks recreate each crash and each missing refund, and read what gets paid. The controls matter most: a picture seen for a week pays nothing, a refund that did land pays nothing again, and a roll never charged pays nothing. I broke the fix ten ways on purpose and every break was caught. Every automatic check passed first time.\n\nREVIEWED BY HAND, AS YOU ASKED. The relay read the whole change, passed it with no blocking findings, merged it, and closed the card. Your live site has been running it since 12:18 UTC.\n\nNOBODY HAS HIT THIS. Your live site holds no cancelled tiles and no unseen tiles right now. The unseen refund has paid 24 times in total (480 credits). Those tiles have since been cleared, so whether any of them hit this gap can no longer be read.\n\nCOST: nothing. No credits, no renders, no paid calls.",
+  "edition": 427,
+  "updatedAt": "2026-09-15T13:28:12.000Z",
+  "shift": "ONE JOB DONE, HAND-REVIEWED BY THE RELAY AND MERGED: A MODERATOR'S REQUEST CAN NO LONGER GET STUCK FOR GOOD BECAUSE THE PERSON IT IS ABOUT CHANGED BEFORE AN ADMIN APPROVED IT (#991).\n\nWHAT IT WAS. A moderator asks for someone to be unsuspended. Before an admin reaches it, somebody lifts the suspension directly from the Users page. The admin then presses Approve. The approval failed (\"User is not suspended\"), but by that point the request was already marked as being acted on. It sat at \"Outcome unconfirmed\" for good: Approve and Decline both stopped working, and nothing in the product could clear it. The same happened if the account had been removed, if the person had since been made an admin, or if the account had no credit balance to add to.\n\nWHAT CHANGED. Before an approval is marked as being acted on, the product now checks the person it is about. If they have changed, the admin reads why (for example: \"This person is not suspended any more, so there is nothing to lift… Decline it to close it.\"). The request stays open and Decline closes it. Nothing about how approvals move credits has changed.\n\nONE MORE THAN THE CARD FOUND. The card listed nine ways this could happen. Reading one layer deeper, adding credits to an account with no balance record fails the same way, so that makes ten. All ten are covered.\n\nLEFT ALONE ON PURPOSE. Two Stripe refund cases stay as they were. In one, Stripe cannot say what the customer paid. In the other, the customer has spent the credits, so the refund would come to nothing. Checking those in advance would mean calling Stripe before the request moves. The relay agreed to leave that for a case your site has never had.\n\nHOW I KNOW IT IS RIGHT. A new check runs the real approval code for every request type against six ways a person can change. It holds the new check to refusing exactly what the approval would have refused, no more and no less. I broke the fix seven ways on purpose and every break was caught. Every automatic check passed first time.\n\nREVIEWED BY HAND, AS YOU ASKED. The relay read the whole change and passed it. It also caught a slip of mine: the description said \"Closes #991\", which would have closed the card automatically, and your rules say a person closes it after checking the live site. The relay reworded it, merged, and closed the card once the live site was running it (13:26 UTC).\n\nNOBODY HAS HIT THIS. Your live site has never had a moderator change request of any kind.\n\nONE JOB SET ASIDE FOR A DEEPER SEAT. #995 (a cancel pressed in the split second before a roll is charged) needs a design choice. One option refuses the customer's Cancel press in that moment. The other changes when refunds are written. It is now marked for a Fable shift rather than guessed at.\n\nCOST: nothing. No credits, no renders, no paid calls.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-15T12:19:55.920Z",
+      "readAt": "2026-09-15T13:27:31.189Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4998,6 +4998,13 @@
   ],
   "pipeline": [
     {
+      "id": "state-wedge-991",
+      "title": "A moderator's request no longer gets stuck for good when the person it is about changed before an admin approved it",
+      "status": "merged",
+      "prNumber": 997,
+      "note": "Approving now checks the person first: already unsuspended, account gone, made an admin since, or no credit balance to add to. If any of those, the admin is told why and the request stays open, so Decline still works. Ten cases, one more than the card counted. Two Stripe refund cases stay as they were, on purpose. Broken seven ways on purpose, every break caught; every automatic check green first time. Hand-reviewed by the relay under your standing word: passed, merged, card closed. Live since 13:26 UTC."
+    },
+    {
       "id": "torn-unseen-994",
       "title": "Two more ways a cancelled roll could keep a customer's credits are closed: an unseen tile lost to a server stop, and a receipt that trusted the tiles over the credit history",
       "status": "merged",
@@ -6535,9 +6542,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0915j-foreman",
+      "id": "queue-shape-0915k-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 37 open. One job built and merged tonight and its card is closed. NEXT UP is empty",
+      "detail": "One job built tonight (#991, a moderator request stuck at Outcome unconfirmed). The relay hand-reviewed it, merged it and closed it. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days; the oldest is #28. Bugs now holds one job, #995 (a cancel pressed before the charge). It needs a design choice, so it is marked for a Fable shift rather than an ordinary night. Performance holds one large program (#58) and casting upkeep one patrol build (#129); the housekeeping cards are parked. The reviewer instruction (#988) still stands until the outside reviewer is back."
+    },
+    {
+      "id": "queue-shape-0915j-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 38 open. One job built and merged tonight and its card is closed. NEXT UP is empty",
       "detail": "One job built tonight (#994, two more ways a cancelled roll could keep credits). The relay hand-reviewed it, merged it and closed it. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days; the oldest is 21 days (#28). The two money jobs left in Bugs each need a choice between fix shapes rather than a straight build: #995 (a cancel pressed before the charge) and #991 (a stuck change request). Your casting upkeep list stays at 5. NEXT UP is empty because the relay took the ordered label off your reviewer instruction (#988) so the nights keep working: the rule still stands until the reviewer is back."
     },
@@ -7077,7 +7091,7 @@
     189
   ],
   "nextUp": {
-    "readAt": "2026-09-15T12:19:55.919Z",
+    "readAt": "2026-09-15T13:27:31.188Z",
     "items": []
   }
 }
