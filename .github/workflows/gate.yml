@@ -398,13 +398,16 @@ jobs:
           # Label only — visibility, not a block (founder ruling 2026-08-25).
           # The label also forces the full Fable review in review.yml.
           echo "Money/auth surfaces touched (labelled, not blocked):"
+          # Printed unindented on purpose: `sed 's/^/    /'` is SC2001, and the
+          # parameter-expansion form shellcheck suggests does not indent every
+          # line of a multi-line list. The two headers are what separate them.
           if [ -n "$PATH_HITS" ]; then
-            echo "  by path (stored/bought):"
-            echo "$PATH_HITS" | sed 's/^/    /'
+            echo "-- by path (money stored and bought):"
+            echo "$PATH_HITS"
           fi
           if [ -n "$SYMBOL_HITS" ]; then
-            echo "  by credit-API symbol (decided):"
-            echo "$SYMBOL_HITS" | sed 's/^/    /'
+            echo "-- by credit-API symbol (money decided):"
+            echo "$SYMBOL_HITS"
           fi
           gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label founder-review || true
           echo "::notice::This PR touches billing/credits/auth/session surfaces, or changes a line that moves credits — labelled founder-review for the digest and full Fable review."
