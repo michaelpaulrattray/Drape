@@ -115,6 +115,7 @@ import {
   ROLL_RECOVERY_SENTENCE,
   candidateChargeReference,
   candidateUnseenChargeReference,
+  readCancelCharge,
   recoverCastingV2RollOperation,
   settleCancelledSlices,
   type RollRecoveryOutcome,
@@ -1723,6 +1724,10 @@ export type CancelRollResult = {
  * (§H.6 "never refund delivered work"), and it is also what makes double
  * settlement structurally impossible — a candidate is either won by this CAS
  * or by dispatch, never by both.
+ *
+ * And it refunds only once the ledger shows the roll's charge (#995). A cancel
+ * that beats the deduct stops the rows and writes no refund, because nothing
+ * has been taken yet. `createRoll`'s seal pays those slices after the charge.
  */
 export async function cancelRoll(input: {
   userId: number;
@@ -1755,24 +1760,49 @@ export async function cancelRoll(input: {
   let refundedCredits = 0;
   let refundUnrecorded = false;
 
+  const owed: typeof candidates = [];
+
   for (const candidate of candidates) {
     if (candidate.status !== "queued") continue;
     const won = await cancelQueuedCandidate({ userId: input.userId, candidateId: candidate.id });
     if (!won) continue;
     cancelled += 1;
     cancelledCandidateIds.push(candidate.publicId);
-    if (candidate.pointsCost <= 0) continue;
-    const refund = await recordRefund(
-      input.userId,
-      candidate.pointsCost,
-      ROLL_CANCEL_REFUND_DESCRIPTION,
-      // The reference recovery pays a torn cancel under (#955): if this
-      // process dies after the CAS above and before this line, the sweep's
-      // refund and a late one from here meet as the ledger's duplicate.
-      candidateChargeReference(roll.operationId, candidate.publicId),
+    if (candidate.pointsCost > 0) owed.push(candidate);
+  }
+
+  /*
+    REFUND ONLY WHAT HAS BEEN TAKEN (#995). A `pending` roll's rows exist
+    before its charge does, so the ledger is asked, after the CAS, whether
+    there is anything to give back. If there is no charge yet, nothing is
+    written here: the charge road pays these slices after its own charge, or
+    owes nothing if the charge never lands. The customer's press works
+    either way.
+  */
+  const charge = owed.length > 0
+    ? await readCancelCharge({ userId: input.userId, operationId: roll.operationId })
+    : "not_charged";
+  if (charge === "unknown") {
+    refundUnrecorded = true;
+  } else if (charge === "charged") {
+    for (const candidate of owed) {
+      const refund = await recordRefund(
+        input.userId,
+        candidate.pointsCost,
+        ROLL_CANCEL_REFUND_DESCRIPTION,
+        // The reference recovery pays a torn cancel under (#955): if this
+        // process dies after the CAS above and before this line, the sweep's
+        // refund and a late one from here meet as the ledger's duplicate.
+        candidateChargeReference(roll.operationId, candidate.publicId),
+      );
+      if (refund.recorded) refundedCredits += refund.amount;
+      else refundUnrecorded = true;
+    }
+  } else if (owed.length > 0) {
+    log.info(
+      { rollId: roll.publicId, userId: input.userId, slices: owed.length },
+      "[rollService] cancel landed before the charge — nothing taken, so nothing refunded here",
     );
-    if (refund.recorded) refundedCredits += refund.amount;
-    else refundUnrecorded = true;
   }
 
   await setRollStatus({ userId: input.userId, rollId: roll.id, status: "cancelled" });

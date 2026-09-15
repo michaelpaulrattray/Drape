@@ -98,6 +98,7 @@ const {
   candidateUnseenChargeReference,
   candidateUnseenRefundReference,
   settleCancelledSlices,
+  readCancelCharge,
 } = await import("./rollRecovery");
 const {
   ROLL_CANCEL_REFUND_DESCRIPTION,
@@ -1297,6 +1298,36 @@ describe("the live seal asks the ledger, not the rows, what a cancel refunded (#
 
     expect(await seal()).toEqual({ refundedCredits: 0, unrecorded: 0 });
     expect(refunds).toHaveLength(0);
+  });
+});
+
+describe("a cancel refunds only on a clean charge row (#995)", () => {
+  /*
+    `cancelRoll` asks this after its CAS. A `pending` roll's rows exist before
+    its charge, so "was anything taken?" is the ledger's question, read by the
+    same rule the sweep and the seal use.
+  */
+  const read = () => readCancelCharge({ userId: OPERATION.userId, operationId: OPERATION_ID });
+
+  it("answers charged when the ledger holds the charge", async () => {
+    rows.ledger = [chargeRow()];
+    expect(await read()).toBe("charged");
+  });
+
+  it("THE DEFECT'S WINDOW: answers not_charged when the rows exist and the charge does not yet", async () => {
+    rows.ledger = [];
+    expect(await read()).toBe("not_charged");
+  });
+
+  it("answers unknown, never charged, on an ambiguous charge", async () => {
+    rows.ledger = [chargeRow(), chargeRow()];
+    expect(await read()).toBe("unknown");
+  });
+
+  it("answers unknown, never charged, when the ledger cannot be read", async () => {
+    // Not an array, so the ledger read throws where a dropped connection would.
+    ledgerSequence = [{} as never];
+    expect(await read()).toBe("unknown");
   });
 });
 

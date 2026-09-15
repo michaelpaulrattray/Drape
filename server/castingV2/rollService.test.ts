@@ -31,6 +31,15 @@ const rows = {
 
 const refunds: Array<{ amount: number; reference: string }> = [];
 let refundRecords = true;
+/*
+  THE CREDIT LEDGER, in the order rows were written (#995). `readCancelCharge`
+  and the live seal both read it through the real `readOperationLedger`, so the
+  question "was this roll charged yet?" is answered by rows, never by a flag.
+  Seeded with the roll's charge in `beforeEach`, because the fixture roll is
+  `generating` and a generating roll has been charged; the #995 arms clear it.
+*/
+const ledger: Array<{ userId: number; referenceId: string; type: string; amount: number; description?: string }> = [];
+let ledgerReadThrows = false;
 let chargeSucceeds = true;
 /* Candidate ids whose `markCandidateDispatched` THROWS — the write before the
    try, which is where the remote database dropped roll 111 (#855). */
@@ -148,14 +157,25 @@ vi.mock("../db/castingV2", async (importOriginal) => ({
   touchCastingSession: vi.fn(async () => undefined),
 }));
 
-vi.mock("../db/connection", () => ({
-  // No frozen account in these scenarios; the frozen path has its own case.
-  getDb: async () => ({
-    select: () => ({
-      from: () => ({ where: () => ({ limit: async () => [{ frozenAt: null }] }) }),
+vi.mock("../db/connection", async () => {
+  const { getTableName } = await import("drizzle-orm");
+  return {
+    // No frozen account in these scenarios; the frozen path has its own case.
+    getDb: async () => ({
+      select: () => ({
+        from: (table: unknown) => ({
+          where: () => {
+            if (getTableName(table as never) !== "point_transactions") {
+              return { limit: async () => [{ frozenAt: null }] };
+            }
+            if (ledgerReadThrows) return Promise.reject(new Error("Connection lost: The server closed the connection."));
+            return Promise.resolve([...ledger]);
+          },
+        }),
+      }),
     }),
-  }),
-}));
+  };
+});
 
 /*
   THE ANCHOR FRAME'S STORE (#177 Row A): an authored follow reads the followed
@@ -184,10 +204,15 @@ vi.mock("../casting/atomicCredits", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../casting/atomicCredits")>();
   return {
     ...actual,
-    recordRefund: vi.fn(async (_userId: number, amount: number, _d: string, reference: string) => {
+    recordRefund: vi.fn(async (userId: number, amount: number, description: string, reference: string) => {
       journal.push("refund");
       if (!refundRecords) return { recorded: false, amount: 0, reference };
       refunds.push({ amount, reference });
+      // The ledger's unique reference, as the real index enforces it.
+      const referenceId = actual.refundReferenceFor(reference);
+      if (!ledger.some((row) => row.referenceId === referenceId)) {
+        ledger.push({ userId, referenceId, type: "refund", amount, description });
+      }
       return { recorded: true, amount, reference };
     }),
   };
@@ -262,6 +287,11 @@ const {
 const { recordRefund } = await import("../casting/atomicCredits");
 const { ROLL_UNSEEN_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
 const { ProviderError } = await import("../providers/types");
+
+/** The roll's charge row, as `deductCredits` writes it under the pinned reference. */
+function chargeRow() {
+  return { userId: 7, referenceId: `op:${OPERATION_ID}:charge`, type: "generation", amount: -160 };
+}
 
 function seedCandidates(count = 8) {
   rows.candidates = Array.from({ length: count }, (_, index) => ({
@@ -339,6 +369,9 @@ beforeEach(() => {
   anchorBytesAvailable = true;
   refundRecords = true;
   chargeSucceeds = true;
+  ledgerReadThrows = false;
+  ledger.length = 0;
+  ledger.push(chargeRow());
   dispatchWriteThrowsFor.clear();
   seedCandidates();
   vi.clearAllMocks();
@@ -858,6 +891,147 @@ describe("cancel", () => {
       cancelledCandidateIds: [],
     });
     expect(refunds).toHaveLength(0);
+  });
+});
+
+/*
+  A CANCEL THAT BEATS THE CHARGE (#995).
+
+  `createRoll` commits the rows before it deducts, and a `pending` roll is
+  cancellable, so a second tab can cancel inside that window. The cancel used
+  to refund credits that had not been taken: the ledger then held a refund
+  older than its own charge, and if the deduct failed the customer kept
+  credits for a roll nobody paid for.
+
+  These arms drive the window itself. The deduct is the spy, and it lets the
+  cancel land before it writes the charge row. The ledger is read through the
+  real `readOperationLedger` at both the cancel and the live seal. Nothing in
+  them is a flag that says "charged".
+*/
+describe("a cancel that lands before the roll is charged (#995)", () => {
+  const actualRecovery = async () => vi.importActual<typeof import("./rollRecovery")>("./rollRecovery");
+  const cancelRefundReference = (publicId: string) =>
+    `op:${OPERATION_ID}:charge:candidate:${publicId}`;
+
+  /** A deduct that lets a cancel in first, then charges (or fails) as the arm says. */
+  function deductAfterCancel(landed: { cancel?: Awaited<ReturnType<typeof cancelRoll>> }, charges: boolean) {
+    return vi.fn(async () => {
+      landed.cancel = await cancelRoll({ userId: 7, rollPublicId: "roll-public" });
+      journal.push("charge");
+      if (!charges) return { success: false, error: "User credits not found" };
+      ledger.push(chargeRow());
+      return { success: true, newBalance: 100 };
+    });
+  }
+
+  beforeEach(async () => {
+    ledger.length = 0;
+    const castingDb = await import("../db/castingV2");
+    vi.mocked(castingDb.getOwnedRoll).mockResolvedValue({
+      id: 100,
+      publicId: "roll-public",
+      status: "pending",
+      operationId: OPERATION_ID,
+    } as never);
+    // The live seal is the REAL one here: it is the road that pays these slices.
+    const { settleCancelledSlices: realSeal } = await actualRecovery();
+    vi.mocked(settleCancelledSlices).mockImplementation(realSeal);
+  });
+
+  afterEach(async () => {
+    const castingDb = await import("../db/castingV2");
+    vi.mocked(castingDb.getOwnedRoll).mockReset();
+    vi.mocked(castingDb.getOwnedRoll).mockImplementation(async () => ({
+      id: 100,
+      publicId: "roll-public",
+      status: "generating",
+      operationId: OPERATION_ID,
+    }) as never);
+    vi.mocked(settleCancelledSlices).mockReset();
+    vi.mocked(settleCancelledSlices).mockImplementation(async () => ({ refundedCredits: 0, unrecorded: 0 }));
+  });
+
+  it("THE DEFECT: refunds nothing before the charge, then the seal pays each slice once, after the charge", async () => {
+    const landed: { cancel?: Awaited<ReturnType<typeof cancelRoll>> } = {};
+    const dependencies = { ...(baseDependencies() as object), deduct: deductAfterCancel(landed, true) } as never;
+
+    await expect(createRoll(dependencies, INPUT)).rejects.toMatchObject({
+      message: "That roll was cancelled. 160 credits were refunded.",
+    });
+
+    // The press worked: every tile stopped, and the cancel claimed no money.
+    expect(landed.cancel).toMatchObject({ cancelled: 8, refundedCredits: 0, refundUnrecorded: false });
+
+    // THE ORDER: the charge is the first row, and every refund follows it.
+    expect(ledger[0]).toMatchObject({ referenceId: `op:${OPERATION_ID}:charge`, type: "generation" });
+    const refundRows = ledger.slice(1);
+    expect(refundRows).toHaveLength(8);
+    expect(refundRows.every((row) => row.type === "refund" && row.amount === 20)).toBe(true);
+    // Once each, under the cancel's own reference and in the cancel's words.
+    const { refundReferenceFor } = await vi.importActual<typeof import("../casting/atomicCredits")>("../casting/atomicCredits");
+    const { ROLL_CANCEL_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
+    expect(new Set(refundRows.map((row) => row.referenceId))).toEqual(
+      new Set(rows.candidates.map((candidate) => refundReferenceFor(cancelRefundReference(candidate.publicId as string)))),
+    );
+    expect(refundRows.every((row) => row.description === ROLL_CANCEL_REFUND_DESCRIPTION)).toBe(true);
+    expect(receipts.failure).toHaveBeenCalledWith(expect.objectContaining({ chargedCredits: 160, refundedCredits: 160 }));
+  });
+
+  it("THE DEFECT, BY THE FAILED DEDUCT: a roll that is never charged leaves no refund on the ledger", async () => {
+    const landed: { cancel?: Awaited<ReturnType<typeof cancelRoll>> } = {};
+    const dependencies = { ...(baseDependencies() as object), deduct: deductAfterCancel(landed, false) } as never;
+
+    await expect(createRoll(dependencies, INPUT)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+
+    expect(landed.cancel).toMatchObject({ cancelled: 8, refundedCredits: 0, refundUnrecorded: false });
+    // Nothing taken, nothing given back: no credits minted out of a roll nobody paid for.
+    expect(ledger).toEqual([]);
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("THE CONTROL: a cancel after the charge refunds as before, one row each", async () => {
+    ledger.push(chargeRow());
+    rows.candidates.slice(0, 3).forEach((candidate) => {
+      candidate.status = "dispatched";
+    });
+
+    const result = await cancelRoll({ userId: 7, rollPublicId: "roll-public" });
+
+    expect(result).toMatchObject({ cancelled: 5, refundedCredits: 100, refundUnrecorded: false });
+    expect(ledger.filter((row) => row.type === "refund")).toHaveLength(5);
+    expect(ledger.indexOf(ledger.find((row) => row.type === "generation")!)).toBe(0);
+  });
+
+  it("refunds nothing, and says so, when the ledger cannot be read", async () => {
+    ledger.push(chargeRow());
+    ledgerReadThrows = true;
+
+    const result = await cancelRoll({ userId: 7, rollPublicId: "roll-public" });
+
+    // The tiles still stop; the money is reported unrecorded rather than claimed.
+    expect(result).toMatchObject({ cancelled: 8, refundedCredits: 0, refundUnrecorded: true });
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("refunds nothing, and says so, when the charge is ambiguous", async () => {
+    ledger.push(chargeRow(), chargeRow());
+
+    const result = await cancelRoll({ userId: 7, rollPublicId: "roll-public" });
+
+    expect(result).toMatchObject({ cancelled: 8, refundedCredits: 0, refundUnrecorded: true });
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("does not read the ledger when the cancel won nothing it could owe", async () => {
+    rows.candidates.forEach((candidate) => {
+      candidate.status = "dispatched";
+    });
+    ledgerReadThrows = true;
+
+    const result = await cancelRoll({ userId: 7, rollPublicId: "roll-public" });
+
+    // An unreadable ledger would have said "unrecorded"; nothing was owed, so it was never asked.
+    expect(result).toMatchObject({ cancelled: 0, refundedCredits: 0, refundUnrecorded: false, stillFinishing: 8 });
   });
 });
 
