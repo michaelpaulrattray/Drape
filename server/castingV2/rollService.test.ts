@@ -716,6 +716,27 @@ describe("cancel", () => {
     }
   });
 
+  it("refunds under the sentence and the reference the recovery sweep pays a torn cancel with (#955)", async () => {
+    const { recordRefund } = await import("../casting/atomicCredits");
+    const { ROLL_CANCEL_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
+
+    await cancelRoll({ userId: 7, rollPublicId: "roll-public" });
+
+    /*
+      Asserted at the wire (working law 5). The sweep pays a cancel that died
+      before this call under the same charge reference, so the two meet as a
+      ledger duplicate rather than a second refund — and under the same words,
+      so the customer reads one line whichever of the two paid them.
+    */
+    const calls = vi.mocked(recordRefund).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    for (const [, , description, reference] of calls) {
+      expect(description).toBe(ROLL_CANCEL_REFUND_DESCRIPTION);
+      const candidateId = reference.split(":candidate:")[1];
+      expect(reference).toBe(candidateChargeReference(OPERATION_ID, candidateId));
+    }
+  });
+
   it("refunds a candidate that lands unseen after the cancel", async () => {
     rows.candidates = [
       { id: 1, publicId: "cand-1", position: 0, pointsCost: 20, status: "queued", cancelledMidFlight: true },

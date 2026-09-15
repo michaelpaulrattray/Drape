@@ -23,6 +23,7 @@ import { fileURLToPath } from "node:url";
 
 import { readListedSource } from "../testing/listedSource";
 import {
+  ROLL_CANCEL_REFUND_DESCRIPTION,
   SLICE_REFUND_DESCRIPTION,
   SLICE_REFUND_DESCRIPTIONS,
   rollSliceRefundDescription,
@@ -193,6 +194,26 @@ describe("the roll's fork", () => {
         SLICE_REFUND_DESCRIPTION.candidateAbsent,
       );
     }
+  });
+});
+
+describe("the cancel's sentence (#955)", () => {
+  /*
+   * Two writers — the cancel and the sweep paying a torn cancel — and one
+   * author. Kept OUT of the arrival enumeration on purpose: the Machinist's
+   * cross-check counts those sentences against slices that did not arrive, and
+   * a cancelled slice is not one of them.
+   */
+  it("is written out nowhere but its author", () => {
+    expect(filesQuoting(ROLL_CANCEL_REFUND_DESCRIPTION)).toContain(AUTHOR);
+    const elsewhere = filesQuoting(ROLL_CANCEL_REFUND_DESCRIPTION).filter(
+      (relative) => relative !== AUTHOR && relative !== THIS_FILE,
+    );
+    expect(elsewhere).toEqual([]);
+  }, SWEEP_TIMEOUT_MS);
+
+  it("is not counted as a slice that did not arrive", () => {
+    expect(SLICE_REFUND_DESCRIPTIONS).not.toContain(ROLL_CANCEL_REFUND_DESCRIPTION);
   });
 });
 
