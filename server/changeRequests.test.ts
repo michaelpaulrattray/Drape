@@ -160,6 +160,38 @@ vi.mock("./db", () => ({
         createdAt: new Date("2026-01-15T10:00:00Z"), updatedAt: new Date("2026-01-15T10:00:00Z"),
       });
     }
+    // #923 — the money siblings of fixture 9: each is fixture 6 or 8 with ONE
+    // field its executor needs taken away, so the refusal arms and their
+    // positive controls (6 and 8 themselves) differ by that field alone. The
+    // product cannot create any of these; they drive the second line.
+    if (id === 10 || id === 11) {
+      return Promise.resolve({
+        id, type: id === 10 ? "add_credits" : "refund_credits", status: "pending", priority: "normal",
+        submittedById: 10, submittedByName: "Mod User",
+        targetUserId: 42, targetUserName: "Loyal User",
+        title: "Bonus credits for loyalty", description: "User has been active for 12 months",
+        evidenceSummary: null, relatedAuditLogId: null,
+        // 10 has no amount at all; 11 has a stored 0, which the router never
+        // passes on and the executor therefore refuses exactly the same way.
+        creditAmount: id === 10 ? null : 0, creditReason: "Loyalty bonus", ipAddress: null,
+        reviewedById: null, reviewedByName: null, reviewedAt: null, reviewNotes: null,
+        createdAt: new Date("2026-01-15T10:00:00Z"), updatedAt: new Date("2026-01-15T10:00:00Z"),
+      });
+    }
+    if (id === 12 || id === 13) {
+      return Promise.resolve({
+        id, type: "stripe_refund", status: "pending", priority: "high",
+        submittedById: 10, submittedByName: "Mod User",
+        targetUserId: 42, targetUserName: "Refund User",
+        title: "Refund top-up charge", description: "Customer asked for their top-up back",
+        evidenceSummary: null, relatedAuditLogId: null,
+        creditAmount: null, creditReason: null, ipAddress: null,
+        stripeSessionId: id === 12 ? null : "cs_live_418", refundType: "proportional",
+        originalCredits: id === 13 ? null : 5000, refundAmountCents: null, creditsToDeduct: null,
+        reviewedById: null, reviewedByName: null, reviewedAt: null, reviewNotes: null,
+        createdAt: new Date("2026-01-15T10:00:00Z"), updatedAt: new Date("2026-01-15T10:00:00Z"),
+      });
+    }
     // Mock for add_credits auto-execute test
     if (id === 6) {
       return Promise.resolve({
@@ -1043,14 +1075,14 @@ describe("Change Request - Admin Review Procedures", () => {
     it("#921 — the refusal names the missing field and what to do, not a code", async () => {
       /* The message is read by an admin in a toast, so it is part of the fix
          rather than decoration: it must say WHICH field is absent and give the
-         action that works (deny). Asserted on meaning, not on the exact
+         action that works (decline — the button says Decline, #923). Asserted on meaning, not on the exact
          sentence — a reworded sentence should not redden. */
       await expect(
         adminCaller().reviewChangeRequest({ id: 9, action: "approved" } as never),
       ).rejects.toMatchObject({ message: expect.stringMatching(/IP address/i) });
       await expect(
         adminCaller().reviewChangeRequest({ id: 9, action: "approved" } as never),
-      ).rejects.toMatchObject({ message: expect.stringMatching(/deny it/i) });
+      ).rejects.toMatchObject({ message: expect.stringMatching(/decline it/i) });
     });
 
     it("#921 POSITIVE CONTROL — a block_ip request WITH an address still approves and blocks the address", async () => {
@@ -1114,6 +1146,76 @@ describe("Change Request - Admin Review Procedures", () => {
         9,
         expect.objectContaining({ status: "denied", reviewedById: 1 }),
       );
+    });
+
+    /*
+     * ⚠ #923 — THE TWO MONEY SIBLINGS OF #921, REFUSED IN THE SAME PLACE.
+     *
+     * A credit request with no usable amount, and a Stripe refund with no
+     * session or no original-credits figure, used to reach the compare-and-swap
+     * and throw inside the executor — which left the request at
+     * `pending_execution` ("Outcome unconfirmed"), where neither Approve nor
+     * Deny works. The same three assertions as #921, for the same reason: the
+     * throw alone cannot tell "refused while pending" from "wedged".
+     */
+    const MISSING_FIELD = [
+      { id: 10, type: "add_credits", field: /credit amount/i },
+      { id: 11, type: "refund_credits (a stored 0)", field: /credit amount/i },
+      { id: 12, type: "stripe_refund", field: /Stripe session/i },
+      { id: 13, type: "stripe_refund", field: /credits the original purchase gave/i },
+    ];
+
+    for (const { id, type, field } of MISSING_FIELD) {
+      it(`#923 — approving ${type} missing its field (fixture ${id}) is refused BEFORE the CAS, names the field, and says decline — the button's own word`, async () => {
+        const { updateChangeRequestStatus } = await import("./db");
+        const { executeChangeRequestAction } = await import("./lib/adminActions");
+        vi.mocked(updateChangeRequestStatus).mockClear();
+        vi.mocked(executeChangeRequestAction).mockClear();
+
+        const attempt = adminCaller().reviewChangeRequest({ id, action: "approved" } as never);
+        await expect(attempt).rejects.toMatchObject({ code: "BAD_REQUEST", message: expect.stringMatching(field) });
+        await expect(
+          adminCaller().reviewChangeRequest({ id, action: "approved" } as never),
+        ).rejects.toMatchObject({ message: expect.stringMatching(/decline it/i) });
+
+        expect(
+          updateChangeRequestStatus,
+          "the request was moved out of `pending` — it is now wedged and cannot be denied",
+        ).not.toHaveBeenCalled();
+        expect(executeChangeRequestAction).not.toHaveBeenCalled();
+      });
+
+      it(`#923 — the same request (fixture ${id}) can still be DENIED`, async () => {
+        const { updateChangeRequestStatus } = await import("./db");
+        vi.mocked(updateChangeRequestStatus).mockClear();
+        await adminCaller().reviewChangeRequest({ id, action: "denied" } as never);
+        expect(updateChangeRequestStatus).toHaveBeenCalledWith(
+          id,
+          expect.objectContaining({ status: "denied", reviewedById: 1 }),
+        );
+      });
+    }
+
+    it("#923 POSITIVE CONTROL — the complete credit and Stripe requests still reach the CAS and the executor", async () => {
+      /* Without this the refusal arms pass against a guard that refuses every
+         money request. Fixtures 6 and 8 differ from 10–13 only in carrying the
+         field. */
+      const { updateChangeRequestStatus } = await import("./db");
+      const { executeChangeRequestAction } = await import("./lib/adminActions");
+      for (const [id, action] of [[6, "cr_addCredits"], [8, "cr_stripeRefund"]] as const) {
+        vi.mocked(updateChangeRequestStatus).mockClear();
+        vi.mocked(executeChangeRequestAction).mockClear();
+        await adminCaller().reviewChangeRequest({ id, action: "approved" } as never);
+        expect(updateChangeRequestStatus).toHaveBeenCalledWith(
+          id,
+          expect.objectContaining({ status: "pending_execution" }),
+          "pending",
+        );
+        expect(executeChangeRequestAction).toHaveBeenCalledWith(
+          expect.objectContaining({ action }),
+          expect.anything(),
+        );
+      }
     });
 
     it("denying a request marks it denied, and executes nothing", async () => {
