@@ -837,6 +837,14 @@ export function composeBelowHeadCut(input: {
       arrivedPixels: 0,
       departedPixels: 0,
       deliveredRead: false,
+      /*
+        AND NO GROUND WAS LOST, which here is a measured fact rather than a
+        placeholder: this crop is never intersected with `applied` at all (the
+        paragraph above is about exactly that), so there is no ask for the
+        reading to fall outside of. Her whole silhouette below the chin is
+        kept, and `pixels` already says how much of it that was.
+      */
+      lostPixels: 0,
     },
   };
 }
@@ -1362,13 +1370,48 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       rows are pushed in the same order, by the same loops, on the same rules.
     */
     const frame = await readRaster(input.frame.bytes);
-    const cuts = cuttable.length === 0 ? [] : cutSegments({
+    const { cuts, dropped: cutsDropped } = cuttable.length === 0 ? { cuts: [], dropped: [] } : cutSegments({
       composite: frame,
       applied: input.applied ?? wholeFrame(frame.width, frame.height),
       facetRegions: new Map(cuttable.map((slot) => [slot.slot, slot.regionKey])),
       regionMasks: regionsToCut,
       deliveredMasks: deliveredToCut.size > 0 ? deliveredToCut : null,
     });
+
+    /*
+      WHAT THE CUT COST, ON THE PATH EVERY REFINE CUSTOMER TAKES.
+
+      #64 item (3): `applied` was intersected and the workings discarded, so a
+      slot that kept a sliver of a large reading and a slot that kept all of a
+      small one filed indistinguishable rows, and a slot the cutter dropped
+      filed nothing anywhere. Both are now a line — at `info`, because this is
+      the normal healthy shape of a small edit on a big region and not an
+      error, and the finding it makes available is a RATIO nobody could see:
+      `lost` far exceeding `pixels` on a slot the customer paid to change.
+
+      Written only when there is something to say. A render whose every slot cut
+      cleanly and lost nothing adds no line, so the presence of this one is
+      itself the signal.
+    */
+    if (cutsDropped.length > 0 || cuts.some((cut) => cut.lostPixels > 0)) {
+      log.info(
+        {
+          userId: input.userId,
+          variantId: input.variantId,
+          operationId: input.operationId,
+          ground: cuts
+            .filter((cut) => cut.lostPixels > 0)
+            .map((cut) => ({ slot: cut.facet, region: cut.region, kept: cut.pixels, lost: cut.lostPixels })),
+          dropped: cutsDropped.map((drop) => ({
+            slot: drop.facet,
+            region: drop.region,
+            reason: drop.reason,
+            lost: drop.lostPixels,
+          })),
+        },
+        "[referenceMint] what the ask refused the cut",
+      );
+    }
 
     /*
       AND THE COMPOSED ONES, CUT FROM THE FRAME IN HAND.
