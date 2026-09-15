@@ -1,7 +1,7 @@
 {
-  "edition": 417,
-  "updatedAt": "2026-09-15T00:16:17.389Z",
-  "shift": "ALL FIVE OF YOUR HELD JOBS CAN NOW BE LOOKED AT — AND THE REVIEWER STILL WILL NOT LOOK. Nothing a customer sees changed tonight. Nothing merged. The five are exactly as safe as they were, and one thing about them has genuinely changed for the better.\n\nWHAT WAS ACTUALLY WRONG. You said, on Monday: keep holding the five money jobs until the reviewer answers. Two shifts read that as \"do not touch them\", which is fair, and it turned out to be the reading that could never end. All five had drifted so far behind the live code that GitHub marked them as clashing with it — and a clashing job gets NO automatic anything. No checks. And no reviewer. Three attempts on Tuesday morning to summon the reviewer onto one of them produced silence, not a refusal: nothing ran at all. So the thing your hold was waiting for was, by construction, unable to arrive. Your instruction forbids MERGING them without a verdict. It does not forbid making it possible to ask for one.\n\nFIRST FINDING: IT WAS ALL FIVE, NOT TWO. The note this job came from had two of them clashing and three merely \"unknown\". I waited for GitHub to finish working each one out before writing anything down. All five were clashing.\n\nAND NOT ONE OF THEM HAD A REAL CLASH. Every single one was the same two automatically-generated map files that we regenerate on every change — we have a tool that resolves exactly this, and it did, five times, with no human judgement anywhere. All five are now back in step with the live code, pass every check we run ourselves, and can be asked for a review. That is the win, and it is real.\n\nSECOND FINDING, AND IT IS THE ONE THAT MATTERS. I asked the reviewer four times on the first job. Four times it started and died in half a second, having spent nothing and read nothing.\n\nTHEN I NEARLY TOLD YOU SOMETHING FALSE, AND I WANT TO BE STRAIGHT ABOUT IT. My first reading of the evidence said the reviewer was working about one time in five — three green runs yesterday. I wrote that in my own progress note. It was wrong. I opened those three green runs and in every one the reviewer itself was SKIPPED: a different, cheap step had looked at the change, decided it was too small to be worth a review, and passed. A green run means \"we produced an answer about whether to review\", never \"a review happened\". We have been caught by exactly that before, which is why the check now writes its own state out in words.\n\nMEASURED PROPERLY, THE NUMBER IS ZERO. I went back through the 110 most recent reviewer runs and opened each one to see whether the reviewer itself actually ran. It ran 48 times. It produced 0 reviews. Every one of the 48 died at the same instant, before asking a single question, having spent nothing. That is two solid days, every kind of change, no exceptions. The same wrong reading is in the note this job came from and in my own first heartbeat, and both are corrected on the record.\n\nSO WHAT YOUR HOLD IS NOW WAITING ON. There were two things stopping a verdict. One was ours — the five jobs were unaskable — and it is fixed. The other is the reviewer dying before it reads anything, and that is your Claude allowance, which is the one thing here I cannot see or fix. Your desk card below has the corrected picture and the same three choices; the recommendation has not changed, but the cost of choosing \"keep holding\" has, because it is now measurably an indefinite wait rather than a short one.\n\nONE THING I CHECKED AND DELIBERATELY DID NOT BUILD. The job also asked me to make our merging tool name a clash as the reason for a missing review. I opened the tool before writing anything: it already does, in two separate places, one of them word for word. The instruction was out of date and the code was right. No change made.\n\nHONEST ABOUT WHAT THIS DOES NOT FIX. These five will drift out of step again the moment anything else goes in, because the clash is those generated map files and GitHub cannot run our resolver. Tonight bought a window, exactly as a re-merge on Sunday night bought one that had closed by morning. While the hold stands, each shift will put them back in step — but there is no point asking for a review again until the reviewer is alive, and a shift that spends its night re-labelling in hope is wasting it.",
+  "edition": 418,
+  "updatedAt": "2026-09-15T00:52:27.974Z",
+  "shift": "THE WORK LIST YOU SWITCHED ON WAS OFFERING JOBS THAT WERE ALREADY DONE. Nothing a customer sees changed tonight, and nothing merged. What changed is that four pieces of work your team has been carrying as 'still to do' turned out to be finished already — and no note anywhere said so.  WHY I WENT LOOKING. Your Bugs list had one job on it and it is the one waiting on the outside reviewer, which I re-measured before touching anything: 17 real attempts since yesterday, 0 reviews produced. Unchanged, so I left your five held money jobs alone and did not waste the night asking again. That left the casting upkeep list you have switched on — seven jobs — and the rule is that I read each one against the actual code before taking it, never off its title.  WHAT I FOUND. Three of the seven described work that has already landed:  · A job about tattoos on the back said the app would accept the request and then quietly   produce nothing. I drove eight real phrasings through the live code. All eight are   refused politely and correctly. It stopped being broken when something else was fixed. · A job listing five small fixes had two of them done — and one of the two was fixed by a   shift that WROTE THE JOB NUMBER INTO THE CODE COMMENT and then never updated the job. · A job about a duplicated error sentence was fixed; there is one copy now, with a test.  THREE OF THE FOUR WERE FIXED BY ACCIDENT — they rode in on changes aimed at something else entirely, which is exactly the kind of thing no test and no green run will ever tell us. The only thing that finds it is somebody opening the file.  WHAT IT WAS COSTING YOU. A job that says it is small and is actually finished is worse than one that is too big: a shift reads it, finds nothing to do, quietly moves on, and the job stays on your list for the next shift to pay for again. One had been advertising a 'two-line fix' for three weeks that was already in the code.  WHAT I ALSO RE-MEASURED. One upkeep job rests on two numbers being zero — whether any customer work has picked up some old unmarked records. Those numbers were nineteen days old, so I re-read them on the live database rather than repeat them. Still zero, and now on a pool that has more than tripled since. That is a stronger answer than the old one.  WHAT I CHANGED. No code. Four jobs corrected so they now say what is actually left, and one moved off your upkeep list onto the longer-term list, because all that remains of it is building something new — which is not mine to start. Your upkeep count goes 7 to 6, and the six that remain are honest.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -6450,30 +6450,37 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0915d-foreman",
+      "id": "queue-shape-0915e-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 47 open — none closed tonight, none filed, and four corrected; NEXT UP is empty and nothing new waits on you",
+      "detail": "Nothing was closed or filed tonight and nothing merged. Four jobs were CORRECTED instead — they were describing work that has already been done, which is the opposite of the usual problem and is harder to spot. Nothing is running and nothing is marked urgent. 24 cards have gone a week with no comment, close or commit against them, down from 27, and the oldest is 20 days. Your casting upkeep count moves 7 to 6: one job is now purely about building something new, so it has moved to the longer-term list where I cannot start it without your word. The five finished money jobs held for the outside reviewer are untouched and still held — I re-measured it at 17 attempts, 0 reviews, and deliberately did not spend the night asking again."
+    },
+    {
+      "id": "queue-shape-0915d-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 46 open — one closed tonight, none filed; NEXT UP is empty and one new thing waits on you",
       "detail": "One job closed tonight (#979, both halves) and nothing new was filed — the two faults found along the way were the job's own subject, so they were fixed rather than carded. Nothing is running and nothing is marked urgent. 27 cards have gone a week with no comment, close or commit against them — the same 27 as last night — and the oldest is 20 days. NEW ON YOUR PAGE TONIGHT: the two Process jobs that seven shifts running have correctly refused, one of which is about money jobs reaching your eye. The five finished jobs held for the outside reviewer are unchanged and still held."
     },
     {
       "id": "reviewer-no-verdict-0915d",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The outside reviewer stopped after 42 seconds again — and it said in its own words that this is an outage, not a judgement",
       "detail": "It ran on tonight's first job and died on its first question. Its own log prints: 'NO VERDICT: the Fable reviewer did not complete. This is an OUTAGE, not a rejection — nothing in this diff was judged.' That sentence exists because a red mark here was once read as the reviewer rejecting work, which cost two nights before anyone dug out the log. Tonight's second job got a different answer again — 'declined', meaning the reviewer looked and decided the job did not need a full review, which is the system working rather than failing. Both went through on our own checks under your standing ruling. Nothing here needs you; it is recorded so the reviewer's silence stays visible."
     },
     {
       "id": "queue-shape-0915c-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 49 open — two closed tonight and one filed; NEXT UP is still empty and nothing new waits on you",
       "detail": "Two jobs closed tonight (#969 and #971) and one filed and finished in the same shift (#971). Nothing is running, nothing is marked urgent, and your NEXT UP list is empty. 27 cards have gone a week with no comment, close or commit against them — the same 27 as last night, and the oldest is 20 days old. The five finished jobs held for the outside reviewer are the only thing waiting on you, and they are unchanged."
     },
     {
       "id": "reviewer-declined-0915c",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The outside reviewer did not run tonight — and for once that is it working correctly, not failing",
       "detail": "Both of tonight's changes were small and touched no money or sign-in code, so the triage step looked at them and decided a paid review was not warranted. That is a decision, not a breakdown — worth saying plainly, because the last few nights this row has reported the reviewer dying on its first call. Nothing about your Fable allowance has changed, and your 'wait' on the five held money jobs stands exactly as it did."
     },
@@ -6522,28 +6529,28 @@
     {
       "id": "queue-shape-0914l-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 49 open, one closed tonight and three filed; NEXT UP is empty and nothing new waits on you",
       "detail": "49 open, up from 47 — one card closed (#932) and three filed, which is the honest direction when a job's own sweep finds real things. Two of the three (#955, #956) are the same fault as tonight's fix down two other roads, both measured on the live database as having hurt nobody yet; the third (#958) is about our own safety gate and is the sharpest of them. The main job (#896) is built and waiting on the reviewer rather than closed, which is why the number did not fall further. 27 cards have had no comment, close, reopen or commit for seven days — one more than last night. None are urgent, NEXT UP is empty, and the oldest untouched card is #28 at 20 days."
     },
     {
       "id": "fable-reviewer-no-verdict-884-0914b",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The outside reviewer failed again tonight — at least 40 failed runs, and your 'wait' stands",
       "detail": "Counted rather than carried over: of the last 100 reviewer runs, 40 ended in failure, the oldest of those on 13 September — and the list does not reach back far enough to see the start, so 40 is a floor. Tonight's run on the refund fix died the same way as all of them: it reached the point of starting work, failed on its first question in 0.8 seconds, and spent nothing. You have said the reviewer card is not relevant and it is closed; I did not re-diagnose it. ONE THING WORTH KNOWING FOR ANYONE SCANNING THE LIST: a reviewer run tonight shows GREEN, and it reviewed nothing — the green means 'we looked at this job and decided it did not need a review'. A run finishing is not a verdict."
     },
     {
       "id": "queue-shape-0914k-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 51 open, one closed tonight and one filed; NEXT UP is empty and nothing waits on you",
       "detail": "51 open. One card closed (#946) and one filed (#950, found by looking at the screen I had just fixed); the second card I worked (#940) is built and waiting on the reviewer rather than closed, which is why the number did not fall. 26 have had no comment, close, reopen or commit for seven days — unchanged for the sixth night. None are urgent, NEXT UP is empty, and the oldest untouched card is #28 at 20 days."
     },
     {
       "id": "fable-reviewer-no-verdict-884-36",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The outside reviewer has now failed 36 times in a row — and tonight it cost us a held change",
       "detail": "Both of tonight's changes failed the same way as the thirty-four before them: about six hundred milliseconds, one turn, zero dollars, an error on the very first step, all still tracing to 1am on the 12th. I read each run's own numbers rather than the red tick beside it, and I did not re-diagnose it — you said wait. WHAT IS NEW IS THE COST: one of tonight's two changes touches a file the safety net treats as money-related, so our own rule holds it back until a reviewer exists. It is finished, its checks are green, and it needs one click when the reviewer is back. That is the first time this outage has actually stopped work rather than just looked alarming."
     },
