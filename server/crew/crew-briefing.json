@@ -1,7 +1,7 @@
 {
-  "edition": 422,
-  "updatedAt": "2026-09-15T05:15:00.000Z",
-  "shift": "BOTH THINGS YOU ASKED FOR LAST NIGHT ARE DONE, AND THEN I FIXED A BUG WHERE A PICTURE THAT ARRIVES AT THE LAST SECOND GETS REPORTED AS MISSING.\n\nYOUR TWO INSTRUCTIONS. You replied \"Merge it, and yes to #909's sentence\". The money flag is merged and live — from now on, a job that changes how many credits a customer gets back is flagged for your eye and gets the deep review, which it was not before. And the crew's rulebook now carries the sentence you approved: when a shift picks up a job, it counts how big the job really is before it starts, instead of trusting the size written on the card. Three jobs in a row had been several times bigger than their own description said.\n\nTHE BUG I THEN FIXED, IN PLAIN TERMS. When you cast a sheet, eight pictures are made. If something crashes partway, a clean-up pass decides what you got and what you are owed. That pass takes one look at your pictures at the start and never looks again — so a picture that lands in the same few seconds the clean-up is running is not counted. You keep the picture. But the sheet is marked FAILED, and the receipt says one fewer picture arrived than actually did.\n\nSo you would be holding an image while the studio told you the whole sheet failed. Your money was always right; what was wrong was what we told you about it. The fix is one sentence of behaviour: look once more, right at the end, and count from that.\n\nWHAT I WAS CAREFUL ABOUT. That clean-up pass is also what pays refunds, and I did not let the new look-again touch the money at all — every refund calculation still works off the original reading. A second reader of the money would have paid some slices back twice. Every test in the new batch checks the refunds are untouched as well as checking the count is fixed.\n\nTHE PART WORTH TELLING YOU. Our own test suite had this bug written down as CORRECT behaviour. There is a test named \"pays nothing when the winner landed the candidate\" — it described exactly this situation, the customer holding an image, and asserted that the sheet should be called a total failure. It has passed for weeks. The money half of it has not changed; what changed is the sentence it tells you at the end.\n\nPROVING THE TESTS ACTUALLY WORK. I broke the fix four different ways on purpose — put the old stale reading back in each of the two places, made it believe an empty result, and made it use a too-narrow rule — and each one turned the right tests red. All 48 pass either side. A test that cannot fail is not a test.\n\nI HAVE NOT MERGED IT, BECAUSE YOU TOLD ME NOT TO TONIGHT. Your instruction about the reviewer being down arrived at 4:51 this morning, while I was building: money jobs go to the relay for a hand review rather than being held or merged by a shift. I found it by re-reading the queue before shipping, which is exactly why that rule exists. So the job is finished, every check green, marked for the relay, and waiting for a person — not parked.\n\nONE HONEST CORRECTION. I had written in the job's own description that the new money flag would catch it. It did not, and when I checked properly it is right not to: this change moves no money, so nothing about credits appears in it. I corrected that line rather than leaving it, because a guess written down is what the next person inherits.\n\nCOST: nothing. No credits, no renders, no paid calls.",
+  "edition": 423,
+  "updatedAt": "2026-09-15T07:50:00.000Z",
+  "shift": "ONE JOB DONE: THE TOOL THAT MERGES THE NIGHT SHIFTS' OWN WORK NOW NOTICES A REFUND CHANGE, NOT ONLY A BILLING-FOLDER CHANGE. IT IS WAITING FOR THE RELAY'S HAND REVIEW, AS YOU ASKED.\n\nWHAT IT WAS. Last night's fix taught the automatic check to flag any job that changes how many credits a customer gets back, not only jobs in the billing and sign-in folders. But the shifts merge their own jobs with a separate tool, and that tool still only looked at folder names. So a refund change living in the casting code would have been treated by that tool as an ordinary job and merged without a reviewer, even though the check had flagged it for your eye. Five of the last sixty finished jobs were exactly that kind.\n\nWHAT CHANGED. The tool now reads the changed lines too, using the very same rule the check uses, from the one file that rule lives in — no second copy to drift. It costs nothing extra: the lines were already in what the tool downloads, and it was throwing them away.\n\nHOW I KNOW IT IS RIGHT. I ran the new reading over the last sixty finished jobs and compared it with the check's own answer, file by file. They agree on all sixty. Then I broke the new part five different ways on purpose, and each break turned the tests red. It flagged its own job for your eye, which is the right answer, since its tests talk about credits.\n\nNOT MERGED BY ME. Per your word while the reviewer is out of credits, it is open, marked for the relay, and not held back.\n\nNOTHING ELSE WAS TAKEABLE. The two remaining bug jobs are one that needs your decision on refund wording (not urgent: it has never happened) and one that is blocked on the reviewer. The casting jobs each need your word or your money, as the last three nights also found.\n\nCOST: nothing. No credits, no renders, no paid calls.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -147,7 +147,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-15T05:08:22.658Z",
+      "readAt": "2026-09-15T07:46:07.369Z",
       "items": [
         {
           "issueNumber": 16,
@@ -4974,6 +4974,13 @@
   ],
   "pipeline": [
     {
+      "id": "merge-tool-symbols-987",
+      "title": "The tool that merges the shifts' jobs now spots a refund change, not only a billing-folder change",
+      "status": "in-review",
+      "prNumber": 990,
+      "note": "Last night's money check learned to flag jobs that change how many credits a customer gets back. The separate tool the shifts use to merge their own work did not learn it, so it would have waved those same jobs through without a reviewer. It now reads the same rule from the same file, in data it was already downloading. Compared against the check's own answer over the last sixty finished jobs: identical on all sixty. Broken five ways on purpose; every break caught. Every automatic check green; it flagged itself for your eye, correctly. Waiting for the relay's hand review under your standing word, not held."
+    },
+    {
       "id": "money-classifier-958",
       "title": "Refund jobs were invisible to the check that decides what reaches your eye — measured at 4 of 60, now 9",
       "status": "merged",
@@ -6469,7 +6476,7 @@
     {
       "id": "pr-989-sealcount-956",
       "title": "A picture that lands at the last second is now counted, instead of the sheet being marked failed (#956)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 989,
       "note": "WHAT YOU WOULD SEE: a sheet whose last tile arrives in the same seconds the crash clean-up is running. You keep the picture — and the sheet says FAILED, with the receipt one picture short. Your credits were always right; the sentence about them was not.\n\nTHE CAUSE, IN ONE LINE: the clean-up looked at your pictures once, at the start, and never looked again, while the thing it is guarding against is a picture arriving late. The fix looks once more at the very end and counts from that.\n\nTHE MONEY IS DELIBERATELY UNTOUCHED. Every refund calculation still works off the original reading. A second reader of the money would have paid some slices back twice, so every new test checks the refunds are unchanged as well as checking the count is fixed.\n\nOUR OWN TESTS HAD THE BUG WRITTEN DOWN AS CORRECT. A test called \"pays nothing when the winner landed the candidate\" described this exact situation and asserted the sheet should be called a total failure. Its money assertion has not moved; its verdict now says partial, with the picture counted.\n\nPROVEN ABLE TO FAIL: broken four ways on purpose, each turning the right tests red, all 48 green either side.\n\nNOT MERGED BY THE SHIFT — your 4:51am instruction: money jobs go to the relay for a hand review while the reviewer is down. Gate green, marked for the relay, waiting for a person."
     },
@@ -7004,7 +7011,7 @@
     189
   ],
   "nextUp": {
-    "readAt": "2026-09-15T05:08:22.657Z",
+    "readAt": "2026-09-15T07:46:07.368Z",
     "items": [
       {
         "issueNumber": 988,
