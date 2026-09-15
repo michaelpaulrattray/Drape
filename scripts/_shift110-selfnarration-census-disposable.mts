@@ -86,6 +86,31 @@ const CUES: ReadonlyArray<{ cue: string; why: string }> = [
   { cue: "unchanged", why: "refers to the author's act of keeping something" },
   { cue: "instruction", why: "names the author's own instructions" },
   { cue: "no softening", why: "#242's own specimen — and the shape of his legitimate 'no soft…' direction" },
+  /*
+    ⚠ THE OPENNESS CLASS — ADDED 2026-09-15 FROM THIS INSTRUMENT'S OWN
+    RECORDED FAILURE, not from a new idea. The 2026-08-30 run
+    (`AUTHOR_SELF_NARRATION_READING_2026-08-30.md`, and the answer comment on
+    #242) closed with: *"My deliberately over-broad cue list STILL missed a
+    hit. `C-thin-4` entered the confirmed set only from a wider sweep run
+    afterwards. A cue list is a mirror, and this one is measured incomplete."*
+    That run's actual finding was that the defect is NOT the author narrating
+    its compliance but the author narrating what it is leaving OPEN — and the
+    phrases that do it were measured PERFECT discriminators where every cue
+    above is not: `left to the engine` / `left to the room` 2 occurrences, 2
+    offending; `nothing named or fixed` / `what is stated` 3 and 3. One of them
+    names OUR PIPELINE in an image prompt, which is the §5b class whose own
+    cost is pictured (dev roll 95: openness narration painted 7 of 8 tiles as
+    contact-sheet grids).
+
+    Re-measuring the new road with the blind spot still in would reproduce the
+    exact hole the last run declared. `left to` is deliberately NOT a cue on
+    its own — measured 3 occurrences, 2 offending, "the OBJECT decides".
+  */
+  { cue: "left to the engine", why: "openness narration, and it names our pipeline — 2/2 offending (2026-08-30)" },
+  { cue: "left to the room", why: "openness narration — 2/2 offending (2026-08-30)" },
+  { cue: "nothing named", why: "'nothing named or fixed' — 3/3 offending (2026-08-30)" },
+  { cue: "left open", why: "already banned (NEVER_WRITTEN) — present as a control on the ban's reach" },
+  { cue: "left unset", why: "already banned (NEVER_WRITTEN) — present as a control on the ban's reach" },
 ];
 
 /** Every sentence of `text` that contains at least one cue, with the cues that caught it. */
@@ -113,6 +138,15 @@ const candidateSentences = (text: string): Array<{ sentence: string; cues: strin
 const POSITIVE_CONTROL =
   "no invented jewelry, no new garments beyond the armour already described, no softening of the "
   + "predatory stillness that defines the character.";
+/*
+  THE SECOND POSITIVE — the openness class, and it is the one that matters on
+  the new road. `C-thin-4`, the draft the 2026-08-30 cue list MISSED. A run
+  whose detector cannot see this is a run that would report the same clean
+  sheet the last one did for the same wrong reason.
+*/
+const POSITIVE_CONTROL_OPENNESS =
+  "Jewellery, where it appears, reads as dark metal and old stones rather than sparkle — left to the "
+  + "engine rather than fixed.";
 const NEGATIVE_CONTROLS = [
   "no soft youthful rounding in the jaw.",
   "matte skin, no shine.",
@@ -127,6 +161,13 @@ if (positiveHits.length === 0) {
   console.log("  positive  MISSED — the detector cannot see #242's own specimen. Nothing below is evidence.");
 } else {
   console.log(`  positive  CAUGHT via [${positiveHits[0].cues.join(", ")}]`);
+}
+const opennessHits = candidateSentences(POSITIVE_CONTROL_OPENNESS);
+if (opennessHits.length === 0) {
+  controlsOk = false;
+  console.log("  positive  MISSED — the OPENNESS specimen (C-thin-4), the class the 2026-08-30 run actually found. Nothing below is evidence.");
+} else {
+  console.log(`  positive  CAUGHT via [${opennessHits[0].cues.join(", ")}]  (openness class)`);
 }
 for (const control of NEGATIVE_CONTROLS) {
   const hits = candidateSentences(control);
