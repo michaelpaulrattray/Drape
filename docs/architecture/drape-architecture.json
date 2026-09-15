@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ad83470d5d881fa4"
+    "sourceFingerprint": "5d41912c0905a483"
   },
   "domains": [
     {
@@ -33861,6 +33861,11 @@
     {
       "from": "module:shared/crewPipelineGroups.ts",
       "to": "module:shared/crewWorkSwitches.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewQueueExclusions.ts",
+      "to": "module:shared/crewNextUpHold.ts",
       "kind": "imports"
     },
     {

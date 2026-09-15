@@ -29,6 +29,7 @@ import {
   queueExclusionSentence,
   serializeQueueExclusions,
 } from "../shared/crewQueueExclusions";
+import { CREW_HOLD_LABELS } from "../shared/crewNextUpHold";
 
 describe("the exclusion vocabulary", () => {
   it("⚠ CONTROL — the reasons are the queue's OWN labels, not labels invented here", () => {
@@ -43,7 +44,31 @@ describe("the exclusion vocabulary", () => {
        quietly, so the repair is to state the new list here with its reasoning
        — never to loosen the assertion to a length or a `toContain`. */
     expect(QUEUE_EXCLUSION_REASONS.map((reason) => reason.queueLabel))
-      .toEqual(["founder-ordered", "parked", "blocked"]);
+      .toEqual(["founder-ordered", "parked", "blocked", "awaiting-fable", "needs-sitting"]);
+    /* ⚠ AND IT WENT RED AGAIN FOR #999, WHICH ADDED THE LAST TWO. Neither is new:
+       both are `shared/crewNextUpHold.ts`'s hold labels, which the relay and the
+       desk sweep already apply. `#841` carried `awaiting-fable` under a switch
+       and was counted as on offer, so the park gate saw work no shift may take. */
+  });
+
+  it("⚠ #999 — EVERY hold label has an exclusion row, read from the one hold vocabulary", () => {
+    /* The drift this arm closes: `blocked` was typed here while the hold
+       vocabulary grew two more labels, and nothing noticed that a held card
+       was still being offered. A fourth hold label added there reddens this. */
+    const excluded = QUEUE_EXCLUSION_REASONS.map((reason) => reason.queueLabel as string);
+    for (const label of Object.values(CREW_HOLD_LABELS)) {
+      expect(excluded, `hold label \`${label}\` has no exclusion row`).toContain(label);
+    }
+  });
+
+  it("names a card held for a Fable session, or for a sitting", () => {
+    /* The live shape the card was filed about: `#841`. */
+    expect(exclusionFor(["debt", "seat:janitor", "awaiting-fable"])).toBe("fable");
+    expect(exclusionFor(["seat:retro", "needs-sitting"])).toBe("sitting");
+    /* A card that is both blocked and awaiting Fable reads as blocked — first
+       match wins, and a Fable session could not take it either. */
+    expect(exclusionFor(["awaiting-fable", "blocked"])).toBe("blocked");
+    expect(queueExclusionSentence({ fable: 1, parked: 3 })).toBe("3 parked, 1 awaiting Fable");
   });
 
   it("names a card he has already queued", () => {
