@@ -23,6 +23,16 @@
  * outside its region, or did not answer it at all — and it produces NO segment
  * rather than an empty one. A zero-pixel segment would be a promise of
  * permanence over nothing, which is the flattering direction.
+ *
+ * # But it produces a ROW saying so
+ *
+ * Common is not the same as uninteresting. Until #64 item (3) each of those
+ * states was a bare `continue`, so the cutter knew precisely which facets it
+ * had dropped and why, and threw both away at the `return` — and the same went
+ * for the ground a filed cut LOST to the intersection. `cutSegments` therefore
+ * hands back `{ cuts, dropped }`, and every cut carries `lostPixels`. Nothing
+ * about which segments get filed has changed; what changed is that the
+ * arithmetic no longer keeps its own workings secret.
  */
 import sharp from "sharp";
 
@@ -77,6 +87,84 @@ export type SegmentCut = {
    * and a delivered-anchored cut that found nothing new are the same row.
    */
   deliveredRead: boolean;
+  /**
+   * LOST GROUND — pixels this facet's own reading claimed that `applied` did
+   * not grant.
+   *
+   * The other end of `arrivedPixels`, and the half that was computed and thrown
+   * away for as long as this module has existed: `owned` is the intersection,
+   * so everything outside it left no trace of having been claimed. A cut
+   * reporting 200 pixels is two completely different events depending on
+   * whether its reading asked for 200 or for 40,000, and only this number tells
+   * them apart from the kept artifacts.
+   *
+   * It is not an error. `applied` is the territory the paint was allowed into
+   * (rule 4), so a large loss is the normal state of a small edit on a large
+   * region — a freckles pass over her whole face skin loses nearly all of it.
+   * What it makes findable is the OTHER shape: a facet whose reading and whose
+   * ask barely overlap, which is the render where permanence quietly keeps a
+   * sliver of what she paid for.
+   */
+  lostPixels: number;
+};
+
+/**
+ * A facet that asked for a segment and got none, and why.
+ *
+ * Every one of these was a bare `continue` until #64 item (3): the cutter knew
+ * exactly which facets it had dropped and threw the list away at the `return`,
+ * so a render that filed three segments out of eight looked identical to one
+ * that was only ever asked for three. `bornWornCatalogue` felt this first and
+ * rebuilt the list by hand from the facets it had passed in — a second list
+ * shadowing a source of truth, which is working law 4, and it could only ever
+ * recover the FACT of a drop and never its reason.
+ */
+export type SegmentDrop = {
+  facet: string;
+  /** The segmentation question this facet asked. */
+  region: string;
+  reason: SegmentDropReason;
+  /**
+   * How much ground its reading claimed, all of which was lost.
+   *
+   * Zero on `regionNotSegmented`, where there was no reading to claim any. The
+   * `reason` is what carries that difference, not the number.
+   */
+  lostPixels: number;
+  /** Whether a delivered reading existed for the region — as on a filed cut. */
+  deliveredRead: boolean;
+};
+
+export type SegmentDropReason =
+  /**
+   * The harvest never segmented this facet's region, so there is nothing to
+   * intersect. Deliberate and common: the render has no evidence about the
+   * facet, and the next one treats it exactly as today — words.
+   */
+  | "regionNotSegmented"
+  /**
+   * The reading and the ask never met. The facet WAS segmented, `applied` WAS
+   * granted, and the two share no pixel — the painter answered it outside its
+   * region, or did not answer it at all.
+   */
+  | "noGroundInTheAsk"
+  /**
+   * The bounds of the owned mask contain no owned pixel.
+   *
+   * ⚠ UNREACHABLE under today's `boundsOf`, which returns null exactly when
+   * nothing is claimed above zero, so a box it does return contains at least
+   * the pixel it was drawn around. It is kept and NAMED rather than deleted
+   * because `boundsOf` takes a THRESHOLD, and the day somebody cuts with one
+   * this becomes the only place that would notice — where before it was a bare
+   * `continue` that would have dropped a facet in silence. If this reason ever
+   * appears in a log, the arithmetic above it has changed underneath the cut.
+   */
+  | "emptyBox";
+
+export type SegmentCutResult = {
+  cuts: SegmentCut[];
+  /** Every facet that asked and got nothing, with the reason and the cost. */
+  dropped: SegmentDrop[];
 };
 
 function assertSameShape(a: { width: number; height: number }, b: { width: number; height: number }, what: string): void {
@@ -208,10 +296,11 @@ export function cutSegments(input: {
    *    reading that overreached is a number somebody can see.
    */
   deliveredMasks?: ReadonlyMap<string, Mask> | null;
-}): SegmentCut[] {
+}): SegmentCutResult {
   assertSameShape(input.composite, input.applied, "the applied mask does not match the composite");
   const frame = { width: input.composite.width, height: input.composite.height };
   const cuts: SegmentCut[] = [];
+  const dropped: SegmentDrop[] = [];
 
   for (const [facet, region] of Array.from(input.facetRegions.entries())) {
     const regionMask = input.regionMasks.get(region);
@@ -219,8 +308,20 @@ export function cutSegments(input: {
       A facet whose region was never segmented is not a failure and not a
       silent zero — it is a facet this render has no evidence about. It gets no
       segment, and the next render treats it exactly as today: words.
+
+      It gets a DROP ROW, though, which is the whole of #64 item (3) on this
+      branch: the behaviour is unchanged and the fact is no longer thrown away.
     */
-    if (!regionMask) continue;
+    if (!regionMask) {
+      dropped.push({
+        facet,
+        region,
+        reason: "regionNotSegmented",
+        lostPixels: 0,
+        deliveredRead: Boolean(input.deliveredMasks?.get(region)),
+      });
+      continue;
+    }
     assertSameShape(regionMask, input.applied, `the ${region} region does not match the composite`);
 
     /*
@@ -239,30 +340,50 @@ export function cutSegments(input: {
     const ground = deliveredMask ? unionMasks(regionMask, deliveredMask) : regionMask;
 
     const owned = intersectMasks(input.applied, ground);
-    const box = boundsOf(owned);
-    if (!box) continue;
 
-    const mask = cropMask(owned, box);
     /*
       THE SPLIT, counted on the same pixels the segment actually owns rather
       than on the region masks — a count taken off the inputs would describe
       ground `applied` never granted.
+
+      Walked over the GROUND rather than over the owned box, which is what lets
+      the same pass count the ground the ask refused. The three numbers the box
+      walk produced are identical either way: `owned` is `ground ∩ applied`, so
+      every owned pixel is a ground pixel and `boundsOf(owned)` contains all of
+      them. What is new is the second branch — the pixels the reading claimed
+      and `applied` did not grant, which was simply never written down.
     */
     let pixels = 0;
+    let lostPixels = 0;
     let arrivedPixels = 0;
     let departedPixels = 0;
-    for (let y = 0; y < box.height; y += 1) {
-      for (let x = 0; x < box.width; x += 1) {
-        if (mask.data[y * box.width + x] === 0) continue;
-        pixels += 1;
-        if (!deliveredMask) continue;
-        const at = (box.y + y) * input.applied.width + (box.x + x);
-        const onMaster = regionMask.data[at] > 0;
-        if (!onMaster) arrivedPixels += 1;
-        else if (deliveredMask.data[at] === 0) departedPixels += 1;
+    for (let at = 0; at < ground.data.length; at += 1) {
+      if (ground.data[at]! === 0) continue;
+      if (owned.data[at]! === 0) {
+        lostPixels += 1;
+        continue;
       }
+      pixels += 1;
+      if (!deliveredMask) continue;
+      const onMaster = regionMask.data[at]! > 0;
+      if (!onMaster) arrivedPixels += 1;
+      else if (deliveredMask.data[at] === 0) departedPixels += 1;
     }
-    if (pixels === 0) continue;
+
+    const deliveredRead = Boolean(deliveredMask);
+    const box = boundsOf(owned);
+    if (!box) {
+      dropped.push({ facet, region, reason: "noGroundInTheAsk", lostPixels, deliveredRead });
+      continue;
+    }
+
+    const mask = cropMask(owned, box);
+    if (pixels === 0) {
+      /* See `emptyBox`: unreachable today, and RECORDED rather than silent so
+         that the day it stops being unreachable is a line somebody can read. */
+      dropped.push({ facet, region, reason: "emptyBox", lostPixels, deliveredRead });
+      continue;
+    }
 
     cuts.push({
       facet,
@@ -274,11 +395,12 @@ export function cutSegments(input: {
       pixels,
       arrivedPixels,
       departedPixels,
-      deliveredRead: Boolean(deliveredMask),
+      deliveredRead,
+      lostPixels,
     });
   }
 
-  return cuts;
+  return { cuts, dropped };
 }
 
 /**
