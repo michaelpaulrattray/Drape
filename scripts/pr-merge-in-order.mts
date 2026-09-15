@@ -32,7 +32,9 @@
  *     saying it has read them. The acknowledgement is PINNED to the verdict
  *     count it was given for, so a later one is not waived by an earlier word;
  *   - a money/auth diff with no verdict at all — whether the reviewer failed
- *     or triage declined it — and a diff touching `review.yml` (the reviewer
+ *     or triage declined it — by EITHER half of `.github/money-surfaces.sh`:
+ *     a money path, or a changed line under `server`/`shared` naming the
+ *     credit API (#987) — and a diff touching `review.yml` (the reviewer
  *     self-skips on its own change, #165);
  *   - a real content conflict, a draft, or branch protection saying BLOCKED;
  *   - a worktree that is not clean: a merge commit folds staged work into
@@ -76,6 +78,8 @@ import {
   describeAction,
   extractJobNames,
   extractMoneyPattern,
+  extractMoneySymbols,
+  type FilePatch,
   orderByOpened,
   classifyMergeOutcome,
   classifyPrMergeReceipt,
@@ -226,8 +230,11 @@ const moneyDeclarationPath = join(REPO_ROOT, ".github", "money-surfaces.sh");
 if (!existsSync(moneyDeclarationPath))
   fail(`${MONEY_DECLARATION_PATH} is missing — cannot read the money rule`);
 let moneyPattern: string;
+let moneySymbols: string;
 try {
-  moneyPattern = extractMoneyPattern(readFileSync(moneyDeclarationPath, "utf8"));
+  const declaration = readFileSync(moneyDeclarationPath, "utf8");
+  moneyPattern = extractMoneyPattern(declaration);
+  moneySymbols = extractMoneySymbols(declaration);
 } catch (error) {
   fail((error as Error).message);
 }
@@ -390,24 +397,37 @@ function readReviewRuns(headBranch: string): ReviewRunReading[] {
  * `gh api --paginate` is complete whatever the cap is, and costs one extra
  * call on a diff nobody here has ever produced.
  */
-function readPrFiles(number: number): string[] {
+function readPrFiles(number: number): FilePatch[] {
   // ⚠ `filename`, not `path`. The REST payload names it `filename`; `path` is
   //    the GraphQL connection's name, and asking REST for `.path` returns one
   //    EMPTY STRING PER FILE — a list of the right length carrying nothing, so
   //    both holds read every diff as ordinary. Written the wrong way here for
   //    ten minutes and caught by DRIVING the tool, not by reading it: the
   //    dry-run printed `files=0` on a seven-file PR.
+  //
+  // ⚠ And the PATCH rides the same payload (#987), which is why the money
+  //    hold's symbol half costs no extra request. Each file is emitted as ONE
+  //    `@json` line — a patch is multi-line text, and splitting raw output on
+  //    newlines would shred it into pretend files. `// null` because GitHub
+  //    omits `patch` for binary and very large files; see `moneySymbolHits`.
   const out = gh([
     "api",
     "--paginate",
     `repos/:owner/:repo/pulls/${number}/files`,
     "--jq",
-    ".[].filename",
+    ".[] | [.filename, (.patch // null)] | @json",
   ]);
-  const files = out
+  const files: FilePatch[] = out
     .split(/\r?\n/)
     .map((l) => l.trim())
-    .filter((l) => l !== "");
+    .filter((l) => l !== "")
+    .map((l) => {
+      const [filename, patch] = JSON.parse(l) as [unknown, unknown];
+      if (typeof filename !== "string" || filename === "" || (patch !== null && typeof patch !== "string")) {
+        fail(`#${number}: a changed-file row did not parse as [filename, patch]: ${l.slice(0, 120)}`);
+      }
+      return { filename, patch };
+    });
   // Fail CLOSED. A pull request always changes at least one file, so an empty
   // list means the reading broke, and an empty list is exactly what makes both
   // holds pass. This is the guard that would have caught the line above.
@@ -447,6 +467,7 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     createdAt: view.createdAt,
   };
   const tally = tallyRounds(readReviewRuns(view.headRefName), identity);
+  const patches = readPrFiles(view.number);
   const verdictCount = tally.verdicts.length;
 
   // An acknowledgement is PINNED to the verdict count observed the first time
@@ -464,7 +485,8 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     state: view.state,
     mergeable: view.mergeable,
     mergeStateStatus: view.mergeStateStatus,
-    files: readPrFiles(view.number),
+    files: patches.map((f) => f.filename),
+    patches,
     gate: gateStateOf(view.statusCheckRollup ?? []),
     supplyChain: gateStateOf(view.statusCheckRollup ?? [], SUPPLY_CHAIN_CHECK_NAME),
     review: reviewPresence(tally),
@@ -883,7 +905,7 @@ outer: for (const first of readings) {
   /** Was the LAST thing this PR waited on the freeze rather than the gate? */
   let heldOnFreeze = false;
   for (;;) {
-    const action: MergeAction = decideMergeAction(pr, { moneyPattern });
+    const action: MergeAction = decideMergeAction(pr, { moneyPattern, moneySymbols });
     say(describeAction(pr, action));
 
     if (action.kind === "merge") {

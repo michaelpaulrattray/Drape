@@ -9,9 +9,10 @@
  *
  * Two arms in here read REAL artifacts rather than fixtures, and they are the
  * ones that matter most:
- *   - the money/auth pattern is extracted from the live `.github/workflows/
- *     review.yml`, so a rename there reddens this suite instead of silently
- *     letting a money PR merge unreviewed (working law 4 — never mirror);
+ *   - both halves of the money/auth rule are extracted from the live
+ *     `.github/money-surfaces.sh` (it lived in `review.yml` until #958), so a
+ *     rename there reddens this suite instead of silently letting a money PR
+ *     merge unreviewed (working law 4 — never mirror);
  *   - the `review` and `gate-checks` job names are asserted against what the
  *     real workflow files DECLARE. The gate review of PR #558 found this
  *     header claiming that arm before it existed — the header was the mirror,
@@ -37,6 +38,9 @@ import {
   classifyRemoteBranchDeletion,
   extractJobNames,
   extractMoneyPattern,
+  extractMoneySymbols,
+  MONEY_SYMBOL_ROOTS,
+  moneySymbolHits,
   refuseDirtyWorktree,
   orderByOpened,
   mergeNotice,
@@ -76,7 +80,8 @@ const REPO_ROOT = join(__dirname, "..");
 const reviewYml = readFileSync(join(REPO_ROOT, REVIEWER_WORKFLOW_PATH), "utf8");
 const moneyDeclaration = readFileSync(join(REPO_ROOT, MONEY_DECLARATION_PATH), "utf8");
 const MONEY = extractMoneyPattern(moneyDeclaration);
-const ctx: MergeContext = { moneyPattern: MONEY };
+const SYMBOLS = extractMoneySymbols(moneyDeclaration);
+const ctx: MergeContext = { moneyPattern: MONEY, moneySymbols: SYMBOLS };
 
 const pr = (over: Partial<PrReading> = {}): PrReading => ({
   number: 551,
@@ -87,6 +92,7 @@ const pr = (over: Partial<PrReading> = {}): PrReading => ({
   mergeable: "MERGEABLE",
   mergeStateStatus: "CLEAN",
   files: ["scripts/thing.mts"],
+  patches: [],
   gate: "green",
   supplyChain: "green",
   review: "none",
@@ -138,6 +144,66 @@ describe("the money rule is read out of the one file that declares it", () => {
     // copy again is the drift #958 removed, and this tool quietly reading it
     // is how that copy would stay alive unnoticed.
     expect(() => extractMoneyPattern("          MONEY='^server/stripe/'\n")).toThrow(/MONEY_PATHS=/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe("the money rule's second half — a changed line naming the credit API (#987)", () => {
+  const file = (filename: string, patch: string | null) => ({ filename, patch });
+
+  it("extracts the symbols from the real .github/money-surfaces.sh, and refuses when they move", () => {
+    expect(SYMBOLS).toMatch(/recordRefund/);
+    expect(() => new RegExp(SYMBOLS)).not.toThrow();
+    expect(() => extractMoneySymbols("MONEY_PATHS='^server/stripe/'\n")).toThrow(/MONEY_SYMBOLS=/);
+    expect(() => extractMoneySymbols("# MONEY_SYMBOLS_OLD='addCredits'\n")).toThrow(/MONEY_SYMBOLS=/);
+  });
+
+  it("counts an added line and a removed line", () => {
+    expect(moneySymbolHits([file("server/a.ts", "@@ -1 +1,2 @@\n x\n+  await addCredits(u, 5, ref);")], SYMBOLS)).toEqual([
+      "server/a.ts",
+    ]);
+    expect(moneySymbolHits([file("shared/b.ts", "@@ -1,2 +1 @@\n-  await deductCredits(u, 5, ref);\n x")], SYMBOLS)).toEqual([
+      "shared/b.ts",
+    ]);
+  });
+
+  it("does not count a context line, a hunk header, or an ordinary change", () => {
+    const patch =
+      "@@ -40,3 +40,3 @@ export async function recordRefund(userId: number) {\n" +
+      "   await recordRefund(userId, cost, ref);\n" +
+      "-  const x = 1;\n" +
+      "+  const x = 2;";
+    expect(moneySymbolHits([file("server/a.ts", patch)], SYMBOLS)).toEqual([]);
+  });
+
+  it("does not count a file GitHub sent no patch for — the path half still applies to it", () => {
+    expect(moneySymbolHits([file("server/huge.json", null)], SYMBOLS)).toEqual([]);
+  });
+
+  it("reads only under the gate's own roots — a script or client line is not what the gate labels", () => {
+    const line = "@@ -1 +1 @@\n+  await addCredits(u, 5, ref);";
+    expect(moneySymbolHits([file("scripts/x.mts", line), file("client/src/y.ts", line)], SYMBOLS)).toEqual([]);
+    // A directory whose name merely STARTS with a root is not under it.
+    expect(moneySymbolHits([file("serverless/z.ts", line)], SYMBOLS)).toEqual([]);
+  });
+
+  /**
+   * ⚠ THE ARM THAT KEEPS THE ROOTS A HELD MIRROR RATHER THAN A SILENT ONE.
+   * Both workflows scope `git diff -G"$MONEY_SYMBOLS"` with a literal pathspec
+   * that the declaration does not carry, so the tool's `MONEY_SYMBOL_ROOTS` is
+   * a third copy. It is read back out of BOTH workflows here, and the reader
+   * throws rather than returning nothing when the line moves.
+   */
+  it("uses exactly the pathspec both workflows scope their symbol reading to", () => {
+    const gateYml = readFileSync(join(REPO_ROOT, ".github/workflows/gate.yml"), "utf8");
+    for (const [name, yml] of [
+      ["gate.yml", gateYml],
+      ["review.yml", reviewYml],
+    ] as const) {
+      const lines = [...yml.matchAll(/git diff -G"\$MONEY_SYMBOLS"[^\n]*? -- ([^|\n]+?)\s*\|\|/g)];
+      expect(lines.length, `${name}: the symbol reading's git diff line was not found`).toBe(1);
+      expect(lines[0]![1]!.trim().split(/\s+/), name).toEqual([...MONEY_SYMBOL_ROOTS]);
+    }
   });
 });
 
@@ -346,6 +412,46 @@ describe("decideMergeAction — the branch order is the contract", () => {
     expect(
       decideMergeAction(
         pr({ review: "no-verdict", acknowledgedAtVerdictCount: 0, files: [REVIEWER_WORKFLOW_PATH] }),
+        ctx,
+      ),
+    ).toEqual({ kind: "merge", notice: null });
+  });
+
+  /**
+   * #987. The PR shape the path half cannot see: a casting refund fix, on a
+   * path no money list names, whose changed line calls the credit API. The
+   * gate labels it `founder-review`; before #987 this tool merged it.
+   */
+  const refundFix = {
+    files: ["server/castingV2/refineService.test.ts"],
+    patches: [
+      {
+        filename: "server/castingV2/refineService.test.ts",
+        patch: '@@ -10,2 +10,3 @@\n   it("refunds", async () => {\n+    const { recordRefund } = await import("../casting/atomicCredits");\n   });',
+      },
+    ],
+  };
+
+  it("STOPS on a money PR the path list misses — a changed line names the credit API (#987)", () => {
+    const a = decideMergeAction(pr({ review: "no-verdict", ...refundFix }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/money\/auth/);
+    expect(a.kind === "stop" && a.reason).toContain("server/castingV2/refineService.test.ts");
+  });
+
+  it("and holds it on `declined` and `absent` too, like the path half", () => {
+    for (const review of ["declined", "absent"] as const) {
+      expect(decideMergeAction(pr({ review, ...refundFix }), ctx).kind, review).toBe("stop");
+    }
+  });
+
+  it("but merges it once hand-reviewed, or with a read verdict", () => {
+    expect(
+      decideMergeAction(pr({ review: "no-verdict", acknowledgedAtVerdictCount: 0, ...refundFix }), ctx),
+    ).toEqual({ kind: "merge", notice: null });
+    expect(
+      decideMergeAction(
+        pr({ review: "verdict", verdictCount: 1, acknowledgedAtVerdictCount: 1, ...refundFix }),
         ctx,
       ),
     ).toEqual({ kind: "merge", notice: null });
