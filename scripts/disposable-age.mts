@@ -141,14 +141,45 @@ export const untrackedDisposables = (statusPorcelain: string): string[] =>
 /**
  * The id a disposable's NAME points at, or null.
  *
- * ⚠ The edition shape is tested FIRST and the two are mutually exclusive by
- * construction: `_briefing-e88-…` also matches nothing in the card shape
- * (`briefing` is not digits), but writing the order down is cheaper than
- * relying on that staying true.
+ * ⚠ The edition shape is tested FIRST and the two are STILL mutually exclusive
+ * by construction, which #973 re-proved rather than assumed when it widened the
+ * edition side: the edition pattern is anchored at `^_` and its optional
+ * prefix is `[a-z]+\d*-`, so it can never begin with digits. `_155-edition179-…`
+ * and `_921-edition393-…` are in the live population, carry both a card number
+ * and an edition number, and resolve by the CARD — and they do so whichever
+ * order these two lines are in. The order is written down because it is cheaper
+ * than relying on that staying true; a driven swap of it moves no verdict today.
+ *
+ * ⚠ **The widening is to two named families, never to "a number anywhere".**
+ * `_court177-grid-…` and `_shift101-court-mouth-…` sit in the unresolved bucket
+ * beside the names that now resolve, and a loose pattern would date a court at a
+ * briefing edition it has nothing to do with. Measured on the population the day
+ * this changed (#973, Janitor run 6), the old anchor — the single literal
+ * `_briefing-e<N>` — matched **2** files and missed **27** that carry a readable
+ * edition:
+ *
+ *   `_edition<N>-…`                21   (`_edition337-…` … `_edition398-…`, `_edition61-…`)
+ *   `_<seat>-edition<N>-…`          3   (`_foreman-edition354/355-…`, `_janitor5-edition353-…`)
+ *   `_<seat>-briefing-e<N>-…`       3   (`_shift93-briefing-e96/97-…`, `_shift94-briefing-e98-…`)
+ *
+ * All 27 sat in `the name points at no card or edition`, which is a PERMANENT
+ * keep — so the anchor was not exercising the reader's judgement, it was blind,
+ * and it failed toward hoarding exactly the way the mtime did. Driven against
+ * the live tree either side of the change: anchored **67 -> 94**, unresolved
+ * **480 -> 453**, and **4** of the newly dated files fall outside the window.
+ *
+ * `_briefing-e76b-…` does not match even now: `76b` is an edition with a variant
+ * letter, the trailing separator never arrives, and inventing a reading for it
+ * would be a guess. It stays unresolved and therefore KEPT — the safe direction,
+ * stated here rather than looking like a bug later. Two more live names are
+ * deliberately near misses: `_court177-briefing-edit-…` (`briefing-edit`, not
+ * `briefing-e<N>`) and `_381b-edition-…` / `_shift191-edition-…`, where `edition`
+ * carries no number at all. `_412-edition-…` is the same shape and still resolves,
+ * by its card.
  */
 export const nameAnchorOf = (file: string): { kind: "card" | "edition"; id: number } | null => {
   const base = path.basename(file);
-  const edition = /^_briefing-e(\d+)[-_]/.exec(base);
+  const edition = /^_(?:[a-z]+\d*-)?(?:edition|briefing-e)(\d+)[-_.]/.exec(base);
   if (edition) return { kind: "edition", id: Number(edition[1]) };
   const card = /^_(\d{1,4})[-_]/.exec(base);
   if (card) return { kind: "card", id: Number(card[1]) };
