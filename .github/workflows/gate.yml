@@ -359,9 +359,21 @@ jobs:
           PR: ${{ needs.resolve.outputs.pr }}
           BASE: ${{ needs.resolve.outputs.base }}
         run: |
-          # Surfaces where a bot's approval is never enough (CLAUDE.md:
-          # billing, credits, auth, and session code are production-critical).
-          PATTERNS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^shared/const\.ts$|^drizzle/'
+          # TWO readings, because a path list answers only half the question
+          # (#958). The first is WHERE MONEY IS STORED AND BOUGHT; the second is
+          # WHERE MONEY IS DECIDED, and until 2026-09-15 nothing asked it — over
+          # the 60 newest merged PRs the path list labelled 4, none of them a
+          # credit-refund fix.
+          #
+          # ⚠ THE DECLARATION IS NOT HERE. It lives in `.github/money-surfaces.sh`
+          # and `review.yml` sources the same bytes, because the two workflows
+          # carried identical copies and drifted. That file holds the whole
+          # measurement, what each reading covers, and what the symbol reading
+          # deliberately does not claim. Both are extracted and driven by
+          # `server/moneySurfaceClassifier.test.ts`: a pattern edited without
+          # that suite going green is an unmeasured change to which money PRs
+          # reach the founder's eye.
+          . ./.github/money-surfaces.sh
 
           # Full fetch, deliberately: a --depth=1 fetch of the base cannot
           # reach the merge base once main outpaces the branch point, and
@@ -370,9 +382,15 @@ jobs:
           # so this costs nothing.
           git fetch origin "$BASE"
           CHANGED=$(git diff --name-only "origin/$BASE"...HEAD)
-          HITS=$(echo "$CHANGED" | grep -E "$PATTERNS" || true)
+          PATH_HITS=$(echo "$CHANGED" | grep -E "$MONEY_PATHS" || true)
 
-          if [ -z "$HITS" ]; then
+          # Test files are deliberately IN SCOPE here. Measured: PR #874 — a
+          # real refund fix — changed no production line mentioning these
+          # symbols, and its only symbol-bearing file was the suite. Excluding
+          # tests would have dropped it, which is the silent direction.
+          SYMBOL_HITS=$(git diff -G"$MONEY_SYMBOLS" --name-only "origin/$BASE"...HEAD -- server shared || true)
+
+          if [ -z "$PATH_HITS" ] && [ -z "$SYMBOL_HITS" ]; then
             echo "No money/auth surfaces touched."
             exit 0
           fi
@@ -380,9 +398,16 @@ jobs:
           # Label only — visibility, not a block (founder ruling 2026-08-25).
           # The label also forces the full Fable review in review.yml.
           echo "Money/auth surfaces touched (labelled, not blocked):"
-          echo "$HITS"
+          if [ -n "$PATH_HITS" ]; then
+            echo "  by path (stored/bought):"
+            echo "$PATH_HITS" | sed 's/^/    /'
+          fi
+          if [ -n "$SYMBOL_HITS" ]; then
+            echo "  by credit-API symbol (decided):"
+            echo "$SYMBOL_HITS" | sed 's/^/    /'
+          fi
           gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label founder-review || true
-          echo "::notice::This PR touches billing/credits/auth/session surfaces — labelled founder-review for the digest and full Fable review."
+          echo "::notice::This PR touches billing/credits/auth/session surfaces, or changes a line that moves credits — labelled founder-review for the digest and full Fable review."
           exit 0
 
       # The reviewer cannot review its own change (issue #165):

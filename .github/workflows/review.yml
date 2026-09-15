@@ -204,8 +204,16 @@ jobs:
             exit 0
           fi
 
-          MONEY='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/db/(billing|credits)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^shared/const\.ts$|^drizzle/'
-          if echo "$CHANGED" | grep -qE "$MONEY"; then
+          # ⚠ ONE DECLARATION FOR BOTH WORKFLOWS (#958). This file used to carry
+          # a byte-identical copy of the gate's path list, so widening the gate
+          # left the reviewer reading the charter on a diff the gate had just
+          # called money — working law 4, measured. It reads BOTH halves now:
+          # the paths (where money is stored and bought) and a credit-API symbol
+          # in an added or removed line (where money is decided). The second is
+          # what the casting refund adjudicators were invisible to.
+          . ./.github/money-surfaces.sh
+          MONEY_SYMBOL_HITS=$(git diff -G"$MONEY_SYMBOLS" --name-only "origin/$BASE"...HEAD -- server shared || true)
+          if echo "$CHANGED" | grep -qE "$MONEY_PATHS" || [ -n "$MONEY_SYMBOL_HITS" ]; then
             echo "Money/auth surfaces touched — full review, always, reading CLAUDE.md in full."
             echo "review=yes" >> "$GITHUB_OUTPUT"
             echo "deep=yes" >> "$GITHUB_OUTPUT"; exit 0

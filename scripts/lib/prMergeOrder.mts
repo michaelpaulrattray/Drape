@@ -122,26 +122,42 @@ export type MergeAction =
  */
 export const REVIEWER_WORKFLOW_PATH = ".github/workflows/review.yml";
 
+/** The one file that declares what a money/auth diff is (#958). */
+export const MONEY_DECLARATION_PATH = ".github/money-surfaces.sh";
+
 /**
- * ⚠ THE MONEY/AUTH PATTERN IS EXTRACTED FROM `review.yml`, NEVER COPIED.
+ * ⚠ THE MONEY/AUTH PATTERN IS EXTRACTED, NEVER COPIED.
  *
  * A second copy of a rule always drifts from the first (working law 4), and
  * this particular rule decides whether a PR with no reviewer verdict may
- * merge — the exact place a silent drift costs the most. `review.yml` declares
- * it once, on a line of the form:
+ * merge — the exact place a silent drift costs the most.
  *
- *     MONEY='^server/routes/(billing|credits|auth|…)|…'
+ * ⚠ IT MOVED HOUSE ON 2026-09-15 (#958) AND THAT IS THE WHOLE POINT OF THIS
+ * NOTE. It used to be read off a `MONEY='…'` line inside `review.yml`, which
+ * was itself a byte-identical copy of `gate.yml`'s — so the repository had
+ * THREE readers of one rule and two of them were copies. The declaration now
+ * lives once, in `.github/money-surfaces.sh`, and `gate.yml`, `review.yml` and
+ * this tool all read those bytes.
+ *
+ *     MONEY_PATHS='^server/routes/(billing|credits|auth|…)|…'
+ *
+ * ⚠ THIS TOOL READS THE PATH HALF ONLY, AND SAYS SO RATHER THAN IMPLYING
+ * COVERAGE IT HAS NOT GOT. The declaration also carries `MONEY_SYMBOLS`, a
+ * reading of the DIFF's added and removed lines that catches the casting
+ * refund adjudicators the paths miss — measured at 5 of the 60 newest merged
+ * PRs. This tool holds on file NAMES (`readPrFiles`), so it cannot apply that
+ * half without also fetching each file's patch. Filed, not silently skipped.
  *
  * The extraction REFUSES rather than returning a default when the shape moves,
  * because a pattern that quietly matches nothing would let every money PR
  * through as ordinary. `server/prMergeOrder.test.ts` runs it against the real
- * workflow file, so a rename reddens the suite instead of the gate.
+ * declaration, so a rename reddens the suite instead of the gate.
  */
-export function extractMoneyPattern(reviewYmlText: string): string {
-  const match = /^\s*MONEY='([^']+)'\s*$/m.exec(reviewYmlText);
+export function extractMoneyPattern(declarationText: string): string {
+  const match = /^\s*MONEY_PATHS='([^']+)'\s*$/m.exec(declarationText);
   if (!match) {
     throw new Error(
-      `could not find the MONEY='…' line in ${REVIEWER_WORKFLOW_PATH}. It is the ` +
+      `could not find the MONEY_PATHS='…' line in ${MONEY_DECLARATION_PATH}. It is the ` +
         `single declaration of which diffs are money/auth diffs, and this tool ` +
         `refuses to guess at one rather than mirror it (working law 4).`,
     );

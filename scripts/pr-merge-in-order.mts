@@ -70,6 +70,7 @@ import {
   type GateState,
   type MergeAction,
   type PrReading,
+  MONEY_DECLARATION_PATH,
   REVIEWER_WORKFLOW_PATH,
   decideMergeAction,
   describeAction,
@@ -219,12 +220,14 @@ if (!Number.isFinite(intervalMs) || intervalMs < 5_000) fail("--interval must be
 if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) fail("--timeout must be a positive number of minutes");
 const uniquePrs = [...new Set(prNumbers)];
 
-// ---- the money rule, extracted from the reviewer's own workflow ------------
-const reviewYmlPath = join(REPO_ROOT, ".github", "workflows", REVIEW_WORKFLOW_FILE);
-if (!existsSync(reviewYmlPath)) fail(`${REVIEWER_WORKFLOW_PATH} is missing — cannot read the money rule`);
+// ---- the money rule, extracted from the ONE file that declares it ---------
+// It lived in `review.yml` until #958, as a copy of `gate.yml`'s copy.
+const moneyDeclarationPath = join(REPO_ROOT, ".github", "money-surfaces.sh");
+if (!existsSync(moneyDeclarationPath))
+  fail(`${MONEY_DECLARATION_PATH} is missing — cannot read the money rule`);
 let moneyPattern: string;
 try {
-  moneyPattern = extractMoneyPattern(readFileSync(reviewYmlPath, "utf8"));
+  moneyPattern = extractMoneyPattern(readFileSync(moneyDeclarationPath, "utf8"));
 } catch (error) {
   fail((error as Error).message);
 }
