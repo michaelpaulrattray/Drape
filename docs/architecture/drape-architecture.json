@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f003e0115b6af18b"
+    "sourceFingerprint": "0087273c8545daff"
   },
   "domains": [
     {
@@ -148,7 +148,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 42
+      "moduleCount": 43
     },
     {
       "id": "domain:wardrobe",
@@ -5278,6 +5278,12 @@
     {
       "id": "module:server/lib/adminActions/approvalExecution.ts",
       "path": "server/lib/adminActions/approvalExecution.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/lib/adminActions/approvalStateBlocker.ts",
+      "path": "server/lib/adminActions/approvalStateBlocker.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -30418,6 +30424,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/lib/adminActions/approvalStateBlocker.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/lib/adminActions/changeRequestActions.ts",
       "to": "module:server/auditLog.ts",
       "kind": "imports"
@@ -31080,6 +31091,11 @@
     {
       "from": "module:server/routes/admin/changeRequests.ts",
       "to": "module:server/lib/adminActions/approvalExecution.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/changeRequests.ts",
+      "to": "module:server/lib/adminActions/approvalStateBlocker.ts",
       "kind": "imports"
     },
     {

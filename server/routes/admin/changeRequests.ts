@@ -1,6 +1,7 @@
 import { adminProcedure, router } from "../../_core/trpc";
 import { CHANGE_REQUEST_ACTION_BY_TYPE, executeChangeRequestAction } from "../../lib/adminActions";
 import { approvalExecution } from "../../lib/adminActions/approvalExecution";
+import { changeRequestStateBlocker } from "../../lib/adminActions/approvalStateBlocker";
 import { changeRequestApprovalBlocker } from "@shared/changeRequestApproval";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -125,6 +126,29 @@ export const changeRequestsRouter = router({
         const blocker = changeRequestApprovalBlocker(request);
         if (blocker) {
           throw new TRPCError({ code: "BAD_REQUEST", message: blocker.sentence });
+        }
+      }
+
+      // ─── …nor on a target whose STATE its executor would refuse ─────
+      //
+      // #991. The same wedge from the other side: the request carries every
+      // field, but the person it is about has changed since a moderator
+      // raised it — the suspension was already lifted from the Users page
+      // (reachable today), the account is gone, the target became an admin,
+      // or there is no credit balance to add to. Each executor refuses those
+      // before writing anything, but only after the CAS below, so the request
+      // wedged at "Outcome unconfirmed". Read here, the request stays `pending`
+      // and deniable.
+      //
+      // ⚠ A read before the CAS can go stale before the executor's, so this is
+      // the common case and not the race: the executors keep their refusals,
+      // and the no-retry wedge in the `catch` below is deliberately untouched.
+      // The Stripe executor's charge read and zero-refund refusal stay there
+      // too (`approvalStateBlocker.ts` says why).
+      if (input.action === "approved" && isSensitive) {
+        const stateBlocker = await changeRequestStateBlocker(request);
+        if (stateBlocker) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: stateBlocker.sentence });
         }
       }
 
