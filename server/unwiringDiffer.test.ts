@@ -515,6 +515,20 @@ describe("the destructured dynamic import", () => {
     expect(importerCount(readTree(after), "blockIp")).toBe(1);
   });
 
+  it("reads every name of a multi-name destructure — `changeRequestActions.ts`'s own shape", () => {
+    const two = `export const route = async (ip: string) => {
+  const { blockIp, unblockIp } = await import("../db");
+  return blockIp(ip) && unblockIp(ip);
+};
+`;
+    const source = tree({ "server/db.ts": BLOCK + `export async function unblockIp(ip: string) {
+  return ip;
+}
+`, "server/routes/ipBlocking.ts": two });
+    expect(importerCount(readTree(source), "blockIp")).toBe(1);
+    expect(importerCount(readTree(source), "unblockIp")).toBe(1);
+  });
+
   it("follows the `b: c` alias form — destructuring has no `as`, and the body says the local name", () => {
     const aliased = `export const route = async (ip: string) => {\n  const { blockIp: block } = await import("../db");\n  return block(ip);\n};\n`;
     const source = tree({ "server/db.ts": BLOCK, "server/routes/ipBlocking.ts": aliased });

@@ -411,7 +411,9 @@ export function readTree(rootArgument: string): Tree {
     }
     /* `const mod = await import("./x")` binds the whole module the way
        `import * as mod` does, and its members are read the same way below
-       (`server/casting/geminiClient.ts` is the one production instance). */
+       (`server/casting/geminiClient.ts` is the one production instance that
+       reaches an in-repo module; `aiService.ts` binds the `sharp` package the
+       same way, which resolves to nothing and credits nothing). */
     for (const match of src.matchAll(
       /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*await\s+import\(\s*["']([^"']+)["']\s*\)/g,
     )) {
