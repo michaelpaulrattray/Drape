@@ -65,9 +65,10 @@
  *
  * Everything `lib/importerCountDiff.mts` states: a dead importer still counts,
  * a call site after an early return is invisible, COMPUTED dynamic specifiers
- * unresolved (a string one is read since 2026-09-17, both destructured and
- * bound whole — the differ's docblock carries the 36 wired symbols that were
- * invisible until then), and **one row per symbol NAME across the tree — which since #274
+ * unresolved (a string one is read since 2026-09-17 in three shapes — `const
+ * { x } = await import()`, `import().then(({ x }) =>` and `const mod = await
+ * import()`; any OTHER shape is not, and the differ's docblock carries the 41
+ * wired symbols those three hid), and **one row per symbol NAME across the tree — which since #274
  * is a DERIVED view over a (file, symbol) store rather than the store itself.
  * Where a name is declared twice the row unions both**, so a timeline verdict
  * about a twinned name is about the pair and not about either file; eleven names

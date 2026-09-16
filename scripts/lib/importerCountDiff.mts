@@ -281,6 +281,22 @@ export function readTree(rootArgument: string): Tree {
   */
   const DYNAMIC_DESTRUCTURE =
     /(?:const|let|var)\s*\{([^}]*)\}\s*=\s*await\s+import\(\s*["']([^"']+)["']\s*\)/g;
+  /*
+    AND THE SAME SHAPE WITHOUT `await` - the reviewer's finding on PR #1017,
+    the hour the form above landed:
+
+        import("../casting/operationRecovery").then(({ startGenerationOperationRecoverySweep }) => {
+
+    is the ONLY production reach of all four background worker starters
+    (`_core/index.ts:338-362` - the recovery sweep that refunds a mid-deploy
+    roll collision among them) and of `completeReferral`, the welcome-bonus
+    payer (`db/generations.ts:64`). The workers were the blind population of
+    the Atlas hole of 2026-08-23 too. The destructure inside `.then((...) =>`
+    feeds the same parse; its groups come specifier-first, so they are
+    swapped here into the order the loop below reads.
+  */
+  const DYNAMIC_THEN_DESTRUCTURE =
+    /import\(\s*["']([^"']+)["']\s*\)\s*\.then\(\s*(?:async\s*)?\(\s*\{([^}]*)\}\s*\)\s*=>/g;
   const prodImportersAt = new Map<string, string[]>();
   for (const [file, src] of sources) {
     if (isTestFile(file)) continue;
@@ -288,6 +304,12 @@ export function readTree(rootArgument: string): Tree {
     const matches = [
       ...[...src.matchAll(NAMED_IMPORT)].map((match) => ({ match, dynamic: false })),
       ...[...src.matchAll(DYNAMIC_DESTRUCTURE)].map((match) => ({ match, dynamic: true })),
+      ...[...src.matchAll(DYNAMIC_THEN_DESTRUCTURE)].map((match) => {
+        /* names in group 1, specifier in group 2 - the order the loop reads */
+        const swapped = [match[0], match[2], match[1]] as unknown as RegExpExecArray;
+        swapped.index = match.index;
+        return { match: swapped, dynamic: true };
+      }),
     ].sort((a, b) => a.match.index - b.match.index);
     let body = "";
     let cursor = 0;

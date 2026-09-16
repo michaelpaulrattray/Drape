@@ -544,6 +544,38 @@ describe("the destructured dynamic import", () => {
     expect(importerCount(readTree(production), "blockIp")).toBe(1);
   });
 
+  /*
+    THE THIRD SHAPE — the reviewer's finding on PR #1017: `.then(({ x }) =>`,
+    with no `await`, is the ONLY reach of all four background worker starters
+    and of `completeReferral`, the welcome-bonus payer.
+  */
+  const THEN_CALL = `export const boot = () => {\n  import("../db").then(({ blockIp }) => {\n    blockIp("x");\n  }).catch(() => {});\n};\n`;
+
+  it("counts a symbol reached through `import(...).then(({ x }) =>` — the background workers' own shape", () => {
+    const source = tree({ "server/db.ts": BLOCK, "server/routes/index.ts": THEN_CALL });
+    expect(importerCount(readTree(source), "blockIp")).toBe(1);
+    expect(importersOfName(readTree(source), "blockIp")).toEqual(["server/routes/index.ts"]);
+  });
+
+  it("⚠ and REPORTS it when that .then site disappears — the recovery sweep's death would have been silent", () => {
+    const before = tree({ "server/db.ts": BLOCK, "server/routes/index.ts": THEN_CALL });
+    const after = tree({ "server/db.ts": BLOCK, "server/routes/index.ts": `export const boot = () => {};\n` });
+    expect(namesFound(before, after)).toEqual(["blockIp"]);
+    expect(importerCount(readTree(before), "blockIp")).toBe(1);
+  });
+
+  it("reads the `async ({ x }) =>` and aliased forms of the .then destructure", () => {
+    const asyncForm = `export const boot = () => {\n  import("../db").then(async ({ blockIp: block }) => {\n    await block("x");\n  });\n};\n`;
+    const source = tree({ "server/db.ts": BLOCK, "server/routes/index.ts": asyncForm });
+    expect(importerCount(readTree(source), "blockIp")).toBe(1);
+  });
+
+  it("⚠ a .then destructure whose body never mentions the name is a dead import too", () => {
+    const dead = `export const boot = () => {\n  import("../db").then(({ blockIp }) => {\n    return 1;\n  });\n};\n`;
+    const source = tree({ "server/db.ts": BLOCK, "server/routes/index.ts": dead });
+    expect(importerCount(readTree(source), "blockIp")).toBe(0);
+  });
+
   it("reads `const mod = await import(...)` as a namespace binding — `geminiClient.ts`'s shape", () => {
     const viaModule = `export const send = async () => {\n  const mod = await import("../db");\n  return mod.blockIp("x");\n};\n`;
     const source = tree({ "server/db.ts": BLOCK, "server/routes/client.ts": viaModule });

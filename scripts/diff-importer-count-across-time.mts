@@ -93,6 +93,15 @@
  * dynamic callers stayed live. Read now (`lib/importerCountDiff.mts`, arms in
  * `server/unwiringDiffer.test.ts`); 36 → 0 the same hour.
  *
+ * ⚠ **AND THE REVIEWER FOUND THE THIRD SHAPE THE SAME HOUR**: `import("…")
+ * .then(({ x }) =>` — no `await` — is the ONLY reach of all four background
+ * worker starters (`_core/index.ts:338-362`, the mid-deploy recovery sweep
+ * among them) and of `completeReferral`, the welcome-bonus payer. Five more
+ * wired symbols at zero; read now too. **What is read is exactly three
+ * shapes** — the `await` destructure, the `.then` destructure, and a whole
+ * module bound to a name — and a fourth shape, if one is ever written, is
+ * not, so a claim of "dynamic imports are read" is only as true as that list.
+ *
  * ⚠ **NAMESPACE IMPORTS WERE ON THAT LIST UNTIL 2026-08-23, AND THAT LINE WAS
  * COSTING THE INSTRUMENT ITS BEST SUBJECT.** `import * as db from "../db"` is
  * the house style of this product's whole database layer, so the reading it
