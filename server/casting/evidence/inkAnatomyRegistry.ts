@@ -105,7 +105,7 @@ function zoneRule(value: ZoneRule): ZoneRule {
   });
 }
 
-export const INK_ZONE_RULES = Object.freeze({
+const INK_ZONE_RULES = Object.freeze({
     face: zoneRule({
       surfaces: ["anterior", "lateral"],
       sides: ["left", "centre", "right"],
@@ -653,7 +653,7 @@ export function chooseCurrentInkAuthoringSource(
   return null;
 }
 
-export function allSupportedInkAnatomyTuples(): readonly InkAnatomyTuple[] {
+function allSupportedInkAnatomyTuples(): readonly InkAnatomyTuple[] {
   const tuples: InkAnatomyTuple[] = [];
   for (const zone of INK_ANATOMY_ZONES) {
     const rule = INK_ZONE_RULES[zone];

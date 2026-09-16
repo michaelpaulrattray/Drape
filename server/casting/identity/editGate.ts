@@ -18,7 +18,7 @@ import type {
 const log = createModuleLogger("casting/identity/editGate");
 
 export const OVERALL_IDENTITY_DIMENSION = "overall.facialIdentity" as const;
-export const PERMANENT_MARKS_DIMENSION = "marks.visiblePermanent" as const;
+const PERMANENT_MARKS_DIMENSION = "marks.visiblePermanent" as const;
 
 export type IdentityGateDimension =
   | AuthorizableIdentityField

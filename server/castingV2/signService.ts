@@ -41,7 +41,6 @@ import { recordRefund } from "../casting/atomicCredits";
 import { castWardrobeLine, currentWardrobeLine, editedWardrobeLine } from "./wardrobeLine";
 import { readStoredDelta } from "./refineLegacy";
 import { rollComposedOnAuthorRoad } from "./rollProjection";
-import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 import { withUniqueCastPublicId } from "../casting/castPublicId";
 import {
   beginDirectOperation,
@@ -1449,4 +1448,3 @@ function signRefusal(error: unknown, refunded: boolean, operationId: string): TR
   });
 }
 
-export { CASTING_V2_SIGN_PRICE_CREDITS, CASTING_V2_SIGN_COSTS };

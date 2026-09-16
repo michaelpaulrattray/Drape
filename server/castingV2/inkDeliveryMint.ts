@@ -78,7 +78,7 @@ import { storagePut } from "../storage";
 const log = createModuleLogger("castingV2/inkDeliveryMint");
 
 /** One prefix, so an operator can see every delivered-tattoo crop in one place. */
-export const INK_DELIVERY_KEY_PREFIX = "casting-v2/ink-delivery";
+const INK_DELIVERY_KEY_PREFIX = "casting-v2/ink-delivery";
 
 export type InkDeliveryMintOutcome =
   /** The crop is a row's and the next carry will ride it. */
@@ -154,7 +154,7 @@ function defaultReader(): InkDeliveryReader {
  * table: the outcome is already returned to a caller that logs it, and a row
  * per non-event is a schema bought for a number.
  */
-export const INK_DELIVERY_SIDE_UNREAD = "sideUnread";
+const INK_DELIVERY_SIDE_UNREAD = "sideUnread";
 
 /** What this mint needs of a reader — `regionSides` is optional on the type it
  *  comes from, so its absence is a real state rather than a type error. */

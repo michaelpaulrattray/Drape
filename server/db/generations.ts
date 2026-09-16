@@ -132,14 +132,3 @@ export async function getUserGenerations(
     .limit(limit);
 }
 
-export async function getGenerationById(generationId: number) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const result = await db
-    .select()
-    .from(generations)
-    .where(eq(generations.id, generationId))
-    .limit(1);
-  return result.length > 0 ? result[0] : null;
-}

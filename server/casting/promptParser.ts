@@ -227,7 +227,7 @@ export async function parseCastingPrompt(prompt: string): Promise<ParsedCastAttr
 
 // ── System prompt (PARSER_PROMPT_V2.md §1, verbatim) ────────────────────────
 
-export const PARSER_SYSTEM_PROMPT = `You are a casting brief translator. You read a natural-language casting description from a user and convert it into a structured CastAttributes JSON object. Your job is restrained extraction, not creative interpretation. Downstream of you is a creative casting engine that fills in everything you leave null using brand archetypes, ethnicity heritage, and vibe weighting — your job is to give that engine accurate explicit user signals and stay out of its way.
+const PARSER_SYSTEM_PROMPT = `You are a casting brief translator. You read a natural-language casting description from a user and convert it into a structured CastAttributes JSON object. Your job is restrained extraction, not creative interpretation. Downstream of you is a creative casting engine that fills in everything you leave null using brand archetypes, ethnicity heritage, and vibe weighting — your job is to give that engine accurate explicit user signals and stay out of its way.
 
 ## YOUR OUTPUT
 

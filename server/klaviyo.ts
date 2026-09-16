@@ -53,7 +53,7 @@ export interface CreateProfileResponse {
  * Create or update a profile in Klaviyo
  * Uses the POST /api/profile-import endpoint which handles both create and update
  */
-export async function createOrUpdateProfile(
+async function createOrUpdateProfile(
   attributes: ProfileAttributes
 ): Promise<CreateProfileResponse> {
   try {
@@ -168,7 +168,7 @@ export async function newsletterSignup(
 /**
  * Track a custom event in Klaviyo (triggers Flows for transactional emails)
  */
-export async function trackEvent(
+async function trackEvent(
   email: string,
   metricName: string,
   properties: Record<string, unknown> = {}
@@ -255,7 +255,7 @@ export async function sendReferralInviteEmail(params: {
  * the template lives in Klaviyo, not in this repository. Do not assert it in
  * either direction; what is fixed here is that the value we send is reachable.
  */
-export const FROZEN_ACCOUNT_SUPPORT_URL = "mailto:support@klieglabs.com";
+const FROZEN_ACCOUNT_SUPPORT_URL = "mailto:support@klieglabs.com";
 
 /**
  * Send account frozen notification email via Klaviyo event (triggers a Flow)

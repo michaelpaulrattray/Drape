@@ -87,7 +87,7 @@ const STRUCTURED_KEYS = ["bodyType", "age", "gender", "skinTone", "ethnicity", "
  *  creation-context (brand/vibe/brief/features), references, unknowns —
  *  refuses; a post-creation `features` update is exactly the escape hatch
  *  §5.2 closes. */
-export const STRUCTURED_UPDATE_KEYS: ReadonlySet<string> = new Set([
+const STRUCTURED_UPDATE_KEYS: ReadonlySet<string> = new Set([
   ...STRUCTURED_KEYS,
   ...PAIR_FIELDS.flatMap((p) => [p.baseKey, p.overrideKey]),
   ...DESCRIPTOR_FIELDS.map((d) => d.key),

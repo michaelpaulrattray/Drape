@@ -63,7 +63,7 @@ import { getDb } from "../db/connection";
 const log = createModuleLogger("castingV2/refusalCounter");
 
 /** The one action string every casting refusal is filed under. */
-export const REFUSAL_ACTION = AUDIT_ACTIONS.CASTING_REFUSAL;
+const REFUSAL_ACTION = AUDIT_ACTIONS.CASTING_REFUSAL;
 
 export type RefusalOutcome =
   /** The refusal stood, and the customer read it. */

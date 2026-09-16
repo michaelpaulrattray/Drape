@@ -106,14 +106,14 @@ export const COSMETIC_LASH_PATTERN =
 /** Any remaining eyelash language — post-creation eyelash edits (natural or
  *  cosmetic) refuse during R6 and never resolve through eyeShape/browShape/
  *  features or a parent (§5.2, M16). */
-export const EYELASH_PATTERN = /\b(?:eye)?lash(?:es)?\b/i;
+const EYELASH_PATTERN = /\b(?:eye)?lash(?:es)?\b/i;
 
 /** §9.1 rule 3 — vague whole-reference requests refuse as ambiguous, free. */
-export const VAGUE_REFERENCE_PATTERN =
+const VAGUE_REFERENCE_PATTERN =
   /(?:^\s*(?:use|apply|copy|match|transfer)\s+(?:this|that|it|the\s+(?:reference|image|photo|picture))\s*[.!]?\s*$)|\b(?:use|copy|apply|steal|take)\s+(?:this|that|the|her|his|their)\s+(?:whole\s+)?(?:look|style|vibe|aesthetic|everything)\b|\bmake\s+(?:her|him|them)\s+like\s+the\s+(?:reference|image|photo)\b/i;
 
 /** Whole-face / whole-person replacement — refuse (§6.2 corpus). */
-export const WHOLE_IDENTITY_PATTERN =
+const WHOLE_IDENTITY_PATTERN =
   /\b(?:resemble|look\s+like)\s+(?:this|that|the)\s+(?:person|woman|man|girl|guy|model)\b|\bcopy\s+(?:everything|the\s+whole\s+face|her\s+face|his\s+face|their\s+face)\b|\breplace\s+(?:her|his|their|the)\s+(?:face|head|identity)\b|\bswap\s+(?:the\s+)?face(?:s)?\b/i;
 
 /** Hair-length bands (founder final ruling 2026-07-16, final corrections):
@@ -179,7 +179,7 @@ export interface AuthorityLlm {
 }
 
 /** Exported for tests — the classifier's single tuning point. */
-export const CLASSIFIER_PROMPT_HEADER = `You classify one edit instruction typed against a generated fashion-model photo.
+const CLASSIFIER_PROMPT_HEADER = `You classify one edit instruction typed against a generated fashion-model photo.
 Output STRICT JSON only, no prose, with EXACTLY these three keys and nothing else:
 {"kind":"identity"|"presentation"|"imageOnly"|"unknown","categories":[string],"operations":{}}
 
@@ -205,7 +205,7 @@ Rules:
 INSTRUCTION: `;
 
 /** Exported for tests — the normalizer's single tuning point. */
-export const NORMALIZER_PROMPT_HEADER = `You convert an authorized identity-edit instruction into concrete, durable attribute values for a character sheet.
+const NORMALIZER_PROMPT_HEADER = `You convert an authorized identity-edit instruction into concrete, durable attribute values for a character sheet.
 Output STRICT JSON only: {"edits":[...]} with EXACTLY one entry per requested field, in any order.
 
 Entry shapes:

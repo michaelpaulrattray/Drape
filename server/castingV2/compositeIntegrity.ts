@@ -94,7 +94,7 @@ export const SEAM_MIN_PIXELS = 50;
  *
  * The torn frame is 0.40% of its boundary; the clean ones are 0.0014%.
  */
-export const SEAM_MIN_SHARE = 0.001;
+const SEAM_MIN_SHARE = 0.001;
 
 export type SeamVerdict = {
   /** Whether this frame carries our compositor's seam. */

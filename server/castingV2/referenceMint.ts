@@ -196,10 +196,10 @@ const log = createModuleLogger("castingV2/referenceMint");
  * here. The `sideUnread` shape is the precedent: the reason the crop was not
  * filed, greppable, with the subject on the line.
  */
-export const OPEN_KIND_READ_EMPTY = "openKindReadEmpty";
+const OPEN_KIND_READ_EMPTY = "openKindReadEmpty";
 
 /** One prefix, so an operator can see every library object in one place. */
-export const LIBRARY_KEY_PREFIX = "casting-v2/library";
+const LIBRARY_KEY_PREFIX = "casting-v2/library";
 
 /**
  * What this render has to say about one slot.
@@ -760,7 +760,7 @@ const MATTE_CLAIM = 127;
  * what could not be composed, and the caller turns one into the words-only row
  * `build` filed before it had a region at all — never into a lost render.
  */
-export function composeBelowHeadCut(input: {
+function composeBelowHeadCut(input: {
   /** The slot this cut belongs to, in the key space `cutSegments` uses. */
   facet: string;
   /** The delivered frame, decoded — the pixels the crop is made of. */

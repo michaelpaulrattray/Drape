@@ -902,7 +902,7 @@ export async function getAllCustomerInvoices(
  * Get the payment intent ID from a checkout session.
  * Needed for issuing refunds since we store session IDs, not payment intent IDs.
  */
-export async function getPaymentIntentFromSession(sessionId: string): Promise<string | null> {
+async function getPaymentIntentFromSession(sessionId: string): Promise<string | null> {
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     const paymentIntent = session.payment_intent;
@@ -954,7 +954,7 @@ export async function getSessionChargedAmountCents(sessionId: string): Promise<n
  * so the caller went on to deduct the customer's credits, mark the change
  * request approved and write an audit row naming a refund that never paid.
  */
-export const REFUND_CREATE_FAILED_STATUSES: ReadonlySet<string> = new Set(["failed", "canceled"]);
+const REFUND_CREATE_FAILED_STATUSES: ReadonlySet<string> = new Set(["failed", "canceled"]);
 
 /**
  * What a refund is FOR, written into its Stripe metadata so the asynchronous

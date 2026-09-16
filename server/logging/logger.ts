@@ -5,12 +5,10 @@
  * into every log line within a request lifecycle. No manual threading needed.
  *
  * Usage:
- *   import { logger, createModuleLogger } from "../logging/logger";
+ *   import { createModuleLogger } from "../logging/logger";
  *
- *   // Root logger (module = "app")
- *   logger.info("Server started");
- *
- *   // Module-scoped logger
+ *   // Module-scoped logger (every caller names its module; there is no
+ *   // shared "app" logger — the one that existed had no caller, #108)
  *   const log = createModuleLogger("stripe");
  *   log.error({ err }, "Webhook processing failed");
  */
@@ -54,9 +52,6 @@ export const rootLogger = pino({
       }
     : {}),
 });
-
-/** Default logger with module="app" */
-export const logger = rootLogger.child({ module: "app" });
 
 /**
  * Create a child logger scoped to a specific module.

@@ -42,7 +42,7 @@ const log = createModuleLogger("castingV2/thumbnails");
 export const THUMB_MAX_SIDE = 320;
 
 /** WebP at this quality is ~20 KB for a 320 px face and visually clean. */
-export const THUMB_QUALITY = 82;
+const THUMB_QUALITY = 82;
 
 export type Thumbnail = { bytes: Buffer; contentType: string; key: string };
 

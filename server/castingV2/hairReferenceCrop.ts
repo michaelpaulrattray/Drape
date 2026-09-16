@@ -83,7 +83,7 @@ export const SEAM_RATIO = 10;
  * A photograph often has a hard edge at its first or last rows — a letterbox, a
  * scanner edge, a border — and cutting there would produce a panel of nothing.
  */
-export const SEAM_EDGE_MARGIN = 0.05;
+const SEAM_EDGE_MARGIN = 0.05;
 
 export type Seam = {
   readonly axis: "row" | "column";

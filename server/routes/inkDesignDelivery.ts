@@ -79,7 +79,7 @@ const log = createModuleLogger("routes/inkDesignDelivery");
  * a Cast holds at most eight designs and they are looked at, not scrolled.
  */
 
-export const INK_DESIGN_DELIVERY_RATE_LIMIT = {
+const INK_DESIGN_DELIVERY_RATE_LIMIT = {
   windowMs: 60_000,
   maxRequests: INK_DESIGN_READS_PER_MINUTE,
   keyPrefix: "ink_design_delivery",

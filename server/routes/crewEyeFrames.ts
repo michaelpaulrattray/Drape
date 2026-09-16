@@ -54,7 +54,7 @@ const log = createModuleLogger("routes/crewEyeFrames");
  * the two numbers are tied on purpose (PR #79 review nit): whoever raises the
  * frame cap raises this with it.
  */
-export const CREW_EYE_FRAME_RATE_LIMIT = {
+const CREW_EYE_FRAME_RATE_LIMIT = {
   windowMs: 60_000,
   maxRequests: 240,
   keyPrefix: "crew_eye_frame",

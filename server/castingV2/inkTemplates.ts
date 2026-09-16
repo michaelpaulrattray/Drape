@@ -76,12 +76,12 @@ import path from "node:path";
 import type { Sex } from "../../shared/castingVocabularies";
 import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
-import { INK_TEMPLATE_KINDS, type InkTemplateKind } from "../../shared/inkTemplateKinds";
+import type { InkTemplateKind } from "../../shared/inkTemplateKinds";
 
 /* The vocabulary is `shared/inkTemplateKinds.ts` — the plate table's enum is
    derived from it, and a second list here would be the parallel copy that
    drifts. Re-exported so this module stays the one place a caller needs. */
-export { INK_TEMPLATE_KINDS, type InkTemplateKind };
+export type { InkTemplateKind };
 
 /** The builds a torso blank exists for. `nonbinary` is absent BY ABSENCE. */
 export type InkTemplateBuild = "female" | "male";

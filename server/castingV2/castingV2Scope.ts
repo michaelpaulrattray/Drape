@@ -936,7 +936,7 @@ export function validateCastingScanTableEnvironment(input: {
  */
 export const CASTING_OPEN_LANE_SCOPE_ENV = "CASTING_OPEN_LANE_SCOPE";
 
-export class CastingOpenLaneScopeConfigurationError extends Error {
+class CastingOpenLaneScopeConfigurationError extends Error {
   constructor() {
     super(
       `${CASTING_OPEN_LANE_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
@@ -945,14 +945,14 @@ export class CastingOpenLaneScopeConfigurationError extends Error {
   }
 }
 
-export class CastingOpenLaneCoverageError extends Error {
+class CastingOpenLaneCoverageError extends Error {
   constructor(detail: string) {
     super(`${CASTING_OPEN_LANE_SCOPE_ENV} ${detail}`);
     this.name = "CastingOpenLaneCoverageError";
   }
 }
 
-export function parseCastingOpenLaneScope(raw: string | undefined): CastingV2Scope {
+function parseCastingOpenLaneScope(raw: string | undefined): CastingV2Scope {
   return parseScopeGrammar(raw, () => {
     throw new CastingOpenLaneScopeConfigurationError();
   });
@@ -2803,7 +2803,7 @@ export function validateCastingConceptUploadEnvironment(input: {
  */
 export const CASTING_RETRY_SCOPE_ENV = "CASTING_RETRY_SCOPE";
 
-export class CastingRetryScopeConfigurationError extends Error {
+class CastingRetryScopeConfigurationError extends Error {
   constructor() {
     super(
       `${CASTING_RETRY_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
@@ -2812,14 +2812,14 @@ export class CastingRetryScopeConfigurationError extends Error {
   }
 }
 
-export class CastingRetryCoverageError extends Error {
+class CastingRetryCoverageError extends Error {
   constructor(detail: string) {
     super(`${CASTING_RETRY_SCOPE_ENV} ${detail}`);
     this.name = "CastingRetryCoverageError";
   }
 }
 
-export function parseCastingRetryScope(raw: string | undefined): CastingV2Scope {
+function parseCastingRetryScope(raw: string | undefined): CastingV2Scope {
   return parseScopeGrammar(raw, () => {
     throw new CastingRetryScopeConfigurationError();
   });

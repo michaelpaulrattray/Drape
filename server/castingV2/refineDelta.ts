@@ -475,7 +475,7 @@ export function itemsOf(value: FreeValue | undefined): string[] {
 }
 
 /** And back to prose, for a prompt or a record. Their order, never sorted. */
-export function joinItems(value: FreeValue | undefined): string {
+function joinItems(value: FreeValue | undefined): string {
   return itemsOf(value).join(", ");
 }
 
@@ -2096,7 +2096,7 @@ export function withoutCarriedInkWords(
   would be free to disagree with this one about whether "gold hoop earrings" and
   "gold hoops" name one object. One judgement, two callers (law 4).
 */
-export function namesSameThing(departed: string, answer: string): boolean {
+function namesSameThing(departed: string, answer: string): boolean {
   const departedKind = accessoryKindOf(departed);
   const answerKind = accessoryKindOf(answer);
   if (departedKind && answerKind) return departedKind === answerKind;
@@ -2265,7 +2265,7 @@ function collapseWithinDelta(delta: RefineDelta): RefineDelta {
  * one line and cannot land with a subtly different restatement rule. Ordered
  * only for readability; the loop is order-independent.
  */
-export const INK_POINTER_FIELDS = ["inkApplied", "inkDelivered"] as const;
+const INK_POINTER_FIELDS = ["inkApplied", "inkDelivered"] as const;
 
 /**
  * ALL THREE HALVES, KEYED BY SLOT — the two pointers above and her own words

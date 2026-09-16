@@ -21,7 +21,6 @@ export { getDb, withTransaction } from "./connection";
 export {
   upsertUser,
   getUserByOpenId,
-  getUserByEmail,
   getUserById,
   getUserStorageInfo,
   updateUserStorageUsed,
@@ -32,7 +31,6 @@ export {
 
 // Credits
 export {
-  initializeUserCredits,
   getUserCredits,
   getCreditTransactions,
   getCreditTransactionByRef,
@@ -54,15 +52,12 @@ export {
   markModelAssetsStale,
   getModelAssets,
   getHeadshotsForModels,
-  getModelAssetByView,
 } from "./models";
-export { getUserDraftModelsWithThumbnail } from "./models";
 
 // Durable generation-operation receipts and exclusive resource locks
 export {
   claimGenerationOperation,
   acquireCastingCandidateOperationLock,
-  getOperationLockByOperation,
   acquireGenerationOperationLock,
   markGenerationOperationRunning,
   handoffGenerationOperationToRecovery,
@@ -95,7 +90,6 @@ export {
   createGeneration,
   updateGeneration,
   getUserGenerations,
-  getGenerationById,
 } from "./generations";
 
 // Billing
@@ -103,10 +97,8 @@ export {
   updateUserSubscription,
   getUserByStripeCustomerId,
   refreshMonthlyCredits,
-  addTopupCredits,
   getSubscriptionByUserId,
   getCycleSpend,
-  spendWindow,
 } from "./billing";
 
 // Plan-change credit settlements (#711)
@@ -122,9 +114,7 @@ export {
 // Waitlist
 export {
   addToWaitlist,
-  getWaitlistPosition,
   getWaitlistCount,
-  checkEmailOnWaitlist,
 } from "./waitlist";
 
 // Security
@@ -141,7 +131,6 @@ export {
 
 // IP Blocking
 export {
-  isIpBlocked,
   blockIp,
   unblockIp,
   getBlockedIps,
@@ -178,9 +167,7 @@ export {
   getUserByReferralCode,
   claimReferral,
   redeemReferralCode,
-  completeReferral,
   creditReferrerOnPaidAction,
-  getReferralCreditsEarned,
   getReferralStats,
   getReferralHistory,
   recordEmailInvite,
@@ -202,11 +189,9 @@ export type { BugReportRow } from "./bugReports";
 
 // Invite Codes (Pre-launch access gating)
 export {
-  redeemInviteCode,
   createInviteCode,
   listInviteCodes,
   deactivateInviteCode,
-  approveUserDirectly,
 } from "./inviteCodes";
 
 // Wardrobe
@@ -220,7 +205,6 @@ export {
   createOutfit,
   getUserOutfits,
   getOutfitById,
-  updateOutfit,
   deleteOutfit,
   createSession,
   getSessionById,
@@ -265,7 +249,6 @@ export {
   getBoardItemVersions,
   getLatestVersionNumber,
   getVersionCount,
-  deleteBoardItemVersions,
   // Atomic landing records (Batch C final corrections 3+4)
   stampBoardItemWithVersion,
   stampBoardItemWithVersionIn,

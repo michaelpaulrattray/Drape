@@ -32,7 +32,7 @@ let viewQueue: ProviderQueue | null = null;
 let identityEngine: IdentityEngine | null = null;
 let judge: ViewConformanceJudge | null = null;
 
-export function castPackageQueue(): ProviderQueue {
+function castPackageQueue(): ProviderQueue {
   if (!viewQueue) {
     viewQueue = new ProviderQueue({
       name: "fal-cast-views",

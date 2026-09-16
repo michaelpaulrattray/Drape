@@ -397,7 +397,7 @@ export async function getFilteredAuditLogs(options: FilteredAuditLogsOptions): P
   the panel if anyone reordered that declaration. `server/auditLogFilterSql.test.ts`
   reads this at the rendered statement.
 */
-export const ABUSE_ALERT_SEVERITY_RANK = sql`case ${auditLogs.severity} when 'critical' then 0 when 'warning' then 1 else 2 end`;
+const ABUSE_ALERT_SEVERITY_RANK = sql`case ${auditLogs.severity} when 'critical' then 0 when 'warning' then 1 else 2 end`;
 
 /**
  * Get abuse alerts summary for admin dashboard.

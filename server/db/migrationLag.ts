@@ -63,7 +63,7 @@ export function unappliedMigrations(input: {
  * "3 migrations behind" sends someone to look them up; naming them is the whole
  * value, because the next thing they type is the one that fixes it.
  */
-export function reportMigrationLag(input: {
+function reportMigrationLag(input: {
   entries: readonly JournalEntry[];
   applied: readonly number[];
   environment: string;

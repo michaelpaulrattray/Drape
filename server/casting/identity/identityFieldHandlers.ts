@@ -50,7 +50,7 @@ export type OverridePairField = keyof typeof BASE_OPTION_SETS;
 
 /** §5.5 rule: the base must come from the field's closed option set, or ""
  *  when nothing fits (the override then carries the whole value). */
-export function isValidBaseValue(field: OverridePairField, base: string): boolean {
+function isValidBaseValue(field: OverridePairField, base: string): boolean {
   return base === "" || (BASE_OPTION_SETS[field] as readonly string[]).includes(base);
 }
 

@@ -25,7 +25,7 @@ import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
 export const HIDDEN_PLAN_TIERS = ["ultimate"] as const;
 export type HiddenPlanTier = (typeof HIDDEN_PLAN_TIERS)[number];
 
-export function isHiddenPlanTier(tier: PlanTier): boolean {
+function isHiddenPlanTier(tier: PlanTier): boolean {
   return (HIDDEN_PLAN_TIERS as readonly string[]).includes(tier);
 }
 

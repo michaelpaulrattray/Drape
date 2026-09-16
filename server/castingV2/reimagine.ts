@@ -101,11 +101,11 @@ const log = createModuleLogger("reimagine");
  * instruction this road forbids.
  */
 export const REIMAGINE_WORD_BUDGET = 220;
-export const REIMAGINE_ALLOWANCE_FLOOR = 40;
+const REIMAGINE_ALLOWANCE_FLOOR = 40;
 /** A draft may exceed its allowance by this fraction before it is re-asked — the author road's own tolerance. */
-export const REIMAGINE_OVERRUN_TOLERANCE = 0.1;
+const REIMAGINE_OVERRUN_TOLERANCE = 0.1;
 /** The author's output budget — the interpreter's figure, for its reason (reasoning tokens count). */
-export const REIMAGINE_MAX_OUTPUT_TOKENS = 5000;
+const REIMAGINE_MAX_OUTPUT_TOKENS = 5000;
 
 export function reimagineAllowance(briefText: string): number {
   return Math.max(REIMAGINE_WORD_BUDGET, countWords(briefText) + REIMAGINE_ALLOWANCE_FLOOR);

@@ -5,9 +5,9 @@ import {
   INK_ADD_MIN_DESCRIPTOR_LENGTH,
 } from "./inkAddRecipe";
 
-export const INK_AUTHORIZATION_RECIPE_VERSION =
+const INK_AUTHORIZATION_RECIPE_VERSION =
   "ink.add.authorization.v1" as const;
-export const INK_AUTHORIZATION_MIN_CONFIDENCE = 80;
+const INK_AUTHORIZATION_MIN_CONFIDENCE = 80;
 
 export type InkAuthorizationRefusal =
   | "invalid_description"

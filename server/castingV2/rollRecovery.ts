@@ -204,7 +204,7 @@ export function isSettleable(candidate: CandidateRow): boolean {
  * one the live catch would have used, so a live process racing this refund
  * lands as the ledger's duplicate, never as a second payment.
  */
-export function isTornFailure(
+function isTornFailure(
   candidate: CandidateRow,
   ledger: Pick<OperationLedger, "refundedReferences">,
   operationId: string,
@@ -234,7 +234,7 @@ export function isTornFailure(
  * operation that was never charged is never paid from here. A cancel that beat
  * a deduct which DID land wrote no refund (#995), and this is what pays it.
  */
-export function isTornCancel(
+function isTornCancel(
   candidate: CandidateRow,
   ledger: Pick<OperationLedger, "refundedReferences">,
   operationId: string,
@@ -263,7 +263,7 @@ export function isTornCancel(
  * status alone is precisely the reading the sweep correction (44748ae5)
  * forbade.
  */
-export function isTornUnseen(
+function isTornUnseen(
   candidate: CandidateRow,
   ledger: Pick<OperationLedger, "refundedReferences">,
   operationId: string,

@@ -14,7 +14,7 @@ const log = createModuleLogger("routes/characterSheet");
  * cheaper than a generation and dearer than a database read. Bounded per user
  * accordingly — generous enough that downloading a roster never trips it.
  */
-export const CHARACTER_SHEET_RATE_LIMIT = {
+const CHARACTER_SHEET_RATE_LIMIT = {
   windowMs: 60_000,
   maxRequests: 20,
   keyPrefix: "character_sheet",

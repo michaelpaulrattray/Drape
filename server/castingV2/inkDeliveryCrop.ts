@@ -179,7 +179,7 @@ import type { Mask } from "./maskedComposite";
  * is the NECK, where a generous pad reaches toward the jaw — the regression arm
  * for that is in the test file rather than in this paragraph.
  */
-export const INK_DELIVERY_REGION_PAD = 0.15;
+const INK_DELIVERY_REGION_PAD = 0.15;
 
 /**
  * WHAT TO ASK, AND WHICH SIDE TO ASK IT OF — one parse, three answers.

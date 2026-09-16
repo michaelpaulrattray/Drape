@@ -107,17 +107,6 @@ export async function getOutfitById(outfitId: number) {
   return outfit || null;
 }
 
-export async function updateOutfit(
-  outfitId: number,
-  data: Partial<InsertWardrobeOutfit>,
-) {
-  const db = (await getDb())!;
-  await db
-    .update(wardrobeOutfits)
-    .set(data)
-    .where(eq(wardrobeOutfits.id, outfitId));
-}
-
 export async function deleteOutfit(outfitId: number, userId: number) {
   const db = (await getDb())!;
   await db

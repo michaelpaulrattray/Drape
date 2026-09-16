@@ -55,12 +55,7 @@ import { DEFAULT_CAST_STYLE, type CastStyle } from "../../shared/castStyles";
   the pieces road his two rolled courts rejected, and the editable box is the
   new fidelity control.)
 */
-export {
-  ageClaimsIn,
-  ageContradictionIn,
-  saysSex,
-  type StatedAge,
-} from "./seedFidelity";
+export type { StatedAge } from "./seedFidelity";
 
 /**
  * THE AUTHOR'S OWN MODEL — one line, and swapping it swaps nothing else (#466).
@@ -168,7 +163,7 @@ export const NEVER_WRITTEN: ReadonlyArray<{ word: string; because: string }> = [
  * about her own cast, and refusing a draft for a word she typed would cost
  * her the press while the roll sends the same word anyway.
  */
-export const SKIN_CONTRADICTIONS: ReadonlyArray<{ phrase: string; because: string }> = [
+const SKIN_CONTRADICTIONS: ReadonlyArray<{ phrase: string; because: string }> = [
   { phrase: "translucent", because: "his own named specimen (#230 item 4); reads as the block's banned doll skin" },
   { phrase: "translucency", because: "his own named specimen (#230 item 4)" },
   { phrase: "poreless", because: "the block bans beauty-app smoothing by name" },

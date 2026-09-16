@@ -56,7 +56,6 @@ import {
   LOOK_KEYS,
   ARCHETYPE_KEYS,
   AGE_BANDS,
-  BUILDS,
   ENERGIES,
   ENERGY_KEYS,
   HAIR_FAMILIES,
@@ -2483,7 +2482,7 @@ function heritageClause(components: HeritageComponent[]): string {
   return described === "" ? "" : `, ${described}`;
 }
 
-export function describeHeritage(components: HeritageComponent[]): string {
+function describeHeritage(components: HeritageComponent[]): string {
   if (components.length === 0) return "";
   if (components.length === 1) return `${components[0].heritage} heritage`;
   // A15: no raw numbers in the prompt. Percentages are control signal, and
@@ -2764,4 +2763,4 @@ export function personaLineFor(resolved: ResolvedIdentity, read?: string | null)
  */
 export const COHORT_CONSTANT_MARKERS = cohortConstantBlocks(null);
 
-export { AGE_BANDS, BUILDS };
+export { AGE_BANDS };

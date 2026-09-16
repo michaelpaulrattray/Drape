@@ -21,7 +21,7 @@ export function spokenError(input: {
   return new SpokenError({ code: input.code, message: input.message, cause: input.cause });
 }
 
-export function isSpokenError(error: unknown): error is SpokenError {
+function isSpokenError(error: unknown): error is SpokenError {
   return error instanceof SpokenError;
 }
 

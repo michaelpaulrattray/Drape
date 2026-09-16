@@ -1,4 +1,4 @@
-import { HERITAGES, type CastingIntent, type Heritage } from "./castingIntent";
+import type { CastingIntent, Heritage } from "./castingIntent";
 import { namesUnknownProperNoun } from "./properNouns";
 import { scrubBrands } from "./brandScrub";
 
@@ -67,9 +67,6 @@ export function promoteStatedHeritage(intent: CastingIntent, briefText: string):
 
   return { ...intent, heritage: [{ heritage: found[0][0], pct: 100 }] };
 }
-
-/** Exported for the test's own table, so the two cannot drift apart. */
-export { HERITAGE_WORDS, HERITAGES };
 
 /**
  * A category the brief named must reach the sheet, even when the interpreter

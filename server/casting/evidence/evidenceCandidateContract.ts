@@ -18,14 +18,14 @@ export const EVIDENCE_CANDIDATE_MAX_ATTEMPTS = 2 as const;
  */
 export const EVIDENCE_CANDIDATE_GENERATION_TYPE = "evidenceCandidate" as const;
 
-export const EVIDENCE_INTENT_STATUSES = [
+const EVIDENCE_INTENT_STATUSES = [
   "pending",
   "resolved",
   "cancelled",
 ] as const;
 export type EvidenceIntentStatus = typeof EVIDENCE_INTENT_STATUSES[number];
 
-export const EVIDENCE_CANDIDATE_STATUSES = [
+const EVIDENCE_CANDIDATE_STATUSES = [
   "processing",
   "ready",
   "accepted",
@@ -37,7 +37,7 @@ export const EVIDENCE_CANDIDATE_STATUSES = [
 export type EvidenceCandidateStatus =
   typeof EVIDENCE_CANDIDATE_STATUSES[number];
 
-export const EVIDENCE_CANDIDATE_ATTEMPT_STATUSES = [
+const EVIDENCE_CANDIDATE_ATTEMPT_STATUSES = [
   "planned",
   "generating",
   "stored",
@@ -51,14 +51,14 @@ export const EVIDENCE_CANDIDATE_ATTEMPT_STATUSES = [
 export type EvidenceCandidateAttemptStatus =
   typeof EVIDENCE_CANDIDATE_ATTEMPT_STATUSES[number];
 
-export const EVIDENCE_CANDIDATE_BILLING_ROLES = [
+const EVIDENCE_CANDIDATE_BILLING_ROLES = [
   "charged_attempt",
   "included_retry",
 ] as const;
 export type EvidenceCandidateBillingRole =
   typeof EVIDENCE_CANDIDATE_BILLING_ROLES[number];
 
-export const EVIDENCE_PROBE_OUTCOMES = ["pass", "fail", "unknown"] as const;
+const EVIDENCE_PROBE_OUTCOMES = ["pass", "fail", "unknown"] as const;
 export type EvidenceProbeOutcome = typeof EVIDENCE_PROBE_OUTCOMES[number];
 
 const INTENT_TRANSITIONS: Readonly<

@@ -3564,3 +3564,53 @@ rows the reader cannot index per file — read by hand before any goes. Client
 by its own design, and widening that scope changes THIS table's population;
 that is an instrument decision, carded on #108 and not taken here.
 
+## 37. #108 SLICE 2b — THE MANIFEST EXECUTED, AND THE FOUR ROWS ITS BARREL TABLE HAD WRONG
+
+Janitor session foreman-20260917-0335, run #275. The manifest
+(`UNUSED_EXPORTS_PURGE_MANIFEST_2026-09-17.md`) was re-derived first on a fresh
+knip read at `0df9fe25` and a fresh 378-boundary timeline: the population was
+IDENTICAL to the 09-16 reading (458 symbols, the same set), and the tables
+differed by one cell (`isIpBlocked`'s ledger verdict, moved by §36a). Then it
+was executed: 149 `export` keywords dropped (147 DROP + the 2 DIED rows), 19
+barrel lines removed, 5 declarations deleted, 29 hand rows read per file.
+
+### 37a. `composeFromAssets` — HELD, blocker #29
+
+Deleting the wrapper `composeIdentityPayload` (dark-born, zero mentions outside
+a docblock and a plan) left the pure core with one importer: its own suite.
+The module is lifecycle `delete` in the Atlas and now has no production reach
+at all, which makes it a MODULE retirement, and module retirements are the
+finish line's (#29), governed by the Atlas's retirement view — not a Janitor
+act. The row is HELD so the door stays honest about a symbol that is dead but
+not this slice's to remove.
+
+### 37b. Four barrel rows whose declaration was NOT reached anywhere else
+
+The manifest's barrel table said, of every row, *"the declaration lives
+elsewhere and is reached there."* That was derived from knip listing the
+`server/db/index.ts` line rather than the declaration — and knip lists ONE of
+the pair. For four of the nineteen the barrel line was the declaration's ONLY
+reach: `deleteBoardItemVersions` (boards.ts), `getGenerationById`
+(generations.ts), `getModelAssetByView` (models.ts) and `updateOutfit`
+(wardrobe.ts). All four are dark-born on the timeline (never a production
+importer at any boundary, zero self-use, no test or script mention), and two of
+them — `updateOutfit` and `deleteBoardItemVersions` — write with no owner in
+the WHERE, which is invariant 1's exact shape the day anyone wires them. The
+strict door surfaced them as `unread` the moment the barrel lines went, which
+is the door working. **DELETED in the same PR**, on the card's own rule for a
+dark-born export nothing mentions; recorded here because the manifest's note
+was wrong about them and a manifest that is wrong in the safe direction is
+still wrong.
+
+### 37c. Two rows the manifest classed one way and the code answered another
+
+- `IDENTITY_FIELD_AXES` (`axisRegistry.ts`) was on the DELETE table (zero
+  self-use). Its docblock says what it is for: *"adding a field to
+  `ResolvedIdentity` without registering an axis for it stops compiling here."*
+  The `satisfies Record<IdentityAxisField, …>` is a guard tsc invokes on every
+  check; the value is unread and the CHECK is not. Only the `export` went.
+- `COILED_NONBINARY_STYLES` (`hairStyles.ts`) is on knip's unused-EXPORT list
+  and is a plain `const` at HEAD — never exported. knip's compact reporter
+  names it beside two real exports of the same file; nothing to do, noted so
+  the next reading does not chase it.
+

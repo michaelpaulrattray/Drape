@@ -32,7 +32,6 @@ import { leanFacialHairWeights, leanStyleWeights, type FacialHairLean } from "./
 import type { HairFamily } from "../../shared/castingVocabularies";
 import {
   HAIR_PARTS,
-  REALIZED_AXIS_KEYS,
   type BrowStyle,
   type HairPart,
   type EyeColour,
@@ -610,9 +609,6 @@ export function describeRealizedAxes(
 
   return parts.length > 0 ? ` ${parts.join(" ")}` : "";
 }
-
-/** Exported so the registry has exactly one definition. */
-export { REALIZED_AXIS_KEYS };
 
 /* ----------------------------------------------------- the sheet-level pass */
 

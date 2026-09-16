@@ -37,7 +37,7 @@ const r2PublicOrigin = (process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
  * wrong theme. `client/src/foundation/theme.test.ts` recomputes the hash from
  * `client/index.html` and fails if the script and this constant drift apart.
  */
-export const THEME_BOOT_SCRIPT_HASH = "sha256-KdZpGeeTOvpFqttmTc1kHMnndUDN1NdkXX4dV0tlJXQ=";
+const THEME_BOOT_SCRIPT_HASH = "sha256-KdZpGeeTOvpFqttmTc1kHMnndUDN1NdkXX4dV0tlJXQ=";
 
 // In dev: allow unsafe-inline/eval for Vite HMR + React Fast Refresh preamble
 const scriptSrc = isDev

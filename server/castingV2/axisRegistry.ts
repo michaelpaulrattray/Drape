@@ -199,7 +199,7 @@ type IdentityAxisField = Exclude<
   "stylingResolution" | "realized" | "hairTiers"
 >;
 
-export const IDENTITY_FIELD_AXES = {
+const IDENTITY_FIELD_AXES = {
   sex: ["sex"],
   ageBand: ["ageBand"],
   agePhase: ["agePhase"],

@@ -10,7 +10,7 @@ interface RateLimitEntry {
   windowStart: number;
 }
 
-export const TRUSTED_PROXY_HOPS = 1;
+const TRUSTED_PROXY_HOPS = 1;
 
 export function configureTrustedProxy(app: {
   set(setting: "trust proxy", value: number): unknown;

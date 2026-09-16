@@ -124,7 +124,9 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       // The Sign adjudicator reads the promotion price to cross-check the
       // promised package against what was actually charged (package v2).
       "castingV2/signRecovery.ts",
-      "castingV2/signService.ts",
+      // signService.ts LEFT this list with #108 slice 2b: its only import of
+      // castingCreditCosts fed a re-export (`CASTING_V2_SIGN_COSTS`) nothing
+      // read through it; the sign price it charges comes via castViewPackage.
       "db/castingV2.ts",
       "db/inkAddCandidates.ts",
       "routes/castingV2.ts",

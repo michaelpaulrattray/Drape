@@ -17,7 +17,7 @@
  */
 
 /** The placeholder a garment carries while its digitization is still running. */
-export const ANALYZING_DESCRIPTION_PREFIX = "Analyzing";
+const ANALYZING_DESCRIPTION_PREFIX = "Analyzing";
 
 /** True when the garment's description is real rather than the placeholder. */
 export function hasUsableDescription(

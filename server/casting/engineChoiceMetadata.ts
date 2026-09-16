@@ -1,6 +1,6 @@
 import type { ModelPreferences } from './geminiTypes';
 
-export const ENGINE_CHOICE_FIELDS = [
+const ENGINE_CHOICE_FIELDS = [
   'castingBrand', 'gender', 'age', 'ethnicity',
   'skinTone', 'eyeColor', 'hairColor', 'hairStyle',
 ] as const;

@@ -49,7 +49,7 @@ import {
 
 const log = createModuleLogger("casting/identity/identityCommit");
 
-export function editField(edit: AuthorizedIdentityEdit): AuthorizableIdentityField {
+function editField(edit: AuthorizedIdentityEdit): AuthorizableIdentityField {
   return edit.kind === "leaf" ? edit.leaf : edit.edit.field;
 }
 

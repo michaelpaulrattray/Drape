@@ -482,7 +482,7 @@ export function classifyInkPlacement(
  * frozen promise, one file over, and on a roll-neck cast it would name two
  * surfaces under a jumper.
  */
-export function servedAndBare(
+function servedAndBare(
   wordsRoadOpen: boolean,
   wardrobe?: WardrobeResolution,
 ): readonly string[] {

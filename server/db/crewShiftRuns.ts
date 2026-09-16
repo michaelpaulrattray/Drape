@@ -56,7 +56,7 @@ import { getDb } from "./connection";
  * goes idle is a worse surface than a constant one. One wasted row on an
  * unindexed-by-nothing four-row read is not worth a second query shape.
  */
-export const CREW_SHIFT_RUN_LIMIT = 4;
+const CREW_SHIFT_RUN_LIMIT = 4;
 
 /**
  * One run as the page sees it.

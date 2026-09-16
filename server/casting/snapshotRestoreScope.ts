@@ -7,7 +7,7 @@ export const SNAPSHOT_RESTORE_SCOPE_ENV = "R7_SNAPSHOT_RESTORE_SCOPE";
 
 export type SnapshotRestoreScope = SnapshotReadScope;
 
-export class SnapshotRestoreScopeConfigurationError extends Error {
+class SnapshotRestoreScopeConfigurationError extends Error {
   constructor(message?: string) {
     super(
       message

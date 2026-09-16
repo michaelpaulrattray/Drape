@@ -19,7 +19,7 @@ import type { MarkCategory, MarkOperation } from "./identityTypes";
 /** Per-category detection patterns. `ink` intentionally matches the same
  *  family the legacy hasBodyArt matched (plus obvious spellings) so the
  *  persistence rule never regresses on existing documents. */
-export const MARK_VOCABULARY: Record<MarkCategory, RegExp> = {
+const MARK_VOCABULARY: Record<MarkCategory, RegExp> = {
   "mark.ink":
     /\b(tattoo(?:s|ed)?|tatt|ink(?:ed)?|body\s*art|body\s*branding|brand\s*mark|wax\s*seal|calligraphy\s*tattoo)\b/i,
   "mark.scar":
@@ -32,7 +32,7 @@ export const MARK_VOCABULARY: Record<MarkCategory, RegExp> = {
     /\b(stretch\s*mark(?:s)?|gap\s*(?:tooth|teeth)|tooth\s*gap|missing\s*(?:tooth|teeth|finger)|cleft\s*lip)\b/i,
 };
 
-export const MARK_CATEGORIES = Object.keys(MARK_VOCABULARY) as MarkCategory[];
+const MARK_CATEGORIES = Object.keys(MARK_VOCABULARY) as MarkCategory[];
 
 /** Every mark category the text names. */
 export function detectMarkCategories(text: string): MarkCategory[] {
