@@ -1,7 +1,7 @@
 {
-  "edition": 438,
-  "updatedAt": "2026-09-16T15:40:00.000Z",
-  "shift": "YOUR REFERRAL LINK WORKS AGAIN, AND THE FIRST PART OF YOUR LAST CLEAN-UP JOB IS DONE. NOTHING NEEDS AN ANSWER FROM YOU.\n\nTwo things landed and are on production now. First, the broken link from last night’s edition: Settings hands every customer a “share this” link, and since April a friend opening it got nothing. The missing piece is switched back on — the friend lands, the code is caught, and the moment they sign in the referral is claimed for them, with the reward paid the same way the hand-typed code already pays. The outside reviewer read it twice. The first read found two older gaps on the same road that only mattered once the link was live again — a friend with two tabs open could have been counted twice (two welcome bonuses, and you credited twice for one friend), and the automatic claim had no limit on attempts where the hand-typed one has five an hour. Both are closed in the same change: the database itself now refuses a second claim for the same person, and both roads share the one five-an-hour limit. The second read passed it. The referrals table on production holds zero rows, all time — nobody has ever been referred through the product yet — so nothing existing was affected.\n\nSecond, job 108, part one of three: seventeen names that were a second spelling of something already there are gone. Nothing you see changes; the reviewer passed it with no findings. Parts two and three (unused exports through the history check, then unused types) are each their own session. One shift died overnight mid-wait after opening both of these; this shift picked them up, read them at the code, and landed them. Next: 108 part two, or the small bug this found (1016 — a bad connection at the one automatic claim attempt still loses the referral).",
+  "edition": 439,
+  "updatedAt": "2026-09-16T17:10:00.000Z",
+  "shift": "THE HISTORY CHECK YOU ASKED FOR ON JOB 108 WAS BLIND TO HALF THE PRODUCT - FIXED - AND PART TWO OF 108 IS WRITTEN. NOTHING NEEDS AN ANSWER FROM YOU.\n\nThree things landed and are on production now. First, the instrument. Job 108 asks that nothing be deleted until a history check says it was never used - and the first thing that check did tonight was call a live piece of code dead. Read at the code, the check could not see the way the admin screens, the audit log, and the credit layer reach their code - forty-one working pieces read as unused, among them both sign-in routes, the Stripe refund, the role changer, and all four background workers (the one that refunds a roll interrupted by a deploy among them). Had any of those been switched off by accident, the check would have said nothing. The outside reviewer read the fix twice and found the last five himself; both rounds taken, both passed.\n\nSecond, part two of job 108 is written - not executed. Every unused export in the product (458 of them) was read through the repaired check and sorted by what can be said about it: 153 on the server side were never used by anything, ever, and are the deletion list; 29 need a person's eye; 15 were already ruled on; and 238 on the customer side and in the tooling are outside what the check can read, which is stated rather than folded in. The next session deletes from that list. Nothing is gone yet.\n\nThird, the small bug from last night (1016): a friend opening your referral link on a bad connection used to lose the referral for good on one failed attempt. Now the code is kept and tried again on their next sign-in; only a code that can never work is dropped. Reviewer passed it.\n\nNext: 108 part two's deletion (one session), then part three (unused types).",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-16T15:36:03.385Z",
+      "readAt": "2026-09-16T17:05:48.590Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5033,6 +5033,27 @@
   ],
   "pipeline": [
     {
+      "id": "unwiring-dynamic-import-1017",
+      "title": "The history check behind your clean-up jobs could not see 41 working pieces of the product - fixed",
+      "status": "merged",
+      "prNumber": 1017,
+      "note": "Found on the way into job 108 part two. Worked example: the check said the admin's block-an-address button was dead code. It is not - two screens call it, through a way of loading code the check did not read. Measured: 36 working pieces read as unused, including both sign-in routes and the Stripe refund; the reviewer found five more (all four background workers, and the welcome-bonus payer) in the same shape without the word await. A piece already read as unused can never be seen to STOP being used, so the check would have stayed silent on the day any of them was switched off. Now reads exactly three shapes and says so; 41 to 0. Reviewer two rounds: one Medium taken in one push, then PASS with two Low notes, both taken. Production build 8760d072 read at /api/health."
+    },
+    {
+      "id": "knip-exports-108-s2",
+      "title": "Job 108, part two: every unused export read through the history check and sorted - the deletion list is written, nothing deleted yet",
+      "status": "merged",
+      "prNumber": 1018,
+      "note": "Your 105-108 clear them, last job, second of three slices. Worked example: 458 unused exports on the product; 153 on the server were never used by anything at any of 377 points in the product's history and are unused by every test and script today - that is the deletion list, derived by script, not typed. 29 need a person to open the file (the check reads a name, not a file, when two files share one). 15 were already ruled on. 163 customer-side and 57 tooling exports are outside what the check reads, said plainly rather than folded in. One old unread row on the deletion ledger (the IP-block read) was read and kept. The deletion itself is the next session, with this list as its brief."
+    },
+    {
+      "id": "referral-keep-code-1016",
+      "title": "A friend's referral survives a bad connection (bug 1016)",
+      "status": "merged",
+      "prNumber": 1019,
+      "note": "Worked example: your friend opens your link on the train, signs in, the one automatic claim fails on the network. Before: the code was thrown away and neither of you got the reward, silently. After: the code stays in their browser and is claimed on their next sign-in; only a code that can never work is dropped. The card listed one case as a drop that is kept instead, with the reason on the card - the reviewer read it and agreed. Reviewer PASS; one Low note about an unreachable-today path recorded, not taken."
+    },
+    {
       "id": "referral-link-wired-1010",
       "title": "Your referral link works again — and the claim road got the two guards it was missing",
       "status": "merged",
@@ -6661,9 +6682,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0917a-foreman",
+      "id": "queue-shape-0917b-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 32 open, level. 108 is two parts into three; 1016 closed",
+      "detail": "One card closed tonight (1016, the referral code kept on a bad connection - on production). Nothing filed. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level with last night. NEXT UP: 108 takeable (part two's deletion, then part three), 129 held on its own data. Nothing on your desk."
+    },
+    {
+      "id": "queue-shape-0917a-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 33 open, level. Your 105–107 are cleared; 108 is one part into three",
       "detail": "One card closed tonight (1010, the referral link — fixed and on production) and two filed: 1014, found by 108’s own reading (the money deduction has two names, and about a dozen guards that promise “this road charges nothing” only check one of the spellings — read at the code: 24 test files, more than the card first said, so it is a session of its own, under the reviewer); and 1016, found by the reviewer on the referral fix (one bad connection at the single automatic claim attempt still loses the referral — small, client-only). So the board goes 32 → 33.\n\nOf your five: 527 done, 129’s first part live and its second part waiting on your refused rolls, 105 done, 106 done, 108 one slice in. A shift died overnight mid-wait after opening two finished PRs and never marked them ready for review; this shift found them, read both at the code, and landed them — nothing was lost, and the dead shift’s row on this page is closed with that note.\n\n15 open cards have had no comment, close, reopen or commit for 7 days — level with last night."
     },
@@ -7274,7 +7302,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-16T15:36:03.384Z",
+    "readAt": "2026-09-16T17:05:48.589Z",
     "items": [
       {
         "issueNumber": 108,
