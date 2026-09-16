@@ -3519,3 +3519,47 @@ identity on purpose — *"the pointer is a measurement's result, so it is pinned
 … this fails if it changes without a new run."* The three arms stay exported for
 their own test arms. It is the knip duplicate floor, and `docs/JANITOR_KNIP.md`
 says so.
+
+## 36. #108 SLICE 2 — THE UNUSED-EXPORT POPULATION THROUGH THE DIFFER, THE
+## INSTRUMENT REPAIRED FIRST, ONE `UNREVIEWED` ROW READ, AND A MANIFEST WRITTEN
+## (2026-09-17, Janitor seat, run #274. Nothing is deleted in this commit.)
+
+The reading is `docs/specs/UNUSED_EXPORTS_PURGE_MANIFEST_2026-09-17.md`; this
+section is the ledger's half of it.
+
+### 36a. `isIpBlocked` — read, and KEPT
+
+The timeline classified it `died` (last wired 2026-02-19, lost importer
+`server/security/rateLimit.ts`) and the row has said `UNREVIEWED` since
+fable-1435 §3. Read at the commit: `2722bc5b`'s importer was the wrapper
+`checkIpBlocked`, whose only consumer was a test — the differ's docblock
+already carries this specimen as its worked example of *"a dead importer
+still counts as an importer"*, and CLAUDE.md's *not enforced* list files the
+IP-blocking request-path check as **never wired**, which the read confirms.
+What IS wired is the other half: `blockIp` calls `isIpBlocked` for its
+duplicate check (`ipBlocking.ts:64`), and `blockIp` has two live callers
+through the admin routes. So the symbol is on the admin block road today,
+self-consulted, and the request-path control it was written for is a founder
+decision (wire or bin) rather than a Janitor act. **KEEP**, ceiling 17 → 16.
+
+### 36b. The instrument, and why the ledger's door did not move
+
+`lib/importerCountDiff.mts` read no destructured dynamic import before PR
+#1017 — 36 production-wired server exports counted zero, both login routers
+among them. The `rewired` arm of `check-cleanup-dispositions` runs on that
+reader, so a HELD or TAKE row whose symbol had come back through a dynamic
+import would have passed the door in silence. Measured after the repair: **0
+rewired, 0 unreadable** — no standing verdict in this table was wrong, which
+is luck of the population rather than a property of the door, and is why the
+repair went in before any row was read.
+
+### 36c. What the manifest holds, and what it does not
+
+153 server exports never wired at any of 377 boundaries AND unused by every
+test and script (knip): 147 lose their `export`, 6 lose their declaration. 19
+barrel lines whose declaration is reached directly. 29 twinned or export-list
+rows the reader cannot index per file — read by hand before any goes. Client
+(163), shared (18) and scripts (57) are outside the differ's reported scope
+by its own design, and widening that scope changes THIS table's population;
+that is an instrument decision, carded on #108 and not taken here.
+

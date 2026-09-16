@@ -994,3 +994,43 @@ posted before the branch (#909) and triage §35 for the ledger rows.
 
 `docs/JANITOR_KNIP.md` carries the expected next nightly reading: duplicates
 2; files/exports/types unmoved by this slice.
+
+## Between runs — #108 slice 2 worked off NEXT UP, 2026-09-17 (not a patrol; the clock had not fired)
+
+**Not a `## Run` heading**: the Janitor is due 18 Sep; #108 came off NEXT UP on
+the founder's word (*"105-108 clear them"*, 16 Sep). Shift foreman-20260917-0200,
+run #274. Slice 2 of three — exports through the un-wiring differ, never a hand
+list.
+
+**Written, not executed.** The reading is
+`docs/specs/UNUSED_EXPORTS_PURGE_MANIFEST_2026-09-17.md`; the deletion it
+prescribes is the next Janitor session's brief. Nothing came out of the tree
+this session except one `UNREVIEWED` verdict (`isIpBlocked` → KEEP, triage
+§36a, ceiling 17 → 16).
+
+**What a future run needs from this, in three lines:**
+
+1. **The differ reported a live symbol dead, and that was the finding.** Its
+   30-day window named `blockIp` un-wired; `blockIp` has two callers, both
+   `const { blockIp } = await import("../../db")`, a shape the reader did not
+   read. 36 production-wired server exports counted zero — both login routers
+   among them. PR #1017 repairs it; the full-history timeline was walked on
+   both readers (216 s each) and the class counts moved exactly as predicted.
+   **Run the differ, then read its first noisy finding at the code before
+   believing its silences** — the noise is the only side of a blindness you
+   can see.
+2. **The population is three populations.** The differ reports `server/`
+   declarations only, by design (the sweep's scope). Of 458 unused exports,
+   218 are server (153 dark-born, 19 barrel lines, 29 read-by-hand, 2 died,
+   15 on the ledger), 163 client, 18 shared, 57 scripts. Widening the
+   reported scope grows the deletion ledger's `unread` by every client
+   symbol — an instrument decision, carded on #108, not a Janitor act.
+3. **"Self-used" needs comments stripped.** A `\bname\b` count over a module
+   reads its own docblocks; 151 rows read self-used until comments were
+   stripped, 147 after. The remaining six are the DELETE table.
+
+The nightly was triggered by hand (`gh workflow run knip.yml`) because the
+cron had not run since `35008863398`; the readings row above records the
+measurement it produced, which landed every expectation the previous three
+rows had written.
+

@@ -1054,9 +1054,9 @@
 
 - symbol: isIpBlocked
   file: server/db/ipBlocking.ts
-  verdict: UNREVIEWED
-  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
-  argued: unreviewed
+  verdict: KEEP
+  why: "self-consulted — blockIp calls it for its duplicate check (ipBlocking.ts:64), so it is on the admin block road today; the REQUEST-PATH check it was written for was never wired (the 2722bc5b importer was rateLimit.ts's checkIpBlocked wrapper, whose only consumer was a test — CLAUDE.md's 'never wired' road, re-read 2026-09-17), and wiring or binning that control is a founder decision, not a Janitor act"
+  argued: 36a
 
 - symbol: hasBodyArt
   file: server/casting/geminiPrompts.ts
