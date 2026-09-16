@@ -33,8 +33,9 @@ export {
 } from "./staffTable";
 /* Brief 11 (#436) - the staff dialogs' shared grammar. Its docblock carries
    why it composes `.dpc-modal__eyebrow` rather than declaring a second one.
-   The field row (`StaffField`) is `ModalField` in `@/foundation` since the
-   section 11 promotion pass (#481); the header stays here on purpose. */
+   The field row (`StaffField`) is `LabelledField` in `@/foundation` since the
+   section 11 promotion pass (#481) and #841's fold; the header stays here on
+   purpose. */
 export {
   StaffDialogHeader,
   STAFF_DIALOG_BODY,

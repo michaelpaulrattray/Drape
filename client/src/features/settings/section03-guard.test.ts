@@ -415,10 +415,17 @@ describe("section 03 — five modals became three surfaces", () => {
       Profile field — label, then the box, then the note — inside a capped
       column; the built pane had them as leader rows with a 220px input in a
       `flex: none` track.
+
+      ⚠ The stacked field is the FOUNDATION's since #841 — `SettingsField` was
+      the same three rows with a second label treatment, and his ruling folded
+      it. The shape this arm is about is unchanged; only who draws it moved.
     */
     const profile = code(read(join(SECTIONS_DIR, "ProfileSection.tsx")));
     expect(profile, "Profile went back to leader rows").not.toContain("<SettingsRow");
-    expect(profile, "Profile's fields do not stack").toContain("<SettingsField");
+    expect(profile, "Profile's fields do not stack").toContain("<LabelledField");
+    expect(profile, "a second stacked field was born back in settings/").not.toContain(
+      "<SettingsField",
+    );
     expect(profile, "the field lost its full width inside the capped column").toContain(
       "dp-set__fullfield",
     );

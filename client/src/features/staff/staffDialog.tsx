@@ -2,8 +2,9 @@
  * The staff dialogs' shared grammar — header and shell strings (brief 11, #436).
  *
  * ⚠ **THE FIELD ROW IS NOT HERE ANY MORE.** `StaffField` left for
- * `foundation/ModalField.tsx` in the section 11 promotion pass (#481) — four
- * consumer files, no rewrite, renamed on the way in. The header stays: it
+ * `foundation/LabelledField.tsx` in the section 11 promotion pass (#481) — four
+ * consumer files, no rewrite, renamed on the way in; #841 then folded Profile's
+ * own field onto it, so it is every labelled field in the product. The header stays: it
  * collides with the confirm shell's own header (`.dpc-modal__eyebrow` has five
  * consumers there, through a different shell), and brief 11 §8 forbade folding
  * the form dialogs onto that shell, so which chrome a form dialog gets is a

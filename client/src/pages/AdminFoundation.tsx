@@ -32,7 +32,7 @@ import {
   Marquee,
   MediaCard,
   MediaFrame,
-  ModalField,
+  LabelledField,
   Progress,
   RequiredMarker,
   ScopePill,
@@ -211,14 +211,14 @@ export default function AdminFoundation() {
             parenthesis in the label. Its docblock names the two field devices
             it did NOT absorb, and why.
           */}
-          <ModalField label="Reason" htmlFor="specimen-modal-field" helper="At least 5 characters.">
+          <LabelledField label="Reason" htmlFor="specimen-modal-field" helper="At least 5 characters.">
             <Textarea
               id="specimen-modal-field"
               placeholder="Refund requested by the customer on 12 Sep; card statement attached."
               rows={2}
               readOnly
             />
-          </ModalField>
+          </LabelledField>
         </div>
       </section>
 
@@ -630,9 +630,21 @@ export default function AdminFoundation() {
           />
         ) : null}
         {shown === "confirm" ? (
+          /*
+            The notes slot is shown because card 841 folded its label onto the
+            house one: it wore its own sans declaration and now reads
+            `.dpc-modal__label` like every other name-of-a-slot. Its only real
+            consumer is behind a moderator user search, so without a specimen
+            the folded label had nowhere anyone could look at it.
+          */
           <ConfirmDialog
             title="Discard this sheet?"
             body="The eight faces on it go, and the credits it cost don't come back."
+            notes={{
+              label: "Reason for discarding (required)",
+              placeholder: "Say what went wrong, so the refund reader has it.",
+              maxLength: 280,
+            }}
             confirmLabel="Discard it"
             busyLabel="Discarding…"
             busy={false}

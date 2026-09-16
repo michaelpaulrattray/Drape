@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { LabelledField } from "./LabelledField";
+
 /**
  * A destructive confirmation, in our own voice.
  *
@@ -163,11 +165,20 @@ export function ConfirmDialog({
         <p id="dpc-confirm-body" className="dpc-confirm__body">
           {body}
         </p>
+        {/*
+          ⚠ #841 — THE NOTES LABEL IS THE HOUSE FIELD LABEL, NOT A FOURTH ONE.
+          It wore its own sans 11.5px `--metaStrong` declaration until his
+          ruling folded the field label to one treatment; it is the same device
+          as every other — the name of a slot somebody types into — so it takes
+          the same component. The row is unchanged (5px between label and box,
+          4px above), only where the label's type comes from.
+        */}
         {notes && (
-          <div className="dpc-confirm__notes">
-            <label className="dpc-confirm__noteslabel" htmlFor={notesId}>
-              {notes.label}
-            </label>
+          <LabelledField
+            label={notes.label}
+            htmlFor={notesId}
+            className="dpc-confirm__notes"
+          >
             <textarea
               ref={notesRef}
               id={notesId}
@@ -184,7 +195,7 @@ export function ConfirmDialog({
             <p className="dpc-confirm__notescount">
               {typed.length}/{notes.maxLength}
             </p>
-          </div>
+          </LabelledField>
         )}
         <div className="dpc-confirm__actions">
           <button
