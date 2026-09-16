@@ -121,7 +121,7 @@ export async function countRefusal(input: {
  * `rescued` over `rescued + upheld` IS the honest-ask-refused rate, measured
  * continuously rather than reconstructed from logs that no longer exist.
  */
-export type RefusalTally = {
+type RefusalTally = {
   reason: string;
   outcome: RefusalOutcome;
   count: number;

@@ -104,7 +104,7 @@ export const CREDIT_COSTS = {
 
 // ============ Types ============
 
-export interface CastingVibe {
+interface CastingVibe {
   editorial: number;
   commercial: number;
   runway: number;

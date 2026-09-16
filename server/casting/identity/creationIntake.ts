@@ -47,7 +47,7 @@ import {
 import { isValidAgeValue, isValidEthnicityBlend, isValidGender } from "./identityFieldHandlers";
 import { REFUSAL_COPY } from "./refusalCopy";
 
-export interface CreationIntakeRefusal {
+interface CreationIntakeRefusal {
   ok: false;
   code: "presentation" | "cosmetic_lash" | "creation_reference" | "relational_reference" | "invalid_value";
   /** Which input channel tripped — for honest, correctable copy. */

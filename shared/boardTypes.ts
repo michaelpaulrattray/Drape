@@ -152,7 +152,7 @@ export function isLineageEdge(relation: string): boolean {
 }
 
 /** A snapshot of an input actually consumed by a generation, captured at generation time (D-12). */
-export interface InputSnapshot {
+interface InputSnapshot {
   itemId: number;
   versionId?: number;
   /** The EXACT image URL consumed — survives later edits to the source. */

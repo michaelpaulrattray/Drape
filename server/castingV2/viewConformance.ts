@@ -37,9 +37,9 @@ import { packageViewExpectation } from "./castViewPackage";
 const log = createModuleLogger("castingV2/viewConformance");
 
 export const CONFORMANCE_AXES = ["identity", "angle", "wardrobe"] as const;
-export type ConformanceAxis = (typeof CONFORMANCE_AXES)[number];
+type ConformanceAxis = (typeof CONFORMANCE_AXES)[number];
 
-export type AxisVerdict = {
+type AxisVerdict = {
   /**
    * DERIVED from `verdict`. Never written by the model, never read as the
    * source of truth — it is here so downstream readers keep their shape.
@@ -81,7 +81,7 @@ export type ViewConformanceVerdict = {
   unjudged?: boolean;
 };
 
-export type ViewConformanceInput = {
+type ViewConformanceInput = {
   angle: CastViewAngle;
   /** The signed anchor — the face the customer chose. */
   anchor: ReferenceImage;
@@ -125,7 +125,7 @@ export type ViewConformanceJudge = (input: ViewConformanceInput) => Promise<View
  * pick a side and hedge in prose.
  */
 const AXIS_VERDICTS = ["matches", "differs", "unsure"] as const;
-export type AxisVerdictWord = (typeof AXIS_VERDICTS)[number];
+type AxisVerdictWord = (typeof AXIS_VERDICTS)[number];
 
 const axisSchema = z.object({
   verdict: z.enum(AXIS_VERDICTS),

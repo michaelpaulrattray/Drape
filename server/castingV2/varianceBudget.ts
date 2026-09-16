@@ -97,7 +97,7 @@ export function distinctSignatures(sheet: readonly ResolvedIdentity[]): number {
  * precisely because the drift ruling owns it.
  */
 const RELEASE_LADDER = ["worn-state", "texture", "adjacent-cut"] as const;
-export type ReleaseRung = (typeof RELEASE_LADDER)[number];
+type ReleaseRung = (typeof RELEASE_LADDER)[number];
 
 export type VarianceReport = {
   /** Distinct styling signatures across the sheet, after any release. */

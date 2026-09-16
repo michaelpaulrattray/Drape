@@ -113,7 +113,7 @@ export function resolveBenchSet(
    The fold
    ──────────────────────────────────────────────────────────────────────── */
 
-export type HyperfineResult = {
+type HyperfineResult = {
   readonly command: string;
   readonly mean: number;
   readonly stddev: number | null;

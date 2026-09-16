@@ -54,8 +54,6 @@
 /** Every state a needs-you card or eye item may hold, in page order. */
 export const CREW_CARD_STATES = ["open", "waiting", "answered", "done"] as const;
 
-export type CrewCardState = (typeof CREW_CARD_STATES)[number];
-
 /**
  * Does this card still want something from him?
  *

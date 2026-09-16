@@ -17,7 +17,7 @@ import type {
 } from "./identity/identityTypes";
 const log = createModuleLogger("casting/promptReinforcement");
 
-export interface EthnicityBlendEntry {
+interface EthnicityBlendEntry {
   name: string;
   pct: number;
 }

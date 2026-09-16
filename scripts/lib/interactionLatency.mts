@@ -80,7 +80,7 @@ export const BAR_MS: Record<Bar, number> = {
  * the same act as `page.evaluate(string)` and carries the same trust: the
  * page is the driver's own, on a server the driver was pointed at.
  */
-export type Probe = {
+type Probe = {
   readonly name: string;
   readonly bar: Bar;
   readonly source: string;
@@ -107,7 +107,7 @@ export type Action = {
 };
 
 /** What one probe read on one click. */
-export type ProbeReading =
+type ProbeReading =
   | { kind: "changed"; mutationMs: number; frameMs: number; before: string; after: string }
   | { kind: "timeout"; waitedMs: number; before: string };
 

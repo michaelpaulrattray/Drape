@@ -1,8 +1,8 @@
 import { HAIR_LENGTHS } from "./castingOptions";
 
-export type CastingClarificationKind = "hair_length";
+type CastingClarificationKind = "hair_length";
 
-export interface CastingClarificationChoice {
+interface CastingClarificationChoice {
   label: string;
   instruction: string;
 }

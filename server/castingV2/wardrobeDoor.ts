@@ -87,7 +87,7 @@ import { containsBrand, scrubBrands } from "./brandScrub";
  * "rejected the weapon" from "rejected because the string was 300 characters",
  * so the verdict names the class AND the word that fired it.
  */
-export type WardrobePickRefusal =
+type WardrobePickRefusal =
   /* `blank` rather than the obvious `empty`, and it is not a taste choice.
      `empty` is a DECLARED refusal id in the capability census, and that census
      records which test files pin each id by naming it — so a suite asserting

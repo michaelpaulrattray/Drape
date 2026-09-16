@@ -34,7 +34,7 @@ import { useEffect, useState } from "react";
  * back to `currentColor`: it inherits the element's own colour, which is
  * already themed, and it is not a hex literal — `token-guard` covers this file.
  */
-export interface ChartTokens {
+interface ChartTokens {
   /** The primary series and the one bar that is today. */
   ink: string;
   /** The second series, and only where the second series is an attention state. */

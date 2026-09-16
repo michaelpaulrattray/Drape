@@ -83,7 +83,7 @@
 
 /** Whose words the slot is holding. The panel decides this at the moment it
  *  writes, with the same `failureIsOurs` it uses to mark the request. */
-export type OutcomeOrigin = "server" | "fallback";
+type OutcomeOrigin = "server" | "fallback";
 
 export type HeldOutcome = {
   text: string;

@@ -65,7 +65,7 @@
  */
 import type { Buffer } from "node:buffer";
 
-export type ConstancySide = {
+type ConstancySide = {
   readonly side: "left" | "right" | "whole";
   /** Feature area as a share of her face's area, on that frame. */
   readonly parentExtent: number;

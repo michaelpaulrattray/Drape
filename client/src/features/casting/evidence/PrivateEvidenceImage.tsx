@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { loadPrivateEvidenceImage } from "./privateEvidenceImageLoader";
 
-export interface PrivateEvidenceImageProps {
+interface PrivateEvidenceImageProps {
   src: string;
   alt: string;
   className?: string;

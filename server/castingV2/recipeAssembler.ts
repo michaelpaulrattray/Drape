@@ -352,15 +352,29 @@ export type AssembleInput = {
 };
 
 /**
- * WHAT A SOURCE PICTURE ACTUALLY SHOWS — a closed vocabulary, because the
- * sentence describing it has to be true.
+ * WHAT KIND OF PICTURE THIS IS, AND WHAT THAT KIND OWES.
+ *
+ * A union rather than a flag, because the ink road carries an obligation the
+ * hair road does not have and OPTIONAL IS WHAT THE DEFECT LOOKS LIKE — the same
+ * lesson `scope` below is written from. A caller assembling an ink source must
+ * state what was done to the bytes before they were stored; there is no shape
+ * of this type in which it can forget, and forgetting is the failure that would
+ * send an unexamined photograph to an engine.
+ *
+ * `null` is a legal value and is REFUSED at assembly (`sourceNotExamined`).
+ * That is the distinction the type cannot make and the door can: the caller is
+ * forced to SAY which of the three it is, and saying "nobody looked" is
+ * answered with a refusal rather than a render.
+ *
+ * # `pictures` IS A CLOSED VOCABULARY, because the sentence describing it has
+ * to be true.
  *
  * Each member arrives with the road that mints that kind of carrier, and with
  * its own sentence rather than by widening a neighbour's. Calling a redacted
  * form *"only hair"* would be lying to the engine about what it is looking at,
  * and the scale court measured what that costs.
  *
- * # THE NAME IS THE CONTAINMENT (ruled fable-1137 §2d)
+ * ## THE NAME IS THE CONTAINMENT (ruled fable-1137 §2d)
  *
  * `inkDesignOnTransparency` is literally what `cutOutPixels` produces — the
  * design in its own pixels, everything else alpha-zero. It is named for the
@@ -376,29 +390,10 @@ export type AssembleInput = {
  * same rule and passes it: those bytes are a crop of a frame THIS PRODUCT
  * PAINTED, harvested by the delivery mint, never anything a customer uploaded.
  *
- * ⚠ **DERIVED FROM `SourceKind` AS OF 2026-08-21, and that is the fence too.**
- * It was written out as a literal union, and the day `inkAsDelivered` joined
- * `SourceKind` this list silently stopped naming every member — a second list
- * shadowing a source of truth, drifting the way working law 4 says they always
- * do, in the one place whose whole job is to enumerate what may be sent. It had
- * no caller left to notice.
- */
-export type SourcePicture = SourceKind["pictures"];
-
-/**
- * WHAT KIND OF PICTURE THIS IS, AND WHAT THAT KIND OWES.
- *
- * A union rather than a flag, because the ink road carries an obligation the
- * hair road does not have and OPTIONAL IS WHAT THE DEFECT LOOKS LIKE — the same
- * lesson `scope` below is written from. A caller assembling an ink source must
- * state what was done to the bytes before they were stored; there is no shape
- * of this type in which it can forget, and forgetting is the failure that would
- * send an unexamined photograph to an engine.
- *
- * `null` is a legal value and is REFUSED at assembly (`sourceNotExamined`).
- * That is the distinction the type cannot make and the door can: the caller is
- * forced to SAY which of the three it is, and saying "nobody looked" is
- * answered with a refusal rather than a render.
+ * (This section lived on a `SourcePicture = SourceKind["pictures"]` alias
+ * until #108 slice 3; the alias had no reader and was deleted, the ruling was
+ * not. It sits on the union it describes now, which is where a second list
+ * cannot drift from it.)
  */
 type SourceKind =
   | { pictures: "hairOnRedactedForm" }
@@ -577,7 +572,7 @@ export type CarriedInkDesign = {
  */
 export type PresentationClause = { noun: string; words: string };
 
-export type RecipeReference = {
+type RecipeReference = {
   role: ReferenceRole;
   image: ReferenceImage;
   /** The sentence naming this reference by the ordinal it actually occupies.
@@ -592,7 +587,7 @@ export type RecipeReference = {
  * carried crop (words are the carrier of record, the crop is the assist); for a
  * surface it is the only thing that rides at all.
  */
-export type StandingWords = {
+type StandingWords = {
   slot: FeatureSlot;
   noun: string;
   words: readonly string[];
@@ -667,14 +662,14 @@ export type Recipe = {
  * (`wordsNameAnotherKind`, `wordsClaimThePair`, `wordsDescribeTheArtifact`),
  * never a second spelling invented here.
  */
-export type WithheldWords = {
+type WithheldWords = {
   slot: FeatureSlot;
   word: string;
   reason: SlotWordsRefusal["reason"];
   detail: string;
 };
 
-export type RecipeRefusal = {
+type RecipeRefusal = {
   ok: false;
   reason:
     | "carriesItsOwnEdit"

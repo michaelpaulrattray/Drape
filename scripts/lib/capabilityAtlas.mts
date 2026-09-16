@@ -868,7 +868,7 @@ export const outcomeId = (outcome: string): string | null => {
 
 /* ═══════════════════════════════════════════════════════════ driven half */
 
-export type InterpreterCall = { mode: string; answer: string };
+type InterpreterCall = { mode: string; answer: string };
 
 export type Observation = {
   id: string;

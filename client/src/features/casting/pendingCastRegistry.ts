@@ -24,7 +24,7 @@ export interface CastingOperation {
   startedAt: number;
 }
 
-export type CastingOperationOutcome =
+type CastingOperationOutcome =
   | {
       status: 'success';
       modelId: number;

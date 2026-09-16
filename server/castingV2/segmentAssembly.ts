@@ -47,7 +47,7 @@ export type CarriedSegment = {
   frame: { width: number; height: number };
 };
 
-export type SegmentExclusion = {
+type SegmentExclusion = {
   id: number;
   facet: string;
   /**

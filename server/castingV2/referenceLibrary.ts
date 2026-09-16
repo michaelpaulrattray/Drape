@@ -59,7 +59,7 @@ import type {
  * read it, and the row that would otherwise be picked up carries a picture of
  * the very thing she removed.
  */
-export type ReferenceRole = "anchor" | "carry" | "vacancy";
+type ReferenceRole = "anchor" | "carry" | "vacancy";
 
 export type ReferenceGeometry = {
   bbox: { x: number; y: number; width: number; height: number };

@@ -67,7 +67,7 @@ export type MergedPrReading = {
   gateRuns: number;
 };
 
-export type AttributedSession = {
+type AttributedSession = {
   run: ShiftRunReading;
   prs: MergedPrReading[];
 };

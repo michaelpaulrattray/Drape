@@ -14,7 +14,7 @@ import { NodeLabelRow } from "../NodeLabelRow";
 import { SafeImage } from "../ImageFallback";
 import type { Provenance } from "@shared/boardTypes";
 
-export interface ImageNodeData extends Record<string, unknown> {
+interface ImageNodeData extends Record<string, unknown> {
   itemId: number;
   boardId: number;
   provenance: Provenance | null;

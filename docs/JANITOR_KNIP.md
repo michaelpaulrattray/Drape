@@ -74,6 +74,14 @@ Controls taken 2026-08-26 on the committed config (working law 2):
   deductPoints` is a rename alias with SIX live money-path callers and a dozen
   guard regexes spelling the old name, held for its own card (triage §35c). A
   duplicates reading of 2 is the floor; a reading above 2 names a new alias.
+- **An inline `import("./x").T` in a type position is a consumer knip does
+  NOT see** (#108 slice 3, 2026-09-17): `SchemaPathByField` was listed as an
+  unused type while `identityFieldHandlers.ts` read it as
+  `import("./identityTypes").SchemaPathByField[F]`; tsc would have refused the
+  drop. Before believing a type row, grep the tree for `import("` beside the
+  name. That one site is a named import now (the file already imported from
+  the module statically), so the row left the list honestly; a future one is
+  the same read.
 
 ## Readings (the Janitor appends one line per run; findings become cards)
 
@@ -90,6 +98,7 @@ Controls taken 2026-08-26 on the committed config (working law 2):
 | 2026-09-16 | (20 expected) | (0) | — | — | — | (2 expected) | Read by #108 slice 1 (not a patrol), still against `35008863398` — no nightly since #1008/#1011 merged. **17 of the 19 duplicate exports go** in #108's slice-1 PR (triage §35, card comment on #108): the 12 client `Name, default` pairs (no file has EVER imported the default — `git log -G` over the whole history), four `credits.ts` `*Points` rename aliases (three of them `UNREVIEWED` ledger rows, now TAKEN, ceiling 20 → 17), and `CONCEPT_REVIEW_READING`. Two HELD and stated as the floor above. Expected next nightly: duplicates 19 → **2**; files/exports/types unmoved by this slice. A reading above 2 is the finding. |
 | 2026-09-17 | 19 | 0 | — | 193 | 134 | 2 | **A MEASUREMENT, not an expectation** — nightly `35119015532` at `b411314d`, triggered by hand after #108 slice 1 merged (the cron had not run since `35008863398`), compact. ✅ **Every expectation above landed**: files 69 → 19 (the 16 lobby/export/billing rows and `features/casting/index.ts` were already on the 09-15 list — no new orphan; `useReferralClaim.ts` left it when #1015 wired the hook), deps 1 → 0, **duplicates 19 → 2, the stated floor**. Read by #108 slice 2 (not a patrol): the export population is **458 symbols in 193 files**, dispositioned by class in `docs/specs/UNUSED_EXPORTS_PURGE_MANIFEST_2026-09-17.md` — 153 server dark-born rows are the deletion list, NOT executed yet. ⚠ The differ was found blind to `const { x } = await import()` on the way (36 wired symbols at zero; PR #1017) and every row was read on the repaired reader. |
 | 2026-09-17 | 19 | 0 | — | **102** | 134 | 2 | **A MEASUREMENT on the executing tree** — `pnpm janitor:knip` run locally at #108 slice 2b's branch (not a nightly; the nightly measures it after the merge). **Unused exports 193 → 102 files, 458 → 256 symbols.** The 16 server rows left are the 15 ledger KEEP rows and `COILED_NONBINARY_STYLES`, which knip reports as an unused export and is a plain `const` at HEAD (triage §37c) — so the server population is at its floor and every remaining symbol is client (163), shared (18) or scripts (57), outside the differ's reported scope. Executed: 149 `export` keywords dropped, 19 barrel lines, 5 declarations + 4 db functions the barrel table had wrong (§37b), 28 of 29 hand rows. Files, types and duplicates untouched by this slice, as expected. A next nightly above 102 / 256 is the finding. |
+| 2026-09-17 | 19 | 0 | — | 102 | **0** | 2 | **Nightly `35135458071` at `c8ee90c6` FIRST, then a measurement on the executing tree.** The nightly landed slice 2b's expectation exactly (exports 102 files, types 134, duplicates 2, files 19) and is the reading #108 slice 3 executed against: **271 unused type symbols in 134 files → 0 — the *Unused exported types* section is ABSENT from `pnpm janitor:knip` on the branch.** 221 `export` keywords dropped, 15 declarations deleted, 40 barrel lines and 9 export-list entries removed, 1 inline `import()` type rewritten as a named import (the ceiling above). Manifest `docs/specs/UNUSED_TYPES_PURGE_MANIFEST_2026-09-17.md`; triage §38 argues why no control-instrument reads a type. Exports, files and duplicates untouched by this slice. A next nightly that prints a types section at all is the finding. |
 
 ⚠ **THE COLUMNS ABOVE ARE NOT ALL THE SAME KIND OF NUMBER, AND ONE ROW MIXED
 TWO REPORTERS.** Measured Janitor run 2: `pnpm janitor:knip` passes

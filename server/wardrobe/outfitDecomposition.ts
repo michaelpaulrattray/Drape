@@ -17,7 +17,7 @@ import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("wardrobe/outfitDecomposition");
 
-export interface DecomposedGarment {
+interface DecomposedGarment {
   id: string;
   category: string;
   label: string;

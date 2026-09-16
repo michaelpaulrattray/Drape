@@ -296,7 +296,7 @@ export function readRouterRoutes(file = ROUTER_FILE): RouterRoute[] {
   return routes;
 }
 
-export type PlannedSurface = {
+type PlannedSurface = {
   plan: Extract<SurfacePlan, { kind: "drive" }>;
   /** The address to open, already joined onto the base. */
   url: string;

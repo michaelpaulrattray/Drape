@@ -191,9 +191,9 @@ export const HAIR_COLOUR_READ_REFUSAL_CODES = [
   "noColourReadable",
 ] as const;
 
-export type HairColourReadRefusalCode = (typeof HAIR_COLOUR_READ_REFUSAL_CODES)[number];
+type HairColourReadRefusalCode = (typeof HAIR_COLOUR_READ_REFUSAL_CODES)[number];
 
-export type HairColourReadRefusal = {
+type HairColourReadRefusal = {
   readonly code: HairColourReadRefusalCode;
   /** Her sentence, not a code a client re-words. */
   readonly message: string;

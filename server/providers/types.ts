@@ -261,7 +261,7 @@ export class ProviderError extends Error {
  * comes from provenance, not from pixel replay, because neither engine
  * documents a usable seed (§B-5).
  */
-export type ProviderProvenance = {
+type ProviderProvenance = {
   provider: "openrouter" | "fal" | "gemini" | "elevenlabs";
   /** The model slug as requested. */
   model: string;
@@ -287,7 +287,7 @@ export type ImageResult = {
 /* ------------------------------------------------------------- capabilities */
 
 /** An image handed to the engine alongside the prompt, as bytes we already hold. */
-export type ImageReference = { bytes: Buffer; contentType: string };
+type ImageReference = { bytes: Buffer; contentType: string };
 
 export type CandidateRequest = {
   /** The compiled instruction. Internal — never leaves the server. */
@@ -539,7 +539,7 @@ export interface IdentityEngine {
   generateTake?(request: IdentityEditRequest & { kind: "image" | "video" }): Promise<ImageResult>;
 }
 
-export type IdentityVerdict = {
+type IdentityVerdict = {
   /** Whether the candidate reads as the same character as the anchor. */
   sameCharacter: boolean;
   /** 0–1. Comparable only within one scoring method — see `method`. */
@@ -550,7 +550,7 @@ export type IdentityVerdict = {
   notes?: string;
 };
 
-export interface Validator {
+interface Validator {
   readonly id: string;
   /**
    * Judges an output against the signed anchor. Prompt compliance is never the
@@ -576,7 +576,7 @@ export interface Validator {
  * M8b drops from V2.0 and the room simply never renders a Voice card — the
  * honest-capability law (§I), not a greyed-out control.
  */
-export interface VoiceEngine {
+interface VoiceEngine {
   readonly id: string;
   designVoice(input: { description: string; signal?: AbortSignal }): Promise<{
     providerVoiceRef: string;

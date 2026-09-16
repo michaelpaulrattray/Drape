@@ -175,7 +175,7 @@ export function readLocalEnvFile(path = ".env"): Map<string, string> {
   return values;
 }
 
-export type MixedWorld = { key: string };
+type MixedWorld = { key: string };
 
 /** The finding, separated from the throwing so it can be driven in a control. */
 export function findLocalValuesInsideRailway(

@@ -13,9 +13,6 @@ export {
   Section, 
   SectionLabel, 
   Container,
-  type SectionProps,
-  type SectionLabelProps,
-  type ContainerProps,
 } from "./Section";
 
 // Card Components
@@ -24,10 +21,6 @@ export {
   ProjectCard, 
   ServiceCard, 
   StatCard,
-  type CardProps,
-  type ProjectCardProps,
-  type ServiceCardProps,
-  type StatCardProps,
 } from "./Card";
 
 // Button Components
@@ -40,11 +33,6 @@ export {
   ConveyorText,
   ConveyorTextColor,
   ConveyorIcon,
-  type ButtonProps,
-  type LinkButtonProps,
-  type NavLinkProps,
-  type SocialLinkProps,
-  type FooterLinkProps,
 } from "./Button";
 
 // Typography Components
@@ -54,10 +42,6 @@ export {
   Tag, 
   BodyText, 
   Label,
-  type HeadingProps,
-  type TagProps,
-  type BodyTextProps,
-  type LabelProps,
 } from "./Typography";
 
 // Grid Components
@@ -66,7 +50,4 @@ export {
   GridItem, 
   AnimatedGridItem, 
   TwoColumn,
-  type GridProps,
-  type GridItemProps,
-  type TwoColumnProps,
 } from "./Grid";

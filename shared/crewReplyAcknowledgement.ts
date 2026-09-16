@@ -88,7 +88,7 @@ import {
 export type Acknowledgement = { list: CardList; id: string };
 
 /** One it will NOT move, and the sentence a shift acts on. */
-export type AcknowledgementHold = { list: CardList; id: string; reason: string };
+type AcknowledgementHold = { list: CardList; id: string; reason: string };
 
 export type AcknowledgementPlan = {
   apply: Acknowledgement[];

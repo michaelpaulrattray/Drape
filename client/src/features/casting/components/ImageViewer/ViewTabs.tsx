@@ -24,12 +24,6 @@ import {
 
 export type ViewType = CanonicalViewAngle;
 
-export interface GeneratedAsset {
-  id: number;
-  viewType: ViewType | string;
-  storageUrl: string;
-}
-
 // ============ ViewThumbnail ============
 
 function ViewThumbnail({

@@ -74,7 +74,7 @@ export const CREW_CARD_INTENT_KEYS = CREW_CARD_INTENTS.map((intent) => intent.ke
  */
 export const CREW_INTENT_RESOLUTIONS = ["closed", "declined"] as const;
 
-export type CrewIntentResolution = (typeof CREW_INTENT_RESOLUTIONS)[number];
+type CrewIntentResolution = (typeof CREW_INTENT_RESOLUTIONS)[number];
 
 /** The longest note a shift may write back. Matches the column. */
 export const CREW_INTENT_NOTE_MAX = 500;

@@ -91,7 +91,7 @@ export type InkDeliveryMintOutcome =
    *  write. The picture stands and the next carry rides the artwork. */
   | { outcome: "failed"; slot: string; reason: string };
 
-export type InkDeliveryMintDependencies = {
+type InkDeliveryMintDependencies = {
   /** Who answers `tattooed skin`. Injected, so the suite never calls fal. */
   reader?: InkDeliveryReader;
   store?: (input: { key: string; bytes: Buffer; contentType: string }) => Promise<{ key: string }>;

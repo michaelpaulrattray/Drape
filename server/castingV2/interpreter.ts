@@ -836,7 +836,7 @@ JSON.`;
  * — a reply we could not parse — and keeps the compiler's fallback until he
  * says otherwise; the compiler's own docblock says which is which.
  */
-export type InterpreterUnavailableCause = "thrown" | "unconfigured" | "unparsed";
+type InterpreterUnavailableCause = "thrown" | "unconfigured" | "unparsed";
 
 export type InterpretOutcome =
   | { ok: true; intent: CastingIntent; subject: SubjectReading; latencyMs: number; model: string }

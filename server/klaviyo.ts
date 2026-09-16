@@ -34,7 +34,7 @@ function getHeaders(): Record<string, string> {
   };
 }
 
-export interface ProfileAttributes {
+interface ProfileAttributes {
   email: string;
   first_name?: string;
   last_name?: string;

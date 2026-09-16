@@ -119,7 +119,7 @@ export type SegmentCut = {
  * shadowing a source of truth, which is working law 4, and it could only ever
  * recover the FACT of a drop and never its reason.
  */
-export type SegmentDrop = {
+type SegmentDrop = {
   facet: string;
   /** The segmentation question this facet asked. */
   region: string;
@@ -135,7 +135,7 @@ export type SegmentDrop = {
   deliveredRead: boolean;
 };
 
-export type SegmentDropReason =
+type SegmentDropReason =
   /**
    * The harvest never segmented this facet's region, so there is nothing to
    * intersect. Deliberate and common: the render has no evidence about the

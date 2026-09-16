@@ -3614,3 +3614,45 @@ still wrong.
   names it beside two real exports of the same file; nothing to do, noted so
   the next reading does not chase it.
 
+## 38. #108 SLICE 3 — THE UNUSED TYPES, AND WHY NO CONTROL-INSTRUMENT HAS A SAY
+
+Janitor session foreman-20260917-0520, run #276. Manifest
+`UNUSED_TYPES_PURGE_MANIFEST_2026-09-17.md`, written and executed in one
+session: 271 unused exported types in 134 files (nightly `35135458071` at
+`c8ee90c6`) → 0.
+
+### 38a. The road is knip + tsc, and that is the fidelity law observed, not skipped
+
+The card says *"through the differ, not by hand"* because an unused export
+may be a control that DIED. Every row here is a `type`, an `interface`, a
+barrel re-export of one, or an `export { … }` list entry naming one — read
+at the bytes, no `enum` and no value among the 271. A type is not on any
+request path and cannot die the path-three death, and the three
+control-instruments exclude types on purpose and say so: the differ indexes
+`const|let|function|class|enum` only (`importerCountDiff.mts:168`), the
+uncalled-export sweep discards `type|interface` as *"contracts, not call
+sites"* (`sweep-uncalled-exports-disposable.mts:426`), and the deletion
+ledger's population is the sweep's list — it held zero of the 174 server
+types (measured by intersection). So slice 2's open scope question (§36c)
+does not reach this slice: no scope of any control-instrument has ever
+included a type, and the manifest covers all four areas.
+
+### 38b. The one shape knip cannot see, and what was done with it
+
+`SchemaPathByField` (`identityTypes.ts`) is read by `identityFieldHandlers.ts`
+as `import("./identityTypes").SchemaPathByField[F]` — an inline
+type-position `import()`. knip listed it unused; the consumer checker (driven
+on two positive controls first) found the reader; tsc would have refused the
+drop. The file already static-imports from `./identityTypes`, so the reference
+is rewritten as a named import and the row leaves the list honestly. The
+ceiling is recorded in `docs/JANITOR_KNIP.md`: **an inline `import("./x").T`
+is a consumer knip does not see** — grep for `import("` in a type position
+before believing a type row.
+
+### 38c. Two docblocks that were records, kept where they belong
+
+`SourcePicture`'s docblock was the closed-vocabulary ruling for
+`SourceKind["pictures"]` (fable-1137 §2d); it now sits on `SourceKind` itself.
+`OpenKindSide`'s note (*"nothing here is per-side"*) stays as prose. A
+docblock is deleted with its declaration by default; the executor prints
+every one it takes so the exceptions are a decision, not a loss.

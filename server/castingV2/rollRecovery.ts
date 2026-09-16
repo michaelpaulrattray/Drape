@@ -616,7 +616,7 @@ async function failUnpaidCandidates(
  * Injected rather than imported so recovery can be tested without a network,
  * and so the sweep never accidentally reaches for a provider that is down.
  */
-export type ProviderProbe = (input: {
+type ProviderProbe = (input: {
   provider: string | null;
   providerRef: string | null;
 }) => Promise<"delivered" | "not_delivered" | "unknown">;

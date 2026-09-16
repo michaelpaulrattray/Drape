@@ -26,7 +26,6 @@ import {
 import { createModuleLogger } from "../logging/logger";
 import type { TattooMap } from "./tattooAnalysis";
 
-export type { TattooMap };
 
 const log = createModuleLogger("wardrobe/vtoGeneration");
 

@@ -127,7 +127,7 @@ export const INK_PLACEMENTS = ["neck", "upperArm", "upperChest"] as const;
 export type InkPlacement = (typeof INK_PLACEMENTS)[number];
 
 /** Whether a placement comes in a matching pair, or is one thing. */
-export type InkPlacementSides = "one" | "perSide";
+type InkPlacementSides = "one" | "perSide";
 
 /*
   ⚠ `InkPlacementSkin` AND THE `skin` FIELD WERE DELETED HERE (item 7a,

@@ -31,7 +31,7 @@ export interface ComposerImage {
   mime: ComposerImageMime;
 }
 
-export interface InkComposerInlineImage {
+interface InkComposerInlineImage {
   role:
     | "original_target"
     | "identity_anchor"

@@ -16,7 +16,7 @@ import pino from "pino";
 import { AsyncLocalStorage } from "async_hooks";
 
 /** Request-scoped context injected by the middleware */
-export interface RequestContext {
+interface RequestContext {
   correlationId: string;
   userId?: number | string;
 }

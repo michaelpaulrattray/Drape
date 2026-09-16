@@ -12,7 +12,7 @@ import { AlertCircle, AlertTriangle, Eye, XCircle, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCanvasZoom, screenLegibleScale } from "./canvasZoom";
 
-export type NodeStatus =
+type NodeStatus =
   | {
       type: "stale";
       message: string;

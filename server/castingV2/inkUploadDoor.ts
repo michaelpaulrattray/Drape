@@ -105,7 +105,7 @@ export const INK_DESIGN_MIN_EDGE = 256;
 /** One prefix, so an operator can see every uploaded design in one place. */
 export const INK_KEY_PREFIX = "casting-v2/ink";
 
-export type InkUploadRefusalCode =
+type InkUploadRefusalCode =
   | "intentMissing"
   | "intentRepeated"
   | "intentNotOpen"

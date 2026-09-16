@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b00ae593bc1b7126"
+    "sourceFingerprint": "b66055f95b8593c3"
   },
   "domains": [
     {
@@ -25308,11 +25308,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/openKindQuestion.ts",
-      "to": "module:server/castingV2/referenceSlots.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/castingV2/openLaneAccept.ts",
       "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
@@ -25495,11 +25490,6 @@
     {
       "from": "module:server/castingV2/promptAuthor.ts",
       "to": "module:server/castingV2/interpreter.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/promptAuthor.ts",
-      "to": "module:server/castingV2/seedFidelity.ts",
       "kind": "imports"
     },
     {
@@ -27095,11 +27085,6 @@
     {
       "from": "module:server/castingV2/reimagine.ts",
       "to": "module:shared/castingVocabularies.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/reliabilityReport.ts",
-      "to": "module:server/castingV2/refineFacets.ts",
       "kind": "imports"
     },
     {
@@ -35003,13 +34988,6 @@
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/carriedSegments.ts:45",
-      "severity": "warn",
-      "kind": "redeclared-shape",
-      "subject": "server/castingV2/carriedSegments.ts:45",
-      "message": "Names 4 of SegmentExclusion's 4 fields (server/castingV2/segmentAssembly.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
-    },
-    {
       "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:964",
       "severity": "warn",
       "kind": "redeclared-shape",
@@ -35024,6 +35002,20 @@
       "message": "Names 2 of TiltReading's 4 fields (server/castingV2/canthalTilt.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:582",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/facePanel.ts:582",
+      "message": "Names 2 of PresentationClause's 2 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:583",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/facePanel.ts:583",
+      "message": "Names 2 of PresentationClause's 2 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
       "id": "finding:redeclared-shape:server/castingV2/inkPlateDoor.ts:85",
       "severity": "warn",
       "kind": "redeclared-shape",
@@ -35035,6 +35027,13 @@
       "severity": "warn",
       "kind": "redeclared-shape",
       "subject": "server/castingV2/inkReferenceCutter.ts:133",
+      "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/inkReferenceMint.ts:121",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/inkReferenceMint.ts:121",
       "message": "Names 2 of InkUploadRefusal's 2 fields (server/castingV2/inkUploadDoor.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

@@ -130,7 +130,7 @@ export const SCALE_REGION = "face";
 export const SECOND_VIEW_UNUSED_NOTE =
   "That picture holds two views — I worked from the one showing the most hair.";
 
-export type HairCarrierRefusalCode =
+type HairCarrierRefusalCode =
   /** The bytes would not decode at all. */
   | "unreadable"
   /** The reader answered, and the answer is that there is no hair in it. */
@@ -142,7 +142,7 @@ export type HairCarrierRefusalCode =
   /** The carrier pictures no scale, so it would lose the length it was cut for. */
   | "noScale";
 
-export type HairCarrierRefusal = {
+type HairCarrierRefusal = {
   readonly code: HairCarrierRefusalCode;
   /** Her sentence, not a code the client re-words. */
   readonly message: string;

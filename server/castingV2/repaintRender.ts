@@ -45,7 +45,7 @@ import type { ImageResult } from "../providers/types";
 import type { Recipe, ReferenceImage, ReferenceRole } from "./recipeAssembler";
 
 /** Bytes for one reference. Injected, so the fixture path never touches R2. */
-export type ReferenceLoader = (image: ReferenceImage) => Promise<ReferenceBytes>;
+type ReferenceLoader = (image: ReferenceImage) => Promise<ReferenceBytes>;
 
 export type ReferenceBytes = {
   bytes: Buffer;
@@ -152,14 +152,14 @@ export type ReferenceFitter = (input: {
   frame: { width: number; height: number };
 }) => Promise<ReferenceBytes & { width: number; height: number }>;
 
-export type RepaintDelivery = {
+type RepaintDelivery = {
   ok: true;
   /** The engine's own frame, untouched. Nothing is composited into it. */
   frame: ImageResult;
   sent: SentRequest;
 };
 
-export type RepaintRefusal = {
+type RepaintRefusal = {
   ok: false;
   reason: "referenceBytesChanged" | "referenceMissing";
   key: string;

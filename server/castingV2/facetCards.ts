@@ -44,7 +44,7 @@ import type { ZoneScope } from "./zoneScope";
  * about it. `null` for a facet that can never BE a row (no region, nothing to
  * keep), which is `expression`'s case and is a decision rather than an omission.
  */
-export type FacetNaming = { shape: "hers" | "worn" | "hairArrangement" } | null;
+type FacetNaming = { shape: "hers" | "worn" | "hairArrangement" } | null;
 
 /**
  * HOW THE PRESERVATION TAIL NAMES IT, and which category it is protected under.
@@ -54,7 +54,7 @@ export type FacetNaming = { shape: "hers" | "worn" | "hairArrangement" } | null;
  * mouth") belongs to the category rather than to any one member, so it lives in
  * `PRESERVATION_CATEGORIES` beside them.
  */
-export type FacetPreservation = { category: string; phrase: string };
+type FacetPreservation = { category: string; phrase: string };
 
 export type FacetCard = {
   /** The scope this facet's edit follows. */

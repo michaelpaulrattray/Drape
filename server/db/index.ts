@@ -26,7 +26,6 @@ export {
   updateUserStorageUsed,
   updateUserProfile,
   markCanvasIntroSeen,
-  type ProfileUpdateData,
 } from "./users";
 
 // Credits
@@ -78,11 +77,6 @@ export {
   acknowledgeGenerationOperation,
   dismissGenerationOperationLanding,
   landGenerationOperationResult,
-  type ClaimGenerationOperationInput,
-  type AcquireGenerationOperationLockResult,
-  type AcknowledgeGenerationOperationResult,
-  type DismissGenerationOperationLandingResult,
-  type LandGenerationOperationResult,
 } from "./generationOperations";
 
 // Generations
@@ -176,7 +170,7 @@ export {
 } from "./referrals";
 
 // GDPR Data Export
-export { exportUserData, type GdprExportData } from "./gdprExport";
+export { exportUserData } from "./gdprExport";
 
 // Bug Reports
 export {
@@ -185,7 +179,6 @@ export {
   getBugReportCounts,
   updateBugReportStatus,
 } from "./bugReports";
-export type { BugReportRow } from "./bugReports";
 
 // Invite Codes (Pre-launch access gating)
 export {
@@ -255,5 +248,4 @@ export {
   fillEmptyCastNodeWithVersionIn,
   updateBoardItemIn,
   placeLinkedBoardItem,
-  type FillEmptyCastNodeResult,
 } from "./boards";

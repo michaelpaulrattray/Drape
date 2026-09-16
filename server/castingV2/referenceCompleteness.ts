@@ -480,9 +480,9 @@ export function measureCoverage(
   reading 100% says which of three instruments read it — the display-default
   class this campaign keeps paying for.
 */
-export type GuardInstrument = "area" | "centreline" | "derived-geometry";
+type GuardInstrument = "area" | "centreline" | "derived-geometry";
 
-export type Adjudication = {
+type Adjudication = {
   instrument: GuardInstrument;
   /** The reading that decided — in the deciding instrument's own units. */
   coverage: number;
@@ -490,7 +490,7 @@ export type Adjudication = {
   threshold: number;
 };
 
-export type GuardPass = {
+type GuardPass = {
   ok: true;
   kind: string;
   /** The AREA reading, always taken and always real — `spill` in particular is

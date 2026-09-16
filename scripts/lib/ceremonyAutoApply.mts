@@ -73,7 +73,7 @@ import {
 } from "./schemaConformance.mts";
 
 /** The three shapes that may run unattended. Anything else is refused. */
-export type StatementKind = "additive" | "destructive";
+type StatementKind = "additive" | "destructive";
 
 export type ParsedStatement = {
   /** The SQL as it will be sent, comments and the breakpoint marker stripped. */

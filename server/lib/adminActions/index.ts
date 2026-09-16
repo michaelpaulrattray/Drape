@@ -42,5 +42,4 @@ export type ApprovedChangeRequestAction = {
  */
 export {
   CHANGE_REQUEST_ACTION_BY_TYPE,
-  type ChangeRequestAction,
 } from "@shared/changeRequestLabels";

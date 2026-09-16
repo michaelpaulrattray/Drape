@@ -91,7 +91,7 @@ import { crewCardNeedsHim } from "./crewCardState.js";
 
 export type IssueState = "OPEN" | "CLOSED" | null;
 
-export type ResolvableCard = {
+type ResolvableCard = {
   id: string;
   state: string;
   issueNumber: number | null;
@@ -124,7 +124,7 @@ export type Promotion = {
   issueNumber: number;
 };
 
-export type Hold = {
+type Hold = {
   list: CardList;
   id: string;
   issueNumber: number;
@@ -132,7 +132,7 @@ export type Hold = {
   reason: string;
 };
 
-export type Unreadable = {
+type Unreadable = {
   list: CardList;
   id: string;
   issueNumber: number;

@@ -12,7 +12,7 @@ import { honestModelName } from '@/features/casting/modelDisplayTruth';
 
 export type TierPlan = Record<MintTier, { missing: string[]; cost: number }>;
 
-export interface EvidenceMintTierPlan {
+interface EvidenceMintTierPlan {
   ready: boolean;
   requiredAngles: string[];
   missingAngles: string[];
@@ -30,13 +30,13 @@ export interface EvidenceMintPlan {
 /** §14 (R8, Batch C): the server's per-tier mint-integrity prediction — the
  *  dialog surfaces each failing check's OWN copy and holds the mint door
  *  shut, so a refusal is never a surprise after money was about to move. */
-export interface MintIntegrityPrediction {
+interface MintIntegrityPrediction {
   anchor: { ok: boolean; message?: string };
   displayHeadshot: { ok: boolean; message?: string };
   tierViews: Array<{ angle: string; label: string; present: boolean; ok: boolean; message?: string }>;
   ok: boolean;
 }
-export type TierIntegrity = Record<MintTier, MintIntegrityPrediction>;
+type TierIntegrity = Record<MintTier, MintIntegrityPrediction>;
 
 const TIER_COPY: Record<MintTier, { name: string; purpose: string }> = {
   // D-55 (VC-R6 final): minting is what NAMES and locks identity — the old

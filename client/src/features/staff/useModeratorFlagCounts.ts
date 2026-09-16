@@ -71,7 +71,7 @@ import { trpc } from "@/lib/trpc";
 /** Held this long before reopening the menu re-asks. Mirrors `useStaffCounts`. */
 const STALE_MS = 30_000;
 
-export interface ModeratorFlagCounts {
+interface ModeratorFlagCounts {
   flaggedReferrals: number;
   flaggedDiscrepancies: number;
   /** What the badge shows. Zero means the pill is omitted, never `(0)`. */

@@ -1393,7 +1393,7 @@ export async function asksNothingOfItsOwn(
  * call sites are untouched. The distinction exists because those two states
  * deserve different sentences and had one: see `RefineRefusal.reader_outage`.
  */
-export type ReadFailure = "threw" | "unparsed";
+type ReadFailure = "threw" | "unparsed";
 
 /**
  * One sampling. Returns null when the reply was unusable, so the caller retries.

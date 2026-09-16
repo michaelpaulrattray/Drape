@@ -35,7 +35,7 @@ export type MarkCategory =
   | "mark.structural";
 
 /** Structured-editor scope (R3); refused at every free-text door (§8.2). */
-export type PersonStructuredCategory =
+type PersonStructuredCategory =
   | "person.build"
   | "person.age"
   | "person.gender"
@@ -43,9 +43,9 @@ export type PersonStructuredCategory =
   | "person.ethnicity";
 
 /** Classifier-internal ONLY — a parent never authorizes anything (§8.4). */
-export type ClassifierParent = "person.face" | "person.hair" | "person.skin";
+type ClassifierParent = "person.face" | "person.hair" | "person.skin";
 
-export type FaceLeaf =
+type FaceLeaf =
   | "person.face.faceShape"
   | "person.face.jawline"
   | "person.face.chin"
@@ -58,7 +58,7 @@ export type FaceLeaf =
   | "person.face.browShape"
   | "person.face.browColor"
   | "person.face.facialHair";
-export type HairLeaf =
+type HairLeaf =
   | "person.hair.style"
   | "person.hair.color"
   | "person.hair.length"
@@ -70,7 +70,7 @@ export type HairLeaf =
   | "person.hair.hairline"
   | "person.hair.tuck"
   | "person.hair.flyaways";
-export type SkinLeaf = "person.skin.texture" | "person.skin.finish";
+type SkinLeaf = "person.skin.texture" | "person.skin.finish";
 export type IdentityLeaf = FaceLeaf | HairLeaf | SkinLeaf;
 
 export type PresentationCategory =
@@ -91,7 +91,6 @@ export type ImageOnlyCategory =
   | "image.retouch";
 
 export type MarkOperation = "add" | "remove" | "modify";
-export type ReferenceModality = "none" | "attached";
 
 export type IdentityClassifierCategory =
   | MarkCategory
@@ -122,9 +121,9 @@ export type EditClassification =
 
 /** §8.5 R9: refused during R6 — no durable field, no rushed mapping. These
  *  leaves are NOT constructible in any authorizable union below. */
-export type RefusedIdentityLeaf = "person.face.chin" | "person.face.browColor";
+type RefusedIdentityLeaf = "person.face.chin" | "person.face.browColor";
 
-export type SupportedFaceLeaf =
+type SupportedFaceLeaf =
   | "person.face.faceShape"
   | "person.face.jawline"
   | "person.face.cheekbones"
@@ -135,7 +134,7 @@ export type SupportedFaceLeaf =
   | "person.face.lipShape"
   | "person.face.browShape"
   | "person.face.facialHair";
-export type SupportedHairLeaf =
+type SupportedHairLeaf =
   | "person.hair.style"
   | "person.hair.color"
   | "person.hair.length"
@@ -147,7 +146,7 @@ export type SupportedHairLeaf =
   | "person.hair.hairline"
   | "person.hair.tuck"
   | "person.hair.flyaways";
-export type SupportedSkinLeaf = "person.skin.texture" | "person.skin.finish";
+type SupportedSkinLeaf = "person.skin.texture" | "person.skin.finish";
 export type SupportedIdentityLeaf = SupportedFaceLeaf | SupportedHairLeaf | SupportedSkinLeaf;
 
 // The four scalar structured values are literal unions derived from the ONE
@@ -162,17 +161,17 @@ export const FORM_OPTION_SETS = {
   gender: GENDER_VALUES,
   skinTone: SKIN_TONE_VALUES,
 } as const;
-export type FormOption<K extends keyof typeof FORM_OPTION_SETS> =
+type FormOption<K extends keyof typeof FORM_OPTION_SETS> =
   (typeof FORM_OPTION_SETS)[K][number];
-export type BodyTypeOption = FormOption<"bodyType">;
-export type AgeValue = FormOption<"age">;
-export type GenderOption = FormOption<"gender">;
-export type SkinToneOption = FormOption<"skinTone">;
+type BodyTypeOption = FormOption<"bodyType">;
+type AgeValue = FormOption<"age">;
+type GenderOption = FormOption<"gender">;
+type SkinToneOption = FormOption<"skinTone">;
 
 export type EthnicityBlendValue = { blend: Array<{ name: string; pct: number }> };
 
 /** Structured fields keep their REAL value types — never reduced to prose. */
-export type StructuredIdentityField =
+type StructuredIdentityField =
   | { field: "person.build"; value: BodyTypeOption }
   | { field: "person.age"; value: AgeValue }
   | { field: "person.gender"; value: GenderOption }
@@ -196,12 +195,12 @@ export type EnumWithOverrideValue = {
 };
 /** A concrete durable description ("broad angular jaw, squared") — never a
  *  relational instruction (§8.6 step 2). */
-export type DurableDescriptor = string;
+type DurableDescriptor = string;
 
 /** ONE complete field→value map — exhaustively keyed by
  *  AuthorizableIdentityField; a field without an entry (or an entry without
  *  a field) fails compilation (assertion below). */
-export type NormalizedValueByField = {
+type NormalizedValueByField = {
   // the five base/override leaves (§5.5)
   "person.hair.style": EnumWithOverrideValue;
   "person.hair.color": EnumWithOverrideValue;
@@ -262,7 +261,7 @@ export type AuthorizedIdentityPatch = {
 
 // ── Persistence destinations — CLOSED unions of the verified writable set ───
 
-export type WritableIdentityPreferenceKey =
+type WritableIdentityPreferenceKey =
   | "faceShape" | "jawline" | "cheekbones" | "cheeks" | "eyeShape"
   | "eyeColor" | "eyeColorOverride" | "noseShape" | "lipShape" | "eyebrowStyle"
   | "facialHair" | "facialHairOverride"
@@ -271,7 +270,7 @@ export type WritableIdentityPreferenceKey =
   | "hairFade" | "hairHairline" | "hairTuck" | "hairFlyaways"
   | "skinTexture" | "skinTextureOverride" | "skinFinish"
   | "bodyType" | "age" | "gender" | "skinTone" | "ethnicity" | "ethnicityBlend";
-export type WritableIdentitySchemaPath =
+type WritableIdentitySchemaPath =
   | "subject.sex" | "subject.age" | "subject.ethnicity" | "subject.skin_tone"
   | "subject.hair_style" | "subject.hair_color" | "subject.eye_color"
   | "facial_features.eye_shape" | "facial_features.face_shape"
@@ -303,7 +302,7 @@ export type WritableIdentitySchemaPath =
  *  from a handler is a compile error — both driven as sabotages on the closing
  *  commit. A new override-pair field is protected by the compiler first and
  *  its test arm second, which is the order this docblock always claimed. */
-export type PreferenceKeysByField = {
+type PreferenceKeysByField = {
   "person.face.faceShape": "faceShape";
   "person.face.jawline": "jawline";
   "person.face.cheekbones": "cheekbones";

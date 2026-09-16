@@ -1,7 +1,7 @@
 import { isProductionAppId } from "../deletionAudit";
 import { parseEvidenceIngestScope } from "./evidenceIngestScope";
 
-export type FounderEvidenceCeremonyMode = "stage" | "discard";
+type FounderEvidenceCeremonyMode = "stage" | "discard";
 
 export interface FounderEvidenceCeremonyArgs {
   mode: FounderEvidenceCeremonyMode;

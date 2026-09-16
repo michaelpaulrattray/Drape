@@ -17,7 +17,7 @@ import {
 
 export const INK_ANYWHERE_AUTHORIZATION_MIN_CONFIDENCE = 82;
 
-export type InkInstructionPlanRefusal =
+type InkInstructionPlanRefusal =
   | "invalid_instruction"
   | "unsupported_request"
   | "ambiguous_anatomy"

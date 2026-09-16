@@ -40,7 +40,6 @@ import { FACET_CARD_ENTRIES } from "./facetCards";
 import { allFacets, facetOfSubject } from "./refineFacets";
 import { hasRegion } from "./zoneScope";
 import { capitalize, type CastPronouns } from "./castPronouns";
-import type { Facet } from "./refineFacets";
 
 /** How a facet's delivered value becomes something she would say. */
 type Naming =
@@ -238,4 +237,3 @@ export function segmentsOnFace(input: {
 
 /** The one facet id this module is asked about by name, kept honest. */
 export const ACCESSORY_FACET = facetOfSubject("statedAccessories");
-export type { Facet };

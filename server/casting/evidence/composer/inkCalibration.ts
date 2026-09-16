@@ -11,27 +11,27 @@ const INK_CALIBRATION_RECORD_VERSION =
 
 const INK_CALIBRATION_SOURCE_KINDS =
   ["synthetic", "consented"] as const;
-export type InkCalibrationSourceKind =
+type InkCalibrationSourceKind =
   typeof INK_CALIBRATION_SOURCE_KINDS[number];
 
 const INK_CALIBRATION_TONE_COHORTS =
   ["tone_1", "tone_2", "tone_3", "tone_4", "tone_5", "tone_6"] as const;
-export type InkCalibrationToneCohort =
+type InkCalibrationToneCohort =
   typeof INK_CALIBRATION_TONE_COHORTS[number];
 
 const INK_CALIBRATION_PRESENTATION_COHORTS =
   ["feminine", "masculine", "androgynous"] as const;
-export type InkCalibrationPresentationCohort =
+type InkCalibrationPresentationCohort =
   typeof INK_CALIBRATION_PRESENTATION_COHORTS[number];
 
 const INK_CALIBRATION_BUILD_COHORTS =
   ["slender", "average", "athletic", "curvy", "plus"] as const;
-export type InkCalibrationBuildCohort =
+type InkCalibrationBuildCohort =
   typeof INK_CALIBRATION_BUILD_COHORTS[number];
 
 const INK_CALIBRATION_OCCLUSION_COHORTS =
   ["none", "partial"] as const;
-export type InkCalibrationOcclusionCohort =
+type InkCalibrationOcclusionCohort =
   typeof INK_CALIBRATION_OCCLUSION_COHORTS[number];
 
 export interface InkCalibrationRecord {
@@ -184,7 +184,7 @@ export function createInkCalibrationRecorder(): {
   };
 }
 
-export interface InkCalibrationRates {
+interface InkCalibrationRates {
   samples: number;
   explicitAcceptForCanonRate: number;
   unknownCanonCommits: number;

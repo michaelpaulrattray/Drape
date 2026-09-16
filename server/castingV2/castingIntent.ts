@@ -100,7 +100,7 @@ import {
   type PoolTendencies,
 } from "./poolTendencies";
 export { NO_TENDENCIES };
-export type { FacialHairLean, LeanStrength, PoolTendencies };
+export type { PoolTendencies };
 import { mentionsGarments, scrubBrands } from "./brandScrub";
 import {
   BODY_ANCHOR_REGIONS,
@@ -349,7 +349,7 @@ export const ARCHETYPE_KEYS = Object.keys(ARCHETYPES) as ArchetypeKey[];
 
 /** The only cohort M5 compiles. Anything else is refused, not approximated. */
 const SUPPORTED_COHORTS = ["photoreal_human"] as const;
-export type CohortKey = (typeof SUPPORTED_COHORTS)[number];
+type CohortKey = (typeof SUPPORTED_COHORTS)[number];
 
 /**
  * WHY A BRIEF WAS WALLED AT THE SUBJECT (#131 slice C). Off the author road
@@ -511,7 +511,7 @@ export type CastingIntent = {
 };
 
 /** The same shape an  entry uses, and reviewed the same way. */
-export type ComposedDirection = { thesis: string; avoid: string };
+type ComposedDirection = { thesis: string; avoid: string };
 
 /**
  * WHAT the brief said about each part of hair — D-79's re-ship (D-89).

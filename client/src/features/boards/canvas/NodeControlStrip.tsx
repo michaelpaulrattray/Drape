@@ -14,7 +14,7 @@ export interface ControlSegment {
   active?: boolean;
 }
 
-export interface NodeControlStripProps {
+interface NodeControlStripProps {
   segments: ControlSegment[];
 }
 

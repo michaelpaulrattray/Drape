@@ -75,8 +75,6 @@ export const SLICE_REFUND_DESCRIPTION = {
   retryRecovered: "Casting retry did not arrive (recovered)",
 } as const;
 
-export type SliceRefundReason = keyof typeof SLICE_REFUND_DESCRIPTION;
-
 /**
  * EVERY slice-refund sentence, derived from the record above.
  *

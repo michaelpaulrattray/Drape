@@ -976,7 +976,6 @@ export type ConceptDescribeInput = {
  * that it never runs app code, and THIS module reaches the provider layer.
  * Declaring the union here made that safe only by `import type`'s erasure.
  */
-export type { ConceptDescribeRefusal } from "./conceptDescribeCopy";
 import type { ConceptDescribeRefusal } from "./conceptDescribeCopy";
 
 export type ConceptDescribeOutcome =

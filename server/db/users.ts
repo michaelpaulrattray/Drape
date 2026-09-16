@@ -151,7 +151,7 @@ export async function getUserById(userId: number) {
 
 // ============ Profile ============
 
-export interface ProfileUpdateData {
+interface ProfileUpdateData {
   displayName?: string | null;
   bio?: string | null;
   avatarUrl?: string | null;

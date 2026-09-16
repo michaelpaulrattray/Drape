@@ -76,7 +76,7 @@ export const refOf = (branch: string): string =>
   branch.includes(":") ? branch.split(":")[1]! : branch;
 
 export type PushOutcome = { ok: boolean; output: string };
-export type PushAttempt = { branch: string; ok: boolean; output: string };
+type PushAttempt = { branch: string; ok: boolean; output: string };
 
 export type PushSequence = {
   /** Every branch actually attempted, in order. Stops after the first failure. */

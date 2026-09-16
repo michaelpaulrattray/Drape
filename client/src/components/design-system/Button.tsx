@@ -26,7 +26,7 @@ import { Plus } from "lucide-react";
  * TYPES
  * ============================================ */
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Button content */
   children: ReactNode;
   /** Button style variant */
@@ -248,7 +248,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
  * NAV LINK COMPONENT
  * ============================================ */
 
-export interface NavLinkProps {
+interface NavLinkProps {
   /** Link text */
   children: ReactNode;
   /** Link URL */
@@ -289,7 +289,7 @@ export function NavLink({ children, href, className }: NavLinkProps) {
  * LINK BUTTON COMPONENT
  * ============================================ */
 
-export interface LinkButtonProps {
+interface LinkButtonProps {
   /** Link text */
   children: ReactNode;
   /** Link URL */
@@ -331,7 +331,7 @@ export function LinkButton({
  * SOCIAL LINK COMPONENT
  * ============================================ */
 
-export interface SocialLinkProps {
+interface SocialLinkProps {
   /** Link text */
   children: ReactNode;
   /** Link URL */
@@ -360,7 +360,7 @@ export function SocialLink({ children, href, className }: SocialLinkProps) {
  * FOOTER LINK COMPONENT
  * ============================================ */
 
-export interface FooterLinkProps {
+interface FooterLinkProps {
   /** Link text */
   children: ReactNode;
   /** Link URL */

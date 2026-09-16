@@ -56,7 +56,7 @@ interface AlertItem {
   createdAt: Date;
 }
 
-export interface AttentionItem {
+interface AttentionItem {
   key: string;
   /** The mono kind label — what sort of thing this is. */
   kind: string;

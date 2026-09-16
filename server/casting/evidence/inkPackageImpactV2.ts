@@ -11,7 +11,7 @@ import {
   type InkViewVisibility,
 } from "./inkAnatomyRegistry";
 
-export interface InkFeatureAngleAuthority {
+interface InkFeatureAngleAuthority {
   entry: ClosedInkFeatureEntry;
   impact: InkExistingSelectionImpact;
   visibility: InkViewVisibility | "authoring_truth";

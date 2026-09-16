@@ -118,7 +118,7 @@ export type PackageOrchestratorDependencies = {
   deleteObject?: typeof storageDelete;
 };
 
-export type PackageSlotOutcome =
+type PackageSlotOutcome =
   | { angle: CastViewAngle; status: "committed"; assetId: number }
   | {
       angle: CastViewAngle;

@@ -51,7 +51,6 @@
  * `windowFrom` is carried into the report so a reader can see which it is
  * rather than having to guess.
  */
-import type { Facet } from "./refineFacets";
 import { subjectKey, type FactSubject } from "./renderVerification";
 
 /** What became of one paid attempt. Ordered worst-to-best for reporting. */
@@ -152,7 +151,7 @@ export type StoredCheck = {
   absenceIsTheAsk?: boolean;
 };
 
-export type StoredVerification = {
+type StoredVerification = {
   checks?: StoredCheck[];
   unavailable?: boolean;
   attempts?: number;
@@ -487,7 +486,7 @@ export function classesOf(row: AttemptRow): string[] {
   return Array.from(new Set(classes)).sort();
 }
 
-export type ClassTally = {
+type ClassTally = {
   edit: string;
   total: number;
   delivered_compliant: number;
@@ -859,4 +858,3 @@ export function formatReport(report: ReliabilityReport): string {
 }
 
 /** Re-exported so callers can name a facet without importing two modules. */
-export type { Facet };

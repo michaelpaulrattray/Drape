@@ -53,7 +53,7 @@ import { FACE_SCAN_READS_PER_VERSION, FAL_MEASURED_USD } from "./falSpend.mts";
 export const FACE_SCAN_PROCEDURE = "castingV2.faceScan";
 
 /** One (candidate, version) the browser asked to have read. */
-export type ScanAsk = { candidateId: string; variantId: string | null };
+type ScanAsk = { candidateId: string; variantId: string | null };
 
 /**
  * What a single outgoing request is, as far as the scan is concerned.

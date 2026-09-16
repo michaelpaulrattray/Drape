@@ -270,7 +270,7 @@ export function padRegionBox(
   };
 }
 
-export type InkDeliveryCutRefusal =
+type InkDeliveryCutRefusal =
   /** The reader found no inked skin on the delivered frame. */
   | "noInk"
   /** The region is the entire picture — that is the man, not his tattoo. */
@@ -294,7 +294,7 @@ export type InkDeliveryCutRefusal =
    */
   | "cutDidNotCut";
 
-export type InkDeliveryCut = {
+type InkDeliveryCut = {
   /**
    * The RECTANGLE to extract from the delivered frame — the region's own extent
    * opened up by {@link INK_DELIVERY_REGION_PAD}.

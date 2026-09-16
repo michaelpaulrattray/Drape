@@ -240,7 +240,7 @@ export async function buildInkEvidenceMosaic(
   };
 }
 
-export interface InkProjectionComposerInlineImage {
+interface InkProjectionComposerInlineImage {
   role:
     | "original_target"
     | "guided_target"

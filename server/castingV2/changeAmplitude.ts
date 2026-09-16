@@ -36,7 +36,7 @@ import { FREE_SUBJECT_KEYS, type FreeSubject } from "./refineSubjects";
 import { tableOf } from "./subjectCards";
 import { subjectsOfFacet, type Facet } from "./refineFacets";
 
-export type AmplitudeBasis =
+type AmplitudeBasis =
   /** A control was run and this is what it read. */
   | { readonly measured: string }
   /** No control yet — the number follows from what the class does to pixels. */

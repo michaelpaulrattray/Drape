@@ -71,7 +71,6 @@
  * today's behaviour for those, so nothing regresses; what closes the gap is the
  * rung record turning their first arrivals into data rather than anecdote.
  */
-import type { Instance } from "./referenceSlots";
 
 /** Which rung of the ladder produced a crop, or that none did. */
 export type OpenKindRung = "words" | "site" | "none";
@@ -347,7 +346,7 @@ export function openKindRungOfRow(row: {
   return "site";
 }
 
-/** Nothing here is per-side; a distributed kind asks the same phrase of each
- *  half, exactly as `earring` does. Declared so the next reader does not go
- *  looking for a side branch that would have no reason to exist. */
-export type OpenKindSide = Instance | null;
+/* Nothing here is per-side; a distributed kind asks the same phrase of each
+   half, exactly as `earring` does. Said so the next reader does not go looking
+   for a side branch that would have no reason to exist. (An `OpenKindSide`
+   type once carried this note; nothing read it — #108 slice 3.) */

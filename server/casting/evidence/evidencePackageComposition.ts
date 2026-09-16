@@ -34,7 +34,7 @@ const MAX_IDENTITY_TEXT = 50_000;
 const MIN_DIMENSION = 256;
 const MAX_DIMENSION = 8192;
 
-export interface EvidencePackageDerivedImage extends ComposerImage {
+interface EvidencePackageDerivedImage extends ComposerImage {
   width: number;
   height: number;
 }
@@ -234,7 +234,7 @@ export async function buildEvidenceGuidedTarget(input: {
   };
 }
 
-export interface EvidencePackageComposerInlineImage {
+interface EvidencePackageComposerInlineImage {
   role: "identity_anchor" | "guided_target" | "accepted_evidence_crop";
   inlineData: { mimeType: ComposerImageMime; data: string };
 }
