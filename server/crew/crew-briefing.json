@@ -1,7 +1,7 @@
 {
-  "edition": 440,
-  "updatedAt": "2026-09-16T18:35:00.000Z",
-  "shift": "PART TWO OF JOB 108 IS DONE - THE DELETION LIST WAS EXECUTED AND IS ON PRODUCTION. NOTHING NEEDS AN ANSWER FROM YOU.\n\nOne thing landed. Last night's session wrote the list of unused code on the server side and deleted nothing; tonight's session re-checked that list from scratch (same 458 items, not one different) and then executed it: 149 pieces of code that nothing outside their own file ever used were made private, 19 dead pass-through lines were removed, and 9 functions nothing had ever called were deleted. 111 files changed and the product behaves exactly as before - every check is green, the outside reviewer read the whole diff at the billing-and-sign-in bar and found no defect, only three stale comments, all fixed.\n\nTwo things the code said that the list had not. Four of the 'dead pass-through' lines were the ONLY road to their function - the list had assumed the function was reached another way. All four functions had never been called at any point in the product's history, and two of them would have edited a customer's outfit or board without checking whose it was had anyone ever wired them - so they are gone, and the reviewer called that the right call. And one item on the delete list turned out to be a compile-time safety check in disguise (it stops a new identity field being added without its axis), so it stays.\n\nMeasured afterwards: unused code on the server side is at its floor - the only 16 items left are ones already ruled KEEP on the ledger, plus one the checker mis-reads. The 238 remaining items are all on the customer side or in the tooling, which the history check cannot read by design; that scope question stays on the card.\n\nNext: 108 part three (unused types, 134 files), then 129 when your refused rolls exist.",
+  "edition": 441,
+  "updatedAt": "2026-09-16T19:55:00.000Z",
+  "shift": "PART THREE OF JOB 108 IS DONE AND ON PRODUCTION. NOTHING NEEDS AN ANSWER FROM YOU.\n\nOne thing landed. The last of the three clean-up lists on job 108 - the 271 type definitions that nothing outside their own file ever used - was checked and cleared tonight: 221 made private, 15 deleted outright, 49 dead pass-through lines removed. 150 files changed and the product behaves exactly as before: these are compile-time shapes, not running code, so there is nothing for a customer to notice. Every check is green, the outside reviewer read the whole diff, re-counted every deleted line itself, and found no defect. The overnight reading that counts these now prints no 'unused types' section at all.\n\nWhy this list did not go through the history check the way the last one did: the history check exists to catch a working control that quietly lost its callers, and a type definition cannot be a control - it never runs. All three checkers say so of themselves in their own code, and the ledger held none of these. So the readers here were the finder (knip) and the compiler (tsc), and the checker I drove found exactly one item knip could not see (a type read through a shape the finder is blind to) - fixed so it reads correctly, and the blind spot is written into the Janitor's record.\n\nTwo notes of yours were kept when their carrier went: the closed-vocabulary ruling on what a source picture may show now sits on the thing it describes, and the 'nothing here is per-side' note stays as a plain comment.\n\nWhat is left on 108: the 256 unused exports that are all on the customer side or in the tooling. The history check cannot read those by design, and whether it should is a tooling decision - filed as card 1022 for the Retro with a recommendation (widen to shared/ only; clear the customer side on the finder-plus-compiler road), not decided mid-job. 129 still waits on your refused rolls.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-16T18:23:53.587Z",
+      "readAt": "2026-09-16T19:47:57.731Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5033,6 +5033,13 @@
   ],
   "pipeline": [
     {
+      "id": "knip-types-108-s3",
+      "title": "Job 108, part three: 271 unused type definitions cleared - 221 made private, 15 deleted, 49 dead pass-through lines removed; no behaviour change",
+      "status": "merged",
+      "prNumber": 1021,
+      "note": "Your 105-108 clear them, the last job, third of three slices. Worked example: the overnight reading at the current build listed 271 type definitions in 134 files that nothing imports; a script working on the code's own syntax tree, refusing to run unless every line matched exactly once, made the edits; a checker driven on two known-good controls first found the one item the finder was blind to (a type read through an inline import shape) and it was fixed rather than deleted. Compile and full suite green; reviewer PASS with no findings - it re-categorised every deleted line as compile-time only and checked the five mixed export lines for a dropped value half. Measured after: the reading prints no unused-types section. Production build 9d2ef07c."
+    },
+    {
       "id": "knip-exports-108-s2b",
       "title": "Job 108, part two executed: 149 pieces of server code made private, 19 dead lines and 9 never-called functions deleted - no behaviour change",
       "status": "merged",
@@ -6689,9 +6696,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0917c-foreman",
+      "id": "queue-shape-0917d-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 33 open, one filed. 108 is three parts into three; its remainder is a tooling decision (1022)",
+      "detail": "One card filed tonight (1022, for the Retro: whether the history check should also read the customer side and shared code - it decides how the last 256 items on 108 get cleared; recommendation on the card). Nothing closed. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 open with its remainder named, 129 held on its own data (re-read tonight: the hold is still true). Nothing on your desk. Two background cards sized and left again: 1006 (the Retro's eye) and 1003 (a design decision at phone width); 1014 is a money-path bug that wants a full session under the reviewer."
+    },
+    {
+      "id": "queue-shape-0917c-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 32 open, level. 108 is two parts into three",
       "detail": "Nothing closed, nothing filed tonight. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level with last night. NEXT UP: 108 takeable (part three, unused types), 129 held on its own data. Nothing on your desk. Two background cards were sized and left: 1006 asks for the Retro's eye on whether your order is a label or a field, and 1003 is a design decision on the Settings modal at phone width."
     },
@@ -7316,7 +7330,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-16T18:23:53.586Z",
+    "readAt": "2026-09-16T19:47:57.730Z",
     "items": [
       {
         "issueNumber": 108,
