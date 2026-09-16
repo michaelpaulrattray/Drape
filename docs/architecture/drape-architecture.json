@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4b517a7c755596b1"
+    "sourceFingerprint": "6b9ede91284aaf06"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 55
+      "moduleCount": 54
     },
     {
       "id": "domain:api",
@@ -43,7 +43,7 @@
     {
       "id": "domain:client-shared",
       "name": "client-shared",
-      "moduleCount": 16
+      "moduleCount": 13
     },
     {
       "id": "domain:data",
@@ -68,7 +68,7 @@
     {
       "id": "domain:home",
       "name": "home",
-      "moduleCount": 6
+      "moduleCount": 5
     },
     {
       "id": "domain:lobby",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 59
+      "moduleCount": 58
     },
     {
       "id": "domain:staff",
@@ -143,17 +143,17 @@
     {
       "id": "domain:ui-primitives",
       "name": "ui-primitives",
-      "moduleCount": 12
+      "moduleCount": 11
     },
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 43
+      "moduleCount": 42
     },
     {
       "id": "domain:wardrobe",
       "name": "wardrobe",
-      "moduleCount": 37
+      "moduleCount": 36
     }
   ],
   "modules": [
@@ -194,18 +194,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/components/HairColorWheel.tsx",
-      "path": "client/src/components/HairColorWheel.tsx",
-      "domain": "client-shared",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/Navigation.tsx",
-      "path": "client/src/components/Navigation.tsx",
-      "domain": "client-shared",
-      "lifecycle": "delete"
-    },
-    {
       "id": "module:client/src/components/PageTransition.tsx",
       "path": "client/src/components/PageTransition.tsx",
       "domain": "client-shared",
@@ -214,12 +202,6 @@
     {
       "id": "module:client/src/components/Tooltip.tsx",
       "path": "client/src/components/Tooltip.tsx",
-      "domain": "client-shared",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/TriBlendSelector.tsx",
-      "path": "client/src/components/TriBlendSelector.tsx",
       "domain": "client-shared",
       "lifecycle": "active"
     },
@@ -286,12 +268,6 @@
     {
       "id": "module:client/src/components/ui/dialog.tsx",
       "path": "client/src/components/ui/dialog.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/dropdown-menu.tsx",
-      "path": "client/src/components/ui/dropdown-menu.tsx",
       "domain": "ui-primitives",
       "lifecycle": "active"
     },
@@ -538,12 +514,6 @@
     {
       "id": "module:client/src/features/admin/components/crew/useCrewState.ts",
       "path": "client/src/features/admin/components/crew/useCrewState.ts",
-      "domain": "admin",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/admin/index.ts",
-      "path": "client/src/features/admin/index.ts",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -1598,12 +1568,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/home/index.ts",
-      "path": "client/src/features/home/index.ts",
-      "domain": "home",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/features/lobby/BoardsView.tsx",
       "path": "client/src/features/lobby/BoardsView.tsx",
       "domain": "lobby",
@@ -2482,12 +2446,6 @@
     {
       "id": "module:client/src/hooks/useComposition.ts",
       "path": "client/src/hooks/useComposition.ts",
-      "domain": "unassigned",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/hooks/useMobile.tsx",
-      "path": "client/src/hooks/useMobile.tsx",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -5708,12 +5666,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:server/wardrobe/index.ts",
-      "path": "server/wardrobe/index.ts",
-      "domain": "wardrobe",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:server/wardrobe/modelImageAuthority.ts",
       "path": "server/wardrobe/modelImageAuthority.ts",
       "domain": "wardrobe",
@@ -6100,12 +6052,6 @@
     {
       "id": "module:shared/spokenError.ts",
       "path": "shared/spokenError.ts",
-      "domain": "shared",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:shared/types.ts",
-      "path": "shared/types.ts",
       "domain": "shared",
       "lifecycle": "active"
     }
@@ -13929,41 +13875,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/components/HairColorWheel.tsx",
-      "to": "module:shared/const.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/Navigation.tsx",
-      "to": "module:client/src/_core/hooks/useAuth.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/Navigation.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/Navigation.tsx",
-      "to": "module:client/src/components/ui/dropdown-menu.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/Navigation.tsx",
-      "to": "module:client/src/const.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/Navigation.tsx",
-      "to": "module:client/src/lib/trpc.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/TriBlendSelector.tsx",
-      "to": "module:client/src/components/Tooltip.tsx",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/components/ui/badge.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
@@ -13980,11 +13891,6 @@
     },
     {
       "from": "module:client/src/components/ui/dialog.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/dropdown-menu.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
@@ -14536,71 +14442,6 @@
     {
       "from": "module:client/src/features/admin/components/crew/useCrewState.ts",
       "to": "module:client/src/lib/trpc.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/adminConstants.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/AuditActionModals.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/AuditLogsFilters.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/AuditLogTable.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/BlockedIPsTab.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/ChangeRequestConstants.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/ChangeRequestList.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/ReviewModal.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/UserActionModals.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/UserBadges.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/UserFilters.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/UserStatsCards.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/index.ts",
-      "to": "module:client/src/features/admin/UserTable.tsx",
       "kind": "imports"
     },
     {
@@ -16846,26 +16687,6 @@
     {
       "from": "module:client/src/features/home/HomeNavbar.tsx",
       "to": "module:shared/const.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/home/index.ts",
-      "to": "module:client/src/features/home/HeroContent.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/home/index.ts",
-      "to": "module:client/src/features/home/HomeNavbar.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/home/index.ts",
-      "to": "module:client/src/features/home/PartnersBar.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/home/index.ts",
-      "to": "module:client/src/features/home/WaitlistModal.tsx",
       "kind": "imports"
     },
     {
@@ -33164,66 +32985,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/wardrobe/index.ts",
-      "to": "module:server/wardrobe/editClassifier.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/wardrobe/index.ts",
-      "to": "module:server/wardrobe/garmentAnalysis.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/wardrobe/index.ts",
-      "to": "module:server/wardrobe/garmentDetection.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/wardrobe/index.ts",
-      "to": "module:server/wardrobe/garmentDigitization.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/wardrobe/index.ts",
-      "to": "module:server/wardrobe/garmentRefinement.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/wardrobe/index.ts",
-      "to": "module:server/wardrobe/identityCheck.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/wardrobe/index.ts",
-      "to": "module:server/wardrobe/outfitDecomposition.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/wardrobe/index.ts",
-      "to": "module:server/wardrobe/qualityCheck.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/wardrobe/index.ts",
-      "to": "module:server/wardrobe/tattooAnalysis.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/wardrobe/index.ts",
-      "to": "module:server/wardrobe/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/wardrobe/index.ts",
-      "to": "module:server/wardrobe/vtoGeneration.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/wardrobe/index.ts",
-      "to": "module:server/wardrobe/vtoSession.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/wardrobe/modelImageAuthority.ts",
       "to": "module:server/casting/deletionAudit.ts",
       "kind": "imports"
@@ -33426,16 +33187,6 @@
     {
       "from": "module:shared/refreshPolicy.ts",
       "to": "module:shared/boardTypes.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:shared/types.ts",
-      "to": "module:drizzle/schema.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:shared/types.ts",
-      "to": "module:shared/_core/errors.ts",
       "kind": "imports"
     }
   ],

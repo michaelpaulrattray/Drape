@@ -85,7 +85,8 @@ describe("#267 — the product says Sign out, and only Sign out", () => {
     for (const file of [
       "components/UserCard.tsx",
       "features/studio/components/StudioSlimHeader.tsx",
-      "components/Navigation.tsx",
+      // `components/Navigation.tsx` was the third file here until #106 deleted
+      // it (2026-09-16): orphaned since `faa28312`, no file ever mounted it.
     ]) {
       expect(readFileSync(join(CLIENT, file), "utf8"), file).toContain("Sign out");
     }
