@@ -245,5 +245,3 @@ export function RefinePanel({
     </div>
   );
 }
-
-export default RefinePanel;

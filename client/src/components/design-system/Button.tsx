@@ -396,5 +396,3 @@ export function FooterLink({ children, href, className }: FooterLinkProps) {
     </a>
   );
 }
-
-export default Button;

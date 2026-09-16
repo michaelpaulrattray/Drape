@@ -1030,21 +1030,21 @@
 
 - symbol: getUserPoints
   file: server/db/credits.ts
-  verdict: UNREVIEWED
-  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
-  argued: unreviewed
+  verdict: TAKEN
+  why: "last real call in d81ddb80/1d3cd614 (withAtomicCredits moved the balance read to getUserCredits); only mention since was the db/index.ts barrel line. TAKEN 2026-09-16 with #108 slice 1 — alias and barrel line deleted"
+  argued: 35a
 
 - symbol: getPointTransactions
   file: server/db/credits.ts
-  verdict: UNREVIEWED
-  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
-  argued: unreviewed
+  verdict: TAKEN
+  why: "a `45eb2e5f` rename alias (points→credits) whose every caller moved in that same commit; only mention since was the db/index.ts barrel line. TAKEN 2026-09-16 with #108 slice 1 — alias and barrel line deleted"
+  argued: 35a
 
 - symbol: addPoints
   file: server/db/credits.ts
-  verdict: UNREVIEWED
-  why: classified `died` by scripts/unwiring-timeline.mts — production imported it and stopped; nobody has read it since
-  argued: unreviewed
+  verdict: TAKEN
+  why: "a `45eb2e5f` rename alias (points→credits) whose every caller moved in that same commit; only mention since was the db/index.ts barrel line. TAKEN 2026-09-16 with #108 slice 1 — alias and barrel line deleted"
+  argued: 35a
 
 - symbol: addTopupCredits
   file: server/db/billing.ts

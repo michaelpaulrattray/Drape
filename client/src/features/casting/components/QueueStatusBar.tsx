@@ -63,5 +63,3 @@ export function QueueStatusBar({ isGenerating }: QueueStatusBarProps) {
     </div>
   );
 }
-
-export default QueueStatusBar;

@@ -37,5 +37,3 @@ export function MaskCanvas({
     />
   );
 }
-
-export default MaskCanvas;

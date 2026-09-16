@@ -80,5 +80,3 @@ export function CastingDescribeStart({
     </section>
   );
 }
-
-export default CastingDescribeStart;
