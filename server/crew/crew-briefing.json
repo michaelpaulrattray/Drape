@@ -1,7 +1,7 @@
 {
-  "edition": 439,
-  "updatedAt": "2026-09-16T17:10:00.000Z",
-  "shift": "THE HISTORY CHECK YOU ASKED FOR ON JOB 108 WAS BLIND TO HALF THE PRODUCT - FIXED - AND PART TWO OF 108 IS WRITTEN. NOTHING NEEDS AN ANSWER FROM YOU.\n\nThree things landed and are on production now. First, the instrument. Job 108 asks that nothing be deleted until a history check says it was never used - and the first thing that check did tonight was call a live piece of code dead. Read at the code, the check could not see the way the admin screens, the audit log, and the credit layer reach their code - forty-one working pieces read as unused, among them both sign-in routes, the Stripe refund, the role changer, and all four background workers (the one that refunds a roll interrupted by a deploy among them). Had any of those been switched off by accident, the check would have said nothing. The outside reviewer read the fix twice and found the last five himself; both rounds taken, both passed.\n\nSecond, part two of job 108 is written - not executed. Every unused export in the product (458 of them) was read through the repaired check and sorted by what can be said about it: 153 on the server side were never used by anything, ever, and are the deletion list; 29 need a person's eye; 15 were already ruled on; and 238 on the customer side and in the tooling are outside what the check can read, which is stated rather than folded in. The next session deletes from that list. Nothing is gone yet.\n\nThird, the small bug from last night (1016): a friend opening your referral link on a bad connection used to lose the referral for good on one failed attempt. Now the code is kept and tried again on their next sign-in; only a code that can never work is dropped. Reviewer passed it.\n\nNext: 108 part two's deletion (one session), then part three (unused types).",
+  "edition": 440,
+  "updatedAt": "2026-09-16T18:35:00.000Z",
+  "shift": "PART TWO OF JOB 108 IS DONE - THE DELETION LIST WAS EXECUTED AND IS ON PRODUCTION. NOTHING NEEDS AN ANSWER FROM YOU.\n\nOne thing landed. Last night's session wrote the list of unused code on the server side and deleted nothing; tonight's session re-checked that list from scratch (same 458 items, not one different) and then executed it: 149 pieces of code that nothing outside their own file ever used were made private, 19 dead pass-through lines were removed, and 9 functions nothing had ever called were deleted. 111 files changed and the product behaves exactly as before - every check is green, the outside reviewer read the whole diff at the billing-and-sign-in bar and found no defect, only three stale comments, all fixed.\n\nTwo things the code said that the list had not. Four of the 'dead pass-through' lines were the ONLY road to their function - the list had assumed the function was reached another way. All four functions had never been called at any point in the product's history, and two of them would have edited a customer's outfit or board without checking whose it was had anyone ever wired them - so they are gone, and the reviewer called that the right call. And one item on the delete list turned out to be a compile-time safety check in disguise (it stops a new identity field being added without its axis), so it stays.\n\nMeasured afterwards: unused code on the server side is at its floor - the only 16 items left are ones already ruled KEEP on the ledger, plus one the checker mis-reads. The 238 remaining items are all on the customer side or in the tooling, which the history check cannot read by design; that scope question stays on the card.\n\nNext: 108 part three (unused types, 134 files), then 129 when your refused rolls exist.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-16T17:05:48.590Z",
+      "readAt": "2026-09-16T18:23:53.587Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5033,6 +5033,13 @@
   ],
   "pipeline": [
     {
+      "id": "knip-exports-108-s2b",
+      "title": "Job 108, part two executed: 149 pieces of server code made private, 19 dead lines and 9 never-called functions deleted - no behaviour change",
+      "status": "merged",
+      "prNumber": 1020,
+      "note": "Your 105-108 clear them, the last job, second of three slices - the deletion itself. Worked example: the list was re-derived from scratch first (same 458 items), then a script that refuses to run unless every line matches exactly once made the mechanical edits; the 29 items needing a person's eye were each opened and read at every place their file is imported. Four functions the list had assumed were reached elsewhere were not - never called in the product's whole history, two of them unsafe writers - and are deleted; one 'unused' constant is really a compile-time guard and stays. Reviewer PASS at the billing bar: no defect, no orphaned control; three stale comments, all fixed. Measured after: unused server exports 218 to 16, all 16 already ruled. Production build 5f412f94."
+    },
+    {
       "id": "unwiring-dynamic-import-1017",
       "title": "The history check behind your clean-up jobs could not see 41 working pieces of the product - fixed",
       "status": "merged",
@@ -6682,9 +6689,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0917b-foreman",
+      "id": "queue-shape-0917c-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 32 open, level. 108 is two parts into three",
+      "detail": "Nothing closed, nothing filed tonight. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level with last night. NEXT UP: 108 takeable (part three, unused types), 129 held on its own data. Nothing on your desk. Two background cards were sized and left: 1006 asks for the Retro's eye on whether your order is a label or a field, and 1003 is a design decision on the Settings modal at phone width."
+    },
+    {
+      "id": "queue-shape-0917b-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 32 open, level. 108 is two parts into three; 1016 closed",
       "detail": "One card closed tonight (1016, the referral code kept on a bad connection - on production). Nothing filed. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level with last night. NEXT UP: 108 takeable (part two's deletion, then part three), 129 held on its own data. Nothing on your desk."
     },
@@ -7302,7 +7316,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-16T17:05:48.589Z",
+    "readAt": "2026-09-16T18:23:53.586Z",
     "items": [
       {
         "issueNumber": 108,
