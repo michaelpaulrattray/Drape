@@ -45,7 +45,7 @@ export function invoiceSubscriptionId(invoice: unknown): string | null {
 }
 
 /** Is this line a proration adjustment (either dialect)? */
-export function isProrationLine(line: unknown): boolean {
+function isProrationLine(line: unknown): boolean {
   const l = line as AnyRecord | null;
   if (typeof l?.proration === "boolean") return l.proration;
   const parented = l?.parent?.subscription_item_details?.proration;
@@ -54,7 +54,7 @@ export function isProrationLine(line: unknown): boolean {
 }
 
 /** Is this line a subscription (recurring) line at all (either dialect)? */
-export function isSubscriptionLine(line: unknown): boolean {
+function isSubscriptionLine(line: unknown): boolean {
   const l = line as AnyRecord | null;
   if (!l) return false;
   if (l.price?.recurring || l.plan) return true;

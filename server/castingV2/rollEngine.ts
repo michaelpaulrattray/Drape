@@ -20,7 +20,7 @@ import { envInt } from "../_core/env";
 let queue: ProviderQueue | null = null;
 let engine: CreativeEngine | null = null;
 
-export function castingImageQueue(): ProviderQueue {
+function castingImageQueue(): ProviderQueue {
   if (!queue) {
     queue = new ProviderQueue({
       name: "fal-casting-images",

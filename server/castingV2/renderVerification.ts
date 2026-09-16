@@ -148,7 +148,7 @@ export function subjectKey(subject: FactSubject): string {
  * closed lane's own headings — never `openKindHeading`, which upper-cases the
  * kebab token and would ask about "CAT-EARS".
  */
-export function subjectHeading(subject: FactSubject): string {
+function subjectHeading(subject: FactSubject): string {
   return subject.kind === "facet" ? facetHeading(subject.facet) : subject.noun.toUpperCase();
 }
 
@@ -362,11 +362,6 @@ export function isRefusableMiss(check: FacetCheck): boolean {
   if (!isMiss(check) || !check.binding) return false;
   if (check.absenceIsTheAsk === true) return true;
   return check.absent !== false;
-}
-
-/** Read, contradicted by nothing, and unanswerable — neither pass nor miss. */
-export function isOccluded(check: FacetCheck): boolean {
-  return check.read && !check.verified && check.occluded === true;
 }
 
 export type RenderVerdict = {
@@ -863,7 +858,7 @@ async function readOnce(input: {
         subject: fact.subject,
         asked: fact.asked,
         /* An unanswerable question is not a pass. It is not a miss either —
-           `isMiss`/`isOccluded` are what tell the two apart downstream. */
+           `isMiss` and the `occluded` field are what tell the two apart downstream. */
         verified: read && row.present === true && !occluded,
         read,
         binding: fact.binding !== false,

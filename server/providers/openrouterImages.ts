@@ -32,10 +32,10 @@ const log = createModuleLogger("providers/openrouterImages");
  */
 
 const BASE_URL = "https://openrouter.ai/api/v1";
-export const DEFAULT_CREATIVE_MODEL = "openai/gpt-image-2";
+const DEFAULT_CREATIVE_MODEL = "openai/gpt-image-2";
 
 /** Documented list price, used for pre-flight cost estimates (§H.10). */
-export const GPT_IMAGE_2_USD_PER_IMAGE: Record<CandidateRequest["quality"], number> = {
+const GPT_IMAGE_2_USD_PER_IMAGE: Record<CandidateRequest["quality"], number> = {
   low: 0.006,
   medium: 0.053,
   high: 0.211,

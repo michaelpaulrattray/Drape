@@ -43,7 +43,6 @@ import {
   HERITAGES,
   LOOK_KEYS,
   SEXES,
-  HAIR_COLOURS,
   HAIR_FAMILIES,
   VARIATION_AXES,
   type AgeBand,
@@ -71,13 +70,11 @@ export {
   AGE_BANDS,
   AGE_PHASES,
   BUILDS,
-  HAIR_COLOURS,
   HAIR_FAMILIES,
   ENERGY_KEYS,
   HERITAGES,
   LOOK_KEYS,
   SEXES,
-  VARIATION_AXES,
 };
 export type {
   AgeBand,
@@ -102,7 +99,7 @@ import {
   type LeanStrength,
   type PoolTendencies,
 } from "./poolTendencies";
-export { FACIAL_HAIR_LEANS, LEAN_STRENGTHS, NO_TENDENCIES };
+export { NO_TENDENCIES };
 export type { FacialHairLean, LeanStrength, PoolTendencies };
 import { mentionsGarments, scrubBrands } from "./brandScrub";
 import {
@@ -351,7 +348,7 @@ export type ArchetypeKey = keyof typeof ARCHETYPES;
 export const ARCHETYPE_KEYS = Object.keys(ARCHETYPES) as ArchetypeKey[];
 
 /** The only cohort M5 compiles. Anything else is refused, not approximated. */
-export const SUPPORTED_COHORTS = ["photoreal_human"] as const;
+const SUPPORTED_COHORTS = ["photoreal_human"] as const;
 export type CohortKey = (typeof SUPPORTED_COHORTS)[number];
 
 /**
@@ -543,7 +540,7 @@ export type StatedHair = {
   greying: boolean;
 };
 
-export const STATED_HAIR_MAX = 40;
+const STATED_HAIR_MAX = 40;
 
 /**
  * ⚠ **THE STATED SKIN LANE** — what the brief said about her skin, in her own
@@ -571,7 +568,7 @@ export type StatedSkin = {
 export const EMPTY_STATED_SKIN: StatedSkin = { tone: null, character: null };
 
 /** Kept short for `STATED_HAIR_MAX`'s reason: this is a phrase she typed. */
-export const STATED_SKIN_MAX = 40;
+const STATED_SKIN_MAX = 40;
 
 export const EMPTY_STATED_HAIR: StatedHair = {
   cutLength: null,
@@ -580,10 +577,10 @@ export const EMPTY_STATED_HAIR: StatedHair = {
   greying: false,
 };
 
-export const COMPOSED_THESIS_MAX = 200;
-export const COMPOSED_AVOID_MAX = 120;
+const COMPOSED_THESIS_MAX = 200;
+const COMPOSED_AVOID_MAX = 120;
 
-export const ROLE_MAX = 80;
+const ROLE_MAX = 80;
 export const NOTES_MAX = 180;
 /**
  * ⚠ **THE SAME BOUND, INSIDE `CASTING_BRIEF_FIDELITY_SCOPE`** — 2000 rather
@@ -942,7 +939,7 @@ export function tokensComeFromBrief(value: string, briefText: string): boolean {
  * run, were honoured in her own words. One word on a list written for another
  * field. (opus-281 §2, fable-338.)
  */
-export function parseStatedHair(raw: unknown, briefText: string): StatedHair {
+function parseStatedHair(raw: unknown, briefText: string): StatedHair {
   if (!raw || typeof raw !== "object") return EMPTY_STATED_HAIR;
   const wire = raw as Record<string, unknown>;
 

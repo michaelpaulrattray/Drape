@@ -28,7 +28,7 @@ export type SheetPreviewCandidate = {
 };
 
 /** How many faces the card's strip holds. */
-export const SHEET_PREVIEW_LIMIT = 4;
+const SHEET_PREVIEW_LIMIT = 4;
 
 /**
  * A candidate can be previewed when it landed and has a picture.

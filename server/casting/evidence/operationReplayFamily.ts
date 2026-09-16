@@ -3,7 +3,7 @@ import {
   type GenerationOperationKind,
 } from "../operationContract";
 
-export const OPERATION_REPLAY_FAMILIES = [
+const OPERATION_REPLAY_FAMILIES = [
   "refresh",
   "mint",
 ] as const;

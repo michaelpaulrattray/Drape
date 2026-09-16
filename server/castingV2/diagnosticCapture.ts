@@ -59,7 +59,7 @@ import {
 const log = createModuleLogger("castingV2/diagnosticCapture");
 
 export const CASTING_DIAGNOSTIC_CAPTURE_SCOPE_ENV = "CASTING_DIAGNOSTIC_CAPTURE_SCOPE";
-export const STORAGE_CLEANUP_WORKER_ENV = "ENABLE_STORAGE_CLEANUP_WORKER";
+const STORAGE_CLEANUP_WORKER_ENV = "ENABLE_STORAGE_CLEANUP_WORKER";
 
 /** Keys live under this prefix and nowhere else. */
 export const DIAGNOSTIC_KEY_PREFIX = "casting-v2/diagnostics";

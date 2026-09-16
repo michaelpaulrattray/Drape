@@ -15,7 +15,6 @@ const log = createModuleLogger("casting/aiService");
 
 // Re-export types and utilities from geminiService
 export type { ModelPreferences } from "./geminiService";
-export { ImageResolution, AspectRatio, GenerationMode } from "./geminiService";
 export { clearCastingSession } from "./geminiService";
 export {
   updateSchemaForIteration,
@@ -89,7 +88,7 @@ export { CREDIT_COSTS, POINT_COSTS } from "./castingCreditCosts";
 /**
  * Fetch a URL and return as base64 data URL (for S3/HTTP URLs → Gemini input)
  */
-export async function fetchImageAsBase64(url: string): Promise<string> {
+async function fetchImageAsBase64(url: string): Promise<string> {
   if (!url.startsWith("http")) return url;
   const response = await fetch(url);
   const buffer = Buffer.from(await response.arrayBuffer());

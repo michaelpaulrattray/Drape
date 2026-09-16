@@ -133,19 +133,3 @@ export async function deactivateInviteCode(codeId: number) {
     .set({ isActive: false })
     .where(eq(inviteCodes.id, codeId));
 }
-
-/**
- * Approve a user directly (admin bypass, no code needed).
- */
-export async function approveUserDirectly(userId: number) {
-  const db = await getDb();
-  if (!db) return;
-  await db
-    .update(users)
-    .set({
-      approved: true,
-      accessCode: "ADMIN_APPROVED",
-      approvedAt: new Date(),
-    })
-    .where(eq(users.id, userId));
-}

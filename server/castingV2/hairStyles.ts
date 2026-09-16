@@ -521,7 +521,7 @@ export const FINISH_RENDER: Record<SkinFinish, string> = {
 };
 
 /** Words in a brief that state a finish, and what they map to. */
-export const FINISH_WORDS: Array<[SkinFinish, string[]]> = [
+const FINISH_WORDS: Array<[SkinFinish, string[]]> = [
   ["dewy", ["dewy", "hydrated", "glossy", "glowing", "glowy"]],
   ["matte", ["matte", "powdered", "flat"]],
   ["oily", ["oily", "greasy", "sweaty", "shiny", "sweat"]],

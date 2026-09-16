@@ -63,7 +63,7 @@ export const GENERATION_OPERATION_KINDS = [
 
 export type GenerationOperationKind = typeof GENERATION_OPERATION_KINDS[number];
 
-export const GENERATION_OPERATION_STATUSES = [
+const GENERATION_OPERATION_STATUSES = [
   "claimed",
   "running",
   "partial",
@@ -91,7 +91,7 @@ export const GENERATION_OPERATION_PHASES = [
 
 export type GenerationOperationPhase = typeof GENERATION_OPERATION_PHASES[number];
 
-export const GENERATION_OPERATION_LANDING_STATUSES = [
+const GENERATION_OPERATION_LANDING_STATUSES = [
   "not_applicable",
   "pending",
   "landed",
@@ -101,7 +101,7 @@ export const GENERATION_OPERATION_LANDING_STATUSES = [
 
 export type GenerationOperationLandingStatus = typeof GENERATION_OPERATION_LANDING_STATUSES[number];
 
-export const GENERATION_OPERATION_CHILD_STATUSES = [
+const GENERATION_OPERATION_CHILD_STATUSES = [
   "pending",
   "processing",
   "completed",

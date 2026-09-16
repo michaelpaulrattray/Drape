@@ -6,30 +6,30 @@ import {
   INK_ADD_PROBE_RECIPE_VERSION,
 } from "./inkAddRecipe";
 
-export const INK_CALIBRATION_RECORD_VERSION =
+const INK_CALIBRATION_RECORD_VERSION =
   "ink.add.calibration-record.v1" as const;
 
-export const INK_CALIBRATION_SOURCE_KINDS =
+const INK_CALIBRATION_SOURCE_KINDS =
   ["synthetic", "consented"] as const;
 export type InkCalibrationSourceKind =
   typeof INK_CALIBRATION_SOURCE_KINDS[number];
 
-export const INK_CALIBRATION_TONE_COHORTS =
+const INK_CALIBRATION_TONE_COHORTS =
   ["tone_1", "tone_2", "tone_3", "tone_4", "tone_5", "tone_6"] as const;
 export type InkCalibrationToneCohort =
   typeof INK_CALIBRATION_TONE_COHORTS[number];
 
-export const INK_CALIBRATION_PRESENTATION_COHORTS =
+const INK_CALIBRATION_PRESENTATION_COHORTS =
   ["feminine", "masculine", "androgynous"] as const;
 export type InkCalibrationPresentationCohort =
   typeof INK_CALIBRATION_PRESENTATION_COHORTS[number];
 
-export const INK_CALIBRATION_BUILD_COHORTS =
+const INK_CALIBRATION_BUILD_COHORTS =
   ["slender", "average", "athletic", "curvy", "plus"] as const;
 export type InkCalibrationBuildCohort =
   typeof INK_CALIBRATION_BUILD_COHORTS[number];
 
-export const INK_CALIBRATION_OCCLUSION_COHORTS =
+const INK_CALIBRATION_OCCLUSION_COHORTS =
   ["none", "partial"] as const;
 export type InkCalibrationOcclusionCohort =
   typeof INK_CALIBRATION_OCCLUSION_COHORTS[number];
@@ -207,7 +207,7 @@ function rate(records: readonly InkCalibrationRecord[], key: keyof Pick<
   return records.filter((record) => record[key]).length / records.length;
 }
 
-export function summarizeInkCalibration(
+function summarizeInkCalibration(
   records: readonly InkCalibrationRecord[],
 ): InkCalibrationRates {
   const canon = records.filter((record) => record.canonCommitted);

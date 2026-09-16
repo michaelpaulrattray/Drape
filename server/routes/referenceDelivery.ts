@@ -73,7 +73,7 @@ const log = createModuleLogger("routes/referenceDelivery");
  * machinery that can never fire.
  */
 
-export const REFERENCE_DELIVERY_RATE_LIMIT = {
+const REFERENCE_DELIVERY_RATE_LIMIT = {
   windowMs: 60_000,
   maxRequests: REFERENCE_READS_PER_MINUTE,
   keyPrefix: "reference_delivery",

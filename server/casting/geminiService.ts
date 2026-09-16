@@ -18,9 +18,6 @@ export { ImageResolution, AspectRatio, GenerationMode } from "./geminiTypes";
 
 // Client & utilities
 export {
-  getAiClient,
-  SAFETY_SETTINGS,
-  extractMimeType,
   extractBase64Data,
   formatGeminiError,
   safeResponseText,
@@ -29,24 +26,21 @@ export {
   withTimeout,
   withSingleRetry503,
   buildIdentityAnchor,
-  checkIdentityConsistency,
 } from "./geminiClient";
 
 // Prompts & helpers
 export {
-  BRAND_NAME,
   MASTER_PROMPT_SYSTEM_INSTRUCTION,
   BRAND_PROFILES,
   DEFAULT_BRAND_DESCRIPTOR,
   getSkinDescription,
   getBrandExpression,
   irisDescriptions,
-  getStudioSettings,
   hasBodyArt,
 } from "./geminiPrompts";
 
 // Generation functions
-export { generateMasterPrompt, enhanceUserPrompt, generateCastingImage, clearCastingSession, castingSessionKey, deleteCastingSessionsFor } from "./geminiGeneration";
+export { generateMasterPrompt, enhanceUserPrompt, generateCastingImage, clearCastingSession } from "./geminiGeneration";
 
 // Schema reconciliation
 export { updateSchemaForIteration, reconcileSchemaWithImage } from "./geminiSchemaUpdater";
@@ -58,4 +52,4 @@ export { generateCastingSuggestions, analyzeReferenceForTransfer, FALLBACK_SUGGE
 export { compactMasterPrompt } from "./geminiPromptCompactor";
 
 // View generation functions
-export { generateFullBody, generateRemainingViews, generateSingleView } from "./geminiViews";
+export { generateFullBody, generateSingleView } from "./geminiViews";

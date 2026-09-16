@@ -27,7 +27,7 @@ import {
  * engine now that GPT Image 2 also runs here.
  */
 
-export const DEFAULT_IDENTITY_MODEL = "fal-ai/nano-banana-pro";
+const DEFAULT_IDENTITY_MODEL = "fal-ai/nano-banana-pro";
 export const DEFAULT_IDENTITY_EDIT_MODEL = "fal-ai/nano-banana-pro/edit";
 
 /** Documented list price per image (§H.9). 4K is the premium tier. */

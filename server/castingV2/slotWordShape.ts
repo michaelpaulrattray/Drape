@@ -151,7 +151,7 @@ const ARTIFACT_WORDS: readonly RegExp[] = [
 ];
 
 /** The artifact phrase this text uses, or null. */
-export function artifactPhraseIn(described: string): string | null {
+function artifactPhraseIn(described: string): string | null {
   for (const word of ARTIFACT_WORDS) {
     const found = word.exec(described ?? "");
     if (found) return found[0];

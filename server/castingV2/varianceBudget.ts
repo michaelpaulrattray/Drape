@@ -96,7 +96,7 @@ export function distinctSignatures(sheet: readonly ResolvedIdentity[]): number {
  * then how it grows, then what you asked the barber for. The cut is last
  * precisely because the drift ruling owns it.
  */
-export const RELEASE_LADDER = ["worn-state", "texture", "adjacent-cut"] as const;
+const RELEASE_LADDER = ["worn-state", "texture", "adjacent-cut"] as const;
 export type ReleaseRung = (typeof RELEASE_LADDER)[number];
 
 export type VarianceReport = {

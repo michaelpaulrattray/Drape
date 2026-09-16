@@ -55,9 +55,6 @@ export const rootLogger = pino({
     : {}),
 });
 
-/** Default logger with module="app" */
-export const logger = rootLogger.child({ module: "app" });
-
 /**
  * Create a child logger scoped to a specific module.
  * The module name appears in every log line for filtering.

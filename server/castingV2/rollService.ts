@@ -359,7 +359,7 @@ async function defaultStoreImage(input: { bytes: Buffer; contentType: string; ke
  * is the customer's own Start over. Both end the same way: the words are
  * still theirs, and a fresh sheet is where they roll again.
  */
-export function closedSessionRefusal(status: Exclude<CastingSession["status"], "open">): string {
+function closedSessionRefusal(status: Exclude<CastingSession["status"], "open">): string {
   return status === "expired"
     ? "This sheet has expired, so it can't be rolled on. Nothing was charged — start a new sheet to roll these words again."
     : "This sheet was closed, so it can't be rolled on. Nothing was charged — start a new sheet to roll these words again.";

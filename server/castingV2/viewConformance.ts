@@ -124,7 +124,7 @@ export type ViewConformanceJudge = (input: ViewConformanceInput) => Promise<View
  * only honest if the judge can SAY it is unsure instead of being forced to
  * pick a side and hedge in prose.
  */
-export const AXIS_VERDICTS = ["matches", "differs", "unsure"] as const;
+const AXIS_VERDICTS = ["matches", "differs", "unsure"] as const;
 export type AxisVerdictWord = (typeof AXIS_VERDICTS)[number];
 
 const axisSchema = z.object({

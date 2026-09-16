@@ -41,7 +41,7 @@ import {
   type InkPackageAngleAuthority,
 } from "./inkPackageImpactV2";
 
-export const EVIDENCE_PACKAGE_REFUSALS = [
+const EVIDENCE_PACKAGE_REFUSALS = [
   "feature_graph_unsupported",
   "model_unavailable",
   "identity_anchor",

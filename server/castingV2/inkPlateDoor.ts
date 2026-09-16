@@ -57,7 +57,7 @@ import { INK_KEY_PREFIX } from "./inkUploadDoor";
  * permanently public URL and the name is the only thing between it and a
  * stranger (the repository guard on storage writers says the same thing).
  */
-export const INK_PLATE_KEY_PREFIX = `${INK_KEY_PREFIX}/plates`;
+const INK_PLATE_KEY_PREFIX = `${INK_KEY_PREFIX}/plates`;
 
 export function inkPlateKey(): string {
   /* Always PNG: the engines are asked for PNG and a plate is a flat drawing on

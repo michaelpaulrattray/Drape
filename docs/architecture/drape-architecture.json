@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "88f3b6c647264773"
+    "sourceFingerprint": "7a63a3ff6d76e2fb"
   },
   "domains": [
     {
@@ -20334,11 +20334,6 @@
     },
     {
       "from": "module:server/casting/composeIdentityPayload.ts",
-      "to": "module:server/db/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/casting/composeIdentityPayload.ts",
       "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
@@ -27869,11 +27864,6 @@
     },
     {
       "from": "module:server/castingV2/signService.ts",
-      "to": "module:server/casting/castingCreditCosts.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/signService.ts",
       "to": "module:server/casting/castPublicId.ts",
       "kind": "imports"
     },
@@ -35020,10 +35010,10 @@
       "message": "Names 4 of SegmentExclusion's 4 fields (server/castingV2/segmentAssembly.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:965",
+      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:964",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/cohortPhotorealHuman.ts:965",
+      "subject": "server/castingV2/cohortPhotorealHuman.ts:964",
       "message": "Names 6 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

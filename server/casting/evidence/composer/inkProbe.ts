@@ -216,7 +216,7 @@ function bool(value: unknown): boolean {
   return value;
 }
 
-export function parseInkVisibilityProbe(raw: unknown): VisibilityResponse {
+function parseInkVisibilityProbe(raw: unknown): VisibilityResponse {
   const value = exactObject(raw, [
     "upperTorsoVisible",
     "materiallyOccluded",
@@ -242,7 +242,7 @@ export function parseInkIdentityPoseProbe(raw: unknown): IdentityPoseResponse {
   };
 }
 
-export function parseInkFeaturePlacementProbe(
+function parseInkFeaturePlacementProbe(
   raw: unknown,
 ): FeaturePlacementResponse {
   const value = exactObject(raw, [
@@ -259,7 +259,7 @@ export function parseInkFeaturePlacementProbe(
   };
 }
 
-export function parseInkAnywhereVisibilityProbe(
+function parseInkAnywhereVisibilityProbe(
   raw: unknown,
 ): AnywhereVisibilityResponse {
   const value = exactObject(raw, [
@@ -276,7 +276,7 @@ export function parseInkAnywhereVisibilityProbe(
   };
 }
 
-export function parseInkAnywhereGuideCoverageProbe(
+function parseInkAnywhereGuideCoverageProbe(
   raw: unknown,
 ): AnywhereGuideCoverageResponse {
   const value = exactObject(raw, [
@@ -294,7 +294,7 @@ export function parseInkAnywhereGuideCoverageProbe(
   };
 }
 
-export function parseInkAnywhereFeaturePlacementProbe(
+function parseInkAnywhereFeaturePlacementProbe(
   raw: unknown,
 ): AnywhereFeaturePlacementResponse {
   const value = exactObject(raw, [
@@ -313,7 +313,7 @@ export function parseInkAnywhereFeaturePlacementProbe(
   };
 }
 
-export function parseInkAnywherePlacementAuditProbe(
+function parseInkAnywherePlacementAuditProbe(
   raw: unknown,
 ): AnywherePlacementAuditResponse {
   const value = exactObject(raw, [
@@ -456,7 +456,7 @@ confidence must be an integer from 0 to 100.`,
   };
 }
 
-export function buildInkAnywhereIdentityPoseProbeRequest(input: {
+function buildInkAnywhereIdentityPoseProbeRequest(input: {
   identityAnchor: ComposerImage;
   originalTarget: ComposerImage;
   candidate: ComposerImage;

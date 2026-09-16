@@ -10,7 +10,7 @@ export type EvidencePackageScope =
   | { kind: "users"; userIds: readonly number[] }
   | { kind: "all" };
 
-export class EvidencePackageConfigurationError extends Error {
+class EvidencePackageConfigurationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "EvidencePackageConfigurationError";

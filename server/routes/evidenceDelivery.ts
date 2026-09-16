@@ -21,7 +21,7 @@ import {
 const log = createModuleLogger("routes/evidenceDelivery");
 const ENTITY_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-export const EVIDENCE_DELIVERY_RATE_LIMIT = {
+const EVIDENCE_DELIVERY_RATE_LIMIT = {
   windowMs: 60_000,
   maxRequests: EVIDENCE_DELIVERY_REQUESTS_PER_MINUTE,
   keyPrefix: "evidence_delivery",

@@ -66,7 +66,7 @@ export function falConcurrencyLimit(): number {
 }
 
 /** How many times a concurrency 429 is waited out before it becomes a failure. */
-export const LIMIT_RETRIES = 4;
+const LIMIT_RETRIES = 4;
 
 /** The provider's own name for the one failure worth retrying. */
 export const CONCURRENCY_LIMIT_MARKER = "concurrent_requests_limit";

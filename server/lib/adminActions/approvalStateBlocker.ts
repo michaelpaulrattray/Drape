@@ -96,7 +96,7 @@ const USER_MISSING_SENTENCE =
  * Keyed by change-request type, beyond the account existing — which every type
  * listed here needs. A type absent from this map is not read at all.
  */
-export const CHANGE_REQUEST_STATE_REQUIREMENTS: Readonly<Record<string, readonly StateCheck[]>> = {
+const CHANGE_REQUEST_STATE_REQUIREMENTS: Readonly<Record<string, readonly StateCheck[]>> = {
   suspend_user: [NOT_ADMIN],
   unsuspend_user: [IS_SUSPENDED],
   add_credits: [HAS_BALANCE],

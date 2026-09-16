@@ -276,7 +276,7 @@ Full casting spec: ${masterPrompt}`;
  * Returns true if consistent, false if drift detected.
  * Fails open (returns true) if the check itself errors.
  */
-export const checkIdentityConsistency = async (
+const checkIdentityConsistency = async (
   sourceImageBase64: string,
   generatedImageBase64: string,
   sourceMimeType: string = 'image/png',

@@ -146,10 +146,10 @@
 import { vi } from "vitest";
 
 /** Thirty seconds, for a file whose tests are dominated by module loading. */
-export const COLD_IMPORT_TIMEOUT_MS = 30_000;
+const COLD_IMPORT_TIMEOUT_MS = 30_000;
 
 /** Sixty seconds, for a file whose tests read the source tree off disk. */
-export const TREE_SWEEP_TIMEOUT_MS = 60_000;
+const TREE_SWEEP_TIMEOUT_MS = 60_000;
 
 export function allowColdImports(): void {
   vi.setConfig({ testTimeout: COLD_IMPORT_TIMEOUT_MS });

@@ -157,7 +157,6 @@ describe("access.redeem", () => {
       createInviteCode: vi.fn(),
       listInviteCodes: vi.fn(),
       deactivateInviteCode: vi.fn(),
-      approveUserDirectly: vi.fn(),
     }));
 
     const ctx = createMockContext();

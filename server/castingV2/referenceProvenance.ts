@@ -66,7 +66,7 @@ export const READ_TOKEN_TTL_MS = 30 * 60 * 1000;
  * exactly the second list working law 4 forbids: the day a third reader lands,
  * one of them gets updated and the other silently refuses every token it sees.
  */
-export const REFERENCE_READ_INTENTS = ["makeup", "hair"] as const;
+const REFERENCE_READ_INTENTS = ["makeup", "hair"] as const;
 
 export type ReferenceReadIntent = (typeof REFERENCE_READ_INTENTS)[number];
 

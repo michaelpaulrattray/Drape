@@ -98,7 +98,7 @@ import { inkPackageDirective } from "./evidencePackageRegistry";
 
 const log = createModuleLogger("casting/evidence/evidencePackageExecution");
 const PACKAGE_FAILURE = "The view could not be updated from its saved evidence.";
-export const EVIDENCE_PACKAGE_EXECUTION_FAILURE_CODES = [
+const EVIDENCE_PACKAGE_EXECUTION_FAILURE_CODES = [
   ...EVIDENCE_PACKAGE_PROBE_FAILURES,
   "execution_error",
   "settlement_refused",
@@ -380,7 +380,7 @@ function retryDirectives(
   }
 }
 
-export const EVIDENCE_PACKAGE_EXECUTION_STAGES = [
+const EVIDENCE_PACKAGE_EXECUTION_STAGES = [
   "generation_provider",
   "candidate_validation",
   "candidate_storage",

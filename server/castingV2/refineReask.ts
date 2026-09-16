@@ -279,7 +279,7 @@ const BY_HANDLE: Partial<Record<ReaskKind, (asked: string, pronouns: CastPronoun
  * sentence falls through to the word doors exactly as it does today, which is
  * the behaviour every caller had before this existed.
  */
-export function reaskByHandle(answering: string, pronouns: CastPronouns): Reask | null {
+function reaskByHandle(answering: string, pronouns: CastPronouns): Reask | null {
   const match = HANDLE.exec(answering.trim());
   if (!match) return null;
   const build = BY_HANDLE[match[1] as ReaskKind];
@@ -940,7 +940,7 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
  * a free outcome — one constant, read in two places, rather than a sentinel
  * spelled out at each of them.
  */
-export function leaveAsTheyAre(pronouns: CastPronouns): string {
+function leaveAsTheyAre(pronouns: CastPronouns): string {
   /* "leave them as they ARE" — the plural flag is why this is a function of the
      whole pronoun set rather than of one word. */
   return `leave ${pronouns.object} as ${pronouns.subject} ${pronouns.plural ? "are" : "is"}`;
@@ -1038,7 +1038,7 @@ export const DISCARD_THE_DESIGN = "discard the design taken from that picture";
  * here: her left is the picture's right, and that inversion has exactly one
  * owner in this product.
  */
-export function inkCutHalfSentence(focus: InkCutFocus): string {
+function inkCutHalfSentence(focus: InkCutFocus): string {
   if (focus.half === null) return "";
   const where = pictureHalfPhrase(focus.half);
   return focus.fellBack
@@ -1075,7 +1075,7 @@ export function thisDesignReask(input: {
 }
 
 /** The handle for {@link thisDesignReask} — the design's name, then the ask. */
-export function designReaskHandle(designPublicId: string, asked: string): string {
+function designReaskHandle(designPublicId: string, asked: string): string {
   return reaskHandle("this-design", `${designPublicId} ${asked.trim()}`);
 }
 

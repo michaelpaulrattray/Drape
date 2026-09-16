@@ -708,7 +708,7 @@ export function notAboutThePersonIn(text: string): string | null {
  * the length bound makes an inventory structurally impossible to fit, so the
  * nouns it would have carried have nowhere to go.
  */
-export const ABSENCE_CLAIMS = {
+const ABSENCE_CLAIMS = {
   /** `no` / `without` / `free of` / `lacking`, optionally hedged with `visible` or `any`. */
   lead: "(?:no|without|free of|lacking)",
   nouns: ["tattoos?", "jewell?e?ry", "make-?up", "piercings?"],

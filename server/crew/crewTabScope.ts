@@ -51,7 +51,7 @@ export type CrewTabScope =
   | { kind: "users"; userIds: readonly number[] }
   | { kind: "all" };
 
-export class CrewTabScopeConfigurationError extends Error {
+class CrewTabScopeConfigurationError extends Error {
   constructor() {
     super(
       `${CREW_TAB_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,

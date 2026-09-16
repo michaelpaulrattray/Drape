@@ -34,7 +34,7 @@ import {
 } from "../casting/modelReadProjections";
 const log = createModuleLogger("routes/models");
 
-export function isFinalModelDeleteEnabled(): boolean {
+function isFinalModelDeleteEnabled(): boolean {
   return process.env.ENABLE_FINAL_MODEL_DELETE === "true";
 }
 

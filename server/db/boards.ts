@@ -1152,7 +1152,3 @@ export async function getVersionCount(itemId: number): Promise<number> {
   return result?.count ?? 0;
 }
 
-export async function deleteBoardItemVersions(itemId: number) {
-  const db = (await getDb())!;
-  await db.delete(boardItemVersions).where(eq(boardItemVersions.itemId, itemId));
-}

@@ -15,7 +15,7 @@ import type {
 export const EVIDENCE_PACKAGE_PROBE_RECIPE_VERSION =
   "evidence.package.sync.probe.front-upper-torso.v3" as const;
 
-export const OBSERVED_ANATOMICAL_SIDES = [
+const OBSERVED_ANATOMICAL_SIDES = [
   "left",
   "right",
   "none",
@@ -23,7 +23,7 @@ export const OBSERVED_ANATOMICAL_SIDES = [
 ] as const;
 export type ObservedAnatomicalSide = typeof OBSERVED_ANATOMICAL_SIDES[number];
 
-export const OBSERVED_TRAVEL_DIRECTIONS = [
+const OBSERVED_TRAVEL_DIRECTIONS = [
   "frame_left",
   "frame_right",
   "stationary",
@@ -40,7 +40,7 @@ const EXPECTED_TRAVEL_BY_FACING = {
   ObservedTravelDirection
 >>;
 
-export const FEATURE_REGION_VISIBILITIES = [
+const FEATURE_REGION_VISIBILITIES = [
   "visible",
   "hidden",
   "outside_frame",

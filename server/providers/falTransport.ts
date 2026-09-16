@@ -101,7 +101,7 @@ export async function readFalBalanceUsd(apiKey: string): Promise<number | null> 
  * matters: a submitted request is spend unless it is cancelled, so both user
  * aborts and deadline expiry must call this.
  */
-export async function cancelFalUrl(
+async function cancelFalUrl(
   apiKey: string,
   cancelUrl: string,
 ): Promise<"cancelled" | "completed"> {

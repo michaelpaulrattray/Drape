@@ -116,7 +116,7 @@ export function isDuplicateKey(error: unknown): boolean {
 }
 
 /** The Cast, the design or the frame is not this account's. */
-export class InkDeliveryCropOwnershipError extends Error {
+class InkDeliveryCropOwnershipError extends Error {
   constructor(what: string) {
     super(`${what} not found`);
     this.name = "InkDeliveryCropOwnershipError";

@@ -28,7 +28,6 @@
  * exist yet (image-gen is pass 3, VTO pass 2).
  */
 import { TRPCError } from "@trpc/server";
-import { getModelById, getModelAssets } from "../db";
 import { buildIdentityAnchor } from "./geminiClient";
 import { VIEW_ANGLE_LABELS, type CanonicalViewAngle } from "../../shared/boardTypes";
 
@@ -126,21 +125,4 @@ export function composeFromAssets(
     },
     staleInputs,
   };
-}
-
-/** Ownership-checked wrapper — the shape every future consumer op calls. */
-export async function composeIdentityPayload(input: {
-  userId: number;
-  modelId: number;
-  intentViewAngle: CanonicalViewAngle;
-}): Promise<ComposedIdentity> {
-  const model = await getModelById(input.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
-  if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-  const assets = await getModelAssets(input.modelId);
-  return composeFromAssets(
-    { masterPrompt: model.masterPrompt, technicalSchema: model.technicalSchema ?? undefined },
-    assets,
-    input.intentViewAngle,
-  );
 }

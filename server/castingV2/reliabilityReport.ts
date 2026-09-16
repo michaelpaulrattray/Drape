@@ -127,7 +127,7 @@ export type StoredCheck = {
   /**
    * THE SITE COULD NOT BE SEEN AT ALL — neither a pass nor a miss.
    *
-   * `renderVerification.isOccluded`. Hair over both earlobes is the specimen:
+   * `FacetCheck.occluded` from `renderVerification`. Hair over both earlobes is the specimen:
    * the reader reaches the frame, says the lobes are hidden, and the runtime
    * already declines to refuse on it (`isRefusableMiss` is false). This report
    * did not know the field existed, so such a check — read, unverified, binding
@@ -449,7 +449,7 @@ function classifyChecks(row: AttemptRow, checks: ReadonlyArray<StoredCheck>): At
  * A row written before the flag existed has no flag and keeps exactly the class
  * it has today. Nothing in the existing table moves.
  */
-export function classOfCheck(check: StoredCheck): string {
+function classOfCheck(check: StoredCheck): string {
   const named = labelOfStoredCheck(check);
   return check.absenceIsTheAsk === true ? `${named} · removal` : named;
 }
@@ -469,7 +469,7 @@ export function classOfCheck(check: StoredCheck): string {
  * ever had; it is named rather than dropped, because a check quietly grouped
  * under somebody else's class is the failure this function exists to prevent.
  */
-export function labelOfStoredCheck(check: StoredCheck): string {
+function labelOfStoredCheck(check: StoredCheck): string {
   if (check.subject) return subjectKey(check.subject);
   return check.facet ?? "unnamed";
 }
@@ -602,7 +602,7 @@ export type ReliabilityReport = {
 
 /** D-236's bar. A number with teeth, beside D-193's. */
 export const DELIVERY_RATE_BAR = 95;
-export const FALSE_PASS_BAR = 0;
+const FALSE_PASS_BAR = 0;
 
 const emptyTally = (edit: string): ClassTally => ({
   edit,

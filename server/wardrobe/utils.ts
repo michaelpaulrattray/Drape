@@ -119,7 +119,7 @@ export function sanitizeDescription(desc: string): string {
 // ── Image Conversion Helpers ───────────────────────────────────────────────
 
 /** Convert a URL or base64 data URL to a raw base64 string + mimeType */
-export async function urlToBase64(
+async function urlToBase64(
   url: string,
 ): Promise<{ data: string; mimeType: string }> {
   if (url.startsWith("data:")) {
@@ -276,7 +276,7 @@ export interface GarmentForVTO {
   sourceImageUrl?: string;  // S3 URL of the full source image
 }
 
-export function getIntraCategoryWeight(garment: GarmentForVTO): number {
+function getIntraCategoryWeight(garment: GarmentForVTO): number {
   const tags = (garment.tags || []).map((t) => t.toLowerCase());
   const desc = (garment.description || "").toLowerCase();
 

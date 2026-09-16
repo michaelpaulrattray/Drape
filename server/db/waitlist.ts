@@ -37,7 +37,7 @@ export async function addToWaitlist(
   }
 }
 
-export async function getWaitlistPosition(email: string): Promise<number> {
+async function getWaitlistPosition(email: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
 
@@ -67,22 +67,5 @@ export async function getWaitlistCount(): Promise<number> {
   } catch (error) {
     log.error({ err: error }, "[Database] Failed to get waitlist count:");
     return 0;
-  }
-}
-
-export async function checkEmailOnWaitlist(email: string): Promise<boolean> {
-  const db = await getDb();
-  if (!db) return false;
-
-  try {
-    const result = await db
-      .select()
-      .from(waitlist)
-      .where(eq(waitlist.email, email))
-      .limit(1);
-    return result.length > 0;
-  } catch (error) {
-    log.error({ err: error }, "[Database] Failed to check waitlist:");
-    return false;
   }
 }

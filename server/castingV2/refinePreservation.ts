@@ -53,7 +53,7 @@ void f;
  * them — `refinePreservation.test` proves the cover is total. A facet nobody
  * protects is a facet the model is free to redraw.
  */
-export const CATEGORIES: Category[] = Object.entries(PRESERVATION_CATEGORIES)
+const CATEGORIES: Category[] = Object.entries(PRESERVATION_CATEGORIES)
   .map(([identifier, whole]) => ({
     whole,
     siblings: Object.fromEntries(
@@ -95,7 +95,7 @@ const ALWAYS: readonly { phrase: string; unless: Facet | null }[] = [
 
 /** The facets ALWAYS protects — so the totality check sees them (`wardrobe` is
  *  covered here rather than by a category, see the note above). */
-export const ALWAYS_PROTECTED: readonly Facet[] = ALWAYS
+const ALWAYS_PROTECTED: readonly Facet[] = ALWAYS
   .map((entry) => entry.unless)
   .filter((facet): facet is Facet => facet !== null);
 
@@ -149,7 +149,7 @@ export function composePreservation(edited: ReadonlySet<Facet>): Preservation {
 }
 
 /** Every facet the table knows how to protect — for the totality test. */
-export function protectableFacets(): Facet[] {
+function protectableFacets(): Facet[] {
   return [
     ...CATEGORIES.flatMap((category) => Object.keys(category.siblings) as Facet[]),
     ...ALWAYS_PROTECTED,

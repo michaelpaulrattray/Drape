@@ -420,16 +420,3 @@ export async function markModelAssetsStale(assetIds: number[]): Promise<{ succes
   return { success: true };
 }
 
-export async function getModelAssetByView(modelId: number, viewType: string) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const result = await db
-    .select()
-    .from(modelAssets)
-    .where(eq(modelAssets.modelId, modelId))
-    .orderBy(desc(modelAssets.createdAt));
-
-  const filtered = result.filter((a) => a.viewType === viewType);
-  return filtered.length > 0 ? filtered[0] : null;
-}

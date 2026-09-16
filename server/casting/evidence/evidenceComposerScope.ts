@@ -29,7 +29,7 @@ export type EvidenceComposerRecipe =
   | { kind: "off" }
   | { kind: "ink_add"; capabilityKey: typeof INK_ADD_CAPABILITY_KEY };
 
-export class EvidenceComposerConfigurationError extends Error {
+class EvidenceComposerConfigurationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "EvidenceComposerConfigurationError";
@@ -104,7 +104,7 @@ export interface EvidenceComposerEnvironment {
   candidateWorkerEnabled: boolean;
 }
 
-export function evidenceComposerEnabledForUser(
+function evidenceComposerEnabledForUser(
   scope: EvidenceComposerScope,
   userId: number,
 ): boolean {

@@ -1016,7 +1016,7 @@ export function resetInterpreterForTests(): void {
  *   the flip, not after. A closure whose premise is "this is rare" must name
  *   the thing that would make it common.
  */
-export const NOTES_OVERFLOW = "notesOverflow";
+const NOTES_OVERFLOW = "notesOverflow";
 
 /**
  * THE REASON A BRIEF WAS READ TWICE BEFORE IT WAS WALLED — one string, so the
@@ -1034,7 +1034,7 @@ export const NOTES_OVERFLOW = "notesOverflow";
  * what let a ~30% misfire rate on a real brief go unnoticed until the founder
  * met it twice in an hour.
  */
-export const COHORT_WALL_RETRIED = "cohortWallRetried";
+const COHORT_WALL_RETRIED = "cohortWallRetried";
 
 
 /**
@@ -1509,4 +1509,3 @@ export async function interpretBrief(input: {
   }
 }
 
-export { SYSTEM_PROMPT as INTERPRETER_SYSTEM_PROMPT };

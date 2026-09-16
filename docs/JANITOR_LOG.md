@@ -1035,3 +1035,28 @@ cron had not run since `35008863398`; the readings row above records the
 measurement it produced, which landed every expectation the previous three
 rows had written.
 
+## Between runs — #108 slice 2b worked off NEXT UP, 2026-09-17 (not a patrol; the clock had not fired)
+
+The manifest executed (foreman-20260917-0335, run #275). Re-derived first on a
+fresh knip read and a fresh timeline: identical population, one cell moved.
+Then 149 `export` keywords, 19 barrel lines, 9 declarations, 28 hand rows —
+98 files, `pnpm check` green with the deletion door OPEN, the suite green but
+for the atlas-freshness arms the commit hook regenerates. Measured after:
+unused exports **193 → 102 files, 458 → 256 symbols**; server at its floor.
+Three things worth the next Janitor's minute:
+
+1. **A barrel line's "reached directly elsewhere" is a claim, and four were
+   false.** knip lists ONE of a re-export pair, and the manifest inferred the
+   declaration was reached because knip named the line and not the
+   declaration. The strict ledger door caught all four the moment the lines
+   went (`unread`) — run `pnpm check` BEFORE reading the hand rows, not after,
+   because the door is the cheapest reader of what a barrel deletion exposes.
+2. **A zero-self-use export can be a compile-time guard.** `IDENTITY_FIELD_AXES`
+   was on the DELETE table on the numbers; its `satisfies` is what stops a new
+   identity field compiling without an axis. Read the docblock of anything
+   whose declaration ends in `satisfies` or `as const` before deleting it.
+3. **knip's compact reporter can name a non-export.** `COILED_NONBINARY_STYLES`
+   sits on its unused-export list as a plain `const`. The floor for the server
+   population is therefore 16 on knip's count and 15 on the ledger's, and both
+   are right about their own question.
+

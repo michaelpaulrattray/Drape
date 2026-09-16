@@ -130,7 +130,7 @@ export const FACE_REGION = "face";
  * codebase keeps paying for is unreachable from here. **The INK mask, which IS
  * geometry, is never asked of anything but her own pixels.**
  */
-export const LICENCE_PAD_FACTOR = 2;
+const LICENCE_PAD_FACTOR = 2;
 
 /**
  * THE PADDED CANVAS, AS ARITHMETIC — so the shape of the licence read can be

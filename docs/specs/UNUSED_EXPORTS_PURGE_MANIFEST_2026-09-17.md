@@ -1,10 +1,41 @@
 # The unused-exports purge — the manifest (#108 slice 2)
 
-> **Status: WRITTEN 2026-09-17, NOT EXECUTED.** Janitor session for #108 slice 2
-> (foreman-20260917-0200, run #274), on the founder's word of 16 Sep: *"105-108
-> clear them"* — manifest-first, the un-wiring differ read on every row before
-> it goes. **This document is the reading; the deletion is the next Janitor
-> session's brief and it carries this manifest.** Nothing below is deleted yet.
+> **Status: EXECUTED 2026-09-17** (foreman-20260917-0335, run #275, Janitor
+> seat — the session after the one that wrote it). Written by the #108 slice 2
+> session (foreman-20260917-0200, run #274) on the founder's word of 16 Sep:
+> *"105-108 clear them"* — manifest-first, the un-wiring differ read on every
+> row before it goes.
+>
+> **What the executing session did, and where the code answered differently
+> from the tables below** (triage §37 carries the argument for each):
+>
+> - **Re-derived first (#909)**: a fresh knip read at `0df9fe25` and a fresh
+>   378-boundary timeline. The population was IDENTICAL to the 09-16 reading —
+>   458 symbols, the same set — and the regenerated tables differed from these
+>   by one cell (`isIpBlocked`'s ledger verdict, moved by §36a).
+> - **149 `export` keywords dropped** — the 147 DROP rows and the 2 DIED rows —
+>   by `scripts/_108-slice2b-execute-disposable.mts`, which refuses the whole
+>   run unless every row matches exactly once. **19 barrel lines removed.**
+> - **DELETE table: 5 of 6 deleted.** `IDENTITY_FIELD_AXES` is KEPT un-exported:
+>   its `satisfies Record<IdentityAxisField, …>` is a compile-time guard its own
+>   docblock names (*"adding a field to `ResolvedIdentity` without registering
+>   an axis for it stops compiling here"*) — the value is unread, the check is
+>   not (§37c).
+> - **Barrel table: the note *"the declaration lives elsewhere and is reached
+>   there"* was WRONG for four rows** — `deleteBoardItemVersions`,
+>   `getGenerationById`, `getModelAssetByView`, `updateOutfit`: the barrel line
+>   was their only reach, all four dark-born, two of them owner-less writers.
+>   The ledger's strict door surfaced them as `unread` the moment the lines
+>   went, and they are DELETED in the same PR (§37b).
+> - **READ BY HAND: 28 of 29 taken**, each read at every import of its module
+>   (a checker driven with positive controls first): every one was a re-export
+>   nothing reads through that file, and the imports that existed only to feed
+>   the re-export went with it. `geminiViews.generateRemainingViews` is a dead
+>   TWIN of `aiService`'s own — its one "self-use" was its own label string —
+>   and is deleted. The 29th, `COILED_NONBINARY_STYLES`, is a plain `const` at
+>   HEAD that knip mis-reports as an export; nothing to do (§37c).
+> - **`composeFromAssets`** lost its only production reach with the wrapper
+>   and is a HELD ledger row, blocker #29 (§37a).
 
 **The finding** (card #108, Janitor patrol #1): knip's unused-export list. Read
 here at the nightly run `35119015532` on `b411314d` (triggered by hand after

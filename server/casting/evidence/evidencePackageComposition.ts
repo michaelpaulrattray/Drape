@@ -24,7 +24,7 @@ import {
 
 export const EVIDENCE_PACKAGE_COMPOSER_RECIPE_VERSION =
   "evidence.package.sync.composer.front-upper-torso.v3" as const;
-export const EVIDENCE_PACKAGE_CROP_RECIPE_VERSION =
+const EVIDENCE_PACKAGE_CROP_RECIPE_VERSION =
   "evidence.package.crop.front-upper-torso.v1" as const;
 
 const MAX_PIXELS = 40_000_000;

@@ -50,7 +50,7 @@ import type { HairPart, RealizedAxes } from "../../shared/castingRealization";
  */
 export type HairTier = "stated" | "anchored" | "realized" | "suppressed";
 
-export const HAIR_AXES = [
+const HAIR_AXES = [
   "hairColour",
   "hairStyle",
   "hairTexture",
