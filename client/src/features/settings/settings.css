@@ -255,10 +255,22 @@
 
 .dp-set__panecol--narrow { max-width: 460px; }
 
-/* ---- stacked fields (Profile), the shape the prototype draws ---- */
-.dp-set__stackfield { display: flex; flex-direction: column; gap: var(--s-2); }
+/* ---- stacked fields (Profile), the shape the prototype draws ----
+
+   ⚠ **THE FIELD ITSELF IS THE FOUNDATION'S NOW — #841.** Profile drew its
+   own stacked field with its own sans label (`.dp-set__fieldlabel`, 11.5px
+   `--ink`) while the staff dialogs and the confirm shells drew the same device
+   with the mono one. His ruling: a field in a modal and a field on a page are
+   the same component, so there is ONE label treatment and it is the mono
+   `.dpc-modal__label`. The rows come from `LabelledField` / `.dp-sfield`;
+   this class is now only the GAP BETWEEN two of them.
+
+   It stays a settings class rather than becoming `.dp-sfield + .dp-sfield`,
+   which would reach into the staff dialogs — their fields are spaced by their
+   own body `gap` and must not move (the zero-pixel half of #841's bar). */
 .dp-set__stackfield + .dp-set__stackfield { margin-top: var(--s-6); }
-.dp-set__fieldlabel { font: 500 11.5px/1.3 var(--font-sans); color: var(--ink); }
+/* Still worn by the avatar block's constraint line, which is a note with no
+   field above it. A field's own note is `.dp-sfield__help`. */
 .dp-set__fieldnote { font: 400 10.5px/1.5 var(--font-sans); color: var(--metaStrong); }
 .dp-set__fullfield { width: 100%; }
 /* ---- avatar block ---- */

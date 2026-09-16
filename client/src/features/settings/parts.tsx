@@ -200,34 +200,6 @@ export function StatCard({
 }
 
 /**
- * A field that STACKS — label above, control beneath, note under that.
- *
- * The prototype draws every Profile field this way (`flex-direction: column;
- * gap: 6px`, the whole pane capped at 440px), and #381's four questions name it
- * explicitly: *"what STACKS vs sits inline."* A leader row puts a 220px input in
- * a `flex: none` column against a label, which is the shape for a SETTING you
- * flick; a field somebody types their own name into wants its full width and
- * its label directly above it.
- */
-export function SettingsField({
-  label,
-  note,
-  children,
-}: {
-  label: ReactNode;
-  note?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="dp-set__stackfield">
-      <span className="dp-set__fieldlabel">{label}</span>
-      {children}
-      {note ? <span className="dp-set__fieldnote">{note}</span> : null}
-    </div>
-  );
-}
-
-/**
  * The label a stub wears, and the only way to say "not built yet" in here.
  *
  * It is a `<span>`, so it can never be tabbed to or clicked — the failure mode

@@ -28,7 +28,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
-import { Button, Field, Input } from "@/foundation";
+import { Button, Field, Input, LabelledField } from "@/foundation";
 import { ProfileAvatar } from "@/features/profile/ProfileVisual";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { compressImage, AVATAR_COMPRESSION } from "@/lib/imageUtils";
@@ -36,7 +36,7 @@ import { WORKSPACE_NAME } from "@/foundation/brand";
 import { INK_DESIGN_FORMATS, inkDesignContentType } from "@shared/pictureFormats";
 import { PROFILE_DISPLAY_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
-import { SettingsField, SettingsGroup } from "../parts";
+import { SettingsGroup } from "../parts";
 
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -202,7 +202,12 @@ export function ProfileSection({
         </div>
       </div>
 
-      <SettingsField label="Display name" note="Shown on shared canvases and comments.">
+      <LabelledField
+        label="Display name"
+        htmlFor="profile-display-name"
+        helper="Shown on shared canvases and comments."
+        className="dp-set__stackfield"
+      >
         {/*
           ⚠ `Input` IS A BARE BORDERLESS <input> AND MUST SIT INSIDE `Field`.
           Caught by opening the app: rendered on its own it draws no box at all,
@@ -214,14 +219,14 @@ export function ProfileSection({
         */}
         <Field compact className="dp-set__fullfield">
           <Input
+            id="profile-display-name"
             value={displayName}
             maxLength={PROFILE_DISPLAY_NAME_MAX_LENGTH}
             onChange={(event) => setDisplayName(event.target.value)}
             onBlur={commitName}
-            aria-label="Display name"
           />
         </Field>
-      </SettingsField>
+      </LabelledField>
 
       {/*
         ⚠ **BIO IS GONE ON HIS WORD — #387 item 5, verbatim: *"remove the bio
@@ -245,19 +250,21 @@ export function ProfileSection({
         think the account has no email; disabling it with a reason answers the
         question they actually have."*
       */}
-      <SettingsField
+      <LabelledField
         label="Email"
-        note="Contact support to change the address on the account."
+        htmlFor="profile-email"
+        helper="Contact support to change the address on the account."
+        className="dp-set__stackfield"
       >
         <Field compact className="dp-set__fullfield dp-set__field--off">
           <Input
+            id="profile-email"
             value={user?.email ?? profile?.email ?? ""}
             readOnly
             disabled
-            aria-label="Email"
           />
         </Field>
-      </SettingsField>
+      </LabelledField>
 
       {/*
         ⚠ SHOWN AND DISABLED, exactly as Email is — not a naked stub chip.
@@ -269,20 +276,22 @@ export function ProfileSection({
         the box is the true one — every workspace IS this name today — so the
         field is honest, out of the tab order, and says why on hover.
       */}
-      <SettingsField
+      <LabelledField
         label="Workspace name"
-        note={`Appears in the top bar and on client shares. Every workspace is ${WORKSPACE_NAME} until workspaces exist.`}
+        htmlFor="profile-workspace-name"
+        helper={`Appears in the top bar and on client shares. Every workspace is ${WORKSPACE_NAME} until workspaces exist.`}
+        className="dp-set__stackfield"
       >
         <Field compact className="dp-set__fullfield dp-set__field--off">
           <Input
+            id="profile-workspace-name"
             value={WORKSPACE_NAME}
             readOnly
             disabled
             title="Renaming a workspace is not built yet"
-            aria-label="Workspace name"
           />
         </Field>
-      </SettingsField>
+      </LabelledField>
     </SettingsGroup>
   );
 }

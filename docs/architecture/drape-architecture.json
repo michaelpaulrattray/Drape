@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "5d41912c0905a483"
+    "sourceFingerprint": "455202e6d4f08748"
   },
   "domains": [
     {
@@ -2612,8 +2612,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/foundation/ModalField.tsx",
-      "path": "client/src/foundation/ModalField.tsx",
+      "id": "module:client/src/foundation/LabelledField.tsx",
+      "path": "client/src/foundation/LabelledField.tsx",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -19374,6 +19374,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/foundation/ConfirmDialog.tsx",
+      "to": "module:client/src/foundation/LabelledField.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/foundation/DestructiveConfirm.tsx",
       "to": "module:client/src/foundation/CastingModal.tsx",
       "kind": "imports"
@@ -19435,12 +19440,12 @@
     },
     {
       "from": "module:client/src/foundation/index.ts",
-      "to": "module:client/src/foundation/menuCount.ts",
+      "to": "module:client/src/foundation/LabelledField.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/foundation/index.ts",
-      "to": "module:client/src/foundation/ModalField.tsx",
+      "to": "module:client/src/foundation/menuCount.ts",
       "kind": "imports"
     },
     {
@@ -19479,7 +19484,7 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/foundation/ModalField.tsx",
+      "from": "module:client/src/foundation/LabelledField.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },

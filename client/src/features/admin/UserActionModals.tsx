@@ -55,7 +55,7 @@ import {
   DialogContent,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ModalField } from "@/foundation";
+import { LabelledField } from "@/foundation";
 import {
   RolePill,
   StaffDialogHeader,
@@ -92,7 +92,7 @@ export function SuspendModal({ open, onOpenChange, reason, onReasonChange, onCon
           description="This will immediately block the user from accessing their account."
         />
         <div className={STAFF_DIALOG_BODY}>
-          <ModalField label="Reason for suspension" htmlFor="user-suspend-reason">
+          <LabelledField label="Reason for suspension" htmlFor="user-suspend-reason">
             <Textarea
               id="user-suspend-reason"
               value={reason}
@@ -101,7 +101,7 @@ export function SuspendModal({ open, onOpenChange, reason, onReasonChange, onCon
               maxLength={SUSPEND_REASON_MAX_LENGTH}
               required
             />
-          </ModalField>
+          </LabelledField>
         </div>
         <DialogFooter className="shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -137,7 +137,7 @@ export function CreditModal({ open, onOpenChange, action, amount, onAmountChange
           title={action === "add" ? "Add credits" : "Deduct credits"}
         />
         <div className={STAFF_DIALOG_BODY}>
-          <ModalField label="Amount" htmlFor="user-credit-amount">
+          <LabelledField label="Amount" htmlFor="user-credit-amount">
             <Input
               id="user-credit-amount"
               type="number"
@@ -147,8 +147,8 @@ export function CreditModal({ open, onOpenChange, action, amount, onAmountChange
               min="1"
               required
             />
-          </ModalField>
-          <ModalField label="Reason" htmlFor="user-credit-reason">
+          </LabelledField>
+          <LabelledField label="Reason" htmlFor="user-credit-reason">
             <Textarea
               id="user-credit-reason"
               value={reason}
@@ -157,7 +157,7 @@ export function CreditModal({ open, onOpenChange, action, amount, onAmountChange
               maxLength={CREDIT_ADJUST_REASON_MAX_LENGTH}
               required
             />
-          </ModalField>
+          </LabelledField>
         </div>
         <DialogFooter className="shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -292,7 +292,7 @@ export function RoleChangeModal({ open, onOpenChange, targetRole, reason, onReas
               </div>
             </div>
           )}
-          <ModalField label="Reason for role change" htmlFor="user-role-reason">
+          <LabelledField label="Reason for role change" htmlFor="user-role-reason">
             <Textarea
               id="user-role-reason"
               value={reason}
@@ -303,7 +303,7 @@ export function RoleChangeModal({ open, onOpenChange, targetRole, reason, onReas
                 : "e.g., No longer needed, stepping down from moderation duties..."}
               required
             />
-          </ModalField>
+          </LabelledField>
           {/*
             ⚠ **THIS COMMENT RECORDS A REVERSAL RATHER THAN ARGUING FOR WHAT
             THE CODE NO LONGER DOES.** It used to read: *"The amber slab becomes

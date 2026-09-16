@@ -217,10 +217,14 @@
   margin-top: 4px;
 }
 
-.dpc-confirm__noteslabel {
-  font: 500 11.5px var(--font-sans);
-  color: var(--metaStrong);
-}
+/*
+  #841 — the notes block IS a `LabelledField`, so its own label declaration is
+  gone and the row keeps its 5px gap. The field row zeroes the label's
+  confirm-shell top margin and adds 5px beneath it; here the gap already does
+  that, so the margin is zeroed on both sides or the label would sit 10px off
+  its box instead of 5.
+*/
+.dpc-confirm__notes.dp-sfield > .dpc-modal__label { margin-bottom: 0; }
 
 .dpc-confirm__notesfield {
   width: 100%;

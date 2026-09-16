@@ -95,7 +95,7 @@ const GRAMMAR = read(path.resolve(HERE, "staffDialog.tsx"));
    11 promotion pass. The header and the two shell strings are still GRAMMAR;
    the row is read from where it lives now, and the arms below hold the move
    as much as the rule. */
-const FIELD = read(path.resolve(CLIENT_SRC, "foundation/ModalField.tsx"));
+const FIELD = read(path.resolve(CLIENT_SRC, "foundation/LabelledField.tsx"));
 const FOUNDATION_BARREL = read(path.resolve(CLIENT_SRC, "foundation/index.ts"));
 const MODALS_CSS = read(path.resolve(CLIENT_SRC, "foundation/modals.css"));
 
@@ -280,7 +280,7 @@ describe("brief 11 §4/§5 — one eyebrow, one field label, no asterisks", () =
       /* The three treatments the brief is collapsing. A raw <label> in one of
          these files is a fourth one being born. */
       expect(stripped, `${rel} still hand-rolls a <label>`).not.toMatch(/<label\s/);
-      expect(stripped, `${rel} uses ModalField`).toContain("<ModalField");
+      expect(stripped, `${rel} uses LabelledField`).toContain("<LabelledField");
     }
   });
 
@@ -291,13 +291,13 @@ describe("brief 11 §4/§5 — one eyebrow, one field label, no asterisks", () =
      declares no field of its own any more. A second `StaffField` born here is
      the drift the pass exists to prevent, and it reddens on the day. */
   it("the field row is the foundation's, taken from the barrel by every staff dialog", () => {
-    expect(code(FIELD)).toMatch(/export function ModalField\(/);
-    expect(code(FOUNDATION_BARREL)).toMatch(/export \{ ModalField \} from "\.\/ModalField"/);
-    expect(code(GRAMMAR), "staffDialog.tsx grew a field row back").not.toMatch(/dp-sfield|StaffField|ModalField/);
+    expect(code(FIELD)).toMatch(/export function LabelledField\(/);
+    expect(code(FOUNDATION_BARREL)).toMatch(/export \{ LabelledField \} from "\.\/LabelledField"/);
+    expect(code(GRAMMAR), "staffDialog.tsx grew a field row back").not.toMatch(/dp-sfield|StaffField|LabelledField/);
     for (const { rel, src } of DIALOG_FILES) {
       const stripped = code(src);
-      const fromFoundation = /import\s*\{[^}]*\bModalField\b[^}]*\}\s*from\s*"@\/foundation"/.test(stripped);
-      expect(fromFoundation, `${rel} imports ModalField from somewhere other than @/foundation`).toBe(true);
+      const fromFoundation = /import\s*\{[^}]*\bLabelledField\b[^}]*\}\s*from\s*"@\/foundation"/.test(stripped);
+      expect(fromFoundation, `${rel} imports LabelledField from somewhere other than @/foundation`).toBe(true);
     }
   });
 
@@ -338,7 +338,7 @@ describe("brief 11 §4/§5 — one eyebrow, one field label, no asterisks", () =
      template literal at its first `${…}`, so `(max 5)` here was never seen and
      the arm above was narrower than its sentence. */
   it("the label reader carries a rule that sits after an interpolation", () => {
-    const fixture = "<ModalField label={`Attachments (${n}/${MAX}) (max 5)`} />";
+    const fixture = "<LabelledField label={`Attachments (${n}/${MAX}) (max 5)`} />";
     expect(labelsIn(fixture)).toEqual(["Attachments (${n}/${MAX}) (max 5)"]);
     expect(labelsIn(fixture)[0]).toMatch(/\(min\s|\(max\s/);
     // The other three attribute shapes the population writes still read.
@@ -491,5 +491,155 @@ describe("brief 11 §8 — what the PR was told not to do", () => {
     );
     expect(offenders, `Title Case labels: ${offenders.join(", ")} — brief 05 asks for sentence case`)
       .toEqual([]);
+  });
+});
+
+/**
+ * #841 — THE FIELD LABEL IS ONE TREATMENT, PRODUCT-WIDE.
+ *
+ * Brief 11 §5 collapsed three label treatments inside the staff dialogs; the
+ * section 11 promotion pass (#481) moved the row to the foundation and LOGGED
+ * the two it could not decide; his ruling on #841 decided them — *a field in a
+ * modal and a field on a page are the same component*, so one treatment wins
+ * and it is the mono `.dpc-modal__label`.
+ *
+ * ⚠ **THE ARM IS OVER `<label>` ELEMENTS, NOT OVER CLASS NAMES CONTAINING
+ * "label", AND THAT IS THE WHOLE DIFFERENCE BETWEEN A RULE AND A NUISANCE.**
+ * Measured while writing this: 22 CSS blocks in `client/src` declare a font on
+ * a selector with `label` in it, and 21 of them are other devices entirely — a
+ * KPI's label, a rail's label, a leader row's label, a skeleton's. The thing
+ * this card is about is narrower and has an HTML element of its own: *the name
+ * of a slot somebody types into.* So the population is every `<label>` in the
+ * client, and the rule is what it wears.
+ *
+ * ⚠ **THE EXCEPTIONS ARE ENUMERATED WITH REASONS AND ARE EXACT.** Three are not
+ * field labels at all (a checkbox row, a file-upload button, a search wrapper);
+ * three are field labels on lanes this fold deliberately did not enter, and
+ * they are FILED rather than quietly tolerated. An unlisted `<label>` reddens
+ * this arm the day it lands — including one that goes back to hand-rolling its
+ * own type, which is exactly how the third treatment was born.
+ */
+describe("card 841 — one field-label treatment across the whole client", () => {
+  const CLIENT_TSX = tsxUnder(CLIENT_SRC).filter((f) => !f.includes(".test."));
+
+  /** Every `<label …>` opening tag, with the className it carries. */
+  const LABEL_TAG = /<label\b([^>]*)>/g;
+  type LabelSite = { rel: string; classes: string };
+  const labelSites: LabelSite[] = CLIENT_TSX.flatMap((file) => {
+    const rel = path.relative(CLIENT_SRC, file).split(path.sep).join("/");
+    return [...code(read(file)).matchAll(LABEL_TAG)].map((m) => ({
+      rel,
+      classes: /className="([^"]*)"/.exec(m[1])?.[1] ?? "",
+    }));
+  });
+
+  /**
+   * NOT a field label — a different device that happens to be a `<label>`.
+   * Each is `file :: className`, exactly as the census reads it.
+   */
+  const NOT_A_FIELD_LABEL = new Map<string, string>([
+    [
+      "features/admin/overview/BannerManagement.tsx :: dp-ov__check",
+      "a checkbox ROW — the label wraps the box and its sentence; there is no named slot above a control",
+    ],
+    [
+      "features/settings/sections/ProfileSection.tsx :: dp-btn dp-btn--secondary dp-btn--small",
+      "a <label> used as the upload BUTTON — the only way to style a file input; it is a control, not the name of one",
+    ],
+    [
+      "features/lobby/SearchField.tsx :: flex items-center gap-2",
+      "the search input's wrapper — an icon and the input, and no label text at all",
+    ],
+  ]);
+
+  /**
+   * A field label this fold did not reach, each on a lane of its own, each
+   * filed rather than tolerated. Deleting a line here without folding the
+   * label is the drift this map exists to make visible.
+   */
+  const FILED_ELSEWHERE = new Map<string, string>([
+    [
+      "pages/AdminInviteCodes.tsx :: dp-stack",
+      "the invite form wraps its control in the <label> and puts the name in a `.dp-chrome` span — a different ROW, filed",
+    ],
+    [
+      "features/home/WaitlistModal.tsx :: block text-xs font-medium text-white/70 mb-2.5 font-body",
+      "the marketing lane's own fixed-dark type system, not the app's tokens — filed",
+    ],
+    [
+      "features/studio/components/CastModelModal.tsx :: block text-canvas-xs font-medium text-canvas-ink-soft mb-1.5",
+      "the LEGACY studio, which dies whole with the retirement (card 29) — folding a label into it would be work thrown away",
+    ],
+  ]);
+
+  it("the census finds the labels — positive control before any absence arm", () => {
+    expect(labelSites.length, "the <label> reader found nothing — the shape moved").toBeGreaterThan(10);
+    const house = labelSites.filter((s) => s.classes.includes("dpc-modal__label"));
+    /* The labelled field itself, and the three confirm shells that wear the
+       class bare. A drop here means a surface stopped using the one label. */
+    expect(house.length, "the house field label lost a site").toBeGreaterThanOrEqual(4);
+    expect(house.map((s) => s.rel)).toContain("foundation/LabelledField.tsx");
+  });
+
+  it("every field label in the client is the house one, or an enumerated exception", () => {
+    const offenders = labelSites
+      .map((site) => ({ ...site, key: `${site.rel} :: ${site.classes}` }))
+      .filter(
+        (site) =>
+          !site.classes.includes("dpc-modal__label") &&
+          !NOT_A_FIELD_LABEL.has(site.key) &&
+          !FILED_ELSEWHERE.has(site.key),
+      );
+    expect(
+      offenders.map((o) => o.key),
+      "a <label> outside the one treatment — fold it onto LabelledField, or add it to one of the two maps above WITH ITS REASON",
+    ).toEqual([]);
+  });
+
+  it("every enumerated exception still exists — a stale excuse is deleted, not kept", () => {
+    const keys = new Set(labelSites.map((s) => `${s.rel} :: ${s.classes}`));
+    for (const key of [...NOT_A_FIELD_LABEL.keys(), ...FILED_ELSEWHERE.keys()]) {
+      expect(keys.has(key), `${key} is excepted and no longer exists — delete the line`).toBe(true);
+    }
+  });
+
+  it("the field label's type is declared in exactly one place", () => {
+    /* The two second declarations his ruling removed. Both were the same three
+       rows with a different label: Profile's sans 11.5px `--ink`, and the
+       confirm dialog's sans 11.5px `--metaStrong`. */
+    const CLIENT_CSS = (function walk(dir: string): string[] {
+      const out: string[] = [];
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) out.push(...walk(full));
+        else if (entry.name.endsWith(".css")) out.push(full);
+      }
+      return out;
+    })(CLIENT_SRC);
+    const allCss = CLIENT_CSS.map(read).join("\n");
+    expect(allCss, "`.dp-set__fieldlabel` is back — a second field-label type").not.toMatch(
+      /\.dp-set__fieldlabel\s*\{/,
+    );
+    expect(allCss, "`.dpc-confirm__noteslabel` is back — a second field-label type").not.toMatch(
+      /\.dpc-confirm__noteslabel\s*\{/,
+    );
+    /* And the one that remains is declared once, with a font, in modals.css. */
+    const declarations = [...allCss.matchAll(/(^|\})\s*\.dpc-modal__label\s*\{([^}]*)\}/g)].filter(
+      (m) => /font\s*:/.test(m[2]),
+    );
+    expect(declarations.length, "the one field label is declared more than once").toBe(1);
+    expect(declarations[0][2]).toMatch(/var\(--font-mono\)/);
+  });
+
+  it("no consumer re-declares the label's type on top of the shared class", () => {
+    /* The failure that does not need a new class: a call site that keeps
+       `.dpc-modal__label` and paints over it. Both real specimens did exactly
+       this before brief 11 — `text-sm text-muted-foreground` beside the class. */
+    const painted = labelSites.filter(
+      (site) =>
+        site.classes.includes("dpc-modal__label") &&
+        /\btext-(xs|sm|base|lg|\[)|\bfont-(medium|semibold|bold|body)\b/.test(site.classes),
+    );
+    expect(painted.map((p) => `${p.rel} :: ${p.classes}`), "a label wears the house class AND its own type").toEqual([]);
   });
 });

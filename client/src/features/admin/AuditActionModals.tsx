@@ -46,7 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ModalField } from "@/foundation";
+import { LabelledField } from "@/foundation";
 import {
   StaffDialogHeader,
   STAFF_DIALOG_BODY,
@@ -100,7 +100,7 @@ export function SuspendUserModal({
           {/* The uppercase field label is brief 07's one uppercase device, and
               brief 11 §5 settles which of the three treatments it is: the mono
               one, through `.dpc-modal__label`. */}
-          <ModalField label="Suspension reason" htmlFor="audit-suspend-reason">
+          <LabelledField label="Suspension reason" htmlFor="audit-suspend-reason">
             <Input
               id="audit-suspend-reason"
               value={reason}
@@ -109,7 +109,7 @@ export function SuspendUserModal({
               maxLength={SUSPEND_REASON_MAX_LENGTH}
               required
             />
-          </ModalField>
+          </LabelledField>
         </div>
         <DialogFooter className="shrink-0">
           <Button
@@ -175,7 +175,7 @@ export function BlockIpModal({
           description="This will block all requests from this IP address. Blocked IPs cannot access any part of the platform."
         />
         <div className={STAFF_DIALOG_BODY}>
-          <ModalField label="IP address" htmlFor="audit-block-ip">
+          <LabelledField label="IP address" htmlFor="audit-block-ip">
             <Input
               id="audit-block-ip"
               value={ipAddress}
@@ -184,8 +184,8 @@ export function BlockIpModal({
               className="font-mono"
               required
             />
-          </ModalField>
-          <ModalField label="Reason" htmlFor="audit-block-reason">
+          </LabelledField>
+          <LabelledField label="Reason" htmlFor="audit-block-reason">
             <Input
               id="audit-block-reason"
               value={reason}
@@ -194,14 +194,14 @@ export function BlockIpModal({
               maxLength={IP_BLOCK_REASON_MAX_LENGTH}
               required
             />
-          </ModalField>
+          </LabelledField>
           {/*
             ⚠ Five options with a `Permanent` outlier, so this stays a select.
             Brief 11 §6 draws the line at four: *"Nine is a list."* The one
             control that becomes segmented in this brief is the request form's
             Priority.
           */}
-          <ModalField label="Duration">
+          <LabelledField label="Duration">
             <Select value={duration} onValueChange={setDuration}>
               <SelectTrigger>
                 <SelectValue />
@@ -221,7 +221,7 @@ export function BlockIpModal({
                 <SelectItem value="permanent">Permanent</SelectItem>
               </SelectContent>
             </Select>
-          </ModalField>
+          </LabelledField>
         </div>
         <DialogFooter className="shrink-0">
           <Button

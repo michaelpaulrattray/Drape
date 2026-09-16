@@ -33,7 +33,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { ModalField } from "@/foundation";
+import { LabelledField } from "@/foundation";
 import {
   StaffDialogHeader,
   STAFF_DIALOG_BODY,
@@ -118,7 +118,7 @@ export function ReviewModal({
         />
 
         <div className={STAFF_DIALOG_BODY}>
-          <ModalField label="Notes" htmlFor="review-notes" helper="Optional.">
+          <LabelledField label="Notes" htmlFor="review-notes" helper="Optional.">
             <Textarea
               id="review-notes"
               value={notes}
@@ -126,7 +126,7 @@ export function ReviewModal({
               placeholder={notesPlaceholder}
               className="min-h-[80px]"
             />
-          </ModalField>
+          </LabelledField>
         </div>
 
         <DialogFooter className="shrink-0 gap-2">
