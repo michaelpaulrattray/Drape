@@ -6,7 +6,7 @@ import {
   REFERRAL_LIFETIME_CAP,
   AUDIT_ACTIONS,
 } from "../../drizzle/schema";
-import { addCredits } from "./credits";
+import { addCredits, isDuplicateCreditReferenceError } from "./credits";
 import { getDb } from "./connection";
 import { logAuditEvent } from "../auditLog";
 import crypto from "crypto";
@@ -142,6 +142,31 @@ export async function getReferralCreditsEarned(userId: number): Promise<number> 
  * Check if referrer IP was used by referred user within 24 hours.
  * Soft flag — does NOT block, just marks for moderator review.
  */
+/**
+ * The one answer to a second claim, whichever guard caught it — the read
+ * before the insert, or `uq_referrals_referred_user` at the insert itself.
+ * Both write the same `REFERRAL_MULTI_CLAIM_BLOCKED` row, so the moderator's
+ * audit view does not depend on which tab lost the race. `existingReferralId`
+ * is null on the index road: the row that won is not re-read to name it.
+ */
+async function alreadyUsed(
+  referredUserId: number,
+  referralCode: string,
+  referredIp: string | undefined,
+  existingReferralId: number | null,
+): Promise<{ success: false; error: string }> {
+  await logAuditEvent({
+    userId: referredUserId,
+    action: AUDIT_ACTIONS.REFERRAL_MULTI_CLAIM_BLOCKED,
+    resourceType: "referral",
+    resourceId: referralCode,
+    metadata: { attemptedCode: referralCode, existingReferralId },
+    severity: "warning",
+    ipAddress: referredIp,
+  });
+  return { success: false, error: "You have already used a referral code" };
+}
+
 async function checkSameIpWithin24h(
   referrerId: number,
   referredIp: string | undefined
@@ -191,7 +216,8 @@ export async function claimReferral(
     return { success: false, error: "Cannot use your own referral code" };
   }
 
-  // Check if this user has EVER been referred (one-time only)
+  // Check if this user has EVER been referred (one-time only). This read is
+  // the friendly answer, not the guard — the guard is the unique index below.
   const [existingClaim] = await db
     .select({ id: referrals.id })
     .from(referrals)
@@ -199,30 +225,38 @@ export async function claimReferral(
     .limit(1);
 
   if (existingClaim) {
-    await logAuditEvent({
-      userId: referredUserId,
-      action: AUDIT_ACTIONS.REFERRAL_MULTI_CLAIM_BLOCKED,
-      resourceType: "referral",
-      resourceId: referralCode,
-      metadata: { attemptedCode: referralCode, existingReferralId: existingClaim.id },
-      severity: "warning",
-      ipAddress: referredIp,
-    });
-    return { success: false, error: "You have already used a referral code" };
+    return alreadyUsed(referredUserId, referralCode, referredIp, existingClaim.id);
   }
 
   // Soft IP flag: check if referred IP matches referrer IP within 24hrs
   const isSameIp = await checkSameIpWithin24h(referrer.id, referredIp);
 
-  // Create the referral record
-  await db.insert(referrals).values({
-    referrerUserId: referrer.id,
-    referredUserId: referredUserId,
-    referredEmail: null,
-    status: "signed_up",
-    referredIp: referredIp || null,
-    sameIpFlag: isSameIp,
-  });
+  // Create the referral record.
+  //
+  // ONE CLAIM PER USER IS ENFORCED BY `uq_referrals_referred_user`, IN THIS
+  // STATEMENT — not by the SELECT above (invariant 1: a check-then-write keyed
+  // on id alone is a race). The race became reachable the day #1010 mounted
+  // `useReferralClaim` at the app root: the claim fires automatically on login
+  // in EVERY open tab, so two tabs signing in together both pass the read and
+  // both insert — and `completeReferral` pays the welcome bonus once PER ROW,
+  // `creditReferrerOnPaidAction` credits the referrer once per row. The index
+  // makes the second insert fail; this catch turns that failure into the same
+  // answer the read gives, so the customer sees one outcome whichever tab won.
+  try {
+    await db.insert(referrals).values({
+      referrerUserId: referrer.id,
+      referredUserId: referredUserId,
+      referredEmail: null,
+      status: "signed_up",
+      referredIp: referredIp || null,
+      sameIpFlag: isSameIp,
+    });
+  } catch (error) {
+    if (isDuplicateCreditReferenceError(error)) {
+      return alreadyUsed(referredUserId, referralCode, referredIp, null);
+    }
+    throw error;
+  }
 
   // Update the referred user's record
   await db

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a509d58bbb867192"
+    "sourceFingerprint": "36cc0b5c60e32e2a"
   },
   "domains": [
     {
@@ -8340,7 +8340,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/referral.ts"
     },
     {
@@ -12588,6 +12588,10 @@
       "path": "server/db/referenceReadDemand.test.ts"
     },
     {
+      "id": "test:server/db/referralClaimRace.test.ts",
+      "path": "server/db/referralClaimRace.test.ts"
+    },
+    {
       "id": "test:server/db/storageCleanupHold.test.ts",
       "path": "server/db/storageCleanupHold.test.ts"
     },
@@ -13214,6 +13218,10 @@
     {
       "id": "test:server/referral.test.ts",
       "path": "server/referral.test.ts"
+    },
+    {
+      "id": "test:server/referralClaimRateLimit.test.ts",
+      "path": "server/referralClaimRateLimit.test.ts"
     },
     {
       "id": "test:server/referralCodeFormat.test.ts",

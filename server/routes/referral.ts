@@ -189,6 +189,20 @@ export const referralRouter = router({
     // publicInputStrictness.test.ts, positive control first.
     .input(z.object({ referralCode: z.string().min(1).max(20) }).strict())
     .mutation(async ({ ctx, input }) => {
+      // The SAME bucket as `redeem` above, on purpose: both procedures are one
+      // road (`redeemReferralCode` is `claimReferral` plus an audit row), so a
+      // per-procedure bucket would hand a code-guesser ten tries an hour
+      // instead of five. Until #1010 re-mounted the hook this procedure had no
+      // caller, so its missing limiter cost nothing; this is the commit that
+      // opens it to live traffic, and the limiter lands in the same one.
+      const rateCheck = checkRateLimit(`${ctx.user.id}`, REDEEM_RATE);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Too many attempts. Try again in ${Math.ceil(rateCheck.resetIn / 60000)} minutes.`,
+        });
+      }
+
       const ip = getClientIp(ctx.req);
       const result = await claimReferral(ctx.user.id, input.referralCode, ip);
       return { claimed: result.success };
