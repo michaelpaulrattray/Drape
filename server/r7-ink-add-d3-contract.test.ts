@@ -36,7 +36,7 @@ describe("R7-7D D3 pure composer contract", () => {
       /from\s+["'][^"']*(?:routes|db\/|storage|credits|snapshot|atomicCredits)[^"']*["']/i,
     );
     expect(sources).not.toMatch(
-      /verifyViewIdentity|deductPoints|recordRefund|storagePut|storageDelete|getDb|protectedProcedure|publicProcedure/,
+      /verifyViewIdentity|deductPoints|deductCredits|withAtomicCredits|recordRefund|storagePut|storageDelete|getDb|protectedProcedure|publicProcedure/,
     );
   });
 

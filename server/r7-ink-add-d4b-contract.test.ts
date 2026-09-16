@@ -54,7 +54,7 @@ describe("R7-7D D4B candidate generation contract", () => {
       "pointsCost: input.attemptNumber === 1 ? input.priceCredits : 0",
     );
     expect(db).toContain("resultUrl: null");
-    expect(db).not.toMatch(/deductPoints|refundPoints|generateContent|storagePut/);
+    expect(db).not.toMatch(/deductPoints|deductCredits|withAtomicCredits|refundPoints|recordRefund|addCredits|generateContent|storagePut/);
   });
 
   it("replays only an exact server-owned intent claim", async () => {

@@ -47,7 +47,7 @@ describe("R7-7C2 evidence runtime contract", () => {
     ].map((file) => readFile(file, "utf8")));
     const combined = evidenceSources.join("\n");
     expect(combined).not.toMatch(
-      /from ["'][^"']*(?:routes|routers|storage)["']|storagePut|R2_|Gemini|deductPoints|creditTransactions|generation_operations/i,
+      /from ["'][^"']*(?:routes|routers|storage)["']|storagePut|R2_|Gemini|deductPoints|deductCredits|withAtomicCredits|creditTransactions|generation_operations/i,
     );
     expect(combined).not.toMatch(/process\.env|setInterval|setTimeout|createModuleLogger/);
   });

@@ -36,7 +36,7 @@ describe("R7-7D D4C atomic Ink acceptance contract", () => {
     );
     expect(service).toContain("captureEvidenceComposerEnabled");
     expect(service).toContain('plannedCredits: 0');
-    expect(service).not.toMatch(/withAtomicCredits|deductPoints|generateContent|withImageQueue/);
+    expect(service).not.toMatch(/withAtomicCredits|deductPoints|deductCredits|generateContent|withImageQueue/);
   });
 
   it("replays only the exact candidate claim before storage or canon work", async () => {

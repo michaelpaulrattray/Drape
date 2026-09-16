@@ -125,6 +125,6 @@ describe("bounded evidence identity-revision repair", () => {
     );
     expect(source).toContain("updatedSlots");
     expect(source).not.toContain('eq(modelPackageSnapshotSlots.viewAngle, "frontClose")');
-    expect(script).not.toMatch(/--all|storagePut|deductPoints|generateContent/);
+    expect(script).not.toMatch(/--all|storagePut|deductPoints|deductCredits|withAtomicCredits|generateContent/);
   });
 });

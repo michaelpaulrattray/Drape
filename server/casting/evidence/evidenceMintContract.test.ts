@@ -37,7 +37,7 @@ describe("R7-7E3 progressive evidence mint contract", () => {
       "utf8",
     );
     expect(source).not.toMatch(
-      /\b(?:deductPoints|deductCredits|addCredits|storagePut|storageDelete|generateCastingImage|generateFullBody|generateRemainingViews|generatePackageSlotCandidate)\b/,
+      /\b(?:deductPoints|withAtomicCredits|deductCredits|addCredits|storagePut|storageDelete|generateCastingImage|generateFullBody|generateRemainingViews|generatePackageSlotCandidate)\b/,
     );
     expect(source).toContain("withUniqueCastPublicId");
     expect(source).toContain("commitEvidenceMintSnapshot");

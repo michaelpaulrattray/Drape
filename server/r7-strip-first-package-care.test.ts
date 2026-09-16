@@ -107,6 +107,6 @@ describe('R7-4A strip-first package care', () => {
     expect(route).toContain('angles: input.angles,');
     expect(route).toContain('readMode,');
     expect(executor).toContain('// Structural refusals before any money moves');
-    expect(executor).toContain('await deductPoints(');
+    expect(executor).toMatch(/await deduct(?:Points|Credits)\(/);
   });
 });

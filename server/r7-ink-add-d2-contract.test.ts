@@ -70,7 +70,7 @@ describe("R7-7D D2 inert durability contract", () => {
     expect(fork).toContain('status: "draft"');
     expect(fork).toContain("finalizeClaimedGenerationOperationSuccessIn");
     expect(fork).toContain("pointsCost: 0");
-    expect(fork).not.toMatch(/deductPoints|recordRefund|generateCastingImage/);
+    expect(fork).not.toMatch(/deductPoints|deductCredits|withAtomicCredits|recordRefund|generateCastingImage/);
     expect(fork).not.toMatch(/from\s+["'][^"']*(?:credits|gemini|provider)[^"']*["']/i);
     const cleanup = read("server/db/storageCleanup.ts");
     expect(cleanup).toContain("inFlightOperationFence()");

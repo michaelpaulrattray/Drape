@@ -155,7 +155,7 @@ describe("R7-7C4 evidence capability", () => {
     expect(service).toContain('kind: "evidence_plate_discard"');
     expect(service).toContain("resumeClaimedEvidence: true");
     expect(service).not.toMatch(
-      /markGenerationOperationRunning|startOperationHeartbeat|deductPoints|Gemini|storagePut|modelAssets/,
+      /markGenerationOperationRunning|startOperationHeartbeat|deductPoints|deductCredits|withAtomicCredits|Gemini|storagePut|modelAssets/,
     );
 
     const persistence = await readFile(
@@ -165,6 +165,6 @@ describe("R7-7C4 evidence capability", () => {
     expect(persistence).toContain("finalizeClaimedGenerationOperationSuccessIn");
     expect(persistence).toContain("createStorageCleanupManifestIn");
     expect(persistence).toContain("modelEvidenceCrops");
-    expect(persistence).not.toMatch(/deleteExact|storageDelete|deductPoints|Gemini|modelAssets/);
+    expect(persistence).not.toMatch(/deleteExact|storageDelete|deductPoints|deductCredits|withAtomicCredits|Gemini|modelAssets/);
   });
 });
