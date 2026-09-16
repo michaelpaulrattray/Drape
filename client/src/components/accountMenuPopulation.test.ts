@@ -92,9 +92,6 @@ const ALLOWED: Record<string, string> = {
     "FROZEN, not fixed and not deleted — his ruling on #374. One host, " +
     "pages/DrapeStudio.tsx, the admin-sealed legacy studio (#364). Expires " +
     "with that page at N8; delete this entry in the same commit.",
-  "components/Navigation.tsx":
-    "ORPHANED. The retired marketing nav — no file in client/src imports it. " +
-    "Not reachable by anyone, and not this section's to remove.",
   "features/settings/SettingsModal.tsx":
     "NOT A MENU. A sign-out at the foot of the settings nav (#267), mounted " +
     "once by AccountSurfaces. Listed because the matcher is deliberately the " +

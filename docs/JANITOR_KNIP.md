@@ -49,9 +49,18 @@ Controls taken 2026-08-26 on the committed config (working law 2):
 - `client/src/components/ui/*` are shadcn primitives added as a set; 40 of
   them were unused and held 21 unused `@radix-ui/*` dependencies — **deleted
   2026-09-16 under #105** (`docs/specs/SHADCN_PRIMITIVES_PURGE_MANIFEST_2026-09-16.md`;
-  the population was 41 by then, and `dropdown-menu.tsx` is held for #106, so
-  it reads as unused until that card lands and is not a finding). A vendored
-  library is still code, and a re-vendored primitive is reported on purpose.
+  the population was 41 by then; `dropdown-menu.tsx` was held for #106 and
+  went with it the same day, `docs/specs/NON_SHADCN_ORPHANS_PURGE_MANIFEST_2026-09-16.md`).
+  The directory now holds only primitives with importers. A vendored library
+  is still code, and a re-vendored primitive is reported on purpose.
+- **An unused file can be a DEAD FEATURE rather than litter, and only the
+  history read tells them apart** (#106, 2026-09-16): `useReferralClaim.ts`
+  read as unused on all three readers and `git log -S` on its import string
+  named the commit that orphaned it — a page deletion that took the client
+  half of the referral link with it, while Settings kept handing the link out
+  (#1010). A row whose last importer was deleted ON PURPOSE is litter; a row
+  whose last importer was deleted for some OTHER reason is the un-wiring
+  differ's finding, and it is held, not purged.
 - **A `scripts/lib/` module whose only importer is a `*-disposable.*` reads
   as unused** (`scripts/lib/sabotage.mts`, imported only by
   `prove-sabotage-survives-death-disposable.mts`) — a consequence of the
@@ -69,6 +78,7 @@ Controls taken 2026-08-26 on the committed config (working law 2):
 | 2026-09-07 | 69 | 1 | — | 191 | 129 | 19 | Janitor run 4, nightly `34153675089` at `18547497`, compact. ✅ **The +18 climb STOPPED: files flat at 69 across three days**, and duplicates flat at 19 — so run 3's one watch-item is answered, and answered the right way. Exports 186 → 191 and types 122 → 129 are the ordinary drift of a week's merges. Nothing proposed; recorded on #108. |
 | 2026-09-11 | 69 | 1 | — | 194 | 132 | 19 | Janitor run 5, nightly `34631395445` at `ac7c2cd7`, compact. **Files flat at 69 for a week** (four nightlies: 09-08, 09-09, 09-10, 09-11 all `success`); duplicates flat at 19. Exports 191 → 194, types 129 → 132 — single-digit drift again. Nothing proposed. |
 | 2026-09-15 | 69 | 1 | — | 200 | 134 | 19 | Read by #105's session (not a patrol), nightly `35008863398` at `4f3c49da`, compact. **The reading that #105 was executed against**: 41 of the 69 files were `components/ui/*`. ✅ **40 of those and 33 of the 34 packages in the one `package.json` line are DELETED in PR #1008 (`ed7b0032`)** — manifest `docs/specs/SHADCN_PRIMITIVES_PURGE_MANIFEST_2026-09-16.md`. Expected next nightly: files 69 → **29**, and the deps line reduced to `@radix-ui/react-dropdown-menu` alone (held for #106). A next reading that does NOT show that drop is the finding. |
+| 2026-09-16 | (29 expected) | (1) | — | — | — | — | Read by #106's session (not a patrol), against the same `35008863398` reading — no nightly has run since #1008 merged, so the 29 is #105's expectation, not a measurement. **9 more files and the last unused package DELETED in #106's PR** — manifest `docs/specs/NON_SHADCN_ORPHANS_PURGE_MANIFEST_2026-09-16.md`. Expected next nightly: files **20** (the two that remain unused are `useReferralClaim.ts`, held for bug #1010, and `features/casting/index.ts`, #29's), deps **0**. ⚠ **One of #106's eleven rows was a dead FEATURE, not litter** — `useReferralClaim.ts`, orphaned by a page deletion in April while Settings kept issuing the `?ref=` link it served; held and carded (#1010). A next reading that shows more than those two unused files is the finding. |
 
 ⚠ **THE COLUMNS ABOVE ARE NOT ALL THE SAME KIND OF NUMBER, AND ONE ROW MIXED
 TWO REPORTERS.** Measured Janitor run 2: `pnpm janitor:knip` passes
