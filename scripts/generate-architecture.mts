@@ -78,7 +78,6 @@ const LIFECYCLE: Array<{ prefix: string; status: "active" | "compat" | "retire" 
   { prefix: "client/src/features/lobby/BoardsView.tsx", status: "retire" },
   { prefix: "client/src/features/casting/", status: "retire" },
   { prefix: "client/src/features/studio/", status: "retire" },
-  { prefix: "client/src/components/ui/sidebar.tsx", status: "delete" },
   { prefix: "client/src/components/Navigation.tsx", status: "delete" },
   { prefix: "client/src/styles/canvas-tokens.css", status: "retire" },
   { prefix: "server/casting/evidence/", status: "retire" },
