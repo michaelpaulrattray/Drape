@@ -11,7 +11,7 @@
  */
 import { create } from "zustand";
 
-export interface OptimisticFill {
+interface OptimisticFill {
   imageUrl: string;
   label: string | null;
   modelId: number;

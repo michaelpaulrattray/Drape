@@ -9,7 +9,7 @@ import { NodeResizer, type NodeProps, type Node } from '@xyflow/react';
 
 /* ── Types ────────────────────────────────────────────────── */
 
-export type FrameNodeData = {
+type FrameNodeData = {
   itemId: number;
   label: string | null;
   onRename?: (itemId: number, label: string) => void;

@@ -42,7 +42,7 @@
  * failure this whole campaign exists to stop.
  */
 
-export type Tier = "A" | "B" | "C";
+type Tier = "A" | "B" | "C";
 
 export type Ask = {
   /** The class the delivery-rate table cuts by. */

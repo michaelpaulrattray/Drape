@@ -53,7 +53,7 @@ const EVIDENCE_PACKAGE_REFUSALS = [
   "angle_not_supported",
   "projection_not_calibrated",
 ] as const;
-export type EvidencePackageRefusal = typeof EVIDENCE_PACKAGE_REFUSALS[number];
+type EvidencePackageRefusal = typeof EVIDENCE_PACKAGE_REFUSALS[number];
 
 export interface EvidencePackageSlotState {
   angle: CanonicalViewAngle;
@@ -178,14 +178,14 @@ export function assessSupportedInkFeatureGraph(
   return { selection, feature, version, plate };
 }
 
-export type EvidencePackageSlotStatus =
+type EvidencePackageSlotStatus =
   | "current"
   | "stale"
   | "failed"
   | "missing"
   | "attention";
 
-export interface EvidencePackagePlanSlot {
+interface EvidencePackagePlanSlot {
   angle: CanonicalViewAngle;
   label: string;
   status: EvidencePackageSlotStatus;

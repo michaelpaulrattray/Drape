@@ -51,7 +51,7 @@ type Arm = {
   mayHold?: ExistentialSubject[];
 };
 
-export type Control = {
+type Control = {
   law: LawKey;
   /** What the offender does wrong, in one line — printed on a miss. */
   breaks: string;

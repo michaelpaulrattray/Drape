@@ -15,9 +15,9 @@ import type { NormalizedInkZone } from "./composer/inkZoneGuide";
 export const EVIDENCE_PACKAGE_GUIDE_RECIPE_VERSION =
   "evidence.package.guide.front-upper-torso.v3" as const;
 
-export type ExistingSelectionImpact = "affected" | "unaffected";
-export type MissingViewAuthority = "compose" | "not_supported";
-export type EvidenceVisibilityDirective =
+type ExistingSelectionImpact = "affected" | "unaffected";
+type MissingViewAuthority = "compose" | "not_supported";
+type EvidenceVisibilityDirective =
   | "authoring_truth"
   | "outside_frame_omit"
   | "hidden_omit"

@@ -687,7 +687,7 @@ export type RefineRefusal =
  * It rides the parse because the interpreter knows the verdict and the SERVICE
  * knows the customer: the count has to be written where both are true.
  */
-export type InventionDoorOutcome = "rescued" | "upheld";
+type InventionDoorOutcome = "rescued" | "upheld";
 
 /**
  * WHICH WALL THE DOOR WAS STANDING AT (fable-635 §2c).
@@ -705,7 +705,7 @@ export type InventionDoorOutcome = "rescued" | "upheld";
  * A closed pair rather than the whole `reason` union, so it can only ever mean
  * "a door ran here" and never drift into a second copy of the refusal reason.
  */
-export type DoorAt = "wall_unfileable" | "wall_content" | "wall_unbacked";
+type DoorAt = "wall_unfileable" | "wall_content" | "wall_unbacked";
 
 export type RefineParse =
   | {

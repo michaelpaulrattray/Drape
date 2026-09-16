@@ -95,7 +95,7 @@ import type { RegionReader } from "./maskedRefine";
 
 const log = createModuleLogger("castingV2/inkReferenceCutter");
 
-export type InkCutRefusalCode =
+type InkCutRefusalCode =
   /** The bytes would not decode at all. Hers, and she can fix it. */
   | "unreadable"
   /** A reader did not answer — a provider failure, never a fact about her picture. */
@@ -130,7 +130,7 @@ export type InkCutRefusalCode =
    */
   | "inkNotOnThatSurface";
 
-export type InkCutRefusal = {
+type InkCutRefusal = {
   readonly code: InkCutRefusalCode;
   /** Her sentence, not a code the client re-words. */
   readonly message: string;
@@ -157,7 +157,7 @@ export type InkCutRefusal = {
 */
 export type { InkCutRoute };
 
-export type InkCut = {
+type InkCut = {
   readonly route: InkCutRoute;
   /** What the design row should store: the cutout, or her frame unchanged. */
   readonly bytes: Buffer;

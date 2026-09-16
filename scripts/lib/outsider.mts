@@ -89,7 +89,7 @@ export const SCOPE_FLAGS = [
   "CASTING_REPAINT_SCOPE",
   "CASTING_FACE_SCAN_SCOPE",
 ] as const;
-export type ScopeFlag = (typeof SCOPE_FLAGS)[number];
+type ScopeFlag = (typeof SCOPE_FLAGS)[number];
 
 /**
  * Is this user inside that flag? Read here rather than imported from the server

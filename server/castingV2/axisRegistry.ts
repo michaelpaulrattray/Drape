@@ -151,7 +151,7 @@ export type AxisShelf = "resolver" | "realized" | "treatment";
  * outside it.
  */
 export const REALIZED_SHELF = [...REALIZED_AXIS_KEYS, "hairColour"] as const;
-export type RealizedShelfAxis = (typeof REALIZED_SHELF)[number];
+type RealizedShelfAxis = (typeof REALIZED_SHELF)[number];
 
 /* ------------------------------------------------- the completeness bindings */
 
@@ -238,7 +238,7 @@ export const TASTE_WRITABLE_AXES = [
   "facialHair",
   "hairColour",
 ] as const;
-export type TasteWritableAxis = (typeof TASTE_WRITABLE_AXES)[number];
+type TasteWritableAxis = (typeof TASTE_WRITABLE_AXES)[number];
 
 /** THE LAW, as a type. Only realized values are writable by the taste pass. */
 type OnlyRealizedIsTasteWritable = TasteWritableAxis extends RealizedShelfAxis ? true : never;

@@ -30,7 +30,7 @@ import { scaleIn, viewportOnce, easeOut, duration } from "@/lib/motion";
  * TYPES
  * ============================================ */
 
-export interface CardProps {
+interface CardProps {
   /** Card content */
   children: ReactNode;
   /** Card style variant */
@@ -47,7 +47,7 @@ export interface CardProps {
   onClick?: () => void;
 }
 
-export interface ProjectCardProps {
+interface ProjectCardProps {
   /** Project image URL */
   image: string;
   /** Project title */
@@ -64,7 +64,7 @@ export interface ProjectCardProps {
   aspectRatio?: "square" | "video" | "portrait" | "wide";
 }
 
-export interface ServiceCardProps {
+interface ServiceCardProps {
   /** Service icon or number */
   icon?: ReactNode;
   /** Service title */
@@ -269,7 +269,7 @@ export function ServiceCard({
  * STAT CARD COMPONENT
  * ============================================ */
 
-export interface StatCardProps {
+interface StatCardProps {
   /** Large stat value */
   value: string;
   /** Stat label */

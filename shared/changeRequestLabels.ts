@@ -88,9 +88,6 @@ export const CHANGE_REQUEST_ACTION_BY_TYPE = {
   stripe_refund: "cr_stripeRefund",
 } as const;
 
-export type ChangeRequestAction =
-  (typeof CHANGE_REQUEST_ACTION_BY_TYPE)[keyof typeof CHANGE_REQUEST_ACTION_BY_TYPE];
-
 /** The types whose approval executes immediately, for the panel's warning. */
 export const SENSITIVE_CHANGE_REQUEST_TYPES = Object.keys(
   CHANGE_REQUEST_ACTION_BY_TYPE,

@@ -97,7 +97,7 @@ export const BODY_TYPE_VALUES = ["Ultra Thin", "Slim", "Athletic", "Muscular", "
 export const GENDER_VALUES = ["Male", "Female"] as const;
 
 /** Ethnicity blend entry — max 2 per cast (engine limit). */
-export interface EthnicityBlendEntry {
+interface EthnicityBlendEntry {
   name: string;
   pct: number;
 }

@@ -81,10 +81,9 @@ import type { InkTemplateKind } from "../../shared/inkTemplateKinds";
 /* The vocabulary is `shared/inkTemplateKinds.ts` — the plate table's enum is
    derived from it, and a second list here would be the parallel copy that
    drifts. Re-exported so this module stays the one place a caller needs. */
-export type { InkTemplateKind };
 
 /** The builds a torso blank exists for. `nonbinary` is absent BY ABSENCE. */
-export type InkTemplateBuild = "female" | "male";
+type InkTemplateBuild = "female" | "male";
 
 export type InkTemplate = {
   /**
@@ -296,8 +295,6 @@ export const INK_TEMPLATES = Object.freeze({
     build: "male",
   }),
 }) satisfies Readonly<Record<string, InkTemplate>>;
-
-export type InkTemplateName = keyof typeof INK_TEMPLATES;
 
 /** Every blank, for the suite and for the digest lookup. */
 export const EVERY_INK_TEMPLATE: readonly InkTemplate[] = Object.freeze(

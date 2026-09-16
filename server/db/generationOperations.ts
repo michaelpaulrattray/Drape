@@ -116,7 +116,7 @@ function startOperationHeartbeat(userId: number, operationId: string): void {
   activeHeartbeats.set(operationId, active);
 }
 
-export interface ClaimGenerationOperationInput {
+interface ClaimGenerationOperationInput {
   userId: number;
   clientRequestId: string;
   kind: GenerationOperationKind;
@@ -126,7 +126,7 @@ export interface ClaimGenerationOperationInput {
   payload: unknown;
 }
 
-export type AcquireGenerationOperationLockResult =
+type AcquireGenerationOperationLockResult =
   | { type: "acquired"; operationId: string; lockKey: string; expiresAt: Date }
   | Extract<GenerationOperationOutcome, { type: "resource_busy" }>;
 
@@ -390,7 +390,7 @@ export async function listActivePublicGenerationOperations(input: {
   );
 }
 
-export type AcknowledgeGenerationOperationResult =
+type AcknowledgeGenerationOperationResult =
   | { type: "acknowledged"; operation: PublicGenerationOperation; acknowledgedNow: boolean }
   | { type: "not_found" }
   | { type: "not_terminal" }
@@ -466,7 +466,7 @@ function boardMetadata(value: unknown): BoardItemCanvasMetadata {
     : {};
 }
 
-export type LandGenerationOperationResult =
+type LandGenerationOperationResult =
   | { type: "landed"; operation: PublicGenerationOperation; landedNow: boolean }
   | { type: "relink_required"; operation: PublicGenerationOperation }
   | { type: "not_found" }
@@ -474,7 +474,7 @@ export type LandGenerationOperationResult =
   | { type: "landing_not_required" }
   | { type: "invalid_result" };
 
-export type DismissGenerationOperationLandingResult =
+type DismissGenerationOperationLandingResult =
   | { type: "dismissed"; operation: PublicGenerationOperation; dismissedNow: boolean }
   | { type: "not_found" }
   | { type: "not_terminal" }

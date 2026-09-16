@@ -931,7 +931,7 @@ export async function stampBoardItemWithVersion(input: StampBoardItemWithVersion
   });
 }
 
-export type FillEmptyCastNodeResult = "filled" | "reconciled" | "not_found" | "not_empty";
+type FillEmptyCastNodeResult = "filled" | "reconciled" | "not_found" | "not_empty";
 
 /** Shared exactly-once fill primitive for the library picker and durable
  * operation landing. The row lock plus conditional write prevents either

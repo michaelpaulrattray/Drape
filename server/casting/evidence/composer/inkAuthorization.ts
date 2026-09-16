@@ -9,7 +9,7 @@ const INK_AUTHORIZATION_RECIPE_VERSION =
   "ink.add.authorization.v1" as const;
 const INK_AUTHORIZATION_MIN_CONFIDENCE = 80;
 
-export type InkAuthorizationRefusal =
+type InkAuthorizationRefusal =
   | "invalid_description"
   | "unsupported_request"
   | "authorization_unknown";

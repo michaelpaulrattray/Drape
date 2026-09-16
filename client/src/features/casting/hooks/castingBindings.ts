@@ -32,7 +32,7 @@ import { useCastingUIStore } from "../stores/useCastingUIStore";
 import { useStudioStore } from "@/features/studio/stores/useStudioStore";
 import type { EngineChoiceFlags } from "../engineChoicePersistence";
 
-export type FailedAction = {
+type FailedAction = {
   type: "NEW" | "ITERATE" | "BODY" | "SIDE";
   args?: { text: string; view: string; mask?: string };
 };

@@ -5,7 +5,7 @@ const ENGINE_CHOICE_FIELDS = [
   'skinTone', 'eyeColor', 'hairColor', 'hairStyle',
 ] as const;
 
-export type EngineChoiceField = (typeof ENGINE_CHOICE_FIELDS)[number];
+type EngineChoiceField = (typeof ENGINE_CHOICE_FIELDS)[number];
 export type PersistedEngineChoice = Partial<Record<EngineChoiceField, true>>;
 
 const IDENTITY_FIELD_TO_ENGINE_CHOICE: Partial<Record<string, EngineChoiceField>> = {

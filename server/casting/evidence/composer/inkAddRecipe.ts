@@ -21,7 +21,7 @@ export type InkAddSide = typeof INK_ADD_SIDES[number];
 export const INK_ADD_MIN_DESCRIPTOR_LENGTH = 3;
 export const INK_ADD_MAX_DESCRIPTOR_LENGTH = 240;
 
-export interface InkAddRecipeIdentity {
+interface InkAddRecipeIdentity {
   capabilityKey: typeof INK_ADD_CAPABILITY_KEY;
   ontologyVersion: typeof INK_ADD_ONTOLOGY_VERSION;
   composerRecipeVersion: typeof INK_ADD_COMPOSER_RECIPE_VERSION;

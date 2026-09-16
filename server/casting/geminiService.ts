@@ -13,7 +13,7 @@
  */
 
 // Types & enums
-export type { ModelPreferences, ModelViews, GeminiPart } from "./geminiTypes";
+export type { ModelPreferences } from "./geminiTypes";
 export { ImageResolution, AspectRatio, GenerationMode } from "./geminiTypes";
 
 // Client & utilities

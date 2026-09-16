@@ -42,7 +42,7 @@ import { composedPlan, scanPlan } from "./faceScan";
 import { allFacets, facetHeading, subjectsOfFacet, type Facet } from "./refineFacets";
 import { catalogueSlots, FACET_SLOTS, type SlotDefinition } from "./referenceSlotCatalogue";
 
-export type DetectionVerdict = "SEEN" | "GAP" | "VIOLATION";
+type DetectionVerdict = "SEEN" | "GAP" | "VIOLATION";
 
 export type DetectionRow = {
   /** The facet, which is the unit the product's words land in. */

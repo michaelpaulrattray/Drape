@@ -110,7 +110,7 @@ const GENERATION_OPERATION_CHILD_STATUSES = [
 
 export type GenerationOperationChildStatus = typeof GENERATION_OPERATION_CHILD_STATUSES[number];
 
-export interface GenerationOperationProgressStep {
+interface GenerationOperationProgressStep {
   stepKey: string;
   viewAngle?: string | null;
   status: GenerationOperationChildStatus;
@@ -123,7 +123,7 @@ export interface GenerationOperationProgress {
   steps: GenerationOperationProgressStep[];
 }
 
-export interface PublicGenerationOperationChild {
+interface PublicGenerationOperationChild {
   id: number;
   stepKey: string | null;
   viewAngle: string | null;

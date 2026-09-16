@@ -99,7 +99,7 @@ import {
 
 const log = createModuleLogger("castingV2/inkReferenceMint");
 
-export type InkReferenceMintRefusalCode =
+type InkReferenceMintRefusalCode =
   /** The cutter refused — its code, carried so a caller can tell them apart. */
   | "cut"
   /**
@@ -118,7 +118,7 @@ export type InkReferenceMintRefusalCode =
   /** The Cast is not this account's — said the way a missing one is. */
   | "noSuchCast";
 
-export type InkReferenceMintRefusal = {
+type InkReferenceMintRefusal = {
   readonly code: InkReferenceMintRefusalCode;
   /** Her sentence, not a code the client re-words. */
   readonly message: string;

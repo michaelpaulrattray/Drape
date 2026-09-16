@@ -24,7 +24,7 @@
  *  client must not be narrower than the server. */
 export const STAFF_ROLES = ["moderator", "admin"] as const;
 
-export type StaffRole = (typeof STAFF_ROLES)[number];
+type StaffRole = (typeof STAFF_ROLES)[number];
 
 export function isStaffRole(role: string | null | undefined): boolean {
   return STAFF_ROLES.includes(role as StaffRole);

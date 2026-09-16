@@ -436,7 +436,7 @@ export function departureFloorFor(kind: string | null | undefined): {
   };
 }
 
-export type BornWornDetection = {
+type BornWornDetection = {
   /** The facet the row carries. */
   facet: string;
   /** The segmentation question that drew it. */

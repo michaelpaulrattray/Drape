@@ -146,7 +146,7 @@ export type InkUploadRequest = {
  * idempotent and a caller that could not tell them apart would report a second
  * upload as a second $0.15.
  */
-export type InkUploadPlate =
+type InkUploadPlate =
   | { minted: true; plateId: string; reused: boolean; engine: string; width: number; height: number }
   /** The mint's own sentence, unchanged — a client that re-worded it is how two
    *  surfaces come to say different things about one wall. */

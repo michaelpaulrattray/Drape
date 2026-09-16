@@ -305,7 +305,7 @@ export type SlotSpec = {
  * cannot contain a neighbouring kind, where a `frame` is the whole picture and
  * the reader has to be trusted to stay inside a name.
  */
-export type SlotWordsReader = (input: {
+type SlotWordsReader = (input: {
   bytes: Buffer;
   contentType: string;
   /** The stylist's word for the thing: `left earring`, `hair`, `jaw`. */
@@ -315,11 +315,11 @@ export type SlotWordsReader = (input: {
 
 /** Why a disputed slot kept no pixels: the guard's own refusal, or the reason
  *  no crop was ever cut for it. */
-export type DisputedNothingKept =
+type DisputedNothingKept =
   | GuardRefusalReason
   | "surface" | "noQuestion" | "noSide" | "noRegion" | "notAPair";
 
-export type MintedSlot =
+type MintedSlot =
   | {
     slot: FeatureSlot;
     outcome: "stored";
@@ -439,7 +439,7 @@ export type MintResult = {
   adjudications?: DeliveryAdjudication[];
 };
 
-export type MintDependencies = {
+type MintDependencies = {
   /** The guard's independent read. Required in production; injected in tests. */
   read?: RegionReader;
   /**

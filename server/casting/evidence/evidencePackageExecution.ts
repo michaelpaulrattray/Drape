@@ -103,7 +103,7 @@ const EVIDENCE_PACKAGE_EXECUTION_FAILURE_CODES = [
   "execution_error",
   "settlement_refused",
 ] as const;
-export type EvidencePackageExecutionFailureCode =
+type EvidencePackageExecutionFailureCode =
   typeof EVIDENCE_PACKAGE_EXECUTION_FAILURE_CODES[number];
 
 export interface EvidencePackageSyncResult {
@@ -390,7 +390,7 @@ const EVIDENCE_PACKAGE_EXECUTION_STAGES = [
   "candidate_cleanup",
   "audit_close",
 ] as const;
-export type EvidencePackageExecutionStage =
+type EvidencePackageExecutionStage =
   typeof EVIDENCE_PACKAGE_EXECUTION_STAGES[number];
 
 async function deleteCandidate(

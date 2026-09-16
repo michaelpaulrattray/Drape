@@ -34,8 +34,8 @@ import type { RefineRefusal } from "./refineDelta";
 import { inkNeedsDocumentMessage } from "./inkPlacement";
 import { capitalize, pronounsForSex, type CastPronouns } from "./castPronouns";
 
-export type RefusalCharge = "free" | "charged";
-export type RefusalReportClass = "wall" | "gate" | "absorbed" | "unread";
+type RefusalCharge = "free" | "charged";
+type RefusalReportClass = "wall" | "gate" | "absorbed" | "unread";
 
 export type RefusalEntry = {
   /** What the customer reads. */

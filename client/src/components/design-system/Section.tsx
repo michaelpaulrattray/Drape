@@ -20,7 +20,7 @@ import { fadeInUp, viewportOnce } from "@/lib/motion";
  * TYPES
  * ============================================ */
 
-export interface SectionProps {
+interface SectionProps {
   /** Section content */
   children: ReactNode;
   /** Optional section label (e.g., "01 — About") */
@@ -39,7 +39,7 @@ export interface SectionProps {
   fullWidth?: boolean;
 }
 
-export interface SectionLabelProps {
+interface SectionLabelProps {
   /** Label text */
   children: ReactNode;
   /** Additional CSS classes */
@@ -170,7 +170,7 @@ export const Section = forwardRef<HTMLElement, SectionProps>(
  * CONTAINER COMPONENT
  * ============================================ */
 
-export interface ContainerProps {
+interface ContainerProps {
   /** Container content */
   children: ReactNode;
   /** Additional CSS classes */

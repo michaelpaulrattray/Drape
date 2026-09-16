@@ -23,7 +23,7 @@ import { fadeInUp, viewportOnce, easeInOut } from "@/lib/motion";
  * TYPES
  * ============================================ */
 
-export interface HeadingProps {
+interface HeadingProps {
   /** Heading content */
   children: ReactNode;
   /** Heading level */
@@ -40,7 +40,7 @@ export interface HeadingProps {
   id?: string;
 }
 
-export interface TagProps {
+interface TagProps {
   /** Tag content */
   children: ReactNode;
   /** Tag style variant */
@@ -53,7 +53,7 @@ export interface TagProps {
   onClick?: () => void;
 }
 
-export interface BodyTextProps {
+interface BodyTextProps {
   /** Text content */
   children: ReactNode;
   /** Text size */
@@ -277,7 +277,7 @@ export function BodyText({
  * LABEL COMPONENT
  * ============================================ */
 
-export interface LabelProps {
+interface LabelProps {
   /** Label content */
   children: ReactNode;
   /** Additional CSS classes */

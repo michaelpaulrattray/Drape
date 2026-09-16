@@ -66,7 +66,7 @@ export const INK_ANATOMY_ZONES = [
   "full_leg",
   "foot",
 ] as const;
-export type InkAnatomyZone = typeof INK_ANATOMY_ZONES[number];
+type InkAnatomyZone = typeof INK_ANATOMY_ZONES[number];
 
 export const INK_ANATOMY_SURFACES = [
   "anterior",
@@ -76,7 +76,7 @@ export const INK_ANATOMY_SURFACES = [
   "dorsal",
   "palmar",
 ] as const;
-export type InkAnatomySurface = typeof INK_ANATOMY_SURFACES[number];
+type InkAnatomySurface = typeof INK_ANATOMY_SURFACES[number];
 
 export const INK_ANATOMY_SIDES = [
   "left",

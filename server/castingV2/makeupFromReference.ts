@@ -98,9 +98,9 @@ export const MAKEUP_READ_REFUSAL_CODES = [
   "outOfClass",
 ] as const;
 
-export type MakeupReadRefusalCode = (typeof MAKEUP_READ_REFUSAL_CODES)[number];
+type MakeupReadRefusalCode = (typeof MAKEUP_READ_REFUSAL_CODES)[number];
 
-export type MakeupReadRefusal = {
+type MakeupReadRefusal = {
   readonly code: MakeupReadRefusalCode;
   /** The customer's sentence, not a code a client re-words. */
   readonly message: string;

@@ -65,7 +65,7 @@ const CREW_SHIFT_RUN_LIMIT = 4;
  * The page is handed the timestamps and derives the verdict itself, so the
  * server and the client can never disagree about what "stalled" means.
  */
-export type CrewShiftRunView = {
+type CrewShiftRunView = {
   readonly id: number;
   readonly shift: string;
   readonly seat: string;

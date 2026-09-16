@@ -343,7 +343,7 @@ export function createLandedImageKey(candidateId: string) {
 export const MACHINE_WORDS =
   /transform response|undefined|\[object |TypeError|NetworkError|ECONN|fetch failed|<html|status code|JSON/i;
 
-export type RefineOutcome = "delivered" | "asked" | "refused" | "errored" | "timeout" | "collided";
+type RefineOutcome = "delivered" | "asked" | "refused" | "errored" | "timeout" | "collided";
 
 export type RefineObservation = {
   outcome: RefineOutcome;

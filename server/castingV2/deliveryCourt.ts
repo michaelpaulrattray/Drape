@@ -150,7 +150,7 @@ export function courtCovers(court: DeliveryCourt, facets: readonly string[]): bo
 }
 
 /** Why an instrument declined to adjudicate — never "it did not deliver". */
-export type DeliveryDeclined =
+type DeliveryDeclined =
   | "noCourt"
   | "facetOutsideCourt"
   | "anchorCarriesPriorDelivery"

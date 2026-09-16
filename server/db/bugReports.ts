@@ -58,7 +58,7 @@ export type { BugReportStatus, BugReportCategory };
  * nothing. They are NULLABLE because the join is a `leftJoin` on purpose: a
  * deleted account must not make its report disappear from the queue.
  */
-export type BugReportRow = {
+type BugReportRow = {
   id: number;
   userId: number;
   reporterEmail: string | null;

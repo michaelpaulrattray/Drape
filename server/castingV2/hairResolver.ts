@@ -37,7 +37,7 @@
  * lineage never had.
  */
 
-import type { AgeBand, HairColour, HeritageComponent, Sex } from "./castingIntent";
+import type { HairColour } from "./castingIntent";
 import type { HairPart, RealizedAxes } from "../../shared/castingRealization";
 
 /**
@@ -48,7 +48,7 @@ import type { HairPart, RealizedAxes } from "../../shared/castingRealization";
  * apart from "resolved to nothing" is what stops the next reader treating a
  * deferred axis as an unfilled one.
  */
-export type HairTier = "stated" | "anchored" | "realized" | "suppressed";
+type HairTier = "stated" | "anchored" | "realized" | "suppressed";
 
 const HAIR_AXES = [
   "hairColour",
@@ -58,7 +58,7 @@ const HAIR_AXES = [
   "wornState",
   "facialHair",
 ] as const;
-export type HairAxis = (typeof HAIR_AXES)[number];
+type HairAxis = (typeof HAIR_AXES)[number];
 
 export type HairTiers = Record<HairAxis, HairTier>;
 
@@ -152,4 +152,3 @@ export function resolveHairAxes(input: HairResolverInput): ResolvedHair {
   };
 }
 
-export type { AgeBand, HeritageComponent, Sex };

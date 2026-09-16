@@ -50,7 +50,7 @@ export const REFERENCE_PICTURES_PER_CANDIDATE = INK_DESIGNS_PER_CANDIDATE;
 /** One prefix, so an operator can see every attached picture in one place. */
 export const REFERENCE_ATTACHMENT_KEY_PREFIX = "casting-v2/reference";
 
-export type ReferenceAttachRefusalCode =
+type ReferenceAttachRefusalCode =
   | "unreadable"
   | "unsupportedFormat"
   | "tooLarge"

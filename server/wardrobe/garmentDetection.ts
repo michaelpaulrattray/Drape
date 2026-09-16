@@ -22,7 +22,7 @@ import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("wardrobe/garmentDetection");
 
-export type SlotType = "tops" | "bottoms" | "shoes" | "accessories" | "full_look";
+type SlotType = "tops" | "bottoms" | "shoes" | "accessories" | "full_look";
 
 export interface DetectedItem {
   id: string;

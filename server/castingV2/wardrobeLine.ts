@@ -51,7 +51,7 @@ import type { CastingPath } from "../../shared/castingPaths";
 /**
  * Where the answer came from. `edited` beats `born` — that IS condition (v).
  */
-export type WardrobeLineSource = "edited" | "born";
+type WardrobeLineSource = "edited" | "born";
 
 /**
  * ⚠ THREE CASES, AND THE THIRD IS THE ONE THE DESIGN IMPLIES WITHOUT NAMING.

@@ -39,7 +39,7 @@ export interface ComposerAssetRow {
   status?: unknown;
 }
 
-export interface IdentityPayload {
+interface IdentityPayload {
   /** The CURRENT canonical headshot — always the anchor (D-30). */
   anchorImageUrl: string;
   /** The intent view's image, when that slot is filled; null degrades to
@@ -50,7 +50,7 @@ export interface IdentityPayload {
 }
 
 /** D-12 provenance manifest — stored verbatim by consumers. */
-export interface IdentityManifest {
+interface IdentityManifest {
   strategy: "headshot+intent+text";
   intentViewAngle: CanonicalViewAngle;
   /** model_assets provenance vocabulary: the exact images sent. */
@@ -60,7 +60,7 @@ export interface IdentityManifest {
   composedAt: string;
 }
 
-export interface StaleInputFlag {
+interface StaleInputFlag {
   viewAngle: CanonicalViewAngle;
   label: string;
 }

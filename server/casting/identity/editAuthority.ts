@@ -467,7 +467,7 @@ export function deterministicStage(feedback: string, referenceAttached: boolean)
 
 // ── The boundary ─────────────────────────────────────────────────────────────
 
-export interface EditAuthorityModel {
+interface EditAuthorityModel {
   id: number;
   status: string | null;
   name?: string | null;

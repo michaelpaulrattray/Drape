@@ -264,7 +264,7 @@ export async function readFalBalance(
   return { ok: true, remaining, currency, low: remaining < FAL_LOW_BALANCE_USD };
 }
 
-export type FalUnitPrice = { unitPrice: number; unit: string; currency: string };
+type FalUnitPrice = { unitPrice: number; unit: string; currency: string };
 export type FalPrices =
   | { ok: true; prices: Map<string, FalUnitPrice> }
   | { ok: false; why: string };

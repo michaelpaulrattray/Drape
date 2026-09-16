@@ -55,7 +55,6 @@ import { DEFAULT_CAST_STYLE, type CastStyle } from "../../shared/castStyles";
   the pieces road his two rolled courts rejected, and the editable box is the
   new fidelity control.)
 */
-export type { StatedAge } from "./seedFidelity";
 
 /**
  * THE AUTHOR'S OWN MODEL — one line, and swapping it swaps nothing else (#466).

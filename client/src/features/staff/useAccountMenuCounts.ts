@@ -41,7 +41,7 @@ import { useModeratorFlagCounts } from "./useModeratorFlagCounts";
  * `Moderation` row for both, so a moderator receives `adminCount: 0` and never
  * sees a row it could sit on.
  */
-export interface AccountMenuCounts {
+interface AccountMenuCounts {
   /** Pending change requests. Omitted at zero by `showsMenuCount`. */
   adminCount: number;
   /** Flagged referrals + flagged credit discrepancies. Omitted at zero. */

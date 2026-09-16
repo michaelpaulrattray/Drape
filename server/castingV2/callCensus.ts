@@ -39,7 +39,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 /** Which part of the product asked. Kept coarse: this answers "where do the
  *  minutes go", not "which line of code ran". */
-export type CallStage =
+type CallStage =
   /** The brief or refine interpreter, and its re-looks. */
   | "interpret"
   /** A segmentation question — the region reader, on any of its roads. */

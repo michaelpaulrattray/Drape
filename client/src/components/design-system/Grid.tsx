@@ -26,7 +26,7 @@ import { staggerContainer, staggerItem, viewportOnce } from "@/lib/motion";
  * TYPES
  * ============================================ */
 
-export interface GridProps {
+interface GridProps {
   /** Grid content */
   children: ReactNode;
   /** Number of columns (responsive) */
@@ -41,7 +41,7 @@ export interface GridProps {
   animate?: boolean;
 }
 
-export interface GridItemProps {
+interface GridItemProps {
   /** Item content */
   children: ReactNode;
   /** Column span */
@@ -172,7 +172,7 @@ export function AnimatedGridItem({
  * TWO COLUMN LAYOUT
  * ============================================ */
 
-export interface TwoColumnProps {
+interface TwoColumnProps {
   /** Left column content */
   left: ReactNode;
   /** Right column content */

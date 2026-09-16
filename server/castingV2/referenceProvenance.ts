@@ -82,7 +82,7 @@ function isReadIntent(value: unknown): value is ReferenceReadIntent {
  * it is the common and intended one, because the sentence is a suggestion she
  * reworks.
  */
-export type ReferenceReadAdoption = "verbatim" | "edited";
+type ReferenceReadAdoption = "verbatim" | "edited";
 
 /**
  * One step's provenance, as it is written to `stepProvenance[i]`.

@@ -74,7 +74,7 @@
 import { AGE_BANDS, SEXES, type AgeBand, type AgePhase, type Sex } from "../../shared/castingVocabularies";
 
 /** The reader's recorded age — the value a claim in the author's text is compared against. */
-export type StatedAge = { band: AgeBand; phase: AgePhase | null };
+type StatedAge = { band: AgeBand; phase: AgePhase | null };
 
 /**
  * Decade words → the band they claim. Consulted ONLY inside an age-stating

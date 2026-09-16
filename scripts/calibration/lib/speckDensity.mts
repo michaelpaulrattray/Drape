@@ -23,7 +23,7 @@ import sharp from "sharp";
 import { CHANGE_AMPLITUDE } from "../../../server/castingV2/changeAmplitude";
 import type { RegionReader } from "../../../server/castingV2/maskedRefine";
 
-export type Patch = { left: number; top: number; width: number; height: number };
+type Patch = { left: number; top: number; width: number; height: number };
 export type Population = { patch: Patch; skin: Uint8Array; pixels: number };
 
 /**

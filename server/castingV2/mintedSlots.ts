@@ -211,7 +211,7 @@ export type MintedSlotsInput = {
  * One open kind, as this ask wrote it, with the one property that decides
  * whether it may carry pixels.
  */
-export type OpenKindToFile = {
+type OpenKindToFile = {
   /** The normalizer's key — a single lowercase token (`fangs`, `cat-ears`). */
   kind: string;
   /**

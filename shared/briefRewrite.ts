@@ -106,8 +106,8 @@ export function agePhrase(band: AgeBand, phase: AgePhase | null): string {
   return `in their ${qualifier}${band}`;
 }
 
-export type BriefEditMode = "replaced" | "appended";
-export type BriefEdit = { field: keyof BriefFactOverrides; mode: BriefEditMode; to: string };
+type BriefEditMode = "replaced" | "appended";
+type BriefEdit = { field: keyof BriefFactOverrides; mode: BriefEditMode; to: string };
 export type RewrittenBrief = { text: string; edits: BriefEdit[] };
 
 const SUBJECT_NOUN: Record<Sex, string> = {

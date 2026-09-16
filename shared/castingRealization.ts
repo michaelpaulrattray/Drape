@@ -282,7 +282,6 @@ export const REALIZED_AXIS_KEYS = [
   "skinCharacter",
   "beardGrey",
 ] as const;
-export type RealizedAxisKey = (typeof REALIZED_AXIS_KEYS)[number];
 
 /**
  * Named hairstyles, on legacy's D9 pattern.

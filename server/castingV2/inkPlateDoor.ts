@@ -80,7 +80,7 @@ export const INK_PLATE_REFUSAL_CODES = [
   "alreadyPlated",
 ] as const;
 
-export type InkPlateRefusalCode = (typeof INK_PLATE_REFUSAL_CODES)[number];
+type InkPlateRefusalCode = (typeof INK_PLATE_REFUSAL_CODES)[number];
 
 export type InkPlateRefusal = {
   readonly code: InkPlateRefusalCode;

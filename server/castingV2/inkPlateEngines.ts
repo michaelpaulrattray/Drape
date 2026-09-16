@@ -91,7 +91,7 @@ import type { IdentityEngine, ImageResult, ReferenceImage } from "../providers/t
 /** A picture handed to an engine — the template, then the design. */
 export type InkPlateReference = ReferenceImage;
 
-export type InkPlateMintRequest = {
+type InkPlateMintRequest = {
   prompt: string;
   /** PICTURE 1: the blank form. */
   template: InkPlateReference;

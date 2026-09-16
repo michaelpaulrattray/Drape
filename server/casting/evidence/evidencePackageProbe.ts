@@ -46,7 +46,7 @@ const FEATURE_REGION_VISIBILITIES = [
   "outside_frame",
   "unknown",
 ] as const;
-export type FeatureRegionVisibility =
+type FeatureRegionVisibility =
   typeof FEATURE_REGION_VISIBILITIES[number];
 
 export interface EvidencePackageProbeResponse {
@@ -63,7 +63,7 @@ export interface EvidencePackageProbeResponse {
   confidence: number;
 }
 
-export interface EvidencePackageProbeInlineImage {
+interface EvidencePackageProbeInlineImage {
   role:
     | "identity_anchor"
     | "original_target"

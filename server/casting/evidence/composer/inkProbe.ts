@@ -26,7 +26,7 @@ import {
 } from "../inkAnatomyRegistry";
 import type { CanonicalViewAngle } from "../../../../shared/boardTypes";
 
-export type InkProbeKind =
+type InkProbeKind =
   | "visibility"
   | "guide_coverage"
   | "identity_pose"
@@ -84,7 +84,7 @@ export interface InkVisibilityProbe {
   }> | null;
 }
 
-export interface InkPlacementProbeDetail {
+interface InkPlacementProbeDetail {
   semanticPlacement: EvidenceProbeOutcome;
   anatomicalSide: EvidenceProbeOutcome;
   authorizedZone: EvidenceProbeOutcome;

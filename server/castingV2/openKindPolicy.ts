@@ -88,7 +88,7 @@ import type { ZoneScope } from "./zoneScope";
  * a reasoned threshold, for the same reason: a decision wearing a derivation's
  * clothes survives being wrong.
  */
-export type PolicyBasis =
+type PolicyBasis =
   | { readonly derived: string }
   | { readonly stated: string };
 
@@ -99,7 +99,7 @@ export type PolicyBasis =
  * `silence`  the table decides by omission and the omission IS the answer.
  * `owed`     the answer is decided; the code that must honour it is not built.
  */
-export type PolicyStanding = "policy" | "silence" | "owed";
+type PolicyStanding = "policy" | "silence" | "owed";
 
 export type OpenKindAnswer = {
   /** The file the table lives in, so the reverse check can find the symbol. */

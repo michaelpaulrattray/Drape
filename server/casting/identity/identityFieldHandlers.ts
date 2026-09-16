@@ -20,6 +20,7 @@ import {
   type EthnicityBlendValue,
   type IdentityFieldHandler,
   type NormalizedValueFor,
+  type SchemaPathByField,
   type SupportedIdentityLeaf,
   type TechnicalSchema,
   type TypedPreferencePatchFor,
@@ -218,9 +219,7 @@ function overridePairHandler<F extends OverridePairField>(
  *  and `buildSchemaWrite`'s own assertion then swallowed the mismatch — the
  *  same shape as the patch hole #888 measured, one field over. */
 type SchemaPathOf<F extends AuthorizableIdentityField> =
-  [import("./identityTypes").SchemaPathByField[F]] extends [never]
-    ? null
-    : import("./identityTypes").SchemaPathByField[F];
+  [SchemaPathByField[F]] extends [never] ? null : SchemaPathByField[F];
 
 function setSchema(path: string, value: string) {
   return { path, value };
