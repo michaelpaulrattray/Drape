@@ -47,8 +47,11 @@ Controls taken 2026-08-26 on the committed config (working law 2):
 - `railway.cmd`, `netstat`, `taskkill.exe` are OS/CLI binaries the scripts
   shell out to, allowlisted in `ignoreBinaries`.
 - `client/src/components/ui/*` are shadcn primitives added as a set; 40 of
-  them are unused and they hold the 21 unused `@radix-ui/*` dependencies.
-  They are reported on purpose — a vendored library is still code.
+  them were unused and held 21 unused `@radix-ui/*` dependencies — **deleted
+  2026-09-16 under #105** (`docs/specs/SHADCN_PRIMITIVES_PURGE_MANIFEST_2026-09-16.md`;
+  the population was 41 by then, and `dropdown-menu.tsx` is held for #106, so
+  it reads as unused until that card lands and is not a finding). A vendored
+  library is still code, and a re-vendored primitive is reported on purpose.
 - **A `scripts/lib/` module whose only importer is a `*-disposable.*` reads
   as unused** (`scripts/lib/sabotage.mts`, imported only by
   `prove-sabotage-survives-death-disposable.mts`) — a consequence of the
