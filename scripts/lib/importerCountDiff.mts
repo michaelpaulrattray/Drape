@@ -255,21 +255,74 @@ export function readTree(rootArgument: string): Tree {
     themselves cannot over-reach by construction.
   */
   const NAMED_IMPORT = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["']([^"']+)["']/g;
+  /*
+    ⚠ THE DESTRUCTURED DYNAMIC IMPORT — THE NAMESPACE HOLE'S SIBLING, ONE SHAPE
+    OVER, AND IT HID BOTH LOGIN ROUTERS (#108 slice 2, 2026-09-17).
+
+        const { blockIp } = await import("../../db");
+
+    is the house style of every admin route, every audit-log reader and the
+    atomic credit layer — 104 such statements across 23 production files.
+    Measured at HEAD the hour this landed: **36 production-wired server exports
+    counted ZERO importers** — `emailAuthRouter` and `googleAuthRouter` (the
+    two login routes `_core/index.ts` mounts this way), `issueStripeRefund`,
+    `calculateProportionalRefund`, `adjustUserCredits`, `updateUserRole`,
+    `blockIp`, `unblockIp`, and the whole change-request road. The same
+    sentence as the namespace paragraph below applies unchanged: a symbol
+    already counted at zero can never be seen to FALL to zero, so this reader
+    would have reported silence on the day either login route died.
+
+    It surfaced the other way round — toward NOISE — which is the only reason
+    it was seen: the 30-day differ reported `blockIp` un-wired when #800
+    deleted its static Slack importer, while two dynamic callers stayed live.
+    A destructured name is read exactly as a named import is: `b: c` is the
+    alias form here (destructuring has no `as`), the body is searched for the
+    LOCAL name, and the specifier decides which declaration is credited.
+  */
+  const DYNAMIC_DESTRUCTURE =
+    /(?:const|let|var)\s*\{([^}]*)\}\s*=\s*await\s+import\(\s*["']([^"']+)["']\s*\)/g;
+  /*
+    AND THE SAME SHAPE WITHOUT `await` - the reviewer's finding on PR #1017,
+    the hour the form above landed:
+
+        import("../casting/operationRecovery").then(({ startGenerationOperationRecoverySweep }) => {
+
+    is the ONLY production reach of all four background worker starters
+    (`_core/index.ts:338-362` - the recovery sweep that refunds a mid-deploy
+    roll collision among them) and of `completeReferral`, the welcome-bonus
+    payer (`db/generations.ts:64`). The workers were the blind population of
+    the Atlas hole of 2026-08-23 too. The destructure inside `.then((...) =>`
+    feeds the same parse; its groups come specifier-first, so they are
+    swapped here into the order the loop below reads.
+  */
+  const DYNAMIC_THEN_DESTRUCTURE =
+    /import\(\s*["']([^"']+)["']\s*\)\s*\.then\(\s*(?:async\s*)?\(\s*\{([^}]*)\}\s*\)\s*=>/g;
   const prodImportersAt = new Map<string, string[]>();
   for (const [file, src] of sources) {
     if (isTestFile(file)) continue;
     const here = show(file);
-    const matches = [...src.matchAll(NAMED_IMPORT)];
+    const matches = [
+      ...[...src.matchAll(NAMED_IMPORT)].map((match) => ({ match, dynamic: false })),
+      ...[...src.matchAll(DYNAMIC_DESTRUCTURE)].map((match) => ({ match, dynamic: true })),
+      ...[...src.matchAll(DYNAMIC_THEN_DESTRUCTURE)].map((match) => {
+        /* names in group 1, specifier in group 2 - the order the loop reads */
+        const swapped = [match[0], match[2], match[1]] as unknown as RegExpExecArray;
+        swapped.index = match.index;
+        return { match: swapped, dynamic: true };
+      }),
+    ].sort((a, b) => a.match.index - b.match.index);
     let body = "";
     let cursor = 0;
-    for (const match of matches) {
+    for (const { match } of matches) {
       body += src.slice(cursor, match.index);
       cursor = match.index + match[0].length;
     }
     body += src.slice(cursor);
-    for (const match of matches) {
+    for (const { match, dynamic } of matches) {
       for (const raw of match[1].split(",")) {
-        const parts = raw.trim().replace(/^type\s+/, "").split(/\s+as\s+/);
+        const parts = dynamic
+          ? raw.trim().replace(/\s*=[\s\S]*$/, "").split(/\s*:\s*/)
+          : raw.trim().replace(/^type\s+/, "").split(/\s+as\s+/);
         const name = parts[0]!.trim();
         /*
           ⚠ THE BODY IS SEARCHED FOR THE LOCAL NAME, NOT THE EXPORTED ONE.
@@ -352,6 +405,17 @@ export function readTree(rootArgument: string): Tree {
     const bindings = new Map<string, string>();
     for (const match of src.matchAll(
       /import\s+(?:type\s+)?(?:\*\s+as\s+)?([A-Za-z_$][\w$]*)\s+from\s*["']([^"']+)["']/g,
+    )) {
+      const target = resolveSpecifier(file, match[2]!, root);
+      if (target) bindings.set(match[1]!, target);
+    }
+    /* `const mod = await import("./x")` binds the whole module the way
+       `import * as mod` does, and its members are read the same way below
+       (`server/casting/geminiClient.ts` is the one production instance that
+       reaches an in-repo module; `aiService.ts` binds the `sharp` package the
+       same way, which resolves to nothing and credits nothing). */
+    for (const match of src.matchAll(
+      /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*await\s+import\(\s*["']([^"']+)["']\s*\)/g,
     )) {
       const target = resolveSpecifier(file, match[2]!, root);
       if (target) bindings.set(match[1]!, target);
