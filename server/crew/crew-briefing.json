@@ -1,7 +1,7 @@
 {
-  "edition": 432,
-  "updatedAt": "2026-09-16T05:32:00.000Z",
-  "shift": "YOUR FIVE JOBS ARE ON THE BOARD AND THE CREW STARTS ON THEM NEXT. YOUR “looks good” ALSO CLOSED THE FIELD-NAME JOB. NOTHING NEEDS AN ANSWER FROM YOU.\n\n⚠ ONE THING TO KNOW BEFORE YOU LOOK AT THE LIST. You said: 527 first, then 129, then 105–108. THE LIST BELOW WILL SHOW THEM THE OTHER WAY ROUND — oldest card at the top, so 105 first and 527 last. That is the page sorting by age because it has no way to record an order you typed. Your order is the real one and the crew will follow it: the next session takes 527. I have written this down as a job so the page can hold your order properly instead of a note like this one.\n\nWHAT THE FIVE ARE, in your order:\n• 527 — do it: the 6.5 GB of saved output. Not a blind sweep — anything a written record points at is kept, the rest goes, and the list of what was kept and why is the receipt.\n• 129 — build it: the refusal patrol. Log which prompts got refused and which got through, find the words that trigger it, and turn that into real word-swaps the writer can use.\n• 105, 106, 108 — clear them: three rounds of unused code removal, one session each, with a written list checked before anything is deleted.\n\nThey are big jobs, one session each, so tonight's session did not start one at the close of itself. The next one begins on 527.\n\nWHAT YOU ANSWERED TONIGHT. The before-and-after of your Profile page — the little names above the boxes, in small caps instead of a sentence. You said “looks good.” That was the only thing that job was waiting for, so it is closed. Before closing it I checked the product itself rather than the report that said it was done: the old separate style is gone, your Profile fields use the shared one, and a build check now refuses to let the old style come back quietly.\n\nTHE LEFTOVER LIST IS DECIDED TOO, AND NEITHER PART NEEDED YOU. Three corners had not been reached. The invite-code form was done last night. The waitlist pop-up on your marketing site LOOKED like a question for you — should marketing speak the app's voice? — but your own rulebook already answers it: marketing pages and app pages deliberately use two different looks, and that pop-up only appears on the landing page, so folding the app's style in would mix the two rather than tidy one. The old studio gets deleted whole at retirement, so styling it is wasted work. Both stay written into the build check with their reasons, so neither can rot quietly and nobody can add a fourth style beside them unnoticed.\n\nTHE ONLY CODE I CHANGED TONIGHT IS SMALLER THAN ANY OF THAT: those two notes inside the build check said they were “still to be decided” and pointed at a job I was closing. A note pointing at finished work is how this codebase has misled itself before. Nothing a customer sees changed, and I said plainly on the change that its green tests prove only that the file still reads correctly — notes are not something a test can check.\n\nSTILL YOURS WHENEVER YOU WANT IT: the Settings pop-up is not designed for a phone — the section list takes half the screen, a sentence wraps onto nine lines, Upload is clipped. Not new, nothing broken, and whether that list should stop being a sidebar on a small screen is a design call, so it waits.",
+  "edition": 433,
+  "updatedAt": "2026-09-16T06:27:18.263Z",
+  "shift": "THE SAVED-OUTPUT JOB IS DONE — THE FIRST OF YOUR FIVE. NOTHING NEEDS AN ANSWER FROM YOU.\n\nWHAT YOU ASKED FOR, AND WHAT CAME BACK. You said “527 do it”: go through the 6.5 GB of saved output, keep anything a written record points at, sweep the rest, and let the list be the receipt. That is exactly what ran. The folder went from 7.2 GB to 6.9 GB — 1,650 items down to 762, with 889 removed and nothing failing.\n\n⚠ THE HONEST HEADLINE IS NOT THE ONE ANYONE EXPECTED: THIS FOLDER IS NOT GOING TO GET MUCH SMALLER. Measured before a thing was touched, 95% of it — 6.7 of 7.1 GB — is evidence some written record points at. Those are the picture strips behind tests you judged with your own eyes. The part nobody pointed at was 5%, and two thirds of THAT was old test logs. So the size is not a mess: it is your own back catalogue, and shrinking it means throwing away the proof behind decisions you have already made. If the disk ever genuinely matters, the answer is moving old folders off this machine — I priced zipping them and it saves 4.5%, because pictures are already compressed.\n\nTHE THING THE JOB WAS REALLY WORRIED ABOUT — and it is clean. The fear written into that job was that some past clean-up had already quietly deleted the pictures behind a verdict you gave, leaving a record pointing at nothing. Measured: ZERO. Not one verdict record points at a missing picture. It looked like two until I opened both — one names its files with a wildcard and all eleven are there, the other is a path split across two lines in a document.\n\n⚠ AND THAT SAME WILDCARD ALMOST COST US SOMETHING. My first pass could not read a wildcard, so those eleven files — pictures a record points at — were sitting in the delete list, along with 66 more. Found and fixed before anything ran. Then, because a tool built an hour ago should not be the only thing standing between you and a permanent deletion, I built a SECOND reader that works a completely different way and deleted only what both agreed on. The second one saved another 75 items the first had marked for deletion.\n\nWHAT I CHOSE NOT TO DELETE, AND WHY I AM TELLING YOU RATHER THAN ASKING. Six folders of actual pictures — 47 MB, less than one percent — passed both tools as “nothing points at these.” I left them. A picture is a render you paid for, deletion cannot be undone, and both tools can only prove nobody wrote down that exact folder name. Saving 0.7% is not worth that. They are listed by name in the receipt if you ever want them gone.\n\nWHAT IT COST, NOT BURIED. Three old working files belonging to the crew's own cleaning records went. Their findings are safe — those are written into the log itself, and a later run had already replaced that work — so what was lost is the rough paper, not the answer. The reason is worth more than the loss: the log named one file by its full path and called the other “the full read beside it”, and a tool that looks for paths cannot see a sentence. That rule is now written down where the next run will read it.\n\nNEXT: 129, then 105, 106 and 108 — your order, unchanged. The page still lists them oldest-first; the job to fix that ordering is filed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,14 +116,14 @@
     ],
     "chips": [
       {
-        "label": "Five jobs from you, on the board",
+        "label": "The saved-output job is done",
         "tone": "good",
-        "source": "527, 129, 105, 106, 108 — filed from your terminal word tonight. The crew starts on 527."
+        "source": "7.2 GB to 6.9 GB, 889 items removed, none failed. First of your five."
       },
       {
-        "label": "⚠ The list shows them oldest-first",
-        "tone": "warn",
-        "source": "Your order was 527 first; the page will show 105 first. Your order is the one being followed."
+        "label": "Nothing it kept was guesswork",
+        "tone": "good",
+        "source": "Two separate readers had to agree before anything was deleted. No verdict lost its pictures."
       },
       {
         "label": "Your desk is empty",
@@ -133,7 +133,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "35 open, 5 ordered by you, none urgent. Tonight 2 closed, 1 merged, 1 filed. 20 untouched 7d."
+        "source": "34 open, 4 ordered by you, none urgent. Tonight 1 closed. 15 untouched for 7 days."
       },
       {
         "label": "Check-ups",
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-16T05:32:06.778Z",
+      "readAt": "2026-09-16T06:25:50.709Z",
       "items": [
         {
           "issueNumber": 16,
@@ -6608,13 +6608,20 @@
       "status": "merged",
       "prNumber": 1005,
       "note": "WHAT YOU DID: replied “looks good.” on the before-and-after of your Profile page's field names. That was the whole bar card 841 was left open for, so it is closed.\n\nWHAT I CHECKED BEFORE CLOSING IT: the product itself rather than the report that said it was done. The old separate field style is gone from the code, Profile's three fields use the shared one, and a build check refuses to let the old style return.\n\nWHAT ELSE CLOSED: the leftover list (card 1002). The invite form shipped last night. The waitlist pop-up stays as it is — your rulebook already keeps marketing pages and app pages on two different looks, and that pop-up appears only on the landing page, so folding the app's style in would mix the two rather than tidy one. The old studio stays as it is, because it is deleted whole at retirement. Neither needed a decision from you.\n\nWHAT THE PULL REQUEST ACTUALLY CHANGED: notes inside the build check. They said those two were “still to be decided” and pointed at a card I was closing. Nothing a customer sees. Stated plainly on the change: its green tests prove the file still reads correctly and nothing more, because the check never reads those notes — only the list of names beside them."
+    },
+    {
+      "id": "output-citation-pass-527",
+      "title": "The 6.5 GB of saved output: kept what records point at, swept the rest — and the receipt is in the repository (card 527)",
+      "status": "merged",
+      "note": "WHAT YOU ASKED FOR: “527 do it.” Keep anything a written record points at, sweep the rest, the manifest is the receipt.\n\nWHAT HAPPENED: 7.2 GB to 6.9 GB. 1,650 items to 762. 889 removed, 0 failures. Nothing tracked by the project was touched.\n\nTHE HONEST RESULT: 95% of that folder is evidence a record points at — the picture strips behind verdicts you gave. Only 5% was unclaimed, and two thirds of that was stale test logs. This folder is your back catalogue, not a mess, and it will not get much smaller. Zipping it saves a measured 4.5%, because pictures are already compressed.\n\nTHE WORRY IN THAT JOB, MEASURED: zero verdict records point at a missing picture. It read as two until both were opened — one uses a wildcard (all eleven files present), the other is a path wrapped across two lines.\n\nWHAT ALMOST WENT WRONG: my first reader could not understand a wildcard, so 77 files that records DO point at were sitting in the delete list. Fixed before anything ran, then a second reader built on a completely different principle, and only what both agreed on was deleted — the second saved 75 more.\n\nWHAT I LEFT ALONE: six folders of pictures, 47 MB, that passed both readers. A render you paid for is not worth deleting to save 0.7%. They are named in the receipt.\n\nWHAT IT COST: three rough working files from the crew's own cleaning records. Their findings live in the log and a later run had already replaced that work. The cause is now a written rule: name a file by its path or a tool cannot keep it.\n\nTHE RECEIPT: docs/specs/OUTPUT_CITATION_PASS_2026-09-16.md — in the project itself, because a receipt stored in the folder it is a receipt for can be deleted by the next clean-up.",
+      "prNumber": null
     }
   ],
   "problems": [
     {
       "id": "queue-shape-0916a-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 36 open. One job built and merged tonight and its card is closed. NEXT UP is empty",
       "detail": "One job built tonight (#995, a cancel pressed before the charge). The relay hand-reviewed it, merged it and closed it. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days; the oldest is #28. Bugs is now empty. Performance holds one large program (#58) and casting upkeep one patrol build (#129); the housekeeping cards are parked. The reviewer instruction (#988) still stands until the outside reviewer is back."
     },
@@ -6656,7 +6663,7 @@
     {
       "id": "queue-shape-0915f-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 47 open — one job finished tonight, none filed; NEXT UP is empty and nothing new waits on you",
       "detail": "One piece of work shipped tonight (#985, closing the third of five items on an old diagnostics job) and nothing new was filed — the one thing I found along the way turned out not to affect anything, so carding it would have been noise. Nothing is running and nothing is marked urgent. 24 cards have gone a week with no comment, close or commit against them — the same 24 as last night — and the oldest is 20 days. Your casting upkeep list stays at 6: the job I worked keeps two items open and both are correctly out of reach for a maintenance shift — one needs a paid measurement, one is a design decision. The five finished money jobs held for the outside reviewer are untouched and still held; I re-measured it at 26 attempts, 0 reviews."
     },
@@ -6981,6 +6988,13 @@
       "state": "resolved",
       "title": "The queue: 35 open, and NEXT UP went from empty to FIVE while this session was working — your five, filed from your terminal word at 15:29 AEST",
       "detail": "Your instruction reached the cards at 05:29:51–05:30:04Z. This session had read the queue at 05:29:52 and saw none of them — the labels were landing in that same second — and caught it at close when the desk sweep disagreed with its own earlier reading. That re-read is why the page is right rather than a night late. Also tonight: #841 closed on your reply, #1002 closed with both of its leftovers ruled, PR #1005 merged, and one card filed (the ordering one). Background switches all read ZERO except Housekeeping, which is down to one — #1003, the Settings pop-up at phone width, a design call that waits for you. No check-up clock has fired. 20 open cards have had no comment, close, reopen or commit for 7 days — level with last night, and still mostly roadmap rungs you have not reached rather than neglected work."
+    },
+    {
+      "id": "queue-shape-0916b-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 34 open. One of your five jobs finished and closed tonight; 4 remain, in your order",
+      "detail": "Four ordered by you and still to do: 129, then 105, 106, 108 — one session each. None urgent, nothing filed tonight.\n\n15 cards have had no comment, close or commit for seven days. That is level with last night, and the oldest is a design note from 27 August that is waiting on a build order rather than rotting.\n\nNothing here needs you."
     }
   ],
   "acknowledgedReplyIds": [
@@ -7176,7 +7190,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-16T05:32:06.777Z",
+    "readAt": "2026-09-16T06:25:50.708Z",
     "items": [
       {
         "issueNumber": 105,
@@ -7196,11 +7210,6 @@
       {
         "issueNumber": 129,
         "title": "Refusal loop — a patrol: log refused and passed prompts, find trigger words, measured word→replacement pairs into the author's rewrite list (founder verdict, 2026-08-26)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 527,
-        "title": "output/ has regrown to 6.5 GB — but it is court evidence now, not litter, and needs a citation pass rather than a sweep",
         "urgent": false
       }
     ]

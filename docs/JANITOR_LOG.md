@@ -836,3 +836,39 @@ verified recovery copy outside the repository.
    `output/janitor/run6-crew-eye-manifest.txt` — two are test fixtures, two are
    not, and none is on his page today.
 5. Root frames and `%TEMP%` families, as run 5 left them.
+
+## Between runs — #527 worked off NEXT UP, 2026-09-16 (not a patrol; the clock had not fired)
+
+**This is deliberately NOT a `## Run` heading**, because `scripts/patrol-clocks.mts`
+reads the newest one as the seat's last run and this was not a patrol: the Janitor
+was due 18 Sep. #527 came off NEXT UP on the founder's own word (*"527 do it"*),
+so the seat's clock is untouched.
+
+**`output/`: 7.2 GB → 6.9 GB, 1,650 top-level entries → 762. 889 removed, 0
+failures.** Full record, method, controls and the complete manifest:
+**`docs/specs/OUTPUT_CITATION_PASS_2026-09-16.md`**. Run 5's and run 6's "Next
+run" item 3 (*"`output/` — #527's citation pass, still unwritten"*) is **CLOSED**.
+
+**What a future run needs from this, in four lines:**
+
+1. **The tree cannot get much smaller.** 6.71 of 7.08 GB is CITED evidence —
+   courts, frames, verdicts he has looked at. Do not re-open this as a size
+   problem; the answer is off-machine storage, not deletion. Zipping was priced
+   at a real **4.5%** (`two-paths-court-round4`, measured).
+2. **Zero `docs/specs` verdicts cite a missing frame.** The thing the card feared
+   has not happened. Two apparent breaks were glob and line-wrap artifacts of the
+   reader, run down to the bytes.
+3. **Six frame-holding directories were SPARED by name** (`roll103-sheet`,
+   `his-roll-216`, `verify-makeup-chip`, `refusal-viewer-rehearsal-control`,
+   `_eyefix`, `_cinema-glyph` — 46.8 MB). Two readers said uncited; a picture is
+   a paid render and 0.7% is not worth that risk. They are a one-word decision
+   for him, not a judgement for the next run to re-make silently.
+4. ⚠ **THE DISCIPLINE THIS RUN PAID FOR: A READING A FUTURE RUN NEEDS IS CITED
+   BY PATH IN THIS LOG, OR IT IS NOT A RECORD.** Run 4's full read
+   (`output/janitor-run4-full-read.txt`, 92 KB) and its `%TEMP%` manifest were
+   swept, while the sweep manifest beside them survived — because line 576 cites
+   the manifest by path and calls the other *"the full read beside it"*. **A
+   path-based keeper cannot see a prose citation.** The verdicts survive in this
+   log and run 5 superseded that sweep, so the loss is the working paper, not the
+   finding — but it is this seat's own §C lesson (run 6) landing on this seat's
+   own records, and the next reading written goes into the log with its path.
