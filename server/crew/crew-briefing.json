@@ -1,7 +1,7 @@
 {
-  "edition": 433,
-  "updatedAt": "2026-09-16T06:27:18.263Z",
-  "shift": "THE SAVED-OUTPUT JOB IS DONE — THE FIRST OF YOUR FIVE. NOTHING NEEDS AN ANSWER FROM YOU.\n\nWHAT YOU ASKED FOR, AND WHAT CAME BACK. You said “527 do it”: go through the 6.5 GB of saved output, keep anything a written record points at, sweep the rest, and let the list be the receipt. That is exactly what ran. The folder went from 7.2 GB to 6.9 GB — 1,650 items down to 762, with 889 removed and nothing failing.\n\n⚠ THE HONEST HEADLINE IS NOT THE ONE ANYONE EXPECTED: THIS FOLDER IS NOT GOING TO GET MUCH SMALLER. Measured before a thing was touched, 95% of it — 6.7 of 7.1 GB — is evidence some written record points at. Those are the picture strips behind tests you judged with your own eyes. The part nobody pointed at was 5%, and two thirds of THAT was old test logs. So the size is not a mess: it is your own back catalogue, and shrinking it means throwing away the proof behind decisions you have already made. If the disk ever genuinely matters, the answer is moving old folders off this machine — I priced zipping them and it saves 4.5%, because pictures are already compressed.\n\nTHE THING THE JOB WAS REALLY WORRIED ABOUT — and it is clean. The fear written into that job was that some past clean-up had already quietly deleted the pictures behind a verdict you gave, leaving a record pointing at nothing. Measured: ZERO. Not one verdict record points at a missing picture. It looked like two until I opened both — one names its files with a wildcard and all eleven are there, the other is a path split across two lines in a document.\n\n⚠ AND THAT SAME WILDCARD ALMOST COST US SOMETHING. My first pass could not read a wildcard, so those eleven files — pictures a record points at — were sitting in the delete list, along with 66 more. Found and fixed before anything ran. Then, because a tool built an hour ago should not be the only thing standing between you and a permanent deletion, I built a SECOND reader that works a completely different way and deleted only what both agreed on. The second one saved another 75 items the first had marked for deletion.\n\nWHAT I CHOSE NOT TO DELETE, AND WHY I AM TELLING YOU RATHER THAN ASKING. Six folders of actual pictures — 47 MB, less than one percent — passed both tools as “nothing points at these.” I left them. A picture is a render you paid for, deletion cannot be undone, and both tools can only prove nobody wrote down that exact folder name. Saving 0.7% is not worth that. They are listed by name in the receipt if you ever want them gone.\n\nWHAT IT COST, NOT BURIED. Three old working files belonging to the crew's own cleaning records went. Their findings are safe — those are written into the log itself, and a later run had already replaced that work — so what was lost is the rough paper, not the answer. The reason is worth more than the loss: the log named one file by its full path and called the other “the full read beside it”, and a tool that looks for paths cannot see a sentence. That rule is now written down where the next run will read it.\n\nNEXT: 129, then 105, 106 and 108 — your order, unchanged. The page still lists them oldest-first; the job to fix that ordering is filed.",
+  "edition": 434,
+  "updatedAt": "2026-09-16T07:41:47.011Z",
+  "shift": "THE SECOND OF YOUR FIVE — AND MEASURING IT FIRST SAVED THE JOB FROM BEING BUILT ON SOMETHING THAT ISN'T TRUE. NOTHING NEEDS AN ANSWER FROM YOU.\n\nYou said “129 build it” — the refusal loop. The idea behind that job is a good one: when the picture engine refuses to draw something, write down the exact words it refused, write down the words it accepted, and over time learn which words cost you pictures. Before building any of it I went and looked at what is actually saved on the live system.\n\n⚠ THE WORDS ARE NOT BEING SAVED. NOT ONE OF THEM. The system has kept a record of 26 refused pictures going back to 25 August — it knows each one was refused, and when. It does not have the words. They are written down at the moment the picture is ordered, and then they are thrown away a few days later along with the rest of the sheet, while the note saying “refused” lives on. So today there is nothing to learn from: 26 refusals and zero of their words.\n\nWHY THAT MATTERS TO YOU IN MONEY. Four separate attempts have been made to work out which words upset the engine — your torso wording, four groups of words, a five-sentence swap, and the cyber-goth brief. Every one of them had to BUY fresh pictures to get anything to compare, because there was no back catalogue to read. That is the real reason this job keeps costing money to answer. Fix the saving and the next attempt reads a corpus that built itself for free while you work.\n\nAND THE NOTE THAT MADE THIS LOOK CHEAP WAS WRONG. A note left on that job on 5 September said the words were already recoverable from what is saved, and that the first pass might not need to buy anything at all. I checked it against the actual database rather than taking it at its word: it is not true. What survives is the brief YOU TYPED, which is not the same thing as what was sent — your words get expanded into a much longer instruction before they reach the engine, and the expansion is what gets refused. I asked the whole database, not just the two places I expected, and proved the reader could both find words where they exist and correctly find none where they don't before believing it.\n\nWHAT HAPPENS NEXT, AND WHY IT ISN'T ME. The first piece of this job means keeping a copy of the full instruction behind every picture — and that instruction is the recipe for a customer's cast, which this product treats like a password. How long we keep it, who can read it, and what happens to it when someone deletes their account is a real decision about customer privacy, not a piece of plumbing. The second piece changes how the studio writes its instructions, which is the very thing being rebuilt under Re-imagine. So it has gone to the seat that makes those calls, with all the numbers already measured so none of it gets paid for twice. Your other three jobs — 105, 106, 108 — are untouched and next.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,14 +116,19 @@
     ],
     "chips": [
       {
-        "label": "The saved-output job is done",
-        "tone": "good",
-        "source": "7.2 GB to 6.9 GB, 889 items removed, none failed. First of your five."
+        "label": "Your refusal job: measured first",
+        "tone": "neutral",
+        "source": "26 refused pictures on record. Zero of their words kept. Nothing to learn from yet."
       },
       {
-        "label": "Nothing it kept was guesswork",
-        "tone": "good",
-        "source": "Two separate readers had to agree before anything was deleted. No verdict lost its pictures."
+        "label": "That is why it kept costing money",
+        "tone": "neutral",
+        "source": "Four past attempts all had to buy fresh pictures. There was never a back catalogue."
+      },
+      {
+        "label": "A note that made it look cheap",
+        "tone": "warn",
+        "source": "5 Sept said the words were recoverable. Checked at the database: they are not."
       },
       {
         "label": "Your desk is empty",
@@ -133,16 +138,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "34 open, 4 ordered by you, none urgent. Tonight 1 closed. 15 untouched for 7 days."
-      },
-      {
-        "label": "Check-ups",
-        "tone": "good",
-        "source": "Janitor ran 15 Sep; next 18 Sep. Machinist and Retro 19 Sep, Warden 20 Sep. None overdue."
+        "source": "34 open, 4 ordered by you, none urgent. 15 untouched for 7 days."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-16T06:25:50.709Z",
+      "readAt": "2026-09-16T07:40:39.791Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5033,6 +5033,13 @@
   ],
   "pipeline": [
     {
+      "id": "refusal-corpus-129",
+      "title": "The refusal job was measured before it was built — and the words it wants to study are not being kept",
+      "status": "blocked",
+      "prNumber": null,
+      "note": "Your “129 build it”. Nothing was built and nothing was spent, on purpose: the first act was checking the job's own premise against the live database, and it does not hold. 26 refused pictures are on record since 25 August and NOT ONE keeps the words it was refused for — they are written when the picture is ordered and thrown away with the sheet, while the “refused” note survives. A note on that job from 5 September said the words were recoverable from what is left; read at the rows, what is left is the brief YOU typed, which is not what was sent. Both halves of the reader were proven able to find words and able to find none before anything was believed, and the whole database was asked rather than the two places expected. It has moved to the seat that makes privacy and instruction-writing calls, with every number already measured so it is not paid for twice. Your 105, 106 and 108 are untouched and next."
+    },
+    {
       "id": "invite-form-label-1002",
       "title": "The invite form's three field names now match every other field name in the product",
       "status": "merged",
@@ -6619,6 +6626,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0916c-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 34 open, level. Your second job was measured tonight and handed on rather than guessed at; 3 remain",
+      "detail": "Nothing closed and nothing filed tonight, so the board is level at 34.\n\nOf your five: 527 is done, 129 was measured tonight and passed to the seat that makes privacy and instruction calls — with its numbers already taken, so it is not paid for twice. Still to do, in your order: 105, 106, 108 — one session each.\n\n15 cards have had no comment, close or commit for seven days, level with last night.\n\nNothing here needs you."
+    },
+    {
       "id": "queue-shape-0916a-foreman",
       "severity": "info",
       "state": "resolved",
@@ -6992,7 +7006,7 @@
     {
       "id": "queue-shape-0916b-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 34 open. One of your five jobs finished and closed tonight; 4 remain, in your order",
       "detail": "Four ordered by you and still to do: 129, then 105, 106, 108 — one session each. None urgent, nothing filed tonight.\n\n15 cards have had no comment, close or commit for seven days. That is level with last night, and the oldest is a design note from 27 August that is waiting on a build order rather than rotting.\n\nNothing here needs you."
     }
@@ -7190,7 +7204,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-16T06:25:50.708Z",
+    "readAt": "2026-09-16T07:40:39.790Z",
     "items": [
       {
         "issueNumber": 105,
@@ -7210,7 +7224,11 @@
       {
         "issueNumber": 129,
         "title": "Refusal loop — a patrol: log refused and passed prompts, find trigger words, measured word→replacement pairs into the author's rewrite list (founder verdict, 2026-08-26)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "fable",
+          "because": "a DESIGN DECISION (#541 rule 3) — slice 1 makes the composed prompt outlive its candidate, which reverses `generation_operations`' stated invariant (\"Raw promp…"
+        }
       }
     ]
   }
