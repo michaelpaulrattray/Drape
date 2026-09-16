@@ -1,7 +1,7 @@
 {
-  "edition": 441,
-  "updatedAt": "2026-09-16T19:55:00.000Z",
-  "shift": "PART THREE OF JOB 108 IS DONE AND ON PRODUCTION. NOTHING NEEDS AN ANSWER FROM YOU.\n\nOne thing landed. The last of the three clean-up lists on job 108 - the 271 type definitions that nothing outside their own file ever used - was checked and cleared tonight: 221 made private, 15 deleted outright, 49 dead pass-through lines removed. 150 files changed and the product behaves exactly as before: these are compile-time shapes, not running code, so there is nothing for a customer to notice. Every check is green, the outside reviewer read the whole diff, re-counted every deleted line itself, and found no defect. The overnight reading that counts these now prints no 'unused types' section at all.\n\nWhy this list did not go through the history check the way the last one did: the history check exists to catch a working control that quietly lost its callers, and a type definition cannot be a control - it never runs. All three checkers say so of themselves in their own code, and the ledger held none of these. So the readers here were the finder (knip) and the compiler (tsc), and the checker I drove found exactly one item knip could not see (a type read through a shape the finder is blind to) - fixed so it reads correctly, and the blind spot is written into the Janitor's record.\n\nTwo notes of yours were kept when their carrier went: the closed-vocabulary ruling on what a source picture may show now sits on the thing it describes, and the 'nothing here is per-side' note stays as a plain comment.\n\nWhat is left on 108: the 256 unused exports that are all on the customer side or in the tooling. The history check cannot read those by design, and whether it should is a tooling decision - filed as card 1022 for the Retro with a recommendation (widen to shared/ only; clear the customer side on the finder-plus-compiler road), not decided mid-job. 129 still waits on your refused rolls.",
+  "edition": 442,
+  "updatedAt": "2026-09-16T23:20:00.000Z",
+  "shift": "BUG 1014 IS FIXED AND ON PRODUCTION, IN TWO STEPS. NOTHING NEEDS AN ANSWER FROM YOU.\n\nWhat it was: the code that takes credits from a customer had two names for the same thing - an old name from the points-to-credits rename and the real one. About thirty of the tests that promise 'this road never charges anyone' were written against the old name only. So a road could have charged through the real name and still passed a test that says it charges nothing. No customer was charged wrongly - this was a hole in the safety net, not a fall through it - but the net had a hole.\n\nStep one (first change): every one of those thirty tests now watches both names, plus the wrapper every new-studio charge goes through. Before I trusted a single one, I broke each on purpose through the other name and confirmed it went red - and did the same on the old code to prove the hole was real: on the old code, 29 of the 30 stayed green while a charge was planted through the real name. On the new code, all 30 go red. Four of them also forbade a refund name that has never existed in the product; they now name the real refund road. The outside reviewer read the whole diff, checked every widened test against the files it reads, and passed it.\n\nStep two (second change): with the net repaired, the old name was deleted and its six callers now use the real one - the same function, so nothing about pricing or paths moves. Two suites had been watching the two names as two separate spies; they now watch the one thing there is. Reviewer passed it too. Both changes are live; the health check reads the new build.\n\nTwo things found on the way, filed, not done: the PRICE table has the same two-names shape (card 1025 - all its callers are in the old studio that is due to be retired whole; recommendation on the card is to clear it now anyway, one small change). And a process cost: because I marked each change ready AND added the review label, the reviewer ran twice on each - $17.19 for four reviews where two were owed. That is card 1026 for the Retro, with the fix in two lines; I will not do it again either way.\n\nNothing on your desk. 108's remainder still waits on the Retro's tooling decision (1022); 129 still waits on your refused rolls.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-16T19:47:57.731Z",
+      "readAt": "2026-09-16T23:10:47.793Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5033,6 +5033,13 @@
   ],
   "pipeline": [
     {
+      "id": "money-guards-1014",
+      "title": "Bug 1014: the 'this road charges nothing' tests watch the real deduction name as well as its alias, and the alias is gone - two changes, no behaviour change",
+      "status": "merged",
+      "prNumber": 1024,
+      "note": "Background work, Bugs switch. Worked example: on the old code a charge planted through the real name passed 29 of 30 no-charge tests; on the new code all 30 go red (119 checks each way, none out of place). Then the old name was deleted and its six callers renamed - same function, same prices. Reviewer PASS on both (its one note is card 1025). Production build 995cea4b."
+    },
+    {
       "id": "knip-types-108-s3",
       "title": "Job 108, part three: 271 unused type definitions cleared - 221 made private, 15 deleted, 49 dead pass-through lines removed; no behaviour change",
       "status": "merged",
@@ -6696,9 +6703,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0917d-foreman",
+      "id": "queue-shape-0917e-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 34 open, one closed, two filed. The Bugs band is empty again",
+      "detail": "Closed tonight: 1014 (the money-guard bug, both halves live). Filed: 1025 (the price table's two names - same class, old studio, recommendation to clear it now) and 1026 (a money-path change marked ready and labelled for review is reviewed twice - $17.19 tonight; for the Retro). 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 open with its remainder on 1022, 129 held on its own data (re-read tonight: still true, not waiting on you). Nothing on your desk. Left as before: 1006 and 1022 (the Retro's), 1003 (a design decision at phone width)."
+    },
+    {
+      "id": "queue-shape-0917d-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 33 open, one filed. 108 is three parts into three; its remainder is a tooling decision (1022)",
       "detail": "One card filed tonight (1022, for the Retro: whether the history check should also read the customer side and shared code - it decides how the last 256 items on 108 get cleared; recommendation on the card). Nothing closed. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 open with its remainder named, 129 held on its own data (re-read tonight: the hold is still true). Nothing on your desk. Two background cards sized and left again: 1006 (the Retro's eye) and 1003 (a design decision at phone width); 1014 is a money-path bug that wants a full session under the reviewer."
     },
@@ -7330,7 +7344,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-16T19:47:57.730Z",
+    "readAt": "2026-09-16T23:10:47.792Z",
     "items": [
       {
         "issueNumber": 108,
