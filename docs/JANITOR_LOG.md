@@ -1014,7 +1014,8 @@ this session except one `UNREVIEWED` verdict (`isIpBlocked` → KEEP, triage
    30-day window named `blockIp` un-wired; `blockIp` has two callers, both
    `const { blockIp } = await import("../../db")`, a shape the reader did not
    read. 36 production-wired server exports counted zero — both login routers
-   among them. PR #1017 repairs it; the full-history timeline was walked on
+   among them — and the reviewer found five more on the PR (`.then(({ x }) =>`,
+   all four background workers and `completeReferral`): 41. PR #1017 repairs it; the full-history timeline was walked on
    both readers (216 s each) and the class counts moved exactly as predicted.
    **Run the differ, then read its first noisy finding at the code before
    believing its silences** — the noise is the only side of a blindness you

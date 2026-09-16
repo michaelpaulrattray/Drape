@@ -3546,7 +3546,8 @@ decision (wire or bin) rather than a Janitor act. **KEEP**, ceiling 17 → 16.
 
 `lib/importerCountDiff.mts` read no destructured dynamic import before PR
 #1017 — 36 production-wired server exports counted zero, both login routers
-among them. The `rewired` arm of `check-cleanup-dispositions` runs on that
+among them, and the reviewer found five more on the PR (`.then(({ x }) =>`:
+all four background workers and `completeReferral`), 41 in all. The `rewired` arm of `check-cleanup-dispositions` runs on that
 reader, so a HELD or TAKE row whose symbol had come back through a dynamic
 import would have passed the door in silence. Measured after the repair: **0
 rewired, 0 unreadable** — no standing verdict in this table was wrong, which

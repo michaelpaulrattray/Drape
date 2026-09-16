@@ -30,7 +30,11 @@ to zero, so the timeline would have reported silence on the day either login
 route died. **PR #1017** repairs it (destructured dynamic imports read as named
 imports; `const mod = await import()` as a namespace binding); seven of eight
 new arms redden under the old reader; `--controls february` passes; the
-deletion door reads 0 rewired. After: 36 → 0. **Every table below is read on
+deletion door reads 0 rewired. After: 36 → 0. **And the reviewer found a
+third shape on the PR itself** — `import("…").then(({ x }) =>`, no `await`,
+the ONLY reach of all four background worker starters and of
+`completeReferral`, the welcome-bonus payer: five more at zero, read now,
+**41 in all**. What the reader reads is exactly three shapes and no fourth. **Every table below is read on
 the repaired reader.** The full-history timeline was walked twice, stride 10
 over 3765 commits (377 boundaries, 216 s each) — once on each reader — and the
 class counts moved exactly as the repair predicts: `wired-at-head` 1730 → 1766,
