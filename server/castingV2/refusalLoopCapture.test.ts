@@ -78,6 +78,17 @@ describe("which slices are kept", () => {
     expect(slicesToKeep([slice("a", "ready"), slice("b", "failed", "transport")])).toEqual([]);
   });
 
+  it("keeps a Retry's PASS on words refused before — and only then", () => {
+    expect(slicesToKeep([slice("r", "ready")], true).map((entry) => entry.kept)).toEqual(["passed"]);
+    expect(slicesToKeep([slice("r", "ready")], false)).toEqual([]);
+    /* A retry that failed for another reason is still not a pass. */
+    expect(slicesToKeep([slice("r", "failed", "transport")], true)).toEqual([]);
+  });
+
+  it("drops a slice with no words rather than keeping an empty sentence", () => {
+    expect(slicesToKeep([{ ...slice("a", "failed", "content_policy"), prompt: "" }])).toEqual([]);
+  });
+
   it("keeps each refused slice and each delivered one, and nothing else", () => {
     const kept = slicesToKeep(MIXED_ROLL).map((entry) => [entry.candidatePublicId, entry.kept]);
     expect(kept).toEqual([
@@ -225,12 +236,27 @@ describe("a 30-day hold is not a cleanup backlog", () => {
 describe("where the capture is wired", () => {
   const roll = fs.readFileSync(path.join(__dirname, "rollService.ts"), "utf8");
 
-  it("runs before the all-refused early return, so an eight-of-eight refusal is kept", () => {
+  it("runs before BOTH early returns — all refused, and a partly abandoned dispatch", () => {
     const capture = roll.indexOf("dependencies.captureWords ?? captureRollWords");
-    const earlyReturn = roll.indexOf("if (ready === 0) {");
+    const abandoned = roll.indexOf("if (abandoned.length > 0) {");
+    const allRefused = roll.indexOf("if (ready === 0) {");
     expect(capture, "the roll calls the capture").toBeGreaterThan(0);
-    expect(earlyReturn, "the early return this is ordered against still exists").toBeGreaterThan(0);
-    expect(capture).toBeLessThan(earlyReturn);
+    expect(abandoned, "the abandoned-dispatch return still exists").toBeGreaterThan(0);
+    expect(allRefused, "the all-refused return still exists").toBeGreaterThan(0);
+    expect(capture).toBeLessThan(abandoned);
+    expect(capture).toBeLessThan(allRefused);
+  });
+
+  it("is called on the Retry road too, after the settlement and before its branches", () => {
+    const retry = fs.readFileSync(path.join(__dirname, "retryService.ts"), "utf8");
+    const settled = retry.indexOf("const settlement = value as Settlement;");
+    const capture = retry.indexOf("dependencies.captureWords ?? captureRollWords");
+    const readyBranch = retry.indexOf('if (settlement.outcome === "ready") {');
+    expect(settled).toBeGreaterThan(0);
+    expect(readyBranch).toBeGreaterThan(0);
+    expect(capture).toBeGreaterThan(settled);
+    expect(capture).toBeLessThan(readyBranch);
+    expect(retry).toContain("refusedBefore: priorFailureClass === REFUSAL_FAILURE_CLASS");
   });
 
   it("hands over the prompt that was dispatched, not the brief", () => {

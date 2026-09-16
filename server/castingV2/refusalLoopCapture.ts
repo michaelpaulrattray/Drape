@@ -26,7 +26,11 @@
  *   the hold lapses. No new sweeper.
  * - **Which rolls.** Only a roll with at least one REFUSAL. Its refused slices
  *   and its passed slices are both kept, because the patrol needs the pair; a
- *   wholly-passed roll writes nothing.
+ *   wholly-passed roll writes nothing. **Both roads that dispatch a slice call
+ *   it** (review of PR #1007, finding 1): the roll, including a roll whose
+ *   dispatch was partly abandoned (its settled slices are still kept), and the
+ *   Retry — a refused retry is kept, and so is a retry that PASSES on words
+ *   refused before, which is the pair in its purest form.
  * - **Who reads it.** The patrol (slice 2, not built) and nobody else. No staff
  *   projection — `server/staffImageBoundary.test.ts` holds that by name.
  * - **Deletion.** `collectAccountOwnedStorageItemsIn` adds these keys to the
@@ -110,12 +114,28 @@ export function refusalLoopKey(input: {
  */
 export function slicesToKeep(
   slices: readonly RollSliceWords[],
+  /**
+   * These words were REFUSED on an earlier attempt (a Retry of a refused tile),
+   * so a pass now is the other half of the pair even with no refusal in hand.
+   */
+  refusedBefore = false,
 ): Array<RollSliceWords & { kept: RefusalLoopOutcome }> {
   const refused = (slice: RollSliceWords) =>
     slice.outcome === "failed" && slice.failureClass === REFUSAL_FAILURE_CLASS;
-  if (!slices.some(refused)) return [];
+  if (!refusedBefore && !slices.some(refused)) return [];
   return slices.flatMap((slice): Array<RollSliceWords & { kept: RefusalLoopOutcome }> => {
-    if (slice.prompt.length === 0) return [];
+    if (slice.prompt.length === 0) {
+      /* A slice with no words cannot teach the patrol anything — but a corpus
+         holding a pass without its refused sibling must not be silent about
+         why. Today dispatch reads the same map, so this should never fire. */
+      if (refused(slice) || slice.outcome === "ready") {
+        log.warn(
+          { candidate: slice.candidatePublicId, outcome: slice.outcome },
+          "[refusalLoopCapture] a kept slice had no prompt — its words are missing from the corpus",
+        );
+      }
+      return [];
+    }
     if (refused(slice)) return [{ ...slice, kept: "refused" as const }];
     if (slice.outcome === "ready") return [{ ...slice, kept: "passed" as const }];
     return [];
@@ -164,6 +184,8 @@ export async function captureRollWords(input: {
   operationId: string;
   rollPublicId: string;
   slices: readonly RollSliceWords[];
+  /** A Retry of a tile whose words were refused before — see `slicesToKeep`. */
+  refusedBefore?: boolean;
   /** Injected by tests; production builds one from the private bucket config. */
   writer?: DiagnosticWriter;
   /** Injected by tests; production reserves a real held manifest. */
@@ -176,7 +198,7 @@ export async function captureRollWords(input: {
     if (!diagnosticCaptureEnabledFor(input.userId, env[CASTING_DIAGNOSTIC_CAPTURE_SCOPE_ENV])) {
       return { captured: 0, keys: [], reason: "not in scope" };
     }
-    const kept = slicesToKeep(input.slices);
+    const kept = slicesToKeep(input.slices, input.refusedBefore === true);
     if (kept.length === 0) return { captured: 0, keys: [], reason: "no refusal" };
 
     let writer = input.writer;

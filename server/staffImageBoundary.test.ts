@@ -111,14 +111,21 @@ describe("staff image boundary", () => {
     const capture = source("castingV2/refusalLoopCapture.ts");
     expect(capture).toContain('REFUSAL_LOOP_KEY_PREFIX = "casting-v2/refusal-loop"');
 
+    /* DERIVED, both halves (review of PR #1007, finding 3): every moderator
+       route and every admin route, so a reader added to a file this list did
+       not name still reddens it. */
     const staffFiles = [
       "db/moderatorQueries.ts",
-      "routes/moderatorExports.ts",
+      ...fs.readdirSync(path.join(serverRoot, "routes"))
+        .filter((name) => name.startsWith("moderator") && name.endsWith(".ts") && !name.endsWith(".test.ts"))
+        .map((name) => `routes/${name}`),
       ...fs.readdirSync(path.join(serverRoot, "routes/admin"))
         .filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts"))
         .map((name) => `routes/admin/${name}`),
     ];
-    expect(staffFiles.length).toBeGreaterThan(2);
+    expect(staffFiles).toContain("routes/moderator.ts");
+    expect(staffFiles).toContain("routes/moderatorExports.ts");
+    expect(staffFiles.length).toBeGreaterThan(5);
     for (const file of staffFiles) {
       const text = source(file);
       for (const needle of ["refusalLoopCapture", "REFUSAL_LOOP_KEY_PREFIX", "refusal-loop"]) {

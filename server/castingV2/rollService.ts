@@ -1009,6 +1009,34 @@ export async function createRoll(
     ),
   );
 
+  /*
+    AND THE WORDS BEHIND A REFUSAL ARE KEPT (#129 slice 1).
+
+    The sent prompt lives on the candidate row, and a refused candidate dies
+    with its session — so until this, a refusal left its class and lost its
+    sentence. On a roll with at least one refusal, each refused and each
+    delivered slice's words go to the private bucket for 30 days, for the
+    refusal patrol to read. BEFORE both early returns on purpose: a roll
+    refused eight times out of eight is the roll this exists for, and a roll
+    with one abandoned dispatch still has seven settled slices whose refunds
+    are already recorded (review of PR #1007, finding 2). Never throws.
+  */
+  await (dependencies.captureWords ?? captureRollWords)({
+    userId: input.userId,
+    operationId: gate.operationId,
+    rollPublicId: created.roll.publicId,
+    slices: outcomes.flatMap((outcome, index) => {
+      if (outcome.status !== "fulfilled") return [];
+      const candidate = candidates[index];
+      return [{
+        candidatePublicId: candidate.publicId,
+        prompt: promptByPosition.get(candidate.position) ?? "",
+        outcome: outcome.value.outcome,
+        failureClass: outcome.value.failureClass,
+      }];
+    }),
+  });
+
   const abandoned = outcomes.flatMap((outcome, index) =>
     outcome.status === "rejected" ? [{ candidate: candidates[index], reason: outcome.reason }] : [],
   );
@@ -1052,28 +1080,6 @@ export async function createRoll(
     settlements.filter((settlement) => settlement.refundUnrecorded).length + cancelSettlement.unrecorded;
 
   await touchCastingSession(input.userId, roll.sessionId).catch(() => undefined);
-
-  /*
-    AND THE WORDS BEHIND A REFUSAL ARE KEPT (#129 slice 1).
-
-    The sent prompt lives on the candidate row, and a refused candidate dies
-    with its session — so until this, a refusal left its class and lost its
-    sentence. On a roll with at least one refusal, each refused and each
-    delivered slice's words go to the private bucket for 30 days, for the
-    refusal patrol to read. Before the early return below on purpose: a roll
-    refused eight times out of eight is the roll this exists for. Never throws.
-  */
-  await (dependencies.captureWords ?? captureRollWords)({
-    userId: input.userId,
-    operationId: gate.operationId,
-    rollPublicId: roll.publicId,
-    slices: candidates.map((candidate, index) => ({
-      candidatePublicId: candidate.publicId,
-      prompt: promptByPosition.get(candidate.position) ?? "",
-      outcome: settlements[index].outcome,
-      failureClass: settlements[index].failureClass,
-    })),
-  });
 
   if (unrecordedRefunds > 0) {
     // A refund that did not record is never reported as "you weren't charged".
