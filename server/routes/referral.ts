@@ -179,10 +179,15 @@ export const referralRouter = router({
 
   /**
    * Claim a referral code during/after signup.
-   * Called by the frontend after OAuth callback when ?ref= param was captured.
+   * Called by the frontend after login when a ?ref= param was captured on
+   * landing — `useReferralClaim`, mounted at the app root by
+   * `ReferralClaimBridge` (#1010: it had no mount for five months).
    */
   claim: protectedProcedure
-    .input(z.object({ referralCode: z.string().min(1).max(20) }))
+    // .strict() — invariant 4 on a money-adjacent surface. The ONE caller is the
+    // hook above and it sends `{ referralCode }` alone; proven at the parser in
+    // publicInputStrictness.test.ts, positive control first.
+    .input(z.object({ referralCode: z.string().min(1).max(20) }).strict())
     .mutation(async ({ ctx, input }) => {
       const ip = getClientIp(ctx.req);
       const result = await claimReferral(ctx.user.id, input.referralCode, ip);
