@@ -39,7 +39,7 @@ vi.mock("./db", async (importOriginal) => {
     fillEmptyCastNodeWithVersionIn: vi.fn().mockResolvedValue("filled"),
     updateModel: vi.fn().mockResolvedValue({ success: true }),
     mintModelAtomically: vi.fn().mockResolvedValue({ success: true }),
-    deductPoints: vi.fn().mockResolvedValue({ success: true }),
+    deductCredits: vi.fn().mockResolvedValue({ success: true }),
   };
 });
 vi.mock("./casting/pdfService", () => ({

@@ -4,7 +4,7 @@ import {
   createGeneration, updateGeneration, markGenerationOperationRunning,
   assertGenerationOperationSnapshotHead,
 } from "../../db";
-import { deductPoints } from "../../db";
+import { deductCredits } from "../../db";
 import {
   generateCastingImage,
   POINT_COSTS,
@@ -211,7 +211,7 @@ export const castingImagingRouter = router({
       const chargeReferenceId = started.chargeReferenceId;
       let chargedCredits = 0;
       let refundedCredits = 0;
-      const deductResult = await deductPoints(
+      const deductResult = await deductCredits(
         ctx.user.id,
         POINT_COSTS.castingImage,
         "generation",

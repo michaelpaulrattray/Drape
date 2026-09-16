@@ -19,7 +19,7 @@ const db = vi.hoisted(() => ({
   updateGeneration: vi.fn(),
   updateModel: vi.fn(),
   mintModelAtomically: vi.fn(),
-  deductPoints: vi.fn(),
+  deductCredits: vi.fn(),
   addCredits: vi.fn(),
 }));
 vi.mock("../db", () => db);

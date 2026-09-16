@@ -35,7 +35,6 @@ export {
   getCreditTransactionByRef,
   normalizeCreditReferenceId,
   deductCredits,
-  deductPoints,
   addCredits,
 } from "./credits";
 

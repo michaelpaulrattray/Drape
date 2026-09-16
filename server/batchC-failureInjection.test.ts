@@ -106,7 +106,6 @@ vi.mock("./db", async (importOriginal) => {
       tx.updates.push(input.data);
       return { success: true };
     }),
-    deductPoints: vi.fn(),
     deductCredits: vi.fn(),
     addCredits: vi.fn(),
   };
@@ -372,7 +371,6 @@ import {
   addBoardItemVersion,
   getLatestVersionNumber,
   addBoardItem,
-  deductPoints,
   deductCredits,
   addCredits,
   assertGenerationOperationSnapshotHead,
@@ -513,7 +511,6 @@ beforeEach(() => {
   vi.mocked(addBoardItem).mockReset().mockResolvedValue(55 as never);
   vi.mocked(addBoardEdge).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(getEdgesFrom).mockReset().mockResolvedValue([] as never);
-  vi.mocked(deductPoints).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(deductCredits).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(addCredits).mockReset().mockResolvedValue({ success: true } as never);
   vi.mocked(iterateModel).mockClear();
@@ -1015,7 +1012,7 @@ describe("applyModelEdit boundaries", () => {
     expect(anchorInserts).toHaveLength(1);
     expect((anchorInserts[0].provenance as Record<string, unknown>).identityRole).toBe("anchor");
     expect(tx.updates.some((u) => typeof u.identityRevisionId === "string")).toBe(true);
-    expect(deductPoints).toHaveBeenCalledTimes(1);
+    expect(deductCredits).toHaveBeenCalledTimes(1);
   });
 
 });

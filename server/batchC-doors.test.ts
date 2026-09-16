@@ -49,7 +49,6 @@ vi.mock("./db", async (importOriginal) => {
     assertGenerationOperationSnapshotHead: vi.fn().mockResolvedValue(undefined),
     createModelAsset: vi.fn().mockResolvedValue({ success: true, assetId: 501 }),
     markModelAssetsStale: vi.fn().mockResolvedValue({ success: true }),
-    deductPoints: vi.fn().mockResolvedValue({ success: true }),
     deductCredits: vi.fn().mockResolvedValue({ success: true }),
     addCredits: vi.fn().mockResolvedValue({ success: true }),
   };
@@ -280,7 +279,6 @@ import {
   updateGenerationOperationProgress,
   assertGenerationOperationSnapshotHead,
   mintModelAtomically,
-  deductPoints,
   deductCredits,
   addCredits,
   createGeneration,
@@ -402,7 +400,6 @@ beforeEach(() => {
   vi.mocked(completeDirectOperationFailure).mockClear();
   vi.mocked(completeDirectOperationSuccess).mockClear();
   vi.mocked(mintModelAtomically).mockClear().mockResolvedValue({ success: true } as never);
-  vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(deductCredits).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(addCredits).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(createGeneration).mockClear().mockResolvedValue({ success: true, generationId: 11 } as never);
@@ -444,7 +441,7 @@ describe("generation.castingImage (M10)", () => {
       caller.generation.castingImage({ modelId: 7, referenceImage: "data:image/png;base64,AAAA" } as never),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(getModelById).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
   });
 
@@ -495,7 +492,7 @@ describe("generation.castingImage (M10)", () => {
       .rejects.toThrow("snapshot bootstrap failed");
 
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
     expect(commitHeadshotSnapshot).not.toHaveBeenCalled();
   });
@@ -504,7 +501,7 @@ describe("generation.castingImage (M10)", () => {
     vi.mocked(getModelById).mockResolvedValue(model({ status: "active", agencyId: "MOD-1" }) as never);
     const caller = appRouter.createCaller(authCtx());
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
   });
 
@@ -655,7 +652,7 @@ describe("generation.castingImage (M10)", () => {
       .rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
 
     expect(markGenerationOperationRunning).toHaveBeenCalledTimes(1);
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(createGeneration).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
     expect(commitHeadshotSnapshot).not.toHaveBeenCalled();
@@ -782,7 +779,7 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
     await expect(
       executeMintPackage({ userId: 1, modelId: 7, tier: "draft", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.mintAnchorInvalid });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(mintModelAtomically).not.toHaveBeenCalled();
   });
 
@@ -807,7 +804,7 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
     await expect(
       executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: expect.stringContaining("unpin") });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 
   it("a CROSS-REVISION tier view refuses before money", async () => {
@@ -819,7 +816,7 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
     await expect(
       executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 
   it("snapshot mint refuses a stale selected tier view even when a newer unselected ledger row is fresh", async () => {
@@ -886,7 +883,7 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
     });
 
     expect(getModelAssets).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
   });
@@ -929,7 +926,7 @@ describe("executeMintPackage §14 integrity (M7) + anchor consumption (M21)", ()
     vi.mocked(getModelAssets).mockResolvedValue(full as never);
     const res = await executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID });
     expect(res.minted).toBe(true);
-    expect(deductPoints).not.toHaveBeenCalled(); // zero missing ⇒ zero deduction
+    expect(deductCredits).not.toHaveBeenCalled(); // zero missing ⇒ zero deduction
     expect(commitGeneratedPackageSnapshot).toHaveBeenCalledWith(expect.objectContaining({
       operationId: REQUEST_ID,
       operationKind: "casting.mint",
@@ -980,7 +977,7 @@ describe("mint/add-views snapshot ordering", () => {
       message: expect.stringContaining("headshot"),
     });
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
   });
@@ -997,7 +994,7 @@ describe("mint/add-views snapshot ordering", () => {
       characterName: "Vera",
     })).rejects.toThrow("snapshot head changed before execution");
 
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
   });
@@ -1134,7 +1131,7 @@ describe("mint/add-views snapshot ordering", () => {
     })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
 
     expect(markGenerationOperationRunning).toHaveBeenCalledTimes(1);
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(generateFullBody).not.toHaveBeenCalled();
     expect(commitGeneratedPackageSnapshot).not.toHaveBeenCalled();
@@ -1320,7 +1317,6 @@ describe("mint/add-views snapshot ordering", () => {
       tier: "core",
       name: "Vera",
     }));
-    expect(deductPoints).not.toHaveBeenCalled();
     expect(deductCredits).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(generateFullBody).not.toHaveBeenCalled();
@@ -1359,7 +1355,7 @@ describe("mint/add-views snapshot ordering", () => {
 
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
     expect(executeEvidenceMint).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
   });
 
@@ -1404,7 +1400,7 @@ describe("mint/add-views snapshot ordering", () => {
       operationId: REQUEST_ID,
     });
     expect(completeDirectOperationFailure).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 
   // L8b (opus-607 §2, ruled fable-818 §2). The structural twin of this pair
@@ -1447,7 +1443,7 @@ describe("mint/add-views snapshot ordering", () => {
     })).rejects.toMatchObject({ code: "CONFLICT" });
 
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
   });
 });
@@ -1605,7 +1601,7 @@ describe("generation.refreshSlots snapshot adoption", () => {
     })).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: expect.stringContaining("headshot") });
 
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();
   });
@@ -1623,7 +1619,7 @@ describe("generation.refreshSlots snapshot adoption", () => {
       angles: ["threeQuarter"],
     })).rejects.toThrow("snapshot head changed before execution");
 
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();
   });
@@ -1644,7 +1640,7 @@ describe("generation.refreshSlots snapshot adoption", () => {
     expect(result).toMatchObject({ refreshed: [], failed: [] });
     expect(bootstrapModelSnapshot).not.toHaveBeenCalled();
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();
   });
@@ -1826,7 +1822,7 @@ describe("generation.refreshSlots snapshot adoption", () => {
     })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
 
     expect(markGenerationOperationRunning).toHaveBeenCalledTimes(1);
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateRemainingViews).not.toHaveBeenCalled();
     expect(commitRefreshedSlotsSnapshot).not.toHaveBeenCalled();
   });
@@ -1953,7 +1949,7 @@ describe("generation.refreshSlots snapshot adoption", () => {
 
     expect(beginDirectOperation).not.toHaveBeenCalled();
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(executeEvidencePackageSync).not.toHaveBeenCalled();
   });
 
@@ -1974,7 +1970,7 @@ describe("generation.refreshSlots snapshot adoption", () => {
     }));
     expect(classifyEvidencePackageRouteAuthority).not.toHaveBeenCalled();
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(executeEvidencePackageSync).not.toHaveBeenCalled();
   });
 });
@@ -1995,7 +1991,6 @@ describe("executeRestoreSlotVersion stays free (M13/M20)", () => {
       assetId: 1,
       readMode: "r6",
     });
-    expect(deductPoints).not.toHaveBeenCalled();
     expect(deductCredits).not.toHaveBeenCalled();
     expect(commitRestoredSlotSnapshot).toHaveBeenCalledWith({
       userId: 1,
@@ -2027,7 +2022,6 @@ describe("generation.restoreSlotVersion snapshot adoption", () => {
       .toBeLessThan(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0]);
     expect(vi.mocked(markGenerationOperationRunning).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(commitRestoredSlotSnapshot).mock.invocationCallOrder[0]);
-    expect(deductPoints).not.toHaveBeenCalled();
     expect(deductCredits).not.toHaveBeenCalled();
   });
 

@@ -66,14 +66,17 @@ Controls taken 2026-08-26 on the committed config (working law 2):
   `prove-sabotage-survives-death-disposable.mts`) — a consequence of the
   disposable ignore above, found Janitor run 1. Such a row is a KEEP; grep
   `scripts/` including disposables before believing a `lib/` file is dead.
-- **The duplicate-exports floor is 2, and both are on purpose** (#108 slice 1,
-  2026-09-16): `server/castingV2/faceDescribe.ts: describeWithTeeth, describeFace`
-  is a PINNED bench result — the shipped pointer beside the arm it points at,
-  with `faceDescribe.test.ts:132` asserting the identity so a re-pointing
-  without a new run goes red; and `server/db/credits.ts: deductCredits,
-  deductPoints` is a rename alias with SIX live money-path callers and a dozen
-  guard regexes spelling the old name, held for its own card (triage §35c). A
-  duplicates reading of 2 is the floor; a reading above 2 names a new alias.
+- **The duplicate-exports floor is 1, and it is on purpose** (#108 slice 1,
+  2026-09-16; floor 2 → 1 with #1014, 2026-09-17): `server/castingV2/faceDescribe.ts:
+  describeWithTeeth, describeFace` is a PINNED bench result — the shipped
+  pointer beside the arm it points at, with `faceDescribe.test.ts:132` asserting
+  the identity so a re-pointing without a new run goes red. The other one —
+  `server/db/credits.ts: deductCredits, deductPoints`, a rename alias with six
+  live money-path callers and thirty guard regexes spelling only the old name
+  (triage §35c) — is RETIRED under #1014: the guards were widened to the real
+  name first, each driven with a sabotage through the other spelling, then the
+  six callers renamed and the alias deleted. A duplicates reading of 1 is the
+  floor; a reading above 1 names a new alias.
 - **An inline `import("./x").T` in a type position is a consumer knip does
   NOT see** (#108 slice 3, 2026-09-17): `SchemaPathByField` was listed as an
   unused type while `identityFieldHandlers.ts` read it as

@@ -5,7 +5,7 @@ import { TRPCError } from "@trpc/server";
 import {
   createGeneration,
   createModelAsset,
-  deductPoints,
+  deductCredits,
   updateGeneration,
 } from "../../db";
 import {
@@ -160,7 +160,7 @@ export interface EvidencePackageExecutionDependencies {
   createAudit?: typeof createGeneration;
   updateAudit?: typeof updateGeneration;
   createFailureMarker?: typeof createModelAsset;
-  deduct?: typeof deductPoints;
+  deduct?: typeof deductCredits;
   refund?: typeof recordRefund;
   commit?: typeof commitEvidencePackageSyncSnapshot;
   reserveCleanup?: (input: {
@@ -1083,7 +1083,7 @@ export async function executeEvidencePackageSync(
     operationId: input.operationId,
     angles: input.angles,
   });
-  const charged = await (dependencies.deduct ?? deductPoints)(
+  const charged = await (dependencies.deduct ?? deductCredits)(
     input.userId,
     authority.plan.totalCost,
     "generation",
