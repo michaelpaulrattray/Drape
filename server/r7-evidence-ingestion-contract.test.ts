@@ -201,6 +201,6 @@ describe("R7-7C1 owned-evidence schema contract", () => {
     expect(driver).toContain("applyMigrationRange(connection, 0, 10)");
     expect(driver).toContain("applyMigrationRange(connection, 11, 11)");
     expect(driver).toContain("DROP DATABASE IF EXISTS");
-    expect(driver).not.toMatch(/storage(Put|Delete|List)|Gemini|generateContent|deductPoints/i);
+    expect(driver).not.toMatch(/storage(Put|Delete|List)|Gemini|generateContent|deductPoints|deductCredits|withAtomicCredits/i);
   });
 });

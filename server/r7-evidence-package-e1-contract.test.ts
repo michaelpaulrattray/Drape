@@ -67,7 +67,7 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       relativePath,
       source: await readFile(new URL(relativePath, serverRoot), "utf8"),
     })));
-    const forbidden = /(?:\b(?:getDb|withTransaction|deductPoints|storagePut|storageDelete|generateCastingImage|generatePackageSlotCandidate)\s*\(|from\s+["'][^"']*(?:\/db|\/storage|geminiService|aiService)|\b(?:router|procedure|mutation)\s*\()/i;
+    const forbidden = /(?:\b(?:getDb|withTransaction|deductPoints|deductCredits|withAtomicCredits|storagePut|storageDelete|generateCastingImage|generatePackageSlotCandidate)\s*\(|from\s+["'][^"']*(?:\/db|\/storage|geminiService|aiService)|\b(?:router|procedure|mutation)\s*\()/i;
 
     for (const { relativePath, source } of sources) {
       expect(source, relativePath).not.toMatch(forbidden);

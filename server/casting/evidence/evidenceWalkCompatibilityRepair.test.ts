@@ -104,6 +104,6 @@ describe("bounded evidence Walk compatibility repair", () => {
     expect(source).toContain('directive.visibility !== "hidden_omit"');
     expect(source).toContain("expectedRepairCount: 0");
     expect(source).toContain('row.status !== "repaired"');
-    expect(script).not.toMatch(/--all|storagePut|deductPoints|generateContent/);
+    expect(script).not.toMatch(/--all|storagePut|deductPoints|deductCredits|withAtomicCredits|generateContent/);
   });
 });

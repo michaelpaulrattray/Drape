@@ -56,7 +56,7 @@ describe("R7-7D D4A intent/reference contract", () => {
     expect(db).toContain('source.compatibility !== "current"');
     expect(db).toContain("finalizeClaimedGenerationOperationSuccessIn(tx");
     expect(db).not.toMatch(
-      /deductPoints|refundPoints|storagePut|putCanonical|generateContent|castingEvidenceCandidates/,
+      /deductPoints|deductCredits|withAtomicCredits|refundPoints|recordRefund|addCredits|storagePut|putCanonical|generateContent|castingEvidenceCandidates/,
     );
   });
 

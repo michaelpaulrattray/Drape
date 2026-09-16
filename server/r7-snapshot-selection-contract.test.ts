@@ -158,7 +158,7 @@ describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () =>
 
     const shadowReader = await readFile(new URL("./casting/snapshotShadow.ts", import.meta.url), "utf8");
     expect(shadowReader).not.toMatch(/\btx\s*\.\s*(insert|update|delete)\s*\(/);
-    expect(shadowReader).not.toMatch(/deductPoints|withAtomicCredits|storage(Put|Delete)|Gemini|generateContent/);
+    expect(shadowReader).not.toMatch(/deductPoints|deductCredits|withAtomicCredits|storage(Put|Delete)|Gemini|generateContent/);
     const packageRecovery = await readFile(
       new URL("./casting/operationRecovery.ts", import.meta.url),
       "utf8",
@@ -238,7 +238,7 @@ describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () =>
     );
     expect(resolver).not.toMatch(/\btx\s*\.\s*(insert|update|delete)\s*\(/);
     expect(resolver).not.toMatch(
-      /deductPoints|withAtomicCredits|storage(Put|Delete|List)|Gemini|generateContent|Slack/i,
+      /deductPoints|deductCredits|withAtomicCredits|storage(Put|Delete|List)|Gemini|generateContent|Slack/i,
     );
     expect(scope).not.toMatch(/client|localStorage|sessionStorage|window\./);
     expect(scope).toContain('process.env[SNAPSHOT_READ_SCOPE_ENV]');
@@ -252,7 +252,7 @@ describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () =>
     expect(driver).toContain("Refusing disposable database work under a production app id");
     expect(driver).toContain("configured development URL must target the railway MySQL database");
     expect(driver).toContain("DROP DATABASE IF EXISTS");
-    expect(driver).not.toMatch(/storage(Put|Delete|List)|deductPoints|withAtomicCredits|Gemini|generateContent/i);
+    expect(driver).not.toMatch(/storage(Put|Delete|List)|deductPoints|deductCredits|withAtomicCredits|Gemini|generateContent/i);
   });
 
   it("removes the Cast-slot pin route and client controls after global cutover", async () => {
@@ -361,12 +361,12 @@ describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () =>
     const auditContract = await readFile(new URL("./casting/snapshotShadowAudit.ts", import.meta.url), "utf8");
     const consumerShadow = await readFile(new URL("./casting/snapshotConsumerShadow.ts", import.meta.url), "utf8");
     const convergence = await readFile(new URL("./casting/snapshotConvergence.ts", import.meta.url), "utf8");
-    expect(script).not.toMatch(/storage(Put|Delete|List)|deductPoints|withAtomicCredits|Gemini|generateContent/);
+    expect(script).not.toMatch(/storage(Put|Delete|List)|deductPoints|deductCredits|withAtomicCredits|Gemini|generateContent/);
     expect(consumerShadow).not.toMatch(
-      /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+      /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|deductCredits|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
     );
     expect(convergence).not.toMatch(
-      /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+      /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|deductCredits|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
     );
     expect(convergence).toContain("bootstrapIdleModelSnapshot({");
     expect(convergence).not.toContain("bootstrapModelSnapshot({");
@@ -396,7 +396,7 @@ describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () =>
     );
     expect(convergenceScript).not.toMatch(/(?:^|\s)--all(?:\s|$)/m);
     expect(convergenceScript).not.toMatch(
-      /storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+      /storage(Put|Delete|List)|deductPoints|deductCredits|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
     );
     expect(convergenceScript).toContain(
       "return !plan.ready || plan.summary.mismatchedModels > 0 ? 2 : 0;",
@@ -451,7 +451,7 @@ describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () =>
       "utf8",
     );
     expect(service).not.toMatch(
-      /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+      /\b(?:tx|db)\.(insert|update|delete)\(|for\s+update|storage(Put|Delete|List)|deductPoints|deductCredits|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
     );
     expect(service).toContain("COUNT(DISTINCT");
     expect(service).toContain("if (totalUsers > input.maxUsers)");
@@ -459,7 +459,7 @@ describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () =>
     expect(service).toContain("availableModelWhere()");
     expect(service).not.toContain('ne(models.status, "archived")');
     expect(script).not.toMatch(
-      /storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+      /storage(Put|Delete|List)|deductPoints|deductCredits|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
     );
     expect(script).not.toMatch(/(?:^|\s)--all(?:\s|$)/m);
     expect(script).toContain("cohort_inventory_failed");
@@ -495,7 +495,7 @@ describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () =>
     expect(source.match(/\.update\(modelAssets\)/g)).toHaveLength(1);
     expect(source).toContain(".set({ pinned: false })");
     expect(source).not.toMatch(
-      /boardItems|board_items|storage(Put|Get|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+      /boardItems|board_items|storage(Put|Get|Delete|List)|deductPoints|deductCredits|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
     );
     expect(source).not.toMatch(/\.insert\(|\.delete\(/);
     expect(source).toContain('.for("update")');
@@ -506,7 +506,7 @@ describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () =>
     expect(script.indexOf("if (!args.apply)"))
       .toBeLessThan(script.indexOf("convergeSnapshotPins(args)"));
     expect(script).not.toMatch(
-      /storage(Put|Get|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
+      /storage(Put|Get|Delete|List)|deductPoints|deductCredits|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue/i,
     );
   });
 
@@ -534,7 +534,7 @@ describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () =>
     expect(fetchAuthority).toContain("AbortController");
     expect(fetchAuthority).toContain("supportedImageMime");
     expect(source).not.toMatch(
-      /deductPoints|withAtomicCredits|storage(Put|Get|Delete|List)|Gemini|generateContent|tx\s*\.\s*(insert|update|delete)/i,
+      /deductPoints|deductCredits|withAtomicCredits|storage(Put|Get|Delete|List)|Gemini|generateContent|tx\s*\.\s*(insert|update|delete)/i,
     );
   });
 
@@ -553,7 +553,7 @@ describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () =>
       "utf8",
     );
     expect(source).not.toMatch(
-      /\b(?:tx|db)\.(insert|update|delete)\(|\.for\(\s*["']update["']\s*\)|for\s+update|storage(Put|Delete|List)|deductPoints|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue|analyzeTattoos/i,
+      /\b(?:tx|db)\.(insert|update|delete)\(|\.for\(\s*["']update["']\s*\)|for\s+update|storage(Put|Delete|List)|deductPoints|deductCredits|withAtomicCredits|getAiClient|generateContent|with(?:Image|Text)Queue|analyzeTattoos/i,
     );
     expect(source).toContain('view.angle === "frontFull"');
     expect(source).toContain("session.modelId == null");

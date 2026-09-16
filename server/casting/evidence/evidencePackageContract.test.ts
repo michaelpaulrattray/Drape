@@ -74,7 +74,7 @@ describe("R7-7E2 evidence package execution contract", () => {
       "server/casting/evidence/evidencePackageExecution.ts",
       "utf8",
     );
-    expect(source.match(/dependencies\.deduct \?\? deductPoints/g)).toHaveLength(1);
+    expect(source.match(/dependencies\.deduct \?\? deduct(?:Points|Credits)/g)).toHaveLength(1);
     expect(source).toContain("attemptNumber: 1");
     expect(source).toContain("attemptNumber: 2");
     expect(source).not.toMatch(/\bwhile\s*\(/);

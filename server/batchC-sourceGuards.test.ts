@@ -152,7 +152,7 @@ describe("headshot snapshot reads stay server-owned", () => {
     expect(src).toContain("state.identity.preferences");
     expect(src).toMatch(/commitHeadshotSnapshot\(\{[\s\S]*?readMode,/);
     expect(src).toMatch(
-      /assertGenerationOperationSnapshotHead\([\s\S]*?deductPoints\(/,
+      /assertGenerationOperationSnapshotHead\([\s\S]*?deduct(?:Points|Credits)\(/,
     );
     const input = src.slice(src.indexOf(".input(z.object({"), src.indexOf("}).strict()"));
     expect(input).not.toContain("readMode");

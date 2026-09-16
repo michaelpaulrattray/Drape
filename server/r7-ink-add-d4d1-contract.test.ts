@@ -25,7 +25,7 @@ describe("R7-7D D4D1 cancellation and retry-cleanup contract", () => {
     expect(service).toContain("chargedCredits: 0");
     expect(service).toContain("refundedCredits: 0");
     expect(service).not.toMatch(
-      /deductPoints|refundPoints|generateContent|storagePut|storageDelete/,
+      /deductPoints|deductCredits|withAtomicCredits|refundPoints|recordRefund|addCredits|generateContent|storagePut|storageDelete/,
     );
     expect(client).not.toContain("cancelInkAddIntent");
   });
@@ -66,7 +66,7 @@ describe("R7-7D D4D1 cancellation and retry-cleanup contract", () => {
     expect(db).toContain('status: "cancelled"');
     expect(db).toContain("activeCapabilityKey: null");
     expect(db).not.toMatch(
-      /deductPoints|refundPoints|generateContent|storagePut|storageDelete/,
+      /deductPoints|deductCredits|withAtomicCredits|refundPoints|recordRefund|addCredits|generateContent|storagePut|storageDelete/,
     );
   });
 

@@ -37,7 +37,7 @@ describe("R7-7D D7 product-ready and evidence-aware Fork contract", () => {
     expect(fork).toContain("bootstrapModelSnapshot");
     expect(fork).toContain("modelOperationLockKey(model.id)");
     expect(fork).not.toMatch(
-      /markGenerationOperationRunning|deductPoints|recordRefund|generateCastingImage/,
+      /markGenerationOperationRunning|deductPoints|deductCredits|withAtomicCredits|recordRefund|generateCastingImage/,
     );
     expect(route.slice(recastStart)).toContain('kind: "canvas.recast"');
   });
@@ -114,7 +114,7 @@ describe("R7-7D D7 product-ready and evidence-aware Fork contract", () => {
     ]);
     expect(route.match(/forkEvidenceAwareCast\(/g)).toHaveLength(1);
     expect(fork).not.toMatch(
-      /deductPoints|addCredits|recordRefund|generateCastingImage|generateContent/,
+      /deductPoints|deductCredits|withAtomicCredits|addCredits|recordRefund|generateCastingImage|generateContent/,
     );
     expect(quota).toContain("leftJoin(");
     expect(quota).toContain("generationOperations.kind");
