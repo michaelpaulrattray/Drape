@@ -149,6 +149,36 @@ export async function getReferralCreditsEarned(userId: number): Promise<number> 
  * audit view does not depend on which tab lost the race. `existingReferralId`
  * is null on the index road: the row that won is not re-read to name it.
  */
+/** The index that says one referred user, one claim (`drizzle/0064`). */
+export const ONE_CLAIM_PER_USER_INDEX = "uq_referrals_referred_user";
+
+/**
+ * Was this insert refused by THAT index — not merely by A unique key?
+ *
+ * `isDuplicateCreditReferenceError` answers "was it a duplicate key" and walks
+ * the cause chain drizzle wraps the driver error in; this asks the narrower
+ * question, because "already used a referral code" is only the right answer
+ * when `uq_referrals_referred_user` is the key that refused. Today it is the
+ * table's only unique key besides the primary, so the two questions have one
+ * answer — but a later unique key on this table (say `referredEmail` for the
+ * invite road) would otherwise have its violation reported as a second claim
+ * and audited as one. MySQL names the key in the message
+ * (`Duplicate entry '99' for key 'referrals.uq_referrals_referred_user'`), so
+ * the name is read out of it, along the same cause chain.
+ */
+export function isOneClaimPerUserRefusal(error: unknown): boolean {
+  if (!isDuplicateCreditReferenceError(error)) return false;
+  let current: unknown = error;
+  for (let depth = 0; depth < 4 && current && typeof current === "object"; depth += 1) {
+    const candidate = current as { message?: unknown; sqlMessage?: unknown; cause?: unknown };
+    for (const text of [candidate.message, candidate.sqlMessage]) {
+      if (typeof text === "string" && text.includes(ONE_CLAIM_PER_USER_INDEX)) return true;
+    }
+    current = candidate.cause;
+  }
+  return false;
+}
+
 async function alreadyUsed(
   referredUserId: number,
   referralCode: string,
@@ -252,7 +282,7 @@ export async function claimReferral(
       sameIpFlag: isSameIp,
     });
   } catch (error) {
-    if (isDuplicateCreditReferenceError(error)) {
+    if (isOneClaimPerUserRefusal(error)) {
       return alreadyUsed(referredUserId, referralCode, referredIp, null);
     }
     throw error;

@@ -115,6 +115,39 @@ describe("claimReferral under uq_referrals_referred_user (#1010 review)", () => 
     });
   });
 
+  it("a duplicate on a DIFFERENT unique key is NOT 'already used' — it surfaces (reviewer L1)", async () => {
+    /* The shape a future `uq_referrals_referred_email` would raise. Reading any
+       ER_DUP_ENTRY as a second claim would answer and audit the wrong defect. */
+    const otherKey = Object.assign(new Error("Duplicate entry 'x@example.com' for key 'referrals.uq_referrals_referred_email'"), {
+      code: "ER_DUP_ENTRY",
+      errno: 1062,
+    });
+    const db = fakeDb({ reject: otherKey });
+    mockGetDb.mockResolvedValue(db);
+
+    await expect(claimReferral(REFERRED_USER_ID, CODE)).rejects.toThrow("uq_referrals_referred_email");
+    expect(mockLogAuditEvent).not.toHaveBeenCalledWith(expect.objectContaining({
+      action: AUDIT_ACTIONS.REFERRAL_MULTI_CLAIM_BLOCKED,
+    }));
+  });
+
+  it("the index name is read wherever the driver put it — `sqlMessage` on the cause, not only `message`", async () => {
+    const driverShaped = Object.assign(new Error("Failed query: insert into referrals …"), {
+      cause: Object.assign(new Error("query failed"), {
+        code: "ER_DUP_ENTRY",
+        errno: 1062,
+        sqlMessage: "Duplicate entry '99' for key 'referrals.uq_referrals_referred_user'",
+      }),
+    });
+    const db = fakeDb({ reject: driverShaped });
+    mockGetDb.mockResolvedValue(db);
+
+    await expect(claimReferral(REFERRED_USER_ID, CODE)).resolves.toEqual({
+      success: false,
+      error: "You have already used a referral code",
+    });
+  });
+
   it("NEGATIVE CONTROL — any other insert failure is NOT read as 'already used'; it surfaces", async () => {
     const db = fakeDb({ reject: Object.assign(new Error("Lock wait timeout exceeded"), { code: "ER_LOCK_WAIT_TIMEOUT", errno: 1205 }) });
     mockGetDb.mockResolvedValue(db);
