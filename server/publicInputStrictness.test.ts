@@ -306,3 +306,34 @@ describe("moderator.createChangeRequest, closed on #705", () => {
     }
   });
 });
+
+/**
+ * `referral.claim`, closed on #1010.
+ *
+ * The fourth population here, for the same reason as the third: the proof is
+ * this file's `parserOf`, and a second copy of it is the mirror working law 4
+ * warns about. `claim` is the server half of the referral LINK — the road
+ * `useReferralClaim` fires after login with the code it caught on landing —
+ * and #1010 is the card that re-mounted that hook after five months with no
+ * caller. Money-adjacent: a claimed referral is what later pays
+ * `REFERRAL_REWARD_CREDITS` to the referrer, so invariant 4 applies.
+ *
+ * # THE CALL SITE, READ BEFORE TIGHTENING
+ *
+ * ONE caller — `client/src/features/referral/useReferralClaim.ts` —
+ * `claimMutation.mutate({ referralCode: storedCode })`. One declared key, no
+ * optionals. That payload is the positive control below, and it runs first.
+ */
+describe("referral.claim, closed on #1010", () => {
+  const AS_THE_HOOK_SENDS_IT = { referralCode: "DRAPE-ABC234" } as const;
+
+  it("⚠ CONTROL — the one live caller's own payload still parses", () => {
+    expect(() => parserOf(referralRouter, "claim").parse({ ...AS_THE_HOOK_SENDS_IT })).not.toThrow();
+  });
+
+  it("rejects an undeclared field", () => {
+    expect(() =>
+      parserOf(referralRouter, "claim").parse({ ...AS_THE_HOOK_SENDS_IT, somethingNobodyDeclared: "x" }),
+    ).toThrow();
+  });
+});

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "004bd84e12c59deb"
+    "sourceFingerprint": "f9bf7e0cc25a5bf2"
   },
   "domains": [
     {
@@ -108,7 +108,7 @@
     {
       "id": "domain:referral",
       "name": "referral",
-      "moduleCount": 2
+      "moduleCount": 3
     },
     {
       "id": "domain:security",
@@ -1834,6 +1834,12 @@
     {
       "id": "module:client/src/features/referral/RedeemCodeModal.tsx",
       "path": "client/src/features/referral/RedeemCodeModal.tsx",
+      "domain": "referral",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/referral/ReferralClaimBridge.tsx",
+      "path": "client/src/features/referral/ReferralClaimBridge.tsx",
       "domain": "referral",
       "lifecycle": "active"
     },
@@ -8333,8 +8339,8 @@
       "name": "claim",
       "type": "mutation",
       "auth": "protected",
-      "input": "open",
-      "rateLimited": false,
+      "input": "strict",
+      "rateLimited": true,
       "file": "server/routes/referral.ts"
     },
     {
@@ -10538,6 +10544,10 @@
       "path": "client/src/features/operations/outcomeSlot.test.ts"
     },
     {
+      "id": "test:client/src/features/referral/referralLinkWired.test.ts",
+      "path": "client/src/features/referral/referralLinkWired.test.ts"
+    },
+    {
       "id": "test:client/src/features/settings/card385-guard.test.ts",
       "path": "client/src/features/settings/card385-guard.test.ts"
     },
@@ -12578,6 +12588,10 @@
       "path": "server/db/referenceReadDemand.test.ts"
     },
     {
+      "id": "test:server/db/referralClaimRace.test.ts",
+      "path": "server/db/referralClaimRace.test.ts"
+    },
+    {
       "id": "test:server/db/storageCleanupHold.test.ts",
       "path": "server/db/storageCleanupHold.test.ts"
     },
@@ -13206,6 +13220,10 @@
       "path": "server/referral.test.ts"
     },
     {
+      "id": "test:server/referralClaimRateLimit.test.ts",
+      "path": "server/referralClaimRateLimit.test.ts"
+    },
+    {
       "id": "test:server/referralCodeFormat.test.ts",
       "path": "server/referralCodeFormat.test.ts"
     },
@@ -13647,6 +13665,11 @@
     {
       "from": "module:client/src/App.tsx",
       "to": "module:client/src/features/operations/GenerationOperationBridge.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/App.tsx",
+      "to": "module:client/src/features/referral/ReferralClaimBridge.tsx",
       "kind": "imports"
     },
     {
@@ -17342,6 +17365,11 @@
     {
       "from": "module:client/src/features/referral/RedeemCodeModal.tsx",
       "to": "module:shared/referralCodeFormat.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/referral/ReferralClaimBridge.tsx",
+      "to": "module:client/src/features/referral/useReferralClaim.ts",
       "kind": "imports"
     },
     {
@@ -34715,13 +34743,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:profile.uploadBanner",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:referral.claim",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:referral.claim",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {

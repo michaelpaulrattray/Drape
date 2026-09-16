@@ -1515,7 +1515,15 @@ export const referrals = mysqlTable("referrals", {
   sameIpFlag: boolean("sameIpFlag").default(false).notNull(), // Fraud flag: same IP within 24hrs
   completedAt: timestamp("completedAt"), // When referee first generation happened
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ([
+  // ONE CLAIM PER REFERRED USER, ENFORCED IN THE INSERT (#1010 review, invariant
+  // 1). `claimReferral` read-then-wrote this column with nothing in the database
+  // behind the read; the app-root claim hook made two concurrent claims an
+  // ordinary event (two tabs signing in), and every extra row is a second
+  // welcome bonus. NULL rows — pending email invites — are exempt: MySQL does
+  // not count NULLs toward a unique key. Migration 0064.
+  uniqueIndex("uq_referrals_referred_user").on(table.referredUserId),
+]));
 
 export type Referral = typeof referrals.$inferSelect;
 export type InsertReferral = typeof referrals.$inferInsert;

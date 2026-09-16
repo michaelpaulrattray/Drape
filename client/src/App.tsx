@@ -18,6 +18,7 @@ import CastingV2 from "./pages/CastingV2";
 import { BoardPage } from "./features/boards/BoardPage";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { GenerationOperationBridge } from "./features/operations/GenerationOperationBridge";
+import { ReferralClaimBridge } from "./features/referral/ReferralClaimBridge";
 
 /*
  * THE STAFF PAGES ARE LAZY, AND THE CUSTOMER PAGES ARE NOT (#744).
@@ -187,6 +188,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <GenerationOperationBridge />
+          <ReferralClaimBridge />
           <AnnouncementBanner />
           <Router />
         </TooltipProvider>

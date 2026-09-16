@@ -1,0 +1,33 @@
+-- ONE CLAIM PER REFERRED USER — a unique index on `referrals.referredUserId`
+-- (#1010's review, finding 1; invariant 1).
+--
+-- `claimReferral` checked "has this user ever been referred?" with a SELECT
+-- and then INSERTed, and nothing in the database stood behind the SELECT. That
+-- was latent while a claim was a hand-typed code in a modal. #1010 mounted
+-- `useReferralClaim` at the app root, so a claim now fires automatically on
+-- login in every open tab — two tabs signing in together both pass the read
+-- and both insert, and the reward road pays once PER ROW (`completeReferral`
+-- keys its idempotency on `referral.id`, `creditReferrerOnPaidAction` walks
+-- `referrerCredited = false` rows one at a time). Two rows is two welcome
+-- bonuses and a referrer credited twice for one friend.
+--
+-- The index makes the second insert fail; `claimReferral` catches the
+-- duplicate-key error and answers exactly as the read does ("You have already
+-- used a referral code"), with the same audit row.
+--
+-- ============================================================================
+-- WHY THIS IS SAFE TO APPLY UNATTENDED
+-- ============================================================================
+--
+-- Read at production before it was written (foreman-20260917-0041): the
+-- `referrals` table holds ZERO rows, all time — the link has had no client
+-- half since April and nobody has hand-typed a code. So there is no existing
+-- duplicate for this index to refuse over.
+--
+-- NULL is exempt: MySQL does not count NULLs toward a UNIQUE key, so pending
+-- email-invite rows (`referredUserId` null until the friend signs up) may
+-- coexist without limit. `recordEmailInvite` writes those and is untouched.
+--
+-- PURELY ADDITIVE. One index on one existing column. No column changes, no
+-- row is rewritten, nothing is dropped.
+CREATE UNIQUE INDEX `uq_referrals_referred_user` ON `referrals` (`referredUserId`);
