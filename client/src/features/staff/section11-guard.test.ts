@@ -514,10 +514,18 @@ describe("brief 11 §8 — what the PR was told not to do", () => {
  *
  * ⚠ **THE EXCEPTIONS ARE ENUMERATED WITH REASONS AND ARE EXACT.** Three are not
  * field labels at all (a checkbox row, a file-upload button, a search wrapper);
- * three are field labels on lanes this fold deliberately did not enter, and
- * they are FILED rather than quietly tolerated. An unlisted `<label>` reddens
- * this arm the day it lands — including one that goes back to hand-rolling its
- * own type, which is exactly how the third treatment was born.
+ * two are field labels on lanes this fold deliberately did not enter, and they
+ * are FILED rather than quietly tolerated. An unlisted `<label>` reddens this
+ * arm the day it lands — including one that goes back to hand-rolling its own
+ * type, which is exactly how the third treatment was born.
+ *
+ * ⚠ **IT WAS THREE UNTIL CARD 1002 AND THE INVITE FORM CAME OFF THE LIST.** The
+ * census left three remainders behind and the card took the one that was only
+ * ever a different ROW: `pages/AdminInviteCodes.tsx` now mounts the house field,
+ * so its line is DELETED rather than kept as a dead excuse — which is the third
+ * arm below working exactly as intended. The two that remain are decisions, not
+ * leftovers: the marketing modal needs a ruling on whether that lane speaks the
+ * app's voice, and the legacy studio dies whole with the retirement (card 29).
  */
 describe("card 841 — one field-label treatment across the whole client", () => {
   const CLIENT_TSX = tsxUnder(CLIENT_SRC).filter((f) => !f.includes(".test."));
@@ -559,10 +567,6 @@ describe("card 841 — one field-label treatment across the whole client", () =>
    */
   const FILED_ELSEWHERE = new Map<string, string>([
     [
-      "pages/AdminInviteCodes.tsx :: dp-stack",
-      "the invite form wraps its control in the <label> and puts the name in a `.dp-chrome` span — a different ROW, filed",
-    ],
-    [
       "features/home/WaitlistModal.tsx :: block text-xs font-medium text-white/70 mb-2.5 font-body",
       "the marketing lane's own fixed-dark type system, not the app's tokens — filed",
     ],
@@ -573,8 +577,24 @@ describe("card 841 — one field-label treatment across the whole client", () =>
   ]);
 
   it("the census finds the labels — positive control before any absence arm", () => {
-    expect(labelSites.length, "the <label> reader found nothing — the shape moved").toBeGreaterThan(10);
+    /*
+      ⚠ **THE FLOOR IS DERIVED, BECAUSE A TRANSCRIBED ONE ERODES EVERY TIME THIS
+      GUARD SUCCEEDS.** It was `> 10`, written when the census read 13 sites —
+      and card 1002's fold took three of them, because a folded call site stops
+      declaring its own `<label>` and borrows the one inside `LabelledField`.
+      So the population SHRINKS as the rule wins, and the sentinel was two folds
+      away from being met by a reader that had stopped working. Lowering the
+      number each time would be the same mistake told smaller. The reader's real
+      proof is that it still finds the sites we can NAME: every enumerated
+      exception, plus every site wearing the house class. Both are asserted
+      individually below and in the arms that follow; this line is what refuses
+      a regex that has silently stopped matching anything at all.
+    */
     const house = labelSites.filter((s) => s.classes.includes("dpc-modal__label"));
+    expect(
+      labelSites.length,
+      "the <label> reader found fewer tags than the sites we can name — the shape moved",
+    ).toBeGreaterThanOrEqual(NOT_A_FIELD_LABEL.size + FILED_ELSEWHERE.size + house.length);
     /* The labelled field itself, and the three confirm shells that wear the
        class bare. A drop here means a surface stopped using the one label. */
     expect(house.length, "the house field label lost a site").toBeGreaterThanOrEqual(4);
