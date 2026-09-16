@@ -155,6 +155,11 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // put and the landing cannot strand a paid picture of a person at a
       // permanent public URL with no row left that knows it exists.
       "server/castingV2/refineService.ts",
+      // The refusal loop (#129 slice 1) registers a refused roll's sent words
+      // BEFORE they are stored and names `private_evidence_r2` for each: they
+      // are the cast's recipe in sentences, and the one bucket they may never
+      // reach is the public one. Born held for 30 days, then collected.
+      "server/castingV2/refusalLoopCapture.ts",
       // Segment permanence (slice 1) registers a kept edit's mask and crop the
       // same way, and for the same reason: those objects are pieces of a
       // person's face at permanently public keys, and they are handed to the

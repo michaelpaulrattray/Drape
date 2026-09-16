@@ -248,6 +248,14 @@ const COLLECTORS: Readonly<Record<string, string>> = {
     that happen quietly.
   */
   "server/castingV2/hairReferenceCutter.ts": "a carrier cut for one render, collected after it",
+  /*
+    #129 slice 1, 2026-09-16. A COLLECTOR whose hold IS its retention: a refused
+    roll's sent words are reserved under a manifest born held for 30 days, and
+    the worker collecting them when the hold lapses is the design, not a leak.
+    No row references them, so there is nothing to hand a receipt to — the day
+    something needs the words to outlive the window, this moves to KEEPERS.
+  */
+  "server/castingV2/refusalLoopCapture.ts": "a refused roll's sent words, collected when the 30-day hold lapses",
   /* The nine older-road collectors, read one at a time on 2026-08-19. Every one
      records the batch id ONTO its row — the pointer, not the receipt — and not
      one of them deletes a batch. */

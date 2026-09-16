@@ -67,6 +67,7 @@ import { captureCastingRetryEnabled } from "./castingV2Scope";
 import { castingCreativeEngine } from "./rollEngine";
 import { dispatchCandidate, type RollServiceDependencies, type Settlement } from "./rollService";
 import { assertNotFrozen } from "./spendGuards";
+import { REFUSAL_FAILURE_CLASS, captureRollWords } from "./refusalLoopCapture";
 import { storageReadBytes } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 import { candidateFailureKind, isRetryableFailure } from "../../shared/candidateFailure";
@@ -83,6 +84,8 @@ export type RetryServiceDependencies = {
   storeImage?: RollServiceDependencies["storeImage"];
   /** The flag, as a seam — so both sides can be driven with the flag as the only variable. */
   retryEnabled?: (userId: number) => boolean;
+  /** Keeps the words behind a refusal (#129). A seam so a test can see what was handed over. */
+  captureWords?: typeof captureRollWords;
 };
 
 export type RetryInput = {
@@ -399,6 +402,26 @@ export async function retryCandidate(
     return settleAbandonedRetry({ userId: input.userId, operationId, candidatePublicId: candidate.publicId, price, cause: error });
   }
   const settlement = value as Settlement;
+
+  /*
+    THE WORDS BEHIND A REFUSAL, ON THE RETRY ROAD TOO (#129 slice 1, review of
+    PR #1007 finding 1). A retry is the roll's unit run again, so it refuses
+    the same way — and a retry that PASSES on words refused before is the
+    patrol's pair in its purest form: same sentence, different verdict. Never
+    throws; the settlement above already recorded any refund.
+  */
+  await (dependencies.captureWords ?? captureRollWords)({
+    userId: input.userId,
+    operationId,
+    rollPublicId: roll.publicId,
+    slices: [{
+      candidatePublicId: candidate.publicId,
+      prompt,
+      outcome: settlement.outcome,
+      failureClass: settlement.failureClass,
+    }],
+    refusedBefore: priorFailureClass === REFUSAL_FAILURE_CLASS,
+  });
 
   if (settlement.outcome === "ready") {
     /*

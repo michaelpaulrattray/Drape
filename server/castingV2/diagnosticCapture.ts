@@ -179,7 +179,15 @@ const defaultReserver: DiagnosticReserver = async (input) =>
     storageBackend: "private_evidence_r2",
   });
 
-function s3Writer(config: PrivateEvidenceStorageConfig): DiagnosticWriter {
+/**
+ * The private bucket's writer. Exported for the refusal loop
+ * (`refusalLoopCapture.ts`), which keeps a slice's sent words on this same
+ * bucket and purge path and differs only in what the object is.
+ */
+export function privateEvidenceWriter(
+  config: PrivateEvidenceStorageConfig,
+  contentType = "image/png",
+): DiagnosticWriter {
   const client = new S3Client({
     region: "auto",
     endpoint: config.endpoint,
@@ -193,7 +201,7 @@ function s3Writer(config: PrivateEvidenceStorageConfig): DiagnosticWriter {
       Bucket: config.bucket,
       Key: key,
       Body: bytes,
-      ContentType: "image/png",
+      ContentType: contentType,
       ContentLength: bytes.byteLength,
     }));
   };
@@ -236,7 +244,7 @@ export async function captureRefusedRender(input: {
       );
       return { captured: false, keys: [], reason: "unconfigured" };
     }
-    writer = s3Writer(config);
+    writer = privateEvidenceWriter(config);
   }
 
   const keys: string[] = [];

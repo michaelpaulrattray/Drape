@@ -54,6 +54,8 @@ import {
   boardItems,
   boardItemVersions,
   boardEdges,
+  storageCleanupBatches,
+  storageCleanupItems,
 } from "../../drizzle/schema";
 import { getDb, withTransaction } from "./connection";
 import type { TransactionHandle } from "./connection";
@@ -63,6 +65,8 @@ import type { StorageCleanupManifestItem } from "../casting/storageCleanupContra
 import { createModuleLogger } from "../logging/logger";
 import { assertOwnedEvidenceStorageKey } from "../casting/evidence/evidenceLifecycle";
 import { parseEvidenceStorageKey } from "../casting/evidence/evidenceDelivery";
+import { DIAGNOSTIC_KEY_PREFIX } from "../castingV2/diagnosticCapture";
+import { REFUSAL_LOOP_KEY_PREFIX } from "../castingV2/refusalLoopCapture";
 const log = createModuleLogger("db/accountDeletion");
 
 export interface DeletionResult {
@@ -115,6 +119,19 @@ function addOwnedAccountKey(
   if (classified.kind === "explicit_key" || classified.kind === "current_origin_url") {
     keys.add(classified.key);
   }
+}
+
+/**
+ * The private-bucket prefixes that hold a customer's words or frames kept for
+ * diagnosis and are known ONLY to the cleanup manifest — no product row points
+ * at them, so the collector below cannot find them the way it finds a model's
+ * assets. Each key carries its owner as the segment after the prefix.
+ */
+export const DIAGNOSTIC_OWNED_PREFIXES = [REFUSAL_LOOP_KEY_PREFIX, DIAGNOSTIC_KEY_PREFIX] as const;
+
+/** Is this manifest key one of this account's kept diagnostics? */
+export function isAccountDiagnosticKey(userId: number, storageKey: string): boolean {
+  return DIAGNOSTIC_OWNED_PREFIXES.some((prefix) => storageKey.startsWith(`${prefix}/${userId}/`));
 }
 
 /** Account erasure owns all rows selected by user id. This collector uses the
@@ -300,6 +317,33 @@ export async function collectAccountOwnedStorageItemsIn(
     for (const item of items) addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: item.imageKey });
     // URL-only Canvas references/history can be shared inputs. The dry-run
     // orphan audit counts them, but they are not automatic delete authority.
+  }
+
+  /*
+    AND THE WORDS AND FRAMES KEPT FOR DIAGNOSIS (#129).
+
+    The refusal loop keeps a refused roll's sent prompts for 30 days under a
+    manifest born HELD for the whole window, and the refused-frame capture
+    reserves its frames the same way. No product row names those keys — the
+    manifest item is the only record — so they are found there, by owner and
+    by prefix, and queued with the account's own manifest to go now rather
+    than on their clock. The held batch later meets an absent key, which every
+    cleanup path already tolerates.
+
+    Only items not yet settled: a deleted object needs no second instruction.
+  */
+  const keptForDiagnosis = await tx
+    .select({ storageKey: storageCleanupItems.storageKey })
+    .from(storageCleanupItems)
+    .innerJoin(storageCleanupBatches, eq(storageCleanupBatches.id, storageCleanupItems.batchId))
+    .where(and(
+      eq(storageCleanupBatches.userId, userId),
+      eq(storageCleanupBatches.kind, "casting_diagnostic_cleanup"),
+      eq(storageCleanupItems.storageBackend, "private_evidence_r2"),
+      inArray(storageCleanupItems.status, ["pending", "processing", "failed"]),
+    ));
+  for (const item of keptForDiagnosis) {
+    if (isAccountDiagnosticKey(userId, item.storageKey)) privateEvidenceKeys.add(item.storageKey);
   }
 
   return [

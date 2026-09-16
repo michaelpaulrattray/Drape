@@ -99,6 +99,41 @@ describe("staff image boundary", () => {
     ).toContain("prompt: sent.prompt");
   });
 
+  it("keeps the refusal loop's kept WORDS out of every staff surface (#129)", () => {
+    /*
+      A refused roll's sent prompts are kept for 30 days for the refusal
+      patrol, and nobody else. They are the cast's recipe in sentences — the
+      `masterPrompt` class — so no staff procedure may name the module, its
+      key space or its reader. POSITIVE CONTROL first: the prefix really is
+      the one the capture writes under, so a rename reddens this arm rather
+      than passing it.
+    */
+    const capture = source("castingV2/refusalLoopCapture.ts");
+    expect(capture).toContain('REFUSAL_LOOP_KEY_PREFIX = "casting-v2/refusal-loop"');
+
+    /* DERIVED, both halves (review of PR #1007, finding 3): every moderator
+       route and every admin route, so a reader added to a file this list did
+       not name still reddens it. */
+    const staffFiles = [
+      "db/moderatorQueries.ts",
+      ...fs.readdirSync(path.join(serverRoot, "routes"))
+        .filter((name) => name.startsWith("moderator") && name.endsWith(".ts") && !name.endsWith(".test.ts"))
+        .map((name) => `routes/${name}`),
+      ...fs.readdirSync(path.join(serverRoot, "routes/admin"))
+        .filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts"))
+        .map((name) => `routes/admin/${name}`),
+    ];
+    expect(staffFiles).toContain("routes/moderator.ts");
+    expect(staffFiles).toContain("routes/moderatorExports.ts");
+    expect(staffFiles.length).toBeGreaterThan(5);
+    for (const file of staffFiles) {
+      const text = source(file);
+      for (const needle of ["refusalLoopCapture", "REFUSAL_LOOP_KEY_PREFIX", "refusal-loop"]) {
+        expect(text, `${file} must not reach the refusal loop's kept words`).not.toContain(needle);
+      }
+    }
+  });
+
   it("leaves non-evidence rows alone apart from the boundary", () => {
     const row = {
       type: "castingImage",
