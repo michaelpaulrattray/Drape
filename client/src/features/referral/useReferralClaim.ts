@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { keepsReferralCodeAfterError } from "./referralClaimRetry";
 
 const REFERRAL_STORAGE_KEY = "drape_referral_code";
 
@@ -40,9 +41,13 @@ export function useReferralClaim() {
         onSuccess: () => {
           localStorage.removeItem(REFERRAL_STORAGE_KEY);
         },
-        onError: () => {
-          // Silently fail — invalid/expired/self-referral
-          localStorage.removeItem(REFERRAL_STORAGE_KEY);
+        onError: (error) => {
+          // A designed refusal (invalid / self / already used) is a 200 with
+          // `claimed: false` and lands above. An ERROR is kept for the next
+          // login unless the code can never succeed (#1016).
+          if (!keepsReferralCodeAfterError(error)) {
+            localStorage.removeItem(REFERRAL_STORAGE_KEY);
+          }
         },
       }
     );
