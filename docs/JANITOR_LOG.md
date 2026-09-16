@@ -872,3 +872,52 @@ run" item 3 (*"`output/` — #527's citation pass, still unwritten"*) is **CLOSE
    log and run 5 superseded that sweep, so the loss is the working paper, not the
    finding — but it is this seat's own §C lesson (run 6) landing on this seat's
    own records, and the next reading written goes into the log with its path.
+
+---
+## Between runs — #105 worked off NEXT UP, 2026-09-16 (not a patrol; the clock had not fired)
+
+**Not a `## Run` heading**, for the same reason as the #527 entry above: the
+Janitor is due 18 Sep, and #105 came off NEXT UP on the founder's word
+(*"105-108 clear them"*, 16 Sep). Shift foreman-20260916-2037, run #270.
+
+**40 shadcn primitives and 33 packages DELETED — PR #1008, squash `ed7b0032`,
+on production 11:16Z.** Manifest, every row with its three readers and its
+history read: **`docs/specs/SHADCN_PRIMITIVES_PURGE_MANIFEST_2026-09-16.md`**.
+Reviewer verdict PASS with no findings (run `35087932617`; it re-drove the
+grep, the package grep, the held row and the lockfile rather than reading the
+manifest). Card #105 CLOSED.
+
+**What a future run needs from this, in four lines:**
+
+1. **The population moved and the card was corrected before the branch (#909):
+   40 → 41.** `table.tsx` had already gone in #407; `skeleton.tsx` and
+   `switch.tsx` were un-wired on purpose by the staff briefs (06/09) and section
+   03. Both un-wirings are REPLACEMENTS — the house loading state, three account
+   surfaces — not dead controls; `section09-guard.test.ts` now refuses a
+   moderator file importing skeleton. The history read (`git log -S` on the
+   import string, all 41 rows) found 24 whose only importer ever was the
+   bootstrap's `ComponentShowcase.tsx` (deleted 7 Feb) and 10 never imported at
+   all.
+2. **One row HELD, and the direction of the hold is the rule**: deleting a
+   primitive under an importer that STAYS breaks the typecheck, so
+   `dropdown-menu.tsx` + `@radix-ui/react-dropdown-menu` wait for #106, whose
+   row `Navigation.tsx` is the importer. Deleting an importer whose dependency
+   stays only makes an orphan (`useMobile.tsx`, already #106's row). The rider is
+   written on #106; the next nightly's deps line should read exactly that one
+   package.
+3. **The deps went by `pnpm install --lockfile-only` after editing `package.json`
+   by hand, never `pnpm remove` in the worktree** — the worktree's
+   `node_modules` is a JUNCTION to the main tree's, so a remove there would have
+   mutated the founder's tree under a package.json that still declared the
+   packages. After the merge the main tree was synced with `--frozen-lockfile`
+   (wouter patch intact, read at `node_modules/.pnpm`).
+4. **Found on the way, carded not worked (#1009, `small-fix`)**: the full suite's
+   one esbuild warning — `server/auth.me.test.ts` sets `approved: true` twice in
+   one fixture. Harmless, one line, and it is the line that hides the next real
+   warning. The stale `sidebar.tsx` lifecycle marker in the atlas generator was
+   the reviewer's nit and went in the same PR; `Navigation.tsx`'s marker rides
+   out with #106 the same way.
+
+`docs/JANITOR_KNIP.md` carries the 2026-09-15 nightly row this was executed
+against, with the expected next reading (files 69 → 29) written down so a
+nightly that does not show the drop is a finding rather than a surprise.

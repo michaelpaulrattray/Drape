@@ -1,7 +1,7 @@
 {
-  "edition": 435,
-  "updatedAt": "2026-09-16T09:58:00.000Z",
-  "shift": "THE REFUSAL JOB'S FIRST PART IS LIVE ON YOUR ACCOUNT. NOTHING NEEDS AN ANSWER FROM YOU.\n\nYou said “129 build it”. Last shift found the words behind a refused picture were being thrown away; tonight they are kept. From now on, when the picture engine refuses one of your pictures, the exact words it was sent are saved privately — beside the words of the pictures from the same sheet that it DID draw — for 30 days, then deleted automatically. That pairing is what the next part needs: a job that compares what was refused with what passed and finds the words that trip the engine, without buying new pictures to test with.\n\nNothing you see changes, and nobody on the staff side can read these words. Your 105, 106 and 108 are next.",
+  "edition": 436,
+  "updatedAt": "2026-09-16T11:24:00.000Z",
+  "shift": "THE FIRST OF YOUR THREE CLEAN-UP JOBS IS DONE. NOTHING NEEDS AN ANSWER FROM YOU.\n\nYou said “105-108 clear them”. 105 is cleared: forty ready-made screen parts that the product has never used — they came with the starter kit, and the only page that ever showed them was a demo page deleted in February — are out of the code, along with the 33 add-on packages that existed only to serve them. Nothing you see changes; every page renders as before, because a part nobody used was never in what your browser downloads. What it buys is a smaller, more honest install and a map with 40 fewer dead rooms on it.\n\nEvery one of the 40 was checked three separate ways before it went, and the outside reviewer re-checked all of it independently and passed it with no findings. One part is kept back on purpose for the next job (106), because a file on 106's list still uses it. Next: 106, then 108.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-16T09:58:22.859Z",
+      "readAt": "2026-09-16T11:17:22.937Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5033,6 +5033,13 @@
   ],
   "pipeline": [
     {
+      "id": "shadcn-purge-105",
+      "title": "Forty ready-made screen parts nothing ever used are gone, with the 33 packages that served only them",
+      "status": "merged",
+      "prNumber": 1008,
+      "note": "Your “105-108 clear them”, first job. Worked example: the starter kit shipped 52 ready-made parts (accordions, sliders, calendars, a sidebar…); a demo page showed them all, that page was deleted in February, and 40 of the parts have had no user since — some never had one. Each of the 40 was checked three ways (the nightly dead-code reading, a search of every file for anything using it, and the full history of who ever used it and when they stopped), and every one that HAD once been used lost its user to a page or dashboard being deleted on purpose — none was a safety control. The 33 add-on packages went with them; two were stubs their real packages had made redundant. One part is held for job 106 because a file on that list still uses it. The reviewer re-ran the checks itself and passed it with no findings; its one small note (a stale marker in the map generator) was taken before the merge. On production at 11:16 UTC."
+    },
+    {
       "id": "refusal-corpus-129",
       "title": "When a picture is refused, the words it was sent are now kept — privately, for 30 days",
       "status": "merged",
@@ -6626,9 +6633,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0916d-foreman",
+      "id": "queue-shape-0916e-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 33 open, level. Your 105 is cleared; 106 and 108 are next",
+      "detail": "One card closed tonight (105, the clean-up you ordered) and one small one filed from what the test run printed on the way (#1009 — a test file sets the same value twice; harmless, one line, left as a small fix rather than worked unasked). So the board is level at 33.\n\nOf your five: 527 done, 129's first part live, 105 done. Still to do, in your order: 106, then 108 — one session each. 106 now carries one extra item handed on from 105 (the one screen part held back), written on the card.\n\n15 open cards have had no comment, close, reopen or commit for 7 days — level with last night; the oldest is “Takes” at 19 days, a design waiting its turn."
+    },
+    {
+      "id": "queue-shape-0916d-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 33 open, one fewer. The refusal job's first part shipped tonight; your 105, 106 and 108 are next",
       "detail": "One card closed tonight: the temporary rule that had the relay hand-check money and account changes while the automatic reviewer was out — it is back, and reviewed tonight's change twice. Nothing new filed.\n\nOf your five: 527 is done; 129's first part is live and the job stays open for its next part, which needs a few of your refused sheets on record first. Still to do, in your order: 105, 106, 108.\n\n15 open cards have had no comment, close, reopen or commit for 7 days — level with last night; the oldest is “Takes” at 19 days, which is a design waiting its turn, not stuck work."
     },
@@ -7211,13 +7225,8 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-16T09:58:22.858Z",
+    "readAt": "2026-09-16T11:17:22.936Z",
     "items": [
-      {
-        "issueNumber": 105,
-        "title": "Janitor #1 (knip): 40 unused shadcn/ui primitives carrying 21 unused @radix-ui deps + 14 satellite deps — manifest-first removal",
-        "urgent": false
-      },
       {
         "issueNumber": 106,
         "title": "Janitor #1 (knip): 11 non-shadcn files with no importer, confirmed by three readers - manifest-first removal",
