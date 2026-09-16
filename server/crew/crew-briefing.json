@@ -1,7 +1,7 @@
 {
-  "edition": 429,
-  "updatedAt": "2026-09-15T19:16:00.000Z",
-  "shift": "TWO SHIFTS' WORK REACHES YOUR PAGE, AND THE TEAM CAN NOW REST WHEN THERE IS NOTHING TO DO (#999).\n\nWHAT IT WAS. Your team was waking up about every half hour overnight and finding nothing it was allowed to take. The panel counted four cards as waiting work, but none of them could actually be picked up. One was waiting on a question put to you, one was waiting on a longer Fable session, one was a big planned job, and one was a card whose job had finished weeks ago. Because the count never reached zero, the team never parked. Each wake-up cost a session to conclude nothing.\n\nWHAT CHANGED. The panel's count now leaves out any card marked as waiting on a Fable session or on a sitting, as well as cards marked blocked. That fix merged and went live earlier tonight. The relay then marked the two cards waiting on your answers as parked (the output folder sweep, and starting the refusal-loop build). This shift found that the test-quality card (#28) was actually finished on 25 August and had simply never been closed, so it is closed now with the commit as proof. Every category on your panel now reads zero, so the next quiet shift parks the team instead of waking it again.\n\nHOW I KNOW IT IS RIGHT. The park gate's own checks all pass (19 of 19). One of them is exactly tonight's case: one quiet shift, nothing queued by you, every category at zero on fresh counts, and the team parks. It wakes by itself when you reply or anything new lands.\n\nONE THING FOUND ON THE WAY. An old test for the legacy studio checks copies of three reset steps that nothing in the product calls any more, and its copy has already drifted. It belongs to the legacy retirement, so it is noted there and nothing was deleted.\n\nCOST: nothing. No credits, no renders, no paid calls.",
+  "edition": 430,
+  "updatedAt": "2026-09-16T03:20:00.000Z",
+  "shift": "THE NAME OF A BOX YOU TYPE IN IS WRITTEN ONE WAY NOW, NOT FOUR (card 841). ONE THING TO LOOK AT.\n\nWHAT IT WAS. The little name above a box you type into — Display name, Email, Reason — was drawn four different ways in different corners of the product. The staff dialogs drew it one way, your Profile page drew it another, a confirm box drew it a third, and the old studio a fourth. Nothing looked wrong on any one screen; what it cost was the next person drawing a fifth, because there was no one right answer to copy.\n\nWHAT YOU SAID, AND WHAT I BUILT. Your answer was that a box on a page and a box in a pop-up are the same thing, so one way of writing the name wins — the quiet small-caps one the rest of the product already uses. So on Settings → Profile the three names now read DISPLAY NAME, EMAIL and WORKSPACE NAME instead of a sentence-case line nothing else draws. Same words, same boxes, nothing moved, nothing renamed.\n\nTHAT CHANGE IS THE ONE THING I WANT YOUR EYE ON, and it is in the gallery below — your Profile before and after, light and dark. If the small caps read wrong on a page a customer sees, the fix is one line in the other direction (the pop-ups take Profile's style instead) and it is still one way, not four. The card stays open until you say.\n\nSOMETHING I FOUND ON THE WAY. There was a FOURTH copy the card never named — inside the confirm box a moderator uses to freeze an account. Same job, its own styling. It is folded in too, and its spacing is the same to the pixel.\n\nHOW I KNOW IT DID NOT BREAK THE STAFF SCREENS. I photographed the exact component the four staff pop-ups use, before and after, in both themes, and the two pictures are identical byte for byte. And there is now a check that walks every box-name in the product and fails the build if a new one is drawn its own way — with the three remaining odd ones listed by name and reason, so none of them can rot quietly.\n\nTWO THINGS I FILED RATHER THAN FIXED. The three remaining odd ones (the invite form, the waitlist pop-up, the old studio), and this: your Settings window is not built for a phone — at 390px the section list eats half the width and the picture rules wrap one word per line. That was already true before tonight; the before and after phone shots are identical apart from the name. Carded, not patched inside something else.\n\nCOST: nothing. No credits, no renders, no paid calls.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -118,32 +118,27 @@
       {
         "label": "Your desk is empty",
         "tone": "good",
-        "source": "You answered #938 at 06:03 and it was built, merged and live by 06:57. 187 of 187 acted on."
+        "source": "189 of 189 replies acted on. Nothing on the board is waiting on your word tonight."
       },
       {
-        "label": "Secrets, shapes, access: clean",
-        "tone": "good",
-        "source": "3,390 commits no leaks; 76 rules/1,850 files 0; 52 access tests green; 625 audit rows clean."
+        "label": "One thing for your eye",
+        "tone": "warn",
+        "source": "Profile's field names are small caps now (card 841). Before/after below; it waits on your word."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "47 open, none waiting on you, none urgent. Tonight 4 merged, 3 closed, 2 filed. 27 untouched 7d."
+        "source": "37 open, none waiting on you, none urgent. Tonight 1 merged, 2 filed. 20 untouched 7d."
       },
       {
         "label": "Check-ups",
         "tone": "good",
-        "source": "Janitor ran 15 Sep on its day; next 18 Sep. Machinist, Retro 19 Sep; Warden 20 Sep. None overdue."
+        "source": "Janitor ran 15 Sep; next 18 Sep. Machinist and Retro 19 Sep, Warden 20 Sep. None overdue."
       },
       {
-        "label": "One drawing, five copies",
-        "tone": "warn",
-        "source": "Casting hero's heading and the account menu's are identical, written out twice. Filed #928."
-      },
-      {
-        "label": "Your account is no longer flagged",
+        "label": "Four ways to write one thing, now one",
         "tone": "good",
-        "source": "Re-read after the fix: out by 150, under the 500 mark. The list is empty."
+        "source": "A build check now walks every box-name in the product and fails if a fifth is drawn."
       }
     ],
     "ladderCards": {
@@ -2542,6 +2537,46 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "one-field-label-841-frames",
+      "title": "Your Profile's field names, before and after — small caps instead of a sentence",
+      "question": "Is the small-caps name right on a page a customer sees? It is the style the rest of the product already uses for the name of a thing, and it is now the only one. If it reads wrong here, say so and the fix goes the other way — the staff pop-ups take Profile's style instead. Still one way either way.",
+      "state": "open",
+      "filedAt": "2026-09-16T03:20:00.000Z",
+      "issueNumber": 841,
+      "frames": [
+        {
+          "key": "crew-eye/009494c5-fbbd-46a3-a186-9a8a368b3982.png",
+          "caption": "BEFORE — light, 1440 wide. Settings → Profile on the test account: 'Display name', 'Email', 'Workspace name' in sentence case, in the page's own styling that nothing else in the product draws.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/4ff52d48-617f-4e98-9a5e-c4a715c16364.png",
+          "caption": "AFTER — light, 1440 wide, same account and same moment in the flow. DISPLAY NAME, EMAIL, WORKSPACE NAME in the product's small caps. Same words, same boxes, same order; the spacing under each name is a touch tighter.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/93098b94-09ee-4382-9f4b-c2538faa7235.png",
+          "caption": "BEFORE — dark, 1440 wide. The same three names in the old styling.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/022e6092-0c30-4d6d-a871-e0fb6383b9dc.png",
+          "caption": "AFTER — dark, 1440 wide. The small caps sit quieter against the dark surface than the old near-white line did.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/b355716e-1e8f-4efa-896e-ad26669c3c88.png",
+          "caption": "The fourth copy nobody had named, now folded in: the confirm box a moderator uses. 'REASON FOR DISCARDING (REQUIRED)' in the same small caps, sitting exactly as far above its box as it did before — 5px, measured in the running app.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/811d8a8b-dea0-44ff-a7b3-13670397252b.png",
+          "caption": "NOT part of this change, and filed as its own card: Settings on a phone. The section list eats half the width and 'JPG, PNG or WebP · up to 5 MB' wraps one word per line. The before shot is identical apart from the name — this was already true.",
+          "arm": "light"
+        }
+      ]
+    },
     {
       "id": "closed-sheet-dock-864-frames",
       "title": "The expired-sheet dock as built on your A — and where the press lands",
@@ -4997,6 +5032,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "one-field-label-841",
+      "title": "The name above a box you type in is written one way now, not four",
+      "status": "merged",
+      "prNumber": 1001,
+      "note": "Your ruling built: a box on a page and a box in a pop-up are the same thing, so Profile's field names take the product's own small-caps style and the old Profile-only styling is deleted. A fourth copy found on the way — inside the moderator's freeze confirm — folded in with its spacing unchanged to the pixel. The four staff pop-ups photographed before and after, both themes, byte-identical. Merged on a green gate at 03:12 UTC; the reviewer is still out of credits, so no outside review ran. THE CARD STAYS OPEN for your eye on the Profile repaint."
+    },
     {
       "id": "held-cards-off-offer-999",
       "title": "The team stops waking every half hour when nothing on the board can actually be taken",
