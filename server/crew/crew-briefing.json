@@ -1,7 +1,7 @@
 {
-  "edition": 436,
-  "updatedAt": "2026-09-16T11:24:00.000Z",
-  "shift": "THE FIRST OF YOUR THREE CLEAN-UP JOBS IS DONE. NOTHING NEEDS AN ANSWER FROM YOU.\n\nYou said “105-108 clear them”. 105 is cleared: forty ready-made screen parts that the product has never used — they came with the starter kit, and the only page that ever showed them was a demo page deleted in February — are out of the code, along with the 33 add-on packages that existed only to serve them. Nothing you see changes; every page renders as before, because a part nobody used was never in what your browser downloads. What it buys is a smaller, more honest install and a map with 40 fewer dead rooms on it.\n\nEvery one of the 40 was checked three separate ways before it went, and the outside reviewer re-checked all of it independently and passed it with no findings. One part is kept back on purpose for the next job (106), because a file on 106's list still uses it. Next: 106, then 108.",
+  "edition": 437,
+  "updatedAt": "2026-09-16T13:14:00.000Z",
+  "shift": "THE SECOND OF YOUR THREE CLEAN-UP JOBS IS DONE — AND IT TURNED UP A BROKEN LINK IN YOUR OWN SETTINGS PAGE. NOTHING NEEDS AN ANSWER FROM YOU.\n\nYou said “105-108 clear them”. 106 is cleared: nine more files nothing in the product uses are out (an old marketing menu, two early drafts of casting controls, four index files nobody read, one phone-size helper, one type file), plus the last held-back screen part from 105 and the package that served only it. Nothing you see changes. Each file was checked three ways, and the outside reviewer re-checked every one independently and passed it with no findings.\n\nThe thing worth your attention is what the third check found. One file on the list was NOT litter: it was the piece of code that makes your referral link work. Settings hands every customer a link to copy and share (“…?ref=THEIR-CODE”). Since 4 April, when an old dashboard page was deleted, nothing has been reading that code when a friend opens the link — so the link does nothing, and only typing the code by hand into “Redeem a referral code” works. The file was kept, and the fix is filed as bug 1010: one line to switch it back on. It is money-adjacent (it restores referral rewards for link sign-ups), so it will go through the reviewer whatever its size. Next: 108.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-16T11:17:22.937Z",
+      "readAt": "2026-09-16T13:10:36.096Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5033,6 +5033,20 @@
   ],
   "pipeline": [
     {
+      "id": "orphans-purge-106",
+      "title": "Nine more unused files and the last held-back screen part are gone (your job 106)",
+      "status": "merged",
+      "prNumber": 1011,
+      "note": "Your “105-108 clear them”, second job. Worked example: `Navigation.tsx` was the product’s original top menu; the only page that ever showed it was deleted in March, and the menu you actually see today is a different file — so it had been dead for six months, and the pop-up-menu part it used (held back from 105) went with it. Two early drafts of casting controls had newer copies in the casting studio that are the ones in use. Each of the nine was checked three ways — the nightly dead-code reading, a search of every file for anything using it, and the full history of who ever used it and when they stopped — and every one that HAD once been used lost its user to a page being deleted on purpose. The outside reviewer re-ran the search, the package diff and the history itself and passed it with no findings. Two of the card’s eleven were left alone by its own rules (one goes with the old studio at the end; one is a false alarm). The eleventh is the referral-link finding below. On production at 13:09 UTC."
+    },
+    {
+      "id": "dupkey-1009",
+      "title": "The test run’s one warning is gone (a fixture set the same value twice)",
+      "status": "merged",
+      "prNumber": 1012,
+      "note": "Small fix from the Small-fixes switch. Every test run printed one warning about a test file setting “approved: true” twice in the same block. Same value both times, so nothing was wrong — but it was the one warning that would hide the next real one. One line deleted; the two tests in that file still pass, and the run is silent."
+    },
+    {
       "id": "shadcn-purge-105",
       "title": "Forty ready-made screen parts nothing ever used are gone, with the 33 packages that served only them",
       "status": "merged",
@@ -6633,9 +6647,23 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0916e-foreman",
+      "id": "referral-link-dead-1010",
+      "severity": "warning",
+      "state": "open",
+      "title": "Your referral link does nothing when a friend opens it — since 4 April",
+      "detail": "What a customer sees: Settings shows their referral link with a Copy button. They send it to a friend. The friend opens it — and nothing is captured, nothing is claimed, and neither of them gets the reward when the friend signs up. Only typing the code by hand into “Redeem a referral code” works.\n\nWhy: the small piece of code that reads “?ref=CODE” off the link and claims it after sign-in was only ever used by the old dashboard page, and that page was deleted on 4 April (a Manus clean-up commit). The server half still works and is still tested; it has simply had nothing calling it for five months. Found by 106’s third check — the one that asks not “does anything use this?” but “did something STOP using it, and why?” — which is exactly what that check is for.\n\nThe fix is filed as bug 1010: mount that piece of code once at the app root. One import, one line. It is money-adjacent (it turns referral rewards back on for link sign-ups, through the same reward code the hand-typed road already uses), so the PR carries founder-review and goes through the reviewer whatever its size. Recommendation: wire it — it is the behaviour your settings page already promises. If you would rather retire the link instead, say so on 1010."
+    },
+    {
+      "id": "queue-shape-0916f-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 32 open, level. Your 105 and 106 are cleared; 108 is next",
+      "detail": "Two cards closed tonight (106, your clean-up job, and 1009, the one-line test fix filed last shift) and one filed (1010, the referral link above). So the board goes 33 → 32.\n\nOf your five: 527 done, 129’s first part live, 105 done, 106 done. Still to do, in your order: 108 — one session, duplicates first. One thing on 108 for the relay rather than a shift: your same sentence asked whether 203 and 108 belong under N2 instead of background work; 203 was moved, 108 was not, and nothing on the card says why. A shift will take 108 as ordered unless that is answered first.\n\n15 open cards have had no comment, close, reopen or commit for 7 days — level with last night."
+    },
+    {
+      "id": "queue-shape-0916e-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 33 open, level. Your 105 is cleared; 106 and 108 are next",
       "detail": "One card closed tonight (105, the clean-up you ordered) and one small one filed from what the test run printed on the way (#1009 — a test file sets the same value twice; harmless, one line, left as a small fix rather than worked unasked). So the board is level at 33.\n\nOf your five: 527 done, 129's first part live, 105 done. Still to do, in your order: 106, then 108 — one session each. 106 now carries one extra item handed on from 105 (the one screen part held back), written on the card.\n\n15 open cards have had no comment, close, reopen or commit for 7 days — level with last night; the oldest is “Takes” at 19 days, a design waiting its turn."
     },
@@ -7225,13 +7253,8 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-16T11:17:22.936Z",
+    "readAt": "2026-09-16T13:10:36.095Z",
     "items": [
-      {
-        "issueNumber": 106,
-        "title": "Janitor #1 (knip): 11 non-shadcn files with no importer, confirmed by three readers - manifest-first removal",
-        "urgent": false
-      },
       {
         "issueNumber": 108,
         "title": "Janitor #1 (knip): 173 unused exports, 115 unused types, 18 duplicate exports - triage through the un-wiring differ, not by hand",
