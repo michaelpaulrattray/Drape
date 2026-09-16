@@ -3510,6 +3510,12 @@ say it charges nothing. Two names for one money write is a defect in the guards
 before it is untidiness in the ledger. Its own card (money path, reviewer
 regardless of size), filed from this shift.
 
+**Done — #1014, 2026-09-17.** The guards were widened first (PR #1023: 30 negative
+arms name `deductCredits` and `withAtomicCredits`, 3 positive arms take either
+spelling, each arm driven with a sabotage through the other name), then the six
+callers renamed and the alias deleted (the PR after it). Floor in
+`docs/JANITOR_KNIP.md` moved 2 → 1.
+
 ### 35d. And `describeFace = describeWithTeeth`, which is on knip's list and NOT
 ### on this ledger, recorded so the next reader does not take it
 

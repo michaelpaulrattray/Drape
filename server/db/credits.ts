@@ -422,9 +422,6 @@ export async function deductCredits(
   }
 }
 
-// Legacy alias
-export const deductPoints = deductCredits;
-
 export async function addCredits(
   userId: number,
   amount: number,

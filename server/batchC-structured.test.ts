@@ -62,7 +62,7 @@ vi.mock("./db", async (importOriginal) => {
     getLatestVersionNumber: vi.fn().mockResolvedValue(1),
     addBoardItem: vi.fn().mockResolvedValue({ success: true, itemId: 55 }),
     fillEmptyCastNodeWithVersionIn: vi.fn().mockResolvedValue("filled"),
-    deductPoints: vi.fn().mockResolvedValue({ success: true }),
+    deductCredits: vi.fn().mockResolvedValue({ success: true }),
     addCredits: vi.fn().mockResolvedValue({ success: true }),
     claimGenerationOperation: vi.fn().mockImplementation(async () => operation.outcome),
     acquireGenerationOperationLock: vi.fn().mockResolvedValue({
@@ -198,7 +198,7 @@ import {
   createModel,
   createModelAsset,
   updateModel,
-  deductPoints,
+  deductCredits,
   claimGenerationOperation,
   acquireGenerationOperationLock,
   markGenerationOperationRunning,
@@ -317,7 +317,7 @@ beforeEach(() => {
   vi.mocked(createModel).mockClear();
   vi.mocked(createModelAsset).mockClear();
   vi.mocked(updateModel).mockClear();
-  vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true } as never);
+  vi.mocked(deductCredits).mockClear().mockResolvedValue({ success: true } as never);
   vi.mocked(generateMasterPrompt).mockClear();
   vi.mocked(generateCastingImage).mockClear();
   vi.mocked(generateCastingImageRaw).mockClear();
@@ -389,7 +389,7 @@ describe("applyModelEdit wire schema (M6)", () => {
         changes: { totallyUnknownField: "x" },
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 
   it("the removed referenceImage/previousMasterPrompt channels are rejected too", async () => {
@@ -424,7 +424,7 @@ describe("runGeneration attributes wire schema (final correction 3)", () => {
         boardId: 2, itemId: 3, attributes: attributes as never,
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(createModel).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
   });
@@ -544,7 +544,7 @@ describe("R7-1E Canvas operation receipts", () => {
       modelId: 7,
     });
     expect(vi.mocked(assertGenerationOperationSnapshotHead).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(deductPoints).mock.invocationCallOrder[0],
+      vi.mocked(deductCredits).mock.invocationCallOrder[0],
     );
     const [prompt, options] = vi.mocked(generateCastingImageRaw).mock.calls[0];
     expect(prompt).toContain("immutable snapshot prompt");
@@ -576,7 +576,7 @@ describe("R7-1E Canvas operation receipts", () => {
 
     expect(markGenerationOperationRunning).toHaveBeenCalledTimes(1);
     expect(assertGenerationOperationSnapshotHead).toHaveBeenCalledTimes(1);
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImageRaw).not.toHaveBeenCalled();
     expect(commitCanvasRecastSnapshot).not.toHaveBeenCalled();
   });
@@ -621,7 +621,7 @@ describe("R7-1E Canvas operation receipts", () => {
       message: "Generate a headshot before recasting this Cast.",
     });
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImageRaw).not.toHaveBeenCalled();
   });
 
@@ -639,7 +639,7 @@ describe("R7-1E Canvas operation receipts", () => {
     expect(forkEvidenceAwareCast).toHaveBeenCalled();
     expect(result).toMatchObject({ decision: "fork", modelId: 88, placed: true });
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 
   it("routes a configured Fork through the zero-credit evidence copy and atomic Canvas placement", async () => {
@@ -675,7 +675,7 @@ describe("R7-1E Canvas operation receipts", () => {
       },
     );
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       decision: "fork",
@@ -733,7 +733,7 @@ describe("R7-1E Canvas operation receipts", () => {
       itemId: 3,
     })).rejects.toMatchObject({ code: "CONFLICT" });
     expect(markGenerationOperationRunning).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
   });
 });
@@ -763,7 +763,7 @@ describe("applyModelEdit UPDATE = source:'structured' recast commit (M6)", () =>
     // Stale flags include the PINNED sideClose
     expect(tx.staleUpdates).toHaveLength(1);
     // Paid exactly once, after validation
-    expect(deductPoints).toHaveBeenCalledTimes(1);
+    expect(deductCredits).toHaveBeenCalledTimes(1);
     expect(generateCastingImageRaw).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ modelId: 7 }),
@@ -781,7 +781,7 @@ describe("applyModelEdit UPDATE = source:'structured' recast commit (M6)", () =>
         executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes }),
       ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     }
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(tx.modelUpdates).toEqual([]);
   });
 
@@ -792,7 +792,7 @@ describe("applyModelEdit UPDATE = source:'structured' recast commit (M6)", () =>
         changes: { eyeShape: "almond with naturally long eyelashes" },
       }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: expect.stringContaining("pick a value") });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 
   it("eyelash language cannot ride an OPEN structured channel either (§5.2/M16)", async () => {
@@ -802,7 +802,7 @@ describe("applyModelEdit UPDATE = source:'structured' recast commit (M6)", () =>
         changes: { hairStyleOverride: "a bob framing naturally long eyelashes" },
       }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: REFUSAL_COPY.eyelashPostCreation });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 
   it("FINDING 4 corpus: forbidden content cannot ride ANY permitted structured key, free, before generation/writes", async () => {
@@ -820,7 +820,7 @@ describe("applyModelEdit UPDATE = source:'structured' recast commit (M6)", () =>
         executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes }),
       ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     }
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
     expect(tx.modelUpdates).toEqual([]);
   });
@@ -828,7 +828,7 @@ describe("applyModelEdit UPDATE = source:'structured' recast commit (M6)", () =>
   it("FOUNDER FINAL RULING: every hair length is a valid durable structured edit — Long/Very Long included", async () => {
     for (const hairLength of ["Very Short", "Short", "Medium", "Long", "Very Long"]) {
       tx.reset();
-      vi.mocked(deductPoints).mockClear();
+      vi.mocked(deductCredits).mockClear();
       const ok = await executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: { hairLength } });
       expect(ok.decision).toBe("update");
       // The real typed pathway ran: new anchor + new revision + stale flags
@@ -837,7 +837,7 @@ describe("applyModelEdit UPDATE = source:'structured' recast commit (M6)", () =>
       expect(String(update.masterPrompt)).toContain(`hair length: ${hairLength}`);
       expect(String(update.identityRevisionId)).toMatch(/^rev-/);
       expect(tx.staleUpdates).toHaveLength(1); // the PINNED sideClose stales too
-      expect(deductPoints).toHaveBeenCalledTimes(1); // paid once, never auto-regenerating siblings
+      expect(deductCredits).toHaveBeenCalledTimes(1); // paid once, never auto-regenerating siblings
     }
     // Long Layers is a STYLE and coexists with any length
     tx.reset();
@@ -856,7 +856,7 @@ describe("applyModelEdit UPDATE = source:'structured' recast commit (M6)", () =>
     await expect(
       executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: { bodyType: "Bodybuilder" } }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 
   it("minted originals stay untouched: update refuses, fork is the boundary (D-43 regression)", async () => {
@@ -864,7 +864,7 @@ describe("applyModelEdit UPDATE = source:'structured' recast commit (M6)", () =>
     await expect(
       executeApplyModelEdit({ userId: 1, itemId: 3, decision: "update", changes: { jawline: "Sharp / Chiseled" } }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 });
 
@@ -875,14 +875,14 @@ describe("creation doors reordered: refusal precedes deduction (M22)", () => {
     await expect(
       executeRunGeneration({ userId: 1, itemId: 3, userPrompt: "girl in a leather jacket" }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(createModel).not.toHaveBeenCalled();
   });
 
   it("canvas runGeneration: a clean brief creates with the anchor+genesis stamp", async () => {
     const result = await executeRunGeneration({ userId: 1, itemId: 3, userPrompt: "sharp editorial Nordic face" });
     expect(result.success).toBe(true);
-    expect(deductPoints).toHaveBeenCalledTimes(1);
+    expect(deductCredits).toHaveBeenCalledTimes(1);
     const row = vi.mocked(createModelAsset).mock.calls[0][0] as { provenance: Record<string, unknown> };
     expect(row.provenance.identityRole).toBe("anchor");
     expect(row.provenance.identityRevisionId).toBe("genesis");
@@ -895,7 +895,7 @@ describe("creation doors reordered: refusal precedes deduction (M22)", () => {
     await expect(
       executeRunVariations({ userId: 1, itemId: 3, count: 2 }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 
   it("variations preserve Open flags on candidates but never send metadata to intake or Gemini", async () => {

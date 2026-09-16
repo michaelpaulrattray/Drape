@@ -30,7 +30,7 @@ import {
   createGeneration,
   updateGeneration,
   updateModel,
-  deductPoints,
+  deductCredits,
 } from "../db";
 import { generateFullBody, generateRemainingViews } from "./aiService";
 import { recordRefund } from "./atomicCredits";
@@ -605,7 +605,7 @@ export async function executeMintPackage(input: MintPackageInput) {
 
   // Deduct the tier total up front (atomic-credits contract)
   if (totalCost > 0) {
-    const deduct = await deductPoints(
+    const deduct = await deductCredits(
       input.userId, totalCost, "generation",
       `Mint package (${input.tier}, pending)`, input.chargeReferenceId ?? `legacy-mint-${input.modelId}`,
       { toolKind: "image" }, // the charge pays for generating the missing view images

@@ -35,7 +35,7 @@ vi.mock("./db", async (importOriginal) => {
     getGenerationOperationKindByRequest: vi.fn().mockResolvedValue(null),
     updateGenerationOperationProgress: vi.fn().mockResolvedValue(undefined),
     deleteModel: vi.fn().mockResolvedValue({ success: true }),
-    deductPoints: vi.fn().mockResolvedValue({ success: true }),
+    deductCredits: vi.fn().mockResolvedValue({ success: true }),
     createGeneration: vi.fn().mockResolvedValue({ success: true, generationId: 1 }),
     createModelAsset: vi.fn().mockResolvedValue({ success: true, assetId: 99 }),
   };
@@ -125,7 +125,7 @@ import {
   getModelStatusesIn,
   updateModel,
   mintModelAtomically,
-  deductPoints,
+  deductCredits,
   createModelAsset,
 } from "./db";
 import { executeFinalCastDeletion, planFinalCastDeletion } from "./casting/finalCastDeletion";
@@ -253,7 +253,7 @@ beforeEach(() => {
     castViews: 6, canvasPlacements: 2, affectedBoards: 1,
     wardrobeSessions: 1, wardrobeLooks: 1,
   });
-  vi.mocked(deductPoints).mockClear().mockResolvedValue({ success: true });
+  vi.mocked(deductCredits).mockClear().mockResolvedValue({ success: true });
   vi.mocked(createModelAsset).mockClear().mockResolvedValue({ success: true, assetId: 99 } as never);
   vi.mocked(commitGeneratedPackageSnapshot).mockClear().mockImplementation(async (input) => ({
     result: {
@@ -307,7 +307,7 @@ describe("generation.castingImage authorization order (review fix 1)", () => {
       assetId: 99,
       imageUrl: `${R2_BASE}/models/7/replayed-head.png`,
     });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
     expect(createModelAsset).not.toHaveBeenCalled();
   });
@@ -316,7 +316,7 @@ describe("generation.castingImage authorization order (review fix 1)", () => {
     vi.mocked(getModelById).mockResolvedValue(model({ userId: 2 }) as never);
     const caller = appRouter.createCaller(authCtx(1));
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
     expect(createModelAsset).not.toHaveBeenCalled();
   });
@@ -325,7 +325,7 @@ describe("generation.castingImage authorization order (review fix 1)", () => {
     vi.mocked(getModelById).mockResolvedValue(model({ status: "archived" }) as never);
     const caller = appRouter.createCaller(authCtx());
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({ code: "NOT_FOUND" });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(createModelAsset).not.toHaveBeenCalled();
   });
 
@@ -337,7 +337,7 @@ describe("generation.castingImage authorization order (review fix 1)", () => {
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
     });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
     expect(createModelAsset).not.toHaveBeenCalled();
   });
@@ -348,7 +348,7 @@ describe("generation.castingImage authorization order (review fix 1)", () => {
     await expect(caller.generation.castingImage({ modelId: 7 })).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
     });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 });
 
@@ -379,7 +379,7 @@ describe("R7 direct Casting receipt replay", () => {
       angles: ["sideClose"],
     })).resolves.toEqual({ refreshed: [], failed: [] });
 
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(mintModelAtomically).not.toHaveBeenCalled();
     expect(generateCastingImage).not.toHaveBeenCalled();
     expect(createModelAsset).not.toHaveBeenCalled();
@@ -576,7 +576,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
       executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(getModelAssets).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(updateModel).not.toHaveBeenCalled();
     expect(mintModelAtomically).not.toHaveBeenCalled();
   });
@@ -590,7 +590,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
       executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(getModelAssets).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(mintModelAtomically).not.toHaveBeenCalled();
   });
 
@@ -601,7 +601,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
       executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(getModelAssets).not.toHaveBeenCalled();
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(updateModel).not.toHaveBeenCalled();
     expect(mintModelAtomically).not.toHaveBeenCalled();
   });
@@ -612,7 +612,7 @@ describe("executeMintPackage mint-transition invariant (review item 1)", () => {
     await expect(
       executeMintPackage({ userId: 1, modelId: 7, tier: "core", characterName: "Vera", operationId: REQUEST_ID }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
     expect(mintModelAtomically).not.toHaveBeenCalled();
   });
 
@@ -812,7 +812,7 @@ describe("masked-edit closure (Batch 0.1 / E10)", () => {
       }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(getModelById).toHaveBeenCalledTimes(1);
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 
   it("the board masked-edit surface is gone (ModelEditorOverlay + useBoardIteration deleted)", async () => {
@@ -918,7 +918,7 @@ describe("executeMintPackage name guard + name persistence (review fix 2)", () =
     expect(attemptedIds[0]).toMatch(CAST_PUBLIC_ID_PATTERN);
     expect(attemptedIds[1]).toMatch(CAST_PUBLIC_ID_PATTERN);
     expect(attemptedIds[0]).not.toBe(attemptedIds[1]);
-    expect(deductPoints).not.toHaveBeenCalled();
+    expect(deductCredits).not.toHaveBeenCalled();
   });
 });
 

@@ -33,7 +33,7 @@ import {
   createModelAsset,
   createGeneration,
   updateGeneration,
-  deductPoints,
+  deductCredits,
   addCredits,
 } from "../db";
 import { addBoardEdge, getEdgesForItem, removeBoardEdge, getEdgesFrom } from "../db/boardEdges";
@@ -399,7 +399,7 @@ export async function executeRunGeneration(input: RunGenerationInput) {
   }
 
   const cost = CREDIT_COSTS.castingImage;
-  const deduct = await deductPoints(
+  const deduct = await deductCredits(
     input.userId, cost, "generation", "Canvas cast generation (pending)", input.chargeReferenceId,
     { toolKind: "image" },
   );
@@ -1081,7 +1081,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
       releasedIdentityDependents,
     } = prepared!;
 
-    const deduct = await deductPoints(
+    const deduct = await deductCredits(
       input.userId, cost, "generation",
       `Model recast (pending)`, input.chargeReferenceId,
       { toolKind: "image" },
@@ -1401,7 +1401,7 @@ export async function executeRunVariations(input: {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: intake.message });
   }
 
-  const deduct = await deductPoints(
+  const deduct = await deductCredits(
     input.userId, totalCost, "generation",
     `${count} cast variation${count === 1 ? "" : "s"} (pending)`, input.chargeReferenceId,
     { toolKind: "image" },

@@ -21,7 +21,7 @@
  * retry-then-refund contract as mint.
  */
 import { TRPCError } from "@trpc/server";
-import { getModelById, getModelAssets, deductPoints } from "../db";
+import { getModelById, getModelAssets, deductCredits } from "../db";
 import {
   computePackageSlots,
   computeEffectivePackageSlots,
@@ -232,7 +232,7 @@ export async function executeRefreshSlots(input: {
   }
 
   const totalCost = input.angles.reduce((sum, a) => sum + slotCost(a), 0);
-  const deduct = await deductPoints(
+  const deduct = await deductCredits(
     input.userId,
     totalCost,
     "generation",
