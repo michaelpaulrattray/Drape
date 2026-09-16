@@ -64,8 +64,10 @@
  * # LIMITS, inherited and stated
  *
  * Everything `lib/importerCountDiff.mts` states: a dead importer still counts,
- * a call site after an early return is invisible, dynamic specifiers
- * unresolved, and **one row per symbol NAME across the tree — which since #274
+ * a call site after an early return is invisible, COMPUTED dynamic specifiers
+ * unresolved (a string one is read since 2026-09-17, both destructured and
+ * bound whole — the differ's docblock carries the 36 wired symbols that were
+ * invisible until then), and **one row per symbol NAME across the tree — which since #274
  * is a DERIVED view over a (file, symbol) store rather than the store itself.
  * Where a name is declared twice the row unions both**, so a timeline verdict
  * about a twinned name is about the pair and not about either file; eleven names

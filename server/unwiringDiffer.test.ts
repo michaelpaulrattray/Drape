@@ -469,6 +469,89 @@ describe("the namespace hop", () => {
 });
 
 /**
+ * THE DESTRUCTURED DYNAMIC IMPORT — the namespace hole's sibling, one shape
+ * over (#108 slice 2, 2026-09-17).
+ *
+ *     const { blockIp } = await import("../../db");
+ *
+ * is the house style of every admin route and the atomic credit layer: 104
+ * statements in 23 production files. Measured at HEAD before these arms
+ * existed: **36 production-wired server exports counted ZERO importers**,
+ * among them BOTH login routers (`emailAuthRouter`, `googleAuthRouter` —
+ * mounted by `_core/index.ts` exactly this way), `issueStripeRefund`,
+ * `adjustUserCredits` and `updateUserRole`. The reader would have reported
+ * silence on the day either login route died. It was found from the noise
+ * side: the 30-day differ called `blockIp` un-wired when #800 removed its
+ * static Slack importer, while two dynamic callers stayed live.
+ *
+ * Each arm varies ONE property; the un-varied direction is asserted beside it.
+ */
+describe("the destructured dynamic import", () => {
+  const BLOCK = `export async function blockIp(ip: string) {\n  return ip;\n}\n`;
+  const DYN_CALL = `export const route = async (ip: string) => {\n  const { blockIp } = await import("../db");\n  return blockIp(ip);\n};\n`;
+
+  it("counts a symbol reached through `const { x } = await import(...)` — the admin routes' own shape", () => {
+    const source = tree({ "server/db.ts": BLOCK, "server/routes/ipBlocking.ts": DYN_CALL });
+    expect(importerCount(readTree(source), "blockIp")).toBe(1);
+    expect(importersOfName(readTree(source), "blockIp")).toEqual(["server/routes/ipBlocking.ts"]);
+  });
+
+  it("⚠ and REPORTS it when that call site disappears — the login routers' death would have been silent", () => {
+    const before = tree({ "server/db.ts": BLOCK, "server/routes/ipBlocking.ts": DYN_CALL });
+    const after = tree({
+      "server/db.ts": BLOCK,
+      "server/routes/ipBlocking.ts": `export const route = async (ip: string) => {\n  const { unblockIp } = await import("../db");\n  return unblockIp(ip);\n};\n`,
+    });
+    expect(namesFound(before, after)).toEqual(["blockIp"]);
+    expect(importerCount(readTree(before), "blockIp")).toBe(1);
+  });
+
+  it("does NOT report a symbol whose static importer went while a dynamic one stayed — the `blockIp` noise", () => {
+    const STATIC = `import { blockIp } from "../db";\nexport const slack = (ip: string) => blockIp(ip);\n`;
+    const before = tree({ "server/db.ts": BLOCK, "server/routes/slack.ts": STATIC, "server/routes/ipBlocking.ts": DYN_CALL });
+    const after = tree({ "server/db.ts": BLOCK, "server/routes/ipBlocking.ts": DYN_CALL });
+    expect(namesFound(before, after)).toEqual([]);
+    expect(importerCount(readTree(before), "blockIp")).toBe(2);
+    expect(importerCount(readTree(after), "blockIp")).toBe(1);
+  });
+
+  it("follows the `b: c` alias form — destructuring has no `as`, and the body says the local name", () => {
+    const aliased = `export const route = async (ip: string) => {\n  const { blockIp: block } = await import("../db");\n  return block(ip);\n};\n`;
+    const source = tree({ "server/db.ts": BLOCK, "server/routes/ipBlocking.ts": aliased });
+    expect(importerCount(readTree(source), "blockIp")).toBe(1);
+  });
+
+  it("⚠ a destructured name the body never mentions again is a dead import, exactly as a static one is", () => {
+    const dead = `export const route = async (ip: string) => {\n  const { blockIp } = await import("../db");\n  return ip;\n};\n`;
+    const source = tree({ "server/db.ts": BLOCK, "server/routes/ipBlocking.ts": dead });
+    expect(importerCount(readTree(source), "blockIp")).toBe(0);
+  });
+
+  it("credits the specifier's own module, not a twin of the name elsewhere", () => {
+    const source = tree({
+      "server/db.ts": BLOCK,
+      "server/other.ts": BLOCK,
+      "server/routes/ipBlocking.ts": DYN_CALL,
+    });
+    expect(importersAt(readTree(source), "server/db.ts", "blockIp")).toEqual(["server/routes/ipBlocking.ts"]);
+    expect(importersAt(readTree(source), "server/other.ts", "blockIp")).toEqual([]);
+  });
+
+  it("counts a TEST file's dynamic use as no importer, exactly as it does a static one", () => {
+    const source = tree({ "server/db.ts": BLOCK, "server/routes/db.test.ts": DYN_CALL });
+    expect(importerCount(readTree(source), "blockIp")).toBe(0);
+    const production = tree({ "server/db.ts": BLOCK, "server/routes/dbUse.ts": DYN_CALL });
+    expect(importerCount(readTree(production), "blockIp")).toBe(1);
+  });
+
+  it("reads `const mod = await import(...)` as a namespace binding — `geminiClient.ts`'s shape", () => {
+    const viaModule = `export const send = async () => {\n  const mod = await import("../db");\n  return mod.blockIp("x");\n};\n`;
+    const source = tree({ "server/db.ts": BLOCK, "server/routes/client.ts": viaModule });
+    expect(importerCount(readTree(source), "blockIp")).toBe(1);
+  });
+});
+
+/**
  * THE TWIN — ONE NAME, TWO DECLARATIONS, AND THEY MUST NOT ANSWER FOR EACH
  * OTHER (#274).
  *

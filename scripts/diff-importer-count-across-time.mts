@@ -77,6 +77,22 @@
  * is exactly that shape and CLAUDE.md records it. Computed dynamic specifiers
  * are not resolved either.
  *
+ * ⚠ **A DESTRUCTURED DYNAMIC IMPORT WAS ON THAT LIST UNTIL 2026-09-17, AND IT
+ * IS THE NAMESPACE HOLE BELOW WEARING ONE MORE SHAPE** (#108 slice 2).
+ * `const { blockIp } = await import("../../db")` is the house style of every
+ * admin route and the atomic credit layer — 104 statements in 23 production
+ * files — and the reader saw none of them. Measured at HEAD the hour it was
+ * fixed: **36 production-wired server exports counted zero**, among them BOTH
+ * login routers (`emailAuthRouter`, `googleAuthRouter` — `_core/index.ts`
+ * mounts them exactly this way), `issueStripeRefund`, `adjustUserCredits`,
+ * `updateUserRole`. The uncalled-export sweep had read this shape by name
+ * since triage §15 — so counting importers instead of reading the sweep, which
+ * is this file's own founding argument, had traded the sweep's blindness for
+ * one of its own. It surfaced from the noise side: the 30-day window reported
+ * `blockIp` un-wired when #800 removed its static Slack importer while two
+ * dynamic callers stayed live. Read now (`lib/importerCountDiff.mts`, arms in
+ * `server/unwiringDiffer.test.ts`); 36 → 0 the same hour.
+ *
  * ⚠ **NAMESPACE IMPORTS WERE ON THAT LIST UNTIL 2026-08-23, AND THAT LINE WAS
  * COSTING THE INSTRUMENT ITS BEST SUBJECT.** `import * as db from "../db"` is
  * the house style of this product's whole database layer, so the reading it
