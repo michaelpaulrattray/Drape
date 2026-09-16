@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d8349c115ecb6482"
+    "sourceFingerprint": "4b517a7c755596b1"
   },
   "domains": [
     {
@@ -143,7 +143,7 @@
     {
       "id": "domain:ui-primitives",
       "name": "ui-primitives",
-      "moduleCount": 52
+      "moduleCount": 12
     },
     {
       "id": "domain:unassigned",
@@ -266,50 +266,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/components/ui/accordion.tsx",
-      "path": "client/src/components/ui/accordion.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/alert-dialog.tsx",
-      "path": "client/src/components/ui/alert-dialog.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/alert.tsx",
-      "path": "client/src/components/ui/alert.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/aspect-ratio.tsx",
-      "path": "client/src/components/ui/aspect-ratio.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/avatar.tsx",
-      "path": "client/src/components/ui/avatar.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/components/ui/badge.tsx",
       "path": "client/src/components/ui/badge.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/breadcrumb.tsx",
-      "path": "client/src/components/ui/breadcrumb.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/button-group.tsx",
-      "path": "client/src/components/ui/button-group.tsx",
       "domain": "ui-primitives",
       "lifecycle": "active"
     },
@@ -320,50 +278,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/components/ui/calendar.tsx",
-      "path": "client/src/components/ui/calendar.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/components/ui/card.tsx",
       "path": "client/src/components/ui/card.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/carousel.tsx",
-      "path": "client/src/components/ui/carousel.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/chart.tsx",
-      "path": "client/src/components/ui/chart.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/checkbox.tsx",
-      "path": "client/src/components/ui/checkbox.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/collapsible.tsx",
-      "path": "client/src/components/ui/collapsible.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/command.tsx",
-      "path": "client/src/components/ui/command.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/context-menu.tsx",
-      "path": "client/src/components/ui/context-menu.tsx",
       "domain": "ui-primitives",
       "lifecycle": "active"
     },
@@ -374,32 +290,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/components/ui/drawer.tsx",
-      "path": "client/src/components/ui/drawer.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/components/ui/dropdown-menu.tsx",
       "path": "client/src/components/ui/dropdown-menu.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/empty.tsx",
-      "path": "client/src/components/ui/empty.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/field.tsx",
-      "path": "client/src/components/ui/field.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/form.tsx",
-      "path": "client/src/components/ui/form.tsx",
       "domain": "ui-primitives",
       "lifecycle": "active"
     },
@@ -410,56 +302,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/components/ui/input-group.tsx",
-      "path": "client/src/components/ui/input-group.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/input-otp.tsx",
-      "path": "client/src/components/ui/input-otp.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/components/ui/input.tsx",
       "path": "client/src/components/ui/input.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/item.tsx",
-      "path": "client/src/components/ui/item.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/kbd.tsx",
-      "path": "client/src/components/ui/kbd.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/label.tsx",
-      "path": "client/src/components/ui/label.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/menubar.tsx",
-      "path": "client/src/components/ui/menubar.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/navigation-menu.tsx",
-      "path": "client/src/components/ui/navigation-menu.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/pagination.tsx",
-      "path": "client/src/components/ui/pagination.tsx",
       "domain": "ui-primitives",
       "lifecycle": "active"
     },
@@ -470,62 +314,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/components/ui/progress.tsx",
-      "path": "client/src/components/ui/progress.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/radio-group.tsx",
-      "path": "client/src/components/ui/radio-group.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/resizable.tsx",
-      "path": "client/src/components/ui/resizable.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/scroll-area.tsx",
-      "path": "client/src/components/ui/scroll-area.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/components/ui/select.tsx",
       "path": "client/src/components/ui/select.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/separator.tsx",
-      "path": "client/src/components/ui/separator.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/sheet.tsx",
-      "path": "client/src/components/ui/sheet.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/sidebar.tsx",
-      "path": "client/src/components/ui/sidebar.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "delete"
-    },
-    {
-      "id": "module:client/src/components/ui/skeleton.tsx",
-      "path": "client/src/components/ui/skeleton.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/slider.tsx",
-      "path": "client/src/components/ui/slider.tsx",
       "domain": "ui-primitives",
       "lifecycle": "active"
     },
@@ -536,38 +326,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/components/ui/spinner.tsx",
-      "path": "client/src/components/ui/spinner.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/switch.tsx",
-      "path": "client/src/components/ui/switch.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/tabs.tsx",
-      "path": "client/src/components/ui/tabs.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/components/ui/textarea.tsx",
       "path": "client/src/components/ui/textarea.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/toggle-group.tsx",
-      "path": "client/src/components/ui/toggle-group.tsx",
-      "domain": "ui-primitives",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/components/ui/toggle.tsx",
-      "path": "client/src/components/ui/toggle.tsx",
       "domain": "ui-primitives",
       "lifecycle": "active"
     },
@@ -14204,47 +13964,7 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/components/ui/accordion.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/alert-dialog.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/alert-dialog.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/alert.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/avatar.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/components/ui/badge.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/breadcrumb.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/button-group.tsx",
-      "to": "module:client/src/components/ui/separator.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/button-group.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
@@ -14254,52 +13974,7 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/components/ui/calendar.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/calendar.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/components/ui/card.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/carousel.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/carousel.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/chart.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/checkbox.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/command.tsx",
-      "to": "module:client/src/components/ui/dialog.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/command.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/context-menu.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
@@ -14309,42 +13984,7 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/components/ui/drawer.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/components/ui/dropdown-menu.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/empty.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/field.tsx",
-      "to": "module:client/src/components/ui/label.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/field.tsx",
-      "to": "module:client/src/components/ui/separator.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/field.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/form.tsx",
-      "to": "module:client/src/components/ui/label.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/form.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
@@ -14354,31 +13994,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/components/ui/input-group.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/input-group.tsx",
-      "to": "module:client/src/components/ui/input.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/input-group.tsx",
-      "to": "module:client/src/components/ui/textarea.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/input-group.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/input-otp.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/components/ui/input.tsx",
       "to": "module:client/src/components/ui/dialog.tsx",
       "kind": "imports"
@@ -14390,46 +14005,6 @@
     },
     {
       "from": "module:client/src/components/ui/input.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/item.tsx",
-      "to": "module:client/src/components/ui/separator.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/item.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/kbd.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/label.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/menubar.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/navigation-menu.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/pagination.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/pagination.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
@@ -14439,102 +14014,7 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/components/ui/progress.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/radio-group.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/resizable.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/scroll-area.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/components/ui/select.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/separator.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/sheet.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/sidebar.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/sidebar.tsx",
-      "to": "module:client/src/components/ui/input.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/sidebar.tsx",
-      "to": "module:client/src/components/ui/separator.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/sidebar.tsx",
-      "to": "module:client/src/components/ui/sheet.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/sidebar.tsx",
-      "to": "module:client/src/components/ui/skeleton.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/sidebar.tsx",
-      "to": "module:client/src/components/ui/tooltip.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/sidebar.tsx",
-      "to": "module:client/src/hooks/useMobile.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/sidebar.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/skeleton.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/slider.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/spinner.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/switch.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/tabs.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
@@ -14550,21 +14030,6 @@
     },
     {
       "from": "module:client/src/components/ui/textarea.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/toggle-group.tsx",
-      "to": "module:client/src/components/ui/toggle.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/toggle-group.tsx",
-      "to": "module:client/src/lib/utils.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ui/toggle.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },

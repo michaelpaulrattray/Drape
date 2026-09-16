@@ -146,18 +146,19 @@ describe("#744 — the customer pages stay static, on purpose", () => {
 describe("#744 — recharts stays inside the staff tree", () => {
   /*
     The weight left the entry chunk only because every importer of `recharts`
-    — and of the shadcn `components/ui/chart.tsx` wrapper around it — is
-    reached solely from a staff page. A customer-facing module importing
-    either puts the library back on every visitor with no route line changing.
-    The staff tree is `features/admin/`, `features/moderator/`, `features/staff/`,
-    the staff pages themselves, and the wrapper. Everything else is a customer
-    module until a measurement says otherwise.
+    is reached solely from a staff page. A customer-facing module importing it
+    puts the library back on every visitor with no route line changing.
+    The staff tree is `features/admin/`, `features/moderator/`, `features/staff/`
+    and the staff pages themselves. Everything else is a customer module until
+    a measurement says otherwise. (The shadcn `components/ui/chart.tsx` wrapper
+    was on this list until #105 deleted it — nothing ever imported it; the
+    matcher still names its path so a re-vendored wrapper is held to the same
+    tree rather than becoming a second door.)
   */
   const STAFF_TREE = [
     "features/admin/",
     "features/moderator/",
     "features/staff/",
-    "components/ui/chart.tsx",
     "pages/Admin",
     "pages/Moderator",
     "pages/DrapeStudio",
