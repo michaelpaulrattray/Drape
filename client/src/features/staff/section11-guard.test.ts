@@ -523,9 +523,13 @@ describe("brief 11 §8 — what the PR was told not to do", () => {
  * census left three remainders behind and the card took the one that was only
  * ever a different ROW: `pages/AdminInviteCodes.tsx` now mounts the house field,
  * so its line is DELETED rather than kept as a dead excuse — which is the third
- * arm below working exactly as intended. The two that remain are decisions, not
- * leftovers: the marketing modal needs a ruling on whether that lane speaks the
- * app's voice, and the legacy studio dies whole with the retirement (card 29).
+ * arm below working exactly as intended. ⚠ **AND THE TWO THAT REMAIN ARE NOW
+ * RULED RATHER THAN PENDING — card 1002 was CLOSED 2026-09-16 with both of them
+ * decided, so nothing here is waiting on anybody.** The marketing modal stays on
+ * the marketing lane, which the house keeps separate on purpose; the legacy
+ * studio dies whole with the retirement (card 29). They stay enumerated below
+ * because a ruled exception still has to be visible — an unlisted fourth
+ * treatment landing beside either of them is exactly what this map catches.
  */
 describe("card 841 — one field-label treatment across the whole client", () => {
   const CLIENT_TSX = tsxUnder(CLIENT_SRC).filter((f) => !f.includes(".test."));
@@ -562,13 +566,13 @@ describe("card 841 — one field-label treatment across the whole client", () =>
 
   /**
    * A field label this fold did not reach, each on a lane of its own, each
-   * filed rather than tolerated. Deleting a line here without folding the
+   * RULED rather than tolerated. Deleting a line here without folding the
    * label is the drift this map exists to make visible.
    */
   const FILED_ELSEWHERE = new Map<string, string>([
     [
       "features/home/WaitlistModal.tsx :: block text-xs font-medium text-white/70 mb-2.5 font-body",
-      "the marketing lane's own fixed-dark type system, not the app's tokens — filed",
+      "the MARKETING lane, which the house keeps separate from app UI by convention (CLAUDE.md's design-system section: marketing/home pages compose @/components/design-system, app UI composes the foundation) — this modal is mounted by pages/Home.tsx and nothing else, so folding the app's label into it would cross the two lanes rather than unify one. Ruled not a fold on card 1002",
     ],
     [
       "features/studio/components/CastModelModal.tsx :: block text-canvas-xs font-medium text-canvas-ink-soft mb-1.5",
