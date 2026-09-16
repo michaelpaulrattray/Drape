@@ -33,17 +33,13 @@ export {
 // Credits
 export {
   initializeUserCredits,
-  initializeUserPoints,
   getUserCredits,
-  getUserPoints,
   getCreditTransactions,
-  getPointTransactions,
   getCreditTransactionByRef,
   normalizeCreditReferenceId,
   deductCredits,
   deductPoints,
   addCredits,
-  addPoints,
 } from "./credits";
 
 // Models

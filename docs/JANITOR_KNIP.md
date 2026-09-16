@@ -66,6 +66,14 @@ Controls taken 2026-08-26 on the committed config (working law 2):
   `prove-sabotage-survives-death-disposable.mts`) — a consequence of the
   disposable ignore above, found Janitor run 1. Such a row is a KEEP; grep
   `scripts/` including disposables before believing a `lib/` file is dead.
+- **The duplicate-exports floor is 2, and both are on purpose** (#108 slice 1,
+  2026-09-16): `server/castingV2/faceDescribe.ts: describeWithTeeth, describeFace`
+  is a PINNED bench result — the shipped pointer beside the arm it points at,
+  with `faceDescribe.test.ts:132` asserting the identity so a re-pointing
+  without a new run goes red; and `server/db/credits.ts: deductCredits,
+  deductPoints` is a rename alias with SIX live money-path callers and a dozen
+  guard regexes spelling the old name, held for its own card (triage §35c). A
+  duplicates reading of 2 is the floor; a reading above 2 names a new alias.
 
 ## Readings (the Janitor appends one line per run; findings become cards)
 
@@ -79,6 +87,7 @@ Controls taken 2026-08-26 on the committed config (working law 2):
 | 2026-09-11 | 69 | 1 | — | 194 | 132 | 19 | Janitor run 5, nightly `34631395445` at `ac7c2cd7`, compact. **Files flat at 69 for a week** (four nightlies: 09-08, 09-09, 09-10, 09-11 all `success`); duplicates flat at 19. Exports 191 → 194, types 129 → 132 — single-digit drift again. Nothing proposed. |
 | 2026-09-15 | 69 | 1 | — | 200 | 134 | 19 | Read by #105's session (not a patrol), nightly `35008863398` at `4f3c49da`, compact. **The reading that #105 was executed against**: 41 of the 69 files were `components/ui/*`. ✅ **40 of those and 33 of the 34 packages in the one `package.json` line are DELETED in PR #1008 (`ed7b0032`)** — manifest `docs/specs/SHADCN_PRIMITIVES_PURGE_MANIFEST_2026-09-16.md`. Expected next nightly: files 69 → **29**, and the deps line reduced to `@radix-ui/react-dropdown-menu` alone (held for #106). A next reading that does NOT show that drop is the finding. |
 | 2026-09-16 | (29 expected) | (1) | — | — | — | — | Read by #106's session (not a patrol), against the same `35008863398` reading — no nightly has run since #1008 merged, so the 29 is #105's expectation, not a measurement. **9 more files and the last unused package DELETED in #106's PR** — manifest `docs/specs/NON_SHADCN_ORPHANS_PURGE_MANIFEST_2026-09-16.md`. Expected next nightly: files **20** (the two that remain unused are `useReferralClaim.ts`, held for bug #1010, and `features/casting/index.ts`, #29's), deps **0**. ⚠ **One of #106's eleven rows was a dead FEATURE, not litter** — `useReferralClaim.ts`, orphaned by a page deletion in April while Settings kept issuing the `?ref=` link it served; held and carded (#1010). A next reading that shows more than those two unused files is the finding. |
+| 2026-09-16 | (20 expected) | (0) | — | — | — | (2 expected) | Read by #108 slice 1 (not a patrol), still against `35008863398` — no nightly since #1008/#1011 merged. **17 of the 19 duplicate exports go** in #108's slice-1 PR (triage §35, card comment on #108): the 12 client `Name, default` pairs (no file has EVER imported the default — `git log -G` over the whole history), four `credits.ts` `*Points` rename aliases (three of them `UNREVIEWED` ledger rows, now TAKEN, ceiling 20 → 17), and `CONCEPT_REVIEW_READING`. Two HELD and stated as the floor above. Expected next nightly: duplicates 19 → **2**; files/exports/types unmoved by this slice. A reading above 2 is the finding. |
 
 ⚠ **THE COLUMNS ABOVE ARE NOT ALL THE SAME KIND OF NUMBER, AND ONE ROW MIXED
 TWO REPORTERS.** Measured Janitor run 2: `pnpm janitor:knip` passes

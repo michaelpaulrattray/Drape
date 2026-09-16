@@ -229,5 +229,3 @@ export function TwoColumn({
     </div>
   );
 }
-
-export default Grid;

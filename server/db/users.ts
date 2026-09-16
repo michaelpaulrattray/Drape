@@ -9,11 +9,11 @@ import { getDb } from "./connection";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/users");
 
-// Forward reference — initializeUserPoints lives in credits.ts
+// Forward reference — initializeUserCredits lives in credits.ts
 // We use a dynamic import to avoid circular dependency
 async function ensurePointsInitialized(userId: number) {
-  const { initializeUserPoints } = await import("./credits");
-  await initializeUserPoints(userId);
+  const { initializeUserCredits } = await import("./credits");
+  await initializeUserCredits(userId);
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {

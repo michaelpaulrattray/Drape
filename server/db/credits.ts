@@ -238,9 +238,6 @@ export async function initializeUserCredits(userId: number): Promise<void> {
   }
 }
 
-// Legacy alias
-export const initializeUserPoints = initializeUserCredits;
-
 export async function getUserCredits(userId: number) {
   const db = await getDb();
   if (!db) {
@@ -255,9 +252,6 @@ export async function getUserCredits(userId: number) {
     .limit(1);
   return result.length > 0 ? result[0] : null;
 }
-
-// Legacy alias
-export const getUserPoints = getUserCredits;
 
 export async function getCreditTransactions(
   userId: number,
@@ -276,9 +270,6 @@ export async function getCreditTransactions(
     .orderBy(desc(creditTransactions.createdAt))
     .limit(limit);
 }
-
-// Legacy alias
-export const getPointTransactions = getCreditTransactions;
 
 /**
  * Get a specific credit transaction by userId and referenceId.
@@ -511,6 +502,3 @@ export async function addCredits(
     return { success: false, error: "Failed to add credits" };
   }
 }
-
-// Legacy alias
-export const addPoints = addCredits;

@@ -57,5 +57,3 @@ export function WarmEmptyState({ canGenerate }: WarmEmptyStateProps) {
     </div>
   );
 }
-
-export default WarmEmptyState;

@@ -957,3 +957,40 @@ Manifest, every row with its three readers and its history read:
 
 `docs/JANITOR_KNIP.md` carries the expected next nightly reading: files 20,
 deps 0, and exactly two unused files with a card each.
+
+## Between runs — #108 slice 1 worked off NEXT UP, 2026-09-16 (not a patrol; the clock had not fired)
+
+**Not a `## Run` heading**, as with the three entries above: the Janitor is
+due 18 Sep, and #108 came off NEXT UP on the founder's word (*"105-108 clear
+them"*, 16 Sep). Shift foreman-20260916-2348, run #272. Slice 1 of the card's
+three — duplicates first, per its road.
+
+**17 of the 19 duplicate exports GONE.** The reading with every row, its
+consumers in all three import forms, and its history read is the card comment
+posted before the branch (#909) and triage §35 for the ledger rows.
+
+**What a future run needs from this, in three lines:**
+
+1. **A `Name, default` pair is settled by the history, not the grep.** All 12
+   client pairs read the same way — the named export consumed through a barrel
+   or directly, the default consumed by nothing — and `git log -G` over the
+   whole history says no file has EVER imported one of those defaults. Never
+   wired, so the 12 lines go with nothing to repoint.
+2. **A rename alias is settled by the un-wiring reading, and the death is the
+   RENAME's.** Three `credits.ts` `*Points` aliases sat on the deletion ledger
+   as `UNREVIEWED` (`died`, per the timeline) — true, and the thing that
+   stopped importing them was `45eb2e5f`, the commit that created them as
+   aliases. Not a control. Rows flipped to `TAKEN`, ceiling 20 → 17, in the
+   same commit, because the checker's equality rule refuses either half alone.
+   `initializeUserPoints` was NOT on the ledger — it had one live caller
+   (`db/users.ts`, a dynamic import) — and was repointed rather than read dead.
+3. **Two stay, and they are the floor.** `deductPoints` has SIX money-path
+   callers and a dozen guard regexes spelling it, including one POSITIVE arm
+   (`r7-strip-first-package-care.test.ts:110`): a rename, not a slice-1 act,
+   and the negative guards that name only the old spelling are a finding
+   (triage §35c; carded). `describeFace = describeWithTeeth` is a pinned bench
+   pointer with a test arm asserting the identity on purpose — not a duplicate
+   in the card's sense at all. `JANITOR_KNIP.md` states the floor as 2.
+
+`docs/JANITOR_KNIP.md` carries the expected next nightly reading: duplicates
+2; files/exports/types unmoved by this slice.
