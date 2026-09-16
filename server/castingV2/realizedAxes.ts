@@ -610,8 +610,6 @@ export function describeRealizedAxes(
   return parts.length > 0 ? ` ${parts.join(" ")}` : "";
 }
 
-/** Exported so the registry has exactly one definition. */
-
 /* ----------------------------------------------------- the sheet-level pass */
 
 /**
