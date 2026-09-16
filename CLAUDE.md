@@ -635,7 +635,7 @@ the live service on every push.
 | `CASTING_REFINE_DISPATCH_SCOPE` | whether the paid half of a refine stops holding the request |
 | `CASTING_RETRY_SCOPE` | the Retry button on a failed tile |
 | `CASTING_TWO_PATHS_SCOPE` | the Wardrobe / Basics path choice — a road the founder has ruled RETIRED |
-| `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` | keeping the frame from a refused render for diagnosis |
+| `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` | keeping the frame from a refused render, and the words of a refused roll, for diagnosis |
 | `R7_SNAPSHOT_READ_SCOPE` | the R7-7B snapshot reader rollout |
 | `R7_SNAPSHOT_RESTORE_SCOPE` | the restore half of it |
 | `R7_EVIDENCE_COMPOSER_SCOPE` | the evidence composer's runtime door |

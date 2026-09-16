@@ -202,6 +202,18 @@ one from whoever owns its road.
   rather than turned into a different error. Needs the cleanup worker
   (`ENABLE_STORAGE_CLEANUP_WORKER`) — the frames are reserved on the operation's
   own purge path. Production: `users:1`
+  ⚠ **AND SINCE 2026-09-16 IT ALSO KEEPS THE WORDS OF A REFUSED ROLL (#129
+  slice 1, the relay's design on the card).** On a roll with at least one
+  `content_policy` refusal, each refused and each delivered slice's SENT prompt
+  is written to the same private bucket under `casting-v2/refusal-loop` and
+  nowhere else, reserved first under one manifest born HELD for 30 days — the
+  hold is the retention, so no new sweeper exists — and queued with the
+  account's own manifest on account deletion. It rides this flag rather than a
+  new one on purpose: it is the same act (keep the evidence behind a refusal,
+  privately, under the purge promise) and needs the same boot guard. Its only
+  reader is the refusal patrol (slice 2, unbuilt); no staff surface may name it
+  (`server/staffImageBoundary.test.ts`). The worker's health count no longer
+  reads an unlapsed hold as a private backlog (`storageCleanupBatchIsHeld`).
 - `R7_SNAPSHOT_READ_SCOPE` — `off`/absent, `all`, or `users:<ids>`; the R7-7B
   snapshot READER rollout. **Server-owned: clients never send or influence it**,
   and callers capture the mode once at request entry so one request cannot mix

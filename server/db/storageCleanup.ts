@@ -646,6 +646,23 @@ export async function finalizeStorageCleanupBatch(input: {
   });
 }
 
+/** Born held, never claimed, and the hold has not lapsed — see `getStorageCleanupHealth`. */
+export function storageCleanupBatchIsHeld(
+  batch: {
+    status: string;
+    leaseToken: string | null;
+    attemptedAt: Date | null;
+    leaseExpiresAt: Date | null;
+  },
+  now: Date,
+): boolean {
+  return batch.status === "processing"
+    && batch.leaseToken === null
+    && batch.attemptedAt === null
+    && batch.leaseExpiresAt !== null
+    && batch.leaseExpiresAt > now;
+}
+
 export async function getStorageCleanupHealth(now = new Date()): Promise<{
   pendingBatches: number;
   processingBatches: number;
@@ -668,6 +685,7 @@ export async function getStorageCleanupHealth(now = new Date()): Promise<{
     status: storageCleanupBatches.status,
     leaseToken: storageCleanupBatches.leaseToken,
     leaseExpiresAt: storageCleanupBatches.leaseExpiresAt,
+    attemptedAt: storageCleanupBatches.attemptedAt,
   })
     .from(storageCleanupBatches);
   const failedItems = await db.select({ id: storageCleanupItems.id }).from(storageCleanupItems)
@@ -689,10 +707,22 @@ export async function getStorageCleanupHealth(now = new Date()): Promise<{
       "cleanup_pending",
     ]));
   const batchStatusById = new Map(batches.map((batch) => [batch.id, batch.status]));
+  /*
+    A batch BORN HELD whose hold has not lapsed is not work waiting — it is a
+    retention the worker is correctly declining to touch. The refusal loop
+    (#129) holds its manifests for 30 days on purpose, so counting them here
+    would read "requires attention" for a month and teach everyone to ignore
+    the line. Same predicate as `undischargedStorageCleanupBatchWhere`'s held
+    arm, plus the clock.
+  */
+  const heldBatchIds = new Set(
+    batches.filter((batch) => storageCleanupBatchIsHeld(batch, now)).map((batch) => batch.id),
+  );
   const pendingPrivateBatches = new Set(
     privateItems
       .map((item) => item.batchId)
       .filter((batchId) => {
+        if (heldBatchIds.has(batchId)) return false;
         const status = batchStatusById.get(batchId);
         return status === "pending" || status === "processing";
       }),

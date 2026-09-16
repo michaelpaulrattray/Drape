@@ -90,6 +90,7 @@ import { storageDelete, storagePut, storageReadBytes } from "../storage";
 import { thumbnailOf } from "./thumbnails";
 import { createModuleLogger } from "../logging/logger";
 import { detectRenderFault } from "./renderFault";
+import { captureRollWords } from "./refusalLoopCapture";
 import {
   ROLL_CANCEL_REFUND_DESCRIPTION,
   ROLL_UNSEEN_REFUND_DESCRIPTION,
@@ -277,6 +278,8 @@ export type RollServiceDependencies = {
   storeImage?: (
     input: { bytes: Buffer; contentType: string; key?: string },
   ) => Promise<{ key: string }>;
+  /** Keeps the words behind a refusal (#129). A seam so a test can see what was handed over. */
+  captureWords?: typeof captureRollWords;
 };
 
 export type CreateRollInput = {
@@ -1049,6 +1052,28 @@ export async function createRoll(
     settlements.filter((settlement) => settlement.refundUnrecorded).length + cancelSettlement.unrecorded;
 
   await touchCastingSession(input.userId, roll.sessionId).catch(() => undefined);
+
+  /*
+    AND THE WORDS BEHIND A REFUSAL ARE KEPT (#129 slice 1).
+
+    The sent prompt lives on the candidate row, and a refused candidate dies
+    with its session — so until this, a refusal left its class and lost its
+    sentence. On a roll with at least one refusal, each refused and each
+    delivered slice's words go to the private bucket for 30 days, for the
+    refusal patrol to read. Before the early return below on purpose: a roll
+    refused eight times out of eight is the roll this exists for. Never throws.
+  */
+  await (dependencies.captureWords ?? captureRollWords)({
+    userId: input.userId,
+    operationId: gate.operationId,
+    rollPublicId: roll.publicId,
+    slices: candidates.map((candidate, index) => ({
+      candidatePublicId: candidate.publicId,
+      prompt: promptByPosition.get(candidate.position) ?? "",
+      outcome: settlements[index].outcome,
+      failureClass: settlements[index].failureClass,
+    })),
+  });
 
   if (unrecordedRefunds > 0) {
     // A refund that did not record is never reported as "you weren't charged".
