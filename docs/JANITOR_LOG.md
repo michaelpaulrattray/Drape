@@ -921,3 +921,39 @@ manifest). Card #105 CLOSED.
 `docs/JANITOR_KNIP.md` carries the 2026-09-15 nightly row this was executed
 against, with the expected next reading (files 69 → 29) written down so a
 nightly that does not show the drop is a finding rather than a surprise.
+
+## Between runs — #106 worked off NEXT UP, 2026-09-16 (not a patrol; the clock had not fired)
+
+**Not a `## Run` heading**, as with the #527 and #105 entries above: the Janitor
+is due 18 Sep, and #106 came off NEXT UP on the founder's word (*"105-108 clear
+them"*, 16 Sep). Shift foreman-20260916-2214, run #271.
+
+**9 files and 1 package DELETED — the eight non-shadcn orphans that were litter,
+plus `dropdown-menu.tsx` + `@radix-ui/react-dropdown-menu` (the #105 rider).**
+Manifest, every row with its three readers and its history read:
+**`docs/specs/NON_SHADCN_ORPHANS_PURGE_MANIFEST_2026-09-16.md`**.
+
+**What a future run needs from this, in three lines:**
+
+1. **The history read is the reader that earns its place, and #106 is the
+   specimen.** Eleven rows read "unused" on knip, the Atlas and the grep alike.
+   `git log -S` on each import string separated them: seven whose last importer
+   was deleted ON PURPOSE (a demo page, a dead layout, a redesign that inlined
+   the barrel), three never imported at all — and ONE, `useReferralClaim.ts`,
+   whose last importer was `pages/Dashboard.tsx`, deleted 2026-04-04 for a
+   reason that had nothing to do with referrals. Settings still hands out the
+   `?ref=` link that hook served. **HELD, carded as bug #1010 (`founder-review`,
+   money-adjacent), and it leaves this card.** A reader that only asks "does
+   anything import this" cannot tell those apart; the card's road asked the
+   second question on every row and that is why it was asked.
+2. **The population held: 11 rows, 2 excluded by the card, 1 held, 8 + the
+   rider deleted.** Recorded on the card before the branch (#909). The two test
+   populations naming `Navigation.tsx` were built to redden on its deletion
+   (`accountMenuPopulation.test.ts`'s other-direction arm did) and lose their
+   entry in the same commit.
+3. **Nothing the Atlas kept lost its last inbound edge** (modules 992 → 983,
+   edges 3957 → 3918, findings unchanged) — read at the regenerated json, not
+   assumed from the deletion list.
+
+`docs/JANITOR_KNIP.md` carries the expected next nightly reading: files 20,
+deps 0, and exactly two unused files with a card each.

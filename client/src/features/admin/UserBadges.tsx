@@ -7,8 +7,9 @@
  * and a `#666` — which is the palette brief 07 §3 removed from the staff
  * surfaces. Read at the consumers before either was touched:
  *
- * - `StatusBadge` had **ZERO**. It is re-exported from `features/admin/index.ts`
- *   as `UserStatusBadge` and no file in the product imports that name. Brief 06
+ * - `StatusBadge` had **ZERO**. It was re-exported from `features/admin/index.ts`
+ *   as `UserStatusBadge` and no file in the product imported that name (that
+ *   never-imported barrel went with #106, 2026-09-16). Brief 06
  *   moved the accounts table to `StatePill` and left this behind.
  * - `RoleBadge` had **ONE** — the role-change dialog — which now renders
  *   `features/staff`'s `RolePill`, a component that already existed and holds

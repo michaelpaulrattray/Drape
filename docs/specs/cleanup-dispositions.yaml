@@ -1204,19 +1204,19 @@
 - symbol: BadRequestError
   file: shared/_core/errors.ts
   verdict: KEEP
-  why: "one of four convenience constructors over HttpError, declared as a set by a docblock that states their job (\"Throw this from route handlers to send specific HTTP errors\"). ForbiddenError is live at server/_core/sdk.ts:2; this product routes through tRPC, so the other three are an unused remainder of a complete vocabulary rather than three independent dead symbols. Also reachable through the barrel shared/types.ts:7 (export * from ./_core/errors)"
+  why: "one of four convenience constructors over HttpError, declared as a set by a docblock that states their job (\"Throw this from route handlers to send specific HTTP errors\"). ForbiddenError is live at server/_core/sdk.ts:2; this product routes through tRPC, so the other three are an unused remainder of a complete vocabulary rather than three independent dead symbols. Was also reachable through the barrel shared/types.ts:7 (export * from ./_core/errors) until #106 deleted that never-imported barrel on 2026-09-16"
   argued: 29e
 
 - symbol: UnauthorizedError
   file: shared/_core/errors.ts
   verdict: KEEP
-  why: "see BadRequestError — same four-member set, same docblock, same barrel at shared/types.ts:7"
+  why: "see BadRequestError — same four-member set, same docblock, same barrel at shared/types.ts:7 (deleted with #106, 2026-09-16)"
   argued: 29e
 
 - symbol: NotFoundError
   file: shared/_core/errors.ts
   verdict: KEEP
-  why: "see BadRequestError — same four-member set, same docblock, same barrel at shared/types.ts:7"
+  why: "see BadRequestError — same four-member set, same docblock, same barrel at shared/types.ts:7 (deleted with #106, 2026-09-16)"
   argued: 29e
 
 - symbol: FALLBACK
