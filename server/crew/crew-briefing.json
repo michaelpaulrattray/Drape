@@ -1,7 +1,7 @@
 {
-  "edition": 437,
-  "updatedAt": "2026-09-16T13:14:00.000Z",
-  "shift": "THE SECOND OF YOUR THREE CLEAN-UP JOBS IS DONE — AND IT TURNED UP A BROKEN LINK IN YOUR OWN SETTINGS PAGE. NOTHING NEEDS AN ANSWER FROM YOU.\n\nYou said “105-108 clear them”. 106 is cleared: nine more files nothing in the product uses are out (an old marketing menu, two early drafts of casting controls, four index files nobody read, one phone-size helper, one type file), plus the last held-back screen part from 105 and the package that served only it. Nothing you see changes. Each file was checked three ways, and the outside reviewer re-checked every one independently and passed it with no findings.\n\nThe thing worth your attention is what the third check found. One file on the list was NOT litter: it was the piece of code that makes your referral link work. Settings hands every customer a link to copy and share (“…?ref=THEIR-CODE”). Since 4 April, when an old dashboard page was deleted, nothing has been reading that code when a friend opens the link — so the link does nothing, and only typing the code by hand into “Redeem a referral code” works. The file was kept, and the fix is filed as bug 1010: one line to switch it back on. It is money-adjacent (it restores referral rewards for link sign-ups), so it will go through the reviewer whatever its size. Next: 108.",
+  "edition": 438,
+  "updatedAt": "2026-09-16T15:40:00.000Z",
+  "shift": "YOUR REFERRAL LINK WORKS AGAIN, AND THE FIRST PART OF YOUR LAST CLEAN-UP JOB IS DONE. NOTHING NEEDS AN ANSWER FROM YOU.\n\nTwo things landed and are on production now. First, the broken link from last night’s edition: Settings hands every customer a “share this” link, and since April a friend opening it got nothing. The missing piece is switched back on — the friend lands, the code is caught, and the moment they sign in the referral is claimed for them, with the reward paid the same way the hand-typed code already pays. The outside reviewer read it twice. The first read found two older gaps on the same road that only mattered once the link was live again — a friend with two tabs open could have been counted twice (two welcome bonuses, and you credited twice for one friend), and the automatic claim had no limit on attempts where the hand-typed one has five an hour. Both are closed in the same change: the database itself now refuses a second claim for the same person, and both roads share the one five-an-hour limit. The second read passed it. The referrals table on production holds zero rows, all time — nobody has ever been referred through the product yet — so nothing existing was affected.\n\nSecond, job 108, part one of three: seventeen names that were a second spelling of something already there are gone. Nothing you see changes; the reviewer passed it with no findings. Parts two and three (unused exports through the history check, then unused types) are each their own session. One shift died overnight mid-wait after opening both of these; this shift picked them up, read them at the code, and landed them. Next: 108 part two, or the small bug this found (1016 — a bad connection at the one automatic claim attempt still loses the referral).",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-16T13:10:36.096Z",
+      "readAt": "2026-09-16T15:36:03.385Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5033,6 +5033,20 @@
   ],
   "pipeline": [
     {
+      "id": "referral-link-wired-1010",
+      "title": "Your referral link works again — and the claim road got the two guards it was missing",
+      "status": "merged",
+      "prNumber": 1015,
+      "note": "Bug 1010 from last night’s edition. Worked example: you copy your link from Settings and send it to a friend. Before: they open it, sign up, and nothing happens — no claim, no reward, for five months. After: the code is caught when they land and claimed the moment they sign in; the address tidies itself; the reward is paid the same way the hand-typed code already pays. Seen in the running app before the PR opened (the claim arrives at the server with the right code). The reviewer read it twice. Round one found two older gaps on the same road: a friend signing in with two tabs open could be recorded twice — and the reward is paid once per record, so two welcome bonuses and you credited twice — and the automatic claim had no attempt limit where the hand-typed one has five an hour. Both fixed in the same change: the database now refuses a second claim for one person outright (checked on production after the deploy: the rule is there), and both roads share one five-an-hour limit. Round two passed it, with one small tightening taken on the spot. Production 15:33 UTC."
+    },
+    {
+      "id": "knip-duplicates-108-s1",
+      "title": "Seventeen second-spellings of existing names are gone (your job 108, part one of three)",
+      "status": "merged",
+      "prNumber": 1013,
+      "note": "Your “105-108 clear them”, last job, first slice. Worked example: the credits code kept four old “points” names alongside the real “credits” ones after a rename months ago; nothing had called the old names since, and the one place that still did was pointed at the real name. Twelve screen parts exported themselves twice (a named export everything used, and a default nobody ever imported — checked across the whole history); the spare went. Two were deliberately kept: one is a money name with six live callers (its own card, 1014), the other is a pinned result of a measurement that must not change quietly. Reviewer PASS, no findings — it re-ran the searches itself. Production 14:55 UTC. Parts two and three of 108 remain."
+    },
+    {
       "id": "orphans-purge-106",
       "title": "Nine more unused files and the last held-back screen part are gone (your job 106)",
       "status": "merged",
@@ -6647,16 +6661,23 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0917a-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 33 open, level. Your 105–107 are cleared; 108 is one part into three",
+      "detail": "One card closed tonight (1010, the referral link — fixed and on production) and two filed: 1014, found by 108’s own reading (the money deduction has two names, and about a dozen guards that promise “this road charges nothing” only check one of the spellings — read at the code: 24 test files, more than the card first said, so it is a session of its own, under the reviewer); and 1016, found by the reviewer on the referral fix (one bad connection at the single automatic claim attempt still loses the referral — small, client-only). So the board goes 32 → 33.\n\nOf your five: 527 done, 129’s first part live and its second part waiting on your refused rolls, 105 done, 106 done, 108 one slice in. A shift died overnight mid-wait after opening two finished PRs and never marked them ready for review; this shift found them, read both at the code, and landed them — nothing was lost, and the dead shift’s row on this page is closed with that note.\n\n15 open cards have had no comment, close, reopen or commit for 7 days — level with last night."
+    },
+    {
       "id": "referral-link-dead-1010",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "Your referral link does nothing when a friend opens it — since 4 April",
       "detail": "What a customer sees: Settings shows their referral link with a Copy button. They send it to a friend. The friend opens it — and nothing is captured, nothing is claimed, and neither of them gets the reward when the friend signs up. Only typing the code by hand into “Redeem a referral code” works.\n\nWhy: the small piece of code that reads “?ref=CODE” off the link and claims it after sign-in was only ever used by the old dashboard page, and that page was deleted on 4 April (a Manus clean-up commit). The server half still works and is still tested; it has simply had nothing calling it for five months. Found by 106’s third check — the one that asks not “does anything use this?” but “did something STOP using it, and why?” — which is exactly what that check is for.\n\nThe fix is filed as bug 1010: mount that piece of code once at the app root. One import, one line. It is money-adjacent (it turns referral rewards back on for link sign-ups, through the same reward code the hand-typed road already uses), so the PR carries founder-review and goes through the reviewer whatever its size. Recommendation: wire it — it is the behaviour your settings page already promises. If you would rather retire the link instead, say so on 1010."
     },
     {
       "id": "queue-shape-0916f-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 32 open, level. Your 105 and 106 are cleared; 108 is next",
       "detail": "Two cards closed tonight (106, your clean-up job, and 1009, the one-line test fix filed last shift) and one filed (1010, the referral link above). So the board goes 33 → 32.\n\nOf your five: 527 done, 129’s first part live, 105 done, 106 done. Still to do, in your order: 108 — one session, duplicates first. One thing on 108 for the relay rather than a shift: your same sentence asked whether 203 and 108 belong under N2 instead of background work; 203 was moved, 108 was not, and nothing on the card says why. A shift will take 108 as ordered unless that is answered first.\n\n15 open cards have had no comment, close, reopen or commit for 7 days — level with last night."
     },
@@ -7253,7 +7274,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-16T13:10:36.095Z",
+    "readAt": "2026-09-16T15:36:03.384Z",
     "items": [
       {
         "issueNumber": 108,
