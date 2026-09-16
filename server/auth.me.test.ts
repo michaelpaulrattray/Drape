@@ -51,7 +51,6 @@ function fullUserRow(): User {
     frozenBy: "system",
     referralCode: "SERVER-ONLY",
     referredByUserId: 3,
-    approved: true,
     accessCode: "server-only-access-code",
     approvedAt: now,
     passwordHash: "server-only-password-hash",
