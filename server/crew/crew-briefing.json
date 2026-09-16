@@ -1,7 +1,7 @@
 {
-  "edition": 434,
-  "updatedAt": "2026-09-16T07:41:47.011Z",
-  "shift": "THE SECOND OF YOUR FIVE — AND MEASURING IT FIRST SAVED THE JOB FROM BEING BUILT ON SOMETHING THAT ISN'T TRUE. NOTHING NEEDS AN ANSWER FROM YOU.\n\nYou said “129 build it” — the refusal loop. The idea behind that job is a good one: when the picture engine refuses to draw something, write down the exact words it refused, write down the words it accepted, and over time learn which words cost you pictures. Before building any of it I went and looked at what is actually saved on the live system.\n\n⚠ THE WORDS ARE NOT BEING SAVED. NOT ONE OF THEM. The system has kept a record of 26 refused pictures going back to 25 August — it knows each one was refused, and when. It does not have the words. They are written down at the moment the picture is ordered, and then they are thrown away a few days later along with the rest of the sheet, while the note saying “refused” lives on. So today there is nothing to learn from: 26 refusals and zero of their words.\n\nWHY THAT MATTERS TO YOU IN MONEY. Four separate attempts have been made to work out which words upset the engine — your torso wording, four groups of words, a five-sentence swap, and the cyber-goth brief. Every one of them had to BUY fresh pictures to get anything to compare, because there was no back catalogue to read. That is the real reason this job keeps costing money to answer. Fix the saving and the next attempt reads a corpus that built itself for free while you work.\n\nAND THE NOTE THAT MADE THIS LOOK CHEAP WAS WRONG. A note left on that job on 5 September said the words were already recoverable from what is saved, and that the first pass might not need to buy anything at all. I checked it against the actual database rather than taking it at its word: it is not true. What survives is the brief YOU TYPED, which is not the same thing as what was sent — your words get expanded into a much longer instruction before they reach the engine, and the expansion is what gets refused. I asked the whole database, not just the two places I expected, and proved the reader could both find words where they exist and correctly find none where they don't before believing it.\n\nWHAT HAPPENS NEXT, AND WHY IT ISN'T ME. The first piece of this job means keeping a copy of the full instruction behind every picture — and that instruction is the recipe for a customer's cast, which this product treats like a password. How long we keep it, who can read it, and what happens to it when someone deletes their account is a real decision about customer privacy, not a piece of plumbing. The second piece changes how the studio writes its instructions, which is the very thing being rebuilt under Re-imagine. So it has gone to the seat that makes those calls, with all the numbers already measured so none of it gets paid for twice. Your other three jobs — 105, 106, 108 — are untouched and next.",
+  "edition": 435,
+  "updatedAt": "2026-09-16T09:58:00.000Z",
+  "shift": "THE REFUSAL JOB'S FIRST PART IS LIVE ON YOUR ACCOUNT. NOTHING NEEDS AN ANSWER FROM YOU.\n\nYou said “129 build it”. Last shift found the words behind a refused picture were being thrown away; tonight they are kept. From now on, when the picture engine refuses one of your pictures, the exact words it was sent are saved privately — beside the words of the pictures from the same sheet that it DID draw — for 30 days, then deleted automatically. That pairing is what the next part needs: a job that compares what was refused with what passed and finds the words that trip the engine, without buying new pictures to test with.\n\nNothing you see changes, and nobody on the staff side can read these words. Your 105, 106 and 108 are next.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-16T07:40:39.791Z",
+      "readAt": "2026-09-16T09:58:22.859Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5034,10 +5034,10 @@
   "pipeline": [
     {
       "id": "refusal-corpus-129",
-      "title": "The refusal job was measured before it was built — and the words it wants to study are not being kept",
-      "status": "blocked",
-      "prNumber": null,
-      "note": "Your “129 build it”. Nothing was built and nothing was spent, on purpose: the first act was checking the job's own premise against the live database, and it does not hold. 26 refused pictures are on record since 25 August and NOT ONE keeps the words it was refused for — they are written when the picture is ordered and thrown away with the sheet, while the “refused” note survives. A note on that job from 5 September said the words were recoverable from what is left; read at the rows, what is left is the brief YOU typed, which is not what was sent. Both halves of the reader were proven able to find words and able to find none before anything was believed, and the whole database was asked rather than the two places expected. It has moved to the seat that makes privacy and instruction-writing calls, with every number already measured so it is not paid for twice. Your 105, 106 and 108 are untouched and next."
+      "title": "When a picture is refused, the words it was sent are now kept — privately, for 30 days",
+      "status": "merged",
+      "prNumber": 1007,
+      "note": "Your “129 build it”, first part. Worked example: you roll a sheet and 5 of 8 pictures come back refused. Until today that left five “refused” notes and no words. Now it keeps eight private records — the words of the 5 refused and of the 3 that were drawn — so the refused and the passed can be compared line by line. It works the same when you press Retry on a refused tile, and a Retry that passes on words that were refused before is kept as the matching half. Only on your account for now; kept in the private store, never the public one; gone after 30 days, or at once if an account is deleted. Nothing is shown to anyone and no staff screen can reach it. Checked on the way: the storage clean-up's own health check would have raised a false alarm every hour for a month over these 30-day holds, so that reading was corrected in the same change. The reviewer passed it twice; one rare case it named (a refused tile that fails a retry for a network reason and passes on a second) is written onto the job for the next part. Live on production at 09:56 UTC."
     },
     {
       "id": "invite-form-label-1002",
@@ -6626,9 +6626,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0916c-foreman",
+      "id": "queue-shape-0916d-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 33 open, one fewer. The refusal job's first part shipped tonight; your 105, 106 and 108 are next",
+      "detail": "One card closed tonight: the temporary rule that had the relay hand-check money and account changes while the automatic reviewer was out — it is back, and reviewed tonight's change twice. Nothing new filed.\n\nOf your five: 527 is done; 129's first part is live and the job stays open for its next part, which needs a few of your refused sheets on record first. Still to do, in your order: 105, 106, 108.\n\n15 open cards have had no comment, close, reopen or commit for 7 days — level with last night; the oldest is “Takes” at 19 days, which is a design waiting its turn, not stuck work."
+    },
+    {
+      "id": "queue-shape-0916c-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 34 open, level. Your second job was measured tonight and handed on rather than guessed at; 3 remain",
       "detail": "Nothing closed and nothing filed tonight, so the board is level at 34.\n\nOf your five: 527 is done, 129 was measured tonight and passed to the seat that makes privacy and instruction calls — with its numbers already taken, so it is not paid for twice. Still to do, in your order: 105, 106, 108 — one session each.\n\n15 cards have had no comment, close or commit for seven days, level with last night.\n\nNothing here needs you."
     },
@@ -7204,7 +7211,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-16T07:40:39.790Z",
+    "readAt": "2026-09-16T09:58:22.858Z",
     "items": [
       {
         "issueNumber": 105,
@@ -7226,8 +7233,8 @@
         "title": "Refusal loop — a patrol: log refused and passed prompts, find trigger words, measured word→replacement pairs into the author's rewrite list (founder verdict, 2026-08-26)",
         "urgent": false,
         "held": {
-          "state": "fable",
-          "because": "a DESIGN DECISION (#541 rule 3) — slice 1 makes the composed prompt outlive its candidate, which reverses `generation_operations`' stated invariant (\"Raw promp…"
+          "state": "blocked",
+          "because": "slice 1's rows — PR #1007 merged (9d517932); slice 2's patrol needs refused AND passed prompts on record first. Not waiting on him."
         }
       }
     ]
