@@ -501,5 +501,3 @@ export function ViewTabs() {
     </div>
   );
 }
-
-export default ViewTabs;

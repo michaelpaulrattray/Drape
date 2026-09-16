@@ -127,9 +127,6 @@ export const CONCEPT_REVIEW_USE = "Use this brief";
 /** The way out. Nothing is charged either way, so it says nothing about cost. */
 export const CONCEPT_REVIEW_DISCARD = "Discard";
 
-/** Drawn on the right while the one describer call is in flight. */
-export const CONCEPT_REVIEW_READING = CONCEPT_READING_LABEL;
-
 /* ------------------------------------------- the two entrances, and the cast */
 
 /**

@@ -4,6 +4,7 @@ import {
   CONCEPT_DROP_CHOOSE,
   CONCEPT_DROP_LINE,
   CONCEPT_NOT_A_PICTURE,
+  CONCEPT_READING_LABEL,
   CONCEPT_REVIEW_ANOTHER,
   CONCEPT_REVIEW_CANCEL,
   CONCEPT_REVIEW_CAST,
@@ -13,7 +14,6 @@ import {
   CONCEPT_REVIEW_EXPLAINER,
   CONCEPT_REVIEW_EYEBROW,
   CONCEPT_REVIEW_LABEL,
-  CONCEPT_REVIEW_READING,
   CONCEPT_REVIEW_REFUSED_TITLE,
   CONCEPT_REVIEW_RETRY,
   CONCEPT_REVIEW_TITLE,
@@ -344,7 +344,7 @@ export function ConceptReviewModal({
               <textarea
                 id="dpc-concept-description"
                 value={text}
-                placeholder={reading ? CONCEPT_REVIEW_READING : undefined}
+                placeholder={reading ? CONCEPT_READING_LABEL : undefined}
                 disabled={reading || reimagine.pending}
                 rows={6}
                 aria-label={CONCEPT_REVIEW_LABEL}

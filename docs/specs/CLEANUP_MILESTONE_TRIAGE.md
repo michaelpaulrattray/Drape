@@ -3454,3 +3454,68 @@ twin anywhere in the tree has a consumer — and it reports the wrong FILE when 
 finally speaks. Filed as its own card rather than repaired here, because
 repairing it means re-taking every reading in this table under a (file, name)
 key, which is a sitting rather than a paragraph.
+
+## 35. THE `*Points` ALIASES IN `server/db/credits.ts` — THREE `UNREVIEWED` ROWS
+## READ AND TAKEN, A FOURTH THAT WAS NEVER ON THE LEDGER, AND THE ONE THAT STAYS
+## (2026-09-16, #108 slice 1, Janitor seat. Three deletions are executed in this
+## commit; the fifth alias is HELD and carded, not touched.)
+
+`45eb2e5f` renamed points to credits *"throughout codebase"* and kept every old
+name as a `// Legacy alias` beside the new one — five of them:
+`initializeUserPoints`, `getUserPoints`, `getPointTransactions`, `deductPoints`,
+`addPoints`. knip lists all five as duplicate exports (nightly `35008863398`),
+and three of them sat on this ledger as `UNREVIEWED` since fable-1435 §3 — the
+un-wiring timeline had classified them `died`, which is the one reading a
+rename-with-alias always produces: production imported the old name, then the
+rename moved every caller to the new one, then nothing.
+
+### 35a. The reading, one row each
+
+| symbol | consumers at `e61b4546` | history | verdict |
+|---|---|---|---|
+| `addPoints` | the `db/index.ts` barrel line, nothing else in `client/`, `server/`, `shared/`, `scripts/`, tests included | `git log -G '\baddPoints\('`: last real call at or before `45eb2e5f`, the rename itself | **TAKEN** |
+| `getPointTransactions` | barrel line only | same commit | **TAKEN** |
+| `getUserPoints` | barrel line only | last call in `d81ddb80`/`1d3cd614` (the `withAtomicCredits` commits), which moved the balance read to `getUserCredits` | **TAKEN** |
+| `initializeUserPoints` | barrel line + ONE caller, `db/users.ts:15` — a dynamic `import("./credits")` inside `ensurePointsInitialized` | never on this ledger (a live caller, so the sweep never listed it) | deleted, caller repointed to `initializeUserCredits` |
+| `deductPoints` | **six production files** — `mintPackage.ts:608`, `refreshSlots.ts:235`, `boardOps.ts:402/1084/1404`, `castingImaging.ts:214`, `evidencePackageExecution.ts:1086` — and ~12 contract guards that name the literal in a regex (`r7-strip-first-package-care.test.ts:110` REQUIRES `await deductPoints(`; `evidencePackageContract.test.ts:77`; `batchC-sourceGuards.test.ts:155`; the `r7-ink-add-*` and `r7-snapshot-selection` forbidden lists) | live on both names since the rename | **HELD — see 35c** |
+
+None of the three TAKEN is a control: a control dies when the thing that called
+it goes away; here the CALLER survived and was pointed at the other name in the
+same commit that created the alias. The `died` classification is true and the
+death is the rename's, not a feature's.
+
+### 35b. What executes here
+
+The three aliases and their barrel lines go; `initializeUserPoints` goes with
+its one caller repointed (`initializeUserCredits` had no caller outside its own
+module until now, which is the rename's other half finally landing). The three
+ledger rows flip to `TAKEN` in this commit and `UNREVIEWED_CEILING` comes down
+20 → 17 beside them, per the checker's own equality rule.
+
+### 35c. `deductPoints` — held, and why it is a card rather than a row
+
+The card's slice-1 rule is *"drop the alias that has no caller; grep proves
+which"*, and this one has six, all on the money path. Retiring it is a rename
+across those six plus every guard regex that spells the name, and **one of
+those regexes is a positive arm** (`r7-strip-first-package-care.test.ts:110`) —
+a rename that forgot it would go red, a rename that forgot a NEGATIVE arm would
+silently widen it. That is exactly the shape working law 2 exists for, and it is
+not a slice-1 act.
+
+**The instrument finding on the way**: the negative guards that forbid
+`deductPoints` and not `deductCredits` (e.g. `r7-ink-add-d3-contract.test.ts:39`,
+`r7-ink-add-d7-contract.test.ts:40`) are blind to a deduction spelled the other
+way — a module could charge through `deductCredits` and pass a guard written to
+say it charges nothing. Two names for one money write is a defect in the guards
+before it is untidiness in the ledger. Its own card (money path, reviewer
+regardless of size), filed from this shift.
+
+### 35d. And `describeFace = describeWithTeeth`, which is on knip's list and NOT
+### on this ledger, recorded so the next reader does not take it
+
+Not a rename that kept both names. `describeWithTeeth` is bench arm 3Q and
+`describeFace` is the shipped pointer, and `faceDescribe.test.ts:132` pins the
+identity on purpose — *"the pointer is a measurement's result, so it is pinned
+… this fails if it changes without a new run."* The three arms stay exported for
+their own test arms. It is the knip duplicate floor, and `docs/JANITOR_KNIP.md`
+says so.

@@ -311,5 +311,3 @@ export function Label({
     </span>
   );
 }
-
-export default SectionHeading;

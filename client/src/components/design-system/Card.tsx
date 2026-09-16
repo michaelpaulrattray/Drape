@@ -293,5 +293,3 @@ export function StatCard({ value, label, className }: StatCardProps) {
     </div>
   );
 }
-
-export default Card;

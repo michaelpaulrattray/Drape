@@ -179,5 +179,3 @@ export function LoadingOverlay({ statusMessage, isFirstGeneration = false }: Loa
     </div>
   );
 }
-
-export default LoadingOverlay;

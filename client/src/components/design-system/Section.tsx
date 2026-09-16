@@ -207,5 +207,3 @@ export function Container({
     </div>
   );
 }
-
-export default Section;
