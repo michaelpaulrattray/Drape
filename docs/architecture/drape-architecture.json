@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "21a46394a0174ac4"
+    "sourceFingerprint": "88f3b6c647264773"
   },
   "domains": [
     {
@@ -108,7 +108,7 @@
     {
       "id": "domain:referral",
       "name": "referral",
-      "moduleCount": 3
+      "moduleCount": 4
     },
     {
       "id": "domain:security",
@@ -1840,6 +1840,12 @@
     {
       "id": "module:client/src/features/referral/ReferralClaimBridge.tsx",
       "path": "client/src/features/referral/ReferralClaimBridge.tsx",
+      "domain": "referral",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/referral/referralClaimRetry.ts",
+      "path": "client/src/features/referral/referralClaimRetry.ts",
       "domain": "referral",
       "lifecycle": "active"
     },
@@ -10544,6 +10550,10 @@
       "path": "client/src/features/operations/outcomeSlot.test.ts"
     },
     {
+      "id": "test:client/src/features/referral/referralClaimRetry.test.ts",
+      "path": "client/src/features/referral/referralClaimRetry.test.ts"
+    },
+    {
       "id": "test:client/src/features/referral/referralLinkWired.test.ts",
       "path": "client/src/features/referral/referralLinkWired.test.ts"
     },
@@ -17375,6 +17385,11 @@
     {
       "from": "module:client/src/features/referral/useReferralClaim.ts",
       "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/referral/useReferralClaim.ts",
+      "to": "module:client/src/features/referral/referralClaimRetry.ts",
       "kind": "imports"
     },
     {
