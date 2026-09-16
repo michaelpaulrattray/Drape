@@ -15,7 +15,7 @@ import {
   STAFF_REFRESH_INTERVAL_MS,
 } from "@/features/staff";
 import { Shuffle } from "lucide-react";
-import { Button, DataTable, Field, IconButton, Input, TableHead } from "@/foundation";
+import { Button, DataTable, Field, IconButton, Input, LabelledField, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
 import { STAFF_LOCALE } from "@/foundation/staffDate";
 import { INVITE_CODE_MAX_LENGTH, INVITE_CODE_NOTE_MAX_LENGTH } from "@shared/inputLimits";
@@ -224,6 +224,29 @@ export default function AdminInviteCodes() {
           uses, expiry and note — and every colour in it now flips with the
           theme, which is the point: this page had never been opened in dark
           mode, so a white form on a dark surface had simply never been seen.
+
+          ⚠ **THE THREE NAMED FIELDS ARE `LabelledField` NOW (card 1002, the
+          enumerated remainder of card 841's fold).** They each wrapped their
+          control in a `<label>` with the name in a `.dp-chrome` span, which was
+          the third of the treatments his ruling collapsed — *a field in a modal
+          and a field on a page are the same component, so one label treatment
+          wins and it is the mono `.dpc-modal__label`.* The row was a different
+          shape, not a different rule, and that is the whole reason the fold
+          stopped here the first time.
+
+          What moved: the name is 9.5px `--faint` rather than 10px `--muted`,
+          the gap under it is 5px rather than 4, and the label NAMES its control
+          with a real `htmlFor` instead of associating by wrapping it. Nothing
+          about what the form does changed.
+
+          ⚠ **THE CODE FIELD ABOVE IS DELIBERATELY NOT ONE OF THEM, AND IT IS
+          THE FOURTH FIELD ON THIS FORM.** It has no label ELEMENT at all — it
+          carries `aria-label="The code itself"` and leans on the panel's own
+          eyebrow. Folding it in would ADD a name where the design has none, and
+          it would need the label to sit on a line with the shuffle button
+          beside the box — which is the `row` variant card 841 refused by name.
+          So it stays as it is, said here rather than left looking like an
+          oversight.
         */}
         <section className="dp-panel">
           <span className="dp-eyebrow">Generate a code</span>
@@ -246,10 +269,10 @@ export default function AdminInviteCodes() {
             </div>
 
             <div className="dp-inviteform__row">
-              <label className="dp-stack" style={{ gap: 4 }}>
-                <span className="dp-chrome">MAX USES</span>
+              <LabelledField label="Max uses" htmlFor="invite-max-uses">
                 <Field compact>
                   <Input
+                    id="invite-max-uses"
                     type="number"
                     min={1}
                     max={10000}
@@ -257,11 +280,11 @@ export default function AdminInviteCodes() {
                     onChange={(e) => setMaxUses(Number(e.target.value))}
                   />
                 </Field>
-              </label>
-              <label className="dp-stack" style={{ gap: 4 }}>
-                <span className="dp-chrome">EXPIRES IN (DAYS)</span>
+              </LabelledField>
+              <LabelledField label="Expires in (days)" htmlFor="invite-expires-in-days">
                 <Field compact>
                   <Input
+                    id="invite-expires-in-days"
                     type="number"
                     min={1}
                     max={365}
@@ -272,11 +295,11 @@ export default function AdminInviteCodes() {
                     placeholder="Never"
                   />
                 </Field>
-              </label>
-              <label className="dp-stack" style={{ gap: 4 }}>
-                <span className="dp-chrome">NOTE</span>
+              </LabelledField>
+              <LabelledField label="Note" htmlFor="invite-note">
                 <Field compact>
                   <Input
+                    id="invite-note"
                     type="text"
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
@@ -284,7 +307,7 @@ export default function AdminInviteCodes() {
                     maxLength={INVITE_CODE_NOTE_MAX_LENGTH}
                   />
                 </Field>
-              </label>
+              </LabelledField>
             </div>
 
             <span>
