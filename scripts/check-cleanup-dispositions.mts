@@ -159,11 +159,12 @@ type Verdict = (typeof VERDICTS)[number];
  * How many rows are allowed to say `UNREVIEWED`. Twenty on 2026-08-23, the
  * `died` symbols the timeline named that this table had never carried;
  * seventeen on 2026-09-16, when #108 slice 1 read the three `credits.ts`
- * `*Points` aliases (triage §35a) and took them.
+ * `*Points` aliases (triage §35a) and took them; sixteen on 2026-09-17, when
+ * #108 slice 2 read `isIpBlocked` (triage §36a) and kept it.
  *
  * **Lower it in the commit that reviews a row.** Equality, not a maximum.
  */
-const UNREVIEWED_CEILING = 17;
+const UNREVIEWED_CEILING = 16;
 
 export type Row = {
   symbol: string;
