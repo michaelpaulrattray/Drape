@@ -1061,6 +1061,33 @@ Three things worth the next Janitor's minute:
    are right about their own question.
 
 
+## Between runs — #108 slice 4a: the differ's reported scope widened to `shared/` (#1022), 2026-09-17 (not a patrol; the clock had not fired)
+
+The relay decided #1022 at 02:05Z (a Fable seat: *"an instrument decision,
+not his"*) — `shared/` through the differ, `client/` by knip + a consumer
+checker + tsc, `scripts/` out — and struck `seat:retro`, so the Janitor took it
+(foreman-20260917-1220, run #280). One constant, `REPORTED_ROOTS =
+["server/", "shared/"]`, and four arms in `server/unwiringDiffer.test.ts`; the
+two that name `shared/` redden under the old gate (driven by sabotage before
+commit), the `client/` arm holds the line the widening must not cross.
+
+Two things the card had wrong at the code, recorded on it:
+
+1. **The sweep already scanned `shared/`.** The reader's docblock said its
+   `server/`-only scope was *"the same scope the sweep uses"*, and the sweep's
+   `scanRoots` has been `["server", "shared"]` since 2026-08-24. So the ledger
+   already held **16 `shared/` rows** (13 KEEP, 3 FILED) and the reader
+   answered `null` for every one — measured on both trees: readable 0 → 16.
+   A `HELD` or `TAKE` verdict on any of them would have refused as
+   `unreadable`, and a `shared/` constant the server imports could have lost
+   its last importer without the timeline saying a word.
+2. **So the ledger grows by ZERO rows, not 18.** The card priced the widening
+   as *"the ledger grows by 18 rows"*; the ledger is keyed on the sweep's
+   list, the sweep's scope did not move, and `check-cleanup-dispositions`
+   reads exactly as before (210 rows / 146 listed, OPEN). `decls` 2652 →
+   2971 names; the second reader (`deletionDoorSecondReader.test.ts`) holds
+   every new credit against the Atlas.
+
 ## Between runs — #108 slice 4: the client and shared remainder (#1022's road), 2026-09-17 (not a patrol; the clock had not fired)
 
 Same session as slice 4a (foreman-20260917-1220, run #280). Manifest
