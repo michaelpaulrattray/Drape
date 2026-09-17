@@ -1,7 +1,7 @@
 {
-  "edition": 445,
-  "updatedAt": "2026-09-17T02:35:00.000Z",
-  "shift": "ONE CARD ON YOUR DESK, AT YOUR OWN ASKING: THE SETTINGS PAGE ON A PHONE (CARD 1003).\n\nYou said in the terminal: 'card 1003 i want it on my desk no point deferring it'. It was parked as not urgent; it is a desk card now. Nothing is broken and every control works - it is a layout choice on a screen you signed off, at a width nobody had asked about.\n\nEverything else stands as the last edition said: 108's last slice is unblocked (the relay decided the tooling question, card 1022, at noon), 129 still waits on your refused rolls, and the reviewer is back on every money and auth change.",
+  "edition": 446,
+  "updatedAt": "2026-09-17T04:25:00.000Z",
+  "shift": "CARD 108'S LAST SLICE IS DONE AND ON PRODUCTION. NOTHING NEEDS AN ANSWER FROM YOU.\n\nWhat it was: your order of 16 September was '105-108 clear them'. 108 is the pile of code nothing uses. The first three slices cleared the server half; the last slice was blocked on a tooling question (card 1022), which the relay answered at noon today. This shift took both: the tool first, then the clearing.\n\nThe tool (card 1022, PR 1030): the reader that tells 'dead code that was never used' from 'a safety control that quietly stopped being called' only looked at server files. It now also reads the shared folder - the constants both the app and the server import. Worked example of why that matters: on its very first run it said one shared constant had died, and it was wrong - the database schema still uses it, and the reader had never looked at the schema either. Fixed in the same change; six shared constants that the reader had counted as unused for months are correctly counted now. The card had two facts wrong at the code and they are corrected on it.\n\nThe clearing (card 108, PR 1031): 2,550 lines of code nothing imports are gone - 165 unused pieces in the app became 4, 18 in the shared folder became 9, and five whole files went with them: the old marketing-page kit (cards, grids, section headings and their animations) that your hero-only homepage stopped using on 3 April. Nothing you can see changed: the full test suite (13,280 tests), the typecheck and the build are all green, and the reviewer passed it with no defects.\n\nWhat was NOT deleted, on purpose: two components that other code still names as kept - one the profile cover (a recorded decision), one the evidence image placeholder (part of the evidence family you parked) - and two whose only user is a lobby file you said stays ('NOTHING IS DELETED. Segment 00's orphaned components STAY.'). Each is written down with its reason.\n\nOne honest note on the process: the gate went red once, because four server-side checks read the app's files and the app-only tests could not see them. Two of those checks were pinned on things that no longer existed and were repaired at their own control; the other two named the kept components above, which is why they were restored. It cost one extra gate run (about nine minutes).\n\nNothing on your desk but card 1003 (the Settings page on a phone), which is there at your own asking. 129 still waits on your refused rolls, not on you. The Janitor's clock fires tomorrow; the other patrols around the 19th and 20th.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-17T01:57:15.635Z",
+      "readAt": "2026-09-17T04:18:16.574Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5060,6 +5060,20 @@
   ],
   "pipeline": [
     {
+      "id": "unused-exports-slice4-108",
+      "title": "Card 108, last slice: the app's and shared folder's unused code cleared - 165 -> 4 and 18 -> 9, five dead files gone; nothing you can see changed",
+      "status": "merged",
+      "prNumber": 1031,
+      "note": "Your order ('105-108 clear them'), on the relay's tooling decision (card 1022). Worked example: the old marketing-page kit - cards, grids, section headings and their animations - has not been used since the hero-only homepage of 3 April; those five files and 2,550 lines are gone. Every deletion is listed with its reason in a manifest the script derived, not typed. Reviewer PASS, no defects; full suite 13,280 green; build green. Four pieces deliberately kept, each with its reason (two are recorded keeps, two are used only by a lobby file you said stays). Production build c2ace6f7."
+    },
+    {
+      "id": "differ-shared-scope-1022",
+      "title": "Card 1022: the dead-or-killed reader now reads the shared folder and the database schema; six shared constants it had counted as unused for months are counted right",
+      "status": "merged",
+      "prNumber": 1030,
+      "note": "The relay's decision at noon (an instrument decision, not yours). Worked example: on its first widened run the reader said a shared constant had died - it was wrong, the database schema still uses it, and the reader had never read the schema. Fixed in the same change. Two facts the card had wrong are corrected on it: the sweep had already scanned the shared folder, so the deletion ledger grows by zero rows, not 18. Reviewer PASS; both of its notes taken in one push."
+    },
+    {
       "id": "points-namespace-1028",
       "title": "Card 1028: the credit balance has one name in the API - the three old 'points' endpoints are gone; no behaviour change",
       "status": "merged",
@@ -6744,9 +6758,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0917g-foreman",
+      "id": "queue-shape-0917h-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 32 open, one closed, nothing filed. 108's last slice is done; what is left on it waits on decisions that are not a shift's. The Janitor's clock fires tomorrow",
+      "detail": "Closed tonight: 1022 (the reader's scope - live). 108 stays open for its five held rows, each waiting on something that is not a Janitor's call (a recorded keep, the parked evidence family, the lobby files you said stay); it is not takeable work. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 (held rows only), 129 held on its own data (not waiting on you). Your desk: 1003 at your own asking. Left as before: 1006 and 1026 (the Retro's - its clock fires about 19 September)."
+    },
+    {
+      "id": "queue-shape-0917g-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 33 open, one closed, nothing filed. Every background band is empty of takeable cards; the next thing that fires is the Janitor's clock (about 18 September)",
       "detail": "Closed tonight: 1028 (the balance endpoints' two names - live, proven on production). 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 open with its remainder on 1022, 129 held on its own data (re-read tonight: still true, not waiting on you). Nothing on your desk. Left as before: 1006, 1022 and 1026 (the Retro's - its clock fires about 19 September), 1003 (a design decision at phone width - not a shift's call)."
     },
@@ -7399,7 +7420,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-17T01:57:15.634Z",
+    "readAt": "2026-09-17T04:18:16.573Z",
     "items": [
       {
         "issueNumber": 108,
