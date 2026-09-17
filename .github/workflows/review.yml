@@ -34,6 +34,15 @@
 #     `--remove-label needs-fable` first, then the add. Measured at the
 #     issue timeline 2026-09-01 (1 event, then 1, then 2 after a removal),
 #     and pinned by server/reviewerManualRoad.test.ts.
+#   - ONE VERDICT PER HEAD SHA (#1026): `gh pr ready` on a money or >=50-line
+#     diff IS the review trigger, and a `needs-fable` applied beside it used
+#     to buy the same verdict twice — four doubled shas in the 500 newest
+#     runs, $17.19 on two of them. A `labeled` run on such a diff now asks
+#     whether another run on its sha is producing the verdict and stands
+#     down if so (the shell block in triage, `scripts/review-label-dedupe.mts`,
+#     the decision in `scripts/lib/reviewRounds.mts`). A trivial diff never
+#     takes that road — there the label is the only review it will get — and
+#     every failure of the question is "review": it may spend, never silence.
 #
 # THE READING IS TIERED (#161, founder-approved 2026-08-27: reviews on his
 # token used ~10% of his cap; Fable stays the reviewer — "it finds things
@@ -149,6 +158,9 @@ jobs:
     if: ${{ !github.event.pull_request.draft && (github.event.action != 'labeled' || github.event.label.name == 'needs-fable') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read # the checkout and the diff against main
+      actions: read # the one-verdict-per-sha question (#1026): a `labeled` run lists the other review runs on its own head sha; nothing here writes
     outputs:
       review: ${{ steps.decide.outputs.review }}
       # "yes" when the diff touches money/auth surfaces: the review then reads
@@ -163,11 +175,25 @@ jobs:
           fetch-depth: 0
           # Public repo; the fetch below needs no token and nothing pushes.
           persist-credentials: false
+      # Node 24 strips types natively, so the dedupe reader below runs the
+      # shared `.mts` module with no dependency install — the same road the
+      # review job takes for `review-round-notice.mts`. `continue-on-error`
+      # because a missing node is one more "review" answer, never a red triage.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        continue-on-error: true
+        with:
+          node-version: 24
       - name: Decide whether this diff earns a Fable review
         id: decide
         env:
           BASE: ${{ github.base_ref }}
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          # The three below feed the one-verdict-per-sha question (#1026); they
+          # go through `env`, never into the run block (zizmor, template injection).
+          EVENT_ACTION: ${{ github.event.action }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_ID: ${{ github.run_id }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           if echo ",$LABELS," | grep -q ",skip-review,"; then
             echo "Label skip-review — no AI review."
@@ -213,7 +239,45 @@ jobs:
           # what the casting refund adjudicators were invisible to.
           . ./.github/money-surfaces.sh
           MONEY_SYMBOL_HITS=$(git diff -G"$MONEY_SYMBOLS" --name-only "origin/$BASE"...HEAD -- server shared || true)
+          MONEY=no
           if echo "$CHANGED" | grep -qE "$MONEY_PATHS" || [ -n "$MONEY_SYMBOL_HITS" ]; then
+            MONEY=yes
+          fi
+
+          # Code files only — docs, mailbox, output, images don't count.
+          # Counted HERE, before the money and label exits, because the
+          # one-verdict-per-sha question below needs to know whether this diff
+          # earns a review WITHOUT the label; the exits below read the same
+          # numbers they always did.
+          CODE=$(echo "$CHANGED" | grep -vE '\.(md|txt|png|jpg|jpeg|webp|json)$|^docs/|^\.agents/|^output/' || true)
+          LINES=0
+          if [ -n "$CODE" ]; then
+            LINES=$(echo "$CODE" | xargs -r -d '\n' git diff --numstat "origin/$BASE"...HEAD -- | awk '{s+=$1+$2} END {print s+0}')
+          fi
+
+          # ONE VERDICT PER HEAD SHA (#1026). A PR marked ready and labelled
+          # `needs-fable` in the same breath fires two runs on one sha, and the
+          # concurrency key above keeps both alive on purpose (#434). Measured:
+          # four doubled shas in the 500 newest runs (#680, #1007, #1023,
+          # #1024), $17.19 on the last two. So a `labeled` run whose diff
+          # already earns a review on its own merits — money, or >=50 code
+          # lines, a reading the label does not change — asks whether another
+          # run on this sha is producing the verdict, and stands down if so.
+          # A trivial diff NEVER takes this road: there the label is the
+          # escalation and this run is the only review it will get. And every
+          # failure of the question (no node, no token, an API error, an absent
+          # line) is "review" — the decision may spend, it may never silence.
+          if [ "$EVENT_ACTION" = "labeled" ] && { [ "$MONEY" = "yes" ] || [ "$LINES" -ge 50 ]; }; then
+            DEDUPE=$(node scripts/review-label-dedupe.mts --sha "$HEAD_SHA" --run-id "$RUN_ID" 2>&1 || true)
+            echo "$DEDUPE"
+            if echo "$DEDUPE" | grep -qx 'dedupe=skip'; then
+              echo "One verdict per sha — another run on $HEAD_SHA covers this diff; the label adds nothing (#1026). If that run produces no verdict, remove and re-add needs-fable (#368)."
+              echo "review=no" >> "$GITHUB_OUTPUT"
+              echo "deep=no" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+          fi
+
+          if [ "$MONEY" = "yes" ]; then
             echo "Money/auth surfaces touched — full review, always, reading CLAUDE.md in full."
             echo "review=yes" >> "$GITHUB_OUTPUT"
             echo "deep=yes" >> "$GITHUB_OUTPUT"; exit 0
@@ -225,14 +289,11 @@ jobs:
             echo "review=yes" >> "$GITHUB_OUTPUT"; exit 0
           fi
 
-          # Code files only — docs, mailbox, output, images don't count
-          CODE=$(echo "$CHANGED" | grep -vE '\.(md|txt|png|jpg|jpeg|webp|json)$|^docs/|^\.agents/|^output/' || true)
           if [ -z "$CODE" ]; then
             echo "Docs/assets only — no AI review."
             echo "review=no" >> "$GITHUB_OUTPUT"; exit 0
           fi
 
-          LINES=$(echo "$CODE" | xargs -r -d '\n' git diff --numstat "origin/$BASE"...HEAD -- | awk '{s+=$1+$2} END {print s+0}')
           echo "Changed code lines: $LINES"
           if [ "$LINES" -lt 50 ]; then
             echo "Trivial diff (<50 code lines) — no AI review; mechanical checks still apply."

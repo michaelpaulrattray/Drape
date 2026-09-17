@@ -93,8 +93,12 @@ describe("the step cannot change what the `review` check means (#219)", () => {
     // findings — which reads as "no verdict" (#219) and is the worst thing
     // this step could possibly cause.
     const nodeStep = (() => {
-      const start = reviewYml.indexOf("      - uses: actions/setup-node@");
-      expect(start, "the setup-node step is missing from review.yml").toBeGreaterThan(-1);
+      // The REVIEW job's setup-node, not the triage job's (#1026 gave triage
+      // one of its own, ahead of this one in the file).
+      const reviewJob = reviewYml.indexOf("\n  review:");
+      expect(reviewJob, "review.yml has no review job").toBeGreaterThan(-1);
+      const start = reviewYml.indexOf("      - uses: actions/setup-node@", reviewJob);
+      expect(start, "the setup-node step is missing from the review job").toBeGreaterThan(-1);
       const next = reviewYml.indexOf("\n      - ", start + 10);
       return reviewYml.slice(start, next === -1 ? reviewYml.length : next);
     })();

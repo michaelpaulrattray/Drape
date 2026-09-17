@@ -315,3 +315,108 @@ export function decideRoundNotice(verdictsIncludingThisRun: number): RoundNotice
   }
   return { kind: "silent", verdictsSoFar: verdictsIncludingThisRun };
 }
+
+/**
+ * ONE VERDICT PER HEAD SHA — THE `labeled` RUN ASKS BEFORE IT SPENDS (#1026).
+ *
+ * `review.yml` triggers on `ready_for_review` AND on `labeled`, and its
+ * concurrency group is keyed on the event so a skipping label run can never
+ * cancel a real review (#434). The cost of that correct design: a PR marked
+ * ready and labelled `needs-fable` in the same breath earns TWO full verdicts
+ * on one sha. Measured over the 500 newest `review.yml` runs (2026-09-08 →
+ * 2026-09-17), each run's `review` job read from the jobs API: **four doubled
+ * shas** — PRs #680, #1007, #1023, #1024 — every one that exact shape, the two
+ * runs 1 s, 1 s, 2 s and 36 s apart. $17.19 on the last two alone, against the
+ * founder's standing word: *"we are doubling up on our fable reviews and its
+ * burning through my credits."*
+ *
+ * So on a `labeled needs-fable` run, triage asks this question about the OTHER
+ * `review.yml` runs on the SAME head sha, and only when the diff earns a review
+ * on its own merits (the money pattern, or ≥50 code lines — a reading that does
+ * not depend on the label). Where it does not, the label IS the escalation and
+ * nothing here may touch it.
+ *
+ * ⚠ EVERY UNKNOWN RESOLVES TO `review`. This decision can only ever SPEND a
+ * verdict nobody needed; it must never SILENCE one that was owed. So: no other
+ * run → review; a run whose jobs are not listed yet → review; a run whose triage
+ * job was skipped (a `labeled urgent` run, a draft) → review; a run whose review
+ * job failed or was cancelled (#219, #434 — no verdict) → review, because the
+ * label is exactly the retry road those cards prescribe. The ONLY thing that
+ * skips is another run whose triage is evaluating (or evaluated) this sha and
+ * whose review job is queued, running, or concluded with a verdict.
+ *
+ * Pure, like everything above it: the CLI reads GitHub and hands the readings
+ * in, so the whole decision is driveable without a network (working law 3).
+ */
+export type SameShaRunReading = {
+  id: number;
+  /** GitHub's `status` on the run: queued | in_progress | completed. */
+  runStatus: string;
+  /** The `triage` job's status/conclusion, or null when the run lists no such job (yet). */
+  triageJobStatus: string | null;
+  triageJobConclusion: string | null;
+  /** The `review` job's status/conclusion, or null when absent. */
+  reviewJobStatus: string | null;
+  reviewJobConclusion: string | null;
+};
+
+export type LabelDedupe =
+  | { kind: "review"; reason: string }
+  | { kind: "skip"; reason: string; byRun: number };
+
+/** Why one other run does, or does not, stand in for this one. */
+export function sameShaRunStandsIn(run: SameShaRunReading): { standsIn: boolean; why: string } {
+  // No triage job listed: a run still being scheduled, or one this reader
+  // cannot see into. Either way it is not known to be reviewing this sha.
+  if (run.triageJobStatus === null) return { standsIn: false, why: "its jobs are not listed yet" };
+  const triageDone = run.triageJobStatus === "completed";
+  if (triageDone && run.triageJobConclusion !== "success") {
+    // `skipped`: the job-level `if` said no — a draft, or a label other than
+    // needs-fable. failure/cancelled: it decided nothing.
+    return { standsIn: false, why: `its triage job concluded ${run.triageJobConclusion ?? "nothing"}` };
+  }
+  // From here the other run's triage is running or ran to a decision.
+  if (run.reviewJobStatus === null) {
+    if (!triageDone) return { standsIn: true, why: "its triage is evaluating this sha now" };
+    return { standsIn: false, why: "its triage finished but lists no review job" };
+  }
+  if (run.reviewJobStatus !== "completed") {
+    return { standsIn: true, why: `its review job is ${run.reviewJobStatus}` };
+  }
+  if (run.reviewJobConclusion === "success") return { standsIn: true, why: "it produced a verdict on this sha" };
+  if (run.reviewJobConclusion === "skipped") return { standsIn: false, why: "its triage declined this sha" };
+  return { standsIn: false, why: `its review job concluded ${run.reviewJobConclusion ?? "nothing"} — no verdict` };
+}
+
+export function decideLabelDedupe(input: {
+  thisRunId: number;
+  meritsReview: boolean;
+  others: readonly SameShaRunReading[];
+}): LabelDedupe {
+  if (!input.meritsReview) {
+    return {
+      kind: "review",
+      reason: "the diff does not earn a review on its own merits — the needs-fable label is the escalation, and nothing else will review it",
+    };
+  }
+  const candidates = [...input.others]
+    .filter((run) => run.id !== input.thisRunId)
+    .sort((a, b) => a.id - b.id);
+  for (const run of candidates) {
+    const verdict = sameShaRunStandsIn(run);
+    if (verdict.standsIn) {
+      return {
+        kind: "skip",
+        byRun: run.id,
+        reason: `run ${run.id} already covers this head sha (${verdict.why}); a diff that earns a review on its own merits does not earn a second for the label`,
+      };
+    }
+  }
+  return {
+    kind: "review",
+    reason:
+      candidates.length === 0
+        ? "no other review run exists on this head sha"
+        : `${candidates.length} other run(s) on this head sha and none stands in (${candidates.map((r) => `${r.id}: ${sameShaRunStandsIn(r).why}`).join("; ")})`,
+  };
+}
