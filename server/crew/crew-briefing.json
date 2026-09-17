@@ -1,7 +1,7 @@
 {
-  "edition": 448,
-  "updatedAt": "2026-09-17T08:45:00.000Z",
-  "shift": "THE BACKGROUND WORK IS DONE. NEXT UP IS EMPTY. ONE CARD ON YOUR DESK (1003, the Settings page on a phone).\n\nYou asked why the page still showed two cards in Next Up and two on offer under Housekeeping: that was the 15:26 snapshot, and every shift since closed quiet, which ships no edition. This edition refreshes it. Card 108 (your 'clear them') is done to the last row a shift may touch - five rows are held by your own earlier 'nothing is deleted' rule and wait on your word. Card 129 (the refusal loop) has its logging half live on your account and waits on a few refused rolls from you before the patrol half can be built. Neither is a job a shift can take, so both left the ordered queue and carry a hold that says what they wait on.\n\nEvery switch reads zero on offer: Bugs 0, Small fixes 0, Performance 0, Security 0 (1 parked, yours), Housekeeping 0 (2 held on you), Process 1 (the Retro patrol's own note, worked on its Saturday clock), Casting upkeep 0 (1 held on you). The team parks itself on the next quiet close and wakes on your reply or a patrol clock. The rest of the board is the roadmap, 26 cards, waiting for you to open a rung.",
+  "edition": 449,
+  "updatedAt": "2026-09-17T09:30:17.402Z",
+  "shift": "SETTINGS ON A PHONE IS BUILT THE WAY YOU CHOSE. ONE THING WANTS YOUR EYES: THE BEFORE AND AFTER, IN YOUR GALLERY.\n\nYour answer on card 1003 was one letter, 'A', at 18:39. Built and live an hour later: on a phone the six section names (Profile, Usage, Billing, Members, Notifications, Security) are now a row of small chips across the top of Settings, two rows so all six are visible, and the page you chose takes the whole width underneath. Sign out stays where the rules put it - at the end of the section list, never next to Done.\n\nWhat it fixes, measured on a 390-pixel screen before the change: the section list took 186 of the box's 326 pixels, the fields had 138 pixels beside it, 'JPG, PNG or WebP - up to 5 MB' wrapped one word per line, and the Upload button was cut off at the right edge. After: the fields have 368 pixels, nothing is cut off, and the same was checked on all six sections - nothing sticks out past the edge on any of them.\n\nWhat it does not touch: a desktop or a tablet. Read on the new build at 1440 wide - the sidebar is exactly as it was, same width, same icons, same gutter. The change only exists below 640 pixels, which is the width this page already treated as narrow.\n\nThe frames are in your gallery (before/after, light and dark). Card 1003 closes on your eye, not on the merge - say so on the gallery item.\n\nEverything else is as it was. 129 still waits on your refused rolls, not on you. The Janitor's clock fires tomorrow; the Retro's on the 19th with card 1006 and three written questions.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-17T08:41:54.113Z",
+      "readAt": "2026-09-17T09:30:27.423Z",
       "items": [
         {
           "issueNumber": 16,
@@ -307,7 +307,7 @@
     {
       "id": "settings-phone-layout-1003",
       "issueNumber": 1003,
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-17T02:35:00.000Z",
       "title": "Settings on a phone: the section list takes half the screen. Chips above the pane, or the list first?",
       "productImpact": "Open Settings on a phone (390px wide) and it keeps its desktop shape: the section list (Profile, Usage, Billing, Members, Notifications, Security) takes about half the width, the content is squeezed into a narrow column beside it, the avatar's 'JPG, PNG or WebP, up to 5 MB' line wraps one word per line, the Upload button is clipped at the right edge, and the fields are pushed below the fold. Every control still works, awkwardly. No customer data is at risk. This was found while photographing the Profile labels for card 841 and is older than that change - the before frame shows it identically. The fix is a layout choice on a screen you signed off, so it is yours: at phone width the section list should stop being a sidebar.",
@@ -2564,6 +2564,37 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "settings-phone-1003-frames",
+      "title": "Settings on a phone, before and after - the section list as chips across the top (your 'A')",
+      "question": "Does Settings read right on a phone now? Two rows of chips, the page you chose full width underneath, Sign out at the end of the list. If the chips should be one scrolling row instead, or the icons should come back, say so - either is a small change. Your eye closes card 1003.",
+      "state": "open",
+      "filedAt": "2026-09-17T09:30:17.403Z",
+      "issueNumber": 1003,
+      "frames": [
+        {
+          "key": "crew-eye/a305b847-5cf2-409d-a50e-a6072581cd0b.png",
+          "caption": "BEFORE - light, 390 wide (a phone). The section list takes more than half the box; beside it 'JPG, PNG or WebP - up to 5 MB' wraps one word per line and the Upload button is cut off at the right edge.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/589493aa-f0dc-40d5-ae93-2337564f19be.png",
+          "caption": "AFTER - light, 390 wide, same account. Six chips across the top in two rows, Profile selected; the whole width below is the Profile page. Upload sits beside the avatar with its whole sentence on one line, and every field is full width.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/ec28800b-53bf-415a-bc99-78fe7cac0b6b.png",
+          "caption": "BEFORE - dark, 390 wide. The same cramped column.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/082f157d-4b2f-4675-a6dc-7db9e1b81900.png",
+          "caption": "AFTER - dark, 390 wide. The selected chip is the filled one; the others are outlined. Sign out is the one red word, at the end of the list as the rules ask.",
+          "arm": "dark"
+        }
+      ],
+      "cardId": null
+    },
     {
       "id": "one-field-label-841-frames",
       "title": "Your Profile's field names, before and after — small caps instead of a sentence",
@@ -5060,6 +5091,13 @@
   ],
   "pipeline": [
     {
+      "id": "settings-phone-1003",
+      "title": "Card 1003: Settings on a phone - the section list is a row of chips above the page, on your word ('A')",
+      "status": "merged",
+      "prNumber": 1033,
+      "note": "Below 640 pixels the six sections become chips across the top (two rows, all six visible) and the chosen page takes the full width beneath; Sign out keeps the end of the list, never beside Done. Measured at 390 wide: fields went from 138 to 368 pixels, the Upload button is no longer cut off, and all six sections were checked - nothing overflows. Desktop read at 1440 on the new build: unchanged. One stylesheet, no new controls, nothing to learn. Production build 8e63308b."
+    },
+    {
       "id": "review-dedupe-1026",
       "title": "Card 1026: the reviewer bills once per change - a 'needs a Fable look' label on code already being reviewed stands down instead of buying a second verdict",
       "status": "merged",
@@ -6765,9 +6803,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0917h-relay",
+      "id": "queue-shape-0917j-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 31 open, nothing closed (1003 waits on your eye), nothing filed. NEXT UP empty; the Janitor's clock fires tomorrow",
+      "detail": "Merged this shift: PR 1033 (card 1003, Settings on a phone) - on production as build 8e63308b, verified at the health check. 1003 stays OPEN for your eye: the before/after frames are in your gallery, and your word there closes it. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level with the last four shifts. NEXT UP: empty. Under the switches: 108 (held rows only), 1006 (the Retro's, clock ~19 September), 129 held on its own data. Nothing new filed. The reviewer's one observation on 1033 - the selected chip's outline is fainter than the others', so the selection is carried by the fill and the bolder type - is left for your eye with the frames rather than changed on a guess."
+    },
+    {
+      "id": "queue-shape-0917h-relay",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 31 open, 26 of them roadmap. Nothing on offer under any switch; NEXT UP empty; one card on your desk (1003).",
       "detail": "Refreshed by the relay at 18:45 after three quiet shifts left the 15:26 counts standing. 108 and 129 left NEXT UP (held on him: five protected rows; refused rolls). 1003 is on his desk. 1006 is the Retro patrol's, due Saturday. 45 parked by him. The team parks on the next quiet close."
     },
@@ -7438,10 +7483,11 @@
     187,
     188,
     189,
-    190
+    190,
+    191
   ],
   "nextUp": {
-    "readAt": "2026-09-17T08:41:54.112Z",
+    "readAt": "2026-09-17T09:30:27.422Z",
     "items": []
   }
 }
