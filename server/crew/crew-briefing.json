@@ -1,7 +1,7 @@
 {
-  "edition": 446,
-  "updatedAt": "2026-09-17T04:25:00.000Z",
-  "shift": "CARD 108'S LAST SLICE IS DONE AND ON PRODUCTION. NOTHING NEEDS AN ANSWER FROM YOU.\n\nWhat it was: your order of 16 September was '105-108 clear them'. 108 is the pile of code nothing uses. The first three slices cleared the server half; the last slice was blocked on a tooling question (card 1022), which the relay answered at noon today. This shift took both: the tool first, then the clearing.\n\nThe tool (card 1022, PR 1030): the reader that tells 'dead code that was never used' from 'a safety control that quietly stopped being called' only looked at server files. It now also reads the shared folder - the constants both the app and the server import. Worked example of why that matters: on its very first run it said one shared constant had died, and it was wrong - the database schema still uses it, and the reader had never looked at the schema either. Fixed in the same change; six shared constants that the reader had counted as unused for months are correctly counted now. The card had two facts wrong at the code and they are corrected on it.\n\nThe clearing (card 108, PR 1031): 2,550 lines of code nothing imports are gone - 165 unused pieces in the app became 4, 18 in the shared folder became 9, and five whole files went with them: the old marketing-page kit (cards, grids, section headings and their animations) that your hero-only homepage stopped using on 3 April. Nothing you can see changed: the full test suite (13,280 tests), the typecheck and the build are all green, and the reviewer passed it with no defects.\n\nWhat was NOT deleted, on purpose: two components that other code still names as kept - one the profile cover (a recorded decision), one the evidence image placeholder (part of the evidence family you parked) - and two whose only user is a lobby file you said stays ('NOTHING IS DELETED. Segment 00's orphaned components STAY.'). Each is written down with its reason.\n\nOne honest note on the process: the gate went red once, because four server-side checks read the app's files and the app-only tests could not see them. Two of those checks were pinned on things that no longer existed and were repaired at their own control; the other two named the kept components above, which is why they were restored. It cost one extra gate run (about nine minutes).\n\nNothing on your desk but card 1003 (the Settings page on a phone), which is there at your own asking. 129 still waits on your refused rolls, not on you. The Janitor's clock fires tomorrow; the other patrols around the 19th and 20th.",
+  "edition": 447,
+  "updatedAt": "2026-09-17T05:30:00.000Z",
+  "shift": "THE REVIEWER NO LONGER BILLS YOU TWICE FOR ONE LOOK. NOTHING NEEDS AN ANSWER FROM YOU.\n\nWhat it was (card 1026): when a shift finished a change on a money path it did two things within a second of each other - marked it ready, and put the 'needs a Fable look' label on it. Each of those starts a review, and the reviewer was deliberately built so one cannot cancel the other (an older fix, card 434, for a real bug the other way). So the same change got two full verdicts from the same reviewer on the same code. Your own rule, from 28 August: 'we are doubling up on our fable reviews and its burning through my credits.'\n\nHow often, measured before anything was built: over the 500 newest review runs (9 days), four changes were reviewed twice - three of them yesterday. The two on Tuesday night alone cost $17.19 for verdicts nobody needed twice.\n\nWhat changed (PR 1032, live): when the label starts a review on a change that was already going to be reviewed on its own (a money path, or a substantial diff), it first asks whether another review of that exact code is already running or finished. If so it stands down and says why. Worked example: last night's pair on card 1014 - asked the new question, the second run answers 'run 35159141107 already covers this code' and spends nothing.\n\nThe one thing it will never do: silence a review that was owed. A small change that only gets a review BECAUSE of the label always gets it. A sibling review that failed or was cancelled does not count as cover. If the question itself cannot be answered (the tool is down, the API is slow), the answer is 'review'. It may spend a verdict; it may never skip one. That property has 23 tests, and the shift broke the fix ten different ways on purpose to prove the tests catch each one - they caught all ten.\n\nThe same rule is now written where the shifts read their orders: mark ready OR label, not both.\n\nNothing on your desk but card 1003 (the Settings page on a phone), which is there at your own asking. 129 still waits on your refused rolls, not on you. The Janitor's clock fires tomorrow; the Retro's on the 19th - it has card 1006 (the order of your Next Up list) and three written questions waiting for it.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-17T04:18:16.574Z",
+      "readAt": "2026-09-17T05:26:10.601Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5060,6 +5060,13 @@
   ],
   "pipeline": [
     {
+      "id": "review-dedupe-1026",
+      "title": "Card 1026: the reviewer bills once per change - a 'needs a Fable look' label on code already being reviewed stands down instead of buying a second verdict",
+      "status": "merged",
+      "prNumber": 1032,
+      "note": "Your rule (28 August, 'we are doubling up on our fable reviews'). Measured first: four changes reviewed twice in the 500 newest runs, $17.19 on Tuesday night's two. Worked example: the second run on card 1014's fix would now say 'run 35159141107 already covers this code' and spend nothing. It can never skip a review that was owed: a small change that only earns a look because of the label always gets it, a failed or cancelled sibling does not count as cover, and any failure to answer the question means 'review'. 23 tests; ten deliberate breakages all caught. The reviewer cannot review its own workflow file, so the shift hand-reviewed it on the PR and merged on the gate - the same road as the two previous changes to this file. Production build 2f285355."
+    },
+    {
       "id": "unused-exports-slice4-108",
       "title": "Card 108, last slice: the app's and shared folder's unused code cleared - 165 -> 4 and 18 -> 9, five dead files gone; nothing you can see changed",
       "status": "merged",
@@ -6758,9 +6765,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0917h-foreman",
+      "id": "queue-shape-0917i-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 31 open, one closed (1026), nothing filed. Every background band is empty of takeable cards; the Janitor's clock fires tomorrow",
+      "detail": "Closed this shift: 1026 (the doubled reviewer bill - live). 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 (held rows only, none a Janitor's call), 129 held on its own data (not waiting on you). Your desk: 1003 at your own asking. Left for the Retro (clock ~19 September): 1006, which asks a design question about how your Next Up list is ordered - nothing on it is mis-ordered today, so waiting costs nothing. One flake seen once during the full test run (a throwaway git worktree's registration vanishing under load) is recorded on card 969 with its log line, not filed."
+    },
+    {
+      "id": "queue-shape-0917h-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 32 open, one closed, nothing filed. 108's last slice is done; what is left on it waits on decisions that are not a shift's. The Janitor's clock fires tomorrow",
       "detail": "Closed tonight: 1022 (the reader's scope - live). 108 stays open for its five held rows, each waiting on something that is not a Janitor's call (a recorded keep, the parked evidence family, the lobby files you said stay); it is not takeable work. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 (held rows only), 129 held on its own data (not waiting on you). Your desk: 1003 at your own asking. Left as before: 1006 and 1026 (the Retro's - its clock fires about 19 September)."
     },
@@ -7420,7 +7434,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-17T04:18:16.573Z",
+    "readAt": "2026-09-17T05:26:10.600Z",
     "items": [
       {
         "issueNumber": 108,
