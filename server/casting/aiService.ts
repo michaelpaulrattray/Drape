@@ -81,7 +81,7 @@ export interface UploadedGenerationResult extends GenerationResult {
 // ============ Credit Costs ============
 // 1 credit ≈ $0.01 | Pro model costs, Flash fallback = 50% cost
 
-export { CREDIT_COSTS, POINT_COSTS } from "./castingCreditCosts";
+export { CREDIT_COSTS } from "./castingCreditCosts";
 
 // ============ Helper Functions ============
 

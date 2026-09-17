@@ -1128,9 +1128,9 @@ export function creditCostsFrom(project: Project, files: readonly string[]): Ent
       continue;
     }
 
-    /* A const pointing at another const — `POINT_COSTS = CREDIT_COSTS`. Named
-       as an alias rather than copied out again, so the Atlas never shows one
-       price table twice under two names. */
+    /* A const pointing at another const — the shape `POINT_COSTS = CREDIT_COSTS`
+       had until #1025 retired it. Named as an alias rather than copied out
+       again, so the Atlas never shows one price table twice under two names. */
     const alias = expression.asKind(SyntaxKind.Identifier);
     if (alias && objectMembers(initializerOf(alias)).size > 0) {
       push({

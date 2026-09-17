@@ -7,7 +7,7 @@ import {
 import { deductCredits } from "../../db";
 import {
   generateCastingImage,
-  POINT_COSTS,
+  CREDIT_COSTS,
 } from "../../casting/aiService";
 import { enforceDailyQuota } from "../../db/dailyQuota";
 import { recordRefund, refundTruth } from "../../casting/atomicCredits";
@@ -114,7 +114,7 @@ export const castingImagingRouter = router({
         return {
           success: true,
           imageUrl: asset.storageUrl,
-          pointsCost: POINT_COSTS.castingImage,
+          pointsCost: CREDIT_COSTS.castingImage,
           assetId: asset.id,
         };
       }
@@ -171,7 +171,7 @@ export const castingImagingRouter = router({
         operationId: gate.operationId,
         modelId: input.modelId,
         expectedIdentityRevisionId: currentRevisionId(lockedModel),
-        plannedCredits: POINT_COSTS.castingImage,
+        plannedCredits: CREDIT_COSTS.castingImage,
         requiredLockKey: lockKey,
         phase: "generating",
         heartbeat: true,
@@ -213,7 +213,7 @@ export const castingImagingRouter = router({
       let refundedCredits = 0;
       const deductResult = await deductCredits(
         ctx.user.id,
-        POINT_COSTS.castingImage,
+        CREDIT_COSTS.castingImage,
         "generation",
         "Casting image generation (pending)",
         chargeReferenceId,
@@ -228,11 +228,11 @@ export const castingImagingRouter = router({
           refundedCredits,
           error: new TRPCError({
             code: "BAD_REQUEST",
-            message: deductResult.error || `Insufficient credits. Need ${POINT_COSTS.castingImage} credits.`,
+            message: deductResult.error || `Insufficient credits. Need ${CREDIT_COSTS.castingImage} credits.`,
           }),
         });
       }
-      chargedCredits = POINT_COSTS.castingImage;
+      chargedCredits = CREDIT_COSTS.castingImage;
 
       // Create generation record — a failed audit-row insert is detected and
       // refunded, never dereferenced as an undefined id (review finding 2).
@@ -245,12 +245,12 @@ export const castingImagingRouter = router({
         viewAngle: "frontClose",
         type: "castingImage",
         status: "processing",
-        pointsCost: POINT_COSTS.castingImage,
+        pointsCost: CREDIT_COSTS.castingImage,
       });
       if (!genResult.success || !genResult.generationId) {
         log.error({ modelId: input.modelId }, "[castingImage] createGeneration failed — refunding before generation");
-        const outcome = await recordRefund(ctx.user.id, POINT_COSTS.castingImage, "Refund: casting image couldn't start", chargeReferenceId);
-        if (outcome.recorded) refundedCredits = POINT_COSTS.castingImage;
+        const outcome = await recordRefund(ctx.user.id, CREDIT_COSTS.castingImage, "Refund: casting image couldn't start", chargeReferenceId);
+        if (outcome.recorded) refundedCredits = CREDIT_COSTS.castingImage;
         return completeDirectOperationFailure({
           userId: ctx.user.id,
           operationId: gate.operationId,
@@ -307,7 +307,7 @@ export const castingImagingRouter = router({
           candidate: {
             storageUrl: result.imageUrl,
             storageKey: result.storageKey,
-            pointsCost: POINT_COSTS.castingImage,
+            pointsCost: CREDIT_COSTS.castingImage,
             engine: result.engineUsed,
           },
         });
@@ -348,7 +348,7 @@ export const castingImagingRouter = router({
         return {
           success: true,
           imageUrl: result.imageUrl,
-          pointsCost: POINT_COSTS.castingImage,
+          pointsCost: CREDIT_COSTS.castingImage,
           assetId: assetResult.assetId,
         };
       } catch (error) {
@@ -369,8 +369,8 @@ export const castingImagingRouter = router({
         // IS the durable-result write, so a refund here is always correct.
         // The outgoing message carries the refund TRUTH (final correction 1).
         log.error({ err: error, modelId: input.modelId, generationId }, "[castingImage] failed before the durable boundary");
-        const outcome = await recordRefund(ctx.user.id, POINT_COSTS.castingImage, "Refund: failed casting image generation", chargeReferenceId);
-        if (outcome.recorded) refundedCredits = POINT_COSTS.castingImage;
+        const outcome = await recordRefund(ctx.user.id, CREDIT_COSTS.castingImage, "Refund: failed casting image generation", chargeReferenceId);
+        if (outcome.recorded) refundedCredits = CREDIT_COSTS.castingImage;
 
         // Raw internal text stays in the audit row + logs (staff surfaces);
         // the client message is sanitized (final corrections).

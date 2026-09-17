@@ -18,7 +18,7 @@ Public procedures do not require authentication. The user context (`ctx.user`) m
 
 ```typescript
 // Example: Anyone can view generation costs
-costs: publicProcedure.query(() => POINT_COSTS),
+costs: publicProcedure.query(() => CREDIT_COSTS),
 ```
 
 Use public procedures for read-only data that should be accessible to everyone, such as pricing information, public content, or health checks.

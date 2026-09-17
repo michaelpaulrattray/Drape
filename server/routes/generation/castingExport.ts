@@ -7,7 +7,7 @@ import {
   handoffGenerationOperationToRecovery,
   updateGenerationOperationProgress,
 } from "../../db";
-import { POINT_COSTS } from "../../casting/aiService";
+import { CREDIT_COSTS } from "../../casting/aiService";
 import {
   planMintPackage,
   executeMintPackage,
@@ -94,7 +94,7 @@ export const castingExportRouter = router({
     }),
 
   // Get point costs for all generation types
-  costs: publicProcedure.query(() => POINT_COSTS),
+  costs: publicProcedure.query(() => CREDIT_COSTS),
 
   /** The server counts the current filled canonical package slots and returns
    * the fixed 1K, zero-credit customer export contract. */
