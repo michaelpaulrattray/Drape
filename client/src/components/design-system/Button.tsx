@@ -82,7 +82,7 @@ interface ConveyorTextProps {
  * Text with conveyor belt hover animation
  * Requires parent to have `group` class
  */
-export function ConveyorText({ children, className, height = "h-5" }: ConveyorTextProps) {
+function ConveyorText({ children, className, height = "h-5" }: ConveyorTextProps) {
   return (
     <span className={cn("overflow-hidden block", height, className)}>
       <span className="block transition-transform duration-500 ease-out group-hover:-translate-y-full">
@@ -99,37 +99,6 @@ export function ConveyorText({ children, className, height = "h-5" }: ConveyorTe
  * CONVEYOR TEXT WITH COLOR CHANGE
  * ============================================ */
 
-interface ConveyorTextColorProps {
-  children: ReactNode;
-  className?: string;
-  height?: string;
-  defaultColor?: string;
-  hoverColor?: string;
-}
-
-/**
- * Text with conveyor belt hover animation and color change
- * Requires parent to have `group` class
- */
-export function ConveyorTextColor({ 
-  children, 
-  className, 
-  height = "h-5",
-  defaultColor = "text-[#0A0A0A]/70",
-  hoverColor = "text-[#0A0A0A]"
-}: ConveyorTextColorProps) {
-  return (
-    <span className={cn("overflow-hidden block", height, className)}>
-      <span className={cn("block transition-transform duration-500 ease-out group-hover:-translate-y-full", defaultColor)}>
-        {children}
-      </span>
-      <span className={cn("block transition-transform duration-500 ease-out group-hover:-translate-y-full", hoverColor)}>
-        {children}
-      </span>
-    </span>
-  );
-}
-
 /* ============================================
  * CONVEYOR ICON COMPONENT
  * ============================================ */
@@ -143,7 +112,7 @@ interface ConveyorIconProps {
  * Icon with conveyor belt hover animation
  * Requires parent to have `group` class
  */
-export function ConveyorIcon({ icon, className }: ConveyorIconProps) {
+function ConveyorIcon({ icon, className }: ConveyorIconProps) {
   const IconElement = icon || <Plus className="w-4 h-4" />;
   
   return (
@@ -243,156 +212,3 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     );
   }
 );
-
-/* ============================================
- * NAV LINK COMPONENT
- * ============================================ */
-
-interface NavLinkProps {
-  /** Link text */
-  children: ReactNode;
-  /** Link URL */
-  href: string;
-  /** Additional CSS classes */
-  className?: string;
-}
-
-/**
- * Navigation link with conveyor animation and color change
- */
-export function NavLink({ children, href, className }: NavLinkProps) {
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (href.startsWith('#')) {
-      e.preventDefault();
-      const target = document.querySelector(href);
-      if (target) {
-        const headerOffset = 72;
-        const elementPosition = target.getBoundingClientRect().top + window.scrollY;
-        window.scrollTo({ top: elementPosition - headerOffset, behavior: 'smooth' });
-      }
-    }
-  };
-
-  return (
-    <a href={href} onClick={handleClick} className={cn("group overflow-hidden", className)}>
-      <ConveyorTextColor 
-        defaultColor="text-[#0A0A0A]/70 font-medium text-sm"
-        hoverColor="text-[#0A0A0A] font-medium text-sm"
-      >
-        {children}
-      </ConveyorTextColor>
-    </a>
-  );
-}
-
-/* ============================================
- * LINK BUTTON COMPONENT
- * ============================================ */
-
-interface LinkButtonProps {
-  /** Link text */
-  children: ReactNode;
-  /** Link URL */
-  href: string;
-  /** Additional CSS classes */
-  className?: string;
-  /** Show arrow icon */
-  showArrow?: boolean;
-}
-
-/**
- * Text link with conveyor animation
- */
-export function LinkButton({ 
-  children, 
-  href, 
-  className,
-  showArrow = false 
-}: LinkButtonProps) {
-  return (
-    <a
-      href={href}
-      className={cn(
-        "group inline-flex items-center gap-2 text-[#0A0A0A] font-medium hover:text-[#0A0A0A]/70 transition-colors duration-300",
-        className
-      )}
-    >
-      <ConveyorText>{children}</ConveyorText>
-      {showArrow && (
-        <span className="transition-transform duration-300 group-hover:translate-x-1">
-          →
-        </span>
-      )}
-    </a>
-  );
-}
-
-/* ============================================
- * SOCIAL LINK COMPONENT
- * ============================================ */
-
-interface SocialLinkProps {
-  /** Link text */
-  children: ReactNode;
-  /** Link URL */
-  href: string;
-  /** Additional CSS classes */
-  className?: string;
-}
-
-/**
- * Social link with conveyor animation (muted to full color)
- */
-export function SocialLink({ children, href, className }: SocialLinkProps) {
-  return (
-    <a href={href} className={cn("group overflow-hidden", className)}>
-      <ConveyorTextColor 
-        defaultColor="text-[#0A0A0A]/50 text-sm font-medium"
-        hoverColor="text-[#0A0A0A] text-sm font-medium"
-      >
-        {children}
-      </ConveyorTextColor>
-    </a>
-  );
-}
-
-/* ============================================
- * FOOTER LINK COMPONENT
- * ============================================ */
-
-interface FooterLinkProps {
-  /** Link text */
-  children: ReactNode;
-  /** Link URL */
-  href: string;
-  /** Additional CSS classes */
-  className?: string;
-}
-
-/**
- * Footer link with conveyor animation for dark backgrounds
- */
-export function FooterLink({ children, href, className }: FooterLinkProps) {
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (href.startsWith('#')) {
-      e.preventDefault();
-      const target = document.querySelector(href);
-      if (target) {
-        const headerOffset = 72;
-        const elementPosition = target.getBoundingClientRect().top + window.scrollY;
-        window.scrollTo({ top: elementPosition - headerOffset, behavior: 'smooth' });
-      }
-    }
-  };
-
-  return (
-    <a href={href} onClick={handleClick} className={cn("group overflow-hidden block", className)}>
-      <ConveyorTextColor 
-        defaultColor="text-white/60 text-base"
-        hoverColor="text-white text-base"
-      >
-        {children}
-      </ConveyorTextColor>
-    </a>
-  );
-}

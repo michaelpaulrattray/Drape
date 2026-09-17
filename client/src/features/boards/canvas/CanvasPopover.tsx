@@ -3,10 +3,8 @@
  * shadcn Popover with the canvas-language overrides: no shadow, hairline
  * border, canvas surface. Use for blender chips, view generation, menus.
  */
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-
-export { Popover, PopoverTrigger };
 
 export function CanvasPopoverContent({
   className,

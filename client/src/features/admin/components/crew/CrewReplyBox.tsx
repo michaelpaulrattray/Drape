@@ -34,7 +34,7 @@ import { Send } from "lucide-react";
 import { Button, Field } from "@/foundation";
 
 /** The wire's own bound, restated here so the counter and the server agree. */
-export const CREW_REPLY_MAX = 4000;
+const CREW_REPLY_MAX = 4000;
 
 export function CrewReplyBox({
   cardId,

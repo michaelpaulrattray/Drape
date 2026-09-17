@@ -17,7 +17,7 @@ interface CanvasLayersState {
   remove: (id: string) => void;
 }
 
-export const useCanvasLayers = create<CanvasLayersState>()((set) => ({
+const useCanvasLayers = create<CanvasLayersState>()((set) => ({
   layers: [],
   push: (id) => set((s) => ({ layers: [...s.layers.filter((l) => l !== id), id] })),
   remove: (id) => set((s) => ({ layers: s.layers.filter((l) => l !== id) })),

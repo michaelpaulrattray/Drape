@@ -1060,3 +1060,29 @@ Three things worth the next Janitor's minute:
    population is therefore 16 on knip's count and 15 on the ledger's, and both
    are right about their own question.
 
+
+## Between runs — #108 slice 4: the client and shared remainder (#1022's road), 2026-09-17 (not a patrol; the clock had not fired)
+
+Same session as slice 4a (foreman-20260917-1220, run #280). Manifest
+`docs/specs/UNUSED_EXPORTS_PURGE_MANIFEST_2026-09-17_SLICE4.md`; triage §39.
+Population re-derived at `d1707381` (client 165 / shared 18); the checker driven
+on four positive controls first; the shared 18 through the widened differ over
+379 boundaries (no death on the list; three off it, read — one false and fixed
+in PR #1030, two DECIDED). Executed: 50 barrel lines, 19 list entries, 39
+`export` dropped, 64 declarations deleted, 14 more at the in-file fixpoint, 12
+orphaned declarations and 32 orphaned imports removed, five files deleted.
+`pnpm check` green, 1,567 client tests green, `pnpm build` green. After: client
+**165 → 2** (held), shared **18 → 9** (kept/held). Three things for the next
+Janitor:
+
+1. **Count self-uses AFTER the batch, not before** — 14 rows were held up only
+   by other rows (§39b); the executor's fixpoint is the repair, and it is the
+   shape to reuse for `scripts/` if that road is ever taken.
+2. **A comment can make a barrel a "chart file"** (§39c): the §7 guard selects
+   by `includes("recharts")`. When a deletion reddens a text guard, read what
+   the guard SELECTS before touching what it asserts.
+3. **The remaining client 2 + shared 1 are held on knip's unused FILES** —
+   their consumers are `DeleteCastDialog.tsx`, `billing/index.ts` and
+   `export/useExportPack.ts`. The lobby ones stay by his word ("NOTHING IS
+   DELETED. Segment 00's orphaned components STAY."); the other two are the
+   unused-files population, which is not #108's and has no card.

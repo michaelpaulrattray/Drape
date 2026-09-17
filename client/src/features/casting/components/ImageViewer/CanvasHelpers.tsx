@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo } from "react";
 
 // ============ SlotChip + RotatingSuggestions ============
 
-export function SlotChip({ slotIdeas, intervalMs, onSelect }: { slotIdeas: string[]; intervalMs: number; onSelect: (idea: string) => void }) {
+function SlotChip({ slotIdeas, intervalMs, onSelect }: { slotIdeas: string[]; intervalMs: number; onSelect: (idea: string) => void }) {
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);
 
@@ -62,22 +62,6 @@ export function RotatingSuggestions({ ideas, onSelect }: { ideas: string[]; onSe
 }
 
 // ============ ToolButton ============
-
-export function ToolButton({ active, onClick, icon, title }: { active: boolean; onClick: () => void; icon: React.ReactNode; title?: string }) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      className={
-        active
-          ? "w-10 h-10 rounded-canvas-md flex items-center justify-center cursor-pointer transition-colors bg-canvas-ink text-canvas-surface"
-          : "w-10 h-10 rounded-canvas-md flex items-center justify-center cursor-pointer transition-colors bg-canvas-surface border-hairline border-canvas-border text-canvas-ink-soft hover:text-canvas-ink hover:border-canvas-border-strong"
-      }
-    >
-      {icon}
-    </button>
-  );
-}
 
 // (NextStepChip died with the A4 belt-slimming — the export verb lives in
 // the viewer's ··· menu; the floating chip was the last belt nudge.)

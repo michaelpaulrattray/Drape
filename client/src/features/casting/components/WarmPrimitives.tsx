@@ -19,8 +19,6 @@ import {
 // copies drifted (this file's EYE_PRESETS lacked the `image` field).
 import { ETHNICITIES, EYE_PRESETS, SKIN_TONES } from "../constants";
 
-export { ETHNICITIES };
-
 // ── Tiny Helpers ──────────────────────────────
 
 const ReqDot = ({ filled }: { filled: boolean }) => (

@@ -565,7 +565,7 @@ Most of these followed the same path: helper or rule written, docs written, todo
 - Design tokens in `client/src/styles/tokens.css`: monochrome palette (black `#0A0A0A`, surface `#EBEBEB`, white), 4px spacing grid, Inter font. Reference via `var(--token-name)`; don't hardcode colors/spacing.
 - **Light is the default theme** (founder, 2026-07-30, re-stated 2026-09-08 — #686): `DEFAULT_THEME` in `client/src/foundation/theme.ts` is the one place it is declared, and `App.tsx` passes `ThemeProvider` no `defaultTheme` override. ⚠ This line read *"Dark theme is the default"* until 2026-09-08 because `App.tsx` carried `defaultTheme="dark"` over the foundation's `light` for six weeks; `client/src/foundation/themeDefault.test.ts` refuses the override coming back. The sign-in and landing pages stay fixed-light on his word (#678).
 - App UI (studio, admin, boards): shadcn/ui primitives from `@/components/ui`, composed inside `features/<domain>/components`.
-- Marketing/home pages: use `@/components/design-system` (Section, Card, Button, Typography, Grid) — these encode the Home.tsx look.
+- Marketing/home pages: `@/components/design-system` is the conveyor `Button` only (used by `Login.tsx`). ⚠ This line named *Section, Card, Typography, Grid* as "the Home.tsx look" until 2026-09-17 — the hero-only homepage (`b8e8a2d9`, 2026-04-03) had stopped using every one of them five months earlier, and #108 slice 4 removed the four files, and `lib/motion.ts` whose only consumers they were, once nothing imported them. `client/src/features/home/` is where the homepage's own components live.
 - Icons: lucide-react. Toasts: sonner. Class merging: `cn()` from `@/lib/utils`.
 - Client state: Zustand stores per feature; server state: tRPC + TanStack Query only.
 

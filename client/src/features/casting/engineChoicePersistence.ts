@@ -20,7 +20,7 @@ const SCHEMA_PATHS: Record<RequiredCastField, readonly [string, string]> = {
   hairStyle: ['subject', 'hair_style'],
 };
 
-export const ENGINE_CHOICE_LABELS: Record<RequiredCastField, string> = {
+const ENGINE_CHOICE_LABELS: Record<RequiredCastField, string> = {
   castingBrand: 'Brand',
   gender: 'Gender',
   age: 'Age',

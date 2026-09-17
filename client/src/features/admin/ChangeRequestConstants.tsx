@@ -14,7 +14,6 @@ import {
   XCircle,
   Timer,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   CHANGE_REQUEST_STATUSES,
   CHANGE_REQUEST_STATUS_LABELS,
@@ -147,7 +146,7 @@ const DEFAULT_ACTION: ActionConfig = {
   denyNotesPlaceholder: "Reason for declining...",
 };
 
-export const ACTION_CONFIG: Record<string, ActionConfig> = {
+const ACTION_CONFIG: Record<string, ActionConfig> = {
   refund_credits: {
     approveLabel: "Approve refund",
     denyLabel: "Decline refund",
@@ -242,36 +241,6 @@ export const ACTION_CONFIG: Record<string, ActionConfig> = {
 
 export function getActionConfig(type: string): ActionConfig {
   return ACTION_CONFIG[type] || DEFAULT_ACTION;
-}
-
-// ─── Badge Components ────────────────────────────────────────────────────────
-
-export function StatusBadge({ status }: { status: string }) {
-  const config = STATUS_CONFIG[status];
-  if (!config) return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
-  const Icon = config.icon;
-  return (
-    <Badge variant="outline" className={`text-[10px] ${config.className}`}>
-      <Icon className="w-3 h-3 mr-1" />
-      {config.label}
-    </Badge>
-  );
-}
-
-export function PriorityBadge({ priority }: { priority: string }) {
-  const config = PRIORITY_CONFIG[priority];
-  if (!config) return null;
-  return (
-    <Badge variant="outline" className={`text-[10px] ${config.className}`}>
-      {config.label}
-    </Badge>
-  );
-}
-
-export function TypeIcon({ type }: { type: string }) {
-  const config = TYPE_CONFIG[type] || TYPE_CONFIG.other;
-  const Icon = config.icon;
-  return <Icon className={`w-4 h-4 ${config.color}`} />;
 }
 
 // ─── Formatters ──────────────────────────────────────────────────────────────

@@ -273,7 +273,6 @@ export function alignToPreview(
   suites already use.
 */
 export {
-  ANNUAL_RATE,
   annualPriceInCents as annualPrice,
   monthsFreePerYear as monthsFree,
 } from "@shared/annualBilling";

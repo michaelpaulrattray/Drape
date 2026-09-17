@@ -41,7 +41,7 @@ export const TEXT_HEAVY_FALLBACK = [TEXT_PRO, TEXT_MID, TEXT_ECONOMY] as const;
 export const TEXT_LIGHT_FALLBACK = [TEXT_MID, TEXT_ECONOMY] as const;
 
 /** Cheapest text path: Economy only */
-export const TEXT_ECONOMY_FALLBACK = [TEXT_ECONOMY] as const;
+const TEXT_ECONOMY_FALLBACK = [TEXT_ECONOMY] as const;
 
 // ─── Convenience re-export ───────────────────────────────────────────
 

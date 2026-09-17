@@ -30,7 +30,7 @@ function edgeHeatToWeights(edge: number, heat: number): { commercial: number; ed
 // ── Preset Data ───────────────────────────────
 // Exported for formatVibe (DS §5.9 chip formatter — nearest preset within
 // SNAP_THRESHOLD, else "Custom"); audit F
-export const PRESETS = [
+const PRESETS = [
   { label: 'Catalogue',   edge: 300, heat: 333, desc: 'E-commerce, lookbook ready' },
   { label: 'Commercial',  edge: 200, heat: 500, desc: 'Clean, sellable, broad appeal' },
   { label: 'High-Com',    edge: 400, heat: 250, desc: 'Premium commercial, editorial polish' },
@@ -41,7 +41,7 @@ export const PRESETS = [
   { label: 'Runway',      edge: 900, heat: 889, desc: 'Powerful, commanding, dramatic' },
 ];
 
-export const SNAP_THRESHOLD = 35;
+const SNAP_THRESHOLD = 35;
 
 function findNearestPreset(e: number, h: number) {
   let best = PRESETS[0];

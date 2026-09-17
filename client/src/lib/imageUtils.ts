@@ -75,8 +75,3 @@ export const AVATAR_COMPRESSION = {
   quality: 0.85,
 };
 
-export const BANNER_COMPRESSION = {
-  maxWidth: 1920,
-  maxHeight: 600,
-  quality: 0.85,
-};

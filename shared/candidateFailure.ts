@@ -72,7 +72,7 @@ export type CandidateFailureKind = (typeof CANDIDATE_FAILURE_KINDS)[number];
  * his sentences say. `unpaid` is absent because there is nothing to retry:
  * that slice never ran and was never charged.
  */
-export const RETRYABLE_FAILURE_KINDS = ["engine", "unknown", "content_filter"] as const satisfies readonly CandidateFailureKind[];
+const RETRYABLE_FAILURE_KINDS = ["engine", "unknown", "content_filter"] as const satisfies readonly CandidateFailureKind[];
 
 export function isRetryableFailure(kind: CandidateFailureKind): boolean {
   return (RETRYABLE_FAILURE_KINDS as readonly CandidateFailureKind[]).includes(kind);

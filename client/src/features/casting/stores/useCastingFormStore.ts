@@ -7,7 +7,7 @@ import {
   type RequiredCastField,
 } from '../engineChoicePersistence';
 
-export { REQUIRED_CAST_FIELDS, type RequiredCastField } from '../engineChoicePersistence';
+export { type RequiredCastField } from '../engineChoicePersistence';
 
 /**
  * Required fields for a cast (mirrors useCastingGeneration's isFormValid).

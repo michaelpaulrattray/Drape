@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { AlertTriangle, RotateCcw, RefreshCw, Home } from "lucide-react";
-import { Component, ReactNode, useCallback, useState } from "react";
+import { Component, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 
 // ============ Base Error Boundary ============
@@ -158,7 +158,7 @@ const CONTEXT_MESSAGES: Record<string, { title: string; description: string }> =
   },
 };
 
-export class GenerationErrorBoundary extends Component<
+class GenerationErrorBoundary extends Component<
   GenerationErrorBoundaryProps,
   GenerationErrorBoundaryState
 > {
@@ -226,128 +226,4 @@ export class GenerationErrorBoundary extends Component<
 
     return this.props.children;
   }
-}
-
-// ============ Inline Error Display Component ============
-
-/**
- * Inline error display for use within forms/panels
- * Not a boundary - use for displaying caught errors inline
- */
-interface InlineErrorProps {
-  error: Error | string | null;
-  onRetry?: () => void;
-  onDismiss?: () => void;
-  className?: string;
-}
-
-export function InlineError({ error, onRetry, onDismiss, className }: InlineErrorProps) {
-  if (!error) return null;
-
-  const errorMessage = typeof error === 'string' ? error : error.message;
-
-  return (
-    <div className={cn(
-      "flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm",
-      className
-    )}>
-      <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
-      <span className="text-red-700 flex-1">{errorMessage}</span>
-      <div className="flex gap-2">
-        {onRetry && (
-          <button
-            onClick={onRetry}
-            className="text-red-600 hover:text-red-800 p-1"
-            title="Retry"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        )}
-        {onDismiss && (
-          <button
-            onClick={onDismiss}
-            className="text-red-400 hover:text-red-600 p-1"
-            title="Dismiss"
-          >
-            ×
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ============ Retry Hook ============
-
-/**
- * Hook for handling async errors with retry logic
- * Use this for mutation/query error handling
- */
-export function useRetryHandler(maxRetries = 3) {
-  const [retryCount, setRetryCount] = useState(0);
-  const [lastError, setLastError] = useState<Error | null>(null);
-
-  const handleError = useCallback((error: Error) => {
-    setLastError(error);
-    console.error('Retry handler caught error:', error);
-  }, []);
-
-  const retry = useCallback(() => {
-    if (retryCount < maxRetries) {
-      setRetryCount(prev => prev + 1);
-      setLastError(null);
-      return true;
-    }
-    return false;
-  }, [retryCount, maxRetries]);
-
-  const reset = useCallback(() => {
-    setRetryCount(0);
-    setLastError(null);
-  }, []);
-
-  return {
-    retryCount,
-    lastError,
-    canRetry: retryCount < maxRetries,
-    handleError,
-    retry,
-    reset,
-  };
-}
-
-// ============ Async Error Handler ============
-
-/**
- * Wrapper for async operations with automatic retry
- * Returns a function that wraps your async operation with retry logic
- */
-export function withRetry<T extends (...args: unknown[]) => Promise<unknown>>(
-  fn: T,
-  options: {
-    maxRetries?: number;
-    delayMs?: number;
-    onRetry?: (attempt: number, error: Error) => void;
-  } = {}
-): T {
-  const { maxRetries = 3, delayMs = 1000, onRetry } = options;
-
-  return (async (...args: Parameters<T>) => {
-    let lastError: Error | null = null;
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        return await fn(...args);
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        
-        if (attempt < maxRetries) {
-          onRetry?.(attempt + 1, lastError);
-          await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)));
-        }
-      }
-    }
-
-    throw lastError;
-  }) as T;
 }

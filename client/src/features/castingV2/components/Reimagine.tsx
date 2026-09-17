@@ -33,11 +33,11 @@ import { trpc } from "@/lib/trpc";
  */
 
 /** What the quiet line under the box says. One owner, so the wording cannot fork per surface. */
-export const REIMAGINED_LINE = "Re-imagined from your words — press again for another idea.";
-export const REIMAGINE_UNDO_LABEL = "Undo";
-export const NOTHING_TO_OFFER_LINE = "Nothing to offer this time — your words stand.";
+const REIMAGINED_LINE = "Re-imagined from your words — press again for another idea.";
+const REIMAGINE_UNDO_LABEL = "Undo";
+const NOTHING_TO_OFFER_LINE = "Nothing to offer this time — your words stand.";
 /** Decision 17: while a follow chip is up, the press is dimmed with this hover. */
-export const REIMAGINE_FOLLOW_HELD_TITLE = "Clear the follow to re-imagine";
+const REIMAGINE_FOLLOW_HELD_TITLE = "Clear the follow to re-imagine";
 
 export type ReimagineState = {
   /** The glyph is turning — the box should dim and refuse edits for the moment. */

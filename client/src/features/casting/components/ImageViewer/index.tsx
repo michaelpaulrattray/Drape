@@ -6,4 +6,4 @@ export { RefinePanel } from './RefinePanel';
 export { RefinementClarification } from './RefinementClarification';
 export { LoadingOverlay } from './LoadingOverlay';
 export { WarmEmptyState } from './WarmEmptyState';
-export { SlotChip, RotatingSuggestions, ToolButton } from './CanvasHelpers';
+export { RotatingSuggestions } from './CanvasHelpers';

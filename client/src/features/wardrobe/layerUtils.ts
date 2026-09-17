@@ -20,7 +20,7 @@ const OUTER_LAYER_TAGS = [
 /**
  * Returns 0 for inner-layer garments, 10 for outer-layer, 5 for neutral.
  */
-export function getIntraCategoryWeight(
+function getIntraCategoryWeight(
   garment: { tags?: string[] | unknown; description?: string | null },
 ): number {
   const tags = (Array.isArray(garment.tags) ? garment.tags : []).map(
@@ -43,7 +43,7 @@ export function getIntraCategoryWeight(
 }
 
 /** Canonical render order for slot types (bottom-up layering). */
-export const LAYER_ORDER = [
+const LAYER_ORDER = [
   "shoes",
   "bottoms",
   "tops",

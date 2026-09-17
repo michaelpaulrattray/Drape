@@ -1,38 +1,3 @@
-import {
-  Info,
-  AlertTriangle,
-  AlertCircle,
-} from "lucide-react";
-
-import type { AuditCategory } from "@shared/auditActionCategories";
-
-// ── Severity ──────────────────────────────────────────────
-export const SEVERITY_COLORS = {
-  info: "bg-blue-50 text-blue-700 border-blue-200",
-  warning: "bg-amber-50 text-amber-700 border-amber-200",
-  critical: "bg-red-50 text-red-700 border-red-200",
-} as const;
-
-export const SEVERITY_ICONS = {
-  info: Info,
-  warning: AlertTriangle,
-  critical: AlertCircle,
-} as const;
-
-// ── Category ──────────────────────────────────────────────
-export const CATEGORY_COLORS = {
-  billing: "bg-emerald-50 text-emerald-700",
-  model: "bg-purple-50 text-purple-700",
-  security: "bg-orange-50 text-orange-700",
-  /* #938 — deliberately the quiet one. A change request is staff housekeeping,
-     not an alarm, and giving it a warning colour would say the opposite of
-     what the founder's ruling separated it from. */
-  moderator: "bg-slate-100 text-slate-700",
-  abuse: "bg-red-50 text-red-700",
-  /* Typed against the bucket list so a sixth category cannot ship without a
-     colour here — the completeness check is the compiler's, not a reviewer's. */
-} as const satisfies Record<AuditCategory, string>;
-
 // ── Types ─────────────────────────────────────────────────
 export interface AuditLog {
   id: number;
