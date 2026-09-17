@@ -1,7 +1,7 @@
 {
-  "edition": 443,
-  "updatedAt": "2026-09-17T00:40:00.000Z",
-  "shift": "CARD 1025 IS DONE AND ON PRODUCTION. NOTHING NEEDS AN ANSWER FROM YOU.\n\nWhat it was: the table of casting prices had two names for the same thing - an old name from the points-to-credits rename and the real one - the same shape as bug 1014 last night, one step over. Nothing charged wrong: both names pointed at the exact same table, so every price was the same number either way. What rotted was that a reader looking for every place a price is used would find only half of them.\n\nWhat changed (one small change): the old name is deleted and its 28 uses - all in the old studio's image and refine roads, plus the public 'what does it cost' read - now use the real name. Same table, same numbers, same roads. Before I trusted it I counted every use in the code rather than taking the card's figure (the card said 30; it is 28), confirmed that no screen in the app calls the public read the alias sat behind, and ran the compile, the eleven nearest test suites (312 checks) and both map checks. The outside reviewer then read the whole diff at the billing bar and passed it with no findings - it re-proved the alias was a pure second name at the source, checked every swapped line is value-identical, and confirmed nothing else in the product was bolted to the dying name. The architecture map loses exactly the one row it had for the alias.\n\nFound on the way, filed, not done (card 1028): the credit BALANCE has the same two-names shape too, one size up - a whole set of three old 'points' endpoints that duplicate the three 'credits' ones exactly, with no screen calling them since 3 February. Not folded in, because removing endpoints is a change to the product's public surface and wants its own small change with the figures re-stated; recommendation on the card is to clear it.\n\nOne process note, no cost this time: the first gate run went red on the rule that a change description may not carry the word that makes GitHub auto-close a card. Fixed the description, re-ran, green. And per last night's card 1026 I marked the change ready ONCE and did not add the review label - one review, one bill.\n\nNothing on your desk. 108's remainder still waits on the Retro's tooling decision (1022); 129 still waits on your refused rolls; 1006, 1022 and 1026 are all the Retro's, whose clock fires about 19 September.",
+  "edition": 444,
+  "updatedAt": "2026-09-17T02:05:00.000Z",
+  "shift": "CARD 1028 IS DONE AND ON PRODUCTION. NOTHING NEEDS AN ANSWER FROM YOU.\n\nWhat it was: the credit balance had two names in the product's own API - the real 'credits' reads and an old 'points' copy of them left over from the February rename. Same shape as bugs 1014 (the charging function) and 1025 (the price table), one size up: three whole endpoints. No screen in the app has called the old ones since 3 February, so nobody saw anything wrong; what rotted was that anyone tightening the real balance read would fix one of two identical doors and leave the twin open under the old name.\n\nWhat changed (one small change): the three old endpoints and their mounting line are deleted. Nothing else moved - the real 'credits' reads are untouched, byte for byte. Before I trusted it I counted every mention in the code rather than taking the card's figures: zero callers in any screen (checked back through the history to the rename), the mount was its only reach on the server, and the three test hits on the word are the database table, not the endpoints. One correction to the card on the way: the old balance read returned a SMALLER answer than the real one, not an identical one - nothing turns on it, since nothing called either. Compile, ten nearest test suites (126 checks) and both map checks green; the gate went green on its first run; the outside reviewer read the whole diff at the billing bar and passed it with no findings - it re-proved the zero-caller claim at the bytes, checked nothing else was bolted to the dying endpoints, and re-counted the architecture map itself.\n\nProven on production after the deploy, not just in tests: asking the live server for the old endpoint now answers 'no such thing'; asking for the real price read answers as before.\n\nAlso fixed in the same change: the number of API endpoints your access-control law quotes was stale (it said 270 from 23 August; the product stood at 273 yesterday). It is 270 again now - by coincidence, not by standing still - and the paragraph says so with the old readings kept beside it.\n\nSweep of the family (1014, 1025, 1028 - the credit surface wearing two names): nothing else of that shape is left. What still carries the old word is the database table itself, which is kept on purpose - renaming a table is the kind of change that is yours to run, not a shift's.\n\nNothing on your desk. 108's remainder still waits on the Retro's tooling decision (1022); 129 still waits on your refused rolls; 1006, 1022 and 1026 are all the Retro's, whose clock fires about 19 September. Every background band is now empty of takeable cards - the Janitor's clock is the next thing that fires, about 18 September.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-17T00:27:29.536Z",
+      "readAt": "2026-09-17T01:57:15.635Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5033,6 +5033,13 @@
   ],
   "pipeline": [
     {
+      "id": "points-namespace-1028",
+      "title": "Card 1028: the credit balance has one name in the API - the three old 'points' endpoints are gone; no behaviour change",
+      "status": "merged",
+      "prNumber": 1029,
+      "note": "Background work, Housekeeping switch. Worked example: the old 'points' balance reads duplicated the real 'credits' ones and no screen had called them since 3 February; now the API has one set. Counted at the code before branching (zero callers, one mount line, no test names them); one correction recorded on the card (the old balance read was narrower, not identical). Gate green first run, reviewer PASS with no findings at the billing bar. Proven on production: the old endpoint answers 'no such thing', the real reads answer as before. The endpoint count in your access-control law restated (273 -> 270). Production build 1826b86b."
+    },
+    {
       "id": "price-alias-1025",
       "title": "Card 1025: the casting price table has one name - the old alias is gone from its 28 uses and the public cost read; no behaviour change",
       "status": "merged",
@@ -6710,9 +6717,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0917f-foreman",
+      "id": "queue-shape-0917g-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 33 open, one closed, nothing filed. Every background band is empty of takeable cards; the next thing that fires is the Janitor's clock (about 18 September)",
+      "detail": "Closed tonight: 1028 (the balance endpoints' two names - live, proven on production). 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 open with its remainder on 1022, 129 held on its own data (re-read tonight: still true, not waiting on you). Nothing on your desk. Left as before: 1006, 1022 and 1026 (the Retro's - its clock fires about 19 September), 1003 (a design decision at phone width - not a shift's call)."
+    },
+    {
+      "id": "queue-shape-0917f-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 34 open, one closed, one filed. Every background band but Housekeeping is empty, and Housekeeping's one takeable card is the new one",
       "detail": "Closed tonight: 1025 (the price table's two names - live). Filed: 1028 (the balance endpoints' two names - three old 'points' reads duplicating the 'credits' ones, no caller since 3 February; recommendation to clear it, one small change). 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 open with its remainder on 1022, 129 held on its own data (re-read tonight: still true, not waiting on you). Nothing on your desk. Left as before: 1006, 1022 and 1026 (the Retro's - its clock fires about 19 September), 1003 (a design decision at phone width)."
     },
@@ -7358,7 +7372,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-17T00:27:29.535Z",
+    "readAt": "2026-09-17T01:57:15.634Z",
     "items": [
       {
         "issueNumber": 108,
