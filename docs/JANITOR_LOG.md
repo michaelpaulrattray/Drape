@@ -1122,3 +1122,137 @@ Janitor:
    `export/useExportPack.ts`. The lobby ones stay by his word ("NOTHING IS
    DELETED. Segment 00's orphaned components STAY."); the other two are the
    unused-files population, which is not #108's and has no card.
+
+---
+
+## Run 7 — 2026-09-18 04:03–04:3x AEST (Janitor, patrol #7)
+
+Clock fired on the day (`patrol-clocks.mts`: *"1 seat's clock has fired: Janitor
+(due today)"*), Housekeeping ON, so standing exception 3 outranked the category
+order. Run 6's "Next run" list is the provenance for every act below; item 1
+(#975) was already CLOSED (PRs #980 + #981, 2026-09-14) and item 3 (`output/`)
+was closed by the #527 pass — neither re-done. **No PR, no card filed, nothing
+spent.** Every deletion has a manifest written by the invocation that read it
+and, for anything that was a file, a zip outside the repository.
+
+### A. The remote `origin/team/*` refs (run 6, item 2) — 262 of 268 gone
+
+Re-measured at the code, not taken from run 6's 245: after `git fetch --prune`,
+**268** remote `team/*` refs. Classified against every PR the repository has
+(499 — `gh pr list --state all`, cross-checked against GraphQL `totalCount`;
+441 of them have a `team/*` head, no branch has ever carried two PRs):
+
+| class | count | rule |
+|---|---|---|
+| **DELETE** | **262** | its PR is MERGED and the tip sha equals the PR's `headRefOid` |
+| KEEP — closed unmerged | 5 | `131-max-one-frame` #140, `257-mono-third-idiom` #719, `remove-brief-chips` #607, `socket-gate` #753, `strictargs-602` #623 |
+| KEEP — work past merge | 1 | `titles-285`: one commit two minutes after #314 merged (`b91e74e9`, the exception line deleted the hour ceremony 0057 ran). **Its substance is on main by another road** — `DECLARED_COLUMNS_BUT_UNMIGRATED` is `{}` at HEAD with the injectable parameter — so the criterion keeps it and the next run may take it |
+| KEEP — open PR | 0 | run 6's five open-PR branches (the two held auth branches among them) have all merged since |
+
+The tip == head test is stricter than run 6's epoch compare and needs no clock:
+**0 of 262** differed. Recovery is structural rather than a zip: GitHub keeps
+`refs/pull/<N>/head` for every PR (read before the delete — `ls-remote` returned
+#94, #140 and #314's heads at exactly the manifest shas), so no deleted tip is
+unreachable. Pushed in five batches of ≤60 (`git push origin --delete …`; the
+pre-push hook's `deleting_ref` arm lets an all-zero local sha through, as its
+own comment says); a second `fetch --prune` reads **6** remaining. Manifest:
+`output/janitor/run7-remote-branch-manifest.txt` (every row: class, branch,
+tip sha, reason), with `run7-prs.json` and `run7-remote-refs.txt` beside it as
+the two inputs.
+
+**Local `team/*` by the same rule: 15 → 3.** Nine squash-merged at their PR head
+(`git branch -D`, because a squash leaves `-d` saying "not fully merged" — the
+manifest is the proof, not git's ancestry test), three no-PR branches whose tip
+was a main commit (empty branches, `-d` accepted them). Kept: `776-reply-number`
+(#779 closed, tip is a re-commit of the same fix), `socket-gate`,
+`strictargs-602` — the same three the remote keeps.
+
+### B. The root frames (run 6, item 5) — 95 → 13, line `2026-09-10T18:10Z`
+
+Read on run 5's doctrine: the card's own `closedAt` against a 7-day line, a
+tracked citation is a KEEP. 17 cards; 15 closed before the line. **82 swept**
+(5.4 MB; manifest `output/janitor/run7-root-frames-manifest.txt` with a size
+and sha1 per row; zip `C:\Users\Admin\drape-root-frames-sweep-2026-09-18.zip`,
+82 entries verified by name AND size before the delete). **KEPT 13: the seven
+`436-*`** (still cited by `docs/specs/STAFF_DIALOGS_436_EVIDENCE.md`), `771-*`
+(closed 11 Sep) and `890-*` (closed 13 Sep). ⚠ The citation grep first said
+`535-*` was cited by `scripts/_535-frames-disposable.mts` — it is not: that
+script writes `output/535-frames/…`, and the `\b535-` pattern matched the
+directory name. Read at the line before believing a `cited by`, which is run
+6 §E's lesson again. `FABLE_R7_*.md` stay — run 2's ruling, unchanged. The next
+run's line is ~`2026-09-13T18:00Z`; nothing else at the root is untracked.
+
+**`C:\Users\Admin\drape-shift-frames\`** (run 5 item 3, run 6 item 5, four
+foremen's handoffs): six `624-*` frames, 7 Sep, 488 KB, card closed 7 Sep,
+cited by nothing tracked. Zipped (`drape-shift-frames-624-2026-09-18.zip`, 6
+entries verified) and the directory removed.
+
+### C. `%TEMP%` (run 6, item 5)
+
+| family | found | done |
+|---|---|---|
+| `drape-rite-nbRiZF` | **one, 277 MB**, a REGISTERED worktree at `ea88a782` (15 Sep 12:20, on main), `git status` clean, no node process holding it — a killed rite's temp tree (#654's shape, the repair holds for the ordinary exit) | `git worktree remove --force` + `rm -rf`, `worktree prune`; the list is main + `drape-pinned-42652964` now |
+| `drape-precommit-*` | 6, 1 KB each, all 12 Sep 07:44 — #694's family, one killed run | swept |
+| `drape-962-probe-*` | 1, 2 KB, 15 Sep — a #962 (closed 14 Sep) fixture | swept |
+| `drape-bundle-*`, `drape-hf-cache-*`, `drape-atlas-*` | **0, 0, 0** — six days after #826, no regrowth | nothing |
+| `playwright-artifacts-*` 18, `puppeteer_dev_chrome_profile-*` 13 | other tools' families | left, recorded, as every run has |
+
+Manifest `output/janitor/run7-temp-manifest.txt`. `drape-*` under `%TEMP%`: 8 → 0.
+
+### D. The disposables — 581 → 562, sweepable 0
+
+`disposable-age.mts --list` (#526): 581 untracked under `scripts/`, **19** with
+both readers old and uncited — `_418-*` ×2, `_428-card`, `_599-roll249-read`,
+`_664-*` ×12 (the billing cycle-boundary card, closed 9 Sep — among them
+`_664-seed-test-subscription`, the script that seeded verify-bot-local's
+test-mode Stripe subscription; the fixture itself is untouched and lives in
+Stripe, and the zip holds the seeder), `_edition61`, `_shift93-briefing-e96`.
+Zipped (`C:\Users\Admin\drape-janitor-run7-disposables-2026-09-18.zip`, 19
+entries verified), manifest `output/janitor/run7-disposable-manifest.txt` (size
++ sha1 per row), deleted. Re-read after: **562 · sweepable 0 · chain 0**; 474
+still unresolvable by name — run 6 §B's structural finding, unchanged.
+
+### E. The four referenced-but-absent `crew-eye/` keys (run 6, item 4) — CLOSED by reading, not by acting
+
+Two were test fixtures (`a.png`, `…0305e82c3301.png`). The other two
+(`06efa647…`, `2d489e10…`) are named by exactly two commits of the briefing —
+edition 72 (`761314d2`), where the concept frames were uploaded to the DEV
+bucket by the `railway run` env trap, and `f36ae8cc`, which repointed them to
+production keys the same day. **Nothing at HEAD names either** (`git grep` on
+the sha: empty), so they were never servable, were never meant to be, and are
+not a debt. Struck from the next-run list.
+
+### F. Dead-code reading
+
+The 15:00Z cron had not fired by 18:05Z, so the nightly was triggered by hand
+(`gh workflow run knip.yml` → `35256683364`, `success`, at `98664570`). ⚠ **Not
+a missed day**: the last fourteen scheduled runs fired between 2.0 and 4.7
+hours after 15:00Z (09-16 at 18:36, 09-14 at 19:42), so a nightly not yet
+present at 18:05 is GitHub's queue, and today's will most likely land on top
+of this one. Compact: **files 19 · deps 0 · exports 53 · types ABSENT ·
+duplicates 1** — every expectation the slice-4 row wrote landed (the four held
+client rows, the shared floor, the one duplicate). Row appended to
+`docs/JANITOR_KNIP.md`.
+
+### G. Anti-boredom check
+
+Every act traces to run 6's own "Next run" list or to a reading produced on
+this patrol's clock. No new instrument, no card filed (nothing found that a
+shift could take), nothing spent. Production writes: the shift row, the queue
+counts. Remote writes: the 262 branch deletions, each tip held by its PR ref.
+
+**Next run (~2026-09-21):**
+
+1. Root frames: 13 remain; the `436-*` seven are a permanent KEEP while the
+   evidence file cites them, `771-*` and `890-*` cross the line on the 18th
+   and 20th.
+2. `team/titles-285` (remote + the one-commit past-merge shape) — take it if
+   the criterion is widened to "substance on main", else it keeps forever.
+3. The disposables: 474 unresolvable by name is the whole remaining pile and
+   only a naming rule shrinks it — a card proposal for the Retro, not a
+   Janitor act.
+4. `drape-pinned-42652964` — still KEEP, cited by two court disposables
+   (`court-ink-carry-a`, `court-ink-realism`); the founder-adjacent question
+   stays open.
+5. Watch `%TEMP%` for a second `drape-rite-*` — one killed rite in three days
+   is the ordinary rate; two is a finding about what kills them.

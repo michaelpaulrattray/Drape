@@ -1,7 +1,7 @@
 {
-  "edition": 450,
-  "updatedAt": "2026-09-17T11:45:39.349Z",
-  "shift": "YOUR EYE CLOSED THE LAST CARD ON YOUR DESK. NOTHING WAITS ON YOU.\n\nYou looked at Settings on a phone and said 'good for now' at 21:41. That is the receipt: card 1003 is closed with your words on it, and the four frames are marked seen. The change is exactly what you passed - on a phone the six section names sit as chips across the top of Settings and the page you chose takes the whole width underneath; a desktop or tablet is untouched. Nothing else was built this shift and nothing was deployed except this page.\n\n'For now' is kept as your exact phrasing. If you later want the chips as one scrolling row, or the icons back on them, either is a one-block change and a new card - say so on the General box whenever.\n\nThe board after this: 30 open, none on offer under any switch, NEXT UP empty. The Janitor's clock fires tomorrow, the Retro's on the 19th (with card 1006 and three written questions), the Warden's on the 20th. The team parks itself on the next quiet shift and wakes on your next word.",
+  "edition": 451,
+  "updatedAt": "2026-09-17T18:16:03.663Z",
+  "shift": "THE JANITOR RAN ITS CLEAN-UP ROUND. NOTHING WAITS ON YOU, AND NOTHING YOU USE CHANGED.\n\nThis was the every-three-days tidy, not a build. What went: 262 old work branches on GitHub whose changes are already in the product (every one still recoverable through the pull request it belonged to), 82 screenshots the crew had left in the project folder from cards you closed more than a week ago (zipped first, then deleted), a 277 MB leftover from a deploy run that was cut off on the 15th, and 19 throwaway scripts from closed cards. Everything deleted has a written list beside it and a copy outside the project, so nothing is unrecoverable.\n\nThe dead-code count was read again after the last of 108's clean-outs: it sits exactly where that work said it would - no new leftovers appeared.\n\nThe board after this: 30 open, none on offer under any switch, NEXT UP empty. The Machinist's and the Retro's clocks fire tomorrow (the Retro takes card 1006 and three written questions), the Warden's on the 20th. The team parks itself on the next quiet shift and wakes on your next word.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-17T11:44:59.641Z",
+      "readAt": "2026-09-17T18:16:01.861Z",
       "items": [
         {
           "issueNumber": 16,
@@ -2568,7 +2568,7 @@
       "id": "settings-phone-1003-frames",
       "title": "Settings on a phone, before and after - the section list as chips across the top (your 'A')",
       "question": "Does Settings read right on a phone now? Two rows of chips, the page you chose full width underneath, Sign out at the end of the list. If the chips should be one scrolling row instead, or the icons should come back, say so - either is a small change. Your eye closes card 1003.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-17T09:30:17.403Z",
       "issueNumber": 1003,
       "frames": [
@@ -6799,13 +6799,20 @@
       "status": "merged",
       "note": "WHAT YOU ASKED FOR: “527 do it.” Keep anything a written record points at, sweep the rest, the manifest is the receipt.\n\nWHAT HAPPENED: 7.2 GB to 6.9 GB. 1,650 items to 762. 889 removed, 0 failures. Nothing tracked by the project was touched.\n\nTHE HONEST RESULT: 95% of that folder is evidence a record points at — the picture strips behind verdicts you gave. Only 5% was unclaimed, and two thirds of that was stale test logs. This folder is your back catalogue, not a mess, and it will not get much smaller. Zipping it saves a measured 4.5%, because pictures are already compressed.\n\nTHE WORRY IN THAT JOB, MEASURED: zero verdict records point at a missing picture. It read as two until both were opened — one uses a wildcard (all eleven files present), the other is a path wrapped across two lines.\n\nWHAT ALMOST WENT WRONG: my first reader could not understand a wildcard, so 77 files that records DO point at were sitting in the delete list. Fixed before anything ran, then a second reader built on a completely different principle, and only what both agreed on was deleted — the second saved 75 more.\n\nWHAT I LEFT ALONE: six folders of pictures, 47 MB, that passed both readers. A render you paid for is not worth deleting to save 0.7%. They are named in the receipt.\n\nWHAT IT COST: three rough working files from the crew's own cleaning records. Their findings live in the log and a later run had already replaced that work. The cause is now a written rule: name a file by its path or a tool cannot keep it.\n\nTHE RECEIPT: docs/specs/OUTPUT_CITATION_PASS_2026-09-16.md — in the project itself, because a receipt stored in the folder it is a receipt for can be deleted by the next clean-up.",
       "prNumber": null
+    },
+    {
+      "id": "janitor-run7-litter",
+      "title": "The Janitor's round 7: 262 stale GitHub branches, 82 old screenshots, a 277 MB leftover deploy folder and 19 throwaway scripts cleared - each with a written list and a backup copy",
+      "status": "merged",
+      "prNumber": null,
+      "note": "WHAT A CUSTOMER SEES: nothing. This is housekeeping on the crew's own workspace; no product file changed.\n\nWHAT WENT: the 262 GitHub branches were each checked against their pull request - deleted only where the request had merged and the branch had not moved since; every one is still reachable through that request. The 82 screenshots were from cards you closed over a week ago (the seven for card 436 stay, because a written evidence file cites them). The deploy leftover was a copy of the project a cut-off deploy run made on the 15th; it held no unsaved work. The 19 scripts were one-off helpers for cards closed over a week ago.\n\nTHE RECEIPTS: docs/JANITOR_LOG.md run 7, and the lists under output/janitor/run7-*. Backups: four zips under C:UsersAdmin dated 2026-09-18."
     }
   ],
   "problems": [
     {
       "id": "queue-shape-0917k-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 30 open, 1003 closed on your eye, nothing filed. NEXT UP empty; nothing on offer under any switch; the Janitor's clock fires tomorrow",
       "detail": "Closed this shift: card 1003 (Settings on a phone) on your 'good for now' at 21:41 - the build was already on production (PR 1033, build 8e63308b) and only your look was owed. Nothing merged, nothing filed, nothing spent. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level with the last five shifts. NEXT UP: empty. Under the switches, every category is at zero on counts refreshed 21:44: 108 is held rows only, 1006 is the Retro's (clock 19 September), 129 waits on refused rolls, 45 is parked by you. The runner will park itself on the next quiet shift and wake on your next reply."
     },
@@ -7298,6 +7305,13 @@
       "state": "resolved",
       "title": "The queue: 34 open. One of your five jobs finished and closed tonight; 4 remain, in your order",
       "detail": "Four ordered by you and still to do: 129, then 105, 106, 108 — one session each. None urgent, nothing filed tonight.\n\n15 cards have had no comment, close or commit for seven days. That is level with last night, and the oldest is a design note from 27 August that is waiting on a build order rather than rotting.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0918a-janitor",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 30 open, nothing closed, nothing filed. NEXT UP empty; nothing on offer under any switch; the Janitor ran its round, the Retro and the Machinist fire tomorrow",
+      "detail": "The Janitor's every-three-days round found nothing a shift could take and filed no card. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading) - level with the last six shifts, and still roadmap rungs you have not reached rather than neglected work.\n\nNothing here needs you."
     }
   ],
   "acknowledgedReplyIds": [
@@ -7495,7 +7509,7 @@
     192
   ],
   "nextUp": {
-    "readAt": "2026-09-17T11:44:59.640Z",
+    "readAt": "2026-09-17T18:16:01.860Z",
     "items": []
   }
 }
