@@ -134,6 +134,64 @@
   padding: 22px var(--s-9) 26px;
 }
 
+/* ---- A PHONE (#1003 — his word on the desk card, Crew reply #191: "A") ----
+
+   Below the width this sheet already calls narrow (the stat card collapses at
+   the same number) the section list stops being a sidebar: it was taking half
+   of a 390px screen and leaving the fields a one-word-per-line column beside
+   it. The six become a row of chips above the pane, and the pane takes the
+   full width beneath. Nothing above this width moves — desktop and tablet keep
+   the sidebar.
+
+   Three choices inside it, each for a reason:
+   - the chips WRAP rather than scroll off the edge. Six names do not fit one
+     row at 390px whatever the type size, and a row that hides its last two
+     chips past the edge is a control the customer must discover; two rows is
+     six visible names.
+   - the icons go. On the sidebar they lead the label; in a chip they cost
+     ~20px each, which is the difference between two rows and three.
+   - Sign out keeps the NAV's foot (§4). The foot of a row is its end, so it
+     sits at the right of the chip row — still never beside Done.
+
+   The scrim's 32px gutter is the shell's, and at 390px it spends 64px of the
+   screen on nothing; this section takes it in on its own scrim only, because
+   the shell's gutter is every dialog's and this card is about one. */
+@media (max-width: 640px) {
+  .dpc-modal.dp-set__scrim { padding: var(--s-4); }
+
+  .dp-set__body { flex-direction: column; }
+
+  .dp-set__nav {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-4) var(--s-5);
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+    overflow: visible;
+  }
+
+  .dp-set__navitem {
+    width: auto;
+    padding: 5px var(--s-4);
+    border: 1px solid var(--borderCard);
+    border-radius: var(--r-pill);
+    font-size: 12px;
+  }
+  .dp-set__navitem svg { display: none; }
+  .dp-set__navitem[aria-current="true"] { border-color: var(--fillStrong); }
+
+  .dp-set__signout {
+    margin-top: 0;
+    margin-left: auto;
+    padding: 5px 0 5px var(--s-3);
+  }
+
+  .dp-set__pane { padding: var(--s-7) var(--s-6) var(--s-8); }
+}
+
 .dp-set__foot {
   display: flex;
   align-items: center;
