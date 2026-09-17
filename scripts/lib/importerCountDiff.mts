@@ -84,7 +84,7 @@ export type Tree = {
   selfUsesAt: Map<string, number>;
   /**
    * Every declaration of every exported name ANYWHERE in the walked tree,
-   * `client/` included — the out-of-scope ones are what turn *"I could not
+   * `client/` and `drizzle/` included — the out-of-scope ones are what turn *"I could not
    * follow this chain"* into *"this import belongs to someone else"*.
    * See `creditedDeclarations`' own `allDeclaringFiles` docblock.
    */
@@ -643,7 +643,7 @@ export type TimelineRow = {
  *   wired-at-head wired at HEAD with no dark boundary behind it
  *
  * ⚠ `dark-born` is the class to read carefully rather than act on: importers
- * are counted under `server`/`client`/`shared`, so a symbol whose only consumer
+ * are counted under `IMPORTER_ROOTS` (`server`/`client`/`shared`/`drizzle`), so a symbol whose only consumer
  * is a CEREMONY or AUDIT SCRIPT lands here. Measured 2026-08-23 on the
  * control-shaped never-wired names: 13 of 19 had a `scripts/` consumer, and
  * every one of the remaining six was accounted for. Right for the question

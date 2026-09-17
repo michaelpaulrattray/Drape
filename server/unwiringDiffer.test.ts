@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -709,6 +709,28 @@ export const col = INK_TEMPLATE_KINDS;
     const gone = tree({ "shared/inkTemplateKinds.ts": KINDS, "drizzle/schema.ts": `export const col = ["plate"];
 ` });
     expect(namesFound(schema, gone)).toEqual(["INK_TEMPLATE_KINDS"]);
+  });
+
+
+  /*
+    THE UNION HAS NO CROSS-BOUNDARY TWIN TO HIDE BEHIND — PINNED, NOT ASSUMED
+    (the reviewer's second note on PR #1030). `importersAt` credits each
+    declaration separately, but `unwiredBetween` and `classifyTimeline` judge
+    on `importerCount`, the name-level UNION (#274's accepted limit, shared by
+    the eleven server-internal twins). A name declared under BOTH `server/` and
+    `shared/` would let one twin's surviving importers hold the other's death
+    above zero — the silence this card closes, one conflation over. Zero such
+    names exist today; this arm is what reddens the day that stops being true,
+    so the limit is re-read then rather than discovered.
+  */
+  it("no name is declared under both `server/` and `shared/` in the real tree", () => {
+    const real = readTree(resolve(__dirname, ".."));
+    const straddling = [...real.decls.entries()]
+      .filter(([, files]) => files.some((f) => f.startsWith("server/")) && files.some((f) => f.startsWith("shared/")))
+      .map(([name, files]) => `${name}: ${files.join(", ")}`);
+    expect(straddling).toEqual([]);
+    /* the un-varied direction: the reading is looking at something */
+    expect(real.decls.size).toBeGreaterThan(2000);
   });
 
   it("leaves a `server/` reading unchanged, and a `shared/` twin cannot take a server twin's importer", () => {
