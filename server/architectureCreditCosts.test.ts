@@ -231,7 +231,8 @@ export const CREDIT_TOPUP_PRICE = 900;`,
   });
 
   it("names an alias rather than printing one table twice", () => {
-    /* `POINT_COSTS = CREDIT_COSTS` — the legacy alias. */
+    /* `POINT_COSTS = CREDIT_COSTS` — the legacy alias's shape, kept synthetic here
+       after #1025 retired the live one, so the collector still names the class. */
     const rows = creditCostsFromSources({
       "server/prices.ts": `export const CREDIT_COSTS = { a: 1 } as const;
 export const POINT_COSTS = CREDIT_COSTS;`,

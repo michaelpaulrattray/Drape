@@ -12,7 +12,7 @@
  * ```typescript
  * const result = await withAtomicCredits(
  *   ctx.user.id,
- *   POINT_COSTS.castingImage,
+ *   CREDIT_COSTS.castingImage,
  *   "Casting image generation",
  *   async () => {
  *     // Your expensive operation here

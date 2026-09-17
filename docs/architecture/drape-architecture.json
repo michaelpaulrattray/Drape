@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "cc97924a988b82f5"
+    "sourceFingerprint": "0bb1f1211a6b498c"
   },
   "domains": [
     {
@@ -9799,14 +9799,6 @@
       "constant": "CREDIT_COSTS",
       "member": "multiView",
       "credits": 300,
-      "file": "server/casting/castingCreditCosts.ts"
-    },
-    {
-      "id": "cost:server/casting/castingCreditCosts.ts:POINT_COSTS",
-      "name": "POINT_COSTS",
-      "constant": "POINT_COSTS",
-      "credits": null,
-      "aliasOf": "CREDIT_COSTS",
       "file": "server/casting/castingCreditCosts.ts"
     },
     {

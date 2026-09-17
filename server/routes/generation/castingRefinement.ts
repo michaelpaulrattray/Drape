@@ -8,7 +8,7 @@ import {
   iterateModel, iterateModelRaw, uploadRawCandidate, enhanceUserPrompt,
   generateCastingSuggestions, analyzeReferenceForTransfer, FALLBACK_SUGGESTIONS,
   compactMasterPrompt, clearCastingSession,
-  POINT_COSTS,
+  CREDIT_COSTS,
 } from "../../casting/aiService";
 import { withAtomicCredits, recordRefund, refundTruth } from "../../casting/atomicCredits";
 import { enforceDailyQuota } from "../../db/dailyQuota";
@@ -187,7 +187,7 @@ export const castingRefinementRouter = router({
         return {
           success: true,
           imageUrl: asset.storageUrl,
-          pointsCost: POINT_COSTS.iterate,
+          pointsCost: CREDIT_COSTS.iterate,
           ...(identityChanged && replayModel ? {
             masterPrompt: replayModel.masterPrompt,
             technicalSchema: replayModel.technicalSchema,
@@ -381,7 +381,7 @@ export const castingRefinementRouter = router({
         viewAngle: targetAsset.viewType,
         type: "iteration",
         status: "processing",
-        pointsCost: POINT_COSTS.iterate,
+        pointsCost: CREDIT_COSTS.iterate,
         metadata: generationMetadata,
       });
       // Review finding 2: a failed audit-row insert is detected BEFORE any
@@ -400,7 +400,7 @@ export const castingRefinementRouter = router({
         operationId: gate.operationId,
         modelId: input.modelId,
         expectedIdentityRevisionId: currentRevisionId(lockedModel),
-        plannedCredits: POINT_COSTS.iterate,
+        plannedCredits: CREDIT_COSTS.iterate,
         requiredLockKey: lockKey,
         phase: "generating",
         heartbeat: true,
@@ -449,7 +449,7 @@ export const castingRefinementRouter = router({
         const result = await withAtomicCredits(
           {
             userId: ctx.user.id,
-            amount: POINT_COSTS.iterate,
+            amount: CREDIT_COSTS.iterate,
             description: "Model iteration",
             referenceId: chargeReferenceId,
             toolKind: "image",
@@ -557,7 +557,7 @@ export const castingRefinementRouter = router({
                 targetAssetId: targetAsset.id,
                 storageUrl: result.imageUrl,
                 storageKey: typeof result.storageKey === "string" ? result.storageKey : undefined,
-                pointsCost: POINT_COSTS.iterate,
+                pointsCost: CREDIT_COSTS.iterate,
                 engine: result.engineUsed,
               },
             })).result;
@@ -579,7 +579,7 @@ export const castingRefinementRouter = router({
             // the outgoing message carries the refund TRUTH (correction 1).
             const outcome = await recordRefund(
               ctx.user.id,
-              POINT_COSTS.iterate,
+              CREDIT_COSTS.iterate,
               "Identity edit failed to commit (refund)",
               chargeReferenceId,
             );
@@ -630,7 +630,7 @@ export const castingRefinementRouter = router({
           return {
             success: true,
             imageUrl: result.imageUrl,
-            pointsCost: POINT_COSTS.iterate,
+            pointsCost: CREDIT_COSTS.iterate,
             masterPrompt: commit.masterPrompt,
             technicalSchema: commit.technicalSchema,
             preferences: commit.preferences,
@@ -657,7 +657,7 @@ export const castingRefinementRouter = router({
               targetAssetId: targetAsset.id,
               storageUrl: result.imageUrl,
               storageKey: typeof result.storageKey === "string" ? result.storageKey : undefined,
-              pointsCost: POINT_COSTS.iterate,
+              pointsCost: CREDIT_COSTS.iterate,
               engine: result.engineUsed,
             },
             imageOnlyCategories: authorization.imageOnlyCategories ?? [],
@@ -676,7 +676,7 @@ export const castingRefinementRouter = router({
           }
           const outcome = await recordRefund(
             ctx.user.id,
-            POINT_COSTS.iterate,
+            CREDIT_COSTS.iterate,
             "Model iteration failed to save (refund)",
             chargeReferenceId,
           );
@@ -715,7 +715,7 @@ export const castingRefinementRouter = router({
         return {
           success: true,
           imageUrl: result.imageUrl,
-          pointsCost: POINT_COSTS.iterate,
+          pointsCost: CREDIT_COSTS.iterate,
           assetId: assetResult.assetId,
           staledAngles: [],
           staleMessage: null,

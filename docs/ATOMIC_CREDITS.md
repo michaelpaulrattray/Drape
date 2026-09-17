@@ -35,7 +35,7 @@ import { withAtomicCredits } from "./atomicCredits";
 const result = await withAtomicCredits(
   {
     userId: ctx.user.id,
-    amount: POINT_COSTS.castingImage,
+    amount: CREDIT_COSTS.castingImage,
     description: "Casting image generation",
     referenceId: `gen-${generationId}`,
   },
@@ -65,7 +65,7 @@ When implementing a new credit-consuming feature, follow this checklist:
 | Step | Action | Verification |
 |------|--------|--------------|
 | 1 | Import the helper | `import { withAtomicCredits } from "./atomicCredits"` |
-| 2 | Define the credit cost | Use constants from `POINT_COSTS` or `CREDIT_COSTS` |
+| 2 | Define the credit cost | Use constants from `CREDIT_COSTS` (`server/casting/castingCreditCosts.ts`) |
 | 3 | Validate inputs first | Check ownership, existence before deducting credits |
 | 4 | Wrap expensive operation | All AI calls inside `withAtomicCredits` callback |
 | 5 | Handle the result | Process returned data after the wrapper completes |
@@ -89,7 +89,7 @@ generateHeadshot: protectedProcedure
     const result = await withAtomicCredits(
       {
         userId: ctx.user.id,
-        amount: POINT_COSTS.castingImage,
+        amount: CREDIT_COSTS.castingImage,
         description: "Headshot generation",
         referenceId: `headshot-${input.modelId}`,
       },
@@ -110,7 +110,7 @@ When a single endpoint performs multiple credit-consuming operations, calculate 
 generateAllViews: protectedProcedure
   .input(z.object({ modelId: z.number() }))
   .mutation(async ({ ctx, input }) => {
-    const totalCost = POINT_COSTS.multiView * 3; // 3 views
+    const totalCost = CREDIT_COSTS.multiView * 3; // 3 views
 
     const results = await withAtomicCredits(
       {
@@ -144,7 +144,7 @@ import { withAtomicCreditsAndRateLimit } from "./atomicCredits";
 const result = await withAtomicCreditsAndRateLimit(
   {
     userId: ctx.user.id,
-    amount: POINT_COSTS.iterate,
+    amount: CREDIT_COSTS.iterate,
     description: "Model iteration",
     referenceId: `iter-${modelId}`,
     rateLimitKey: `generation:${ctx.user.id}`,

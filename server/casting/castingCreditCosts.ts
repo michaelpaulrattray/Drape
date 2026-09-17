@@ -14,9 +14,6 @@ export const CREDIT_COSTS = {
   flashMultiplier: 0.5,
 } as const;
 
-// Legacy alias for backward compatibility during migration.
-export const POINT_COSTS = CREDIT_COSTS;
-
 /**
  * Casting V2 prices (plan §H.10, founder-decided 2026-07-30).
  *
