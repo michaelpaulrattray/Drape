@@ -158,12 +158,9 @@ jobs:
     if: ${{ !github.event.pull_request.draft && (github.event.action != 'labeled' || github.event.label.name == 'needs-fable') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    # `actions: read` is for the one-verdict-per-sha question below (#1026):
-    # a `labeled` run lists the other review runs on its own head sha. Nothing
-    # here writes.
     permissions:
-      contents: read
-      actions: read
+      contents: read # the checkout and the diff against main
+      actions: read # the one-verdict-per-sha question (#1026): a `labeled` run lists the other review runs on its own head sha; nothing here writes
     outputs:
       review: ${{ steps.decide.outputs.review }}
       # "yes" when the diff touches money/auth surfaces: the review then reads

@@ -245,7 +245,10 @@ describe("the question has a call site (invariant 7)", () => {
 
   it("the triage job can read the runs it asks about (`actions: read`)", () => {
     const triageJob = reviewYml.slice(reviewYml.indexOf("\n  triage:"), reviewYml.indexOf("\n  review:"));
-    expect(triageJob).toMatch(/permissions:\s*\n\s*contents: read\s*\n\s*actions: read/);
+    // Each line carries its reason — zizmor's pedantic persona refuses an
+    // undocumented permission, and the gate runs that persona (measured on
+    // this PR's first gate run: `undocumented-permissions`, exit 12).
+    expect(triageJob).toMatch(/permissions:\s*\n\s*contents: read #[^\n]+\n\s*actions: read #[^\n]*#1026/);
   });
 
   it("and sets up a node that can strip types, without failing triage if it cannot", () => {
