@@ -594,7 +594,7 @@ if (import.meta.main) {
     THE IMPORTER READER IS THE DIFFER'S, NOT A SECOND ONE. `readTree` is the
     module half of `diff-importer-count-across-time.mts`, so this door and that
     instrument cannot disagree about what a production importer IS — its scope
-    is `server`/`client`/`shared` with `*.test.ts` excluded, and `scripts/` is
+    is `server`/`client`/`shared`/`drizzle` (`IMPORTER_ROOTS`) with `*.test.ts` excluded, and `scripts/` is
     deliberately outside it. A drive bench naming a symbol is not the request
     path, and that is the same call the differ makes.
   */

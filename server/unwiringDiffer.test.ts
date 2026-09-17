@@ -9,6 +9,7 @@ import {
   importerCount,
   importersAt,
   importersOfName,
+  IMPORTER_ROOTS,
   readTree,
   REPORTED_ROOTS,
   unwiredBetween,
@@ -672,6 +673,42 @@ export const max = () => CREW_REPLY_MAX;
     expect(readTree(before).decls.has("CREW_REPLY_MAX")).toBe(false);
     expect(readTree(before).declsAnywhere.get("CREW_REPLY_MAX")).toEqual(["client/src/features/admin/crewLimits.ts"]);
     expect(namesFound(before, after)).toEqual([]);
+  });
+
+
+  /*
+    ⚠ THE SCHEMA IS A CONSUMER. The first `shared/` run of the timeline reported
+    `INK_TEMPLATE_KINDS` DIED — and it is `mysqlEnum("templateKind", …)` at
+    `drizzle/schema.ts`, the column definition itself. A reader that does not
+    walk `drizzle/` calls a live column a death (toward NOISE), which is the
+    specimen the sweep repaired on 2026-08-24 (`WARDROBE_LINE_MAX_LENGTH`).
+    `IMPORTER_ROOTS` is derived from the sweep's own list now, less `scripts/`.
+  */
+  it("counts `drizzle/schema.ts` as an importer of a `shared/` constant, and `scripts/` still not", () => {
+    expect([...IMPORTER_ROOTS]).toEqual(["server", "client", "shared", "drizzle"]);
+    const KINDS = `export const INK_TEMPLATE_KINDS = ["plate", "sleeve"] as const;
+`;
+    const schema = tree({
+      "shared/inkTemplateKinds.ts": KINDS,
+      "drizzle/schema.ts":
+        `import { INK_TEMPLATE_KINDS } from "../shared/inkTemplateKinds";
+export const col = INK_TEMPLATE_KINDS;
+`,
+    });
+    expect(importersAt(readTree(schema), "shared/inkTemplateKinds.ts", "INK_TEMPLATE_KINDS")).toEqual(["drizzle/schema.ts"]);
+    /* the un-varied direction: a ceremony script is not a request path */
+    const script = tree({
+      "shared/inkTemplateKinds.ts": KINDS,
+      "scripts/ceremony.mts":
+        `import { INK_TEMPLATE_KINDS } from "../shared/inkTemplateKinds";
+export const col = INK_TEMPLATE_KINDS;
+`,
+    });
+    expect(importersAt(readTree(script), "shared/inkTemplateKinds.ts", "INK_TEMPLATE_KINDS")).toEqual([]);
+    /* and losing the schema's import IS reported, exactly as a server importer's loss is */
+    const gone = tree({ "shared/inkTemplateKinds.ts": KINDS, "drizzle/schema.ts": `export const col = ["plate"];
+` });
+    expect(namesFound(schema, gone)).toEqual(["INK_TEMPLATE_KINDS"]);
   });
 
   it("leaves a `server/` reading unchanged, and a `shared/` twin cannot take a server twin's importer", () => {

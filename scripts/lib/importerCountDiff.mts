@@ -13,6 +13,7 @@
 import { readdirSync } from "node:fs";
 import { readIfPresent, statIfPresent } from "./listedEntry.mts";
 import { join, resolve } from "node:path";
+import { CONSUMER_ROOTS } from "./productionMention.mts";
 import {
   buildReexportMap,
   creditedDeclarations,
@@ -27,7 +28,7 @@ const SEP = String.fromCharCode(92);
   ⚠ ENTRIES READ THROUGH THE ENOENT-ONLY TOLERANCE (#591), AND THE CARVE-OUT
   WAS DECLINED ON PURPOSE.
 
-  This module walks `server`, `client` and `shared` today, where the ~440
+  This module walks `IMPORTER_ROOTS` (`server`, `client`, `shared`, `drizzle`), where the ~440
   untracked disposables this rule is about do not land — so the guard's own
   precedent (`architectureAtlas.test.ts`'s row in `NOT_THE_CLASS`) would have
   exempted it by name. It is fixed instead, because that row's reason would be
@@ -132,8 +133,8 @@ export const selfUsesOfName = (tree: Tree, symbol: string): number => {
 
 /**
  * THE REPORTED SCOPE — where a declaration must live to be a symbol this reader
- * REPORTS on (`decls`). Importers are looked for wider (`server`, `client`,
- * `shared`), and `declsAnywhere` indexes wider still; this list governs only
+ * REPORTS on (`decls`). Importers are looked for wider (`IMPORTER_ROOTS`
+ * below), and `declsAnywhere` indexes wider still; this list governs only
  * what can be named in a finding, a timeline row or a ledger verdict.
  *
  * ⚠ `shared/` JOINED IT 2026-09-17 (#1022, decided by the relay), AND THE
@@ -161,10 +162,31 @@ export const isReportedPath = (repoRelative: string): boolean =>
   REPORTED_ROOTS.some((root) => repoRelative.startsWith(root));
 
 /**
+ * THE IMPORTER ROOTS — where a CONSUMER may live. Derived from the sweep's
+ * `CONSUMER_ROOTS` rather than spelled again here (working law 4: the two
+ * spellings of that list were once both missing `drizzle`), less `scripts/`,
+ * which this reader excludes on purpose: a ceremony or an audit script is not
+ * a request path, and the entrypoint's `dark-born` docblock says so.
+ *
+ * ⚠ `drizzle/` WAS NOT WALKED UNTIL 2026-09-17, AND THE FIRST `shared/` RUN
+ * PROVED THE COST THE SWEEP HAD ALREADY PAID (#1022). `INK_TEMPLATE_KINDS`
+ * (`shared/inkTemplateKinds.ts`) is `mysqlEnum("templateKind", …)` at
+ * `drizzle/schema.ts:3289` — the schema is its production consumer — and the
+ * widened timeline reported it DIED the day slice 2b removed a dead re-export
+ * of it from `server/castingV2/inkTemplates.ts`. A reader that cannot see the
+ * schema calls a live column definition a death, which is the toward-NOISE
+ * direction, and it is the exact specimen the sweep repaired on 2026-08-24
+ * (`WARDROBE_LINE_MAX_LENGTH`, live at `drizzle/schema.ts:2076`). The same
+ * list now feeds both instruments, so the third spelling cannot drift either.
+ */
+export const IMPORTER_ROOTS: readonly string[] = CONSUMER_ROOTS.filter((root) => root !== "scripts");
+
+/**
  * Read one tree.
  *
  * Declarations are looked for under `REPORTED_ROOTS` (`server/` and `shared/`).
- * Importers are looked for wider.
+ * Importers are looked for under `IMPORTER_ROOTS` (those two, `client/` and
+ * `drizzle/`), tests excluded.
  */
 export function readTree(rootArgument: string): Tree {
   /*
@@ -186,7 +208,7 @@ export function readTree(rootArgument: string): Tree {
     from being.
   */
   const root = resolve(rootArgument);
-  const all = ["server", "client", "shared"].flatMap((r) => walk(join(root, r)));
+  const all = IMPORTER_ROOTS.flatMap((r) => walk(join(root, r)));
   const show = (f: string) => f.slice(root.length + 1).split(SEP).join("/");
   const decls = new Map<string, string[]>();
   const declsAnywhere = new Map<string, string[]>();
