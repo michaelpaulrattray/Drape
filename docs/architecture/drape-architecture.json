@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "d86055047160d80a"
+    "sourceFingerprint": "25f2c89e4771f81c"
   },
   "domains": [
     {
@@ -15812,6 +15812,11 @@
     {
       "from": "module:client/src/features/casting/evidence/PrivateEvidenceImage.tsx",
       "to": "module:client/src/features/casting/evidence/privateEvidenceImageLoader.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/evidence/PrivateEvidenceImage.tsx",
+      "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
     {

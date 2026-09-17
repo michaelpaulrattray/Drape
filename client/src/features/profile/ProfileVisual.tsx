@@ -141,3 +141,24 @@ export function ProfileAvatar({
   );
 }
 
+export function ProfileCover({
+  src,
+  identity,
+  alt,
+  className,
+  style,
+}: ProfileImageProps) {
+  const fallback = useMemo(
+    () => getProfileVisualDefaults(identity).cover,
+    [identity],
+  );
+  return (
+    <ResilientProfileImage
+      src={src}
+      fallback={fallback}
+      alt={alt}
+      className={className}
+      style={style}
+    />
+  );
+}

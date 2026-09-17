@@ -1072,8 +1072,17 @@ in PR #1030, two DECIDED). Executed: 50 barrel lines, 19 list entries, 39
 `export` dropped, 64 declarations deleted, 14 more at the in-file fixpoint, 12
 orphaned declarations and 32 orphaned imports removed, five files deleted.
 `pnpm check` green, 1,567 client tests green, `pnpm build` green. After: client
-**165 → 2** (held), shared **18 → 9** (kept/held). Three things for the next
+**165 → 4** (held), shared **18 → 9** (kept/held). Four things for the next
 Janitor:
+
+0. **`vitest run client/src` is not the preflight for a client deletion — the
+   FULL `pnpm test` is.** Four SERVER text guards read client source and the
+   gate went red once (5.8 m + a 9 m re-run): a stripper's positive control
+   pinned on a bystander constant (repaired), a barrel pin on a dead export
+   (dropped, with its commit), and two guards that name a component on
+   purpose — `ProfileCover` (a recorded keep) and `PrivateEvidenceImage` (the
+   parked R7 family's contract) — both RESTORED byte-for-byte and HELD. The
+   manifest's last table is the four.
 
 1. **Count self-uses AFTER the batch, not before** — 14 rows were held up only
    by other rows (§39b); the executor's fixpoint is the repair, and it is the

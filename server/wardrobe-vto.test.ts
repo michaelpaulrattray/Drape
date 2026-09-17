@@ -239,7 +239,11 @@ describe("Component exports", () => {
     const mod = await import("../client/src/features/wardrobe/index");
     expect(mod).toHaveProperty("WardrobeEmptyState");
     expect(mod).toHaveProperty("WardrobeImageOverlay");
-    expect(mod).toHaveProperty("WardrobeShortcutsBar");
+    /* `WardrobeShortcutsBar` came off this list with #108 slice 4 (2026-09-17):
+       its render left with d4d4ce53 (2026-04-03, "keyboard shortcuts moved from
+       bottom bar to triple-dot menu") and nothing imported it for five months
+       — a pin on a dead export is a suite that fails only when its subject is
+       finally deleted, which is the velocity-cap shape inverted. */
   });
 
   it("LayersPanel is exported from the wardrobe barrel", async () => {

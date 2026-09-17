@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { loadPrivateEvidenceImage } from "./privateEvidenceImageLoader";
+
+interface PrivateEvidenceImageProps {
+  src: string;
+  alt: string;
+  className?: string;
+  placeholder?: ReactNode;
+}
 
 type ImageState =
   | { phase: "loading"; objectUrl: null }
@@ -12,13 +20,6 @@ export interface PrivateEvidenceImageState {
   retry: () => void;
 }
 
-/**
- * Owner-private image loading. The endpoint is never assigned directly to an
- * <img>, so retryable HTTP/stream failures cannot flash a broken-image icon —
- * the surface hands out an object URL only once the bytes have arrived. (The
- * ruling lived on a `PrivateEvidenceImage` component nothing rendered, deleted
- * #108 slice 4; the hook is where the behaviour is.)
- */
 export function usePrivateEvidenceImage(
   src: string | null,
 ): PrivateEvidenceImageState {
@@ -60,3 +61,53 @@ export function usePrivateEvidenceImage(
   return { ...state, retry };
 }
 
+/**
+ * Owner-private image surface. The endpoint is never assigned directly to an
+ * <img>, so retryable HTTP/stream failures cannot flash a broken-image icon.
+ */
+export function PrivateEvidenceImage({
+  src,
+  alt,
+  className,
+  placeholder,
+}: PrivateEvidenceImageProps) {
+  const state = usePrivateEvidenceImage(src);
+
+  const objectUrl = state.objectUrl;
+  if (state.phase === "loaded" && objectUrl) {
+    return (
+      <img
+        src={objectUrl}
+        alt={alt}
+        className={className}
+        onError={state.retry}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex h-full w-full items-center justify-center bg-canvas-surface-inset",
+        className,
+      )}
+      aria-busy={state.phase === "loading"}
+      aria-label={state.phase === "loading" ? `Loading ${alt}` : undefined}
+    >
+      {placeholder ?? (
+        state.phase === "loading"
+          ? <span className="sr-only">Loading image</span>
+          : null
+      )}
+      {state.phase === "unavailable" && (
+        <button
+          type="button"
+          className="text-canvas-xs text-canvas-ink-muted underline-offset-2 hover:underline"
+          onClick={state.retry}
+        >
+          Try image again
+        </button>
+      )}
+    </div>
+  );
+}

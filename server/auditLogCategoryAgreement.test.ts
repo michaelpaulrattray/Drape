@@ -266,8 +266,11 @@ describe("the audit panel's chip and the server's category filter", () => {
         The stripper's own positive control: it must not have eaten the file. If
         it returned "" the assertion below would pass having read nothing, which
         is the exact failure this suite exists to prevent one level down.
+        (The token was `CATEGORY_COLORS` until #108 slice 4 deleted that unused
+        constant from both consoles — a control pinned on a bystander; it is
+        the derivation's own name now, which is the thing this arm is about.)
       */
-      expect(code, `${relative} stripped to nothing`).toContain("CATEGORY_COLORS");
+      expect(code, `${relative} stripped to nothing`).toContain("getActionCategory");
       expect(code, `${relative} re-implements the category chip`).not.toContain("startsWith(");
     }
   });

@@ -178,7 +178,7 @@ read at its commit:**
 | `shared/crewShiftState.ts` | `normaliseCardRef` | function | drop export | timeline: dark-born (379 boundaries); self-used 2× in its module |
 | `shared/modelRegistry.ts` | `TEXT_ECONOMY_FALLBACK` | const | drop export | timeline: dark-born (379 boundaries); self-used 1× in its module |
 
-### Declarations deleted — nothing in the tree mentions them — 64 rows
+### Declarations deleted — nothing in the tree mentions them — 62 rows (64 executed; two reverted after the gate, see below)
 
 | file | symbol | kind | act | note |
 |---|---|---|---|---|
@@ -213,7 +213,6 @@ read at its commit:**
 | `client/src/features/casting/components/ImageViewer/CanvasHelpers.tsx` | `ToolButton` | function | delete declaration | nothing in the tree mentions it; its re-export is a population row too: client/src/features/casting/components/ImageViewer/index.tsx(re-export) |
 | `client/src/features/casting/constants.ts` | `BODY_TYPES` | const | delete declaration | nothing in the tree mentions it |
 | `client/src/features/casting/constants.ts` | `FACE_SHAPES` | const | delete declaration | nothing in the tree mentions it |
-| `client/src/features/casting/evidence/PrivateEvidenceImage.tsx` | `PrivateEvidenceImage` | function | delete declaration | nothing in the tree mentions it |
 | `client/src/features/casting/stores/useCastingGenerationStore.ts` | `useAmendments` | const | delete declaration | nothing in the tree mentions it |
 | `client/src/features/casting/stores/useCastingGenerationStore.ts` | `useCurrentMasterPrompt` | const | delete declaration | nothing in the tree mentions it |
 | `client/src/features/casting/stores/useCastingGenerationStore.ts` | `useIdentityWarning` | const | delete declaration | nothing in the tree mentions it |
@@ -222,7 +221,6 @@ read at its commit:**
 | `client/src/features/moderator/moderatorConstants.ts` | `CATEGORY_COLORS` | const | delete declaration | nothing in the tree mentions it |
 | `client/src/features/moderator/moderatorConstants.ts` | `SEVERITY_COLORS` | const | delete declaration | nothing in the tree mentions it |
 | `client/src/features/moderator/moderatorConstants.ts` | `SEVERITY_ICONS` | const | delete declaration | nothing in the tree mentions it |
-| `client/src/features/profile/ProfileVisual.tsx` | `ProfileCover` | function | delete declaration | nothing in the tree mentions it |
 | `client/src/features/settings/parts.tsx` | `SettingsRow` | function | delete declaration | nothing in the tree mentions it |
 | `client/src/features/wardrobe/components/WardrobeCanvasOverlays.tsx` | `WardrobeShortcutsBar` | function | delete declaration | nothing in the tree mentions it; its re-export is a population row too: client/src/features/wardrobe/index.ts(re-export) |
 | `client/src/features/wardrobe/constants.ts` | `MAX_TOTAL_GARMENTS` | const | delete declaration | nothing in the tree mentions it |
@@ -247,12 +245,14 @@ read at its commit:**
 | `client/src/lib/motion.ts` | `withDelay` | function | delete declaration | nothing in the tree mentions it |
 | `client/src/lib/motion.ts` | `withDuration` | function | delete declaration | nothing in the tree mentions it |
 
-### HELD — with the reason — 11 rows
+### HELD — with the reason — 13 rows (11 before the gate, 13 after)
 
 | file | symbol | kind | act | note |
 |---|---|---|---|---|
 | `client/src/features/billing/LowBalanceWarning.tsx` | `LowBalanceBanner` | function | HOLD — its only consumer is a knip unused FILE (the lobby lane keeps those) | client/src/features/billing/index.ts(re-export) |
+| `client/src/features/casting/evidence/PrivateEvidenceImage.tsx` | `PrivateEvidenceImage` | function | HOLD — restored after the gate: the R7 evidence family is PARKED by his word (#6), and `server/r7-evidence-delivery-contract.test.ts` names this component as the contract's placeholder surface | executed, then reverted byte-for-byte to main |
 | `client/src/features/operations/castDeletionSync.ts` | `publishCastDeleted` | function | HOLD — its only consumer is a knip unused FILE (the lobby lane keeps those) | client/src/features/lobby/DeleteCastDialog.tsx(import) |
+| `client/src/features/profile/ProfileVisual.tsx` | `ProfileCover` | function | HOLD — restored after the gate: `server/profileVisualDefaults.test.ts` pins it by its own stated stance ("the day a surface wants a cover it is there"); a shift does not overrule a recorded keep | executed, then reverted byte-for-byte to main |
 | `shared/_core/errors.ts` | `BadRequestError` | const | HOLD — ledger KEEP (§29e) | timeline: dark-born (379 boundaries) |
 | `shared/_core/errors.ts` | `HttpError` | class | HOLD — base class of the ledger-KEPT error set (§29e) | timeline: dark-born (379 boundaries) |
 | `shared/_core/errors.ts` | `NotFoundError` | const | HOLD — ledger KEEP (§29e) | timeline: dark-born (379 boundaries) |
@@ -366,10 +366,8 @@ re-export alone, with the history on it.
 
 ## Records moved, not deleted (the executor prints every docblock it takes)
 
-- **`PrivateEvidenceImage`** carried the owner-private image ruling (*the endpoint is never
-  assigned directly to an `<img>`*); the component had no renderer, the hook
-  `usePrivateEvidenceImage` is what `useInkAddWorkflow.ts` uses, and the sentence now
-  sits on the hook.
+- **`PrivateEvidenceImage`** — executed, then RESTORED byte-for-byte (see the gate's
+  findings below); its docblock ruling stays where it was.
 - **`CATEGORY_COLORS` / `SEVERITY_COLORS`** (admin + moderator constants) — `foundation/severity.ts`'s
   docblock said their deletion belonged to section 02 once the repaint landed; it landed,
   they had no reader, and that docblock now says so.
@@ -384,12 +382,28 @@ re-export alone, with the history on it.
 
 | population | before | after |
 |---|---|---|
-| unused exports, client | 49 files / 165 symbols | **2 files / 2 symbols** (both HELD — unused-file consumers) |
+| unused exports, client | 49 files / 165 symbols | **4 files / 4 symbols** (all HELD — two unused-file consumers, `ProfileCover`, `PrivateEvidenceImage`) |
 | unused exports, shared | 9 / 18 | **5 / 9** (8 ledger KEEP or its class, 1 HELD — unused-file consumer) |
 | unused exports, server | 14 / 16 | 14 / 16 (the floor, untouched) |
 | unused exports, scripts | 29 / 53 | 30 / 57 — out by the decision; the +4 is untracked disposables absent from the worktree, not this slice |
 | unused files | 18 (19 on the nightly) | 19 — `motion.ts` became one and was deleted; `scripts/lib/sabotage.mts` is the nightly's 19th, a stated knip ceiling |
 | duplicates | 1 (the floor) | 1 |
 
-`pnpm check` green (the deletion door OPEN, unchanged: 210 rows / 146 listed); 1,567
+`pnpm check` green (the deletion door OPEN, unchanged: 210 rows / 146 listed); the FULL `pnpm test` 13,280 passed (only the Atlas-freshness arms red before the commit hook); 1,567
 client tests green; `pnpm build` green.
+
+## The gate's four findings, and what each one was
+
+`npx vitest run client/src` was green and the preflight ran the nearest server
+suites — and **four server-side text guards read client source**
+(`rename-sweep-is-repo-wide`: a guard naming a symbol need not live beside it).
+The full `pnpm test` is the preflight for a client deletion, and it was run
+before the second push: 13,280 passed, 3 failed — all three the Atlas-freshness
+arms the commit hook regenerates.
+
+| guard | what it read | decision |
+|---|---|---|
+| `server/auditLogCategoryAgreement.test.ts` — *neither console re-implements the chip* | its comment-stripper's positive control was `toContain("CATEGORY_COLORS")`, a bystander constant this slice deleted | **guard repaired**: the control token is `getActionCategory`, the derivation the arm is about; the arm's real assertion (`from "@shared/auditActionCategories"`, no `startsWith(`) was never in doubt |
+| `server/profileVisualDefaults.test.ts` — *puts resilient defaults on every main account surface* | `export function ProfileCover` in `ProfileVisual.tsx`, with its own stated stance: *"the day a surface wants a cover it is there"* | **row HELD, file restored byte-for-byte**: a recorded keep is not a shift's to overrule; whether a component kept for a hypothetical surface is litter is the Retro's question, not this slice's |
+| `server/r7-evidence-delivery-contract.test.ts` — *keeps retryable failures behind the shared placeholder component* | `Try image again` in `PrivateEvidenceImage.tsx` | **row HELD, file restored byte-for-byte**: the R7 evidence family is PARKED by his word (#6), and the contract names this component |
+| `server/wardrobe-vto.test.ts` — *WardrobeCanvasOverlays are exported from the wardrobe barrel* | `WardrobeShortcutsBar` on the barrel | **pin dropped, deletion stands**: its render left with `d4d4ce53` (2026-04-03, *"keyboard shortcuts moved from bottom bar to triple-dot menu"*) — a pin on a dead export is a suite that fails only when its subject is finally deleted |
