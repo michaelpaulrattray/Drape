@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "95a6331b037972bc"
+    "sourceFingerprint": "83cfdfcd7e0fc3cf"
   },
   "domains": [
     {
@@ -13767,11 +13767,6 @@
     {
       "from": "module:client/src/components/design-system/index.ts",
       "to": "module:client/src/components/design-system/Button.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/components/ErrorBoundary.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
     },
     {

@@ -138,7 +138,7 @@ read at its commit:**
 
 | file | symbol | kind | act | note |
 |---|---|---|---|---|
-| `client/src/components/ErrorBoundary.tsx` | `GenerationErrorBoundary` | class | drop export | self-used 1× in its module |
+| `client/src/components/ErrorBoundary.tsx` | `GenerationErrorBoundary` | class | drop export → **deleted after the review** | the "self-use" was the class's own `console.error` string (the reviewer's note: a row surviving on a self-reference, as `isSensitiveAction` once survived on a dead import); the class, its two interfaces, `CONTEXT_MESSAGES` and the `Button` import it alone used are gone |
 | `client/src/components/design-system/Button.tsx` | `ConveyorIcon` | function | drop export | self-used 1× in its module; its re-export is a population row too: client/src/components/design-system/index.ts(re-export) |
 | `client/src/components/design-system/Button.tsx` | `ConveyorText` | function | drop export | self-used 4× in its module; its re-export is a population row too: client/src/components/design-system/index.ts(re-export) |
 | `client/src/components/design-system/Button.tsx` | `ConveyorTextColor` | function | drop export | self-used 6× in its module; its re-export is a population row too: client/src/components/design-system/index.ts(re-export) |
