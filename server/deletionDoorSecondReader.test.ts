@@ -68,7 +68,8 @@ import { declKey, importersAt, readTree, type Tree } from "../scripts/lib/import
  *   population rather than asserting anything about it.
  * - **It sees only what both instruments walk.** The Atlas scans `server`,
  *   `client/src`, `shared` and `drizzle` and excludes test files; the reader
- *   walks `server`, `client`, `shared` and counts production importers only.
+ *   walks `server`, `client`, `shared` and `drizzle` (`IMPORTER_ROOTS`, since
+ *   #1022) and counts production importers only.
  *   A credit naming a file outside the Atlas is SKIPPED and counted out loud —
  *   a skip that nobody counts is how a reader comes to be looking at nothing.
  * - **It reads the COMMITTED Atlas.** `.githooks/atlas-stage` regenerates it on

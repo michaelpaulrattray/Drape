@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -9,7 +9,9 @@ import {
   importerCount,
   importersAt,
   importersOfName,
+  IMPORTER_ROOTS,
   readTree,
+  REPORTED_ROOTS,
   unwiredBetween,
 } from "../scripts/lib/importerCountDiff.mts";
 
@@ -597,6 +599,175 @@ describe("the destructured dynamic import", () => {
   });
 });
 
+
+/**
+ * THE REPORTED SCOPE — `shared/` IS IN IT, `client/` IS NOT, AND EACH IS A
+ * DECISION WITH AN ARM (#1022, decided by the relay 2026-09-17).
+ *
+ * Until this landed the reader reported `server/` declarations only, on a
+ * docblock that said this was the sweep's scope too — and the sweep had scanned
+ * `shared/` since 2026-08-24. A `shared/` constant the server imports is a
+ * control exactly as a server one is (`BadRequestError`, `AUDIT_CATEGORIES`,
+ * the model registry), and a symbol this reader never counted can never be seen
+ * to FALL to zero: the day such a constant lost its last server importer, the
+ * timeline would have reported silence. The first arm is that day, driven.
+ *
+ * `client/` stays out on purpose — a client module is reached by the bundle or
+ * not at all, there is no request path and no ledger row — and the second arm
+ * holds that line so the widening cannot creep by one more directory without
+ * an arm reddening. The third is the negative control: a `server/` reading is
+ * unchanged by the widening, and a `shared/` twin cannot take a server twin's
+ * importer, because the specifier decides which declaration is credited.
+ */
+describe("the reported scope", () => {
+  const SHARED_CONST = `export const AUDIT_CATEGORIES = ["abuse", "billing"] as const;
+`;
+  const SERVER_USE = `import { AUDIT_CATEGORIES } from "../shared/auditActionCategories";
+export const cats = () => AUDIT_CATEGORIES;
+`;
+  const SERVER_NO_USE = `export const cats = () => ["abuse"];
+`;
+
+  it("is exactly `server/` and `shared/` — the relay's decision, pinned", () => {
+    expect([...REPORTED_ROOTS]).toEqual(["server/", "shared/"]);
+  });
+
+  it("⚠ REPORTS a `shared/` constant that lost its last server importer — the silence this closes", () => {
+    const before = tree({
+      "shared/auditActionCategories.ts": SHARED_CONST,
+      "server/auditLog.ts": SERVER_USE,
+    });
+    const after = tree({
+      "shared/auditActionCategories.ts": SHARED_CONST,
+      "server/auditLog.ts": SERVER_NO_USE,
+    });
+    /* it is DECLARED to the reader, which is the half the old scope lacked */
+    expect(declFileOf(readTree(before), "AUDIT_CATEGORIES")).toBe("shared/auditActionCategories.ts");
+    expect(importersOfName(readTree(before), "AUDIT_CATEGORIES")).toEqual(["server/auditLog.ts"]);
+    const found = unwiredBetween(readTree(before), readTree(after));
+    expect(found.map((f) => f.name)).toEqual(["AUDIT_CATEGORIES"]);
+    expect(found[0]!.declaredAt).toBe("shared/auditActionCategories.ts");
+    expect(found[0]!.lostImporters).toEqual(["server/auditLog.ts"]);
+    expect(found[0]!.kind).toBe("fully-dark");
+    /* the un-varied direction: while the importer stands, nothing is reported */
+    expect(namesFound(before, before)).toEqual([]);
+  });
+
+  it("does NOT report a `client/` declaration in the same shape — that directory is a scope, not an oversight", () => {
+    const CLIENT_CONST = `export const CREW_REPLY_MAX = 2000;
+`;
+    const before = tree({
+      "client/src/features/admin/crewLimits.ts": CLIENT_CONST,
+      "client/src/features/admin/CrewReplyBox.tsx":
+        `import { CREW_REPLY_MAX } from "./crewLimits";
+export const max = () => CREW_REPLY_MAX;
+`,
+    });
+    const after = tree({
+      "client/src/features/admin/crewLimits.ts": CLIENT_CONST,
+      "client/src/features/admin/CrewReplyBox.tsx": `export const max = () => 2000;
+`,
+    });
+    /* not declared to the reader at all — so it cannot be reported, and a
+       ledger row naming it would trip `unreadable` rather than pass */
+    expect(readTree(before).decls.has("CREW_REPLY_MAX")).toBe(false);
+    expect(readTree(before).declsAnywhere.get("CREW_REPLY_MAX")).toEqual(["client/src/features/admin/crewLimits.ts"]);
+    expect(namesFound(before, after)).toEqual([]);
+  });
+
+
+  /*
+    ⚠ THE SCHEMA IS A CONSUMER. The first `shared/` run of the timeline reported
+    `INK_TEMPLATE_KINDS` DIED — and it is `mysqlEnum("templateKind", …)` at
+    `drizzle/schema.ts`, the column definition itself. A reader that does not
+    walk `drizzle/` calls a live column a death (toward NOISE), which is the
+    specimen the sweep repaired on 2026-08-24 (`WARDROBE_LINE_MAX_LENGTH`).
+    `IMPORTER_ROOTS` is derived from the sweep's own list now, less `scripts/`.
+  */
+  it("counts `drizzle/schema.ts` as an importer of a `shared/` constant, and `scripts/` still not", () => {
+    expect([...IMPORTER_ROOTS]).toEqual(["server", "client", "shared", "drizzle"]);
+    const KINDS = `export const INK_TEMPLATE_KINDS = ["plate", "sleeve"] as const;
+`;
+    const schema = tree({
+      "shared/inkTemplateKinds.ts": KINDS,
+      "drizzle/schema.ts":
+        `import { INK_TEMPLATE_KINDS } from "../shared/inkTemplateKinds";
+export const col = INK_TEMPLATE_KINDS;
+`,
+    });
+    expect(importersAt(readTree(schema), "shared/inkTemplateKinds.ts", "INK_TEMPLATE_KINDS")).toEqual(["drizzle/schema.ts"]);
+    /* the un-varied direction: a ceremony script is not a request path */
+    const script = tree({
+      "shared/inkTemplateKinds.ts": KINDS,
+      "scripts/ceremony.mts":
+        `import { INK_TEMPLATE_KINDS } from "../shared/inkTemplateKinds";
+export const col = INK_TEMPLATE_KINDS;
+`,
+    });
+    expect(importersAt(readTree(script), "shared/inkTemplateKinds.ts", "INK_TEMPLATE_KINDS")).toEqual([]);
+    /* and losing the schema's import IS reported, exactly as a server importer's loss is */
+    const gone = tree({ "shared/inkTemplateKinds.ts": KINDS, "drizzle/schema.ts": `export const col = ["plate"];
+` });
+    expect(namesFound(schema, gone)).toEqual(["INK_TEMPLATE_KINDS"]);
+  });
+
+
+  /*
+    THE UNION HAS NO CROSS-BOUNDARY TWIN TO HIDE BEHIND — PINNED, NOT ASSUMED
+    (the reviewer's second note on PR #1030). `importersAt` credits each
+    declaration separately, but `unwiredBetween` and `classifyTimeline` judge
+    on `importerCount`, the name-level UNION (#274's accepted limit, shared by
+    the eleven server-internal twins). A name declared under BOTH `server/` and
+    `shared/` would let one twin's surviving importers hold the other's death
+    above zero — the silence this card closes, one conflation over. Zero such
+    names exist today; this arm is what reddens the day that stops being true,
+    so the limit is re-read then rather than discovered.
+  */
+  it("no name is declared under both `server/` and `shared/` in the real tree", () => {
+    const real = readTree(resolve(__dirname, ".."));
+    const straddling = [...real.decls.entries()]
+      .filter(([, files]) => files.some((f) => f.startsWith("server/")) && files.some((f) => f.startsWith("shared/")))
+      .map(([name, files]) => `${name}: ${files.join(", ")}`);
+    expect(straddling).toEqual([]);
+    /* the un-varied direction: the reading is looking at something */
+    expect(real.decls.size).toBeGreaterThan(2000);
+  });
+
+  it("leaves a `server/` reading unchanged, and a `shared/` twin cannot take a server twin's importer", () => {
+    /* the February shape beside a shared file that has nothing to do with it */
+    const before = tree({
+      "server/adminSecurity.ts": GATE,
+      "server/routers.ts": CALLER,
+      "shared/auditActionCategories.ts": SHARED_CONST,
+    });
+    const after = tree({
+      "server/adminSecurity.ts": GATE,
+      "server/routers.ts": `export const route = (a: string) => a === "delete";
+`,
+      "shared/auditActionCategories.ts": SHARED_CONST,
+    });
+    expect(namesFound(before, after)).toEqual(["isSensitiveAction"]);
+
+    /* one name, two declarations across the boundary: each importer goes to
+       the file its specifier reaches, exactly as the server/server twin arm */
+    const TWIN = `export const MODELS = ["a"];
+`;
+    const twins = tree({
+      "server/casting/modelRegistry.ts": TWIN,
+      "shared/modelRegistry.ts": TWIN,
+      "server/casting/useServer.ts": `import { MODELS } from "./modelRegistry";
+export const s = MODELS;
+`,
+      "client/src/useShared.ts": `import { MODELS } from "@shared/modelRegistry";
+export const c = MODELS;
+`,
+    });
+    const t = readTree(twins);
+    expect(t.decls.get("MODELS")).toEqual(["server/casting/modelRegistry.ts", "shared/modelRegistry.ts"]);
+    expect(importersAt(t, "server/casting/modelRegistry.ts", "MODELS")).toEqual(["server/casting/useServer.ts"]);
+    expect(importersAt(t, "shared/modelRegistry.ts", "MODELS")).toEqual(["client/src/useShared.ts"]);
+  });
+});
 /**
  * THE TWIN — ONE NAME, TWO DECLARATIONS, AND THEY MUST NOT ANSWER FOR EACH
  * OTHER (#274).
