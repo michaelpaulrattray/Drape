@@ -134,29 +134,3 @@ export function showLowBalanceToast(balance: number, onTopUp: () => void) {
   );
 }
 
-/**
- * Hook to check if balance is low and trigger warnings
- */
-export function useLowBalanceCheck(
-  balance: number | undefined,
-  previousBalance: number | undefined,
-  onTopUp: () => void
-) {
-  useEffect(() => {
-    // Only show toast when balance drops below threshold (not on initial load)
-    if (
-      balance !== undefined &&
-      previousBalance !== undefined &&
-      previousBalance >= LOW_BALANCE_THRESHOLD &&
-      balance < LOW_BALANCE_THRESHOLD
-    ) {
-      showLowBalanceToast(balance, onTopUp);
-    }
-  }, [balance, previousBalance, onTopUp]);
-
-  return {
-    isLow: balance !== undefined && balance < LOW_BALANCE_THRESHOLD,
-    isCritical: balance !== undefined && balance === 0,
-    isVeryLow: balance !== undefined && balance < 500,
-  };
-}

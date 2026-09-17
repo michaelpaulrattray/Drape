@@ -48,7 +48,7 @@
  *  spelled on the server so this surface holds ONE list of strings rather than
  *  two shapes and a branch — they fall through the lookup below unchanged,
  *  which is exactly what its fallback is for. */
-export const MAKEUP_SURFACE_WORDS: Readonly<Record<string, string>> = Object.freeze({
+const MAKEUP_SURFACE_WORDS: Readonly<Record<string, string>> = Object.freeze({
   eyes: "eyes",
   lips: "lips",
   brows: "brows",

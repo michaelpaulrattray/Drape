@@ -202,9 +202,3 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
     useCastingGenerationStore;
 }
 
-// Selector hooks — only those actually imported by consumers
-export const useCurrentMasterPrompt = () => useCastingGenerationStore((state) => state.currentMasterPrompt);
-export const useSuggestions = () => useCastingGenerationStore((state) => state.suggestions);
-export const useIsLoadingSuggestions = () => useCastingGenerationStore((state) => state.isLoadingSuggestions);
-export const useAmendments = () => useCastingGenerationStore((state) => state.amendments);
-export const useIdentityWarning = () => useCastingGenerationStore((state) => state.identityWarning);

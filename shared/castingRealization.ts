@@ -120,7 +120,7 @@ export const HAIR_TEXTURES = ["straight", "wavy", "curly", "coiled"] as const;
 export type HairTexture = (typeof HAIR_TEXTURES)[number];
 
 /** Brow CHARACTER. The rendering protocol (A8) is separate and already ported. */
-export const BROW_STYLES = [
+const BROW_STYLES = [
   /*
     F4 — the wiry, overgrown older male brow, which casting directors genuinely
     hunt for and the dice could not produce. Age-funded at 70s+ only, on the same
@@ -146,7 +146,7 @@ export type BrowStyle = (typeof BROW_STYLES)[number];
  * unremarkable and a few carry something, rather than like a casting gimmick
  * where everybody has a distinguishing feature.
  */
-export const SKIN_CHARACTERS = [
+const SKIN_CHARACTERS = [
   "plain",
   "freckled",
   "lightly freckled",
@@ -258,7 +258,7 @@ export type RealizedAxes = {
 };
 
 /** How far along it is. Two steps is enough to read at tile scale. */
-export const BEARD_GREYS = ["salt and pepper", "mostly grey"] as const;
+const BEARD_GREYS = ["salt and pepper", "mostly grey"] as const;
 export type BeardGrey = (typeof BEARD_GREYS)[number];
 
 /**
@@ -356,7 +356,7 @@ export type HairStyle = {
  * at BIAS tier — a named cut would compete with the casting the user asked
  * for, but whether the hair is up or down would not.
  */
-export const WORN_STATES = [
+const WORN_STATES = [
   "loose", "tied back", "in a ponytail", "worn up", "half-up",
   /*
     F7 - an ordinary styling state with no entry, so it was unsayable by the
@@ -418,7 +418,7 @@ export type HairModifiers = {
 export const HAIR_PARTS = ["cutLength", "colour", "texture"] as const;
 export type HairPart = (typeof HAIR_PARTS)[number];
 
-export const SKIN_FINISHES = [
+const SKIN_FINISHES = [
   "matte",
   "natural",
   "dewy",

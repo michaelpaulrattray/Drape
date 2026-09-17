@@ -86,6 +86,18 @@ Controls taken 2026-08-26 on the committed config (working law 2):
   the module statically), so the row left the list honestly; a future one is
   the same read.
 
+- **A self-use count is a claim about the tree BEFORE a batch deletion, not
+  after** (#108 slice 4, 2026-09-17): 14 `drop export` rows were "self-used"
+  only by another row of the same table, and the first execution left them
+  as dead locals behind green `tsc`. The slice-4 executor runs an in-file
+  fixpoint (a table row mentioned only by its own declaration is deleted,
+  repeated until nothing moves) and a mentions-in-both-trees pass for the
+  non-exported `Props` interfaces a deleted component orphans. And **one
+  export can surface the moment another leaves**: `ui/popover.tsx:
+  PopoverTrigger` was on nobody's list until `CanvasPopover.tsx` stopped
+  re-exporting it — re-run knip on the executed tree before calling a
+  population clear.
+
 ## Readings (the Janitor appends one line per run; findings become cards)
 
 | date | files | deps | devDeps | exports | types | duplicates | note |
@@ -102,6 +114,7 @@ Controls taken 2026-08-26 on the committed config (working law 2):
 | 2026-09-17 | 19 | 0 | — | 193 | 134 | 2 | **A MEASUREMENT, not an expectation** — nightly `35119015532` at `b411314d`, triggered by hand after #108 slice 1 merged (the cron had not run since `35008863398`), compact. ✅ **Every expectation above landed**: files 69 → 19 (the 16 lobby/export/billing rows and `features/casting/index.ts` were already on the 09-15 list — no new orphan; `useReferralClaim.ts` left it when #1015 wired the hook), deps 1 → 0, **duplicates 19 → 2, the stated floor**. Read by #108 slice 2 (not a patrol): the export population is **458 symbols in 193 files**, dispositioned by class in `docs/specs/UNUSED_EXPORTS_PURGE_MANIFEST_2026-09-17.md` — 153 server dark-born rows are the deletion list, NOT executed yet. ⚠ The differ was found blind to `const { x } = await import()` on the way (36 wired symbols at zero; PR #1017) and every row was read on the repaired reader. |
 | 2026-09-17 | 19 | 0 | — | **102** | 134 | 2 | **A MEASUREMENT on the executing tree** — `pnpm janitor:knip` run locally at #108 slice 2b's branch (not a nightly; the nightly measures it after the merge). **Unused exports 193 → 102 files, 458 → 256 symbols.** The 16 server rows left are the 15 ledger KEEP rows and `COILED_NONBINARY_STYLES`, which knip reports as an unused export and is a plain `const` at HEAD (triage §37c) — so the server population is at its floor and every remaining symbol is client (163), shared (18) or scripts (57), outside the differ's reported scope. Executed: 149 `export` keywords dropped, 19 barrel lines, 5 declarations + 4 db functions the barrel table had wrong (§37b), 28 of 29 hand rows. Files, types and duplicates untouched by this slice, as expected. A next nightly above 102 / 256 is the finding. |
 | 2026-09-17 | 19 | 0 | — | 102 | **0** | 2 | **Nightly `35135458071` at `c8ee90c6` FIRST, then a measurement on the executing tree.** The nightly landed slice 2b's expectation exactly (exports 102 files, types 134, duplicates 2, files 19) and is the reading #108 slice 3 executed against: **271 unused type symbols in 134 files → 0 — the *Unused exported types* section is ABSENT from `pnpm janitor:knip` on the branch.** 221 `export` keywords dropped, 15 declarations deleted, 40 barrel lines and 9 export-list entries removed, 1 inline `import()` type rewritten as a named import (the ceiling above). Manifest `docs/specs/UNUSED_TYPES_PURGE_MANIFEST_2026-09-17.md`; triage §38 argues why no control-instrument reads a type. Exports, files and duplicates untouched by this slice. A next nightly that prints a types section at all is the finding. |
+| 2026-09-17 | 19 | 0 | — | **54** | 0 | 1 | **A MEASUREMENT on the executing tree** (#108 slice 4, not a patrol) — HEAD `d1707381` read locally 101 files / 252 symbols (client 165, shared 18, scripts 53, server 16); after: **54 symbols** = scripts 57 (out, by #1022; the +4 is untracked disposables absent from the worktree) + server 16 (floor) + shared 9 (8 ledger KEEP or its class, 1 held) + client 4 (held: two whose consumers are knip unused FILES, `ProfileCover` and `PrivateEvidenceImage` restored after the gate — a recorded keep and the parked R7 contract). Files 19: `lib/motion.ts` became one and was deleted with the design-system kit it served; `sabotage.mts` is the stated ceiling above. Duplicates 1, the floor. |
 
 ⚠ **THE COLUMNS ABOVE ARE NOT ALL THE SAME KIND OF NUMBER, AND ONE ROW MIXED
 TWO REPORTERS.** Measured Janitor run 2: `pnpm janitor:knip` passes

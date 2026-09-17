@@ -16,9 +16,6 @@ export const SLOT_TABS: SlotTab[] = [
 /** Maximum garments per slot */
 export const MAX_GARMENTS_PER_SLOT = 10;
 
-/** Maximum total garments in inventory */
-export const MAX_TOTAL_GARMENTS = 50;
-
 /** Accepted image MIME types for garment upload */
 export const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 

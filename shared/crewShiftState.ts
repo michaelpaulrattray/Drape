@@ -269,7 +269,7 @@ export function looksLive(
  */
 export const CARD_REF_STORED_LENGTH = 64;
 
-export function normaliseCardRef(raw: string | null | undefined): string | null {
+function normaliseCardRef(raw: string | null | undefined): string | null {
   if (typeof raw !== "string") return null;
   /* ⚠ TRUNCATE FIRST, AND TO THE LENGTH THE COLUMN ACTUALLY HOLDS.
      `crew-shift-start.mts` stores `--card` as `.slice(0, 64)`; comparing the

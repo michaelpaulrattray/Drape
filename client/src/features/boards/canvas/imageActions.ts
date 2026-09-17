@@ -6,7 +6,7 @@
 import { toast } from "sonner";
 
 /** Build a same-origin proxy URL to bypass CORS for stored images */
-export function proxyUrl(originalUrl: string, download = false): string {
+function proxyUrl(originalUrl: string, download = false): string {
   const params = new URLSearchParams({ url: originalUrl });
   if (download) params.set("download", "1");
   return `/api/image-proxy?${params.toString()}`;

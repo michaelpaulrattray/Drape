@@ -8,7 +8,6 @@
  */
 
 import { ASSETS_BASE_URL } from "@shared/const";
-import { CORE_FACE_SHAPES } from "@shared/castingOptions";
 import type { CastingClarification } from "@shared/castingClarification";
 
 // Canonical value lists live in shared/castingOptions.ts (R2 dedupe — the
@@ -19,15 +18,6 @@ export {
   SKIN_TEXTURES,
   SKIN_FINISHES,
   CHAR_OPTIONS,
-  HAIR_FAMILIES_FEMALE,
-  HAIR_FAMILIES_MALE,
-  HAIR_LENGTHS,
-  HAIR_TEXTURES,
-  HAIR_FRINGES,
-  HAIR_PARTINGS,
-  HAIR_VOLUMES,
-  HAIR_TUCKS,
-  HAIR_FADES,
   HAIR_FLYAWAYS,
 } from "@shared/castingOptions";
 
@@ -73,22 +63,6 @@ export const EYE_PRESETS = [
   { label: "Brown", hex: "#634e34", image: `${ASSETS_BASE_URL}/eye-colors/brown.png` },
   { label: "Dark", hex: "#3b2b22", image: `${ASSETS_BASE_URL}/eye-colors/dark.png` },
   { label: "Black", hex: "#1c1c1c", image: `${ASSETS_BASE_URL}/eye-colors/black.png` },
-];
-
-// ============ Face ============
-
-// "Random" is a client-only affordance in the face-shape picker
-export const FACE_SHAPES = [...CORE_FACE_SHAPES, "Random"];
-
-// ============ Body ============
-
-export const BODY_TYPES = [
-  { label: "Ultra Thin", value: "Ultra Thin" },
-  { label: "Slim", value: "Slim" },
-  { label: "Athletic", value: "Athletic" },
-  { label: "Muscular", value: "Muscular" },
-  { label: "Curvy", value: "Curvy" },
-  { label: "Petite", value: "Petite" },
 ];
 
 // ============ Credits ============

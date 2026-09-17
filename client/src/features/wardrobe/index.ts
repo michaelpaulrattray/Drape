@@ -1,12 +1,8 @@
 export { RackPanel } from "./components/RackPanel";
-export { GarmentCard } from "./components/GarmentCard";
-export { QualityBadge } from "./components/QualityBadge";
-export { WardrobeEmptyState, WardrobeImageOverlay, WardrobeShortcutsBar } from "./components/WardrobeCanvasOverlays";
-export { GarmentOverlay } from "./components/GarmentOverlay";
+export { WardrobeEmptyState, WardrobeImageOverlay } from "./components/WardrobeCanvasOverlays";
 export { DecompositionDrawer } from "./components/DecompositionDrawer";
 export { LayersPanel } from "./components/LayersPanel";
 export { useWardrobeStore } from "./stores/useWardrobeStore";
-export { useWardrobeInventory } from "./hooks/useWardrobeInventory";
 export { useWardrobeGeneration } from "./hooks/useWardrobeGeneration";
 export { useModelSetup } from "./hooks/useModelSetup";
 export { WardrobeWorkspaceSection } from "./WardrobeWorkspaceSection";

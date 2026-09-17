@@ -4,10 +4,13 @@ import type { CSSProperties } from "react";
  * Severity, in greyscale plus the one red (brief 00 §4).
  *
  * `features/admin/adminConstants.ts` and `features/moderator/moderatorConstants.ts`
- * each carry `SEVERITY_COLORS` and `CATEGORY_COLORS` as Tailwind tint classes —
+ * each carried `SEVERITY_COLORS` and `CATEGORY_COLORS` as Tailwind tint classes —
  * seven tints between them: blue, amber, red, emerald, purple, orange, red
  * again. The foundation allows exactly one colour beside the accent, `--error`,
  * and only for genuinely urgent state. Seven tints collapse to three looks.
+ * (Both constants were DELETED from both files on 2026-09-17, #108 slice 4,
+ * once section 02's repaint had left them with no reader — the deletion the
+ * paragraph below said belonged to that section.)
  *
  * **Category is deliberately not here.** It is carried by the mono action
  * string (`stripe.refund.manual`), which says more than a colour can and reads

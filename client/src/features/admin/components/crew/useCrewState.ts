@@ -32,7 +32,7 @@ const CREW_STALE_MS = 30_000;
  * page, and a reader of `useCrewState` should not have to know the staff bar
  * to find out how often it polls.
  */
-export const CREW_LIVE_INTERVAL_MS = STAFF_REFRESH_INTERVAL_MS;
+const CREW_LIVE_INTERVAL_MS = STAFF_REFRESH_INTERVAL_MS;
 
 export function useCrewState(enabled: boolean, options?: { live?: boolean }) {
   const live = options?.live === true;

@@ -80,24 +80,6 @@ function RowBody({
   );
 }
 
-export function SettingsRow({
-  label,
-  note,
-  children,
-}: {
-  label: ReactNode;
-  note?: ReactNode;
-  children?: ReactNode;
-}) {
-  return (
-    <div className="dp-set__row">
-      <RowBody label={label} note={note}>
-        {children}
-      </RowBody>
-    </div>
-  );
-}
-
 /**
  * A row the prototype draws as its own bordered card.
  *

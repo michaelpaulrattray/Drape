@@ -30,7 +30,7 @@ import { AUDIT_ACTIONS, type AuditAction } from "./auditActions";
  * is honest; a chip whose filter drops the row is not) and it is the direction
  * the founder ruling above the abuse bucket asks for.
  */
-export const AUDIT_CATEGORIES = ["billing", "model", "security", "moderator", "abuse"] as const;
+const AUDIT_CATEGORIES = ["billing", "model", "security", "moderator", "abuse"] as const;
 
 export type AuditCategory = (typeof AUDIT_CATEGORIES)[number];
 

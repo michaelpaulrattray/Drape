@@ -3662,3 +3662,52 @@ before believing a type row.
 `OpenKindSide`'s note (*"nothing here is per-side"*) stays as prose. A
 docblock is deleted with its declaration by default; the executor prints
 every one it takes so the exceptions are a decision, not a loss.
+
+## §39. #108 slice 4 — the client and shared remainder, on #1022's road
+
+Janitor session foreman-20260917-1220, run #280. Manifest
+`UNUSED_EXPORTS_PURGE_MANIFEST_2026-09-17_SLICE4.md`, written and executed in
+one session: knip's client 165 + shared 18 (101 files / 252 symbols at
+`d1707381`) → client 2 held, shared 9 held or ledger-kept. `scripts/` (53)
+stays out by the decision.
+
+### 39a. Two roads, one card, and the road each directory takes was decided, not chosen
+
+The relay's #1022 decision (2026-09-17 02:05Z) is the provenance: `client/`
+by knip + a consumer checker + tsc, because a client module is reached by the
+bundle or not at all — no request path, no ledger row; `shared/` through the
+differ with its reported scope widened (PR #1030), because a shared constant
+the server imports can be a control. The widening's first run over 379
+boundaries found NO death on this list and three off it — one a reader limit
+(`drizzle/` not walked; repaired in the same PR), two DECIDED at their commits
+(§ the manifest's table). The 18 split **8 ledger-kept, 1 held, 9 dark-born
+and self-consulted → `export` dropped**. `MODELS` is held under `FALLBACK`'s
+own §29e reasoning — a convenience aggregate over members production imports
+by name — because deleting one twin while KEEP-ing the other on that argument
+would make the ledger say two things about one shape.
+
+### 39b. What "self-used" hid, and the pass that closes it
+
+A `drop export` row is one its module still mentions. Fourteen of them were
+mentioned ONLY by another row of the same table (`transitionFast` by
+`hoverScale`, the shadcn `CardHeader` by its export list alone), so the first
+execution left fourteen dead locals behind green tsc. The executor now runs an
+in-file fixpoint after the table's edits — a table row mentioned only by its
+own declaration is deleted, repeated until nothing moves — and a second pass
+took eleven non-exported `Props`/helper declarations the deletions orphaned,
+told apart from ones already unused at `main` by counting in both trees.
+**The class: a self-use count taken BEFORE a batch deletion is a claim about
+the tree before it, not after.**
+
+### 39c. A barrel that is not a chart, and a design system that was not one
+
+`admin/overview/index.ts` re-exported `useChartTokens` with a comment saying
+"for recharts props"; `section07-guard.test.ts` selects chart files by
+`f.text.includes("recharts")`, so the barrel had been a *chart file* to the
+guard since the day it was written, passing because the comment named the
+helper. Removing the dead re-export left the comment and reddened the guard —
+the comment changed, not the guard. And `components/design-system/` — named
+in `CLAUDE.md` as "the Home.tsx look" — had been the conveyor `Button` and
+four files nothing imported since the hero-only homepage (`b8e8a2d9`,
+2026-04-03); the four files and `lib/motion.ts` (their only consumer) are
+deleted and the line is corrected at the bytes.

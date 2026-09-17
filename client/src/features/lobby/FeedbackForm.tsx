@@ -22,7 +22,7 @@ import { logRawFailure, readableFailure } from '@/lib/failureSentence';
 
 export type FeedbackMode = 'feedback' | 'bug';
 
-export const FEEDBACK_COPY: Record<
+const FEEDBACK_COPY: Record<
   FeedbackMode,
   { title: string; placeholder: string; category: 'feedback' | 'other' }
 > = {

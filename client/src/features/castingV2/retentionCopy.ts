@@ -29,7 +29,7 @@ const DAY = 24 * HOUR;
  * noise on a sheet nobody is at risk of losing; later and there is no
  * meaningful chance to act.
  */
-export const EXPIRY_NOTICE_MS = 2 * DAY;
+const EXPIRY_NOTICE_MS = 2 * DAY;
 
 /** Whole days since a moment, floored — "today" until it has actually been one. */
 function daysSince(then: number, now: number): number {
