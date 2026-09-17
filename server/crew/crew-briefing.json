@@ -1,7 +1,7 @@
 {
-  "edition": 442,
-  "updatedAt": "2026-09-16T23:20:00.000Z",
-  "shift": "BUG 1014 IS FIXED AND ON PRODUCTION, IN TWO STEPS. NOTHING NEEDS AN ANSWER FROM YOU.\n\nWhat it was: the code that takes credits from a customer had two names for the same thing - an old name from the points-to-credits rename and the real one. About thirty of the tests that promise 'this road never charges anyone' were written against the old name only. So a road could have charged through the real name and still passed a test that says it charges nothing. No customer was charged wrongly - this was a hole in the safety net, not a fall through it - but the net had a hole.\n\nStep one (first change): every one of those thirty tests now watches both names, plus the wrapper every new-studio charge goes through. Before I trusted a single one, I broke each on purpose through the other name and confirmed it went red - and did the same on the old code to prove the hole was real: on the old code, 29 of the 30 stayed green while a charge was planted through the real name. On the new code, all 30 go red. Four of them also forbade a refund name that has never existed in the product; they now name the real refund road. The outside reviewer read the whole diff, checked every widened test against the files it reads, and passed it.\n\nStep two (second change): with the net repaired, the old name was deleted and its six callers now use the real one - the same function, so nothing about pricing or paths moves. Two suites had been watching the two names as two separate spies; they now watch the one thing there is. Reviewer passed it too. Both changes are live; the health check reads the new build.\n\nTwo things found on the way, filed, not done: the PRICE table has the same two-names shape (card 1025 - all its callers are in the old studio that is due to be retired whole; recommendation on the card is to clear it now anyway, one small change). And a process cost: because I marked each change ready AND added the review label, the reviewer ran twice on each - $17.19 for four reviews where two were owed. That is card 1026 for the Retro, with the fix in two lines; I will not do it again either way.\n\nNothing on your desk. 108's remainder still waits on the Retro's tooling decision (1022); 129 still waits on your refused rolls.",
+  "edition": 443,
+  "updatedAt": "2026-09-17T00:40:00.000Z",
+  "shift": "CARD 1025 IS DONE AND ON PRODUCTION. NOTHING NEEDS AN ANSWER FROM YOU.\n\nWhat it was: the table of casting prices had two names for the same thing - an old name from the points-to-credits rename and the real one - the same shape as bug 1014 last night, one step over. Nothing charged wrong: both names pointed at the exact same table, so every price was the same number either way. What rotted was that a reader looking for every place a price is used would find only half of them.\n\nWhat changed (one small change): the old name is deleted and its 28 uses - all in the old studio's image and refine roads, plus the public 'what does it cost' read - now use the real name. Same table, same numbers, same roads. Before I trusted it I counted every use in the code rather than taking the card's figure (the card said 30; it is 28), confirmed that no screen in the app calls the public read the alias sat behind, and ran the compile, the eleven nearest test suites (312 checks) and both map checks. The outside reviewer then read the whole diff at the billing bar and passed it with no findings - it re-proved the alias was a pure second name at the source, checked every swapped line is value-identical, and confirmed nothing else in the product was bolted to the dying name. The architecture map loses exactly the one row it had for the alias.\n\nFound on the way, filed, not done (card 1028): the credit BALANCE has the same two-names shape too, one size up - a whole set of three old 'points' endpoints that duplicate the three 'credits' ones exactly, with no screen calling them since 3 February. Not folded in, because removing endpoints is a change to the product's public surface and wants its own small change with the figures re-stated; recommendation on the card is to clear it.\n\nOne process note, no cost this time: the first gate run went red on the rule that a change description may not carry the word that makes GitHub auto-close a card. Fixed the description, re-ran, green. And per last night's card 1026 I marked the change ready ONCE and did not add the review label - one review, one bill.\n\nNothing on your desk. 108's remainder still waits on the Retro's tooling decision (1022); 129 still waits on your refused rolls; 1006, 1022 and 1026 are all the Retro's, whose clock fires about 19 September.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-16T23:10:47.793Z",
+      "readAt": "2026-09-17T00:27:29.536Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5033,6 +5033,13 @@
   ],
   "pipeline": [
     {
+      "id": "price-alias-1025",
+      "title": "Card 1025: the casting price table has one name - the old alias is gone from its 28 uses and the public cost read; no behaviour change",
+      "status": "merged",
+      "prNumber": 1027,
+      "note": "Background work, Housekeeping switch. Worked example: the old name and the real one pointed at the same table, so a price was the same number either way; now the table has one name and every use spells it. Counted at the code before branching (28, not the card's 30); no screen calls the public read it sat behind. Gate green, reviewer PASS with no findings at the billing bar. Sibling found and filed: card 1028 (the balance endpoints wear two names too). Production build 0a70840f."
+    },
+    {
       "id": "money-guards-1014",
       "title": "Bug 1014: the 'this road charges nothing' tests watch the real deduction name as well as its alias, and the alias is gone - two changes, no behaviour change",
       "status": "merged",
@@ -6703,9 +6710,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0917e-foreman",
+      "id": "queue-shape-0917f-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 34 open, one closed, one filed. Every background band but Housekeeping is empty, and Housekeeping's one takeable card is the new one",
+      "detail": "Closed tonight: 1025 (the price table's two names - live). Filed: 1028 (the balance endpoints' two names - three old 'points' reads duplicating the 'credits' ones, no caller since 3 February; recommendation to clear it, one small change). 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 open with its remainder on 1022, 129 held on its own data (re-read tonight: still true, not waiting on you). Nothing on your desk. Left as before: 1006, 1022 and 1026 (the Retro's - its clock fires about 19 September), 1003 (a design decision at phone width)."
+    },
+    {
+      "id": "queue-shape-0917e-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 34 open, one closed, two filed. The Bugs band is empty again",
       "detail": "Closed tonight: 1014 (the money-guard bug, both halves live). Filed: 1025 (the price table's two names - same class, old studio, recommendation to clear it now) and 1026 (a money-path change marked ready and labelled for review is reviewed twice - $17.19 tonight; for the Retro). 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 open with its remainder on 1022, 129 held on its own data (re-read tonight: still true, not waiting on you). Nothing on your desk. Left as before: 1006 and 1022 (the Retro's), 1003 (a design decision at phone width)."
     },
@@ -7344,7 +7358,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-16T23:10:47.792Z",
+    "readAt": "2026-09-17T00:27:29.535Z",
     "items": [
       {
         "issueNumber": 108,
