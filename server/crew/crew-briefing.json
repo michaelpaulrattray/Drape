@@ -1,7 +1,7 @@
 {
-  "edition": 444,
-  "updatedAt": "2026-09-17T02:05:00.000Z",
-  "shift": "CARD 1028 IS DONE AND ON PRODUCTION. NOTHING NEEDS AN ANSWER FROM YOU.\n\nWhat it was: the credit balance had two names in the product's own API - the real 'credits' reads and an old 'points' copy of them left over from the February rename. Same shape as bugs 1014 (the charging function) and 1025 (the price table), one size up: three whole endpoints. No screen in the app has called the old ones since 3 February, so nobody saw anything wrong; what rotted was that anyone tightening the real balance read would fix one of two identical doors and leave the twin open under the old name.\n\nWhat changed (one small change): the three old endpoints and their mounting line are deleted. Nothing else moved - the real 'credits' reads are untouched, byte for byte. Before I trusted it I counted every mention in the code rather than taking the card's figures: zero callers in any screen (checked back through the history to the rename), the mount was its only reach on the server, and the three test hits on the word are the database table, not the endpoints. One correction to the card on the way: the old balance read returned a SMALLER answer than the real one, not an identical one - nothing turns on it, since nothing called either. Compile, ten nearest test suites (126 checks) and both map checks green; the gate went green on its first run; the outside reviewer read the whole diff at the billing bar and passed it with no findings - it re-proved the zero-caller claim at the bytes, checked nothing else was bolted to the dying endpoints, and re-counted the architecture map itself.\n\nProven on production after the deploy, not just in tests: asking the live server for the old endpoint now answers 'no such thing'; asking for the real price read answers as before.\n\nAlso fixed in the same change: the number of API endpoints your access-control law quotes was stale (it said 270 from 23 August; the product stood at 273 yesterday). It is 270 again now - by coincidence, not by standing still - and the paragraph says so with the old readings kept beside it.\n\nSweep of the family (1014, 1025, 1028 - the credit surface wearing two names): nothing else of that shape is left. What still carries the old word is the database table itself, which is kept on purpose - renaming a table is the kind of change that is yours to run, not a shift's.\n\nNothing on your desk. 108's remainder still waits on the Retro's tooling decision (1022); 129 still waits on your refused rolls; 1006, 1022 and 1026 are all the Retro's, whose clock fires about 19 September. Every background band is now empty of takeable cards - the Janitor's clock is the next thing that fires, about 18 September.",
+  "edition": 445,
+  "updatedAt": "2026-09-17T02:35:00.000Z",
+  "shift": "ONE CARD ON YOUR DESK, AT YOUR OWN ASKING: THE SETTINGS PAGE ON A PHONE (CARD 1003).\n\nYou said in the terminal: 'card 1003 i want it on my desk no point deferring it'. It was parked as not urgent; it is a desk card now. Nothing is broken and every control works - it is a layout choice on a screen you signed off, at a width nobody had asked about.\n\nEverything else stands as the last edition said: 108's last slice is unblocked (the relay decided the tooling question, card 1022, at noon), 129 still waits on your refused rolls, and the reviewer is back on every money and auth change.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -304,6 +304,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "settings-phone-layout-1003",
+      "issueNumber": 1003,
+      "state": "open",
+      "filedAt": "2026-09-17T02:35:00.000Z",
+      "title": "Settings on a phone: the section list takes half the screen. Chips above the pane, or the list first?",
+      "productImpact": "Open Settings on a phone (390px wide) and it keeps its desktop shape: the section list (Profile, Usage, Billing, Members, Notifications, Security) takes about half the width, the content is squeezed into a narrow column beside it, the avatar's 'JPG, PNG or WebP, up to 5 MB' line wraps one word per line, the Upload button is clipped at the right edge, and the fields are pushed below the fold. Every control still works, awkwardly. No customer data is at risk. This was found while photographing the Profile labels for card 841 and is older than that change - the before frame shows it identically. The fix is a layout choice on a screen you signed off, so it is yours: at phone width the section list should stop being a sidebar.",
+      "workedExample": "The two frames in your gallery from card 841 ('Profile, phone (before)' and 'Profile, phone (after)') show it as it is today: half the screen is the list, the other half is a cramped column. Under option A the list becomes a single row of small chips across the top and the whole width below is the section you chose. Under option B you first see the list on its own, tap a section, and it slides in with a back control. Both are the same on a desktop, where nothing changes.",
+      "options": [
+        {
+          "key": "A",
+          "label": "A - a row of section chips above the pane (recommended)",
+          "consequence": "One screen, no back control, the current section always visible. The six names fit as chips at 390px; the pane takes the full width below. Desktop is untouched."
+        },
+        {
+          "key": "B",
+          "label": "B - the list first, the section slides in behind it",
+          "consequence": "Two screens on a phone: pick, then read. Cleanest for long sections, but adds a back control and a step every time. Desktop is untouched."
+        },
+        {
+          "key": "C",
+          "label": "C - leave it",
+          "consequence": "Stays as it is: usable but awkward on a phone. Nothing else changes."
+        }
+      ],
+      "recommendation": "A. It keeps Settings one screen on every device, which is how it already reads on a desktop, and the six section names are short enough to sit as chips at 390px. B is the answer only if sections grow long. Whichever you pick, the change stays behind a phone-width media query, so nothing moves on a desktop or tablet."
+    },
     {
       "id": "money-labeller-built-909-open",
       "issueNumber": 958,
