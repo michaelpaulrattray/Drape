@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0bb1f1211a6b498c"
+    "sourceFingerprint": "af97f1218b6ffea7"
   },
   "domains": [
     {
@@ -8238,36 +8238,6 @@
       "input": "none",
       "rateLimited": false,
       "file": "server/routes/newsletter.ts"
-    },
-    {
-      "id": "route:points.checkBalance",
-      "namespace": "points",
-      "name": "checkBalance",
-      "type": "query",
-      "auth": "protected",
-      "input": "open",
-      "rateLimited": false,
-      "file": "server/routes/credits.ts"
-    },
-    {
-      "id": "route:points.getBalance",
-      "namespace": "points",
-      "name": "getBalance",
-      "type": "query",
-      "auth": "protected",
-      "input": "none",
-      "rateLimited": false,
-      "file": "server/routes/credits.ts"
-    },
-    {
-      "id": "route:points.getTransactions",
-      "namespace": "points",
-      "name": "getTransactions",
-      "type": "query",
-      "auth": "protected",
-      "input": "open",
-      "rateLimited": false,
-      "file": "server/routes/credits.ts"
     },
     {
       "id": "route:profile.get",
@@ -34690,20 +34660,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:moderatorReconciliation.unfreezeAccount",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:points.checkBalance",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:points.checkBalance",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:points.getTransactions",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:points.getTransactions",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {

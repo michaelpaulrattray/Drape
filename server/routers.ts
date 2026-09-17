@@ -8,7 +8,7 @@
 import { systemRouter } from "./_core/systemRouter";
 import { router } from "./_core/trpc";
 import { authRouter } from "./routes/auth";
-import { creditsRouter, pointsRouter } from "./routes/credits";
+import { creditsRouter } from "./routes/credits";
 import { waitlistRouter } from "./routes/waitlist";
 import { newsletterRouter } from "./routes/newsletter";
 import { modelsRouter } from "./routes/models";
@@ -38,7 +38,6 @@ export const appRouter = router({
   system: systemRouter,
   auth: authRouter,
   credits: creditsRouter,
-  points: pointsRouter,
   waitlist: waitlistRouter,
   models: modelsRouter,
   generation: generationRouter,
