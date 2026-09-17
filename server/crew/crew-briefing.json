@@ -1,7 +1,7 @@
 {
-  "edition": 447,
-  "updatedAt": "2026-09-17T05:30:00.000Z",
-  "shift": "THE REVIEWER NO LONGER BILLS YOU TWICE FOR ONE LOOK. NOTHING NEEDS AN ANSWER FROM YOU.\n\nWhat it was (card 1026): when a shift finished a change on a money path it did two things within a second of each other - marked it ready, and put the 'needs a Fable look' label on it. Each of those starts a review, and the reviewer was deliberately built so one cannot cancel the other (an older fix, card 434, for a real bug the other way). So the same change got two full verdicts from the same reviewer on the same code. Your own rule, from 28 August: 'we are doubling up on our fable reviews and its burning through my credits.'\n\nHow often, measured before anything was built: over the 500 newest review runs (9 days), four changes were reviewed twice - three of them yesterday. The two on Tuesday night alone cost $17.19 for verdicts nobody needed twice.\n\nWhat changed (PR 1032, live): when the label starts a review on a change that was already going to be reviewed on its own (a money path, or a substantial diff), it first asks whether another review of that exact code is already running or finished. If so it stands down and says why. Worked example: last night's pair on card 1014 - asked the new question, the second run answers 'run 35159141107 already covers this code' and spends nothing.\n\nThe one thing it will never do: silence a review that was owed. A small change that only gets a review BECAUSE of the label always gets it. A sibling review that failed or was cancelled does not count as cover. If the question itself cannot be answered (the tool is down, the API is slow), the answer is 'review'. It may spend a verdict; it may never skip one. That property has 23 tests, and the shift broke the fix ten different ways on purpose to prove the tests catch each one - they caught all ten.\n\nThe same rule is now written where the shifts read their orders: mark ready OR label, not both.\n\nNothing on your desk but card 1003 (the Settings page on a phone), which is there at your own asking. 129 still waits on your refused rolls, not on you. The Janitor's clock fires tomorrow; the Retro's on the 19th - it has card 1006 (the order of your Next Up list) and three written questions waiting for it.",
+  "edition": 448,
+  "updatedAt": "2026-09-17T08:45:00.000Z",
+  "shift": "THE BACKGROUND WORK IS DONE. NEXT UP IS EMPTY. ONE CARD ON YOUR DESK (1003, the Settings page on a phone).\n\nYou asked why the page still showed two cards in Next Up and two on offer under Housekeeping: that was the 15:26 snapshot, and every shift since closed quiet, which ships no edition. This edition refreshes it. Card 108 (your 'clear them') is done to the last row a shift may touch - five rows are held by your own earlier 'nothing is deleted' rule and wait on your word. Card 129 (the refusal loop) has its logging half live on your account and waits on a few refused rolls from you before the patrol half can be built. Neither is a job a shift can take, so both left the ordered queue and carry a hold that says what they wait on.\n\nEvery switch reads zero on offer: Bugs 0, Small fixes 0, Performance 0, Security 0 (1 parked, yours), Housekeeping 0 (2 held on you), Process 1 (the Retro patrol's own note, worked on its Saturday clock), Casting upkeep 0 (1 held on you). The team parks itself on the next quiet close and wakes on your reply or a patrol clock. The rest of the board is the roadmap, 26 cards, waiting for you to open a rung.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-17T05:26:10.601Z",
+      "readAt": "2026-09-17T08:41:54.113Z",
       "items": [
         {
           "issueNumber": 16,
@@ -6765,9 +6765,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0917i-foreman",
+      "id": "queue-shape-0917h-relay",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 31 open, 26 of them roadmap. Nothing on offer under any switch; NEXT UP empty; one card on your desk (1003).",
+      "detail": "Refreshed by the relay at 18:45 after three quiet shifts left the 15:26 counts standing. 108 and 129 left NEXT UP (held on him: five protected rows; refused rolls). 1003 is on his desk. 1006 is the Retro patrol's, due Saturday. 45 parked by him. The team parks on the next quiet close."
+    },
+    {
+      "id": "queue-shape-0917i-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 31 open, one closed (1026), nothing filed. Every background band is empty of takeable cards; the Janitor's clock fires tomorrow",
       "detail": "Closed this shift: 1026 (the doubled reviewer bill - live). 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 (held rows only, none a Janitor's call), 129 held on its own data (not waiting on you). Your desk: 1003 at your own asking. Left for the Retro (clock ~19 September): 1006, which asks a design question about how your Next Up list is ordered - nothing on it is mis-ordered today, so waiting costs nothing. One flake seen once during the full test run (a throwaway git worktree's registration vanishing under load) is recorded on card 969 with its log line, not filed."
     },
@@ -7434,22 +7441,7 @@
     190
   ],
   "nextUp": {
-    "readAt": "2026-09-17T05:26:10.600Z",
-    "items": [
-      {
-        "issueNumber": 108,
-        "title": "Janitor #1 (knip): 173 unused exports, 115 unused types, 18 duplicate exports - triage through the un-wiring differ, not by hand",
-        "urgent": false
-      },
-      {
-        "issueNumber": 129,
-        "title": "Refusal loop — a patrol: log refused and passed prompts, find trigger words, measured word→replacement pairs into the author's rewrite list (founder verdict, 2026-08-26)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "slice 1's rows — PR #1007 merged (9d517932); slice 2's patrol needs refused AND passed prompts on record first. Not waiting on him."
-        }
-      }
-    ]
+    "readAt": "2026-09-17T08:41:54.112Z",
+    "items": []
   }
 }
