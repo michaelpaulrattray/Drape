@@ -72,8 +72,9 @@ export const declKey = (file: string, symbol: string) => `${file}::${symbol}`;
 
 export type Tree = {
   /**
-   * symbol -> EVERY declaring file under `server/`, repo-relative with forward
-   * slashes, in walk order. A one-entry list is the ordinary case.
+   * symbol -> EVERY declaring file under `REPORTED_ROOTS` (`server/`, `shared/`),
+   * repo-relative with forward slashes, in walk order. A one-entry list is the
+   * ordinary case.
    */
   decls: Map<string, string[]>;
   /** `declKey` -> production files importing THAT declaration */
@@ -82,8 +83,8 @@ export type Tree = {
   selfUsesAt: Map<string, number>;
   /**
    * Every declaration of every exported name ANYWHERE in the walked tree,
-   * `client/` and `shared/` included — the out-of-scope ones are what turn *"I
-   * could not follow this chain"* into *"this import belongs to someone else"*.
+   * `client/` included — the out-of-scope ones are what turn *"I could not
+   * follow this chain"* into *"this import belongs to someone else"*.
    * See `creditedDeclarations`' own `allDeclaringFiles` docblock.
    */
   declsAnywhere: Map<string, string[]>;
@@ -130,18 +131,47 @@ export const selfUsesOfName = (tree: Tree, symbol: string): number => {
 };
 
 /**
+ * THE REPORTED SCOPE — where a declaration must live to be a symbol this reader
+ * REPORTS on (`decls`). Importers are looked for wider (`server`, `client`,
+ * `shared`), and `declsAnywhere` indexes wider still; this list governs only
+ * what can be named in a finding, a timeline row or a ledger verdict.
+ *
+ * ⚠ `shared/` JOINED IT 2026-09-17 (#1022, decided by the relay), AND THE
+ * SENTENCE THAT KEPT IT OUT WAS FALSE AT THE BYTES. `readTree`'s docblock read
+ * *"`server/` only — the same scope `sweep-uncalled-exports-disposable.mts`
+ * uses, so the two instruments are talking about the same population"* — and
+ * the sweep's `scanRoots` has been `["server", "shared"]` since 2026-08-24
+ * (opus-1157 §2, ruled fable-1508 §1). So for three weeks the deletion ledger
+ * held SIXTEEN `shared/` rows whose importers this reader answered `null` for:
+ * a `HELD` or `TAKE` verdict on any of them would have refused as `unreadable`,
+ * and — the direction that matters — a `shared/` constant the server imports
+ * (`BadRequestError`, `MODELS`, `AUDIT_CATEGORIES`) could lose its last server
+ * importer and the timeline would report nothing, because a symbol never
+ * counted cannot be seen to FALL to zero. That is the same silence the
+ * namespace hop and the destructured dynamic import were each closed for.
+ *
+ * `client/` stays OUT on purpose, and it is a scope rather than an oversight:
+ * a client module is reached by the bundle or not at all — there is no request
+ * path for a control to fall off, no ledger row keyed on it, and knip + tsc are
+ * the whole truth there (#1022's own reading). `scripts/` stays out as the
+ * differ's entrypoint says: a ceremony is not a request path.
+ */
+export const REPORTED_ROOTS = ["server/", "shared/"] as const;
+export const isReportedPath = (repoRelative: string): boolean =>
+  REPORTED_ROOTS.some((root) => repoRelative.startsWith(root));
+
+/**
  * Read one tree.
  *
- * Declarations are looked for under `server/` only — the same scope
- * `sweep-uncalled-exports-disposable.mts` uses, so the two instruments are
- * talking about the same population. Importers are looked for wider.
+ * Declarations are looked for under `REPORTED_ROOTS` (`server/` and `shared/`).
+ * Importers are looked for wider.
  */
 export function readTree(rootArgument: string): Tree {
   /*
     ⚠ THE ROOT IS RESOLVED, AND A RELATIVE ONE USED TO READ NOTHING AT ALL.
     `show` strips `root.length + 1` characters to make a path repo-relative,
     so a root of "." chopped TWO characters off every path — `server/x.ts`
-    became `rver/x.ts`, the `startsWith("server/")` gate below never matched,
+    became `rver/x.ts`, the `isReportedPath` gate below never matched,
     and the reader declared ZERO exports while happily reporting that it had
     walked 1,471 files. Found 2026-08-22 by an operator typing the most
     natural thing there is:
@@ -169,9 +199,11 @@ export function readTree(rootArgument: string): Tree {
   /*
     ⚠ TWO INDEXES, AND THE SECOND IS NOT A MIRROR OF THE FIRST (#274).
 
-    `decls` is the population this reader REPORTS on — `server/` only, the same
-    scope `sweep-uncalled-exports-disposable.mts` takes, so the two instruments
-    name the same symbols. `declsAnywhere` is wider and is never reported: it
+    `decls` is the population this reader REPORTS on — `REPORTED_ROOTS`, which
+    is `server/` and `shared/`, the same scope `sweep-uncalled-exports-disposable.mts`
+    scans, so the two instruments name the same symbols (it said `server/` only
+    here until #1022, and that was the reader, not the sweep — see
+    `REPORTED_ROOTS`). `declsAnywhere` is wider and is never reported: it
     exists solely so `creditedDeclarations` can tell *"this import reached a
     declaration of the name that is not one of mine"* from *"I could not follow
     this chain"*. Collapsing them was the first version of the sweep's own fix
@@ -190,7 +222,7 @@ export function readTree(rootArgument: string): Tree {
       const anywhere = declsAnywhere.get(name) ?? [];
       if (!anywhere.includes(here)) anywhere.push(here);
       declsAnywhere.set(name, anywhere);
-      if (!here.startsWith("server/")) continue;
+      if (!isReportedPath(here)) continue;
       const inScope = decls.get(name) ?? [];
       if (inScope.includes(here)) continue;
       inScope.push(here);
