@@ -94,6 +94,7 @@ const pr = (over: Partial<PrReading> = {}): PrReading => ({
   files: ["scripts/thing.mts"],
   patches: [],
   gate: "green",
+  staticShapes: "green",
   supplyChain: "green",
   review: "none",
   verdictCount: 0,
@@ -348,6 +349,54 @@ describe("decideMergeAction — the branch order is the contract", () => {
     /* Without this the three arms above would all pass over a rule that simply
        never merges anything. */
     expect(decideMergeAction(pr({ gate: "green", supplyChain: "green" }), ctx).kind).toBe("merge");
+  });
+
+  /*
+    ⚠ THE SEMGREP JOB — #1034 split it out of `gate-checks` into `static-shapes`,
+    and the split is a decoration unless this tool reads the new job: the
+    merging account is an admin and `enforce_admins` is off, so a required
+    check alone binds nobody here (the `supplyChain` paragraph above, which is
+    the same lesson). Four states, the gate's own three roads.
+  */
+  it("STOPS on a red static-shapes job — a green gate-checks is not enough on its own", () => {
+    const a = decideMergeAction(pr({ gate: "green", staticShapes: "red" }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/static-shapes FAILED/);
+  });
+
+  it("waits while the semgrep job is still running", () => {
+    const a = decideMergeAction(pr({ staticShapes: "running" }), ctx);
+    expect(a.kind).toBe("wait");
+    expect(a.kind === "wait" && a.reason).toMatch(/static-shapes/);
+  });
+
+  it("STOPS when gate-checks ran on a MERGEABLE head and static-shapes did not — silence is not a pass", () => {
+    const a = decideMergeAction(pr({ gate: "green", staticShapes: "absent" }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/no `static-shapes` job did/);
+  });
+
+  it("when BOTH jobs are absent it is the gate's own wait (one run, no run yet), not the semgrep stop", () => {
+    const a = decideMergeAction(pr({ gate: "absent", staticShapes: "absent" }), ctx);
+    expect(a.kind).toBe("wait");
+    expect(a.kind === "wait" && a.reason).toMatch(/no gate-checks run/);
+  });
+
+  it("SYNCS a conflicting PR whose semgrep job is absent — the conflict explains the silence", () => {
+    const a = decideMergeAction(
+      pr({ gate: "absent", staticShapes: "absent", supplyChain: "absent", mergeable: "CONFLICTING", mergeStateStatus: "DIRTY" }),
+      ctx,
+    );
+    expect(a.kind).toBe("sync-main");
+  });
+
+  it("⚠ the GATE is answered before semgrep: a diff failing both is told about the tests first", () => {
+    const a = decideMergeAction(pr({ gate: "red", staticShapes: "red" }), ctx);
+    expect(a.kind === "stop" && a.reason).toMatch(/gate-checks FAILED/);
+  });
+
+  it("merges when gate-checks, static-shapes and Socket are all green — the control on the arms above", () => {
+    expect(decideMergeAction(pr({ gate: "green", staticShapes: "green", supplyChain: "green" }), ctx).kind).toBe("merge");
   });
 
   it("⚠ the GATE is answered before Socket: a diff failing both is told about the gate", () => {
@@ -834,11 +883,13 @@ describe("🟡 3 · the job names are asserted against the workflows, not mirror
   it("reads the real gate.yml's jobs", () => {
     expect(gateJobs).toContain("gate-checks");
     expect(gateJobs).toContain("founder-gate");
+    expect(gateJobs).toContain("static-shapes");
   });
 
   it("the names this tool keys on are declared by those files", () => {
     expect(refuseUnknownJobName("review", reviewJobs, "review.yml")).toBeNull();
     expect(refuseUnknownJobName("gate-checks", gateJobs, "gate.yml")).toBeNull();
+    expect(refuseUnknownJobName("static-shapes", gateJobs, "gate.yml")).toBeNull();
   });
 
   it("REFUSES a name the workflow does not declare, naming what it does", () => {

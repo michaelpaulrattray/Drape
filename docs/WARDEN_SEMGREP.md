@@ -13,7 +13,11 @@ gate.
 `python -m venv ~/.semgrep-venv && ~/.semgrep-venv/Scripts/pip install
 semgrep==1.174.0`, then put `~/.semgrep-venv/Scripts` on `PATH` for the
 `pnpm` call. It runs natively on this Windows machine (proven 2026-08-26).
-**In the gate since Warden patrol #1 (2026-08-26)**: `gate.yml`'s "Static
+**In the gate since Warden patrol #1 (2026-08-26)** — and **its own job,
+`static-shapes`, beside `gate-checks` since #1034 (2026-09-19)**, because it
+needs no `pnpm install` and was ~100 s of a ~500 s serial job spent in front
+of the tests; `scripts/pr-merge-in-order.mts` reads that job by name, since a
+required check alone binds no admin merge here (#460). `gate.yml`'s "Static
 shapes (semgrep, OSS rulesets)" step installs the same pinned version with
 pipx and runs `pnpm warden:semgrep` — the rulesets and flags live in
 `package.json` alone, so the step and a hand reading cannot drift. The version
