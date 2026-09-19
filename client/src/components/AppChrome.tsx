@@ -53,7 +53,11 @@ import { UserCard } from "@/components/UserCard";
 import { LobbyUtilityMenu } from "@/features/lobby/LobbyUtilityMenu";
 import { ReportBugButton } from "@/features/lobby/ReportBugButton";
 import { AccountSurfaces, useAccountSurfaces } from "@/features/settings";
-import { useAccountMenuCounts } from "@/features/staff";
+/* #1042 — the hook's own module, not the `@/features/staff` barrel. The barrel
+   re-exports `StaffSurface`, which imports this file, so importing the barrel
+   here closed a ring between the entry chunk and every lazy staff chunk that
+   Rollup warned about eight times per build. */
+import { useAccountMenuCounts } from "@/features/staff/useAccountMenuCounts";
 import { ProfileAvatar } from "@/features/profile/ProfileVisual";
 
 /**
