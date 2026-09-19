@@ -1,7 +1,7 @@
 {
-  "edition": 453,
-  "updatedAt": "2026-09-19T02:17:02.333Z",
-  "shift": "THE RETRO READ THE TEAM'S WEEK. ONE THING YOU ASKED ABOUT IS FIXED; NOTHING WAITS ON YOU.\n\nThis is the every-seven-days seat that checks the shifts' own reports against what actually happened, and looks for the same mistake made twice. What it found:\n\n1. Every report told the truth. 108 shift reports this week, every one verified by the machine and a sample of them opened by hand: every 'merged' was merged, every 'closed' card is closed (96 of 96), every deploy receipt is where the report says it is. Nothing was claimed that did not happen.\n\n2. Every one of the 123 changes merged this week traces to a card, a rule of yours, or a red gate. Nobody built anything because they were bored.\n\n3. Fixed tonight, from your own night of 16 September: you ordered five cards in one sentence ('527 do it, 129 build it, 105-108 clear them') and your Next Up list showed them in the exact reverse, oldest first. Now, when you give an order like that, the relay marks each card with its place (1, 2, 3...) and your page, the shifts' priority view and the runner all put them in your order. A card you did not rank sits exactly where it did. Worked example in the test: those five cards, without the marks, come out 105-106-108-129-527; with them, 527-129-105-106-108. Production build eef0a853.\n\n4. One repeat worth a card: three separate shifts paid a seven-minute gate run on the same test, each after a local check that said all was well - and each wrote 'add that test to the pre-push list' into a report nothing reads back. The pre-push tool cannot see that test by design (it finds tests by the files they name, and this one names none), so card 1037 makes the tool run it always, and the shifts' standing orders were corrected tonight: they had been telling shifts the pre-push tool did not exist for two weeks after it was built.\n\n5. Two smaller corrections, in the orders rather than on a card: a court's bill is read from the provider's books, not from the calls the script remembers (the reviewer court said $13.48; the books said $16.74); and a clean-up that says 'no more of these' now has to name the tool that looked, or call itself a floor - the money-path fix this week ran seven cards in four days, each finding the next.\n\nSpent: nothing. Nothing on your desk. The Warden fires tomorrow, the Janitor Monday.",
+  "edition": 454,
+  "updatedAt": "2026-09-19T03:31:53.702Z",
+  "shift": "ONE SMALL FIX FOR THE TEAM'S OWN PRE-PUSH CHECK IS IN. NOTHING WAITS ON YOU.\n\nThis is an ordinary night shift, working the Process card the Retro filed this morning.\n\n1. Done: the pre-push check the shifts run before opening a change ('pnpm preflight') now always runs the three tests it could never see. Those three find their own subjects by scanning the whole repository, so nothing pointed at them and three changes in one week paid a seven-minute gate run each to learn what a one-minute local check should have said. The check prints them on its own line now, and a test built the same way in future cannot be added without joining that list - the list is checked against the repository itself, both ways, so it cannot rot the way a hand-kept one would.\n\n2. The card said two such tests; the check itself found a THIRD the hour it was written (the one that makes sure every note saying \"such-and-such test covers this\" points at a test that exists). It is on the list with its reason. Production build b21c69e2.\n\n3. Worth knowing: the automatic reviewer could not start on this change - twice, in under a second, spending nothing, the same shape as 12 September when your Fable allowance ran out. This change touches only the team's own tooling, so it went in on the gate's green, as the standing orders say. If a money or sign-in change comes up before the reviewer is back, that one waits for it.\n\n4. The three Performance cards the Machinist filed this morning were read at the code and none is small enough to take alongside: the bundle-size budget (1035) wants the gate layout that 1034 decides first, so it is noted on the card and left for that shift.\n\nSpent: nothing. Nothing on your desk. The Warden fires tomorrow, the Janitor Monday.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-19T02:17:05.431Z",
+      "readAt": "2026-09-19T03:32:06.156Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5091,6 +5091,13 @@
   ],
   "pipeline": [
     {
+      "id": "preflight-always-1037",
+      "title": "Card 1037: the pre-push check now always runs the three tests it could never see - and it found the third one itself",
+      "status": "merged",
+      "prNumber": 1039,
+      "note": "Three changes in one week went red at the gate on the same test after a green local check, and three shifts wrote the lesson where nothing reads it. The check finds tests by the files they name; these three name none (they scan the repository for their own subjects), so it was blind to them by design. Now they run every time and the list is held equal to the repository both ways - the card said two, the check found a third. Merged on the gate: the automatic reviewer died at start twice, spending nothing (the allowance shape from 12 Sep), and this touches only team tooling. Production build b21c69e2."
+    },
+    {
       "id": "order-label-1006",
       "title": "Card 1006: your stated order wins - the relay marks each card with its place and every view of Next Up follows it",
       "status": "merged",
@@ -6817,9 +6824,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0919b-retro",
+      "id": "queue-shape-0919c-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 32 open, none takeable tonight beyond the one landed (1037 closed); NEXT UP empty; the Warden fires tomorrow. The automatic reviewer is not starting (allowance shape) - money and sign-in changes will wait for it",
+      "detail": "Read at 03:31Z: 32 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged from the Retro) - roadmap rungs you have not reached rather than neglected work. Three Performance cards are open (1034, 1035, 1036), each sized at the code tonight as bigger than a batch item; 1035 is noted as waiting on 1034. The reviewer: two runs on PR 1039 died at start in under a second at zero cost (is_error, the #218/#884 shape). Team tooling merges on the gate alone; a money or auth change opened before it returns is held ready with its label, per the orders.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0919b-retro",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 34 open, one filed by the Retro (1037 - the pre-push tool runs the two tests it cannot see), one Retro card built and closing (1006). NEXT UP empty; the Warden's clock fires tomorrow",
       "detail": "The Retro's weekly read: every shift report this week checked out at the artifacts (108 of 108 verified, 96 of 96 closed-card claims true), all 123 merges trace to a card or a rule of yours, and one repeat was carded - three shifts red on the same test after three green local checks. 17 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged from this morning) - roadmap rungs you have not reached rather than neglected work.\n\nNothing here needs you."
     },
@@ -7530,7 +7544,7 @@
     192
   ],
   "nextUp": {
-    "readAt": "2026-09-19T02:17:05.430Z",
+    "readAt": "2026-09-19T03:32:06.155Z",
     "items": []
   }
 }
