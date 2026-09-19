@@ -35,6 +35,7 @@ import {
   ORDERED_BAND_RULE,
   compareOrderedBand,
   filedKey,
+  rankFromLabels,
   sortOrderedBand,
 } from "../scripts/lib/orderedBand.mts";
 import {
@@ -317,5 +318,120 @@ describe("what the priority view PRINTS about its own order", () => {
     const lines = rendered(WORKED_EXAMPLE).split("\n");
     const floated = lines.findIndex((line) => line.includes("#250"));
     expect(lines[floated + 1]).toContain("urgent");
+  });
+});
+
+/**
+ * HIS STATED ORDER — #1006. On 2026-09-16 he ordered five cards in one
+ * sentence (*"527 do it, 129 build it, 105-108 clear them"*) and his page
+ * showed him 105, 106, 108, 129, 527: the comparator had only `urgent` and age
+ * to read, and his five were numbered in almost the opposite order to his
+ * intent. The relay now files his sequence as `order:<n>` labels and ONE reader
+ * turns them into a rank both consumers put above everything else.
+ *
+ * The fixture is that night's five cards with their real filing order, so
+ * every arm below is the exact case he found.
+ */
+describe("his stated order (#1006) — `order:<n>` outranks urgent and age", () => {
+  type Card = { number: number; title: string; createdAt: string; urgent: boolean; order?: number };
+  /* Filed oldest → newest: 105, 106, 108, 129, 527. He wanted 527, 129, 105, 106, 108. */
+  const HIS_FIVE: Card[] = [
+    { number: 105, title: "clear them", createdAt: "2026-08-26T00:00:00Z", urgent: false, order: 3 },
+    { number: 106, title: "clear them too", createdAt: "2026-08-26T00:00:01Z", urgent: false, order: 4 },
+    { number: 108, title: "and this", createdAt: "2026-08-26T00:00:02Z", urgent: false, order: 5 },
+    { number: 129, title: "build it", createdAt: "2026-08-27T00:00:00Z", urgent: false, order: 2 },
+    { number: 527, title: "do it", createdAt: "2026-09-04T00:00:00Z", urgent: false, order: 1 },
+  ];
+  const labelsOf = (card: Card) => [
+    { name: "founder-ordered" },
+    ...(card.urgent ? [{ name: "urgent" }] : []),
+    ...(card.order === undefined ? [] : [{ name: `order:${card.order}` }]),
+  ];
+  const queueRow = (card: Card): Row => ({
+    number: card.number, title: card.title, createdAt: card.createdAt, labels: labelsOf(card),
+  });
+  const issue = (card: Card): OrderedIssue => ({
+    number: card.number, title: card.title, createdAt: card.createdAt, labels: labelsOf(card), body: "",
+  });
+  const viewOrder = (cards: Card[]) => orderedBandRunningOrder(cards.map(queueRow)).map((r) => r.number);
+  const pageOrder = (cards: Card[]) =>
+    planNextUpItems({ ordered: cards.map(issue), appliedReasons: new Map<number, string>() })
+      .map((item) => item.issueNumber);
+
+  it("shows him the sequence he said, not the reverse he was shown that night", () => {
+    expect(pageOrder(HIS_FIVE)).toEqual([527, 129, 105, 106, 108]);
+    expect(viewOrder(HIS_FIVE)).toEqual([527, 129, 105, 106, 108]);
+    /* And without the labels the fixture reproduces the defect exactly. */
+    const unlabelled = HIS_FIVE.map(({ order: _o, ...card }) => card);
+    expect(pageOrder(unlabelled)).toEqual([105, 106, 108, 129, 527]);
+  });
+
+  it("puts a ranked card above an unranked URGENT one — his sequence is the top limb", () => {
+    const cards: Card[] = [
+      { number: 900, title: "urgent, unranked", createdAt: "2026-08-01T00:00:00Z", urgent: true },
+      { number: 950, title: "ranked, newer, not urgent", createdAt: "2026-09-10T00:00:00Z", urgent: false, order: 1 },
+    ];
+    expect(pageOrder(cards)).toEqual([950, 900]);
+    expect(viewOrder(cards)).toEqual([950, 900]);
+  });
+
+  it("never moves a card he did not rank — unranked cards keep the #718 order among themselves", () => {
+    const ranked: Card = { number: 10, title: "ranked", createdAt: "2026-09-08T00:00:00Z", urgent: false, order: 1 };
+    const withOne = [...WORKED_EXAMPLE.map((c) => ({ ...c })), ranked];
+    expect(pageOrder(withOne)).toEqual([10, 250, 400, 100, 500]);
+    expect(viewOrder(withOne)).toEqual([10, 250, 400, 100, 500]);
+  });
+
+  it("two cards he gave the SAME rank fall through to urgent-then-oldest", () => {
+    const cards: Card[] = [
+      { number: 20, title: "rank 1, newer, not urgent", createdAt: "2026-09-05T00:00:00Z", urgent: false, order: 1 },
+      { number: 30, title: "rank 1, older, urgent", createdAt: "2026-09-01T00:00:00Z", urgent: true, order: 1 },
+      { number: 40, title: "rank 1, oldest, not urgent", createdAt: "2026-08-01T00:00:00Z", urgent: false, order: 1 },
+    ];
+    expect(pageOrder(cards)).toEqual([30, 40, 20]);
+    expect(viewOrder(cards)).toEqual([30, 40, 20]);
+  });
+
+  it("reads only a bare positive integer — a malformed label is NO rank, not a guess", () => {
+    expect(rankFromLabels(["order:3"])).toBe(3);
+    expect(rankFromLabels(["order:12"])).toBe(12);
+    for (const bad of ["order:0", "order:01", "order: 2", "order:two", "order:-1", "order:1.5", "order:", "ordered:1"]) {
+      expect(rankFromLabels([bad]), bad).toBeNull();
+    }
+    expect(rankFromLabels(["founder-ordered", "urgent"])).toBeNull();
+    expect(rankFromLabels([])).toBeNull();
+  });
+
+  it("two rank labels on one card resolve to the smaller, the same way in both views", () => {
+    expect(rankFromLabels(["order:4", "order:2"])).toBe(2);
+    const cards: Card[] = [
+      { number: 50, title: "rank 3", createdAt: "2026-08-01T00:00:00Z", urgent: false, order: 3 },
+      { number: 60, title: "slip: two labels", createdAt: "2026-09-01T00:00:00Z", urgent: false },
+    ];
+    const rows = cards.map(queueRow);
+    rows[1].labels.push({ name: "order:4" }, { name: "order:2" });
+    const issues = cards.map(issue);
+    issues[1].labels.push({ name: "order:4" }, { name: "order:2" });
+    expect(orderedBandRunningOrder(rows).map((r) => r.number)).toEqual([60, 50]);
+    expect(planNextUpItems({ ordered: issues, appliedReasons: new Map() }).map((i) => i.issueNumber)).toEqual([60, 50]);
+  });
+
+  it("the comparator ranks the pair the same whichever way round it is handed", () => {
+    const a = { rank: 2, urgent: true, createdAt: "2026-08-01T00:00:00Z", issueNumber: 1 };
+    const b = { rank: null, urgent: true, createdAt: "2026-07-01T00:00:00Z", issueNumber: 2 };
+    const c = { rank: 1, urgent: false, createdAt: "2026-09-01T00:00:00Z", issueNumber: 3 };
+    expect(compareOrderedBand(a, b)).toBeLessThan(0);
+    expect(compareOrderedBand(b, a)).toBeGreaterThan(0);
+    expect(compareOrderedBand(c, a)).toBeLessThan(0);
+    expect(sortOrderedBand([a, b, c]).map((r) => r.issueNumber)).toEqual([3, 1, 2]);
+    /* A consumer that has not learned the field at all still gets the #718 order. */
+    const legacy = { urgent: true, createdAt: "2026-08-01T00:00:00Z", issueNumber: 7 };
+    expect(compareOrderedBand(legacy, b)).toBeGreaterThan(0);
+  });
+
+  it("names the label in the one rule sentence both views print", () => {
+    expect(ORDERED_BAND_RULE).toContain("order:<n>");
+    expect(ORDERED_BAND_RULE).toContain("#1006");
+    expect(ORDERED_BAND_RULE).toContain("#718");
   });
 });

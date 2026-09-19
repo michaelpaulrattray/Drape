@@ -23,7 +23,7 @@ import {
   holdReasonFromBody,
 } from "../../shared/crewNextUpHold.js";
 
-import { sortOrderedBand } from "./orderedBand.mts";
+import { rankFromLabels, sortOrderedBand } from "./orderedBand.mts";
 
 /** A row as `gh issue list --json number,title,labels,body,createdAt` gives it. */
 export type OrderedIssue = {
@@ -252,6 +252,10 @@ export function planNextUpItems(input: {
       issueNumber: Number(row.number),
       title: String(row.title).slice(0, 300),
       urgent: labels.includes("urgent"),
+      /* His stated place, if he gave one — read by the one reader all three
+         views share (#1006), so the page and the terminal cannot disagree on
+         what an `order:` label means. */
+      rank: rankFromLabels(labels),
       /* ⚠ NOT stringified here — `filedKey` in `scripts/lib/orderedBand.mts`
          owns what a missing date means, once, for all three views. */
       createdAt: row.createdAt,
