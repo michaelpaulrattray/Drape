@@ -136,6 +136,17 @@ what lets it be asked with a number. The remaining ~11 s between the
 interpreter's log line and the poll seeing the roll is UNREAD by this
 instrument (it reads the client; the call census reads the server) and is the
 next thing to look at if the chip is ever a brief.
+⚠ **READ ON RUN 4 (2026-09-19), AND IT IS THE FIXTURE, NOT THE PRODUCT.** The
+third Follow sample put the chip at 28.1 s with the interpreter at 15.5 s, so
+the remainder was 12.6 s (13.9 and 13.9 s on the first two) — and the same
+roll's first tile was DISPATCHED 9 s after its operation row existed, on the
+dev world's REMOTE database. On production, read off the timestamps every
+roll already carries (`scripts/_machinist4-roll-phases-disposable.mts`, 256
+rolls over 60 days): **operation row → first slice dispatched is 0 s at the
+median and 1 s at p95.** The dev drive pays a round trip to Railway per
+statement; production's database is beside the process. So the chip's wait on
+a customer's screen is the interpreter plus one poll, and the "~11 s" above is
+not a number to chase. Run 4 §D carries the table.
 
 **What the instrument could not read, stated so an absence is never a zero
 (doctrine entry 1):** Retry, because no tile failed on any of the five rolls;
@@ -823,3 +834,259 @@ run 2 was 2026-09-05, so this run is on the day; the clock counts from today.
 Reader hardened (PR #824) with its control driven; ledger appended; one card
 filed; #743 and #129 given their numbers; two read-only disposables written and
 guarded. Nothing spent.
+
+## Run 4 — 2026-09-19 10:33–11:3x AEST (Machinist, patrol #4; weekly clock, on the day)
+
+Readers: `scripts/machinist-ledger-read.mts` (14d / 60d / 7d), `pnpm
+machinist:bundle`, `pnpm machinist:bench` (all five rows, the test row for the
+first time), `pnpm machinist:latency` (the free walk, then `--spend --only
+retry` and `--only follow` on the dev bot), the gate's own step timings off four
+runs, and three read-only disposables named where they are quoted. Windows:
+**14d** = the 14 days to 2026-09-19 00:34Z, **60d** and **7d** to the same
+instant, against `hayabusa.proxy.rlwy.net:23768` (production) at `d9e04659`.
+Raw outputs in `output/_machinist4/` (untracked). **Spent: ≈$0.81 of house
+money and 160 dev credits off verify-bot** (estimate on the shift row before it
+fired: ≈$0.95 + 180 — the Retry arm found no tile and spent nothing).
+
+⚠ **The denominator, first, and it is smaller than run 3's:** **no paid
+operation has run on production since 2026-09-09.** Every window read this
+morning ends on that day; the 7-day window holds ZERO generation operations.
+The 14-day window is therefore run 3's LAST week re-read (25 ops, all user 1),
+and nothing in §A–§B is new evidence — it is the same rows, quoted so the
+fortnight is on the record. Ten idle days is not a defect; it is the N1 gate
+waiting on his eye (his sequencing ruling), and this ledger does not pretend a
+quiet fortnight moved a number.
+
+### A. Wall-clock per paid operation
+
+| kind | window | n | median | p95 | max | statuses |
+|---|---|---|---|---|---|---|
+| `castingV2.roll` | 14d | 19 | 46 s | 341 s | 341 s | 14 succeeded · 5 partial |
+| `castingV2.roll` | 60d | 256 | 47 s | 126 s | 1,495 s | 229 · 22 partial · 5 failed |
+| `castingV2.refine` | 14d | 3 | 106 s | 116 s | 116 s | 3 succeeded (run 3's three) |
+| `castingV2.refine` | 60d | 225 | 120 s | 285 s | 390 s | 192 · 33 failed |
+| `castingV2.retry` | 14d | 3 | 41 s | 46 s | 46 s | 2 · 1 failed (run 3's three) |
+| `model.delete` | 14d | 0 | — | — | — | run 3's 58 have left the window; none since 08-31 |
+
+- The 60-day roll and refine rows are IDENTICAL to run 3's (same n, same
+  medians) — the window's leading edge moved from 07-14 to 07-21 over days
+  that held nothing, and its trailing edge gained nothing.
+- The 341 s roll is the window's p95 now because the window shrank to 19
+  rolls; it is one roll whose settlement waited 294 s on a stranded slice's
+  lease (§D's phase read), not a change in the road.
+- Refine: 0 of 3 past the wall in the window; 9 of 225 over 60 days — the
+  fourth run to read the same nine. No refine has crossed the wall since
+  2026-08-21, and none has run since the three run 3 read.
+
+### B. The roll at slice grain — the worst number, re-read on the same rows
+
+| window | slices paid for | arrived | refused by the engine | stranded | **did not arrive** |
+|---|---|---|---|---|---|
+| 14d (run 4) | 155 | 147 | 6 (3.9%) | 2 (1.3%) | **8 — 5.2%** |
+| 14d (run 3) | 243 | 232 | 9 (3.7%) | 2 (0.8%) | **11 — 4.5%** |
+| 60d | 2,051 | 1,971 | 41 (2.0%) | 39 (1.9%) | **80 — 3.9%** |
+
+**Cross-check on the money ledger: 8 refunds / 160 credits (14d), 80 / 1,600
+(60d) — AGREES on both.** Every classified loss `content_policy` (6 of 6 in
+the window; 25 + 1 of 41 over 60 days, beside 15 `capability`). At the sheet:
+**5 of 19 rolls came back short a picture — one sheet in four**, exactly run
+3's ratio on the subset of its rows that survive in the window. **#129 is still
+the brief and is `blocked`** (waits on `founder-ordered`); the fortnight's
+numbers are on the card. The class cannot move until the card is taken.
+
+### C. Face scans and the carried-geometry sentence
+
+**1 paid look in the window (2026-09-08), $0.10; 0 render-written; library 2
+rows over 1 face, all time; carried-geometry writer 0 over 0** — run 3's §C
+denominator stands and the sentence is not quoted as a defect. His $30/month
+model is unexercised this fortnight because nothing was exercised.
+
+### D. Where a roll's seconds go on PRODUCTION — read for the first time, off timestamps the rows already carry
+
+The header has said since run 1 that a roll's per-slice timing is UNREAD
+(rolls log their census to the container). The rows carry three timestamps
+that bracket it anyway — the operation's `createdAt` (written at `begin`,
+AFTER the interpreter), each slice's `generations.createdAt` (written at
+dispatch) and `completedAt`, and the operation's `completedAt` — and
+`scripts/_machinist4-roll-phases-disposable.mts` reads them (second
+resolution, read-only):
+
+| phase | 14d (19 rolls) p50 / p95 / max | 60d (256 rolls) p50 / p95 / max |
+|---|---|---|
+| pre-dispatch: operation row → first slice asked for | **0 / 0 / 1 s** | **0 / 1 / 8 s** |
+| dispatch spread: first → eighth slice | 0 / 0 / 0 s | 0 / 0 / 2 s |
+| render: first dispatch → last slice done | 46 / 53 / 54 s | 47 / 76 / 350 s |
+| post: last slice done → operation completed | 0 / 0 / 294 s | 0 / 0 / 1,155 s |
+| operation total | 46 / 54 / 341 s | 47 / 124 / 1,495 s |
+
+**So on production a roll's wall IS the render** — eight slices asked for
+inside the same second, the slowest of the eight answering at ~46 s — and the
+database work around it is under a second. **What is NOT in this table is the
+interpreter**, which runs before the operation row exists and persists no
+timing (the dev log read it at 4.4 / 14.5 / 15.5 s over three Follows); it is
+the only server-side second the customer waits on that no production row
+records. The two long tails are settlement waiting on a stranded slice's lease
+(294 s and 1,155 s — the deploy-collision class CLAUDE.md names as accepted).
+
+⚠ **This table CORRECTS the header's "~11 s" sentence and the correction is
+written beside it.** The dev drive's chip remainder (12.6–13.9 s over three
+samples) is the dev world's REMOTE database — the same roll's first tile was
+dispatched 9 s after its row existed on dev, against 0 s here.
+
+### E. Provider books — one court, ten idle days
+
+- **OpenRouter (text), account-wide: $20.91 over 8 active days** — but
+  **$16.74 of it is one day, 2026-09-13, 12 requests on `openai/gpt-6-astra`:
+  the reviewer court (#513).** Without it: $4.17 over 7 days, ≈$0.60/day, all
+  `claude-sonnet-5`, and since 09-09 only 27 requests / $0.30 in total (the
+  crew and rite text calls). ⚠ **The court's own record says $13.48 over 9
+  calls; the provider's books say $16.74 over 12.** Three requests and $3.26
+  the record does not carry — most likely the first five re-run when the
+  court's cost reading was corrected, the roll-up file holding only the last
+  invocation. Recorded on #513 as a comment (the card is closed and stays
+  closed); noted for the Retro, whose clock fires today: **a court closes its
+  spend line at the provider's day total, never at the sum of the calls it
+  remembers.** Estimate → record → books: *"single-digit"* → ~$12 → $13.48 →
+  **$16.74.**
+- **fal (image), off our surviving rows: $0.40 — 4 roll renders.** A floor
+  and this fortnight a very low one: candidate rows are purged at expiry, and
+  the last roll is ten days old, so 151 of the window's 155 slices have no
+  surviving row to price. Run 3's "the floor is close to the number" held
+  because run 3 read a live fortnight; this one is a cold one.
+- **Steady state with nothing running: ≈$0.04/day of text** (crew and rite).
+  Run 3's ≈$2.20/day was a dogfood fortnight; this is what the house costs when
+  nobody rolls. Balances are a reading for the rite's receipt, never a finding.
+
+### F. The client and the house — every reader, and the bench's first full row
+
+**Bundle** (`pnpm machinist:bundle`, 2026-09-19 00:47Z at `d9e04659`): **21
+chunks, 651.6 kB gzip JS in total, entry chunk 452.4 kB**, CSS 58.3 kB (67.4
+on run 3). Run 3 read ONE chunk of 636.9 kB; **#832 (closing #744) split the
+ten staff pages out on 12 Sep and measured the entry at 451.8 kB** — this run
+reads it 0.6 kB heavier a week later, i.e. flat. `AdminOverview` is its own
+116 kB chunk carrying `recharts` and its lodash; `DrapeStudio` 28 kB;
+`ModeratorDashboard` 15 kB; `AdminCrew` 12 kB. Shares (never sizes):
+`recharts` 11.3% · `react-dom` 11.0% · casting 6.3% · pages 5.8% · boards
+5.4% · framer-motion 4.8% · lodash 3.8%. **#744's close left three things for
+this seat**: a bundle budget the gate reads (nothing reddens if the entry
+grows back) — **carded, #1035**; the customer-route split measured as a
+navigation trade, never assumed — **carded, #1036**; `three` with no importer
+— already gone from `package.json` (#108's slices), nothing to file.
+
+**House commands** (`pnpm machinist:bench`, hyperfine 1.20.0, this machine,
+3 runs + 1 warmup unless stated; the ledger reads were the only other load,
+and the test row ran alone):
+
+| command | run 4 median | run 3 median | note |
+|---|---|---|---|
+| `pnpm check` | **24.2 s** | 116.3 s | #830 (closing #825) runs the four passes in parallel — the seat's own bench confirms the card's 28 s |
+| `pnpm build` | 8.4 s | 9.4 s | |
+| `pnpm architecture:check` | 7.6 s | 8.7 s | |
+| `pnpm capability:check` | 1.1 s | 1.2 s | |
+| **`pnpm test`** | **130 s (2 m 10 s, 1 run)** | refused (red on main) | **the row's first reading**: green on `main` at `d9e04659`; #743 closed 09-11 |
+
+Run 3's direct `pnpm test` read 591 s with 14 timeouts under a concurrent
+`pnpm check`; alone and after #743 it is 130 s. **On the gate's runner the
+same suite is 190–302 s** (§G) — the runner is roughly half this machine.
+
+**Interaction latency** (`pnpm machinist:latency`, dev server on `:3000` from
+the main tree, dev database, verify-bot 823 on session 90 — `c19610ad…`, open
+until 2026-09-19 13:30Z — headless Edge 1440×900; the seat's FIRST reading on
+its own clock, the 09-12 table being the build shift's):
+
+| action → what changes | bar | n | p50 | p95 | max | verdict | 09-12 |
+|---|---|---|---|---|---|---|---|
+| keep → tile ring | optimistic | 8 | 24 ms | 28 ms | 28 ms | under 100 ms | 26 |
+| keep → dock face | optimistic | 8 | 24 ms | 28 ms | 28 ms | under 100 ms | 26 |
+| unkeep → tile ring | optimistic | 8 | 23 ms | 27 ms | 27 ms | under 100 ms | 25 |
+| unkeep → dock face | optimistic | 8 | 23 ms | 27 ms | 27 ms | under 100 ms | 25 |
+| chip edit → the box | optimistic | 1 | 20 ms | 20 ms | 20 ms | under 100 ms | 15 |
+| follow → rail pill | optimistic | 1 | 16 ms | 16 ms | 16 ms | under 100 ms | 22 |
+| follow → family chip | server-bound | 1 | 28,076 ms | — | — | **OVER 1 000 ms**, known, under the 45 s regression line | 18,328 / 28,4xx |
+| retry → tile face | server-bound | 0 | — | — | — | absent — roll 111's two failed tiles are not the roll on screen (114); the drive reads the active roll only | absent |
+| roll again → first skeleton | — | 0 | — | — | — | not re-read (`--only`); 34 ms on 09-12 | 34 |
+
+Keep/Unkeep hold at one or two frames on the seat's clock as they did on the
+build shift — #554's fix is still on the customer's hand. The chip's third
+sample (28.1 s; interpreter 15.5 s on the dev log) is what produced §D: the
+remainder is the fixture, and on production the chip waits the interpreter
+plus one 2.5 s poll. The Retry row is a limit of the instrument, stated: it
+will read only when the ACTIVE roll holds a failed tile, which on a fixture
+sheet means a Roll again that happens to lose a slice. Roll 115 (this run's
+Follow) landed 8/8 in 57 s; verify-bot 19,200 → 19,080 (−160, +40 from roll
+111's two slices settled since 09-12).
+
+### G. The shift process — #543's numbers, third reading on the clock, and where a gate run's minutes go
+
+| figure | **7d** (to 09-19) | 14d | run 3's 7d (to 09-12) | baseline (05 Sep) | target |
+|---|---|---|---|---|---|
+| cards landed per session | **1.38** (109 / 79 landing of 93) | 1.58 (274 / 173 of 190) | 1.73 | 1.18–1.27 | 3 |
+| gate minutes per card | **13.85** (1,510 / 109) | 17.43 | 20.0 | 23.2–28.25 | 10 |
+| gate runs per card | **1.65** (180 / 109) | 2.05 | 2.36 | 3.1 | 1.5 (aim) |
+
+**Gate runs per card fell 2.36 → 1.65 and is within a tenth of the card's
+aim** — preflight (`pnpm preflight` exists now) and #830's 24 s `pnpm check`
+are the likeliest movers, and the 14d column (2.05) sits between the two weeks
+as it should. **Gate minutes per card fell 20.0 → 13.85** on the same lever.
+**Cards per session fell 1.73 → 1.38** — a week of Janitor slices and one-card
+shifts against a week of batches; the reader prints means and the spread is
+not in it (noted on run 3, still not carded — #543 is closed on his word).
+Unattributed in the 7d: #952 (2026-09-15, merged outside any closed row); in
+the 60d: 105, all but two before `crew_shift_runs` existed. Overlap 97/98, as
+every reading has said. The reader read on the first attempt all three times
+— #824's retries are in and were not needed today.
+
+**Where a run's minutes go** — the seat's first reading at STEP grain, off the
+`gate-checks` job of the last four green runs (`gh run view --json jobs`; ids
+35203275641 · 35184393989 · 35180775578 · 35176080211, 17 Sep):
+
+| step | four readings | share |
+|---|---|---|
+| Unit tests | **302 · 189 · 287 · 290 s** | ~50% |
+| Static shapes (semgrep) | 103 · 66 · 98 · 100 s | ~18% |
+| Typecheck (`pnpm check`) | 45 · 28 · 41 · 42 s | ~7% — was 86–94 s serial before #830 |
+| Design-law controls | 29 · 20 · 27 · 28 s | ~5% |
+| checkout · install · atlas · capability · the rest | the remainder | |
+
+The job is ONE serial chain (`gate.yml` L170–327); semgrep needs neither the
+install nor the build and runs in front of the tests on the same runner. With
+runs-per-card at its aim, **the wall-clock of one run is the only lever left
+on the 10-minute target — carded, #1034**: a parallel job for semgrep (and the
+two browser controls if it pays), measured over ten runs before and after; a
+vitest shard as the second arm, its doubled runner minutes stated.
+
+### H. Attempted and reverted; carded
+
+Nothing attempted on the product. **Carded this run, filed not worked: #1034
+(the gate's serial job, §G), #1035 (a bundle budget the gate reads, §F), #1036
+(the customer-route split measured, §F)** — the last two are #744's close
+comment's own list for this seat, the first is this run's reading. Receipts
+as comments, no reopen: #513 (the court's $13.48 against the books' $16.74),
+#129 (the fortnight's numbers). Not filed: the interpreter's unpersisted
+latency (§D) — a number this ledger has now named three times from a dev log
+and never from a production row; it becomes a card the day the chip or the
+roll's wall is a brief, and the roll census already carries a
+`stage: "interpreter"` log line that a persisted column could read from.
+
+### I. THE WORST NUMBER — run 4
+
+**Unchanged from run 3, on the same rows, because nothing new ran: one sheet
+in four came back short a picture — 5 of 19 rolls partial, 8 of 155 paid
+slices did not arrive (5.2%), every classified one the engine refusing to
+draw it (`content_policy`, 6 of 6).** #129 holds it and is `blocked` on a
+label, so the seat states plainly that this number CANNOT move until that
+card is taken. **Runner-up, and the one this seat can move: gate minutes per
+card at 13.85 against 10, with runs-per-card already at its aim — #1034.**
+The client half of the charter: click-to-paint READ on the seat's own clock
+now (Keep 24 ms); page load and the canvas STILL unread, and #1036 is the
+first brief that would read page load on its way to its own answer.
+
+### J. Close
+
+Seat: Machinist, patrol #4, one seat, shift `foreman-20260919-1033`. Clock:
+run 3 was 2026-09-12, so this run is on the day; the clock counts from today.
+No PR. Ledger appended; header corrected beside its own sentence (§D); three
+cards filed; two receipts. Three read-only disposables written and guarded
+(`_machinist4-sheet-`, `_machinist4-roll-phases-`, `_machinist4-spend-`).
+One dev server on `:3000`, killed; `dev-servers` reads none. Spent ≈$0.81
+house + 160 dev credits, both recorded before and after.

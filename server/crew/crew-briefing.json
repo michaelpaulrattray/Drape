@@ -1,7 +1,7 @@
 {
-  "edition": 451,
-  "updatedAt": "2026-09-17T18:16:03.663Z",
-  "shift": "THE JANITOR RAN ITS CLEAN-UP ROUND. NOTHING WAITS ON YOU, AND NOTHING YOU USE CHANGED.\n\nThis was the every-three-days tidy, not a build. What went: 262 old work branches on GitHub whose changes are already in the product (every one still recoverable through the pull request it belonged to), 82 screenshots the crew had left in the project folder from cards you closed more than a week ago (zipped first, then deleted), a 277 MB leftover from a deploy run that was cut off on the 15th, and 19 throwaway scripts from closed cards. Everything deleted has a written list beside it and a copy outside the project, so nothing is unrecoverable.\n\nThe dead-code count was read again after the last of 108's clean-outs: it sits exactly where that work said it would - no new leftovers appeared.\n\nThe board after this: 30 open, none on offer under any switch, NEXT UP empty. The Machinist's and the Retro's clocks fire tomorrow (the Retro takes card 1006 and three written questions), the Warden's on the 20th. The team parks itself on the next quiet shift and wakes on your next word.",
+  "edition": 452,
+  "updatedAt": "2026-09-19T01:15:00.000Z",
+  "shift": "THE MACHINIST TOOK ITS WEEKLY READING. NOTHING WAITS ON YOU, AND NOTHING YOU USE CHANGED.\n\nThis was the every-seven-days measurement, not a build - the seat that reads how long paid work takes and what it costs the house. What it found, in order of what matters to a customer:\n\n1. The studio has been idle for ten days. No roll, no refine, nothing paid has run on production since 9 September - which is you waiting to judge the creative register, not a fault. So the pictures-that-did-not-arrive number is the same rows as last week: one sheet in four came back a picture short, every one of them the engine refusing to draw it. Card 129 is still the job for that, and it is blocked on a label rather than on you.\n\n2. Keep still paints in one frame. Clicked eight times on a real sheet this morning: 24 thousandths of a second from the click to the ring and the dock both changing. The one slow thing on that page is still the 'FOLLOWING' chip after you press Follow (28 seconds on the test machine) - and this run finally read WHY on production's own rows: a roll's whole wait is the eight pictures being drawn (46 seconds for the slowest of eight); the database work around them is under a second. The extra seconds on the test machine are the test machine's faraway database, not the product.\n\n3. Your machine checks a change in 24 seconds where it took 116 a fortnight ago (card 825's fix, confirmed on this seat's own stopwatch), and the full test run is green in 2 minutes 10 - the first time this seat has been able to time it at all.\n\n4. The shifts' own gate: each card now waits on the gate about 1.65 times (down from 2.36 - within a hair of the 1.5 aim) and 13.9 minutes in total (down from 20; the target you set is 10). Half of every gate run is the test suite, and the code-shape scan queues in front of it on the same runner. That is the one lever left, so it is a card (1034) to measure, not a change made tonight.\n\n5. The first thing a visitor downloads is 452 kB - flat since last week's split of the staff pages out. Two cards the last bundle job left for this seat are now filed: a check that turns red if that number grows back (1035), and a measured look at whether the boards canvas and the old wardrobe should stop riding in a sign-in visitor's first download (1036) - measured before anything moves, because a spinner on the way to the studio would be the wrong trade.\n\n6. One cost correction, recorded and closed: the reviewer court on 13 September wrote down $13.48; the provider's own books for that day say $16.74 over three more calls than the record kept. Under the $50 line either way. It goes to the Retro, whose clock fires today, as a rule about where a court reads its bill.\n\nSpent this morning: about 81 cents of house money and 160 test-account credits for one Follow on the test sheet, estimated before it ran. Nothing on your desk. The Retro is next; the Warden fires tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -133,16 +133,16 @@
       {
         "label": "Your desk is empty",
         "tone": "good",
-        "source": "190 of 190 replies acted on. Nothing on the board needs an answer from you."
+        "source": "192 of 192 replies acted on. Nothing on the board needs an answer from you."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "34 open, 4 ordered by you, none urgent. 15 untouched for 7 days."
+        "source": "33 open, none ordered by you, none urgent. 17 untouched for 7 days."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-17T18:16:01.861Z",
+      "readAt": "2026-09-19T01:09:18.394Z",
       "items": [
         {
           "issueNumber": 16,
@@ -6810,6 +6810,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0919a-machinist",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 33 open, nothing closed, three filed by the Machinist (1034, 1035, 1036 - all measurements, none needing you). NEXT UP empty; the Retro's clock fires today",
+      "detail": "The Machinist's weekly reading filed three Performance cards: the gate's serial job (half of every run is the test suite), a bundle-size check the gate can read, and a measured look at the first download. 17 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading) - up from 15, and still roadmap rungs you have not reached rather than neglected work. Nothing was closed: nothing on the board was takeable under a switch except the patrol itself.\n\nNothing here needs you."
+    },
+    {
       "id": "queue-shape-0917k-foreman",
       "severity": "info",
       "state": "resolved",
@@ -7309,7 +7316,7 @@
     {
       "id": "queue-shape-0918a-janitor",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 30 open, nothing closed, nothing filed. NEXT UP empty; nothing on offer under any switch; the Janitor ran its round, the Retro and the Machinist fire tomorrow",
       "detail": "The Janitor's every-three-days round found nothing a shift could take and filed no card. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading) - level with the last six shifts, and still roadmap rungs you have not reached rather than neglected work.\n\nNothing here needs you."
     }
@@ -7509,7 +7516,7 @@
     192
   ],
   "nextUp": {
-    "readAt": "2026-09-17T18:16:01.860Z",
+    "readAt": "2026-09-19T01:09:18.393Z",
     "items": []
   }
 }
