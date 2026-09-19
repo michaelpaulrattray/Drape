@@ -19,6 +19,9 @@ import { defineConfig, type PluginOption } from "vite";
  */
 const wantsBundleReport = process.env.BUNDLE_REPORT === "1";
 
+/** Every font format `@fontsource` ships and any a future face could. */
+const FONT_FILE = /\.(woff2?|ttf|otf|eot)$/i;
+
 const bundleReportPlugins: PluginOption[] = wantsBundleReport
   ? [
       visualizer({
@@ -67,6 +70,16 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // Fonts are never inlined (#1044). Vite's default folds any asset under
+    // 4 kB into the stylesheet as a `data:` URL, and six of the mono face's
+    // subsets are that small (cyrillic-ext in both formats, vietnamese in
+    // woff2) — so every production page load logged six CSP violations,
+    // because `font-src` is `'self' https://fonts.gstatic.com` and says
+    // nothing about `data:`. Keeping the policy narrow and shipping the
+    // files is the repair; widening the CSP for a build artefact is not.
+    // Invisible on the dev server, which inlines nothing.
+    assetsInlineLimit: (filePath) =>
+      FONT_FILE.test(filePath) ? false : undefined,
   },
   // No `server` block here, on purpose (#849). The dev server is Vite in
   // middleware mode inside Express, and `setupVite` (server/_core/vite.ts)

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "78ac7b89c820b855"
+    "sourceFingerprint": "b54adceab7e39659"
   },
   "domains": [
     {
@@ -12620,6 +12620,10 @@
     {
       "id": "test:server/floorParity.test.ts",
       "path": "server/floorParity.test.ts"
+    },
+    {
+      "id": "test:server/fontInlineLimit.test.ts",
+      "path": "server/fontInlineLimit.test.ts"
     },
     {
       "id": "test:server/founderActivity.test.ts",
