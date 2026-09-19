@@ -1,7 +1,7 @@
 {
-  "edition": 458,
-  "updatedAt": "2026-09-19T06:20:16.309Z",
-  "shift": "THE SIX SECURITY WARNINGS ON EVERY PAGE ARE GONE - ONE CONFIG LINE. NOTHING WAITS ON YOU.\n\nThis is an ordinary night shift, working the one-line fix the last shift filed (card 1044) under Small fixes and Bugs. It was the only card open under any of your switches that did not want your eye.\n\n1. Done: every page of the live app used to log six browser security warnings the moment it opened. The cause: the build tool bakes any very small file straight into the stylesheet to save a request, and six pieces of the app's mono font (its extended-Cyrillic and Vietnamese alphabets) are small enough to qualify - while the app's own security policy, on purpose, only accepts fonts served as real files. So the browser refused all six, every time, on every page. The fix tells the build tool that a font is never baked in, whatever its size. The security policy itself is untouched - loosening it to make the warnings go away was the road I did not take. The stylesheet also got 18 kilobytes lighter, because the baked-in fonts are gone from it.\n\n2. Checked in the real thing, twice: I built the app exactly as production does, ran the old build and the new build side by side, and opened the sign-in page on each in the same browser session - six warnings on the old, zero on the new, and a Cyrillic character that fell back to another font on the old build now draws in the mono face. Then after the deploy I opened the LIVE sign-in page: zero warnings, zero baked-in fonts in the stylesheet it serves, the Cyrillic alphabet loads. In English you would never have seen a difference - the point is the console is clean and a Vietnamese or Cyrillic name in a staff table now keeps the mono face.\n\n3. Worth knowing: the automatic reviewer was asked (the change is over the size that triggers it, because I added a small test) and it died at start-up in one second - no verdict, the same failure as card 1041 last night, not a rejection. The checks were green on the first run, the change is build config and a test, no money or sign-in code, so it merged on the checks as the standing orders say. A test now pins the rule so a future font cannot quietly re-open it.\n\n4. Left as it was: the customer-route card (1036) still wants your eye on the trade it would make and is not started. No check-up clock has fired; the Warden fires tomorrow, the Janitor Monday.\n\nSpent: nothing. Nothing on your desk.",
+  "edition": 459,
+  "updatedAt": "2026-09-19T07:19:47.344Z",
+  "shift": "THE APP'S FIRST DOWNLOAD IS 45% SMALLER - MEASURED, SHIPPED, LIVE. ONE THING FOR YOUR EYE, NOTHING BLOCKING.\n\nThis is an ordinary night shift, working the one Performance card (1036) that was open under your switches. Its own brief was \"measure first, then decide\", so that is what happened.\n\n1. Done: the canvas page (the boards workspace) no longer rides in every visitor's first download. Until tonight, someone opening the sign-in page or the casting studio downloaded the whole canvas - its drawing engine, the old studio takeover and the zip tool - before a pixel drew. Now that arrives the first time a canvas is opened. The first download went from 450 to 246 kilobytes. On a slow phone connection (the standard \"Fast 3G\" test) the lobby and the casting studio each paint about one second sooner.\n\n2. What it costs, measured rather than guessed: opening a canvas at its own address now shows the canvas's loading frame a second EARLIER and the finished canvas about half a second later; going from the lobby into a canvas costs two seconds on that slow connection and almost nothing on a normal one. Two facts made this shippable without a decision from you: nobody can walk lobby-to-canvas today (your canvas list page is a stub, by your own order in card 302 - a canvas opens at its own address), and nothing NEW is shown - while the canvas's code downloads you see exactly the frame the canvas already shows while its pictures load: the dotted field, the \"drape\" mark, the hairline. No spinner was added. The old and new builds were run side by side in one browser session, three runs each, and the live site was read after the deploy: 820 kilobytes raw where it was 1,529.\n\n3. For your eye, not blocking anything: two frames on this page - the loading frame you would see for those seconds, and the loaded canvas. If the wait on a canvas ever reads wrong to you, one word reopens card 1036 and the split is one line to undo.\n\n4. Worth knowing: the automatic reviewer died at start-up again (third time in a row: cards 1041, 1044, now 1036) - no verdict, not a rejection. The checks were green first run, the full test suite passed (13,360 tests), no money or sign-in code, so it merged on the checks as the standing orders say. A test now names this one route as the measured exception and refuses any other customer page going lazy without its own numbers.\n\n5. Left as it was: nothing is open under any of your switches now. No check-up clock has fired; the Warden fires tomorrow, the Janitor on Monday. The next shift with nothing to take is a correct quiet one.\n\nSpent: nothing. Nothing on your desk.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,7 +138,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "30 open, none ordered by you, none urgent. 17 untouched for 7 days."
+        "source": "29 open, none ordered by you, none urgent. 17 untouched for 7 days."
       }
     ],
     "ladderCards": {
@@ -2564,6 +2564,26 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "board-lazy-1036-frames",
+      "title": "Opening a canvas after tonight - the frame you see while its code downloads, and the loaded canvas",
+      "question": "Does the wait on a canvas read right? On a slow connection you would see the first frame for about two seconds before the canvas's pictures start loading (the same frame you already saw for that) - the dotted field, the drape mark, the hairline. No spinner was added, nothing else changed on screen. Card 1036 is closed on the numbers; if this wait reads wrong to you, say so and one line undoes it.",
+      "state": "open",
+      "filedAt": "2026-09-19T07:19:47.348Z",
+      "issueNumber": 1036,
+      "frames": [
+        {
+          "key": "crew-eye/f2a73ce1-441c-4bfb-9d26-bc09ad81835f.png",
+          "caption": "AFTER - what is on screen from the moment you head into a canvas until its code has arrived (Fast 3G, about two seconds): the canvas's own loading frame. Before tonight this same frame appeared a second later on a cold open, after a blank.",
+          "arm": "chunk wait"
+        },
+        {
+          "key": "crew-eye/85df06e8-46c2-488e-a94e-8127d184a2e5.png",
+          "caption": "AFTER - the same canvas loaded (verify-bot's test canvas in the dev world). Nothing on the canvas itself changed.",
+          "arm": "loaded"
+        }
+      ]
+    },
     {
       "id": "settings-phone-1003-frames",
       "title": "Settings on a phone, before and after - the section list as chips across the top (your 'A')",
@@ -5091,6 +5111,13 @@
   ],
   "pipeline": [
     {
+      "id": "board-lazy-1036",
+      "title": "Card 1036: the canvas page leaves every visitor's first download - 450 to 246 kilobytes, lobby and casting paint a second sooner on a slow connection",
+      "status": "merged",
+      "prNumber": 1046,
+      "note": "The canvas route loads its code the first time a canvas is opened; while it downloads, the route shows the canvas's own loading frame, so nothing new is shown. Measured on production builds behind a gzip front at Fast 3G, three runs each: first download 449.9 to 246.1 kilobytes; lobby first paint 5.3 to 4.3 s; casting 3.66 to 2.63 s; a canvas at its own address paints its loading frame 3.67 to 2.62 s and its finished canvas 9.0 to 9.6 s. Read on the LIVE site after the deploy: entry 820 kilobytes raw (was 1,529). Guard extended and proven red four ways. Checks green first run; full suite 13,360 passed; the reviewer died at start-up (no verdict), merged on the checks. Production build b2be5a95."
+    },
+    {
       "id": "font-inline-1044",
       "title": "Card 1044: fonts are never baked into the stylesheet - six browser security warnings on every page to zero, 18 kilobytes off the stylesheet",
       "status": "merged",
@@ -7400,9 +7427,16 @@
     {
       "id": "queue-shape-0919g-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 30 open, one closed tonight (1044); NEXT UP empty; nothing left under Bugs or Small fixes; one Performance card (1036 wants your eye); the Warden fires tomorrow",
       "detail": "Read at 06:19Z: 30 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. 1044 built, merged, live and closed with its receipt, so Bugs and Small fixes both stand at zero. 1036 (a smaller first download at the cost of a possible spinner on the way to the studio) is a trade for your eye before anything ships. No check-up clock has fired; the next shift with nothing under a switch is a correct quiet one.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0919h-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 29 open, one closed tonight (1036); NEXT UP empty; nothing open under any of your switches; the Warden fires tomorrow",
+      "detail": "Read at 07:17Z: 29 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. 1036 measured, built, merged, live and closed with its receipt, so every switched category now stands at zero (129 and 108 are blocked on their own rows, 45 is parked). No check-up clock has fired; the next shift with nothing under a switch is a correct quiet one.\n\nNothing here needs you."
     }
   ],
   "acknowledgedReplyIds": [
