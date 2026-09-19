@@ -113,15 +113,35 @@ describe("#744 — the staff pages are lazy", () => {
     const suspense = appSource.indexOf("<Suspense fallback={null}>");
     const sw = appSource.indexOf("<Switch location={location}>");
     const closeSw = appSource.indexOf("</Switch>");
-    const closeSuspense = appSource.indexOf("</Suspense>");
+    /* The FIRST close after the Switch — a measured customer route owns its own boundary above it (#1036). */
+    const closeSuspense = appSource.indexOf("</Suspense>", closeSw);
     expect(suspense).toBeGreaterThan(-1);
     expect(sw).toBeGreaterThan(suspense);
     expect(closeSuspense).toBeGreaterThan(closeSw);
   });
 });
 
+/**
+ * The customer routes that ARE lazy, each on a measurement its card records
+ * (#1036 was the first: entry chunk 451 → 246 kB gzip, first paint of the lobby
+ * and the casting studio a second sooner at Fast 3G; the board's own loading
+ * frame covers the chunk wait, so nothing new is shown). Adding a route here
+ * without a card of before/after readings is the tidy-up #744 refuses. The
+ * route's component is a WRAPPER that owns a Suspense boundary with the named
+ * fallback around the lazy page, so the wait never falls through to the
+ * app-wide `null`.
+ */
+const MEASURED_LAZY_CUSTOMER_ROUTES: Record<
+  string,
+  { wrapper: string; page: string; fallback: string; card: string }
+> = {
+  "/app/board/:id": { wrapper: "BoardRoute", page: "BoardPage", fallback: "BoardLoadingFrame", card: "#1036" },
+};
+
 describe("#744 — the customer pages stay static, on purpose", () => {
   const customer = routedComponents(appSource).filter((r) => !isStaffPath(r.path));
+  const measured = customer.filter((r) => r.path in MEASURED_LAZY_CUSTOMER_ROUTES);
+  const unmeasured = customer.filter((r) => !(r.path in MEASURED_LAZY_CUSTOMER_ROUTES));
 
   it("finds the customer routes it is supposed to find, in both shapes", () => {
     const paths = customer.map((r) => r.path);
@@ -134,11 +154,29 @@ describe("#744 — the customer pages stay static, on purpose", () => {
     );
   });
 
-  it("no customer page is lazy — splitting a customer route is a measured decision, not a tidy-up", () => {
-    for (const { path, component } of customer) {
+  it("no unmeasured customer page is lazy — splitting a customer route is a measured decision, not a tidy-up", () => {
+    expect(unmeasured.length).toBeGreaterThanOrEqual(8);
+    for (const { path, component } of unmeasured) {
       expect(appSource, `${path} → ${component} went lazy without a measurement (#744)`).not.toMatch(
-        new RegExp(`const ${component} = (?:staffPage|lazy)\\(`),
+        new RegExp(`const ${component} = (?:staffPage|lazyRoute|lazy)\\(`),
       );
+    }
+  });
+
+  it("every measured lazy customer route is routed through its wrapper, and the wrapper owns the boundary (#1036)", () => {
+    expect(measured.map((r) => r.path)).toEqual(Object.keys(MEASURED_LAZY_CUSTOMER_ROUTES));
+    for (const { path, component } of measured) {
+      const { wrapper, page, fallback } = MEASURED_LAZY_CUSTOMER_ROUTES[path]!;
+      expect(component, `${path} must be routed to ${wrapper}`).toBe(wrapper);
+      /* The page is lazy through lazyRoute — lazy() plus the once-only reload a deployed-away chunk needs. */
+      expect(appSource).toMatch(new RegExp(`const ${page} = lazyRoute\\(\\(\\) =>\\s*import\\("[^"]+/${page}"\\)`));
+      /* And never ALSO imported statically — the lazy route would be doing nothing. */
+      expect(appSource).not.toMatch(new RegExp(`^import [^;]* from "[^"]+/${page}";`, "m"));
+      /* The wrapper: a Suspense whose fallback is the named frame, around the lazy page. */
+      const body = appSource.slice(appSource.indexOf(`function ${wrapper}()`));
+      expect(body).toMatch(new RegExp(`<Suspense fallback=\\{<${fallback} />\\}>\\s*<${page} />\\s*</Suspense>`));
+      /* The fallback is a static import — it must be in the entry chunk to show while the page's chunk downloads. */
+      expect(appSource).toMatch(new RegExp(`^import \\{ ${fallback} \\} from "[^"]+/${fallback}";`, "m"));
     }
   });
 });

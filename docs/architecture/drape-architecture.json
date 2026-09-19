@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b54adceab7e39659"
+    "sourceFingerprint": "1fe9b12d777537ac"
   },
   "domains": [
     {
@@ -23,7 +23,7 @@
     {
       "id": "domain:boards",
       "name": "boards",
-      "moduleCount": 49
+      "moduleCount": 50
     },
     {
       "id": "domain:casting",
@@ -604,6 +604,12 @@
     {
       "id": "module:client/src/features/boards/BoardHeader.tsx",
       "path": "client/src/features/boards/BoardHeader.tsx",
+      "domain": "boards",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/boards/BoardLoadingFrame.tsx",
+      "path": "client/src/features/boards/BoardLoadingFrame.tsx",
       "domain": "boards",
       "lifecycle": "active"
     },
@@ -13613,6 +13619,11 @@
     },
     {
       "from": "module:client/src/App.tsx",
+      "to": "module:client/src/features/boards/BoardLoadingFrame.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/App.tsx",
       "to": "module:client/src/features/boards/BoardPage.tsx",
       "kind": "imports"
     },
@@ -14742,13 +14753,18 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/boards/BoardPage.tsx",
-      "to": "module:client/src/_core/hooks/useAuth.ts",
+      "from": "module:client/src/features/boards/BoardLoadingFrame.tsx",
+      "to": "module:client/src/components/BrandLoader.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardLoadingFrame.tsx",
+      "to": "module:client/src/features/boards/canvas/DottedGridBackground.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
-      "to": "module:client/src/components/BrandLoader.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
     },
     {
@@ -14764,6 +14780,11 @@
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
       "to": "module:client/src/features/boards/BoardHeader.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardPage.tsx",
+      "to": "module:client/src/features/boards/BoardLoadingFrame.tsx",
       "kind": "imports"
     },
     {
@@ -14784,11 +14805,6 @@
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
       "to": "module:client/src/features/boards/canvas/DeleteCascadeDialog.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/boards/BoardPage.tsx",
-      "to": "module:client/src/features/boards/canvas/DottedGridBackground.tsx",
       "kind": "imports"
     },
     {
