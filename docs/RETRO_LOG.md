@@ -387,3 +387,156 @@ predicted. **So R6 closed in THREE sites tonight** (#813's two shapes in the
 close-stamp; #721 in the cap classifier), and the rule that did it is the same
 one each time: strip what is quoted, then require the claim to lead the line.
 Edition 349 carries his acknowledgement; his desk is clear.
+
+## Run 4 — 2026-09-19 11:27–13:xx AEST (Retro, patrol #4, run #286)
+
+**Window:** 2026-09-12 02:26 (run 3's close) → 2026-09-19 11:27. **116 mailbox
+files** — 108 seat-stamped entries (100 foreman, 4 janitor, 3 machinist, 1
+warden), 2 relay notes, 6 runner park/unpark notices, **0 `runner-close-*`, 0
+`runner-escalated-*`**. **123 PRs merged.**
+
+**Why the Retro ran today.** Its clock fired on the day (`patrol-clocks.mts`:
+"DUE today", 7 days exactly since run 3); Process ON; NEXT UP empty; no reply,
+no tap; every switched count at zero but Performance (three Machinist cards
+filed this morning, none urgent). The Machinist took the same day's tie
+yesterday-morning-AEST by alphabetical order and said so; this is the next
+patrol. Nothing else was takeable.
+
+### A. Audit ledger
+
+**The instrument first (working law 2).** Read anchored on the LAST
+`## Runner close-stamp` heading per entry — the template's own placeholder
+heading sits above the runner's appended verdict, so a `grep -m1` reads 37
+verified entries as bare. Corrected before counting.
+
+**108 of 108 seat entries carry a `— verified` trailer. 0 UNVERIFIED.** The 8
+files without one are the relay notes and the runner's park/unpark notices,
+which are not shifts. So the guard repaired in run 3 (#813) has, this week, a
+false-alarm rate of 0 of 108 — measured on the same corpus shape that gave it
+0 of 7 precision last week.
+
+**The claim class the trailer cannot see — card closures — read in bulk.** Every
+`#N … closed` pairing in the 108 entries (112 distinct numbers; 15 are PR
+numbers by the extractor's over-reach): **96 issues, 96 CLOSED, 0 OPEN** — the
+one "open" number is `#209`, which the entry calls *"Shift row #209 closed"*, a
+`crew_shift_runs` id and not a card. **0 false closure claims** (run 3: 89/91
+with both exceptions correct; run 2: 68/68).
+
+**Merge claims:** 24 trailers carry them and each resolves `MERGED` on the
+trailer. Four sampled past the trailer, at the artifacts — PRs #840, #1007,
+#1032, #853: `gh pr view` MERGED with a merge commit; each merge commit an
+ancestor of `origin/main`; each named receipt present once in
+`output/deploy-receipts/index.log` with its `OK`. All four hold.
+
+**Verdict: no false claim by a shift this period, and none by the checker
+either.** The one document found false was not a shift report — see R11: the
+standing orders said `pnpm preflight` did not exist for two weeks after
+`b9dc5eb8` created it.
+
+### B. Recurrence ledger
+
+| # | Repeat | Occurrences (evidence) | Class | Proposal | Status |
+|---|---|---|---|---|---|
+| **R6** (4th site) | **A reader infers a citation from PROSE** | `disposable-age`'s citation sweep counts a docblock naming a file as a KEEP — #975 → PR #980 moved the fixture names off the live population, and **PR #981 the same night** fixed the docblocks that explained the defect by quoting live names in full | mention read as declaration | **None new, and deliberately** — that reader is conservative by design (*a KEEP is a citation, never a judgement of value*; deletion is the one act a gate cannot give back), so the repair stays on the WRITER side: #980's arm refuses a fixture name that is a real file. The cost is a permanent KEEP per prose mention, and it is stated | **Watch.** Run 3's rule (strip what is quoted, then require the claim to lead the line) was applied to three instruments; this fourth chose the other side on purpose |
+| **R7** | **A shift dies and leaves no report** | **zero instances — third clear week.** No `runner-close-*` file in the window at all (the four in the mtime listing are last week's stubs the Retro annotated) | shift death | none | **Closed as a recurrence.** Re-read only if a stub appears |
+| **R10** (again, twice) | **A law-7 sweep declares its remainder by HAND COUNT and the next shift finds more** — both guard cards from run 3 LANDED this window (#766 → PR #837, #769 → PR #851) and the class recurred anyway in two places they do not cover | (a) **the crew switch count**: #893 (unreachable cards) → #904 (`blocked` out of the count, **typed by hand** while `CREW_HOLD_LABELS` already declared every hold) → #999 (PR #1000: *"leaves out every held card, not only blocked ones"* — derived from the list at last); (b) **the torn-write chain on the money path**: #855 → #868 → #896 → #955 → #956 → #994 → #995, **seven cards and twelve PRs in four days**, every card honestly *"found by the previous sweep"*, every remainder hand-read (*"Reachability is NOT measured"*) | a hand count stated as coverage; (a) is also *shape-match where a declaration exists* | **The transferable line is now IN the standing orders** (written this run, law-7 bullet): *a sweep's remainder is named with the READER that produced it, or it is called a floor.* No guard: a reader for "two ordered ledger-affecting writes with no shared transaction" is a design, and (b) was worked honestly — the defect is the word *complete*, not the sweeps | **Watch** with the line in force |
+| **R11** (new) | **A guard whose population is DERIVED is invisible to preflight's reverse index — and the lesson was written three times to a place nothing reads** | gate runs `34667546203` (#836), `34869959271` (#966), `34906719794` (#983): three branches red on `server/childProcessTestTimeouts.test.ts:50` after three green preflights, 12–14 Sep; three entries (foreman-0912-1315, -0915-0330, -0915-0930) each say *"add the clock guards to the preflight list"* — in the MAILBOX. And the orders' PREFLIGHT paragraph said *"Until `pnpm preflight` exists"* while `package.json:14` had it since 2026-09-05 (#549) — **4 of 108 entries ran it; the rest hand-picked "the changed file and its neighbours"** | a subject with no literal to index; a lesson filed as a receipt | **Guard carded: #1037** — an always-run set in preflight, membership DERIVED by an arm that greps for the deriver idiom, sabotage stated. **Orders corrected tonight**: `pnpm preflight` IS the command; the two clock guards run by name until #1037 lands; a deletion or rename runs the FULL suite (1220's own finding, #1031's first gate) | **Open** — #1037 filed, Process, small |
+| **R12** (new, and it spans two runs) | **A control arm pins the author's belief, so the guard cannot discover the mistake it was built for** | run 3's #813 (the driver's "positive control" was an ISSUE, so every arm passed through the `gh failed` road); **#912** (PR #914: `staffClock.test.ts`'s NEGATIVE control asserted `toLocaleDateString` never prints a clock — it does when asked for `hour:` — so the fifth shipping of the 12-hour defect passed a guard built after the fourth); **#975** (PR #980: the dater's arms pinned the live files they measured) | a control written from a premise rather than a specimen in the world | **No guard** — the shape is not mechanizable across instruments (#697's reader sees exactly the *assert-the-mock* shape and its table is exhausted, PR #882 last). Working law 2 already says a control is driven, and memory `instrument-discipline` indexes 69 of these. The Retro's line: **a control's specimen comes from the world — a real PR, a real file, the library's real output — never from the test's own declaration**; worth one line in the orders' close ceremony when they are next touched, not tonight (two lines went in already) | **Watch.** Three instances, three instruments, two weeks |
+
+**Also noted, not carded:**
+
+- **A spend record is a claim; the provider's books are the artifact** (the
+  Machinist's #513 note this morning): the reviewer court's record said $13.48
+  over 9 calls, OpenRouter's day total said **$16.74 over 12** — the roll-up
+  file held only the last invocation. One instance, so not a row; written into
+  the orders' spend bullet instead (*the ACTUAL is read from the books*).
+- **The seat pattern in four `.agents/foreman` files** (run 3's line) did not
+  drift this week; still a line.
+- **The test-timing cluster** (PRs #828 #838 #945 #963 #966 #978 — six PRs
+  on a harness sized for an idle box and run on a contended one) is NOT a
+  repeat class: each traced to its own card, two root causes landed (8 workers,
+  one libvips thread per worker), and the Machinist's row reads `pnpm test`
+  **130 s green** for the first time. Converged, not recurring.
+- **#976/#979 (three guards sweeping the DISK, not the repository)** is law 7
+  working as written: the class named in the fix, the population measured
+  before taking (*"the card understated its own population by 62×"*), the two
+  guards that sweep untracked scratch ON PURPOSE named as exceptions. Not a
+  finding.
+
+**Recurrence rate this period: 5 repeat classes over 116 entries / 123 PRs**
+(run 3: 4 over 111 / 154). One closed (R7), two watched with their line in
+force (R10, R12), one watched on a deliberate choice (R6), **one carded
+(R11, #1037)**. **0 laws proposed.**
+
+### C. The anti-boredom read
+
+**123 PRs merged in the window, 123 trace.** Mechanically, 122 cite a card that
+predates the PR (`output/_retro4/trace.mjs`: every `#N` / `card N` in title +
+body resolved at `gh api`, kept if an ISSUE created before the PR). The one
+that did not resolve by number — **#838**, a per-arm 120 s on
+`selfInvocationCheck`'s RUN DIRECTLY arm — is a rite refusal recorded by three
+shifts (foreman-0910-1730 twice, -0912-1010 at 312 s): a red on the road every
+docs push takes, standing exception 2. **No boredom finding.** No hardening PR
+without a finding behind it; the week's sixteen `test(…)` and `fix(guard)` PRs
+each name the gate red, the card, or the review finding they answer.
+
+**Gate rejections, read for a shared cause (the third thing this seat reads
+for).** 17 failed `gate.yml` runs in the window: 5 Dependabot, 12 on shift
+branches — **9 on `Unit tests`**, 2 on workflow lint, 1 on #376's closing-
+keyword arm. Of the nine: **three are one guard** (R11 above); four are text
+guards that read across trees (#1031's three, `listedSource`, `token-guard`,
+`auditLogCategoryAgreement`) — the class `pnpm preflight` already covers and
+the shift did not run; two are their own (`refusalTag`, `hookDriver`). So
+**seven of nine unit-test rejections were a preflight that did not run the
+tool built to be the preflight**, and the orders were telling shifts it did
+not exist.
+
+### D. The predecessor's four items, and what each got
+
+1. **#1006 — the Retro's own card.** `parked` struck; ruled **a LABEL, not a
+   field** (every consumer already holds the row's labels from one `gh issue
+   list` call; a Projects field is a second source — #718's drift). **Built:
+   PR #1038** — `order:<n>`, one reader (`rankFromLabels`), the top limb of
+   `compareOrderedBand`, all three consumers; that night's five cards are the
+   fixture, reproducing the reverse without labels and his sequence with them;
+   five arms redden under sabotage. Labels `order:1`…`order:8` created;
+   PROGRAM.md's *"there is no pin-to-top mechanism"* paragraph replaced with
+   the relay's instruction. The #203/#108 loose end is moot at the artifact
+   (#108 lost `founder-ordered`; NEXT UP empty).
+2. **#969's flake.** The card is CLOSED (PR #970, the prune race settled); the
+   17 Sep comment records a DIFFERENT one-off — a `tree1` registration
+   directory gone between creation and index write, 1 in 13+13+13 — not the
+   prune race, not reproduced, recorded not carded. Correct; nothing to add.
+3. **foreman-20260917-1220's three questions.** (a) `MODELS`/`FALLBACK`:
+   the HOLD stands — §29e's floor says no row is dispositioned inert on a grep
+   and the twins are held on one argument, which is the consistent reading;
+   not a Retro matter to overrule. (b) `ProfileCover`: KEEP stands — the pin
+   carries a stated stance from a founder-ordered section (03), which is what
+   distinguishes it from the `WardrobeShortcutsBar` pin the same slice dropped;
+   **but a recorded keep with no condition is a permanent KEEP by prose (R6's
+   citation shape)**, so #108's close should put one line to him — *cover:
+   keep or bin?* — rather than carry it forever. (c) `vitest run client/src`
+   as a preflight: **forbidden for a deletion or rename — in the orders as of
+   tonight** (R11's second bullet).
+4. **#513's court-cost note.** In the orders' spend bullet (§B, "also noted").
+
+### Clocks
+
+Retro: run 1 2026-08-26, run 2 2026-09-05, run 3 2026-09-12, **run 4
+2026-09-19** (on the day). Next due ~2026-09-26.
+
+### E. The seat's own PR, audited the same way
+
+PR #1038 took one review round, and the finding is an instance of the class
+this run watches: `nextUpItems.mts`'s docblock said *"nothing here may add a
+field that schema does not know"* and **no arm held it** — the sort rows'
+`rank` rode a rest-spread into every item, the briefing schema is `.strict()`,
+and the first non-empty NEXT UP would have degraded his whole page. TypeScript
+does not see an extra key through a spread, and the PR's own arms mapped only
+`.issueNumber` off the output, so they could not either. Fixed in `824dbbf6`
+with the arm the reviewer asked for (the real schema parsing the real output,
+seen red on the pre-fix bytes), and the schema's refusal of an extra key as its
+control. **A constraint held by a docblock is R12's shape from the other side:
+not a control pinning a wrong premise, but a premise with no control at all.**
+Recorded here because a Retro that audits everyone else's reports and not its
+own would be the process finding.

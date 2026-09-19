@@ -1,7 +1,7 @@
 {
-  "edition": 452,
-  "updatedAt": "2026-09-19T01:15:00.000Z",
-  "shift": "THE MACHINIST TOOK ITS WEEKLY READING. NOTHING WAITS ON YOU, AND NOTHING YOU USE CHANGED.\n\nThis was the every-seven-days measurement, not a build - the seat that reads how long paid work takes and what it costs the house. What it found, in order of what matters to a customer:\n\n1. The studio has been idle for ten days. No roll, no refine, nothing paid has run on production since 9 September - which is you waiting to judge the creative register, not a fault. So the pictures-that-did-not-arrive number is the same rows as last week: one sheet in four came back a picture short, every one of them the engine refusing to draw it. Card 129 is still the job for that, and it is blocked on a label rather than on you.\n\n2. Keep still paints in one frame. Clicked eight times on a real sheet this morning: 24 thousandths of a second from the click to the ring and the dock both changing. The one slow thing on that page is still the 'FOLLOWING' chip after you press Follow (28 seconds on the test machine) - and this run finally read WHY on production's own rows: a roll's whole wait is the eight pictures being drawn (46 seconds for the slowest of eight); the database work around them is under a second. The extra seconds on the test machine are the test machine's faraway database, not the product.\n\n3. Your machine checks a change in 24 seconds where it took 116 a fortnight ago (card 825's fix, confirmed on this seat's own stopwatch), and the full test run is green in 2 minutes 10 - the first time this seat has been able to time it at all.\n\n4. The shifts' own gate: each card now waits on the gate about 1.65 times (down from 2.36 - within a hair of the 1.5 aim) and 13.9 minutes in total (down from 20; the target you set is 10). Half of every gate run is the test suite, and the code-shape scan queues in front of it on the same runner. That is the one lever left, so it is a card (1034) to measure, not a change made tonight.\n\n5. The first thing a visitor downloads is 452 kB - flat since last week's split of the staff pages out. Two cards the last bundle job left for this seat are now filed: a check that turns red if that number grows back (1035), and a measured look at whether the boards canvas and the old wardrobe should stop riding in a sign-in visitor's first download (1036) - measured before anything moves, because a spinner on the way to the studio would be the wrong trade.\n\n6. One cost correction, recorded and closed: the reviewer court on 13 September wrote down $13.48; the provider's own books for that day say $16.74 over three more calls than the record kept. Under the $50 line either way. It goes to the Retro, whose clock fires today, as a rule about where a court reads its bill.\n\nSpent this morning: about 81 cents of house money and 160 test-account credits for one Follow on the test sheet, estimated before it ran. Nothing on your desk. The Retro is next; the Warden fires tomorrow.",
+  "edition": 453,
+  "updatedAt": "2026-09-19T02:17:02.333Z",
+  "shift": "THE RETRO READ THE TEAM'S WEEK. ONE THING YOU ASKED ABOUT IS FIXED; NOTHING WAITS ON YOU.\n\nThis is the every-seven-days seat that checks the shifts' own reports against what actually happened, and looks for the same mistake made twice. What it found:\n\n1. Every report told the truth. 108 shift reports this week, every one verified by the machine and a sample of them opened by hand: every 'merged' was merged, every 'closed' card is closed (96 of 96), every deploy receipt is where the report says it is. Nothing was claimed that did not happen.\n\n2. Every one of the 123 changes merged this week traces to a card, a rule of yours, or a red gate. Nobody built anything because they were bored.\n\n3. Fixed tonight, from your own night of 16 September: you ordered five cards in one sentence ('527 do it, 129 build it, 105-108 clear them') and your Next Up list showed them in the exact reverse, oldest first. Now, when you give an order like that, the relay marks each card with its place (1, 2, 3...) and your page, the shifts' priority view and the runner all put them in your order. A card you did not rank sits exactly where it did. Worked example in the test: those five cards, without the marks, come out 105-106-108-129-527; with them, 527-129-105-106-108. Production build eef0a853.\n\n4. One repeat worth a card: three separate shifts paid a seven-minute gate run on the same test, each after a local check that said all was well - and each wrote 'add that test to the pre-push list' into a report nothing reads back. The pre-push tool cannot see that test by design (it finds tests by the files they name, and this one names none), so card 1037 makes the tool run it always, and the shifts' standing orders were corrected tonight: they had been telling shifts the pre-push tool did not exist for two weeks after it was built.\n\n5. Two smaller corrections, in the orders rather than on a card: a court's bill is read from the provider's books, not from the calls the script remembers (the reviewer court said $13.48; the books said $16.74); and a clean-up that says 'no more of these' now has to name the tool that looked, or call itself a floor - the money-path fix this week ran seven cards in four days, each finding the next.\n\nSpent: nothing. Nothing on your desk. The Warden fires tomorrow, the Janitor Monday.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,11 +138,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "33 open, none ordered by you, none urgent. 17 untouched for 7 days."
+        "source": "34 open, none ordered by you, none urgent. 17 untouched for 7 days."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-19T01:09:18.394Z",
+      "readAt": "2026-09-19T02:17:05.431Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5091,6 +5091,13 @@
   ],
   "pipeline": [
     {
+      "id": "order-label-1006",
+      "title": "Card 1006: your stated order wins - the relay marks each card with its place and every view of Next Up follows it",
+      "status": "merged",
+      "prNumber": 1038,
+      "note": "From 16 September, when you ordered five cards in one sentence and your page showed the exact reverse. The Retro ruled it a label on the card (the readers already hold the labels; a separate field would be a second source that drifts). Worked example, driven in the test: your five cards without the marks come out 105-106-108-129-527, with them 527-129-105-106-108; a card you did not rank moves nowhere; two cards given the same place fall back to today's rule. Nothing changes until the relay next files a sequence of yours. Production build eef0a853."
+    },
+    {
       "id": "settings-phone-1003",
       "title": "Card 1003: Settings on a phone - the section list is a row of chips above the page, on your word ('A')",
       "status": "merged",
@@ -6810,9 +6817,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0919a-machinist",
+      "id": "queue-shape-0919b-retro",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 34 open, one filed by the Retro (1037 - the pre-push tool runs the two tests it cannot see), one Retro card built and closing (1006). NEXT UP empty; the Warden's clock fires tomorrow",
+      "detail": "The Retro's weekly read: every shift report this week checked out at the artifacts (108 of 108 verified, 96 of 96 closed-card claims true), all 123 merges trace to a card or a rule of yours, and one repeat was carded - three shifts red on the same test after three green local checks. 17 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged from this morning) - roadmap rungs you have not reached rather than neglected work.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0919a-machinist",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 33 open, nothing closed, three filed by the Machinist (1034, 1035, 1036 - all measurements, none needing you). NEXT UP empty; the Retro's clock fires today",
       "detail": "The Machinist's weekly reading filed three Performance cards: the gate's serial job (half of every run is the test suite), a bundle-size check the gate can read, and a measured look at the first download. 17 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading) - up from 15, and still roadmap rungs you have not reached rather than neglected work. Nothing was closed: nothing on the board was takeable under a switch except the patrol itself.\n\nNothing here needs you."
     },
@@ -7516,7 +7530,7 @@
     192
   ],
   "nextUp": {
-    "readAt": "2026-09-19T01:09:18.393Z",
+    "readAt": "2026-09-19T02:17:05.430Z",
     "items": []
   }
 }
