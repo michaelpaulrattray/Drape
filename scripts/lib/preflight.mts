@@ -241,6 +241,135 @@ function dirOf(file: string): string {
   return cut === -1 ? "" : unix.slice(0, cut);
 }
 
+/**
+ * THE ALWAYS-RUN SET — guards whose subject is the TREE, not a path (#1037).
+ *
+ * ⚠ **THE REVERSE INDEX IS STRUCTURALLY BLIND TO THESE, AND THREE BRANCHES
+ * PAID A GATE RUN EACH IN ONE WEEK TO LEARN IT** (runs 34667546203,
+ * 34869959271, 34906719794 — PRs #836, #966, #983, each green at preflight by
+ * the shift's own account, each red at `childProcessTestTimeouts.test.ts:50`).
+ * `buildSubjectIndex` finds the suites ABOUT a change by resolving the PATH
+ * LITERALS a suite names. These name none: their population — every suite
+ * that spawns, every suite that sweeps the tree, every docblock that points at
+ * a suite — is DERIVED from `git ls-files` at run time (the derivers under
+ * `server/testing/`), so a new spawning suite three directories away enters
+ * their population with no literal anywhere for the index to resolve.
+ * Adjacency does not save it either: all of them live in `server/` root, and a
+ * change under `server/castingV2/` or `scripts/` never selects that directory.
+ *
+ * So they run on EVERY invocation, whatever the diff. Measured cost: ~450 ms
+ * apiece for the clock guards (their own docblocks) and ~1.4 s for the pointer
+ * guard, on a 30–90 s preflight.
+ *
+ * ⚠ **THIS IS A LIST, AND THE ARM THAT KEEPS IT HONEST IS DERIVED** (working
+ * law 4): `derivedPopulationGuards` reads the real tree for every collected
+ * suite that imports a population deriver and calls it, and
+ * `server/preflight.test.ts` requires that reading and this list to be EQUAL —
+ * a third derived guard cannot be written without joining this set, and a
+ * member that stops deriving is reported rather than run for nothing. Each
+ * member carries its reason because a list without reasons is the shape
+ * three shifts wrote into the mailbox, which nothing reads back.
+ */
+export const ALWAYS_RUN_SUITES: ReadonlyArray<{ readonly file: string; readonly reason: string }> = [
+  {
+    file: "server/childProcessTestTimeouts.test.ts",
+    reason:
+      "derives its population (every suite that spawns a real process) from `git ls-files` via `childProcessSuites()`; it names no path literal, so the reverse index cannot see that a new spawning suite anywhere in the tree is its subject (#548, #1037).",
+  },
+  {
+    file: "server/contendedTestTimeouts.test.ts",
+    reason:
+      "derives its population (every suite that sweeps the source tree) from `git ls-files` via `sourceSweepSuites()`; the same blindness as its sibling, one hop further (#741, #1037).",
+  },
+  {
+    file: "server/suitePointerDiscipline.test.ts",
+    reason:
+      "derives its population (every tracked .ts/.tsx docblock that backticks a suite name) from `git ls-files` via `suitePointers()`; a pointer added under any tree is its subject and no literal says so. ⚠ THE CARD SAID TWO — the derived arm found this third one the hour the set was written, which is why the arm is derived (#647, #1037). ~1.4 s measured.",
+  },
+];
+
+/** A helper module that enumerates the suite population, and the exported functions that do it. */
+export type PopulationDeriver = {
+  readonly module: string;
+  readonly exports: readonly string[];
+};
+
+/**
+ * The CALL that enumerates suites — `execFileSync("git", ["ls-files", "*.test.ts"…`.
+ * Matched on the call shape, never on the words `git ls-files`, which this
+ * repository writes in prose in a hundred docblocks (the runner's own included).
+ */
+const LS_FILES_CALL = /execFileSync\(\s*"git",\s*\[\s*"ls-files"/;
+
+/**
+ * Which helper modules DERIVE a suite population, and by which exported name.
+ *
+ * A deriver is any module whose code runs the `git ls-files` call above; the
+ * exported function whose body carries that call is the deriver's name (the
+ * text is split at `export function` boundaries, and the chunk holding the
+ * call names it). Today that is `childProcessSuites`, `sourceSweepSuites` and
+ * `suitePointers`, and none is written here — the test's positive control
+ * asserts all three are FOUND, which is the difference between deriving and
+ * re-listing: the card that ordered this named two, and the derived reading
+ * found the third.
+ *
+ * @param modules  `[repo-relative path, source text]` pairs, normally `server/testing/*.ts`
+ */
+export function populationDerivers(modules: ReadonlyArray<readonly [string, string]>): PopulationDeriver[] {
+  const out: PopulationDeriver[] = [];
+  for (const [rawPath, text] of modules) {
+    if (!LS_FILES_CALL.test(text)) continue;
+    const exports: string[] = [];
+    const chunks = text.split(/^(?=export function )/m);
+    for (const chunk of chunks) {
+      const head = /^export function (\w+)\(/.exec(chunk);
+      if (head && LS_FILES_CALL.test(chunk)) exports.push(head[1]!);
+    }
+    if (exports.length > 0) out.push({ module: rawPath.replace(/\\/g, "/"), exports });
+  }
+  return out;
+}
+
+/**
+ * Every collected suite whose population is derived — it IMPORTS a deriver
+ * module by a relative specifier AND names one of that module's deriver
+ * functions as a call. Both halves are required: the call alone would indict a
+ * docblock anywhere that mentions `childProcessSuites(` (this repository's
+ * prose names its instruments), and the import alone would indict a suite
+ * borrowing `codeOnly`, which strips comments and starts no enumeration.
+ *
+ * Stated limit: the call is read on the suite's whole text, prose included,
+ * so a suite that imports the module and only WRITES ABOUT the call is
+ * reported too. That errs toward noise, and noise here costs one ~450 ms run
+ * plus a reason on the list — the silent direction is the one this exists
+ * to close.
+ *
+ * Returns the suites sorted, so the arm can compare it to the set directly.
+ */
+export function derivedPopulationGuards(
+  tests: ReadonlyArray<readonly [string, string]>,
+  derivers: readonly PopulationDeriver[],
+): string[] {
+  const byModule = new Map<string, readonly string[]>();
+  for (const deriver of derivers) byModule.set(deriver.module.replace(/\.[cm]?ts$/, ""), deriver.exports);
+  const out: string[] = [];
+  for (const [rawPath, text] of tests) {
+    const test = rawPath.replace(/\\/g, "/");
+    if (!isCollectedTest(test)) continue;
+    const own = dirOf(test);
+    let calls = false;
+    for (const match of text.matchAll(/from\s+["'](\.{1,2}\/[^"']+)["']/g)) {
+      const resolved = normalizeRepoPath(own ? `${own}/${match[1]!}` : match[1]!);
+      if (!resolved) continue;
+      const names = byModule.get(resolved.replace(/\.[cm]?ts$/, ""));
+      if (!names) continue;
+      if (names.some((name) => new RegExp(`\\b${name}\\(`).test(text))) calls = true;
+    }
+    if (calls) out.push(test);
+  }
+  return out.sort();
+}
+
 export type TestSelection = {
   /** The vitest files to run, sorted and deduped. */
   readonly files: readonly string[];

@@ -27,15 +27,21 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { runHook } from "./testing/hookDriver";
+import { readListedSource } from "./testing/listedSource";
 import {
+  ALWAYS_RUN_SUITES,
   ARGV_BUDGET_CHARS,
   EXCUSED_GATE_STEPS,
   PREFLIGHT_CHECKS,
   VITEST_ENTRY,
   COLLECTED_PATTERNS,
   chunkVitestFiles,
+  derivedPopulationGuards,
+  populationDerivers,
   formatSeconds,
   gateCommandMatches,
   gateRunCommands,
@@ -45,6 +51,14 @@ import {
   selectDiffAdjacentTests,
   vitestArgv,
 } from "../scripts/lib/preflight.mts";
+
+/* ⚠ TWO FAMILIES AT ONCE, AND ONE DECLARATION SERVES BOTH (the shape
+   `sharpTestCeiling.test.ts` states). The #1037 arm below spawns one `git
+   ls-files` (#548's child-process class) and reads every collected suite off
+   the real tree (#741's contended class). `declaresTheTimeout` wants
+   `CHILD_PROCESS_TEST_TIMEOUT_MS` by name and `declaresTheFloor` accepts it
+   too; naming this one satisfies both guards. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
 
@@ -666,6 +680,137 @@ describe("the check list itself", () => {
       expect(check.command.length).toBeGreaterThan(1);
       for (const part of check.command) expect(part).not.toContain(" ");
     }
+  });
+});
+
+describe("the ALWAYS-RUN set — guards whose subject is the tree (#1037)", () => {
+  /*
+    THE FIXTURE MODULES: one real deriver shape, and one helper that merely
+    lives beside it. The deriver is recognised by the CALL it makes, never by
+    its name — `enumerate` is deliberately not called `*Suites` so a reader
+    keyed on the house naming would fail this arm.
+  */
+  const DERIVER_MODULE = [
+    "server/testing/population.ts",
+    [
+      'import { execFileSync } from "node:child_process";',
+      "export function codeOnly(source: string): string { return source; }",
+      "export function enumerate(repoRoot: string): string[] {",
+      '  return execFileSync("git", ["ls-files", "*.test.ts"], { cwd: repoRoot, encoding: "utf8" }).split("\\n");',
+      "}",
+    ].join("\n"),
+  ] as const;
+  const HELPER_MODULE = [
+    "server/testing/prose.ts",
+    // Talks about `git ls-files` and never runs it.
+    'export const NOTE = "derived from git ls-files";\nexport function help(): void {}',
+  ] as const;
+
+  it("populationDerivers finds the deriver by its CALL and names the function that makes it", () => {
+    expect(populationDerivers([DERIVER_MODULE, HELPER_MODULE])).toEqual([
+      { module: "server/testing/population.ts", exports: ["enumerate"] },
+    ]);
+  });
+
+  it("a suite that IMPORTS the deriver and CALLS it is a derived-population guard", () => {
+    const derivers = populationDerivers([DERIVER_MODULE]);
+    const guard = [
+      "server/castingV2/deep/newGuard.test.ts",
+      'import { enumerate } from "../../testing/population";\nconst population = enumerate(ROOT);',
+    ] as const;
+    expect(derivedPopulationGuards([guard], derivers)).toEqual(["server/castingV2/deep/newGuard.test.ts"]);
+  });
+
+  it("NEGATIVE CONTROLS — a prose mention, a borrowed helper, and an uncollected file are not guards", () => {
+    const derivers = populationDerivers([DERIVER_MODULE]);
+    const proseOnly = [
+      "server/other.test.ts",
+      "/* the population is derived by enumerate(ROOT) elsewhere */\nimport { x } from \"./y\";",
+    ] as const;
+    const borrowsHelper = [
+      "server/stripper.test.ts",
+      'import { codeOnly } from "./testing/population";\ncodeOnly("x");',
+    ] as const;
+    const notCollected = [
+      "scripts/enumerate.test.ts",
+      'import { enumerate } from "../server/testing/population";\nenumerate(ROOT);',
+    ] as const;
+    expect(derivedPopulationGuards([proseOnly, borrowsHelper, notCollected], derivers)).toEqual([]);
+  });
+
+  it("every member carries a reason — a list without reasons is the mailbox sentence three shifts wrote", () => {
+    for (const member of ALWAYS_RUN_SUITES) {
+      expect(member.reason.length).toBeGreaterThan(40);
+      expect(member.reason).toContain("#1037");
+      expect(isCollectedTest(member.file)).toBe(true);
+    }
+  });
+
+  /*
+    THE ARM THAT MATTERS — over the REAL tree, both directions. Every collected
+    suite that derives its population must be in the set (a third derived guard
+    cannot be written without joining it), and every member must still derive
+    (a member that stops deriving is reported rather than run for nothing).
+    `git ls-files` lists the population; a listing that fails or comes back
+    empty REFUSES rather than comparing against nothing, because an empty
+    reading would agree with an empty set and pass.
+  */
+  function realTree(): { tests: Array<readonly [string, string]>; modules: Array<readonly [string, string]> } {
+    const listing = runHook("git", ["ls-files", "-z", "--", "server", "client/src"], { cwd: repoRoot });
+    if (listing.status !== 0) {
+      throw new Error(`git ls-files failed (status ${listing.status}) — the population cannot be decided.\n${listing.stderr}`);
+    }
+    const names = listing.stdout.split("\0").filter((name) => name.length > 0);
+    if (names.length === 0) throw new Error("git ls-files returned nothing — refusing to compare against an empty tree");
+    const tests: Array<readonly [string, string]> = [];
+    const modules: Array<readonly [string, string]> = [];
+    for (const name of names) {
+      const isModule = name.startsWith("server/testing/") && /\.ts$/.test(name) && !/\.test\.ts$/.test(name);
+      if (!isCollectedTest(name) && !isModule) continue;
+      const text = readListedSource(path.join(repoRoot, name));
+      if (text === null) continue;
+      (isModule ? modules : tests).push([name, text] as const);
+    }
+    return { tests, modules };
+  }
+
+  it("POSITIVE CONTROL — the real tree holds the three known derivers, found by their call and not their name", () => {
+    // The card named TWO. The third — suitePointers (#647) — was found by this
+    // reading the hour the set was written, which is the whole argument for a
+    // derived arm over a hand-kept list.
+    const { modules } = realTree();
+    const found = populationDerivers(modules);
+    expect(found.map((d) => d.module).sort()).toEqual([
+      "server/testing/childProcessSuites.ts",
+      "server/testing/sourceSweepSuites.ts",
+      "server/testing/suitePointers.ts",
+    ]);
+    expect(found.flatMap((d) => d.exports).sort()).toEqual(["childProcessSuites", "sourceSweepSuites", "suitePointers"]);
+  });
+
+  it("⚠ THE SET IS EXACTLY THE DERIVED-POPULATION GUARDS OF THE REAL TREE — both directions", () => {
+    const { tests, modules } = realTree();
+    const derived = derivedPopulationGuards(tests, populationDerivers(modules));
+    expect(derived.length).toBeGreaterThan(0);
+    const listed = ALWAYS_RUN_SUITES.map((member) => member.file).sort();
+    const missingFromSet = derived.filter((file) => !listed.includes(file));
+    const noLongerDerives = listed.filter((file) => !derived.includes(file));
+    expect(
+      missingFromSet,
+      "a suite derives its population and is NOT in ALWAYS_RUN_SUITES — preflight cannot see it; add it with its reason",
+    ).toEqual([]);
+    expect(
+      noLongerDerives,
+      "an ALWAYS_RUN_SUITES member no longer derives its population — it runs for nothing; remove it or say why",
+    ).toEqual([]);
+  });
+
+  it("SABOTAGE — the comparison reddens naming the guard when one member is dropped", () => {
+    const { tests, modules } = realTree();
+    const derived = derivedPopulationGuards(tests, populationDerivers(modules));
+    const sabotaged = ALWAYS_RUN_SUITES.slice(1).map((member) => member.file);
+    const missing = derived.filter((file) => !sabotaged.includes(file));
+    expect(missing).toEqual([ALWAYS_RUN_SUITES[0]!.file]);
   });
 });
 
