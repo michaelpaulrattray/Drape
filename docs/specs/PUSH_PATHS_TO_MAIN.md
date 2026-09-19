@@ -197,6 +197,8 @@ ruled *"protect it"* (#461):
 main:            required checks [gate-checks, founder-gate] · strict false
                  enforce_admins FALSE · allow_force_pushes false · allow_deletions false
                  no required_pull_request_reviews
+                 (Socket Security: Pull Request Alerts added 2026-09-10, #35 option A, PR #761;
+                  static-shapes added 2026-09-19, #1034 — the semgrep job of its own)
 local-migration: required checks [gate-checks, founder-gate] · strict false
                  enforce_admins FALSE · allow_force_pushes false · allow_deletions false
                  no required_pull_request_reviews

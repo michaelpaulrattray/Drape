@@ -55,6 +55,21 @@ export type PrReading = {
   patches: readonly FilePatch[];
   gate: GateState;
   /**
+   * THE WARDEN'S SEMGREP READING on this head — gate.yml's `static-shapes`
+   * job, its own job beside `gate-checks` since #1034 so a ~100 s reading no
+   * longer sits in front of the tests on one serial runner.
+   *
+   * ⚠ READ HERE FOR THE SAME REASON `supplyChain` IS. A job the merge road
+   * does not read is a decoration: the merging account is an admin and
+   * `enforce_admins` on `main` is off (#460), so registering the job as a
+   * required check binds nobody who merges here. Splitting semgrep out of
+   * `gate-checks` without this field would have turned a blocking finding
+   * into a red badge — the exact "installed and never connected" shape the
+   * field below was written to avoid. Same four states, same three roads:
+   * running waits, red stops, absent is judged after mergeability.
+   */
+  staticShapes: GateState;
+  /**
    * SOCKET'S OWN SUPPLY-CHAIN VERDICT on this head (`Socket Security: Pull
    * Request Alerts`) — the founder's ruling on #35, verbatim and entire: **"A"**,
    * which is *"just let Socket's own verdict do the blocking"*.
@@ -457,6 +472,22 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
         "read the run, fix it, push. `pnpm preflight` catches the cheap causes before the push.",
     };
   }
+  // 3.2 The semgrep job, immediately after the gate and read exactly like it:
+  //     a reading of THIS head, split out of `gate-checks` by #1034. Answered
+  //     after the gate so a diff failing both is sent to the run with the
+  //     test output first.
+  if (pr.staticShapes === "running") {
+    return { kind: "wait", reason: "static-shapes (semgrep) is running" };
+  }
+  if (pr.staticShapes === "red") {
+    return {
+      kind: "stop",
+      reason:
+        "static-shapes FAILED — semgrep found a shape it refuses. This tool never merges past " +
+        "a red gate job — read the run, fix it at the line (`// nosemgrep: <rule.id> -- <reason>` " +
+        "where the finding is wrong), push. `pnpm warden:semgrep` reads the same bytes locally.",
+    };
+  }
   // 3.5 Socket's supply-chain verdict, immediately after the gate and for the
   //     same reason: it is a reading of THIS head that costs nothing to consult.
   //     See `supplyChain` above for why this is read here rather than left to
@@ -653,6 +684,22 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
 
     Below here the branch is mergeable, so this absence is the real one.
   */
+  /* The semgrep job's absent is read on the gate's own road, for the gate's own
+     reason: both are jobs of ONE workflow run, so `gate=absent` and
+     `staticShapes=absent` are one fact (no run on this head yet) and the
+     stall reader below is the answer to both. Only a head whose gate has
+     RUN and whose semgrep job has not — a workflow edited to drop the job —
+     reaches this line, and that is a refusal, not a wait. */
+  if (pr.staticShapes === "absent") {
+    return {
+      kind: "stop",
+      reason:
+        "gate-checks ran on this head but no `static-shapes` job did, and this tool will not " +
+        "read that silence as a pass. Either the head was gated by a workflow from before " +
+        "#1034 (merge main into the branch and let the gate run again) or gate.yml on this " +
+        "branch has lost the semgrep job (read it).",
+    };
+  }
   if (pr.supplyChain === "absent") {
     /* ⚠ HIS OWN STATED RISK, MADE LOUD RATHER THAN SILENT. Option A's
        consequence line names it: *"it is an outside service, so if it ever
