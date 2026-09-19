@@ -22,8 +22,7 @@ import { CanvasImageViewer } from './canvas/CanvasImageViewer';
 import { AddNodeMenu, type AddNodeAction } from './components/AddNodeMenu';
 import { FloatingToolPill, type PillTool } from './canvas/FloatingToolPill';
 import { CastPickerModal } from './canvas/CastPickerModal';
-import { DottedGridBackground } from './canvas/DottedGridBackground';
-import { BrandLoader } from '@/components/BrandLoader';
+import { BoardLoadingFrame } from './BoardLoadingFrame';
 import { CastingTakeover, type CastEditContext } from '@/features/studio/takeover/CastingTakeover';
 import { AddCreditsModal } from '@/features/billing/AddCreditsModal';
 import { FirstRunIntro } from './components/FirstRunIntro';
@@ -2097,23 +2096,9 @@ function BoardPageImpl() {
   }
 
   if (boardLoading || itemsLoading) {
-    // Designed loading state (P1): the space reads as a board from frame one —
-    // dotted grid immediately, centered mark, hairline progress. Never a bare
-    // spinner.
-    return (
-      <div className="flex flex-col overflow-hidden" style={{ height: '100vh', background: 'var(--color-canvas-field)' }}>
-        <div
-          className="flex items-center gap-3 px-4 flex-shrink-0"
-          style={{ height: 52, borderBottom: '1px solid rgba(0,0,0,0.06)' }}
-        >
-          <div className="rounded animate-pulse" style={{ width: 80, height: 20, background: 'rgba(0,0,0,0.06)' }} />
-        </div>
-        <div className="flex-1 relative" style={{ background: 'var(--color-canvas-field)' }}>
-          <DottedGridBackground />
-          <BrandLoader />
-        </div>
-      </div>
-    );
+    // Designed loading state (P1) — the same frame App.tsx shows while this
+    // page's own chunk downloads (#1036), so the two waits read as one.
+    return <BoardLoadingFrame />;
   }
 
   if (boardError || !board) {

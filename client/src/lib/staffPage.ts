@@ -52,7 +52,17 @@ const browserDeps = (): RetryDeps => ({
   reload: () => window.location.reload(),
 });
 
-/** A staff-only page as a lazy route with the once-only reload above. */
-export function staffPage<T extends ComponentType<unknown>>(load: Loader<T>): LazyExoticComponent<T> {
+/**
+ * Any page as a lazy route with the once-only reload above. The deployed-away
+ * chunk is not a staff-only failure: a customer holding a lobby tab across a
+ * deploy who then opens a board asks for a filename the new build no longer
+ * serves, exactly as a staff member opening the audit log would. A customer
+ * route becomes lazy ONLY on a measurement (#1036 was the first;
+ * `staffPagesLazy.test.ts` names each one and refuses an unmeasured one).
+ */
+export function lazyRoute<T extends ComponentType<unknown>>(load: Loader<T>): LazyExoticComponent<T> {
   return lazy(() => loadStaffChunk(load, browserDeps()));
 }
+
+/** A staff-only page as a lazy route with the once-only reload above. */
+export const staffPage = lazyRoute;

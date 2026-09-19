@@ -3,7 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { Suspense } from "react";
-import { staffPage } from "./lib/staffPage";
+import { lazyRoute, staffPage } from "./lib/staffPage";
 import { AnimatePresence } from "framer-motion";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { PageTransition } from "./components/PageTransition";
@@ -15,7 +15,7 @@ import AppLobby from "./pages/AppLobby";
 import CastingRoom from "./pages/CastingRoom";
 import CastingSheet from "./pages/CastingSheet";
 import CastingV2 from "./pages/CastingV2";
-import { BoardPage } from "./features/boards/BoardPage";
+import { BoardLoadingFrame } from "./features/boards/BoardLoadingFrame";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { GenerationOperationBridge } from "./features/operations/GenerationOperationBridge";
 import { ReferralClaimBridge } from "./features/referral/ReferralClaimBridge";
@@ -41,8 +41,9 @@ import { ReferralClaimBridge } from "./features/referral/ReferralClaimBridge";
  * download for several and can make navigation slower; the card's own
  * caveat. A customer never navigates to a staff page, so their navigation
  * cannot get slower from this — and a customer page going lazy is a separate
- * decision with its own measurement. `client/src/staffPagesLazy.test.ts`
- * holds both halves.
+ * decision with its own measurement (the board page is the one that has one,
+ * below). `client/src/staffPagesLazy.test.ts` holds both halves and names
+ * every measured exception.
  *
  * `staffPage` is `lazy()` plus one thing the monolith never needed: a deploy
  * (every merge to main, #508) removes the old chunk files, so a staff tab
@@ -61,6 +62,41 @@ const AdminCrew = staffPage(() => import("./pages/AdminCrew"));
 const AdminBugReports = staffPage(() => import("./pages/AdminBugReports"));
 const AdminFoundation = staffPage(() => import("./pages/AdminFoundation"));
 
+/*
+ * THE BOARD PAGE IS THE ONE CUSTOMER ROUTE THAT IS LAZY, ON A MEASUREMENT (#1036).
+ *
+ * `/app/board/:id` carried the React Flow canvas, the studio takeover and with
+ * it the legacy casting and wardrobe features, and jszip, into the first
+ * download of a visitor who came to sign in. Measured on a production build
+ * over a gzip front at Chrome's Fast 3G (1.6 Mbps, 562 ms RTT), three runs
+ * each, 2026-09-19: the entry chunk fell from 451 kB to 246 kB, and first
+ * paint of the lobby and the casting studio came a second sooner. What the
+ * split costs is one chunk fetch on the way INTO a board, and today no
+ * in-product road leads there: the lobby's canvas list is a stub (#302), so a
+ * board opens at its own address, a cold load, where the chunk's download
+ * simply moves from before first paint to after it. The card carries both
+ * readings.
+ */
+const BoardPage = lazyRoute(() =>
+  import("./features/boards/BoardPage").then((m) => ({ default: m.BoardPage })),
+);
+
+/**
+ * The board route suspends on the board's OWN loading frame, not the app-wide
+ * `null`: a customer on a slow connection sees the dotted field and the mark
+ * from the first moment, and the same frame until the canvas appears. The
+ * chunk wait and the data wait are one loading state, so the split does not
+ * show. `BoardLoadingFrame` is the frame `BoardPage` itself renders while its
+ * data loads, imported from its own light module so the page stays lazy.
+ */
+function BoardRoute() {
+  return (
+    <Suspense fallback={<BoardLoadingFrame />}>
+      <BoardPage />
+    </Suspense>
+  );
+}
+
 
 /** Lobby views share one transition key so the rail doesn't remount between them. */
 const LOBBY_ROUTES = new Set(['/app', '/app/boards', '/app/models', '/app/garments', '/app/looks']);
@@ -75,7 +111,8 @@ function Router() {
           The fallback is nothing, deliberately: a lazy chunk arrives in the
           time the page's own fade-in takes, and a spinner for a staff page's
           first open would be machinery showing through. Customer routes never
-          suspend here — none of them is lazy.
+          suspend HERE: the one lazy customer route, the board (#1036), carries
+          its own boundary with the board's own loading frame as the fallback.
         */}
         <Suspense fallback={null}>
           <Switch location={location}>
@@ -92,7 +129,7 @@ function Router() {
             <Route path="/app/looks" component={AppLobby} />
 
             {/* Board-based canvas */}
-            <Route path="/app/board/:id" component={BoardPage} />
+            <Route path="/app/board/:id" component={BoardRoute} />
 
             {/* Classic Drape Studio (fallback) */}
             <Route path="/studio" component={DrapeStudio} />
