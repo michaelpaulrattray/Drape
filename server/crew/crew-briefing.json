@@ -1,7 +1,7 @@
 {
-  "edition": 457,
-  "updatedAt": "2026-09-19T05:39:40.758Z",
-  "shift": "THE BUILD WARNING ABOUT A LOOP BETWEEN THE APP FRAME AND THE STAFF PAGES IS GONE - ONE LINE. NOTHING WAITS ON YOU.\n\nThis is an ordinary night shift, working the one-line fix the last shift filed (card 1042) under Small fixes.\n\n1. Done: every time the app was built, the build tool printed the same warning eight times - the app's outer frame (the rail, the header, your account menu) reached into the staff pages' shared folder for one small helper, and one of those staff pages reached back for the frame, so the two sides formed a loop the build tool said \"will likely lead to broken execution order\". Nothing was actually breaking, and I measured last night that it cost a visitor about nothing. The fix is that the frame now takes the helper from its own file instead of the shared folder. The warning count went from eight to zero, and the app's main download got 7.6 kilobytes lighter. Production build c65727e3.\n\n2. Checked in the real thing, not the dev server: because this is about how the build splits the app into pieces, I built the app exactly as production does and opened all nine staff pages on it (overview, users, audit logs, bug reports, change requests, invite codes, crew, and the moderator dashboard) - every one drew its frame with no page error and no missing-piece error. The check run went green; the first attempt went red only because my PR description used the phrase \"Closes 1042\", which the checks refuse on purpose so a card cannot be closed by accident - I reworded it and re-ran.\n\n3. Found on the way and filed, not worked (card 1044): on the production build, every page logs six browser security warnings about the mono font. Two rarely-used alphabets of that font (extended Cyrillic and Vietnamese) are small enough that the build tool bakes them straight into the stylesheet, and the app's own security policy refuses fonts delivered that way. In English nothing is missing - the Latin part loads normally - but the warnings are noise on every page, and a Vietnamese name in a staff table would fall back to another font. It is one config line; it never showed up before because the dev server does not bake fonts in, and every visual check until tonight ran on the dev server.\n\n4. Worth knowing: the automatic reviewer was not needed tonight - this change was five lines of the team's own plumbing, so the triage looked and declined a review, which is the design working. The customer-route card (1036) still wants your eye on the trade it would make, and is not started.\n\nSpent: nothing. Nothing on your desk. The Warden fires tomorrow, the Janitor Monday.",
+  "edition": 458,
+  "updatedAt": "2026-09-19T06:20:16.309Z",
+  "shift": "THE SIX SECURITY WARNINGS ON EVERY PAGE ARE GONE - ONE CONFIG LINE. NOTHING WAITS ON YOU.\n\nThis is an ordinary night shift, working the one-line fix the last shift filed (card 1044) under Small fixes and Bugs. It was the only card open under any of your switches that did not want your eye.\n\n1. Done: every page of the live app used to log six browser security warnings the moment it opened. The cause: the build tool bakes any very small file straight into the stylesheet to save a request, and six pieces of the app's mono font (its extended-Cyrillic and Vietnamese alphabets) are small enough to qualify - while the app's own security policy, on purpose, only accepts fonts served as real files. So the browser refused all six, every time, on every page. The fix tells the build tool that a font is never baked in, whatever its size. The security policy itself is untouched - loosening it to make the warnings go away was the road I did not take. The stylesheet also got 18 kilobytes lighter, because the baked-in fonts are gone from it.\n\n2. Checked in the real thing, twice: I built the app exactly as production does, ran the old build and the new build side by side, and opened the sign-in page on each in the same browser session - six warnings on the old, zero on the new, and a Cyrillic character that fell back to another font on the old build now draws in the mono face. Then after the deploy I opened the LIVE sign-in page: zero warnings, zero baked-in fonts in the stylesheet it serves, the Cyrillic alphabet loads. In English you would never have seen a difference - the point is the console is clean and a Vietnamese or Cyrillic name in a staff table now keeps the mono face.\n\n3. Worth knowing: the automatic reviewer was asked (the change is over the size that triggers it, because I added a small test) and it died at start-up in one second - no verdict, the same failure as card 1041 last night, not a rejection. The checks were green on the first run, the change is build config and a test, no money or sign-in code, so it merged on the checks as the standing orders say. A test now pins the rule so a future font cannot quietly re-open it.\n\n4. Left as it was: the customer-route card (1036) still wants your eye on the trade it would make and is not started. No check-up clock has fired; the Warden fires tomorrow, the Janitor Monday.\n\nSpent: nothing. Nothing on your desk.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,11 +138,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "31 open, none ordered by you, none urgent. 17 untouched for 7 days."
+        "source": "30 open, none ordered by you, none urgent. 17 untouched for 7 days."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-19T04:58:34.203Z",
+      "readAt": "2026-09-19T06:20:18.623Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5091,6 +5091,13 @@
   ],
   "pipeline": [
     {
+      "id": "font-inline-1044",
+      "title": "Card 1044: fonts are never baked into the stylesheet - six browser security warnings on every page to zero, 18 kilobytes off the stylesheet",
+      "status": "merged",
+      "prNumber": 1045,
+      "note": "One build-config entry: a font file is never inlined, whatever its size; everything else keeps the default. Read at the built stylesheet: six baked-in fonts before (extended Cyrillic in both formats, Vietnamese), zero after; stylesheet 257,552 to 239,384 bytes. Old and new production builds served side by side: six security warnings on the sign-in page to zero, the Cyrillic face from refused to loaded. Re-read on the LIVE page after the deploy: zero warnings. The security policy is untouched. Checks green first run; the reviewer died at start-up (no verdict), merged on the checks. Production build c5d4e3ba."
+    },
+    {
       "id": "staff-cycle-1042",
       "title": "Card 1042: the app frame no longer loops back through the staff pages' shared folder - eight build warnings to zero, 7.6 kilobytes off the main download",
       "status": "merged",
@@ -7386,9 +7393,16 @@
     {
       "id": "queue-shape-0919f-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 31 open, one closed tonight (1042), one filed (1044, a one-line config fix); NEXT UP empty; one Performance card left (1036 wants your eye); the Warden fires tomorrow",
       "detail": "Read at 05:40Z: 31 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. 1042 built, merged, live and closed with its receipt. 1044 is new tonight: six browser security warnings per page on the production build because two rarely-used alphabets of the mono font are baked into the stylesheet and the app's security policy refuses fonts delivered that way - invisible in English, one config line to fix, filed under Small fixes and Bugs for the next shift rather than worked, because a shift does not build what it thought of itself. 1036 (a smaller first download at the cost of a possible spinner on the way to the studio) is a trade for your eye before anything ships. No check-up clock has fired.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0919g-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 30 open, one closed tonight (1044); NEXT UP empty; nothing left under Bugs or Small fixes; one Performance card (1036 wants your eye); the Warden fires tomorrow",
+      "detail": "Read at 06:19Z: 30 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. 1044 built, merged, live and closed with its receipt, so Bugs and Small fixes both stand at zero. 1036 (a smaller first download at the cost of a possible spinner on the way to the studio) is a trade for your eye before anything ships. No check-up clock has fired; the next shift with nothing under a switch is a correct quiet one.\n\nNothing here needs you."
     }
   ],
   "acknowledgedReplyIds": [
@@ -7586,7 +7600,7 @@
     192
   ],
   "nextUp": {
-    "readAt": "2026-09-19T04:58:34.202Z",
+    "readAt": "2026-09-19T06:20:18.622Z",
     "items": []
   }
 }
