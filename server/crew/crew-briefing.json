@@ -1,7 +1,7 @@
 {
-  "edition": 454,
-  "updatedAt": "2026-09-19T03:31:53.702Z",
-  "shift": "ONE SMALL FIX FOR THE TEAM'S OWN PRE-PUSH CHECK IS IN. NOTHING WAITS ON YOU.\n\nThis is an ordinary night shift, working the Process card the Retro filed this morning.\n\n1. Done: the pre-push check the shifts run before opening a change ('pnpm preflight') now always runs the three tests it could never see. Those three find their own subjects by scanning the whole repository, so nothing pointed at them and three changes in one week paid a seven-minute gate run each to learn what a one-minute local check should have said. The check prints them on its own line now, and a test built the same way in future cannot be added without joining that list - the list is checked against the repository itself, both ways, so it cannot rot the way a hand-kept one would.\n\n2. The card said two such tests; the check itself found a THIRD the hour it was written (the one that makes sure every note saying \"such-and-such test covers this\" points at a test that exists). It is on the list with its reason. Production build b21c69e2.\n\n3. Worth knowing: the automatic reviewer could not start on this change - twice, in under a second, spending nothing, the same shape as 12 September when your Fable allowance ran out. This change touches only the team's own tooling, so it went in on the gate's green, as the standing orders say. If a money or sign-in change comes up before the reviewer is back, that one waits for it.\n\n4. The three Performance cards the Machinist filed this morning were read at the code and none is small enough to take alongside: the bundle-size budget (1035) wants the gate layout that 1034 decides first, so it is noted on the card and left for that shift.\n\nSpent: nothing. Nothing on your desk. The Warden fires tomorrow, the Janitor Monday.",
+  "edition": 455,
+  "updatedAt": "2026-09-19T04:13:25.635Z",
+  "shift": "THE CHECKS ON EVERY CHANGE RUN ABOUT TWO MINUTES FASTER FROM TONIGHT. NOTHING WAITS ON YOU.\n\nThis is an ordinary night shift, working the oldest of the three speed cards the Machinist filed this morning.\n\n1. Done: every change the team makes waits on an automatic check run before it can go in, and that run averaged about eight and a half minutes. One of its readings - the code-pattern scan - was queued in front of the tests for about a minute and forty seconds, and it never needed to be: it reads the files as they are and waits for nothing. It runs on its own machine beside the rest now. The first run on the new shape took 6 minutes 44 seconds against a typical 8 minutes 41 before - about 22% off, which is what the card expected. Ten more runs will say whether that holds; the Machinist reads them on its own clock next week.\n\n2. The part that matters more than the speed: a check that runs on its own is worth nothing unless something refuses to merge when it goes red. The tool the shifts merge with now reads that scan by name and stops on a red one, exactly as it does for the main run - and the branch rules on GitHub list it too. Production build 404659c8.\n\n3. Worth knowing: the automatic reviewer still cannot start - one attempt, under a second, spending nothing, the same shape as 12 September when your Fable allowance ran out. This change touches only the team's own tooling, so it went in on the gate's green, as the standing orders say. A money or sign-in change would wait for the reviewer.\n\n4. The bundle-size card (1035) now has the layout it was waiting for and is takeable; the customer-route card (1036) still wants your eye on the trade it would make, and is not started.\n\nSpent: nothing. Nothing on your desk. The Warden fires tomorrow, the Janitor Monday.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,7 +138,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "34 open, none ordered by you, none urgent. 17 untouched for 7 days."
+        "source": "31 open, none ordered by you, none urgent. 17 untouched for 7 days."
       }
     ],
     "ladderCards": {
@@ -5091,6 +5091,13 @@
   ],
   "pipeline": [
     {
+      "id": "gate-split-1034",
+      "title": "Card 1034: the code-pattern scan runs beside the tests instead of in front of them - the check run on every change is about two minutes shorter",
+      "status": "merged",
+      "prNumber": 1040,
+      "note": "The automatic check on every change was one long queue of steps on one machine, and the code-pattern scan (a minute and forty) waited in that queue while needing nothing the later steps install. It has its own machine now. First run on the new shape: 6 min 44 s against a typical 8 min 41 s before (twelve runs read). The merge tool reads the new scan by name and stops on a red one, because the GitHub rule on its own does not bind the account that merges here - a lesson this project has paid for before. Merged on the gate: the reviewer died at start once, spending nothing. Production build 404659c8."
+    },
+    {
       "id": "preflight-always-1037",
       "title": "Card 1037: the pre-push check now always runs the three tests it could never see - and it found the third one itself",
       "status": "merged",
@@ -6826,7 +6833,7 @@
     {
       "id": "queue-shape-0919c-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 32 open, none takeable tonight beyond the one landed (1037 closed); NEXT UP empty; the Warden fires tomorrow. The automatic reviewer is not starting (allowance shape) - money and sign-in changes will wait for it",
       "detail": "Read at 03:31Z: 32 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged from the Retro) - roadmap rungs you have not reached rather than neglected work. Three Performance cards are open (1034, 1035, 1036), each sized at the code tonight as bigger than a batch item; 1035 is noted as waiting on 1034. The reviewer: two runs on PR 1039 died at start in under a second at zero cost (is_error, the #218/#884 shape). Team tooling merges on the gate alone; a money or auth change opened before it returns is held ready with its label, per the orders.\n\nNothing here needs you."
     },
@@ -7347,6 +7354,13 @@
       "state": "resolved",
       "title": "The queue: 30 open, nothing closed, nothing filed. NEXT UP empty; nothing on offer under any switch; the Janitor ran its round, the Retro and the Machinist fire tomorrow",
       "detail": "The Janitor's every-three-days round found nothing a shift could take and filed no card. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading) - level with the last six shifts, and still roadmap rungs you have not reached rather than neglected work.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0919d-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 31 open, one closed tonight (1034); NEXT UP empty; two Performance cards left (1035 takeable now, 1036 wants your eye); the Warden fires tomorrow. The automatic reviewer is still not starting (allowance shape)",
+      "detail": "Read at 04:12Z: 31 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged from this morning) - roadmap rungs you have not reached rather than neglected work. 1034 built, merged and closed with its first reading on the card; the ten-run after reading is the Machinist's on its clock (~26 Sep). 1035 (a size budget for the first download, so it cannot quietly grow back) is takeable next; 1036 (a smaller first download at the cost of a possible spinner on the way to the studio) is a trade for your eye before anything ships. No check-up clock has fired. The reviewer: one run tonight, under a second, spent nothing - money and sign-in changes wait for it.\n\nNothing here needs you."
     }
   ],
   "acknowledgedReplyIds": [
