@@ -1,7 +1,7 @@
 {
-  "edition": 456,
-  "updatedAt": "2026-09-19T04:58:29.455Z",
-  "shift": "THE FIRST DOWNLOAD OF THE APP NOW HAS A SIZE LIMIT THE CHECKS ENFORCE. NOTHING WAITS ON YOU.\n\nThis is an ordinary night shift, working the second of the three speed cards the Machinist filed this morning.\n\n1. Done: when a visitor opens the app, the first thing their browser downloads is 452 kilobytes. A week ago it was 637, and the change that cut it had no guard - one careless import of a staff page from a customer screen would have put a chart library back into every visitor's first download, and nothing would have said so. From tonight there is a line at 480 kilobytes (about 6% of room for ordinary work), and every change is measured against it before it can go in: on the shift's own machine before the change is even sent (about nine seconds), on the check run itself, and by the tool the shifts merge with, which stops on a red. It is also in the branch rules on GitHub.\n\n2. It was proven able to fail before it went in: I deliberately made a customer screen import the admin overview page, and the check went red at 556 kilobytes; put it back, green at 452. The check run's total time did not move (6 min 54 s tonight against 6 min 44 s for the last one) because the new measurement runs on its own machine beside the rest, taking 36 seconds. Production build 6b61430d.\n\n3. Worth knowing: the automatic reviewer still cannot start - one attempt, under a second, spending nothing, the same allowance shape as 12 September. This change touches only the team's own tooling, so it went in on the gate's green as the standing orders say; a money or sign-in change would wait for the reviewer.\n\n4. Found on the way and filed, not worked: the build prints the same warning eight times about a loop between the app frame and the staff pages. I measured it - it costs a visitor about nothing - and it is a one-line fix under Small fixes (card 1042). The customer-route card (1036) still wants your eye on the trade it would make, and is not started.\n\nSpent: nothing. Nothing on your desk. The Warden fires tomorrow, the Janitor Monday.",
+  "edition": 457,
+  "updatedAt": "2026-09-19T05:39:40.758Z",
+  "shift": "THE BUILD WARNING ABOUT A LOOP BETWEEN THE APP FRAME AND THE STAFF PAGES IS GONE - ONE LINE. NOTHING WAITS ON YOU.\n\nThis is an ordinary night shift, working the one-line fix the last shift filed (card 1042) under Small fixes.\n\n1. Done: every time the app was built, the build tool printed the same warning eight times - the app's outer frame (the rail, the header, your account menu) reached into the staff pages' shared folder for one small helper, and one of those staff pages reached back for the frame, so the two sides formed a loop the build tool said \"will likely lead to broken execution order\". Nothing was actually breaking, and I measured last night that it cost a visitor about nothing. The fix is that the frame now takes the helper from its own file instead of the shared folder. The warning count went from eight to zero, and the app's main download got 7.6 kilobytes lighter. Production build c65727e3.\n\n2. Checked in the real thing, not the dev server: because this is about how the build splits the app into pieces, I built the app exactly as production does and opened all nine staff pages on it (overview, users, audit logs, bug reports, change requests, invite codes, crew, and the moderator dashboard) - every one drew its frame with no page error and no missing-piece error. The check run went green; the first attempt went red only because my PR description used the phrase \"Closes 1042\", which the checks refuse on purpose so a card cannot be closed by accident - I reworded it and re-ran.\n\n3. Found on the way and filed, not worked (card 1044): on the production build, every page logs six browser security warnings about the mono font. Two rarely-used alphabets of that font (extended Cyrillic and Vietnamese) are small enough that the build tool bakes them straight into the stylesheet, and the app's own security policy refuses fonts delivered that way. In English nothing is missing - the Latin part loads normally - but the warnings are noise on every page, and a Vietnamese name in a staff table would fall back to another font. It is one config line; it never showed up before because the dev server does not bake fonts in, and every visual check until tonight ran on the dev server.\n\n4. Worth knowing: the automatic reviewer was not needed tonight - this change was five lines of the team's own plumbing, so the triage looked and declined a review, which is the design working. The customer-route card (1036) still wants your eye on the trade it would make, and is not started.\n\nSpent: nothing. Nothing on your desk. The Warden fires tomorrow, the Janitor Monday.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,7 +138,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "30 open, none ordered by you, none urgent. 17 untouched for 7 days."
+        "source": "31 open, none ordered by you, none urgent. 17 untouched for 7 days."
       }
     ],
     "ladderCards": {
@@ -5091,6 +5091,13 @@
   ],
   "pipeline": [
     {
+      "id": "staff-cycle-1042",
+      "title": "Card 1042: the app frame no longer loops back through the staff pages' shared folder - eight build warnings to zero, 7.6 kilobytes off the main download",
+      "status": "merged",
+      "prNumber": 1043,
+      "note": "One import path changed: the frame takes the account-menu counts helper from its own file rather than the staff folder's index, which also re-exported the staff page frame that imports the app frame. Build warnings 8 to 0, main download 1,536 to 1,529 kilobytes. Proven on the production build, not the dev server: nine staff routes opened, frame present on each, no page or missing-piece error. Gate green; triage declined the review (five lines, no money path). Production build c65727e3."
+    },
+    {
       "id": "bundle-budget-1035",
       "title": "Card 1035: the first download has a size limit the checks enforce - 480 kilobytes on 452 measured, proven able to go red before it went in",
       "status": "merged",
@@ -7372,9 +7379,16 @@
     {
       "id": "queue-shape-0919e-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 30 open, one closed tonight (1035), one filed (1042, a one-line fix); NEXT UP empty; one Performance card left (1036 wants your eye); the Warden fires tomorrow. The automatic reviewer is still not starting (allowance shape)",
       "detail": "Read at 04:58Z: 30 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. 1035 built, merged, live and closed with its receipt; the ten-run after reading is the Machinist's on its clock (~26 Sep). 1042 is new tonight: a build warning about a loop between the app frame and the staff pages, measured at about nothing for a visitor, one line to fix - filed under Small fixes for the next shift rather than worked, because the rule is that a shift does not build what it thought of itself. 1036 (a smaller first download at the cost of a possible spinner on the way to the studio) is a trade for your eye before anything ships. No check-up clock has fired. The reviewer: one run tonight, under a second, spent nothing - money and sign-in changes wait for it.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0919f-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 31 open, one closed tonight (1042), one filed (1044, a one-line config fix); NEXT UP empty; one Performance card left (1036 wants your eye); the Warden fires tomorrow",
+      "detail": "Read at 05:40Z: 31 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. 1042 built, merged, live and closed with its receipt. 1044 is new tonight: six browser security warnings per page on the production build because two rarely-used alphabets of the mono font are baked into the stylesheet and the app's security policy refuses fonts delivered that way - invisible in English, one config line to fix, filed under Small fixes and Bugs for the next shift rather than worked, because a shift does not build what it thought of itself. 1036 (a smaller first download at the cost of a possible spinner on the way to the studio) is a trade for your eye before anything ships. No check-up clock has fired.\n\nNothing here needs you."
     }
   ],
   "acknowledgedReplyIds": [
