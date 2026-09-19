@@ -225,6 +225,8 @@ describe("the class is keyed on the SHAPE now, because three greps were keyed on
       "DECLARED REMAINDER: asserts EXACT codes (toBe(0)) on filesystem helpers (mklink, rm) rather than on a gate's verdict — same loud half",
     "server/testing/hookDriver.test.ts":
       "THIS FILE — it carries the reader's own positive controls, which are source-shaped strings the reader necessarily matches (#943). It drives nothing directly: every child here goes through runHook or runHookAsync, which are its subjects",
+    "server/preflight.test.ts":
+      "the same shape as this file's own entry (#1037): its always-run arm carries a FIXTURE deriver module — a source-shaped string holding `execFileSync(\"git\", [\"ls-files\"…` so `populationDerivers` can be proven to key on the CALL — and its one real child (`git ls-files` over the tree) goes through runHook",
   };
 
   /**

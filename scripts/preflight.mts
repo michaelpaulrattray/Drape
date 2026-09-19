@@ -33,6 +33,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
+  ALWAYS_RUN_SUITES,
   PREFLIGHT_CHECKS,
   aliasPrefixes,
   buildSubjectIndex,
@@ -218,14 +219,32 @@ const subjects = buildSubjectIndex(
 );
 const selection = selectDiffAdjacentTests(changed, repoTests, subjects);
 
+/*
+  #1037 — THE GUARDS WHOSE SUBJECT IS THE TREE. `ALWAYS_RUN_SUITES` names the
+  suites the reverse index is structurally blind to (their population is
+  derived from `git ls-files`, so there is no literal to resolve); they run on
+  every invocation, whatever the diff selected. A member the tree does not
+  hold is a tool error, not a silent skip: a list that quietly drops a missing
+  guard is green about a test it never ran, which is the one shape this script
+  must never take.
+*/
+const alwaysRun = ALWAYS_RUN_SUITES.map((member) => member.file);
+const collectedSet = new Set(repoTests);
+for (const file of alwaysRun) {
+  if (!collectedSet.has(file)) fail(`ALWAYS_RUN_SUITES names ${file}, which is not a collected suite in this tree`);
+}
+const alwaysAdded = alwaysRun.filter((file) => !selection.files.includes(file)).sort();
+const filesToRun = [...new Set([...selection.files, ...alwaysRun])].sort();
+
 const checks: PreflightCheck[] = [...PREFLIGHT_CHECKS];
-if (runTests && selection.files.length > 0) {
+if (runTests && filesToRun.length > 0) {
   // Chunked, never truncated — see `chunkVitestFiles`. On this repository a
   // one-file change under `server/` selects 263 suites and a single command
   // line of 9,075 characters, which is past cmd.exe's limit; the node entry
   // plus these chunks keep every invocation comfortably inside CreateProcess's.
-  const chunks = chunkVitestFiles(selection.files);
-  const where = `${selection.files.length} file${selection.files.length === 1 ? "" : "s"} in ${selection.directories.length} dir${selection.directories.length === 1 ? "" : "s"}`;
+  const chunks = chunkVitestFiles(filesToRun);
+  const always = alwaysAdded.length > 0 ? ` + ${alwaysAdded.length} always-run` : "";
+  const where = `${selection.files.length} file${selection.files.length === 1 ? "" : "s"} in ${selection.directories.length} dir${selection.directories.length === 1 ? "" : "s"}${always}`;
   chunks.forEach((chunk, index) => {
     const part = chunks.length === 1 ? "" : ` — part ${index + 1}/${chunks.length}`;
     checks.push({
@@ -261,6 +280,11 @@ if (selection.uncovered.length > 0) {
 }
 if (runTests && selection.files.length === 0) {
   console.log("  no diff-adjacent tests — the gate still runs the whole suite");
+}
+if (runTests && alwaysAdded.length > 0) {
+  // Named, because a clock guard running for a scripts/ diff reads as a
+  // surprise otherwise — and the answer is the whole point of #1037.
+  console.log(`  always-run guards (population derived, no literal to index): ${alwaysAdded.join(", ")}`);
 }
 console.log("");
 
