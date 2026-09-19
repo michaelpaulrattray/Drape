@@ -39,6 +39,7 @@
  */
 import {
   ORDERED_BAND_RULE,
+  rankFromLabels,
   sortOrderedBand,
 } from "./orderedBand.mts";
 import { OPEN_QUEUE_LIMIT, emptyOrderedBandVerdictOnLabels } from "./nextUpItems.mts";
@@ -163,7 +164,12 @@ export function isUrgent(row: Row): boolean {
  */
 export function orderedBandRunningOrder(rows: readonly Row[]): Row[] {
   return sortOrderedBand(
-    rows.map((row) => ({ ...row, urgent: isUrgent(row), issueNumber: row.number })),
+    rows.map((row) => ({
+      ...row,
+      urgent: isUrgent(row),
+      rank: rankFromLabels(row.labels.map((label) => label.name)),
+      issueNumber: row.number,
+    })),
   );
 }
 

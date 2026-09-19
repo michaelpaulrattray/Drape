@@ -52,6 +52,13 @@
  * consumer passes its own row shape through and keeps whatever else it carries.
  */
 export type OrderedBandRow = {
+  /**
+   * His STATED place in the sequence, read from an `order:<n>` label by
+   * `rankFromLabels` — `null` (or absent) when he did not rank the card.
+   * Optional so a consumer that has not learned the label keeps today's order
+   * for every row rather than failing to build one.
+   */
+  rank?: number | null;
   /** Does the card carry the `urgent` label. */
   urgent: boolean;
   /** ISO-8601, as GitHub stamps it at filing. May be absent — see `filedKey`. */
@@ -81,13 +88,60 @@ export function filedKey(createdAt: unknown): string {
 }
 
 /**
- * HIS RULING AS A COMPARATOR: urgent first, then oldest first, then the issue
- * number.
+ * THE LABEL THAT CARRIES HIS STATED SEQUENCE — `order:<n>` (#1006).
  *
- * The second limb is PROGRAM.md's ordered clause untouched (*absent a word,
+ * On 2026-09-16 he ordered five cards in one sentence (*"527 do it, 129 build
+ * it, 105-108 clear them"*) and NEXT UP showed him the exact reverse, because
+ * the comparator below had only `urgent` and age to read and his five were
+ * numbered in almost the opposite order to his intent. PROGRAM.md's ordered
+ * clause had predicted the moment: *"if he pins a second card this way, that
+ * is the point at which the ordering wants a real field rather than a
+ * paragraph."* The Retro ruled it a LABEL rather than a Projects field, because
+ * every consumer already holds the row's labels from one `gh issue list` call
+ * and a second source is the drift this module exists to close.
+ *
+ * The relay applies it when it files his sequence: `order:1` on the card he
+ * named first, `order:2` on the next, and so on. Nothing else about a card
+ * changes — `founder-ordered` still says it is his, `urgent` still says it
+ * cannot wait.
+ */
+export const ORDER_LABEL_PREFIX = "order:";
+
+/**
+ * His rank from a card's labels, or `null` when he gave none. ONE reader,
+ * called by all three consumers, so `order:01`, `order: 2` and `order:two`
+ * cannot mean three different things on three pages: only a bare positive
+ * integer after the prefix counts, and anything else is treated as no rank
+ * rather than as a guess. Two rank labels on one card (a relay slip) resolve to
+ * the SMALLER — the more urgent reading of a contradictory instruction — and a
+ * consumer that wants to complain about the slip can see both labels itself.
+ */
+export function rankFromLabels(labels: readonly string[]): number | null {
+  let best: number | null = null;
+  for (const label of labels) {
+    if (!label.startsWith(ORDER_LABEL_PREFIX)) continue;
+    const digits = label.slice(ORDER_LABEL_PREFIX.length);
+    if (!/^[1-9][0-9]*$/.test(digits)) continue;
+    const rank = Number(digits);
+    if (best === null || rank < best) best = rank;
+  }
+  return best;
+}
+
+/**
+ * HIS RULINGS AS A COMPARATOR: his stated order first (ranked cards above
+ * unranked, lowest rank first — #1006), then urgent first, then oldest first,
+ * then the issue number.
+ *
+ * ⚠ **A RANK NEVER MOVES A CARD HE DID NOT RANK.** Two unranked cards compare
+ * exactly as they did before #1006, and two cards he gave the SAME rank fall
+ * through to that same rule — so the relay writing `order:1` on one card
+ * changes the position of that card and nothing else.
+ *
+ * The oldest-first limb is PROGRAM.md's ordered clause untouched (*absent a word,
  * oldest first*) and #236, the incident about an old card sitting unworked.
  *
- * ⚠ **THE THIRD LIMB EXISTS TO MAKE THIS A TOTAL ORDER** (review of PR #722,
+ * ⚠ **THE LAST LIMB EXISTS TO MAKE THIS A TOTAL ORDER** (review of PR #722,
  * finding 2). Without it, two cards filed in the same second compared equal and
  * fell to input order under a stable sort — so the three views agreed on ties
  * only because all three feed on one `gh issue list` call and inherit its
@@ -99,6 +153,13 @@ export function filedKey(createdAt: unknown): string {
  * same relation `createdAt` is, so it never contradicts the limb above it.
  */
 export function compareOrderedBand(a: OrderedBandRow, b: OrderedBandRow): number {
+  const ra = a.rank ?? null;
+  const rb = b.rank ?? null;
+  if (ra !== rb) {
+    if (ra === null) return 1;
+    if (rb === null) return -1;
+    return ra - rb;
+  }
   if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
   const byDate = filedKey(a.createdAt).localeCompare(filedKey(b.createdAt));
   if (byDate !== 0) return byDate;
@@ -115,4 +176,4 @@ export function sortOrderedBand<T extends OrderedBandRow>(rows: readonly T[]): T
  * a shift's terminal cannot describe the same sort two different ways.
  */
 export const ORDERED_BAND_RULE =
-  "urgent first, then oldest first (his ruling on #718)";
+  "his stated order first (an `order:<n>` label, lowest first — #1006), then urgent first, then oldest first (his ruling on #718)";

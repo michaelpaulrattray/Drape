@@ -234,6 +234,12 @@ if (ordered === null) {
     that is band 1. Everything else the founder ordered follows, also oldest
     first.
 
+    ⚠ **AND HIS OWN STATED SEQUENCE OUTRANKS BOTH (#1006, 2026-09-19).** When he
+    orders cards in a sentence, the relay files `order:<n>` labels and
+    `orderedBand.mts` puts those first, lowest first; a card he did not rank
+    keeps the order below. The night of 2026-09-16 he ordered five and this
+    block showed him the exact reverse, which is why the label exists.
+
     ⚠ **HE SETTLED IT — #718, Crew reply #168, 2026-09-09, verbatim and
     entire: *"Urgent wins inside your ordered group"*.** So this page's reading
     was the surviving one, and the priority view came to it rather than the

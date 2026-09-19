@@ -114,7 +114,7 @@ import { resolve } from "node:path";
 
 import { heldStatesFromLabels } from "../shared/crewNextUpHold.js";
 
-import { compareOrderedBand } from "./lib/orderedBand.mts";
+import { compareOrderedBand, rankFromLabels } from "./lib/orderedBand.mts";
 
 type Json = Record<string, any>;
 
@@ -314,6 +314,7 @@ const items = rows
       issueNumber: Number(row.number),
       title: String(row.title ?? ""),
       urgent: labels.includes("urgent"),
+      rank: rankFromLabels(labels),
       /* ⚠ Handed through RAW: `filedKey` owns what a missing date means, and
          two consumers normalising it differently is what finding 1 of PR
          #722's review caught — `"undefined"` sorts last, `""` sorts first. */

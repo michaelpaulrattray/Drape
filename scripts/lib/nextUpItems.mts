@@ -23,7 +23,7 @@ import {
   holdReasonFromBody,
 } from "../../shared/crewNextUpHold.js";
 
-import { sortOrderedBand } from "./orderedBand.mts";
+import { rankFromLabels, sortOrderedBand } from "./orderedBand.mts";
 
 /** A row as `gh issue list --json number,title,labels,body,createdAt` gives it. */
 export type OrderedIssue = {
@@ -252,6 +252,10 @@ export function planNextUpItems(input: {
       issueNumber: Number(row.number),
       title: String(row.title).slice(0, 300),
       urgent: labels.includes("urgent"),
+      /* His stated place, if he gave one — read by the one reader all three
+         views share (#1006), so the page and the terminal cannot disagree on
+         what an `order:` label means. */
+      rank: rankFromLabels(labels),
       /* ⚠ NOT stringified here — `filedKey` in `scripts/lib/orderedBand.mts`
          owns what a missing date means, once, for all three views. */
       createdAt: row.createdAt,
@@ -266,5 +270,10 @@ export function planNextUpItems(input: {
     that would tell him to unblock something."* The position stays the
     priority order; the chip explains the skip.
   */
-  return sortOrderedBand(rows).map(({ createdAt: _sortKey, ...item }) => item);
+  /* ⚠ BOTH sort keys come off here — `rank` as well as `createdAt`. The
+     schema is `.strict()`, TypeScript lets an extra key survive a rest-spread,
+     and PR #1038 shipped `rank` through this line until its review read it:
+     the first non-empty band would have degraded his whole page. The arm in
+     `orderedBandOrder.test.ts` parses this output through the real schema. */
+  return sortOrderedBand(rows).map(({ createdAt: _sortKey, rank: _rank, ...item }) => item);
 }
