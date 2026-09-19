@@ -1,7 +1,7 @@
 {
-  "edition": 460,
-  "updatedAt": "2026-09-19T08:10:47.565Z",
-  "shift": "YOUR EYE PASSED THE CANVAS FRAMES (\"good\"). NOTHING ON YOUR DESK, NOTHING UNDER ANY SWITCH.\n\nA short shift: one reply from you, one record made, no code changed.\n\n1. Your word on the canvas loading frame - \"good\", 08:00 UTC - is recorded on card 1036, which was already closed on its numbers. Those two frames leave the eye gallery now; the split it showed you (the canvas page arriving the first time a canvas is opened, 450 to 246 kilobytes off everyone's first download) stays exactly as it went live last night. Nothing to undo.\n\n2. Nothing else was takeable: your ordered list is empty, no card is urgent, and every category under your switches stands at zero on fresh counts (129 casting upkeep and 108 housekeeping are held on their own rows, 45 security is parked). No check-up clock has fired - the Warden's fires tomorrow, the Janitor's on Monday.\n\n3. The automatic reviewer is still unread since last night's three start-up deaths (cards 1041, 1044, 1036); nothing this shift needed it. A money or sign-in change would still wait for a real verdict before merging.\n\nSpent: nothing. Nothing on your desk. The next shift with nothing to take is a correct quiet one.",
+  "edition": 461,
+  "updatedAt": "2026-09-19T14:31:08.571Z",
+  "shift": "THE WEEKLY SECURITY CHECK-UP RAN (WARDEN, ROUND 4). EVERYTHING CLEAN; NOTHING TO FILE; NOTHING ON YOUR DESK.\n\nA patrol shift: readings only, no code changed, nothing spent.\n\n1. The two things last week's check-up found are both closed and proven at the artifacts. The 91 known package advisories (3 critical, 21 high) are 0 - the security-first bump went live on 13 September and the audit reads clean today, with the development tools clean too. And your \"C\" on card 858 did what it promised: the moment the alerts switch was turned on (12 Sep, 16:11 UTC), the first two security fixes arrived by themselves within two minutes - sharp, the image decoder on the upload doors, first. That road is live and it was proven by its own timestamps, not by a card saying so.\n\n2. Every standing reading held: the weekly secret scan over the whole history (3683 commits, none found); the static code scan (0 findings, now its own required check); the six access-control test files (55 tests, up from 52 as guards were added); the staff audit trail (one new row all week - your own sign-in on 19 Sep; no abuse rows ever, no blocked addresses, no locked or suspended accounts); and the week's 17 changes on the sign-in, money and admin paths, each read - all of them narrow what is accepted, none widen it.\n\n3. One thing could not be measured yet and is said rather than skipped: whether the package scanner now blocks (rather than warns on) a critical-vulnerability package under the stricter policy you chose. No change this week added a package for it to react to. The next one that does is the reading.\n\nSpent: nothing. Nothing on your desk. The next check-up is the Janitor's, tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-19T06:20:18.623Z",
+      "readAt": "2026-09-19T14:31:31.126Z",
       "items": [
         {
           "issueNumber": 16,
@@ -2568,7 +2568,7 @@
       "id": "board-lazy-1036-frames",
       "title": "Opening a canvas after tonight - the frame you see while its code downloads, and the loaded canvas",
       "question": "Does the wait on a canvas read right? On a slow connection you would see the first frame for about two seconds before the canvas's pictures start loading (the same frame you already saw for that) - the dotted field, the drape mark, the hairline. No spinner was added, nothing else changed on screen. Card 1036 is closed on the numbers; if this wait reads wrong to you, say so and one line undoes it.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-19T07:19:47.348Z",
       "issueNumber": 1036,
       "frames": [
@@ -7441,9 +7441,16 @@
     {
       "id": "queue-shape-0919i-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 29 open, none moved; NEXT UP empty; nothing under any of your switches; your eye closed the last item on your desk",
       "detail": "Read at 08:10Z: 29 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged from last night) - roadmap rungs you have not reached rather than neglected work. Your \"good\" on the canvas frames (reply 193) is recorded on card 1036. Every switched category is at zero (129 and 108 are blocked on their own rows, 45 is parked). No check-up clock has fired; the Warden fires tomorrow.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0920a-warden",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 29 open, none moved; NEXT UP empty; nothing under any of your switches; the Warden ran its round and found nothing to file",
+      "detail": "Read at 14:30Z: 29 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. The Warden's weekly readings are all clean and both of last week's cards (857, 858) are closed with receipts read at the artifacts. Every switched category is at zero (129 and 108 are blocked on their own rows, 45 is parked). The Janitor's clock fires tomorrow.\n\nNothing here needs you."
     }
   ],
   "acknowledgedReplyIds": [
@@ -7642,7 +7649,7 @@
     193
   ],
   "nextUp": {
-    "readAt": "2026-09-19T06:20:18.622Z",
+    "readAt": "2026-09-19T14:31:31.125Z",
     "items": []
   }
 }

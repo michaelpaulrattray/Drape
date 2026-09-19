@@ -290,3 +290,73 @@ own card if ever wanted); the change-request self-approval shape (CLAUDE.md's
 "new control, founder decision" sentence already owns it).
 
 **Spent: nothing.** One throwaway PR, one gate run, no money, no credits.
+
+## Run 4 — 2026-09-20 00:22–00:4x AEST (Warden, patrol #4, crew run #294)
+
+Ran because `patrol-clocks.mts` read the seat **DUE today** (7 days since run 3)
+with his Security switch ON, NEXT UP empty, no replies, no taps. Run 3's brief
+worked in order: the scheduled secrets run, the audit number and whether #857
+landed, the Dependabot road's liveness proof under his #858 "C", Socket under
+Higher Noise, the audit rows, the surface diff — then the standing two
+(semgrep, the suites).
+
+**This run found nothing to file. Every reading held or improved, and the two
+cards run 3 left are both closed with their receipts read at the artifacts.**
+
+### A. Findings baseline — the readings
+
+| reading | at | verdict | done with it |
+|---|---|---|---|
+| gitleaks, full history — the 2026-09-14 scheduled run (run 3's item 1) | run **34890166419**, 2026-09-14T19:59Z, `5db9a07a`, cron, gitleaks 8.30.0 | **3683 commits scanned, `no leaks found`** | Read at the log. Baseline 3390 → 3683 commits, still zero. Next scheduled 2026-09-21. |
+| `pnpm audit --prod` (run 3's item 2) | `f7c563b7`, lockfile at HEAD | **`No known vulnerabilities found`** — and with dev: `{"low":0,"moderate":0,"high":0,"critical":0}` | Run 3 read **91 (3 critical, 21 high)**. **#857 landed** the same night: PR #877 `7e9f07cd` (12 Sep 23:45Z — sharp 0.35.4 on the upload doors, mysql2, drizzle, @aws-sdk, `streamdown` deleted) took `--prod` to 0; PR #881 `2ba68f03` (13 Sep) took the 29 development-scope advisories GitHub still showed to 0. Both closed with receipts; card #857 CLOSED 12 Sep 23:46Z. |
+| the roads that read a known CVE (run 3's ⚠, #858) | repository settings via the API, 00:30 local | **`GET …/vulnerability-alerts` → 204 (alerts ON)**; Dependabot alerts: **0 open, 100+ `fixed`** (runtime rows `fixed_at` 2026-09-12, development rows 2026-09-13 — the two PRs above) | **The road is proven LIVE, at the timestamps**: the relay's `PUT` landed 2026-09-12T16:11:06Z on his "C" (Crew reply #179); Dependabot's first security PRs appeared at **16:12:47Z (#861, sharp 0.34.5 → 0.35.4)** and **16:12:52Z (#863, mysql2)** — under two minutes after the switch, both bodies carrying the security advisory. Both were closed unmerged because #877 carried the same bumps in one security-first PR; #878 (nanoid, 23:44Z) likewise superseded by #881. So the first security PR did appear, and it was the reached package first. #858 CLOSED 12 Sep 16:11Z on his word. |
+| Socket under Higher Noise (his other half of "C") | every PR that changed `pnpm-lock.yaml` since 13 Sep: #881, #1008, #1011, and the two action bumps #935/#936 | **all `Socket Security: Pull Request Alerts` = success** | **Unmeasured, stated rather than skipped**: no PR since the policy change has ADDED a package carrying any alert (two were pure deletions, one a dev bump to fixed versions), so whether Higher Noise now blocks a Critical CVE has had nothing to react to. The next lockfile PR that adds a package is the reading; a throwaway like #856 is NOT re-run for it (one proof of the arms exists; the policy switch is his dashboard's word). |
+| access-control suites + the wired controls | `f7c563b7`, 00:36 local | **6 files / 55 tests green** — `approvalGate` 11, `staffImageBoundary` **6** (was 5), `publicInputStrictness` **11** (was 9), `sessionIssuanceSites` 4, `loginAttackAlert` 11, `bugReportInbox` 12 | Recorded. Five mint sites still five. The two additions are guard arms landed with this week's work, not a widened surface. |
+| semgrep, tree | run **35428421774** (PR #1046, `9dfe8c2b`), job `static-shapes` (its own job since #1040), semgrep 1.174.0 | **`Ran 76 rules on 1831 files: 0 findings`** | 1850 → 1831 files — the janitor's #108 slices removed 40 shadcn primitives and 8 orphans, not readers. Row appended to `docs/WARDEN_SEMGREP.md`'s readings table, which the seat's own record says takes one line per run and had only run 1's two — runs 2 and 3 recorded semgrep here and not there; this run does both. |
+| `audit_logs` (run 3's item 3) | production, **626 rows**, 2026-07-10 → 2026-09-19 | **ONE row since run 3**: id 626, `auth.login`, `info`, userId **1** (his own account), 2026-09-19T06:53:19Z, 89 bytes of metadata | Boundary keys (`masterPrompt`, `technicalSchema`, `preferences`, `resultUrl`, `imageUrl`, `description`) in **0 of 626**. Severity all time: 620 info, 6 warning (the same July six), 0 critical. `abuse.*` still **zero all time**. The newest `auth.login` moved for the first time since 2026-08-25 — his 30-day session from run 2's false alarm was five days from expiry, and this is him signing in again, nothing else. The 22 `casting.scan_miss` rows between 09-09 and 09-13 were run 3's own window. Run 2's question (should the casting writers be in this table) is still nobody's card and this patrol still does not write it. |
+| `blocked_ips` / staff population / lockouts | production | **0 rows / 1 admin, 3 users / 0 suspended, 0 with failed logins, 0 locked** | Unchanged. |
+| the security surface's diff since run 3 | `git log --since=2026-09-12T16:00` over `server/security`, `_core`, the auth routes, billing, admin, stripe, the workflows, the merge tool | **17 commits** — read by title, five opened | **#997 `e6b0297a`** adds a state read BEFORE the approval CAS in `changeRequests.ts` (a request whose person has changed is refused while still deniable) — narrows, never widens, and its comment names the race it leaves to the executors. **#992 `f3867fe8`** refuses a money change request missing its field before it is marked acted on. **#952 `d9295658`** — an older subscription never overwrites a newer one (`stripe/webhooks.ts`, 383-line guard). **`420fe59e`** gives moderator actions their own audit category (his ruling) — `auditLogCategoryAgreement.test.ts` widened. **The two janitor slices** touched four security files by un-exporting only: `TRUSTED_PROXY_HOPS` (still the value `configureTrustedProxy` sets — read at the file), `THEME_BOOT_SCRIPT_HASH` (its guard `client/src/foundation/theme.test.ts` reads the FILE TEXT by regex, not the export — checked because a guard whose subject is un-exported is invariant 7's shape, and it is not that), `isSpokenError`, `SessionPayload` type. Nothing to file. |
+| branch protection (the #858 rider) | `GET …/branches/main/protection` | required checks: `gate-checks`, `founder-gate`, `Socket Security: Pull Request Alerts`, `static-shapes`, `bundle-budget`; `enforce_admins: false` | The two new jobs from this week (#1040, #1041) are REQUIRED, which is the merge tool reading them by name made durable at the repository. `enforce_admins` unchanged — his call, no recommendation, as #858 said. |
+| `knip.yml` nightly | runs 35377686610 (18 Sep), 35260686205 (17 Sep) | both `schedule` / success | Still firing. |
+
+### B. Instrument ledger
+
+Unchanged from run 3 and re-read at the workflow files and at branch
+protection: gitleaks in `gate.yml`; `actionlint + zizmor`; **semgrep is now
+its own job `static-shapes` (#1040) and a REQUIRED check** — before this week
+a semgrep finding reddened `gate-checks` as a whole, now it reddens its own
+line and the merge tool reads it by name; `secrets.yml`'s Monday cron;
+`knip.yml` nightly; `pnpm audit --prod` as this seat's per-run reading (run 3's
+addition, taken again here: 0). **Dependabot security alerts and automated
+security fixes are ON** (run 3's finding, his "C") — the ledger's first row
+that a person outside the crew switched on, read back at the API rather than
+at the card.
+
+### C. Controls
+
+Nothing driven this run. Socket's reaction arms were proven once on #856 (run
+3 §C) and the Higher Noise policy has had no alert to act on since; a control
+is not re-driven to fill a table.
+
+### D. What this run leaves standing, and run 5's brief
+
+Filed: **nothing**. Closed: **nothing** (both of run 3's cards were closed by
+their own shifts). Nothing moved except this record and the semgrep table.
+
+**Run 5 (~2026-09-27) takes, in order:**
+1. `secrets.yml`'s 2026-09-21 run at its log.
+2. `pnpm audit --prod` (expect 0; a non-zero number is the reading, and
+   Dependabot's security PR for it should already exist — read whether it does,
+   which is the road's second liveness proof).
+3. **Socket under Higher Noise, still unmeasured** — if any merged PR since
+   this run ADDED a package, read what Socket said on it.
+4. The `audit_logs` read and the surface diff, as before.
+
+**Not a Warden brief, named so it is not re-proposed:** an `audit` step in the
+gate (#858 did not ask for it and his "C" did not include it); the express 5
+migration; the change-request self-approval shape; `enforce_admins` (his call,
+stated on #858 with no recommendation).
+
+**Spent: nothing.** One read-only disposable against production
+(`scripts/_warden4-audit-rows-disposable.mts`, deleted at close), no PR, no
+gate run, no money, no credits.
