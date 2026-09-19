@@ -25,7 +25,9 @@
  * ⚠ THE EXCUSED LIST IS THE HONEST HALF. Preflight deliberately does NOT run
  * gitleaks, actionlint/zizmor, semgrep or the full `pnpm test` — the first
  * three need tools a dev box may not have and the fourth is the thing whose
- * seven minutes we are trying not to spend twice. Each is named in
+ * seven minutes we are trying not to spend twice. (The bundle budget, #1035,
+ * went the other way: a plain `vite build` any dev box can run, so it is
+ * ADOPTED and its ~10 s are paid here rather than at seven minutes.) Each is named in
  * `EXCUSED_GATE_STEPS` with its reason, so "preflight was green and the gate
  * was red" has a written list of the ways that can honestly happen, rather
  * than being a surprise. **A green preflight is a FLOOR, never a promise.**
@@ -171,6 +173,18 @@ export const PREFLIGHT_CHECKS: readonly PreflightCheck[] = [
     label: "Capability Atlas (static)",
     command: ["pnpm", "capability:check"],
     gateRun: "pnpm capability:check",
+  },
+  {
+    id: "bundle-budget",
+    label: "Bundle budget (build the client, judge the first download)",
+    command: ["npx", "tsx", "scripts/bundle-budget.mts"],
+    // ADOPTED rather than excused (#1035): it is a plain `vite build` plus a
+    // gzip read — ~10 s on the founder's machine, no tool a dev box lacks —
+    // and the red it catches (a staff page pulled eager into the entry chunk)
+    // is exactly the one a shift would otherwise learn about at seven minutes
+    // on the runner. Only a client diff can move it; the ten seconds are paid
+    // on every preflight so the list stays one list (working law 4).
+    gateRun: "npx tsx scripts/bundle-budget.mts",
   },
   {
     id: "script-guards",

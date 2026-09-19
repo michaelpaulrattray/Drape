@@ -652,13 +652,21 @@ describe("the SECOND mirror — the collected roots, against vitest.config.ts it
 });
 
 describe("the check list itself", () => {
-  it("runs in the gate's own order", () => {
+  it("runs in the gate's own order (a parallel job — the bundle budget — sits after the serial checks it cannot precede)", () => {
     expect(PREFLIGHT_CHECKS.map((c) => c.id)).toEqual([
       "typecheck",
       "architecture",
       "capability",
+      "bundle-budget",
       "script-guards",
     ]);
+  });
+
+  it("the bundle budget is ADOPTED, not excused — the gate's build runs on the shift's own box (#1035)", () => {
+    const budget = PREFLIGHT_CHECKS.find((c) => c.id === "bundle-budget");
+    expect(budget?.command).toEqual(["npx", "tsx", "scripts/bundle-budget.mts"]);
+    expect(budget?.gateRun).toBe("npx tsx scripts/bundle-budget.mts");
+    expect(EXCUSED_GATE_STEPS.some((e) => e.gateRun.includes("bundle-budget"))).toBe(false);
   });
 
   it("the vitest-running check uses the node entry, so no check can reach cmd.exe's limit", () => {

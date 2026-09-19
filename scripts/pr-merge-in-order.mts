@@ -261,6 +261,11 @@ const GATE_JOB_NAME = "gate-checks";
  */
 const STATIC_SHAPES_JOB_NAME = "static-shapes";
 /**
+ * The bundle budget job (#1035): builds the client and refuses a first
+ * download over the line. Read by name here for the same reason.
+ */
+const BUNDLE_BUDGET_JOB_NAME = "bundle-budget";
+/**
  * Socket's own pass/fail on a PR. The SBOM upload posts beside it as
  * `Socket Security: Project Report`, which is a report and not a verdict — the
  * name here is the one that goes red, and it is the one registered as a
@@ -272,6 +277,7 @@ for (const [needed, workflowPath] of [
   [REVIEW_JOB_NAME, REVIEWER_WORKFLOW_PATH],
   [GATE_JOB_NAME, GATE_WORKFLOW_PATH],
   [STATIC_SHAPES_JOB_NAME, GATE_WORKFLOW_PATH],
+  [BUNDLE_BUDGET_JOB_NAME, GATE_WORKFLOW_PATH],
 ] as const) {
   const file = join(REPO_ROOT, workflowPath);
   if (!existsSync(file)) fail(`${workflowPath} is missing — cannot check job names`);
@@ -319,8 +325,8 @@ type Rollup = {
 };
 
 /**
- * `gate-checks` on the PR's CURRENT head commit (or, by name, its sibling
- * `static-shapes` and Socket's check). `resolve` and `founder-gate` are the
+ * `gate-checks` on the PR's CURRENT head commit (or, by name, its siblings
+ * `static-shapes` and `bundle-budget`, and Socket's check). `resolve` and `founder-gate` are the
  * other siblings and are not the bar
  * (`founder-gate` labels and never blocks, by the founder's 2026-08-25 ruling).
  */
@@ -497,6 +503,7 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     patches,
     gate: gateStateOf(view.statusCheckRollup ?? []),
     staticShapes: gateStateOf(view.statusCheckRollup ?? [], STATIC_SHAPES_JOB_NAME),
+    bundleBudget: gateStateOf(view.statusCheckRollup ?? [], BUNDLE_BUDGET_JOB_NAME),
     supplyChain: gateStateOf(view.statusCheckRollup ?? [], SUPPLY_CHAIN_CHECK_NAME),
     review: reviewPresence(tally),
     verdictCount,
@@ -880,7 +887,7 @@ console.log(`pr-merge-in-order — ${readings.length} PR(s), in the order they w
 for (const pr of readings) {
   console.log(
     `  #${pr.number}  ${pr.headRefName}  opened ${pr.createdAt}  gate=${pr.gate}  ` +
-    `semgrep=${pr.staticShapes}  socket=${pr.supplyChain}  review=${pr.review}  ` +
+    `semgrep=${pr.staticShapes}  bundle=${pr.bundleBudget}  socket=${pr.supplyChain}  review=${pr.review}  ` +
       `${pr.mergeable}/${pr.mergeStateStatus}  files=${pr.files.length}` +
       `${pr.worktreePath ? "" : "  (no worktree)"}`,
   );

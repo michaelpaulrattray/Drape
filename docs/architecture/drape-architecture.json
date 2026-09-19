@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "11a2c23a1bda68b3"
+    "sourceFingerprint": "1f1aba54004e0673"
   },
   "domains": [
     {
@@ -10836,6 +10836,10 @@
     {
       "id": "test:server/bulkRefreshDialog.test.ts",
       "path": "server/bulkRefreshDialog.test.ts"
+    },
+    {
+      "id": "test:server/bundleBudget.test.ts",
+      "path": "server/bundleBudget.test.ts"
     },
     {
       "id": "test:server/bundleFold.test.ts",

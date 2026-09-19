@@ -70,6 +70,19 @@ export type PrReading = {
    */
   staticShapes: GateState;
   /**
+   * THE BUNDLE BUDGET on this head — gate.yml's `bundle-budget` job (#1035),
+   * which builds the client and refuses when the JS a customer downloads
+   * before first paint exceeds the budget declared in
+   * `scripts/lib/bundleBudget.mts`.
+   *
+   * Read here for `staticShapes`' reason, which is `supplyChain`'s reason: a
+   * job the merge road does not read is a decoration on this repository,
+   * where the merging account is an admin and `enforce_admins` is off (#460).
+   * Same four states, same three roads: running waits, red stops, absent is
+   * judged after mergeability.
+   */
+  bundleBudget: GateState;
+  /**
    * SOCKET'S OWN SUPPLY-CHAIN VERDICT on this head (`Socket Security: Pull
    * Request Alerts`) — the founder's ruling on #35, verbatim and entire: **"A"**,
    * which is *"just let Socket's own verdict do the blocking"*.
@@ -488,6 +501,22 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
         "where the finding is wrong), push. `pnpm warden:semgrep` reads the same bytes locally.",
     };
   }
+  // 3.3 The bundle budget, read exactly like the semgrep job: a reading of THIS
+  //     head (#1035). After semgrep so a diff failing several is told about
+  //     them in the gate's own order.
+  if (pr.bundleBudget === "running") {
+    return { kind: "wait", reason: "bundle-budget (the first download's size) is running" };
+  }
+  if (pr.bundleBudget === "red") {
+    return {
+      kind: "stop",
+      reason:
+        "bundle-budget FAILED — the JS a customer downloads before first paint is over the " +
+        "budget in scripts/lib/bundleBudget.mts. This tool never merges past a red gate job — " +
+        "read the run's verdict line, find what went eager (`pnpm machinist:bundle` names the " +
+        "owners), push. `npx tsx scripts/bundle-budget.mts` reads the same bytes locally.",
+    };
+  }
   // 3.5 Socket's supply-chain verdict, immediately after the gate and for the
   //     same reason: it is a reading of THIS head that costs nothing to consult.
   //     See `supplyChain` above for why this is read here rather than left to
@@ -698,6 +727,19 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
         "read that silence as a pass. Either the head was gated by a workflow from before " +
         "#1034 (merge main into the branch and let the gate run again) or gate.yml on this " +
         "branch has lost the semgrep job (read it).",
+    };
+  }
+  /* And the bundle budget's absent, on the same road for the same reason: one
+     workflow run, so a head whose gate RAN without this job is a workflow
+     that lost it, not a run that has not started. */
+  if (pr.bundleBudget === "absent") {
+    return {
+      kind: "stop",
+      reason:
+        "gate-checks ran on this head but no `bundle-budget` job did, and this tool will not " +
+        "read that silence as a pass. Either the head was gated by a workflow from before " +
+        "#1035 (merge main into the branch and let the gate run again) or gate.yml on this " +
+        "branch has lost the bundle-budget job (read it).",
     };
   }
   if (pr.supplyChain === "absent") {
