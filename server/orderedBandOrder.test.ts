@@ -47,6 +47,7 @@ import {
   orderedBandRunningOrder,
   renderBands,
 } from "../scripts/lib/standingExceptions.mts";
+import { crewBriefingSchema } from "./crew/crewBriefing.js";
 
 const NOW = new Date("2026-09-09T13:00:00Z");
 
@@ -433,5 +434,49 @@ describe("his stated order (#1006) — `order:<n>` outranks urgent and age", () 
     expect(ORDERED_BAND_RULE).toContain("order:<n>");
     expect(ORDERED_BAND_RULE).toContain("#1006");
     expect(ORDERED_BAND_RULE).toContain("#718");
+  });
+});
+
+/**
+ * THE BRIEFING CONTRACT — `nextUpItems.mts`'s own docblock says *"nothing here
+ * may add a field that schema does not know"*, and until PR #1038's review no
+ * arm held it: the `rank` the sort rows carry leaked through the rest-spread
+ * into every item, the schema is `.strict()`, and the first non-empty NEXT UP
+ * would have written an edition `readCrewBriefing` refuses — his whole page
+ * degraded, not one block. TypeScript cannot see it (extra keys survive a
+ * spread under assignability), so the proof is the real schema parsing the
+ * real output.
+ */
+describe("the plan's items parse through the REAL briefing schema (PR #1038 review, findings 1–2)", () => {
+  const nextUpSchema = crewBriefingSchema.shape.nextUp;
+  const readAt = "2026-09-19T03:00:00.000Z";
+  const labelled = (number: number, labels: string[]): OrderedIssue => ({
+    number, title: `card ${number}`, createdAt: "2026-09-01T00:00:00Z",
+    labels: labels.map((name) => ({ name })), body: "",
+  });
+
+  it("with ranked, unranked, urgent and held rows — no sort key reaches the page", () => {
+    const items = planNextUpItems({
+      ordered: [
+        labelled(527, ["founder-ordered", "order:1"]),
+        labelled(129, ["founder-ordered", "order:2", "urgent"]),
+        labelled(105, ["founder-ordered"]),
+        labelled(108, ["founder-ordered", "blocked"]),
+      ],
+      appliedReasons: new Map<number, string>([[108, "waits on #1006"]]),
+    });
+    expect(items.map((i) => i.issueNumber)).toEqual([527, 129, 105, 108]);
+    const parsed = nextUpSchema.safeParse({ readAt, items });
+    expect(parsed.success, parsed.success ? "" : JSON.stringify(parsed.error.issues)).toBe(true);
+    for (const item of items) {
+      expect(Object.keys(item).sort()).toEqual(
+        ["issueNumber", "title", "urgent", ...("held" in item ? ["held"] : [])].sort(),
+      );
+    }
+  });
+
+  it("the schema is the control — an extra key on an item IS refused", () => {
+    const [item] = planNextUpItems({ ordered: [labelled(1, ["founder-ordered"])], appliedReasons: new Map() });
+    expect(nextUpSchema.safeParse({ readAt, items: [{ ...item, rank: null }] }).success).toBe(false);
   });
 });

@@ -270,5 +270,10 @@ export function planNextUpItems(input: {
     that would tell him to unblock something."* The position stays the
     priority order; the chip explains the skip.
   */
-  return sortOrderedBand(rows).map(({ createdAt: _sortKey, ...item }) => item);
+  /* ⚠ BOTH sort keys come off here — `rank` as well as `createdAt`. The
+     schema is `.strict()`, TypeScript lets an extra key survive a rest-spread,
+     and PR #1038 shipped `rank` through this line until its review read it:
+     the first non-empty band would have degraded his whole page. The arm in
+     `orderedBandOrder.test.ts` parses this output through the real schema. */
+  return sortOrderedBand(rows).map(({ createdAt: _sortKey, rank: _rank, ...item }) => item);
 }
