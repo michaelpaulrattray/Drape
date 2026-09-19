@@ -95,6 +95,7 @@ const pr = (over: Partial<PrReading> = {}): PrReading => ({
   patches: [],
   gate: "green",
   staticShapes: "green",
+  bundleBudget: "green",
   supplyChain: "green",
   review: "none",
   verdictCount: 0,
@@ -397,6 +398,54 @@ describe("decideMergeAction — the branch order is the contract", () => {
 
   it("merges when gate-checks, static-shapes and Socket are all green — the control on the arms above", () => {
     expect(decideMergeAction(pr({ gate: "green", staticShapes: "green", supplyChain: "green" }), ctx).kind).toBe("merge");
+  });
+
+  /*
+    ⚠ THE BUNDLE BUDGET — #1035 added `bundle-budget` beside `static-shapes`,
+    and it is read for the identical reason: the merging account is an admin,
+    `enforce_admins` is off, and a required check alone binds nobody here.
+  */
+  it("STOPS on a red bundle-budget job — the first download over the line blocks the merge", () => {
+    const a = decideMergeAction(pr({ gate: "green", staticShapes: "green", bundleBudget: "red" }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/bundle-budget FAILED/);
+  });
+
+  it("waits while the bundle-budget job is still building", () => {
+    const a = decideMergeAction(pr({ bundleBudget: "running" }), ctx);
+    expect(a.kind).toBe("wait");
+    expect(a.kind === "wait" && a.reason).toMatch(/bundle-budget/);
+  });
+
+  it("STOPS when gate-checks ran on a MERGEABLE head and bundle-budget did not — silence is not a pass", () => {
+    const a = decideMergeAction(pr({ gate: "green", bundleBudget: "absent" }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/no `bundle-budget` job did/);
+  });
+
+  it("when every gate job is absent it is the gate's own wait, not the budget stop", () => {
+    const a = decideMergeAction(pr({ gate: "absent", staticShapes: "absent", bundleBudget: "absent" }), ctx);
+    expect(a.kind).toBe("wait");
+    expect(a.kind === "wait" && a.reason).toMatch(/no gate-checks run/);
+  });
+
+  it("SYNCS a conflicting PR whose bundle-budget job is absent — the conflict explains the silence", () => {
+    const a = decideMergeAction(
+      pr({ gate: "absent", staticShapes: "absent", bundleBudget: "absent", supplyChain: "absent", mergeable: "CONFLICTING", mergeStateStatus: "DIRTY" }),
+      ctx,
+    );
+    expect(a.kind).toBe("sync-main");
+  });
+
+  it("⚠ semgrep is answered before the budget: a diff failing both is told in the gate's order", () => {
+    const a = decideMergeAction(pr({ staticShapes: "red", bundleBudget: "red" }), ctx);
+    expect(a.kind === "stop" && a.reason).toMatch(/static-shapes FAILED/);
+  });
+
+  it("merges when gate-checks, static-shapes, bundle-budget and Socket are all green — the control", () => {
+    expect(
+      decideMergeAction(pr({ gate: "green", staticShapes: "green", bundleBudget: "green", supplyChain: "green" }), ctx).kind,
+    ).toBe("merge");
   });
 
   it("⚠ the GATE is answered before Socket: a diff failing both is told about the gate", () => {
@@ -884,12 +933,14 @@ describe("🟡 3 · the job names are asserted against the workflows, not mirror
     expect(gateJobs).toContain("gate-checks");
     expect(gateJobs).toContain("founder-gate");
     expect(gateJobs).toContain("static-shapes");
+    expect(gateJobs).toContain("bundle-budget");
   });
 
   it("the names this tool keys on are declared by those files", () => {
     expect(refuseUnknownJobName("review", reviewJobs, "review.yml")).toBeNull();
     expect(refuseUnknownJobName("gate-checks", gateJobs, "gate.yml")).toBeNull();
     expect(refuseUnknownJobName("static-shapes", gateJobs, "gate.yml")).toBeNull();
+    expect(refuseUnknownJobName("bundle-budget", gateJobs, "gate.yml")).toBeNull();
   });
 
   it("REFUSES a name the workflow does not declare, naming what it does", () => {
