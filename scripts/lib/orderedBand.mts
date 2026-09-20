@@ -105,7 +105,7 @@ export function filedKey(createdAt: unknown): string {
  * changes — `founder-ordered` still says it is his, `urgent` still says it
  * cannot wait.
  */
-export const ORDER_LABEL_PREFIX = "order:";
+const ORDER_LABEL_PREFIX = "order:";
 
 /**
  * His rank from a card's labels, or `null` when he gave none. ONE reader,

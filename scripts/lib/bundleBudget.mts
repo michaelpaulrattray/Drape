@@ -167,7 +167,7 @@ export function judgeFirstPaint(
   };
 }
 
-export function kb(bytes: number): string {
+function kb(bytes: number): string {
   return `${(bytes / KB).toFixed(1)} kB`;
 }
 

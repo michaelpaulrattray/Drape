@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1fe9b12d777537ac"
+    "sourceFingerprint": "3a660be2865e0fc7"
   },
   "domains": [
     {
@@ -17535,11 +17535,6 @@
     {
       "from": "module:client/src/features/staff/index.ts",
       "to": "module:client/src/features/staff/stores/useStaffAutoRefreshStore.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/staff/index.ts",
-      "to": "module:client/src/features/staff/useAccountMenuCounts.ts",
       "kind": "imports"
     },
     {
