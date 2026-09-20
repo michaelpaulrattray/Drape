@@ -1256,3 +1256,147 @@ counts. Remote writes: the 262 branch deletions, each tip held by its PR ref.
    stays open.
 5. Watch `%TEMP%` for a second `drape-rite-*` — one killed rite in three days
    is the ordinary rate; two is a finding about what kills them.
+
+## Run 8 — 2026-09-21 07:49–08:5x AEST (Janitor, patrol #8, cards #1047 + #1049; #1051 filed for the Retro)
+
+Clock fired on the day (`patrol-clocks.mts`: *"1 seat's clock has fired: Janitor
+(due today)"*), Housekeeping ON, NEXT UP empty, no reply, no intent — so
+standing exception 3 was the shift's whole brief. Run 7's "Next run" list is the
+provenance for §A–§C; §D and §E are readings produced on this clock. **Two small
+PRs merged, three cards filed, nothing spent.** Every deletion has a manifest
+written by the invocation that read it and, for anything that was a file, a zip
+outside the repository.
+
+### A. The disposables — 568 → 534, sweepable 0
+
+`disposable-age.mts --list` (#526): 568 untracked, **33** with both readers old
+and uncited plus **1** chain row (`_327-strip`, kept only by `_477-strip`, itself
+swept) — `_477`, `_524` ×2, `_599-fangs-court`, `_655` ×2, `_737`, `_743`,
+`_776`, `_913`, `_921` ×5, `_edition337–352` (15, no 345), `_foreman-edition354/
+355`, `_janitor5-edition353`. **Second reader before the delete:** `git grep` of
+each basename over the tracked tree AND over the 576 untracked files that stay —
+**0 of 34 cited by either**. Manifest `output/janitor/run8-disposable-manifest.txt`
+(bytes + sha1 per row, 172,813 bytes total), zip
+`C:\Users\Admin\drape-janitor-run8-disposables-2026-09-21.zip` (34 entries
+verified by name AND size before the delete). Re-read after: **534 · sweepable 0
+· chain 0 · 477 unresolvable by name** (run 6 §B's structural finding, unchanged:
+only a naming rule shrinks it).
+
+### B. The root frames (run 7, item 1) — 13 → 7, line `2026-09-13T21:58Z`
+
+Run 5's doctrine: the card's own `closedAt` against the line, a tracked citation
+is a KEEP. `771-*` ×2 (#771 closed `2026-09-11T00:51Z`) and `890-*` ×4 (#890
+closed `2026-09-13T07:43Z`) cross it; `git grep` of their stems over the tracked
+tree: nothing. **6 swept** (876 KB; manifest
+`output/janitor/run8-root-frames-manifest.txt`, zip
+`C:\Users\Admin\drape-root-frames-sweep-2026-09-21.zip`, 6 entries verified).
+**KEPT 7 — the `436-*` seven**, cited at the line by
+`docs/specs/STAFF_DIALOGS_436_EVIDENCE.md:72–113` (a permanent KEEP while that
+file cites them). `FABLE_R7_*.md` stay — run 2's ruling. After §D the root's
+untracked non-script set is exactly those nine.
+
+### C. `team/*` refs (run 7, item 2) — remote 8 → 6, local 3 → 3
+
+`git fetch --prune` first (it dropped three refs GitHub had already deleted on
+merge). Two NEW remote refs since run 7, both classified by run 7's rule (PR
+MERGED and tip == `headRefOid`): `1006-order-rank` (#1038, `824dbbf6`) and
+`preflight-always-1037` (#1039, `e5ca4e2b`) — `ls-remote` read both tips at
+`refs/pull/<N>/head` before the delete. Manifest
+`output/janitor/run8-remote-branch-manifest.txt`. The six that remain are run
+7's six KEEPs unchanged, `titles-285` among them (criterion not widened — that
+is a judgement, not a Janitor act). Local: `776-reply-number`, `socket-gate`,
+`strictargs-602`, none an ancestor of main, unchanged.
+
+### D. Doc drift found on the sweep — four of HIS briefs existed on one disk (#1047, PR #1048 `315f3386`)
+
+Under `docs/specs/Casting-ui-ux-design/drape-redesign/` the briefs `00`–`09` are
+tracked (`05`–`09` rode a rite in edition 195, `e9ef01fd`); **`10-casting-hero-
+and-settings.md`, `11-staff-dialogs.md`, `12b-cinema-amendments.md` and
+`icons-original.tsx`** (30 Aug–3 Sep) never were — while **nine tracked files
+cite them by path**: `section10-guard.test.ts:6`, `section11-guard.test.ts:9`,
+`server/castingV2/rollDuration.ts:3`, `client/src/foundation/icons.tsx:234`,
+`drape-redesign/icons.tsx:194`, and four spec docs. Every citation is a docblock
+pointer, not a read — which is why CI stayed green and seven Janitor runs walked
+past them (the root sweep never looked under `docs/`). Read before acting (law
+7c): `git log --all` has never held any of the four; no ruling anywhere says they
+stay untracked (the `FABLE_R7_*` pair HAS one — `CLAUDE_R7_3A_…PROMPT.md:45` —
+these do not). **Committed byte for byte** (12b's CRLF → LF by `.gitattributes`,
+as its siblings). Stated limit on the card: 12b applies on top of `12-cinema.md`,
+which was his Downloads copy and never entered the repository
+(`CINEMA_SKELETON_MARRIAGE_REVIEW.md:727`) — this keeps the half we have. The
+originals are at `C:\Users\Admin\drape-janitor-run8-briefs-originals-2026-09-21\`
+(moved aside so main could fast-forward; verified identical to the committed
+copies, 12b modulo CRLF). Docs-only, review declined by triage, gate green twice
+(see §F for why twice).
+
+### E. Dead-code reading — 3 rows above run 7's floor, all from the 19 Sep merges (#1049, PR #1050 `f89b2abb`)
+
+Nightly `35527260025` at `cc0ffef5` (fired on schedule, 17:52Z): **files 19 ·
+deps 0 · exports 56 · types ABSENT · duplicates 2 · unlisted binaries 1** —
+against run 7's 53 / 1. Diffed the two runs' export sections and read each new
+row at the code: `features/staff/index.ts: useAccountMenuCounts` is a barrel
+line whose only consumer went DIRECT in #1043 to break the AppChrome ↔ staff
+chunk ring (stale line — removed, and the #416 comment now says why it is
+deliberately off the barrel); `bundleBudget.mts: kb` (#1041) and
+`orderedBand.mts: ORDER_LABEL_PREFIX` (#1038) are read only inside their own
+modules (surplus `export`, dropped); **`lib/staffPage.ts: lazyRoute, staffPage`
+is a duplicate BY DESIGN** — `staffPagesLazy.test.ts:102` requires the
+`staffPage(` spelling on staff pages and `:258` refuses it on the customer
+regexp, so the NAME is what the guard reads: KEEP, recorded so the next run
+does not re-ask. The *Unlisted binaries* row (`founderActivity.test.ts:
+drape-probe.cmd`) has stood in every nightly since #723 — a fixture the test
+writes itself; added to `knip.json`'s `ignoreBinaries` beside `railway.cmd`.
+Five guards green, `pnpm janitor:knip` on the branch: **exports 53, duplicates
+2, binaries absent** — the expected next nightly. Row appended to
+`docs/JANITOR_KNIP.md`. Under 50 code lines; review declined by triage.
+
+### F. A process finding on the way to the merge — the Socket skip (#1051, filed for the Retro, NOT worked)
+
+`pr-merge-in-order` STOPPED both PRs with *"Socket REFUSED this diff … read the
+alerts"*. Read at Socket's own check-run output: **"Skipped un-mergeable pull
+request"**, conclusion `neutral`, started **7 s** after each PR opened as a
+draft — before GitHub had computed mergeability. Socket does not re-read on
+`ready_for_review`, only on a push; `rerequest` on the check run is 404 for that
+app. **Measured over the last 59 PRs' FIRST heads: 3 skipped-neutral** (#986 on
+15 Sep, whose three later pushes hid it, and these two — one-push PRs have no
+later head, which is exactly the shape the batch rule produces). The tool's
+`gateStateOf` reads any non-`SUCCESS` as `red`; it already has an `absent`
+state for "no verdict" and that is what a skip is. Remedy taken: one empty commit
+per branch (a second gate run each, ~7 min; the reviewer does not fire on a
+push), Socket then read *"no net changes to dependencies"* on both. The two-line
+classification fix and its arm are the Retro's to weigh — an instrument change
+from a mid-shift observation is a card proposal, and the tool sits on every
+merge's road. **Cost: ~25 min and two gate runs.** A second stop met on the
+same road and repaired in a minute: both PR bodies opened with `Closes #N`, which
+`check-closing-keyword` refuses (#376) — the bodies now say `Card: #N` and the
+cards were closed by hand with the squash sha as receipt.
+
+### G. `%TEMP%` (run 7, item 5)
+
+`drape-*`: **0** (run 7 left it at 0; no second `drape-rite-*` in three days —
+the ordinary rate holds). `playwright-artifacts-*` 11, `puppeteer_dev_chrome_
+profile-*` 7 — other tools' families, left, recorded, as every run has.
+
+### H. Anti-boredom check
+
+Every act traces to run 7's own "Next run" list, to a reading produced on this
+patrol's clock (the disposable reader, the nightly, the root `git status`), or
+to a gate failure met on the way (§F — filed, not worked). No new instrument.
+Production writes: the shift row, the queue counts. Remote writes: 2 branch
+deletions (each tip held by its PR ref), 2 merges. Spend: nothing.
+
+**Next run (~2026-09-24):**
+
+1. Root frames: 7 remain and all seven are the `436-*` permanent KEEP; nothing
+   crosses a line until a new card leaves frames at the root.
+2. The nightly after #1050: expect **exports 53, duplicates 2, binaries section
+   absent**. Above 53 is the finding, as before; a binaries section reappearing
+   means a new test wrote a fixture binary.
+3. `team/titles-285` — unchanged; keeps forever unless the criterion is widened.
+4. The disposables: 477 unresolvable by name is the whole remaining pile —
+   a naming-rule card for the Retro, not a Janitor act (run 6 §B, run 7 §D).
+5. `drape-pinned-42652964` — still KEEP (`court-ink-carry-a`, `court-ink-realism`).
+6. #1051 — if the Retro has not taken it, a one-push PR will meet the same stop
+   at roughly 1 in 20; the remedy is an empty commit, not a read of the alerts.
+7. The four briefs' originals under `C:\Users\Admin\drape-janitor-run8-briefs-
+   originals-2026-09-21\` can go on the next run — they are on main.

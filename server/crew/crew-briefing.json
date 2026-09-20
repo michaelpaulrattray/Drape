@@ -1,7 +1,7 @@
 {
-  "edition": 461,
-  "updatedAt": "2026-09-19T14:31:08.571Z",
-  "shift": "THE WEEKLY SECURITY CHECK-UP RAN (WARDEN, ROUND 4). EVERYTHING CLEAN; NOTHING TO FILE; NOTHING ON YOUR DESK.\n\nA patrol shift: readings only, no code changed, nothing spent.\n\n1. The two things last week's check-up found are both closed and proven at the artifacts. The 91 known package advisories (3 critical, 21 high) are 0 - the security-first bump went live on 13 September and the audit reads clean today, with the development tools clean too. And your \"C\" on card 858 did what it promised: the moment the alerts switch was turned on (12 Sep, 16:11 UTC), the first two security fixes arrived by themselves within two minutes - sharp, the image decoder on the upload doors, first. That road is live and it was proven by its own timestamps, not by a card saying so.\n\n2. Every standing reading held: the weekly secret scan over the whole history (3683 commits, none found); the static code scan (0 findings, now its own required check); the six access-control test files (55 tests, up from 52 as guards were added); the staff audit trail (one new row all week - your own sign-in on 19 Sep; no abuse rows ever, no blocked addresses, no locked or suspended accounts); and the week's 17 changes on the sign-in, money and admin paths, each read - all of them narrow what is accepted, none widen it.\n\n3. One thing could not be measured yet and is said rather than skipped: whether the package scanner now blocks (rather than warns on) a critical-vulnerability package under the stricter policy you chose. No change this week added a package for it to react to. The next one that does is the reading.\n\nSpent: nothing. Nothing on your desk. The next check-up is the Janitor's, tomorrow.",
+  "edition": 462,
+  "updatedAt": "2026-09-20T22:34:35.081Z",
+  "shift": "THE 3-DAY TIDY-UP RAN (JANITOR, ROUND 8). TWO SMALL THINGS LANDED, ONE PROCESS BUG FILED. NOTHING ON YOUR DESK.\n\nA patrol shift on its own clock: litter swept by written manifest, two small changes merged, nothing spent.\n\n1. Four of your own design documents existed on one computer only. The design pack under docs/specs (the casting hero column and settings modal, the staff dialogs, the cinema amendments, and the original icon set) had its first ten briefs saved into the project, but these four - delivered 30 August to 3 September - never were. Nine saved files point at them by name, so anyone opening the project on another machine would follow those pointers to nothing, and one disk failure would have lost your briefs. They are in the project now, word for word, unedited (card 1047). One limit said plainly: the cinema amendments were written 'on top of' a cinema brief that only ever lived in your Downloads folder, so this keeps the half we have.\n\n2. The nightly unused-code reading had crept three rows above the floor it was left at on Thursday, all from Friday's merges. Each was read at the code: two were a stray 'export' word, one was a leftover line from the fix that untangled the app frame from the staff pages, and a fourth was a test helper the scanner mistook for a missing program. All fixed in one small change (card 1049); the reading is back at its floor. One row it flagged is correct by design and is recorded so nobody re-asks.\n\n3. The litter itself: 34 old throwaway scripts (zipped, then deleted), six screenshots from cards closed more than a week ago (zipped, then deleted), two finished work branches on GitHub whose changes are already merged. Nothing in the temp folder. What is left at the project root is exactly the seven staff-dialog screenshots an evidence file still cites and two review documents a saved instruction says must stay unsaved.\n\n4. A process bug, found on the way and filed for the Retro rather than fixed tonight (card 1051): the merge tool refused both of tonight's changes saying the supply-chain scanner had rejected them and to 'read the alerts'. There were no alerts. The scanner had looked at each change seven seconds after it was opened, before GitHub had finished sizing it up, and recorded 'skipped' - which the tool reads as a rejection. Pushing an empty change made the scanner look again ('no changes to dependencies') and both merged. Measured: three of the last 59 changes hit this, and only the smallest one-push changes show it. Cost tonight: about 25 minutes and two extra check runs. The fix is two lines in the tool and is the Retro's to weigh.\n\n5. Left as it was: your ordered list is empty, no card is urgent, every category under your switches is at zero on fresh counts. The next check-up clocks are the Machinist's and the Retro's on Friday, the Warden's on Saturday, the Janitor's again on Wednesday.\n\nSpent: nothing. Nothing on your desk.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -133,16 +133,16 @@
       {
         "label": "Your desk is empty",
         "tone": "good",
-        "source": "192 of 192 replies acted on. Nothing on the board needs an answer from you."
+        "source": "193 of 193 replies acted on. Nothing on the board needs an answer from you."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "29 open, none ordered by you, none urgent. 17 untouched for 7 days."
+        "source": "30 open, none ordered by you, none urgent. 17 untouched for 7 days."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-19T14:31:31.126Z",
+      "readAt": "2026-09-20T22:33:25.291Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5111,6 +5111,20 @@
   ],
   "pipeline": [
     {
+      "id": "briefs-1047",
+      "title": "Card 1047: four of your design briefs existed on one computer only - now saved in the project, word for word",
+      "status": "merged",
+      "prNumber": 1048,
+      "note": "The casting hero and settings brief, the staff dialogs brief, the cinema amendments and the original icon set (30 Aug to 3 Sep) were never saved into the project while nine saved files pointed at them by name. Added unedited; no code changed. The cinema amendments sit on top of a cinema brief that only ever lived in your Downloads, so this keeps the half we have. Checks green; the reviewer correctly declined a documents-only change."
+    },
+    {
+      "id": "knip-floor-1049",
+      "title": "Card 1049: the nightly unused-code reading back at Thursday's floor - three stray exports and one scanner false alarm from Friday's merges",
+      "status": "merged",
+      "prNumber": 1050,
+      "note": "Each row read at the code before touching it: two 'export' words on values only their own file uses, one leftover line from the fix that untangled the app frame from the staff pages (the comment now says why it stays off), and a test's own helper file the scanner took for a missing program, now listed as known. One flagged duplicate is by design (a test reads the name) and stays. Five guards green; the scanner on the branch reads exactly what the next nightly should. Checks green; the reviewer correctly declined a change under fifty lines."
+    },
+    {
       "id": "board-lazy-1036",
       "title": "Card 1036: the canvas page leaves every visitor's first download - 450 to 246 kilobytes, lobby and casting paint a second sooner on a slow connection",
       "status": "merged",
@@ -6879,6 +6893,13 @@
   ],
   "problems": [
     {
+      "id": "socket-skip-1051",
+      "severity": "info",
+      "state": "open",
+      "title": "The merge tool calls a supply-chain 'skipped' a rejection and says 'read the alerts' when there are none - filed as card 1051 for the Retro, not fixed tonight",
+      "detail": "Socket reads a change the moment it is opened; if GitHub has not finished sizing it up (the first ten to twenty seconds), Socket records 'skipped un-mergeable' and does not look again until something is pushed. The merge tool reads that as a rejection. Three of the last 59 changes hit it on their first version (card 986 hid it under later pushes; tonight's two one-push changes showed it). Remedy tonight: an empty change pushed on each, a second check run each, both merged. The fix is to read 'skipped' as 'no verdict' and say so - two lines and a test - and it belongs to the Retro because it changes the tool every merge goes through."
+    },
+    {
       "id": "queue-shape-0919c-foreman",
       "severity": "info",
       "state": "resolved",
@@ -7649,7 +7670,7 @@
     193
   ],
   "nextUp": {
-    "readAt": "2026-09-19T14:31:31.125Z",
+    "readAt": "2026-09-20T22:33:25.290Z",
     "items": []
   }
 }
