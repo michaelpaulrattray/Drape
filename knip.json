@@ -22,7 +22,7 @@
     "output/**",
     "docs/**"
   ],
-  "ignoreBinaries": ["railway.cmd", "netstat", "taskkill.exe", "semgrep"],
+  "ignoreBinaries": ["railway.cmd", "netstat", "taskkill.exe", "semgrep", "drape-probe.cmd"],
   "drizzle": false,
   "paths": {
     "@/*": ["client/src/*"],

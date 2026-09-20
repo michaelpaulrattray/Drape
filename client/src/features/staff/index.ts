@@ -5,10 +5,10 @@ export { useStaffRefresh, STAFF_REFRESH_INTERVAL_MS } from "./useStaffRefresh";
 /* #415 — the ONE reader behind the bar's count pill, the Overview card and
    (next, #416) the account menu's badge. Its docblock carries why it reads
    `admin.getOverview` rather than counting anything itself. */
-/* #416 — the account menu's two badges, which were declared and rendered and
-   handed nothing by their one call site. `useAccountMenuCounts` composes and
-   issues no query of its own; that is deliberate and its docblock says why. */
-export { useAccountMenuCounts } from "./useAccountMenuCounts";
+/* #416 — the account menu's two badges live in `./useAccountMenuCounts`, and
+   its one consumer (`AppChrome`) imports that module DIRECTLY since #1043,
+   which broke the AppChrome ↔ staff chunk ring: re-exporting it here would
+   rebuild the ring, so it is deliberately not on this barrel. */
 /* #453 — ONE switch for the whole panel, on his reply #104. Seven surfaces held
    seven `useState`s, so the toggle died on every navigation. Its docblock
    carries why the moderator page only looked like it worked. */
