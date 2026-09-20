@@ -1,7 +1,7 @@
 {
-  "edition": 462,
-  "updatedAt": "2026-09-20T22:34:35.081Z",
-  "shift": "THE 3-DAY TIDY-UP RAN (JANITOR, ROUND 8). TWO SMALL THINGS LANDED, ONE PROCESS BUG FILED. NOTHING ON YOUR DESK.\n\nA patrol shift on its own clock: litter swept by written manifest, two small changes merged, nothing spent.\n\n1. Four of your own design documents existed on one computer only. The design pack under docs/specs (the casting hero column and settings modal, the staff dialogs, the cinema amendments, and the original icon set) had its first ten briefs saved into the project, but these four - delivered 30 August to 3 September - never were. Nine saved files point at them by name, so anyone opening the project on another machine would follow those pointers to nothing, and one disk failure would have lost your briefs. They are in the project now, word for word, unedited (card 1047). One limit said plainly: the cinema amendments were written 'on top of' a cinema brief that only ever lived in your Downloads folder, so this keeps the half we have.\n\n2. The nightly unused-code reading had crept three rows above the floor it was left at on Thursday, all from Friday's merges. Each was read at the code: two were a stray 'export' word, one was a leftover line from the fix that untangled the app frame from the staff pages, and a fourth was a test helper the scanner mistook for a missing program. All fixed in one small change (card 1049); the reading is back at its floor. One row it flagged is correct by design and is recorded so nobody re-asks.\n\n3. The litter itself: 34 old throwaway scripts (zipped, then deleted), six screenshots from cards closed more than a week ago (zipped, then deleted), two finished work branches on GitHub whose changes are already merged. Nothing in the temp folder. What is left at the project root is exactly the seven staff-dialog screenshots an evidence file still cites and two review documents a saved instruction says must stay unsaved.\n\n4. A process bug, found on the way and filed for the Retro rather than fixed tonight (card 1051): the merge tool refused both of tonight's changes saying the supply-chain scanner had rejected them and to 'read the alerts'. There were no alerts. The scanner had looked at each change seven seconds after it was opened, before GitHub had finished sizing it up, and recorded 'skipped' - which the tool reads as a rejection. Pushing an empty change made the scanner look again ('no changes to dependencies') and both merged. Measured: three of the last 59 changes hit this, and only the smallest one-push changes show it. Cost tonight: about 25 minutes and two extra check runs. The fix is two lines in the tool and is the Retro's to weigh.\n\n5. Left as it was: your ordered list is empty, no card is urgent, every category under your switches is at zero on fresh counts. The next check-up clocks are the Machinist's and the Retro's on Friday, the Warden's on Saturday, the Janitor's again on Wednesday.\n\nSpent: nothing. Nothing on your desk.",
+  "edition": 463,
+  "updatedAt": "2026-09-20T23:24:00.000Z",
+  "shift": "THE MERGE TOOL NO LONGER CALLS A 'SKIPPED' SCAN A REJECTION. ONE SMALL FIX LANDED (CARD 1051). NOTHING ON YOUR DESK.\n\nAn ordinary Opus shift on the one background card open under your switches; nothing spent.\n\n1. The process bug the Janitor filed last night is fixed. When a change is opened, the supply-chain scanner (Socket) looks at it within seconds; if GitHub has not finished sizing the change up yet, the scanner writes 'skipped' and never looks at that version again. The team's merge tool read that 'skipped' as a rejection and told the shift to 'read the alerts' - there were none. Before touching anything the whole population was counted: of the last 60 changes (104 versions), 5 were skipped this way and NOT ONE was ever actually rejected by the scanner - so every time the tool said 'rejected', it was wrong. Now 'skipped' is its own reading: the tool still refuses to merge (no verdict is no verdict), but it says what happened and the one remedy - push a fresh version, an empty one is enough. A real rejection still stops the merge exactly as before, and that is proved in the tests with the real record of the change that hit it. What you would see: nothing; what the next shift sees is the right message instead of a 25-minute detour.\n\n2. The outside reviewer is still not starting: it died on its first call in under half a second, spending nothing - the same shape as the 19 September failures. This change is not a money or sign-in change, so it merged on the machine checks alone, as the standing orders say. A money or sign-in change would wait for a real verdict.\n\n3. Left as it was: your ordered list is empty, no card is urgent, every category under your switches is at zero on fresh counts. The next check-up clocks are the Machinist's and the Retro's on Friday, the Warden's on Saturday, the Janitor's again on Wednesday.\n\nSpent: nothing. Nothing on your desk.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,11 +138,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "30 open, none ordered by you, none urgent. 17 untouched for 7 days."
+        "source": "29 open, none ordered by you, none urgent. 17 untouched for 7 days (timeline reading)."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-20T22:33:25.291Z",
+      "readAt": "2026-09-20T23:21:46.314Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5111,6 +5111,13 @@
   ],
   "pipeline": [
     {
+      "id": "socket-skip-fix-1051",
+      "title": "Card 1051: the merge tool reads a 'skipped' supply-chain scan as 'no verdict, push a fresh version' instead of 'rejected, read the alerts'",
+      "status": "merged",
+      "prNumber": 1052,
+      "note": "Counted first: of the last 60 changes (104 versions), 5 were skipped by the scanner because it looked before GitHub had sized them up, and none was ever rejected - every 'rejected' the tool had printed was a skip. The reading now lives where the tests can drive it, with the real record of the change that hit it; a real rejection still stops the merge, and that arm is in the tests too. Merged on the machine checks alone: the outside reviewer is still not starting."
+    },
+    {
       "id": "briefs-1047",
       "title": "Card 1047: four of your design briefs existed on one computer only - now saved in the project, word for word",
       "status": "merged",
@@ -6893,11 +6900,18 @@
   ],
   "problems": [
     {
-      "id": "socket-skip-1051",
+      "id": "queue-shape-0921a-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The merge tool calls a supply-chain 'skipped' a rejection and says 'read the alerts' when there are none - filed as card 1051 for the Retro, not fixed tonight",
-      "detail": "Socket reads a change the moment it is opened; if GitHub has not finished sizing it up (the first ten to twenty seconds), Socket records 'skipped un-mergeable' and does not look again until something is pushed. The merge tool reads that as a rejection. Three of the last 59 changes hit it on their first version (card 986 hid it under later pushes; tonight's two one-push changes showed it). Remedy tonight: an empty change pushed on each, a second check run each, both merged. The fix is to read 'skipped' as 'no verdict' and say so - two lines and a test - and it belongs to the Retro because it changes the tool every merge goes through."
+      "title": "The queue: 29 open, one closed tonight (1051); NEXT UP empty; nothing left under any of your switches; no check-up clock fires before Friday",
+      "detail": "Read at 23:21Z after the merge: 29 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading) - roadmap rungs you have not reached rather than neglected work. Every category under your switches is at zero on fresh counts; the three held cards (108, 129, 45) are unchanged. The outside reviewer is still not starting (first call, under half a second, nothing spent), so a money or sign-in change would wait for it; tonight's was neither."
+    },
+    {
+      "id": "socket-skip-1051",
+      "severity": "info",
+      "state": "resolved",
+      "title": "The merge tool called a supply-chain 'skipped' a rejection - fixed (card 1051, change 1052); it now says 'no verdict, push a fresh version'",
+      "detail": "Counted before fixing: of the last 60 changes (104 versions) the scanner skipped 5 - three because GitHub had not sized the change up yet, two because it could not yet see the change's starting point - and rejected none. The tool now reads a skip as its own thing: it still refuses to merge, and it names the remedy (an empty change pushed). A real rejection stops the merge exactly as before, proved in the tests with the real record of the skipped change."
     },
     {
       "id": "queue-shape-0919c-foreman",
@@ -7469,7 +7483,7 @@
     {
       "id": "queue-shape-0920a-warden",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 29 open, none moved; NEXT UP empty; nothing under any of your switches; the Warden ran its round and found nothing to file",
       "detail": "Read at 14:30Z: 29 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. The Warden's weekly readings are all clean and both of last week's cards (857, 858) are closed with receipts read at the artifacts. Every switched category is at zero (129 and 108 are blocked on their own rows, 45 is parked). The Janitor's clock fires tomorrow.\n\nNothing here needs you."
     }
@@ -7670,7 +7684,7 @@
     193
   ],
   "nextUp": {
-    "readAt": "2026-09-20T22:33:25.290Z",
+    "readAt": "2026-09-20T23:21:46.313Z",
     "items": []
   }
 }
