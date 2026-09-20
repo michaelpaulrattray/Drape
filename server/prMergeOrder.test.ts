@@ -29,8 +29,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   type MergeContext,
   type PrReading,
+  type Rollup,
   MONEY_DECLARATION_PATH,
   REVIEWER_WORKFLOW_PATH,
+  checkStateOf,
   decideMergeAction,
   describeAction,
   classifyMergeOutcome,
@@ -48,6 +50,7 @@ import {
   refuseUnknownJobName,
   reviewAbsenceClause,
   sharesFiles,
+  supplyChainStateOf,
   touchesMoney,
   touchesReviewerWorkflow,
 } from "../scripts/lib/prMergeOrder.mts";
@@ -350,6 +353,32 @@ describe("decideMergeAction — the branch order is the contract", () => {
     /* Without this the three arms above would all pass over a rule that simply
        never merges anything. */
     expect(decideMergeAction(pr({ gate: "green", supplyChain: "green" }), ctx).kind).toBe("merge");
+  });
+
+  /*
+    ⚠ A SOCKET SKIP IS ITS OWN STATE (#1051). Socket reads a PR seconds after
+    it opens; if GitHub has not computed mergeability yet, or cannot show it
+    the base commit yet, it posts `NEUTRAL` titled "Skipped" and never reads
+    that head again. The classification used to live in the script, untested,
+    and read every non-SUCCESS conclusion as `red`, so the stop said "Socket
+    REFUSED this diff … read the alerts" over a head with no alerts to read.
+    Measured over 60 PRs / 104 heads: 5 NEUTRAL skips, 0 FAILUREs — every
+    firing of that stop had been a skip.
+  */
+  it("STOPS on a skipped Socket head and names the remedy — a new head, not a read of the alerts", () => {
+    const a = decideMergeAction(pr({ gate: "green", supplyChain: "skipped" }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/SKIPPED/);
+    expect(a.kind === "stop" && a.reason).toMatch(/empty commit/);
+    expect(a.kind === "stop" && a.reason).not.toMatch(/REFUSED/);
+  });
+
+  it("SYNCS a conflicting PR whose Socket reading is skipped — the sync makes the head it will re-read", () => {
+    const a = decideMergeAction(
+      pr({ supplyChain: "skipped", gate: "green", mergeable: "CONFLICTING", mergeStateStatus: "DIRTY" }),
+      ctx,
+    );
+    expect(a.kind).toBe("sync-main");
   });
 
   /*
@@ -1289,5 +1318,84 @@ describe("the merge call itself never asks gh to touch the local checkout", () =
     expect(guardOpens).toBeGreaterThan(-1);
     const beforeGuard = body.slice(0, guardOpens);
     expect(beforeGuard).not.toContain("gh(");
+  });
+});
+
+// ---------------------------------------------------------------------------
+/*
+  THE CHECK CLASSIFICATION, driven on the REAL rollup (#1051). This is the
+  `statusCheckRollup` GitHub returned for PR #1048's first head `40f73361`,
+  read back through GraphQL on 2026-09-21 — the shape the tool reads, with its
+  UPPER-CASE enums and no title. Socket read the head seven seconds after the
+  draft opened and posted NEUTRAL "Skipped un-mergeable pull request"; the
+  tool called that a refusal, and a shift spent ~25 minutes reading alerts
+  that did not exist.
+*/
+const SOCKET_CHECK = "Socket Security: Pull Request Alerts";
+const SKIPPED_HEAD_ROLLUP: readonly Rollup[] = [
+  {
+    __typename: "CheckRun",
+    name: "Socket Security: Pull Request Alerts",
+    status: "COMPLETED",
+    conclusion: "NEUTRAL",
+    startedAt: "2026-09-20T22:04:03Z",
+    workflowName: "",
+  },
+  {
+    __typename: "CheckRun",
+    name: "Socket Security: Project Report",
+    status: "COMPLETED",
+    conclusion: "SUCCESS",
+    startedAt: "2026-09-20T22:04:01Z",
+    workflowName: "",
+  },
+];
+
+describe("the check classification reads a Socket skip as `skipped`, never as a refusal (#1051)", () => {
+  it("#1048's real skipped head reads `skipped` through the Socket reader", () => {
+    expect(supplyChainStateOf(SKIPPED_HEAD_ROLLUP, SOCKET_CHECK)).toBe("skipped");
+  });
+
+  it("and reads `red` through the generic reader — the reading the tool used to make, kept for gate jobs", () => {
+    /* A gate job that concludes NEUTRAL or SKIPPED did not run to a pass, and
+       `red` is the safe reading there. Only Socket's reader knows the fifth
+       state, so this is the arm that says the two readers differ on purpose. */
+    expect(checkStateOf(SKIPPED_HEAD_ROLLUP, SOCKET_CHECK)).toBe("red");
+  });
+
+  it("a real Socket FAILURE still reads `red` — the positive control on the refusal arm", () => {
+    const refused = SKIPPED_HEAD_ROLLUP.map((c) => (c.name === SOCKET_CHECK ? { ...c, conclusion: "FAILURE" } : c));
+    expect(supplyChainStateOf(refused, SOCKET_CHECK)).toBe("red");
+    const a = decideMergeAction(pr({ supplyChain: supplyChainStateOf(refused, SOCKET_CHECK) }), ctx);
+    expect(a.kind === "stop" && a.reason).toMatch(/Socket REFUSED/);
+  });
+
+  it("SUCCESS is green, an unfinished run is running, no run at all is absent — same for both readers", () => {
+    const green = SKIPPED_HEAD_ROLLUP.map((c) => (c.name === SOCKET_CHECK ? { ...c, conclusion: "SUCCESS" } : c));
+    expect(supplyChainStateOf(green, SOCKET_CHECK)).toBe("green");
+    expect(checkStateOf(green, SOCKET_CHECK)).toBe("green");
+    const running = SKIPPED_HEAD_ROLLUP.map((c) =>
+      c.name === SOCKET_CHECK ? { ...c, status: "IN_PROGRESS", conclusion: null } : c,
+    );
+    expect(supplyChainStateOf(running, SOCKET_CHECK)).toBe("running");
+    expect(checkStateOf(running, SOCKET_CHECK)).toBe("running");
+    const none = SKIPPED_HEAD_ROLLUP.filter((c) => c.name !== SOCKET_CHECK);
+    expect(supplyChainStateOf(none, SOCKET_CHECK)).toBe("absent");
+    expect(checkStateOf(none, SOCKET_CHECK)).toBe("absent");
+  });
+
+  it("the NEWEST run by startedAt is the one read — an old skip under a fresh SUCCESS is green", () => {
+    const reread: Rollup[] = [
+      ...SKIPPED_HEAD_ROLLUP,
+      { __typename: "CheckRun", name: SOCKET_CHECK, status: "COMPLETED", conclusion: "SUCCESS", startedAt: "2026-09-20T22:20:00Z" },
+    ];
+    expect(supplyChainStateOf(reread, SOCKET_CHECK)).toBe("green");
+    const reversed = [...reread].reverse();
+    expect(supplyChainStateOf(reversed, SOCKET_CHECK)).toBe("green");
+  });
+
+  it("the Project Report beside it is a report, not the verdict — its SUCCESS never stands in for the alerts check", () => {
+    const none = SKIPPED_HEAD_ROLLUP.filter((c) => c.name !== SOCKET_CHECK);
+    expect(supplyChainStateOf(none, SOCKET_CHECK)).toBe("absent");
   });
 });

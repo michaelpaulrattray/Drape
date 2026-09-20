@@ -33,6 +33,73 @@ import { type ReviewPresence } from "./reviewRounds.mts";
 /** What a named check says on the PR's CURRENT head commit. */
 export type GateState = "green" | "red" | "running" | "absent";
 
+/**
+ * Socket's reading has a FIFTH state the gate's jobs do not: `skipped`. Socket
+ * reads a PR seconds after it opens, and when GitHub has not yet computed
+ * mergeability — or cannot yet see the base commit — it posts `NEUTRAL` with
+ * the title *"Skipped"* and never reads that head again (#1051). That is no
+ * verdict, but it is not `absent` either: `absent` means NO check was posted
+ * (the outside service down or uninstalled), and the two have different
+ * remedies. Kept off `GateState` on purpose, so a gate job concluding
+ * `NEUTRAL` still reads `red` — a job that did not run to a pass is not one.
+ *
+ * Measured over the 60 PRs before this type existed (104 head commits, every
+ * `Socket Security: Pull Request Alerts` check-run read): 92 `SUCCESS`
+ * "no net changes to dependencies", 3 `SUCCESS` "no new dependency alerts",
+ * **5 `NEUTRAL` skips** (3 "un-mergeable pull request", 2 "missing parent
+ * commit"), 4 heads with no Socket check at all, and **not one `FAILURE`** —
+ * so every time the tool's "Socket REFUSED" stop had fired, it was a skip.
+ */
+export type SupplyChainState = GateState | "skipped";
+
+/**
+ * One entry of `gh pr view --json statusCheckRollup` — the GraphQL shape, so
+ * `status`/`conclusion` are UPPER CASE (`COMPLETED`, `NEUTRAL`), unlike the
+ * REST check-runs payload. No `title` and no `summary` ride on it, which is
+ * why the readers below key on the conclusion alone.
+ */
+export type Rollup = {
+  __typename?: string;
+  name?: string;
+  status?: string;
+  conclusion?: string | null;
+  startedAt?: string;
+  workflowName?: string;
+};
+
+function newestCheckRun(rollup: readonly Rollup[], name: string): Rollup | undefined {
+  const runs = rollup
+    .filter((c) => c.__typename === "CheckRun" && c.name === name)
+    .sort((a, b) => new Date(a.startedAt ?? 0).getTime() - new Date(b.startedAt ?? 0).getTime());
+  return runs[runs.length - 1];
+}
+
+/**
+ * The named check on the PR's current head: no run is `absent`, an unfinished
+ * one is `running`, `SUCCESS` is `green` and EVERY other conclusion is `red` —
+ * `FAILURE`, `CANCELLED`, `TIMED_OUT`, `NEUTRAL`, `SKIPPED` alike. For a gate
+ * job that is the safe reading: a job that did not run to a pass is not a
+ * pass. Lived inside `pr-merge-in-order.mts` as `gateStateOf`, untested, until
+ * #1051 found it pointed at Socket.
+ */
+export function checkStateOf(rollup: readonly Rollup[], name: string): GateState {
+  const newest = newestCheckRun(rollup, name);
+  if (!newest) return "absent";
+  if (newest.status !== "COMPLETED") return "running";
+  return newest.conclusion === "SUCCESS" ? "green" : "red";
+}
+
+/**
+ * Socket's check on the PR's current head, with `NEUTRAL` read as `skipped`
+ * rather than `red` (see `SupplyChainState`). Every other conclusion reads as
+ * `checkStateOf` reads it: a `FAILURE` is still a refusal, and stays one.
+ */
+export function supplyChainStateOf(rollup: readonly Rollup[], name: string): SupplyChainState {
+  const newest = newestCheckRun(rollup, name);
+  if (newest?.status === "COMPLETED" && newest.conclusion === "NEUTRAL") return "skipped";
+  return checkStateOf(rollup, name);
+}
+
 export type PrReading = {
   number: number;
   /** ISO. The order opened, which is the merge order. */
@@ -101,8 +168,11 @@ export type PrReading = {
    * This field is the half that binds the road we actually merge on, and it
    * runs no second scan and needs no token: it reads a verdict Socket already
    * posted for free.
+   *
+   * Five states, not four: `skipped` is Socket declining to read a head it saw
+   * too early (#1051), stopped at step 5.5 beside `absent` with its own remedy.
    */
-  supplyChain: GateState;
+  supplyChain: SupplyChainState;
   review: ReviewPresence;
   /** How many reviewer verdicts exist for this PR right now. */
   verdictCount: number;
@@ -535,7 +605,9 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
     };
   }
   /* `absent` is NOT read here — it moved to step 5.5 beside the gate's own
-     absent, for the identical reason. See the note there. */
+     absent, for the identical reason. See the note there. `skipped` is read
+     there too, for the same reason again: a head Socket skipped on open is a
+     head that may be about to be replaced by the sync at step 5. */
 
   // 4. The reviewer. Green is not a pass (#219): a verdict exists to be READ,
   //    and reading it is the one thing here that is not mechanical.
@@ -740,6 +812,29 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
         "read that silence as a pass. Either the head was gated by a workflow from before " +
         "#1035 (merge main into the branch and let the gate run again) or gate.yml on this " +
         "branch has lost the bundle-budget job (read it).",
+    };
+  }
+  if (pr.supplyChain === "skipped") {
+    /* ⚠ A SKIP IS NOT A REFUSAL, AND UNTIL #1051 THIS TOOL SAID IT WAS. Socket
+       reads a PR on `opened`, seconds after the draft exists; if GitHub has
+       not computed mergeability yet, or the base commit is not visible to it
+       yet, it posts `NEUTRAL` titled "Skipped" and does not read again on
+       `ready_for_review` — only a push makes it look. The old reading was
+       `red`, and the stop said "Socket REFUSED this diff … read the alerts",
+       which sent a shift to read alerts that did not exist (~25 minutes and
+       two gate runs on #1048 + #1050). It stops here still — a skip is no
+       verdict and this tool never merges past no verdict — but it says what
+       it is and names the one remedy there is. `rerequest` is 404 for this
+       app; a new head is the only road. */
+    return {
+      kind: "stop",
+      reason:
+        "Socket SKIPPED this head rather than reading it — it posted NEUTRAL, which is no " +
+        "verdict, not a refusal: there are no alerts to read. It reads a PR seconds after " +
+        "it opens, before GitHub has computed mergeability (or before it can see the base " +
+        "commit), and it never reads that head again. Push a NEW head — an empty commit " +
+        "(`git commit --allow-empty`) is enough — and Socket reads it on the push. This tool " +
+        "never merges past a missing verdict (founder ruling on #35: \"A\").",
     };
   }
   if (pr.supplyChain === "absent") {

@@ -69,11 +69,12 @@ import { fileURLToPath } from "node:url";
 
 import { closingKeywordHits, closingKeywordRefusal } from "./lib/closingKeyword.mts";
 import {
-  type GateState,
   type MergeAction,
   type PrReading,
+  type Rollup,
   MONEY_DECLARATION_PATH,
   REVIEWER_WORKFLOW_PATH,
+  checkStateOf,
   decideMergeAction,
   describeAction,
   extractJobNames,
@@ -88,6 +89,7 @@ import {
   refuseProtectedPush,
   refuseUnknownJobName,
   sharesFiles,
+  supplyChainStateOf,
 } from "./lib/prMergeOrder.mts";
 import { gitTreeReader, readProtectedRefs } from "./lib/pushPaths.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
@@ -315,30 +317,16 @@ function readWorktrees(): Map<string, string> {
 }
 
 // ---- readings --------------------------------------------------------------
-type Rollup = {
-  __typename?: string;
-  name?: string;
-  status?: string;
-  conclusion?: string | null;
-  startedAt?: string;
-  workflowName?: string;
-};
-
-/**
+/*
  * `gate-checks` on the PR's CURRENT head commit (or, by name, its siblings
- * `static-shapes` and `bundle-budget`, and Socket's check). `resolve` and `founder-gate` are the
- * other siblings and are not the bar
- * (`founder-gate` labels and never blocks, by the founder's 2026-08-25 ruling).
+ * `static-shapes` and `bundle-budget`) is `checkStateOf`; Socket's check is
+ * `supplyChainStateOf`, which knows one more state (#1051). Both live in the
+ * lib so the suite can drive them — the classification sat here untested as
+ * `gateStateOf` for as long as this tool existed, and read a Socket skip as a
+ * refusal. `resolve` and `founder-gate` are the other siblings and are not the
+ * bar (`founder-gate` labels and never blocks, by the founder's 2026-08-25
+ * ruling).
  */
-function gateStateOf(rollup: readonly Rollup[], name: string = GATE_JOB_NAME): GateState {
-  const runs = rollup
-    .filter((c) => c.__typename === "CheckRun" && c.name === name)
-    .sort((a, b) => new Date(a.startedAt ?? 0).getTime() - new Date(b.startedAt ?? 0).getTime());
-  const newest = runs[runs.length - 1];
-  if (!newest) return "absent";
-  if (newest.status !== "COMPLETED") return "running";
-  return newest.conclusion === "SUCCESS" ? "green" : "red";
-}
 
 /**
  * Every `review.yml` run, with the conclusion of the job NAMED `review` in it.
@@ -501,10 +489,10 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     mergeStateStatus: view.mergeStateStatus,
     files: patches.map((f) => f.filename),
     patches,
-    gate: gateStateOf(view.statusCheckRollup ?? []),
-    staticShapes: gateStateOf(view.statusCheckRollup ?? [], STATIC_SHAPES_JOB_NAME),
-    bundleBudget: gateStateOf(view.statusCheckRollup ?? [], BUNDLE_BUDGET_JOB_NAME),
-    supplyChain: gateStateOf(view.statusCheckRollup ?? [], SUPPLY_CHAIN_CHECK_NAME),
+    gate: checkStateOf(view.statusCheckRollup ?? [], GATE_JOB_NAME),
+    staticShapes: checkStateOf(view.statusCheckRollup ?? [], STATIC_SHAPES_JOB_NAME),
+    bundleBudget: checkStateOf(view.statusCheckRollup ?? [], BUNDLE_BUDGET_JOB_NAME),
+    supplyChain: supplyChainStateOf(view.statusCheckRollup ?? [], SUPPLY_CHAIN_CHECK_NAME),
     review: reviewPresence(tally),
     verdictCount,
     acknowledgedAtVerdictCount: ackPinnedAt.get(view.number) ?? null,
