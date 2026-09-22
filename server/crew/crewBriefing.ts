@@ -388,7 +388,33 @@ export const crewBriefingSchema = z.object({
   /** The founder-ordered queue, read from the label rather than composed (#290). */
   nextUp: nextUpSchema,
   pipeline: z.array(pipelineItemSchema)
-    .refine(uniqueBy<z.infer<typeof pipelineItemSchema>>("item", (item) => item.id), uniqueMessage("pipeline[].id")),
+    .refine(uniqueBy<z.infer<typeof pipelineItemSchema>>("item", (item) => item.id), uniqueMessage("pipeline[].id"))
+    /**
+     * ⚠ AND ONE PULL REQUEST GETS ONE **LIVE** ROW (#1104). The refinement
+     * above keys on the row id alone, so two rows naming one `prNumber` were
+     * schema-valid — and on 2026-09-22 his page carried exactly that: PR #1078
+     * listed twice, both `in-review`, one row written when it opened and a
+     * second written when a later shift repaired it instead of updating the
+     * first. He read the same fix waiting on review in two places.
+     *
+     * **It is scoped to rows that are NOT `merged`, and that scope is the
+     * whole decision.** A rule over the entire array would also refuse
+     * `pr-622-review-annual` + `pr-622-cycle-spend-385` — two finished rows
+     * that may deliberately record two pieces of work riding one pull request,
+     * which is a judgement about his history rather than a bug. What is
+     * unambiguously wrong is two rows telling him one thing is happening NOW,
+     * so that is what the parse refuses; history keeps whatever was written.
+     *
+     * A row with no `prNumber` is exempt by construction (there is nothing to
+     * collide), which is 20 of the 271 rows as this landed.
+     */
+    .refine(
+      (items) => uniqueBy<{ prNumber: number }>("live pull request", (item) => String(item.prNumber))(
+        items.filter((item): item is typeof item & { prNumber: number } =>
+          item.prNumber !== null && item.status !== "merged"),
+      ),
+      "pipeline[].prNumber must be unique among rows that are not `merged` — one pull request gets one live row",
+    ),
   problems: z.array(problemSchema)
     .refine(uniqueBy<z.infer<typeof problemSchema>>("problem", (problem) => problem.id), uniqueMessage("problems[].id")),
   acknowledgedReplyIds: z.array(z.number().int().positive()),

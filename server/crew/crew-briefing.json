@@ -1,7 +1,7 @@
 {
-  "edition": 478,
-  "updatedAt": "2026-09-22T21:35:00.000Z",
-  "shift": "THE BLIND SPOT FROM LAST NIGHT IS CLOSED, AND IT CAUGHT SOMETHING WITHIN THE HOUR. Nothing here needs you.\n\nWHAT WAS WRONG. Last night a fix you are waiting on had quietly become un-releasable and sat that way for nine hours, because every list the night team reads says \"somebody already has an open job on this\" and not one of them asks the next question, which is \"and can it still be released?\". The shift that found it wrote it up as a job rather than building it the same night. That was the right order and it is the job I took tonight.\n\nWHAT I BUILT. The three lists a shift actually reads - the launch summary, the ranking of what matters most, and the check it runs the moment it declares which job it is taking - now say it plainly: this job has an open piece of work on it AND that work can no longer be released, here is why it looks healthy anyway, and here is the repair. It warns rather than blocks, because sometimes the stuck work is the shift's own and it should be allowed to carry on.\n\nTHE CARE IN IT, because it is the whole difference between a useful warning and a harmful one. There are three answers, not two: it is stuck, it is fine, and nobody knows yet. GitHub genuinely answers \"nobody knows yet\" for a minute or two after anything moves, and a version of this that treated that as \"it is fine\" would print a reassurance at the exact moment something broke. Same for the day somebody trims the question we ask GitHub: that now reads as \"nobody knows\" rather than \"all clear\", and there is a test holding the question itself in place, because no ordinary test can notice a question that stopped being asked.\n\nAND THEN IT PROVED ITSELF. Releasing tonight's work moved the main line of code, and that pushed the makeup fix - the one from last night - straight back into the same stuck state. Twenty-two minutes after it had been repaired. This time it was caught in about two minutes rather than nine hours, brought up to date, re-checked here in full and then green on the full machine gate again. It is ready to be read and released; I did not read it and did not release it, which on a change touching credits is not a night shift's call.\n\nONE THING LEFT ON PURPOSE. This page has the same gap: the row below telling you the makeup fix is \"in review\" did not move once, through two separate spells of that fix being stuck. Fixing that means deciding what your page should SAY, and a wording on your screen is your call rather than mine, so it is written up as its own job with a recommendation instead of guessed at tonight.",
+  "edition": 479,
+  "updatedAt": "2026-09-22T22:30:00.000Z",
+  "shift": "THE PAGE YOU ARE READING NOW NOTICES WHEN A FIX HAS QUIETLY STOPPED BEING RELEASABLE. Nothing here needs you.\n\nWHAT WAS WRONG. This page has a line for every fix in flight, and it said \"in review\" for the makeup fix all day yesterday and all day today. It was telling you the truth on the day it was written and then it stopped being true: the fix had drifted too far behind the rest of the code to be released at all, twice, and the line never moved. It could only ever change when the fix RELEASED, so a fix that got stuck was a line that quietly lied for as long as it stayed stuck. Nine hours the first time.\n\nWHAT I BUILT. The check that re-reads this page against the real record now asks the second question as well - not only \"has it gone out yet\" but \"can it still go out at all\". When the answer is no, it says so to the night team, loudly, and tells them to fix it rather than writing an excuse onto your page.\n\nTHE DECISION INSIDE IT, because this is the part that decides what you actually read. The job as written wanted your page to say \"stuck since 11:38\" after a quiet hour. I could not do the first half honestly - GitHub does not record WHEN something got stuck, and I was not going to put a number on your page that nobody can work out. That turned out to matter less than it sounds, because the real answer to the second half is better: you should not read about this at all. Nine times in ten it is an ordinary twenty-minute collision that the night team clears in a quarter of an hour, and a line about it would only teach you to ignore the line. So the team gets told to go and fix it, and only something still stuck by morning gets a sentence here, written in plain words by whoever is on.\n\nIT PROVED ITSELF IN TWENTY MINUTES, and not in a rehearsal. Releasing this very change is what broke the makeup fix for the third time today. The new check named it on its first real run, I repaired the fix, and it is green and ready again - where every night before tonight that break was found by somebody happening to look.\n\nAND IT FOUND SOMETHING NOBODY HAD NOTICED: the makeup fix has been listed TWICE on this page, two separate lines both saying \"in review\", because one shift wrote a fresh line instead of updating the one already there. Nothing refused it - the page only checks that two lines do not share an id, not that two lines describe the same job. Tonight's page shows it once. The guard against it happening again is written up as its own job, because one of the two older cases might be deliberate and deleting somebody's record is not a thing to guess at.\n\nSTILL WAITING ON THE REVIEW LANE: the makeup fix itself. It touches the database, so it goes to the relay rather than being released by the night team.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-22T19:29:34.904Z",
+      "readAt": "2026-09-22T22:25:11.509Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5216,6 +5216,13 @@
   ],
   "pipeline": [
     {
+      "id": "stuck-row-1101",
+      "title": "This page now notices when a fix listed as in review can no longer be released",
+      "status": "merged",
+      "prNumber": 1102,
+      "note": "Not a product change - nothing in the app moves. What it buys you is that the line on this page stops being able to say \"in review\" over something that is actually stuck and unlooked-at.\n\nThe check that re-reads this page against the record only ever asked GitHub one thing: has this released yet. So a fix that had drifted too far behind to be released at all took the quiet road - the line stayed exactly as it was, for as long as it stayed broken. Yesterday that was nine hours.\n\nIt now asks both questions, using the same three-answer reading built last night rather than a second copy of it: stuck, fine, and nobody knows yet. That third answer matters - GitHub genuinely says \"nobody knows yet\" for a minute or two after anything moves, and treating that as \"fine\" would print an all-clear at the exact moment something broke.\n\nIt reports and repairs nothing. That is deliberate: what a wrong line should become is a judgement about work, and the first instruction it gives is to go and unstick the thing, which usually means there was never anything to write here at all.\n\nProven before it was believed: fifteen checks, then the code was deliberately broken six different ways and all six were caught. One of those six is a test holding the question we ask GitHub in place, because no ordinary test can notice a question that stopped being asked - it would keep answering from its own practice data and go silent with nothing red anywhere."
+    },
+    {
       "id": "pr-drift-warning-1099",
       "title": "The night team's own lists now say when a job cannot be released, not just that somebody is on it",
       "status": "merged",
@@ -5224,10 +5231,10 @@
     },
     {
       "id": "makeup-cap-unstuck-1076",
-      "title": "The makeup fix is ready to release again - it drifted a second time tonight and was caught in two minutes",
+      "title": "The makeup fix is ready to release again - it drifted a third time tonight, caught in two minutes by the check built tonight",
       "status": "in-review",
       "prNumber": 1078,
-      "note": "Attach a picture, ask for her makeup, and our own length cap could eat the answer on the way back - at which point we told you the picture had no makeup in it. The fix keeps the answer we actually read.\n\nIt waits for a person to read it because it touches credits, and that is unchanged and correct.\n\nIt had gone stuck once already and was repaired last night. Releasing tonight's work moved the main line of code again and pushed it straight back into the same state, twenty-two minutes later - the only file both sides had touched is one the build generates for itself. Brought up to date again, re-checked here in full before pushing, then green on the whole machine gate on the new version. Not read and not released by me.\n\nThe difference between the two times is the point: nine hours, then two minutes. The reader that found it is the job directly above this row, merged forty minutes earlier.\n\nOne job rides directly behind this one - the hair-colour reader has the same fault and reuses a piece of this repair."
+      "note": "Attach a picture, ask for her makeup, and our own length cap could eat the answer on the way back - at which point we told you the picture had no makeup in it. The fix keeps the answer we actually read.\n\nWaiting on its review, not on you. Every check is green and it is clean to release; it touches the database, so it goes through the review lane rather than being released by the night team.\n\nIt has now drifted out of releasable three times in two days, each time because an ordinary release moved the code underneath it. The first went unnoticed for nine hours. Tonight's was named by a tool within two minutes and repaired inside a quarter of an hour.\n\nUntil tonight this fix had TWO lines on this page, both saying the same thing. That is now one line - this one."
     },
     {
       "id": "lobby-seconds-and-scroll-1090",
@@ -7137,20 +7144,20 @@
       "status": "merged",
       "prNumber": null,
       "note": "WHAT A CUSTOMER SEES: nothing. This is housekeeping on the crew's own workspace; no product file changed.\n\nWHAT WENT: the 262 GitHub branches were each checked against their pull request - deleted only where the request had merged and the branch had not moved since; every one is still reachable through that request. The 82 screenshots were from cards you closed over a week ago (the seven for card 436 stay, because a written evidence file cites them). The deploy leftover was a copy of the project a cut-off deploy run made on the 15th; it held no unsaved work. The 19 scripts were one-off helpers for cards closed over a week ago.\n\nTHE RECEIPTS: docs/JANITOR_LOG.md run 7, and the lists under output/janitor/run7-*. Backups: four zips under C:UsersAdmin dated 2026-09-18."
-    },
-    {
-      "id": "makeup-our-cap-1076",
-      "title": "The makeup reader stops telling a customer her picture had no makeup in it when our own limit ate the answer",
-      "status": "in-review",
-      "prNumber": 1078,
-      "note": "Waiting on its review, not on you. Every check is green and the change is clean to merge; it touches the database, so it goes through the review lane rather than being merged by the night shift.\n\nWHAT CHANGES FOR A CUSTOMER: one sentence. She is told we read her picture and could not use our own description of it, and is pointed at the box to type the look herself - instead of being sent to find a better photograph of a problem that was never hers.\n\nWHAT WAS ALREADY THERE AND UNUSED: the code already knew, twenty lines earlier, exactly which descriptions had run too long. It had the answer and threw it away. Reading what we already paid for before reaching for anything new is the fourth clause of your philosophy, and this is the second time this week it has been the whole fix.\n\nTHE DATABASE CHANGE: applied to both databases before the request was opened, and re-running it reports 'already applied'. All nine existing values were read back afterwards to prove nothing was lost."
     }
   ],
   "problems": [
     {
-      "id": "queue-shape-0923d-foreman",
+      "id": "queue-shape-0923e-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 39 open, your own list still EMPTY, none urgent. No check-up clock fires before tomorrow.",
+      "detail": "Read at 22:23 tonight. 39 open - one closed and two written, so the board is up one. The one closed is tonight's build; of the two written, one is a guard against this page listing the same fix twice, and the other is a tidy-up the night team found while sweeping its own work. Neither needs you.\n\nYour own ordered list is still empty, so the team keeps working from the background categories you have switched on. All seven are on.\n\n21 of the 39 have had nothing happen to them - no comment, no close, no code - for a week. The same 21 as the last three nights, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0923d-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 38 open, your own list still EMPTY, none urgent. No check-up clock fires before tomorrow.",
       "detail": "Read at 21:17 tonight. 38 open - one closed tonight and one written tonight, so the total is flat on last night rather than standing still: the one closed is the blind-spot job I built, the one written is the same fault on this page, which needs a wording decision from you before anybody builds it.\n\nYour own ordered list is still empty, so the team keeps working from the background categories you have switched on. All seven are on.\n\n21 of the 38 have had nothing happen to them - no comment, no close, no code - for a week. The same 21 as the last two nights, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
     },
@@ -7976,7 +7983,7 @@
     195
   ],
   "nextUp": {
-    "readAt": "2026-09-22T19:29:34.903Z",
+    "readAt": "2026-09-22T22:25:11.509Z",
     "items": []
   }
 }
