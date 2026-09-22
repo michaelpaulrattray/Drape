@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "94e2ecd24fcfd00c"
+    "sourceFingerprint": "5afe85d4c2a5278a"
   },
   "domains": [
     {
@@ -12513,6 +12513,10 @@
     {
       "id": "test:server/crewShiftArguments.test.ts",
       "path": "server/crewShiftArguments.test.ts"
+    },
+    {
+      "id": "test:server/crewShiftCardClaim.test.ts",
+      "path": "server/crewShiftCardClaim.test.ts"
     },
     {
       "id": "test:server/crewShiftState.test.ts",

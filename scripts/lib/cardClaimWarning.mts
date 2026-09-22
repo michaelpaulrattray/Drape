@@ -1,0 +1,115 @@
+/**
+ * IS SOMEBODY ALREADY BUILDING THIS CARD? — the open-PR read the shift-start
+ * sequence never had (#1083).
+ *
+ * `shared/crewShiftState.ts`'s `findCardCollisions` reads open shift ROWS and
+ * REFUSES; `findCardPullRequests` beside it reads open PULL REQUESTS and this
+ * file WARNS. The docblock on the second carries the measurement and the reason
+ * the two answers differ in kind — read it before changing the shape here.
+ *
+ * It lives in a lib rather than inside `crew-shift-start.mts` for one reason:
+ * the script's warning is unreachable from a unit test (the block sits past a
+ * live database connection, and `vitest.setup.ts` strips `DATABASE_URL` so no
+ * suite can ever get there). A warning nothing can drive is a warning nobody
+ * knows the shape of — `server/crewShiftCardClaim.test.ts` drives every branch
+ * of this file directly, including the one that matters most, which is an
+ * unreadable answer.
+ */
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { cardNumberOf, findCardPullRequests } from "../../shared/crewShiftState.js";
+
+/**
+ * Twenty seconds. `gh pr list` on this repository is well under a second, and
+ * the number is here so a hung call costs a wait a shift can sit through rather
+ * than a session — the only failure this read may cause is a slow start.
+ */
+export const OPEN_PR_READ_TIMEOUT_MS = 20_000;
+
+/** The shape `gh pr list --json number,title,body,url,isDraft,headRefName` gives back. */
+export interface OpenPullRequest {
+  readonly number?: number;
+  readonly title?: string;
+  readonly body?: string;
+  readonly url?: string;
+  readonly isDraft?: boolean;
+  readonly headRefName?: string;
+}
+
+/**
+ * The open pull requests, from `gh` or from a fixture — `null` when the answer
+ * could not be read at all.
+ *
+ * ⚠ **THE THREE OUTCOMES ARE KEPT DISTINCT AND THAT IS THE WHOLE POINT.**
+ * "No open PRs" and "the read failed" are the same picture to a caller that
+ * collapses them, and the second one is a board nobody looked at. A `gh` that
+ * is absent, unauthenticated, offline or slow returns `null` here and the
+ * renderer says so in words.
+ *
+ * `fixturePath` exists so the suite can drive every branch without a network, a
+ * token or a live queue — the same reason `next-up-escalation.mts` takes
+ * `--queue` and `patrol-clocks.mts` takes `--dir`.
+ */
+export function readOpenPullRequests(fixturePath?: string | null): OpenPullRequest[] | null {
+  if (fixturePath) {
+    try {
+      const rows = JSON.parse(readFileSync(resolve(fixturePath), "utf8"));
+      return Array.isArray(rows) ? (rows as OpenPullRequest[]) : null;
+    } catch {
+      return null;
+    }
+  }
+  try {
+    /* `gh` with no shell — it is an .exe, and the shell form emits DEP0190. */
+    const out = execFileSync(
+      "gh",
+      ["pr", "list", "--state", "open", "--limit", "100", "--json", "number,title,body,url,isDraft,headRefName"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: OPEN_PR_READ_TIMEOUT_MS },
+    );
+    const rows = JSON.parse(out);
+    return Array.isArray(rows) ? (rows as OpenPullRequest[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * What the shift should read before it cuts a branch — `null` when there is
+ * genuinely nothing to say.
+ *
+ * ⚠ **THIS NEVER REFUSES, AND #1083 RULED THAT BEFORE IT WAS BUILT.** A refusal
+ * keyed on a card number fires on a legitimate follow-up PR naming the same
+ * card, and a guard that stops a shift finishing its own card's second half has
+ * cost more than the duplicate it prevents. So: name the PR, say WHERE the
+ * number was found, and let the shift decide.
+ *
+ * A free-text card ref (a founder reply rather than a `#NNN`) returns `null`:
+ * there is no number to search for, and inventing a substring search over prose
+ * would report noise as diligence.
+ */
+export function renderCardClaimWarning(
+  cardRef: string | null | undefined,
+  openPrs: readonly OpenPullRequest[] | null,
+): string | null {
+  if (cardNumberOf(cardRef) === null) return null;
+  if (openPrs === null) {
+    return `\n⚠ could not read the open pull requests, so nobody checked whether ${cardRef} is already`
+      + "\n  being built. That is not a clean board — it is an unread one (`gh auth status`).";
+  }
+  const claimed = findCardPullRequests(openPrs, cardRef);
+  if (claimed.length === 0) return null;
+  const one = claimed.length === 1;
+  const rows = claimed
+    .map(({ pr, where }) =>
+      `   #${pr.number ?? "?"}${pr.isDraft ? " (draft)" : ""} ${pr.url ?? ""}`
+      + `\n     ${String(pr.title ?? "").slice(0, 110)}`
+      + `\n     the number is in its ${where.join(" and ")}`)
+    .join("\n");
+  return `\n⚠ ${claimed.length} OPEN pull request${one ? "" : "s"} already name${one ? "s" : ""} ${cardRef}:\n${rows}\n`
+    + "\n  This is a WARNING and the run is opening anyway — an open PR may be your own"
+    + "\n  follow-up, a finished piece, or somebody else mid-build. READ IT before you"
+    + "\n  cut a branch: #1083 is thirty-five minutes spent rebuilding something that had"
+    + "\n  merged seven minutes earlier, and this is the artifact that knew.";
+}

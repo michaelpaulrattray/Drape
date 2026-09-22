@@ -48,6 +48,22 @@
  * `--note` UPDATES the newest open run rather than opening a second one. That
  * is the heartbeat, and it is deliberately manual: a heartbeat process would be
  * a new persistent process, which `PROGRAM.md` makes a founder-announced act.
+ *
+ * # TWO READINGS OF "IS SOMEBODY ALREADY ON THIS CARD", AND THEY DIFFER IN KIND
+ *
+ * With `--card`, opening a run asks the question twice:
+ *
+ * - **An open shift ROW on the same card REFUSES** (#608). A row is a
+ *   declaration of intent that only its own seat writes, so two of them is a
+ *   duplicated session. `--same-card` overrides it.
+ * - **An open PULL REQUEST naming the card WARNS** (#1083) — it may be a
+ *   finished piece, a follow-up, or somebody else mid-build, and only the shift
+ *   can tell which. `scripts/lib/cardClaimWarning.mts` carries the measurement
+ *   and the ruling; `--open-prs <file.json>` feeds it a fixture instead of `gh`.
+ *
+ * The second exists because the first cannot fire on a builder who never wrote
+ * a row — the relay in his terminal, which is the seat the origin incident
+ * raced.
  */
 import {
   CARD_REF_STORED_LENGTH,
@@ -57,6 +73,7 @@ import {
   type CrewShiftSeat,
   type CrewShiftWorkKind,
 } from "../shared/crewShiftState.js";
+import { readOpenPullRequests, renderCardClaimWarning } from "./lib/cardClaimWarning.mts";
 import {
   CREW_WORK_CATEGORIES,
   CREW_WORK_MASTER_KEY,
@@ -73,7 +90,7 @@ const TABLE = "crew_shift_runs";
    real just as silently. Both writers are fixed in one commit, because fixing
    the instance and leaving its sibling is law 7 half done. */
 const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
-  value: ["shift", "seat", "kind", "card", "title", "intent", "note", "branch"],
+  value: ["shift", "seat", "kind", "card", "title", "intent", "note", "branch", "open-prs"],
   boolean: ["dry-run", "same-card"],
 });
 
@@ -117,6 +134,7 @@ function refuse(message: string): never {
   console.error(`REFUSING: ${message}`);
   process.exit(1);
 }
+
 
 await import("dotenv/config");
 const url = resolveDatabaseUrl();
@@ -334,6 +352,24 @@ try {
         + "\n   If you really are meant to share it, pass --same-card.",
       );
     }
+
+    /*
+      ⚠ IS A PULL REQUEST ALREADY OPEN ON THIS CARD? (#1083) — and this one
+      WARNS, where the refusal above does not.
+
+      The guard above reads open shift ROWS, and it is silent whenever the other
+      builder never wrote one — which is the ordinary case for the relay in his
+      terminal, and is exactly how a shift came to spend thirty-five minutes
+      rebuilding a feature that had merged seven minutes before it started. The
+      card's own ruling names the shape: `findCardPullRequests`' docblock
+      carries the reasoning for why a refusal here would be wrong.
+
+      It prints BEFORE the insert so the shift reads it while stopping is still
+      free, and it does not gate the insert either way — a shift that decides
+      the PR is its own follow-up should not have to run the command twice.
+    */
+    const claimWarning = renderCardClaimWarning(arg("card"), readOpenPullRequests(arg("open-prs")));
+    if (claimWarning !== null) console.log(claimWarning);
 
     if (DRY_RUN) {
       console.log(
