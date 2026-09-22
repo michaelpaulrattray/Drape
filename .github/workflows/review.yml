@@ -100,6 +100,7 @@ jobs:
             {
               echo "review=yes"
               echo "deep=no"
+              echo "held=yes"
               echo "why=it changes the rules of the review itself (review.yml)"
             } >> "$GITHUB_OUTPUT"
             exit 0
@@ -165,6 +166,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
           DEEP: ${{ steps.decide.outputs.deep }}
+          HELD: ${{ steps.decide.outputs.held }}
           WHY: ${{ steps.decide.outputs.why }}
         run: |
           gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label needs-fable
@@ -173,8 +175,13 @@ jobs:
             echo "Already said on the PR; comment not repeated."
             exit 0
           fi
+          # HELD or not is the merge tool's rule, said here in the same words:
+          # money/auth and a change to review.yml wait for the verdict; an
+          # ordinary diff may merge on the gate alone (the standing orders).
           if [ "$DEEP" = "yes" ]; then
             READING='This is a **money/auth** diff: the review reads CLAUDE.md in full, and this PR is HELD until the verdict is posted — a shift neither merges it nor posts one.'
+          elif [ "$HELD" = "yes" ]; then
+            READING='This diff changes the rules of the review itself: the review reads docs/REVIEWER_CHARTER.md, and this PR is HELD until the verdict is posted — a shift neither merges it nor posts one.'
           else
             READING='An ordinary diff: the review reads docs/REVIEWER_CHARTER.md. The standing orders let a shift merge it on the gate alone if the verdict has not landed yet.'
           fi
