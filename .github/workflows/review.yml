@@ -1,242 +1,114 @@
-# The Gatekeeper — judgment half.
+# The Gatekeeper — the triage half. THE REVIEWER IS A PERSON (#1065).
 #
-# A Fable review, but only where a full look is genuinely warranted
-# (founder ruling 2026-08-25: don't burn Fable tokens on small changes).
-# Triage decides per PR:
+# His ruling, verbatim (2026-09-22, terminal): *"You are the new outside
+# reviewer the outfit reviewer is permanently dead and will not come back."*
 #
-#   FULL REVIEW (Fable) when any of:
-#     - the diff touches money/auth surfaces (always reviewed, never blocked)
-#     - the diff is substantial (>= 50 changed lines of non-doc code)
-#     - the PR carries the `needs-fable` label (anyone can escalate)
-#   SKIPPED when:
-#     - docs/mailbox/output-only changes, or a trivial diff below the line
-#     - the PR carries the `skip-review` label
+# Until that day this workflow ran `anthropics/claude-code-action` on every
+# diff triage said earned a look, and most of this file's history — #165 the
+# self-skip, #219 "a red check is not a verdict", #434 the cancelled-run race,
+# #566 the absent check, #1026 one verdict per sha, #368 the one-shot label —
+# was about telling "the action judged" from "the action died". Read it in
+# git if you need it. The action is gone, and with it every one of those
+# states. What is left is the half that was always worth keeping:
 #
-# The four mechanical checks in gate.yml run on EVERY PR regardless —
-# nothing merges broken just because it was too small to review.
+#   TRIAGE DECIDES WHETHER A DIFF EARNS A REVIEW, and says so ON THE PR.
 #
-# ONCE PER PR, NOT ONCE PER PUSH (founder ruling 2026-08-26, verbatim:
-# "keep it at fable because its been catching things, but reduce its
-# frequency so its not burning as much credits and usage"). Measured before
-# the change: 32 executed reviews in under eight hours — one per PUSH, so
-# the reviewer re-read every fix round it had itself asked for. Now:
-#   - `synchronize` (a push) does NOT trigger a review. The free gate does.
-#   - a review runs when the PR is OPENED non-draft or marked READY FOR
-#     REVIEW — the shift's own "this is finished" signal. Open as a DRAFT
-#     while iterating.
-#   - a second look is DELIBERATE: apply the `needs-fable` label. Any other
-#     label event is ignored (a `labeled` event for `urgent` or `parked`
-#     must not buy a full review).
-#     ⚠ THE LABEL IS A ONE-SHOT BUTTON, NOT A STATE (issue #368). It works
-#     by the `labeled` EVENT, and GitHub delivers no such event when the
-#     label is already on the PR — so `--add-label needs-fable` a second
-#     time exits 0 and starts nothing. A THIRD look needs
-#     `--remove-label needs-fable` first, then the add. Measured at the
-#     issue timeline 2026-09-01 (1 event, then 1, then 2 after a removal),
-#     and pinned by server/reviewerManualRoad.test.ts.
-#   - ONE VERDICT PER HEAD SHA (#1026): `gh pr ready` on a money or >=50-line
-#     diff IS the review trigger, and a `needs-fable` applied beside it used
-#     to buy the same verdict twice — four doubled shas in the 500 newest
-#     runs, $17.19 on two of them. A `labeled` run on such a diff now asks
-#     whether another run on its sha is producing the verdict and stands
-#     down if so (the shell block in triage, `scripts/review-label-dedupe.mts`,
-#     the decision in `scripts/lib/reviewRounds.mts`). A trivial diff never
-#     takes that road — there the label is the only review it will get — and
-#     every failure of the question is "review": it may spend, never silence.
+#   A review is OWED when any of:
+#     - the diff touches money/auth surfaces (`.github/money-surfaces.sh`,
+#       both halves — the paths, and a changed line naming the credit API);
+#     - the diff is substantial (>= 50 changed lines of non-doc code);
+#     - the PR carries the `needs-fable` label (anyone can escalate).
+#   Nobody owes a look when:
+#     - docs/mailbox/output-only changes, or a trivial diff below the line;
+#     - the PR carries the `skip-review` label.
 #
-# THE READING IS TIERED (#161, founder-approved 2026-08-27: reviews on his
-# token used ~10% of his cap; Fable stays the reviewer — "it finds things
-# opus would miss" — the cut comes from the READING, not the model):
-#   - ordinary reviews read docs/REVIEWER_CHARTER.md (~15KB), the distilled
-#     project law, instead of the full ~157KB CLAUDE.md;
-#   - money/auth diffs still read CLAUDE.md IN FULL — that is where the
-#     deep context has paid. Triage computes this (the same MONEY pattern
-#     that forces their review) and hands it to the prompt as `deep`.
-#   The charter is DERIVED, never a second authority; CLAUDE.md wins on any
-#   conflict, and server/reviewerCharter.test.ts reddens when CLAUDE.md
-#   gains or renames a law/invariant the charter lacks.
+# When a review is owed, triage LABELS the PR `needs-fable` and posts ONE
+# comment naming the obligation and the reading (ordinary diffs read
+# docs/REVIEWER_CHARTER.md; money/auth diffs read CLAUDE.md in full, #161).
+# The relay — Fable, in the founder's terminal — reviews it at its next
+# sitting and posts the verdict as a PR comment headed
+# `**Fable review — by hand`. That comment IS the verdict:
+# `scripts/pr-merge-in-order.mts` reads it off the PR (by the founder's
+# account, on the current head — a later push makes it stale), holds a
+# money/auth PR until it exists, and merges an ordinary PR on the gate alone
+# without it, exactly as the standing orders said during the outages. A shift
+# never posts that comment. The four mechanical checks in gate.yml run on
+# EVERY PR regardless — nothing merges broken because it was too small.
 #
-# SELF-SKIP HONESTY (issue #165): claude-code-action refuses to run on any
-# PR whose diff modifies THIS file — workflow validation on ITS side, a
-# legitimate anti-exfiltration control — and that skip used to exit 0: a
-# green check named `review` while no review ran (found at the artifact on
-# PR #163). Triage now detects review.yml in the diff and FORCES the review
-# job, whose first step fails naming the reason — the check goes red,
-# honestly, on every such PR. The founder-gate job (gate.yml) is the
-# second, always-runs half: it labels the PR `review-skipped` and posts one
-# comment naming the hand-review obligation, so the fact survives even a
-# `skip-review` label (which still short-circuits triage here, on purpose —
-# that label's meaning is unchanged). The PR that shipped this guard
-# demonstrated it on itself: its own `review` check went red by design.
+# ONCE PER PR, NOT ONCE PER PUSH (founder ruling 2026-08-26): triage runs when
+# the PR is OPENED non-draft or marked READY FOR REVIEW — the shift's own
+# "this is finished" signal. A push does not re-run it; the label stays, and
+# the verdict's freshness is read against the head at merge time.
 #
-# A `review` CHECK REPORTS WHETHER A VERDICT EXISTS, NOT WHETHER THE DIFF
-# PASSED (issue #219). The action exits 0 whatever it finds, so findings ride
-# a GREEN check's sticky comment and a RED check means NO REVIEW WAS PRODUCED:
-#
-#   green   the reviewer ran — read the sticky comment; it may hold findings
-#   red     no verdict — the self-skip refusal above (#165), the action failing
-#           to complete (#219: the founder's Fable allowance ran out, the job
-#           died in ~1s on `is_error: true`, and two shifts read that red check
-#           as a reviewer verdict before the log was dug out), or the run being
-#           CANCELLED (#434 — superseded by a newer run on the same trigger)
-#   absent  triage decided this diff earns no review; gate.yml still ran
-#
-# ⚠ A CANCELLED RUN IS THE ONE STATE THE CHECK CANNOT ALWAYS NARRATE, and that
-# limit is stated here rather than discovered. The "What this check means" step
-# runs on `always()`, which covers a cancellation mid-review; but a run
-# cancelled while still QUEUED never reaches a runner, so no step of it ever
-# executes and the only thing on the PR is a cancelled check with no
-# annotation. That is exactly what #433 showed. The repair for the common
-# cause is the concurrency key above, not a louder message — this paragraph
-# and the step's cancelled branch are for the cases the key legitimately
-# leaves: two `ready_for_review` events, or a `needs-fable` removed and
-# re-added while its first run is still going. In every one of them the
-# reading is the same: **cancelled is red, and red is no verdict.**
-#
-# The last step of the review job says which of those it is, as an annotation
-# on the PR's checks page and a table in the run summary. It cannot change the
-# job's conclusion (always() + continue-on-error), and it covers the self-skip
-# branch too — a PR touching this file can never earn a green review, so that
-# is the only branch such a PR is able to demonstrate live.
-#
-# Runs on the founder's Claude subscription via CLAUDE_CODE_OAUTH_TOKEN.
+# There is deliberately NO `review` check on a PR any more. A check that
+# reported whether a verdict existed was the right instrument for a machine
+# whose runs could die; a person's verdict lives where people write, on the
+# PR, and the merge tool reads that.
 
 name: Fable Review
 
 on:
   pull_request:
     branches: [main]
-    types: [opened, ready_for_review, labeled]
+    types: [opened, ready_for_review]
 
-# A RUN THAT WILL DO NOTHING MUST NEVER CANCEL A RUN THAT WOULD REVIEW (#434).
-#
-# The group used to be `review-<pr>` alone, so every event on a pull request
-# shared one slot and `cancel-in-progress` killed whatever was already in it.
-# That is right between two runs of the SAME kind — a second `ready_for_review`
-# supersedes the first — and wrong across kinds, because most `labeled` runs
-# are going to skip: triage below reviews a `labeled` event only when the label
-# is `needs-fable`. So a label applied in the same second as the PR was created
-# took the slot, cancelled the real review, and then skipped itself.
-#
-# Measured at the artifacts 2026-09-04, and the frequency is smaller than the
-# card that ordered this said. Over the last 100 `review.yml` runs: 46 success,
-# 45 skipped, 8 failure, **1 cancelled** — run 33588638499 on PR #433, whose
-# `triage` job was cancelled one second after it started, before it could
-# evaluate anything. The 45 skipped runs are NOT this bug; they are the design
-# above working (a `labeled` event for `urgent` or `parked` must not buy a full
-# review), and #502's "27 of the last 60 were skipped" counts the reviewer
-# doing its job. The gate's own `founder-review` label was raised as a likely
-# second road and does NOT hold: on PRs #337 and #349 the label run was created
-# and skipped ~8 seconds BEFORE the reviewing run existed, so there was nothing
-# to cancel. The race needs the skipping run to still be in flight, which is
-# why the shifts' draft-then-ready habit mostly hides it.
-#
-# Keying the group on the event AND the label name gives each kind its own
-# slot: an `opened` run and a `labeled` run can no longer see each other, and
-# two labels applied at once (`--label a,b`) cannot cancel each other either —
-# which matters, because one of them may be the `needs-fable` that was the
-# whole point. `github.event.label.name` is empty for non-label events, so
-# those groups are unchanged in meaning. Within one kind, cancel-in-progress
-# still supersedes, which is the behaviour that was always wanted.
-#
-# Pinned by server/reviewerConcurrency.test.ts, which resolves this template
-# against real event payloads instead of matching its text.
+# Two triage runs on one PR supersede each other; two PRs never share a slot.
 concurrency:
-  group: review-${{ github.event.pull_request.number }}-${{ github.event.action }}-${{ github.event.label.name }}
+  group: review-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 # Least privilege at the workflow level (zizmor excessive-permissions, #35);
-# the review job declares what claude-code-action needs, with reasons.
+# the job declares what it writes, with reasons.
 permissions:
   contents: read
 
 jobs:
   triage:
     name: triage
-    # Drafts never review; a label event reviews only when the label applied
-    # is `needs-fable` (the deliberate second look).
-    if: ${{ !github.event.pull_request.draft && (github.event.action != 'labeled' || github.event.label.name == 'needs-fable') }}
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read # the checkout and the diff against main
-      actions: read # the one-verdict-per-sha question (#1026): a `labeled` run lists the other review runs on its own head sha; nothing here writes
-    outputs:
-      review: ${{ steps.decide.outputs.review }}
-      # "yes" when the diff touches money/auth surfaces: the review then reads
-      # CLAUDE.md in full instead of the charter (#161).
-      deep: ${{ steps.decide.outputs.deep }}
-      # "yes" when the diff modifies review.yml itself: the action will
-      # self-skip, so the review job is forced and fails honestly (#165).
-      selfskip: ${{ steps.decide.outputs.selfskip }}
+      pull-requests: write # `gh pr edit --add-label needs-fable` when a review is owed
+      issues: write # the one comment naming the obligation (PR comments are issue comments)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-          # Public repo; the fetch below needs no token and nothing pushes.
           persist-credentials: false
-      # Node 24 strips types natively, so the dedupe reader below runs the
-      # shared `.mts` module with no dependency install — the same road the
-      # review job takes for `review-round-notice.mts`. `continue-on-error`
-      # because a missing node is one more "review" answer, never a red triage.
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        continue-on-error: true
-        with:
-          node-version: 24
-      - name: Decide whether this diff earns a Fable review
+
+      - name: Decide whether this diff earns a review
         id: decide
         env:
           BASE: ${{ github.base_ref }}
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-          # The three below feed the one-verdict-per-sha question (#1026); they
-          # go through `env`, never into the run block (zizmor, template injection).
-          EVENT_ACTION: ${{ github.event.action }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          RUN_ID: ${{ github.run_id }}
-          GH_TOKEN: ${{ github.token }}
         run: |
           if echo ",$LABELS," | grep -q ",skip-review,"; then
-            echo "Label skip-review — no AI review."
+            echo "Label skip-review — nobody owes this diff a look."
             echo "review=no" >> "$GITHUB_OUTPUT"; exit 0
           fi
 
-          # The money check runs BEFORE the needs-fable early exit, because it
-          # now also decides the READING (#161): an escalated money PR must
-          # still read CLAUDE.md in full, not the charter.
-          #
-          # No --depth here (#811). The checkout above is a full clone, and a
-          # --depth=1 fetch of a tip the clone does not yet have cuts that
-          # tip's parent link in .git/shallow even though the parent is in
-          # the store — so when main MOVED between the checkout and this
-          # fetch (PR #808 merged two seconds before #810's triage fetched),
-          # `origin/$BASE...HEAD` had no merge base, the diff exited 128 and
-          # the PR merged with no verdict. The overlap rule (mark the second
-          # PR ready, merge the first) makes that window routine.
           git fetch origin "$BASE"
           CHANGED=$(git diff --name-only "origin/$BASE"...HEAD)
 
-          # Before the money check, because a money PR that also edits
-          # review.yml cannot be reviewed either — the action self-skips on
-          # any diff touching this workflow file, whatever else it touches.
-          # Forcing review=yes here makes the review job run its refusal
-          # step, so the check reddens instead of lying green (issue #165).
+          # A change to the review's own rules is always read (#165's
+          # obligation, now a person's): the reviewer reads the change to
+          # what the reviewer does.
           if echo "$CHANGED" | grep -qxF '.github/workflows/review.yml'; then
-            echo "This diff modifies review.yml — claude-code-action will self-skip, so no review can run (issue #165)."
+            echo "This diff modifies review.yml — the rules of the review itself. A review is owed."
             {
-              echo "selfskip=yes"
               echo "review=yes"
               echo "deep=no"
+              echo "held=yes"
+              echo "why=it changes the rules of the review itself (review.yml)"
             } >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # ⚠ ONE DECLARATION FOR BOTH WORKFLOWS (#958). This file used to carry
-          # a byte-identical copy of the gate's path list, so widening the gate
-          # left the reviewer reading the charter on a diff the gate had just
-          # called money — working law 4, measured. It reads BOTH halves now:
-          # the paths (where money is stored and bought) and a credit-API symbol
-          # in an added or removed line (where money is decided). The second is
-          # what the casting refund adjudicators were invisible to.
+          # Money/auth: BOTH halves of the one declaration (#958, #987) — the
+          # paths where money is stored and bought, and a changed line under
+          # server/ or shared/ naming the credit API, where money is decided.
           . ./.github/money-surfaces.sh
           MONEY_SYMBOL_HITS=$(git diff -G"$MONEY_SYMBOLS" --name-only "origin/$BASE"...HEAD -- server shared || true)
           MONEY=no
@@ -244,250 +116,79 @@ jobs:
             MONEY=yes
           fi
 
-          # Code files only — docs, mailbox, output, images don't count.
-          # Counted HERE, before the money and label exits, because the
-          # one-verdict-per-sha question below needs to know whether this diff
-          # earns a review WITHOUT the label; the exits below read the same
-          # numbers they always did.
+          # Code lines: everything that is not docs, images, mailbox or output.
           CODE=$(echo "$CHANGED" | grep -vE '\.(md|txt|png|jpg|jpeg|webp|json)$|^docs/|^\.agents/|^output/' || true)
           LINES=0
           if [ -n "$CODE" ]; then
             LINES=$(echo "$CODE" | xargs -r -d '\n' git diff --numstat "origin/$BASE"...HEAD -- | awk '{s+=$1+$2} END {print s+0}')
           fi
 
-          # ONE VERDICT PER HEAD SHA (#1026). A PR marked ready and labelled
-          # `needs-fable` in the same breath fires two runs on one sha, and the
-          # concurrency key above keeps both alive on purpose (#434). Measured:
-          # four doubled shas in the 500 newest runs (#680, #1007, #1023,
-          # #1024), $17.19 on the last two. So a `labeled` run whose diff
-          # already earns a review on its own merits — money, or >=50 code
-          # lines, a reading the label does not change — asks whether another
-          # run on this sha is producing the verdict, and stands down if so.
-          # A trivial diff NEVER takes this road: there the label is the
-          # escalation and this run is the only review it will get. And every
-          # failure of the question (no node, no token, an API error, an absent
-          # line) is "review" — the decision may spend, it may never silence.
-          if [ "$EVENT_ACTION" = "labeled" ] && { [ "$MONEY" = "yes" ] || [ "$LINES" -ge 50 ]; }; then
-            DEDUPE=$(node scripts/review-label-dedupe.mts --sha "$HEAD_SHA" --run-id "$RUN_ID" 2>&1 || true)
-            echo "$DEDUPE"
-            if echo "$DEDUPE" | grep -qx 'dedupe=skip'; then
-              echo "One verdict per sha — another run on $HEAD_SHA covers this diff; the label adds nothing (#1026). If that run produces no verdict, remove and re-add needs-fable (#368)."
-              echo "review=no" >> "$GITHUB_OUTPUT"
-              echo "deep=no" >> "$GITHUB_OUTPUT"; exit 0
-            fi
-          fi
-
           if [ "$MONEY" = "yes" ]; then
-            echo "Money/auth surfaces touched — full review, always, reading CLAUDE.md in full."
-            echo "review=yes" >> "$GITHUB_OUTPUT"
-            echo "deep=yes" >> "$GITHUB_OUTPUT"; exit 0
+            echo "Money/auth surfaces touched — a review is owed, and it reads CLAUDE.md in full."
+            {
+              echo "review=yes"
+              echo "deep=yes"
+              echo "why=it touches a money/auth surface"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           echo "deep=no" >> "$GITHUB_OUTPUT"
-
           if echo ",$LABELS," | grep -q ",needs-fable,"; then
-            echo "Label needs-fable — full review (charter reading)."
-            echo "review=yes" >> "$GITHUB_OUTPUT"; exit 0
+            echo "Label needs-fable — escalated; a review is owed (charter reading)."
+            {
+              echo "review=yes"
+              echo "why=it was escalated with the needs-fable label"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
           fi
-
           if [ -z "$CODE" ]; then
-            echo "Docs/assets only — no AI review."
+            echo "Docs/assets only — nobody owes this diff a look."
             echo "review=no" >> "$GITHUB_OUTPUT"; exit 0
           fi
-
           echo "Changed code lines: $LINES"
           if [ "$LINES" -lt 50 ]; then
-            echo "Trivial diff (<50 code lines) — no AI review; mechanical checks still apply."
+            echo "Trivial diff (<50 code lines) — nobody owes this diff a look; the mechanical checks still apply."
             echo "review=no" >> "$GITHUB_OUTPUT"; exit 0
           fi
+          echo "Substantial diff — a review is owed."
+          {
+            echo "review=yes"
+            echo "why=it changes $LINES lines of code (the line is 50)"
+          } >> "$GITHUB_OUTPUT"
 
-          echo "Substantial diff — full review."
-          echo "review=yes" >> "$GITHUB_OUTPUT"
-
-  review:
-    name: review
-    needs: triage
-    if: ${{ needs.triage.outputs.review == 'yes' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    # What claude-code-action's own README asks for on a pull_request review.
-    permissions:
-      contents: read
-      pull-requests: write # the sticky review comment (track_progress / use_sticky_comment)
-      issues: write # PR comments are issue comments on GitHub's API
-      id-token: write # OIDC, used by the action to exchange its token
-    steps:
-      # A pass this job cannot earn must not be reported (issue #165): when
-      # the PR modifies review.yml, claude-code-action skips itself with
-      # exit 0, which used to leave this job green having reviewed nothing.
-      - name: Refuse a pass the action cannot earn
-        if: ${{ needs.triage.outputs.selfskip == 'yes' }}
-        run: |
-          echo "::error::This PR modifies review.yml, so claude-code-action self-skips (workflow validation) and NO review can run. A green pass here would have reviewed nothing — failing instead. Review the reviewer change by hand (label: review-skipped, issue #165)."
-          exit 1
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-          # The action reads the tree and talks to GitHub through its own
-          # token input; it never pushes from this checkout.
-          persist-credentials: false
-
-      - uses: anthropics/claude-code-action@4036a180cf690f49529f5d8c79c998855287f590 # v1
-        id: fable
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # The action refuses a workflow "initiated by non-human actor" unless
-          # the bot is named here — read at the job log on #1054/#1055/#1057,
-          # where every Dependabot PR died at init with exactly that sentence,
-          # a state the credit outage's narration cannot distinguish from
-          # itself. His ruling (#1062, 2026-09-22): "on the decision with
-          # dependabot allow it." Exactly this one bot, never '*': on a public
-          # repository '*' would let any App start a paid run with a prompt it
-          # controls (the action's own docs/security.md). A dependency bump on
-          # the login library or the API serialiser is precisely a diff worth
-          # a second reader, which is why it is allowed rather than hand-read.
-          allowed_bots: dependabot
-          use_sticky_comment: true
-          # Without this, the review runs but its report stays in the action
-          # log — proven on PR #36's forced run (115s, real review, no visible
-          # comment). track_progress maintains a sticky PR comment carrying
-          # the progress and the final report.
-          track_progress: true
-          prompt: |
-            You are the Drape Gatekeeper reviewing this pull request.
-            ${{ needs.triage.outputs.deep == 'yes' && 'This diff touches money/auth surfaces: read CLAUDE.md in full first — it is project law, it defines what a defect is here, and money/auth is where its deep context pays. If the diff touches a feature flag, read the entry for that flag in docs/architecture/FEATURE_FLAGS.md too — the flag catalogue was carved out of CLAUDE.md byte for byte (#330) and CLAUDE.md now carries only a locator index of it.' || 'Read docs/REVIEWER_CHARTER.md in full first — the distilled project law for reviews; it defines what a defect is here. CLAUDE.md remains the authority: open the specific section the charter names whenever a finding turns on detail the charter compresses, but do not read it end to end.' }}
-
-            Review the diff for, in priority order:
-            1. Correctness bugs — concrete inputs/state that produce wrong
-               output, a crash, or lost money (credits charged without
-               delivery, refunds that cannot fire).
-            2. Enforcement-invariant violations (CLAUDE.md "Enforcement
-               invariants"): owner scoping missing from the SQL statement
-               itself, userId taken from input instead of ctx.user.id,
-               missing .strict() on new input schemas, bare selects or
-               spread rows crossing the serialization boundary, a new
-               public endpoint or session-mint site outside the enumerated
-               lists.
-            3. Flag discipline: new reachable behavior not governed by its
-               feature flag (new code must land dark), or a change that
-               alters unflagged behavior as a side effect.
-            4. Controls: any deletion or refactor that could orphan a
-               control (a caller of a guard being removed) — name what was
-               bolted to the deleted path.
-            5. Tests: a bug fix without its failing-test reproduction, or a
-               class fix without its sweep.
-
-            Report findings as a single review comment: most severe first,
-            each with file:line and a one-sentence failure scenario. If the
-            diff touches billing, credits, auth, or session code, say so in
-            your first line. If you find nothing, say what you checked and
-            pass it cleanly — do not invent findings.
-          claude_args: "--model claude-fable-5"
-
-      # THE SECOND ROUND SAYS SO (#543 item 5, founder-ordered).
-      #
-      # The investigation behind that card measured the reviewer at 1.3 runs
-      # per PR — but SEVEN of the last twenty-five merged PRs took two or more
-      # rounds, and that tail is the whole gap between the 27-minute median
-      # wait and the 42-minute mean. So on the run that produces a PR's SECOND
-      # verdict, one line is posted saying the round is the last and how a
-      # third is deliberately asked for.
-      #
-      # ⚠ A NOTICE, NEVER A BLOCK. `continue-on-error` and a script whose every
-      # exit is 0: a bookkeeping step that could redden `review` would make that
-      # check mean a third thing, and its two meanings (#219 — a verdict exists,
-      # or none does) are already the subtlest reading on a PR's checks page.
-      # The shift's judgement remains the thing that stops; this only makes the
-      # count visible at the moment it matters.
-      #
-      # ⚠ IT COUNTS VERDICTS, NEVER ATTEMPTS. A run that produced none — the
-      # allowance running out (#219), a cancelled run (#434), the self-skip
-      # (#165) — judged nothing, and counting it would let an OUTAGE spend one
-      # of the two rounds a shift is allowed. The counting rule lives in
-      # `scripts/lib/reviewRounds.mts`, shared with the merge tool that reads
-      # the same fact (#543 item 3), so the two cannot become two answers.
-      #
-      # It runs only when the reviewer actually produced a verdict — the
-      # self-skip branch (#165) and any failure are `steps.fable.outcome`
-      # other than success, and neither is a round.
-      # Node 24 strips types natively, so this runs the shared `.mts` reader
-      # with NO dependency install — the same reason gate.yml reaches for
-      # setup-node rather than a package install for its own cheap steps.
-      # ⚠ `continue-on-error` HERE TOO, AND IT IS NOT BELT-AND-BRACES.
-      # Without it, a failed setup-node fails the JOB — so the `review` check
-      # goes RED after a review that actually ran and produced findings, which
-      # reads as "no verdict" (#219) and is the single worst thing this whole
-      # step could cause. Found by hand-reviewing this PR, which is the review
-      # it can never get from the reviewer (#165).
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        if: ${{ steps.fable.outcome == 'success' }}
-        continue-on-error: true
-        with:
-          node-version: 24
-
-      - name: Say when this is the second and final review round
-        if: ${{ steps.fable.outcome == 'success' }}
-        continue-on-error: true
-        # ⚠ THE PR NUMBER GOES THROUGH `env`, NOT INTO THE `run` BLOCK.
-        # zizmor's template-injection audit reddened the gate on the first
-        # push of this step: a `${{ … }}` expansion inside `run:` is textual
-        # substitution into the shell, and the rule holds whatever the field's
-        # type is. The variable is quoted below and the script re-validates it
-        # as a positive integer besides.
+      # The obligation lives ON THE PR: a label the merge tool reads, and one
+      # comment a person reads. The label is applied even when it is already
+      # there (idempotent); the comment is posted once, by its marker, so a
+      # second triage run on the same PR does not repeat it.
+      - name: Say on the PR that a review is owed, and to whom
+        if: ${{ steps.decide.outputs.review == 'yes' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: node scripts/review-round-notice.mts --pr "$PR_NUMBER"
-
-      # WHAT A `review` CHECK MEANS (issue #219). The colour of this check
-      # reports whether a review was PRODUCED — never whether the diff passed.
-      # Findings ride a GREEN check's sticky comment (the action exits 0
-      # whatever it finds); this job goes RED only when no verdict exists at
-      # all. That was read the wrong way round on PR #218: the founder's
-      # Fable allowance was exhausted, the action died in ~1s with
-      # `is_error: true`, and a red `review` looked like a reviewer verdict
-      # for two shifts. The step below says which state it is, on the PR's
-      # own checks page and in the run summary, so nobody has to dig the
-      # result JSON out of an action log again.
-      #
-      # It can never change the job's conclusion: `always()` so it also runs
-      # after a failure, `continue-on-error` so its own failure is a warning.
-      # It covers the self-skip branch too (#165) rather than skipping it —
-      # a PR touching this file cannot get a green review, so that is the
-      # only branch such a PR can ever demonstrate live.
-      - name: What this check means
-        if: ${{ always() }}
-        continue-on-error: true
-        env:
-          OUTCOME: ${{ steps.fable.outcome }}
-          SELFSKIP: ${{ needs.triage.outputs.selfskip }}
+          PR: ${{ github.event.pull_request.number }}
+          DEEP: ${{ steps.decide.outputs.deep }}
+          HELD: ${{ steps.decide.outputs.held }}
+          WHY: ${{ steps.decide.outputs.why }}
         run: |
-          if [ "$SELFSKIP" = "yes" ]; then
-            STATE="NO VERDICT — the reviewer cannot run on its own change (#165)"
-            echo "::error::NO VERDICT: this PR modifies review.yml, so claude-code-action self-skips and no review can run. Red here is by design, not a rejection — hand-review the reviewer change before merging (issue #165)."
-          elif [ "$OUTCOME" = "success" ]; then
-            STATE="RAN — findings, if any, are in the sticky review comment"
-            echo "::notice::The Fable reviewer RAN. Green is not a pass: read the sticky review comment on this PR for its findings before merging."
-          elif [ "$OUTCOME" = "cancelled" ]; then
-            # Reachable only when the cancellation lands mid-review; a run
-            # cancelled while still QUEUED never runs this step at all (#434,
-            # and the header says so). Named separately because the generic
-            # message below sends the reader to the Fable allowance, which has
-            # nothing to do with a superseded run.
-            STATE="NO VERDICT — the run was CANCELLED before it finished (#434)"
-            echo "::error::NO VERDICT: this review run was CANCELLED, so nothing in this diff was judged. A newer run on the same trigger supersedes it — read that run's result instead. If there is no newer run, re-trigger by hand: remove then re-add the needs-fable label (it is a one-shot button, issue #368)."
-          else
-            STATE="NO VERDICT — the reviewer did not complete (outcome: $OUTCOME)"
-            echo "::error::NO VERDICT: the Fable reviewer did not complete (step outcome: $OUTCOME). This is an OUTAGE, not a rejection — nothing in this diff was judged. Check the founder's Fable allowance and the action log before reading anything into it (issue #219)."
+          gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label needs-fable
+          MARKER='<!-- hand-review-owed -->'
+          if gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json comments --jq '.comments[].body' | grep -qF "$MARKER"; then
+            echo "Already said on the PR; comment not repeated."
+            exit 0
           fi
-          {
-            echo "## Fable review: $STATE"
-            echo
-            echo "This check reports whether a review was **produced**, never whether the diff passed."
-            echo
-            echo "| check | what it means |"
-            echo "|---|---|"
-            echo "| green | the reviewer ran — its findings, if any, are in the sticky review comment. **Read it before merging.** |"
-            echo "| red | **no verdict exists.** The reviewer cannot run on its own change (#165), it failed to complete (#219), or the run was cancelled by a newer one on the same trigger (#434). Nothing was judged. |"
-            echo "| absent | triage decided this diff does not earn a review; the four mechanical checks in \`gate.yml\` still ran. |"
-          } >> "$GITHUB_STEP_SUMMARY"
+          # HELD or not is the merge tool's rule, said here in the same words:
+          # money/auth and a change to review.yml wait for the verdict; an
+          # ordinary diff may merge on the gate alone (the standing orders).
+          if [ "$DEEP" = "yes" ]; then
+            READING='This is a **money/auth** diff: the review reads CLAUDE.md in full, and this PR is HELD until the verdict is posted — a shift neither merges it nor posts one.'
+          elif [ "$HELD" = "yes" ]; then
+            READING='This diff changes the rules of the review itself: the review reads docs/REVIEWER_CHARTER.md, and this PR is HELD until the verdict is posted — a shift neither merges it nor posts one.'
+          else
+            READING='An ordinary diff: the review reads docs/REVIEWER_CHARTER.md. The standing orders let a shift merge it on the gate alone if the verdict has not landed yet.'
+          fi
+          # Built line by line rather than as a heredoc: a heredoc's body must
+          # start at column 0, which is a YAML syntax error inside this block.
+          BODY="$MARKER"
+          BODY="$BODY"$'\n'"**A review is owed on this PR** — $WHY."
+          BODY="$BODY"$'\n\n'"The reviewer is the relay (Fable, in the founder's terminal), at its next sitting. $READING"
+          BODY="$BODY"$'\n\n'"The verdict arrives as a comment headed \`**Fable review — by hand\` and \`pr-merge-in-order\` reads it off this PR — by the founder's account, on the current head; a later push makes it stale. It reviews, in priority order: correctness bugs (concrete inputs that produce wrong output, a crash, or lost money); enforcement-invariant violations (CLAUDE.md); flag discipline (new reachable behaviour landing dark); controls a deletion or refactor could orphan — name what was bolted to the deleted path; and tests (a fix without its failing reproduction, a class fix without its sweep). A pass says what was checked; it does not invent findings."
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$BODY"

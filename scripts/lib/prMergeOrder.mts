@@ -479,15 +479,10 @@ export type MergeContext = {
  * retires, which is why it was worth a push rather than a note.
  */
 export function mergeNotice(pr: PrReading): string | null {
-  if (pr.review === "absent") {
-    return (
-      `NO Fable review run was ever created for #${pr.number}. This is the FOURTH state ` +
-      "and #219's paragraph does not name it: an absent check is not a verdict, not a " +
-      "refusal and not a cancellation. If this PR wanted a look, remove and re-add " +
-      "`needs-fable` (#368) BEFORE merging — on PR #610 the re-add produced a run two " +
-      "seconds later, fourteen minutes after an identical label event had produced none."
-    );
-  }
+  // `absent` was the one state that carried a notice, and it is retired with
+  // the action reviewer (#1065): nothing can fail to be created any more. Kept
+  // as a function because the CLI prints it and an arm pins it silent.
+  void pr;
   return null;
 }
 
@@ -508,11 +503,9 @@ export function mergeNotice(pr: PrReading): string | null {
 export function reviewAbsenceClause(review: ReviewPresence): string {
   switch (review) {
     case "declined":
-      return " (a review ran and triage DECLINED it — check for a stale `skip-review` label)";
-    case "absent":
       return (
-        " (NO review run exists for this PR at all — not a declined one, not a failed one: " +
-        "nothing was ever created. Measured at ~1 trigger event in 50, cause not in `review.yml`, #566)"
+        " (triage did not label this diff `needs-fable`, so by its own rule nobody owed it a " +
+        "look — but a money/auth diff ALWAYS does, whatever the label says)"
       );
     default:
       return "";
@@ -618,17 +611,14 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
   //    first-round state, not a tail case, and reading it as "no verdict" is
   //    how this tool would have merged past a review by default (#558 review,
   //    finding 1).
-  if (pr.review === "pending") {
-    return { kind: "wait", reason: "a Fable review is IN FLIGHT — in flight is not down" };
-  }
   if (pr.review === "verdict") {
     if (pr.acknowledgedAtVerdictCount === null) {
       return {
         kind: "stop",
         reason:
-          "a Fable verdict exists and has not been acknowledged. A GREEN review reports that a " +
-          "review was PRODUCED, never that the diff passed — its findings ride the sticky " +
-          `comment. Read it, then re-run with --acknowledge ${pr.number}.`,
+          "a hand verdict exists and has not been acknowledged. A verdict is never a pass by " +
+          "itself — its findings are in the comment headed `**Fable review — by hand`. Read it, " +
+          `then re-run with --acknowledge ${pr.number}.`,
       };
     }
     if (pr.acknowledgedAtVerdictCount < pr.verdictCount) {
@@ -637,7 +627,7 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
         reason:
           `a NEWER verdict landed after your acknowledgement (${pr.verdictCount} verdicts now, ` +
           `${pr.acknowledgedAtVerdictCount} when you acknowledged). An acknowledgement is pinned ` +
-          "to what was read, not to the PR. Read the newest sticky comment and re-run.",
+          "to what was read, not to the PR. Read the newest hand verdict and re-run.",
       };
     }
   }
@@ -648,7 +638,7 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
   //     produces a money diff with a DECLINED review and no verdict anywhere
   //     (#558 review, finding 5). Where a human used to click merge, this tool
   //     now does.
-  if (pr.review === "no-verdict" || pr.review === "declined" || pr.review === "absent") {
+  if (pr.review === "no-verdict" || pr.review === "declined") {
     const acknowledged = pr.acknowledgedAtVerdictCount !== null;
     // ⚠ THIS STOP COVERS `declined` AND `absent` AS WELL AS `no-verdict`, and
     //    the round-three review of #558 is why: the round-two fix taught the
@@ -666,9 +656,9 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
       return {
         kind: "stop",
         reason:
-          `it touches ${REVIEWER_WORKFLOW_PATH}, so the reviewer self-skips and NO review can ` +
-          "run (#165). That is a hand-review obligation, not a rejection: review the change " +
-          `yourself, then re-run with --acknowledge ${pr.number}.`,
+          `it touches ${REVIEWER_WORKFLOW_PATH} — the rules of the review itself — and no fresh ` +
+          "hand verdict exists. The relay reviews a change to its own rules at its next sitting " +
+          `and posts the verdict; then re-run with --acknowledge ${pr.number}.`,
       };
     }
     // #987: either half of the money rule holds, never only the first. A PR the
@@ -687,9 +677,10 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
               "credit API") +
           " and NO reviewer verdict exists" +
           reviewAbsenceClause(pr.review) +
-          ". The standing orders merge an ordinary PR on the gate alone when the reviewer is " +
-          "down, and hold a money/auth one. Get a verdict (remove then re-add `needs-fable`, " +
-          `#368) or hand-review it and re-run with --acknowledge ${pr.number}.` +
+          ". The standing orders merge an ordinary PR on the gate alone and HOLD a money/auth " +
+          "one: the relay reviews it at its next sitting and posts a comment headed " +
+          "`**Fable review — by hand` (#1065). A shift neither merges it nor posts that comment. " +
+          `Once the verdict is on the PR, re-run with --acknowledge ${pr.number}.` +
           /*
             ⚠ ONE OF THOSE TWO REMEDIES CANNOT FIRE ON A CONFLICTING HEAD, AND
             SAYING SO IS THIS FIX'S OWN PREMISE TURNED ON ITSELF (PR #631's
@@ -698,13 +689,12 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
             since before it hung above here for ever. But GitHub creates no
             check suite for a conflicting head, which is exactly why the gate
             reads `absent`, and the reviewer runs on that same machinery: a
-            re-added `needs-fable` produces nothing to wait for. Only the
-            hand-review road works, and a re-run then reaches the sync below.
+            re-added `needs-fable` used to produce nothing to wait for. With the
+            action retired (#1065) the hand-review road is the only road, and a
+            re-run then reaches the sync below.
           */
           (pr.mergeable === "CONFLICTING" || pr.mergeStateStatus === "DIRTY"
-            ? " ⚠ This PR is also CONFLICTING, and a conflicting head gets no workflow run at " +
-              "all — so re-adding `needs-fable` will produce nothing to wait for. Hand-review " +
-              "it and re-run; the sync happens after the acknowledgement."
+            ? " ⚠ This PR is also CONFLICTING; the sync happens after the acknowledgement."
             : ""),
       };
     }

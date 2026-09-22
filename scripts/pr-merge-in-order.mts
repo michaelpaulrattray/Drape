@@ -27,27 +27,32 @@
  * ⚠ WHAT IT REFUSES TO DO IS THE POINT. It never judges. It stops, names the
  * PR and says why, whenever the next step is a decision:
  *   - a red gate (it never retries one, and never merges past one);
- *   - a Fable verdict nobody has read — GREEN IS NOT A PASS (#219), the
- *     findings ride the sticky comment, and `--acknowledge <n>` is the shift
- *     saying it has read them. The acknowledgement is PINNED to the verdict
- *     count it was given for, so a later one is not waived by an earlier word;
- *   - a money/auth diff with no verdict at all — whether the reviewer failed
- *     or triage declined it — by EITHER half of `.github/money-surfaces.sh`:
- *     a money path, or a changed line under `server`/`shared` naming the
- *     credit API (#987) — and a diff touching `review.yml` (the reviewer
- *     self-skips on its own change, #165);
+ *   - a hand verdict nobody has read — a verdict is never a pass by itself
+ *     (#219's lesson, kept): the findings are in the comment headed
+ *     `**Fable review — by hand`, and `--acknowledge <n>` is the shift saying
+ *     it has read them. The acknowledgement is PINNED to the verdict count it
+ *     was given for, so a later one is not waived by an earlier word;
+ *   - a money/auth diff with no FRESH verdict — by EITHER half of
+ *     `.github/money-surfaces.sh`: a money path, or a changed line under
+ *     `server`/`shared` naming the credit API (#987) — and a diff touching
+ *     `review.yml`, the rules of the review itself. The relay reviews those at
+ *     its next sitting (#1065); a shift neither merges them nor posts the
+ *     comment;
  *   - a real content conflict, a draft, or branch protection saying BLOCKED;
  *   - a worktree that is not clean: a merge commit folds staged work into
  *     itself, and these worktrees are a shift's ACTIVE workspace;
  *   - a branch with no registered worktree — it will not cut one, because a
  *     worktree it did not create is not one it should take down.
  *
- * And it WAITS, rather than merging, on a review that is still in flight. That
- * one was the gate review of its own PR (#558, finding 1): the gate finishes
- * while a PR is a draft, `gh pr ready` starts the review and starts NO new gate
- * run, so "green gate, review mid-run" is the team's ROUTINE first-round state.
- * Reading it as "the reviewer produced nothing" made merging past a review the
- * default outcome rather than the exception. IN FLIGHT IS NOT DOWN.
+ * ⚠ THE REVIEWER IS A PERSON (#1065). Until 2026-09-22 this tool tallied
+ * `review.yml` workflow runs and read the conclusion of a job named `review`
+ * — and most of its hardest lessons (#219, #434, #558's "in flight is not
+ * down", #566's absent check) were about a machine whose runs could die. The
+ * action is retired on his ruling. A verdict is now a PR comment by the
+ * founder's account headed `**Fable review — by hand`, posted after the head
+ * commit (`scripts/lib/reviewRounds.mts`); a later push makes it stale. There
+ * is nothing in flight to wait on any more, and nothing that can fail to be
+ * created: a PR carries a fresh verdict or it does not.
  *
  * EXIT CODES — the finding is the exit code, like `gate-stall-check`:
  *     0  every named PR is merged (or was already)
@@ -90,6 +95,9 @@ import {
   refuseUnknownJobName,
   sharesFiles,
   supplyChainStateOf,
+  moneySymbolHits,
+  touchesMoney,
+  touchesReviewerWorkflow,
 } from "./lib/prMergeOrder.mts";
 import { gitTreeReader, readProtectedRefs } from "./lib/pushPaths.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
@@ -100,7 +108,7 @@ import {
   readFounderActivity,
 } from "./lib/founderActivity.mts";
 import {
-  type ReviewRunReading,
+  type HandVerdictReading,
   reviewPresence,
   tallyRounds,
 } from "./lib/reviewRounds.mts";
@@ -254,7 +262,6 @@ try {
 // nothing would redden — the silent, permissive direction (#558 review,
 // finding 3). So the names are asserted against what the workflows declare,
 // and an absent one refuses the run.
-const REVIEW_JOB_NAME = "review";
 const GATE_JOB_NAME = "gate-checks";
 /**
  * The Warden's semgrep job, split out of `gate-checks` by #1034. Read by
@@ -275,8 +282,10 @@ const BUNDLE_BUDGET_JOB_NAME = "bundle-budget";
  */
 const SUPPLY_CHAIN_CHECK_NAME = "Socket Security: Pull Request Alerts";
 const GATE_WORKFLOW_PATH = ".github/workflows/gate.yml";
+// `review.yml` declared a `review` job here until #1065 — the action reviewer
+// is retired and the verdict is a hand verdict read off the PR's comments, so
+// there is no review job to key on and nothing of it to assert.
 for (const [needed, workflowPath] of [
-  [REVIEW_JOB_NAME, REVIEWER_WORKFLOW_PATH],
   [GATE_JOB_NAME, GATE_WORKFLOW_PATH],
   [STATIC_SHAPES_JOB_NAME, GATE_WORKFLOW_PATH],
   [BUNDLE_BUDGET_JOB_NAME, GATE_WORKFLOW_PATH],
@@ -293,12 +302,10 @@ for (const [needed, workflowPath] of [
   if (refusal !== null) fail(refusal);
 }
 
-// ---- the reviewer workflow's id, DERIVED ----------------------------------
-const workflows = api<{ workflows: Array<{ id: number; path: string }> }>(
-  "repos/:owner/:repo/actions/workflows?per_page=100",
-).workflows;
-const reviewWorkflow = workflows.find((w) => w.path === REVIEWER_WORKFLOW_PATH);
-if (!reviewWorkflow) fail(`no workflow at ${REVIEWER_WORKFLOW_PATH} — it has been renamed or removed`);
+// ---- whose comments are verdicts, DERIVED ----------------------------------
+// The repository owner's account: the relay posts as it. Read from the record
+// rather than a constant, so a transfer of the repository is felt here.
+const OWNER_LOGIN = api<{ owner: { login: string } }>("repos/:owner/:repo").owner.login;
 
 // ---- worktrees -------------------------------------------------------------
 /** branch ref -> absolute worktree path, from git's own porcelain listing. */
@@ -329,57 +336,29 @@ function readWorktrees(): Map<string, string> {
  */
 
 /**
- * Every `review.yml` run, with the conclusion of the job NAMED `review` in it.
- * The jobs call is what separates "the reviewer read the diff" from "triage
- * declined it" — a run concludes `success` either way (#219). Cached per run
- * id because the loop re-reads on every poll.
+ * Every issue comment on the PR, reduced to what the verdict reading uses
+ * (#1065). `--paginate` because a long-lived PR can carry more than one page,
+ * and a SHORT list fails in the permissive direction: a verdict on page two
+ * reads as none, which holds a money PR for ever — the safe direction, but a
+ * shift then re-reviews a diff that was reviewed. Not cached: the loop
+ * re-reads on every poll, and a verdict posted mid-wait is exactly what it is
+ * waiting for.
  */
-type ReviewJobReading = { status: string | null; conclusion: string | null };
-
-/**
- * ⚠ ONLY TERMINAL STATES ARE CACHED. The first shape cached whatever it saw,
- * including `in_progress` and "no job yet", for the whole process lifetime — so
- * the 45-minute polling loop re-read the PR every 30 seconds and NEVER re-read
- * the job, and a verdict produced mid-run stayed invisible until the process
- * restarted (#558 review, finding 2). A cache that freezes a transient is
- * worse than no cache: it turns a wait into a permanent wrong answer.
- */
-const reviewJobCache = new Map<number, ReviewJobReading>();
-
-function readReviewJob(runId: number): ReviewJobReading {
-  const cached = reviewJobCache.get(runId);
-  if (cached !== undefined) return cached;
-  const jobs = api<{ jobs: Array<{ name: string; status: string; conclusion: string | null }> }>(
-    `repos/:owner/:repo/actions/runs/${runId}/jobs?per_page=100`,
-  ).jobs;
-  const job = jobs.find((j) => j.name === REVIEW_JOB_NAME);
-  const value: ReviewJobReading = job
-    ? { status: job.status, conclusion: job.conclusion }
-    : { status: null, conclusion: null };
-  if (value.status === "completed") reviewJobCache.set(runId, value);
-  return value;
-}
-
-function readReviewRuns(headBranch: string): ReviewRunReading[] {
-  const runs = api<{
-    workflow_runs: Array<{ id: number; head_branch: string; created_at: string; status: string }>;
-  }>(
-    `repos/:owner/:repo/actions/workflows/${reviewWorkflow!.id}/runs` +
-      `?branch=${encodeURIComponent(headBranch)}&per_page=100`,
-  ).workflow_runs;
-  return runs.map((r) => {
-    // A queued run has no jobs yet; asking for them costs a call that can only
-    // answer "not started", which the run's own status already says.
-    const job = r.status === "completed" ? readReviewJob(r.id) : { status: null, conclusion: null };
-    return {
-      id: r.id,
-      headBranch: r.head_branch,
-      createdAt: r.created_at,
-      runStatus: r.status,
-      reviewJobStatus: job.status,
-      reviewJobConclusion: job.conclusion,
-    };
-  });
+function readHandVerdicts(number: number): HandVerdictReading[] {
+  const out = gh([
+    "api",
+    "--paginate",
+    `repos/:owner/:repo/issues/${number}/comments?per_page=100`,
+    "--jq",
+    ".[] | [.id, .user.login, .created_at, .body] | @json",
+  ]);
+  return out
+    .split(/\r?\n/)
+    .filter((line) => line.trim() !== "")
+    .map((line) => {
+      const [id, authorLogin, createdAt, body] = JSON.parse(line) as [number, string, string, string];
+      return { id, authorLogin, createdAt, body };
+    });
 }
 
 /**
@@ -450,7 +429,7 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
       "view",
       String(number),
       "--json",
-      "number,createdAt,isDraft,state,mergeable,mergeStateStatus,headRefName,statusCheckRollup",
+      "number,createdAt,isDraft,state,mergeable,mergeStateStatus,headRefName,statusCheckRollup,labels,commits",
     ]),
   ) as {
     number: number;
@@ -461,16 +440,37 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     mergeStateStatus: string;
     headRefName: string;
     statusCheckRollup: Rollup[] | null;
+    labels: Array<{ name: string }>;
+    commits: Array<{ committedDate: string }>;
   };
 
+  const patches = readPrFiles(view.number);
+  const files = patches.map((f) => f.filename);
+  // The head commit's date bounds a verdict's freshness (#1065): `commits` is
+  // in order, so the last one is the head. A PR with no commits cannot be
+  // reviewed and is refused rather than read as "never pushed".
+  const head = view.commits[view.commits.length - 1];
+  if (!head) fail(`PR #${view.number} lists no commits — nothing to review or merge`);
   const identity = {
     number: view.number,
     headRefName: view.headRefName,
     createdAt: view.createdAt,
+    headCommittedAt: head.committedDate,
+    ownerLogin: OWNER_LOGIN,
   };
-  const tally = tallyRounds(readReviewRuns(view.headRefName), identity);
-  const patches = readPrFiles(view.number);
-  const verdictCount = tally.verdicts.length;
+  const tally = tallyRounds(readHandVerdicts(view.number), identity);
+  // Who owes this diff a look: triage's own verdict rides the `needs-fable`
+  // label; the money rule is read here as well, from the one file, so a label
+  // someone removed cannot un-owe a money diff; and a change to the review's
+  // own rules is always read (#165's obligation, now a person's).
+  const reviewOwed =
+    view.labels.some((l) => l.name === "needs-fable") ||
+    touchesMoney(files, moneyPattern) ||
+    moneySymbolHits(patches, moneySymbols).length > 0 ||
+    touchesReviewerWorkflow(files);
+  // Stale verdicts count toward the acknowledgement pin (a word said for a
+  // verdict that existed), never toward the merge.
+  const verdictCount = tally.verdicts.length + tally.stale.length;
 
   // An acknowledgement is PINNED to the verdict count observed the first time
   // this PR was read — so a verdict landing later in the run is not waived by
@@ -487,13 +487,13 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     state: view.state,
     mergeable: view.mergeable,
     mergeStateStatus: view.mergeStateStatus,
-    files: patches.map((f) => f.filename),
+    files,
     patches,
     gate: checkStateOf(view.statusCheckRollup ?? [], GATE_JOB_NAME),
     staticShapes: checkStateOf(view.statusCheckRollup ?? [], STATIC_SHAPES_JOB_NAME),
     bundleBudget: checkStateOf(view.statusCheckRollup ?? [], BUNDLE_BUDGET_JOB_NAME),
     supplyChain: supplyChainStateOf(view.statusCheckRollup ?? [], SUPPLY_CHAIN_CHECK_NAME),
-    review: reviewPresence(tally),
+    review: reviewPresence(tally, reviewOwed),
     verdictCount,
     acknowledgedAtVerdictCount: ackPinnedAt.get(view.number) ?? null,
     worktreePath: worktrees.get(view.headRefName) ?? null,

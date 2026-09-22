@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8d236ecf52bf30fb"
+    "sourceFingerprint": "3ae846560901f994"
   },
   "domains": [
     {
@@ -13200,24 +13200,8 @@
       "path": "server/reset-look.test.ts"
     },
     {
-      "id": "test:server/reviewLabelDedupe.test.ts",
-      "path": "server/reviewLabelDedupe.test.ts"
-    },
-    {
-      "id": "test:server/reviewRoundCap.test.ts",
-      "path": "server/reviewRoundCap.test.ts"
-    },
-    {
       "id": "test:server/reviewerCharter.test.ts",
       "path": "server/reviewerCharter.test.ts"
-    },
-    {
-      "id": "test:server/reviewerConcurrency.test.ts",
-      "path": "server/reviewerConcurrency.test.ts"
-    },
-    {
-      "id": "test:server/reviewerManualRoad.test.ts",
-      "path": "server/reviewerManualRoad.test.ts"
     },
     {
       "id": "test:server/ritePushSequence.test.ts",

@@ -1,422 +1,142 @@
 /**
- * DID A REVIEW ACTUALLY PRODUCE A VERDICT, AND HOW MANY TIMES? (#543 items 3
- * and 5.)
+ * IS THERE A VERDICT ON THIS PULL REQUEST, AND IS IT FRESH? (#1065 — the relay
+ * IS the reviewer; #543 item 3 is the question this still answers.)
  *
- * Two different shift questions share one reading, so they cannot drift into
- * two answers (working law 4):
+ * ⚠ THE REVIEWER IS A PERSON NOW, NOT A WORKFLOW RUN. His ruling, verbatim
+ * (2026-09-22, terminal): *"You are the new outside reviewer the outfit
+ * reviewer is permanently dead and will not come back."* Until that day this
+ * module tallied `review.yml` workflow runs and read the conclusion of a job
+ * named `review` — a design whose whole difficulty was telling "the action
+ * ran and judged" from "the action ran and died" (#219, #434, #165, #566).
+ * That difficulty is gone with the action. What is left is simpler and it is
+ * the road every one of 2026-09-22's eleven merges actually took:
  *
- *   item 3 — "may this PR be merged, or is there a verdict nobody has read?"
- *   item 5 — "is this the second and final review round for this PR?"
+ *   A VERDICT IS A PULL-REQUEST COMMENT, BY THE FOUNDER'S ACCOUNT, WHOSE BODY
+ *   BEGINS WITH `**Fable review — by hand`, POSTED AFTER THE HEAD COMMIT.
  *
- * ⚠ THE OBVIOUS SOURCES WERE BOTH PROBED AND BOTH FAIL, WHICH IS WHY THIS
- * MODULE EXISTS RATHER THAN A ONE-LINE `gh` FILTER (measured 2026-09-05):
+ * Three consequences, each of which an arm in `server/prMergeOrder.test.ts`
+ * pins:
  *
- *   1. `gh pr view --json statusCheckRollup` reports the checks on the PR's
- *      CURRENT HEAD COMMIT only. The reviewer runs once, at `opened` or
- *      `ready_for_review`, and every fix round after it moves the head — so a
- *      PR that was reviewed twice shows NO `review` check at all once its
- *      last fix lands. Read at PR #550, which had two verdicts and an empty
- *      review rollup on its merge commit. Reading verdicts off the rollup
- *      answers "was the head commit reviewed", which is not the question.
- *   2. A workflow run's `pull_requests` array is the documented association
- *      and is EMPTY on every one of the last 100 `review.yml` runs in this
- *      repository. GitHub populates it only in some cases; ours is not one.
+ *   - A push after the verdict makes it STALE. A verdict is on a diff, not on
+ *     a PR; a head that moved has not been read. Stale verdicts still count
+ *     toward `verdictCount` (an acknowledgement is pinned to what was read,
+ *     #558 finding 6) but they do not satisfy the merge.
+ *   - A comment by any other account is NOT a verdict, whatever it says. The
+ *     relay posts as the founder's account and so does every shift, so this
+ *     reader cannot tell a shift from the relay — the standing orders carry
+ *     the line "a shift never posts a hand verdict", and the retro reads for
+ *     it. The author check is the floor, not the fence.
+ *   - "Declined" is no longer a run's job being `skipped`; it is triage's own
+ *     verdict, carried on the PR as the `needs-fable` label: a diff that earns
+ *     a review is labelled at open (money/auth, ≥50 code lines, or an
+ *     escalation), and a diff without the label owes nobody a look — the four
+ *     mechanical checks are the whole bar. The caller computes the money half
+ *     itself as well (working law 4: the money rule is read from ONE file),
+ *     so a money diff someone un-labelled is still held.
  *
- *   So the association is by HEAD BRANCH, bounded below by the PR's own
- *   creation time. Its one limit, stated rather than discovered: a REUSED
- *   branch name would over-count, which the time bound reduces to "the same
- *   branch name re-opened as a second PR while the first still exists". The
- *   team's `team/<slug>` naming makes that improbable and not impossible.
+ * `pending` and `absent` are RETIRED states. There is no machine in flight to
+ * wait on, and nothing that can fail to be created; a PR either carries a
+ * fresh verdict or it does not.
  *
- * ⚠ AND A RUN'S CONCLUSION DOES NOT ANSWER "WAS THERE A VERDICT" EITHER. A
- * `review.yml` run concludes `success` both when the reviewer read the diff
- * and when TRIAGE DECLINED it (docs-only, under 50 code lines) — the two
- * outcomes this repository's `review` check most needs told apart (#219: the
- * check reports whether a verdict EXISTS, never whether the diff passed). The
- * only thing that separates them is the run's JOB list, so that is what is
- * read:
- *
- *   review job `success`              → A VERDICT EXISTS. Green is not a pass:
- *                                       the findings ride the sticky comment.
- *   review job `skipped`              → triage declined; no review was earned.
- *   review job `failure`/`cancelled`  → NO VERDICT (#165 self-skip, #219 the
- *                                       allowance running out, #434 a
- *                                       superseded run). Nothing was judged.
- *   no review job at all              → NO VERDICT, reported as such.
- *
- * Pure: it takes readings and returns verdicts. Every `gh` call lives in the
- * CLIs, so the whole decision is driveable without a network (law 3).
+ * Pure: readings in, verdicts out. Every `gh` call lives in the CLI, so the
+ * whole decision is driveable without a network (law 3).
  */
 
-/** One `review.yml` workflow run, reduced to what the decision uses. */
-export type ReviewRunReading = {
+/** The prefix every hand verdict starts with. Posted by the relay, read here. */
+export const HAND_VERDICT_MARKER = "**Fable review — by hand";
+
+/** One issue comment on the PR, reduced to what the decision uses. */
+export type HandVerdictReading = {
   id: number;
-  /** GitHub's `head_branch` on the run. */
-  headBranch: string;
+  /** GitHub login of the comment's author. */
+  authorLogin: string;
   /** ISO, GitHub's `created_at`. */
   createdAt: string;
-  /**
-   * GitHub's `status` on the RUN: queued | in_progress | completed. Read
-   * because a queued run has no jobs yet, so the job list alone cannot tell
-   * "the reviewer has not started" from "there is no reviewer".
-   */
-  runStatus: string;
-  /**
-   * The `status` of the job named `review`: queued | in_progress | completed,
-   * or `null` when the run holds no such job.
-   */
-  reviewJobStatus: string | null;
-  /**
-   * The conclusion of the job NAMED `review` in that run, or `null` when the
-   * run holds no such job or has not reached one. `skipped` is a real value
-   * here and means triage declined — it is not the same as absent.
-   */
-  reviewJobConclusion: string | null;
+  body: string;
 };
 
 export type PrIdentity = {
   number: number;
   headRefName: string;
-  /** ISO. A run older than the PR cannot be a round of it. */
+  /** ISO. A comment older than the PR cannot be a verdict on it. */
   createdAt: string;
+  /** ISO, the committer date of the PR's CURRENT head commit. */
+  headCommittedAt: string;
+  /** The one account whose comments count: the repository owner's. */
+  ownerLogin: string;
 };
 
-/** What a single run was, for this PR. */
-export type RoundKind = "verdict" | "declined" | "no-verdict" | "pending" | "not-this-pr";
+/** Does this body carry the marker, at the very start (after whitespace)? */
+export function isHandVerdict(body: string): boolean {
+  return body.trimStart().startsWith(HAND_VERDICT_MARKER);
+}
 
-/**
- * ⚠ `pending` IS A FOURTH KIND AND IT WAS MISSING FROM THE FIRST SHAPE OF THIS
- * MODULE — the gate review of PR #558 found it, and it defeated the whole
- * tool's headline contract.
- *
- * **IN FLIGHT IS NOT DOWN.** A review that is 30 seconds into its run has
- * produced no verdict yet, and the first shape mapped that to `no-verdict` —
- * the bucket the standing orders say merges on the gate alone. The failure is
- * the team's own routine, not a tail case: the gate runs while the PR is still
- * a draft and finishes; `gh pr ready` starts the review (20-minute timeout) and
- * starts NO new gate run; a shift running the merge tool a minute later sees a
- * green gate and a review that has produced nothing, and merges — with the
- * verdict landing minutes later on a merged PR, unread. That is exactly the
- * outcome the unread-verdict stop exists to prevent, arriving by the one road
- * it did not cover.
- *
- * A pending run is therefore treated like a running gate: WAIT.
- */
-export function classifyRun(run: ReviewRunReading, pr: PrIdentity): RoundKind {
-  if (run.headBranch !== pr.headRefName) return "not-this-pr";
-  if (new Date(run.createdAt).getTime() < new Date(pr.createdAt).getTime()) return "not-this-pr";
-  // The run itself first: a queued run has no jobs yet, so an absent review job
-  // on it means "not started", never "no reviewer".
-  if (run.runStatus !== "completed") return "pending";
-  if (run.reviewJobStatus !== null && run.reviewJobStatus !== "completed") return "pending";
-  switch (run.reviewJobConclusion) {
-    case "success":
-      return "verdict";
-    case "skipped":
-      return "declined";
-    case null:
-      return "no-verdict";
-    default:
-      // failure, cancelled, timed_out, action_required — every one of them is
-      // "nothing was judged", and each has its own recorded cause
-      // (#165 self-skip, #219 the allowance, #434 a superseded run).
-      return "no-verdict";
-  }
+/** What a single comment is, for this PR. */
+export type VerdictKind = "verdict" | "stale-verdict" | "not-a-verdict";
+
+export function classifyComment(comment: HandVerdictReading, pr: PrIdentity): VerdictKind {
+  if (comment.authorLogin !== pr.ownerLogin) return "not-a-verdict";
+  if (!isHandVerdict(comment.body)) return "not-a-verdict";
+  const at = new Date(comment.createdAt).getTime();
+  if (at < new Date(pr.createdAt).getTime()) return "not-a-verdict";
+  // A verdict posted BEFORE the current head was committed read a different
+  // diff. `<` rather than `<=`: a verdict and a commit in the same second is
+  // the relay pushing and posting inside one sitting, and it read the push.
+  if (at < new Date(pr.headCommittedAt).getTime()) return "stale-verdict";
+  return "verdict";
 }
 
 export type RoundTally = {
-  /** Runs that produced a reviewer verdict, oldest first. */
-  verdicts: readonly ReviewRunReading[];
-  /** Runs whose review job ran and failed to produce one. */
-  noVerdicts: readonly ReviewRunReading[];
-  /** Runs triage declined. */
-  declined: readonly ReviewRunReading[];
-  /** Runs still going. Neither a verdict nor its absence — yet. */
-  pending: readonly ReviewRunReading[];
+  /** Fresh verdicts — on the current head — oldest first. */
+  verdicts: readonly HandVerdictReading[];
+  /** Verdicts on an earlier head. Counted for acknowledgement, never merged on. */
+  stale: readonly HandVerdictReading[];
 };
 
 /**
- * Tally every run for one PR. Sorted oldest-first so "the second verdict" is
- * `verdicts[1]` and never depends on GitHub's listing order.
+ * Tally every comment for one PR. Sorted oldest-first so "the second verdict"
+ * is `verdicts[1]` and never depends on GitHub's listing order.
  */
-export function tallyRounds(runs: readonly ReviewRunReading[], pr: PrIdentity): RoundTally {
-  const verdicts: ReviewRunReading[] = [];
-  const noVerdicts: ReviewRunReading[] = [];
-  const declined: ReviewRunReading[] = [];
-  const pending: ReviewRunReading[] = [];
-  const ordered = [...runs].sort(
+export function tallyRounds(comments: readonly HandVerdictReading[], pr: PrIdentity): RoundTally {
+  const verdicts: HandVerdictReading[] = [];
+  const stale: HandVerdictReading[] = [];
+  const ordered = [...comments].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
-  for (const run of ordered) {
-    switch (classifyRun(run, pr)) {
+  for (const comment of ordered) {
+    switch (classifyComment(comment, pr)) {
       case "verdict":
-        verdicts.push(run);
+        verdicts.push(comment);
         break;
-      case "no-verdict":
-        noVerdicts.push(run);
+      case "stale-verdict":
+        stale.push(comment);
         break;
-      case "declined":
-        declined.push(run);
-        break;
-      case "pending":
-        pending.push(run);
-        break;
-      case "not-this-pr":
+      case "not-a-verdict":
         break;
     }
   }
-  return { verdicts, noVerdicts, declined, pending };
+  return { verdicts, stale };
 }
 
 /**
- * THE MERGE QUESTION (item 3). Does an unread verdict stand between this PR
- * and the merge button?
+ * THE MERGE QUESTION. Does an unread verdict, or the absence of one, stand
+ * between this PR and the merge button?
  *
- *   "verdict"     at least one reviewer verdict exists. The standing orders
- *                 are explicit that a GREEN review is not a pass — its
- *                 findings ride the sticky comment and must be read.
- *   "no-verdict"  the reviewer was owed a look and produced none. Per the
- *                 standing orders this does NOT hold a PR whose gate is
- *                 green — EXCEPT on a money/auth diff, and the caller owns
- *                 that half because it is the caller that knows the files.
- *   "declined"    triage LOOKED and said no — a run exists and its `review`
- *                 job is `skipped`. A docs-only diff, a sub-50-line diff, a
- *                 `skip-review` label. The four mechanical checks are the
+ *   "verdict"     a fresh hand verdict exists on the current head. Green is
+ *                 never a pass: its findings are in the comment and must be
+ *                 read (`--acknowledge`).
+ *   "no-verdict"  a review is OWED (triage labelled it, or the caller's own
+ *                 money reading says so) and no fresh verdict exists. Per the
+ *                 standing orders an ORDINARY PR still merges on the gate
+ *                 alone; a money/auth one waits for the relay's sitting, and
+ *                 the caller owns that half because it knows the files.
+ *   "declined"    nobody owes this diff a look — no label, and the caller's
+ *                 money reading is empty. The four mechanical checks are the
  *                 whole bar, and that is the design working.
- *   "absent"      NOTHING RAN. No `review.yml` run exists for this pull
- *                 request at all. The four mechanical checks are the whole
- *                 bar here too — but for a different reason, and the caller
- *                 is told so rather than left to infer a decision that was
- *                 never made.
- *   "pending"     a review is IN FLIGHT. Not a verdict, and emphatically not
- *                 its absence — the caller waits, exactly as it waits on a
- *                 running gate.
- *
- * ⚠ `declined` AND `absent` WERE ONE STATE CALLED `none` UNTIL #566, AND THE
- * CONFLATION MADE THIS TOOL SAY A CONFIDENT WRONG THING. Its money hold read
- * `none` and printed *"triage declined it — check for a stale `skip-review`
- * label"* — a specific diagnosis pointing at a label that is not there,
- * whenever the truth was that no run had ever been created. #219's paragraph
- * teaches three readings of a `review` CHECK (green = a verdict exists, red =
- * no verdict, cancelled = superseded) and **all three assume a check is
- * THERE**; an absent one is the fourth state and it is the only one that
- * cannot be misread as a verdict, because it is silently skipped instead.
- *
- * Measured at the artifacts 2026-09-07, over the 100 newest `review.yml` runs
- * (2026-09-06T06:50Z → 2026-09-07T21:20Z): **50 trigger events, 49 produced a
- * run, 1 produced nothing** — PR #610's first `needs-fable` label at 15:41:54Z.
- * Plus both of PR #563's, checked against that whole day's 49 runs. **The
- * cause is NOT in `review.yml` and #610 is the control that proves it**: the
- * label was removed at 15:55:24Z and re-added at 15:55:29Z, and that second
- * event produced a run two seconds later — same PR, same head `6dfb8842`, same
- * workflow, same conditions, fourteen minutes apart, one fired and one did
- * not. What is left is GitHub's own event delivery, which is not observable
- * from this side of the API. So this module does not try to name it; it makes
- * the state SAYABLE, which is what #566 asked for either way.
- *
- * ⚠ THE ORDER OF THESE TESTS MATTERS AND `pending` OUTRANKS EVERYTHING,
- * INCLUDING AN EXISTING VERDICT. Three cases, and it is right in all three:
- * a PR whose first review failed (#219) and whose second is mid-run must wait
- * for the second rather than merge on the first one's absence; a PR whose
- * first verdict has been acknowledged and whose second is mid-run must wait
- * too, because a second look is only ever started deliberately and merging
- * through one discards the thing that was asked for; and a first review still
- * running is the case the gate review of #558 caught. The cost of the strict
- * order is a wait the shift could have spent reading the first verdict. The
- * cost of the loose one is a merge past a review.
  */
-export type ReviewPresence = "verdict" | "no-verdict" | "declined" | "absent" | "pending";
+export type ReviewPresence = "verdict" | "no-verdict" | "declined";
 
-/**
- * ⚠ THE `declined` TEST READS THE TALLY'S OWN BUCKET, WHICH ALREADY EXISTED.
- * `tallyRounds` has separated declined runs from everything else since it was
- * written; only this function collapsed them back together. So the negative
- * control #566 asks for by name — *a head that DOES have a skipped review must
- * not be reported as missing* — is a bucket read, not a new inference.
- */
-export function reviewPresence(tally: RoundTally): ReviewPresence {
-  if (tally.pending.length > 0) return "pending";
+export function reviewPresence(tally: RoundTally, reviewOwed: boolean): ReviewPresence {
   if (tally.verdicts.length > 0) return "verdict";
-  if (tally.noVerdicts.length > 0) return "no-verdict";
-  if (tally.declined.length > 0) return "declined";
-  return "absent";
-}
-
-/**
- * THE CAP (item 5, founder-ordered #543): the second review round is the last.
- *
- * The measurement behind it: over the last 25 merged PRs the reviewer ran 1.3
- * times per PR, but 7 of 25 took two or more rounds — and that tail is the
- * whole gap between the 27-minute median wait and the 42-minute mean. A third
- * round means the change is not understood: stop, card it with the reviewer's
- * words, and move on.
- *
- * ⚠ IT COUNTS VERDICTS, NEVER ATTEMPTS, AND THAT IS THE DESIGN DECISION IN
- * THIS FUNCTION. A run that produced no verdict — the allowance running out
- * (#219), a cancelled run (#434), the reviewer refusing its own change (#165)
- * — judged nothing. Counting it would let an OUTAGE spend one of the two
- * rounds a shift is allowed, which is the opposite of what the cap is for.
- *
- * ✅ WIRED. These two shipped one PR ahead of their call site, as DECLARED
- * scaffolding (fidelity law; the gate review of PR #558 asked for that sentence
- * by name, and the promise it carried was that item 5 would either wire them or
- * delete them). Item 5 wired them: `scripts/review-round-notice.mts`, run by
- * the `review` job on the run that produces a verdict.
- * `server/reviewRoundCap.test.ts` guards the CHAIN — the step exists, it calls
- * the script, the script calls this decision rather than a copy of it — because
- * "helper written, docs written, todo ticked, call site never added" is exactly
- * how CLAUDE.md's "Currently not enforced" list was filled.
- */
-export type RoundNotice =
-  | { kind: "silent"; verdictsSoFar: number }
-  | { kind: "final-round"; verdictsSoFar: number; message: string };
-
-export const FINAL_ROUND_MESSAGE =
-  "This is the second and final review round; a further push is not reviewed " +
-  "automatically — card it. A third look is deliberate: remove and re-add the " +
-  "`needs-fable` label (it is a one-shot button, #368). The cap is #543's: " +
-  "read the whole verdict and take EVERY finding in ONE push.";
-
-/**
- * `verdictsIncludingThisRun` is the count AFTER this run's own verdict is
- * added — the notice is posted by the run that produced the second one.
- */
-/**
- * The hidden marker the notice carries, and the reason it exists: the review
- * job runs the notice step on EVERY verdict, so without it a third and fourth
- * deliberate look would each repeat the line — and a message that repeats is
- * one people stop reading.
- *
- * ⚠ IT LIVES HERE, WITH ITS DECISION, BECAUSE THE FIRST SHAPE PUT BOTH IN THE
- * CLI AND A SABOTAGE PROVED THE ARM BLIND. Deleting the whole idempotence check
- * from the script reddened NOTHING: the suite could only see that the marker
- * STRING was present, which a broken guard keeps. The decision is a function
- * now and the suite drives it.
- */
-export const ROUND_NOTICE_MARKER = "<!-- review-round-cap -->";
-
-/** Has the notice already been posted on this pull request? */
-export function alreadyNoticed(commentBodies: readonly string[]): boolean {
-  return commentBodies.some((body) => body.includes(ROUND_NOTICE_MARKER));
-}
-
-/** The comment body, so the thing written and the thing searched for are one. */
-export function roundNoticeBody(notice: Extract<RoundNotice, { kind: "final-round" }>): string {
-  return `${ROUND_NOTICE_MARKER}\n**Round ${notice.verdictsSoFar}.** ${notice.message}`;
-}
-
-export function decideRoundNotice(verdictsIncludingThisRun: number): RoundNotice {
-  if (verdictsIncludingThisRun >= 2) {
-    return {
-      kind: "final-round",
-      verdictsSoFar: verdictsIncludingThisRun,
-      message: FINAL_ROUND_MESSAGE,
-    };
-  }
-  return { kind: "silent", verdictsSoFar: verdictsIncludingThisRun };
-}
-
-/**
- * ONE VERDICT PER HEAD SHA — THE `labeled` RUN ASKS BEFORE IT SPENDS (#1026).
- *
- * `review.yml` triggers on `ready_for_review` AND on `labeled`, and its
- * concurrency group is keyed on the event so a skipping label run can never
- * cancel a real review (#434). The cost of that correct design: a PR marked
- * ready and labelled `needs-fable` in the same breath earns TWO full verdicts
- * on one sha. Measured over the 500 newest `review.yml` runs (2026-09-08 →
- * 2026-09-17), each run's `review` job read from the jobs API: **four doubled
- * shas** — PRs #680, #1007, #1023, #1024 — every one that exact shape, the two
- * runs 1 s, 1 s, 2 s and 36 s apart. $17.19 on the last two alone, against the
- * founder's standing word: *"we are doubling up on our fable reviews and its
- * burning through my credits."*
- *
- * So on a `labeled needs-fable` run, triage asks this question about the OTHER
- * `review.yml` runs on the SAME head sha, and only when the diff earns a review
- * on its own merits (the money pattern, or ≥50 code lines — a reading that does
- * not depend on the label). Where it does not, the label IS the escalation and
- * nothing here may touch it.
- *
- * ⚠ EVERY UNKNOWN RESOLVES TO `review`. This decision can only ever SPEND a
- * verdict nobody needed; it must never SILENCE one that was owed. So: no other
- * run → review; a run whose jobs are not listed yet → review; a run whose triage
- * job was skipped (a `labeled urgent` run, a draft) → review; a run whose review
- * job failed or was cancelled (#219, #434 — no verdict) → review, because the
- * label is exactly the retry road those cards prescribe. The ONLY thing that
- * skips is another run whose triage is evaluating (or evaluated) this sha and
- * whose review job is queued, running, or concluded with a verdict.
- *
- * Pure, like everything above it: the CLI reads GitHub and hands the readings
- * in, so the whole decision is driveable without a network (working law 3).
- */
-export type SameShaRunReading = {
-  id: number;
-  /** GitHub's `status` on the run: queued | in_progress | completed. */
-  runStatus: string;
-  /** The `triage` job's status/conclusion, or null when the run lists no such job (yet). */
-  triageJobStatus: string | null;
-  triageJobConclusion: string | null;
-  /** The `review` job's status/conclusion, or null when absent. */
-  reviewJobStatus: string | null;
-  reviewJobConclusion: string | null;
-};
-
-export type LabelDedupe =
-  | { kind: "review"; reason: string }
-  | { kind: "skip"; reason: string; byRun: number };
-
-/** Why one other run does, or does not, stand in for this one. */
-export function sameShaRunStandsIn(run: SameShaRunReading): { standsIn: boolean; why: string } {
-  // No triage job listed: a run still being scheduled, or one this reader
-  // cannot see into. Either way it is not known to be reviewing this sha.
-  if (run.triageJobStatus === null) return { standsIn: false, why: "its jobs are not listed yet" };
-  const triageDone = run.triageJobStatus === "completed";
-  if (triageDone && run.triageJobConclusion !== "success") {
-    // `skipped`: the job-level `if` said no — a draft, or a label other than
-    // needs-fable. failure/cancelled: it decided nothing.
-    return { standsIn: false, why: `its triage job concluded ${run.triageJobConclusion ?? "nothing"}` };
-  }
-  // From here the other run's triage is running or ran to a decision.
-  if (run.reviewJobStatus === null) {
-    if (!triageDone) return { standsIn: true, why: "its triage is evaluating this sha now" };
-    return { standsIn: false, why: "its triage finished but lists no review job" };
-  }
-  if (run.reviewJobStatus !== "completed") {
-    return { standsIn: true, why: `its review job is ${run.reviewJobStatus}` };
-  }
-  if (run.reviewJobConclusion === "success") return { standsIn: true, why: "it produced a verdict on this sha" };
-  if (run.reviewJobConclusion === "skipped") return { standsIn: false, why: "its triage declined this sha" };
-  return { standsIn: false, why: `its review job concluded ${run.reviewJobConclusion ?? "nothing"} — no verdict` };
-}
-
-export function decideLabelDedupe(input: {
-  thisRunId: number;
-  meritsReview: boolean;
-  others: readonly SameShaRunReading[];
-}): LabelDedupe {
-  if (!input.meritsReview) {
-    return {
-      kind: "review",
-      reason: "the diff does not earn a review on its own merits — the needs-fable label is the escalation, and nothing else will review it",
-    };
-  }
-  const candidates = [...input.others]
-    .filter((run) => run.id !== input.thisRunId)
-    .sort((a, b) => a.id - b.id);
-  for (const run of candidates) {
-    const verdict = sameShaRunStandsIn(run);
-    if (verdict.standsIn) {
-      return {
-        kind: "skip",
-        byRun: run.id,
-        reason: `run ${run.id} already covers this head sha (${verdict.why}); a diff that earns a review on its own merits does not earn a second for the label`,
-      };
-    }
-  }
-  return {
-    kind: "review",
-    reason:
-      candidates.length === 0
-        ? "no other review run exists on this head sha"
-        : `${candidates.length} other run(s) on this head sha and none stands in (${candidates.map((r) => `${r.id}: ${sameShaRunStandsIn(r).why}`).join("; ")})`,
-  };
+  return reviewOwed ? "no-verdict" : "declined";
 }

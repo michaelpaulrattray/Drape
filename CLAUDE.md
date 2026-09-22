@@ -339,54 +339,32 @@ work is either one of its shifts or must behave like one. The binding pieces:
   outside the queue. The mailbox (`.agents/mailbox/`) is receipts and
   handoffs, never state — a fact that lives only in a message does not exist.
 - **The gate** (`.github/workflows/gate.yml`, `review.yml`): every PR runs
-  the four instruments; substantial or money-path diffs get a Fable review
-  (under 50 changed code lines skips it; `needs-fable` forces it). Money/auth
-  diffs are labelled `founder-review` for visibility and always reviewed but
-  do NOT block on founder approval (his ruling, 2026-08-25). Product code
-  goes branch → PR → gate; direct pushes to main are the deploy rite's alone.
-  ⚠ **A `review` CHECK REPORTS WHETHER A VERDICT EXISTS, NEVER WHETHER THE
-  DIFF PASSED** (#219, 2026-08-29). The action exits 0 whatever it finds, so
-  **findings ride a GREEN check's sticky comment — read it before merging —
-  and a RED `review` means NO REVIEW WAS PRODUCED**: the reviewer cannot run
-  on its own change (#165), it failed to complete, or **the run was CANCELLED
-  by a newer one on the same trigger (#434)**. Read the
-  wrong way round on PR #218, where the founder's Fable allowance was
-  exhausted, the job died in ~1s on `is_error: true`, and a red check looked
-  like a reviewer verdict for two shifts until the result JSON was dug out of
-  the action log. The review job's last step now names which of the three
-  states it is, on the PR's own checks page and in the run summary; it runs
-  on `always()` with `continue-on-error`, so it can neither rescue a failure
-  nor break a pass. ⚠ **A CANCELLED run is the one it cannot always narrate,
-  and that is stated rather than discovered**: `always()` covers a
-  cancellation mid-review, but a run cancelled while still QUEUED never
-  reaches a runner, so no step of it executes and the PR carries a red check
-  with no annotation at all. **The concurrency key is what stops the common
-  cause** — until 2026-09-04 every event on a PR shared the slot
-  `review-<pr>`, so a `labeled` event that was going to skip (triage reviews a
-  label only for `needs-fable`) could cancel the real review and then skip
-  itself, which is what PR #433 showed. The group is keyed on the event and
-  the label now, so an `opened` run and a `labeled` run cannot see each other
-  while two runs of the same kind still supersede. ⚠ **And the card's
-  headline number was wrong in the direction that matters — read at the
-  artifact, the last 100 review runs are 46 success, 45 skipped, 8 failure and
-  ONE cancelled. The 45 skipped are the design working**; #502's "27 of the
-  last 60 were skipped" counts the reviewer doing its job, not the bug.
-  ⚠ **AND ALL THREE READINGS ABOVE ASSUME THE CHECK IS THERE — THERE IS A
-  FOURTH STATE AND IT IS AN ABSENT CHECK (#566, 2026-09-07).** A trigger event
-  GitHub never turns into a run leaves no check to read at all, which looks
-  exactly like a repository with no reviewer and is the one shape that cannot
-  be misread as a verdict — it is silently skipped instead. **Measured over
-  the 100 newest review runs: 50 trigger events, 49 produced a run, ONE did
-  not**, and PR #610 is the control that puts the cause OUTSIDE `review.yml` —
-  the same `needs-fable` label, the same head `6dfb8842`, removed and re-added
-  fourteen minutes later, produced a run two seconds after an identical event
-  produced none. So it is not narrated by the review job (nothing runs to
-  narrate it); it is named by `pr-merge-in-order`, which now separates
-  `declined` (triage LOOKED and said no — the design working) from `absent`
-  (nothing ran) and **says the second one out loud on the line it prints as it
-  merges.** The remedy is a `needs-fable` remove-and-re-add BEFORE merging, not
-  a hunt for a `skip-review` label nobody applied — which is what the tool used
-  to tell you.
+  the four instruments. ⚠ **THE OUTSIDE REVIEWER IS THE RELAY, AND THE ACTION
+  REVIEWER IS RETIRED FOR GOOD (#1065, his ruling 2026-09-22, verbatim: *"You
+  are the new outside reviewer the outfit reviewer is permanently dead and
+  will not come back."*).** `review.yml`'s triage still decides which diffs
+  earn a look — money/auth surfaces (both halves of `.github/money-surfaces.sh`),
+  ≥50 changed code lines, or a `needs-fable` escalation — and says so ON THE
+  PR: it applies `needs-fable` and posts one comment naming the obligation and
+  the reading (ordinary diffs: `docs/REVIEWER_CHARTER.md`; money/auth: this
+  file in full). **The verdict is a PR comment by the founder's account headed
+  `**Fable review — by hand`, posted after the head commit** — the road every
+  merge of 2026-09-22 took — and `scripts/pr-merge-in-order.mts` reads it off
+  the PR (`scripts/lib/reviewRounds.mts`): a later push makes it stale, a
+  shift's or a bot's comment is never a verdict, and `--acknowledge` still
+  means "I read the findings". **Money/auth PRs and changes to `review.yml`
+  are HELD until the relay's verdict exists; an ordinary PR merges on the gate
+  alone**, which is his 2026-09-15 outage override made permanent. **A shift
+  never posts a hand verdict** — the tool cannot tell a shift from the relay
+  (both run as his account), so that line is the standing orders' and the
+  retro reads for it. Money/auth diffs are still labelled `founder-review` by
+  the gate for visibility and do NOT block on founder approval (his ruling,
+  2026-08-25). Product code goes branch → PR → gate; direct pushes to main are
+  the deploy rite's alone. **There is no `review` CHECK on a PR any more** —
+  the whole #219/#434/#566 vocabulary of green-is-not-a-pass, cancelled, and
+  absent described a machine whose runs could die, and it is history (read it
+  in git); the one sentence of it that survives is that a verdict exists to be
+  READ, never to be passed on.
 - **The founder steers from the Desk, and the Desk is `/admin/crew` in the
   product** — his own switch-over order, 2026-08-26 (terminal), recorded in the
   night-shift standing orders (`.agents/foreman/prompt.md`, which is untracked)
