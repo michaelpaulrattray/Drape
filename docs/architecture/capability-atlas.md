@@ -239,6 +239,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | absorbed_departure | interpreter-refusal |  | refineRefusals.test.ts |
 | already_original | service-refusal |  | refineService.test.ts |
 | already_signed | service-refusal |  | refineService.test.ts |
+| askNotCarried | cannot-say | refunded | cannotSayCopy.test.ts, repaintAsks.test.ts |
 | busy | service-refusal |  | refusalTag.test.ts, rollService.test.ts |
 | candidate_missing | service-refusal |  | refineService.test.ts |
 | concept.no_being | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts |
@@ -303,10 +304,11 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 
 `CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATIVE_REGISTER_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SEGMENTS_DELIVERED_SCOPE` · `CASTING_SEGMENTS_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_TWO_PATHS_SCOPE` · `CASTING_V2_SCOPE`
 
-## Findings (51)
+## Findings (52)
 
 - **warn** `belief-mismatch` guard.typo — "give her a nose rign" — believed asked:did-you-mean, observed would-render
 - **info** `documented-unreachable` already_signed — no corpus row reaches it: answers a refine sent at a SIGNED cast — request state, not sentence content — a row could reach it via: a signed-cast fixture, if sign-state rows are ever wanted; pinned by its C5 service arm
+- **info** `documented-unreachable` askNotCarried — no corpus row reaches it: answers an ask whose own record does not line up with another record this product minted — an open-lane key `slotDefinition` will not resolve, a kind the step asked for that the composed state does not carry, or a placement definition whose slot is not in the slot catalogue. Every one is two of OUR tables disagreeing, so no sentence a customer types reaches it; the corpus sends a sentence at a real Cast and the state it composes is by construction internally consistent — a row could reach it via: deliberately never as a corpus row. TWO of the three branches are driven directly in `repaintAsks.test.ts` — the unresolvable open key, and the composition that drops this step's own ask. The THIRD (a placement definition outside the slot catalogue) is NOT driven and is stated so rather than implied: reaching it needs the placement table and the slot catalogue to disagree, which no fixture can arrange through the public entrance today
 - **info** `documented-unreachable` candidate_missing — no corpus row reaches it: answers a request naming a cast the account does not own — request shape — a row could reach it via: deliberately never as a corpus row; pinned by its C5 service arm
 - **info** `documented-unreachable` concept.no_being — no corpus row reaches it: answers an upload whose read found no BEING in the picture at all — an object, a vehicle, a landscape, a product. It is the concept entrance's own edge of the same boundary the roll road draws at `not_a_being`, and #204 narrowed it there: a creature, a robot or an alien is a subject, so this fires only outside all four — a row could reach it via: a corpus row that carries a fixture PICTURE through the real concept entrance — cents of describer reads, the class of money the corpus already spends on text; nothing in the row grammar carries an image today
 - **info** `documented-unreachable` concept.no_transport — no corpus row reaches it: answers an upload made with no text engine configured at all — a deployment state, not a picture and not a sentence — a row could reach it via: deliberately never as a corpus row: the census runs against a configured service by construction; pinned by its own arm

@@ -421,4 +421,13 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
   { id: "removal_reread_unmatched",
     reason: "needs the ambiguity re-read to produce a removal whose noun then matches no step — a two-model-disagreement state that cannot be scripted through the real interpreter deterministically",
     becomesReachable: "deliberately never: pinned by its service arm (C5); a census row would be a coin flip (the model's read is the unstable thing)" },
+  /* ── #1072: the three internal-record branches split off `uncatalogued`,
+     which keeps the one fault its capability-limit sentence was true of. This
+     is the other half, and it belongs in the corrupt-state family above
+     (`history_unreadable`'s shape) rather than in KNOWN_DEBTS: a debt line
+     would say the map has not got round to it, and the honest fact is that a
+     well-formed ask structurally cannot produce the state. ── */
+  { id: "askNotCarried",
+    reason: "answers an ask whose own record does not line up with another record this product minted — an open-lane key `slotDefinition` will not resolve, a kind the step asked for that the composed state does not carry, or a placement definition whose slot is not in the slot catalogue. Every one is two of OUR tables disagreeing, so no sentence a customer types reaches it; the corpus sends a sentence at a real Cast and the state it composes is by construction internally consistent",
+    becomesReachable: "deliberately never as a corpus row. TWO of the three branches are driven directly in `repaintAsks.test.ts` — the unresolvable open key, and the composition that drops this step's own ask. The THIRD (a placement definition outside the slot catalogue) is NOT driven and is stated so rather than implied: reaching it needs the placement table and the slot catalogue to disagree, which no fixture can arrange through the public entrance today" },
 ];
