@@ -1203,15 +1203,25 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
      where looking for a different picture is honest advice. */
   if (second.fault === null) return { ok: false, reason: "unreadable", attempts: 2 };
   /*
-    TWO FAMILIES OF SECOND FAILURE, and they are different sentences to her
-    because they are different facts. A read that keeps describing the PICTURE,
-    or keeps CATALOGUING, is ours — she should try again rather than go looking
-    for a better photograph of our problem. A read that keeps coming back as a
-    shrug is the only one where a different picture is the honest advice, and it
-    takes `unreadable`'s sentence, which already says "just now".
+    FAMILIES OF SECOND FAILURE, and they are different sentences to her because
+    they are different facts. A read that keeps describing the PICTURE, keeps
+    CATALOGUING, or keeps running LONG is ours — she should try again rather
+    than go looking for a better photograph of our problem. A read that keeps
+    coming back as a shrug is the only one where a different picture is the
+    honest advice, and it takes `unreadable`'s sentence, which already says
+    "just now".
+
+    ⚠ **`long` TAKES ITS OWN SENTENCE (#1067) — IT USED TO FALL INTO
+    `not_a_casting_note` AND BE CALLED A LIST OF DETAILS.** It is prose that
+    ran over the ceiling, which is a different fact from an inventory, and on
+    his own uploads it was the overwhelmingly common one: six of seven reads
+    sent back on 2026-09-22 were `long`, all of them 304–350 characters. The
+    family is unchanged — still ours, still "try again" — only the noun is now
+    true. `absence` keeps `not_a_casting_note`, which is what #185 ruled on.
   */
   const reason = second.fault.kind === "picture"
     ? "not_about_the_person"
-    : second.fault.kind === "brief" ? "unreadable" : "not_a_casting_note";
+    : second.fault.kind === "brief" ? "unreadable"
+    : second.fault.kind === "long" ? "ran_long" : "not_a_casting_note";
   return { ok: false, reason, attempts: 2 };
 }
