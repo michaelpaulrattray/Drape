@@ -74,7 +74,12 @@
    the mirror working law 4 forbids, and this one has a subtlety worth not
    re-deriving: the branch reading matches a maximal digit RUN, so `#10790` is
    not `#1079`. */
-import { findCardPullRequests } from "../../shared/crewShiftState.js";
+import {
+  findCardPullRequests,
+  PR_CONFLICT_NOTE,
+  readPullRequestConflict,
+  type PullRequestMergeability,
+} from "../../shared/crewShiftState.js";
 
 /** A heading- or bullet-delimited chunk of a law surface. */
 export type Section = {
@@ -799,7 +804,7 @@ function isoFromStamp(stamp: string): string | null {
  * `scripts/lib/cardClaimWarning.mts` reads out of `gh`, declared here so this
  * library's one import stays the JUDGEMENT and not a type graph.
  */
-export type OpenPullRequestLike = {
+export type OpenPullRequestLike = PullRequestMergeability & {
   readonly number?: number;
   readonly title?: string;
   readonly url?: string;
@@ -956,6 +961,10 @@ export function buildDigest(inputs: DigestInputs): string {
           `    ⚠ ALREADY BEING BUILT? PR #${pr.number ?? "?"}${pr.isDraft ? " (draft)" : ""}`
           + ` is open and names this card in its ${where.join(" and ")} — ${pr.url ?? "no url"}`,
         );
+        /* ⚠ A conflict is spoken; `null` (GitHub still computing, or the
+           fields absent) says nothing rather than vouching for a PR this reader
+           has not been told about. #1099. */
+        if (readPullRequestConflict(pr) === true) out.push(`      ⚠ ${PR_CONFLICT_NOTE}`);
       }
     }
     /* ⚠ THE THREE ANSWERS ARE KEPT APART, WHICH IS THE WHOLE OF #1083's FINDING

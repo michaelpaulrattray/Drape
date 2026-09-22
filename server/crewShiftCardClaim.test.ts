@@ -28,7 +28,12 @@ import { join, resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
-import { cardNumberOf, findCardPullRequests } from "../shared/crewShiftState";
+import {
+  cardNumberOf,
+  findCardPullRequests,
+  PR_CONFLICT_NOTE,
+  readPullRequestConflict,
+} from "../shared/crewShiftState";
 import {
   OPEN_PR_READ_TIMEOUT_MS,
   openPullRequestsVerdict,
@@ -286,5 +291,170 @@ describe("the shift-start script actually calls it", () => {
      any hand check of this warning, impossible. */
   it("accepts --open-prs, which the strict reader would otherwise refuse", () => {
     expect(source).toContain("\"open-prs\"");
+  });
+});
+
+/*
+  CAN THE PULL REQUEST THAT CLAIMS THE CARD STILL BE MERGED? (#1099)
+
+  #1078 was finished, green and ready at 11:38Z on 2026-09-22 and unmergeable by
+  20:22Z, because main moved three times underneath it. The 19:53Z shift read
+  this very warning, saw the PR named, wrote "work in flight, not a hold" and
+  moved on — correctly, given what it was shown. Nine hours, and the repair is
+  five minutes.
+
+  Why it stayed invisible is worth keeping in front of these arms: a CONFLICTING
+  pull request gets no merge ref, so no `pull_request` run fires on it for any
+  event, and its checks page keeps showing the last green pass. It looks healthy
+  for exactly as long as it is broken.
+*/
+describe("readPullRequestConflict", () => {
+  it("⚠ says TRUE on either field, because GitHub answers this two ways", () => {
+    expect(readPullRequestConflict({ mergeable: "CONFLICTING", mergeStateStatus: "DIRTY" })).toBe(true);
+    /* Each alone is enough. `gate-stall-check.mts` reads them as an OR for the
+       same reason: they are two views of one fact and either may arrive first. */
+    expect(readPullRequestConflict({ mergeable: "CONFLICTING" })).toBe(true);
+    expect(readPullRequestConflict({ mergeStateStatus: "DIRTY" })).toBe(true);
+  });
+
+  it("says FALSE only when GitHub has actually computed a non-conflict", () => {
+    expect(readPullRequestConflict({ mergeable: "MERGEABLE", mergeStateStatus: "CLEAN" })).toBe(false);
+    expect(readPullRequestConflict({ mergeable: "MERGEABLE", mergeStateStatus: "BLOCKED" })).toBe(false);
+    expect(readPullRequestConflict({ mergeable: "MERGEABLE", mergeStateStatus: "BEHIND" })).toBe(false);
+  });
+
+  /* THE ARM THIS FUNCTION EXISTS FOR. `false` on UNKNOWN would be a claim the
+     reader has not earned — GitHub returns it routinely in the seconds after a
+     push, which is exactly when a shift is looking. Collapsing "could not be
+     read" into "nothing there" is what this file's own header is about. */
+  it("⚠ says NULL while GitHub is still computing — never false", () => {
+    expect(readPullRequestConflict({ mergeable: "UNKNOWN", mergeStateStatus: "UNKNOWN" })).toBeNull();
+    expect(readPullRequestConflict({ mergeable: "UNKNOWN", mergeStateStatus: "CLEAN" })).toBeNull();
+    expect(readPullRequestConflict({ mergeable: "MERGEABLE", mergeStateStatus: "UNKNOWN" })).toBeNull();
+  });
+
+  /* The drift case with teeth: a `--json` list that has lost these two fields
+     hands every PR back without them. That must read as NOT KNOWABLE, or the
+     day somebody trims the field list every PR silently reads as fine. */
+  it("⚠ says NULL when the fields are absent — a lost field list is not a clean board", () => {
+    expect(readPullRequestConflict({})).toBeNull();
+    expect(readPullRequestConflict({ mergeable: null, mergeStateStatus: null })).toBeNull();
+    expect(readPullRequestConflict({ mergeable: undefined })).toBeNull();
+  });
+
+  it("is case-insensitive, so a lowercased answer is not silently a non-conflict", () => {
+    expect(readPullRequestConflict({ mergeable: "conflicting" })).toBe(true);
+    expect(readPullRequestConflict({ mergeStateStatus: "dirty" })).toBe(true);
+    expect(readPullRequestConflict({ mergeable: "unknown" })).toBeNull();
+  });
+});
+
+describe("renderCardClaimWarning names a PR that can no longer be merged", () => {
+  const conflicted = pr({
+    number: 1078,
+    title: "fix (#1076)",
+    mergeable: "CONFLICTING",
+    mergeStateStatus: "DIRTY",
+  });
+
+  it("prints the conflict, why it is invisible, and the repair, beside the claim", () => {
+    const out = renderCardClaimWarning("#1076", [conflicted]);
+    expect(out).toContain("already names #1076");
+    expect(out).toContain("NO LONGER BE MERGED");
+    /* The thing that makes it invisible is said out loud, or a shift trusts the
+       green checks page it is about to open. */
+    expect(out).toContain("fires no workflow run");
+    /* And the repair is named, because the shift reading this has to do
+       something and #984 step 1 is the standing verdict on this shape. */
+    expect(out).toContain("#984");
+    expect(out).toContain("Re-merge main on its branch");
+  });
+
+  it("⚠ stays a WARNING — a drifted PR is exactly when a shift may take the card", () => {
+    expect(renderCardClaimWarning("#1076", [conflicted]))
+      .toContain("This is a WARNING and the run is opening anyway");
+  });
+
+  /* Negative control. Without it, the arm above would pass identically against
+     a renderer that printed the note on every claim. */
+  it("says NOTHING about mergeability on a clean PR", () => {
+    const out = renderCardClaimWarning("#1076", [
+      pr({ number: 1078, title: "fix (#1076)", mergeable: "MERGEABLE", mergeStateStatus: "CLEAN" }),
+    ]);
+    expect(out).toContain("already names #1076");
+    expect(out).not.toContain("NO LONGER BE MERGED");
+  });
+
+  it("says NOTHING while the answer is UNKNOWN, and nothing when the fields never came", () => {
+    const unknown = renderCardClaimWarning("#1076", [
+      pr({ number: 1078, title: "fix (#1076)", mergeable: "UNKNOWN", mergeStateStatus: "UNKNOWN" }),
+    ]);
+    expect(unknown).toContain("already names #1076");
+    expect(unknown).not.toContain("NO LONGER BE MERGED");
+    expect(renderCardClaimWarning("#1076", [pr({ number: 1078, title: "fix (#1076)" })]))
+      .not.toContain("NO LONGER BE MERGED");
+  });
+});
+
+/*
+  THE FIELD LIST IS THE WHOLE DEPENDENCY, SO IT IS HELD AT THE BYTES.
+
+  Every arm above drives the judgement from a fixture, and a fixture cannot
+  notice that the live `gh` call stopped ASKING for these two fields — at which
+  point `readPullRequestConflict` correctly returns `null` for every PR on the
+  board and the whole warning goes quiet with nothing red anywhere. That is the
+  silent direction, and it is the direction this card was filed about.
+*/
+describe("the one gh field list still asks for mergeability", () => {
+  const source = readFileSync(
+    resolve(import.meta.dirname, "..", "scripts", "lib", "cardClaimWarning.mts"),
+    "utf8",
+  );
+  const jsonArg = source.match(/"--json",\s*"([^"]+)"/);
+  const fields = (jsonArg?.[1] ?? "").split(",");
+
+  it("has exactly one --json argument, which is what makes it the one field list", () => {
+    expect(jsonArg).not.toBeNull();
+    expect(source.match(/"--json"/g)).toHaveLength(1);
+  });
+
+  it("⚠ asks for mergeable AND mergeStateStatus", () => {
+    expect(fields).toContain("mergeable");
+    expect(fields).toContain("mergeStateStatus");
+  });
+
+  it("still asks for everything the matcher reads, so this cannot be passed by trimming", () => {
+    for (const field of ["number", "title", "body", "url", "isDraft", "headRefName"]) {
+      expect(fields).toContain(field);
+    }
+  });
+});
+
+describe("the three shift-facing readers all speak the one sentence", () => {
+  /* One note, three renderers. A second wording would be a mirror (working law
+     4) and, worse, would let one reader be quietly dropped while the other two
+     kept the phrase alive in a grep. */
+  const files = [
+    ["scripts", "lib", "cardClaimWarning.mts"],
+    ["scripts", "lib", "shiftDigest.mts"],
+    ["scripts", "lib", "standingExceptions.mts"],
+  ] as const;
+
+  for (const parts of files) {
+    it(`${parts[parts.length - 1]} renders PR_CONFLICT_NOTE rather than its own words`, () => {
+      const source = readFileSync(resolve(import.meta.dirname, "..", ...parts), "utf8");
+      expect(source).toContain("PR_CONFLICT_NOTE");
+      expect(source).toContain("readPullRequestConflict(pr) === true");
+      /* `=== true` is the shape, not truthiness: `if (readPullRequestConflict(pr))`
+         reads identically and is also correct today, but it is one edit from a
+         three-state reader being used as a two-state one. */
+      expect(source).not.toMatch(/\(readPullRequestConflict\(pr\)\)/);
+    });
+  }
+
+  it("PR_CONFLICT_NOTE says what is wrong, why it is invisible, and what to do", () => {
+    expect(PR_CONFLICT_NOTE).toContain("NO LONGER BE MERGED");
+    expect(PR_CONFLICT_NOTE).toContain("fires no workflow run");
+    expect(PR_CONFLICT_NOTE).toContain("#984");
   });
 });

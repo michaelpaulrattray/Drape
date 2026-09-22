@@ -389,3 +389,66 @@ export function findCardPullRequests<T extends PullRequestLike>(
   }
   return matches;
 }
+
+/**
+ * CAN THIS OPEN PULL REQUEST STILL BE MERGED? (#1099)
+ *
+ * `findCardPullRequests` above answers *"is somebody already building this
+ * card"*. This answers the question the three shift-facing readers of that
+ * list never asked: *"and can the thing they are building still land?"*
+ *
+ * **Measured, #1078, 2026-09-22.** The PR was finished, green and ready at
+ * 11:38Z. By 20:22Z `main` had moved three times underneath it and it was
+ * `CONFLICTING`/`DIRTY`. Nothing a shift reads said so — the 19:53Z shift
+ * looked straight at it, wrote *"work in flight, not a hold"*, and moved on,
+ * correctly given what it was shown. Nine hours.
+ *
+ * ⚠ **A CONFLICTING PULL REQUEST IS NOT MERELY STUCK, IT IS SILENT.** GitHub
+ * creates no merge ref for one, so no `pull_request` workflow fires on it for
+ * any event (#566's absent state, measured again on #984 and on #1078). Its
+ * checks page keeps showing the last green run, so it looks perfectly healthy
+ * for exactly as long as it is broken — which is why a reader has to say it.
+ *
+ * ⚠ **THREE STATES, NOT TWO, AND THAT IS THE WHOLE CARE HERE.** `mergeable`
+ * comes back `UNKNOWN` while GitHub is still computing the merge — a PR pushed
+ * seconds ago reads that way routinely. `false` there would be a claim this
+ * reader has not earned, and collapsing "could not be read" into "nothing
+ * there" is the one thing `cardClaimWarning.mts`'s header is about. So:
+ *
+ *   - `true`  — `CONFLICTING` or `DIRTY`: it cannot be merged as it stands.
+ *   - `null`  — `UNKNOWN`, or the fields absent: say nothing.
+ *   - `false` — anything else: GitHub has computed an answer and it is not a
+ *               conflict.
+ *
+ * The shape is copied deliberately from `gate-stall-check.mts:178`–`:182`,
+ * which already reads these two fields this way and whose comment records why
+ * (PR #631's review). One vocabulary, two callers, no second definition.
+ *
+ * ⚠ **AND WHAT IT DRIVES IS A WARNING, NEVER A REFUSAL** — #1083's rule for
+ * the line it rides on, and a drifted PR is exactly the case where a shift may
+ * legitimately want to pick the card up.
+ */
+export interface PullRequestMergeability {
+  readonly mergeable?: string | null;
+  readonly mergeStateStatus?: string | null;
+}
+
+/** `true` unmergeable, `false` fine, `null` not yet knowable. */
+export function readPullRequestConflict(pr: PullRequestMergeability): boolean | null {
+  const mergeable = typeof pr.mergeable === "string" ? pr.mergeable.toUpperCase() : null;
+  const state = typeof pr.mergeStateStatus === "string" ? pr.mergeStateStatus.toUpperCase() : null;
+  if (mergeable === "CONFLICTING" || state === "DIRTY") return true;
+  /* An absent field is not an answer either. A caller whose `--json` list has
+     lost these fields must read as "not knowable", never as "fine" — the
+     silent direction is the one that cost nine hours. */
+  if (mergeable === null && state === null) return null;
+  if (mergeable === "UNKNOWN" || state === "UNKNOWN") return null;
+  return false;
+}
+
+/** The one sentence every reader of the claimed-PR line prints for a conflict. */
+export const PR_CONFLICT_NOTE =
+  "it can NO LONGER BE MERGED (conflicting) — and a conflicting PR fires no"
+  + " workflow run for any event, so it cannot be re-gated or asked anything"
+  + " while its checks page still shows green. Re-merge main on its branch"
+  + " (#984 step 1) before anything else.";
