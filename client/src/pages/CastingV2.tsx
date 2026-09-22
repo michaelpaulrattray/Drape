@@ -197,7 +197,7 @@ export default function CastingV2() {
   */
   const briefField = useRef<HTMLTextAreaElement>(null);
   /*
-    THE UNSIGNED-SHEETS ROW SITS ON ITS LATEST CARD (#1090). His word,
+    THE UNSIGNED-SHEETS ROW SITS ON ITS LATEST CARD (card 1090). His word,
     2026-09-23: *"the scroll bar is never sitting on the latest sheet card
     always the previous so im always scrolling to see the latest sheet card."*
     Read at production first: the ORDER was already right — a roll updates the
@@ -436,7 +436,7 @@ export default function CastingV2() {
   /*
     THE HERO'S RECEIPT LINE, DERIVED (#435 §2d). Every segment comes from the
     server's own roll constants — the count and the price from the numbers that
-    charge. ⚠ **THE DURATION SEGMENT IS GONE (#1090, his word 2026-09-23: *"the
+    charge. ⚠ **THE DURATION SEGMENT IS GONE (card 1090, his word 2026-09-23: *"the
     50 seconds next to 160 cr remove it"*).** The server still measures and
     serves `rollTypicalSeconds` (the sheet's own wait copy reads time); this
     line no longer prints it. What stays is the rule the line was built on: a
@@ -773,7 +773,7 @@ export default function CastingV2() {
               his rule, verbatim: *"A hand-written price that disagrees with the
               charge does the opposite of what this line is for."* The count and
               the price are the server's own roll constants. (The duration
-              segment left this line on his word, #1090.)
+              segment left this line on his word, card 1090.)
 
               ⚠ **HIS BRIEF'S OWN EXAMPLE READ `4 CR` AND THE CHARGE IS 160** —
               the rule above is what settles it, and the rule is his. Numerals

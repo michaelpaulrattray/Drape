@@ -190,7 +190,7 @@ describe("the hero column is three parts, not a centred stack (§2a)", () => {
 });
 
 describe("the receipt line is derived, never typed (§2d)", () => {
-  it("every value comes from the server's own roll constants — and the duration is no longer one of them (#1090)", async () => {
+  it("every value comes from the server's own roll constants — and the duration is no longer one of them (card 1090)", async () => {
     const page = code(await read(PAGE));
     expect(page).toContain("dpc-hero__receipt");
     expect(page).toContain("config.data.candidatesPerRoll");
