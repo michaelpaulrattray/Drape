@@ -1,7 +1,7 @@
 {
-  "edition": 469,
-  "updatedAt": "2026-09-22T11:55:00.000Z",
-  "shift": "A REFUSAL THAT BLAMED A CUSTOMER'S PHOTOGRAPH FOR OUR OWN LIMIT IS FIXED AND WAITING ON ITS REVIEW. NOTHING WAITS ON YOU.\n\n1. Here is what happens today. Somebody attaches a photograph with makeup plainly in it, and we tell her: \"We couldn't see any makeup in that picture to take.\" Her picture was fine. What actually happened is that our reader looked at it, described the eyes, the lips, the brows and the skin - and every one of those descriptions came back longer than the length limit we ourselves set. So we threw all of them away, and then told her the problem was her photograph.\n\n2. She goes looking for a better picture of our problem. The money comes back, so she does not complain, and nothing anywhere ever records that it happened - which is exactly why it could sit there. It now says: \"We read that picture, but our description of it came back too long to use - tell us the look you want in your own words instead.\" Our fault, stated; no suggestion that another photograph would help; and the one thing she can actually do, which is type it into the box she is already standing in front of.\n\n3. The two ways of ending that are genuinely about her picture keep the old sentence - when the reader says there is no makeup on that face at all, and when it says the face is bare. That is the whole point: three endings wore one sentence and only two of them deserved it.\n\n4. The check that nearly got missed, and it is the same shape as last night's. There was an obvious cheap fix: give all three endings the new wording. Every test I wrote for this would have passed it, and a customer with a genuinely bare face would then be told our description came back too long. So the two sentences are now held against EACH OTHER in one test - the claim about her face belongs to one, the invitation to type it herself belongs to the other. I broke the change five different ways on purpose; that rename was the one only this check caught.\n\n5. One thing worth a minute, found while applying the database change. In production that tally table holds exactly one row, and it is the old \"no makeup visible\". We cannot tell whether that was a genuinely bare face or a real person hitting this bug, because the record does not say which ending wrote it. That ambiguity is what this change ends - from the next release they are two different words. It is not proof the bug has bitten, and it is not proof it has not.\n\n6. Checking the rest of the product for the same mistake turned up a real one, one file over: the hair-colour reader tells her to \"try a clearer picture\" when our own 20-character limit ate the answer, and its own note in the code admits it. Filed as its own card rather than bolted onto tonight's, because it needs one real decision about how it is recorded and that deserves its own look.\n\n7. Why it is not live yet: this one touches the database, which puts it in the lane that gets a second pair of eyes before it ships - a night shift never merges those itself. The database change is already applied to both the live and test databases and re-running it says \"already applied\", so nothing is left half-done while it waits.",
+  "edition": 470,
+  "updatedAt": "2026-09-22T11:54:14.851Z",
+  "shift": "THE ROLL-ENGINE COURT RAN — YOUR CYBORG, SAME WORDS, THREE ENGINES. THREE STRIPS ARE IN YOUR EYE GALLERY; YOUR EYE DECIDES.\n\nA relay edition on your word (\"well are we not running gpt image 2.5 to see whats better?\") and the rule you set the same hour: a court never waits for your word on spend.\n\n1. Roll 266 is your cyborg brief on the register as it stands: creature lane, eight of eight delivered on GPT Image 2. Its one compiled prompt — the exact 4,310 characters the engine received — was rendered eight more times on each of the two GPT Image 2.5 models fal offers, Flare and Sunburst, at the same size and quality. Same words, same settings; only the engine changed.\n\n2. The numbers beside the frames: 24 tiles, 0 refusals on any engine. Flare took about 20 seconds a tile, Sunburst about 23; the whole eight-tile arm took 60 and 67 seconds of wall time at three in flight. GPT Image 2's roll took your usual time. Price: GPT Image 2 is measured at about ten cents a tile; fal lists 2.5 by quality and size and the medium 1024×1536 figure was not on the page we could read, so the sixteen renders are stated as cents, not a number — the receipt will say.\n\n3. What you are judging (card 1068): the two bars N1 has always been judged on — does the sheet reach your raw prompt's conviction, and is the spread across the eight enough — now with the engine as the variable. Nothing is wired: the register still renders on GPT Image 2. If an engine wins at your eye it becomes a ratchet decision on N1, not a rebuild.\n\nSpent: sixteen renders on fal, cents. Nothing else moved.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -5139,6 +5139,37 @@
           "key": "crew-eye/d16c462a-c33b-48bf-8140-30e69af8aedf.png",
           "caption": "Light: a sheet CLOSED BY THE CUSTOMER with Start over, not aged out - 'That sheet was closed and cleared.' It never claims an expiry that did not happen.",
           "arm": "light"
+        }
+      ]
+    },
+    {
+      "id": "gpt25-roll-court-1068-strips",
+      "title": "Your cyborg, one prompt, three engines — GPT Image 2 (roll 266) against GPT Image 2.5 Flare and Sunburst",
+      "question": "WHAT YOU ARE JUDGING — the same 4,310-character prompt your roll 266 sent, rendered eight times on each engine at the same size and quality. Row one is roll 266 itself (the sheet you have). Row two is GPT Image 2.5 Flare. Row three is GPT Image 2.5 Sunburst. Judge each row on N1's two bars: does it reach the conviction of your raw brief (bald, mid-40s, weathered porcelain skin, severe bone structure, the implant ports above the right temple, scalp seams, jaw plate, studs below the ears, the amber-red right eye, augmentation integrated not worn), and is the spread across the eight enough? No refusals on any engine; Flare ~20 s a tile, Sunburst ~23 s. One word per row is enough — pass, or what it misses.",
+      "state": "open",
+      "filedAt": "2026-09-22T11:54:14.851Z",
+      "issueNumber": 1068,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/474ea12e-5534-4343-a436-ec827b5e9cab.jpg",
+          "arm": "all three",
+          "caption": "All three rows at once: GPT Image 2 (roll 266) on top, 2.5 Flare in the middle, 2.5 Sunburst at the bottom. Same prompt, same size, same quality; only the engine differs."
+        },
+        {
+          "key": "crew-eye/1faa6665-92fd-4997-87b0-377860016ae9.jpg",
+          "arm": "GPT Image 2",
+          "caption": "Roll 266 as it is on your sheet — the engine the register renders on today. 8/8 delivered."
+        },
+        {
+          "key": "crew-eye/f0096096-93d5-46b2-9392-f2366a4ddecd.jpg",
+          "arm": "2.5 Flare",
+          "caption": "GPT Image 2.5 Flare, the faster of the two 2.5 models. 8/8 delivered, no refusals, ~20 seconds a tile."
+        },
+        {
+          "key": "crew-eye/212655a7-3d7a-494a-af05-d2d4cb45be6b.jpg",
+          "arm": "2.5 Sunburst",
+          "caption": "GPT Image 2.5 Sunburst, the slower 'precision' model. 8/8 delivered, no refusals, ~23 seconds a tile."
         }
       ]
     }
