@@ -44,6 +44,10 @@ import {
 import { reimagineRefusal, reimagineSystemPrompt } from "./reimagine";
 import {
   ANATOMY_VISIBILITY_LINE,
+  ANATOMY_VISIBILITY_LINE_UNFANGED,
+  CREATURE_HOUSE_BLOCK_UNFANGED,
+  CREATURE_EXPRESSION_LINE_UNFANGED,
+  briefNamesFangs,
   AUTHOR_ROAD_FRAMING,
   AUTHORITY_LINE,
   COLOUR_LINE,
@@ -818,8 +822,10 @@ describe("slice C — the WIRE through the compiler: two walls on the author roa
       under is the CREATURE lane's — asserted at the candidate's own prompt,
       which is the wire, and never at the constant beside it (working law 5).
     */
-    expect(on.candidates[0]?.prompt).toBe(`${brief}\n\n${CREATURE_HOUSE_BLOCK}`);
+    /* #1069: the monster names no fangs, so the block it rides is the creature lane's UNFANGED cut. */
+    expect(on.candidates[0]?.prompt).toBe(`${brief}\n\n${CREATURE_HOUSE_BLOCK_UNFANGED}`);
     expect(on.candidates[0]?.prompt).not.toBe(`${brief}\n\n${HOUSE_BLOCK}`);
+    expect(on.candidates[0]?.prompt).not.toMatch(/fang/i);
     expect(on.compiledBrief.register).toMatchObject({ kind: "author", mode: "seed", subject: "being", lane: "creature" });
     /* The adapter that resolved the reader's record is still the photoreal-human one, and the row says which. */
     expect(on.cohortKey).toBe("photoreal_human");
@@ -1009,6 +1015,47 @@ describe("the block by LANE — his creature split (#232) and the anatomy clause
     expect(CREATURE_EXPRESSION_LINE).toContain("Tusks and an underbite protrude past the lips of themselves");
   });
 
+  describe("#1069 — the block speaks of fangs only when the customer does (his android, roll 257, cast with fangs it never asked for)", () => {
+    it("the unfanged creature block carries no word of fangs, and the fanged one is the bytes #599 settled", () => {
+      expect(CREATURE_HOUSE_BLOCK_UNFANGED).not.toMatch(/fang/i);
+      expect(houseBlockForStyle("photoreal", "creature", false)).toBe(CREATURE_HOUSE_BLOCK_UNFANGED);
+      expect(houseBlockForStyle("photoreal", "creature", true)).toBe(CREATURE_HOUSE_BLOCK);
+      expect(CREATURE_HOUSE_BLOCK).toContain("Fangs are teeth");
+      expect(CREATURE_HOUSE_BLOCK).toContain("Where the being has fangs");
+    });
+    it("the two unfanged lines are their fanged lines minus the fang sentence, and nothing else moved", () => {
+      expect(CREATURE_EXPRESSION_LINE).toContain(CREATURE_EXPRESSION_LINE_UNFANGED.slice(0, 80));
+      expect(CREATURE_EXPRESSION_LINE_UNFANGED).not.toMatch(/fang/i);
+      expect(CREATURE_EXPRESSION_LINE_UNFANGED).toContain("lips parted enough to show the being's own dentition");
+      expect(CREATURE_EXPRESSION_LINE_UNFANGED).toContain("no blank CGI stare");
+      expect(ANATOMY_VISIBILITY_LINE_UNFANGED).not.toMatch(/fang/i);
+      expect(ANATOMY_VISIBILITY_LINE_UNFANGED).toContain("Show anatomy the species implies");
+      expect(ANATOMY_VISIBILITY_LINE_UNFANGED).toContain("Do not switch to a full-body shot");
+    });
+    it("the human lane is untouched — the same bytes whatever the fang flag says", () => {
+      expect(houseBlockForStyle("photoreal", "human", false)).toBe(HOUSE_BLOCK);
+      expect(houseBlockForStyle("photoreal", "human", true)).toBe(HOUSE_BLOCK);
+      expect(HOUSE_BLOCK).not.toMatch(/fang/i);
+    });
+    it("one predicate decides both the clause and the block — his word, not a species list", () => {
+      expect(briefNamesFangs("An adult oni-cyber being with short tusks and fangs")).toBe(true);
+      expect(briefNamesFangs("a single fang")).toBe(true);
+      expect(briefNamesFangs("Female android/cyborg type, adult, athletic build, cracked pale synthetic skin")).toBe(false);
+      expect(briefNamesFangs("a vampire")).toBe(false);
+      expect(briefNamesFangs("fangless")).toBe(false);
+    });
+    it("the author sends his android the unfanged block and no clause, and his oni the fanged block with the clause", () => {
+      const android = "Female android/cyborg type, adult, athletic build, cracked pale synthetic skin seamed with visible circuitry over a segmented mechanical body, close-cropped white hair.";
+      const oni = "An adult oni-cyber being, folklore menace rebuilt in hard technology, short tusks and fangs.";
+      const androidPrompt = composeFinalPrompt(android, "photoreal", null, "creature");
+      expect(androidPrompt).not.toMatch(/fang/i);
+      expect(androidPrompt).toContain(CREATURE_HOUSE_BLOCK_UNFANGED);
+      const oniPrompt = composeFinalPrompt(oni, "photoreal", null, "creature");
+      expect(oniPrompt).toContain("DENTITION: The being's fangs are teeth");
+      expect(oniPrompt).toContain(CREATURE_HOUSE_BLOCK);
+    });
+  });
+
   it("#237 — the anatomy clause is a FRAMING fact: his three placements, both prohibitions, and no second crop word", () => {
     for (const placement of ["over a shoulder", "beside the ribcage", "rising into the picture"]) {
       expect(ANATOMY_VISIBILITY_LINE).toContain(placement);
@@ -1099,9 +1146,10 @@ describe("the block by LANE — his creature split (#232) and the anatomy clause
   it("the lane reaches the PROMPT and the row through the one composition (#535: the seed road is the only road)", () => {
     const brief = "a sphinx-cat humanoid with a long tail";
     const creature = seedPromptRecord({ briefText: brief, lane: "creature" });
-    expect(creature.prompt).toBe(`${brief}\n\n${CREATURE_HOUSE_BLOCK}`);
+    /* #1069: no fangs in the brief, so the unfanged cut — and the word count the row records is that cut's. */
+    expect(creature.prompt).toBe(`${brief}\n\n${CREATURE_HOUSE_BLOCK_UNFANGED}`);
     expect(creature.lane).toBe("creature");
-    expect(creature.houseBlockWords).toBe(countWords(CREATURE_HOUSE_BLOCK));
+    expect(creature.houseBlockWords).toBe(countWords(CREATURE_HOUSE_BLOCK_UNFANGED));
     /* And the default is the human lane, byte for byte. */
     const human = seedPromptRecord({ briefText: brief });
     expect(human.prompt).toBe(`${brief}\n\n${HOUSE_BLOCK}`);
@@ -1217,10 +1265,12 @@ describe("#599 · the dentition clause sits with the description, for a fanged c
     expect(paragraphs[paragraphs.length - 1]).toBe(CREATURE_HOUSE_BLOCK);
   });
 
-  it("is absent from a human roll and from a creature roll that names no fangs — bytes unchanged", () => {
+  it("is absent from a human roll and from a creature roll that names no fangs — and (#1069) neither does that creature's block speak of fangs", () => {
     expect(composeFinalPrompt(fanged, DEFAULT_CAST_STYLE, null, "human")).not.toContain("DENTITION:");
-    expect(composeFinalPrompt(tusked, DEFAULT_CAST_STYLE, null, "creature")).not.toContain("DENTITION:");
-    expect(composeFinalPrompt(tusked, DEFAULT_CAST_STYLE, null, "creature").split("\n\n")).toEqual([tusked, CREATURE_HOUSE_BLOCK]);
+    const tuskedPrompt = composeFinalPrompt(tusked, DEFAULT_CAST_STYLE, null, "creature");
+    expect(tuskedPrompt).not.toContain("DENTITION:");
+    expect(tuskedPrompt.split("\n\n")).toEqual([tusked, CREATURE_HOUSE_BLOCK_UNFANGED]);
+    expect(tuskedPrompt).not.toMatch(/fang/i);
   });
 
   it("never carries a retired negative — neither 'open mouth' nor 'showing teeth'", () => {
