@@ -50,7 +50,11 @@ import {
   type OpenPullRequest,
 } from "./cardClaimWarning.mts";
 import { isUnreadable, type Unreadable } from "./shiftDigest.mts";
-import { findCardPullRequests } from "../../shared/crewShiftState.js";
+import {
+  findCardPullRequests,
+  PR_CONFLICT_NOTE,
+  readPullRequestConflict,
+} from "../../shared/crewShiftState.js";
 /**
  * How many open cards the queue read may hold before this reading is
  * INCOMPLETE. ⚠ It counted ONE BAND until #774 widened the fetch; it counts the
@@ -227,6 +231,10 @@ function rowLines(
         `      ⚠ ALREADY BEING BUILT? PR #${pr.number ?? "?"}${pr.isDraft ? " (draft)" : ""}`
         + ` names this card in its ${where.join(" and ")} — ${pr.url ?? "no url"}`,
       );
+      /* ⚠ A conflict is spoken; `null` (still computing, or the fields
+         absent) says nothing. #1099 — and it stays a WARNING: a drifted PR is
+         exactly the case where a shift may want to take the card. */
+      if (readPullRequestConflict(pr) === true) lines.push(`        ⚠ ${PR_CONFLICT_NOTE}`);
     }
   }
   return { lines, claimedAny };

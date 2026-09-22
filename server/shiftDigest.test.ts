@@ -437,6 +437,63 @@ describe("buildDigest", () => {
     expect(digest).toContain("WARNING, never a refusal");
   });
 
+  /*
+    ⚠ AND WHETHER THE PR NAMED CAN STILL BE MERGED (#1099). "Already being
+    built" is only true while the thing can land; #1078 was CONFLICTING for nine
+    hours while every reader a shift consults called it work in flight.
+  */
+  it("⚠ says the claiming PR can no longer be merged, and names the repair", () => {
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [
+          { number: 1076, title: "his card", labels: ["founder-ordered"], createdAt: "2026-09-22T01:00:00Z" },
+        ],
+        openPullRequests: [
+          {
+            number: 1078,
+            title: "fix(casting): the makeup cap (#1076)",
+            body: "",
+            url: "https://github.com/x/y/pull/1078",
+            headRefName: "team/makeup-over-cap",
+            mergeable: "CONFLICTING",
+            mergeStateStatus: "DIRTY",
+          },
+        ],
+      }),
+    );
+    expect(digest).toContain("ALREADY BEING BUILT? PR #1078");
+    expect(digest).toContain("NO LONGER BE MERGED");
+    expect(digest).toContain("Re-merge main on its branch");
+  });
+
+  /* The three-state negative controls. A renderer that printed the note
+     unconditionally, or that read UNKNOWN as a conflict, passes the arm above
+     and fails these. */
+  it("says nothing about mergeability on a CLEAN PR, on UNKNOWN, or when the fields never came", () => {
+    const withPr = (over) =>
+      buildDigest(
+        digestInputs({
+          nextUp: [
+            { number: 1076, title: "his card", labels: ["founder-ordered"], createdAt: "2026-09-22T01:00:00Z" },
+          ],
+          openPullRequests: [
+            {
+              number: 1078,
+              title: "fix (#1076)",
+              body: "",
+              url: "u",
+              headRefName: "team/makeup-over-cap",
+              ...over,
+            },
+          ],
+        }),
+      );
+    expect(withPr({ mergeable: "MERGEABLE", mergeStateStatus: "CLEAN" })).toContain("ALREADY BEING BUILT?");
+    expect(withPr({ mergeable: "MERGEABLE", mergeStateStatus: "CLEAN" })).not.toContain("NO LONGER BE MERGED");
+    expect(withPr({ mergeable: "UNKNOWN", mergeStateStatus: "UNKNOWN" })).not.toContain("NO LONGER BE MERGED");
+    expect(withPr({})).not.toContain("NO LONGER BE MERGED");
+  });
+
   it("matches a branch by its digit RUN, so #1079 is not claimed by team/relay10790", () => {
     const digest = buildDigest(
       digestInputs({
