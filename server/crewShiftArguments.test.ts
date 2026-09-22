@@ -46,7 +46,10 @@ const CLOSE_SPEC = {
 } as const;
 
 const START_SPEC = {
-  value: ["shift", "seat", "kind", "card", "title", "intent", "note", "branch"],
+  /* `open-prs` feeds the #1083 claim warning a fixture instead of `gh` — the
+     warning sits past a live database connection, so a fixture road is the only
+     way to look at its output by hand. */
+  value: ["shift", "seat", "kind", "card", "title", "intent", "note", "branch", "open-prs"],
   /* `same-card` overrides the #608 collision refusal — a shift that really is
      meant to share a card passes it, so a dead shift's stale row costs one
      word rather than a night. */
@@ -278,6 +281,14 @@ describe("and it still accepts the lines a shift actually types", () => {
   it("accepts a note carrying the prose a shift really writes", () => {
     const note = "#343 merged — gate green, `review` red is #219's outage";
     expect(parseStrictArgs(["--outcome", "shipped", "--note", note], CLOSE_SPEC).value("note")).toBe(note);
+  });
+
+  /* #1083's fixture road. Without this flag on the allowlist the strict reader
+     REFUSES the start outright, which is why it is declared rather than read
+     off `process.argv` beside the others. */
+  it("accepts the open-PR fixture path", () => {
+    const args = parseStrictArgs(["--card", "#1079", "--open-prs", "C:/tmp/prs.json"], START_SPEC);
+    expect(args.value("open-prs")).toBe("C:/tmp/prs.json");
   });
 
   it("accepts no arguments at all", () => {

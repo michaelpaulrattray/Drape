@@ -305,3 +305,87 @@ export function findCardCollisions<T extends { readonly cardRef: string | null }
 /** How a run ended. Three members, exactly as #272 names them. */
 export const CREW_SHIFT_OUTCOMES = ["shipped", "stopped", "failed"] as const;
 export type CrewShiftOutcome = (typeof CREW_SHIFT_OUTCOMES)[number];
+
+/**
+ * IS SOMEBODY ALREADY BUILDING THIS CARD? — the OTHER half of the #608 guard
+ * (#1083).
+ *
+ * `findCardCollisions` above reads open SHIFT ROWS, and that is the whole of
+ * what the shift-start sequence could see. It answers *"is another seat's run
+ * declared on this card"* — and it is silent whenever the other builder never
+ * wrote a row, which is the ordinary case for the relay in his terminal.
+ *
+ * **Measured, #1083, 2026-09-22.** Another seat opened PR #1080 on card #1079
+ * at 12:40:17. At ~12:45 this shift read `gh issue list` and saw #1079 open,
+ * `founder-ordered`, no comments, no `blocked`; at 12:47:18 it opened its own
+ * run and started building; at 12:48:09 PR #1080 merged; at 13:05 the gate
+ * said `CONFLICTING`, because `main` already carried the feature. Thirty-five
+ * minutes, and **nothing was disobeyed** — the card was clean, the queue read
+ * was correct, and the shift row guard could not fire because the other seat
+ * had no row. **The one artifact that knew was `gh pr list`, and no step in the
+ * shift-start sequence opened it.**
+ *
+ * ⚠ **THIS WARNS AND NEVER REFUSES, AND THE CARD RULED IT SO BEFORE IT WAS
+ * BUILT.** A refusal keyed on a card number fires on a legitimate FOLLOW-UP PR
+ * naming the same card — PR #1082 is exactly that, and a guard that stops a
+ * shift from finishing its own card's second half has cost more than the
+ * duplicate it prevents. The open-run guard may refuse because an open row is
+ * a DECLARATION of intent that only its own seat writes; an open PR is not —
+ * it may be finished, superseded, someone's follow-up, or the shift's own.
+ * **So this names the PR, says WHERE the number was found, and lets the shift
+ * decide.**
+ *
+ * The match is deliberately wide in one direction and narrow in another:
+ * `#1079` in a title or body is a token (`#10790` and `#11079` are not it,
+ * `#01079` is), and a branch matches when one of its maximal digit runs IS the
+ * number — so `team/relay1079b` matches and `team/relaysmall` does not.
+ */
+export type CardPullRequestWhere = "title" | "body" | "branch";
+
+export interface CardPullRequestMatch<T> {
+  readonly pr: T;
+  readonly where: CardPullRequestWhere[];
+}
+
+interface PullRequestLike {
+  readonly title?: string | null;
+  readonly body?: string | null;
+  readonly headRefName?: string | null;
+}
+
+/** The card as a plain number, or null when the ref is free text. */
+export function cardNumberOf(raw: string | null | undefined): number | null {
+  const normalised = normaliseCardRef(raw);
+  if (normalised === null) return null;
+  const numbered = normalised.match(/^#(\d+)$/);
+  if (!numbered) return null;
+  const value = Number(numbered[1]!);
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
+/** The open PRs naming this card, each with where the number was found. */
+export function findCardPullRequests<T extends PullRequestLike>(
+  openPrs: readonly T[],
+  cardRef: string | null | undefined,
+): CardPullRequestMatch<T>[] {
+  const card = cardNumberOf(cardRef);
+  if (card === null) return [];
+  /* `#0*N` not followed or preceded by a digit. Written out rather than with a
+     lookbehind so the expression reads the same on every engine this file is
+     bundled through. */
+  const token = new RegExp(`(^|[^0-9])#0*${card}([^0-9]|$)`);
+  const matches: CardPullRequestMatch<T>[] = [];
+  for (const pr of openPrs) {
+    const where: CardPullRequestWhere[] = [];
+    if (typeof pr.title === "string" && token.test(pr.title)) where.push("title");
+    if (typeof pr.body === "string" && token.test(pr.body)) where.push("body");
+    /* A branch carries no `#`, so the reading is its digit RUNS: a run that IS
+       the number, never a number the run merely contains. */
+    if (typeof pr.headRefName === "string"
+      && (pr.headRefName.match(/\d+/g) ?? []).some((run) => Number(run) === card)) {
+      where.push("branch");
+    }
+    if (where.length > 0) matches.push({ pr, where });
+  }
+  return matches;
+}
