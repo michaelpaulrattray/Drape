@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "69b5d34833d6734c"
+    "sourceFingerprint": "ae0ea053aa957fa7"
   },
   "domains": [
     {
@@ -8956,6 +8956,16 @@
       "valueRecorded": false
     },
     {
+      "id": "env:CASTING_ROLL_ENGINE_MODEL",
+      "name": "CASTING_ROLL_ENGINE_MODEL",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_ROLL_ENGINE_SCOPE",
+      "name": "CASTING_ROLL_ENGINE_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:CASTING_SCAN_TABLE_SCOPE",
       "name": "CASTING_SCAN_TABLE_SCOPE",
       "valueRecorded": false
@@ -9335,6 +9345,11 @@
     {
       "id": "flag:CASTING_RETRY_SCOPE",
       "name": "CASTING_RETRY_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:CASTING_ROLL_ENGINE_SCOPE",
+      "name": "CASTING_ROLL_ENGINE_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -12116,6 +12131,14 @@
       "path": "server/castingV2/roleRetry.test.ts"
     },
     {
+      "id": "test:server/castingV2/rollEngineChoice.test.ts",
+      "path": "server/castingV2/rollEngineChoice.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/rollEngineOneQueue.test.ts",
+      "path": "server/castingV2/rollEngineOneQueue.test.ts"
+    },
+    {
       "id": "test:server/castingV2/rollProjection.test.ts",
       "path": "server/castingV2/rollProjection.test.ts"
     },
@@ -12490,6 +12513,10 @@
     {
       "id": "test:server/crewShiftArguments.test.ts",
       "path": "server/crewShiftArguments.test.ts"
+    },
+    {
+      "id": "test:server/crewShiftCardClaim.test.ts",
+      "path": "server/crewShiftCardClaim.test.ts"
     },
     {
       "id": "test:server/crewShiftState.test.ts",
@@ -27173,6 +27200,11 @@
     },
     {
       "from": "module:server/castingV2/rollEngine.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollEngine.ts",
       "to": "module:server/castingV2/falBudget.ts",
       "kind": "imports"
     },
@@ -27559,6 +27591,11 @@
     {
       "from": "module:server/castingV2/sheetGone.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/sheetPreview.ts",
+      "to": "module:shared/candidateFailure.ts",
       "kind": "imports"
     },
     {

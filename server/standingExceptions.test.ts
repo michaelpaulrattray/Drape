@@ -38,8 +38,15 @@ const card = (over: Partial<Row> = {}): Row => ({
   ...over,
 });
 
-const render = (ordered: Row[], urgent: Row[]) =>
-  renderBands({ ordered, urgent, now: NOW }).join("\n");
+/* A board read and found CLEAN is the default for every arm that is not about
+   the open-PR read (#1094). It is an explicit empty list rather than an omitted
+   argument on purpose — `renderBands` REQUIRES the reading, so a caller can
+   never lose the annotation by forgetting it. */
+const render = (
+  ordered: Row[],
+  urgent: Row[],
+  openPullRequests: Parameters<typeof renderBands>[0]["openPullRequests"] = [],
+) => renderBands({ ordered, urgent, now: NOW, openPullRequests }).join("\n");
 
 describe("the state the card was filed about: nothing urgent, work he ordered", () => {
   const ordered = [
@@ -161,10 +168,19 @@ describe("the fetch -> render seam, DRIVEN — where the interesting bug lives",
   const filler = (n: number) => card({ number: n, title: `card ${n}`, labels: [{ name: "bug" }] });
   const WHOLE_QUEUE: Row[] = [ordered, urgent, filler(900), filler(901)];
 
-  function drive(readOpenQueue: () => readonly Row[]) {
+  function drive(
+    readOpenQueue: () => readonly Row[],
+    readOpenPullRequests: Parameters<typeof report>[0]["readOpenPullRequests"] = () => [],
+  ) {
     const out: string[] = [];
     const errs: string[] = [];
-    const code = report({ readOpenQueue, now: NOW, log: (l) => out.push(l), error: (l) => errs.push(l) });
+    const code = report({
+      readOpenQueue,
+      readOpenPullRequests,
+      now: NOW,
+      log: (l) => out.push(l),
+      error: (l) => errs.push(l),
+    });
     return { code, out: out.join("\n"), errs: errs.join("\n") };
   }
 
@@ -318,6 +334,7 @@ describe("deriveBands - an empty band is cross-examined against the queue it was
     const errs: string[] = [];
     const code = report({
       readOpenQueue: () => [],
+      readOpenPullRequests: () => [],
       now: NOW,
       log: (l) => out.push(l),
       error: (l) => errs.push(l),
@@ -325,5 +342,130 @@ describe("deriveBands - an empty band is cross-examined against the queue it was
     expect(code).toBe(1);
     expect(out.join("")).toBe("");
     expect(errs.join("")).toContain("REFUSING");
+  });
+});
+
+describe("is somebody already building it (#1094) — this view offered a card and never said", () => {
+  /*
+    ⚠ THE MEASUREMENT, AND IT IS THIS VIEW'S OWN NIGHT. On 2026-09-22 a shift
+    ran `queue-standing-exceptions.mts` at 18:48Z and was shown **#1090 as his
+    top ordered card with no annotation at all**, while a COMPLETE pull request
+    had been open on it since 14:47Z. It only knew because the shift digest —
+    patched hours earlier for exactly this — had warned it thirty seconds
+    before. Two shifts before that one stood off on a reason they read in a
+    handoff rather than in any tool.
+
+    #1083's class: a reader that offers a shift a card while answering only
+    "is it open", never "is somebody already building it".
+  */
+  const pr = (over: Record<string, unknown> = {}) => ({
+    number: 1091,
+    title: "fix(casting): the receipt line drops its seconds (#1090)",
+    body: "",
+    url: "https://github.com/x/y/pull/1091",
+    headRefName: "team/relaysmall",
+    isDraft: false,
+    ...over,
+  });
+  const his = card({ number: 1090, title: "his lobby card", labels: [{ name: "founder-ordered" }] });
+  const urgentCard = card({ number: 711, title: "the urgent card", labels: [{ name: "urgent" }] });
+
+  it("names the PR that is already building a card in HIS band", () => {
+    const out = render([his], [], [pr()]);
+    expect(out).toContain("ALREADY BEING BUILT?");
+    expect(out).toContain("PR #1091");
+    expect(out).toContain("https://github.com/x/y/pull/1091");
+  });
+
+  it("annotates the URGENT band too — both bands offer cards", () => {
+    /* The urgent band is the one PROGRAM.md calls standing exception 1. A
+       warning on only his band would be the narrower-population defect this
+       file's own docblock was written about, one reader along. */
+    const out = render([], [urgentCard], [pr({ number: 712, title: "fix: the urgent one (#711)" })]);
+    expect(out).toContain("ALREADY BEING BUILT?");
+    expect(out).toContain("PR #712");
+  });
+
+  it("says WHERE the number was found, so a coincidence can be judged", () => {
+    const out = render([his], [], [pr({ title: "no number here", body: "closes #1090" })]);
+    expect(out).toMatch(/names this card in its body/);
+  });
+
+  it("a draft is named as a draft — it is a different fact about the other seat", () => {
+    expect(render([his], [], [pr({ isDraft: true })])).toContain("(draft)");
+  });
+
+  it("⚠ a CLEAN board costs a line on purpose, and says how many it read", () => {
+    /* The whole of #1083's finding: a board read and found clean and a board
+       NOBODY READ render identically in any view that stays silent when it has
+       nothing to say. Silence here would be the defect, not the tidy answer. */
+    const out = render([his], [], [pr({ title: "unrelated", body: "" })]);
+    expect(out).not.toContain("ALREADY BEING BUILT?");
+    expect(out).toContain("No open pull request names any card above (1 open PR(s) read)");
+  });
+
+  it("⚠ an UNREADABLE board is NOT a clean one, and never says it is", () => {
+    const out = render([his], [], { unreadable: "`gh pr list` could not be read" });
+    expect(out).toContain("THE OPEN PULL REQUESTS COULD NOT BE READ");
+    expect(out).toContain("gh pr list` could not be read");
+    expect(out).not.toContain("No open pull request names any card above");
+    expect(out).not.toContain("ALREADY BEING BUILT?");
+  });
+
+  it("still prints the ranking when the board is unreadable — it degrades, never refuses", () => {
+    /* The queue read REFUSES because an empty ranking is a lie. This one must
+       not: a shift that cannot reach GitHub still needs to see his order. */
+    const out = render([his], [], { unreadable: "offline" });
+    expect(out).toContain("#1090");
+    expect(out).toContain("HIS ORDERED BAND");
+  });
+
+  it("the match is a token, not a substring — #10900 is not #1090", () => {
+    /* A claim warning that fires on an unrelated card is how a real warning
+       stops being read (#1083's own ruling, kept here so the two readers
+       cannot drift apart on it). */
+    const out = render([his], [], [pr({ title: "fix: something else (#10900)", body: "" })]);
+    expect(out).not.toContain("ALREADY BEING BUILT?");
+  });
+
+  it("⚠ a PR read that THROWS becomes the unreadable line, never an exit code", () => {
+    /* report() owns this: a transport failure on the SECOND read must not take
+       down the ranking the FIRST read paid for. */
+    const out: string[] = [];
+    const errs: string[] = [];
+    const code = report({
+      readOpenQueue: () => [his],
+      readOpenPullRequests: () => { throw new Error("gh: command not found"); },
+      now: NOW,
+      log: (l) => out.push(l),
+      error: (l) => errs.push(l),
+    });
+    expect(code).toBe(0);
+    expect(out.join("\n")).toContain("#1090");
+    expect(out.join("\n")).toContain("THE OPEN PULL REQUESTS COULD NOT BE READ");
+    expect(out.join("\n")).toContain("gh: command not found");
+    expect(errs.join("")).toBe("");
+  });
+
+  it("the seam is DRIVEN — report actually hands the reading to the renderer", () => {
+    /* A wiring asserted by a source grep is not asserted (this file's own
+       lesson at the band reader). Passing a claimed PR through `report` and
+       asserting the annotation reaches the output is the only proof. */
+    const out: string[] = [];
+    report({
+      readOpenQueue: () => [his],
+      readOpenPullRequests: () => [pr()],
+      now: NOW,
+      log: (l) => out.push(l),
+      error: () => {},
+    });
+    expect(out.join("\n")).toContain("ALREADY BEING BUILT?");
+    expect(out.join("\n")).toContain("PR #1091");
+  });
+
+  it("both bands empty: no PR line at all, because there is no card to claim", () => {
+    const out = render([], [], { unreadable: "offline" });
+    expect(out).toContain("both bands are empty");
+    expect(out).not.toContain("THE OPEN PULL REQUESTS COULD NOT BE READ");
   });
 });

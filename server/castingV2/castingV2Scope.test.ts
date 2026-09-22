@@ -57,13 +57,16 @@ import {
   validateCastingRepaintEnvironment,
   CASTING_REFINE_DISPATCH_SCOPE_ENV,
   CASTING_RETRY_SCOPE_ENV,
+  CASTING_ROLL_ENGINE_SCOPE_ENV,
   CastingRefineDispatchScopeConfigurationError,
   CastingRefineDispatchCoverageError,
   parseCastingRefineDispatchScope,
   captureCastingRefineDispatchEnabled,
   captureCastingRetryEnabled,
+  captureCastingRollEngineEnabled,
   validateCastingRefineDispatchEnvironment,
   validateCastingRetryEnvironment,
+  validateCastingRollEngineEnvironment,
 } from "./castingV2Scope";
 
 /**
@@ -869,6 +872,38 @@ describe("the refine dispatch scope — whether the paid half stops holding the 
        invoked is the second way a flag pair goes wrong. */
     process.env[CASTING_V2_SCOPE_ENV] = "off";
     expect(captureCastingRefineDispatchEnabled(1)).toBe(false);
+  });
+});
+
+describe("CASTING_ROLL_ENGINE_SCOPE — the roll engine on his account (#1079)", () => {
+  it("is off by default and refuses a malformed value", () => {
+    expect(validateCastingRollEngineEnvironment({ scope: undefined, castingScope: "all", model: undefined })).toEqual({ kind: "off" });
+    expect(validateCastingRollEngineEnvironment({ scope: "off", castingScope: "off", model: undefined })).toEqual({ kind: "off" });
+    expect(() => validateCastingRollEngineEnvironment({ scope: "flare", castingScope: "all", model: "flare" }))
+      .toThrow(/CASTING_ROLL_ENGINE_SCOPE must be/);
+  });
+
+  it("refuses to reach past CASTING_V2_SCOPE — there is no roll to render", () => {
+    expect(() => validateCastingRollEngineEnvironment({ scope: "all", castingScope: "off", model: "flare" }))
+      .toThrow(/no roll to render/);
+    expect(() => validateCastingRollEngineEnvironment({ scope: "all", castingScope: "users:1", model: "flare" }))
+      .toThrow(/cannot be "all"/);
+    expect(() => validateCastingRollEngineEnvironment({ scope: "users:1,3", castingScope: "users:1,2", model: "flare" }))
+      .toThrow(/names users outside CASTING_V2_SCOPE: 3/);
+    expect(validateCastingRollEngineEnvironment({ scope: "users:1", castingScope: "all", model: "sunburst" }))
+      .toEqual({ kind: "users", userIds: [1] });
+  });
+
+  it("is enabled only when the whole chain names the user", () => {
+    process.env[CASTING_V2_SCOPE_ENV] = "users:1";
+    process.env[CASTING_ROLL_ENGINE_SCOPE_ENV] = "users:1";
+    expect(captureCastingRollEngineEnabled(1)).toBe(true);
+    expect(captureCastingRollEngineEnabled(2)).toBe(false);
+    process.env[CASTING_V2_SCOPE_ENV] = "off";
+    expect(captureCastingRollEngineEnabled(1)).toBe(false);
+    process.env[CASTING_V2_SCOPE_ENV] = "all";
+    delete process.env[CASTING_ROLL_ENGINE_SCOPE_ENV];
+    expect(captureCastingRollEngineEnabled(1)).toBe(false);
   });
 });
 

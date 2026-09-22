@@ -290,7 +290,14 @@ describe("a row with no filing date — ONE normalisation, not three", () => {
 
 describe("what the priority view PRINTS about its own order", () => {
   const rendered = (cards: typeof WORKED_EXAMPLE): string =>
-    renderBands({ ordered: cards.map(asQueueRow), urgent: [], now: NOW }).join("\n");
+    renderBands({
+      ordered: cards.map(asQueueRow),
+      urgent: [],
+      now: NOW,
+      /* A board read and clean — these arms are about ORDER, not #1094's
+         open-PR annotation, and the reading is required rather than optional. */
+      openPullRequests: [],
+    }).join("\n");
 
   it("names the rule it obeys, in the words his page uses", () => {
     /* One sentence, one source — so his page and a shift's terminal cannot

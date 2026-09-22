@@ -300,6 +300,16 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: "users:1",
     why: "evidence ingest on the private adapter, his account",
   },
+  CASTING_ROLL_ENGINE_SCOPE: {
+    position: "users:1",
+    why:
+      "the roll engine on his account — a GPT Image 2.5 model instead of GPT Image 2 (#1079, #1084); "
+      + "CASTING_ROLL_ENGINE_MODEL says which and is not a scope flag (a value, so a model switch is a "
+      + "variable change). His eye on court #1068 (2026-09-22): Flare first (\"honestly flare gave good "
+      + "results\"), then after three real rolls — 4 of 8 refused on roll 276 — \"flare is producing bad "
+      + "results - switch over to sunburst\". users:1 on that word; wider on his eye and not before, with "
+      + "the chosen model's fal price and refusal rate read first",
+  },
   CASTING_RETRY_SCOPE: {
     position: "users:1",
     why:

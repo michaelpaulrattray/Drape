@@ -52,9 +52,19 @@
  * # It reports rather than decides
  *
  * A shift still chooses its brief under the anti-randomness rule. This answers
- * two questions — *what has he ordered* and *what is in the urgent band right
- * now* — and answers both from the artifact rather than from a paragraph that
- * was true last week.
+ * THREE questions — *what has he ordered*, *what is in the urgent band right
+ * now*, and *is somebody already building it* — and answers all three from the
+ * artifact rather than from a paragraph that was true last week.
+ *
+ * ⚠ **THE THIRD ONE ARRIVED LAST AND IS #1094's SWEEP REMAINDER, MEASURED ON
+ * THIS VIEW'S OWN NIGHT.** On 2026-09-22 a shift ran this script at 18:48Z and
+ * was shown **#1090 as his top ordered card with no annotation at all**, while
+ * a COMPLETE pull request had been open on it since 14:47Z. The shift only
+ * knew because `shift-digest.mts` — patched hours earlier for exactly this —
+ * had warned it thirty seconds earlier, and two shifts before that one had
+ * stood off on a reason they read in a handoff rather than in any tool. That
+ * is #1083's class one reader along: **a view that offers a shift a card while
+ * answering only "is it open".**
  *
  *     npx tsx scripts/queue-standing-exceptions.mts
  *
@@ -68,6 +78,10 @@
  */
 import { execFileSync } from "node:child_process";
 
+import {
+  openPullRequestsVerdict,
+  readOpenPullRequests,
+} from "./lib/cardClaimWarning.mts";
 import {
   BAND_CEILING,
   report,
@@ -105,9 +119,23 @@ function readOpenQueue(): Row[] {
   return JSON.parse(raw) as Row[];
 }
 
+/**
+ * THE SECOND IMPURE ACT (#1094): is somebody already building one of these?
+ *
+ * The same reader the shift-start sequence and the digest use, so all three
+ * answer this question the same way and a fix lands once. It is judged by
+ * `openPullRequestsVerdict` rather than here, because the mapping of a failed
+ * read is the one thing this whole family exists to get right — and a
+ * judgement inside a script is a judgement no suite can reach.
+ */
+function readPullRequests() {
+  return openPullRequestsVerdict(readOpenPullRequests(), true);
+}
+
 process.exit(
   report({
     readOpenQueue,
+    readOpenPullRequests: readPullRequests,
     now: new Date(),
     log: (line) => console.log(line),
     error: (line) => console.error(line),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { previewKeyOf, sheetPreviewKeys } from "./sheetPreview";
+import { previewKeyOf, previewStateOf, sheetPreviewKeys, sheetPreviewTiles } from "./sheetPreview";
 
 /**
  * The faces on an unsigned sheet's card.
@@ -87,5 +87,114 @@ describe("a sheet card previews what is on the sheet", () => {
     // And a candidate that never landed contributes nothing at all.
     expect(previewKeyOf({ id: 3, status: "casting", faceImageKey: "early.png", faceThumbKey: null }))
       .toBeNull();
+  });
+});
+
+/**
+ * THE STATES ON THE CARD (his bug, #1086).
+ *
+ * *"when you start a roll off a sheet and exit out before anything generates
+ * the card on unsigned sheets needs to appear instantly and show some sort of
+ * loading state, additionally rolls that fail ... should still show preview
+ * cards just cards relevant to the state"*.
+ *
+ * Every arm here failed before the change: `ready` was the only status that
+ * projected anything at all, so each of these sheets rendered an empty strip
+ * under a line saying how many rolls it had.
+ */
+const at = (id: number, status: string, failureClass: string | null = null) => ({
+  id,
+  status,
+  faceImageKey: null,
+  faceThumbKey: null,
+  failureClass,
+});
+
+describe("a sheet card shows the state of the sheet, not only its faces", () => {
+  it("shows a roll still being cast as frames being cast", () => {
+    // The exact case he described: start a roll, leave before anything lands.
+    const roll = [at(1, "queued"), at(2, "dispatched"), at(3, "queued"), at(4, "queued")];
+    expect(sheetPreviewTiles([], roll)).toEqual([
+      { kind: "pending" },
+      { kind: "pending" },
+      { kind: "pending" },
+      { kind: "pending" },
+    ]);
+  });
+
+  it("tells a content refusal from everything else that did not arrive", () => {
+    /*
+      The screenshot's sheet — the young woman sci-fi android — whose latest
+      roll was refused and whose card was therefore blank. The two words are
+      different because the answers are: one is the engine's filter saying no
+      to these words, the other is a failure that says nothing about them.
+    */
+    const roll = [at(1, "failed", "content_policy"), at(2, "failed", "timeout"), at(3, "failed", null)];
+    expect(sheetPreviewTiles([], roll)).toEqual([
+      { kind: "refused" },
+      { kind: "failed" },
+      { kind: "failed" },
+    ]);
+  });
+
+  it("lets faces take every slot before a state does", () => {
+    /*
+      The rule that keeps this change a strict addition: a partially refused
+      roll shows the faces it has, exactly as it does today, and only fills
+      what is LEFT with states. A grey frame never displaces a picture because
+      it happens to sit at an earlier position.
+    */
+    const roll = [
+      at(1, "failed", "content_policy"),
+      ready("a.png"),
+      at(3, "failed", "engine"),
+      ready("b.png"),
+      ready("c.png"),
+    ];
+    expect(sheetPreviewTiles([], roll)).toEqual([
+      { kind: "face", key: "a.png" },
+      { kind: "face", key: "b.png" },
+      { kind: "face", key: "c.png" },
+      { kind: "refused" },
+    ]);
+  });
+
+  it("stays silent about the states that are the owner's own doing, or gone", () => {
+    /*
+      Four statuses that deliberately draw nothing, each for its own reason:
+      discarded and cancelled are the owner's decisions and a grey frame would
+      argue with them; signed has left the sheet for the roster; expired DID
+      arrive and was swept afterwards, so every word this strip has would be
+      false of it.
+    */
+    for (const status of ["discarded", "cancelled", "signed", "expired"]) {
+      expect(previewStateOf(at(1, status))).toBeNull();
+    }
+    expect(sheetPreviewTiles([], [at(1, "discarded"), at(2, "expired")])).toEqual([]);
+  });
+
+  it("never draws more than the strip holds, whatever the mixture", () => {
+    const roll = [ready("a.png"), ready("b.png"), at(90, "queued"), at(91, "queued"), at(92, "failed")];
+    expect(sheetPreviewTiles([], roll)).toHaveLength(4);
+  });
+
+  it("does not show a kept face a second time as a state", () => {
+    /*
+      The dedupe has to survive the second pass too: a candidate that led the
+      strip as a face must not come back as a frame in the backfill.
+    */
+    const shared = ready("kept.png");
+    const tiles = sheetPreviewTiles([shared], [shared, at(70, "queued")]);
+    expect(tiles).toEqual([{ kind: "face", key: "kept.png" }, { kind: "pending" }]);
+  });
+
+  it("keeps the faces-only view exactly as it was", () => {
+    /*
+      `sheetPreviewKeys` is what the previous bundle reads for one more deploy.
+      It is DERIVED from the tiles now, so this arm is the proof that deriving
+      it did not change a single card: states contribute nothing to it.
+    */
+    const roll = [at(1, "queued"), ready("a.png"), at(3, "failed", "content_policy"), ready("b.png")];
+    expect(sheetPreviewKeys([], roll)).toEqual(["a.png", "b.png"]);
   });
 });

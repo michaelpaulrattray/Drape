@@ -1,7 +1,7 @@
 {
-  "edition": 468,
-  "updatedAt": "2026-09-22T11:00:00.000Z",
-  "shift": "A REFUSAL THAT BLAMED YOUR CAST FOR OUR OWN MISTAKE IS FIXED. NOTHING WAITS ON YOU.\n\n1. When a refine goes wrong there are four different reasons it can stop and hand the credits back. Three of them are OUR filing going wrong - the instruction gets built, and then something we wrote down about it does not line up with something else we wrote down, so the picture would have come out without the thing that was asked for. All three of those told the customer the same thing: \"That's a part of her I can't work on yet.\"\n\n2. That sentence is only true of the fourth one. The other three are us, and the wording taught exactly the wrong lesson: she reads that a part of her cast's body is unsupported, so she stops asking for it. The money comes back, so nothing else ever tells us it happened - which is why it could sit there. The three now say it was our end, that it was nothing about what she asked for, and to try again. The fourth keeps the old sentence, because for that one it has always been true.\n\n3. The part I want on the record, because it is where this nearly went wrong: every existing test of that old sentence was on one of the three branches that MOVED. So I could have split them, left the fourth one with a sentence nothing in the product ever produces, and had every test pass. There is now a test that drives the fourth one directly - taking freckles off, which we genuinely have no way to say yet.\n\n4. Before believing any of it I broke the change four ways on purpose. The last one is the one that matters: I gave the new reason the OLD sentence back, which is a rename that fixes nothing. Every other check in that file passed it happily. So the two sentences are now pinned against each other instead of against a fixed phrase, and that one went red.\n\n5. Checked the rest of that module for the same mistake by COUNTING rather than reading - every refusal reason against every place it can be raised. Only the new one has more than one place, which is the point of it. Nothing else left to split there.\n\n6. The other half of the same bug is filed and not built: the makeup reader tells you it could not see any makeup in your picture when what really happened is that it saw it and could not put it into usable words. Both facts it needs are already sitting there unused. It is not built tonight because it needs a small database change, and those go through a different lane than a night shift can finish on its own.",
+  "edition": 476,
+  "updatedAt": "2026-09-22T19:35:00.000Z",
+  "shift": "BOTH OF THE THINGS YOU ASKED FOR IN THE CASTING LOBBY ARE LIVE. Open it and you should see the difference straight away.\n\nTHE RECEIPT LINE UNDER THE BRIEF BOX now reads 8 CANDIDATES · ~160 CR. The \"~50 SECONDS\" you wanted gone is gone.\n\nTHE UNSIGNED SHEETS ROW now opens on your newest sheet instead of the one before it, and it goes back to the newest one after you open a sheet from further along the row and come back. Worth knowing why it was wrong: the ORDER was always right - your newest sheet really was first in the list. What nobody had ever set was where the row starts scrolled to, so it sat a card and a half to the right of the beginning and you were always dragging left to find what you had just made.\n\nWHY THIS TOOK UNTIL TONIGHT, PLAINLY. The work itself was finished yesterday afternoon by the relay - the seat that works in your terminal - and then it stopped. Between it being written and tonight, the main line of the code moved nine times underneath it, which left it in a state where it could not even be checked automatically, let alone released. Two shifts looked at it and left it alone, which was the right call at the time: you do not take over somebody else's unfinished work while they might still be at it.\n\nTonight it had been four hours, the relay's working copy was clean and matched exactly what it had already sent, and nothing was going to move on its own. So I took it over, brought it up to date with everything else that had changed, checked it myself in a real browser, and released it. Nothing was rebuilt and nothing was thrown away.\n\nTWO THINGS I FOUND WHILE CHECKING IT, both worth a line because they are the kind of thing that quietly wastes a night later.\n\nThe first is that the relay's own check of its own work would have passed even if the sheets row had completely failed to appear. It waited four seconds for the row and then, if the row was not there, printed \"row too short to scroll\" and called it a pass. A row that is MISSING and a row that is merely SHORT are not the same thing, and it could not tell them apart. On a full lobby that row genuinely takes about seven seconds to arrive, so this was not theoretical - I hit it on the first run. Replaced with one that waits properly and refuses if the row never shows.\n\nThe second is a note in the code that justified keeping a piece of data we send to your browser by saying another screen still used it. It does not. I checked, and nothing reads it any more. I have not deleted it, because pulling something out of what we send while somebody might still have an old page open is exactly how you get a white screen - it comes out after a full release has gone by with nobody reading it. The note now says the true thing.\n\nAND ONE MORE FIX TO HOW THE NIGHTS WORK, which is the other half of the last two nights' story. The list a shift reads FIRST thing to decide what matters most still did not say whether somebody was already building a job. Tonight is the proof it mattered: I ran that list at 18:48 and it showed me your lobby job with nothing beside it, while the relay's finished work had been sitting open on it since 14:47. I only knew because of last night's fix to a different list, thirty seconds later. Both lists now say it, and so does the start-up check - one piece of code answering the question, so it cannot drift into three different answers.\n\nNothing here needs you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-22T10:57:37.715Z",
+      "readAt": "2026-09-22T19:29:34.904Z",
       "items": [
         {
           "issueNumber": 16,
@@ -2598,6 +2598,46 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "sheet-card-states-1086-frames",
+      "title": "Your unsigned sheets row: a sheet being cast, a sheet that was refused, and a sheet with faces - all four cards in one line",
+      "question": "Do these cards read right to you? Left to right: two faces then the two states, a roll the engine refused entirely, a roll still being cast (four frames with a soft sweep moving through them, and \"casting...\" in the line), and an untouched sheet with four faces - proof that nothing which shows today stopped showing. The only words are \"Refused\" and \"Didn't arrive\": no engine, no stage, no percentage. If the loading frames are too quiet or too loud on your screen, say so - it is one line either way.",
+      "state": "open",
+      "filedAt": "2026-09-22T15:15:00.000Z",
+      "issueNumber": 1086,
+      "frames": [
+        {
+          "key": "crew-eye/001ff32f-2098-43f7-9949-363c0635e736.png",
+          "caption": "AFTER, light - the four states side by side. The faces are a test picture rather than a cast, and the sheets are fixtures on the development database, so nothing was rolled or charged to make this.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/0b43983f-8956-4306-8fcb-8fbfb31666af.png",
+          "caption": "AFTER, dark - the same row. The sweep in the third card is caught mid-pass; on screen it moves.",
+          "arm": "dark"
+        }
+      ]
+    },
+    {
+      "id": "concept-picture-swap-1087-frames",
+      "title": "The concept dialog with the x on the picture, and the line that says you can drop another one",
+      "question": "Is this the right amount of furniture on your picture? The x sits top right; the line sits along the bottom over a soft wash so it reads on a light photograph as well as a dark one, and \"choose one\" is a real button. On a refusal the line disappears, because that state already offers Choose another picture in the row below. Say the word if you want either one quieter.",
+      "state": "open",
+      "filedAt": "2026-09-22T15:15:00.000Z",
+      "issueNumber": 1087,
+      "frames": [
+        {
+          "key": "crew-eye/47f11b7e-5abc-40a8-ba54-3374bb23da52.png",
+          "caption": "AFTER, light - the dialog with a real picture, read by the real reader. The description is what the studio wrote from it.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/5bae060d-0c91-4963-8402-d2b90eedc23d.png",
+          "caption": "AFTER, dark - the same dialog and the same picture.",
+          "arm": "dark"
+        }
+      ]
+    },
     {
       "id": "board-lazy-1036-frames",
       "title": "Opening a canvas after tonight - the frame you see while its code downloads, and the loaded canvas",
@@ -5141,9 +5181,103 @@
           "arm": "light"
         }
       ]
+    },
+    {
+      "id": "gpt25-roll-court-1068-strips",
+      "title": "Your cyborg, one prompt, three engines — GPT Image 2 (roll 266) against GPT Image 2.5 Flare and Sunburst",
+      "question": "WHAT YOU ARE JUDGING — the same 4,310-character prompt your roll 266 sent, rendered eight times on each engine at the same size and quality. Row one is roll 266 itself (the sheet you have). Row two is GPT Image 2.5 Flare. Row three is GPT Image 2.5 Sunburst. Judge each row on N1's two bars: does it reach the conviction of your raw brief (bald, mid-40s, weathered porcelain skin, severe bone structure, the implant ports above the right temple, scalp seams, jaw plate, studs below the ears, the amber-red right eye, augmentation integrated not worn), and is the spread across the eight enough? No refusals on any engine; Flare ~20 s a tile, Sunburst ~23 s. One word per row is enough — pass, or what it misses.",
+      "state": "answered",
+      "filedAt": "2026-09-22T11:54:14.851Z",
+      "issueNumber": 1068,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/474ea12e-5534-4343-a436-ec827b5e9cab.jpg",
+          "arm": "all three",
+          "caption": "All three rows at once: GPT Image 2 (roll 266) on top, 2.5 Flare in the middle, 2.5 Sunburst at the bottom. Same prompt, same size, same quality; only the engine differs."
+        },
+        {
+          "key": "crew-eye/1faa6665-92fd-4997-87b0-377860016ae9.jpg",
+          "arm": "GPT Image 2",
+          "caption": "Roll 266 as it is on your sheet — the engine the register renders on today. 8/8 delivered."
+        },
+        {
+          "key": "crew-eye/f0096096-93d5-46b2-9392-f2366a4ddecd.jpg",
+          "arm": "2.5 Flare",
+          "caption": "GPT Image 2.5 Flare, the faster of the two 2.5 models. 8/8 delivered, no refusals, ~20 seconds a tile."
+        },
+        {
+          "key": "crew-eye/212655a7-3d7a-494a-af05-d2d4cb45be6b.jpg",
+          "arm": "2.5 Sunburst",
+          "caption": "GPT Image 2.5 Sunburst, the slower 'precision' model. 8/8 delivered, no refusals, ~23 seconds a tile."
+        }
+      ]
     }
   ],
   "pipeline": [
+    {
+      "id": "lobby-seconds-and-scroll-1090",
+      "title": "Your two lobby asks are live: the seconds are off the receipt line, and the sheets row opens on your newest sheet",
+      "status": "merged",
+      "prNumber": 1091,
+      "note": "The receipt line under the brief box reads 8 CANDIDATES · ~160 CR - no seconds. The unsigned sheets row opens on your newest sheet and returns to it after you open one from further along and come back.\n\nThe order was never the problem - your newest sheet was already first in the data. The row's own starting scroll position was simply never set, so it sat part-way along and you dragged left every time.\n\nWritten by the relay yesterday afternoon and then stalled: the main line of code moved nine times underneath it, which left it unable to be checked automatically at all. Two shifts correctly left it alone in case the relay was still working. Tonight, four hours on with its working copy clean and matching what it had already sent, the night shift took it over, brought it up to date, re-checked it in a real browser and released it. Nothing rebuilt, nothing discarded.\n\nChecked on the released version, not the old one: receipt line correct, row opening on the newest card, and still on the newest card after opening a sheet three along and coming back. Frames looked at, not merely taken.\n\nTwo things found in the checking. The relay's own test would have passed even if the row had never appeared - it waited four seconds, and on a full lobby that row takes about seven, and it reported a missing row as a short one. Replaced. And a note in the code justified keeping a piece of data we send your browser by naming another screen that uses it; nothing uses it. Not deleted - removing something we send while an old page may still be open is how you get a white screen - but the note now says the true thing, and it comes out after a clean release has passed."
+    },
+    {
+      "id": "band-pr-claim-1094",
+      "title": "The list a shift reads FIRST now says whether somebody is already building the job",
+      "status": "merged",
+      "prNumber": 1097,
+      "note": "Not a product change - nothing in the app moves.\n\nTwo nights running the team has been closing the same gap: a shift could start building something another seat had already finished. The start-up check learned to ask it, then the launch summary learned to ask it. The list a shift reads first thing to rank what matters most still did not.\n\nTonight is the measurement, on this very list. I ran it at 18:48 and it showed me your lobby job with nothing beside it - while the relay's completed work had been open on it since 14:47. I only knew because of last night's fix to a different list, which spoke up thirty seconds later. Two shifts before mine had stood off on a reason they read in a handover note rather than in any tool.\n\nAll three now use one piece of code to answer it, so they cannot drift into three different answers. Three replies are kept apart on purpose: somebody is building it, nobody is, and the check could not run. The last two look identical unless something says so in words - and the clean answer deliberately costs a line rather than staying silent.\n\nIt also refuses to take the list down with it: if the check for open work fails, you still get your ranking, with a line saying the check failed. Proven by deliberately breaking it seven different ways and confirming the tests complained each time."
+    },
+    {
+      "id": "digest-pr-claim-1094",
+      "title": "The list a shift chooses from now says whether somebody is already building the job",
+      "status": "merged",
+      "prNumber": 1096,
+      "note": "Not a product change - nothing in the app moves. Last night's fix asked \"is somebody already building this?\" at the moment a shift DECLARED its job. The list a shift actually picks from is printed about thirty seconds earlier, at the top of every launch, and it said nothing - so the warning landed after the decision it was for.\n\nIt is on the choosing list now. Driven against your real board the hour it was written, and it caught a live one immediately: your single open job, the receipt-line and sheet-scroll fix, came up named with the work the relay already has open on it.\n\nThree answers are kept apart on purpose - somebody is building it, nobody is, and the check could not run. The third is the dangerous one, because a check that failed and a board that is clear look identical unless something says so in words.\n\nThe build found a real hole in itself. The first version quietly turned \"the check failed\" into \"the board is clear\" - the exact mistake the whole thing exists to prevent - and none of the tests noticed. Found by deliberately breaking my own work seven different ways to see which tests would complain; six did, one did not, and that one is why a piece of it was moved somewhere tests can reach.\n\nOne piece is left on the job and was deliberately not taken: the part of the system that can spend an expensive Fable session on a job someone already has open. Changing when a Fable session gets spent is your rule, not a cleanup, so it stays on the card with a recommendation rather than being decided by a night shift."
+    },
+    {
+      "id": "close-guards-green-1095",
+      "title": "The nightly end-of-shift checks are green again after three nights red",
+      "status": "merged",
+      "note": "No pull request on this one, and that is inherent: every file involved is a scratch file that was never checked in, so the build server has never seen any of them and cannot.\n\nEach shift ends by running two checks over its own scratch files. They had been failing for three nights on nineteen leftovers from shifts that already finished, plus one real typing mistake. A red baseline is worse than it sounds - a shift cannot tell its own breakage from somebody else's mess, which is the road to a check that stops being run.\n\nFifteen cleaned, the typing mistake fixed, green for the first time in three nights. The four still named are the relay's live working files and are correct to be there; it clears its own when it finishes.\n\nThe reason it kept recurring was not the files. The measurement had been living in a comment on a job that was already CLOSED, so two shifts in a row wrote the same number down and neither could act on it. Put back on the board as a real job, it took minutes.",
+      "prNumber": null
+    },
+    {
+      "id": "card-claim-warning-1083",
+      "title": "The night team can no longer start a job somebody is already building",
+      "status": "merged",
+      "prNumber": 1093,
+      "note": "Not a product change - you will see nothing in the app. Earlier this week a shift spent thirty-five minutes rebuilding something that had shipped seven minutes before it started, and nothing it read could have told it: the job list knows whether a job is finished, never whether somebody is doing it right now.\n\nNow, at the moment a shift declares which job it is taking, it reads the work already in progress and names anything open on that job - which piece, and where the job number appeared. It warns instead of blocking, because an open piece of work is sometimes the shift's own follow-up, and blocking there would stop honest work as often as a duplicate.\n\nDriven against your real board both ways before it merged: it named the open work on last night's receipt-line job, and stayed silent on a job that had none. If the check itself cannot run, it says so rather than reporting a clear board - an unread board and a clear one must never look the same.\n\nFour more places still hand a shift a job without asking this question, and the most expensive of them can spend a Fable session on one. Measured and filed as its own card rather than quietly left."
+    },
+    {
+      "id": "sheet-card-states-1086",
+      "title": "Your unsigned sheets show a roll that is being cast, and one that was refused - instead of an empty card",
+      "status": "merged",
+      "prNumber": 1089,
+      "note": "Your bug, and both halves of it. A sheet card used to draw finished faces and nothing else, so a sheet still being cast and a sheet whose roll was refused both rendered as \"4 rolls\" over an empty strip - the first reading as no roll, the second as broken. The strip now carries a frame per picture: a face, a frame being made, \"Refused\", or \"Didn't arrive\". Faces still lead, so nothing that shows on a card today stops showing.\n\nStarted a roll and left? The card catches up on its own - measured at 2.6 seconds with no reload - and when nothing is being cast the lobby asks for nothing, so there is no cost to it.\n\nFour states stay deliberately blank: discarded and cancelled are your own decisions, signed has left the sheet for your roster, and an expired picture DID arrive before it was swept, so none of the four words would be true of it.\n\nLive on production as build 7409b131, read at the machine."
+    },
+    {
+      "id": "concept-picture-swap-1087",
+      "title": "The concept picture gets an x - and dropping a new picture on the old one now actually works",
+      "status": "merged",
+      "prNumber": 1092,
+      "note": "Your QOL ask. The only way out of a picture was Discard, which shuts the dialog and throws your words away, so swapping a photograph cost the whole road. There is a small x on the picture now: it removes the picture and its description and leaves the dialog open on its empty state.\n\nThe correction worth your eye: the card said dragging a new picture over the old one probably worked and only needed an affordance. It did not work at all. The dialog accepted a drop on its body and on the empty slot, never on the picture, and a file dropped anywhere the app has not claimed is deliberately swallowed - because the browser's own default is to navigate away and take your brief with it. So the obvious place to aim was the one dead spot. Driven both ways in one run: a drop at the old picture slot changed nothing after three seconds; the same drop at the new layer replaced the picture and rewrote the description to a different person.\n\nLive on production as build 6b2e8381, read at the machine."
+    },
+    {
+      "id": "flare-engine-live-1079",
+      "title": "The engine your rolls paint on is a setting now - Flare this morning, Sunburst tonight, on your word both times",
+      "status": "merged",
+      "prNumber": 1080,
+      "note": "Two changes in one day, and the second is why the first was worth building. Read at the artifacts rather than at either report: the running build carries the change, and the live setting names your account with sunburst beside it.\n\nWHY FLARE: your eye on the three strips - \"honestly flare gave good results\", then \"switch to flare and let me roll some\".\n\nWHY NOT FLARE: you rolled and said it was producing bad results. Two of your three came back complete; the third had four of its eight refused by Flare's own filter on a short brief. The court's sixteen tiles refused nothing, so that is a thing only your own rolls could have found.\n\nWHAT IS DIFFERENT NOW: the engine is a setting, not a build. Moving it again is a variable and a restart, and the machine refuses to start at all if the setting names an account without naming an engine - so your page can never say one thing while the studio paints another."
+    },
+    {
+      "id": "flare-wire-arms-1082",
+      "title": "Two guards so a Follow on a Flare sheet cannot be answered by the other engine's face",
+      "status": "merged",
+      "prNumber": 1082,
+      "note": "Live at 13:16 (build 55e5e826, read at the health check with 28 seconds' uptime - the new process, not the old one still answering). Checks only; nothing a customer touches changed.\n\nWHAT IT PREVENTS: a Follow sends your chosen face to the engine as an attachment. It must go to Flare's own door. I broke that on purpose and ran everything - 5,690 checks passed in silence. The second one is quieter: giving Flare its own share of the provider's allowance would have had the casting road claiming 16 of the 20 requests we may have in flight, which is the fault that once brought your fresh casts back missing eyes, brows and ears. That also passed 5,690 checks.\n\nWHY THEY WERE MISSING: the existing checks read what the code SAYS it will send. These read what actually leaves the building. It is a house rule here and it earned its place again today."
+    },
     {
       "id": "repaint-our-fault-1072",
       "title": "A refine that fails on our paperwork stops saying it is your cast's fault",
@@ -6989,13 +7123,27 @@
       "status": "merged",
       "prNumber": null,
       "note": "WHAT A CUSTOMER SEES: nothing. This is housekeeping on the crew's own workspace; no product file changed.\n\nWHAT WENT: the 262 GitHub branches were each checked against their pull request - deleted only where the request had merged and the branch had not moved since; every one is still reachable through that request. The 82 screenshots were from cards you closed over a week ago (the seven for card 436 stay, because a written evidence file cites them). The deploy leftover was a copy of the project a cut-off deploy run made on the 15th; it held no unsaved work. The 19 scripts were one-off helpers for cards closed over a week ago.\n\nTHE RECEIPTS: docs/JANITOR_LOG.md run 7, and the lists under output/janitor/run7-*. Backups: four zips under C:UsersAdmin dated 2026-09-18."
+    },
+    {
+      "id": "makeup-our-cap-1076",
+      "title": "The makeup reader stops telling a customer her picture had no makeup in it when our own limit ate the answer",
+      "status": "in-review",
+      "prNumber": 1078,
+      "note": "Waiting on its review, not on you. Every check is green and the change is clean to merge; it touches the database, so it goes through the review lane rather than being merged by the night shift.\n\nWHAT CHANGES FOR A CUSTOMER: one sentence. She is told we read her picture and could not use our own description of it, and is pointed at the box to type the look herself - instead of being sent to find a better photograph of a problem that was never hers.\n\nWHAT WAS ALREADY THERE AND UNUSED: the code already knew, twenty lines earlier, exactly which descriptions had run too long. It had the answer and threw it away. Reading what we already paid for before reaching for anything new is the fourth clause of your philosophy, and this is the second time this week it has been the whole fix.\n\nTHE DATABASE CHANGE: applied to both databases before the request was opened, and re-running it reports 'already applied'. All nine existing values were read back afterwards to prove nothing was lost."
     }
   ],
   "problems": [
     {
+      "id": "queue-shape-0923b-foreman",
+      "severity": "info",
+      "state": "resolved",
+      "title": "The queue: 36 open, your own list is now EMPTY, none urgent. No check-up clock fires before tomorrow.",
+      "detail": "Read at 19:30, after tonight's two releases. 36 open, down one - your lobby job closed and nothing new was filed, because tonight's work came entirely off jobs already on the board.\n\nYour own ordered list is empty for the first time in several nights: the lobby fix was the only thing on it and it shipped. That is not a prompt to do anything - it means the team works from the background categories you have switched on until you add something.\n\n21 of the 36 have had nothing happen to them - no comment, no close, no code - for a week. Flat, not growing. That is the honest backlog figure.\n\nOne job is still open and waiting on the relay: the makeup-reader wording fix, which touches a money-adjacent area and so is held for a hand review rather than released by a night shift."
+    },
+    {
       "id": "queue-shape-0922b-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 33 open, your list empty, none urgent. One bug open and it is the half of tonight's that needs a database change. No check-up clock fires before Wednesday.",
       "detail": "Read at 11:00, after tonight's merge. 33 open cards, unchanged - one closed and one filed. 17 have had no comment, close, reopen or commit for a week or more, the same as last night; that figure counts real activity only, so a label edit does not reset it. Your own ordered list is empty and nothing is marked urgent. The one open bug is #1076, the makeup half of tonight's fix: a night shift can build it and open it, but it needs a small database change, and a change touching the database is reviewed by hand before it can go in - so it will sit for a review rather than closing itself overnight. That is the lane working as designed, not a blockage. Nothing here needs you."
     },
@@ -7593,6 +7741,13 @@
       "state": "resolved",
       "title": "The queue: 29 open, none moved; NEXT UP empty; nothing under any of your switches; the Warden ran its round and found nothing to file",
       "detail": "Read at 14:30Z: 29 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. The Warden's weekly readings are all clean and both of last week's cards (857, 858) are closed with receipts read at the artifacts. Every switched category is at zero (129 and 108 are blocked on their own rows, 45 is parked). The Janitor's clock fires tomorrow.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0922c-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 34 open, your list empty, none urgent. Both open bugs are tonight's work - one in review, one filed from it. No check-up clock has fired.",
+      "detail": "Read at 11:55Z. 34 open cards - one filed tonight by the check that looks for the same mistake elsewhere. 17 have had no comment, close, reopen or commit for 7 days, unchanged from last night; they are roadmap rungs you have not reached rather than neglected work.\n\nBoth open bugs came out of tonight: one is the change now waiting on its review, and the other is the one it found in the hair-colour reader. Every other switched category is at zero. The next check-up clock (housekeeping) fires in two days.\n\nNothing here needs you."
     }
   ],
   "acknowledgedReplyIds": [
@@ -7789,10 +7944,11 @@
     191,
     192,
     193,
-    194
+    194,
+    195
   ],
   "nextUp": {
-    "readAt": "2026-09-22T10:57:37.714Z",
+    "readAt": "2026-09-22T19:29:34.903Z",
     "items": []
   }
 }

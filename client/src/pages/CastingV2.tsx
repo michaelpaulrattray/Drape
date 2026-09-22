@@ -197,6 +197,18 @@ export default function CastingV2() {
   */
   const briefField = useRef<HTMLTextAreaElement>(null);
   /*
+    THE UNSIGNED-SHEETS ROW SITS ON ITS LATEST CARD (card 1090). His word,
+    2026-09-23: *"the scroll bar is never sitting on the latest sheet card
+    always the previous so im always scrolling to see the latest sheet card."*
+    Read at production first: the ORDER was already right — a roll updates the
+    session row and `lastActivityAt` is ON UPDATE, so the rolled sheet is first
+    in the data. What drifted was the row's own scroll position, which nothing
+    set. Keyed on the FIRST sheet's id rather than on mount: the row can be
+    painted from the query cache with yesterday's order and then re-ordered
+    when the refetch lands, and the scroll must follow the second paint too.
+  */
+  const sheetRow = useRef<HTMLDivElement>(null);
+  /*
     THE CONCEPT CARD'S SECOND DOOR (#435 §2e) — the hero's `Start from photos`
     opens the card's own dialog, empty on its drop zone, exactly as tapping the
     card does. A handle rather than lifted state: see `ConceptUploadHandle`.
@@ -247,8 +259,31 @@ export default function CastingV2() {
   });
   const openSessions = trpc.castingV2.openSessions.useQuery(
     {},
-    { enabled: config.data?.enabled === true },
+    {
+      enabled: config.data?.enabled === true,
+      /*
+        A ROLL STARTED AND LEFT SETTLES ON ITS OWN (his bug, #1086): *"when you
+        start a roll off a sheet and exit out before anything generates the card
+        ... needs to appear instantly and show some sort of loading state"*.
+
+        The card appearing is the refetch on arriving here; the tiles turning
+        into faces is this. The roster's own shape, deliberately — poll only
+        while something is actually being cast, and stop the moment nothing is,
+        because this projection runs four queries per sheet (see `discardSheet`
+        below, where that cost was measured at 7.1 seconds on a full lobby).
+      */
+      refetchInterval: (query) =>
+        query.state.data?.some((entry) =>
+          entry.previewTiles.some((tile) => tile.kind === "pending"))
+          ? 5_000
+          : false,
+    },
   );
+  const latestSheetId = openSessions.data?.[0]?.sessionId ?? null;
+  useEffect(() => {
+    /* See `sheetRow` — the start of the row is where the latest card is. */
+    if (sheetRow.current) sheetRow.current.scrollLeft = 0;
+  }, [latestSheetId]);
 
   /*
     UPLOAD A CONCEPT (#185). House money, no credits, nothing kept — and the
@@ -419,17 +454,21 @@ export default function CastingV2() {
   /*
     THE HERO'S RECEIPT LINE, DERIVED (#435 §2d). Every segment comes from the
     server's own roll constants — the count and the price from the numbers that
-    charge, the duration from a dated measurement of real rolls.
+    charge. ⚠ **THE DURATION SEGMENT IS GONE (card 1090, his word 2026-09-23: *"the
+    50 seconds next to 160 cr remove it"*).** What stays is the rule the line
+    was built on: a segment the server did not send is absent, never guessed —
+    no fallback literal can reach it through a default.
 
-    ⚠ **A SEGMENT THE SERVER DID NOT SEND IS ABSENT, NEVER GUESSED.** An older
-    bundle against a server without `rollTypicalSeconds`, or a config still
-    settling, would otherwise print a fallback literal — which is precisely the
-    hand-written number his rule for this line forbids, arriving through the
-    back door marked "default". Two true facts read better than three with one
-    invented among them, and nothing on the line can ever disagree with the
-    charge.
+    ⚠ **`rollTypicalSeconds` IS STILL SERVED AND NOTHING CLIENT-SIDE READS IT
+    NOW — read at the tree, not assumed** (`grep -rn rollTypicalSeconds client/`
+    returns this comment and the guard's absence assertion, nothing else). The
+    sheet's own waiting copy does NOT read it: `CandidateViewer` says *"a minute
+    or two"*, which is hand-written and dated on its own docblock. So the field
+    is an unread field on a live contract — #1088's class exactly — and it stays
+    for now on the removal contract in CLAUDE.md invariant 4: a field leaves the
+    wire only after a full deploy in which no client reads it, never in the
+    commit that stops reading it.
   */
-  const rollSeconds = config.data.rollTypicalSeconds;
   /*
     WHETHER THE CONCEPT DOOR IS OPEN — the same server answer the card itself
     reads, so the hero's `Start from photos` link and the card can never
@@ -756,11 +795,11 @@ export default function CastingV2() {
               the only unpriced spend in the product, and this also answers
               *what do I get* before the money rather than after it.
 
-              ⚠ **ALL THREE VALUES ARE DERIVED, AND THAT IS THE WHOLE POINT** —
+              ⚠ **BOTH VALUES ARE DERIVED, AND THAT IS THE WHOLE POINT** —
               his rule, verbatim: *"A hand-written price that disagrees with the
               charge does the opposite of what this line is for."* The count and
-              the price are the server's own roll constants; the duration is a
-              measurement with a date (`server/castingV2/rollDuration.ts`).
+              the price are the server's own roll constants. (The duration
+              segment left this line on his word, card 1090.)
 
               ⚠ **HIS BRIEF'S OWN EXAMPLE READ `4 CR` AND THE CHARGE IS 160** —
               the rule above is what settles it, and the rule is his. Numerals
@@ -789,7 +828,6 @@ export default function CastingV2() {
                     {price} CR
                   </>
                 ) : null}
-                {rollSeconds ? ` · ~${rollSeconds} SECONDS` : null}
               </span>
               <span className="dpc-hero__receiptrule" aria-hidden="true" />
             </p>
@@ -1039,6 +1077,7 @@ export default function CastingV2() {
             scan sideways and pick from, rather than a collection you browse.
           */}
           <div
+            ref={sheetRow}
             className="dpc-sheetrow"
             role="group"
             aria-label="Unsigned sheets"
@@ -1060,17 +1099,49 @@ export default function CastingV2() {
                     tiles keep the candidate 4:5 so they read as the same
                     objects the sheet is made of.
 
-                    A sheet whose candidates have all expired or not landed
-                    shows nothing rather than a row of grey boxes: an empty
-                    strip is quieter than a broken one.
+                    The tiles carry STATE, not only faces (his bug, #1086).
+                    This used to draw ready faces and nothing else, on the
+                    reasoning that "an empty strip is quieter than a broken
+                    one" — and that was the wrong quiet: a card reading "4
+                    rolls" over nothing says the sheet is broken, while a roll
+                    in flight says there is no roll at all. A frame being cast
+                    is drawn as one being cast; a refused one says so.
+
+                    A sheet whose pictures have aged out still shows nothing,
+                    because they DID arrive and no tile here would be true of
+                    them.
                   */}
-                  {entry.previewUrls.length > 0 ? (
+                  {entry.previewTiles.length > 0 ? (
                     <span className="dpc-sheetcard__strip" aria-hidden="true">
-                      {entry.previewUrls.map((url) => (
-                        <span key={url} className="dpc-sheetcard__frame">
-                          <img src={url} alt="" loading="lazy" />
-                        </span>
-                      ))}
+                      {/*
+                        KEYED BY POSITION, and that is a fix rather than a
+                        style choice. This strip was keyed by the image URL,
+                        and React logged *"Encountered two children with the
+                        same key"* the first time two tiles carried one picture
+                        — a duplicate key lets React duplicate or drop a child.
+                        The strip is a fixed, positional list of at most four
+                        frames that re-renders whole, so the index IS the
+                        identity; nothing here is reordered or filtered in
+                        place.
+                      */}
+                      {entry.previewTiles.map((tile, tileIndex) =>
+                        tile.kind === "face" ? (
+                          <span key={`face-${tileIndex}`} className="dpc-sheetcard__frame">
+                            <img src={tile.url} alt="" loading="lazy" />
+                          </span>
+                        ) : (
+                          <span
+                            key={`${tile.kind}-${tileIndex}`}
+                            className="dpc-sheetcard__frame"
+                            data-state={tile.kind}
+                          >
+                            {tile.kind === "pending" ? null : (
+                              <span className="dpc-sheetcard__frameword">
+                                {tile.kind === "refused" ? "Refused" : "Didn't arrive"}
+                              </span>
+                            )}
+                          </span>
+                        ))}
                     </span>
                   ) : null}
                   {/*
@@ -1088,6 +1159,15 @@ export default function CastingV2() {
                   <span className="dp-secondary">
                     {entry.rollCount} roll{entry.rollCount === 1 ? "" : "s"}
                     {entry.keptCount > 0 ? ` · ${entry.keptCount} kept` : ""}
+                    {/*
+                      The strip is decorative (`aria-hidden`), so a reader hears
+                      "4 rolls" and nothing about the work in flight. One word,
+                      the same one the sheet's own tiles use, and it disappears
+                      the moment the roll settles.
+                    */}
+                    {entry.previewTiles.some((tile) => tile.kind === "pending")
+                      ? " · casting…"
+                      : ""}
                     {/*
                       Which one you were last working on, said once and
                       quietly. The row is ordered by activity, so this only

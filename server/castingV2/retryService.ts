@@ -77,7 +77,7 @@ import type { CreativeEngine } from "../providers/types";
 const log = createModuleLogger("castingV2/retryService");
 
 export type RetryServiceDependencies = {
-  engine?: () => CreativeEngine;
+  engine?: (userId?: number) => CreativeEngine;
   begin?: typeof beginDirectOperation;
   markRunning?: typeof markGenerationOperationRunning;
   deduct?: typeof deductCredits;
@@ -348,7 +348,7 @@ export async function retryCandidate(
 
   /* ---- dispatch: the roll road's own unit, once ---- */
 
-  const engine = (dependencies.engine ?? castingCreativeEngine)();
+  const engine = (dependencies.engine ?? castingCreativeEngine)(input.userId);
   const { value, error, census } = await censusOfAttempt(() => dispatchCandidate({
     dependencies: { storeImage: dependencies.storeImage },
     engine,

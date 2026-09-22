@@ -61,6 +61,42 @@ import { ProviderError, type CandidateRequest, type CreativeEngine, type ImageRe
  */
 export const FAL_GPT_IMAGE_2 = "openai/gpt-image-2";
 export const FAL_GPT_IMAGE_2_EDIT = "openai/gpt-image-2/edit";
+/**
+ * GPT IMAGE 2.5 FLARE — the roll engine the founder chose at his eye on court
+ * #1068 (2026-09-22: *"honestly flare gave good results"*, then *"switch to
+ * flare"*). Rendered through `CASTING_ROLL_ENGINE_SCOPE` + `CASTING_ROLL_ENGINE_MODEL=flare` (#1079, #1084). Its
+ * edit door is the sibling an image-anchored Follow roll takes.
+ *
+ * ⚠ PRICE NOT YET MEASURED at medium 1024×1536 — the census still records
+ * GPT Image 2's dated constant as the estimate; the fal receipt from his first
+ * rolls is where Flare's number comes from (clause 3 of the disappearing-
+ * technology law: the price is named beside the finding, never assumed).
+ */
+export const FAL_GPT_IMAGE_25_FLARE = "openai/gpt-image-2.5/flare/text-to-image";
+export const FAL_GPT_IMAGE_25_FLARE_EDIT = "openai/gpt-image-2.5/flare/edit";
+/**
+ * GPT IMAGE 2.5 SUNBURST — the "precision" 2.5 model. His eye after three
+ * Flare rolls (2026-09-22): *"flare is producing bad results - switch over to
+ * sunburst and let me try it"* — Flare refused 4 of 8 on roll 276 and read
+ * wrong to him on 274/275. Same unread-price caveat as Flare.
+ */
+export const FAL_GPT_IMAGE_25_SUNBURST = "openai/gpt-image-2.5/sunburst/text-to-image";
+export const FAL_GPT_IMAGE_25_SUNBURST_EDIT = "openai/gpt-image-2.5/sunburst/edit";
+/**
+ * THE EDIT SIBLING OF EACH ROLL ENGINE (#1079). An image-anchored render (the
+ * Follow road's attached photo, #177 Row A) goes to the SAME model's edit door
+ * — a roll and its Follow must be one engine, or one cast wears two looks. A
+ * model with no entry here refuses a reference rather than painting strangers
+ * against a sentence about a photograph that never arrived.
+ */
+export const FAL_EDIT_SIBLINGS: Readonly<Record<string, string>> = {
+  [FAL_GPT_IMAGE_2]: FAL_GPT_IMAGE_2_EDIT,
+  [FAL_GPT_IMAGE_25_FLARE]: FAL_GPT_IMAGE_25_FLARE_EDIT,
+  [FAL_GPT_IMAGE_25_SUNBURST]: FAL_GPT_IMAGE_25_SUNBURST_EDIT,
+};
+export function editSiblingOf(model: string): string | null {
+  return FAL_EDIT_SIBLINGS[model] ?? null;
+}
 
 /**
  * MEASURED, not listed: $0.8912 across 9 medium-quality 1024×1536 images on
@@ -150,13 +186,14 @@ export function createFalCreativeEngine(config: FalCreativeConfig): CreativeEngi
         photograph that never arrived (`CandidateRequest.references`).
       */
       const references = request.references ?? [];
-      if (references.length > 0 && model !== FAL_GPT_IMAGE_2) {
+      const editSibling = editSiblingOf(model);
+      if (references.length > 0 && editSibling === null) {
         throw new ProviderError(
           "capability",
           `engine ${model} has no edit sibling to attach an image reference to`,
         );
       }
-      const endpoint = references.length > 0 ? FAL_GPT_IMAGE_2_EDIT : model;
+      const endpoint = references.length > 0 ? editSibling! : model;
 
       return queue.run("generateCandidate", () =>
         withRetry(

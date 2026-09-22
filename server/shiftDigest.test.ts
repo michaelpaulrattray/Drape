@@ -156,6 +156,11 @@ function digestInputs(overrides: Partial<DigestInputs> = {}): DigestInputs {
     lawSurfaces: surfaces(),
     roots: ROOTS,
     nextUp: [],
+    /* A read that SUCCEEDED and found nothing. `openPullRequests` is required on
+       `DigestInputs` on purpose (#1094): a default of `[]` here is this factory
+       declaring "the board was read and is clean", and an arm that wants the
+       unread answer must say so, which is the distinction the field exists for. */
+    openPullRequests: [],
     patrolClocks: "no seat is overdue",
     since: { label: "foreman-20260904-2340.md", iso: "2026-09-04T13:40:00.000Z", notes: [] },
     commits: [],
@@ -393,6 +398,95 @@ describe("buildDigest", () => {
     );
     expect(digest.indexOf("#243")).toBeLessThan(digest.indexOf("#512"));
     expect(digest).toContain("[debt]");
+  });
+
+  /*
+    #1094 — THE SWEEP REMAINDER OF #1083, AT THE PLACE THE CHOICE IS MADE.
+
+    #1083's class: *a reader that offers a shift a card while answering only "is
+    it open", never "is somebody already building it".* `crew-shift-start.mts`
+    now asks at the DECLARATION; the digest names the same cards ~30 seconds
+    earlier, at the top of the launch, which is where a shift actually chooses.
+
+    The three answers below are the arms that matter, and the third is the one
+    the file's own header is about: a board nobody read renders identically to a
+    clean board in any renderer that stays silent when it has nothing to say.
+  */
+  it("names the OPEN PR already building a NEXT UP card, and says where the number was found", () => {
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [
+          { number: 1090, title: "his two", labels: ["founder-ordered"], createdAt: "2026-09-22T14:38:56Z" },
+        ],
+        openPullRequests: [
+          {
+            number: 1091,
+            title: "fix(casting): the receipt line drops its seconds (#1090)",
+            body: "closes #1090",
+            url: "https://github.com/x/y/pull/1091",
+            headRefName: "team/relaysmall",
+          },
+        ],
+      }),
+    );
+    expect(digest).toContain("ALREADY BEING BUILT? PR #1091");
+    expect(digest).toContain("names this card in its title and body");
+    expect(digest).toContain("https://github.com/x/y/pull/1091");
+    /* It WARNS (#1083's own ruling, made before that build): a refusal keyed on
+       a card number fires on a shift's legitimate second half. */
+    expect(digest).toContain("WARNING, never a refusal");
+  });
+
+  it("matches a branch by its digit RUN, so #1079 is not claimed by team/relay10790", () => {
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [
+          { number: 1079, title: "a card", labels: ["founder-ordered"], createdAt: "2026-09-20T01:00:00Z" },
+        ],
+        openPullRequests: [
+          { number: 2, title: "unrelated", body: "", url: "u", headRefName: "team/relay10790" },
+        ],
+      }),
+    );
+    expect(digest).not.toContain("ALREADY BEING BUILT");
+    expect(digest).toContain("No open pull request names any card above");
+  });
+
+  it("says the board was READ AND CLEAN in words, never by saying nothing", () => {
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [
+          { number: 1090, title: "his two", labels: ["founder-ordered"], createdAt: "2026-09-22T14:38:56Z" },
+        ],
+        openPullRequests: [
+          { number: 7, title: "something else", body: "", url: "u", headRefName: "team/other" },
+        ],
+      }),
+    );
+    expect(digest).toContain("No open pull request names any card above (1 open PR(s) read)");
+  });
+
+  it("⚠ says the board was UNREAD when the PR read failed, and never renders it as clean", () => {
+    const digest = buildDigest(
+      digestInputs({
+        nextUp: [
+          { number: 1090, title: "his two", labels: ["founder-ordered"], createdAt: "2026-09-22T14:38:56Z" },
+        ],
+        openPullRequests: { unreadable: "`gh pr list` could not be read" },
+      }),
+    );
+    expect(digest).toContain("THE OPEN PULL REQUESTS COULD NOT BE READ");
+    expect(digest).toContain("not a clean board, it is an unread one");
+    expect(digest).not.toContain("No open pull request names any card above");
+    expect(digest).not.toContain("ALREADY BEING BUILT");
+  });
+
+  it("says nothing about pull requests when there is no band to annotate", () => {
+    /* EMPTY and UNREADABLE both render before any row exists; a PR line there
+       would be a claim about cards that are not on the page. */
+    const empty = buildDigest(digestInputs({ nextUp: [], openPullRequests: { unreadable: "x" } }));
+    expect(empty).toContain("NEXT UP: EMPTY");
+    expect(empty).not.toContain("THE OPEN PULL REQUESTS COULD NOT BE READ");
   });
 
   it("carries the whole current focus and names what it did not carry", () => {
