@@ -170,6 +170,7 @@ export function CastingModal({
   portraitMuted = false,
   portraitWhole = false,
   portraitFallback,
+  portraitOverlay,
   busy,
   onDismiss,
   children,
@@ -210,6 +211,20 @@ export function CastingModal({
    * is the right answer for a portrait that is merely still loading.
    */
   portraitFallback?: ReactNode;
+  /**
+   * CONTROLS THAT BELONG ON THE PICTURE ITSELF (#1087).
+   *
+   * Drawn inside the portrait slot, over whatever is in it. It exists because
+   * the concept review needed a way to REMOVE the picture without closing the
+   * dialog, and the only honest place for that control is on the thing it acts
+   * on — a "remove picture" button sitting in the body, away from the picture,
+   * is a label you have to read rather than a control you can see.
+   *
+   * Absent for every other dialog and that is the intent: a sign or a delete
+   * dialog shows a candidate the customer already chose, and there is nothing
+   * to swap.
+   */
+  portraitOverlay?: ReactNode;
   busy: boolean;
   onDismiss: () => void;
   children: ReactNode;
@@ -226,6 +241,7 @@ export function CastingModal({
             <img src={portrait} alt="" />
           </span>
         ) : (portraitFallback ?? null)}
+        {portraitOverlay ?? null}
       </div>
       <div className="dpc-modal__body">{children}</div>
     </ModalScrim>

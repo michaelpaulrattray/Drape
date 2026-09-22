@@ -15,6 +15,9 @@ import {
   CONCEPT_CARD_DROP,
   CONCEPT_DROP_LINE,
   CONCEPT_NOT_A_PICTURE,
+  CONCEPT_REMOVE_PICTURE,
+  CONCEPT_REPLACE_CHOOSE,
+  CONCEPT_REPLACE_HINT,
   CONCEPT_REVIEW_ANOTHER,
   CONCEPT_REVIEW_CAST,
   CONCEPT_REVIEW_EMPTY_EXPLAINER,
@@ -1046,5 +1049,81 @@ describe("a refused read keeps her picture and offers a way on", () => {
     expect(empty).toContain("similar");
     expect(empty).toContain("never keep");
     expect(empty).not.toContain("likeness");
+  });
+});
+
+/**
+ * A WAY OFF A PICTURE THAT IS NOT DISCARD (his ask, #1087).
+ *
+ * Verbatim: *"another small QOL thing when uploading a image concept there
+ * should be a way to clear the image without closing the brief like a small x
+ * or something so i can replace the image and or dragging and dropping a new
+ * image over the old one should work also?"*
+ *
+ * Until this, the only exit from a picture in the read state was Discard —
+ * which shuts the dialog and throws the words away — so swapping a photograph
+ * cost the whole road. And the second half of his sentence was not true
+ * either: the dialog BODY and the EMPTY slot were drop targets, the picture
+ * itself was not, so a drop aimed at the picture was swallowed by the page's
+ * own guard and did nothing at all.
+ */
+describe("the picture can be removed or replaced without losing the dialog", () => {
+  it("clears everything about the picture and leaves the dialog standing", async () => {
+    const card = withoutProse(await readFile(CARD, "utf8"));
+    const clear = card.slice(card.indexOf("const clearPicture ="));
+    const body = clear.slice(0, clear.indexOf("};") + 2);
+    /* The whole picture goes — the file, the words read off it, a refusal and
+       the not-a-picture note — or the dialog keeps a claim about something
+       nobody is looking at. */
+    expect(body).toContain("setPicture(null)");
+    expect(body).toContain("setDescription(null)");
+    expect(body).toContain("setFailure(null)");
+    expect(body).toContain("setNotAPicture(false)");
+    /* And the one thing `close` does that this must NOT: shut the dialog. */
+    expect(body).not.toContain("setOpen(false)");
+    /* The staleness guard, same as `close` and `beginRead`: a read still in
+       flight must not land afterwards and describe a picture that is gone. */
+    expect(body).toContain("readId.current += 1");
+    /* It is wired — a control nobody calls does not exist (invariant 7). */
+    expect(card).toContain("onClear={clearPicture}");
+  });
+
+  it("draws the controls on the picture, and only where there is one to act on", async () => {
+    const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
+    /*
+      BOUNDED AT THE NEXT PROP, and that is the arm's own negative control:
+      sliced to the end of the file it swallows the dialog BODY, which carries
+      `{...dropHandlers}` of its own — so a drop target deleted from the
+      picture still read as present. Caught by sabotage, not by review.
+    */
+    const from = review.indexOf("portraitOverlay={");
+    const overlay = review.slice(from, review.indexOf("busy={", from));
+    /* Never over the empty slot, which already says what to do, and never
+       mid-read, where the words are still arriving. */
+    expect(overlay.slice(0, 120)).toContain("preview && !reading");
+    expect(overlay).toContain("onClick={onClear}");
+    /* THE DROP TARGET — the whole point of the layer covering the slot. The
+       picture had none of its own before this. */
+    expect(overlay).toContain("{...dropHandlers}");
+    /* And the picker, so replacing is one tap for anyone who does not drag. */
+    expect(overlay).toContain("picker.current?.click()");
+    /* The LINE stands down on a refusal, where the action row already says
+       "Choose another picture" — the × and the drop target do not. */
+    expect(overlay).toContain("refused ? null : (");
+  });
+
+  it("says out loud that the picture takes a drop", () => {
+    /*
+      The road existed and was invisible, which is the same as not existing
+      (the disappearing-technology law, clause 6). The line is the fix for the
+      half of his ask that was already built.
+    */
+    expect(CONCEPT_REPLACE_HINT.toLowerCase()).toContain("drop");
+    expect(CONCEPT_REPLACE_HINT.toLowerCase()).toContain("replace");
+    expect(CONCEPT_REPLACE_CHOOSE.toLowerCase()).toContain("choose");
+    /* The × is a glyph, so its accessible name is the only thing a reader
+       gets — and it names the object, not the state. */
+    expect(CONCEPT_REMOVE_PICTURE.toLowerCase()).toContain("picture");
+    expect(CONCEPT_REMOVE_PICTURE.toLowerCase()).not.toContain("clear");
   });
 });
