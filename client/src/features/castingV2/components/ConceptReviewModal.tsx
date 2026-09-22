@@ -4,6 +4,9 @@ import {
   CONCEPT_DROP_CHOOSE,
   CONCEPT_DROP_LINE,
   CONCEPT_NOT_A_PICTURE,
+  CONCEPT_REMOVE_PICTURE,
+  CONCEPT_REPLACE_CHOOSE,
+  CONCEPT_REPLACE_HINT,
   CONCEPT_READING_LABEL,
   CONCEPT_REVIEW_ANOTHER,
   CONCEPT_REVIEW_CANCEL,
@@ -20,6 +23,8 @@ import {
   CONCEPT_REVIEW_USE,
   conceptCountLabel,
 } from "../conceptUpload";
+import { X } from "lucide-react";
+
 import { ACCEPTED_PICTURE_FILES } from "../pictureBytes";
 import { ReimagineButton, ReimagineLine, useReimagine } from "./Reimagine";
 import { CastingModal } from "@/foundation/CastingModal";
@@ -86,6 +91,7 @@ export function ConceptReviewModal({
   notAPicture,
   priceCredits,
   onFiles,
+  onClear,
   onRetry,
   onUse,
   onCast,
@@ -110,6 +116,13 @@ export function ConceptReviewModal({
   priceCredits: number;
   /** Files arrived here rather than at the card. The card judges and reads them. */
   onFiles: (files: FileList | null) => void;
+  /**
+   * REMOVE THE PICTURE AND KEEP THE DIALOG (his ask, #1087). Back to the empty
+   * state — the drop zone in the picture's own slot — rather than closed, which
+   * is what Discard does and is what made swapping a photograph cost the whole
+   * road.
+   */
+  onClear: () => void;
   /** Read the SAME picture again — the plain retry his build notes ask for. */
   onRetry: () => void;
   /** Put the words in the brief box and stop. The card decides where they go. */
@@ -255,6 +268,57 @@ export function ConceptReviewModal({
         >
           {CONCEPT_DROP_LINE}
         </span>
+      }
+      /*
+        THE TWO WAYS OFF A PICTURE, ON THE PICTURE (his ask, #1087): *"there
+        should be a way to clear the image without closing the brief like a
+        small x or something so i can replace the image and or dragging and
+        dropping a new image over the old one should work also?"*
+
+        The × removes it and leaves the dialog standing. The line under it is
+        documentation of a road that has worked since #196 and said nothing
+        about itself — this slot is a drop target, and dropping a picture on it
+        replaces the one there — with its second half a real button, so nobody
+        has to drag to get there.
+
+        Drawn only where there is a picture to act on: never over the empty
+        slot, which already says what to do, and never during the read, where
+        the words are still arriving and removing the picture mid-flight would
+        ask a question the progress line has not finished answering.
+      */
+      portraitOverlay={
+        preview && !reading ? (
+          <span className="dpc-modal__pictureacts" {...dropHandlers}>
+            <button
+              type="button"
+              className="dpc-modal__pictureclear"
+              aria-label={CONCEPT_REMOVE_PICTURE}
+              title={CONCEPT_REMOVE_PICTURE}
+              onClick={onClear}
+            >
+              <X size={13} strokeWidth={2} aria-hidden="true" />
+            </button>
+            {/*
+              NOT ON A REFUSAL, where the action row already carries "Choose
+              another picture" two inches away — the same offer twice is a
+              busier dialog, not a clearer one. The × and the drop target both
+              stay: removing the picture and dropping a new one on it are still
+              the fastest ways out of a wall.
+            */}
+            {refused ? null : (
+              <span className="dpc-modal__picturehint">
+                {CONCEPT_REPLACE_HINT}{" "}
+                <button
+                  type="button"
+                  className="dpc-modal__picturepick"
+                  onClick={() => picker.current?.click()}
+                >
+                  {CONCEPT_REPLACE_CHOOSE}
+                </button>
+              </span>
+            )}
+          </span>
+        ) : null
       }
       /*
         NEVER busy. The shell blocks Esc while busy, which is right for a

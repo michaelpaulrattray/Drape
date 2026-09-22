@@ -31,6 +31,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { openPullRequestsVerdict, readOpenPullRequests } from "./lib/cardClaimWarning.mts";
 import { LAW_SURFACES } from "./lib/lawText.mts";
 import { OPEN_QUEUE_LIMIT, bandFromOpenQueue } from "./lib/nextUpItems.mts";
 import { mailboxEntries } from "./lib/mailboxEntries.mts";
@@ -41,6 +42,7 @@ import {
   isUnreadable,
   parseMoneyAuthMap,
   type NextUpRow,
+  type OpenPullRequestLike,
   type PreviousShift,
   type Unreadable,
 } from "./lib/shiftDigest.mts";
@@ -157,6 +159,40 @@ function ghJson(root: string, args: string[]): unknown | Unreadable {
   } catch (error) {
     return { unreadable: `gh failed — ${(error as Error).message.split("\n")[0]}` };
   }
+}
+
+/**
+ * THE OPEN PULL REQUESTS — "is somebody already building this?", asked at the
+ * top of the launch rather than only at the declaration (#1094).
+ *
+ * #1083 put this read into `crew-shift-start.mts`, which fires the moment a
+ * shift DECLARES its card. The digest names the same cards ~30 seconds earlier,
+ * and that is where the choice is actually made — so this is the same question
+ * moved to the place a shift reads first, with the same reader and the same
+ * matcher underneath it (`lib/cardClaimWarning.mts`).
+ *
+ * ⚠ **A FAILED READ IS `Unreadable`, NEVER AN EMPTY LIST.** `readOpenPull-
+ * Requests` returns `null` for absent, unauthenticated, offline or slow, and
+ * `null` mapped to `[]` would render as a clean board — which is precisely the
+ * class this file's `nextUp` docblock exists about. The reason is carried into
+ * the digest as a line the shift can act on.
+ *
+ * `--no-network` is its own reason, for the same rule: a read nobody took is
+ * not a read that found nothing.
+ *
+ * ⚠ **THE JUDGEMENT IS NOT HERE, AND THAT IS DELIBERATE.** Nothing in this
+ * script past a `gh` call is reachable from a suite, so the first shape of this
+ * collector held the `null` → UNREADABLE mapping inline and a sabotage that
+ * collapsed it to `[]` — a failed read rendering as a clean board — broke no
+ * arm. `openPullRequestsVerdict` lives beside the reader in
+ * `lib/cardClaimWarning.mts` where `server/crewShiftCardClaim.test.ts` drives
+ * both directions; what is left here is the call and the root.
+ */
+function openPullRequests(root: string, network: boolean): OpenPullRequestLike[] | Unreadable {
+  /* The ROOT, not the cwd: this script takes `--root`, and a digest that read
+     the pull requests of whatever directory it was launched from would name
+     another repository's branches beside this one's cards. */
+  return openPullRequestsVerdict(network ? readOpenPullRequests(null, root) : null, network);
 }
 
 /* Named, because the truncation marker below compares against it: a read that
@@ -320,6 +356,7 @@ function main(argv: string[]): number {
     const sinceIso = isUnreadable(since) ? null : since.iso;
 
     const queue = nextUp(root, options.network);
+    const openPrs = openPullRequests(root, options.network);
     const closed = closedSince(root, sinceIso, options.network);
 
     digest = buildDigest({
@@ -329,6 +366,7 @@ function main(argv: string[]): number {
       lawSurfaces,
       roots: topLevelDirectories(root),
       nextUp: queue.rows,
+      openPullRequests: openPrs,
       patrolClocks: patrolClocks(root),
       since,
       commits: commitsSince(root, sinceIso),

@@ -259,7 +259,25 @@ export default function CastingV2() {
   });
   const openSessions = trpc.castingV2.openSessions.useQuery(
     {},
-    { enabled: config.data?.enabled === true },
+    {
+      enabled: config.data?.enabled === true,
+      /*
+        A ROLL STARTED AND LEFT SETTLES ON ITS OWN (his bug, #1086): *"when you
+        start a roll off a sheet and exit out before anything generates the card
+        ... needs to appear instantly and show some sort of loading state"*.
+
+        The card appearing is the refetch on arriving here; the tiles turning
+        into faces is this. The roster's own shape, deliberately — poll only
+        while something is actually being cast, and stop the moment nothing is,
+        because this projection runs four queries per sheet (see `discardSheet`
+        below, where that cost was measured at 7.1 seconds on a full lobby).
+      */
+      refetchInterval: (query) =>
+        query.state.data?.some((entry) =>
+          entry.previewTiles.some((tile) => tile.kind === "pending"))
+          ? 5_000
+          : false,
+    },
   );
   const latestSheetId = openSessions.data?.[0]?.sessionId ?? null;
   useEffect(() => {
@@ -1073,17 +1091,49 @@ export default function CastingV2() {
                     tiles keep the candidate 4:5 so they read as the same
                     objects the sheet is made of.
 
-                    A sheet whose candidates have all expired or not landed
-                    shows nothing rather than a row of grey boxes: an empty
-                    strip is quieter than a broken one.
+                    The tiles carry STATE, not only faces (his bug, #1086).
+                    This used to draw ready faces and nothing else, on the
+                    reasoning that "an empty strip is quieter than a broken
+                    one" — and that was the wrong quiet: a card reading "4
+                    rolls" over nothing says the sheet is broken, while a roll
+                    in flight says there is no roll at all. A frame being cast
+                    is drawn as one being cast; a refused one says so.
+
+                    A sheet whose pictures have aged out still shows nothing,
+                    because they DID arrive and no tile here would be true of
+                    them.
                   */}
-                  {entry.previewUrls.length > 0 ? (
+                  {entry.previewTiles.length > 0 ? (
                     <span className="dpc-sheetcard__strip" aria-hidden="true">
-                      {entry.previewUrls.map((url) => (
-                        <span key={url} className="dpc-sheetcard__frame">
-                          <img src={url} alt="" loading="lazy" />
-                        </span>
-                      ))}
+                      {/*
+                        KEYED BY POSITION, and that is a fix rather than a
+                        style choice. This strip was keyed by the image URL,
+                        and React logged *"Encountered two children with the
+                        same key"* the first time two tiles carried one picture
+                        — a duplicate key lets React duplicate or drop a child.
+                        The strip is a fixed, positional list of at most four
+                        frames that re-renders whole, so the index IS the
+                        identity; nothing here is reordered or filtered in
+                        place.
+                      */}
+                      {entry.previewTiles.map((tile, tileIndex) =>
+                        tile.kind === "face" ? (
+                          <span key={`face-${tileIndex}`} className="dpc-sheetcard__frame">
+                            <img src={tile.url} alt="" loading="lazy" />
+                          </span>
+                        ) : (
+                          <span
+                            key={`${tile.kind}-${tileIndex}`}
+                            className="dpc-sheetcard__frame"
+                            data-state={tile.kind}
+                          >
+                            {tile.kind === "pending" ? null : (
+                              <span className="dpc-sheetcard__frameword">
+                                {tile.kind === "refused" ? "Refused" : "Didn't arrive"}
+                              </span>
+                            )}
+                          </span>
+                        ))}
                     </span>
                   ) : null}
                   {/*
@@ -1101,6 +1151,15 @@ export default function CastingV2() {
                   <span className="dp-secondary">
                     {entry.rollCount} roll{entry.rollCount === 1 ? "" : "s"}
                     {entry.keptCount > 0 ? ` · ${entry.keptCount} kept` : ""}
+                    {/*
+                      The strip is decorative (`aria-hidden`), so a reader hears
+                      "4 rolls" and nothing about the work in flight. One word,
+                      the same one the sheet's own tiles use, and it disappears
+                      the moment the roll settles.
+                    */}
+                    {entry.previewTiles.some((tile) => tile.kind === "pending")
+                      ? " · casting…"
+                      : ""}
                     {/*
                       Which one you were last working on, said once and
                       quietly. The row is ordered by activity, so this only

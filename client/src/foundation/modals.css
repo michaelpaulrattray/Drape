@@ -392,6 +392,83 @@
   border-radius: 12px;
   overflow: hidden;
   background: var(--media);
+  /* The anchor for `portraitOverlay` (#1087). Nothing else in this slot is
+     positioned, so it changes no existing dialog. */
+  position: relative;
+}
+
+/*
+  THE CONTROLS THAT LIVE ON A PICTURE (#1087).
+
+  It covers the WHOLE slot rather than hugging the corner, and that is the
+  load-bearing part: this layer is the drop target for replacing the picture.
+  Until now the portrait slot had no drop handling at all once a picture was in
+  it — only the empty slot and the dialog BODY did — so dropping a new picture
+  on the old one did nothing the customer wanted. A picture is the obvious
+  place to aim, so it is a target now.
+
+  Nothing under it is interactive (it is an `<img>`), so covering it costs no
+  affordance.
+*/
+.dpc-modal__pictureacts {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/*
+  The × — top right, on a scrim disc so it survives whatever the customer's
+  own photograph puts behind it. Quiet until it is wanted.
+*/
+.dpc-modal__pictureclear {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--secondary);
+  opacity: 0.82;
+  cursor: pointer;
+  transition: opacity var(--t-fast), color var(--t-fast);
+}
+
+.dpc-modal__pictureclear:hover {
+  opacity: 1;
+  color: var(--ink);
+}
+
+/*
+  The line that says the slot takes a drop. Along the bottom, over a soft
+  wash so it reads on a light photograph as well as a dark one.
+*/
+.dpc-modal__picturehint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 8px 6px;
+  text-align: center;
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--secondary);
+  background: linear-gradient(to top, var(--surface), transparent);
+}
+
+.dpc-modal__picturepick {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
 }
 
 /*

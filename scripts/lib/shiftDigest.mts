@@ -65,6 +65,17 @@
  * carries its failure into the digest as a named line the shift can act on.
  */
 
+/* ⚠ THE ONE IMPORT IN THIS FILE, AND IT IS A REUSE RATHER THAN A CONVENIENCE
+   (#1094). This library is otherwise pure and self-contained. `findCardPull-
+   Requests` is the judgement #1083 already built and drove — does an open pull
+   request name this card, and where — and the whole point of the sweep card is
+   that the answer arrives at the place the CHOICE is made, not only at the
+   place it is declared. A second implementation of "does this PR name #N" is
+   the mirror working law 4 forbids, and this one has a subtlety worth not
+   re-deriving: the branch reading matches a maximal digit RUN, so `#10790` is
+   not `#1079`. */
+import { findCardPullRequests } from "../../shared/crewShiftState.js";
+
 /** A heading- or bullet-delimited chunk of a law surface. */
 export type Section = {
   /** The surface it came from, repo-relative: `CLAUDE.md`. */
@@ -783,6 +794,20 @@ function isoFromStamp(stamp: string): string | null {
   return Number.isNaN(new Date(iso).getTime()) ? null : iso;
 }
 
+/**
+ * An open pull request as the digest needs it — the same shape
+ * `scripts/lib/cardClaimWarning.mts` reads out of `gh`, declared here so this
+ * library's one import stays the JUDGEMENT and not a type graph.
+ */
+export type OpenPullRequestLike = {
+  readonly number?: number;
+  readonly title?: string;
+  readonly url?: string;
+  readonly body?: string;
+  readonly isDraft?: boolean;
+  readonly headRefName?: string;
+};
+
 export type NextUpRow = {
   readonly number: number;
   readonly title: string;
@@ -798,6 +823,24 @@ export type DigestInputs = {
   readonly lawSurfaces: readonly { readonly path: string; readonly text: string }[];
   readonly roots: readonly string[];
   readonly nextUp: NextUpRow[] | Unreadable;
+  /**
+   * THE OPEN PULL REQUESTS, so a NEXT UP row can say whether somebody is
+   * already building it (#1094, the sweep remainder of #1083).
+   *
+   * ⚠ **IT IS REQUIRED, NOT OPTIONAL, AND THAT IS THE POINT.** #1083's finding
+   * is that "is it open" and "is somebody building it" are two questions and
+   * only the first was ever asked; an optional field would let a caller ask
+   * neither and render exactly like a caller that asked and found a clean
+   * board. Three states, kept apart in the output: claimed, read-and-clean,
+   * and UNREAD — the third being the one this file's header is about.
+   *
+   * ⚠ **The digest WARNS and never refuses.** #1083 ruled that before it was
+   * built: an open PR naming a card may be the shift's own follow-up, a
+   * finished half, or somebody else mid-build, and a reader that stops a shift
+   * finishing its own card's second half costs more than the duplicate it
+   * prevents. The line names the PR; the shift decides.
+   */
+  readonly openPullRequests: OpenPullRequestLike[] | Unreadable;
   /** `patrol-clocks.mts`'s own output, embedded rather than reimplemented. */
   readonly patrolClocks: string | Unreadable;
   readonly since: PreviousShift | Unreadable;
@@ -897,10 +940,49 @@ export function buildDigest(inputs: DigestInputs): string {
     out.push("NEXT UP: EMPTY — no open `founder-ordered` card, and the open queue was read to confirm it.");
   } else {
     out.push(`NEXT UP: ${inputs.nextUp.length} open \`founder-ordered\` card(s), oldest first:`);
+    const prs = inputs.openPullRequests;
+    let claimedAny = false;
     for (const row of [...inputs.nextUp].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) {
       const labels = row.labels.filter((label) => label !== "founder-ordered");
       out.push(
         `  #${row.number}  ${row.createdAt.slice(0, 10)}  ${row.title}${labels.length > 0 ? `  [${labels.join(", ")}]` : ""}`,
+      );
+      if (isUnreadable(prs)) continue;
+      const claimed = findCardPullRequests(prs, `#${row.number}`);
+      if (claimed.length === 0) continue;
+      claimedAny = true;
+      for (const { pr, where } of claimed) {
+        out.push(
+          `    ⚠ ALREADY BEING BUILT? PR #${pr.number ?? "?"}${pr.isDraft ? " (draft)" : ""}`
+          + ` is open and names this card in its ${where.join(" and ")} — ${pr.url ?? "no url"}`,
+        );
+      }
+    }
+    /* ⚠ THE THREE ANSWERS ARE KEPT APART, WHICH IS THE WHOLE OF #1083's FINDING
+       CARRIED ONE STEP EARLIER. A claimed card, a board read and clean, and a
+       board NOBODY READ are three different facts, and the last two look
+       identical to any renderer that says nothing when it has nothing to say —
+       the same trap this file's header names at #504 and the queue read. So the
+       clean case costs one line on purpose. */
+    if (isUnreadable(prs)) {
+      out.push(
+        "  ⚠ THE OPEN PULL REQUESTS COULD NOT BE READ, so nobody checked whether any card above is",
+      );
+      out.push(`    already being built — ${prs.unreadable}`);
+      out.push(
+        "    That is not a clean board, it is an unread one (`gh auth status`). Check by hand before",
+      );
+      out.push("    you cut a branch: `gh pr list --state open`.");
+    } else if (!claimedAny) {
+      out.push(
+        `  ✓ No open pull request names any card above (${prs.length} open PR(s) read).`,
+      );
+    } else {
+      out.push(
+        "  ⚠ An open PR naming a card is a WARNING, never a refusal (#1083): it may be your own",
+      );
+      out.push(
+        "    follow-up, a finished half, or another seat mid-build. READ IT before you cut a branch.",
       );
     }
     if (inputs.truncated?.nextUp) {
