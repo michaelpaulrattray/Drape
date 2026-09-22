@@ -28,6 +28,7 @@ import { join, resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { readListedSource } from "./testing/listedSource";
 import {
   cardNumberOf,
   findCardPullRequests,
@@ -492,6 +493,13 @@ describe("the conflict vocabulary has exactly one declaration", () => {
       if (entry.isDirectory()) {
         if (entry.name === "node_modules") continue;
         out.push(...sources(rel));
+      /* ⚠ A SHIFT'S OWN DISPOSABLE IS NOT PRODUCTION AND IS NOT SWEPT. This
+         walks the real `scripts/`, which in a working tree carries hundreds of
+         untracked `_*-disposable.mts` throwaways (#8) — one of them reading a
+         PR's state by hand would redden an unrelated shift's suite over a file
+         nobody will ever merge. CI never sees them at all. */
+      } else if (entry.name.startsWith("_")) {
+        continue;
       } else if (/\.(ts|mts)$/.test(entry.name) && !/\.test\.(ts|mts)$/.test(entry.name)) {
         out.push(rel);
       }
@@ -500,6 +508,12 @@ describe("the conflict vocabulary has exactly one declaration", () => {
   };
 
   const population = [...sources("scripts"), ...sources("shared")];
+  /* ⚠ `readListedSource`, never a bare `readFileSync` (#223): this walks the
+     REAL `scripts/` directory, which carries hundreds of untracked disposables
+     and is churned by parallel suites — a file listed a moment ago can be gone
+     at the read, and the ENOENT refuses the deploy rite on a clean tree. A
+     `null` is skipped; it is a file that was not there, not an empty one. */
+  const sourceOf = (rel: string): string | null => readListedSource(resolve(root, rel));
 
   /* POSITIVE CONTROL, and it is the arm that keeps this honest: the pattern
      must MATCH the declaration. A regex that matches nothing passes the sweep
@@ -507,13 +521,15 @@ describe("the conflict vocabulary has exactly one declaration", () => {
      months. */
   it("the pattern finds the declaration itself", () => {
     expect(population).toContain(DECLARATION);
-    expect(COMPARISON.test(readFileSync(resolve(root, DECLARATION), "utf8"))).toBe(true);
+    const declaration = sourceOf(DECLARATION);
+    expect(declaration, "the declaration is tracked and cannot vanish mid-walk").not.toBeNull();
+    expect(COMPARISON.test(declaration!)).toBe(true);
   });
 
   it("⚠ no file outside the declaration spells the rule for itself", () => {
     const offenders = population
       .filter((rel) => rel !== DECLARATION)
-      .filter((rel) => COMPARISON.test(readFileSync(resolve(root, rel), "utf8")));
+      .filter((rel) => COMPARISON.test(sourceOf(rel) ?? ""));
     expect(offenders, `call readPullRequestConflict() instead: ${offenders.join(", ")}`).toEqual([]);
   });
 
@@ -532,13 +548,12 @@ describe("the conflict vocabulary has exactly one declaration", () => {
       board, which is the same derived-population mistake this card is about.
     */
     const reads = (rel: string): boolean => {
-      const source = readFileSync(resolve(root, rel), "utf8");
+      const source = sourceOf(rel) ?? "";
       return /readPullRequestConflict\(/.test(source)
         || /from "[^"]*crewShiftState(\.js)?"/.test(source)
         || /from "[^"]*prMergeOrder\.mts"/.test(source);
     };
-    const asks = (rel: string): boolean =>
-      /"pr",\s*"(view|list)"/.test(readFileSync(resolve(root, rel), "utf8"));
+    const asks = (rel: string): boolean => /"pr",\s*"(view|list)"/.test(sourceOf(rel) ?? "");
 
     const callers = population.filter((rel) => reads(rel) && asks(rel));
     /* The four measured on 2026-09-23: gate-stall-check, crew-desk-sweep,
@@ -547,7 +562,8 @@ describe("the conflict vocabulary has exactly one declaration", () => {
     expect(callers.length).toBeGreaterThanOrEqual(4);
 
     for (const rel of callers) {
-      const source = readFileSync(resolve(root, rel), "utf8");
+      const source = sourceOf(rel);
+      if (source === null) continue;
       const lists = [...source.matchAll(/"--json",\s*"([^"]+)"/g)].map((m) => m[1]!);
       expect(lists.length, `${rel} reads PRs but no --json list was found`).toBeGreaterThan(0);
       expect(

@@ -322,6 +322,19 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
     "cannotSayCopy.ts — the cannot-say copy table, by fixed name",
     "CAPABILITY_JSON — the committed atlas, behind existsSync in readCommittedAtlas",
   ],
+  /*
+     It joined this class with #1103's vocabulary sweep, which lists `scripts/`
+     and `shared/`. That WALK goes through `readListedSource`; these four are
+     FIXED names — tracked source files the arms are about — and each must keep
+     throwing, because a guard that quietly skips the file it exists to read
+     reports a clean tree by going blind.
+  */
+  "server/crewShiftCardClaim.test.ts": [
+    "scripts/shift-digest.mts — the digest's own claim block, by fixed name",
+    "scripts/crew-shift-start.mts — the shift-start wiring, by fixed name",
+    "scripts/lib/cardClaimWarning.mts — the renderer under test, by fixed name",
+    "the three PR_CONFLICT_NOTE callers, a hand-kept three-name list",
+  ],
   "server/changeRequestLabels.test.ts": [
     "SOURCE_OF_TRUTH — shared/changeRequestLabels.ts by fixed name, the one"
     + " declaration this suite exists to protect; if it has gone the guard has"
