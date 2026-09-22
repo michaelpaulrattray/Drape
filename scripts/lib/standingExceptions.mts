@@ -43,6 +43,14 @@ import {
   sortOrderedBand,
 } from "./orderedBand.mts";
 import { OPEN_QUEUE_LIMIT, emptyOrderedBandVerdictOnLabels } from "./nextUpItems.mts";
+
+import {
+  openPullRequestsVerdict,
+  readOpenPullRequests,
+  type OpenPullRequest,
+} from "./cardClaimWarning.mts";
+import { isUnreadable, type Unreadable } from "./shiftDigest.mts";
+import { findCardPullRequests } from "../../shared/crewShiftState.js";
 /**
  * How many open cards the queue read may hold before this reading is
  * INCOMPLETE. ⚠ It counted ONE BAND until #774 widened the fetch; it counts the
@@ -173,8 +181,28 @@ export function orderedBandRunningOrder(rows: readonly Row[]): Row[] {
   );
 }
 
-function rowLines(rows: readonly Row[], ownLabel: string, now: Date): string[] {
+/**
+ * ⚠ **THIS VIEW OFFERS A CARD AND NEVER SAID WHETHER SOMEBODY IS BUILDING IT**
+ * — #1094's sweep remainder, and #1083's class one reader along.
+ *
+ * The night of 2026-09-22 is the measurement: a shift ran this script at
+ * 18:48Z, was shown **#1090 as his top ordered card with no annotation at
+ * all**, and a COMPLETE pull request had been open on it since 14:47Z. The
+ * shift only knew because the digest — patched hours earlier for exactly this
+ * — warned it thirty seconds before. **Two shifts before that one stood off
+ * for a reason they read in a handoff rather than in a tool.**
+ *
+ * `claimedAny` comes back with the lines because the footer must tell the
+ * three answers apart, and only the caller can see both bands at once.
+ */
+function rowLines(
+  rows: readonly Row[],
+  ownLabel: string,
+  now: Date,
+  prs: readonly OpenPullRequest[] | Unreadable,
+): { lines: string[]; claimedAny: boolean } {
   const lines: string[] = [];
+  let claimedAny = false;
   for (const [index, row] of rows.entries()) {
     const age = Math.floor(
       (now.getTime() - Date.parse(row.createdAt)) / (24 * 60 * 60 * 1000),
@@ -192,8 +220,16 @@ function rowLines(rows: readonly Row[], ownLabel: string, now: Date): string[] {
       .map((label) => label.name)
       .filter((name) => name !== ownLabel);
     if (others.length > 0) lines.push(`      labels: ${others.join(", ")}`);
+    if (isUnreadable(prs)) continue;
+    for (const { pr, where } of findCardPullRequests(prs, `#${row.number}`)) {
+      claimedAny = true;
+      lines.push(
+        `      ⚠ ALREADY BEING BUILT? PR #${pr.number ?? "?"}${pr.isDraft ? " (draft)" : ""}`
+        + ` names this card in its ${where.join(" and ")} — ${pr.url ?? "no url"}`,
+      );
+    }
   }
-  return lines;
+  return { lines, claimedAny };
 }
 
 export const PATROL_POINTER = "npx tsx scripts/patrol-clocks.mts";
@@ -206,8 +242,13 @@ export function renderBands(input: {
   ordered: readonly Row[];
   urgent: readonly Row[];
   now: Date;
+  /** REQUIRED on purpose (#1094): optional, a caller that forgot it would
+   *  silently print the un-annotated ranking this change exists to end, and
+   *  every arm would stay green. */
+  openPullRequests: readonly OpenPullRequest[] | Unreadable;
 }): string[] {
-  const { ordered, urgent, now } = input;
+  const { ordered, urgent, now, openPullRequests: prs } = input;
+  let claimedAny = false;
   const out: string[] = [
     "STANDING EXCEPTIONS — derived from the queue, never a second list",
     `read ${now.toISOString()} · ${ordered.length} ordered · ${urgent.length} urgent`,
@@ -231,14 +272,43 @@ export function renderBands(input: {
   if (ordered.length === 0) {
     out.push("  (empty — no open card carries `founder-ordered`.)");
   } else {
-    out.push(...rowLines(orderedBandRunningOrder(ordered), "founder-ordered", now));
+    const cut = rowLines(orderedBandRunningOrder(ordered), "founder-ordered", now, prs);
+    claimedAny = claimedAny || cut.claimedAny;
+    out.push(...cut.lines);
   }
 
   out.push("", "THE URGENT BAND — standing exception 1");
   if (urgent.length === 0) {
     out.push("  (empty — no open card carries `urgent`.)");
   } else {
-    out.push(...rowLines(oldestFirst(urgent), "urgent", now));
+    const cut = rowLines(oldestFirst(urgent), "urgent", now, prs);
+    claimedAny = claimedAny || cut.claimedAny;
+    out.push(...cut.lines);
+  }
+
+  /*
+    ⚠ THE THREE ANSWERS ARE KEPT APART, and the clean one costs a line on
+    purpose — #1083's finding, carried to the band view. A card somebody is
+    building, a board read and found clean, and a board NOBODY READ are three
+    different facts, and the last two render identically in any view that stays
+    silent when it has nothing to say. That is the shape #504 names at the
+    NEXT UP read and #774 named at this file's own empty band.
+  */
+  out.push("");
+  if (isUnreadable(prs)) {
+    out.push(
+      "⚠ THE OPEN PULL REQUESTS COULD NOT BE READ, so nobody checked whether any card above",
+      `  is already being built — ${prs.unreadable}`,
+      "  That is not a clean board, it is an unread one (`gh auth status`). Check by hand before",
+      "  you cut a branch: `gh pr list --state open`.",
+    );
+  } else if (claimedAny) {
+    out.push(
+      "⚠ An open PR naming a card is a WARNING, never a refusal (#1083): it may be your own",
+      "  follow-up, a finished half, or another seat mid-build. READ IT before you cut a branch.",
+    );
+  } else {
+    out.push(`✓ No open pull request names any card above (${prs.length} open PR(s) read).`);
   }
 
   out.push(
@@ -277,11 +347,22 @@ export function report(input: {
   /** ONE whole-queue read, not one per band (#774, PR #775 review finding 1).
    *  See `deriveBands` for why the shape changed. */
   readOpenQueue: () => readonly Row[];
+  /**
+   * IS SOMEBODY ALREADY BUILDING IT (#1094). A PARAMETER for the same reason
+   * the band reader is one: a wiring asserted by a source grep is not
+   * asserted, and this read has THREE outcomes rather than two.
+   *
+   * ⚠ **It must NEVER refuse.** The queue read above refuses because an
+   * empty ranking is a lie; this one degrades, because a shift that cannot
+   * reach GitHub still needs to see the ranking. Its failure is a LINE, not an
+   * exit code — which is exactly why the unreadable case has to print.
+   */
+  readOpenPullRequests: () => readonly OpenPullRequest[] | Unreadable;
   now: Date;
   log: (line: string) => void;
   error: (line: string) => void;
 }): number {
-  const { readOpenQueue, now, log, error } = input;
+  const { readOpenQueue, readOpenPullRequests: readPrs, now, log, error } = input;
   let ordered: readonly Row[];
   let urgent: readonly Row[];
   try {
@@ -317,6 +398,17 @@ export function report(input: {
     return 1;
   }
 
-  for (const line of renderBands({ ordered, urgent, now })) log(line);
+  /* Never lets a PR-read failure take the ranking down with it — see the
+     parameter's own note. A throw here becomes the unreadable LINE. */
+  let openPullRequests: readonly OpenPullRequest[] | Unreadable;
+  try {
+    openPullRequests = readPrs();
+  } catch (failure) {
+    openPullRequests = {
+      unreadable: `the open-PR read threw: ${String(failure instanceof Error ? failure.message : failure)}`,
+    };
+  }
+
+  for (const line of renderBands({ ordered, urgent, now, openPullRequests })) log(line);
   return 0;
 }
