@@ -1,7 +1,7 @@
 {
-  "edition": 470,
-  "updatedAt": "2026-09-22T11:54:14.851Z",
-  "shift": "THE ROLL-ENGINE COURT RAN — YOUR CYBORG, SAME WORDS, THREE ENGINES. THREE STRIPS ARE IN YOUR EYE GALLERY; YOUR EYE DECIDES.\n\nA relay edition on your word (\"well are we not running gpt image 2.5 to see whats better?\") and the rule you set the same hour: a court never waits for your word on spend.\n\n1. Roll 266 is your cyborg brief on the register as it stands: creature lane, eight of eight delivered on GPT Image 2. Its one compiled prompt — the exact 4,310 characters the engine received — was rendered eight more times on each of the two GPT Image 2.5 models fal offers, Flare and Sunburst, at the same size and quality. Same words, same settings; only the engine changed.\n\n2. The numbers beside the frames: 24 tiles, 0 refusals on any engine. Flare took about 20 seconds a tile, Sunburst about 23; the whole eight-tile arm took 60 and 67 seconds of wall time at three in flight. GPT Image 2's roll took your usual time. Price: GPT Image 2 is measured at about ten cents a tile; fal lists 2.5 by quality and size and the medium 1024×1536 figure was not on the page we could read, so the sixteen renders are stated as cents, not a number — the receipt will say.\n\n3. What you are judging (card 1068): the two bars N1 has always been judged on — does the sheet reach your raw prompt's conviction, and is the spread across the eight enough — now with the engine as the variable. Nothing is wired: the register still renders on GPT Image 2. If an engine wins at your eye it becomes a ratchet decision on N1, not a rebuild.\n\nSpent: sixteen renders on fal, cents. Nothing else moved.",
+  "edition": 471,
+  "updatedAt": "2026-09-22T13:20:00.000Z",
+  "shift": "YOUR ROLLS ARE ON FLARE, AND TWO GUARDS NOW STOP A FOLLOW BEING ANSWERED BY THE OTHER ENGINE.\n\nA night shift on your Flare order. Two seats reached for the same card at the same minute, which is worth telling you plainly rather than tidying away.\n\n1. The switch is LIVE and I checked it at the machine rather than at anyone's report: the running build is the one carrying it, and the live setting names your account and nobody else. Your rolls render on GPT Image 2.5 Flare; everyone else's are exactly what they were. Nothing on any screen says an engine's name.\n\n2. THE DUPLICATE, AND IT IS MINE TO OWN. Another seat opened its request at 12:40 and merged at 12:48; I opened my shift on the same card at 12:47 and built it again, because the card was clean, the queue was clean, and nothing a shift reads at the start shows a request already open. About half an hour of one session. The fix for it is filed as a process card for the weekly review, with the timestamps.\n\n3. WHAT SURVIVED, AND IT IS NOT NOTHING. When you press Follow on a Flare face, that face goes to the engine as an attachment - and it has to go to FLARE's door. I changed the code to send it to the other engine's door instead, deliberately, and ran everything: 5,690 checks passed and not one complained. The same was true of giving Flare its own share of the provider's allowance, which would quietly have taken 16 of the 20 requests we are allowed in flight - the fault that once brought your fresh casts back with no eyes or ears. Both now have a check that reads what actually leaves the building, not what the code says it intends to send. Merged and live.\n\n4. YOU HAVE SINCE SAID FLARE IS PRODUCING BAD RESULTS and asked for Sunburst. That card is at the top of your list and the relay is already building it - I stood off it rather than repeat this morning's mistake, and left the one note on it that saves a round: the guards above need two words changed to follow the new switch. Your three Flare rolls are the evidence: two came back complete, and the third had four of its eight refused by Flare's own filter on a 237-character brief. The court's sixteen tiles refused nothing, so that is a thing only your own rolls could have found.\n\nSpent: nothing. No render, no credit, no model call.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-22T11:50:16.004Z",
+      "readAt": "2026-09-22T13:16:20.851Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5176,6 +5176,20 @@
   ],
   "pipeline": [
     {
+      "id": "flare-engine-live-1079",
+      "title": "Your rolls render on GPT Image 2.5 Flare - live on your account, and nothing on screen names it",
+      "status": "merged",
+      "prNumber": 1080,
+      "note": "Built by the other seat; verified here at the artifacts rather than taken from its report. The running build is e5b5c306 (read at the health check) and the live setting is your account alone, read at the service's own variables. Same words, same sheet, same price to you.\n\nWHY IT MOVED: your eye on the three strips - \"honestly flare gave good results\", then \"switch to flare and let me roll some\". Not a benchmark, not a claim from us.\n\nWHAT IS STILL UNREAD, said out loud: what Flare costs us a picture, and how often it refuses a brief anything refuses. Both come off your own rolls, and the first of your rolls has already answered the second."
+    },
+    {
+      "id": "flare-wire-arms-1082",
+      "title": "Two guards so a Follow on a Flare sheet cannot be answered by the other engine's face",
+      "status": "merged",
+      "prNumber": 1082,
+      "note": "Live at 13:16 (build 55e5e826, read at the health check with 28 seconds' uptime - the new process, not the old one still answering). Checks only; nothing a customer touches changed.\n\nWHAT IT PREVENTS: a Follow sends your chosen face to the engine as an attachment. It must go to Flare's own door. I broke that on purpose and ran everything - 5,690 checks passed in silence. The second one is quieter: giving Flare its own share of the provider's allowance would have had the casting road claiming 16 of the 20 requests we may have in flight, which is the fault that once brought your fresh casts back missing eyes, brows and ears. That also passed 5,690 checks.\n\nWHY THEY WERE MISSING: the existing checks read what the code SAYS it will send. These read what actually leaves the building. It is a house rule here and it earned its place again today."
+    },
+    {
       "id": "repaint-our-fault-1072",
       "title": "A refine that fails on our paperwork stops saying it is your cast's fault",
       "status": "merged",
@@ -7837,7 +7851,13 @@
     194
   ],
   "nextUp": {
-    "readAt": "2026-09-22T11:50:16.003Z",
-    "items": []
+    "readAt": "2026-09-22T13:16:20.851Z",
+    "items": [
+      {
+        "issueNumber": 1084,
+        "title": "N1: the roll engine becomes a choice — CASTING_ROLL_ENGINE_SCOPE + CASTING_ROLL_ENGINE_MODEL, Sunburst on his account (his word after three Flare rolls: 'flare is producing bad results')",
+        "urgent": false
+      }
+    ]
   }
 }
