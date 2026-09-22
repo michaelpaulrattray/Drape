@@ -1622,6 +1622,73 @@
 }
 
 /*
+  THE FRAMES THAT ARE NOT FACES YET, OR NEVER WILL BE (#1086).
+
+  Same 4:5 frame, same seam, so the strip still reads as a row of the objects
+  the sheet is made of rather than as a row of error boxes. The difference
+  between the two states is one step of ink and a word — a colour or an icon
+  here would make a lobby card shout about a slice the owner has probably
+  already seen answered on the sheet itself.
+*/
+.dpc-sheetcard__frame[data-state] {
+  display: grid;
+  place-items: center;
+  padding: 2px;
+}
+
+/*
+  Being cast: the foundation's own skeleton sweep, in the frame's shape.
+
+  It is the `.dp-skeleton` construction (`--fill` under a `dp-sweep` gradient)
+  rather than a local imitation, so a loading frame on the lobby moves exactly
+  like a loading tile on the sheet — but written here rather than by wearing
+  the class, because `.dp-skeleton` brings a radius and a border of its own and
+  the strip's whole seam is one hairline between frames.
+
+  It was first drawn as a dimming pulse over `--media`, and the photograph
+  settled it: four of them read as an EMPTY strip, which is the very thing this
+  card was reported for. A frame being cast has to look like work happening.
+*/
+.dpc-sheetcard__frame[data-state="pending"] {
+  position: relative;
+  overflow: hidden;
+  background: var(--fill);
+}
+
+/*
+  The band is `--dots` — the token whose stated job is "tile gradient" — and
+  not `.dp-skeleton`'s `--surface`. Read at the values and then at the frames:
+  in dark, `--surface` (#1C1C1F) is DARKER than `--fill` (#232326), so the
+  foundation's sweep loses most of itself on a dark page, while `--dots` sits
+  clear of the fill in BOTH themes (#DEDEE2 over #F4F4F6, #3A3A42 over
+  #232326). The foundation's own skeleton is left exactly as it is: it is on
+  every loading surface in the product and changing it is not this card.
+*/
+.dpc-sheetcard__frame[data-state="pending"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent, var(--dots), transparent);
+  opacity: 0.6;
+  animation: dp-sweep 1.5s ease-in-out infinite;
+}
+
+/* No motion: the frame still has to differ from an empty one, so it keeps the
+   fill and loses only the sweep. */
+@media (prefers-reduced-motion: reduce) {
+  .dpc-sheetcard__frame[data-state="pending"]::after { animation: none; }
+}
+
+.dpc-sheetcard__frameword {
+  color: var(--faint);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  line-height: 1.2;
+  overflow: hidden;
+}
+
+/*
   WHERE THE TRIGGER SITS. Both card kinds pin it to the top-right corner; the
   room's header sits it inline beside the name.
 
