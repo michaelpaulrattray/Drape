@@ -1,7 +1,7 @@
 {
-  "edition": 473,
-  "updatedAt": "2026-09-22T15:15:00.000Z",
-  "shift": "TWO THINGS YOU ASKED FOR TONIGHT ARE LIVE - AND ONE OF THEM WAS NOT WORKING AT ALL, WHICH THE CARD DID NOT KNOW.\n\nBoth of your small asks from this evening are built, merged and on the live site. I read the running build at the machine after each one rather than trusting the merge: the sheet-card fix is on production as build 7409b131, and the concept-picture fix as 6b2e8381, each with a fresh process behind it.\n\n1. YOUR UNSIGNED SHEETS SHOW WHAT IS HAPPENING NOW. Until tonight a sheet card drew finished faces and nothing else - so a sheet still being cast and a sheet the engine had refused BOTH came out as \"4 rolls\" over an empty strip. One reads as no roll at all, the other reads as broken. That was your screenshot. Now the strip has a frame for every picture: a face where there is one, a frame visibly being made while one is coming, \"Refused\" where the engine's filter said no, \"Didn't arrive\" for anything else, and the card's line says \"casting...\" while work is in flight. Faces still come first, so nothing that shows on a card today stops showing.\n\nAnd the other half of your sentence - start a roll, leave, and the card should appear and settle by itself. It does: with the lobby open and nothing touched, a sheet caught up 2.6 seconds after its pictures landed. When nothing is being cast the lobby asks for nothing at all, so this costs you no speed.\n\n2. THE CONCEPT PICTURE HAS AN X NOW - AND DRAGGING A NEW PICTURE OVER THE OLD ONE NEVER WORKED. The card said it probably worked already and only needed to be made visible. It did not work at all: the dialog took a drop on its body and on its empty slot, never on the picture itself, and a file dropped anywhere else is swallowed on purpose - the browser's own default there is to navigate away and take your brief with it. So the obvious place to aim was the one place that did nothing. I proved that both ways in one run, before and after the change. The x removes the picture and its words and leaves the dialog standing; the line under the picture now says you can drop another one there, or choose one.\n\n3. A SMALL FAULT FOUND ON THE WAY AND FIXED: two tiles carrying the same picture made the page complain about duplicate keys, which is the kind of thing that lets a browser drop or double a frame. It predates tonight.\n\nSpent: nothing on renders or credits. A handful of house text calls to drive the concept dialog against the real reader, well under a dollar.\n\nFour frames are in your gallery below - both fixes, in light and dark.",
+  "edition": 474,
+  "updatedAt": "2026-09-22T16:20:00.000Z",
+  "shift": "NOTHING CHANGED ON YOUR SCREEN TONIGHT - THE THING THAT CHANGED IS THAT THE NIGHT TEAM CAN NO LONGER BUILD THE SAME JOB TWICE.\n\nOne fix, merged and live. It is not a product change and you will not see it anywhere in the app; it is a fix to how the night shifts pick up work, and it came from the team catching itself.\n\nWHAT WENT WRONG, EARLIER THIS WEEK. A night shift picked up a job off the list, spent thirty-five minutes building it, and then found the same thing had already been built and shipped seven minutes before it started. Nobody did anything wrong. The job still looked open on the list, because the list only knows whether a job is FINISHED - it has never known whether somebody is currently DOING it. That is thirty-five minutes of a night, and it was luck rather than design that it was not longer.\n\nWHAT IT DOES NOW. The moment a shift says which job it is taking, it looks at the work already in progress and says so: \"a piece of work is already open on this one - here it is, go and read it.\" It warns rather than blocking, on purpose. Sometimes the open piece of work is the shift's own second half, and a hard block there would stop honest work as often as it stopped a duplicate - so it names it and lets the shift decide.\n\nIt was tested against your real board while it was being built, and it caught a real one: it named the work already open on the receipt-line and sheet-scroll job you asked for last night, which is exactly the collision it exists to prevent.\n\nONE THING I DELIBERATELY DID NOT DO. There is a tidy-up job waiting - a leftover field in the casting lobby that nothing reads any more. It is three deletions. I left it, and wrote on the card why: removing it while somebody still has a lobby tab open from before this afternoon's deploy would white-screen that tab rather than just emptying a strip. It is safe to do tomorrow and it costs nothing to wait.\n\nNothing here needs you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-22T15:12:28.839Z",
+      "readAt": "2026-09-22T16:12:00.739Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5186,7 +5186,7 @@
       "id": "gpt25-roll-court-1068-strips",
       "title": "Your cyborg, one prompt, three engines — GPT Image 2 (roll 266) against GPT Image 2.5 Flare and Sunburst",
       "question": "WHAT YOU ARE JUDGING — the same 4,310-character prompt your roll 266 sent, rendered eight times on each engine at the same size and quality. Row one is roll 266 itself (the sheet you have). Row two is GPT Image 2.5 Flare. Row three is GPT Image 2.5 Sunburst. Judge each row on N1's two bars: does it reach the conviction of your raw brief (bald, mid-40s, weathered porcelain skin, severe bone structure, the implant ports above the right temple, scalp seams, jaw plate, studs below the ears, the amber-red right eye, augmentation integrated not worn), and is the spread across the eight enough? No refusals on any engine; Flare ~20 s a tile, Sunburst ~23 s. One word per row is enough — pass, or what it misses.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-22T11:54:14.851Z",
       "issueNumber": 1068,
       "cardId": null,
@@ -5215,6 +5215,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "card-claim-warning-1083",
+      "title": "The night team can no longer start a job somebody is already building",
+      "status": "merged",
+      "prNumber": 1093,
+      "note": "Not a product change - you will see nothing in the app. Earlier this week a shift spent thirty-five minutes rebuilding something that had shipped seven minutes before it started, and nothing it read could have told it: the job list knows whether a job is finished, never whether somebody is doing it right now.\n\nNow, at the moment a shift declares which job it is taking, it reads the work already in progress and names anything open on that job - which piece, and where the job number appeared. It warns instead of blocking, because an open piece of work is sometimes the shift's own follow-up, and blocking there would stop honest work as often as a duplicate.\n\nDriven against your real board both ways before it merged: it named the open work on last night's receipt-line job, and stayed silent on a job that had none. If the check itself cannot run, it says so rather than reporting a clear board - an unread board and a clear one must never look the same.\n\nFour more places still hand a shift a job without asking this question, and the most expensive of them can spend a Fable session on one. Measured and filed as its own card rather than quietly left."
+    },
     {
       "id": "sheet-card-states-1086",
       "title": "Your unsigned sheets show a roll that is being cast, and one that was refused - instead of an empty card",
@@ -7099,6 +7106,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0923-foreman",
+      "severity": "info",
+      "state": "resolved",
+      "title": "The queue: 37 open, your list has one job on it and the relay is already building it, none urgent. No check-up clock fires before tomorrow.",
+      "detail": "Read at 16:09, after tonight's merge. 37 open cards - one closed tonight and two filed, both of them findings from the job I did rather than new ideas. Your own ordered list has exactly one job on it, last night's receipt-line and sheet-scroll fix, and the relay has work open on it already, so no night shift should touch it. Nothing is marked urgent.\n\n21 cards have had no comment, close, reopen or commit for a week or more, up from 17 last night. That figure counts real activity only, so a label edit does not reset it, and it over-reports on purpose. Most of that 21 is the roadmap - jobs waiting for a rung of the plan rather than jobs anyone is neglecting; the oldest is a design direction you endorsed in August that was never turned into a build order.\n\nThe tidy-up clocks: the Janitor is due tomorrow, the other three on the 26th and 27th. None fires tonight."
+    },
+    {
       "id": "queue-shape-0922b-foreman",
       "severity": "info",
       "state": "resolved",
@@ -7906,7 +7920,7 @@
     195
   ],
   "nextUp": {
-    "readAt": "2026-09-22T15:12:28.838Z",
+    "readAt": "2026-09-22T16:12:00.738Z",
     "items": [
       {
         "issueNumber": 1090,
