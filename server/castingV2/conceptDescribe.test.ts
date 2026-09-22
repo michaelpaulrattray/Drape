@@ -19,6 +19,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   BUILD_FAMILIES,
   CONCEPT_DESCRIPTION_MAX,
+  CONCEPT_DESCRIPTION_MAX_RETRY,
   CONCEPT_DESCRIPTION_MIN,
   CONCEPT_DESCRIPTION_TARGET,
   GOLDEN_NOTES,
@@ -592,7 +593,7 @@ describe("the reader", () => {
     hit, and asserts the sentence she is shown — a `reason` arm alone would
     pass while the words stayed false, which is how the defect survived.
   */
-  it("calls prose that overran by a rounding LONG, never a list of details", async () => {
+  it("takes prose that overran by a rounding on the SECOND read — his 'wider' ruling", async () => {
     /* 336 characters — inside the 304–350 band every one of his six long reads
        landed in, and nothing like the 1,082-character inventory above. */
     const overByARounding = said(
@@ -601,14 +602,48 @@ describe("the reader", () => {
     const text = JSON.parse(overByARounding).description as string;
     expect(text.length, "the fixture must sit in the band his own reads hit").toBe(336);
     expect(text.length).toBeGreaterThan(CONCEPT_DESCRIPTION_MAX);
+    expect(text.length).toBeLessThanOrEqual(CONCEPT_DESCRIPTION_MAX_RETRY);
 
-    expect(await describeConcept({ ...PICTURE, engine: engineSaying(overByARounding, overByARounding) }))
-      .toEqual({ ok: false, reason: "ran_long", attempts: 2 });
+    /* THE WAY IN IS UNMOVED: the same 336 characters are still sent back on the
+       FIRST read. This arm is the load-bearing half of his ruling — an
+       implementation that widened both ceilings would pass the acceptance arm
+       below and silently give back the anti-clone bound. */
+    const engine = engineSaying(overByARounding, overByARounding);
+    expect(await describeConcept({ ...PICTURE, engine }))
+      .toEqual({ ok: true, description: text, attempts: 2 });
+    expect(engine.sent.length, "it was still sent back once").toBe(2);
+    expect(engine.sent[1]!.user, "and the re-ask named the length").toContain("336");
+  });
 
+  /*
+    ⚠ **THE SENTENCE #1067 WAS FILED ABOUT — PROSE IS NEVER CALLED A LIST.**
+    His own upload on 2026-09-22 came back at 350 then 307 characters
+    (correlation `req_1cb9b3348553`, production) and he was told his reader had
+    produced "a list of details". It had produced seven characters too many.
+    A `reason` arm alone would pass while the words stayed false, which is how
+    the defect survived — so the words themselves are asserted.
+  */
+  it("never calls a long read a list of details, whatever length refused it", () => {
     const shown = conceptDescribeSentence("ran_long");
     expect(shown, "prose is never called a list").not.toMatch(/list of details|inventory/i);
     expect(shown, "and it still must not send her for a better photograph")
       .not.toMatch(/clearer|better (shot|picture|photo)/i);
+  });
+
+  /*
+    AND THE RETRY CEILING IS A CEILING, NOT AN OPEN DOOR. A second read over
+    400 is still refused — without this arm "wider" is indistinguishable from
+    "no bound on the retry at all", which is the 1,082-character read his
+    2026-08-28 ruling was about.
+  */
+  it("still refuses a second read that runs over the RETRY ceiling", async () => {
+    const wayOver = said("a tall woman with close-cropped dark hair, ".repeat(12));
+    const text = JSON.parse(wayOver).description as string;
+    expect(text.length, "the fixture must clear the retry ceiling")
+      .toBeGreaterThan(CONCEPT_DESCRIPTION_MAX_RETRY);
+
+    expect(await describeConcept({ ...PICTURE, engine: engineSaying(wayOver, wayOver) }))
+      .toEqual({ ok: false, reason: "ran_long", attempts: 2 });
   });
 
   /*
@@ -662,6 +697,10 @@ describe("the reader", () => {
   it("keeps the bound under the entrance's own brief cap, so she is never refused on text she did not write", () => {
     expect(CONCEPT_DESCRIPTION_MAX).toBeLessThan(2000);
     expect(CONCEPT_DESCRIPTION_MIN).toBeLessThan(CONCEPT_DESCRIPTION_MAX);
+    /* The widened retry ceiling has to clear the same bar, or a second read
+       could be accepted here and then refused by the entrance on text she
+       never wrote (#1073). */
+    expect(CONCEPT_DESCRIPTION_MAX_RETRY).toBeLessThan(2000);
   });
 
   /*
@@ -675,6 +714,16 @@ describe("the reader", () => {
     expect(CONCEPT_DESCRIPTION_TARGET.high).toBe(250);
     expect(CONCEPT_DESCRIPTION_TARGET.low).toBeGreaterThanOrEqual(CONCEPT_DESCRIPTION_MIN);
     expect(CONCEPT_DESCRIPTION_TARGET.high).toBeLessThanOrEqual(CONCEPT_DESCRIPTION_MAX);
+
+    /* The retry ceiling is pinned by the same argument (#1073): it is wider on
+       purpose, it is still a ceiling, and it is nowhere near the 1,082-character
+       read that produced the 2026-08-28 ruling. The announced target is NOT
+       raised with it — an announced cap is a brief, so the reader is still
+       asked for ~150–250 whichever attempt it is on. */
+    expect(CONCEPT_DESCRIPTION_MAX_RETRY).toBeGreaterThan(CONCEPT_DESCRIPTION_MAX);
+    expect(CONCEPT_DESCRIPTION_MAX_RETRY).toBeLessThanOrEqual(400);
+    expect(CONCEPT_DESCRIPTION_MAX_RETRY).toBeLessThan(1082);
+    expect(CONCEPT_DESCRIPTION_TARGET.high).toBeLessThan(CONCEPT_DESCRIPTION_MAX_RETRY);
   });
 
   it("tells the reader what it may not say — the instruction is the primary control, the sweep is the provable one", async () => {

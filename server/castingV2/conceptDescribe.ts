@@ -530,8 +530,78 @@ export function resetConceptReaderForTests(): void {
  * at 300, so an honest read that runs a little over its target is not thrown
  * away for a rounding. A longer read is never truncated mid-word — half a
  * sentence about a person is a claim nobody made.
+ *
+ * ⚠ **AND SINCE 2026-09-22 THIS IS THE FIRST READ'S CEILING, NOT THE ONLY
+ * ONE.** A read we have already sent back once is judged at
+ * {@link CONCEPT_DESCRIPTION_MAX_RETRY} (400) instead — his ruling on card
+ * #1073, made because a detail-dense picture was being refused on a coin toss
+ * over four characters. **Nothing about the number below moved**, and that is
+ * the point of the split: the way IN is still 300, which is what his
+ * anti-clone reasoning was about. {@link ceilingForAttempt} is where the two
+ * meet, and it is the only place that knows which attempt it is.
  */
 export const CONCEPT_DESCRIPTION_MAX = 300;
+
+/**
+ * THE SECOND READ GETS MORE ROOM — 400, and the first read keeps its 300 (his
+ * ruling, 2026-09-22, card #1073, one word: *"'wider'. The first read still has
+ * to come in at 300, so nothing about your anti-clone limit is given up on the
+ * way in - only the retry, which we have already sent back once naming what was
+ * wrong, gets the extra room."*)
+ *
+ * # WHAT IT BOUGHT, IN THE NUMBERS THAT BOUGHT IT
+ *
+ * He uploaded the same detail-dense concept five times in sixteen minutes on
+ * 2026-09-22 and was refused twice, with nothing about the picture changing
+ * between a refusal and an acceptance. Every read those uploads produced:
+ *
+ * | correlation | attempt 1 | attempt 2 |
+ * |---|---|---|
+ * | `req_1cb9b3348553` | 350 | **307 — refused** |
+ * | `req_af0c123e620d` | 316 | under |
+ * | `req_566e45b8346f` | 335 | under |
+ * | `req_b49692ec31bd` | 304 | a picture fault |
+ * | `req_6b1d9310cf86` | 316 | under |
+ *
+ * **Six of seven reads came back long, and every one of them was between 304
+ * and 350** — the shortest refusal overran by four characters. None was an
+ * inventory; they were ordinary prose that ran a rounding over. So the refusal
+ * he met was a coin toss on where the second read happened to land, and at 400
+ * every long read measured that morning fits.
+ *
+ * # WHY THE FIRST READ IS NOT TOUCHED, AND THIS IS THE LOAD-BEARING HALF
+ *
+ * {@link CONCEPT_DESCRIPTION_MAX} is the anti-clone control and his reasoning
+ * for it is untouched by this: a 1,082-character read locks every face in the
+ * roll to one man. Widening the way IN would give that back. What is widened is
+ * only the read we have **already sent back once, naming the fault** — and the
+ * re-ask still asks for ~150–250, because an announced cap is a brief and a
+ * reader told "400" writes to 400. Announced, enforced and re-asked are three
+ * numbers on purpose.
+ *
+ * 400 is four sentences, not a police report: it is a third of the read that
+ * produced his 2026-08-28 ruling, and it stays far under the entrance's own
+ * brief cap (`BRIEF_TEXT_MAX`, 2,000 — `shared/briefLength.ts`), so a
+ * description alone can still
+ * never reach a bound she did not write.
+ *
+ * The cost if this is wrong is one number and it is reversible: descriptions
+ * run to about four sentences instead of three, so eight faces share slightly
+ * more.
+ */
+export const CONCEPT_DESCRIPTION_MAX_RETRY = 400;
+
+/**
+ * WHICH CEILING THIS ATTEMPT IS JUDGED AGAINST — his ruling in one place.
+ *
+ * The rule lives here rather than in a ternary at the call site because it is a
+ * founder decision about a number, and a decision spread across an expression
+ * is a decision nobody can find. The classifier below takes a ceiling and holds
+ * no opinion about attempts; this holds the opinion and no opinion about faults.
+ */
+function ceilingForAttempt(attempt: number): number {
+  return attempt === 1 ? CONCEPT_DESCRIPTION_MAX : CONCEPT_DESCRIPTION_MAX_RETRY;
+}
 
 /** The target the reader is ASKED for, in his own numbers. Announced, not enforced. */
 export const CONCEPT_DESCRIPTION_TARGET = { low: 150, high: 250 } as const;
@@ -1060,9 +1130,15 @@ function reAsk(fault: Fault): string {
   }
 }
 
-/** The first fault in a read, in the order a customer would care about them. */
-function faultIn(description: string): Fault | null {
-  if (description.length > CONCEPT_DESCRIPTION_MAX) return { kind: "long", length: description.length };
+/**
+ * The first fault in a read, in the order a customer would care about them.
+ *
+ * `ceiling` is passed rather than read from the module because it is not the
+ * same number on both attempts — see {@link ceilingForAttempt}. Everything
+ * else here is identical whichever read it is judging.
+ */
+function faultIn(description: string, ceiling: number): Fault | null {
+  if (description.length > ceiling) return { kind: "long", length: description.length };
   if (description.length < CONCEPT_DESCRIPTION_MIN) return { kind: "brief", length: description.length };
   const word = notAboutThePersonIn(description);
   if (word) return { kind: "picture", word };
@@ -1187,7 +1263,7 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
       return { ok: "retry", fault: null };
     }
     const { description } = parsed;
-    const fault = faultIn(description);
+    const fault = faultIn(description, ceilingForAttempt(attempt));
     if (!fault) return { ok: true, description, attempts: attempt };
     log.warn({ attempt, fault, length: description.length }, "[conceptDescribe] the read was sent back");
     /* NEVER truncated and never stripped — re-asked, naming the fault. */
