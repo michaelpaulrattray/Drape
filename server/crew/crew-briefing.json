@@ -1,7 +1,7 @@
 {
-  "edition": 474,
-  "updatedAt": "2026-09-22T16:20:00.000Z",
-  "shift": "NOTHING CHANGED ON YOUR SCREEN TONIGHT - THE THING THAT CHANGED IS THAT THE NIGHT TEAM CAN NO LONGER BUILD THE SAME JOB TWICE.\n\nOne fix, merged and live. It is not a product change and you will not see it anywhere in the app; it is a fix to how the night shifts pick up work, and it came from the team catching itself.\n\nWHAT WENT WRONG, EARLIER THIS WEEK. A night shift picked up a job off the list, spent thirty-five minutes building it, and then found the same thing had already been built and shipped seven minutes before it started. Nobody did anything wrong. The job still looked open on the list, because the list only knows whether a job is FINISHED - it has never known whether somebody is currently DOING it. That is thirty-five minutes of a night, and it was luck rather than design that it was not longer.\n\nWHAT IT DOES NOW. The moment a shift says which job it is taking, it looks at the work already in progress and says so: \"a piece of work is already open on this one - here it is, go and read it.\" It warns rather than blocking, on purpose. Sometimes the open piece of work is the shift's own second half, and a hard block there would stop honest work as often as it stopped a duplicate - so it names it and lets the shift decide.\n\nIt was tested against your real board while it was being built, and it caught a real one: it named the work already open on the receipt-line and sheet-scroll job you asked for last night, which is exactly the collision it exists to prevent.\n\nONE THING I DELIBERATELY DID NOT DO. There is a tidy-up job waiting - a leftover field in the casting lobby that nothing reads any more. It is three deletions. I left it, and wrote on the card why: removing it while somebody still has a lobby tab open from before this afternoon's deploy would white-screen that tab rather than just emptying a strip. It is safe to do tomorrow and it costs nothing to wait.\n\nNothing here needs you.",
+  "edition": 475,
+  "updatedAt": "2026-09-22T17:40:00.000Z",
+  "shift": "AGAIN NOTHING ON YOUR SCREEN CHANGED - AND AGAIN THAT IS THE POINT. TWO FIXES TO HOW THE NIGHTS WORK, BOTH OF THEM THE TEAM CATCHING ITSELF.\n\nTHE FIRST IS THE OTHER HALF OF LAST NIGHT'S. Last night the team learned to stop a shift building a job somebody is already building - but it only asked the question at the moment a shift committed to a job. The list a shift actually CHOOSES from, thirty seconds earlier, still said nothing. So the warning arrived after the decision it was meant to inform.\n\nIt now sits on the choosing list itself. Tonight it worked on the real board straight away: your one open job - the receipt-line and sheet-scroll fix you asked for - came up with a line saying the relay already has work open on it, before I had chosen anything. That is thirty seconds earlier than last night's version would have told me, and it is where the decision is made.\n\nIT ALSO CAUGHT A HOLE IN ITSELF WHILE IT WAS BEING BUILT, and this is the part worth reading. There are three different answers to \"is somebody building this\": yes, no, and nobody checked. I had the first version quietly treat the third as the second - a failed check reporting a clear board. That is the exact mistake the whole fix exists to prevent, and not one of my tests noticed. I found it by deliberately breaking my own work to see whether the tests would complain, and they did not. Fixed, and it now has tests that do.\n\nTHE SECOND IS HOUSEKEEPING THAT HAD BEEN STUCK FOR THREE NIGHTS. Every shift ends by running two checks over its own scratch files. Those checks had been failing for three nights on nineteen leftover files from shifts that had already finished, and one real typing mistake. That matters more than it sounds: when the baseline is already red, a shift cannot tell its own breakage from somebody else's leftovers, which is how a check quietly stops being run at all. Fifteen files cleaned, the typing mistake fixed, and the checks are green for the first time in three nights. The four left are the relay's live working files - it will clear its own when it finishes.\n\nWHY IT KEPT RECURRING: the measurement was being written into a comment on a job that was already closed. Two shifts in a row recorded the same number and neither could act on it, because a closed job is not a work list. It was put back on the board as a real job and then took minutes.\n\nWHAT I DELIBERATELY DID NOT DO, same as last night: the three-deletion tidy-up in the casting lobby stays waiting until tomorrow afternoon, so that nobody with a lobby tab open from before yesterday's deploy gets a white screen instead of an empty strip.\n\nNothing here needs you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-22T16:12:00.739Z",
+      "readAt": "2026-09-22T17:34:07.275Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5216,6 +5216,20 @@
   ],
   "pipeline": [
     {
+      "id": "digest-pr-claim-1094",
+      "title": "The list a shift chooses from now says whether somebody is already building the job",
+      "status": "merged",
+      "prNumber": 1096,
+      "note": "Not a product change - nothing in the app moves. Last night's fix asked \"is somebody already building this?\" at the moment a shift DECLARED its job. The list a shift actually picks from is printed about thirty seconds earlier, at the top of every launch, and it said nothing - so the warning landed after the decision it was for.\n\nIt is on the choosing list now. Driven against your real board the hour it was written, and it caught a live one immediately: your single open job, the receipt-line and sheet-scroll fix, came up named with the work the relay already has open on it.\n\nThree answers are kept apart on purpose - somebody is building it, nobody is, and the check could not run. The third is the dangerous one, because a check that failed and a board that is clear look identical unless something says so in words.\n\nThe build found a real hole in itself. The first version quietly turned \"the check failed\" into \"the board is clear\" - the exact mistake the whole thing exists to prevent - and none of the tests noticed. Found by deliberately breaking my own work seven different ways to see which tests would complain; six did, one did not, and that one is why a piece of it was moved somewhere tests can reach.\n\nOne piece is left on the job and was deliberately not taken: the part of the system that can spend an expensive Fable session on a job someone already has open. Changing when a Fable session gets spent is your rule, not a cleanup, so it stays on the card with a recommendation rather than being decided by a night shift."
+    },
+    {
+      "id": "close-guards-green-1095",
+      "title": "The nightly end-of-shift checks are green again after three nights red",
+      "status": "merged",
+      "note": "No pull request on this one, and that is inherent: every file involved is a scratch file that was never checked in, so the build server has never seen any of them and cannot.\n\nEach shift ends by running two checks over its own scratch files. They had been failing for three nights on nineteen leftovers from shifts that already finished, plus one real typing mistake. A red baseline is worse than it sounds - a shift cannot tell its own breakage from somebody else's mess, which is the road to a check that stops being run.\n\nFifteen cleaned, the typing mistake fixed, green for the first time in three nights. The four still named are the relay's live working files and are correct to be there; it clears its own when it finishes.\n\nThe reason it kept recurring was not the files. The measurement had been living in a comment on a job that was already CLOSED, so two shifts in a row wrote the same number down and neither could act on it. Put back on the board as a real job, it took minutes.",
+      "prNumber": null
+    },
+    {
       "id": "card-claim-warning-1083",
       "title": "The night team can no longer start a job somebody is already building",
       "status": "merged",
@@ -7109,8 +7123,8 @@
       "id": "queue-shape-0923-foreman",
       "severity": "info",
       "state": "resolved",
-      "title": "The queue: 37 open, your list has one job on it and the relay is already building it, none urgent. No check-up clock fires before tomorrow.",
-      "detail": "Read at 16:09, after tonight's merge. 37 open cards - one closed tonight and two filed, both of them findings from the job I did rather than new ideas. Your own ordered list has exactly one job on it, last night's receipt-line and sheet-scroll fix, and the relay has work open on it already, so no night shift should touch it. Nothing is marked urgent.\n\n21 cards have had no comment, close, reopen or commit for a week or more, up from 17 last night. That figure counts real activity only, so a label edit does not reset it, and it over-reports on purpose. Most of that 21 is the roadmap - jobs waiting for a rung of the plan rather than jobs anyone is neglecting; the oldest is a design direction you endorsed in August that was never turned into a build order.\n\nThe tidy-up clocks: the Janitor is due tomorrow, the other three on the 26th and 27th. None fires tonight."
+      "title": "The queue: 37 open, your list still has the one job on it and the relay is still building it, none urgent. No check-up clock fires before tomorrow.",
+      "detail": "Read again at 17:34, after tonight's merge. 37 open - one closed tonight, none filed, because tonight's work came entirely off jobs that were already on the board. 21 of the 37 have had nothing happen to them - no comment, no close, no code - for a week, up from 21 last night; that is the honest backlog figure and it is flat rather than growing. Your own ordered list has exactly one job on it, the receipt-line and sheet-scroll fix, and the relay still has work open on it, so no night shift should touch it. Nothing is marked urgent, and no check-up clock fires before tomorrow."
     },
     {
       "id": "queue-shape-0922b-foreman",
@@ -7920,7 +7934,7 @@
     195
   ],
   "nextUp": {
-    "readAt": "2026-09-22T16:12:00.738Z",
+    "readAt": "2026-09-22T17:34:07.274Z",
     "items": [
       {
         "issueNumber": 1090,
