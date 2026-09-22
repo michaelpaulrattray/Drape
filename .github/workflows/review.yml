@@ -336,6 +336,17 @@ jobs:
         id: fable
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # The action refuses a workflow "initiated by non-human actor" unless
+          # the bot is named here — read at the job log on #1054/#1055/#1057,
+          # where every Dependabot PR died at init with exactly that sentence,
+          # a state the credit outage's narration cannot distinguish from
+          # itself. His ruling (#1062, 2026-09-22): "on the decision with
+          # dependabot allow it." Exactly this one bot, never '*': on a public
+          # repository '*' would let any App start a paid run with a prompt it
+          # controls (the action's own docs/security.md). A dependency bump on
+          # the login library or the API serialiser is precisely a diff worth
+          # a second reader, which is why it is allowed rather than hand-read.
+          allowed_bots: dependabot
           use_sticky_comment: true
           # Without this, the review runs but its report stays in the action
           # log — proven on PR #36's forced run (115s, real review, no visible
