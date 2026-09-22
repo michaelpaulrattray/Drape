@@ -216,6 +216,43 @@ export const CONCEPT_REVIEW_RETRY = "Try again";
 export const CONCEPT_REVIEW_ANOTHER = "Choose another picture";
 
 /**
+ * THE × ON THE PICTURE (his ask, #1087) — its accessible name, since the
+ * control itself is a glyph.
+ *
+ * Verbatim: *"there should be a way to clear the image without closing the
+ * brief like a small x or something so i can replace the image"*. Until this,
+ * the only way out of a picture was Discard, which threw the words away and
+ * shut the dialog — so swapping a photograph meant starting the whole road
+ * again.
+ *
+ * It says REMOVE rather than "clear" because remove is what a person does to a
+ * picture; and the picture's words go with it, because a description of a
+ * photograph nobody is looking at any more is the one thing this dialog exists
+ * to make impossible.
+ */
+export const CONCEPT_REMOVE_PICTURE = "Remove this picture";
+
+/**
+ * THE LINE UNDER THE PICTURE, and it is documentation of a road that already
+ * worked.
+ *
+ * Dropping a new picture over the old one has replaced it since #196 — the
+ * dialog body and the picture slot are both drop targets — and NOTHING on
+ * screen said so, which is the same as it not being possible (the
+ * disappearing-technology law, clause 6). He asked for it as though it were
+ * missing: *"or dragging and dropping a new image over the old one should work
+ * also?"*. It was; it was invisible.
+ *
+ * The second half is a real button, so the answer is one tap for anyone who
+ * does not drag — which is the same road the refusal's "Choose another
+ * picture" has always taken.
+ */
+export const CONCEPT_REPLACE_HINT = "Drop another picture here to replace it, or";
+
+/** The clickable half of the line above. Lowercase: it finishes that sentence. */
+export const CONCEPT_REPLACE_CHOOSE = "choose one";
+
+/**
  * THE REFUSED STATE'S OWN TITLE — and it exists because the frame said so.
  *
  * ⚠ Driven at the running app, the refusal shipped under *"This is what we'll
