@@ -18,7 +18,13 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createFalCreativeEngine, FAL_GPT_IMAGE_2, FAL_GPT_IMAGE_2_EDIT } from "./falImages";
+import {
+  createFalCreativeEngine,
+  FAL_GPT_IMAGE_2,
+  FAL_GPT_IMAGE_2_EDIT,
+  FAL_GPT_IMAGE_25_FLARE,
+  FAL_GPT_IMAGE_25_FLARE_EDIT,
+} from "./falImages";
 import { createOpenRouterCreativeEngine } from "./openrouterImages";
 import { QUEUE_BASE } from "./falTransport";
 import { ProviderError } from "./types";
@@ -84,6 +90,42 @@ describe("the anchored render at the wire", () => {
     expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_2}`);
     expect(Object.keys(captured[0]?.body ?? {})).not.toContain("image_urls");
     expect(result.provenance.model).toBe(FAL_GPT_IMAGE_2);
+  });
+
+  it("A FLARE ROLL'S ANCHORED RENDER LEAVES FOR FLARE'S OWN EDIT DOOR (#1079) — read at the outgoing URL, not at the map", async () => {
+    /*
+      WHY THIS ARM EXISTS, MEASURED RATHER THAN ARGUED (working law 5).
+      #1079 shipped with the sibling declared per model and with arms that read
+      the DECLARATION (`editSiblingOf`). A dispatch that ignored the map and
+      kept the old hardcoded `FAL_GPT_IMAGE_2_EDIT` was driven against the
+      merged tree on 2026-09-22 and **5,690 tests passed** — every follow on his
+      Flare sheet would have gone to the other engine's edit door, answering his
+      sheet with a different studio's face, and nothing in the repository said a
+      word. This assertion is on the bytes fetch() receives.
+    */
+    const { captured } = stubFalTransport();
+    const engine = createFalCreativeEngine({ apiKey: "test-key", model: FAL_GPT_IMAGE_25_FLARE, pollIntervalMs: 1 });
+    const result = await engine.generateCandidate({
+      prompt: "Same casting brief as the attached look, new person.",
+      size: "1024x1536",
+      quality: "medium",
+      references: [{ bytes: PIXEL, contentType: "image/png" }],
+    });
+    expect(captured).toHaveLength(1);
+    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_FLARE_EDIT}`);
+    /* Named explicitly: the failure is not "a wrong URL", it is THIS wrong URL. */
+    expect(captured[0]?.url).not.toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_2_EDIT}`);
+    expect(captured[0]?.body.image_urls).toEqual([`data:image/png;base64,${PIXEL.toString("base64")}`]);
+    expect(result.provenance.model).toBe(FAL_GPT_IMAGE_25_FLARE_EDIT);
+  });
+
+  it("an UNANCHORED Flare roll leaves for Flare's base endpoint with no image_urls key", async () => {
+    const { captured } = stubFalTransport();
+    const engine = createFalCreativeEngine({ apiKey: "test-key", model: FAL_GPT_IMAGE_25_FLARE, pollIntervalMs: 1 });
+    const result = await engine.generateCandidate({ prompt: "a plain roll", size: "1024x1536", quality: "medium" });
+    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_FLARE}`);
+    expect(Object.keys(captured[0]?.body ?? {})).not.toContain("image_urls");
+    expect(result.provenance.model).toBe(FAL_GPT_IMAGE_25_FLARE);
   });
 
   it("an engine with no edit sibling REFUSES an anchored request before any bytes leave", async () => {
