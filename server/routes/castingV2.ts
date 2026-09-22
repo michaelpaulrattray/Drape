@@ -24,7 +24,7 @@ import { storageReadBytes } from "../storage";
 
 import { router, protectedProcedure } from "../_core/trpc";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
-import { sheetPreviewKeys } from "../castingV2/sheetPreview";
+import { sheetPreviewKeys, sheetPreviewTiles } from "../castingV2/sheetPreview";
 import { castPronouns } from "../castingV2/castPronouns";
 import { runFinalCastDeletionCeremony } from "../casting/finalCastDeletionCeremony";
 import { assertFinalModelDeleteEnabled } from "./models";
@@ -1185,14 +1185,31 @@ export const castingV2Router = router({
           const rollCandidates = latest
             ? await listRollCandidates(ctx.user.id, latest.id)
             : [];
-          const projectable = (rows: typeof rollCandidates) =>
-            rows.filter((candidate) =>
-              candidate.status === "ready" && (candidate.thumbKey || candidate.imageKey));
           /*
-            Kept faces lead, the latest roll backfills, deduplicated and capped
-            at the strip. The rule and its two past failures live in
+            A CARD SHOWS THE SHEET'S STATE, NOT ONLY ITS FACES (his bug, #1086).
+
+            Faces lead — the kept ones first, then the latest roll's — and the
+            latest roll's unfinished slices fill whatever is left: a quiet frame
+            while a picture is being cast, a plain one where the engine refused
+            or nothing arrived. Until this, `ready` was the only status that
+            projected at all, so a sheet with a roll in flight and a sheet whose
+            roll was refused both rendered as "4 rolls" over an empty strip —
+            the first reading as no roll, the second as broken.
+
+            The rule and its three past failures live in
             `castingV2/sheetPreview.ts`, where they are pinned by test — it had
-            been wrong twice in ways that looked right on the card.
+            been wrong twice before this in ways that looked right on the card.
+          */
+          const previewTiles = sheetPreviewTiles(kept, rollCandidates).map((tile) =>
+            tile.kind === "face"
+              ? { kind: "face" as const, url: storagePublicUrl(tile.key) }
+              : tile);
+          /*
+            The faces alone, for ONE more deploy. A browser holding the previous
+            bundle reads `previewUrls` and would take the lobby down on
+            `.length` if this vanished under it; the field goes in the deploy
+            after the one that stops reading it (#1088). Derived from the tiles
+            above rather than computed beside them, so the two cannot disagree.
           */
           const previewUrls = sheetPreviewKeys(kept, rollCandidates)
             .map((key) => storagePublicUrl(key));
@@ -1200,6 +1217,7 @@ export const castingV2Router = router({
           return {
             sessionId: session.publicId,
             briefText: latest?.briefText ?? null,
+            previewTiles,
             previewUrls,
             rollCount: rolls.length,
             keptCount: kept.length,

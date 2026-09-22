@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "fa532f656e1c9180"
+    "sourceFingerprint": "94e2ecd24fcfd00c"
   },
   "domains": [
     {
@@ -27587,6 +27587,11 @@
     {
       "from": "module:server/castingV2/sheetGone.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/sheetPreview.ts",
+      "to": "module:shared/candidateFailure.ts",
       "kind": "imports"
     },
     {
