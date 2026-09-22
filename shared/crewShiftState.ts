@@ -452,3 +452,94 @@ export const PR_CONFLICT_NOTE =
   + " workflow run for any event, so it cannot be re-gated or asked anything"
   + " while its checks page still shows green. Re-merge main on its branch"
   + " (#984 step 1) before anything else.";
+
+/**
+ * THE SAME QUESTION ASKED OF HIS OWN PAGE (#1101).
+ *
+ * `readPullRequestConflict` above answers it for the three lists a SHIFT
+ * reads. This answers it for the one surface the founder reads: the pipeline
+ * rows on `/admin/crew`, written by `scripts/crew-desk-sweep.mts`.
+ *
+ * **The instance.** Edition 477 put a row on his page for PR #1078 reading
+ * `in-review`. That was true when it was written; eleven hours earlier the PR
+ * had stopped being mergeable. The sweep's whole reader was
+ * `gh pr view <n> --json state`, and `state` is `OPEN`/`MERGED`/`CLOSED` — it
+ * cannot express *"open, but it can no longer be merged"*. So a live row had
+ * exactly two roads, promote-to-merged or leave alone, and a conflicting PR
+ * took the second one silently, through BOTH spells of #1078 being stuck.
+ *
+ * ⚠ **AND IT CANNOT SAY WHEN IT GOT STUCK, WHICH IS WHY THERE IS NO TIMER
+ * HERE.** The card that ordered this proposed *"stuck since 11:38"* with a
+ * grace period, so an ordinary twenty-minute merge collision would not shout
+ * at him. Read at the tool: `gh pr view --json` offers 31 fields and none of
+ * them is *conflicting-since*; `updatedAt` moves on any write, and the head
+ * commit's date is not it either — **both** #1078 instances broke while the
+ * branch stood still and `main` moved underneath it. A number nobody can
+ * derive is not put on his page (law 7b).
+ *
+ * The honest form of the same intention is not a timer: **he should never read
+ * about that collision at all, because the shift clears it.** So this REPORTS
+ * to the shift and repairs nothing — the sweep's own standing doctrine for a
+ * judgement about work — and the sentence on his row is written by hand, in
+ * his terms, only for a PR still stuck after the repair road was walked.
+ */
+export type PipelineRowPullRequest =
+  (PullRequestMergeability & { readonly state?: string | null }) | null;
+
+export type PlannablePipelineRow = {
+  id?: string;
+  status: string;
+  prNumber?: number | null;
+};
+
+export type PipelineRowPlan<T extends PlannablePipelineRow = PlannablePipelineRow> = {
+  /** The PR merged: safe to write, there is nothing to judge. */
+  merged: T[];
+  /** Live, and it can no longer land — named for a person, never repaired. */
+  stuck: T[];
+  /** `gh` could not answer; never read as "still fine" (working law 2). */
+  unreadable: T[];
+};
+
+/**
+ * Sort every live pipeline row by what its pull request actually is.
+ *
+ * `readPullRequest` is injected for the same reason `planCardResolutions`
+ * injects `issueState`: the script passes its own `gh` reader, the suite
+ * passes a table, and the rule is drivable without a network. It is called at
+ * most ONCE per row, so a flaky reader cannot answer two ways in one plan.
+ *
+ * ⚠ A row whose PR has MERGED is never also reported stuck. GitHub answers
+ * `UNKNOWN` for a merged PR's mergeability, so the three-state reader would
+ * say nothing anyway — but the guard is written rather than inherited, because
+ * "it happens not to fire" is not a contract.
+ */
+export function planPipelineRowStates<T extends PlannablePipelineRow>(
+  rows: readonly T[],
+  readPullRequest: (prNumber: number) => PipelineRowPullRequest,
+): PipelineRowPlan<T> {
+  const merged: T[] = [];
+  const stuck: T[] = [];
+  const unreadable: T[] = [];
+
+  for (const row of rows) {
+    if (row.status === "merged") continue;
+    if (typeof row.prNumber !== "number") continue;
+
+    const pr = readPullRequest(row.prNumber);
+    if (pr === null) {
+      unreadable.push(row);
+      continue;
+    }
+    if (typeof pr.state === "string" && pr.state.toUpperCase() === "MERGED") {
+      merged.push(row);
+      continue;
+    }
+    /* `true` only. `null` is "not yet knowable" and says nothing — a PR read
+       seconds after a push answers UNKNOWN routinely, and a `--json` list that
+       lost the two fields answers the same way rather than "fine". */
+    if (readPullRequestConflict(pr) === true) stuck.push(row);
+  }
+
+  return { merged, stuck, unreadable };
+}
