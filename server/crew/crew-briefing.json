@@ -1,7 +1,7 @@
 {
-  "edition": 475,
-  "updatedAt": "2026-09-22T17:40:00.000Z",
-  "shift": "AGAIN NOTHING ON YOUR SCREEN CHANGED - AND AGAIN THAT IS THE POINT. TWO FIXES TO HOW THE NIGHTS WORK, BOTH OF THEM THE TEAM CATCHING ITSELF.\n\nTHE FIRST IS THE OTHER HALF OF LAST NIGHT'S. Last night the team learned to stop a shift building a job somebody is already building - but it only asked the question at the moment a shift committed to a job. The list a shift actually CHOOSES from, thirty seconds earlier, still said nothing. So the warning arrived after the decision it was meant to inform.\n\nIt now sits on the choosing list itself. Tonight it worked on the real board straight away: your one open job - the receipt-line and sheet-scroll fix you asked for - came up with a line saying the relay already has work open on it, before I had chosen anything. That is thirty seconds earlier than last night's version would have told me, and it is where the decision is made.\n\nIT ALSO CAUGHT A HOLE IN ITSELF WHILE IT WAS BEING BUILT, and this is the part worth reading. There are three different answers to \"is somebody building this\": yes, no, and nobody checked. I had the first version quietly treat the third as the second - a failed check reporting a clear board. That is the exact mistake the whole fix exists to prevent, and not one of my tests noticed. I found it by deliberately breaking my own work to see whether the tests would complain, and they did not. Fixed, and it now has tests that do.\n\nTHE SECOND IS HOUSEKEEPING THAT HAD BEEN STUCK FOR THREE NIGHTS. Every shift ends by running two checks over its own scratch files. Those checks had been failing for three nights on nineteen leftover files from shifts that had already finished, and one real typing mistake. That matters more than it sounds: when the baseline is already red, a shift cannot tell its own breakage from somebody else's leftovers, which is how a check quietly stops being run at all. Fifteen files cleaned, the typing mistake fixed, and the checks are green for the first time in three nights. The four left are the relay's live working files - it will clear its own when it finishes.\n\nWHY IT KEPT RECURRING: the measurement was being written into a comment on a job that was already closed. Two shifts in a row recorded the same number and neither could act on it, because a closed job is not a work list. It was put back on the board as a real job and then took minutes.\n\nWHAT I DELIBERATELY DID NOT DO, same as last night: the three-deletion tidy-up in the casting lobby stays waiting until tomorrow afternoon, so that nobody with a lobby tab open from before yesterday's deploy gets a white screen instead of an empty strip.\n\nNothing here needs you.",
+  "edition": 476,
+  "updatedAt": "2026-09-22T19:35:00.000Z",
+  "shift": "BOTH OF THE THINGS YOU ASKED FOR IN THE CASTING LOBBY ARE LIVE. Open it and you should see the difference straight away.\n\nTHE RECEIPT LINE UNDER THE BRIEF BOX now reads 8 CANDIDATES · ~160 CR. The \"~50 SECONDS\" you wanted gone is gone.\n\nTHE UNSIGNED SHEETS ROW now opens on your newest sheet instead of the one before it, and it goes back to the newest one after you open a sheet from further along the row and come back. Worth knowing why it was wrong: the ORDER was always right - your newest sheet really was first in the list. What nobody had ever set was where the row starts scrolled to, so it sat a card and a half to the right of the beginning and you were always dragging left to find what you had just made.\n\nWHY THIS TOOK UNTIL TONIGHT, PLAINLY. The work itself was finished yesterday afternoon by the relay - the seat that works in your terminal - and then it stopped. Between it being written and tonight, the main line of the code moved nine times underneath it, which left it in a state where it could not even be checked automatically, let alone released. Two shifts looked at it and left it alone, which was the right call at the time: you do not take over somebody else's unfinished work while they might still be at it.\n\nTonight it had been four hours, the relay's working copy was clean and matched exactly what it had already sent, and nothing was going to move on its own. So I took it over, brought it up to date with everything else that had changed, checked it myself in a real browser, and released it. Nothing was rebuilt and nothing was thrown away.\n\nTWO THINGS I FOUND WHILE CHECKING IT, both worth a line because they are the kind of thing that quietly wastes a night later.\n\nThe first is that the relay's own check of its own work would have passed even if the sheets row had completely failed to appear. It waited four seconds for the row and then, if the row was not there, printed \"row too short to scroll\" and called it a pass. A row that is MISSING and a row that is merely SHORT are not the same thing, and it could not tell them apart. On a full lobby that row genuinely takes about seven seconds to arrive, so this was not theoretical - I hit it on the first run. Replaced with one that waits properly and refuses if the row never shows.\n\nThe second is a note in the code that justified keeping a piece of data we send to your browser by saying another screen still used it. It does not. I checked, and nothing reads it any more. I have not deleted it, because pulling something out of what we send while somebody might still have an old page open is exactly how you get a white screen - it comes out after a full release has gone by with nobody reading it. The note now says the true thing.\n\nAND ONE MORE FIX TO HOW THE NIGHTS WORK, which is the other half of the last two nights' story. The list a shift reads FIRST thing to decide what matters most still did not say whether somebody was already building a job. Tonight is the proof it mattered: I ran that list at 18:48 and it showed me your lobby job with nothing beside it, while the relay's finished work had been sitting open on it since 14:47. I only knew because of last night's fix to a different list, thirty seconds later. Both lists now say it, and so does the start-up check - one piece of code answering the question, so it cannot drift into three different answers.\n\nNothing here needs you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-22T17:34:07.275Z",
+      "readAt": "2026-09-22T19:29:34.904Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5216,6 +5216,20 @@
   ],
   "pipeline": [
     {
+      "id": "lobby-seconds-and-scroll-1090",
+      "title": "Your two lobby asks are live: the seconds are off the receipt line, and the sheets row opens on your newest sheet",
+      "status": "merged",
+      "prNumber": 1091,
+      "note": "The receipt line under the brief box reads 8 CANDIDATES · ~160 CR - no seconds. The unsigned sheets row opens on your newest sheet and returns to it after you open one from further along and come back.\n\nThe order was never the problem - your newest sheet was already first in the data. The row's own starting scroll position was simply never set, so it sat part-way along and you dragged left every time.\n\nWritten by the relay yesterday afternoon and then stalled: the main line of code moved nine times underneath it, which left it unable to be checked automatically at all. Two shifts correctly left it alone in case the relay was still working. Tonight, four hours on with its working copy clean and matching what it had already sent, the night shift took it over, brought it up to date, re-checked it in a real browser and released it. Nothing rebuilt, nothing discarded.\n\nChecked on the released version, not the old one: receipt line correct, row opening on the newest card, and still on the newest card after opening a sheet three along and coming back. Frames looked at, not merely taken.\n\nTwo things found in the checking. The relay's own test would have passed even if the row had never appeared - it waited four seconds, and on a full lobby that row takes about seven, and it reported a missing row as a short one. Replaced. And a note in the code justified keeping a piece of data we send your browser by naming another screen that uses it; nothing uses it. Not deleted - removing something we send while an old page may still be open is how you get a white screen - but the note now says the true thing, and it comes out after a clean release has passed."
+    },
+    {
+      "id": "band-pr-claim-1094",
+      "title": "The list a shift reads FIRST now says whether somebody is already building the job",
+      "status": "merged",
+      "prNumber": 1097,
+      "note": "Not a product change - nothing in the app moves.\n\nTwo nights running the team has been closing the same gap: a shift could start building something another seat had already finished. The start-up check learned to ask it, then the launch summary learned to ask it. The list a shift reads first thing to rank what matters most still did not.\n\nTonight is the measurement, on this very list. I ran it at 18:48 and it showed me your lobby job with nothing beside it - while the relay's completed work had been open on it since 14:47. I only knew because of last night's fix to a different list, which spoke up thirty seconds later. Two shifts before mine had stood off on a reason they read in a handover note rather than in any tool.\n\nAll three now use one piece of code to answer it, so they cannot drift into three different answers. Three replies are kept apart on purpose: somebody is building it, nobody is, and the check could not run. The last two look identical unless something says so in words - and the clean answer deliberately costs a line rather than staying silent.\n\nIt also refuses to take the list down with it: if the check for open work fails, you still get your ranking, with a line saying the check failed. Proven by deliberately breaking it seven different ways and confirming the tests complained each time."
+    },
+    {
       "id": "digest-pr-claim-1094",
       "title": "The list a shift chooses from now says whether somebody is already building the job",
       "status": "merged",
@@ -7120,11 +7134,11 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0923-foreman",
+      "id": "queue-shape-0923b-foreman",
       "severity": "info",
       "state": "resolved",
-      "title": "The queue: 37 open, your list still has the one job on it and the relay is still building it, none urgent. No check-up clock fires before tomorrow.",
-      "detail": "Read again at 17:34, after tonight's merge. 37 open - one closed tonight, none filed, because tonight's work came entirely off jobs that were already on the board. 21 of the 37 have had nothing happen to them - no comment, no close, no code - for a week, up from 21 last night; that is the honest backlog figure and it is flat rather than growing. Your own ordered list has exactly one job on it, the receipt-line and sheet-scroll fix, and the relay still has work open on it, so no night shift should touch it. Nothing is marked urgent, and no check-up clock fires before tomorrow."
+      "title": "The queue: 36 open, your own list is now EMPTY, none urgent. No check-up clock fires before tomorrow.",
+      "detail": "Read at 19:30, after tonight's two releases. 36 open, down one - your lobby job closed and nothing new was filed, because tonight's work came entirely off jobs already on the board.\n\nYour own ordered list is empty for the first time in several nights: the lobby fix was the only thing on it and it shipped. That is not a prompt to do anything - it means the team works from the background categories you have switched on until you add something.\n\n21 of the 36 have had nothing happen to them - no comment, no close, no code - for a week. Flat, not growing. That is the honest backlog figure.\n\nOne job is still open and waiting on the relay: the makeup-reader wording fix, which touches a money-adjacent area and so is held for a hand review rather than released by a night shift."
     },
     {
       "id": "queue-shape-0922b-foreman",
@@ -7934,13 +7948,7 @@
     195
   ],
   "nextUp": {
-    "readAt": "2026-09-22T17:34:07.274Z",
-    "items": [
-      {
-        "issueNumber": 1090,
-        "title": "Casting lobby: the ~50 SECONDS segment comes off the receipt line, and the unsigned-sheets row scrolls to its latest card on arrival (his two, 23 Sep)",
-        "urgent": false
-      }
-    ]
+    "readAt": "2026-09-22T19:29:34.903Z",
+    "items": []
   }
 }
