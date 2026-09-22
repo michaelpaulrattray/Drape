@@ -10,7 +10,8 @@
  * A roll admitted here commits to eight jobs, so admission asks whether all
  * eight fit, not whether one does.
  */
-import { createFalCreativeEngine, FAL_GPT_IMAGE_2 } from "../providers/falImages";
+import { createFalCreativeEngine, FAL_GPT_IMAGE_2, FAL_GPT_IMAGE_25_FLARE } from "../providers/falImages";
+import { captureCastingRollEngineFlareEnabled } from "./castingV2Scope";
 import { falAllowanceOf } from "./falBudget";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { CreativeEngine } from "../providers/types";
@@ -19,6 +20,7 @@ import { envInt } from "../_core/env";
 
 let queue: ProviderQueue | null = null;
 let engine: CreativeEngine | null = null;
+let flareEngine: CreativeEngine | null = null;
 
 function castingImageQueue(): ProviderQueue {
   if (!queue) {
@@ -33,17 +35,40 @@ function castingImageQueue(): ProviderQueue {
   return queue;
 }
 
-export function castingCreativeEngine(): CreativeEngine {
-  if (!engine) {
-    const apiKey = process.env.FAL_KEY;
-    if (!apiKey) {
-      // Fail here rather than at dispatch: reaching dispatch means the user is
-      // already charged, and a missing credential is a configuration fault, not
-      // a generation failure they should have to be refunded for.
-      throw new Error("FAL_KEY is required for casting image generation");
+function falApiKey(): string {
+  const apiKey = process.env.FAL_KEY;
+  if (!apiKey) {
+    // Fail here rather than at dispatch: reaching dispatch means the user is
+    // already charged, and a missing credential is a configuration fault, not
+    // a generation failure they should have to be refunded for.
+    throw new Error("FAL_KEY is required for casting image generation");
+  }
+  return apiKey;
+}
+
+/**
+ * THE ENGINE FOR THIS USER'S ROLL (#1079). Two memoized engines, ONE queue:
+ * the budget the boot check proves fits inside the account's ceiling is spent
+ * from one place whichever model paints. Under
+ * `CASTING_ROLL_ENGINE_FLARE_SCOPE` the caller's roll renders on GPT Image
+ * 2.5 Flare; otherwise on GPT Image 2 exactly as before. A caller with no
+ * user in hand (none today — both the roll and the retry dispatch know whose
+ * roll it is) gets GPT Image 2.
+ */
+export function castingCreativeEngine(userId?: number): CreativeEngine {
+  if (userId !== undefined && captureCastingRollEngineFlareEnabled(userId)) {
+    if (!flareEngine) {
+      flareEngine = createFalCreativeEngine({
+        apiKey: falApiKey(),
+        model: FAL_GPT_IMAGE_25_FLARE,
+        queue: castingImageQueue(),
+      });
     }
+    return flareEngine;
+  }
+  if (!engine) {
     engine = createFalCreativeEngine({
-      apiKey,
+      apiKey: falApiKey(),
       model: FAL_GPT_IMAGE_2,
       queue: castingImageQueue(),
     });
@@ -73,4 +98,5 @@ export function admitRoll(candidateCount: number, stats = castingImageQueue().st
 export function resetCastingEngineForTests(): void {
   queue = null;
   engine = null;
+  flareEngine = null;
 }

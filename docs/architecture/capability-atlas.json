@@ -66,8 +66,8 @@
         ],
         "sites": [
           "server/castingV2/refineService.ts:4897",
-          "server/castingV2/rollEngine.ts:56",
-          "server/castingV2/rollEngine.ts:68"
+          "server/castingV2/rollEngine.ts:81",
+          "server/castingV2/rollEngine.ts:93"
         ]
       },
       {
@@ -881,6 +881,7 @@
       "CASTING_REFINE_DISPATCH_SCOPE",
       "CASTING_REPAINT_SCOPE",
       "CASTING_RETRY_SCOPE",
+      "CASTING_ROLL_ENGINE_FLARE_SCOPE",
       "CASTING_SCAN_TABLE_SCOPE",
       "CASTING_SEGMENTS_DELIVERED_SCOPE",
       "CASTING_SEGMENTS_SCOPE",
@@ -1502,7 +1503,8 @@
         "doorsNote": "THE ROLL ENTRANCE'S FIVE WALLS ARE ON THE MAP AS OF #206 — declared from `ROLL_REFUSAL_COPY`, entrance-qualified `roll.*`, each citing its own throw. They are DECLARED but not DRIVEN: the census sends a sentence at an existing Cast through `castingV2.refine`, and these are raised inside `castingV2.createRoll` before a roll row exists, so each carries its reason in UNREACHABLE_DOORS instead of a corpus row. A brief-carrying corpus row is the map's next growth ring, and it would be free at all five. The SIGN entrance is still outside the declared set entirely (fable-1357 §2).",
         "flags": [
           "CASTING_V2_SCOPE",
-          "CASTING_RETRY_SCOPE"
+          "CASTING_RETRY_SCOPE",
+          "CASTING_ROLL_ENGINE_FLARE_SCOPE"
         ],
         "notes": [
           "Anchor law: every refine renders from candidate.imageKey (the pristine master), never from a delivered frame — chaining on delivered frames was measured to drift.",

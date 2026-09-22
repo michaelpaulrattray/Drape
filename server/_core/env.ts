@@ -34,6 +34,7 @@ import {
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   CASTING_REFINE_DISPATCH_SCOPE_ENV,
   CASTING_RETRY_SCOPE_ENV,
+  CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV,
   CASTING_REPAINT_SCOPE_ENV,
   CASTING_SIDE_PHRASING_SCOPE_ENV,
   CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
@@ -67,6 +68,7 @@ import {
   validateCastingReferenceLibraryEnvironment,
   validateCastingRefineDispatchEnvironment,
   validateCastingRetryEnvironment,
+  validateCastingRollEngineFlareEnvironment,
   validateCastingRepaintEnvironment,
   validateCastingSidePhrasingEnvironment,
   validateCastingScanTableEnvironment,
@@ -403,6 +405,15 @@ export function validateEnv(): void {
   */
   validateCastingRetryEnvironment({
     scope: process.env[CASTING_RETRY_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+  });
+  /*
+    The roll engine on his account (#1079): GPT Image 2.5 Flare under scope,
+    GPT Image 2 otherwise. Parent is the CASTING scope alone — an engine is a
+    property of a roll, and a user with no roll has no engine to choose.
+  */
+  validateCastingRollEngineFlareEnvironment({
+    scope: process.env[CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
   /*

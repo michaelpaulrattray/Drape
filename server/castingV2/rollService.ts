@@ -263,7 +263,7 @@ export type RollServiceDependencies = {
    * variable — the pair being the claim. Defaults to the real gate.
    */
   twoPathsEnabled?: (userId: number) => boolean;
-  engine?: () => CreativeEngine;
+  engine?: (userId?: number) => CreativeEngine;
   admit?: (candidateCount: number) => AdmissionDecision;
   begin?: typeof beginDirectOperation;
   markRunning?: typeof markGenerationOperationRunning;
@@ -908,7 +908,7 @@ export async function createRoll(
   await setRollStatus({ userId: input.userId, rollId: roll.id, status: "generating", from: ["pending"] });
 
   // ---- dispatch: eight independent jobs, one operation ----
-  const engine = (dependencies.engine ?? castingCreativeEngine)();
+  const engine = (dependencies.engine ?? castingCreativeEngine)(input.userId);
   /*
     ⚠ THE MARGIN CLAUSE IS GONE — and the prompt a FLAGGED roll sends is now
     byte-identical to an unflagged one (founder retarget, 2026-08-24, ruled

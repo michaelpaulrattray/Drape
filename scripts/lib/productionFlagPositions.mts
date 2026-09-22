@@ -300,6 +300,15 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: "users:1",
     why: "evidence ingest on the private adapter, his account",
   },
+  CASTING_ROLL_ENGINE_FLARE_SCOPE: {
+    position: "users:1",
+    why:
+      "the roll engine on his account — GPT Image 2.5 Flare instead of GPT Image 2 (#1079). His eye on "
+      + "court #1068 (2026-09-22, three strips, same prompt, three engines): \"honestly flare gave good "
+      + "results\", then \"switch to flare and let me roll some\". users:1 on that word; wider on his eye "
+      + "and not before — Flare's fal price at medium 1024x1536 and its refusal rate on a brief anything "
+      + "refuses (his cyber-goth) are both unread the day it landed",
+  },
   CASTING_RETRY_SCOPE: {
     position: "users:1",
     why:

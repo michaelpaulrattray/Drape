@@ -2801,6 +2801,79 @@ export function validateCastingConceptUploadEnvironment(input: {
  * failed slice ever is `content_policy`, which this shape deliberately does
  * not serve), so dark costs nobody anything and `users:1` is his to say.
  */
+/**
+ * THE ROLL ENGINE ON HIS ACCOUNT — GPT IMAGE 2.5 FLARE (#1079, his eye on
+ * court #1068, 2026-09-22: *"honestly flare gave good results"* → *"switch to
+ * flare and let me roll some ill be able to see the difference"*).
+ *
+ * What it governs: which engine the ROLL road (and the Retry road, which
+ * re-renders a slice of a roll) sends its eight jobs to. Under scope,
+ * `castingCreativeEngine(userId)` hands back the Flare engine on the SAME
+ * queue and budget; off, or absent, GPT Image 2 exactly as before. Nothing a
+ * customer sees names either engine — the sheet is the sheet.
+ *
+ * Parent is the CASTING scope alone: an engine choice is a property of a roll,
+ * and a user with no roll has no engine to choose. `users:1` on production on
+ * his word; wider on his eye and not before, with Flare's price and its
+ * refusal rate read first (both unmeasured the day this landed).
+ */
+export const CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV = "CASTING_ROLL_ENGINE_FLARE_SCOPE";
+
+class CastingRollEngineFlareScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingRollEngineFlareScopeConfigurationError";
+  }
+}
+
+class CastingRollEngineFlareCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV} ${detail}`);
+    this.name = "CastingRollEngineFlareCoverageError";
+  }
+}
+
+function parseCastingRollEngineFlareScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingRollEngineFlareScopeConfigurationError();
+  });
+}
+
+export function captureCastingRollEngineFlareEnabled(userId: number): boolean {
+  const child = parseCastingRollEngineFlareScope(process.env[CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingRollEngineFlareEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingRollEngineFlareScope(input.scope);
+  if (child.kind === "off") return child;
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingRollEngineFlareCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — there is no roll to render`,
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingRollEngineFlareCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingRollEngineFlareCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}
+
 export const CASTING_RETRY_SCOPE_ENV = "CASTING_RETRY_SCOPE";
 
 class CastingRetryScopeConfigurationError extends Error {
