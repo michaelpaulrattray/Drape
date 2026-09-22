@@ -1,7 +1,7 @@
 {
-  "edition": 467,
-  "updatedAt": "2026-09-22T10:12:00.000Z",
-  "shift": "YOU SAID 'WIDER' AND IT IS LIVE - UPLOAD A CONCEPT STOPS REFUSING A DETAILED PICTURE FOR FOUR CHARACTERS. YOUR 300 LIMIT IS UNTOUCHED. NOTHING WAITS ON YOU.\n\n1. Your answer landed at 09:37 and shipped at 10:09 (card 1073, change 1074). The retry now gets 400 characters; the first read still has to come in at 300, exactly as you said. On the five uploads you made this morning, both of the refusals become pictures - every read that was sent back was between 304 and 350, so every one of them now fits on the second pass.\n\n2. Your anti-clone limit is genuinely untouched, and this is the part worth being precise about. 300 is still the number on the way IN, which is what your 28 August reasoning was about - a long read locks eye colour, brow, haircut and shirt, and then all eight faces are the same person. The only thing that got more room is a read we have ALREADY sent back once, naming what was wrong with it.\n\n3. One thing I did not do, deliberately: the reader is still ASKED for 150-250 characters whichever attempt it is on. Telling it '400' would simply get 400 - a stated limit writes the answer instead of filtering it. So what we ask for, what we accept, and what we say when we send it back are three different numbers on purpose.\n\n4. Before believing the tests, I broke the change three ways on purpose to check the tests could still catch it: pretending it never landed, pretending BOTH limits moved, and pretending the retry limit was 1,200. All three went red in the right place. The third is the useful one - at 1,200 the 1,082-character read you refused in August would sail straight through on a retry, and the test says so out loud.\n\n5. If 400 turns out to be too generous, it is one number back. Say 'narrower' and the next shift moves it.\n\n6. A small housekeeping note, and it needs nothing from you: your reply came through word-for-word as the recommendation I had written on the card. That is almost certainly you agreeing with it as written - but it is the one case where I cannot tell your answer from my own suggestion, so I am saying so rather than quietly assuming. If you meant something narrower than 400, point 5 is the road back.",
+  "edition": 468,
+  "updatedAt": "2026-09-22T11:00:00.000Z",
+  "shift": "A REFUSAL THAT BLAMED YOUR CAST FOR OUR OWN MISTAKE IS FIXED. NOTHING WAITS ON YOU.\n\n1. When a refine goes wrong there are four different reasons it can stop and hand the credits back. Three of them are OUR filing going wrong - the instruction gets built, and then something we wrote down about it does not line up with something else we wrote down, so the picture would have come out without the thing that was asked for. All three of those told the customer the same thing: \"That's a part of her I can't work on yet.\"\n\n2. That sentence is only true of the fourth one. The other three are us, and the wording taught exactly the wrong lesson: she reads that a part of her cast's body is unsupported, so she stops asking for it. The money comes back, so nothing else ever tells us it happened - which is why it could sit there. The three now say it was our end, that it was nothing about what she asked for, and to try again. The fourth keeps the old sentence, because for that one it has always been true.\n\n3. The part I want on the record, because it is where this nearly went wrong: every existing test of that old sentence was on one of the three branches that MOVED. So I could have split them, left the fourth one with a sentence nothing in the product ever produces, and had every test pass. There is now a test that drives the fourth one directly - taking freckles off, which we genuinely have no way to say yet.\n\n4. Before believing any of it I broke the change four ways on purpose. The last one is the one that matters: I gave the new reason the OLD sentence back, which is a rename that fixes nothing. Every other check in that file passed it happily. So the two sentences are now pinned against each other instead of against a fixed phrase, and that one went red.\n\n5. Checked the rest of that module for the same mistake by COUNTING rather than reading - every refusal reason against every place it can be raised. Only the new one has more than one place, which is the point of it. Nothing else left to split there.\n\n6. The other half of the same bug is filed and not built: the makeup reader tells you it could not see any makeup in your picture when what really happened is that it saw it and could not put it into usable words. Both facts it needs are already sitting there unused. It is not built tonight because it needs a small database change, and those go through a different lane than a night shift can finish on its own.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-22T10:11:04.717Z",
+      "readAt": "2026-09-22T10:57:37.715Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5145,6 +5145,13 @@
   ],
   "pipeline": [
     {
+      "id": "repaint-our-fault-1072",
+      "title": "A refine that fails on our paperwork stops saying it is your cast's fault",
+      "status": "merged",
+      "prNumber": 1075,
+      "note": "Live at 10:56 (build 05e08d38, read at the health check with 23 seconds' uptime - the new process, not the old one still answering). A refine can stop for four different internal reasons and hand the credits back. Three of them are our own records disagreeing with each other after the instruction was built; one is a genuine gap - a feature we have no way of saying has gone, like freckles. All four said \"That's a part of her I can't work on yet.\", which is true of the fourth and false of the first three. The three now say it was our end, that it was nothing to do with what was asked for, and to try again. Nothing else changes - same screen, same refund, one sentence swapped. Worth knowing: the credits always came back, so nobody would ever have reported this; the wording just quietly taught people to stop asking for that feature. Checked the rest of the module by counting every refusal reason against every place it fires, rather than by reading and judging - nothing else needs splitting."
+    },
+    {
       "id": "concept-retry-room-1073",
       "title": "Upload a concept: your 'wider' ruling - the retry gets 400, the way in stays 300",
       "status": "merged",
@@ -6986,9 +6993,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0922-foreman",
+      "id": "queue-shape-0922b-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 33 open, your list empty, none urgent. One bug open and it is the half of tonight's that needs a database change. No check-up clock fires before Wednesday.",
+      "detail": "Read at 11:00, after tonight's merge. 33 open cards, unchanged - one closed and one filed. 17 have had no comment, close, reopen or commit for a week or more, the same as last night; that figure counts real activity only, so a label edit does not reset it. Your own ordered list is empty and nothing is marked urgent. The one open bug is #1076, the makeup half of tonight's fix: a night shift can build it and open it, but it needs a small database change, and a change touching the database is reviewed by hand before it can go in - so it will sit for a review rather than closing itself overnight. That is the lane working as designed, not a blockage. Nothing here needs you."
+    },
+    {
+      "id": "queue-shape-0922-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 33 open, your ordered list empty, none urgent; one bug left and it needs a decision about wording, not a patch; no check-up clock before Wednesday",
       "detail": "Read at 10:10, after this shift's merge. 33 open cards. 17 have had no comment, close, reopen or commit for a week or more - that number jumped from 1 to 15 earlier this month when the reading was fixed to stop counting a label edit as attention, so it is a truer figure rather than a worse backlog; the oldest are #65, #14, #706, #26, #801, #15 and #60, all long-range casting roadmap items waiting on a milestone rather than rotting through neglect.\n\nUnder your switches: Bugs 1, everything else zero. That one bug is #1072 - two more refusal messages that tell a customer something untrue about her own request, found by sweeping for the same mistake as this morning's. It is deliberately not being batched: each one needs a sentence written for it, which is a wording decision rather than a patch.\n\nCheck-up clocks: Janitor is due 24 September, Warden 27th, Machinist and Retro 26th. None has fired."
     },
@@ -7778,7 +7792,7 @@
     194
   ],
   "nextUp": {
-    "readAt": "2026-09-22T10:11:04.717Z",
+    "readAt": "2026-09-22T10:57:37.714Z",
     "items": []
   }
 }
