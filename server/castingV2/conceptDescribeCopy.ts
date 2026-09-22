@@ -86,6 +86,30 @@ export const CONCEPT_DESCRIBE_COPY = {
      does not send her looking for a better photograph. */
   not_a_casting_note:
     "That came back as a list of details rather than a casting note. Try again, or describe them in your own words.",
+  /*
+     THE SAME SHAPE, MINUS THE FALSE NOUN (#1067).
+
+     `not_a_casting_note` was reached from the `long` fault as well as from
+     `absence` and the inventory case, so a read that was PROSE and merely ran
+     over the ceiling was described to her as "a list of details". Measured on
+     his own uploads (production, 2026-09-22 08:39–08:55Z, correlation ids on
+     the card): **six of seven reads sent back were `long`, and every one of
+     them was between 304 and 350 characters** — four within 5% of the 300
+     ceiling. None was an inventory; the shortest overran by four characters.
+
+     What is kept is everything #185 ruled: the fault is OURS, the sentence
+     does not send her looking for a better photograph, and the action she is
+     offered is identical. What changes is the one noun that was not true.
+
+     ⚠ **IT DOES NOT SAY HOW LONG, AND THAT IS THE POINT** (the
+     disappearing-technology law, clause 6). She did not write the read and
+     cannot act on its character count; a number here would be machinery
+     asking her to interpret it. "Longer than a casting note" is what
+     happened, in her vocabulary, and "try again, or describe them in your
+     own words" is what she can do about it.
+  */
+  ran_long:
+    "That came back longer than a casting note. Try again, or describe them in your own words.",
   unreadable: "I couldn't read that picture just now. Try again in a moment.",
   no_transport: "I couldn't read that picture just now. Try again in a moment.",
 } as const satisfies Readonly<Record<string, string>>;

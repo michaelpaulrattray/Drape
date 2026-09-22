@@ -321,7 +321,8 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
   { id: "gate_ink_unkeepable",
     reason: "item 7a's split of gate_ink_uncarried: the surface is BARE and the words road cannot crop a result there. Its population was `upperChest`, the one measured placement the words road did not serve — and the Basics chest court (2026-08-23) put the chest on the road, so `uncarriedInkPlaces` is EMPTY and no measured surface is seen-but-unkept. The refusal is kept because it is the only true thing to say about a placement in that state, which the next measured surface will be in on the day it is added",
     becomesReachable: "the day INK_PLACEMENTS gains a fourth surface — it lands unserved by the words road, which is exactly this door's state, before any court opens it" },
-  /* ── #192: THE CONCEPT UPLOAD'S FIVE DOORS — the map's first entrance that is
+  /* ── #192: THE CONCEPT UPLOAD'S DOORS (five at #192, SIX since #1067 split
+     `ran_long` off `not_a_casting_note`) — the map's first entrance that is
      not `refine`. The corpus drives ONE entrance: it sends a SENTENCE at a
      Cast. `castingV2.concept.describe` takes a PICTURE and no sentence at all,
      so no corpus row can be one of these — the same shape as the request-shape
@@ -342,6 +343,9 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
   { id: "concept.not_a_casting_note",
     reason: "answers a read that came back as an inventory rather than a type — #185's ruling in code, and the door is OURS by construction: the granularity rule is judged on our own reply, never on her picture",
     becomesReachable: "the same picture-carrying corpus row; the fault is in the reply, so reaching it deterministically means driving the describer with a doubled reader rather than a fixture picture" },
+  { id: "concept.ran_long",
+    reason: "answers a read that came back OVER the 300-character ceiling twice — prose about the right person, at the wrong length. Split off `concept.not_a_casting_note` by #1067, because that sentence calls the read \"a list of details\" and #185 ruled it about an INVENTORY: measured on his own uploads (production, 2026-09-22), six of seven reads sent back were this fault and every one was 304–350 characters, the shortest overrunning by four. Ours by construction, exactly as its sibling is — the length is judged on our own reply, never on her picture",
+    becomesReachable: "the same picture-carrying corpus row as its four siblings; the fault is in the reply's LENGTH, so reaching it deterministically means driving the describer with a doubled reader rather than a fixture picture" },
   { id: "concept.unreadable",
     reason: "answers a read that never arrived twice — an unparseable reply, a transport throw, or a 200 carrying an empty completion. Since #193 the second ask is bought before this is said, so the state it describes is TWO failures and not one",
     becomesReachable: "deliberately never as a corpus row: manufacturing two consecutive reader outages would test the harness, not the product. Its pin is its own arm, which is the shape `removal_uncheckable` is documented with above" },

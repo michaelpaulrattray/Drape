@@ -62,9 +62,11 @@ describe("the concept upload's refusal copy", () => {
     /*
       #185's ruling in one arm: `not_a_casting_note` is a fault in the read we
       produced, so its sentence must not imply her picture was the problem. The
-      same holds for the two transport sentences, which say "just now".
+      same holds for `ran_long`, which is the same family split off it (#1067 —
+      prose that overran is ours exactly as an inventory is), and for the two
+      transport sentences, which say "just now".
     */
-    for (const reason of ["not_a_casting_note", "unreadable", "no_transport"] as const) {
+    for (const reason of ["not_a_casting_note", "ran_long", "unreadable", "no_transport"] as const) {
       expect(CONCEPT_DESCRIBE_COPY[reason], reason).not.toMatch(/clearer|better (shot|picture|photo)/i);
     }
     /* And the positive half: the door that IS about her picture says so. */

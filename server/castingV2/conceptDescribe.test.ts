@@ -28,6 +28,7 @@ import {
   describeConcept,
   notAboutThePersonIn,
 } from "./conceptDescribe";
+import { conceptDescribeSentence } from "./conceptDescribeCopy";
 import { SUBJECT_INSTRUCTION } from "./interpreter";
 import { ProviderError, type ProviderFailureClass, type TextEngine } from "../providers/types";
 
@@ -353,13 +354,20 @@ describe("his specimens — the two shapes that pass and the one that fails", ()
     THE FIXTURE THAT PRODUCED THE RULING. A 1,082-character read is what he saw
     and refused; the bound exists to make it unshippable, and this arm is the
     negative control that proves the bound can fire on the real specimen shape.
+
+    ⚠ **IT TAKES `ran_long`, NOT `not_a_casting_note`, AND THE TRADE IS
+    DECLARED (#1067).** This specimen is BOTH an inventory and over-long, and
+    `faultIn` tests length first, so the length sentence is the one she gets.
+    Both sentences are true of 1,082 characters; only the length one is true of
+    the 307-character prose read his own upload produced. The refusal is
+    unchanged — what moved is which true sentence is shown.
   */
   it("refuses the 1,082-character shape that produced the ruling", async () => {
     const inventory = ("A man in his mid-forties with pale blue eyes, a heavy squared brow, "
       + "a number-two fade tight at the temples with grey coming in above the ears, ").repeat(8);
     expect(inventory.length).toBeGreaterThan(1000);
     expect(await describeConcept({ ...PICTURE, engine: engineSaying(said(inventory), said(inventory)) }))
-      .toEqual({ ok: false, reason: "not_a_casting_note", attempts: 2 });
+      .toEqual({ ok: false, reason: "ran_long", attempts: 2 });
   });
 });
 
@@ -572,7 +580,35 @@ describe("the reader", () => {
   it("re-asks rather than truncating an over-long read, and refuses if it comes back long again", async () => {
     const long = said(`${"a tall man with cropped grey hair and a heavy brow, ".repeat(40)}`);
     expect(await describeConcept({ ...PICTURE, engine: engineSaying(long, long) }))
-      .toEqual({ ok: false, reason: "not_a_casting_note", attempts: 2 });
+      .toEqual({ ok: false, reason: "ran_long", attempts: 2 });
+  });
+
+  /*
+    ⚠ **THE ARM #1067 WAS FILED ABOUT — PROSE THAT RAN OVER BY A ROUNDING IS
+    NOT CALLED A LIST.** His own upload on 2026-09-22 came back at 350 then 307
+    characters (correlation `req_1cb9b3348553`, production) and he was told his
+    reader had produced "a list of details". It had produced seven characters
+    too many. This drives the real entrance at the length his frame actually
+    hit, and asserts the sentence she is shown — a `reason` arm alone would
+    pass while the words stayed false, which is how the defect survived.
+  */
+  it("calls prose that overran by a rounding LONG, never a list of details", async () => {
+    /* 336 characters — inside the 304–350 band every one of his six long reads
+       landed in, and nothing like the 1,082-character inventory above. */
+    const overByARounding = said(
+      `${"a tall woman with close-cropped dark hair and a level brow, ".repeat(5)}a lean build and a wide, even mouth.`,
+    );
+    const text = JSON.parse(overByARounding).description as string;
+    expect(text.length, "the fixture must sit in the band his own reads hit").toBe(336);
+    expect(text.length).toBeGreaterThan(CONCEPT_DESCRIPTION_MAX);
+
+    expect(await describeConcept({ ...PICTURE, engine: engineSaying(overByARounding, overByARounding) }))
+      .toEqual({ ok: false, reason: "ran_long", attempts: 2 });
+
+    const shown = conceptDescribeSentence("ran_long");
+    expect(shown, "prose is never called a list").not.toMatch(/list of details|inventory/i);
+    expect(shown, "and it still must not send her for a better photograph")
+      .not.toMatch(/clearer|better (shot|picture|photo)/i);
   });
 
   /*

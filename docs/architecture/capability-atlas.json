@@ -91,7 +91,7 @@
         ],
         "sites": [
           "server/castingV2/conceptDescribe.ts:1120",
-          "server/castingV2/conceptDescribeCopy.ts:90"
+          "server/castingV2/conceptDescribeCopy.ts:114"
         ]
       },
       {
@@ -113,6 +113,17 @@
         ],
         "sites": [
           "server/castingV2/conceptDescribeCopy.ts:82"
+        ]
+      },
+      {
+        "id": "concept.ran_long",
+        "kind": "concept-refusal",
+        "pinnedBy": [
+          "server/castingV2/conceptDescribe.test.ts",
+          "server/castingV2/conceptDescribeCopy.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/conceptDescribeCopy.ts:111"
         ]
       },
       {
@@ -144,7 +155,7 @@
         "sites": [
           "server/castingV2/conceptDescribe.ts:1167",
           "server/castingV2/conceptDescribe.ts:1204",
-          "server/castingV2/conceptDescribeCopy.ts:89"
+          "server/castingV2/conceptDescribeCopy.ts:113"
         ]
       },
       {
@@ -1754,6 +1765,13 @@
         "message": "no corpus row reaches it: answers a read that came back describing the FRAME instead of the subject — the light, the set, the camera, a resemblance — twice in a row. It is a fault of our reader's output, not of her photograph, which is why it has its own sentence — a row could reach it via: the same picture-carrying corpus row, plus a fixture whose read reliably lands on the frame; the model's answer is the variable, so it is a probe rather than a fixture"
       },
       {
+        "id": "documented:concept.ran_long",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "concept.ran_long",
+        "message": "no corpus row reaches it: answers a read that came back OVER the 300-character ceiling twice — prose about the right person, at the wrong length. Split off `concept.not_a_casting_note` by #1067, because that sentence calls the read \"a list of details\" and #185 ruled it about an INVENTORY: measured on his own uploads (production, 2026-09-22), six of seven reads sent back were this fault and every one was 304–350 characters, the shortest overrunning by four. Ours by construction, exactly as its sibling is — the length is judged on our own reply, never on her picture — a row could reach it via: the same picture-carrying corpus row as its four siblings; the fault is in the reply's LENGTH, so reaching it deterministically means driving the describer with a doubled reader rather than a fixture picture"
+      },
+      {
         "id": "documented:concept.unreadable",
         "severity": "info",
         "kind": "documented-unreachable",
@@ -2872,6 +2890,13 @@
       "kind": "documented-unreachable",
       "subject": "concept.not_about_the_person",
       "message": "no corpus row reaches it: answers a read that came back describing the FRAME instead of the subject — the light, the set, the camera, a resemblance — twice in a row. It is a fault of our reader's output, not of her photograph, which is why it has its own sentence — a row could reach it via: the same picture-carrying corpus row, plus a fixture whose read reliably lands on the frame; the model's answer is the variable, so it is a probe rather than a fixture"
+    },
+    {
+      "id": "documented:concept.ran_long",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "concept.ran_long",
+      "message": "no corpus row reaches it: answers a read that came back OVER the 300-character ceiling twice — prose about the right person, at the wrong length. Split off `concept.not_a_casting_note` by #1067, because that sentence calls the read \"a list of details\" and #185 ruled it about an INVENTORY: measured on his own uploads (production, 2026-09-22), six of seven reads sent back were this fault and every one was 304–350 characters, the shortest overrunning by four. Ours by construction, exactly as its sibling is — the length is judged on our own reply, never on her picture — a row could reach it via: the same picture-carrying corpus row as its four siblings; the fault is in the reply's LENGTH, so reaching it deterministically means driving the describer with a doubled reader rather than a fixture picture"
     },
     {
       "id": "documented:concept.unreadable",
