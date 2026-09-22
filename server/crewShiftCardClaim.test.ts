@@ -25,8 +25,9 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { cardNumberOf, findCardPullRequests } from "../shared/crewShiftState";
 import {
   OPEN_PR_READ_TIMEOUT_MS,
@@ -34,6 +35,13 @@ import {
   renderCardClaimWarning,
   type OpenPullRequest,
 } from "../scripts/lib/cardClaimWarning.mts";
+
+/* ⚠ NO ARM HERE SPAWNS ANYTHING — every read goes through a fixture path — and
+   the deriver is still right to put this file in its population (#548): it
+   IMPORTS a module that calls `execFileSync`, and the import hop is what that
+   reader counts. The declaration costs nothing and the alternative is arguing
+   with a guard that found its own subject correctly. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const pr = (over: Partial<OpenPullRequest>): OpenPullRequest => ({
   number: 1,
