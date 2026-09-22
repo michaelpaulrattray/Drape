@@ -158,6 +158,65 @@ describe("the briefing file", () => {
     ).toThrow(/share one reply namespace/);
   });
 
+  it("⚠ one pull request gets one LIVE pipeline row, and finished rows keep their history (#1104)", () => {
+    /*
+      THE DEFECT, READ OFF HIS OWN PAGE (edition 478): PR #1078 had TWO rows,
+      both `in-review` — `makeup-our-cap-1076` written when it opened, and
+      `makeup-cap-unstuck-1076` written when a later shift repaired it instead
+      of updating the first. Different ids, so the `pipeline[].id` refinement
+      above passed it, the rite shipped, and he read the same fix waiting on
+      review twice.
+
+      The positive controls are what decide this arm, because a refinement
+      written over the whole array would pass the negative below by refusing
+      his history as well: the #622 pair (two `merged` rows naming one PR) and
+      the twenty rows carrying no PR at all must both still parse.
+    */
+    const valid = JSON.parse(readFileSync(briefingPath, "utf8"));
+    const row = { ...valid.pipeline[0], prNumber: 1078, cardId: undefined };
+    const live = (id: string) => ({ ...row, id, status: "in-review" });
+    const done = (id: string) => ({ ...row, id, status: "merged" });
+
+    expect(() =>
+      crewBriefingSchema.parse({ ...valid, pipeline: [live("a"), live("b")] }),
+    ).toThrow(/pipeline\[\]\.prNumber/);
+
+    /* Every non-merged status is live for this purpose — `building` beside an
+       `in-review` row is the same sentence written twice. */
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        pipeline: [live("a"), { ...row, id: "b", status: "building" }],
+      }),
+    ).toThrow(/pipeline\[\]\.prNumber/);
+
+    /* POSITIVE CONTROL 1 — the #622 shape: two finished rows may name one PR.
+       Two pieces of work can ride one merge, and his history is not ours to
+       delete to satisfy a guard. */
+    expect(() =>
+      crewBriefingSchema.parse({ ...valid, pipeline: [done("a"), done("b")] }),
+    ).not.toThrow();
+
+    /* POSITIVE CONTROL 2 — rows with no PR cannot collide with each other.
+       They are 20 of the 271 in the shipped file, so a rule that keyed on a
+       null would refuse the very next edition. */
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        pipeline: [{ ...row, id: "a", prNumber: null }, { ...row, id: "b", prNumber: null }],
+      }),
+    ).not.toThrow();
+
+    /* POSITIVE CONTROL 3 — two live rows naming DIFFERENT pull requests are
+       the ordinary case and must stay ordinary. */
+    expect(() =>
+      crewBriefingSchema.parse({
+        ...valid,
+        pipeline: [live("a"), { ...row, id: "b", prNumber: 1079, status: "in-review" }],
+      }),
+    ).not.toThrow();
+  });
+
   it("⚠ a pipeline row may not claim he is blocking it unless his desk agrees (#291)", () => {
     /*
       THE DEFECT THIS REFUSES, MEASURED: seven rows said `waiting-founder`
