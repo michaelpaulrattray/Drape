@@ -29,6 +29,16 @@
  * CLI beside it does the I/O.
  */
 import { type ReviewPresence } from "./reviewRounds.mts";
+/*
+  ⚠ THE CONFLICT TEST IS THE DECLARATION'S, THE REST OF THIS FILE'S VERDICTS
+  ARE NOT (#1103). This module asks a richer question than "is it conflicting"
+  — it separates BEHIND, BLOCKED and UNKNOWN into three verdicts with three
+  remedies, because it is deciding whether to MERGE rather than whether to
+  warn. Only the CONFLICTING/DIRTY predicate is shared; the three branches
+  below keep their own reads on purpose, and folding them would lose the
+  distinctions the skips are built on.
+*/
+import { readPullRequestConflict } from "../../shared/crewShiftState.js";
 
 /** What a named check says on the PR's CURRENT head commit. */
 export type GateState = "green" | "red" | "running" | "absent";
@@ -693,7 +703,7 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
             action retired (#1065) the hand-review road is the only road, and a
             re-run then reaches the sync below.
           */
-          (pr.mergeable === "CONFLICTING" || pr.mergeStateStatus === "DIRTY"
+          (readPullRequestConflict(pr) === true
             ? " ⚠ This PR is also CONFLICTING; the sync happens after the acknowledgement."
             : ""),
       };
@@ -703,7 +713,10 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
   // 5. Mergeability. UNKNOWN is GitHub still computing, which it always is for
   //    a few seconds after a merge lands on main — waiting is the correct
   //    reading of it, and treating it as clean is how a tool merges a conflict.
-  if (pr.mergeable === "CONFLICTING" || pr.mergeStateStatus === "DIRTY") {
+  /* `=== true` rather than truthiness: the declaration's third state is `null`
+     for "not knowable", and `if (x)` would read that as clean — which on the
+     tool that MERGES is the direction that merges a conflict. */
+  if (readPullRequestConflict(pr) === true) {
     return syncOrStop(
       pr,
       "it is CONFLICTING with main — in this repository that is nearly always the two " +

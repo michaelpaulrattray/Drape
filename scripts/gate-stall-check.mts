@@ -40,6 +40,7 @@ import {
   type GateRun,
   type StallVerdict,
 } from "./lib/gateStall.mts";
+import { readPullRequestConflict } from "../shared/crewShiftState.js";
 
 const GATE_WORKFLOW_PATH = ".github/workflows/gate.yml";
 
@@ -127,7 +128,10 @@ function read(): { verdict: StallVerdict; sha: string; suites: Suite[]; runs: Ga
       "headRefOid,headRefName,isDraft,state,mergeable,mergeStateStatus"]),
   ) as {
     headRefOid: string; headRefName: string; isDraft: boolean; state: string;
-    mergeable: string; mergeStateStatus: string;
+    /* Optional on purpose: `gh` omits a field it was not asked for, and a type
+       that swears they are always strings is the reason the old copy could
+       read an absent field as "not conflicting" without anything noticing. */
+    mergeable?: string | null; mergeStateStatus?: string | null;
   };
   const sha = head.headRefOid;
 
@@ -170,16 +174,21 @@ function read(): { verdict: StallVerdict; sha: string; suites: Suite[]; runs: Ga
       and is deliberately NOT read as conflicting: `false` would be a claim
       this reader has not earned, so it passes `null` and the clock decides as
       it always did.
+
+      ⚠ THE THREE STATES WERE SPELLED OUT HERE FIRST AND THAT SPELLING IS NOW
+      THE DECLARATION'S (#1103). `readPullRequestConflict` was copied FROM
+      these lines, so calling it changes no verdict this reader has ever given
+      — with one honest exception, and it runs the safe way: if the `--json`
+      list above ever loses these two fields, the old copy read them as
+      `undefined` and answered FALSE, which is "no conflict here" said about a
+      question it could not see. The declaration answers `null`, and the clock
+      decides exactly as it does for UNKNOWN.
     */
     verdict: decideStall({
       runs,
       pushedAt,
       now: new Date().toISOString(),
-      conflicting: head.mergeable === "CONFLICTING" || head.mergeStateStatus === "DIRTY"
-        ? true
-        : head.mergeable === "UNKNOWN" || head.mergeStateStatus === "UNKNOWN"
-          ? null
-          : false,
+      conflicting: readPullRequestConflict(head),
     }),
     sha,
     suites,

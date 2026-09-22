@@ -21,13 +21,14 @@
  * Nothing here touches a network, a token or a live queue: the reader takes a
  * fixture path, and the source arm reads the file's bytes.
  */
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { readListedSource } from "./testing/listedSource";
 import {
   cardNumberOf,
   findCardPullRequests,
@@ -456,5 +457,119 @@ describe("the three shift-facing readers all speak the one sentence", () => {
     expect(PR_CONFLICT_NOTE).toContain("NO LONGER BE MERGED");
     expect(PR_CONFLICT_NOTE).toContain("fires no workflow run");
     expect(PR_CONFLICT_NOTE).toContain("#984");
+  });
+});
+
+/*
+  ONE SPELLING OF "CAN THIS PULL REQUEST STILL BE MERGED" (#1103).
+
+  The three arms above hold three NAMED files to the declaration, which is the
+  mirror working law 4 warns about: a list of callers drifts from the tree the
+  moment somebody writes a fourth. Measured on 2026-09-22 — there were four
+  readers of mergeability and THREE spellings of the rule, while the
+  declaration's own docblock said *"two callers, no second definition"*. The
+  copies were in `gate-stall-check.mts` (the origin the declaration was copied
+  FROM) and twice in `prMergeOrder.mts`, and nothing anywhere could notice.
+
+  So this arm derives the population instead of naming it: every production
+  source file under `scripts/` and `shared/` is read, and a comparison against
+  `"CONFLICTING"` or `"DIRTY"` outside the declaration is the finding. Prose
+  and fixtures are untouched — the pattern is a COMPARISON, which is why
+  `prMergeOrder.mts`'s sentence *"This PR is also CONFLICTING"* and the test
+  fixtures that build one stay legal.
+*/
+describe("the conflict vocabulary has exactly one declaration", () => {
+  const root = resolve(import.meta.dirname, "..");
+  const DECLARATION = "shared/crewShiftState.ts";
+  /* `x === "CONFLICTING"` / `!== "DIRTY"`, either quote style. A fixture
+     literal (`mergeable: "CONFLICTING"`) carries no comparison operator and is
+     deliberately outside this. */
+  const COMPARISON = /[=!]==\s*["'](?:CONFLICTING|DIRTY)["']/;
+
+  const sources = (dir: string): string[] => {
+    const out: string[] = [];
+    for (const entry of readdirSync(resolve(root, dir), { withFileTypes: true })) {
+      const rel = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (entry.name === "node_modules") continue;
+        out.push(...sources(rel));
+      /* ⚠ A SHIFT'S OWN DISPOSABLE IS NOT PRODUCTION AND IS NOT SWEPT. This
+         walks the real `scripts/`, which in a working tree carries hundreds of
+         untracked `_*-disposable.mts` throwaways (#8) — one of them reading a
+         PR's state by hand would redden an unrelated shift's suite over a file
+         nobody will ever merge. CI never sees them at all. */
+      } else if (entry.name.startsWith("_")) {
+        continue;
+      } else if (/\.(ts|mts)$/.test(entry.name) && !/\.test\.(ts|mts)$/.test(entry.name)) {
+        out.push(rel);
+      }
+    }
+    return out;
+  };
+
+  const population = [...sources("scripts"), ...sources("shared")];
+  /* ⚠ `readListedSource`, never a bare `readFileSync` (#223): this walks the
+     REAL `scripts/` directory, which carries hundreds of untracked disposables
+     and is churned by parallel suites — a file listed a moment ago can be gone
+     at the read, and the ENOENT refuses the deploy rite on a clean tree. A
+     `null` is skipped; it is a file that was not there, not an empty one. */
+  const sourceOf = (rel: string): string | null => readListedSource(resolve(root, rel));
+
+  /* POSITIVE CONTROL, and it is the arm that keeps this honest: the pattern
+     must MATCH the declaration. A regex that matches nothing passes the sweep
+     below by being broken, which is how a guard reports a clean tree for
+     months. */
+  it("the pattern finds the declaration itself", () => {
+    expect(population).toContain(DECLARATION);
+    const declaration = sourceOf(DECLARATION);
+    expect(declaration, "the declaration is tracked and cannot vanish mid-walk").not.toBeNull();
+    expect(COMPARISON.test(declaration!)).toBe(true);
+  });
+
+  it("⚠ no file outside the declaration spells the rule for itself", () => {
+    const offenders = population
+      .filter((rel) => rel !== DECLARATION)
+      .filter((rel) => COMPARISON.test(sourceOf(rel) ?? ""));
+    expect(offenders, `call readPullRequestConflict() instead: ${offenders.join(", ")}`).toEqual([]);
+  });
+
+  /* And the field names the declaration reads must actually be ASKED for. This
+     is #1099's own measured hole: a `--json` list that quietly loses
+     `mergeable,mergeStateStatus` leaves every reader correctly answering
+     `null` and every warning silent, with nothing red anywhere. No fixture can
+     see it, because the fixtures carry the fields. */
+  it("⚠ every caller's --json list still asks GitHub for both fields", () => {
+    /*
+      ⚠ THE POPULATION RESOLVES ONE IMPORT HOP, AND THE FIRST SHAPE OF THIS ARM
+      DID NOT — a sabotage that trimmed `mergeable,mergeStateStatus` out of
+      `crew-desk-sweep.mts` passed it. That script never calls the reader by
+      name: it hands the rows to `planPipelineRowStates`, which does. Keying on
+      the call alone missed the one caller whose whole job is reading a live
+      board, which is the same derived-population mistake this card is about.
+    */
+    const reads = (rel: string): boolean => {
+      const source = sourceOf(rel) ?? "";
+      return /readPullRequestConflict\(/.test(source)
+        || /from "[^"]*crewShiftState(\.js)?"/.test(source)
+        || /from "[^"]*prMergeOrder\.mts"/.test(source);
+    };
+    const asks = (rel: string): boolean => /"pr",\s*"(view|list)"/.test(sourceOf(rel) ?? "");
+
+    const callers = population.filter((rel) => reads(rel) && asks(rel));
+    /* The four measured on 2026-09-23: gate-stall-check, crew-desk-sweep,
+       cardClaimWarning, pr-merge-in-order. A floor rather than an equality —
+       a fifth caller is the thing this arm exists to cover, not to refuse. */
+    expect(callers.length).toBeGreaterThanOrEqual(4);
+
+    for (const rel of callers) {
+      const source = sourceOf(rel);
+      if (source === null) continue;
+      const lists = [...source.matchAll(/"--json",\s*"([^"]+)"/g)].map((m) => m[1]!);
+      expect(lists.length, `${rel} reads PRs but no --json list was found`).toBeGreaterThan(0);
+      expect(
+        lists.some((list) => list.includes("mergeable") && list.includes("mergeStateStatus")),
+        `${rel} reads conflicts but no --json list of its own still asks for both fields`,
+      ).toBe(true);
+    }
   });
 });
