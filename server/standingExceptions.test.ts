@@ -391,6 +391,36 @@ describe("is somebody already building it (#1094) — this view offered a card a
     expect(out).toMatch(/names this card in its body/);
   });
 
+  /*
+    ⚠ AND WHETHER IT CAN STILL BE MERGED (#1099). A PR named here as "already
+    being built" may have gone CONFLICTING under a moved main, at which point
+    nothing is being built at all — and the checks page still shows green,
+    because a conflicting PR fires no run for any event. #1078 sat that way for
+    nine hours with this very line printing beside it.
+  */
+  it("⚠ says the claiming PR can no longer be merged, and names the repair", () => {
+    const out = render([his], [], [pr({ mergeable: "CONFLICTING", mergeStateStatus: "DIRTY" })]);
+    expect(out).toContain("ALREADY BEING BUILT?");
+    expect(out).toContain("NO LONGER BE MERGED");
+    expect(out).toContain("Re-merge main on its branch");
+  });
+
+  /* Negative control: without it, the arm above passes against a renderer that
+     prints the note on every claimed card. */
+  it("says nothing about mergeability on a CLEAN claiming PR", () => {
+    const out = render([his], [], [pr({ mergeable: "MERGEABLE", mergeStateStatus: "CLEAN" })]);
+    expect(out).toContain("ALREADY BEING BUILT?");
+    expect(out).not.toContain("NO LONGER BE MERGED");
+  });
+
+  it("⚠ says nothing while GitHub is still computing, and nothing when the fields never came", () => {
+    expect(render([his], [], [pr({ mergeable: "UNKNOWN", mergeStateStatus: "UNKNOWN" })]))
+      .not.toContain("NO LONGER BE MERGED");
+    /* The fixture below carries no mergeability fields at all — the shape a
+       trimmed `--json` list would produce. It must read as not knowable. */
+    expect(render([his], [], [pr()])).not.toContain("NO LONGER BE MERGED");
+  });
+
   it("a draft is named as a draft — it is a different fact about the other seat", () => {
     expect(render([his], [], [pr({ isDraft: true })])).toContain("(draft)");
   });

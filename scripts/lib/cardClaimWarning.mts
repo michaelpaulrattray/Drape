@@ -19,7 +19,13 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { cardNumberOf, findCardPullRequests } from "../../shared/crewShiftState.js";
+import {
+  cardNumberOf,
+  findCardPullRequests,
+  PR_CONFLICT_NOTE,
+  readPullRequestConflict,
+  type PullRequestMergeability,
+} from "../../shared/crewShiftState.js";
 
 /**
  * Twenty seconds. `gh pr list` on this repository is well under a second, and
@@ -28,8 +34,17 @@ import { cardNumberOf, findCardPullRequests } from "../../shared/crewShiftState.
  */
 export const OPEN_PR_READ_TIMEOUT_MS = 20_000;
 
-/** The shape `gh pr list --json number,title,body,url,isDraft,headRefName` gives back. */
-export interface OpenPullRequest {
+/**
+ * The shape the `--json` list below gives back.
+ *
+ * ⚠ **`mergeable`/`mergeStateStatus` are INHERITED, not declared here** (#1099).
+ * `shiftDigest.mts` keeps its own structural copy of this shape on purpose (its
+ * docblock says why), so two hand-written copies of those two field names would
+ * be working law 4 in miniature — a mirror that drifts, on the one pair of
+ * fields this warning now depends on. Both shapes extend the one declaration in
+ * `shared/crewShiftState.ts`, beside the reader that judges them.
+ */
+export interface OpenPullRequest extends PullRequestMergeability {
   readonly number?: number;
   readonly title?: string;
   readonly body?: string;
@@ -55,8 +70,8 @@ export interface OpenPullRequest {
  * `cwd` exists because this reader has a SECOND caller since #1094 — the shift
  * digest, which is given a `--root` and must ask about that repository rather
  * than whichever directory it was launched from. It is a parameter and not a
- * second reader on purpose: a copied `--json number,title,body,url,isDraft,
- * headRefName` in the digest would be a mirror of the field list this file's
+ * second reader on purpose: a copied `--json` field list
+ * in the digest would be a mirror of the field list this file's
  * matcher depends on, and a mirror drifts (working law 4). One field list, one
  * `gh` call shape, two callers.
  */
@@ -76,7 +91,7 @@ export function readOpenPullRequests(
     /* `gh` with no shell — it is an .exe, and the shell form emits DEP0190. */
     const out = execFileSync(
       "gh",
-      ["pr", "list", "--state", "open", "--limit", "100", "--json", "number,title,body,url,isDraft,headRefName"],
+      ["pr", "list", "--state", "open", "--limit", "100", "--json", "number,title,body,url,isDraft,headRefName,mergeable,mergeStateStatus"],
       {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
@@ -121,7 +136,11 @@ export function renderCardClaimWarning(
     .map(({ pr, where }) =>
       `   #${pr.number ?? "?"}${pr.isDraft ? " (draft)" : ""} ${pr.url ?? ""}`
       + `\n     ${String(pr.title ?? "").slice(0, 110)}`
-      + `\n     the number is in its ${where.join(" and ")}`)
+      + `\n     the number is in its ${where.join(" and ")}`
+      /* ⚠ Only a CONFLICT is spoken (#1099). `null` — GitHub still computing,
+         or the fields absent — prints nothing rather than vouching for a PR this
+         reader has not been told about; `false` needs no line at all. */
+      + (readPullRequestConflict(pr) === true ? `\n     ⚠ ${PR_CONFLICT_NOTE}` : ""))
     .join("\n");
   return `\n⚠ ${claimed.length} OPEN pull request${one ? "" : "s"} already name${one ? "s" : ""} ${cardRef}:\n${rows}\n`
     + "\n  This is a WARNING and the run is opening anyway — an open PR may be your own"
