@@ -2914,6 +2914,14 @@ export const CASTING_REFERENCE_READ_OUTCOMES = [
      this count so the door's false-positive rate has a signal that is a
      reading of live use rather than of a corpus somebody chose. */
   "drawn_narrowed",
+  /* Migration 0065 — the makeup reader answered, and not one of its answers was
+     short enough to use, so the composer was handed nothing. Kept apart from
+     `no_makeup_visible` (which is *there is no makeup on that face*, true of the
+     class read and the presence gate) and from `unreadable` (which sends her for
+     a different photograph, and hers was fine): this one is OUR cap, so a tally
+     that merged it into either would aim the next repair at a picture instead of
+     at the ask. #1076. */
+  "answers_over_cap",
 ] as const;
 
 /**
