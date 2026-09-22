@@ -34,7 +34,8 @@ import {
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   CASTING_REFINE_DISPATCH_SCOPE_ENV,
   CASTING_RETRY_SCOPE_ENV,
-  CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV,
+  CASTING_ROLL_ENGINE_SCOPE_ENV,
+  CASTING_ROLL_ENGINE_MODEL_ENV,
   CASTING_REPAINT_SCOPE_ENV,
   CASTING_SIDE_PHRASING_SCOPE_ENV,
   CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
@@ -68,7 +69,7 @@ import {
   validateCastingReferenceLibraryEnvironment,
   validateCastingRefineDispatchEnvironment,
   validateCastingRetryEnvironment,
-  validateCastingRollEngineFlareEnvironment,
+  validateCastingRollEngineEnvironment,
   validateCastingRepaintEnvironment,
   validateCastingSidePhrasingEnvironment,
   validateCastingScanTableEnvironment,
@@ -412,9 +413,10 @@ export function validateEnv(): void {
     GPT Image 2 otherwise. Parent is the CASTING scope alone — an engine is a
     property of a roll, and a user with no roll has no engine to choose.
   */
-  validateCastingRollEngineFlareEnvironment({
-    scope: process.env[CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV],
+  validateCastingRollEngineEnvironment({
+    scope: process.env[CASTING_ROLL_ENGINE_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
+    model: process.env[CASTING_ROLL_ENGINE_MODEL_ENV],
   });
   /*
     TAKING HER HAIR FROM AN ATTACHED PICTURE. Its parent is the ATTACH door and

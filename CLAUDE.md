@@ -612,7 +612,7 @@ the live service on every push.
 | `CASTING_CONCEPT_UPLOAD_SCOPE` | upload a concept — a picture in, a description of the being out |
 | `CASTING_REFINE_DISPATCH_SCOPE` | whether the paid half of a refine stops holding the request |
 | `CASTING_RETRY_SCOPE` | the Retry button on a failed tile |
-| `CASTING_ROLL_ENGINE_FLARE_SCOPE` | which engine the roll road renders on — GPT Image 2.5 Flare under scope, GPT Image 2 otherwise |
+| `CASTING_ROLL_ENGINE_SCOPE` | whether the roll road renders on a GPT Image 2.5 model, and for whom — `CASTING_ROLL_ENGINE_MODEL` (`flare` / `sunburst`) says which; GPT Image 2 otherwise |
 | `CASTING_TWO_PATHS_SCOPE` | the Wardrobe / Basics path choice — a road the founder has ruled RETIRED |
 | `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` | keeping the frame from a refused render, and the words of a refused roll, for diagnosis |
 | `R7_SNAPSHOT_READ_SCOPE` | the R7-7B snapshot reader rollout |
@@ -624,6 +624,7 @@ the live service on every push.
 | `ENABLE_FINAL_MODEL_DELETE` | permanent Cast deletion, for every account — a boolean with no per-user narrowing |
 | `CREW_TAB_SCOPE` | the Crew tab at `/admin/crew` — his briefing and his reply box |
 
+- `CASTING_ROLL_ENGINE_MODEL` — `flare` or `sunburst`; which GPT Image 2.5 model `CASTING_ROLL_ENGINE_SCOPE`'s users roll on (a boot refusal if the scope names anyone and this is unset). See the catalogue entry
 - `FAL_KEY` — fal.ai credential; the casting image transport (GPT Image 2 for rolls, Nano Banana Pro for identity work). `OPENROUTER_API_KEY` — text transport (brief interpreter, treatment stage) and image fallback
 - `FAL_ACCOUNT_CEILING` (default 20) — the provider account's own concurrent-request ceiling, quoted from its 429. Five paths spend it and `assertFalBudget()` REFUSES TO BOOT if their sum exceeds it, or if any of them is set to zero: `ROLL_IMAGE_CONCURRENCY` 8 + `SIGN_VIEW_CONCURRENCY` 3 + `REFINE_EDIT_CONCURRENCY` 3 + `FAL_CONCURRENCY` 5 + `INK_PLATE_CONCURRENCY` 1 = 20. The plate mint's slot came out of the **courtesy** pool (region reads 6 → 5, 2026-08-18) rather than any paid path, and it costs the panel nothing at the size the reader actually runs: a face scan is 20 segmenter calls, and `ceil(20/6)` and `ceil(20/5)` are both four waves
 - `FAL_CONCURRENCY` (default 5, was 6 until the plate mint was wired) — how many fal calls the segmenter may have in flight at once. The account's ceiling is **20 concurrent requests**, and one panel scan asks eleven questions with every bilateral one becoming two more, so an ungated reader spends the whole allowance on one face: measured 2026-08-14, eight panels opened at once returned no rows at all on five of them, with the provider answering `429 concurrent_requests_limit`. Below 20 on purpose — roll dispatch spends from the same allowance

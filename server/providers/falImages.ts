@@ -64,7 +64,7 @@ export const FAL_GPT_IMAGE_2_EDIT = "openai/gpt-image-2/edit";
 /**
  * GPT IMAGE 2.5 FLARE — the roll engine the founder chose at his eye on court
  * #1068 (2026-09-22: *"honestly flare gave good results"*, then *"switch to
- * flare"*). Rendered through `CASTING_ROLL_ENGINE_FLARE_SCOPE` (#1079). Its
+ * flare"*). Rendered through `CASTING_ROLL_ENGINE_SCOPE` + `CASTING_ROLL_ENGINE_MODEL=flare` (#1079, #1084). Its
  * edit door is the sibling an image-anchored Follow roll takes.
  *
  * ⚠ PRICE NOT YET MEASURED at medium 1024×1536 — the census still records
@@ -75,6 +75,14 @@ export const FAL_GPT_IMAGE_2_EDIT = "openai/gpt-image-2/edit";
 export const FAL_GPT_IMAGE_25_FLARE = "openai/gpt-image-2.5/flare/text-to-image";
 export const FAL_GPT_IMAGE_25_FLARE_EDIT = "openai/gpt-image-2.5/flare/edit";
 /**
+ * GPT IMAGE 2.5 SUNBURST — the "precision" 2.5 model. His eye after three
+ * Flare rolls (2026-09-22): *"flare is producing bad results - switch over to
+ * sunburst and let me try it"* — Flare refused 4 of 8 on roll 276 and read
+ * wrong to him on 274/275. Same unread-price caveat as Flare.
+ */
+export const FAL_GPT_IMAGE_25_SUNBURST = "openai/gpt-image-2.5/sunburst/text-to-image";
+export const FAL_GPT_IMAGE_25_SUNBURST_EDIT = "openai/gpt-image-2.5/sunburst/edit";
+/**
  * THE EDIT SIBLING OF EACH ROLL ENGINE (#1079). An image-anchored render (the
  * Follow road's attached photo, #177 Row A) goes to the SAME model's edit door
  * — a roll and its Follow must be one engine, or one cast wears two looks. A
@@ -84,6 +92,7 @@ export const FAL_GPT_IMAGE_25_FLARE_EDIT = "openai/gpt-image-2.5/flare/edit";
 export const FAL_EDIT_SIBLINGS: Readonly<Record<string, string>> = {
   [FAL_GPT_IMAGE_2]: FAL_GPT_IMAGE_2_EDIT,
   [FAL_GPT_IMAGE_25_FLARE]: FAL_GPT_IMAGE_25_FLARE_EDIT,
+  [FAL_GPT_IMAGE_25_SUNBURST]: FAL_GPT_IMAGE_25_SUNBURST_EDIT,
 };
 export function editSiblingOf(model: string): string | null {
   return FAL_EDIT_SIBLINGS[model] ?? null;
