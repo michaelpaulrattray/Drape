@@ -523,16 +523,37 @@ describe("the conflict vocabulary has exactly one declaration", () => {
      `null` and every warning silent, with nothing red anywhere. No fixture can
      see it, because the fixtures carry the fields. */
   it("⚠ every caller's --json list still asks GitHub for both fields", () => {
-    const callers = population.filter((rel) =>
-      /readPullRequestConflict\(/.test(readFileSync(resolve(root, rel), "utf8")));
-    expect(callers.length).toBeGreaterThanOrEqual(3);
+    /*
+      ⚠ THE POPULATION RESOLVES ONE IMPORT HOP, AND THE FIRST SHAPE OF THIS ARM
+      DID NOT — a sabotage that trimmed `mergeable,mergeStateStatus` out of
+      `crew-desk-sweep.mts` passed it. That script never calls the reader by
+      name: it hands the rows to `planPipelineRowStates`, which does. Keying on
+      the call alone missed the one caller whose whole job is reading a live
+      board, which is the same derived-population mistake this card is about.
+    */
+    const reads = (rel: string): boolean => {
+      const source = readFileSync(resolve(root, rel), "utf8");
+      return /readPullRequestConflict\(/.test(source)
+        || /from "[^"]*crewShiftState(\.js)?"/.test(source)
+        || /from "[^"]*prMergeOrder\.mts"/.test(source);
+    };
+    const asks = (rel: string): boolean =>
+      /"pr",\s*"(view|list)"/.test(readFileSync(resolve(root, rel), "utf8"));
+
+    const callers = population.filter((rel) => reads(rel) && asks(rel));
+    /* The four measured on 2026-09-23: gate-stall-check, crew-desk-sweep,
+       cardClaimWarning, pr-merge-in-order. A floor rather than an equality —
+       a fifth caller is the thing this arm exists to cover, not to refuse. */
+    expect(callers.length).toBeGreaterThanOrEqual(4);
+
     for (const rel of callers) {
       const source = readFileSync(resolve(root, rel), "utf8");
-      /* Only the files that do their own reading — a caller handed PRs by
-         another module has no list of its own to keep. */
-      if (!/"--json"/.test(source)) continue;
-      expect(source, `${rel} reads conflicts but its --json list has lost the fields`)
-        .toMatch(/mergeable,mergeStateStatus|mergeStateStatus,mergeable/);
+      const lists = [...source.matchAll(/"--json",\s*"([^"]+)"/g)].map((m) => m[1]!);
+      expect(lists.length, `${rel} reads PRs but no --json list was found`).toBeGreaterThan(0);
+      expect(
+        lists.some((list) => list.includes("mergeable") && list.includes("mergeStateStatus")),
+        `${rel} reads conflicts but no --json list of its own still asks for both fields`,
+      ).toBe(true);
     }
   });
 });
