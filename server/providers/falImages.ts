@@ -63,6 +63,47 @@ export const FAL_GPT_IMAGE_2 = "openai/gpt-image-2";
 export const FAL_GPT_IMAGE_2_EDIT = "openai/gpt-image-2/edit";
 
 /**
+ * GPT Image 2.5 FLARE — the roll engine inside
+ * `CASTING_ROLL_ENGINE_FLARE_SCOPE` (#1079).
+ *
+ * Endpoint and edit sibling verified 2026-09-22 AT THE WIRE, not from a docs
+ * page, the same way the base model's contract above was taken: an empty body
+ * posted to each slug returns `422 {prompt: Field required}` from a queue that
+ * accepted the application, while an invented sibling
+ * (`openai/gpt-image-2.5/flare/image-to-image`) answers
+ * `404 Application "gpt-image-2.5" not found`. So the probe can tell an
+ * endpoint that exists from one that does not, and both of these exist; the
+ * edit door's required fields are `prompt` + `image_urls`, identical to GPT
+ * Image 2's.
+ *
+ * Chosen on the founder's eye over court #1068 (his own cyborg brief, 8 tiles
+ * per arm, 24/24 delivered, 0 refusals): *"honestly flare gave good results …
+ * switch to flare and let me roll some ill be able to see the difference."*
+ *
+ * ⚠ **ITS FAL-SIDE PRICE IS UNREAD, AND NOTHING HERE PRETENDS OTHERWISE.**
+ * There is deliberately no `…_MEASURED_USD_PER_IMAGE` constant for Flare: the
+ * one above is already stale by ~2.5× and a second unmeasured number beside it
+ * would be a worse lie, not a better estimate. The receipt from his next rolls
+ * is where the figure comes from.
+ */
+export const FAL_GPT_IMAGE_2_5_FLARE = "openai/gpt-image-2.5/flare/text-to-image";
+export const FAL_GPT_IMAGE_2_5_FLARE_EDIT = "openai/gpt-image-2.5/flare/edit";
+
+/**
+ * THE EDIT SIBLING, PER MODEL — a map rather than an `if`.
+ *
+ * An anchored render (one carrying references) goes to the SAME model's edit
+ * door; the pairing is a property of the model, so it is declared beside the
+ * models instead of being re-derived at the call. A model absent from this map
+ * has no edit door here and refuses an anchored request rather than dropping
+ * the attachment — see the dispatch below for why that refusal exists.
+ */
+export const FAL_EDIT_SIBLINGS: Readonly<Record<string, string>> = {
+  [FAL_GPT_IMAGE_2]: FAL_GPT_IMAGE_2_EDIT,
+  [FAL_GPT_IMAGE_2_5_FLARE]: FAL_GPT_IMAGE_2_5_FLARE_EDIT,
+};
+
+/**
  * MEASURED, not listed: $0.8912 across 9 medium-quality 1024×1536 images on
  * 2026-07-30, read from the account balance before and after. List-price
  * arithmetic put it at $0.084, so the real rate is ~18% higher — which is
@@ -143,20 +184,24 @@ export function createFalCreativeEngine(config: FalCreativeConfig): CreativeEngi
         THE ANCHOR PHOTO (#177 Row A): a request carrying references is an
         IMAGE-ANCHORED render and goes to the same model's EDIT endpoint —
         the wire the #177 court measured (24/24 delivered, the anchor as a
-        data URI in `image_urls`). Only GPT Image 2 has that sibling here;
-        any other configured model REFUSES rather than rendering without the
-        attachment, because these prompts say "the attached look" and a
-        dropped attachment would paint strangers against a sentence about a
-        photograph that never arrived (`CandidateRequest.references`).
+        data URI in `image_urls`). The sibling is looked up per model in
+        `FAL_EDIT_SIBLINGS`, so a roll on Flare goes to FLARE's edit door and
+        not to GPT Image 2's — an anchored Follow that silently changed engine
+        would answer one sheet with another studio's face. A model with no
+        sibling there REFUSES rather than rendering without the attachment,
+        because these prompts say "the attached look" and a dropped attachment
+        would paint strangers against a sentence about a photograph that never
+        arrived (`CandidateRequest.references`).
       */
       const references = request.references ?? [];
-      if (references.length > 0 && model !== FAL_GPT_IMAGE_2) {
+      const editSibling = FAL_EDIT_SIBLINGS[model];
+      if (references.length > 0 && editSibling === undefined) {
         throw new ProviderError(
           "capability",
           `engine ${model} has no edit sibling to attach an image reference to`,
         );
       }
-      const endpoint = references.length > 0 ? FAL_GPT_IMAGE_2_EDIT : model;
+      const endpoint = references.length > 0 ? editSibling : model;
 
       return queue.run("generateCandidate", () =>
         withRetry(

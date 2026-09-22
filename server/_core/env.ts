@@ -34,6 +34,7 @@ import {
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   CASTING_REFINE_DISPATCH_SCOPE_ENV,
   CASTING_RETRY_SCOPE_ENV,
+  CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV,
   CASTING_REPAINT_SCOPE_ENV,
   CASTING_SIDE_PHRASING_SCOPE_ENV,
   CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
@@ -67,6 +68,7 @@ import {
   validateCastingReferenceLibraryEnvironment,
   validateCastingRefineDispatchEnvironment,
   validateCastingRetryEnvironment,
+  validateCastingRollEngineFlareEnvironment,
   validateCastingRepaintEnvironment,
   validateCastingSidePhrasingEnvironment,
   validateCastingScanTableEnvironment,
@@ -403,6 +405,16 @@ export function validateEnv(): void {
   */
   validateCastingRetryEnvironment({
     scope: process.env[CASTING_RETRY_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+  });
+  /*
+    WHICH ENGINE RENDERS A ROLL (#1079, his word after court #1068). Its parent
+    is the casting scope and nothing narrower: a user outside casting has no
+    roll to render. It adds no provider budget — the Flare engine is handed the
+    SAME queue as GPT Image 2 — so `assertFalBudget()` below is unchanged by it.
+  */
+  validateCastingRollEngineFlareEnvironment({
+    scope: process.env[CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
   /*

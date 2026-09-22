@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e728266a0edd5608"
+    "sourceFingerprint": "c2bb4db10d38e82c"
   },
   "domains": [
     {
@@ -8956,6 +8956,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:CASTING_ROLL_ENGINE_FLARE_SCOPE",
+      "name": "CASTING_ROLL_ENGINE_FLARE_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:CASTING_SCAN_TABLE_SCOPE",
       "name": "CASTING_SCAN_TABLE_SCOPE",
       "valueRecorded": false
@@ -9335,6 +9340,11 @@
     {
       "id": "flag:CASTING_RETRY_SCOPE",
       "name": "CASTING_RETRY_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:CASTING_ROLL_ENGINE_FLARE_SCOPE",
+      "name": "CASTING_ROLL_ENGINE_FLARE_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -12114,6 +12124,10 @@
     {
       "id": "test:server/castingV2/roleRetry.test.ts",
       "path": "server/castingV2/roleRetry.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/rollEngineFlareScope.test.ts",
+      "path": "server/castingV2/rollEngineFlareScope.test.ts"
     },
     {
       "id": "test:server/castingV2/rollProjection.test.ts",
@@ -27173,6 +27187,11 @@
     },
     {
       "from": "module:server/castingV2/rollEngine.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollEngine.ts",
       "to": "module:server/castingV2/falBudget.ts",
       "kind": "imports"
     },
@@ -34931,24 +34950,24 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1376",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1377",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:1376",
+      "subject": "server/castingV2/rollService.ts:1377",
       "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:279",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:280",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:279",
+      "subject": "server/castingV2/rollService.ts:280",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:337",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:338",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:337",
+      "subject": "server/castingV2/rollService.ts:338",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]

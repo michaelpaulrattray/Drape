@@ -310,6 +310,16 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "button — so its live population on his account is every refused tile he has, not "
       + "zero. Wider than users:1 on his eye and not before",
   },
+  CASTING_ROLL_ENGINE_FLARE_SCOPE: {
+    position: "users:1",
+    why:
+      "which image engine renders a roll (#1079). Court #1068 put his own cyborg brief through "
+      + "GPT Image 2, 2.5 Flare and 2.5 Sunburst on 2026-09-22 — eight tiles each, 24/24 delivered, "
+      + "no refusal — and he read the strips and ruled, verbatim: \"honestly flare gave good results\", then \"switch to flare and let me roll some ill be able to see the difference\". "
+      + "BUILT DARK and flipped to users:1 on that word the same day. It stays at users:1 until he "
+      + "has rolled on it and says wider: the reading behind it is one founder's eye on one brief, "
+      + "and Flare's fal-side price is still unread",
+  },
   CASTING_CONCEPT_UPLOAD_SCOPE: {
     position: "users:1",
     why:

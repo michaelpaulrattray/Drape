@@ -10,15 +10,20 @@
  * A roll admitted here commits to eight jobs, so admission asks whether all
  * eight fit, not whether one does.
  */
-import { createFalCreativeEngine, FAL_GPT_IMAGE_2 } from "../providers/falImages";
+import {
+  createFalCreativeEngine,
+  FAL_GPT_IMAGE_2,
+  FAL_GPT_IMAGE_2_5_FLARE,
+} from "../providers/falImages";
 import { falAllowanceOf } from "./falBudget";
+import { captureCastingRollEngineFlareEnabled } from "./castingV2Scope";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { CreativeEngine } from "../providers/types";
 import { envInt } from "../_core/env";
 
 
 let queue: ProviderQueue | null = null;
-let engine: CreativeEngine | null = null;
+const engines = new Map<string, CreativeEngine>();
 
 function castingImageQueue(): ProviderQueue {
   if (!queue) {
@@ -33,22 +38,49 @@ function castingImageQueue(): ProviderQueue {
   return queue;
 }
 
-export function castingCreativeEngine(): CreativeEngine {
-  if (!engine) {
-    const apiKey = process.env.FAL_KEY;
-    if (!apiKey) {
-      // Fail here rather than at dispatch: reaching dispatch means the user is
-      // already charged, and a missing credential is a configuration fault, not
-      // a generation failure they should have to be refunded for.
-      throw new Error("FAL_KEY is required for casting image generation");
-    }
-    engine = createFalCreativeEngine({
-      apiKey,
-      model: FAL_GPT_IMAGE_2,
-      queue: castingImageQueue(),
-    });
+/**
+ * WHICH ENGINE RENDERS THIS USER'S ROLL (#1079).
+ *
+ * Inside `CASTING_ROLL_ENGINE_FLARE_SCOPE` it is GPT Image 2.5 Flare;
+ * everywhere else it is GPT Image 2, byte-identically to before this existed.
+ * The founder's word after court #1068 on his own brief: *"switch to flare
+ * and let me roll some ill be able to see the difference."*
+ *
+ * **Both engines are handed the SAME queue instance**, which is the whole
+ * reason this is a second engine rather than a second transport: the account
+ * allowance `assertFalBudget()` proves at boot counts requests in flight, not
+ * models, so one queue is the only shape that keeps that arithmetic true. Two
+ * queues at `ROLL_IMAGE_CONCURRENCY` each would quietly double the roll road's
+ * claim on a 20-request ceiling five paths share.
+ *
+ * Memoized per model for the same reason a single engine was: the engine holds
+ * the queue, and an engine rebuilt per request is a queue that admits
+ * everything.
+ */
+export function castingCreativeEngine(userId: number): CreativeEngine {
+  /* Required, never optional: an omitted owner would silently render on the
+     default engine, and a dispatch site that forgets is exactly the shape that
+     would put one of his rolls back on GPT Image 2 with nothing going red. */
+  const model = captureCastingRollEngineFlareEnabled(userId)
+    ? FAL_GPT_IMAGE_2_5_FLARE
+    : FAL_GPT_IMAGE_2;
+  const existing = engines.get(model);
+  if (existing) return existing;
+
+  const apiKey = process.env.FAL_KEY;
+  if (!apiKey) {
+    // Fail here rather than at dispatch: reaching dispatch means the user is
+    // already charged, and a missing credential is a configuration fault, not
+    // a generation failure they should have to be refunded for.
+    throw new Error("FAL_KEY is required for casting image generation");
   }
-  return engine;
+  const built = createFalCreativeEngine({
+    apiKey,
+    model,
+    queue: castingImageQueue(),
+  });
+  engines.set(model, built);
+  return built;
 }
 
 export type AdmissionDecision =
@@ -72,5 +104,5 @@ export function admitRoll(candidateCount: number, stats = castingImageQueue().st
 /** Test seam: drops the memoized queue/engine so config changes take effect. */
 export function resetCastingEngineForTests(): void {
   queue = null;
-  engine = null;
+  engines.clear();
 }

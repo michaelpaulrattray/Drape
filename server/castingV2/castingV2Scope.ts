@@ -2864,3 +2864,104 @@ export function validateCastingRetryEnvironment(input: {
   }
   return child;
 }
+
+/* ======================================================================= */
+/*  THE ROLL ENGINE — `CASTING_ROLL_ENGINE_FLARE_SCOPE`                     */
+/* ======================================================================= */
+
+/**
+ * `CASTING_ROLL_ENGINE_FLARE_SCOPE` — which image engine renders a roll.
+ *
+ * Off, and absent means off, every roll renders on GPT Image 2 exactly as it
+ * does today. On, this user's rolls render on GPT Image 2.5 Flare instead —
+ * same words, same sheet, same price, and nothing on screen says so, which is
+ * the disappearing-technology law's own clause: no engine name on a path
+ * someone must walk to reach their picture.
+ *
+ * **Why it exists at all, dated and with its reason** (the same law's engine
+ * half — "best" has an expiry): court #1068 put his own cyborg brief through
+ * GPT Image 2, 2.5 Flare and 2.5 Sunburst, eight tiles each, on 2026-09-22.
+ * All three delivered 24/24 with no refusal; the founder read the strips and
+ * ruled, verbatim: *"honestly flare gave good results"*, then *"switch to
+ * flare and let me roll some ill be able to see the difference."* So the
+ * engine moves on his eye, measured on his fixture — not on a leaderboard.
+ *
+ * **A flag rather than a constant change, and the reason is the population.**
+ * Swapping the constant would move every customer's rolls on one founder's
+ * reading of one brief. The scope makes his account the whole population
+ * until he says wider, which is the same shape every engine-touching change
+ * in this program has taken.
+ *
+ * **What it does NOT change**: the queue. The Flare engine is handed the same
+ * `ProviderQueue` instance the GPT Image 2 engine holds, so the account
+ * allowance `assertFalBudget()` proves at boot is untouched — one queue, one
+ * concurrency, one breaker, whichever engine a given user's roll takes.
+ *
+ * Its parent is `CASTING_V2_SCOPE` and nothing narrower: what it governs is
+ * the RENDER of a roll, and a user outside casting has no roll to render.
+ */
+export const CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV = "CASTING_ROLL_ENGINE_FLARE_SCOPE";
+
+class CastingRollEngineFlareScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingRollEngineFlareScopeConfigurationError";
+  }
+}
+
+class CastingRollEngineFlareCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV} ${detail}`);
+    this.name = "CastingRollEngineFlareCoverageError";
+  }
+}
+
+function parseCastingRollEngineFlareScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingRollEngineFlareScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's rolls render on Flare. Captured at the dispatch that
+ * uses it, and an AND of the chain at the point of use for its siblings'
+ * reason: the boot check refuses a scope reaching past its parent, and a boot
+ * check nobody invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingRollEngineFlareEnabled(userId: number): boolean {
+  const child = parseCastingRollEngineFlareScope(
+    process.env[CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV],
+  );
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingRollEngineFlareEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingRollEngineFlareScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingRollEngineFlareCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — there is no roll to render`,
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingRollEngineFlareCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingRollEngineFlareCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}

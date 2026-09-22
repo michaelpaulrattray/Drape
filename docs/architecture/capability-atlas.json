@@ -66,8 +66,8 @@
         ],
         "sites": [
           "server/castingV2/refineService.ts:4897",
-          "server/castingV2/rollEngine.ts:56",
-          "server/castingV2/rollEngine.ts:68"
+          "server/castingV2/rollEngine.ts:88",
+          "server/castingV2/rollEngine.ts:100"
         ]
       },
       {
@@ -607,7 +607,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:434"
+          "server/castingV2/rollService.ts:435"
         ]
       },
       {
@@ -617,7 +617,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:428"
+          "server/castingV2/rollService.ts:429"
         ]
       },
       {
@@ -627,7 +627,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:422"
+          "server/castingV2/rollService.ts:423"
         ]
       },
       {
@@ -881,6 +881,7 @@
       "CASTING_REFINE_DISPATCH_SCOPE",
       "CASTING_REPAINT_SCOPE",
       "CASTING_RETRY_SCOPE",
+      "CASTING_ROLL_ENGINE_FLARE_SCOPE",
       "CASTING_SCAN_TABLE_SCOPE",
       "CASTING_SEGMENTS_DELIVERED_SCOPE",
       "CASTING_SEGMENTS_SCOPE",

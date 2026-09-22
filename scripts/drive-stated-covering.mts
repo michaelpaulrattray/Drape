@@ -41,7 +41,10 @@ console.log(`[covering] brief: "${brief}"`);
 console.log(`[covering] prompts carrying the directive: ${withDirective}/${compiled.candidates.length}`);
 console.log(`[covering] size ${compiled.size} quality ${compiled.quality}`);
 
-const engine = castingCreativeEngine();
+/* Renders as a real account does, so the evidence matches what that user
+   would actually get — the roll engine is a per-user scope (#1079). */
+const asUser = Number(process.env.AS_USER ?? 1);
+const engine = castingCreativeEngine(asUser);
 const images = await Promise.all(
   compiled.candidates.map(async (spec) => {
     const result = await engine.generateCandidate({

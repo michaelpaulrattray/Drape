@@ -18,7 +18,13 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createFalCreativeEngine, FAL_GPT_IMAGE_2, FAL_GPT_IMAGE_2_EDIT } from "./falImages";
+import {
+  createFalCreativeEngine,
+  FAL_GPT_IMAGE_2,
+  FAL_GPT_IMAGE_2_EDIT,
+  FAL_GPT_IMAGE_2_5_FLARE,
+  FAL_GPT_IMAGE_2_5_FLARE_EDIT,
+} from "./falImages";
 import { createOpenRouterCreativeEngine } from "./openrouterImages";
 import { QUEUE_BASE } from "./falTransport";
 import { ProviderError } from "./types";
@@ -84,6 +90,36 @@ describe("the anchored render at the wire", () => {
     expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_2}`);
     expect(Object.keys(captured[0]?.body ?? {})).not.toContain("image_urls");
     expect(result.provenance.model).toBe(FAL_GPT_IMAGE_2);
+  });
+
+  it("A FLARE ROLL'S ANCHORED RENDER GOES TO FLARE'S OWN EDIT DOOR, never GPT Image 2's (#1079)", async () => {
+    /* The sibling is per model. Sending a Flare sheet's follow to the other
+       studio's edit door would answer a sheet with a different engine's face,
+       which is the one failure an anchored render exists to prevent. Both
+       slugs were verified AT THE WIRE on 2026-09-22 (empty body -> 422 "prompt
+       Field required"), against an invented sibling that answers 404. */
+    const { captured } = stubFalTransport();
+    const engine = createFalCreativeEngine({ apiKey: "test-key", model: FAL_GPT_IMAGE_2_5_FLARE, pollIntervalMs: 1 });
+    const result = await engine.generateCandidate({
+      prompt: "Same casting brief as the attached look, new person.",
+      size: "1024x1536",
+      quality: "medium",
+      references: [{ bytes: PIXEL, contentType: "image/png" }],
+    });
+    expect(captured).toHaveLength(1);
+    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_2_5_FLARE_EDIT}`);
+    expect(captured[0]?.url).not.toContain(FAL_GPT_IMAGE_2_EDIT);
+    expect(captured[0]?.body.image_urls).toEqual([`data:image/png;base64,${PIXEL.toString("base64")}`]);
+    expect(result.provenance.model).toBe(FAL_GPT_IMAGE_2_5_FLARE_EDIT);
+  });
+
+  it("an UNANCHORED Flare roll goes to Flare's base endpoint with no image_urls", async () => {
+    const { captured } = stubFalTransport();
+    const engine = createFalCreativeEngine({ apiKey: "test-key", model: FAL_GPT_IMAGE_2_5_FLARE, pollIntervalMs: 1 });
+    const result = await engine.generateCandidate({ prompt: "a plain roll", size: "1024x1536", quality: "medium" });
+    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_2_5_FLARE}`);
+    expect(Object.keys(captured[0]?.body ?? {})).not.toContain("image_urls");
+    expect(result.provenance.model).toBe(FAL_GPT_IMAGE_2_5_FLARE);
   });
 
   it("an engine with no edit sibling REFUSES an anchored request before any bytes leave", async () => {
