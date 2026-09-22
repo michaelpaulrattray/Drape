@@ -51,8 +51,19 @@ export interface OpenPullRequest {
  * `fixturePath` exists so the suite can drive every branch without a network, a
  * token or a live queue — the same reason `next-up-escalation.mts` takes
  * `--queue` and `patrol-clocks.mts` takes `--dir`.
+ *
+ * `cwd` exists because this reader has a SECOND caller since #1094 — the shift
+ * digest, which is given a `--root` and must ask about that repository rather
+ * than whichever directory it was launched from. It is a parameter and not a
+ * second reader on purpose: a copied `--json number,title,body,url,isDraft,
+ * headRefName` in the digest would be a mirror of the field list this file's
+ * matcher depends on, and a mirror drifts (working law 4). One field list, one
+ * `gh` call shape, two callers.
  */
-export function readOpenPullRequests(fixturePath?: string | null): OpenPullRequest[] | null {
+export function readOpenPullRequests(
+  fixturePath?: string | null,
+  cwd?: string | null,
+): OpenPullRequest[] | null {
   if (fixturePath) {
     try {
       const rows = JSON.parse(readFileSync(resolve(fixturePath), "utf8"));
@@ -66,7 +77,12 @@ export function readOpenPullRequests(fixturePath?: string | null): OpenPullReque
     const out = execFileSync(
       "gh",
       ["pr", "list", "--state", "open", "--limit", "100", "--json", "number,title,body,url,isDraft,headRefName"],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: OPEN_PR_READ_TIMEOUT_MS },
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: OPEN_PR_READ_TIMEOUT_MS,
+        ...(cwd ? { cwd } : {}),
+      },
     );
     const rows = JSON.parse(out);
     return Array.isArray(rows) ? (rows as OpenPullRequest[]) : null;
@@ -112,4 +128,33 @@ export function renderCardClaimWarning(
     + "\n  follow-up, a finished piece, or somebody else mid-build. READ IT before you"
     + "\n  cut a branch: #1083 is thirty-five minutes spent rebuilding something that had"
     + "\n  merged seven minutes earlier, and this is the artifact that knew.";
+}
+
+/**
+ * THE SAME READ, AS THE SHIFT DIGEST NEEDS IT (#1094) — pure, so it can be
+ * driven.
+ *
+ * ⚠ **THIS FUNCTION EXISTS BECAUSE A SABOTAGE STAYED GREEN.** The first shape
+ * of #1094 did this mapping inline inside `shift-digest.mts`, and collapsing
+ * `null` to `[]` there — a failed `gh pr list` rendering as a clean board, the
+ * one outcome this whole file is about — broke no arm at all, because nothing
+ * in that script past its `gh` call is reachable from a suite. That is the
+ * warning-nothing-can-drive shape in this file's own header, one module along.
+ *
+ * So the judgement is here, beside the reader it judges, and the script keeps
+ * only the call. The two `Unreadable` reasons are kept apart because they are
+ * different facts: `--no-network` is a read NOBODY TOOK, and a `null` is a read
+ * that was taken and FAILED. Neither is an empty board.
+ */
+export function openPullRequestsVerdict(
+  rows: OpenPullRequest[] | null,
+  network: boolean,
+): OpenPullRequest[] | { readonly unreadable: string } {
+  if (!network) return { unreadable: "--no-network was passed; NOT a clean board" };
+  if (rows === null) {
+    return {
+      unreadable: "`gh pr list` could not be read (absent, unauthenticated, offline or slow)",
+    };
+  }
+  return rows;
 }
