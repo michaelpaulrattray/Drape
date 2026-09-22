@@ -1,7 +1,7 @@
 {
-  "edition": 466,
-  "updatedAt": "2026-09-22T09:35:00.000Z",
-  "shift": "TWO THINGS YOU HIT THIS MORNING ARE FIXED AND LIVE - THE FANGS, AND THE UPLOAD THAT CALLED YOUR DESCRIPTION 'A LIST OF DETAILS'. ONE QUESTION FOR YOU, AND IT IS ONE WORD.\n\n1. Your android with the fangs it never asked for is fixed and serving (card 1069, change 1070, landed 09:12). The relay took that one. The house instruction sent on every creature roll used to mention fangs whether or not you had asked for them, and the engine drew the noun. It now speaks of fangs only when you do.\n\n2. The concept upload that refused your cyborg and then worked on retry - I went and read what actually happened on the live site, and it was not random. Your reader writes a short description of the picture, and anything over 300 characters gets sent back. Between 08:39 and 08:55 you uploaded five times: two were refused, three got through, and EVERY read that was sent back came in between 304 and 350 characters. The shortest was refused for FOUR CHARACTERS. Whether an upload works is currently a coin toss on a detailed picture.\n\n3. What I fixed and shipped (change 1071, live at 09:29): you were told 'that came back as a list of details rather than a casting note.' That was simply untrue - your reader had written ordinary prose that ran seven characters long. It now says what actually happened. Worth being straight with you: this stops the message lying about why. It does NOT stop the refusal.\n\n4. What stops the refusal is a number that is YOURS, which is why it is a question and not a change. You set the 300 limit on 28 August, down from 1,200, and your reason still holds - a long read locks eye colour, brow, haircut and shirt, and then all eight faces are the same person. I am not touching that. What I am asking is whether the SECOND attempt - the one we already sent back once - should be allowed a bit more room, up to 400. On this morning's numbers that turns both of your refusals into pictures. One word on card 1073: 'wider' or 'leave it'.\n\n5. Also found while in there, not fixed, written down: one of your two refusals told you to 'try a clearer shot of them'. Your photograph was fine - the first read had described the person perfectly well, just at 304 characters. Sending you off to find a better picture of our own problem is the one thing that message is never supposed to do. Fixing it means deciding what it should say instead, so it is filed rather than guessed at (on card 1067).\n\nSpent: nothing. On your desk: one word, card 1073.",
+  "edition": 467,
+  "updatedAt": "2026-09-22T10:12:00.000Z",
+  "shift": "YOU SAID 'WIDER' AND IT IS LIVE - UPLOAD A CONCEPT STOPS REFUSING A DETAILED PICTURE FOR FOUR CHARACTERS. YOUR 300 LIMIT IS UNTOUCHED. NOTHING WAITS ON YOU.\n\n1. Your answer landed at 09:37 and shipped at 10:09 (card 1073, change 1074). The retry now gets 400 characters; the first read still has to come in at 300, exactly as you said. On the five uploads you made this morning, both of the refusals become pictures - every read that was sent back was between 304 and 350, so every one of them now fits on the second pass.\n\n2. Your anti-clone limit is genuinely untouched, and this is the part worth being precise about. 300 is still the number on the way IN, which is what your 28 August reasoning was about - a long read locks eye colour, brow, haircut and shirt, and then all eight faces are the same person. The only thing that got more room is a read we have ALREADY sent back once, naming what was wrong with it.\n\n3. One thing I did not do, deliberately: the reader is still ASKED for 150-250 characters whichever attempt it is on. Telling it '400' would simply get 400 - a stated limit writes the answer instead of filtering it. So what we ask for, what we accept, and what we say when we send it back are three different numbers on purpose.\n\n4. Before believing the tests, I broke the change three ways on purpose to check the tests could still catch it: pretending it never landed, pretending BOTH limits moved, and pretending the retry limit was 1,200. All three went red in the right place. The third is the useful one - at 1,200 the 1,082-character read you refused in August would sail straight through on a retry, and the test says so out loud.\n\n5. If 400 turns out to be too generous, it is one number back. Say 'narrower' and the next shift moves it.\n\n6. A small housekeeping note, and it needs nothing from you: your reply came through word-for-word as the recommendation I had written on the card. That is almost certainly you agreeing with it as written - but it is the one case where I cannot tell your answer from my own suggestion, so I am saying so rather than quietly assuming. If you meant something narrower than 400, point 5 is the road back.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-22T06:54:39.040Z",
+      "readAt": "2026-09-22T10:11:04.717Z",
       "items": [
         {
           "issueNumber": 16,
@@ -154,6 +154,12 @@
           "issueNumber": 22,
           "title": "Creative Casts, phase A: which downstream doors are honest for a creature, now that the register can roll one",
           "kind": "design-unbuilt",
+          "rung": "N1"
+        },
+        {
+          "issueNumber": 1068,
+          "title": "N1: the ROLL engine re-asked — GPT Image 2.5 vs GPT Image 2 on his fixture briefs, judged on N1's two bars, refusal rate and cost beside (his word, 22 Sep; #801 covers refine only)",
+          "kind": "roadmap",
           "rung": "N1"
         },
         {
@@ -313,7 +319,7 @@
     {
       "id": "concept-upload-retry-bound-1073",
       "issueNumber": 1073,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-22T09:20:00.000Z",
       "title": "Upload a concept refuses your picture about half the time, for four characters - should a retry get more room than the first read?",
       "productImpact": "Upload a concept reads your picture and writes a short description of the person in it. Anything over 300 characters is sent back and asked for again; if the second attempt is also over, you are refused and have to press Try again. On a detailed picture that is roughly a coin toss. Measured on your own uploads this morning between 08:39 and 08:55: seven reads were sent back, six of them for length, and every single one landed between 304 and 350 characters. None was the sprawling catalogue your 300 ruling was aimed at - the shortest was refused for four characters. Five uploads, two refused, three through, each of those three only because the second read happened to come in shorter.",
@@ -5139,6 +5145,13 @@
   ],
   "pipeline": [
     {
+      "id": "concept-retry-room-1073",
+      "title": "Upload a concept: your 'wider' ruling - the retry gets 400, the way in stays 300",
+      "status": "merged",
+      "prNumber": 1074,
+      "note": "Live at 10:09 (build bf88be40, read at the health check with 6 seconds' uptime - the new process, not the old one still answering). The reader writes a short description of your picture; over the limit it is sent back once, and if the second read is also over you are refused. Both numbers used to be 300, so a detailed picture was a coin toss on where the second read happened to land - your shortest refusal this morning overran by four characters. The first read is unchanged at 300; the retry is accepted up to 400. Your 28 August reasoning is untouched, and the reader is still asked for 150-250 either way, because a stated limit writes the answer rather than filtering it. Checked for the same mistake elsewhere: the two nearest places that re-ask a reader already handle it - one allows an overrun, the other shortens instead of refusing - so this was the only one answering 'slightly over' with a flat no."
+    },
+    {
       "id": "creature-fangs-1069",
       "title": "Your android cast with fangs it never asked for",
       "status": "merged",
@@ -6976,8 +6989,8 @@
       "id": "queue-shape-0922-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 31 open, your ordered list empty again (1065 landed at 06:53), none urgent; every category under your switches at zero; no check-up clock before Wednesday",
-      "detail": "Read at 06:44 after this morning's nine merges, re-read at 06:58 after the tenth (1065/1066). 31 open cards; six have had no comment, close, reopen or commit for a week or more - #14, #706, #26, #801, #15 and #60, all roadmap rungs you have not reached rather than neglected work. Every category under your switches is zero on fresh counts; the held cards (108, 129, 45, 1061, 1064) are unchanged. Your desk is empty: 193 of 193 replies acted on, nothing marked not-relevant waiting for an answer."
+      "title": "The queue: 33 open, your ordered list empty, none urgent; one bug left and it needs a decision about wording, not a patch; no check-up clock before Wednesday",
+      "detail": "Read at 10:10, after this shift's merge. 33 open cards. 17 have had no comment, close, reopen or commit for a week or more - that number jumped from 1 to 15 earlier this month when the reading was fixed to stop counting a label edit as attention, so it is a truer figure rather than a worse backlog; the oldest are #65, #14, #706, #26, #801, #15 and #60, all long-range casting roadmap items waiting on a milestone rather than rotting through neglect.\n\nUnder your switches: Bugs 1, everything else zero. That one bug is #1072 - two more refusal messages that tell a customer something untrue about her own request, found by sweeping for the same mistake as this morning's. It is deliberately not being batched: each one needs a sentence written for it, which is a wording decision rather than a patch.\n\nCheck-up clocks: Janitor is due 24 September, Warden 27th, Machinist and Retro 26th. None has fired."
     },
     {
       "id": "queue-shape-0921a-foreman",
@@ -7761,10 +7774,11 @@
     190,
     191,
     192,
-    193
+    193,
+    194
   ],
   "nextUp": {
-    "readAt": "2026-09-22T09:29:00.000Z",
+    "readAt": "2026-09-22T10:11:04.717Z",
     "items": []
   }
 }
