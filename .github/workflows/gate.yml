@@ -488,10 +488,19 @@ jobs:
       # required check going red for a reason unrelated to the tree (review
       # of PR #109, finding 2). setup-node needs no node_modules, so the job
       # keeps its no-install property.
+      #
+      # ⚠ NO `cache: pnpm` HERE, ON PURPOSE (#1059). This job never runs
+      # `pnpm install`, so the pnpm store it would cache never exists. On a PR
+      # whose lockfile is unchanged the cache key hits and nothing is saved;
+      # on any PR that CHANGES `pnpm-lock.yaml` the key misses, setup-node's
+      # post step tries to save a directory that was never created, and the
+      # job goes red AFTER semgrep passed — measured on four Dependabot PRs
+      # in one morning (#1054–#1057), with #1053 (lockfile untouched) green
+      # on the same job the same hour as the control. A cache declared on a
+      # job that never populates it is a red check waiting for a lockfile.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
-          cache: pnpm
 
       - name: Static shapes (semgrep, OSS rulesets)
         run: |
