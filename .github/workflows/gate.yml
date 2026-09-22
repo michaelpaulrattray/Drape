@@ -38,25 +38,14 @@
 # have painted a wrong dispatch green on that branch's head (measured on
 # this workflow's own negative control, 2026-08-26, before it merged).
 #
-# review.yml deliberately has NO dispatch road: claude-code-action's
-# `track_progress` (the sticky review comment) is pull_request/issue-only
-# per its own input doc, so a dispatched review would post nowhere. Its
-# manual road is the `labeled` event it already listens to —
-# `gh pr edit <n> --add-label needs-fable` runs it with full PR context.
-#
-# ⚠ THAT BUTTON WORKS ONCE, AND PRESSING IT AGAIN REPORTS SUCCESS WHILE
-# DOING NOTHING (issue #368). Re-applying a label the PR ALREADY carries is
-# a no-op on GitHub's side: no `labeled` event is delivered, so no review
-# starts — and `gh` still exits 0, which is what makes it silent. Measured
-# at the issue timeline 2026-09-01: press one → one `labeled` event; press
-# two, label already present → still one; remove-then-add → two. To press
-# it a second time, take the label off first:
-#
-#   gh pr edit <n> --remove-label needs-fable
-#   gh pr edit <n> --add-label needs-fable
-#
-# server/reviewerManualRoad.test.ts keeps this sentence and the workflow it
-# describes from drifting apart.
+# review.yml has no machine reviewer any more (#1065, his ruling 2026-09-22:
+# the action reviewer is permanently dead; the relay IS the reviewer). Its
+# triage still decides which diffs earn a look and says so on the PR with the
+# `needs-fable` label and one comment; the verdict is a PR comment by the
+# founder's account headed `**Fable review — by hand`, which
+# scripts/pr-merge-in-order.mts reads. To ask for a look on a diff triage did
+# not label, apply `needs-fable` by hand — the label is the queue, not a
+# button, and it starts nothing by itself.
 
 name: Gate
 
@@ -412,21 +401,21 @@ jobs:
           # and keeps this step self-contained.
           git fetch origin "$BASE"
           if git diff --quiet "origin/$BASE"...HEAD -- .github/workflows/review.yml; then
-            echo "review.yml untouched — the Fable review can run normally."
+            echo "review.yml untouched — triage decides whether a hand review is owed (#1065)."
             # The label is DERIVED from the diff, never left to drift (law 4):
             # a push that reverts the review.yml edit takes the label with it.
             gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --remove-label review-skipped 2>/dev/null || true
             exit 0
           fi
 
-          echo "This PR modifies review.yml — claude-code-action will self-skip, so NO Fable review runs here."
+          echo "This PR modifies review.yml — the rules of the review itself; the relay reads it by hand (#1065)."
           if gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json labels --jq '.labels[].name' | grep -qxF review-skipped; then
             echo "Already labelled review-skipped; comment not repeated."
           else
             gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label review-skipped || true
             gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "**The Fable review DID NOT RUN on this PR.** The diff modifies \`.github/workflows/review.yml\`, and claude-code-action refuses to run when the workflow file invoking it differs from the default branch (its own anti-exfiltration control) — so its skip cannot produce a real review. The \`review\` check on this PR is forced red for the same reason. **Review the reviewer change by hand before merging** (issue #165)." || true
           fi
-          echo "::notice::review.yml modified — no Fable review possible; labelled review-skipped (issue #165)."
+          echo "::notice::review.yml modified — labelled review-skipped so the relay reads the change to its own rules (issue #165, #1065)."
           exit 0
 
   # The Warden's static shape reader (issue #33): the OSS Semgrep rulesets

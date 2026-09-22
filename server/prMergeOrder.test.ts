@@ -13,8 +13,9 @@
  *     `.github/money-surfaces.sh` (it lived in `review.yml` until #958), so a
  *     rename there reddens this suite instead of silently letting a money PR
  *     merge unreviewed (working law 4 — never mirror);
- *   - the `review` and `gate-checks` job names are asserted against what the
- *     real workflow files DECLARE. The gate review of PR #558 found this
+ *   - the `triage` and `gate-checks` job names are asserted against what the
+ *     real workflow files DECLARE (the `review` job is retired with the action
+ *     reviewer, #1065 — the verdict is a hand verdict read off the PR). The gate review of PR #558 found this
  *     header claiming that arm before it existed — the header was the mirror,
  *     which is the joke working law 4 exists to spoil. It exists now, and it
  *     matters because the `review` name fails in the SILENT, PERMISSIVE
@@ -56,11 +57,11 @@ import {
 } from "../scripts/lib/prMergeOrder.mts";
 import { gitTreeReader, readProtectedRefs } from "../scripts/lib/pushPaths.mts";
 import {
-  FINAL_ROUND_MESSAGE,
+  HAND_VERDICT_MARKER,
+  type HandVerdictReading,
   type PrIdentity,
-  type ReviewRunReading,
-  classifyRun,
-  decideRoundNotice,
+  classifyComment,
+  isHandVerdict,
   reviewPresence,
   tallyRounds,
 } from "../scripts/lib/reviewRounds.mts";
@@ -100,7 +101,7 @@ const pr = (over: Partial<PrReading> = {}): PrReading => ({
   staticShapes: "green",
   bundleBudget: "green",
   supplyChain: "green",
-  review: "none",
+  review: "declined",
   verdictCount: 0,
   acknowledgedAtVerdictCount: null,
   worktreePath: "C:/Users/Admin/drape-shift-551-thing",
@@ -526,13 +527,13 @@ describe("decideMergeAction — the branch order is the contract", () => {
     ).toEqual({ kind: "merge", notice: null });
   });
 
-  it("STOPS on a PR touching review.yml — the reviewer self-skips on its own change (#165)", () => {
+  it("STOPS on a PR touching review.yml — the reviewer reads the change to its own rules (#165 → #1065)", () => {
     const a = decideMergeAction(
       pr({ review: "no-verdict", files: [REVIEWER_WORKFLOW_PATH] }),
       ctx,
     );
     expect(a.kind).toBe("stop");
-    expect(a.kind === "stop" && a.reason).toMatch(/165/);
+    expect(a.kind === "stop" && a.reason).toMatch(/rules of the review itself/);
   });
 
   it("and merges it once hand-reviewed", () => {
@@ -566,10 +567,8 @@ describe("decideMergeAction — the branch order is the contract", () => {
     expect(a.kind === "stop" && a.reason).toContain("server/castingV2/refineService.test.ts");
   });
 
-  it("and holds it on `declined` and `absent` too, like the path half", () => {
-    for (const review of ["declined", "absent"] as const) {
-      expect(decideMergeAction(pr({ review, ...refundFix }), ctx).kind, review).toBe("stop");
-    }
+  it("and holds it on `declined` too, like the path half — a label nobody applied does not un-owe money", () => {
+    expect(decideMergeAction(pr({ review: "declined", ...refundFix }), ctx).kind).toBe("stop");
   });
 
   it("but merges it once hand-reviewed, or with a read verdict", () => {
@@ -703,46 +702,11 @@ describe("decideMergeAction — the branch order is the contract", () => {
 // would have caught it. Findings 1 and 2 are the severe pair: as first written,
 // the team's own draft-then-ready flow made "merged past the review" the
 // DEFAULT first-round outcome rather than the exception.
-describe("#558 review — in flight is not down", () => {
-  it("🔴 1 · WAITS on a review that is mid-run, instead of merging on its absence", () => {
-    const a = decideMergeAction(pr({ review: "pending" }), ctx);
-    expect(a.kind).toBe("wait");
-    expect(a.kind === "wait" && a.reason).toMatch(/in flight is not down/);
-  });
-
-  it("🔴 1 · a queued run — no jobs yet — is pending, not 'no reviewer'", () => {
-    expect(
-      classifyRun(run({ runStatus: "queued", reviewJobStatus: null, reviewJobConclusion: null }), identity),
-    ).toBe("pending");
-  });
-
-  it("🔴 1 · a review job still in_progress is pending", () => {
-    expect(
-      classifyRun(run({ reviewJobStatus: "in_progress", reviewJobConclusion: null }), identity),
-    ).toBe("pending");
-  });
-
-  it("🔴 1 · pending outranks a first failed run — wait for the second, do not merge on the first", () => {
-    const tally = tallyRounds(
-      [
-        run({ id: 1, createdAt: "2026-09-05T08:19:00Z", reviewJobConclusion: "failure" }),
-        run({ id: 2, createdAt: "2026-09-05T08:40:00Z", runStatus: "in_progress", reviewJobStatus: null, reviewJobConclusion: null }),
-      ],
-      identity,
-    );
-    expect(reviewPresence(tally)).toBe("pending");
-    expect(decideMergeAction(pr({ review: "pending" }), ctx).kind).toBe("wait");
-  });
-
-  it("🔴 1 · pending outranks an ACKNOWLEDGED verdict too — a second look is only ever asked for deliberately", () => {
-    const tally = tallyRounds(
-      [
-        run({ id: 1, createdAt: "2026-09-05T08:19:00Z" }),
-        run({ id: 2, createdAt: "2026-09-05T08:40:00Z", runStatus: "in_progress", reviewJobStatus: null, reviewJobConclusion: null }),
-      ],
-      identity,
-    );
-    expect(reviewPresence(tally)).toBe("pending");
+describe("#1065 · the verdict is a HAND verdict, and the merge reads it", () => {
+  it("an unread verdict STOPS — a verdict is never a pass by itself", () => {
+    const a = decideMergeAction(pr({ review: "verdict", verdictCount: 1 }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/Fable review — by hand/);
   });
 
   it("🟠 6 · an acknowledgement is pinned to what was read, not to the PR", () => {
@@ -760,33 +724,35 @@ describe("#558 review — in flight is not down", () => {
     ).toEqual({ kind: "merge", notice: null });
   });
 
-  it("🟠 5 · a money PR whose review was DECLINED is held too, not just one with a failed review", () => {
-    // Triage honours `skip-review` BEFORE it tests the money pattern, so a
-    // stale label on a PR that later gains a money file lands exactly here.
-    const a = decideMergeAction(
-      pr({ review: "declined", files: ["server/routes/billing.ts"] }),
-      ctx,
-    );
+  it("a money PR with no verdict is HELD, and the stop names the relay and the comment heading", () => {
+    const a = decideMergeAction(pr({ review: "no-verdict", files: ["server/routes/billing.ts"] }), ctx);
     expect(a.kind).toBe("stop");
-    expect(a.kind === "stop" && a.reason).toMatch(/skip-review/);
+    const reason = a.kind === "stop" ? a.reason : "";
+    expect(reason).toMatch(/money\/auth/);
+    expect(reason).toMatch(/relay/);
+    expect(reason).toMatch(/Fable review — by hand/);
+    // The old remedy — a label that re-ran a machine — is gone with the machine.
+    expect(reason).not.toMatch(/re-add/);
+  });
+
+  it("🟠 5 · a money PR whose review was DECLINED is held too — money is owed a look whatever triage labelled", () => {
+    const a = decideMergeAction(pr({ review: "declined", files: ["server/routes/billing.ts"] }), ctx);
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/whatever the label says/);
   });
 
   it("🟠 5 · an ordinary declined PR still merges — the hold is money-only", () => {
-    expect(decideMergeAction(pr({ review: "declined" }), ctx)).toEqual({
-      kind: "merge",
-      notice: null,
-    });
+    expect(decideMergeAction(pr({ review: "declined" }), ctx)).toEqual({ kind: "merge", notice: null });
   });
 
-  it("🔴 R3-1 · the #165 hand-review stop covers a DECLINED review too, not only a failed one", () => {
-    // Round two taught the money hold to key on `none` and left its sibling
-    // one clause away — working law 7's own shape, a class fixed at one of its
-    // two members. Two roads reach a review.yml PR with presence `declined`: a
-    // stale `skip-review` label (triage honours it BEFORE the self-skip check)
-    // and a triage-job outage, which needs no label at all.
+  it("an ordinary PR that is OWED a review but has none still merges on the gate alone — the standing orders' road", () => {
+    expect(decideMergeAction(pr({ review: "no-verdict" }), ctx)).toEqual({ kind: "merge", notice: null });
+  });
+
+  it("🔴 R3-1 · a change to review.yml with no verdict is held — the reviewer reads its own rules", () => {
     const a = decideMergeAction(pr({ review: "declined", files: [REVIEWER_WORKFLOW_PATH] }), ctx);
     expect(a.kind).toBe("stop");
-    expect(a.kind === "stop" && a.reason).toMatch(/165/);
+    expect(a.kind === "stop" && a.reason).toMatch(/rules of the review itself/);
   });
 
   it("🔴 R3-1 · and it still merges once hand-reviewed", () => {
@@ -797,107 +763,24 @@ describe("#558 review — in flight is not down", () => {
       ),
     ).toEqual({ kind: "merge", notice: null });
   });
-});
-
-describe("#566 · an ABSENT review is held exactly as hard as a declined one, and SAID out loud", () => {
-  // The state itself: a trigger event GitHub never turned into a run. Measured
-  // at ~1 in 50 (100 newest review.yml runs, 2026-09-06 → 09-07), and PR #610
-  // is the control that puts the cause outside review.yml — the same label,
-  // the same head `6dfb8842`, removed and re-added fourteen minutes later,
-  // produced a run two seconds after an identical event produced none.
-
-  it("a money PR with NO run at all is held, exactly as a declined one is", () => {
-    const a = decideMergeAction(pr({ review: "absent", files: ["server/routes/billing.ts"] }), ctx);
-    expect(a.kind).toBe("stop");
-  });
-
-  it("⚠ and it does NOT tell the shift to hunt a `skip-review` label that was never applied", () => {
-    // THIS IS THE DEFECT #566 IS ABOUT, at the sentence. The old wording read
-    // presence `none` and printed "triage declined it — check for a stale
-    // `skip-review` label": a specific, confident, wrong diagnosis of a
-    // decision nobody made.
-    const a = decideMergeAction(pr({ review: "absent", files: ["server/routes/billing.ts"] }), ctx);
-    const reason = a.kind === "stop" ? a.reason : "";
-    expect(reason).not.toMatch(/skip-review/);
-    expect(reason).toMatch(/NO review run exists for this PR at all/);
-  });
-
-  it("the declined sentence is still produced for a declined one — the two did not merge back", () => {
-    const a = decideMergeAction(pr({ review: "declined", files: ["server/routes/billing.ts"] }), ctx);
-    const reason = a.kind === "stop" ? a.reason : "";
-    expect(reason).toMatch(/skip-review/);
-    expect(reason).not.toMatch(/NO review run exists/);
-  });
-
-  it("the #165 hand-review stop covers an absent review too", () => {
-    const a = decideMergeAction(pr({ review: "absent", files: [REVIEWER_WORKFLOW_PATH] }), ctx);
-    expect(a.kind).toBe("stop");
-    expect(a.kind === "stop" && a.reason).toMatch(/165/);
-  });
-
-  it("an ordinary PR with no review run MERGES — the notice is not a hold", () => {
-    // The standing orders merge an ordinary PR on the gate alone when the
-    // reviewer is down. #566 changes what is SAID, deliberately not what is
-    // held; an arm that let this become a hold would be the card overreaching.
-    const a = decideMergeAction(pr({ review: "absent" }), ctx);
-    expect(a.kind).toBe("merge");
-  });
-
-  it("…and it says so, on the line the CLI already prints", () => {
-    const a = decideMergeAction(pr({ review: "absent" }), ctx);
-    expect(a.kind === "merge" && a.notice).toMatch(/NO Fable review run was ever created/);
-    expect(describeAction(pr({ review: "absent" }), a)).toMatch(/NO Fable review run was ever created/);
-  });
 
   it("⚠ a DECLINED merge carries NO notice — the design working is not an alarm", () => {
-    // A line on every docs-only merge is noise, and noise is how a shift
-    // learns to skip reading these.
     const a = decideMergeAction(pr({ review: "declined" }), ctx);
     expect(a).toEqual({ kind: "merge", notice: null });
     expect(describeAction(pr({ review: "declined" }), a)).not.toMatch(/⚠/);
   });
 
-  it("⚠ an ACKNOWLEDGED money PR with no review run reaches merge — the road finding 2 found", () => {
-    // The 4b hold is `!acknowledged`, so a shift that hand-reviews a money/auth
-    // diff whose review never ran clears it and arrives at the merge. This arm
-    // exists because there was none, and its absence is what let the notice
-    // claim "non-money diff" on a road where both halves of that were false.
-    const a = decideMergeAction(
-      pr({ review: "absent", files: ["server/routes/billing.ts"], acknowledgedAtVerdictCount: 0 }),
-      ctx,
-    );
-    expect(a.kind).toBe("merge");
-    const notice = a.kind === "merge" ? (a.notice ?? "") : "";
-    expect(notice).toMatch(/NO Fable review run was ever created/);
-    // ⚠ IT MUST NOT NARRATE THE BASIS. `mergeNotice` cannot see the files or
-    //    the acknowledgement, so any sentence about either is a guess.
-    expect(notice).not.toMatch(/non-money/);
-    expect(notice).not.toMatch(/gate alone/);
-  });
-
-  it("the notice's PR #610 timings match the record the docblock and CLAUDE.md carry", () => {
-    // Finding 1: the first wording said "five seconds", which is the
-    // remove -> re-add gap and pairs with neither clause of the sentence it
-    // sat in. A number in a line built to be trusted is worth an arm.
-    const notice = mergeNotice(pr({ review: "absent" })) ?? "";
-    expect(notice).toMatch(/two\s+seconds later/);
-    expect(notice).toMatch(/fourteen minutes/);
-    expect(notice).not.toMatch(/five\s+seconds/);
-  });
-
-  it("mergeNotice is silent on every state that is not an absence", () => {
-    for (const review of ["verdict", "no-verdict", "declined", "pending"] as const) {
+  it("mergeNotice is silent on every state — `absent` is retired with the machine", () => {
+    for (const review of ["verdict", "no-verdict", "declined"] as const) {
       expect(mergeNotice(pr({ review }))).toBeNull();
     }
-    expect(mergeNotice(pr({ review: "absent" }))).not.toBeNull();
   });
 
-  it("reviewAbsenceClause is empty for a state that is not an absence", () => {
+  it("reviewAbsenceClause speaks only for `declined`, and never sends a shift hunting a label", () => {
     expect(reviewAbsenceClause("no-verdict")).toBe("");
     expect(reviewAbsenceClause("verdict")).toBe("");
-    expect(reviewAbsenceClause("pending")).toBe("");
-    expect(reviewAbsenceClause("declined")).not.toBe("");
-    expect(reviewAbsenceClause("absent")).not.toBe("");
+    expect(reviewAbsenceClause("declined")).toMatch(/needs-fable/);
+    expect(reviewAbsenceClause("declined")).not.toMatch(/skip-review/);
   });
 });
 
@@ -953,9 +836,9 @@ describe("🟡 3 · the job names are asserted against the workflows, not mirror
     readFileSync(join(REPO_ROOT, ".github/workflows/gate.yml"), "utf8"),
   );
 
-  it("reads the real review.yml's jobs", () => {
+  it("reads the real review.yml's jobs — triage only; the `review` job is retired with the action (#1065)", () => {
     expect(reviewJobs).toContain("triage");
-    expect(reviewJobs).toContain("review");
+    expect(reviewJobs).not.toContain("review");
   });
 
   it("reads the real gate.yml's jobs", () => {
@@ -966,16 +849,16 @@ describe("🟡 3 · the job names are asserted against the workflows, not mirror
   });
 
   it("the names this tool keys on are declared by those files", () => {
-    expect(refuseUnknownJobName("review", reviewJobs, "review.yml")).toBeNull();
+    expect(refuseUnknownJobName("triage", reviewJobs, "review.yml")).toBeNull();
     expect(refuseUnknownJobName("gate-checks", gateJobs, "gate.yml")).toBeNull();
     expect(refuseUnknownJobName("static-shapes", gateJobs, "gate.yml")).toBeNull();
     expect(refuseUnknownJobName("bundle-budget", gateJobs, "gate.yml")).toBeNull();
   });
 
   it("REFUSES a name the workflow does not declare, naming what it does", () => {
-    const refusal = refuseUnknownJobName("reviewer", reviewJobs, "review.yml");
+    const refusal = refuseUnknownJobName("review", reviewJobs, "review.yml");
     expect(refusal).not.toBeNull();
-    expect(refusal).toMatch(/`review`/);
+    expect(refusal).toMatch(/`triage`/);
     expect(refusal).toMatch(/SILENTLY/);
   });
 
@@ -1044,128 +927,90 @@ const identity: PrIdentity = {
   number: 550,
   headRefName: "team/shift-worktree",
   createdAt: "2026-09-05T08:05:46Z",
+  headCommittedAt: "2026-09-05T08:15:00Z",
+  ownerLogin: "michaelpaulrattray",
 };
 
-const run = (over: Partial<ReviewRunReading> = {}): ReviewRunReading => ({
+const verdictBody =
+  "**Fable review — by hand, on his word** (founder's lane). Read the whole diff. **Verdict: merge.**";
+
+const comment = (over: Partial<HandVerdictReading> = {}): HandVerdictReading => ({
   id: 1,
-  headBranch: "team/shift-worktree",
+  authorLogin: "michaelpaulrattray",
   createdAt: "2026-09-05T08:19:36Z",
-  runStatus: "completed",
-  reviewJobStatus: "completed",
-  reviewJobConclusion: "success",
+  body: verdictBody,
   ...over,
 });
 
-describe("review rounds — a verdict is not a run, and a run is not a verdict", () => {
-  it("a review job that succeeded is a verdict", () => {
-    expect(classifyRun(run(), identity)).toBe("verdict");
+describe("#1065 · a verdict is a comment by the founder's account, headed by the marker, on the current head", () => {
+  it("the marker is the heading every hand verdict has carried", () => {
+    expect(HAND_VERDICT_MARKER).toBe("**Fable review — by hand");
+    expect(isHandVerdict(verdictBody)).toBe(true);
+    expect(isHandVerdict("  \n**Fable review — by hand**")).toBe(true);
   });
 
-  it("a SKIPPED review job is triage declining, not a verdict", () => {
-    // A run whose triage said no concludes `success` at the RUN level, which is
-    // why the job is what gets read (#219).
-    expect(classifyRun(run({ reviewJobConclusion: "skipped" }), identity)).toBe("declined");
+  it("a fresh verdict by the owner is a verdict", () => {
+    expect(classifyComment(comment(), identity)).toBe("verdict");
   });
 
-  it("a failed or cancelled review job produced NO verdict (#219, #434, #165)", () => {
-    expect(classifyRun(run({ reviewJobConclusion: "failure" }), identity)).toBe("no-verdict");
-    expect(classifyRun(run({ reviewJobConclusion: "cancelled" }), identity)).toBe("no-verdict");
-    expect(classifyRun(run({ reviewJobConclusion: "timed_out" }), identity)).toBe("no-verdict");
+  it("the same words by any other account are NOT a verdict — the floor, not the fence", () => {
+    expect(classifyComment(comment({ authorLogin: "dependabot[bot]" }), identity)).toBe("not-a-verdict");
+    expect(classifyComment(comment({ authorLogin: "some-shift" }), identity)).toBe("not-a-verdict");
   });
 
-  it("a run with no review job at all is no verdict", () => {
-    expect(classifyRun(run({ reviewJobConclusion: null }), identity)).toBe("no-verdict");
+  it("an ordinary comment by the owner is not a verdict, even one that says merge", () => {
+    expect(classifyComment(comment({ body: "Looks fine, merge it." }), identity)).toBe("not-a-verdict");
+    expect(classifyComment(comment({ body: "taken by the relay" }), identity)).toBe("not-a-verdict");
+    // The marker mid-body is a quotation, not a verdict.
+    expect(
+      classifyComment(comment({ body: "As I said in **Fable review — by hand yesterday…" }), identity),
+    ).toBe("not-a-verdict");
   });
 
-  it("a run on another branch is not this PR's", () => {
-    expect(classifyRun(run({ headBranch: "team/preflight" }), identity)).toBe("not-this-pr");
+  it("a verdict posted BEFORE the current head was committed is STALE — a verdict is on a diff, not a PR", () => {
+    expect(classifyComment(comment({ createdAt: "2026-09-05T08:10:00Z" }), identity)).toBe("stale-verdict");
   });
 
-  it("a run older than the PR is not this PR's — the branch-reuse bound", () => {
-    expect(classifyRun(run({ createdAt: "2026-09-04T00:00:00Z" }), identity)).toBe("not-this-pr");
+  it("a verdict in the same second as the head commit is fresh — the relay pushes and posts in one sitting", () => {
+    expect(classifyComment(comment({ createdAt: "2026-09-05T08:15:00Z" }), identity)).toBe("verdict");
   });
 
-  it("tallies PR #550's real shape: two verdicts and one decline", () => {
-    // Read at the artifact 2026-09-05: runs 33954331743 (skipped),
-    // 33954949823 (review success) and 33955640709 (review success) on
-    // team/shift-worktree, which matches that shift's own report of two rounds.
+  it("a comment older than the PR is not this PR's — the branch-reuse bound", () => {
+    expect(classifyComment(comment({ createdAt: "2026-09-04T00:00:00Z" }), identity)).toBe("not-a-verdict");
+  });
+
+  it("tallies oldest-first, fresh apart from stale", () => {
     const tally = tallyRounds(
       [
-        run({ id: 33955640709, createdAt: "2026-09-05T08:34:40Z" }),
-        run({ id: 33954331743, createdAt: "2026-09-05T08:05:50Z", reviewJobConclusion: "skipped" }),
-        run({ id: 33954949823, createdAt: "2026-09-05T08:19:36Z" }),
+        comment({ id: 3, createdAt: "2026-09-05T09:00:00Z" }),
+        comment({ id: 1, createdAt: "2026-09-05T08:10:00Z" }),
+        comment({ id: 2, createdAt: "2026-09-05T08:30:00Z" }),
+        comment({ id: 4, body: "taken by the relay" }),
       ],
       identity,
     );
-    expect(tally.verdicts.map((r) => r.id)).toEqual([33954949823, 33955640709]);
-    expect(tally.declined).toHaveLength(1);
-    expect(tally.noVerdicts).toHaveLength(0);
-    expect(reviewPresence(tally)).toBe("verdict");
+    expect(tally.verdicts.map((c) => c.id)).toEqual([2, 3]);
+    expect(tally.stale.map((c) => c.id)).toEqual([1]);
   });
 
-  it("presence is DECLINED when triage declined every time — and never `absent` (#566)", () => {
-    // ⚠ THE NEGATIVE CONTROL THE CARD ASKS FOR BY NAME: *a head that DOES have
-    //    a skipped review must NOT be reported as missing, or the two states
-    //    have merely been merged into one again.* This arm is that sentence.
-    const tally = tallyRounds([run({ reviewJobConclusion: "skipped" })], identity);
-    expect(tally.declined).toHaveLength(1);
-    expect(reviewPresence(tally)).toBe("declined");
+  it("presence is VERDICT when a fresh one exists, whatever is owed", () => {
+    const tally = tallyRounds([comment()], identity);
+    expect(reviewPresence(tally, true)).toBe("verdict");
+    expect(reviewPresence(tally, false)).toBe("verdict");
   });
 
-  it("presence is ABSENT only when NOTHING ran for this PR (#566)", () => {
-    expect(reviewPresence(tallyRounds([], identity))).toBe("absent");
+  it("presence is NO-VERDICT when a review is owed and only a stale one exists", () => {
+    const tally = tallyRounds([comment({ createdAt: "2026-09-05T08:10:00Z" })], identity);
+    expect(tally.stale).toHaveLength(1);
+    expect(reviewPresence(tally, true)).toBe("no-verdict");
   });
 
-  it("a run belonging to ANOTHER PR leaves this one absent, not declined (#566)", () => {
-    // `not-this-pr` runs fall into no bucket at all, which is the only way a
-    // real branch reaches `absent` while the workflow is plainly alive — and
-    // it is exactly the reading that misled #566's own filing, where the card
-    // queried by the head sha AT MERGE and missed the run on an earlier head.
-    const other = run({ headBranch: "team/somebody-else", reviewJobConclusion: "skipped" });
-    const tally = tallyRounds([other], identity);
-    expect(tally.declined).toHaveLength(0);
-    expect(reviewPresence(tally)).toBe("absent");
+  it("presence is DECLINED when nobody owes a look and none exists — the design working", () => {
+    expect(reviewPresence(tallyRounds([], identity), false)).toBe("declined");
   });
 
-  it("presence is no-verdict when the reviewer was owed a look and produced none", () => {
-    const tally = tallyRounds([run({ reviewJobConclusion: "failure" })], identity);
-    expect(reviewPresence(tally)).toBe("no-verdict");
-  });
-
-  it("a verdict outranks a later outage — one read verdict is still a verdict", () => {
-    const tally = tallyRounds(
-      [
-        run({ id: 1, createdAt: "2026-09-05T08:19:36Z" }),
-        run({ id: 2, createdAt: "2026-09-05T08:40:00Z", reviewJobConclusion: "failure" }),
-      ],
-      identity,
-    );
-    expect(reviewPresence(tally)).toBe("verdict");
-  });
-});
-
-describe("the two-round cap counts VERDICTS, never attempts", () => {
-  it("says nothing on the first verdict", () => {
-    expect(decideRoundNotice(1).kind).toBe("silent");
-  });
-
-  it("posts the final-round line on the second", () => {
-    const n = decideRoundNotice(2);
-    expect(n.kind).toBe("final-round");
-    expect(n.kind === "final-round" && n.message).toBe(FINAL_ROUND_MESSAGE);
-  });
-
-  it("keeps saying it on a third, rather than going quiet exactly when it matters", () => {
-    expect(decideRoundNotice(3).kind).toBe("final-round");
-  });
-
-  it("says nothing at zero", () => {
-    expect(decideRoundNotice(0).kind).toBe("silent");
-  });
-
-  it("the message names the deliberate road to a third look, and the one-shot label trap", () => {
-    expect(FINAL_ROUND_MESSAGE).toMatch(/needs-fable/);
-    expect(FINAL_ROUND_MESSAGE).toMatch(/368/);
+  it("presence is NO-VERDICT when a look is owed and nothing at all was posted", () => {
+    expect(reviewPresence(tallyRounds([], identity), true)).toBe("no-verdict");
   });
 });
 
