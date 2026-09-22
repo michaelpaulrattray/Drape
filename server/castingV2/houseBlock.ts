@@ -240,12 +240,36 @@ export const EXPRESSION_LINE = "EXPRESSION: Eyes into the lens, present, mouth c
  * framed as anatomy the way the tail is), and the creature geometry is *lips
  * parted enough to show the being's own dentition* — never "at rest".
  */
-export const CREATURE_EXPRESSION_LINE =
+/**
+ * THE FANG HALF OF THE EXPRESSION LINE (#599) — a sentence of its own, because
+ * it is sent ONLY when the brief names fangs (#1069). The line below is the
+ * fanged creature's, byte for byte what #599's four courts settled on; the
+ * unfanged creature's line is the same bytes without this sentence.
+ */
+export const CREATURE_EXPRESSION_FANG_SENTENCE =
+  "Fangs are teeth: the mouth is slightly open, upper teeth showing, the fangs among them — nothing growing out of or over the lips. ";
+const CREATURE_EXPRESSION_HEAD =
   "EXPRESSION: Eyes into the lens, present, lips parted enough to show the being's own dentition — pose off, anatomy on. "
   + "Where the mouth is the being's own anatomy it shows as that anatomy allows: non-human dentition, tusks, an underbite, a split lip, a species tongue. "
-  + "Tusks and an underbite protrude past the lips of themselves. "
-  + "Fangs are teeth: the mouth is slightly open, upper teeth showing, the fangs among them — nothing growing out of or over the lips. "
-  + "No laugh, no speech, no acted roar, no tongue out as a pose, no blank CGI stare.";
+  + "Tusks and an underbite protrude past the lips of themselves. ";
+const CREATURE_EXPRESSION_TAIL =
+  "No laugh, no speech, no acted roar, no tongue out as a pose, no blank CGI stare.";
+export const CREATURE_EXPRESSION_LINE =
+  CREATURE_EXPRESSION_HEAD + CREATURE_EXPRESSION_FANG_SENTENCE + CREATURE_EXPRESSION_TAIL;
+/**
+ * ⚠ THE UNFANGED CREATURE'S LINE (#1069). His android — a being with human
+ * teeth, whose brief never said "fang" — was cast WITH fangs on roll 257,
+ * because the creature block named fangs on every creature roll and the
+ * engine draws the noun: "Where the being has fangs" is conditional in
+ * English and an instruction to the model. #599 had already measured that
+ * weighting the other way (the fang sentence in the description made 8/8
+ * read as teeth). So the block speaks of fangs only when the customer does —
+ * the same trigger the DENTITION clause uses, his own word, never a species
+ * word list (#190). The declared trade: a species that implies fangs without
+ * the word loses the how-they-render sentence; the "anatomy the species
+ * implies" line still lets the engine draw them.
+ */
+export const CREATURE_EXPRESSION_LINE_UNFANGED = CREATURE_EXPRESSION_HEAD + CREATURE_EXPRESSION_TAIL;
 
 /**
  * THE CREATURE LANE'S ANATOMY VISIBILITY CLAUSE (#237 half 2) — founder,
@@ -312,12 +336,15 @@ export const CREATURE_EXPRESSION_LINE =
 export const FANG_SENTENCE =
   "the mouth is slightly open with the upper teeth showing and the fangs among them as teeth — nothing grows out of or over the lips";
 
-export const ANATOMY_VISIBILITY_LINE =
+const ANATOMY_VISIBILITY_HEAD =
   "ANATOMY: If the being has a tail, wings, or other anatomy the description names, it must be visible in this frame "
   + "— over a shoulder, beside the ribcage, or rising into the picture. "
-  + "Show anatomy the species implies, even when the description doesn't name the part. "
-  + `Where the being has fangs, ${FANG_SENTENCE}. `
-  + "Do not hide it behind the back. Do not switch to a full-body shot.";
+  + "Show anatomy the species implies, even when the description doesn't name the part. ";
+const ANATOMY_VISIBILITY_TAIL = "Do not hide it behind the back. Do not switch to a full-body shot.";
+export const ANATOMY_VISIBILITY_LINE =
+  ANATOMY_VISIBILITY_HEAD + `Where the being has fangs, ${FANG_SENTENCE}. ` + ANATOMY_VISIBILITY_TAIL;
+/** The unfanged creature's anatomy line (#1069): the same bytes without the fang clause. */
+export const ANATOMY_VISIBILITY_LINE_UNFANGED = ANATOMY_VISIBILITY_HEAD + ANATOMY_VISIBILITY_TAIL;
 
 /**
  * THE DENTITION CLAUSE (#599, fourth court) — code's own paragraph, placed
@@ -341,8 +368,17 @@ export const ANATOMY_VISIBILITY_LINE =
  */
 export function dentitionClauseFor(briefText: string, lane: HouseLane): string | null {
   if (lane !== "creature") return null;
-  if (!/\bfangs?\b/i.test(briefText)) return null;
+  if (!briefNamesFangs(briefText)) return null;
   return `DENTITION: The being's fangs are teeth — ${FANG_SENTENCE}.`;
+}
+
+/**
+ * DOES THE CUSTOMER'S OWN BRIEF NAME FANGS? The one trigger for every fang
+ * sentence the studio sends (#599 the clause, #1069 the block) — his word,
+ * declared once so the clause and the block cannot disagree (working law 4).
+ */
+export function briefNamesFangs(briefText: string): boolean {
+  return /\bfangs?\b/i.test(briefText);
 }
 
 /**
@@ -421,14 +457,16 @@ export const AUTHORITY_LINE =
  * The anatomy clause sits with the crop sentences on purpose: it is a FRAMING
  * fact, which is his own diagnosis (*"More adjectives will not fix that"*).
  */
-function framingSentencesFor(lane: HouseLane): readonly string[] {
+function framingSentencesFor(lane: HouseLane, fangs = true): readonly string[] {
   return [
     ...AUTHOR_ROAD_FRAMING,
     take(PHOTOREAL_HUMAN_BLOCKS.framingSentences, "CROP: The subject's ENTIRE HAIR SILHOUETTE"),
     take(PHOTOREAL_HUMAN_BLOCKS.framingSentences, "Nothing on the head is clipped"),
-    ...(lane === "creature" ? [ANATOMY_VISIBILITY_LINE] : []),
+    ...(lane === "creature" ? [fangs ? ANATOMY_VISIBILITY_LINE : ANATOMY_VISIBILITY_LINE_UNFANGED] : []),
     POSTURE_LINE,
-    lane === "creature" ? CREATURE_EXPRESSION_LINE : EXPRESSION_LINE,
+    lane === "creature"
+      ? fangs ? CREATURE_EXPRESSION_LINE : CREATURE_EXPRESSION_LINE_UNFANGED
+      : EXPRESSION_LINE,
     take(PHOTOREAL_HUMAN_BLOCKS.framingSentences, "BACKGROUND:"),
   ];
 }
@@ -477,9 +515,9 @@ export function houseBlockSentencesFor(lane: HouseLane): readonly string[] {
  * The block as sent: framing, capture, realism and negatives as one paragraph
  * each, the preset, then the authority paragraph last.
  */
-function composeBlock(lane: HouseLane): string {
+function composeBlock(lane: HouseLane, fangs = true): string {
   return [
-    framingSentencesFor(lane).join(" "),
+    framingSentencesFor(lane, fangs).join(" "),
     captureSentences.join(" "),
     PHOTOREAL_HUMAN_BLOCKS.realismSentences.join(" "),
     NEGATIVE_LINES.join(" "),
@@ -491,8 +529,10 @@ function composeBlock(lane: HouseLane): string {
 /** THE HUMAN LANE'S BLOCK — what every roll received before #232/#237, and what every human roll still receives. */
 export const HOUSE_BLOCK: string = composeBlock("human");
 
-/** THE CREATURE LANE'S BLOCK (#232, #237) — the same bytes with his two sentences swapped in. */
+/** THE CREATURE LANE'S BLOCK (#232, #237) — the same bytes with his two sentences swapped in. This is the FANGED cut: what a creature whose brief names fangs receives. */
 export const CREATURE_HOUSE_BLOCK: string = composeBlock("creature");
+/** THE UNFANGED CREATURE'S BLOCK (#1069): the creature block with no word of fangs in it. */
+export const CREATURE_HOUSE_BLOCK_UNFANGED: string = composeBlock("creature", false);
 
 /**
  * THE BLOCK, CHOSEN BY STYLE (#142, the minimal settings modal) — the style
@@ -502,10 +542,16 @@ export const CREATURE_HOUSE_BLOCK: string = composeBlock("creature");
  * style a compile error at this one site until its preset is written,
  * declared and courted — never a silent fall-through to the photoreal bytes.
  */
-export function houseBlockForStyle(style: CastStyle, lane: HouseLane = DEFAULT_HOUSE_LANE): string {
+export function houseBlockForStyle(
+  style: CastStyle,
+  lane: HouseLane = DEFAULT_HOUSE_LANE,
+  /** Whether the brief names fangs (`briefNamesFangs`). The author passes it; a caller with no brief in hand gets the fanged cut, which is what every creature roll received before #1069. */
+  fangs = true,
+): string {
   switch (style) {
     case "photoreal":
-      return lane === "creature" ? CREATURE_HOUSE_BLOCK : HOUSE_BLOCK;
+      if (lane !== "creature") return HOUSE_BLOCK;
+      return fangs ? CREATURE_HOUSE_BLOCK : CREATURE_HOUSE_BLOCK_UNFANGED;
     default: {
       const never: never = style;
       throw new Error(`[houseBlock] no preset for style ${String(never)}`);
