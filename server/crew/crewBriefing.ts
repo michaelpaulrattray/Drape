@@ -340,6 +340,13 @@ const eyeItemSchema = z.object({
  * parses the real file on every commit) at write time, never degrades at
  * render time.
  */
+/**
+ * ⚠ CALLERS NAME `T` EXPLICITLY. zod 4.6 stopped flowing the array's element
+ * type into a generic function passed to `.refine()` (it did through 4.1), so
+ * a bare `uniqueBy("rung", (rung) => rung.key)` reads `rung` as `unknown` and
+ * `pnpm check` reddens on five lines at once (Dependabot #1054). The two
+ * ladder-card sites below always named it; the rest now do the same.
+ */
 function uniqueBy<T>(name: string, of: (item: T) => string) {
   return (items: readonly T[]) => {
     const seen = new Set<string>();
@@ -367,23 +374,23 @@ export const crewBriefingSchema = z.object({
     focus: focusSchema,
     milestone: milestoneSchema.nullable(),
     ladder: z.array(ladderRungSchema)
-      .refine(uniqueBy("rung", (rung) => rung.key), uniqueMessage("ladder[].key")),
+      .refine(uniqueBy<z.infer<typeof ladderRungSchema>>("rung", (rung) => rung.key), uniqueMessage("ladder[].key")),
     /** The open cards waiting on the ladder, by rung where the record names one (#493). */
     ladderCards: ladderCardsSchema,
     /** At-a-glance state, capped so the strip stays a glance (#74). */
     chips: z.array(chipSchema).max(6),
   }).strict(),
   needsYou: z.array(needsYouSchema)
-    .refine(uniqueBy("card", (card) => card.id), uniqueMessage("needsYou[].id")),
+    .refine(uniqueBy<z.infer<typeof needsYouSchema>>("card", (card) => card.id), uniqueMessage("needsYou[].id")),
   /** Courts and measurements waiting on his EYE — frames with captions (#75). */
   eyeItems: z.array(eyeItemSchema)
-    .refine(uniqueBy("eye item", (item) => item.id), uniqueMessage("eyeItems[].id")),
+    .refine(uniqueBy<z.infer<typeof eyeItemSchema>>("eye item", (item) => item.id), uniqueMessage("eyeItems[].id")),
   /** The founder-ordered queue, read from the label rather than composed (#290). */
   nextUp: nextUpSchema,
   pipeline: z.array(pipelineItemSchema)
-    .refine(uniqueBy("item", (item) => item.id), uniqueMessage("pipeline[].id")),
+    .refine(uniqueBy<z.infer<typeof pipelineItemSchema>>("item", (item) => item.id), uniqueMessage("pipeline[].id")),
   problems: z.array(problemSchema)
-    .refine(uniqueBy("problem", (problem) => problem.id), uniqueMessage("problems[].id")),
+    .refine(uniqueBy<z.infer<typeof problemSchema>>("problem", (problem) => problem.id), uniqueMessage("problems[].id")),
   acknowledgedReplyIds: z.array(z.number().int().positive()),
 }).strict().refine(
   /*
