@@ -1,7 +1,7 @@
 {
-  "edition": 465,
-  "updatedAt": "2026-09-22T07:00:00.000Z",
-  "shift": "THE UPDATE BACKLOG IS CLEARED - NINE LANDED TODAY, INCLUDING THE PIECE EVERY MESSAGE BETWEEN THE APP AND THE BROWSER PASSES THROUGH. AND THE ONE CARD ON YOUR ORDERED LIST IS ALREADY DONE - THE AUTOMATIC REVIEWER IS RETIRED. NOTHING ON YOUR DESK.\n\nA reading shift: nothing on the board was takeable, so this brings your page level with the world. Nothing spent.\n\n1. Nine held-up package updates merged this morning, all through the relay in your terminal, and production is serving them. The one worth naming is superjson - the piece that packs every message the app sends the browser and unpacks it at the other end. It jumped a whole version. It was read as a wire change rather than a version number: the shape of three real messages compared before and after, the full test suite run (13,368 passed, none failed), and the lobby, the casting studio and the admin page driven in a real browser with no errors. Nothing looks different, which is exactly what should have happened.\n\n2. The one card you ordered this morning is done - your ruling that the relay is the reviewer and the automatic one is retired for good. The relay took it and it landed at 06:53 (change 1066), seven minutes after this page was written - so this is the second pass of the same reading. What it means in practice: the machine that kept putting a red mark on changes without ever looking at them is gone, a written verdict from the relay is now the thing the merge tool looks for, and a money or sign-in change waits for that verdict while everything else merges on the machine checks alone. Your ordered list is empty again.\n\n3. Owed to you since Sunday and never written down here: the team stopped waking itself up for the weekly Monday package bumps. It was costing one model session every Monday while the nights were parked. Fixed in the team's own start-up gate, so there is no change to the product (card 1058).\n\n4. Left as it was: nothing is urgent, nothing is waiting on you, and every category under your switches is at zero on fresh counts (06:44). The next check-up clock is the Janitor's on Wednesday. Six cards have gone a week or more with nobody touching them, and all six are roadmap rungs you have not reached yet rather than neglected work.\n\nSpent: nothing. Nothing on your desk.",
+  "edition": 466,
+  "updatedAt": "2026-09-22T09:35:00.000Z",
+  "shift": "TWO THINGS YOU HIT THIS MORNING ARE FIXED AND LIVE - THE FANGS, AND THE UPLOAD THAT CALLED YOUR DESCRIPTION 'A LIST OF DETAILS'. ONE QUESTION FOR YOU, AND IT IS ONE WORD.\n\n1. Your android with the fangs it never asked for is fixed and serving (card 1069, change 1070, landed 09:12). The relay took that one. The house instruction sent on every creature roll used to mention fangs whether or not you had asked for them, and the engine drew the noun. It now speaks of fangs only when you do.\n\n2. The concept upload that refused your cyborg and then worked on retry - I went and read what actually happened on the live site, and it was not random. Your reader writes a short description of the picture, and anything over 300 characters gets sent back. Between 08:39 and 08:55 you uploaded five times: two were refused, three got through, and EVERY read that was sent back came in between 304 and 350 characters. The shortest was refused for FOUR CHARACTERS. Whether an upload works is currently a coin toss on a detailed picture.\n\n3. What I fixed and shipped (change 1071, live at 09:29): you were told 'that came back as a list of details rather than a casting note.' That was simply untrue - your reader had written ordinary prose that ran seven characters long. It now says what actually happened. Worth being straight with you: this stops the message lying about why. It does NOT stop the refusal.\n\n4. What stops the refusal is a number that is YOURS, which is why it is a question and not a change. You set the 300 limit on 28 August, down from 1,200, and your reason still holds - a long read locks eye colour, brow, haircut and shirt, and then all eight faces are the same person. I am not touching that. What I am asking is whether the SECOND attempt - the one we already sent back once - should be allowed a bit more room, up to 400. On this morning's numbers that turns both of your refusals into pictures. One word on card 1073: 'wider' or 'leave it'.\n\n5. Also found while in there, not fixed, written down: one of your two refusals told you to 'try a clearer shot of them'. Your photograph was fine - the first read had described the person perfectly well, just at 304 characters. Sending you off to find a better picture of our own problem is the one thing that message is never supposed to do. Fixing it means deciding what it should say instead, so it is filed rather than guessed at (on card 1067).\n\nSpent: nothing. On your desk: one word, card 1073.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -310,6 +310,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "concept-upload-retry-bound-1073",
+      "issueNumber": 1073,
+      "state": "open",
+      "filedAt": "2026-09-22T09:20:00.000Z",
+      "title": "Upload a concept refuses your picture about half the time, for four characters - should a retry get more room than the first read?",
+      "productImpact": "Upload a concept reads your picture and writes a short description of the person in it. Anything over 300 characters is sent back and asked for again; if the second attempt is also over, you are refused and have to press Try again. On a detailed picture that is roughly a coin toss. Measured on your own uploads this morning between 08:39 and 08:55: seven reads were sent back, six of them for length, and every single one landed between 304 and 350 characters. None was the sprawling catalogue your 300 ruling was aimed at - the shortest was refused for four characters. Five uploads, two refused, three through, each of those three only because the second read happened to come in shorter.",
+      "workedExample": "You upload the cyborg with the katana and the cabling. First read: 350 characters - sent back. Second read: 307 - refused, and you get the dialog. You press Try again a minute later, nothing about the picture has changed, and this time the second read lands at 250 and you get your cast. That is what happened at 08:39 and 08:40. With the retry allowed up to 400, the first attempt would simply have worked and you would never have seen a dialog.",
+      "options": [
+        {
+          "key": "wider",
+          "label": "Give the retry more room - 400 on the second read, 300 unchanged on the first",
+          "consequence": "Both of this morning's refusals become pictures. Descriptions can run to about four sentences instead of three, so eight faces share slightly more. Nowhere near the 1,082-character read that made you set the limit. Reversible in one number."
+        },
+        {
+          "key": "leave it",
+          "label": "Leave 300 as the limit for both attempts",
+          "consequence": "Nothing changes: a detailed picture keeps being refused about half the time and you keep pressing Try again until a read lands short. The message at least now tells you the truth about why."
+        }
+      ],
+      "recommendation": "'wider'. The first read still has to come in at 300, so nothing about your anti-clone limit is given up on the way in - only the retry, which we have already sent back once naming what was wrong, gets the extra room. Every long read measured today would have fitted, and 400 characters is four sentences, not the police report you refused in August."
+    },
     {
       "id": "settings-phone-layout-1003",
       "issueNumber": 1003,
@@ -5117,6 +5139,20 @@
   ],
   "pipeline": [
     {
+      "id": "creature-fangs-1069",
+      "title": "Your android cast with fangs it never asked for",
+      "status": "merged",
+      "prNumber": 1070,
+      "note": "Live since 09:12, taken by the relay. Every creature roll carried two house sentences explaining how fangs should look if the being has them. The English was conditional; the engine read the word 'fang' four times and drew them. Your combat android never mentioned teeth. Those two sentences now appear only when your own brief says fang, which is the same trigger the existing dentition rule uses. Your oni, which does ask for fangs, is unchanged. One declared trade: a creature that implies fangs without the word - an undescribed vampire - loses the how-they-render sentence, and the engine draws them its own way."
+    },
+    {
+      "id": "concept-upload-sentence-1067",
+      "title": "The upload that called your description 'a list of details' when it was ordinary prose",
+      "status": "merged",
+      "prNumber": 1071,
+      "note": "Live since 09:29. You were refused on a detailed cyborg and told your reader had come back with 'a list of details rather than a casting note'. It had not - it had written normal prose that ran seven characters over the limit. That message was written for a genuinely sprawling read and was being shown for any over-long one. It now says the read came back longer than a casting note, and offers you the same two things as before: try again, or describe them in your own words. It deliberately does not quote a character count at you, because you did not write the read and cannot do anything with the number. The refusal itself is unchanged - card 1073 is the question that would stop it."
+    },
+    {
       "id": "relay-reviewer-1065",
       "title": "Your ruling this morning: the relay is the reviewer, the automatic one is retired for good",
       "status": "merged",
@@ -7728,7 +7764,7 @@
     193
   ],
   "nextUp": {
-    "readAt": "2026-09-22T06:54:39.039Z",
+    "readAt": "2026-09-22T09:29:00.000Z",
     "items": []
   }
 }
