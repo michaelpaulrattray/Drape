@@ -99,6 +99,12 @@ import {
   pipelineGroupFor,
   rungFromLabels,
 } from "../shared/crewPipelineGroups.js";
+import {
+  type PipelineRowPullRequest,
+  type PlannablePipelineRow,
+  PR_CONFLICT_NOTE,
+  planPipelineRowStates,
+} from "../shared/crewShiftState.js";
 
 const BRIEFING = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -163,10 +169,23 @@ function issueState(issueNumber: number): "OPEN" | "CLOSED" | null {
   return state === "OPEN" || state === "CLOSED" ? state : null;
 }
 
-/** MERGED | OPEN | CLOSED | null when the record could not be read. */
-function prState(prNumber: number): string | null {
-  const row = gh(["pr", "view", String(prNumber), "--json", "state"]) as Json | null;
-  return typeof row?.state === "string" ? row.state : null;
+/**
+ * A pipeline row's pull request, as `gh` answers it — `null` when it could not
+ * be read at all.
+ *
+ * ⚠ **THE THREE FIELD NAMES ARE THE CONTRACT AND NO FIXTURE CAN SEE THEM
+ * (#1101, inheriting #1099's own lesson).** Trim `mergeable,mergeStateStatus`
+ * out of this list and `readPullRequestConflict` correctly answers `null` for
+ * every row, the stuck block goes quiet for ever, and nothing anywhere turns
+ * red — the suite would be driving a table that still carries the fields. So
+ * `server/crewPipelineRowStates.test.ts` holds this list at the BYTES.
+ */
+function prRecord(prNumber: number): PipelineRowPullRequest {
+  const row = gh([
+    "pr", "view", String(prNumber),
+    "--json", "state,mergeable,mergeStateStatus",
+  ]) as Json | null;
+  return row === null ? null : row as PipelineRowPullRequest;
 }
 
 const briefing = JSON.parse(readFileSync(BRIEFING, "utf8")) as Json;
@@ -443,20 +462,19 @@ if (allOpen === null) {
   his desk a sweep longer than the record justifies. Two contradictory facts
   about one row is the exact shape this script's header says it exists to kill.
 */
-for (const item of (briefing.pipeline ?? []) as Json[]) {
-  if (item.status === "merged") continue;
-  if (typeof item.prNumber !== "number") continue;
-  const state = prState(item.prNumber);
-  if (state === null) {
-    skipped.push(`pipeline ${item.id}: PR ${item.prNumber} could not be read — left ${item.status}.`);
-    continue;
-  }
-  if (state === "MERGED") {
-    changes.push(`pipeline ${item.id}: ${item.status} → merged (PR ${item.prNumber} is merged)`);
-    item.status = "merged";
-    /* A merged row cannot be waiting on him; its cardId would fail the parse. */
-    delete item.cardId;
-  }
+const pipelinePlan = planPipelineRowStates(
+  (briefing.pipeline ?? []) as (Json & PlannablePipelineRow)[],
+  prRecord,
+);
+
+for (const item of pipelinePlan.merged) {
+  changes.push(`pipeline ${item.id}: ${item.status} → merged (PR ${item.prNumber} is merged)`);
+  item.status = "merged";
+  /* A merged row cannot be waiting on him; its cardId would fail the parse. */
+  delete item.cardId;
+}
+for (const item of pipelinePlan.unreadable) {
+  skipped.push(`pipeline ${item.id}: PR ${item.prNumber} could not be read — left ${item.status}.`);
 }
 
 /* ─── 3. a finished card is done, from the issue's own state ─── */
@@ -572,6 +590,34 @@ if (staleHolds.length > 0) {
   }
 }
 
+if (pipelinePlan.stuck.length > 0) {
+  /*
+    ⚠ REPORTED, NEVER WRITTEN, AND THE ORDER OF THE ADVICE IS THE PRODUCT
+    DECISION (#1101). The repair comes FIRST because an ordinary merge
+    collision is not something he should ever read about — #1078 went
+    `CONFLICTING` twice in one day, both times from a routine merge to `main`
+    touching only the generated atlas, and both were cleared in fifteen
+    minutes. A row that says so on his page before a shift has tried the
+    repair teaches him to ignore the line.
+
+    The sentence on the row is written BY HAND, in his words, like every other
+    `note` — `pipelineItemSchema` already carries the field, so this needs no
+    new status for him to learn and no machine-written copy on his page.
+  */
+  console.log("");
+  console.log(`⚠ ${pipelinePlan.stuck.length} pipeline row(s) tell him work is moving on a PR that CANNOT LAND.`);
+  console.log(`  ${PR_CONFLICT_NOTE}`);
+  console.log("  Nothing is repaired here. In this order:");
+  console.log("  1. Re-merge `main` on its branch (#984 step 1) — fifteen minutes, and then his");
+  console.log("     page was right all along and there is nothing to write.");
+  console.log("  2. ONLY if it is still stuck when he will read the page — it is in another");
+  console.log("     lane, or the repair failed — say so in the row's `note`, in his terms:");
+  console.log("     what is held up and that somebody has to re-merge it before it can land.");
+  for (const item of pipelinePlan.stuck) {
+    console.log(`  ! ${item.id} — PR #${item.prNumber}, row still says \`${item.status}\``);
+  }
+}
+
 if (liars.length > 0) {
   console.log("");
   console.log(`⚠ ${liars.length} pipeline row(s) claim he is blocking them and his desk does not agree.`);
@@ -615,5 +661,16 @@ if (WRITE) {
 
    A shift reasoning from the old sentence about a perpetually-reprinting frame
    set would conclude it clears itself and stop chasing frames that will sit
-   unjudged for ever. Both still exit 0; both are printed loudly. */
+   unjudged for ever. Both still exit 0; both are printed loudly.
+
+   ⚠ **A STUCK PIPELINE ROW (#1101) EXITS 0 FOR THE SAME REASON, AND IT IS READ
+   OFF THIS PARAGRAPH RATHER THAN CHOSEN.** It is the closest thing yet to a
+   liar — both are a row on his page saying something the record does not
+   support — so the temptation to give it exit 2 is real. But the rule above is
+   not "how wrong is it", it is **"can the shift ship past it"**: a liar is a
+   shape the schema REFUSES at the parse, and a row whose PR is merely
+   conflicting is schema-valid and ships. Spending the one signal that means
+   *you cannot ship this* on a state you can is what that paragraph forbids.
+   It is printed loudly instead, and its first instruction is a repair that
+   usually removes the whole question. */
 process.exit(liars.length > 0 ? 2 : 0);
