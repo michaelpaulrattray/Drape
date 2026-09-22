@@ -197,6 +197,18 @@ export default function CastingV2() {
   */
   const briefField = useRef<HTMLTextAreaElement>(null);
   /*
+    THE UNSIGNED-SHEETS ROW SITS ON ITS LATEST CARD (card 1090). His word,
+    2026-09-23: *"the scroll bar is never sitting on the latest sheet card
+    always the previous so im always scrolling to see the latest sheet card."*
+    Read at production first: the ORDER was already right — a roll updates the
+    session row and `lastActivityAt` is ON UPDATE, so the rolled sheet is first
+    in the data. What drifted was the row's own scroll position, which nothing
+    set. Keyed on the FIRST sheet's id rather than on mount: the row can be
+    painted from the query cache with yesterday's order and then re-ordered
+    when the refetch lands, and the scroll must follow the second paint too.
+  */
+  const sheetRow = useRef<HTMLDivElement>(null);
+  /*
     THE CONCEPT CARD'S SECOND DOOR (#435 §2e) — the hero's `Start from photos`
     opens the card's own dialog, empty on its drop zone, exactly as tapping the
     card does. A handle rather than lifted state: see `ConceptUploadHandle`.
@@ -267,6 +279,11 @@ export default function CastingV2() {
           : false,
     },
   );
+  const latestSheetId = openSessions.data?.[0]?.sessionId ?? null;
+  useEffect(() => {
+    /* See `sheetRow` — the start of the row is where the latest card is. */
+    if (sheetRow.current) sheetRow.current.scrollLeft = 0;
+  }, [latestSheetId]);
 
   /*
     UPLOAD A CONCEPT (#185). House money, no credits, nothing kept — and the
@@ -437,17 +454,21 @@ export default function CastingV2() {
   /*
     THE HERO'S RECEIPT LINE, DERIVED (#435 §2d). Every segment comes from the
     server's own roll constants — the count and the price from the numbers that
-    charge, the duration from a dated measurement of real rolls.
+    charge. ⚠ **THE DURATION SEGMENT IS GONE (card 1090, his word 2026-09-23: *"the
+    50 seconds next to 160 cr remove it"*).** What stays is the rule the line
+    was built on: a segment the server did not send is absent, never guessed —
+    no fallback literal can reach it through a default.
 
-    ⚠ **A SEGMENT THE SERVER DID NOT SEND IS ABSENT, NEVER GUESSED.** An older
-    bundle against a server without `rollTypicalSeconds`, or a config still
-    settling, would otherwise print a fallback literal — which is precisely the
-    hand-written number his rule for this line forbids, arriving through the
-    back door marked "default". Two true facts read better than three with one
-    invented among them, and nothing on the line can ever disagree with the
-    charge.
+    ⚠ **`rollTypicalSeconds` IS STILL SERVED AND NOTHING CLIENT-SIDE READS IT
+    NOW — read at the tree, not assumed** (`grep -rn rollTypicalSeconds client/`
+    returns this comment and the guard's absence assertion, nothing else). The
+    sheet's own waiting copy does NOT read it: `CandidateViewer` says *"a minute
+    or two"*, which is hand-written and dated on its own docblock. So the field
+    is an unread field on a live contract — #1088's class exactly — and it stays
+    for now on the removal contract in CLAUDE.md invariant 4: a field leaves the
+    wire only after a full deploy in which no client reads it, never in the
+    commit that stops reading it.
   */
-  const rollSeconds = config.data.rollTypicalSeconds;
   /*
     WHETHER THE CONCEPT DOOR IS OPEN — the same server answer the card itself
     reads, so the hero's `Start from photos` link and the card can never
@@ -774,11 +795,11 @@ export default function CastingV2() {
               the only unpriced spend in the product, and this also answers
               *what do I get* before the money rather than after it.
 
-              ⚠ **ALL THREE VALUES ARE DERIVED, AND THAT IS THE WHOLE POINT** —
+              ⚠ **BOTH VALUES ARE DERIVED, AND THAT IS THE WHOLE POINT** —
               his rule, verbatim: *"A hand-written price that disagrees with the
               charge does the opposite of what this line is for."* The count and
-              the price are the server's own roll constants; the duration is a
-              measurement with a date (`server/castingV2/rollDuration.ts`).
+              the price are the server's own roll constants. (The duration
+              segment left this line on his word, card 1090.)
 
               ⚠ **HIS BRIEF'S OWN EXAMPLE READ `4 CR` AND THE CHARGE IS 160** —
               the rule above is what settles it, and the rule is his. Numerals
@@ -807,7 +828,6 @@ export default function CastingV2() {
                     {price} CR
                   </>
                 ) : null}
-                {rollSeconds ? ` · ~${rollSeconds} SECONDS` : null}
               </span>
               <span className="dpc-hero__receiptrule" aria-hidden="true" />
             </p>
@@ -1057,6 +1077,7 @@ export default function CastingV2() {
             scan sideways and pick from, rather than a collection you browse.
           */}
           <div
+            ref={sheetRow}
             className="dpc-sheetrow"
             role="group"
             aria-label="Unsigned sheets"

@@ -190,12 +190,15 @@ describe("the hero column is three parts, not a centred stack (§2a)", () => {
 });
 
 describe("the receipt line is derived, never typed (§2d)", () => {
-  it("every value comes from the server's own roll constants", async () => {
+  it("every value comes from the server's own roll constants — and the duration is no longer one of them (card 1090)", async () => {
     const page = code(await read(PAGE));
     expect(page).toContain("dpc-hero__receipt");
     expect(page).toContain("config.data.candidatesPerRoll");
-    expect(page).toContain("config.data.rollTypicalSeconds");
     expect(page).toContain("config.data.rollPriceCredits");
+    /* His word, 2026-09-23: "the 50 seconds next to 160 cr remove it." The
+       server still serves the figure; the page no longer reads it. */
+    expect(page).not.toContain("config.data.rollTypicalSeconds");
+    expect(page).not.toContain("SECONDS");
   });
 
   it("the line carries no hand-written count, price or duration", async () => {
@@ -219,12 +222,14 @@ describe("the receipt line is derived, never typed (§2d)", () => {
   it("a value the server did not send is absent rather than defaulted", async () => {
     const page = code(await read(PAGE));
     /*
-      A `?? 40` here would put a hand-written duration back on the line through
-      the door marked "default" — true of an older bundle, of a config still
-      settling, and of a server that removed the field.
+      A `?? 8` or `?? 160` here would put a hand-written count or price on the
+      line through the door marked "default" — true of an older bundle, of a
+      config still settling, and of a server that removed the field.
     */
-    expect(page).toContain("rollSeconds ?");
-    expect(page).not.toMatch(/rollTypicalSeconds\s*\?\?/);
+    expect(page).toContain("candidatesPerRoll ?");
+    expect(page).toContain("price ?");
+    expect(page).not.toMatch(/candidatesPerRoll\s*\?\?\s*\d/);
+    expect(page).not.toMatch(/rollPriceCredits\s*\?\?\s*\d/);
   });
 
   it("the duration constant is a measurement carrying its date", async () => {
