@@ -31,6 +31,7 @@ import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { cardNumberOf, findCardPullRequests } from "../shared/crewShiftState";
 import {
   OPEN_PR_READ_TIMEOUT_MS,
+  openPullRequestsVerdict,
   readOpenPullRequests,
   renderCardClaimWarning,
   type OpenPullRequest,
@@ -218,6 +219,57 @@ describe("readOpenPullRequests", () => {
   it is the arm to sabotage first, because it is the one standing in for a drive
   nobody can write.
 */
+/*
+  #1094 — THE SECOND CALLER, AND THE ARMS EXIST BECAUSE A SABOTAGE STAYED GREEN.
+
+  The shift digest names his ordered cards ~30 seconds before a shift declares
+  one, so it asks the same question at the place the CHOICE is made. Its first
+  shape did the null-to-UNREADABLE mapping inline in `shift-digest.mts`, where a
+  suite cannot reach past the `gh` call — collapsing a failed read into a clean
+  board broke nothing. The judgement moved here; these are the arms it now has.
+*/
+describe("openPullRequestsVerdict — the digest's half", () => {
+  it("carries a FAILED read through as unreadable, never as an empty board", () => {
+    const verdict = openPullRequestsVerdict(null, true);
+    expect(verdict).toHaveProperty("unreadable");
+    expect(String((verdict as { unreadable: string }).unreadable)).toContain("gh pr list");
+  });
+
+  it("keeps a read NOBODY TOOK apart from a read that failed", () => {
+    const skipped = openPullRequestsVerdict(null, false) as { unreadable: string };
+    expect(skipped.unreadable).toContain("--no-network");
+    /* Two different facts, and a caller that cannot tell them apart reports the
+       wrong reason to a shift deciding whether to check by hand. */
+    expect(skipped.unreadable).not.toContain("gh pr list");
+  });
+
+  it("passes a real answer through untouched, including a genuinely empty one", () => {
+    const rows: OpenPullRequest[] = [{ number: 5, title: "x", body: "", headRefName: "team/x" }];
+    expect(openPullRequestsVerdict(rows, true)).toBe(rows);
+    expect(openPullRequestsVerdict([], true)).toEqual([]);
+  });
+});
+
+describe("the shift digest actually calls it, and on its OWN root", () => {
+  const source = readFileSync(resolve(import.meta.dirname, "..", "scripts", "shift-digest.mts"), "utf8");
+
+  it("reads the open PRs through the shared reader rather than a second gh call", () => {
+    expect(source).toContain("readOpenPullRequests(null, root)");
+    /* A copied `--json number,title,body,url,isDraft,headRefName` would be a
+       mirror of the field list `findCardPullRequests` matches on (working law
+       4). One field list, one call shape, two callers. */
+    expect(source).not.toContain("\"pr\",");
+  });
+
+  it("maps the read through the drivable verdict instead of judging inline", () => {
+    expect(source).toContain("openPullRequestsVerdict(");
+  });
+
+  it("hands the result to the digest as its own input", () => {
+    expect(source).toMatch(/openPullRequests: openPrs/);
+  });
+});
+
 describe("the shift-start script actually calls it", () => {
   const source = readFileSync(resolve(import.meta.dirname, "..", "scripts", "crew-shift-start.mts"), "utf8");
 
