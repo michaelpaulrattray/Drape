@@ -420,9 +420,23 @@ export function findCardPullRequests<T extends PullRequestLike>(
  *   - `false` — anything else: GitHub has computed an answer and it is not a
  *               conflict.
  *
- * The shape is copied deliberately from `gate-stall-check.mts:178`–`:182`,
- * which already reads these two fields this way and whose comment records why
- * (PR #631's review). One vocabulary, two callers, no second definition.
+ * The shape came from `gate-stall-check.mts`, which read these two fields this
+ * way first and whose comment records why (PR #631's review).
+ *
+ * ⚠ **THIS SENTENCE USED TO SAY "two callers, no second definition" AND IT WAS
+ * NEVER TRUE OF THE TREE (#1103).** It described what #1099 added and was
+ * silent about the two spellings that already existed — the origin in
+ * `gate-stall-check.mts` and two more in `prMergeOrder.mts` — so a reader who
+ * trusted it instead of grepping would have believed there was one rule where
+ * there were three. Working law 4, on the vocabulary rather than on a list.
+ * Both were folded onto this declaration in the same commit, and
+ * `server/crewShiftCardClaim.test.ts` now REDDENS on a fourth spelling
+ * anywhere under `scripts/` or `shared/`, so the count is derived rather than
+ * asserted here.
+ *
+ * **What is deliberately NOT folded**: `prMergeOrder.mts`'s BEHIND, BLOCKED
+ * and UNKNOWN verdicts. That module decides whether to MERGE, not whether to
+ * warn, and those three branches carry remedies of their own.
  *
  * ⚠ **AND WHAT IT DRIVES IS A WARNING, NEVER A REFUSAL** — #1083's rule for
  * the line it rides on, and a drifted PR is exactly the case where a shift may

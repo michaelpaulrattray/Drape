@@ -21,7 +21,7 @@
  * Nothing here touches a network, a token or a live queue: the reader takes a
  * fixture path, and the source arm reads the file's bytes.
  */
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -456,5 +456,83 @@ describe("the three shift-facing readers all speak the one sentence", () => {
     expect(PR_CONFLICT_NOTE).toContain("NO LONGER BE MERGED");
     expect(PR_CONFLICT_NOTE).toContain("fires no workflow run");
     expect(PR_CONFLICT_NOTE).toContain("#984");
+  });
+});
+
+/*
+  ONE SPELLING OF "CAN THIS PULL REQUEST STILL BE MERGED" (#1103).
+
+  The three arms above hold three NAMED files to the declaration, which is the
+  mirror working law 4 warns about: a list of callers drifts from the tree the
+  moment somebody writes a fourth. Measured on 2026-09-22 — there were four
+  readers of mergeability and THREE spellings of the rule, while the
+  declaration's own docblock said *"two callers, no second definition"*. The
+  copies were in `gate-stall-check.mts` (the origin the declaration was copied
+  FROM) and twice in `prMergeOrder.mts`, and nothing anywhere could notice.
+
+  So this arm derives the population instead of naming it: every production
+  source file under `scripts/` and `shared/` is read, and a comparison against
+  `"CONFLICTING"` or `"DIRTY"` outside the declaration is the finding. Prose
+  and fixtures are untouched — the pattern is a COMPARISON, which is why
+  `prMergeOrder.mts`'s sentence *"This PR is also CONFLICTING"* and the test
+  fixtures that build one stay legal.
+*/
+describe("the conflict vocabulary has exactly one declaration", () => {
+  const root = resolve(import.meta.dirname, "..");
+  const DECLARATION = "shared/crewShiftState.ts";
+  /* `x === "CONFLICTING"` / `!== "DIRTY"`, either quote style. A fixture
+     literal (`mergeable: "CONFLICTING"`) carries no comparison operator and is
+     deliberately outside this. */
+  const COMPARISON = /[=!]==\s*["'](?:CONFLICTING|DIRTY)["']/;
+
+  const sources = (dir: string): string[] => {
+    const out: string[] = [];
+    for (const entry of readdirSync(resolve(root, dir), { withFileTypes: true })) {
+      const rel = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (entry.name === "node_modules") continue;
+        out.push(...sources(rel));
+      } else if (/\.(ts|mts)$/.test(entry.name) && !/\.test\.(ts|mts)$/.test(entry.name)) {
+        out.push(rel);
+      }
+    }
+    return out;
+  };
+
+  const population = [...sources("scripts"), ...sources("shared")];
+
+  /* POSITIVE CONTROL, and it is the arm that keeps this honest: the pattern
+     must MATCH the declaration. A regex that matches nothing passes the sweep
+     below by being broken, which is how a guard reports a clean tree for
+     months. */
+  it("the pattern finds the declaration itself", () => {
+    expect(population).toContain(DECLARATION);
+    expect(COMPARISON.test(readFileSync(resolve(root, DECLARATION), "utf8"))).toBe(true);
+  });
+
+  it("⚠ no file outside the declaration spells the rule for itself", () => {
+    const offenders = population
+      .filter((rel) => rel !== DECLARATION)
+      .filter((rel) => COMPARISON.test(readFileSync(resolve(root, rel), "utf8")));
+    expect(offenders, `call readPullRequestConflict() instead: ${offenders.join(", ")}`).toEqual([]);
+  });
+
+  /* And the field names the declaration reads must actually be ASKED for. This
+     is #1099's own measured hole: a `--json` list that quietly loses
+     `mergeable,mergeStateStatus` leaves every reader correctly answering
+     `null` and every warning silent, with nothing red anywhere. No fixture can
+     see it, because the fixtures carry the fields. */
+  it("⚠ every caller's --json list still asks GitHub for both fields", () => {
+    const callers = population.filter((rel) =>
+      /readPullRequestConflict\(/.test(readFileSync(resolve(root, rel), "utf8")));
+    expect(callers.length).toBeGreaterThanOrEqual(3);
+    for (const rel of callers) {
+      const source = readFileSync(resolve(root, rel), "utf8");
+      /* Only the files that do their own reading — a caller handed PRs by
+         another module has no list of its own to keep. */
+      if (!/"--json"/.test(source)) continue;
+      expect(source, `${rel} reads conflicts but its --json list has lost the fields`)
+        .toMatch(/mergeable,mergeStateStatus|mergeStateStatus,mergeable/);
+    }
   });
 });
