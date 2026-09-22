@@ -49,7 +49,7 @@
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.45.2",
     "express": "^4.22.2",
-    "framer-motion": "^12.23.22",
+    "framer-motion": "^13.4.0",
     "google-auth-library": "^11.1.0",
     "jose": "6.2.12",
     "jspdf": "^4.2.1",
