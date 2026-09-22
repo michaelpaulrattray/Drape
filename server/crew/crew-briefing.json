@@ -1,7 +1,7 @@
 {
-  "edition": 464,
-  "updatedAt": "2026-09-22T06:55:00.000Z",
-  "shift": "THE UPDATE BACKLOG IS CLEARED - NINE LANDED TODAY, INCLUDING THE PIECE EVERY MESSAGE BETWEEN THE APP AND THE BROWSER PASSES THROUGH. ONE CARD ON YOUR ORDERED LIST, BEING BUILT NOW. NOTHING ON YOUR DESK.\n\nA reading shift: nothing on the board was takeable, so this brings your page level with the world. Nothing spent.\n\n1. Nine held-up package updates merged this morning, all through the relay in your terminal, and production is serving them. The one worth naming is superjson - the piece that packs every message the app sends the browser and unpacks it at the other end. It jumped a whole version. It was read as a wire change rather than a version number: the shape of three real messages compared before and after, the full test suite run (13,368 passed, none failed), and the lobby, the casting studio and the admin page driven in a real browser with no errors. Nothing looks different, which is exactly what should have happened.\n\n2. Your ordered list has one card on it - the ruling you gave this morning, that the relay is the reviewer and the automatic one is retired for good. The relay took it and is building it now (change 1066). It is the only thing in flight, and it is not a night shift's to merge: a change to the reviewer's own machinery goes through the relay by your own rule.\n\n3. Owed to you since Sunday and never written down here: the team stopped waking itself up for the weekly Monday package bumps. It was costing one model session every Monday while the nights were parked. Fixed in the team's own start-up gate, so there is no change to the product (card 1058).\n\n4. Left as it was: nothing is urgent, nothing is waiting on you, and every category under your switches is at zero on fresh counts (06:44). The next check-up clock is the Janitor's on Wednesday. Six cards have gone a week or more with nobody touching them, and all six are roadmap rungs you have not reached yet rather than neglected work.\n\nSpent: nothing. Nothing on your desk.",
+  "edition": 465,
+  "updatedAt": "2026-09-22T07:00:00.000Z",
+  "shift": "THE UPDATE BACKLOG IS CLEARED - NINE LANDED TODAY, INCLUDING THE PIECE EVERY MESSAGE BETWEEN THE APP AND THE BROWSER PASSES THROUGH. AND THE ONE CARD ON YOUR ORDERED LIST IS ALREADY DONE - THE AUTOMATIC REVIEWER IS RETIRED. NOTHING ON YOUR DESK.\n\nA reading shift: nothing on the board was takeable, so this brings your page level with the world. Nothing spent.\n\n1. Nine held-up package updates merged this morning, all through the relay in your terminal, and production is serving them. The one worth naming is superjson - the piece that packs every message the app sends the browser and unpacks it at the other end. It jumped a whole version. It was read as a wire change rather than a version number: the shape of three real messages compared before and after, the full test suite run (13,368 passed, none failed), and the lobby, the casting studio and the admin page driven in a real browser with no errors. Nothing looks different, which is exactly what should have happened.\n\n2. The one card you ordered this morning is done - your ruling that the relay is the reviewer and the automatic one is retired for good. The relay took it and it landed at 06:53 (change 1066), seven minutes after this page was written - so this is the second pass of the same reading. What it means in practice: the machine that kept putting a red mark on changes without ever looking at them is gone, a written verdict from the relay is now the thing the merge tool looks for, and a money or sign-in change waits for that verdict while everything else merges on the machine checks alone. Your ordered list is empty again.\n\n3. Owed to you since Sunday and never written down here: the team stopped waking itself up for the weekly Monday package bumps. It was costing one model session every Monday while the nights were parked. Fixed in the team's own start-up gate, so there is no change to the product (card 1058).\n\n4. Left as it was: nothing is urgent, nothing is waiting on you, and every category under your switches is at zero on fresh counts (06:44). The next check-up clock is the Janitor's on Wednesday. Six cards have gone a week or more with nobody touching them, and all six are roadmap rungs you have not reached yet rather than neglected work.\n\nSpent: nothing. Nothing on your desk.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,11 +138,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "32 open, one ordered by you, none urgent. Six untouched for 7 days (timeline reading)."
+        "source": "31 open, none ordered by you, none urgent. Six untouched for 7 days (timeline reading)."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-22T06:45:29.074Z",
+      "readAt": "2026-09-22T06:54:39.040Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5119,10 +5119,9 @@
     {
       "id": "relay-reviewer-1065",
       "title": "Your ruling this morning: the relay is the reviewer, the automatic one is retired for good",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1066,
-      "note": "Your words on the card: 'You are the new outside reviewer the outfit reviewer is permanently dead and will not come back.' The automatic reviewer has died at its first call, spending nothing, on every run since 19 September - so a red mark from it was never a rejection, only an outage, and shifts were reading it as one. The change deletes it and makes the relay's written verdict the thing the merge tool looks for: a comment on the change itself, newer than the last edit to it. What still waits: a money or sign-in change waits for that written verdict. What does not: an ordinary change merges on the machine checks alone, as it already did. A night shift may not write a verdict - the tool cannot tell a shift from the relay - and that line is in the team's standing orders. The relay took this at 06:36 and is building it now.",
-      "cardId": null
+      "note": "Your words on the card: 'You are the new outside reviewer the outfit reviewer is permanently dead and will not come back.' The automatic reviewer has died at its first call, spending nothing, on every run since 19 September - so a red mark from it was never a rejection, only an outage, and shifts were reading it as one. The change deletes it and makes the relay's written verdict the thing the merge tool looks for: a comment on the change itself, newer than the last edit to it. What still waits: a money or sign-in change waits for that written verdict. What does not: an ordinary change merges on the machine checks alone, as it already did. A night shift may not write a verdict - the tool cannot tell a shift from the relay - and that line is in the team's standing orders. The relay took this at 06:36 and is building it now."
     },
     {
       "id": "superjson-wire-50",
@@ -6941,8 +6940,8 @@
       "id": "queue-shape-0922-foreman",
       "severity": "info",
       "state": "open",
-      "title": "The queue: 32 open, one on your ordered list (1065, being built), none urgent; every category under your switches at zero; no check-up clock before Wednesday",
-      "detail": "Read at 06:44 after this morning's nine merges. 32 open cards; six have had no comment, close, reopen or commit for a week or more - #14, #706, #26, #801, #15 and #60, all roadmap rungs you have not reached rather than neglected work. Every category under your switches is zero on fresh counts; the held cards (108, 129, 45, 1061, 1064) are unchanged. Your desk is empty: 193 of 193 replies acted on, nothing marked not-relevant waiting for an answer."
+      "title": "The queue: 31 open, your ordered list empty again (1065 landed at 06:53), none urgent; every category under your switches at zero; no check-up clock before Wednesday",
+      "detail": "Read at 06:44 after this morning's nine merges, re-read at 06:58 after the tenth (1065/1066). 31 open cards; six have had no comment, close, reopen or commit for a week or more - #14, #706, #26, #801, #15 and #60, all roadmap rungs you have not reached rather than neglected work. Every category under your switches is zero on fresh counts; the held cards (108, 129, 45, 1061, 1064) are unchanged. Your desk is empty: 193 of 193 replies acted on, nothing marked not-relevant waiting for an answer."
     },
     {
       "id": "queue-shape-0921a-foreman",
@@ -7729,13 +7728,7 @@
     193
   ],
   "nextUp": {
-    "readAt": "2026-09-22T06:45:29.073Z",
-    "items": [
-      {
-        "issueNumber": 1065,
-        "title": "The relay IS the reviewer: retire the dead action, make the hand verdict the verdict the merge tool reads (his ruling 2026-09-22)",
-        "urgent": false
-      }
-    ]
+    "readAt": "2026-09-22T06:54:39.039Z",
+    "items": []
   }
 }
