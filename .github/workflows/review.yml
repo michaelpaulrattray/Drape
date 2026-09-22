@@ -178,13 +178,10 @@ jobs:
           else
             READING='An ordinary diff: the review reads docs/REVIEWER_CHARTER.md. The standing orders let a shift merge it on the gate alone if the verdict has not landed yet.'
           fi
-          BODY=$(cat <<EOF
-$MARKER
-**A review is owed on this PR** — $WHY.
-
-The reviewer is the relay (Fable, in the founder's terminal), at its next sitting. $READING
-
-The verdict arrives as a comment headed \`**Fable review — by hand\` and \`pr-merge-in-order\` reads it off this PR — by the founder's account, on the current head; a later push makes it stale. It reviews, in priority order: correctness bugs (concrete inputs that produce wrong output, a crash, or lost money); enforcement-invariant violations (CLAUDE.md); flag discipline (new reachable behaviour landing dark); controls a deletion or refactor could orphan — name what was bolted to the deleted path; and tests (a fix without its failing reproduction, a class fix without its sweep). A pass says what was checked; it does not invent findings.
-EOF
-)
+          # Built line by line rather than as a heredoc: a heredoc's body must
+          # start at column 0, which is a YAML syntax error inside this block.
+          BODY="$MARKER"
+          BODY="$BODY"$'\n'"**A review is owed on this PR** — $WHY."
+          BODY="$BODY"$'\n\n'"The reviewer is the relay (Fable, in the founder's terminal), at its next sitting. $READING"
+          BODY="$BODY"$'\n\n'"The verdict arrives as a comment headed \`**Fable review — by hand\` and \`pr-merge-in-order\` reads it off this PR — by the founder's account, on the current head; a later push makes it stale. It reviews, in priority order: correctness bugs (concrete inputs that produce wrong output, a crash, or lost money); enforcement-invariant violations (CLAUDE.md); flag discipline (new reachable behaviour landing dark); controls a deletion or refactor could orphan — name what was bolted to the deleted path; and tests (a fix without its failing reproduction, a class fix without its sweep). A pass says what was checked; it does not invent findings."
           gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$BODY"
