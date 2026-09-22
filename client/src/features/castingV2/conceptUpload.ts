@@ -244,7 +244,8 @@ export const CONCEPT_REVIEW_CANCEL = "Cancel";
  *
  * His direction asks for a character count and this is the whole of it. A
  * `184 / 300` would be a **lie about the product**: `CONCEPT_DESCRIPTION_MAX`
- * (300) bounds what the DESCRIBER may return and had already done its work
+ * (300, and 400 on a second read since #1073) bounds what the DESCRIBER may
+ * return and had already done its work
  * before these words appeared — after she edits them, nothing refuses at 301.
  * The only bound that governs the edited text is the roll entrance's, and the
  * entrance speaks that refusal itself, before the claim.
@@ -286,6 +287,8 @@ export function conceptCountLabel(characters: number): string {
  * about how long a brief may be is exactly the parallel copy working law 4
  * forbids — `CONCEPT_DESCRIPTION_MAX` (300 since his ruling, and 1,200 before
  * it) is set well under both bounds so a description alone can never reach one.
+ * The same holds of `CONCEPT_DESCRIPTION_MAX_RETRY` (400, #1073): a second read
+ * is wider but still a fifth of the entrance's author-road cap.
  */
 export function briefWithDescription(existing: string, description: string): string {
   const kept = existing.trim();
