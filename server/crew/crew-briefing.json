@@ -1,7 +1,7 @@
 {
-  "edition": 472,
-  "updatedAt": "2026-09-22T13:38:00.000Z",
-  "shift": "YOUR ROLLS ARE ON FLARE, AND TWO GUARDS NOW STOP A FOLLOW BEING ANSWERED BY THE OTHER ENGINE.\n\nA night shift on your Flare order. Two seats reached for the same card at the same minute, which is worth telling you plainly rather than tidying away.\n\n1. YOUR ROLLS ARE ON SUNBURST AS OF A FEW MINUTES AGO, and I read that at the machine rather than at anyone's report: the running build carries the change and the live setting names your account with sunburst beside it. Flare shipped this morning, you rolled three sheets on it and said it was producing bad results, and the relay has already swapped it. Nothing on any screen has ever said an engine's name, and that has not changed.\n\n2. THE DUPLICATE, AND IT IS MINE TO OWN. Another seat opened its request at 12:40 and merged at 12:48; I opened my shift on the same card at 12:47 and built it again, because the card was clean, the queue was clean, and nothing a shift reads at the start shows a request already open. About half an hour of one session. The fix for it is filed as a process card for the weekly review, with the timestamps.\n\n3. WHAT SURVIVED, AND IT IS NOT NOTHING. When you press Follow on a Flare face, that face goes to the engine as an attachment - and it has to go to FLARE's door. I changed the code to send it to the other engine's door instead, deliberately, and ran everything: 5,690 checks passed and not one complained. The same was true of giving Flare its own share of the provider's allowance, which would quietly have taken 16 of the 20 requests we are allowed in flight - the fault that once brought your fresh casts back with no eyes or ears. Both now have a check that reads what actually leaves the building, not what the code says it intends to send. Merged and live.\n\n4. YOU HAVE SINCE SAID FLARE IS PRODUCING BAD RESULTS and asked for Sunburst. That card is at the top of your list and the relay is already building it - I stood off it rather than repeat this morning's mistake, and left the one note on it that saves a round: the guards above need two words changed to follow the new switch. Your three Flare rolls are the evidence: two came back complete, and the third had four of its eight refused by Flare's own filter on a 237-character brief. The court's sixteen tiles refused nothing, so that is a thing only your own rolls could have found.\n\nSpent: nothing. No render, no credit, no model call.",
+  "edition": 473,
+  "updatedAt": "2026-09-22T15:15:00.000Z",
+  "shift": "TWO THINGS YOU ASKED FOR TONIGHT ARE LIVE - AND ONE OF THEM WAS NOT WORKING AT ALL, WHICH THE CARD DID NOT KNOW.\n\nBoth of your small asks from this evening are built, merged and on the live site. I read the running build at the machine after each one rather than trusting the merge: the sheet-card fix is on production as build 7409b131, and the concept-picture fix as 6b2e8381, each with a fresh process behind it.\n\n1. YOUR UNSIGNED SHEETS SHOW WHAT IS HAPPENING NOW. Until tonight a sheet card drew finished faces and nothing else - so a sheet still being cast and a sheet the engine had refused BOTH came out as \"4 rolls\" over an empty strip. One reads as no roll at all, the other reads as broken. That was your screenshot. Now the strip has a frame for every picture: a face where there is one, a frame visibly being made while one is coming, \"Refused\" where the engine's filter said no, \"Didn't arrive\" for anything else, and the card's line says \"casting...\" while work is in flight. Faces still come first, so nothing that shows on a card today stops showing.\n\nAnd the other half of your sentence - start a roll, leave, and the card should appear and settle by itself. It does: with the lobby open and nothing touched, a sheet caught up 2.6 seconds after its pictures landed. When nothing is being cast the lobby asks for nothing at all, so this costs you no speed.\n\n2. THE CONCEPT PICTURE HAS AN X NOW - AND DRAGGING A NEW PICTURE OVER THE OLD ONE NEVER WORKED. The card said it probably worked already and only needed to be made visible. It did not work at all: the dialog took a drop on its body and on its empty slot, never on the picture itself, and a file dropped anywhere else is swallowed on purpose - the browser's own default there is to navigate away and take your brief with it. So the obvious place to aim was the one place that did nothing. I proved that both ways in one run, before and after the change. The x removes the picture and its words and leaves the dialog standing; the line under the picture now says you can drop another one there, or choose one.\n\n3. A SMALL FAULT FOUND ON THE WAY AND FIXED: two tiles carrying the same picture made the page complain about duplicate keys, which is the kind of thing that lets a browser drop or double a frame. It predates tonight.\n\nSpent: nothing on renders or credits. A handful of house text calls to drive the concept dialog against the real reader, well under a dollar.\n\nFour frames are in your gallery below - both fixes, in light and dark.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-22T13:16:20.851Z",
+      "readAt": "2026-09-22T15:12:28.839Z",
       "items": [
         {
           "issueNumber": 16,
@@ -2598,6 +2598,46 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "sheet-card-states-1086-frames",
+      "title": "Your unsigned sheets row: a sheet being cast, a sheet that was refused, and a sheet with faces - all four cards in one line",
+      "question": "Do these cards read right to you? Left to right: two faces then the two states, a roll the engine refused entirely, a roll still being cast (four frames with a soft sweep moving through them, and \"casting...\" in the line), and an untouched sheet with four faces - proof that nothing which shows today stopped showing. The only words are \"Refused\" and \"Didn't arrive\": no engine, no stage, no percentage. If the loading frames are too quiet or too loud on your screen, say so - it is one line either way.",
+      "state": "open",
+      "filedAt": "2026-09-22T15:15:00.000Z",
+      "issueNumber": 1086,
+      "frames": [
+        {
+          "key": "crew-eye/001ff32f-2098-43f7-9949-363c0635e736.png",
+          "caption": "AFTER, light - the four states side by side. The faces are a test picture rather than a cast, and the sheets are fixtures on the development database, so nothing was rolled or charged to make this.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/0b43983f-8956-4306-8fcb-8fbfb31666af.png",
+          "caption": "AFTER, dark - the same row. The sweep in the third card is caught mid-pass; on screen it moves.",
+          "arm": "dark"
+        }
+      ]
+    },
+    {
+      "id": "concept-picture-swap-1087-frames",
+      "title": "The concept dialog with the x on the picture, and the line that says you can drop another one",
+      "question": "Is this the right amount of furniture on your picture? The x sits top right; the line sits along the bottom over a soft wash so it reads on a light photograph as well as a dark one, and \"choose one\" is a real button. On a refusal the line disappears, because that state already offers Choose another picture in the row below. Say the word if you want either one quieter.",
+      "state": "open",
+      "filedAt": "2026-09-22T15:15:00.000Z",
+      "issueNumber": 1087,
+      "frames": [
+        {
+          "key": "crew-eye/47f11b7e-5abc-40a8-ba54-3374bb23da52.png",
+          "caption": "AFTER, light - the dialog with a real picture, read by the real reader. The description is what the studio wrote from it.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/5bae060d-0c91-4963-8402-d2b90eedc23d.png",
+          "caption": "AFTER, dark - the same dialog and the same picture.",
+          "arm": "dark"
+        }
+      ]
+    },
     {
       "id": "board-lazy-1036-frames",
       "title": "Opening a canvas after tonight - the frame you see while its code downloads, and the loaded canvas",
@@ -5175,6 +5215,20 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "sheet-card-states-1086",
+      "title": "Your unsigned sheets show a roll that is being cast, and one that was refused - instead of an empty card",
+      "status": "merged",
+      "prNumber": 1089,
+      "note": "Your bug, and both halves of it. A sheet card used to draw finished faces and nothing else, so a sheet still being cast and a sheet whose roll was refused both rendered as \"4 rolls\" over an empty strip - the first reading as no roll, the second as broken. The strip now carries a frame per picture: a face, a frame being made, \"Refused\", or \"Didn't arrive\". Faces still lead, so nothing that shows on a card today stops showing.\n\nStarted a roll and left? The card catches up on its own - measured at 2.6 seconds with no reload - and when nothing is being cast the lobby asks for nothing, so there is no cost to it.\n\nFour states stay deliberately blank: discarded and cancelled are your own decisions, signed has left the sheet for your roster, and an expired picture DID arrive before it was swept, so none of the four words would be true of it.\n\nLive on production as build 7409b131, read at the machine."
+    },
+    {
+      "id": "concept-picture-swap-1087",
+      "title": "The concept picture gets an x - and dropping a new picture on the old one now actually works",
+      "status": "merged",
+      "prNumber": 1092,
+      "note": "Your QOL ask. The only way out of a picture was Discard, which shuts the dialog and throws your words away, so swapping a photograph cost the whole road. There is a small x on the picture now: it removes the picture and its description and leaves the dialog open on its empty state.\n\nThe correction worth your eye: the card said dragging a new picture over the old one probably worked and only needed an affordance. It did not work at all. The dialog accepted a drop on its body and on the empty slot, never on the picture, and a file dropped anywhere the app has not claimed is deliberately swallowed - because the browser's own default is to navigate away and take your brief with it. So the obvious place to aim was the one dead spot. Driven both ways in one run: a drop at the old picture slot changed nothing after three seconds; the same drop at the new layer replaced the picture and rewrote the description to a different person.\n\nLive on production as build 6b2e8381, read at the machine."
+    },
     {
       "id": "flare-engine-live-1079",
       "title": "The engine your rolls paint on is a setting now - Flare this morning, Sunburst tonight, on your word both times",
@@ -7848,14 +7902,15 @@
     191,
     192,
     193,
-    194
+    194,
+    195
   ],
   "nextUp": {
-    "readAt": "2026-09-22T13:16:20.851Z",
+    "readAt": "2026-09-22T15:12:28.838Z",
     "items": [
       {
-        "issueNumber": 1084,
-        "title": "N1: the roll engine becomes a choice — CASTING_ROLL_ENGINE_SCOPE + CASTING_ROLL_ENGINE_MODEL, Sunburst on his account (his word after three Flare rolls: 'flare is producing bad results')",
+        "issueNumber": 1090,
+        "title": "Casting lobby: the ~50 SECONDS segment comes off the receipt line, and the unsigned-sheets row scrolls to its latest card on arrival (his two, 23 Sep)",
         "urgent": false
       }
     ]
