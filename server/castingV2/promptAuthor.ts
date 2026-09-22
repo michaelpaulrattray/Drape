@@ -44,7 +44,7 @@
 import type { TextEngine } from "../providers/types";
 import { interpreterTextQueue } from "./interpreter";
 import { createOpenRouterTextEngine, DEFAULT_INTERPRETER_MODEL } from "../providers/openrouterText";
-import { DEFAULT_HOUSE_LANE, dentitionClauseFor, houseBlockForStyle, type HouseLane } from "./houseBlock";
+import { DEFAULT_HOUSE_LANE, briefNamesFangs, dentitionClauseFor, houseBlockForStyle, type HouseLane } from "./houseBlock";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "../../shared/castStyles";
 
 /*
@@ -343,7 +343,8 @@ export function composeFinalPrompt(
     The block is the STYLE's (#142) and the LANE's (#232/#237) — one style
     today, and the human lane is `HOUSE_BLOCK`'s bytes exactly as before.
   */
-  parts.push(houseBlockForStyle(style, lane));
+  /* #1069: the block speaks of fangs only when his words do — one predicate for the clause above and the block here. */
+  parts.push(houseBlockForStyle(style, lane, briefNamesFangs(briefText)));
   return parts.join("\n\n");
 }
 
@@ -405,6 +406,6 @@ export function seedPromptRecord(input: {
     mode: "seed",
     authored: false,
     content: null,
-    houseBlockWords: countWords(houseBlockForStyle(style, lane)),
+    houseBlockWords: countWords(houseBlockForStyle(style, lane, briefNamesFangs(briefText))),
   };
 }
