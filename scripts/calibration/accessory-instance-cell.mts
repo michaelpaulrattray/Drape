@@ -304,9 +304,14 @@ const ARMS: { id: string; engine: "gpt2" | "nbp"; form: "crop" | "cutout"; usd: 
 ];
 
 async function paint(arm: typeof ARMS[number]): Promise<Buffer> {
-  const refs = [{ bytes: masterBytes, contentType: "image/png" }].concat(
-    (arm.form === "crop" ? cropRefs : cutoutRefs).map((bytes) => ({ bytes, contentType: "image/png" })),
-  );
+  // `Buffer` named on purpose (#1057): @types/node 26 types readFile's result as
+  // NonSharedBuffer while sharp's toBuffer stays Buffer<ArrayBufferLike>, and
+  // `.concat` on an array literal inferred from its first element refuses the
+  // second kind; a spread into the named array takes both.
+  const refs: Array<{ bytes: Buffer; contentType: string }> = [
+    { bytes: masterBytes, contentType: "image/png" },
+    ...(arm.form === "crop" ? cropRefs : cutoutRefs).map((bytes) => ({ bytes, contentType: "image/png" })),
+  ];
   if (arm.engine === "gpt2") {
     return (await engine.edit({ prompt: PROMPT, references: refs, width, height })).bytes;
   }
@@ -329,7 +334,7 @@ for (const arm of ARMS) {
   const rows: Row[] = [];
   for (let index = 0; index < N; index += 1) {
     const label = `${arm.id}-${index + 1}`;
-    let bytes = await readFile(`${OUT}/${label}.png`).catch(() => null);
+    let bytes: Buffer | null = await readFile(`${OUT}/${label}.png`).catch(() => null);
     if (bytes) { reused += 1; } else {
       process.stdout.write(`  painting ${index + 1}/${N}… `);
       bytes = await paint(arm).catch((error) => {
