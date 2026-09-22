@@ -1,7 +1,7 @@
 {
-  "edition": 468,
-  "updatedAt": "2026-09-22T11:00:00.000Z",
-  "shift": "A REFUSAL THAT BLAMED YOUR CAST FOR OUR OWN MISTAKE IS FIXED. NOTHING WAITS ON YOU.\n\n1. When a refine goes wrong there are four different reasons it can stop and hand the credits back. Three of them are OUR filing going wrong - the instruction gets built, and then something we wrote down about it does not line up with something else we wrote down, so the picture would have come out without the thing that was asked for. All three of those told the customer the same thing: \"That's a part of her I can't work on yet.\"\n\n2. That sentence is only true of the fourth one. The other three are us, and the wording taught exactly the wrong lesson: she reads that a part of her cast's body is unsupported, so she stops asking for it. The money comes back, so nothing else ever tells us it happened - which is why it could sit there. The three now say it was our end, that it was nothing about what she asked for, and to try again. The fourth keeps the old sentence, because for that one it has always been true.\n\n3. The part I want on the record, because it is where this nearly went wrong: every existing test of that old sentence was on one of the three branches that MOVED. So I could have split them, left the fourth one with a sentence nothing in the product ever produces, and had every test pass. There is now a test that drives the fourth one directly - taking freckles off, which we genuinely have no way to say yet.\n\n4. Before believing any of it I broke the change four ways on purpose. The last one is the one that matters: I gave the new reason the OLD sentence back, which is a rename that fixes nothing. Every other check in that file passed it happily. So the two sentences are now pinned against each other instead of against a fixed phrase, and that one went red.\n\n5. Checked the rest of that module for the same mistake by COUNTING rather than reading - every refusal reason against every place it can be raised. Only the new one has more than one place, which is the point of it. Nothing else left to split there.\n\n6. The other half of the same bug is filed and not built: the makeup reader tells you it could not see any makeup in your picture when what really happened is that it saw it and could not put it into usable words. Both facts it needs are already sitting there unused. It is not built tonight because it needs a small database change, and those go through a different lane than a night shift can finish on its own.",
+  "edition": 469,
+  "updatedAt": "2026-09-22T11:55:00.000Z",
+  "shift": "A REFUSAL THAT BLAMED A CUSTOMER'S PHOTOGRAPH FOR OUR OWN LIMIT IS FIXED AND WAITING ON ITS REVIEW. NOTHING WAITS ON YOU.\n\n1. Here is what happens today. Somebody attaches a photograph with makeup plainly in it, and we tell her: \"We couldn't see any makeup in that picture to take.\" Her picture was fine. What actually happened is that our reader looked at it, described the eyes, the lips, the brows and the skin - and every one of those descriptions came back longer than the length limit we ourselves set. So we threw all of them away, and then told her the problem was her photograph.\n\n2. She goes looking for a better picture of our problem. The money comes back, so she does not complain, and nothing anywhere ever records that it happened - which is exactly why it could sit there. It now says: \"We read that picture, but our description of it came back too long to use - tell us the look you want in your own words instead.\" Our fault, stated; no suggestion that another photograph would help; and the one thing she can actually do, which is type it into the box she is already standing in front of.\n\n3. The two ways of ending that are genuinely about her picture keep the old sentence - when the reader says there is no makeup on that face at all, and when it says the face is bare. That is the whole point: three endings wore one sentence and only two of them deserved it.\n\n4. The check that nearly got missed, and it is the same shape as last night's. There was an obvious cheap fix: give all three endings the new wording. Every test I wrote for this would have passed it, and a customer with a genuinely bare face would then be told our description came back too long. So the two sentences are now held against EACH OTHER in one test - the claim about her face belongs to one, the invitation to type it herself belongs to the other. I broke the change five different ways on purpose; that rename was the one only this check caught.\n\n5. One thing worth a minute, found while applying the database change. In production that tally table holds exactly one row, and it is the old \"no makeup visible\". We cannot tell whether that was a genuinely bare face or a real person hitting this bug, because the record does not say which ending wrote it. That ambiguity is what this change ends - from the next release they are two different words. It is not proof the bug has bitten, and it is not proof it has not.\n\n6. Checking the rest of the product for the same mistake turned up a real one, one file over: the hair-colour reader tells her to \"try a clearer picture\" when our own 20-character limit ate the answer, and its own note in the code admits it. Filed as its own card rather than bolted onto tonight's, because it needs one real decision about how it is recorded and that deserves its own look.\n\n7. Why it is not live yet: this one touches the database, which puts it in the lane that gets a second pair of eyes before it ships - a night shift never merges those itself. The database change is already applied to both the live and test databases and re-running it says \"already applied\", so nothing is left half-done while it waits.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-22T10:57:37.715Z",
+      "readAt": "2026-09-22T11:50:16.004Z",
       "items": [
         {
           "issueNumber": 16,
@@ -6989,13 +6989,20 @@
       "status": "merged",
       "prNumber": null,
       "note": "WHAT A CUSTOMER SEES: nothing. This is housekeeping on the crew's own workspace; no product file changed.\n\nWHAT WENT: the 262 GitHub branches were each checked against their pull request - deleted only where the request had merged and the branch had not moved since; every one is still reachable through that request. The 82 screenshots were from cards you closed over a week ago (the seven for card 436 stay, because a written evidence file cites them). The deploy leftover was a copy of the project a cut-off deploy run made on the 15th; it held no unsaved work. The 19 scripts were one-off helpers for cards closed over a week ago.\n\nTHE RECEIPTS: docs/JANITOR_LOG.md run 7, and the lists under output/janitor/run7-*. Backups: four zips under C:UsersAdmin dated 2026-09-18."
+    },
+    {
+      "id": "makeup-our-cap-1076",
+      "title": "The makeup reader stops telling a customer her picture had no makeup in it when our own limit ate the answer",
+      "status": "in-review",
+      "prNumber": 1078,
+      "note": "Waiting on its review, not on you. Every check is green and the change is clean to merge; it touches the database, so it goes through the review lane rather than being merged by the night shift.\n\nWHAT CHANGES FOR A CUSTOMER: one sentence. She is told we read her picture and could not use our own description of it, and is pointed at the box to type the look herself - instead of being sent to find a better photograph of a problem that was never hers.\n\nWHAT WAS ALREADY THERE AND UNUSED: the code already knew, twenty lines earlier, exactly which descriptions had run too long. It had the answer and threw it away. Reading what we already paid for before reaching for anything new is the fourth clause of your philosophy, and this is the second time this week it has been the whole fix.\n\nTHE DATABASE CHANGE: applied to both databases before the request was opened, and re-running it reports 'already applied'. All nine existing values were read back afterwards to prove nothing was lost."
     }
   ],
   "problems": [
     {
       "id": "queue-shape-0922b-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 33 open, your list empty, none urgent. One bug open and it is the half of tonight's that needs a database change. No check-up clock fires before Wednesday.",
       "detail": "Read at 11:00, after tonight's merge. 33 open cards, unchanged - one closed and one filed. 17 have had no comment, close, reopen or commit for a week or more, the same as last night; that figure counts real activity only, so a label edit does not reset it. Your own ordered list is empty and nothing is marked urgent. The one open bug is #1076, the makeup half of tonight's fix: a night shift can build it and open it, but it needs a small database change, and a change touching the database is reviewed by hand before it can go in - so it will sit for a review rather than closing itself overnight. That is the lane working as designed, not a blockage. Nothing here needs you."
     },
@@ -7593,6 +7600,13 @@
       "state": "resolved",
       "title": "The queue: 29 open, none moved; NEXT UP empty; nothing under any of your switches; the Warden ran its round and found nothing to file",
       "detail": "Read at 14:30Z: 29 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. The Warden's weekly readings are all clean and both of last week's cards (857, 858) are closed with receipts read at the artifacts. Every switched category is at zero (129 and 108 are blocked on their own rows, 45 is parked). The Janitor's clock fires tomorrow.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0922c-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 34 open, your list empty, none urgent. Both open bugs are tonight's work - one in review, one filed from it. No check-up clock has fired.",
+      "detail": "Read at 11:55Z. 34 open cards - one filed tonight by the check that looks for the same mistake elsewhere. 17 have had no comment, close, reopen or commit for 7 days, unchanged from last night; they are roadmap rungs you have not reached rather than neglected work.\n\nBoth open bugs came out of tonight: one is the change now waiting on its review, and the other is the one it found in the hair-colour reader. Every other switched category is at zero. The next check-up clock (housekeeping) fires in two days.\n\nNothing here needs you."
     }
   ],
   "acknowledgedReplyIds": [
@@ -7792,7 +7806,7 @@
     194
   ],
   "nextUp": {
-    "readAt": "2026-09-22T10:57:37.714Z",
+    "readAt": "2026-09-22T11:50:16.003Z",
     "items": []
   }
 }
