@@ -50,7 +50,7 @@
     "drizzle-orm": "^0.45.2",
     "express": "^4.22.2",
     "framer-motion": "^12.23.22",
-    "google-auth-library": "^10.6.2",
+    "google-auth-library": "^11.1.0",
     "jose": "6.2.12",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.2",
