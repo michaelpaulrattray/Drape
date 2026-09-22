@@ -455,11 +455,19 @@ export default function CastingV2() {
     THE HERO'S RECEIPT LINE, DERIVED (#435 §2d). Every segment comes from the
     server's own roll constants — the count and the price from the numbers that
     charge. ⚠ **THE DURATION SEGMENT IS GONE (card 1090, his word 2026-09-23: *"the
-    50 seconds next to 160 cr remove it"*).** The server still measures and
-    serves `rollTypicalSeconds` (the sheet's own wait copy reads time); this
-    line no longer prints it. What stays is the rule the line was built on: a
-    segment the server did not send is absent, never guessed — no fallback
-    literal can reach it through a default.
+    50 seconds next to 160 cr remove it"*).** What stays is the rule the line
+    was built on: a segment the server did not send is absent, never guessed —
+    no fallback literal can reach it through a default.
+
+    ⚠ **`rollTypicalSeconds` IS STILL SERVED AND NOTHING CLIENT-SIDE READS IT
+    NOW — read at the tree, not assumed** (`grep -rn rollTypicalSeconds client/`
+    returns this comment and the guard's absence assertion, nothing else). The
+    sheet's own waiting copy does NOT read it: `CandidateViewer` says *"a minute
+    or two"*, which is hand-written and dated on its own docblock. So the field
+    is an unread field on a live contract — #1088's class exactly — and it stays
+    for now on the removal contract in CLAUDE.md invariant 4: a field leaves the
+    wire only after a full deploy in which no client reads it, never in the
+    commit that stops reading it.
   */
   /*
     WHETHER THE CONCEPT DOOR IS OPEN — the same server answer the card itself
