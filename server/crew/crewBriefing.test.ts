@@ -198,12 +198,16 @@ describe("the briefing file", () => {
     ).not.toThrow();
 
     /* POSITIVE CONTROL 2 — rows with no PR cannot collide with each other.
-       They are 20 of the 271 in the shipped file, so a rule that keyed on a
-       null would refuse the very next edition. */
+       ⚠ They must be LIVE rows: written first with the real file's own row
+       status, this arm passed a sabotage that removed the null exemption
+       entirely, because all 20 null-PR rows in the shipped briefing are
+       `merged` and the status filter was already dropping them. A positive
+       control that the guard never reaches proves nothing. */
+    const nullPr = { ...row, prNumber: null, status: "in-review" };
     expect(() =>
       crewBriefingSchema.parse({
         ...valid,
-        pipeline: [{ ...row, id: "a", prNumber: null }, { ...row, id: "b", prNumber: null }],
+        pipeline: [{ ...nullPr, id: "a" }, { ...nullPr, id: "b" }],
       }),
     ).not.toThrow();
 
