@@ -46,16 +46,17 @@ vi.mock("../providers/falImages", async (importOriginal) => {
 
 const { FAL_GPT_IMAGE_2, FAL_GPT_IMAGE_25_FLARE } = await import("../providers/falImages");
 const { castingCreativeEngine, resetCastingEngineForTests } = await import("./rollEngine");
-const { CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV, CASTING_V2_SCOPE_ENV } = await import("./castingV2Scope");
+const { CASTING_ROLL_ENGINE_SCOPE_ENV, CASTING_ROLL_ENGINE_MODEL_ENV, CASTING_V2_SCOPE_ENV } = await import("./castingV2Scope");
 
-const KEYS = [CASTING_V2_SCOPE_ENV, CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV, "FAL_KEY"];
+const KEYS = [CASTING_V2_SCOPE_ENV, CASTING_ROLL_ENGINE_SCOPE_ENV, CASTING_ROLL_ENGINE_MODEL_ENV, "FAL_KEY"];
 const saved: Record<string, string | undefined> = {};
 
 beforeEach(() => {
   for (const key of KEYS) saved[key] = process.env[key];
   process.env.FAL_KEY = "test-key";
   process.env[CASTING_V2_SCOPE_ENV] = "all";
-  process.env[CASTING_ROLL_ENGINE_FLARE_SCOPE_ENV] = "users:1";
+  process.env[CASTING_ROLL_ENGINE_SCOPE_ENV] = "users:1";
+  process.env[CASTING_ROLL_ENGINE_MODEL_ENV] = "flare";
   handed.length = 0;
   resetCastingEngineForTests();
 });

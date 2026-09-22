@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "9c2f22d712f5cc7e"
+    "sourceFingerprint": "9947d9c2af2b55f5"
   },
   "domains": [
     {
@@ -8956,8 +8956,13 @@
       "valueRecorded": false
     },
     {
-      "id": "env:CASTING_ROLL_ENGINE_FLARE_SCOPE",
-      "name": "CASTING_ROLL_ENGINE_FLARE_SCOPE",
+      "id": "env:CASTING_ROLL_ENGINE_MODEL",
+      "name": "CASTING_ROLL_ENGINE_MODEL",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:CASTING_ROLL_ENGINE_SCOPE",
+      "name": "CASTING_ROLL_ENGINE_SCOPE",
       "valueRecorded": false
     },
     {
@@ -9343,8 +9348,8 @@
       "grammar": "off|all|users:<ids>"
     },
     {
-      "id": "flag:CASTING_ROLL_ENGINE_FLARE_SCOPE",
-      "name": "CASTING_ROLL_ENGINE_FLARE_SCOPE",
+      "id": "flag:CASTING_ROLL_ENGINE_SCOPE",
+      "name": "CASTING_ROLL_ENGINE_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -12126,8 +12131,8 @@
       "path": "server/castingV2/roleRetry.test.ts"
     },
     {
-      "id": "test:server/castingV2/rollEngineFlare.test.ts",
-      "path": "server/castingV2/rollEngineFlare.test.ts"
+      "id": "test:server/castingV2/rollEngineChoice.test.ts",
+      "path": "server/castingV2/rollEngineChoice.test.ts"
     },
     {
       "id": "test:server/castingV2/rollEngineOneQueue.test.ts",

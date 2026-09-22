@@ -10,8 +10,13 @@
  * A roll admitted here commits to eight jobs, so admission asks whether all
  * eight fit, not whether one does.
  */
-import { createFalCreativeEngine, FAL_GPT_IMAGE_2, FAL_GPT_IMAGE_25_FLARE } from "../providers/falImages";
-import { captureCastingRollEngineFlareEnabled } from "./castingV2Scope";
+import {
+  createFalCreativeEngine,
+  FAL_GPT_IMAGE_2,
+  FAL_GPT_IMAGE_25_FLARE,
+  FAL_GPT_IMAGE_25_SUNBURST,
+} from "../providers/falImages";
+import { type CastingRollEngineModel, castingRollEngineModelFor } from "./castingV2Scope";
 import { falAllowanceOf } from "./falBudget";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { CreativeEngine } from "../providers/types";
@@ -20,7 +25,12 @@ import { envInt } from "../_core/env";
 
 let queue: ProviderQueue | null = null;
 let engine: CreativeEngine | null = null;
-let flareEngine: CreativeEngine | null = null;
+/** One memoized engine per chosen 2.5 model, all on the one queue. */
+const chosenEngines = new Map<CastingRollEngineModel, CreativeEngine>();
+const MODEL_ENDPOINTS: Readonly<Record<CastingRollEngineModel, string>> = {
+  flare: FAL_GPT_IMAGE_25_FLARE,
+  sunburst: FAL_GPT_IMAGE_25_SUNBURST,
+};
 
 function castingImageQueue(): ProviderQueue {
   if (!queue) {
@@ -50,21 +60,24 @@ function falApiKey(): string {
  * THE ENGINE FOR THIS USER'S ROLL (#1079). Two memoized engines, ONE queue:
  * the budget the boot check proves fits inside the account's ceiling is spent
  * from one place whichever model paints. Under
- * `CASTING_ROLL_ENGINE_FLARE_SCOPE` the caller's roll renders on GPT Image
+ * `CASTING_ROLL_ENGINE_SCOPE` the caller's roll renders on GPT Image
  * 2.5 Flare; otherwise on GPT Image 2 exactly as before. A caller with no
  * user in hand (none today — both the roll and the retry dispatch know whose
  * roll it is) gets GPT Image 2.
  */
 export function castingCreativeEngine(userId?: number): CreativeEngine {
-  if (userId !== undefined && captureCastingRollEngineFlareEnabled(userId)) {
-    if (!flareEngine) {
-      flareEngine = createFalCreativeEngine({
+  const chosen = userId !== undefined ? castingRollEngineModelFor(userId) : null;
+  if (chosen !== null) {
+    let picked = chosenEngines.get(chosen);
+    if (!picked) {
+      picked = createFalCreativeEngine({
         apiKey: falApiKey(),
-        model: FAL_GPT_IMAGE_25_FLARE,
+        model: MODEL_ENDPOINTS[chosen],
         queue: castingImageQueue(),
       });
+      chosenEngines.set(chosen, picked);
     }
-    return flareEngine;
+    return picked;
   }
   if (!engine) {
     engine = createFalCreativeEngine({
@@ -98,5 +111,5 @@ export function admitRoll(candidateCount: number, stats = castingImageQueue().st
 export function resetCastingEngineForTests(): void {
   queue = null;
   engine = null;
-  flareEngine = null;
+  chosenEngines.clear();
 }

@@ -66,8 +66,8 @@
         ],
         "sites": [
           "server/castingV2/refineService.ts:4897",
-          "server/castingV2/rollEngine.ts:81",
-          "server/castingV2/rollEngine.ts:93"
+          "server/castingV2/rollEngine.ts:94",
+          "server/castingV2/rollEngine.ts:106"
         ]
       },
       {
@@ -881,7 +881,7 @@
       "CASTING_REFINE_DISPATCH_SCOPE",
       "CASTING_REPAINT_SCOPE",
       "CASTING_RETRY_SCOPE",
-      "CASTING_ROLL_ENGINE_FLARE_SCOPE",
+      "CASTING_ROLL_ENGINE_SCOPE",
       "CASTING_SCAN_TABLE_SCOPE",
       "CASTING_SEGMENTS_DELIVERED_SCOPE",
       "CASTING_SEGMENTS_SCOPE",
@@ -1504,7 +1504,7 @@
         "flags": [
           "CASTING_V2_SCOPE",
           "CASTING_RETRY_SCOPE",
-          "CASTING_ROLL_ENGINE_FLARE_SCOPE"
+          "CASTING_ROLL_ENGINE_SCOPE"
         ],
         "notes": [
           "Anchor law: every refine renders from candidate.imageKey (the pristine master), never from a delivered frame — chaining on delivered frames was measured to drift.",
