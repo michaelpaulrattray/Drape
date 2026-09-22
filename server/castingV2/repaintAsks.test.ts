@@ -307,6 +307,36 @@ describe("a departure vacates the slot and says so", () => {
     expect(result.reason).toBe("unnamedObject");
   });
 
+  it("KEEPS `uncatalogued` for the one fault its sentence is true of — a kind with no phrase", () => {
+    /*
+      ⚠ THE ARM THE #1072 SPLIT NEEDED, AND THE ONE IT WOULD HAVE BEEN EASIEST
+      TO SHIP WITHOUT.
+
+      Before this file, every assertion of `uncatalogued` in the repository was
+      on one of the three branches that MOVED to `askNotCarried` — so the split
+      could have emptied the reason completely and left a sentence nothing
+      raises, with every suite green. This drives the branch that stays.
+
+      `freckles` is a mark kind whose `canDepart` is FALSE on the freckle
+      court's own verdict, so `vacantPhraseFor` answers null and the door
+      refuses for want of a way to SAY the thing is gone. That is a capability
+      limit about the product, which is exactly what *"a part of her I can't
+      work on yet"* claims — the one place that sentence has always been true.
+    */
+    const result = repaintAsksFor({
+      pronouns: her,
+      delta: { free: {}, absent: { marks: ["freckles"] } },
+      prose,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe("uncatalogued");
+    /* Named at the detail too, so a future move of this branch cannot pass by
+       landing on some other door that also answers `uncatalogued`. */
+    expect(result.detail).toContain("vacant phrase");
+  });
+
   it("vacates BOTH lobes when a pair leaves, because a pair is two slots", () => {
     const result = repaintAsksFor({
       pronouns: her,
@@ -993,7 +1023,10 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.reason).toBe("uncatalogued");
+    /* #1072: this is our own key failing our own resolver, so it takes
+       `askNotCarried` and its sentence — never `uncatalogued`, whose line tells
+       her a part of her cast is unsupported. */
+    expect(result.reason).toBe("askNotCarried");
   });
 
   it("a PRUNE re-says what survives and says nothing about what did not", () => {
@@ -1088,7 +1121,10 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.reason).toBe("uncatalogued");
+    /* #1072: the composition dropped it — that is our fault end to end, and the
+       comment above says so ("never reached the painter"). It reads back as
+       `askNotCarried` now, so the sentence matches the comment. */
+    expect(result.reason).toBe("askNotCarried");
     expect(result.detail).toContain("cat-ears");
   });
 });

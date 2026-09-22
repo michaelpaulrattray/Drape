@@ -443,6 +443,30 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
     say: (context) => `That's a part of ${context.pronouns.object} I can't work on yet. ` + MONEY(context.moneySafe),
   },
   /*
+    OUR BOOKKEEPING, NOT HER CAST (#1072, the law-7 sweep off #1067).
+
+    Three branches of `repaintAsks` refuse because a record this product minted
+    does not line up with another one — a key the open lane could not have
+    minted, an ask the composed state dropped, a placement whose slot is not in
+    the catalogue. All three used to reach `uncatalogued` above and read back as
+    *"that's a part of her I can't work on yet."*
+
+    **That sentence teaches her that a part of her cast is unsupported, so she
+    stops asking for it** — and because the credits come back, nothing else ever
+    tells us the branch fired. A true account costs the same and buys a defect
+    report; the untrue one buys silence.
+
+    So: it says our end, it says nothing was painted, it clears her ask of
+    blame, and it offers the one action that is honest — ask again. It names no
+    slot, no catalogue and no composition, because none of those is a word she
+    has any use for (the disappearing-technology law, clause 6).
+  */
+  askNotCarried: {
+    charge: "refunded",
+    say: (context) => "Something went wrong at our end setting that up, so I didn't paint it "
+      + `— it wasn't anything about what you asked for. Try it again. ${MONEY(context.moneySafe)}`,
+  },
+  /*
     NOTHING TO SAY IT WITH. The read-back came back empty, so the road has no
     phrase to regenerate the feature from — an honest "ask me again" rather
     than a diagnosis she cannot act on.

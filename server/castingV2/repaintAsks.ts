@@ -250,7 +250,47 @@ export type RepaintAsksRefusal = {
      * than through the path that usually behaves.
      */
     | "unplacedInk"
+    /**
+     * A KIND WE CATALOGUED AND HAVE NO WAY TO SAY IS GONE.
+     *
+     * The slot resolves, the ask is well formed, and the placement table holds
+     * no `vacantPhrase` for it — so the road genuinely cannot serve this ask
+     * today. It is a CAPABILITY LIMIT and its sentence says so.
+     *
+     * ⚠ **It used to cover three other branches that are nothing of the kind**
+     * (#1072, the law-7 sweep off #1067). Those are `askNotCarried` below, and
+     * the split is the whole of that card: a customer reading *"that's a part
+     * of her I can't work on yet"* over our own bookkeeping learns that her
+     * cast's body is unsupported, stops asking, and never reports the defect.
+     */
     | "uncatalogued"
+    /**
+     * OUR OWN RECORD OF THE ASK DID NOT HOLD TOGETHER — and it is never about
+     * her, her words or her cast (#1072).
+     *
+     * Three branches raise it and all three are internal inconsistencies
+     * between records this product minted itself:
+     *
+     *   * an open-lane key in the composed state that `slotDefinition` will not
+     *     resolve — a delta built past the door that drops malformed keys;
+     *   * a kind THIS STEP asked for that the composed state does not carry —
+     *     a composition that dropped an ask on the way;
+     *   * a placement-table definition whose slot is not in the slot catalogue
+     *     — two of our own tables disagreeing.
+     *
+     * **Each refuses before paint and each is right to.** What was wrong was
+     * the sentence: they wore `uncatalogued`'s capability-limit line, which is
+     * true of a kind with no vacant phrase and false of every one of these.
+     *
+     * It should be unreachable from a well-formed ask, which is why the
+     * capability atlas files it under `UNREACHABLE_DOORS` rather than as a
+     * debt. **Two of the three are driven directly below** — the unresolvable
+     * open key and the dropped ask. The third is not, and that is said out loud
+     * here and in the atlas entry rather than left to be assumed: reaching it
+     * needs the placement table and the slot catalogue to disagree, which no
+     * fixture can arrange through the public entrance today.
+     */
+    | "askNotCarried"
     | "noWords"
     /**
      * She pointed at ONE of a pair and asked for it to come off.
@@ -706,7 +746,7 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
         better than painting a feature that can never be filed.
       */
       return {
-        ok: false, reason: "uncatalogued", facet: null,
+        ok: false, reason: "askNotCarried", facet: null,
         detail: `${slot} is not a key the open lane could have minted, so nothing knows what to ask for or what to call it`,
       };
     }
@@ -790,7 +830,7 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
   */
   if (openAskedNow.size > 0) {
     return {
-      ok: false, reason: "uncatalogued", facet: null,
+      ok: false, reason: "askNotCarried", facet: null,
       detail: `this step asks for ${Array.from(openAskedNow).join(", ")} and the composed state it was `
         + "given does not carry it, so the recipe would paint a render that never mentions what was asked for",
     };
@@ -906,7 +946,7 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
     for (const definition of definitions) {
       if (slotDefinition(definition.slot) === null) {
         return {
-          ok: false, reason: "uncatalogued", facet,
+          ok: false, reason: "askNotCarried", facet,
           detail: `${definition.slot} is not in the slot catalogue, so nothing knows what tier or noun it has`,
         };
       }

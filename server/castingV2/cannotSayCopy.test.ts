@@ -39,6 +39,9 @@ const REASONS: readonly CannotSayReason[] = [
      of the pre-claim ink door's own sentences. */
   "inkNotKept",
   "uncatalogued",
+  /* #1072: the three internal-record branches split off `uncatalogued`, which
+     keeps only the one fault its sentence was ever true of. */
+  "askNotCarried",
   "noWords",
   "perSideRemoval",
   "sideNamedWithoutScope",
@@ -112,6 +115,36 @@ describe("the sentences the founder ruled are unchanged", () => {
     })).toBe('"Her right eye fiery red" names one side of a pair, and pointing at it is how I can work '
       + "on just that one — tap it on her picture and say it there. Said in a sentence I would have to "
       + "change both, which isn't what you asked for. Nothing was charged.");
+  });
+
+  it("keeps OUR fault off her cast — #1072's whole point, pinned as a relationship", () => {
+    /*
+      ⚠ THE ARM THAT ENCODES THE CARD, and without it the split is cosmetic.
+
+      Every other assertion in this file would pass an `askNotCarried` entry
+      that said *"that's a part of her I can't work on yet"* word for word: it
+      is over twenty characters, it is not the malfunction line, and it ends the
+      money question. The defect was never the reason's NAME — it was that a
+      customer reads a claim about her cast's body when what failed was our
+      bookkeeping, stops asking for that feature, and never reports it.
+
+      So this pins the two sentences AGAINST EACH OTHER rather than pinning a
+      literal. The capability-limit claim belongs to exactly one of them, and
+      the arm fails whichever way that stops being true — the limit sentence
+      losing its claim, or our-fault sentence acquiring one.
+    */
+    const ourFault = cannotSaySentence("askNotCarried", bare);
+    const realLimit = cannotSaySentence("uncatalogued", bare);
+
+    expect(realLimit, "the capability limit stopped claiming to be one")
+      .toContain("can't work on");
+    expect(ourFault, "our own bookkeeping is telling her a part of her cast is unsupported")
+      .not.toContain("can't work on");
+    /* And it must not name her, her words or her cast as the thing at fault —
+       the one positive claim the sentence is FOR. */
+    expect(ourFault, "our-fault sentence does not clear her ask of blame")
+      .toContain("wasn't anything about what you asked for");
+    expect(ourFault, "the two sentences have converged").not.toBe(realLimit);
   });
 
   it("keeps the one-of-a-pair wording, which names what she CAN do", () => {
