@@ -1,7 +1,7 @@
 {
-  "edition": 476,
-  "updatedAt": "2026-09-22T19:35:00.000Z",
-  "shift": "BOTH OF THE THINGS YOU ASKED FOR IN THE CASTING LOBBY ARE LIVE. Open it and you should see the difference straight away.\n\nTHE RECEIPT LINE UNDER THE BRIEF BOX now reads 8 CANDIDATES · ~160 CR. The \"~50 SECONDS\" you wanted gone is gone.\n\nTHE UNSIGNED SHEETS ROW now opens on your newest sheet instead of the one before it, and it goes back to the newest one after you open a sheet from further along the row and come back. Worth knowing why it was wrong: the ORDER was always right - your newest sheet really was first in the list. What nobody had ever set was where the row starts scrolled to, so it sat a card and a half to the right of the beginning and you were always dragging left to find what you had just made.\n\nWHY THIS TOOK UNTIL TONIGHT, PLAINLY. The work itself was finished yesterday afternoon by the relay - the seat that works in your terminal - and then it stopped. Between it being written and tonight, the main line of the code moved nine times underneath it, which left it in a state where it could not even be checked automatically, let alone released. Two shifts looked at it and left it alone, which was the right call at the time: you do not take over somebody else's unfinished work while they might still be at it.\n\nTonight it had been four hours, the relay's working copy was clean and matched exactly what it had already sent, and nothing was going to move on its own. So I took it over, brought it up to date with everything else that had changed, checked it myself in a real browser, and released it. Nothing was rebuilt and nothing was thrown away.\n\nTWO THINGS I FOUND WHILE CHECKING IT, both worth a line because they are the kind of thing that quietly wastes a night later.\n\nThe first is that the relay's own check of its own work would have passed even if the sheets row had completely failed to appear. It waited four seconds for the row and then, if the row was not there, printed \"row too short to scroll\" and called it a pass. A row that is MISSING and a row that is merely SHORT are not the same thing, and it could not tell them apart. On a full lobby that row genuinely takes about seven seconds to arrive, so this was not theoretical - I hit it on the first run. Replaced with one that waits properly and refuses if the row never shows.\n\nThe second is a note in the code that justified keeping a piece of data we send to your browser by saying another screen still used it. It does not. I checked, and nothing reads it any more. I have not deleted it, because pulling something out of what we send while somebody might still have an old page open is exactly how you get a white screen - it comes out after a full release has gone by with nobody reading it. The note now says the true thing.\n\nAND ONE MORE FIX TO HOW THE NIGHTS WORK, which is the other half of the last two nights' story. The list a shift reads FIRST thing to decide what matters most still did not say whether somebody was already building a job. Tonight is the proof it mattered: I ran that list at 18:48 and it showed me your lobby job with nothing beside it, while the relay's finished work had been sitting open on it since 14:47. I only knew because of last night's fix to a different list, thirty seconds later. Both lists now say it, and so does the start-up check - one piece of code answering the question, so it cannot drift into three different answers.\n\nNothing here needs you.",
+  "edition": 477,
+  "updatedAt": "2026-09-22T20:45:00.000Z",
+  "shift": "A FIX YOU ARE WAITING ON HAD QUIETLY BECOME UN-RELEASABLE, AND NOTHING WAS WATCHING IT. It is fine now and back in the queue to be read and released.\n\nWHAT THE FIX IS. When you attach a picture and we read the makeup off it, our own length limit could eat the answer - and instead of saying so, we told you your picture had no makeup in it. That is us blaming your photograph for our own bookkeeping. The repair was written yesterday morning and has been finished and passing every check since 21:38 your time.\n\nWHY IT WAS STILL SITTING THERE. It touches the credits side of the app, and those changes wait for a person to read them rather than going out on the machine checks alone. That is correct and I have not changed it. What is NOT correct is what happened while it waited: the main line of the code moved three times underneath it, and past a certain point the finished work and the current code disagree about the same file. At that point it stops being merely unreleased and becomes unCHECKABLE - the machinery will not run on it at all any more - and it looks perfectly healthy the whole time. It sat like that for nine hours.\n\nWHAT I DID. Brought it up to date with everything that had changed, re-ran the whole check suite here first (6,927 tests, all green), pushed it, and watched the full machine gate come back green on the new version. It can be released the moment somebody reads it. I did not read it and did not release it - on a change like this that is not a night shift's call.\n\nTHE SECOND THING, which is really why it sat there. Five different lists tell a shift 'somebody already has an open job on this'. Not one of them asks the next question, which is 'and can it still be released?'. So last night's shift looked straight at this, saw healthy work in flight, and moved on - exactly right, given what it was shown. This is the third time the team has been caught by the same blind spot. I have written it up as a job rather than building it tonight: it is one line of text on a warning that already prints, and the rule is that a shift does not build its own brand-new idea the same night it has it.\n\nAND A SMALL ONE ON THIS PAGE ITSELF. The queue line you read at the bottom had been stuck on a count from yesterday lunchtime, because the newer and more accurate one was filed in a way that never shows. Fixed in this edition - the line below is tonight's actual reading.\n\nNothing here needs you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -5216,6 +5216,13 @@
   ],
   "pipeline": [
     {
+      "id": "makeup-cap-unstuck-1076",
+      "title": "The makeup fix that stopped telling you your picture had no makeup in it is unstuck and ready to release",
+      "status": "in-review",
+      "prNumber": 1078,
+      "note": "Attach a picture, ask for her makeup, and our own length cap could eat the answer on the way back - at which point we told you the picture had no makeup in it. The fix keeps the answer we actually read.\n\nFinished and green since yesterday morning. It waits for a person to read it because it touches credits, and that is unchanged. What had gone wrong is that it had drifted so far behind the current code that the checking machinery would not run on it at all - and from the outside it still looked healthy.\n\nBrought up to date tonight and re-checked end to end: 6,927 tests green here before pushing, then the full gate green on the new version. Not read and not released by me.\n\nOne job rides directly behind it - the hair-colour reader has the same fault and reuses a piece of this repair."
+    },
+    {
       "id": "lobby-seconds-and-scroll-1090",
       "title": "Your two lobby asks are live: the seconds are off the receipt line, and the sheets row opens on your newest sheet",
       "status": "merged",
@@ -7134,6 +7141,13 @@
   ],
   "problems": [
     {
+      "id": "queue-shape-0923c-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 38 open, your own list still EMPTY, none urgent. No check-up clock fires before tomorrow.",
+      "detail": "Read at 20:34 tonight. 38 open, up two on last night - and both of the new ones were written by the shifts themselves rather than by anything going wrong: one about a leftover practice record in the test database, one about the blind spot described above.\n\nYour own ordered list is still empty, so the team keeps working from the background categories you have switched on. All seven are on.\n\n21 of the 38 have had nothing happen to them - no comment, no close, no code - for a week. That is the same 21 as last night, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
+    },
+    {
       "id": "queue-shape-0923b-foreman",
       "severity": "info",
       "state": "resolved",
@@ -7745,7 +7759,7 @@
     {
       "id": "queue-shape-0922c-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 34 open, your list empty, none urgent. Both open bugs are tonight's work - one in review, one filed from it. No check-up clock has fired.",
       "detail": "Read at 11:55Z. 34 open cards - one filed tonight by the check that looks for the same mistake elsewhere. 17 have had no comment, close, reopen or commit for 7 days, unchanged from last night; they are roadmap rungs you have not reached rather than neglected work.\n\nBoth open bugs came out of tonight: one is the change now waiting on its review, and the other is the one it found in the hair-colour reader. Every other switched category is at zero. The next check-up clock (housekeeping) fires in two days.\n\nNothing here needs you."
     }
