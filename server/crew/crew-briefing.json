@@ -1,7 +1,7 @@
 {
-  "edition": 492,
-  "updatedAt": "2026-09-23T21:05:00+10:00",
-  "shift": "Foreman — your cards read as written",
+  "edition": 493,
+  "updatedAt": "2026-09-23T22:40:00+10:00",
+  "shift": "Foreman — the page stops carrying what it cannot show",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -118,11 +118,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "37 open · 17 untouched for 7 days · 14 waiting on you · none urgent."
+        "source": "38 open · 17 untouched for 7 days · 14 waiting on you · none urgent."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T09:14:28.134Z",
+      "readAt": "2026-09-23T12:36:36.563Z",
       "items": [
         {
           "issueNumber": 10,
@@ -5565,6 +5565,14 @@
   ],
   "pipeline": [
     {
+      "id": "crew-wire-projection-1137",
+      "title": "Your Crew page stopped downloading the third of it nobody can see",
+      "status": "merged",
+      "prNumber": 1139,
+      "cardId": null,
+      "note": "Measured in the browser: 961,050 bytes a refresh before, 609,582 after — the 281 finished rows had no place on the page and were being sent anyway. Nothing you see changed; the frames are identical to the pixel."
+    },
+    {
       "id": "crew-card-paragraphs-1135",
       "title": "Your cards read the way they were written",
       "status": "merged",
@@ -8448,15 +8456,14 @@
     199
   ],
   "nextUp": {
-    "readAt": "2026-09-23T09:14:28.133Z",
+    "readAt": "2026-09-23T12:36:36.562Z",
     "items": [
       {
         "issueNumber": 1132,
         "title": "N2: THE SWITCH LIST — every users:1 flag with its evidence, for one sitting (his word, 23 Sep: 'prepare every switch with its evidence and I'll go down the list in one go')",
         "urgent": false,
         "held": {
-          "state": "blocked",
-          "because": "his desk card `switch-00-how-to-read` is open"
+          "state": "blocked"
         }
       }
     ]
