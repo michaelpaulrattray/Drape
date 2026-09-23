@@ -16,10 +16,8 @@ import {
 import { AppChrome } from "@/components/AppChrome";
 import { trpc } from "@/lib/trpc";
 import { createClientRequestId } from "@shared/clientRequestId";
-import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "@shared/castStyles";
 import { BRIEF_TEXT_MIN, BRIEF_TOO_SHORT_MESSAGE } from "@shared/briefLength";
-import { CASTING_PATH_LINES } from "@/features/castingV2/castingPathCopy";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
 import {
   ReimagineButton,
@@ -32,7 +30,6 @@ import {
   type ConceptUploadHandle,
 } from "@/features/castingV2/components/ConceptUploadCard";
 import { briefWithDescription, CONCEPT_BRIEF_DROP, CONCEPT_BRIEF_PLACEHOLDER_CLAUSE } from "@/features/castingV2/conceptUpload";
-import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { ConfirmDialog } from "@/foundation";
@@ -189,19 +186,6 @@ export default function CastingV2() {
   */
   const sheetGone = readSheetGone(useHistoryState());
   const [brief, setBrief] = useState("");
-  /*
-    WHICH PATH THE NEXT CAST IS BORN ON — the two paths' toggle (design §6).
-
-    `DEFAULT_CASTING_PATH` rather than a literal, and the constant carries the
-    founder's own unprompted ruling for why it is Wardrobe: *"basics is more of
-    a advanced selection because if someone truely wanted to cast someone in
-    basics they would say that in the prompt?"*
-
-    Held here and not in the store, deliberately: it is a property of the roll
-    about to be bought from THIS page, not of a sheet, and it should reset the
-    way the brief box does.
-  */
-  const [path, setPath] = useState<CastingPath>(DEFAULT_CASTING_PATH);
   /*
     THE SETTINGS (#142): the style, set in the modal the gear opens, his
     default (photoreal), drawn only on the author road. Page state and nothing
@@ -551,23 +535,17 @@ export default function CastingV2() {
   */
   const conceptUploadEnabled = config.data.conceptUploadEnabled === true;
   /*
-    WHETHER THIS ACCOUNT CHOOSES ITS PATH — server-owned, asked not decided.
+    WHETHER THIS ACCOUNT IS ON THE AUTHOR ROAD — server-owned, asked not
+    decided. `=== true` rather than a truthy read, so a config still loading,
+    or an older bundle against a server without the field, draws the quiet
+    state rather than a control that would do nothing.
 
-    `=== true` rather than a truthy read: an older bundle against a server
-    without the field, or a config still loading, must draw NO control. §6 is
-    explicit that the toggle is absent rather than disabled when the scope is
-    off, and absent-by-default is the only reading of that which survives a
-    field arriving as `undefined`.
-  */
-  const twoPathsEnabled = config.data.twoPathsEnabled === true;
-  /*
-    THE AUTHOR ROAD RETIRES THE PATH SWITCH (#131 slice E, ruling rule 11: "let
-    the engine decide the outfits based on the prompt") and draws the
-    IMAGINATION meter in its place. Server-owned like `twoPathsEnabled`: the
-    page asks, never decides.
+    The two paths' toggle stood beside this and is RETIRED (#203, his ruling
+    2026-08-28: *"yeah we will retire the wardrobe/basics path obviously"*).
+    The engine dresses the cast from the brief, so there is no path to choose
+    on the way to the button.
   */
   const authorRoad = config.data.authorRoadEnabled === true;
-  const pathToggleVisible = twoPathsEnabled && !authorRoad;
 
   /*
     THE ONE ROLL FLOW — and it takes its brief as an ARGUMENT now (#196, his
@@ -648,23 +626,7 @@ export default function CastingV2() {
           clientRequestId: createClientRequestId(),
           sessionId: session.sessionId,
           briefText: briefText.trim(),
-          /*
-            THE PATH TRAVELS ONLY WHEN THE CONTROL WAS DRAWN (design §6).
-
-            Absent is not `wardrobe` — the field is optional precisely so that
-            *the toggle was not sent* stays distinguishable from *the toggle
-            said Wardrobe*, and `rollService` turns an unsent toggle into the
-            default only INSIDE the flag. Sending a path an account has no
-            control for would be this client asserting a choice nobody made,
-            and it is the shape that would make `casting_rolls.path` NON-NULL
-            on rolls cast without the feature.
-
-            The server is already safe either way — a path from an account
-            outside the flag is ignored, read at `rollService`'s `bornPath`.
-            This is the client not lying, not the client enforcing.
-          */
-          ...(pathToggleVisible ? { path } : {}),
-          /* The settings travel only where the gear was drawn — the path's rule, one control over. */
+          /* The settings travel only where the gear was drawn. */
           ...(authorRoad ? { style } : {}),
         })
         .then(() => setStartingRoll(session.sessionId, false))
@@ -865,40 +827,6 @@ export default function CastingV2() {
             </Field>
             {/* The one quiet line about what just happened to her words — under the box they happened in. */}
             <ReimagineLine state={reimagine} />
-            {/*
-              THE PATH, CHOSEN BEFORE THE MONEY (design §6; founder ruling
-              2026-08-21, *"this is the way foward 100%"*).
-
-              Under the brief field and above the cost line, which is where §6
-              put it when the anchor below it was the TRY row (#375 removed
-              that row; the spec's §6 moved with it in the same commit). The
-              intent is unchanged and is what the anchor was FOR: the tradeoff
-              is read on the way to the button rather than beside it. It is not
-              a modal and it is not a step: one control, two states, default
-              Wardrobe.
-
-              ABSENT, never disabled, when the scope is off — §6's own words,
-              and it is D-180's rule: a disabled toggle is a question with no
-              answer wearing a tap target. Which means for every account in
-              production today this hero is byte-for-byte what it was.
-
-              The note under the pills is the SELECTED path's line, which is
-              how the tradeoff gets told before the roll (his condition,
-              verbatim: *"as long as we make it clear before they go to cast
-              someone"*). One line rather than both: the default's own line
-              already states the bound a Basics customer would be choosing away
-              from, and two grey sentences under a control is the wall of small
-              print that stops being read.
-            */}
-            {pathToggleVisible ? (
-              <PathToggle
-                idPrefix="dpc-hero-path"
-                label="How this cast is born"
-                value={path}
-                onChange={setPath}
-                note={CASTING_PATH_LINES[path]}
-              />
-            ) : null}
             {/*
               THE SETTINGS-AND-RECEIPT ROW (#435 §2d + §2e, joined on his word,
               card 1114: *"move the settings up and the 8 candidates and 160 cr

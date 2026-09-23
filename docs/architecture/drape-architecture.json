@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "727a94fc20be117a"
+    "sourceFingerprint": "cfbc8ae388597a31"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 48
+      "moduleCount": 47
     },
     {
       "id": "domain:client-shared",
@@ -1318,12 +1318,6 @@
     {
       "id": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "path": "client/src/features/castingV2/components/KeptTray.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/components/PathToggle.tsx",
-      "path": "client/src/features/castingV2/components/PathToggle.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -16437,21 +16431,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/castingV2/components/PathToggle.tsx",
-      "to": "module:client/src/features/castingV2/castingPathCopy.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/PathToggle.tsx",
-      "to": "module:client/src/foundation/index.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/PathToggle.tsx",
-      "to": "module:shared/castingPaths.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "to": "module:client/src/features/castingV2/components/SegmentsOnFace.tsx",
       "kind": "imports"
@@ -19298,11 +19277,6 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
-      "to": "module:client/src/features/castingV2/components/PathToggle.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "kind": "imports"
     },
@@ -19423,11 +19397,6 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
-      "to": "module:shared/castingPaths.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:shared/castStyles.ts",
       "kind": "imports"
     },
@@ -19439,11 +19408,6 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/components/AppChrome.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:client/src/features/castingV2/castingPathCopy.ts",
       "kind": "imports"
     },
     {
@@ -19464,11 +19428,6 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/HeroDeck.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:client/src/features/castingV2/components/PathToggle.tsx",
       "kind": "imports"
     },
     {
@@ -19519,11 +19478,6 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:shared/briefLength.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingV2.tsx",
-      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {
@@ -35021,24 +34975,24 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1376",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1354",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:1376",
+      "subject": "server/castingV2/rollService.ts:1354",
       "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:279",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:270",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:279",
+      "subject": "server/castingV2/rollService.ts:270",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:337",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:316",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:337",
+      "subject": "server/castingV2/rollService.ts:316",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]
