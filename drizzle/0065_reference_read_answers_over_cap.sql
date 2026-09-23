@@ -1,0 +1,57 @@
+-- THE READ WE COULD NOT USE — one new value on the reference-read demand
+-- record's `outcome` enum (issue #1076, split out of #1072).
+--
+-- ============================================================================
+-- WHAT A CUSTOMER GETS TODAY, AND WHY THIS WORD IS WORTH A MIGRATION
+-- ============================================================================
+--
+-- She attaches a photograph with makeup plainly in it and is told *"We couldn't
+-- see any makeup in that picture to take."* Her picture was fine. What happened
+-- is that every surface the reader answered came back longer than the ask
+-- allows, so each one was set aside and the composer was handed nothing.
+--
+-- The module's own comment twenty lines above that branch insists on exactly
+-- the distinction the branch collapses — *"Read but unusable, kept apart from
+-- read-as-nothing so neither can wear the other's meaning."* The code was right
+-- about the values and wrong about the sentence.
+--
+-- The cost is not the wording. The credits come back, so nobody reports it, and
+-- what is lost is that she learns her picture is no good, goes looking for a
+-- different one, and the tally never learns the branch fired at all. That last
+-- half is what this file buys.
+--
+-- ============================================================================
+-- WHAT THE VALUE MEANS, AND WHAT IT DOES NOT
+-- ============================================================================
+--
+-- `answers_over_cap` is: the reader looked, it answered, and not one of its
+-- answers was short enough to use — so there was nothing left to compose a note
+-- from. It is OUR fault, it is a REFUSAL, and nothing was charged.
+--
+-- It is deliberately not `no_makeup_visible`, which keeps the two branches where
+-- that sentence is TRUE: the class read answering `nothing`, and the presence
+-- gate answering an explicit no. Those two say *there is no makeup on that
+-- face*. This one says *we could not use what we read*, and a tally that merged
+-- them would send the next repair at a photograph instead of at the cap.
+--
+-- It is deliberately not `unreadable` either, and that one is the nearer trap
+-- because it needs no migration: its sentence is *"We couldn't read that
+-- picture — try another one."*, which blames a photograph that was fine — the
+-- same lie class this file exists to end. The module's own comment defends that
+-- sentence for the branch it has (*"a different picture plausibly gets a
+-- readable answer"*) and that reasoning does not transfer: a different picture
+-- gets the same reader and the same cap.
+--
+-- ============================================================================
+-- PURELY ADDITIVE
+-- ============================================================================
+--
+-- One value appended to one enum. No existing value changes position or
+-- spelling, no row is rewritten, no column is dropped. The writer proves the
+-- value against the column's own list before the insert
+-- (`recordReferenceRead`), so a deploy running ahead of this file writes NO row
+-- rather than a broken one — the tally is what is lost, never an answer. It is
+-- still applied FIRST, because the tally is the only record that the new
+-- refusal is firing.
+ALTER TABLE `casting_reference_reads`
+	MODIFY COLUMN `outcome` enum('delivered','no_transport','unreadable','no_makeup_visible','names_hair','out_of_class','no_hair_visible','no_colour_readable','drawn_narrowed','answers_over_cap') NOT NULL;
