@@ -558,10 +558,21 @@ describe("what the hero must NOT grow back (§2f)", () => {
   it("each door is absent, never disabled, where the server did not open it", async () => {
     const page = code(await read(PAGE));
     // D-180: a disabled control is a question with no answer wearing a tap target.
-    expect(page).toContain("authorRoad || conceptUploadEnabled ?");
-    expect(page).toContain("conceptUploadEnabled ? (");
+    // The settings chip's row is drawn only on the author road.
+    expect(page).toContain("authorRoad ? (");
     const actions = page.slice(page.indexOf('className="dpc-hero__actions"'));
     expect(actions.slice(0, 900)).not.toContain("disabled");
+    /*
+      THE PHOTO DOOR IS THE BRIEF BOX (card 1107, his word: "build option C").
+      The `Start from photos` link is gone; the box takes a dropped picture
+      and its placeholder says so — both only where the server opened the
+      door, and neither ever disabled.
+    */
+    expect(page).not.toContain("Start from photos");
+    expect(page).not.toContain("dpc-hero__photos");
+    expect(page).toContain("conceptUploadEnabled ? briefDrop : {}");
+    expect(page).toContain("conceptUploadEnabled ? CONCEPT_BRIEF_PLACEHOLDER_CLAUSE");
+    expect(page).toContain("offerFiles(");
   });
 });
 

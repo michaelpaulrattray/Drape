@@ -103,7 +103,16 @@ import { ConceptReviewModal } from "./ConceptReviewModal";
  * that opened nothing would be D-180's dead control on the busiest surface in
  * the product.
  */
-export type ConceptUploadHandle = { openEmpty: () => void };
+/**
+ * The card's doors for the hero (card 1107): `openEmpty` opens the dialog on
+ * its drop zone; `offerFiles` hands it a dropped file exactly as the card's
+ * own drop does — one judge (`firstPictureFrom`), one road in (`beginRead`),
+ * so the brief box and the card cannot disagree about what a picture is.
+ */
+export type ConceptUploadHandle = {
+  openEmpty: () => void;
+  offerFiles: (files: FileList | null) => void;
+};
 
 export const ConceptUploadCard = forwardRef<ConceptUploadHandle, {
   /** The door, or nothing. See the header — this is the whole gate. */
@@ -122,7 +131,12 @@ export const ConceptUploadCard = forwardRef<ConceptUploadHandle, {
     the card's own tap — the modal opens on its drop zone with no file — so the
     two doors cannot drift into two behaviours.
   */
-  useImperativeHandle(ref, () => ({ openEmpty: () => setOpen(true) }), []);
+  useImperativeHandle(ref, () => ({
+    openEmpty: () => setOpen(true),
+    /* Declared below; the handle is read only after mount, so the reference is live by then. */
+    offerFiles: (files: FileList | null) => offerFileRef.current(files),
+  }), []);
+  const offerFileRef = useRef<(files: FileList | null) => void>(() => undefined);
   /** The picture under review, and the words for it — `null` while they are in flight. */
   const [picture, setPicture] = useState<File | null>(null);
   const [description, setDescription] = useState<string | null>(null);
@@ -294,6 +308,7 @@ export const ConceptUploadCard = forwardRef<ConceptUploadHandle, {
     setNotAPicture(true);
     setOpen(true);
   };
+  offerFileRef.current = offerFile;
 
   /*
     DEPTH-COUNTED, because `dragleave` fires every time the pointer crosses into

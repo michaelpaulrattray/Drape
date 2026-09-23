@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import { useLocation } from "wouter";
 import { useHistoryState } from "wouter/use-browser-location";
 import { ArrowRight, Plus, Search } from "lucide-react";
@@ -31,12 +31,11 @@ import {
   ConceptUploadCard,
   type ConceptUploadHandle,
 } from "@/features/castingV2/components/ConceptUploadCard";
-import { briefWithDescription } from "@/features/castingV2/conceptUpload";
+import { briefWithDescription, CONCEPT_BRIEF_DROP, CONCEPT_BRIEF_PLACEHOLDER_CLAUSE } from "@/features/castingV2/conceptUpload";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { ConfirmDialog } from "@/foundation";
-import { Icon, P } from "@/foundation";
 import { HeroDeck } from "@/features/castingV2/components/HeroDeck";
 import { CardMenu } from "@/foundation";
 import { DestructiveConfirm } from "@/foundation";
@@ -214,6 +213,41 @@ export default function CastingV2() {
     card does. A handle rather than lifted state: see `ConceptUploadHandle`.
   */
   const conceptCard = useRef<ConceptUploadHandle>(null);
+  /*
+    THE BRIEF BOX TAKES A DROPPED PICTURE (card 1107, his word: "build option
+    C"). The hero's `Start from photos` link is gone: the box itself is the
+    drop door and its placeholder says so once. The card below is unchanged —
+    the click door, the explainer, and the only door on a phone, where nobody
+    drags. Depth-counted like the card's own handlers (a naive enter/leave
+    flickers over the textarea and the glyphs), `preventDefault` on dragover
+    because that is what makes a drop target, and Files only so dragging
+    selected text into the box still works. Nothing here is drawn where the
+    door is shut (D-180).
+  */
+  const [briefDragging, setBriefDragging] = useState(false);
+  const briefDragDepth = useRef(0);
+  const briefDrop = {
+    onDragEnter: (event: ReactDragEvent) => {
+      if (!event.dataTransfer?.types?.includes("Files")) return;
+      briefDragDepth.current += 1;
+      setBriefDragging(true);
+    },
+    onDragLeave: () => {
+      briefDragDepth.current = Math.max(0, briefDragDepth.current - 1);
+      if (briefDragDepth.current === 0) setBriefDragging(false);
+    },
+    onDragOver: (event: ReactDragEvent) => {
+      if (!event.dataTransfer?.types?.includes("Files")) return;
+      event.preventDefault();
+    },
+    onDrop: (event: ReactDragEvent) => {
+      if (!event.dataTransfer?.types?.includes("Files")) return;
+      event.preventDefault();
+      briefDragDepth.current = 0;
+      setBriefDragging(false);
+      conceptCard.current?.offerFiles(event.dataTransfer?.files ?? null);
+    },
+  };
   const focusBrief = () => {
     const field = briefField.current;
     if (!field) return;
@@ -728,7 +762,17 @@ export default function CastingV2() {
               the sheet in its own commit and the start page kept the defect,
               which is what a sweep at the time would have caught.
             */}
-            <Field className="dpc-hero__field dpc-briefrow">
+            <Field
+              className={
+                briefDragging && conceptUploadEnabled
+                  ? "dpc-hero__field dpc-briefrow dpc-hero__field--drop"
+                  : "dpc-hero__field dpc-briefrow"
+              }
+              {...(conceptUploadEnabled ? briefDrop : {})}
+            >
+              {briefDragging && conceptUploadEnabled ? (
+                <span className="dpc-hero__dropsay" aria-hidden="true">{CONCEPT_BRIEF_DROP}</span>
+              ) : null}
               <BriefField
                 ref={briefField}
                 value={brief}
@@ -763,7 +807,7 @@ export default function CastingV2() {
                   which the expression law forbids), and promised HANDS — which the
                   waist-up frame with arms at the sides cannot show at all.
                 */
-                placeholder="a fitness creator in their 30s, close-cropped hair"
+                placeholder={`a fitness creator in their 30s, close-cropped hair${conceptUploadEnabled ? CONCEPT_BRIEF_PLACEHOLDER_CLAUSE : ""}`}
                 aria-label="Casting brief"
               />
               {/*
@@ -898,26 +942,19 @@ export default function CastingV2() {
               where the server did not open concept upload. An account with
               neither sees no row at all.
             */}
-            {authorRoad || conceptUploadEnabled ? (
+            {authorRoad ? (
               <div className="dpc-hero__actions">
-                {authorRoad ? (
-                  <CastSettingsButton
-                    idPrefix="dpc-hero"
-                    style={style}
-                    onStyle={setStyle}
-                  />
-                ) : null}
-                <span className="dpc-hero__actionsair" aria-hidden="true" />
-                {conceptUploadEnabled ? (
-                  <button
-                    type="button"
-                    className="dpc-hero__photos"
-                    onClick={() => conceptCard.current?.openEmpty()}
-                  >
-                    <Icon d={P.image} size={13} />
-                    Start from photos
-                  </button>
-                ) : null}
+                <CastSettingsButton
+                  idPrefix="dpc-hero"
+                  style={style}
+                  onStyle={setStyle}
+                />
+                {/*
+                  `Start from photos` used to sit at the right of this row (card
+                  1107, his word: "build option C"). The brief box is the drop
+                  door now and its placeholder says so; the card below is the
+                  click door. A second link was a second door to one room.
+                */}
               </div>
             ) : null}
             </div>
