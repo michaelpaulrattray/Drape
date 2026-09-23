@@ -2419,7 +2419,18 @@ export default function CastingSheet() {
         {rolls.length > 1 || provisionalIndex ? (
           <div className="dpc-rollrail" role="tablist" aria-label="Rolls in this sheet">
             {rolls.map((entry) => {
-              const shown = entry.rollId === shownRollId;
+              /*
+                ONE SELECTED PILL, AND WHILE A ROLL IS BEING PAID FOR IT IS THE
+                PROVISIONAL ONE (card 1110). The header and the tiles go
+                optimistic on the dispatch latch; this pill used to keep reading
+                `shownRollId`, which still names the OLD roll until the new row
+                lands — so for a second or two the rail lit 03 while the grid
+                showed 04's skeletons. His words: "its still on sheet 3 thats
+                highlighted … and 3 is showing me 04's loading state." A map
+                with two "you are here" marks is wrong, so the real pills stand
+                down for exactly as long as the provisional one is up.
+              */
+              const shown = !awaitingNewRoll && entry.rollId === shownRollId;
               const generating = !TERMINAL_ROLL_STATUSES.has(entry.status);
               return (
                 <button
