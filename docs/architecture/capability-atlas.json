@@ -10,8 +10,8 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:653",
-          "server/castingV2/refineDelta.ts:653"
+          "server/castingV2/refineDelta.ts:644",
+          "server/castingV2/refineDelta.ts:644"
         ]
       },
       {
@@ -21,8 +21,8 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:667",
-          "server/castingV2/refineDelta.ts:667"
+          "server/castingV2/refineDelta.ts:658",
+          "server/castingV2/refineDelta.ts:658"
         ]
       },
       {
@@ -193,9 +193,9 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:635",
-          "server/castingV2/refineInterpreter.ts:905",
-          "server/castingV2/refineDelta.ts:635"
+          "server/castingV2/refineDelta.ts:626",
+          "server/castingV2/refineInterpreter.ts:904",
+          "server/castingV2/refineDelta.ts:626"
         ]
       },
       {
@@ -207,10 +207,10 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:605",
-          "server/castingV2/refineDelta.ts:605",
-          "server/castingV2/refineDelta.ts:1595",
-          "server/castingV2/refineDelta.ts:1595",
+          "server/castingV2/refineDelta.ts:596",
+          "server/castingV2/refineDelta.ts:596",
+          "server/castingV2/refineDelta.ts:1586",
+          "server/castingV2/refineDelta.ts:1586",
           "server/castingV2/refineService.ts:2421"
         ]
       },
@@ -222,11 +222,11 @@
           "server/castingV2/refineDelta.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:571",
-          "server/castingV2/refineDelta.ts:571",
-          "server/castingV2/refineDelta.ts:1604",
-          "server/castingV2/refineDelta.ts:1604",
-          "server/castingV2/refineDelta.ts:571"
+          "server/castingV2/refineDelta.ts:562",
+          "server/castingV2/refineDelta.ts:562",
+          "server/castingV2/refineDelta.ts:1595",
+          "server/castingV2/refineDelta.ts:1595",
+          "server/castingV2/refineDelta.ts:562"
         ]
       },
       {
@@ -238,10 +238,10 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:578",
-          "server/castingV2/refineDelta.ts:578",
-          "server/castingV2/refineDelta.ts:1572",
-          "server/castingV2/refineDelta.ts:1572",
+          "server/castingV2/refineDelta.ts:569",
+          "server/castingV2/refineDelta.ts:569",
+          "server/castingV2/refineDelta.ts:1563",
+          "server/castingV2/refineDelta.ts:1563",
           "server/castingV2/refineService.ts:2420",
           "server/castingV2/refineService.ts:2425"
         ]
@@ -255,11 +255,11 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:597",
-          "server/castingV2/refineDelta.ts:597",
-          "server/castingV2/refineDelta.ts:1587",
-          "server/castingV2/refineDelta.ts:1587",
-          "server/castingV2/refineDelta.ts:597"
+          "server/castingV2/refineDelta.ts:588",
+          "server/castingV2/refineDelta.ts:588",
+          "server/castingV2/refineDelta.ts:1578",
+          "server/castingV2/refineDelta.ts:1578",
+          "server/castingV2/refineDelta.ts:588"
         ]
       },
       {
@@ -415,10 +415,10 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:634",
-          "server/castingV2/refineInterpreter.ts:919",
-          "server/castingV2/refineInterpreter.ts:1005",
-          "server/castingV2/refineDelta.ts:634"
+          "server/castingV2/refineDelta.ts:625",
+          "server/castingV2/refineInterpreter.ts:918",
+          "server/castingV2/refineInterpreter.ts:1004",
+          "server/castingV2/refineDelta.ts:625"
         ]
       },
       {
@@ -734,9 +734,9 @@
           "server/castingV2/openLaneKind.ts:256",
           "server/castingV2/openLaneKind.ts:325",
           "server/castingV2/openLaneKind.ts:326",
-          "server/castingV2/refineDelta.ts:611",
-          "server/castingV2/refineInterpreter.ts:1007",
-          "server/castingV2/refineDelta.ts:611"
+          "server/castingV2/refineDelta.ts:602",
+          "server/castingV2/refineInterpreter.ts:1006",
+          "server/castingV2/refineDelta.ts:602"
         ]
       },
       {
@@ -747,16 +747,6 @@
         ],
         "sites": [
           "server/castingV2/refineService.ts:2527"
-        ]
-      },
-      {
-        "id": "wall_basics_wardrobe",
-        "kind": "interpreter-refusal",
-        "pinnedBy": [],
-        "sites": [
-          "server/castingV2/refineDelta.ts:546",
-          "server/castingV2/refineInterpreter.ts:1688",
-          "server/castingV2/refineDelta.ts:546"
         ]
       },
       {
@@ -771,9 +761,9 @@
           "server/castingV2/stageWallBackstop.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:547",
-          "server/castingV2/refineInterpreter.ts:1601",
-          "server/castingV2/refineDelta.ts:547"
+          "server/castingV2/refineDelta.ts:538",
+          "server/castingV2/refineInterpreter.ts:1600",
+          "server/castingV2/refineDelta.ts:538"
         ]
       },
       {
@@ -790,8 +780,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:498",
-          "server/castingV2/refineDelta.ts:1618",
-          "server/castingV2/refineInterpreter.ts:1599",
+          "server/castingV2/refineDelta.ts:1609",
+          "server/castingV2/refineInterpreter.ts:1598",
           "server/castingV2/refineDelta.ts:498"
         ]
       },
@@ -799,6 +789,7 @@
         "id": "wall_stage",
         "kind": "interpreter-refusal",
         "pinnedBy": [
+          "server/castingV2/bornPathSubjects.test.ts",
           "server/castingV2/colourContextDoor.test.ts",
           "server/castingV2/inventionDoor.test.ts",
           "server/castingV2/priorContextDoor.test.ts",
@@ -810,8 +801,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:513",
-          "server/castingV2/refineDelta.ts:1628",
-          "server/castingV2/refineInterpreter.ts:1692",
+          "server/castingV2/refineDelta.ts:1619",
+          "server/castingV2/refineInterpreter.ts:1686",
           "server/castingV2/refineDelta.ts:513"
         ]
       },
@@ -826,7 +817,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:537",
-          "server/castingV2/refineInterpreter.ts:1693",
+          "server/castingV2/refineInterpreter.ts:1687",
           "server/castingV2/refineDelta.ts:537"
         ]
       },
@@ -844,10 +835,10 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:558",
-          "server/castingV2/refineDelta.ts:1347",
-          "server/castingV2/refineDelta.ts:1680",
-          "server/castingV2/refineDelta.ts:558"
+          "server/castingV2/refineDelta.ts:549",
+          "server/castingV2/refineDelta.ts:1338",
+          "server/castingV2/refineDelta.ts:1671",
+          "server/castingV2/refineDelta.ts:549"
         ]
       },
       {
@@ -1174,15 +1165,6 @@
         "state": "wardrobe-path",
         "expect": "would-render",
         "why": "item 8 §7.1: on the Wardrobe path a garment has a subject to be filed under, so the wall stops being reached"
-      },
-      {
-        "id": "wardrobe.tee.basicsPath",
-        "ask": "put him in a plain black tee",
-        "subject": "wardrobe",
-        "verb": "change",
-        "state": "basics-path",
-        "expect": "refused:wall_basics_wardrobe",
-        "why": "item 8 §7.2: a Basics cast IS her basics, and the refusal says which path she bought rather than that the product cannot"
       },
       {
         "id": "ink.words.chest.basics",
@@ -1963,13 +1945,6 @@
         "kind": "documented-unreachable",
         "subject": "whichInkToChange",
         "message": "no corpus row reaches it: needs a branch wearing TWO tattoos; no cast in either world has ever worn two at once (opus-966 §1) and the multi-tattoo fixture is §10 item 3b's build — a row could reach it via: item 3b's keying work, which needs two-tattoo state to test itself"
-      },
-      {
-        "id": "unpinned:wall_basics_wardrobe",
-        "severity": "warn",
-        "kind": "unpinned-refusal",
-        "subject": "wall_basics_wardrobe",
-        "message": "interpreter-refusal \"wall_basics_wardrobe\" is named by no test file — a door nobody has proven can shut"
       },
       {
         "id": "unreached:absorbed",
@@ -3113,25 +3088,11 @@
       "message": "needs state \"reference-attached\", which this fixture cannot supply"
     },
     {
-      "id": "unpinned:wall_basics_wardrobe",
-      "severity": "warn",
-      "kind": "unpinned-refusal",
-      "subject": "wall_basics_wardrobe",
-      "message": "interpreter-refusal \"wall_basics_wardrobe\" is named by no test file — a door nobody has proven can shut"
-    },
-    {
       "id": "unreached-driven:gate_ink_coverage_unread",
       "severity": "warn",
       "kind": "unreached",
       "subject": "gate_ink_coverage_unread",
       "message": "a corpus row expects \"gate_ink_coverage_unread\" and the drive never produced it — the door may be unreachable"
-    },
-    {
-      "id": "unreached-driven:wall_basics_wardrobe",
-      "severity": "warn",
-      "kind": "unreached",
-      "subject": "wall_basics_wardrobe",
-      "message": "a corpus row expects \"wall_basics_wardrobe\" and the drive never produced it — the door may be unreachable"
     },
     {
       "id": "unreached:absorbed",

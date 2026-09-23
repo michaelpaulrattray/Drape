@@ -23,8 +23,9 @@
 import { describe, expect, it } from "vitest";
 
 import { SUBJECT_CARDS, type SubjectCard } from "./subjectCards";
-import { FREE_SUBJECT_KEYS, pathRefusedNounIn, subjectsServedOnPath } from "./refineSubjects";
-import { refineParseSystemPrompt } from "./refineInterpreter";
+import { FREE_SUBJECT_KEYS, subjectsServedOnPath } from "./refineSubjects";
+import { interpretRefinement, refineParseSystemPrompt, refusalMessage } from "./refineInterpreter";
+import type { TextEngine } from "../providers/types";
 import { assembleRecipe } from "./recipeAssembler";
 import { pronounsForSex } from "./castPronouns";
 import type { WardrobeResolution } from "./wardrobeLine";
@@ -80,44 +81,87 @@ describe("the born path narrows the free lane", () => {
   });
 });
 
-describe("§7.2's door — the noun she used, refused by the path she chose", () => {
-  it("names the wardrobe noun in a Basics ask", () => {
-    expect(pathRefusedNounIn("put him in a plain black tee", "basics"))
-      .toEqual({ subject: "wardrobe", noun: "tee" });
-    expect(pathRefusedNounIn("give her a long black coat", "basics")?.subject).toBe("wardrobe");
-  });
+/**
+ * §7.2'S DOOR IS RETIRED (#203 slice 2), AND WHAT REPLACED ITS ARMS IS THE
+ * QUESTION THEY WERE REALLY ASKING.
+ *
+ * Five arms drove `pathRefusedNounIn` directly. Four of them described the
+ * door's own mechanics — which noun it matched, which it did not — and they die
+ * with it. The fifth is the one that mattered, and it is not a fact about a
+ * helper: **an outfit ask must never come back as a refusal about a path**,
+ * because reusing the prompt question's WITHHOLDING as the refusal's condition
+ * once turned *"put her in a long black coat"* into a Basics refusal for the
+ * entire customer base.
+ *
+ * So it is asked at the entrance instead, through the real interpreter with a
+ * scripted engine — which is where a customer's sentence actually arrives, and
+ * is a place the deletion cannot rescue: if a path-flavoured refusal ever comes
+ * back, on any branch, these go red.
+ */
+describe("an outfit ask is refused the same way on every branch", () => {
+  const FACE = {
+    currentEyeColour: "brown",
+    currentEyeShape: "almond",
+    currentHairColour: "dark brown",
+    currentHairStyle: "long, worn down",
+    currentHairTexture: "straight",
+    currentMakeup: null,
+  };
 
-  it("⚠ NEVER fires on an UNPATHED branch — which is every roll in production", () => {
-    /*
-      THE ARM THAT COST A RED SUITE TO LEARN, kept because the mistake is the
-      natural one. `subjectsServedOnPath` withholds the wardrobe subject from
-      `unpathed` as well as from `basics` — correctly, so the prompt stays
-      byte-identical — and reusing that withholding as this door's condition
-      turned *"put her in a long black coat"* into a Basics refusal for the
-      entire customer base. `stageWallBackstop.test.ts`'s positive control was
-      what went red.
+  /** An engine that claims the wall with the garment word she used. The
+   *  lexicon BACKS `coat`, so the code answers deterministically and spends no
+   *  second call — `stageWallBackstop.test.ts` pins that mechanism itself. */
+  function claimsTheWall(): TextEngine {
+    return {
+      id: "scripted",
+      async complete() {
+        return {
+          text: JSON.stringify({ wall: "stage", asked: "a coat" }),
+          provenance: { provider: "openrouter" as const, model: "scripted" },
+          latencyMs: 0,
+        };
+      },
+    } as unknown as TextEngine;
+  }
 
-      A path nobody chose is not a path that refuses.
-    */
-    for (const path of [null, undefined]) {
-      expect(pathRefusedNounIn("put her in a long black coat", path), String(path)).toBeNull();
+  const ASK = "put her in a long black coat";
+
+  it("⚠ an UNPATHED branch — every roll in production — meets the ordinary wall", async () => {
+    for (const wardrobe of [undefined, { kind: "unpathed" } as const]) {
+      const parse = await interpretRefinement({
+        instruction: ASK, engine: claimsTheWall(), ...FACE,
+        ...(wardrobe ? { wardrobe } : {}),
+      });
+      expect(parse.ok, String(wardrobe)).toBe(false);
+      expect(parse.ok === false && parse.refusal.reason, String(wardrobe)).toBe("wall_stage");
     }
   });
 
-  it("never fires on the WARDROBE path — the subject is served there", () => {
-    expect(pathRefusedNounIn("put him in a plain black tee", "wardrobe")).toBeNull();
+  it("⚠ and so does a BASICS branch — the one state that used to open the door", async () => {
+    /*
+      THE ARM THE DELETION IS PROVEN BY. `basics` is the state §7.2 existed for,
+      and after the retirement it must be answered exactly like every other
+      branch. Thirteen pathed rolls survive on production and not one of them
+      holds a candidate, so no customer can reach this — the arm exists because
+      the TYPE still admits it and a future reader should not have to guess
+      whether the collapse covered it.
+    */
+    const parse = await interpretRefinement({
+      instruction: ASK, engine: claimsTheWall(), ...FACE,
+      wardrobe: { kind: "line", line: "bare chested, in plain black shorts", source: "born", path: "basics" },
+    });
+    expect(parse.ok).toBe(false);
+    expect(parse.ok === false && parse.refusal.reason).toBe("wall_stage");
   });
 
-  it("says nothing about an ask that names no noun — the declared limit", () => {
-    /* *"something smarter"* is a real ask and we genuinely cannot tell what it
-       is, so it falls to the generic wall exactly as it does today. */
-    expect(pathRefusedNounIn("put him in something smarter", "basics")).toBeNull();
-  });
-
-  it("does not fire on a word that merely CONTAINS a noun", () => {
-    /* Single-word nouns are matched against the sentence's own words rather
-       than as substrings, so `top` never matches `topaz`. */
-    expect(pathRefusedNounIn("give her topaz eyes", "basics")).toBeNull();
+  it("and the sentence she reads never names a path she can no longer buy", async () => {
+    const parse = await interpretRefinement({
+      instruction: ASK, engine: claimsTheWall(), ...FACE,
+      wardrobe: { kind: "line", line: "bare chested, in plain black shorts", source: "born", path: "basics" },
+    });
+    const said = parse.ok === false ? refusalMessage(parse) : "";
+    expect(said.length).toBeGreaterThan(0);
+    expect(said).not.toMatch(/Basics|Wardrobe/);
   });
 });
 

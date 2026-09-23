@@ -151,8 +151,13 @@ export const CORPUS: readonly CorpusRow[] = [
      census row is a capability the next design cannot look up. */
   { id: "wardrobe.tee.wardrobePath", ask: "put him in a plain black tee", subject: "wardrobe", verb: "change", state: "wardrobe-path",
     expect: "would-render", why: "item 8 §7.1: on the Wardrobe path a garment has a subject to be filed under, so the wall stops being reached" },
-  { id: "wardrobe.tee.basicsPath", ask: "put him in a plain black tee", subject: "wardrobe", verb: "change", state: "basics-path",
-    expect: "refused:wall_basics_wardrobe", why: "item 8 §7.2: a Basics cast IS her basics, and the refusal says which path she bought rather than that the product cannot" },
+  /* ⚠ `wardrobe.tee.basicsPath` STOOD HERE AND IS GONE WITH ITS DOOR — #203
+     slice 2, 2026-09-24. It expected `refused:wall_basics_wardrobe`, and the
+     map's own two warnings about that door (`unpinned-refusal`, and `unreached`
+     — "the door may be unreachable") were right for a reason nobody had yet
+     named: after slice 1 no roll can be cast on a path at all, and the thirteen
+     pathed rolls on production hold zero candidates between them. The door was
+     retired rather than driven. `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md`. */
   /* ⚠ §7.3 WROTE THIS ROW AS `would-render` AND THE COURT OVERTURNED IT before
      the row was ever written. The design's expectation rested on
      `BASICS_COVERAGE.upperChest = "bare"`, which was read off the Basics SPEC's
@@ -290,6 +295,15 @@ export const KNOWN_DEBTS: readonly string[] = [
   `CASTING_TWO_PATHS_SCOPE` is off. So the map knows how each is reached and
   says out loud that it has not yet been run, where before it said only that it
   could not be.
+
+  ⚠ AND THE FIRST OF THOSE TWO IS NOW RETIRED RATHER THAN DRIVEN — #203 slice 2,
+  2026-09-24. `wall_basics_wardrobe` and its row are deleted with §7.2's door.
+  The paragraph is kept as origin because the shape it describes is the right
+  one and `ink.words.chest.basics` still lives by it: a door whose state the
+  fixtures cannot reach is DECLARED, not hidden. What the retirement adds to it
+  is the other ending — a door whose state nothing can reach ANY MORE is not a
+  debt to drive, it is machinery to remove, and the map's `unreached` warning is
+  the sentence that tells the two apart if somebody reads it as a question.
 
   `gate_ink_coverage_unread`'s entry had also gone stale on its own terms: it
   said the door needs a WARDROBE-path named outfit, and `f7f45e31` made a BASICS

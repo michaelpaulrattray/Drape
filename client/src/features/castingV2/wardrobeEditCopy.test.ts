@@ -44,10 +44,10 @@ describe("the ask box says what it can do, on the path where it can do it", () =
   });
 
   /*
-    AND KEEPS TODAY'S SENTENCE EVERYWHERE ELSE, byte for byte. Basics refuses an
-    outfit in its own words (`wall_basics_wardrobe`), an unpathed cast has no
-    wardrobe to edit, and an account off the repaint road meets the subject
-    card's own `repaintOnly`. Three cells, one sentence, unchanged.
+    AND KEEPS TODAY'S SENTENCE EVERYWHERE ELSE, byte for byte. A Basics cast has
+    nothing to change, an unpathed cast has no wardrobe to edit, and an account
+    off the repaint road meets the subject card's own `repaintOnly`. Three
+    cells, one sentence, unchanged.
   */
   it("keeps the old sentence for every other cell", async () => {
     const panel = withoutProse(await readFile(PANEL, "utf8"));

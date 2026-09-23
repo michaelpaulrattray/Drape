@@ -245,12 +245,21 @@ describe("the static half reads what the source declares", () => {
   it("no door lost its LAST pin — the repair narrows the census, it does not empty it", () => {
     /*
       #614's bar: "No door's pin count changes except for a reason the diff can
-      name." The whole-census form of that is this — exactly one door is
-      unpinned, and it is the one that was unpinned before the change.
+      name." The whole-census form of that is this — every declared door is
+      pinned by at least one test file.
+
+      ⚠ **IT READ `["wall_basics_wardrobe"]` UNTIL 2026-09-24 AND THE DIFF THAT
+      EMPTIED IT NAMES ITS REASON (#203 slice 2): the door is DELETED, not
+      newly pinned.** The census's own two warnings about it — `unpinned-refusal`
+      and `unreached` — had been standing for a month, and the honest answer to
+      both turned out to be that §7.2's refusal could only open on a roll cast
+      on a path, and after #203 slice 1 nobody can cast one. An empty list is
+      the strongest reading this arm has ever had, so it is asserted as such
+      rather than loosened to "at most one".
     */
     const atlas = buildStaticAtlas(CORPUS);
     const unpinned = atlas.declared.filter((d) => d.pinnedBy.length === 0).map((d) => d.id);
-    expect(unpinned).toEqual(["wall_basics_wardrobe"]);
+    expect(unpinned).toEqual([]);
   });
 
   it("REFUSES rather than reporting every door unpinned when nothing reaches the module", () => {
