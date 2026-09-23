@@ -374,16 +374,6 @@ export type BriefCompilerInput = {
    */
   inheritedWardrobe?: { path: CastingPath | null; line: string | null };
   /**
-   * Ask the interpreter for a WARDROBE PICK as well — cases (a) and (b) of the
-   * Wardrobe path (design §4).
-   *
-   * Absent means no, which is every caller outside `CASTING_TWO_PATHS_SCOPE`
-   * and every Basics roll and every Follow. It is a question about the PROMPT,
-   * not about the sheet: see `WARDROBE_BLOCK` in `interpreter.ts` for why a
-   * field nobody will read is not free to ask for.
-   */
-  pickWardrobe?: boolean;
-  /**
    * ASK THE INTERPRETER ABOUT TATTOOS THE BRIEF DESCRIBED — 7b(a), inside
    * `CASTING_BORN_INK_SCOPE`.
    *
@@ -876,8 +866,6 @@ function resolveSheet(input: {
   candidateCount: number;
   rollSeed: string;
   anchor?: FollowAnchor;
-  /** Whether the interpreter was asked for a pick — see the gate below. */
-  pickWardrobe?: boolean;
   /** The two paths (§3.1). `null` composes exactly today's constant. */
   path?: CastingPath | null;
   /** A follow's inherited pair, used verbatim when present — nulls too (§3.1). */
@@ -1024,16 +1012,24 @@ function resolveSheet(input: {
   */
   const path = input.inheritedWardrobe ? input.inheritedWardrobe.path : input.path ?? null;
   /*
-    ⚠ AN UNASKED WARDROBE IS DISCARDED, and it is discarded rather than trusted
-    not to arrive.
+    ⚠ NO SHEET IS DRESSED BY A PICK ANY MORE — #203 slice 2, step (d).
 
-    A language model may volunteer a field it was never offered — the M3 defect
-    this module exists for was exactly that, a plaid shirt and a captioned mug
-    nobody asked for, inherited by all eight. The PARSE cannot tell an answer
-    from an offer, because it does not know what was asked. This function does,
-    so the question and the answer are gated at the same place.
+    The gate that used to stand here — *an unasked wardrobe is discarded* —
+    existed because a language model may volunteer a field it was never offered
+    (the M3 defect: a plaid shirt and a captioned mug nobody asked for,
+    inherited by all eight), and the PARSE cannot tell an answer from an offer
+    because it does not know what was asked. **That argument is not weakened, it
+    is settled**: with the paths retired nobody is ever asked, so there is no
+    answer to prefer and `intent.wardrobe` is read by nothing.
+
+    ⚠ **The parse itself is deliberately still there** (`parseWardrobePick`,
+    `castingIntent.ts`), and so is the `wardrobe: false` the reader is handed
+    below. Removing the ASK is **#1123**'s court, not this slice's: a subset of
+    prompt context is not a subset of behaviour, and this campaign has measured
+    a trimmed prompt raising the stage wall twice as often as its superset.
+    Until that court has run, a volunteered field is still refused at the door
+    rather than being silently believed.
   */
-  const pick = input.pickWardrobe === true ? intent.wardrobe : null;
   const wardrobeLine = input.inheritedWardrobe
     ? input.inheritedWardrobe.line
     : path === null
@@ -1041,7 +1037,6 @@ function resolveSheet(input: {
       : bornWardrobeLine({
         path,
         sex: sheetBasicsSex(sheet.map((identity) => identity.sex)),
-        named: pick,
       });
 
   return {
@@ -1104,7 +1099,19 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   const outcome = await interpretBrief({
     briefText,
     engine: input.engine,
-    wardrobe: input.pickWardrobe === true,
+    /*
+      ⚠ A LITERAL `false`, AND IT IS THE FLOOR OF THIS RETIREMENT ON PURPOSE.
+
+      It was `input.pickWardrobe === true`, which no caller could make true once
+      slice 1 stopped writing a path (#203). `false` appends no `WARDROBE_BLOCK`
+      (`interpreterSystemPrompt`), so the bytes on the wire are the bytes that
+      have gone out on every production roll — that is why the plumbing above it
+      could go in this commit.
+
+      Taking the FIELD out of the reader's ask is a different act with a
+      different risk and it is **#1123**'s court, not this slice's.
+    */
+    wardrobe: false,
     ink: input.readInk === true,
     fidelity: input.briefFidelity === true,
     author: authorRoad,
@@ -1301,7 +1308,6 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     anchor: effectiveAnchor ?? undefined,
     path: input.path ?? null,
     inheritedWardrobe: input.inheritedWardrobe,
-    pickWardrobe: input.pickWardrobe,
   });
   /*
     THE REGISTER — decided once per roll (`authorRoad`, above the reader
@@ -1512,7 +1518,6 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
     rollSeed: input.rollSeed,
     path: input.path ?? null,
     inheritedWardrobe: input.inheritedWardrobe,
-    pickWardrobe: input.pickWardrobe,
   });
 
   return {

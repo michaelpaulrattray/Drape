@@ -614,33 +614,12 @@ export async function createRoll(
   const bornPath: CastingPath | null = null;
 
   /*
-    ⚠ THREE CONDITIONS, AND EACH ONE IS A ROLL WHOSE PROMPT MUST NOT MOVE.
-
-    A prompt is live behaviour: every fact on a paid sheet comes out of that one
-    reply, and context is not additive here — this campaign measured a SUBSET of
-    prompt context raising the stage wall twice as often as its superset. So the
-    wardrobe question is asked only where its answer is READ:
-
-      outside the flag  the columns are NULL and nothing reads a pick;
-      on BASICS         the path IS the outfit and a brief cannot negotiate it
-                        (`bornWardrobeLine` ignores `named` on that path), so
-                        asking would perturb the reply to fill a field the
-                        resolution discards;
-      on a FOLLOW       the db layer inherits the parent roll's pair inside the
-                        transaction, so anything picked here is overwritten —
-                        and a Follow inherits the BORN line by design (§3.1),
-                        which is the one case that deliberately wants the
-                        sheet's outfit rather than a fresh choice.
-  */
-  const pickWardrobe = bornPath === "wardrobe" && !input.followCandidatePublicId;
-
-  /*
     MAY THIS BRIEF BE READ FOR TATTOOS — 7b(a), asked ONCE, here.
 
     Read at the roll rather than inside the compiler so the compiler stays a
     pure function of its input: the prompt a roll sent is reconstructible from
-    what it was handed, which is what made the two-paths prompt auditable and is
-    the same reason `pickWardrobe` is resolved on this line.
+    what it was handed, which is the rule the retired `pickWardrobe` line was
+    resolved here for, and it outlives it.
 
     Off, and absent means off, the interpreter is not asked about ink at all —
     the bytes on the wire are byte-identical to today's, `statedInk` comes back
@@ -697,7 +676,6 @@ export async function createRoll(
       inheritedWardrobe: inheritedWardrobe && !authorRoad
         ? { path: inheritedWardrobe.path, line: inheritedWardrobe.wardrobeLine }
         : undefined,
-      pickWardrobe,
       readInk,
       briefFidelity,
       creativeRegister,

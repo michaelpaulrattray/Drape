@@ -516,7 +516,7 @@
           "server/castingV2/stageWallBackstop.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1216",
+          "server/castingV2/briefCompiler.ts:1223",
           "server/castingV2/briefRefusalCopy.ts:114"
         ]
       },
@@ -529,7 +529,7 @@
           "server/castingV2/creativeRegisterScope.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1219",
+          "server/castingV2/briefCompiler.ts:1226",
           "server/castingV2/briefRefusalCopy.ts:120"
         ]
       },
@@ -544,7 +544,7 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1145",
+          "server/castingV2/briefCompiler.ts:1152",
           "server/castingV2/briefRefusalCopy.ts:126"
         ]
       },
@@ -556,8 +556,8 @@
           "server/castingV2/briefRefusalCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1082",
-          "server/castingV2/briefCompiler.ts:1501",
+          "server/castingV2/briefCompiler.ts:1077",
+          "server/castingV2/briefCompiler.ts:1507",
           "server/castingV2/briefRefusalCopy.ts:106"
         ]
       },
@@ -573,8 +573,8 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1198",
           "server/castingV2/briefCompiler.ts:1205",
+          "server/castingV2/briefCompiler.ts:1212",
           "server/castingV2/briefRefusalCopy.ts:108"
         ]
       },

@@ -576,14 +576,28 @@ describe("the sequence", () => {
       beat, so the flag stubs are gone and the claim is unconditional: a path
       sent from anywhere reaches neither the prompt nor the pick.
     */
-    const seen: { path?: unknown; pickWardrobe?: unknown }[] = [];
+    const seen: { path: unknown; hasPick: boolean; keys: string[] }[] = [];
     const dependencies = baseDependencies();
-    const compileBrief = (dependencies as { compileBrief: (input: { path?: unknown; pickWardrobe?: unknown }) => unknown }).compileBrief;
+    const compileBrief = (dependencies as { compileBrief: (input: { path?: unknown }) => unknown }).compileBrief;
     await createRoll(
       {
         ...(dependencies as object),
-        compileBrief: (input: { path?: unknown; pickWardrobe?: unknown }) => {
-          seen.push({ path: input.path, pickWardrobe: input.pickWardrobe });
+        compileBrief: (input: { path?: unknown }) => {
+          /*
+            ⚠ THE KEY'S ABSENCE, NOT ITS VALUE — #203 slice 2, step (d).
+
+            This read `pickWardrobe: input.pickWardrobe` and compared against
+            `false` while the field existed. `toEqual` does not distinguish an
+            undefined property from a missing one, so the same assertion would
+            have gone on passing over a compiler that had never been handed the
+            field at all — a green arm proving nothing, on the retirement it
+            was pointed at. `in` answers the question actually being asked.
+          */
+          seen.push({
+            path: input.path,
+            hasPick: "pickWardrobe" in input,
+            keys: Object.keys(input),
+          });
           return compileBrief(input);
         },
       } as never,
@@ -592,7 +606,13 @@ describe("the sequence", () => {
          be done deliberately here rather than by accident anywhere else. */
       { ...INPUT, path: "wardrobe" } as never,
     );
-    expect(seen).toEqual([{ path: null, pickWardrobe: false }]);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.path).toBeNull();
+    expect(seen[0]!.hasPick).toBe(false);
+    /* CONTROL — the spy really saw a compile input, so the absence above is a
+       field that is gone rather than an object that was never populated. */
+    expect(seen[0]!.keys).toContain("briefText");
+    expect(seen[0]!.keys).toContain("path");
   });
 
   it("and absent stays absent — the author's default is the compiler's to apply, never a second copy here", async () => {
@@ -1304,15 +1324,21 @@ describe("no roll is born on a path", () => {
    * was measured raising the stage wall twice as often as its superset. The
    * wardrobe question was asked only where its answer was read; nothing reads
    * one now, so it is asked nowhere.
+   *
+   * ⚠ **Since #203 slice 2 step (d) the field does not EXIST, so these arms
+   * read the KEY rather than the value.** `false` and *not handed over at all*
+   * are the same prompt and a different claim, and an arm comparing against
+   * `false` passes identically over both — which would leave the retirement
+   * itself unguarded here.
    */
   describe("the pick", () => {
     const FOLLOW_CANDIDATE_PUBLIC_ID = "66666666-6666-4666-8666-666666666666";
 
-    /** Records what the service asked the compiler for. */
+    /** Records whether the service handed the compiler a pick at all. */
     function compilerSpy() {
-      const asked: (boolean | undefined)[] = [];
-      const compileBrief = async (compilerInput: { pickWardrobe?: boolean }) => {
-        asked.push(compilerInput.pickWardrobe);
+      const asked: boolean[] = [];
+      const compileBrief = async (compilerInput: Record<string, unknown>) => {
+        asked.push("pickWardrobe" in compilerInput);
         return deterministicBriefCompiler(compilerInput as never);
       };
       return { asked, compileBrief };
@@ -1328,10 +1354,33 @@ describe("no roll is born on a path", () => {
       return spy.asked;
     }
 
-    it("⚠ is asked for on no roll at all, including one that sends a path", async () => {
+    it("⚠ is not even a field on the compile any more — on no roll, including one that sends a path", async () => {
       expect(await rollAsking()).toEqual([false]);
       expect(await rollAsking({ path: "wardrobe" })).toEqual([false]);
       expect(await rollAsking({ followCandidatePublicId: FOLLOW_CANDIDATE_PUBLIC_ID })).toEqual([false]);
+    });
+
+    it("CONTROL — the spy can see a key the compile DOES carry", async () => {
+      /*
+        Three `false`s above are three absences, and an absence is worth
+        nothing beside a probe that cannot detect a presence. `readInk` rides
+        the same object from the same function and is always handed over, so it
+        answers the other way through the identical reader.
+      */
+      seedCandidates();
+      const seen: Record<string, unknown>[] = [];
+      await createRoll(
+        {
+          ...(baseDependencies() as object),
+          compileBrief: async (compilerInput: Record<string, unknown>) => {
+            seen.push(compilerInput);
+            return deterministicBriefCompiler(compilerInput as never);
+          },
+        } as never,
+        { ...INPUT } as never,
+      );
+      expect("readInk" in seen[0]!).toBe(true);
+      expect("pickWardrobe" in seen[0]!).toBe(false);
     });
 
     /**
@@ -1368,8 +1417,9 @@ describe("no roll is born on a path", () => {
       it("hands the compiler the PARENT's line, not a freshly resolved one", async () => {
         const compilerInput = await followWith({ path: "wardrobe", wardrobeLine: PARENT_LINE });
         expect(compilerInput.inheritedWardrobe).toEqual({ path: "wardrobe", line: PARENT_LINE });
-        /* And it did not ask for a pick, because the answer already exists. */
-        expect(compilerInput.pickWardrobe).toBe(false);
+        /* And no pick travelled with it — the field is gone, and the answer
+           already exists anyway, which was the older of the two reasons. */
+        expect("pickWardrobe" in compilerInput).toBe(false);
       });
 
       it("⚠ carries the parent's NULLS when the parent predates the paths", async () => {
