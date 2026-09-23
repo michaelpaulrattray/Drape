@@ -145,26 +145,3 @@ export function sheetPreviewTiles(
   }
   return tiles;
 }
-
-/**
- * The faces alone, derived from the tiles above.
- *
- * Kept for one deploy because it is what the shipped bundle reads: a browser
- * holding yesterday's `CastingV2.tsx` against today's server would find
- * `previewUrls` undefined and take the lobby down on `.length`. Only one
- * direction of deploy skew exists (an old bundle against a new server), and it
- * bites exactly when a field is REMOVED — so this goes in the deploy AFTER the
- * one that stops reading it (#1088), never in the same one.
- *
- * DERIVED, not parallel: it reads the tiles rather than re-walking the rows,
- * so the two can never come to disagree about which faces a card shows.
- */
-export function sheetPreviewKeys(
-  kept: readonly SheetPreviewCandidate[],
-  rollCandidates: readonly SheetPreviewCandidate[],
-  limit: number = SHEET_PREVIEW_LIMIT,
-): string[] {
-  return sheetPreviewTiles(kept, rollCandidates, limit)
-    .filter((tile): tile is { kind: "face"; key: string } => tile.kind === "face")
-    .map((tile) => tile.key);
-}
