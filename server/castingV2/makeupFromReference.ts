@@ -96,6 +96,10 @@ export const MAKEUP_READ_REFUSAL_CODES = [
      migration 0042 — the walk in `referenceReadDemand.test.ts` is what makes
      that ordering enforceable rather than remembered. */
   "outOfClass",
+  /* We read it and could not use it (#1076). Its column value arrives in
+     migration 0065; see {@link readMakeupFromReference}'s composer branch for
+     why this is neither `noMakeupVisible` nor `unreadable`. */
+  "answersOverCap",
 ] as const;
 
 type MakeupReadRefusalCode = (typeof MAKEUP_READ_REFUSAL_CODES)[number];
@@ -512,6 +516,67 @@ export async function readMakeupFromReference(
 
   const { sentence, used, dropped } = composeMakeupSentence(slots);
   if (!sentence) {
+    /*
+      TWO WAYS TO ARRIVE HERE WITH NOTHING TO SAY, AND THEY ARE NOT THE SAME
+      FACT (#1076, split out of #1072).
+
+      This branch answered *"We couldn't see any makeup in that picture to
+      take."* for both of them, which is a sentence about HER PHOTOGRAPH — and
+      on one of the two roads it is our own cap talking. She goes looking for a
+      different picture of our problem, the credits come back so nobody reports
+      it, and the tally records a face with no makeup on it.
+
+      The distinction is not a new reading: it is TWO VALUES ALREADY IN HAND
+      twenty lines up, which is the disappearing-technology law's clause 4 —
+      read what the machinery already gives you before reaching for anything
+      else.
+
+        overCap   a surface the reader ANSWERED, whose answer ran longer than
+                  the ask allows. Its slot was set to `null` at the loop above,
+                  which is exactly why the composer never saw it.
+        dropped   a surface with a real value that did not fit the combined cap.
+                  Structurally unreachable today — `MAX_MAKEUP_LENGTH` is
+                  derived so every slot at its maximum fits — and read anyway,
+                  because it is the emergency path for a reading that broke its
+                  own contract and it means the same thing when it fires.
+
+      ⚠ `overCap` IS THE ONE THE REPORTED DEFECT ACTUALLY TAKES, and it is the
+      one where the composer sees nothing at all: every slot is nulled BEFORE
+      composing, so `dropped` stays empty. A repair reading `dropped` alone
+      passes a test and leaves the customer exactly where she was.
+
+      Empty on both is the branch where the old sentence was always true — the
+      reader answered, and every surface it answered was absent. That keeps its
+      word.
+    */
+    if (overCap.length > 0 || dropped.length > 0) {
+      log.info(
+        { overCap, dropped },
+        "[makeupFromReference] every surface we could speak for was over the ask — refused as ours",
+      );
+      return {
+        ok: false,
+        refusal: {
+          code: "answersOverCap",
+          /*
+            HER FAULT LINE IS THE WHOLE POINT OF THE SENTENCE. It says the
+            picture was read, puts the fault on our description rather than on
+            her photograph, and never sends her looking for another one — that
+            last is `unreadable`'s sentence and it would be the same lie in a
+            different suit.
+
+            It offers the one action she actually has: the box she is standing
+            in front of. A surface we cannot speak for is one she can type
+            herself, which she cannot do if nobody tells her.
+
+            It names no surface, no cap and no character count (#1067's call):
+            she did not write the read and cannot act on its length.
+          */
+          message:
+            "We read that picture, but our description of it came back too long to use — tell us the look you want in your own words instead.",
+        },
+      };
+    }
     return {
       ok: false,
       refusal: {

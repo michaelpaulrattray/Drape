@@ -408,7 +408,116 @@ describe("readMakeupFromReference", () => {
     });
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
+    /* ⚠ LOAD-BEARING SINCE #1076: this is the branch `noMakeupVisible` KEEPS at
+       the composer, and it is the only assertion of it there. The split below
+       takes the other road out of the same `if (!sentence)`, and a repair that
+       took both would empty a reason with every suite still green — which is
+       exactly the shape that was invisible on #1072. */
     expect(outcome.refusal.code).toBe("noMakeupVisible");
+  });
+
+  /* ---- read and unusable is OUR fault, not her photograph's (#1076) ---- */
+
+  it("does not tell her the picture had no makeup when every answer was over the ask", async () => {
+    /*
+      THE REPORTED DEFECT, DRIVEN. Four surfaces answered — this reply describes
+      a full face — and every one of them ran longer than the ask allows, so
+      each slot was nulled before the composer saw it and the composer was
+      handed nothing.
+
+      ⚠ THIS IS THE `overCap`-ONLY CASE, which is the one the customer actually
+      hit and the one where `dropped` stays EMPTY: a repair reading `dropped`
+      alone passes its own test and leaves her exactly where she was. The arm is
+      built this way on purpose.
+    */
+    const outcome = await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(JSON.stringify({
+        subject: "cosmetics",
+        wearing: "yes",
+        eyes: "e".repeat(MAKEUP_SLOT_MAX_LENGTH + 1),
+        lips: "l".repeat(MAKEUP_SLOT_MAX_LENGTH + 1),
+        brows: "b".repeat(MAKEUP_SLOT_MAX_LENGTH + 1),
+        complexion: "c".repeat(MAKEUP_SLOT_MAX_LENGTH + 1),
+      })),
+    });
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.refusal.code).toBe("answersOverCap");
+  });
+
+  it("says whose fault it was, and sends her to the box rather than to another photograph", async () => {
+    /*
+      THE SENTENCE, held to the three things it has to do rather than to a
+      literal — a test pinned to the exact string passes a reword that undoes
+      the point and fails an improvement that keeps it.
+    */
+    const outcome = await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(JSON.stringify({
+        subject: "cosmetics",
+        wearing: "yes",
+        eyes: "e".repeat(MAKEUP_SLOT_MAX_LENGTH + 1),
+      })),
+    });
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    const { message } = outcome.refusal;
+    /* It says the picture WAS read — the fault is ours and it is stated. */
+    expect(message).toMatch(/we read that picture/i);
+    /* It never sends her for a different one. That is `unreadable`'s sentence
+       and it would be the same lie about a photograph that was fine. */
+    expect(message).not.toMatch(/another|different picture|try a picture/i);
+    /* It offers the action she has: the box she is already standing in front
+       of. A surface we cannot speak for is one she can type herself. */
+    expect(message).toMatch(/your own words/i);
+    /* And it names no machinery she did not write and cannot act on (#1067). */
+    expect(message).not.toMatch(/surface|cap|character|\d/i);
+  });
+
+  it("keeps the two sentences apart — a rename passes every arm above and must fail here", async () => {
+    /*
+      ⚠ THE ARM THAT WOULD HAVE BEEN EASIEST TO SHIP WITHOUT, and the one this
+      whole change turns on.
+
+      Every other assertion in this file judges ONE branch at a time, so a
+      repair that gave all three `if (!sentence)` roads a single new code and a
+      single new sentence passes them all: the defect arm goes green, the copy
+      arm goes green, and a customer whose picture genuinely has no makeup in it
+      is told our description came back too long.
+
+      So the two are pinned AGAINST EACH OTHER, from one reader in one test: the
+      claim *there is no makeup on that face* belongs to exactly one of them,
+      and the offer of her own words belongs to exactly the other.
+    */
+    const readAndUnusable = await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(JSON.stringify({
+        subject: "cosmetics",
+        wearing: "yes",
+        eyes: "e".repeat(MAKEUP_SLOT_MAX_LENGTH + 1),
+      })),
+    });
+    const genuinelyBare = await readMakeupFromReference({
+      ...REFERENCE,
+      engine: engineReturning(
+        JSON.stringify({ subject: "cosmetics", eyes: null, lips: "none", brows: null, complexion: "n/a" }),
+      ),
+    });
+    expect(readAndUnusable.ok).toBe(false);
+    expect(genuinelyBare.ok).toBe(false);
+    if (readAndUnusable.ok || genuinelyBare.ok) return;
+
+    expect(readAndUnusable.refusal.code).not.toBe(genuinelyBare.refusal.code);
+    expect(readAndUnusable.refusal.message).not.toBe(genuinelyBare.refusal.message);
+    /* The absence claim is the bare face's alone. */
+    expect(genuinelyBare.refusal.message).toMatch(/couldn't see any makeup/i);
+    expect(readAndUnusable.refusal.message).not.toMatch(/couldn't see any makeup/i);
+    /* And the invitation to type it herself is the unusable read's alone —
+       asserted in both directions, because a sentence that offered it to a
+       genuinely bare face would be inviting her to describe nothing. */
+    expect(readAndUnusable.refusal.message).toMatch(/your own words/i);
+    expect(genuinelyBare.refusal.message).not.toMatch(/your own words/i);
   });
 
   /* ---- the hair backstop, in BOTH directions ---- */
