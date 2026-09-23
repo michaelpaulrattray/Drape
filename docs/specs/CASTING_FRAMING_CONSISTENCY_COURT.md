@@ -597,6 +597,13 @@ dispatched:
   or the run throws and buys nothing.
 ```
 
+⚠ **`pickWardrobe` no longer exists** — #203 slice 2 step (d), 2026-09-24. The
+two sentences around this one are the record of what the harness did then and
+are left as written; a harness rebuilt today passes `path` and
+`inheritedWardrobe` and nothing else, and the interpreter is never asked about
+clothes. Nothing about the finding changes: the assertion that mattered was on
+the composed prompts.
+
 `inheritedWardrobe` is used rather than `pickWardrobe` because it is the real
 path a FOLLOW travels and it is deterministic — the founder's population is the
 suit, not whatever the interpreter picks today. **And a frame is opened before a

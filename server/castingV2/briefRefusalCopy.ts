@@ -29,8 +29,10 @@
  * `text`, `too_long`, `weapon`) as a sibling of this defect. Read at the bytes,
  * they are not doors at all: `parseWardrobePick` (`castingIntent.ts`) turns a
  * refused pick into `null`, the reason goes to a LOG COUNTER
- * (`WARDROBE_PICK_REFUSED`), and `bornWardrobeLine` falls back to the house
- * line. **The customer is never told anything**, so there is no sentence and
+ * (`WARDROBE_PICK_REFUSED`), and the sheet wears the house line either way —
+ * since #203 slice 2 step (d) that is true whether the pick was refused or
+ * admitted, because nothing reads it. **The customer is never told anything**,
+ * so there is no sentence and
  * no door — they are internal decision reasons, the same class as the ~70
  * `reason:`-shaped ids #206 measured and declined to map. Recording the verdict
  * here rather than only on the card, because the next sweep will find that file

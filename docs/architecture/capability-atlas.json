@@ -517,7 +517,7 @@
         ],
         "sites": [
           "server/castingV2/briefCompiler.ts:1223",
-          "server/castingV2/briefRefusalCopy.ts:114"
+          "server/castingV2/briefRefusalCopy.ts:116"
         ]
       },
       {
@@ -530,7 +530,7 @@
         ],
         "sites": [
           "server/castingV2/briefCompiler.ts:1226",
-          "server/castingV2/briefRefusalCopy.ts:120"
+          "server/castingV2/briefRefusalCopy.ts:122"
         ]
       },
       {
@@ -545,7 +545,7 @@
         ],
         "sites": [
           "server/castingV2/briefCompiler.ts:1152",
-          "server/castingV2/briefRefusalCopy.ts:126"
+          "server/castingV2/briefRefusalCopy.ts:128"
         ]
       },
       {
@@ -558,7 +558,7 @@
         "sites": [
           "server/castingV2/briefCompiler.ts:1077",
           "server/castingV2/briefCompiler.ts:1507",
-          "server/castingV2/briefRefusalCopy.ts:106"
+          "server/castingV2/briefRefusalCopy.ts:108"
         ]
       },
       {
@@ -575,7 +575,7 @@
         "sites": [
           "server/castingV2/briefCompiler.ts:1205",
           "server/castingV2/briefCompiler.ts:1212",
-          "server/castingV2/briefRefusalCopy.ts:108"
+          "server/castingV2/briefRefusalCopy.ts:110"
         ]
       },
       {
@@ -721,10 +721,10 @@
           "server/db/referenceReadDemand.test.ts"
         ],
         "sites": [
-          "server/castingV2/castingIntent.ts:1271",
-          "server/castingV2/castingIntent.ts:1307",
-          "server/castingV2/castingIntent.ts:1312",
-          "server/castingV2/castingIntent.ts:1327",
+          "server/castingV2/castingIntent.ts:1280",
+          "server/castingV2/castingIntent.ts:1316",
+          "server/castingV2/castingIntent.ts:1321",
+          "server/castingV2/castingIntent.ts:1336",
           "server/castingV2/openLaneAccept.ts:245",
           "server/castingV2/openLaneKind.ts:162",
           "server/castingV2/openLaneKind.ts:220",

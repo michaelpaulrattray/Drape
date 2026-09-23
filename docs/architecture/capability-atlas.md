@@ -17,9 +17,9 @@ _Entrances:_ `server/routes/castingV2.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `C
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1223<br>server/castingV2/briefRefusalCopy.ts:114 | 5 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1226<br>server/castingV2/briefRefusalCopy.ts:120 | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1152<br>server/castingV2/briefRefusalCopy.ts:126 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1223<br>server/castingV2/briefRefusalCopy.ts:116 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1226<br>server/castingV2/briefRefusalCopy.ts:122 | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1152<br>server/castingV2/briefRefusalCopy.ts:128 | 5 test(s) | _documented-unreachable or gap — see findings_ |
 | `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1077<br>server/castingV2/briefCompiler.ts:1507<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `roll.unsupported_cohort` | roll-refusal |  | server/castingV2/briefCompiler.ts:1205<br>server/castingV2/briefCompiler.ts:1212<br>(+1) | 6 test(s) | _documented-unreachable or gap — see findings_ |
 
@@ -64,7 +64,7 @@ _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refine
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
 | `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:626<br>server/castingV2/refineInterpreter.ts:898<br>(+1) | 6 test(s) | guard.empty |
-| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1271<br>server/castingV2/castingIntent.ts:1307<br>(+14) | 21 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
+| `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1280<br>server/castingV2/castingIntent.ts:1316<br>(+14) | 21 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
 | `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:625<br>server/castingV2/refineInterpreter.ts:912<br>(+2) | 5 test(s) | _documented-unreachable or gap — see findings_ |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1609<br>(+2) | 7 test(s) | guard.likeness |
 | `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:538<br>server/castingV2/refineInterpreter.ts:1589<br>(+1) | 6 test(s) | guard.content |

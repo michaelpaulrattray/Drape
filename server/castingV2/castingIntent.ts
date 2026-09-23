@@ -502,10 +502,14 @@ export type CastingIntent = {
    * `bornWardrobeLine` then falls back to §4(c), the house line, which is
    * today's picture unchanged.
    *
-   * **Nothing outside the Wardrobe path ever reads it.** Basics is the path's
-   * own outfit and a brief cannot negotiate it; a roll outside the flag never
-   * asks for a pick at all, so the interpreter's reply is byte-identical to
-   * today's for every account that does not have the paths.
+   * ⚠ **NOTHING READS IT AT ALL SINCE #203 SLICE 2 STEP (d)** (2026-09-24).
+   * This paragraph used to say *nothing outside the Wardrobe path ever reads
+   * it*; there is no Wardrobe path now, `resolveSheet` no longer takes a pick,
+   * and `bornWardrobeLine` has no seam for one to land on. The field is still
+   * PARSED — and refused at the door when a reply volunteers one — because the
+   * reader is still handed the `wardrobe` option (as `false`, which appends no
+   * block, so the bytes are unchanged). **Removing the ask, this parse and the
+   * door is one act and it is #1123's**, not a tidy-up.
    */
   wardrobe: string | null;
 };
@@ -1186,6 +1190,11 @@ export function parseStatedAccessories(raw: unknown, briefText: string): string[
  * dropped pick changes the PICTURE rather than a caption, so the reason travels
  * to the log where it can be counted — with the offending word, because a
  * refusal that cannot say which class fired it is a refusal nobody can act on.
+ *
+ * ⚠ **That last sentence is HISTORY as of #203 slice 2 step (d)**: a dropped
+ * pick changes nothing at all now, because nothing downstream reads the field.
+ * The counter still fires, and is worth reading as *how often a reader nobody
+ * asked volunteers an outfit anyway* — which is a fact #1123 will want.
  */
 export function parseWardrobePick(raw: unknown): string | null {
   if (raw === null || raw === undefined) return null;

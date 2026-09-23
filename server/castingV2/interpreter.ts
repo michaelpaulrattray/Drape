@@ -1132,6 +1132,13 @@ export async function interpretBrief(input: {
    * Absent means no, and no means the prompt is the one every account has been
    * getting. See `WARDROBE_BLOCK` for why this is a flag rather than a
    * permanent addition.
+   *
+   * ⚠ **NO PRODUCTION CALLER PASSES `true` — #203 slice 2 step (d).** The
+   * compiler hands a literal `false` and the paths that could ever have set it
+   * are retired. The option survives its last customer on purpose: dropping it
+   * changes what the reader is ASKED, which is **#1123**'s court, and this
+   * campaign has measured a smaller prompt moving the answers. Until then the
+   * `false` road is driven at the wire by `briefCompiler.test.ts`.
    */
   wardrobe?: boolean;
   /**
