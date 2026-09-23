@@ -855,72 +855,75 @@ describe("a tattoo at a place", () => {
 });
 
 /**
- * §6.1 — WHICH ROWS SAY WHICH WORLD THEIR PICTURE CAME FROM ("as dressed").
+ * §6.1 IS RETIRED WITH THE PATHS — no slot carries a world for its picture
+ * (#203 slice 2 step (b), 2026-09-24).
  *
- * The two paths' provenance label. §8.2 asked for build · skin · scars · ink to
- * split by path; read at this catalogue, `scars` is not a slot at all (marks
- * fold into `skin` by its own note) and `ink` already splits by path — that is
- * 7a, shipped. What is left is the two rows whose MEASUREMENTS were taken on a
- * dressed torso, and that is what this case pins.
+ * `pathProvenance` authored *"as dressed"* on `build` and `skin`, the two rows
+ * whose measurements were taken on a dressed torso. It was drawn on the
+ * Wardrobe path alone and slice 1 made that path unbuyable, so the field is
+ * gone rather than left answering nothing forever. **What is NOT gone is the
+ * reason it existed**: both slots still carry the measurement notes in their
+ * own paragraphs, and `#1148` is where a customer getting her clothes back —
+ * and these rows getting a world to name — is decided.
+ *
+ * ⚠ **WRITTEN AGAINST THE EMPTY-LIST TRAP.** *"No slot carries the field"* is
+ * satisfied by a misspelled key, by a reader that returns nothing, and by an
+ * empty catalogue. Every arm below therefore proves the population is real
+ * before it proves the absence.
  */
-describe("which rows say what their picture actually shows", () => {
-  const labelled = catalogueSlots().filter((definition) => definition.pathProvenance !== undefined);
-
-  it("is build and skin, and nothing else", () => {
-    /* The enumeration is the point, exactly as it is for `whenAbsent` above: a
-       third member arriving by pattern is what this case makes visible. */
-    expect(labelled.map((definition) => [definition.slot, definition.pathProvenance!.onWardrobe]))
-      .toEqual([["build", "as dressed"], ["skin", "as dressed"]]);
-  });
-
-  it("carries the reason it is true, on the slot", () => {
-    /* The label is a claim about a MEASUREMENT this catalogue records — the
-       below-head crop cut from a dressed torso, the 11.5–12.5% read on frames
-       of people in the house crew tee. A member with no argument beside it is a
-       member somebody added by pattern. */
-    for (const definition of labelled) {
-      expect(definition.pathProvenance!.why.length).toBeGreaterThan(60);
-      expect(definition.pathProvenance!.onWardrobe.length).toBeGreaterThan(0);
-    }
-  });
-
+describe("no slot says what world its picture was read in", () => {
   /*
-    ⚠ THE ONE THING IT MAY NEVER BE: A HEDGE (§6.1, ruled).
-
-    "as dressed" is a true statement about what the picture shows. "we think",
-    "approximately", "roughly", "may be" would be the product apologising for a
-    reading it never claimed to make — the row is not LESS accurate on the
-    Wardrobe path, it is accurate about something SMALLER. Pinned here because
-    the tempting edit is to soften the word, not to delete it.
+    ⚠ **BOTH POPULATIONS, AND THE SABOTAGE IS WHY.** The first shape of this
+    case read `catalogueSlots()` alone — the PROJECTED definitions — and a
+    sabotage that re-authored `pathProvenance` on the `build` ENTRY left it
+    green, because `definitionOf` no longer copies the key across. That is the
+    reader silently dropping what an author wrote: inert today, and exactly the
+    state a later reader-side restoration would make live without anything here
+    noticing. The entries are where a person types; the definitions are what the
+    panel is handed. Both are read.
   */
-  it("states what the picture is, and never hedges what the reading was", () => {
-    const hedges = ["approx", "roughly", "we think", "may be", "might", "unverified", "estimate"];
-    for (const definition of labelled) {
-      const says = definition.pathProvenance!.onWardrobe.toLowerCase();
-      for (const hedge of hedges) expect(says).not.toContain(hedge);
+  const definitions = catalogueSlots();
+  const populations = [
+    ["definitions", definitions as readonly Record<string, unknown>[]],
+    ["entries", SLOT_CATALOGUE as readonly Record<string, unknown>[]],
+  ] as const;
+
+  it("still catalogues the two rows that carried it, as drawn body rows", () => {
+    /* THE POSITIVE CONTROL. Without it the absence arms pass on an empty
+       catalogue, which is the one way they must not pass. */
+    expect(
+      definitions
+        .filter((definition) => ["build", "skin"].includes(definition.slot))
+        .map((definition) => [definition.slot, definition.group, definition.panel.row]),
+    ).toEqual([["build", "body", "own"], ["skin", "body", "own"]]);
+  });
+
+  it("carries the key on no slot and on no entry, spelled any way", () => {
+    for (const [name, population] of populations) {
+      /* The population is real, checked the way that cannot go stale: the two
+         members this case is ABOUT are in it. A bare length floor was wrong the
+         first time it ran — 18 entries fold into 25 definitions, and a number
+         typed from one population is a number about the other. */
+      const named = population.map((member) => String(member.slot ?? member.feature));
+      expect(named, name).toContain("build");
+      expect(named, name).toContain("skin");
+      for (const member of population) {
+        expect(Object.keys(member).filter((key) => /provenance/i.test(key)), `${name}: ${String(member.slot ?? member.feature)}`)
+          .toEqual([]);
+      }
     }
   });
 
-  it("is never a per-side slot, because the panel would never draw it", () => {
-    /*
-      THE NEGATIVE CONTROL, and it is the same silent gap `whenAbsent` has: the
-      panel composes this label only on the single-instance branch, so one on a
-      bilateral slot would do NOTHING and say nothing about doing nothing.
-    */
-    for (const definition of labelled) expect(definition.instance).toBeNull();
-    /* And the fixture that proves this case can fail — bilateral slots exist. */
-    expect(catalogueSlots().some((definition) => definition.instance !== null)).toBe(true);
-  });
-
-  it("is on a row the panel actually draws, or it is a label nobody can read", () => {
-    /* An inert admission reads as a decision until somebody looks — the same
-       argument the stated-absence case makes one describe up. */
-    for (const definition of labelled) expect(definition.panel.row).toBe("own");
-  });
-
-  /* And the split is a BODY-fact split (§8.2): a face row read off a head is
-     not measured through anything anyone is wearing. */
-  it("labels body rows and no face rows", () => {
-    for (const definition of labelled) expect(definition.group).toBe("body");
+  it("says it nowhere in the catalogue's own data, under any key", () => {
+    /* The key arm above cannot see the label arriving under a name nobody
+       greps for. This reads the VALUES, and its own positive control is the
+       stated-absence prose two describes up — authored English that is still
+       in the serialization, so a `not.toContain` cannot be passing because the
+       serialization is empty. */
+    for (const [name, population] of populations) {
+      const serialized = JSON.stringify(population);
+      expect(serialized, name).toContain("bald");
+      expect(serialized.toLowerCase(), name).not.toContain("as dressed");
+    }
   });
 });

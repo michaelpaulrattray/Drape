@@ -682,50 +682,26 @@ export type OwnedCandidateFace = {
   rollWardrobeLine: string | null;
 };
 
-/**
- * WHAT THE ROLL THIS CANDIDATE CAME FROM WAS CAST ON — for a caller that has a
- * candidate and no face (item 8's §8.1, the panel's wardrobe section).
- *
- * `getOwnedCandidateWithSelectedFace` above already joins these two columns and
- * is the reader every refine uses; the panel cannot use it, because it reads the
- * version being LOOKED AT rather than the one currently selected, and taking a
- * face's identity from one statement and its roll from another is the mixed
- * record that function's own comment refuses.
- *
- * So this is the same join with the face left out. Reached THROUGH the owned
- * candidate and scoped to the same owner in the SAME statement — enforcement
- * invariant 1, on a join rather than on a check — so a caller holding a
- * candidate public id can never widen it to somebody else's roll.
- *
- * `null` means the candidate is not this account's or is not ready. Both
- * columns `null` on a row that IS found is the honest state of every roll cast
- * before the paths existed, and `currentWardrobeLine` reads that pair as
- * `unpathed`: paint what you always painted.
- */
-export async function getOwnedCandidateRollWardrobe(
-  userId: number,
-  candidatePublicId: string,
-): Promise<{ rollPath: string | null; rollWardrobeLine: string | null } | null> {
-  assertPositiveId(userId, "userId");
-  const db = await requireDb();
-  const [row] = await db
-    .select({
-      rollPath: castingRolls.path,
-      rollWardrobeLine: castingRolls.wardrobeLine,
-    })
-    .from(castingCandidates)
-    .leftJoin(castingRolls, and(
-      eq(castingRolls.id, castingCandidates.rollId),
-      eq(castingRolls.userId, userId),
-    ))
-    .where(and(
-      eq(castingCandidates.publicId, candidatePublicId),
-      eq(castingCandidates.userId, userId),
-      eq(castingCandidates.status, "ready"),
-    ))
-    .limit(1);
-  return row ? { rollPath: row.rollPath, rollWardrobeLine: row.rollWardrobeLine } : null;
-}
+/*
+  ⚠ **`getOwnedCandidateRollWardrobe` STOOD HERE AND IS RETIRED WITH THE PATHS**
+  (#203 slice 2 step (b), 2026-09-24).
+
+  It was the same join as `getOwnedCandidateWithSelectedFace` below with the
+  face left out, and it existed for ONE caller: the panel, which reads the
+  version being LOOKED AT rather than the selected one and so could not use
+  that function. What it answered — which path a roll was cast on and what it
+  was born wearing — fed the panel's wardrobe section and then the *"as
+  dressed"* label, and both are gone: the section with slice 2 step (a), the
+  label with this commit. **Nothing else ever called it**, which is why the
+  cleanup-dispositions checker caught it as an unread export the same hour, and
+  why it is deleted rather than left as a reader nobody reads.
+
+  **The COLUMNS are untouched and are not this commit's to touch.** `rollPath`
+  and `rollWardrobeLine` are still joined by the function below, still read by
+  the refine road, and the thirteen pathed rows on production are the record of
+  which rolls predate the author road — step (e) of the retirement is where the
+  columns are argued, at the Atlas's retirement view.
+*/
 
 export async function getOwnedCandidateWithSelectedFace(
   userId: number,
