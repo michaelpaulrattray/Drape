@@ -27,8 +27,15 @@ export type CrewProblem = CrewBriefingView["problems"][number];
  * (#75). Both carry the same id/state/title triple, and `replyFallsToGeneral`
  * asks only for id + state, so the General box's fall-through rule covers both
  * populations with one list.
+ *
+ * ⚠ **IT IS THE SERVER'S OWN LIST NOW, NOT A `Pick` OFF THE CARDS (#1138).**
+ * `briefing.needsYou` and `briefing.eyeItems` carry only what still needs him
+ * since the wire projection widened, so the union of those two is no longer
+ * the host population — a reply on a card he answered last week would have
+ * found no title and rendered *on "<id>", a card since closed*. The server
+ * sends every host's triple in `threadHosts`, built above its own filters.
  */
-export type CrewThreadHost = Pick<CrewNeedsYouCard, "id" | "state" | "title">;
+export type CrewThreadHost = CrewBriefingView["threadHosts"][number];
 
 /**
  * Whether a reply renders in the GENERAL box rather than under a needs-you card.
@@ -51,7 +58,7 @@ export type CrewThreadHost = Pick<CrewNeedsYouCard, "id" | "state" | "title">;
  */
 export function replyFallsToGeneral(
   cardId: string | null,
-  cards: readonly Pick<CrewNeedsYouCard, "id" | "state">[],
+  cards: readonly Pick<CrewThreadHost, "id" | "state">[],
 ): boolean {
   return cardId === null || !cards.some((card) => card.id === cardId && crewCardNeedsHim(card.state));
 }

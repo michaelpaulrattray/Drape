@@ -19,6 +19,7 @@
  */
 import { cn } from "@/lib/utils";
 import { TableHead } from "@/foundation";
+import { crewProblemIsOpen } from "../../../../../../shared/crewProblemState";
 import type { CrewProblem } from "./crewTypes";
 
 const SEVERITY_ORDER: Record<string, number> = { urgent: 0, warning: 1, info: 2 };
@@ -30,7 +31,12 @@ const SEVERITY_LABEL: Record<string, string> = {
 
 export function CrewProblems({ problems }: { problems: readonly CrewProblem[] }) {
   const open = [...problems]
-    .filter((problem) => problem.state === "open")
+    /* ⚠ THE SERVER NO LONGER SENDS THE OTHERS (#1138) — `crewBriefingForPage`
+       drops every resolved row before the wire; 95 of 97 and 87 KB at edition
+       493. This line is not thereby dead: it is the DEFINITION of what this
+       section holds, the projection asks the same shared question, and it is
+       what still holds if the projection is ever taken out. */
+    .filter((problem) => crewProblemIsOpen(problem.state))
     .sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 3) - (SEVERITY_ORDER[b.severity] ?? 3));
 
   if (open.length === 0) return null;
