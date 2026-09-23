@@ -246,7 +246,7 @@ export const EXPRESSION_LINE = "EXPRESSION: Eyes into the lens, present, mouth c
  * fanged creature's, byte for byte what #599's four courts settled on; the
  * unfanged creature's line is the same bytes without this sentence.
  */
-export const CREATURE_EXPRESSION_FANG_SENTENCE =
+const CREATURE_EXPRESSION_FANG_SENTENCE =
   "Fangs are teeth: the mouth is slightly open, upper teeth showing, the fangs among them — nothing growing out of or over the lips. ";
 const CREATURE_EXPRESSION_HEAD =
   "EXPRESSION: Eyes into the lens, present, lips parted enough to show the being's own dentition — pose off, anatomy on. "

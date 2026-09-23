@@ -89,7 +89,7 @@ export const FAL_GPT_IMAGE_25_SUNBURST_EDIT = "openai/gpt-image-2.5/sunburst/edi
  * model with no entry here refuses a reference rather than painting strangers
  * against a sentence about a photograph that never arrived.
  */
-export const FAL_EDIT_SIBLINGS: Readonly<Record<string, string>> = {
+const FAL_EDIT_SIBLINGS: Readonly<Record<string, string>> = {
   [FAL_GPT_IMAGE_2]: FAL_GPT_IMAGE_2_EDIT,
   [FAL_GPT_IMAGE_25_FLARE]: FAL_GPT_IMAGE_25_FLARE_EDIT,
   [FAL_GPT_IMAGE_25_SUNBURST]: FAL_GPT_IMAGE_25_SUNBURST_EDIT,
