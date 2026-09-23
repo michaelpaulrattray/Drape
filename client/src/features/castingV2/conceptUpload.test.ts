@@ -683,8 +683,9 @@ describe("walking away releases the card, rather than latching it to a dead call
 describe("Cast it goes through the page's ONE roll flow", () => {
   it("dispatches from the page, never from the card or the dialog", async () => {
     /*
-      THE LOAD-BEARING NEGATIVE. `createRoll` carries `imagination`, `style` and
-      `path`, each of which travels only when its control was drawn — a second
+      THE LOAD-BEARING NEGATIVE. `createRoll` carries `style`, which travels only
+      when its control was drawn (`imagination` and `path` stood here until
+      #203 slice 2a took them off the wire) — a second
       dispatch written inside the dialog would look right and quietly cast every
       concept at the wrong settings, which is working law 4 on the money path.
     */

@@ -1268,12 +1268,13 @@ describe("no roll is born on a path", () => {
       THE ARM THAT MATTERS, and it is driven through the real service rather
       than read off the constant.
 
-      `createRoll`'s input no longer declares a path, and the procedure's schema
-      keeps the field one more deploy purely so a browser holding the previous
-      bundle is not BAD_REQUESTed mid-deploy on the money path. A field the wire
-      still tolerates and the service ignores is exactly the shape that rots
-      into a quiet read again, so this sends one — in both his words — and
-      proves the row is unmoved.
+      Neither `createRoll`'s input nor its procedure schema declares a path any
+      more — the one-deploy wire tolerance came off in #203 slice 2a, and the
+      arm that proves the WIRE refuses it lives in `_core/invalidInputWire`.
+      This arm is the layer beneath that one and outlives it on purpose: the
+      service must ignore a path however one arrives, because a resurrected
+      reader here would write a column nobody chose. So it sends one — in both
+      his words — and proves the row is unmoved.
     */
     for (const path of ["wardrobe", "basics"]) {
       const written = await roll({ path });
