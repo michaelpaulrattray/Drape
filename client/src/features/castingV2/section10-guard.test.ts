@@ -1,6 +1,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
+import { CONCEPT_HERO_BRIEF_CLAUSE } from "./conceptUpload";
+
 /**
  * SECTION 10 — the casting hero column and the Cast settings modal (#435, his
  * brief `docs/specs/Casting-ui-ux-design/drape-redesign/10-casting-hero-and-settings.md`).
@@ -570,6 +572,40 @@ describe("what the hero must NOT grow back (§2f)", () => {
     placeholder clause and the drag handlers — which is the whole reason a
     ruling's sweep asks what was bolted to the thing it closed.
   */
+  /*
+    THE ONE-LINE PLACEHOLDER, AS A NUMBER RATHER THAN A REVIEW MEMORY.
+
+    Section 10 §2c says it in as many words — "The placeholder must fit one line
+    at this width" — and it has been broken twice: once by the 100-character
+    text that wrapped to three lines and was clipped, and once inside issue
+    1107, where the example plus the drop offer came to 91 characters and took
+    the resting box from 27px to 46px.
+
+    ⚠ THE BUDGET IS MEASURED, NOT CHOSEN. Driven in the running app at 1440
+    (textarea 427px, 13px on 19.5px): 70 and 71 characters each render on ONE
+    line; 91 renders on two. 72 is the budget, which is the measured pass plus
+    nothing — a guard with headroom nobody measured is a guess wearing a number.
+    Re-drive it if the hero column's width ever changes.
+  */
+  it("the hero placeholder fits one line — both the plain one and the composed one", async () => {
+    const page = await read(PAGE);
+    const literal = (name: string): string => {
+      const at = page.indexOf(`const ${name} = "`);
+      expect(at, `${name} must be declared in the page`).toBeGreaterThan(-1);
+      const from = page.indexOf('"', at) + 1;
+      return page.slice(from, page.indexOf('"', from));
+    };
+    const plain = literal("HERO_BRIEF_PLACEHOLDER");
+    const seed = literal("HERO_BRIEF_PLACEHOLDER_WITH_OFFER");
+    const clause = CONCEPT_HERO_BRIEF_CLAUSE;
+
+    expect(plain.length, "the plain example must fit one line").toBeLessThanOrEqual(72);
+    expect(
+      `${seed} — ${clause}`.length,
+      "the example plus the drop offer must fit one line — it wrapped at 91",
+    ).toBeLessThanOrEqual(72);
+  });
+
   it("each door is absent, never disabled, where the server did not open it", async () => {
     const page = code(await read(PAGE));
     // D-180: a disabled control is a question with no answer wearing a tap target.
@@ -589,7 +625,7 @@ describe("what the hero must NOT grow back (§2f)", () => {
     expect(flat, "the drop handlers must be built only inside the concept scope")
       .toContain("const briefDropHandlers = conceptUploadEnabled ? {");
     expect(flat, "the placeholder must offer the picture only inside the concept scope")
-      .toContain("placeholder={ conceptUploadEnabled ? `${HERO_BRIEF_PLACEHOLDER}");
+      .toContain("placeholder={ conceptUploadEnabled ? `${HERO_BRIEF_PLACEHOLDER_WITH_OFFER}");
 
     /*
       AND THE LINK IS GONE, NOT HIDDEN. A door removed on his word must not

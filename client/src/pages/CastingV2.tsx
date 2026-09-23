@@ -156,6 +156,29 @@ function sheetDeleteCopy(sheet: {
  */
 const HERO_BRIEF_PLACEHOLDER = "a fitness creator in their 30s, close-cropped hair";
 
+/**
+ * THE SAME EXAMPLE, SHORTER, FOR THE COMPOSED PLACEHOLDER (#1107) — and the
+ * reason is a measurement rather than a preference.
+ *
+ * ⚠ Section 10's own spec says it in as many words: **"The placeholder must
+ * fit one line at this width."** Driven in the running app at 1440 (textarea
+ * 427px, 13px/19.5px): the full example plus his clause is **91 characters and
+ * wraps to two lines**, taking the resting box from 27px to 46px and the row
+ * from 55px to 70px — so the hero's main field looks FILLED before anyone has
+ * typed a word, and the wrap lands mid-phrase ("a picture of / someone like
+ * them"). That is the exact failure the placeholder law is about: the
+ * most-read example on the page teaching the wrong shape.
+ *
+ * His clause is his and is kept verbatim; what gives is the second half of the
+ * example, because the deck's brief block beside it already demonstrates a
+ * full-length brief — which the spec says teaches it better than a placeholder
+ * can. Measured: 71 characters, one line, resting box unchanged at 27/55.
+ *
+ * **Outside the concept scope nothing changes**: no clause, no shortening,
+ * the example exactly as it was.
+ */
+const HERO_BRIEF_PLACEHOLDER_WITH_OFFER = "a fitness creator in their 30s";
+
 export default function CastingV2() {
   const [, navigate] = useLocation();
   /*
@@ -219,6 +242,21 @@ export default function CastingV2() {
     here and neither should have to know what element it is.
   */
   const briefField = useRef<HTMLTextAreaElement>(null);
+  /*
+    WHETHER A FILE IS OVER THE BRIEF BOX (#1107) — the handlers that drive it
+    are built further down, where `conceptUploadEnabled` has been read.
+
+    ⚠ **THE TWO HOOKS ARE DECLARED HERE, ABOVE THE `config` EARLY RETURNS, AND
+    THAT IS THE WHOLE REASON THIS COMMENT EXISTS.** They were first written
+    beside the handlers, which sit BELOW `if (config.isLoading) return` and
+    `if (!config.data?.enabled) return` — so the first render (config still in
+    flight) ran two fewer hooks than the second, and React threw *Rendered more
+    hooks than during the previous render*: a white page on the busiest surface
+    in the product. Every suite and the typecheck were green; it was the law-6
+    drive in the running app that found it. A hook never goes below a return.
+  */
+  const [briefDrag, setBriefDrag] = useState(false);
+  const briefDragDepth = useRef(0);
   /*
     THE UNSIGNED-SHEETS ROW SITS ON ITS LATEST CARD (card 1090). His word,
     2026-09-23: *"the scroll bar is never sitting on the latest sheet card
@@ -516,8 +554,6 @@ export default function CastingV2() {
     opens. Cast it stays the only thing that spends, which is #535's rule and
     the reason the over-state sentence says *describe* rather than *cast*.
   */
-  const [briefDrag, setBriefDrag] = useState(false);
-  const briefDragDepth = useRef(0);
   const briefDropHandlers = conceptUploadEnabled
     ? {
       onDragEnter: (event: DragEvent<HTMLDivElement>) => {
@@ -841,7 +877,7 @@ export default function CastingV2() {
                 */
                 placeholder={
                   conceptUploadEnabled
-                    ? `${HERO_BRIEF_PLACEHOLDER} — ${CONCEPT_HERO_BRIEF_CLAUSE}`
+                    ? `${HERO_BRIEF_PLACEHOLDER_WITH_OFFER} — ${CONCEPT_HERO_BRIEF_CLAUSE}`
                     : HERO_BRIEF_PLACEHOLDER
                 }
                 aria-label="Casting brief"
