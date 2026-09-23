@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { readBriefFacts } from "./rollProjection";
 import { castingBriefCompiler } from "./briefCompiler";
+import { promoteStatedRole } from "./heritagePromotion";
+import type { CastingIntent } from "./castingIntent";
 import type { TextEngine } from "../providers/types";
 
 /**
@@ -77,5 +79,73 @@ describe("readBriefFacts surfaces the category", () => {
     expect(facts.role!.length).toBeLessThanOrEqual(60);
     expect(facts.role).not.toMatch(/[\n\t]/);
     expect(facts.role!.startsWith("a very long category")).toBe(true);
+  });
+});
+
+/**
+ * #1122 — THE FOUNDER'S OWN SENTENCE, HANDED BACK CUT INSIDE A WORD.
+ *
+ * Driven end to end through the two real functions, because that is how the
+ * ghost audit found it and because a claim about what a customer READS is
+ * exactly the kind that gets written into a document and stays wrong.
+ *
+ * On a brief naming no category, `promoteStatedRole` installs the brief's own
+ * opening as the role so the CASTING CATEGORY block has something to say — it
+ * caps at a word boundary, because this bug was found and fixed there once. The
+ * projection then re-cut the same string at 60 with a bare slice, and the sheet
+ * said, at full ink, with no control to correct it:
+ *
+ *     Everyone on this sheet is cast as a beauty campaign casting, luminous
+ *     skin, wide-set eyes, cro
+ */
+const FOUNDER_BRIEF =
+  "a beauty campaign casting, luminous skin, wide-set eyes, cropped platinum hair, strong brows";
+
+function lookIntent(): CastingIntent {
+  return {
+    cohort: "photoreal_human",
+    role: null,
+    /* The one signal the promotion reads: the brief asks for a kind of face. */
+    variationAxis: "look",
+    heritage: [],
+    reads: [],
+  } as unknown as CastingIntent;
+}
+
+describe("the role the sheet shows is never cut inside a word (#1122)", () => {
+  it("does not hand the founder his own sentence back broken", () => {
+    const promoted = promoteStatedRole(lookIntent(), FOUNDER_BRIEF);
+    const shown = readBriefFacts({}, { intent: promoted }, FOUNDER_BRIEF).role;
+
+    expect(shown).not.toContain("cro");
+    expect(shown).toBe("a beauty campaign casting, luminous skin, wide-set eyes");
+    /* Every word shown is a whole word of his own sentence. */
+    expect(FOUNDER_BRIEF.startsWith(shown!)).toBe(true);
+    expect(FOUNDER_BRIEF[shown!.length]).toMatch(/[\s,]/);
+  });
+
+  it("leaves no dangling separator for the echo's own full stop to land on", () => {
+    // The echo writes the role, then the rest of its sentence, then ".". A
+    // value ending in a comma renders "wide-set eyes,." on the sheet.
+    const promoted = promoteStatedRole(lookIntent(), FOUNDER_BRIEF);
+    expect(readBriefFacts({}, { intent: promoted }, FOUNDER_BRIEF).role).not.toMatch(/[,;:—-]$/);
+  });
+
+  it("keeps a stated accessory whole, rather than dropping it for a half word", () => {
+    /*
+      The sibling, and it is not typography: `tokensComeFromBrief` reads EVERY
+      token, so a cut landing inside a word leaves one the brief does not
+      contain and the accessory is dropped from the sentence altogether —
+      silently, and against the echo's own contract that a stated fact is never
+      dropped by any road.
+    */
+    const briefText = "she wears heavy tortoiseshell reading spectacles with thin gold temples";
+    /* 40 lands inside "spectacles": the bare slice left "w", which is not a
+       word in her brief, so the whole accessory failed containment and the
+       sentence said nothing about it. */
+    const stated = "heavy tortoiseshell reading spectacles with thin gold temples";
+    const facts = readBriefFacts({}, { intent: { statedAccessories: [stated] } }, briefText);
+
+    expect(facts.statedAccessories).toEqual(["heavy tortoiseshell reading spectacles"]);
   });
 });

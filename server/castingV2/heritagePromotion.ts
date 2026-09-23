@@ -1,4 +1,5 @@
 import type { CastingIntent, Heritage } from "./castingIntent";
+import { capAtWordBoundary } from "./capAtWordBoundary";
 import { namesUnknownProperNoun } from "./properNouns";
 import { scrubBrands } from "./brandScrub";
 
@@ -129,16 +130,13 @@ export function promoteStatedRole(intent: CastingIntent, briefText: string): Cas
   return { ...intent, role: words };
 }
 
-/**
- * Cap without cutting a word in half.
- *
- * `slice(0, 80)` truncated mid-word, which reads as a typo in the CASTING
- * CATEGORY block and can sever a trailing stated fact into nonsense. Falls back
- * to the hard slice only when the first 80 characters contain no space at all.
- */
-function capAtWordBoundary(text: string, max: number): string {
-  if (text.length <= max) return text;
-  const clipped = text.slice(0, max);
-  const lastSpace = clipped.lastIndexOf(" ");
-  return (lastSpace > 0 ? clipped.slice(0, lastSpace) : clipped).trim();
-}
+/*
+  `capAtWordBoundary` used to live here, privately.
+
+  `slice(0, 80)` truncated mid-word, which reads as a typo in the CASTING
+  CATEGORY block and can sever a trailing stated fact into nonsense — so the cap
+  was written here and fixed it here. The projection that carries this same
+  role to the sheet then re-cut it at 60 with a bare slice and the repair did
+  not travel (#1122). The rule now has ONE home, `./capAtWordBoundary`, and both
+  cuts import it.
+*/
