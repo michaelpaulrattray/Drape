@@ -191,9 +191,9 @@
 }
 
 /*
-  THE ACTIONS ROW (§2e) — the settings chip (the photos link left it, card 1107), an
-  element between them. `flex-wrap` so a narrow column stacks the two rather
-  than crushing either, and the spacer collapses when it does.
+  THE ACTIONS ROW (§2e) — the settings chip alone. `Start from photos` and the
+  spacer that held it to the right left this row (card 1107): the brief box is
+  the drop door now. `flex-wrap` stays so a narrow column never crushes the chip.
 */
 .dpc-hero__actions {
   display: flex;
@@ -202,13 +202,6 @@
   flex-wrap: wrap;
   min-width: 0;
 }
-
-.dpc-hero__actionsair {
-  flex: 1;
-  min-width: 0;
-}
-
-/* `Start from photos` left this row (card 1107): the brief box is the drop door. */
 
 /*
   THE DECK COLUMN (#234, spec §2 and §4) — what replaced the split-face pair.
