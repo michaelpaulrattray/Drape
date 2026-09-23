@@ -37,11 +37,7 @@ import {
   type FreeLaneCheck, type RefineDelta, type RefineParse,
 } from "./refineDelta";
 import type { WardrobeResolution } from "./wardrobeLine";
-import {
-  FREE_SUBJECT_KEYS, freeSubjectGuidance, subjectsServedOnPath,
-  type FreeSubject,
-} from "./refineSubjects";
-import type { CastingPath } from "../../shared/castingPaths";
+import { SERVED_SUBJECTS, freeSubjectGuidance } from "./refineSubjects";
 import { closedSubjectFor } from "./openLaneKind";
 import { acceptOpenKind } from "./openLaneAccept";
 import { ensureKindProperties } from "./openKindProperties";
@@ -118,7 +114,7 @@ function firstObject(text: string): string {
  * check sits ABOVE the acceptance door — so without the swap the addition is
  * inert for the whole population the lane exists for.
  */
-const basePromptLines = (openLane: boolean, served: readonly FreeSubject[] = FREE_SUBJECT_KEYS) => [
+const basePromptLines = (openLane: boolean) => [
   "You read ONE short instruction from someone adjusting a face they are casting, and you",
   "translate it into a structured edit. You never write prose and you never explain.",
   "",
@@ -134,7 +130,7 @@ const basePromptLines = (openLane: boolean, served: readonly FreeSubject[] = FRE
   "  makeup      — free text, in the user's own terms",
   "",
   "THE FREE LANE — anything else about the person, keyed by subject:",
-  `  free: { "<subject>": "<their words>" }, subject one of: ${freeSubjectGuidance(served)}`,
+  `  free: { "<subject>": "<their words>" }, subject one of: ${freeSubjectGuidance(SERVED_SUBJECTS)}`,
   "",
   "Reply with JSON and nothing else.",
   "",
@@ -384,9 +380,9 @@ const basePromptLines = (openLane: boolean, served: readonly FreeSubject[] = FRE
    precomputed constants and the composed one cannot differ by a character. */
 const NEWLINE = "\n";
 
-const BASE_PROMPT = basePromptLines(false, subjectsServedOnPath(null)).join(NEWLINE);
+const BASE_PROMPT = basePromptLines(false).join(NEWLINE);
 /** The same prompt with the open lane's last resort in it — `CASTING_OPEN_LANE_SCOPE`. */
-const BASE_PROMPT_OPEN = basePromptLines(true, subjectsServedOnPath(null)).join(NEWLINE);
+const BASE_PROMPT_OPEN = basePromptLines(true).join(NEWLINE);
 
 /*
   THE REMOVAL SECTION, WITHHELD ON THE FALL-THROUGH PASS (D-163 rule 3).
@@ -463,27 +459,25 @@ export const REFINE_PARSE_MAX_TOKENS = 4000;
  *  cannot reproduce the failure cannot measure the fix. */
 export function refineParseSystemPrompt(
   mode?: "classify" | "edit",
-  options?: { openLane?: boolean; bornPath?: CastingPath | null },
+  options?: { openLane?: boolean },
 ): string {
   /*
-    ⚠ THE PATH NARROWS THE SUBJECT LIST, AND ONLY WHEN IT HAS TO (item 8).
+    ⚠ FOUR PROMPTS, AND THERE IS NO FIFTH — the composed one is retired (#203
+    slice 2).
 
-    Every branch except a BASICS one is served the whole vocabulary, so the four
-    precomputed prompts above are still the prompts that ship — byte for byte,
-    for every account and every roll cast before the paths. A Basics branch gets
-    one composed on the spot, with the subjects its own path cannot serve left
-    out, because a subject the model is SHOWN is a subject it will use, and an
-    invited ask that the code then refuses is the worst of both.
+    It existed for a branch born on the Wardrobe path, which was the only branch
+    served the whole vocabulary; everything else — a Basics branch and an
+    unpathed one alike — took one of the four precomputed constants. Slice 1
+    made `casting_rolls.path` a constant `null`, so that branch cannot be bought;
+    the thirteen pathed rolls in production hold no candidate, so it was never
+    reachable on an old roll either. A prompt nothing can ask for is not a
+    prompt, and leaving the join standing would say the subject list still moves.
 
-    Composed rather than precomputed because it is a string join against an LLM
-    call, and precomputing every combination is how a two-flag prompt becomes an
-    eight-constant table nobody can read.
+    ⚠ **The four constants did not change by a character**, which is the bar
+    this collapse was held to rather than a hope: they were hashed before and
+    after and the four sha256s are recorded in
+    `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md`.
   */
-  const served = subjectsServedOnPath(options?.bornPath);
-  if (served.length === FREE_SUBJECT_KEYS.length) {
-    const base = basePromptLines(options?.openLane === true, served).join(NEWLINE);
-    return mode === "edit" ? base : base + REMOVAL_PROMPT;
-  }
   if (options?.openLane) return mode === "edit" ? BASE_PROMPT_OPEN : SYSTEM_PROMPT_OPEN;
   return mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT;
 }
@@ -1426,11 +1420,6 @@ async function runOnce(
       about: purpose,
       system: refineParseSystemPrompt(input.mode, {
         openLane: input.openLane === true,
-        /* THE BORN PATH, from the resolution the service already resolved (item
-           8). Absent and `unpathed` are the same silence and both compose the
-           prompt that shipped; only a WARDROBE-path branch is shown the
-           wardrobe subject. */
-        bornPath: bornPathOf(input.wardrobe),
       })
         + (input.referenceAttached ? REFERENCE_CONSTRAINT : "")
         + (input.echoed ? ECHO_CONSTRAINT : "")
@@ -1687,20 +1676,6 @@ async function runOnce(
       : { ok: false, refusal: { reason: "wall_unbacked", asked: asked || "that" } };
   }
   return containReply({ engine, input, instruction, reply });
-}
-
-/**
- * THE PATH A RESOLUTION WAS BORN ON, or null for silence.
- *
- * `unpathed` is *cast before the paths existed* and answers null, which is what
- * every roll in production is. It had a second reader — §7.2's refusal door —
- * and one function existed so the two could not disagree about which branch
- * they were talking about; the door is retired (#203 slice 2) and the prompt is
- * the only reader left.
- */
-function bornPathOf(wardrobe: WardrobeResolution | undefined): CastingPath | null {
-  if (wardrobe === undefined || wardrobe.kind === "unpathed") return null;
-  return wardrobe.path;
 }
 
 /**

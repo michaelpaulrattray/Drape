@@ -1,11 +1,15 @@
 /**
- * WHICH SUBJECTS A BRANCH MAY BE ASKED ABOUT — the path condition (item 8,
- * `CASTING_V2_TWO_PATHS_DESIGN.md` §7.1, shape ruled fable-1455 Q1).
+ * WHICH SUBJECTS A BRANCH MAY BE ASKED ABOUT — one list, for everybody
+ * (item 8, `CASTING_V2_TWO_PATHS_DESIGN.md` §7.1, shape ruled fable-1455 Q1;
+ * collapsed off the path axis by #203 slice 2, 2026-09-24).
  *
  * `bornPathsServing` is the second axis on `admittedOn`'s question: that field
- * asks which ROAD has measured a subject, this one asks which PATH a cast can
- * be born on and still be asked it. The refusal §7.2 describes is DERIVED from
- * it rather than hand-placed, which is the whole of Q1's ruling.
+ * asks which ROAD has measured a subject, this one asked which PATH a cast
+ * could be born on and still be asked it. ⚠ **The path half is retired and the
+ * WITHHOLDING is not**: the one card that says `wardrobeOnly` is served to
+ * nobody, exactly as it was served to nobody on every branch a customer could
+ * reach before, and whether that should change is **#1148** — his call, because
+ * it is a capability rather than a cleanup.
  *
  * # What this file is really guarding, and it is not the vocabulary
  *
@@ -13,17 +17,22 @@
  * here is a sentence added to every text call this product makes, and this
  * program's own measurement is that **prompt context is not additive**: a
  * SUBSET of context raised the stage wall twice as often as its superset. A new
- * subject that reached every branch would therefore be a live behaviour change
- * on a feature whose flag exists to keep it dark.
+ * subject reaching every branch is therefore a live behaviour change, and the
+ * arm that matters is the one saying the prompt that ships names no subject
+ * nothing serves.
  *
- * The arm that matters is the one that says an UNPATHED branch — every roll in
- * production, both columns NULL — composes the prompt that shipped, character
- * for character.
+ * ⚠ **THE COLLAPSE'S OWN BAR WAS THE BYTES AND IT IS NOT PINNED HERE.** The
+ * four precomputed prompts were hashed before and after and did not move a
+ * character; the sha256s are recorded in
+ * `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md`. A pinned hash would redden
+ * on every honest edit to a prompt sentence, which teaches a reader to
+ * re-stamp it instead of reading it — so what is guarded below is the property
+ * the collapse could actually break, not the artifact of one afternoon.
  */
 import { describe, expect, it } from "vitest";
 
 import { SUBJECT_CARDS, type SubjectCard } from "./subjectCards";
-import { FREE_SUBJECT_KEYS, subjectsServedOnPath } from "./refineSubjects";
+import { FREE_SUBJECT_KEYS, SERVED_SUBJECTS } from "./refineSubjects";
 import { interpretRefinement, refineParseSystemPrompt, refusalMessage } from "./refineInterpreter";
 import type { TextEngine } from "../providers/types";
 import { assembleRecipe } from "./recipeAssembler";
@@ -31,53 +40,47 @@ import { pronounsForSex } from "./castPronouns";
 import type { WardrobeResolution } from "./wardrobeLine";
 
 /** The derived view Q1's condition asks for a can-fail control on. */
-function servedFrom(cards: Record<string, SubjectCard>, path: string | null): string[] {
-  if (path === "wardrobe") return Object.keys(cards);
+function servedFrom(cards: Record<string, SubjectCard>): string[] {
   return Object.keys(cards).filter((key) => cards[key]!.bornPathsServing === "everyPath");
 }
 
-describe("the born path narrows the free lane", () => {
-  it("serves the whole vocabulary on the WARDROBE path", () => {
-    expect(subjectsServedOnPath("wardrobe")).toEqual(FREE_SUBJECT_KEYS);
-    expect(subjectsServedOnPath("wardrobe")).toContain("wardrobe");
-  });
-
-  it("⚠ withholds the wardrobe subject on BASICS — she IS her basics", () => {
-    const served = subjectsServedOnPath("basics");
-    expect(served).not.toContain("wardrobe");
-    /* And nothing else moved: exactly one subject is path-conditional today, so
-       a second one arriving quietly would show up here as a count. */
-    expect(served).toHaveLength(FREE_SUBJECT_KEYS.length - 1);
-  });
-
-  it("⚠ withholds it from an UNPATHED branch too, which is every roll in production", () => {
+describe("the free lane is one list and the wardrobe subject is on nobody's", () => {
+  it("⚠ withholds the wardrobe subject from EVERY branch", () => {
     /*
-      THE DIRECTION THAT MATTERS. It reads naturally as *"a Basics cast cannot be
-      asked this, so everybody else can"*, and that would put the wardrobe
-      subject in front of every customer the day this landed — both roll columns
-      are NULL on every production roll, which is `unpathed`, which is not the
-      Wardrobe path. What opens it is BUYING a cast on that path.
+      THE DIRECTION THAT MATTERS, and it survives the collapse unchanged. While
+      the paths existed this read naturally as *"a Basics cast cannot be asked
+      this, so everybody else can"* — and that would have put the wardrobe
+      subject in front of every customer, because every production roll is
+      unpathed. There is no longer an "everybody else": there is one list, and
+      this subject is not on it.
     */
-    for (const path of [null, undefined]) {
-      expect(subjectsServedOnPath(path), String(path)).not.toContain("wardrobe");
+    expect(SERVED_SUBJECTS).not.toContain("wardrobe");
+    /* And nothing else moved: exactly one subject is withheld today, so a
+       second one arriving quietly would show up here as a count. */
+    expect(SERVED_SUBJECTS).toHaveLength(FREE_SUBJECT_KEYS.length - 1);
+    /* Every other key is served — an arm that only checked the count would pass
+       if one subject were swapped for another. */
+    for (const key of FREE_SUBJECT_KEYS) {
+      if (key === "wardrobe") continue;
+      expect(SERVED_SUBJECTS, key).toContain(key);
     }
   });
 
   it("CAN FAIL — a card that misvalues the field changes the derived view, both ways", () => {
     /*
-      fable-1455 Q1's condition: the new view carries its own can-fail control,
-      driven in both directions. Without this, `bornPathsServing` could be
-      ignored by the derivation entirely and every arm above would still pass on
-      the strength of the one card that happens to be right.
+      fable-1455 Q1's condition: the derived view carries its own can-fail
+      control, driven in both directions. Without this, `bornPathsServing` could
+      be ignored by the derivation entirely and every arm above would still pass
+      on the strength of the one card that happens to be right.
     */
     const asEveryPath = { ...SUBJECT_CARDS, wardrobe: { ...SUBJECT_CARDS.wardrobe, bornPathsServing: "everyPath" } } as unknown as Record<string, SubjectCard>;
-    expect(servedFrom(asEveryPath, null)).toContain("wardrobe");
-    expect(servedFrom(SUBJECT_CARDS as unknown as Record<string, SubjectCard>, null))
+    expect(servedFrom(asEveryPath)).toContain("wardrobe");
+    expect(servedFrom(SUBJECT_CARDS as unknown as Record<string, SubjectCard>))
       .not.toContain("wardrobe");
 
     const armAsWardrobeOnly = { ...SUBJECT_CARDS, arms: { ...SUBJECT_CARDS.arms, bornPathsServing: "wardrobeOnly" } } as unknown as Record<string, SubjectCard>;
-    expect(servedFrom(armAsWardrobeOnly, "basics")).not.toContain("arms");
-    expect(subjectsServedOnPath("basics")).toContain("arms");
+    expect(servedFrom(armAsWardrobeOnly)).not.toContain("arms");
+    expect(SERVED_SUBJECTS).toContain("arms");
   });
 });
 
@@ -227,37 +230,54 @@ describe("the recipe says the outfit only when the photograph disagrees with it"
   });
 });
 
-describe("⚠ the prompt an unpathed branch gets is the prompt that shipped", () => {
-  for (const mode of ["classify", "edit"] as const) {
-    it(`is byte-identical with no path, mode ${mode}`, () => {
-      const shipped = refineParseSystemPrompt(mode);
-      for (const path of [null, undefined, "basics" as const]) {
-        expect(refineParseSystemPrompt(mode, { bornPath: path }), String(path)).toBe(shipped);
+describe("⚠ there are FOUR interpreter prompts and none of them names a withheld subject", () => {
+  /**
+   * The whole reachable output of `refineParseSystemPrompt`: two modes by two
+   * lane states. A fifth existed — composed on the spot for a branch born on
+   * the Wardrobe path — and it is retired with the paths (#203 slice 2).
+   */
+  const FOUR = [
+    { name: "classify · closed", prompt: refineParseSystemPrompt() },
+    { name: "classify · open", prompt: refineParseSystemPrompt(undefined, { openLane: true }) },
+    { name: "edit · closed", prompt: refineParseSystemPrompt("edit") },
+    { name: "edit · open", prompt: refineParseSystemPrompt("edit", { openLane: true }) },
+  ];
+
+  it("⚠ no prompt offers the model a subject nothing serves", () => {
+    /*
+      THE ARM THE COLLAPSE IS PROVEN BY, and it is derived rather than spelling
+      `wardrobe` once: any card moved to `wardrobeOnly` in future is caught by
+      the same line. A subject the model is SHOWN is a subject it will use, and
+      an invited ask the code then refuses is the worst of both.
+    */
+    const withheld = FREE_SUBJECT_KEYS.filter((key) => !SERVED_SUBJECTS.includes(key));
+    expect(withheld, "the population this arm is about").toEqual(["wardrobe"]);
+    for (const { name, prompt } of FOUR) {
+      for (const key of withheld) expect(prompt, `${name} / ${key}`).not.toContain(`, ${key}`);
+    }
+  });
+
+  it("⚠ CONTROL — the reading really can see a subject in the prompt", () => {
+    /*
+      Without this the arm above passes on a prompt that lists no subjects at
+      all, or on a reading that looks in the wrong half of the string. Every
+      SERVED subject must be findable by the same `, <key>` spelling the
+      negative arm uses.
+    */
+    for (const { name, prompt } of FOUR) {
+      for (const key of SERVED_SUBJECTS.slice(1)) {
+        expect(prompt, `${name} / ${key}`).toContain(`, ${key}`);
       }
-      /* And the subject really is absent from it — an arm that only compared
-         two prompts would pass if BOTH carried the subject. */
-      expect(shipped).not.toContain(", wardrobe");
-    });
+    }
+  });
 
-    it(`names the wardrobe subject ONLY on the wardrobe path, mode ${mode}`, () => {
-      const pathed = refineParseSystemPrompt(mode, { bornPath: "wardrobe" });
-      expect(pathed).toContain(", wardrobe");
-      expect(pathed).not.toBe(refineParseSystemPrompt(mode));
-      /* One subject longer and otherwise the same prompt: a composed variant
-         that had drifted from the shipped one in any other line would be a
-         second prompt nobody measured. */
-      expect(pathed.replace(", wardrobe", "")).toBe(refineParseSystemPrompt(mode));
-    });
-  }
-
-  it("the open lane's flag and the path compose rather than replacing each other", () => {
-    const open = refineParseSystemPrompt("edit", { openLane: true, bornPath: "wardrobe" });
-    expect(open).toContain(", wardrobe");
-    /* The open lane's own clause is still in it — the two flags are independent
-       and a composed prompt that dropped one would be silent. */
-    expect(open).not.toBe(refineParseSystemPrompt("edit", { bornPath: "wardrobe" }));
-    expect(open.length).toBeGreaterThan(
-      refineParseSystemPrompt("edit", { bornPath: "wardrobe" }).length,
-    );
+  it("the mode and the open lane are the only two things that move it", () => {
+    const seen = new Set(FOUR.map((one) => one.prompt));
+    expect(seen.size, "four prompts, four distinct strings").toBe(4);
+    /* The open lane ADDS its clause rather than replacing the prompt: the two
+       axes are independent and a variant that dropped the other would be
+       silent. */
+    expect(FOUR[1]!.prompt.length).toBeGreaterThan(FOUR[0]!.prompt.length);
+    expect(FOUR[3]!.prompt.length).toBeGreaterThan(FOUR[2]!.prompt.length);
   });
 });
