@@ -1,7 +1,7 @@
 {
-  "edition": 489,
-  "updatedAt": "2026-09-23T08:28:56.935Z",
-  "shift": "Foreman — #203 slice 1",
+  "edition": 490,
+  "updatedAt": "2026-09-23T20:10:00+10:00",
+  "shift": "Foreman — the switch list",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -38,8 +38,12 @@
           "state": "done"
         },
         {
-          "title": "Next: the switch list itself — one row per setting, what a customer gets, the evidence it is safe, what it costs, and a recommendation. That is the sitting you asked for",
-          "state": "in-progress"
+          "title": "THE SWITCH LIST IS ON YOUR DESK — all twenty settings audited and read at the live rows, resolved into thirteen answers: four on, one retired, eight held. Cards 1 to 13 below",
+          "state": "waiting"
+        },
+        {
+          "title": "Two things the audit found and filed on the way: the safety check for one switch is written onto a row that gets deleted (#1133), and the new engine's cost per picture has never been read (#1134). Neither blocks the four widens",
+          "state": "done"
         }
       ]
     },
@@ -92,33 +96,33 @@
     ],
     "chips": [
       {
-        "label": "N1 signed off, and the drive passed",
+        "label": "The switch list is ready",
         "tone": "good",
-        "source": "“All tests passed” — your reply on the completion card, 23 Sept."
+        "source": "20 settings, 13 answers: four on, one retired, eight held. Cards 1–13."
       },
       {
-        "label": "… and still live on one account",
-        "tone": "warn",
-        "source": "20 of 36 switches read “your account only”, against the live site 04:43Z."
+        "label": "Four answers ship the studio",
+        "tone": "good",
+        "source": "The author road, long briefs, Retry and the open lane. The rest can wait."
       },
       {
-        "label": "The path switch is retired",
-        "tone": "good",
-        "source": "Gone from both pages, and no roll is born on one. You see no difference: it drew for nobody."
+        "label": "One customer, and it is you",
+        "tone": "neutral",
+        "source": "All 295 rolls on the live site are yours. No widen can disturb anybody today."
       },
       {
         "label": "Your desk",
         "tone": "neutral",
-        "source": "199 of 199 replies acted on. Both of this morning’s are done; nothing needs you tonight."
+        "source": "199 of 199 replies acted on. Thirteen cards now wait on you, by your own ask."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "35 open, 1 ordered by you, none urgent. 17 untouched for 7 days, read at the timeline."
+        "source": "38 open, 1 ordered by you, none urgent. Three filed tonight by the audit."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T08:29:06.853Z",
+      "readAt": "2026-09-23T09:14:28.134Z",
       "items": [
         {
           "issueNumber": 10,
@@ -262,6 +266,314 @@
     }
   },
   "needsYou": [
+    {
+      "id": "switch-00-how-to-read",
+      "title": "THE SWITCH LIST — twenty settings, thirteen answers",
+      "productImpact": "You asked for one sitting with every switch and its evidence. Here it is. Twenty settings stand on your account alone, and they come down to thirteen answers, because several of them refuse to work without each other and have to move as a group. The one fact to read before the rest: production has four accounts and exactly one of them has ever cast — yours. All 295 rolls on the live site are yours. So turning any of these on cannot disturb a living customer, because there is not one yet; what you are deciding is what the studio does the day somebody else arrives. Four of the thirteen are a yes, one is a retirement, and eight are holds with a named reason. Answering the first six makes the studio the same product for everyone that it already is for you.",
+      "workedExample": "The full written audit — every number, and where each one was read — is docs/specs/N2_SWITCH_LIST_2026-09-23.md. Nothing in these cards is carried from a document without saying so.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Read on",
+          "consequence": "Each card below takes its own reply."
+        }
+      ],
+      "recommendation": "Go down cards 1 to 13. They are ordered so the ones I would say yes to come first. Answer each on its own card, or all of them in one reply if that is quicker.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": 1132
+    },
+    {
+      "id": "switch-01-author-road",
+      "title": "1 · Your own words go to the engine, for everyone (recommend: YES)",
+      "productImpact": "What a customer gets: their sentence reaches the picture the way they typed it, with our house rules added and nothing in between — no mode, no level, no setting except Style. Every account that is not yours still casts through the old compiler, which rewrites the brief into a template before it becomes a picture. The evidence is your own sign-off this morning — \"im happy to sign off on the cyborg breif now\" — which is your eye on the frames, the only thing that closes it; behind that, 75 rolls have gone through this road on the live site since 26 August. It costs nothing: it REMOVES a text call from every roll rather than adding one, because since Re-imagine the prompt is assembled by code. Still owed, and not blocking: the deep review of N1's whole diff, asked for on #1121.",
+      "workedExample": "Roll the same brief on another account today and it takes the old road; roll it on yours and it takes this one. That difference is the whole card.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Turn it on for everyone",
+          "consequence": "Every account casts the way yours does. Cards 2, 3 and 11 become answerable."
+        },
+        {
+          "key": "B",
+          "label": "Leave it on your account",
+          "consequence": "Nothing changes. N1 stays signed off but unshipped, which is the gap N2 exists to close."
+        }
+      ],
+      "recommendation": "YES — turn it on for everyone. It is the thing you signed off this morning, it costs less than what it replaces, and three other cards on this list are waiting behind it.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": null
+    },
+    {
+      "id": "switch-02-concept-upload",
+      "title": "2 · Upload a picture, get a description — with one question that is yours",
+      "productImpact": "What a customer gets: they drop in a picture of someone and get a written description of the person back, in their own brief box, editable before they spend a credit, instead of typing it all out. The evidence: built and switched on for you on 28 August on your own word, \"Flip it.\" The photograph is never kept and never rendered — the bytes ride the text call and are dropped when it returns, so there is no row, no file and nothing stored; what reaches the image engine is words, so the studio makes a type and never a likeness. It costs cents of house money per upload, no credits and no render. The question, and it is the only reason this is not a formality: the picture goes whole to our text-model supplier. While it is your account that is your picture and your choice; for everyone, it is a stranger's photograph of a person going to a third party. That is a privacy decision, not an engineering one, and it is yours.",
+      "workedExample": "Someone uploads a photo of a friend to cast \"someone like her\". The friend's photograph leaves our system and reaches our supplier once. Nothing is kept afterwards — but it did travel.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Turn it on for everyone",
+          "consequence": "Anyone can start from a picture. Their uploads travel to our supplier, once, and are not kept."
+        },
+        {
+          "key": "B",
+          "label": "Hold it on your account",
+          "consequence": "The rest of the list is unaffected. Everyone else keeps the honest \"coming\" tile on the start page."
+        }
+      ],
+      "recommendation": "YES if you are comfortable with the supplier sentence above, and only alongside card 1, because this road is built on that one. If the supplier question wants thinking about, hold this one alone — nothing else on the list waits behind it.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": null
+    },
+    {
+      "id": "switch-03-brief-fidelity",
+      "title": "3 · A long brief stops losing half of itself (recommend: YES, with card 1)",
+      "productImpact": "What a customer gets: detail survives. Measured on your own 553-character brief, seven of the fourteen facts you typed were lost, and the seven that survived were the seven inside the first 180 characters — cut by position, not by judgement. With this on, all fourteen survive in your own wording. This has been held by one worry: with the cap lifted the reader might stop filling in the \"cast as\" field, and on the OLD road that field is the only thing that produces the casting-category block every picture is judged against — so at full width it might have stripped that block from every rich brief. That worry belongs to the old road, which is the road card 1 retires. Read at the code, the new road never builds that block at all. Read at the rows, the field is missing on 3 of 75 new-road rolls, against 28 of 216 on the old one — rarer than before, not more common. It costs nothing new: two numbers inside a call the roll already makes.",
+      "workedExample": "Type a paragraph describing someone — build, tattoos, posture, three garments, two habits — then count how much of it reaches the sheet. Today, on any account but yours, roughly the first sentence.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Turn it on for everyone, with card 1",
+          "consequence": "Long briefs keep their facts for everybody, and card 11 stops being blocked as a side effect."
+        },
+        {
+          "key": "B",
+          "label": "Turn it on on its own",
+          "consequence": "Not recommended — the lifted cap lands on the old road, where the missing-field effect is real and measured at 13%."
+        },
+        {
+          "key": "C",
+          "label": "Hold",
+          "consequence": "Everyone but you keeps losing detail past the first 180 characters of their brief."
+        }
+      ],
+      "recommendation": "YES, at the same moment as card 1 and not before it. On its own it puts the lifted cap onto the old road, which is exactly where the worry lives; together they are safe. The measurement above answers the court that was going to settle this, so nothing is waiting on a test.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": null
+    },
+    {
+      "id": "switch-04-retry",
+      "title": "4 · Retry on a failed picture, for everyone (recommend: YES)",
+      "productImpact": "What a customer gets: when one picture in a sheet fails or is refused, the tile offers Retry for 20 credits instead of sitting there broken. The evidence: live on your account since 27 August on your own word — \"Flip it on for your account, AND widen it to content-filter tiles\" — and the live site has run 5 retries since, 4 of which succeeded and 1 of which failed and was refunded. The refused half rests on a court you already have: the content filter is a coin per picture, with the same text refused 5 times out of 8 and passed 6 times out of 8 when re-sent unchanged, so a plain Retry rescues a refused tile as well as any rewording and promises nothing it cannot keep. It costs the customer 20 credits, refunded again if the retry also fails — the charge is its own operation with its own refund key, so it can never collide with the original refund.",
+      "workedExample": "A sheet comes back with seven pictures and one \"Engine error\". Today, on any account but yours, that tile is simply gone. With this on it offers to try again, and refunds if it fails again.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Turn it on for everyone",
+          "consequence": "Every failed or refused tile gets the button, with its refund promise."
+        },
+        {
+          "key": "B",
+          "label": "Hold",
+          "consequence": "Everyone else keeps a dead tile and no way to recover it."
+        }
+      ],
+      "recommendation": "YES — turn it on for everyone. It is the smallest and safest thing on this list: it cannot lose a customer money, and the alternative is that they quietly get seven pictures for the price of eight.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": null
+    },
+    {
+      "id": "switch-05-open-lane",
+      "title": "5 · Asking for something we have never heard of (recommend: YES)",
+      "productImpact": "What a customer gets: \"give her wings\" stops being read as winged eyeliner. An ask naming something our catalogue has never heard of can name its own kind and is either served or answered honestly, instead of being quietly keyed onto the nearest thing we do know — which is the worst possible failure, because it looks like an answer. The evidence: it is exercised on the live site, 18 of these asks so far — tails, ornaments, an orb — the last on 5 September, one delivered and the rest answered honestly in words. What we record about them is deliberately thin: the kind, how it went, the date, and nothing else — not the sentence, not the account. It costs nothing new; it changes what the reader is told it may do and opens a door that already exists. Unlike most of this list it has no chain above it: everything it depends on is already on for everyone.",
+      "workedExample": "Ask for \"a small floating orb beside her shoulder\". With this off the studio finds the nearest thing it knows and gives you that; with it on it names the orb and either delivers it or says plainly that it cannot yet.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Turn it on for everyone",
+          "consequence": "Unknown asks get named and answered honestly instead of silently substituted."
+        },
+        {
+          "key": "B",
+          "label": "Hold",
+          "consequence": "Everyone else keeps getting the nearest thing we already know, with no sign a substitution happened."
+        }
+      ],
+      "recommendation": "YES — turn it on for everyone. It is the only one on the list with no cost, no chain and no owed measurement, and the behaviour it replaces is the studio pretending to understand.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": null
+    },
+    {
+      "id": "switch-06-two-paths-retire",
+      "title": "6 · The wardrobe/basics setting — retire it (recommend: YES; it governs nothing)",
+      "productImpact": "What a customer gets, in either position: nothing. Last night's work closed the entrance — there is no path switch on either page, no roll is born on one, and the setting now governs nothing at all. Read at the code, nothing live reads it; read at the rows, 282 of 295 rolls carry no path and the last one that did was 26 August. Unsetting it costs nothing and changes nothing; the only reason this card exists is that the list of switches should equal the list of things that do something. One correction while we are here: last night's note said the live site held no rolls on a path. It holds 13 — ten wardrobe, three basics, the last on 26 August. That changes nothing about the retirement, because the record was deliberately kept; it matters only so that nobody later reads \"zero\" and drops the column those thirteen rolls need.",
+      "workedExample": "There is nothing to try — the switch has no surface and no effect. This is the tidy-up half of a job you already ordered.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Unset it",
+          "consequence": "The setting leaves the record. Nothing about the product moves."
+        },
+        {
+          "key": "B",
+          "label": "Leave it",
+          "consequence": "It stays on the list forever as a switch that does nothing, which is how a list stops being a list."
+        }
+      ],
+      "recommendation": "YES — unset it. Then the other nineteen switches on this list all mean something, which they do not today.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": 203
+    },
+    {
+      "id": "switch-07-roll-engine",
+      "title": "7 · The engine your rolls render on (recommend: HOLD, two numbers first)",
+      "productImpact": "What a customer would get: different-looking pictures. Nothing a customer sees names either engine, and nothing should. This is the row where the numbers argue against moving yet. Read at the rows over the last 60 days: the old engine delivered 120 pictures and was refused 16 times, 11.8%; Flare delivered 20 and was refused 4, 16.7%; Sunburst delivered 130 and was refused 22, 14.5%. That is not a fair comparison and must not be quoted as one — Sunburst rendered your recent hard briefs, the cyborg and the cyber-goth, while the old engine's share is spread over two months of easier ones. What it does establish is that the new engine has not reduced refusals. The customer price is unchanged. What a new-engine picture costs US is still unread: our own books still carry the old engine's dated number as the estimate, and that is one supplier receipt away.",
+      "workedExample": "Your own rolls are already on Sunburst and you chose it by eye, which stands. The open question is not whether it looks better; it is what it costs per picture and whether it refuses more, and nobody has read either.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Hold until the two numbers are read",
+          "consequence": "#1134 reads the supplier receipt and a matched refusal rate. Days, not weeks, and no spend."
+        },
+        {
+          "key": "B",
+          "label": "Turn it on for everyone now",
+          "consequence": "Everyone renders on Sunburst at an unknown cost per picture and a possibly higher refusal rate."
+        }
+      ],
+      "recommendation": "HOLD on your account. Not because anything is wrong — your eye picked it twice — but because widening an engine without knowing its price per picture is exactly the half-judgement we are not meant to make. Filed as #1134: both numbers are reads, not experiments, and cost nothing.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": 1134
+    },
+    {
+      "id": "switch-08-segments",
+      "title": "8 · Your paid edits staying put (recommend: HOLD; the evidence cannot be read)",
+      "productImpact": "What a customer gets: when they pay for a change — freckles, a hair colour — the pixels they paid for are kept and pasted onto the next picture, instead of being re-described in words and re-rolled, and possibly re-lost, every time. A second setting decides whether that kept patch is cut from where the thing now is rather than where it used to be. The road is real and used: 224 paid edits charged on the live site, the last on 5 September, and the second setting was measured on your own edit at 10% rising to 88.7% of what the edit actually delivered. But the safety check for it cannot be read. The design's own condition is that the seam statistic be recorded first. It IS recorded, on every render — onto a row that is deleted when the sheet is cleaned up. So the live site holds none of them, and no widening decision can ask what it said. The check is met when it is written and unmet when it is needed. Neither setting costs a new engine call or a new reader.",
+      "workedExample": "Ask for freckles, pay, get them, then ask for something else. Today the freckles are described to the engine in words and re-rolled; with this on, the pixels you actually paid for are pasted back.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Hold until the statistic survives",
+          "consequence": "#1133. Then the widen is an ordinary decision with a number behind it."
+        },
+        {
+          "key": "B",
+          "label": "Turn them on for everyone now",
+          "consequence": "Changes what a paid picture keeps, for everybody, on a check nobody can read."
+        }
+      ],
+      "recommendation": "HOLD both. Filed as #1133 — a reading of that statistic that outlives the row it is written on. It is a class rather than one bug: anything measured per render and written only to that row is a measurement that exists exactly until somebody needs it.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": 1133
+    },
+    {
+      "id": "switch-09-reference-pictures",
+      "title": "9 · Attaching a picture, and taking hair from it (recommend: HOLD)",
+      "productImpact": "What a customer would get: \"give her this hair\" with a photograph attached, instead of describing it in words. Your own complaint is why the door exists — \"you should be able to upload any image like grok and use it as a reference for anything\". The evidence is that there is none, and that is the finding: the live site holds zero attached pictures, all time. The rows are deleted with the cast, and the casts are intact back to 31 July, so this reads as never used — nobody has walked this road on the live site, including you. The door itself spends nothing: no engine call, no charge, nothing read, the picture is our own copy under her cast's clean-up path, and what comes back is never a public address. What is owed is specific: #62 holds three measurements, filed and never run, which gate the hair road — that a re-render re-sends the original picture, how the reader treats a drawn hairstyle, and the cross-sex case. They gate a constant in the code rather than a setting, which is why every automatic report says this road waits on nothing while it waits on three measurements.",
+      "workedExample": "There is nothing to try on the live site, because the road has never been used there. That is the card.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Hold until #62's three measurements run",
+          "consequence": "Days of work, no spend. Then the hair road is an ordinary decision."
+        },
+        {
+          "key": "B",
+          "label": "Turn them on for everyone now",
+          "consequence": "A feature nobody has ever used on the live site, with three owed checks unrun."
+        }
+      ],
+      "recommendation": "HOLD all three. The blocker is #62 and it is small — three measurements, already specified, that nobody has run. Worth putting in front of a shift soon: this is the feature you personally asked for, and it is closer than the list makes it look.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": 62
+    },
+    {
+      "id": "switch-10-ink-studio",
+      "title": "10 · The tattoo studio — and the real question is not a switch",
+      "productImpact": "What a customer would get: upload a tattoo design and have it appear on their cast, or change one they already have. The road is parked by your own ruling, in the code — 19 August, your words, \"tatto studio on manequins is deferred for now\". That is a named constant rather than a setting, deliberately, so nobody can undo it with an environment variable, and while it holds an upload is kept and nothing is drawn. The live site holds zero uploaded designs, all time. Turning these on would cost two things, both already written down as conditions: uploads currently ride uncropped into the drawing step, which means a stranger's photograph at a public address, and that is the tripwire that says these do not pass your account; and #10, the preview that shows her what we cut out of her picture, which is the named condition and is unbuilt. So these four settings are not waiting for a switch. They are waiting for you to say whether the tattoo studio resumes at all.",
+      "workedExample": "Nothing to try: the drawing half is parked by your own instruction, so an upload today is stored and nothing happens.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Leave it parked for now",
+          "consequence": "Nothing moves. The four settings stay on the list, honestly described."
+        },
+        {
+          "key": "B",
+          "label": "It resumes — queue #10 and the cropping",
+          "consequence": "Real work: the preview that shows her the cut, and cropping before anything leaves our system."
+        },
+        {
+          "key": "C",
+          "label": "It retires with N2",
+          "consequence": "Four settings and a lot of machinery come out. The words-only tattoo road, already on for everyone, is untouched."
+        }
+      ],
+      "recommendation": "HOLD — but this is really a question rather than a hold: does the tattoo studio resume, or does it retire with the rest of N2? Either answer is workable and the second is cheaper. I would not resume it before the rest of this list has shipped.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": 10
+    },
+    {
+      "id": "switch-11-born-ink",
+      "title": "11 · Casts born with tattoos (recommend: HOLD; card 3 unblocks it)",
+      "productImpact": "What a customer gets: a brief saying \"he has a sleeve\" is recorded and shown on the sheet instead of being silently dropped. Six rolls in the whole of the live site carry an ink reading, so the feature has effectively no history. The blocker is the old 180-character cap: ink takes words, so the only briefs long enough to hit that cap are the briefs that describe tattoos — one population, not two. The cap was left alone on the grounds that tattooed briefs are rare, and this is the thing that would make them common. Read at the rows now, 40 rolls exceed 185 characters and the longest runs to 570, all of them yours and all under the lifted cap. So if card 3 is a yes, the cap is 2,000 for everyone and this blocker is simply gone; if card 3 is a no, it stands exactly as written. It costs nothing new — the reading rides a call the roll already makes.",
+      "workedExample": "Describe a cast with tattoos and look at what the sheet records. Today, on any account but yours, the description is read and then dropped.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Hold, and re-ask with card 3",
+          "consequence": "No work. If card 3 is a yes this becomes an easy yes next time."
+        },
+        {
+          "key": "B",
+          "label": "Turn it on for everyone now",
+          "consequence": "Tattooed briefs start being recorded, and start meeting the 180-character cap that card 3 is about."
+        }
+      ],
+      "recommendation": "HOLD for now, and re-ask it the moment card 3 lands. It is the one card on this list whose answer is genuinely decided by another card.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": null
+    },
+    {
+      "id": "switch-12-refusal-keeper",
+      "title": "12 · Keeping the evidence behind a refusal (recommend: HOLD)",
+      "productImpact": "What it does: when a render is refused, it keeps the frame — and since 16 September the words that were sent — in a private store held for 30 days, so the refusal can be diagnosed. No customer sees it, and no staff screen is allowed to name it. There is plenty to catch: 42 refusals in the last 60 days across the three engines. But nothing reads what is kept — the patrol that would turn those words into measured replacements, the second half of #129, is unbuilt. It costs private storage, and a customer's own words held for 30 days. Small, but it is a customer's words.",
+      "workedExample": "Nothing visible. This is a diagnostic store, and its whole point is that no one meets it.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Hold until #129's reader is built",
+          "consequence": "Your own refusals are already being kept, which is enough to build the reader on."
+        },
+        {
+          "key": "B",
+          "label": "Turn it on for everyone now",
+          "consequence": "More people's words kept privately, for a reader that does not exist yet."
+        }
+      ],
+      "recommendation": "HOLD. Widen it when something reads it and not before: storing more people's sentences for a reader that does not exist is the wrong order, and your own 42 refusals are already a bigger sample than that reader has ever seen.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": 129
+    },
+    {
+      "id": "switch-13-r7-pair",
+      "title": "13 · The two parked evidence settings — nothing needed from you",
+      "productImpact": "Two of the twenty belong to the evidence family, which you parked yourself — parked until the casting push lands, revisit at launch prep. The live site holds none of its records, and one of the two must stay inside a setting that is already on for everyone, so it can widen the day the family un-parks and never before. They are on this list only because they stand on your account and the list is meant to be complete. No decision is needed today; this card exists so you can see the twentieth switch accounted for rather than quietly left out.",
+      "workedExample": null,
+      "options": [
+        {
+          "key": "A",
+          "label": "Noted",
+          "consequence": "Nothing changes. They come back at launch prep with the rest of the family."
+        }
+      ],
+      "recommendation": "NOTHING NEEDED — they stay exactly as they are until you un-park the evidence family at launch prep. Tap this away once you have read it.",
+      "state": "open",
+      "filedAt": "2026-09-23T20:10:00+10:00",
+      "issueNumber": null
+    },
     {
       "id": "borrowed-role-1129",
       "title": "One word: should the sheet repeat your own sentence back as the casting category?",
@@ -8129,12 +8441,16 @@
     199
   ],
   "nextUp": {
-    "readAt": "2026-09-23T08:29:06.852Z",
+    "readAt": "2026-09-23T09:14:28.133Z",
     "items": [
       {
         "issueNumber": 1132,
         "title": "N2: THE SWITCH LIST — every users:1 flag with its evidence, for one sitting (his word, 23 Sep: 'prepare every switch with its evidence and I'll go down the list in one go')",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "his desk card `switch-00-how-to-read` is open"
+        }
       }
     ]
   }
