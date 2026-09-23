@@ -131,11 +131,11 @@ export type SubjectCard = {
    *
    * `wardrobeOnly` is the Two Paths ruling's own consequence: a Basics cast IS
    * the plain black basics — that is the product she bought — so an outfit ask
-   * on that path is refused honestly rather than served
-   * (`wall_basics_wardrobe`, §7.2). The refusal is DERIVED from this field
-   * wherever a branch's path is known, never hand-placed at a call site: a wall
-   * that exists as one condition in one function is `STAGE_WORDS`'s own shape,
-   * and this design's §1 convicts it.
+   * on that path was never served. ⚠ **The paths are retired (#203) and the
+   * refusal that named them with them (slice 2), so this field now decides one
+   * thing only: the wardrobe subject is not shown to the model on any branch
+   * that can be reached.** An outfit ask meets the generic wall, exactly as it
+   * has for every customer since before the paths existed.
    *
    * Required rather than optional, for {@link admittedOn}'s reason word for
    * word: an absent field decides by absence, and the compiler asks the path

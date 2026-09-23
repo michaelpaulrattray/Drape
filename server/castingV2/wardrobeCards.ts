@@ -165,7 +165,10 @@ export function wardrobePieces(line: string | null | undefined): readonly Wardro
  * the model*; item 8 reused it for *what a chosen path refuses a customer* and
  * that was a real defect — `unpathed` must be WITHHELD from the first and must
  * not REFUSE on the second, because a path nobody chose is not a path that
- * refuses. One list, one value, two opposite correct answers.
+ * refuses. One list, one value, two opposite correct answers. **The second
+ * question is retired (#203 slice 2) and this paragraph is kept as origin: the
+ * retirement collapses the three one at a time for exactly this reason, and
+ * `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md` re-answers each in writing.**
  *
  * So the third question is stated rather than assumed: **does this cast get a
  * wardrobe SECTION on its panel.**
@@ -173,9 +176,10 @@ export function wardrobePieces(line: string | null | undefined): readonly Wardro
  * ```
  * wardrobe   YES — she chose the path, the subject is in front of the model,
  *            and tapping a card reaches a real edit
- * basics     NO  — §7.2 refuses an outfit ask in its own words, so a card she
- *            can tap whose every road ends at `wall_basics_wardrobe` is D-180's
- *            dead end wearing a tap target
+ * basics     NO  — the path IS the outfit, so a card she can tap whose every
+ *            road ends at a wall is D-180's dead end wearing a tap target.
+ *            (§7.2's refusal said so in the path's own words until #203 slice 2
+ *            retired it with the paths; the answer here is unchanged)
  * unpathed   NO  — and here the answer AGREES with the prompt question while
  *            DISAGREEING with the refusal one, which is exactly why all three
  *            values are checked out loud. Every roll in both worlds is

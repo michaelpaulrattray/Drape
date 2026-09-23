@@ -1065,10 +1065,11 @@ export function RefinePanel({
         they type something it cannot, and a panel showing garment rows beside a
         sentence that ignores them is the contradiction being removed.
 
-        Every other cell keeps today's sentence byte for byte — Basics refuses an
-        outfit in its own words (`wall_basics_wardrobe`), an unpathed cast has no
-        wardrobe to edit, and an account off the repaint road meets the subject
-        card's own `repaintOnly`.
+        Every other cell keeps today's sentence byte for byte — a Basics cast
+        has nothing to change, an unpathed cast has no wardrobe to edit, and an
+        account off the repaint road meets the subject card's own `repaintOnly`.
+        (The Basics cell once had a refusal in the path's own words; it retired
+        with the paths — #203 slice 2.)
       */}
       <p className="dpc-refine__note">
         {wardrobeEdits && wardrobePath === "wardrobe"

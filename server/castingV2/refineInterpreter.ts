@@ -38,7 +38,7 @@ import {
 } from "./refineDelta";
 import type { WardrobeResolution } from "./wardrobeLine";
 import {
-  FREE_SUBJECT_KEYS, freeSubjectGuidance, pathRefusedNounIn, subjectsServedOnPath,
+  FREE_SUBJECT_KEYS, freeSubjectGuidance, subjectsServedOnPath,
   type FreeSubject,
 } from "./refineSubjects";
 import type { CastingPath } from "../../shared/castingPaths";
@@ -472,9 +472,8 @@ export function refineParseSystemPrompt(
     precomputed prompts above are still the prompts that ship — byte for byte,
     for every account and every roll cast before the paths. A Basics branch gets
     one composed on the spot, with the subjects its own path cannot serve left
-    out, because a subject the model is SHOWN is a subject it will use and
-    `wall_basics_wardrobe` should be answering a real ask rather than mopping up
-    one we invited.
+    out, because a subject the model is SHOWN is a subject it will use, and an
+    invited ask that the code then refuses is the worst of both.
 
     Composed rather than precomputed because it is a string join against an LLM
     call, and precomputing every combination is how a two-flag prompt becomes an
@@ -1668,26 +1667,21 @@ async function runOnce(
       sentences are unchanged; the NAME the record files them under is not.
     */
     /*
-      ⚠ §7.2'S DOOR, AND IT SITS HERE BECAUSE THIS IS WHERE THE ASK ARRIVES.
+      §7.2'S DOOR STOOD HERE AND IS RETIRED — #203 slice 2, 2026-09-24.
 
-      A Basics branch is not shown the wardrobe subject at all, so a tee ask
-      cannot be FILED and there is no delta to refuse — it comes through the
-      model's own out-of-scope claim and lands on one of the two walls below.
-      Both would lie to her: `wall_stage` says a garment "comes after Sign",
-      which is true of the shoot and wrong about a path that dresses other
-      casts, and `wall_unbacked` says it "isn't one of the things this can
-      name", which stopped being true the day the wardrobe card landed.
+      It named a garment back to a customer and told her the path she bought
+      was the reason. Slice 1 closed the entrance, so nobody can buy a path any
+      more, and the door was reachable only from a roll carrying one: thirteen
+      of those exist on production, every one of them holding zero candidates
+      and zero signed casts, so no branch that can arrive here has ever been
+      pathed. It answered `null` every time it was asked.
 
-      Asked of her own sentence through the SAME lexicon the collision check
-      uses, so there is no second garment word list to drift (item 8).
+      An outfit ask therefore lands where it has always landed for every
+      customer — `wall_stage` when the lexicon backs the word, `wall_unbacked`
+      when it cannot — and `wall_unbacked`'s sentence is true again once the
+      wardrobe subject is not on offer.
+      `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md` is the reading.
     */
-    const refusedByPath = pathRefusedNounIn(instruction, bornPathOf(input.wardrobe));
-    if (refusedByPath !== null) {
-      return {
-        ok: false,
-        refusal: { reason: "wall_basics_wardrobe", asked: refusedByPath.noun },
-      };
-    }
     return backing !== null
       ? { ok: false, refusal: { reason: "wall_stage", asked: asked || "that", backed: true } }
       : { ok: false, refusal: { reason: "wall_unbacked", asked: asked || "that" } };
@@ -1699,8 +1693,10 @@ async function runOnce(
  * THE PATH A RESOLUTION WAS BORN ON, or null for silence.
  *
  * `unpathed` is *cast before the paths existed* and answers null, which is what
- * every roll in production is. One reader, so the prompt and the door below
- * cannot disagree about which branch they are talking about.
+ * every roll in production is. It had a second reader — §7.2's refusal door —
+ * and one function existed so the two could not disagree about which branch
+ * they were talking about; the door is retired (#203 slice 2) and the prompt is
+ * the only reader left.
  */
 function bornPathOf(wardrobe: WardrobeResolution | undefined): CastingPath | null {
   if (wardrobe === undefined || wardrobe.kind === "unpathed") return null;

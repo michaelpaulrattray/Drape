@@ -1092,7 +1092,8 @@ export const castingV2Router = router({
       to be on the Wardrobe path, which is a property of the roll rather than of
       the account — the client already holds it as `RollProjection.wardrobe.path`
       and reads both. A gate that answered alone would tell a Basics customer she
-      may edit an outfit her path refuses in its own words (`wall_basics_wardrobe`).
+      may edit an outfit her cast was never dressed for. (The refusal that once
+      said so in the path's own words is retired with the paths — #203 slice 2.)
     */
     wardrobeEditsEnabled: captureCastingRepaintEnabled(ctx.user.id),
   })),
