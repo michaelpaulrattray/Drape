@@ -79,11 +79,14 @@ export const RITE_DISK_READS: ReadonlyArray<{ readonly path: string; readonly wh
     path: ".gitattributes",
     why: "the quiet-edition judge derives its generated-file set from these bytes",
   },
-  /* The five `shared/` modules the briefing judge imports at module load —
+  /* The six `shared/` modules the briefing judge imports at module load —
      exact entries, not a `shared/` prefix, so the founder's parked product
      edits under `shared/` stay desk-only. The suite DERIVES the rite's static
      import graph and refuses any reached file this list does not cover, so a
-     fifth import cannot drift past it. */
+     seventh import cannot drift past it — and it has now caught two in two
+     days (`crewPipelineStatus` #1137, `crewProblemState` #1138), which is the
+     argument for the count living in a derived arm rather than in this
+     sentence. */
   {
     path: "shared/crewCardState.ts",
     why: "imported by the briefing schema judging this push, at module load",
@@ -98,6 +101,10 @@ export const RITE_DISK_READS: ReadonlyArray<{ readonly path: string; readonly wh
   },
   {
     path: "shared/crewPipelineStatus.ts",
+    why: "imported by the briefing schema judging this push, at module load",
+  },
+  {
+    path: "shared/crewProblemState.ts",
     why: "imported by the briefing schema judging this push, at module load",
   },
   {
