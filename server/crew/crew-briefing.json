@@ -1,6 +1,6 @@
 {
-  "edition": 490,
-  "updatedAt": "2026-09-23T20:10:00+10:00",
+  "edition": 491,
+  "updatedAt": "2026-09-23T20:25:00+10:00",
   "shift": "Foreman — the switch list",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -118,7 +118,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "38 open, 1 ordered by you, none urgent. Three filed tonight by the audit."
+        "source": "38 open · 17 untouched for 7 days · 14 now waiting on you · none urgent."
       }
     ],
     "ladderCards": {
