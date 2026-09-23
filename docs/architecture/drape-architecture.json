@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "438fe5cd24bbefa1"
+    "sourceFingerprint": "ba8f5d941e2c88e8"
   },
   "domains": [
     {
@@ -10425,6 +10425,10 @@
     {
       "id": "test:client/src/features/castingV2/retryFace.test.ts",
       "path": "client/src/features/castingV2/retryFace.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/rollRail.test.ts",
+      "path": "client/src/features/castingV2/rollRail.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/roomAnatomy.test.ts",
