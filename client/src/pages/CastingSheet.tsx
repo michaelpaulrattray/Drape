@@ -2543,11 +2543,13 @@ export default function CastingSheet() {
           rendered here on `varianceHeld` — "Most of this sheet is held…"
           with the expression-only closer — described the clone as the
           intended product, so it went with the clone-stamp clause it
-          described. The flag itself still rides the projection (the variance
-          plan is still computed and persisted with the compiled brief), so a
-          future surface that says WHAT is held — rather than promising a
-          clone — has its evidence waiting; a forbidden-token arm in
-          `familyClause.test.ts` keeps the sentence from coming back.
+          described. The flag stopped riding the projection with #1124 — it
+          crossed to the browser for three weeks with nothing reading it — but
+          the variance plan is still computed and persisted with the compiled
+          brief, so a future surface that says WHAT is held — rather than
+          promising a clone — still has its evidence waiting, one validator
+          away from the wire; a forbidden-token arm in `familyClause.test.ts`
+          keeps the sentence from coming back.
         */}
 
         {/*

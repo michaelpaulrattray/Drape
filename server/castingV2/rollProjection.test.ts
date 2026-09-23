@@ -7,7 +7,7 @@ vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://public.example/${key}`,
 }));
 
-const { projectCandidate, projectCandidateStatus, projectRoll, readChips, rollComposedOnAuthorRoad } = await import(
+const { projectCandidate, projectCandidateStatus, projectRoll, rollComposedOnAuthorRoad } = await import(
   "./rollProjection"
 );
 
@@ -215,22 +215,26 @@ describe("nothing internal crosses the boundary", () => {
     });
   });
 
-  it("reads chips through a validator rather than forwarding them", () => {
-    // The compiled brief will one day be written by an LLM behind the compiler
-    // seam. A projection that forwarded whatever it found there would be an
-    // injection path straight to the client.
-    const chips = readChips({
-      chips: [
-        { label: "ok", kind: "subject", removable: true },
-        { label: "bad kind", kind: "javascript:", removable: true },
-        { label: 42, kind: "subject", removable: true },
-        { kind: "subject", removable: true },
-        { label: "x".repeat(500), kind: "style", removable: false },
-      ],
+  it("does not put the compiled brief's chips or variance on the wire at all", () => {
+    /*
+      #1124 — both fields crossed to the browser with no reader: the sheet draws
+      `facts` through `BriefEcho`, and the line that rendered on `varianceHeld`
+      died with his #166 ruling. The ROWS are untouched, so this is about the
+      boundary and nothing else.
+    */
+    const projected = projectRoll({
+      roll: rollRow({
+        compiledBrief: {
+          chips: [{ label: "a chip nothing draws", kind: "subject", removable: false }],
+          variance: { confess: true },
+        },
+      }),
+      candidates: [candidateRow()],
     });
-    expect(chips.map((chip) => chip.label)).toEqual(["ok", "x".repeat(60)]);
-    expect(readChips(null)).toEqual([]);
-    expect(readChips({ chips: "not an array" })).toEqual([]);
+    expect("chips" in projected).toBe(false);
+    expect("varianceHeld" in projected).toBe(false);
+    /* And no other field carries them under a different name (invariant 8's shape). */
+    expect(JSON.stringify(projected)).not.toContain("a chip nothing draws");
   });
 });
 
