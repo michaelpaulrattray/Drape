@@ -1,7 +1,7 @@
 {
-  "edition": 483,
-  "updatedAt": "2026-09-23T02:11:39.072Z",
-  "shift": "WHEN OUR OWN LIMIT EATS THE ANSWER, WE STOP BLAMING YOUR PHOTOGRAPH. Nothing here needs you.\n\nTHE SAME FAULT AS LAST NIGHT'S MAKEUP ONE, IN THE HAIR READER, AND IT WAS ALREADY WRITTEN DOWN. Attach a photograph of a head of hair so the studio can take its colour, and until tonight you could be told \"We could see the hair but couldn't pin down its colour — try a clearer picture.\" Your picture may be perfect. What actually happened is that our reader looked, answered properly, named every tone and where it sat — and our own length limit threw its words away. So you go looking for a better picture of OUR problem, the credits come back so nothing looks broken, and our own records file it as hair whose colour could not be read.\n\nIT NOW SAYS WHAT HAPPENED: \"We read that picture, but our description of its colour came back in a form we couldn't use — tell us the colour you want in your own words instead.\" It never sends you for another photograph, and it points at the box you are already standing in front of, because typing the colour is the one thing you can actually do about it.\n\nONE OF THE THREE ENDINGS KEEPS ITS OLD SENTENCE, AND THAT IS THE CAREFUL PART. When the reader genuinely answers \"there is hair here and I cannot tell what colour it is\" — which is a thing we ask it to say — then a clearer photograph IS real advice, and you still get told so. Swapping both sentences would have been quicker and would have taken a true one away.\n\nTWO THINGS THE JOB CARD HAD SLIGHTLY WRONG, BOTH MEASURED RATHER THAN ASSUMED. It named two broken endings; one of them cannot actually be reached today — the numbers involved make it impossible — so it was fixed anyway and a test now watches for the day a limit changes and makes it possible. And the question the card left open (does this need a new word in our records, or can it share last night's?) was answered by reading the live database: it shares it, no change needed. Where that shared word is slightly wider than it reads is written down in the code rather than glossed over.\n\nIT IS BUILT AND GREEN AND WAITING FOR A PERSON, NOT FOR YOU. The change touches a file on the money/login list, so by your own rule it goes to the relay for a hand review before it merges. Nothing about money or logins actually moved — it is a comment in that file — but the rule is mechanical on purpose and I did not reshape the change to slip around it.",
+  "edition": 484,
+  "updatedAt": "2026-09-23T03:59:55.515Z",
+  "shift": "YOUR PICTURE, AND NOTHING ON IT UNTIL YOUR HAND ARRIVES. Five frames are waiting for your eye.\n\nYOUR THIRD NOTE ON THE CONCEPT WINDOW IS BUILT, TO YOUR WORDS. No x. No sentence under the picture. The photograph fills its frame again. Move the pointer onto it and it dims a touch with one word over it — Replace — and clicking anywhere on the picture opens the file chooser. A keyboard gets the same road: one Tab lands on the picture, Enter opens the chooser.\n\nAND THE THING YOU SAID FELT UNRESPONSIVE IS FIXED, BECAUSE IT WAS REAL. Drag a new picture over the old one and the answer now arrives the moment the file crosses the edge: the same overlay, stronger, with a hairline ring drawn inside the frame and the words Drop to replace. What was wrong: the window kept ONE note of \"a file is over me\", counted by the words half of the dialog, and nothing drawn on the picture ever read it — so the drop worked and the picture could not answer. The picture counts its own now.\n\nTHE PICTURE FILLING ITS FRAME IS A REVERSAL, AND IT IS WORTH ONE SENTENCE. It was deliberately letterboxed back in July so a picture of unusual shape could be seen whole beside the words written from it. You looked at it and ruled the other way, so the option is deleted rather than left switched off. The trade is real and small: a very wide or very tall photograph now loses its edges IN THE FRAME. Nothing about the reading changes — the description is still taken from the whole file, not from what the frame shows.\n\nDRIVEN RATHER THAN READ, WHICH IS WHAT YOU ASKED FOR. Real photographs through the real reader in both themes: a 1024x1536 picture fills the 214x268 frame exactly; at rest the overlay is invisible; on hover it is there; with a file held over it, stronger with the ring; when the file leaves, gone again. A second picture dropped over the first replaced it and the description re-wrote itself to a different person. No errors on either theme.\n\nFOUND ON THE WAY AND FILED, NOT FIXED: one more place in the old studio takes a dropped picture and never answers the hand holding it. It is the attach-a-picture button in the ink panel, and it is the only one of six drop targets in the app with nothing to say while a file hovers. It is on the board as its own job.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T02:11:44.954Z",
+      "readAt": "2026-09-23T04:00:19.688Z",
       "items": [
         {
           "issueNumber": 16,
@@ -2620,20 +2620,35 @@
     },
     {
       "id": "concept-picture-swap-1087-frames",
-      "title": "The concept dialog with the x on the picture, and the line that says you can drop another one",
-      "question": "Is this the right amount of furniture on your picture? The x sits top right; the line sits along the bottom over a soft wash so it reads on a light photograph as well as a dark one, and \"choose one\" is a real button. On a refusal the line disappears, because that state already offers Choose another picture in the row below. Say the word if you want either one quieter.",
+      "title": "The concept picture with ONE control on it: nothing at rest, Replace on hover, Drop to replace while a file is over it",
+      "question": "Is this the quiet you meant? At rest your photograph wears nothing at all. On hover it dims a touch and says Replace, and a click anywhere on it opens the chooser. While a file is held over it, the same overlay goes stronger with a hairline ring inside the frame and Drop to replace. The picture fills its frame again, which means a photograph far from this shape loses its edges here — the reading still uses the whole file. If the dim is too heavy or too light, or the ring wants to be tighter, say so: each is one line.",
       "state": "open",
-      "filedAt": "2026-09-22T15:15:00.000Z",
+      "filedAt": "2026-09-23T03:59:55.515Z",
       "issueNumber": 1087,
       "frames": [
         {
-          "key": "crew-eye/47f11b7e-5abc-40a8-ba54-3374bb23da52.png",
-          "caption": "AFTER, light - the dialog with a real picture, read by the real reader. The description is what the studio wrote from it.",
+          "key": "crew-eye/4b1326be-dcd6-40c2-bad8-363e7e8f1f29.png",
+          "caption": "AT REST, light — the whole dialog. Nothing is drawn on your photograph, and it fills its frame.",
           "arm": "light"
         },
         {
-          "key": "crew-eye/5bae060d-0c91-4963-8402-d2b90eedc23d.png",
-          "caption": "AFTER, dark - the same dialog and the same picture.",
+          "key": "crew-eye/27d02915-c3d3-4a12-b3c8-5cfd85363f78.png",
+          "caption": "ON HOVER, light — the one word, and the picture dimmed a touch under it. Clicking anywhere here opens the chooser.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/6310a06f-e4ea-4457-817b-f49501e04904.png",
+          "caption": "A FILE HELD OVER IT, light — stronger wash, the hairline ring inside the frame, and the words change to Drop to replace. This is the state that did not exist before.",
+          "arm": "light"
+        },
+        {
+          "key": "crew-eye/937f7318-8487-4ca0-a77b-1161292cba41.png",
+          "caption": "AT REST, dark — the same dialog, the same picture, read by the real reader.",
+          "arm": "dark"
+        },
+        {
+          "key": "crew-eye/4567c886-ad39-441b-b03c-2e5a4c66aecb.png",
+          "caption": "A FILE HELD OVER IT, dark — the ring and the words on the dark theme.",
           "arm": "dark"
         }
       ]
@@ -7171,10 +7186,24 @@
       "title": "The hair reader stops telling you your photograph was no good when our own limit ate the answer (#1077)",
       "status": "in-review",
       "prNumber": 1116,
-      "note": "WHAT YOU WOULD SEE: you attach a clear photograph of a head of hair to take its colour, and you are told to try a clearer picture. Your picture was fine — our reader answered, and our own length limit threw every word of its answer away.\n\nIt is last night's makeup fault in the second reader, and it was filed as such while that one was being fixed. Same bar: honest that we read it, never send you looking for another photograph, offer the thing you can actually do — type the colour yourself.\n\nTHE ENDING THAT WAS TELLING THE TRUTH KEEPS ITS WORDS. The reader is allowed to answer \"there is hair here and I cannot tell what colour\"; a clearer picture genuinely helps there, and that sentence is untouched. The fix is a fork, not two find-and-replaces.\n\nNO DATABASE CHANGE. The word our records need was added last night for the makeup reader; the live database was read this shift to confirm it is actually there before relying on it.\n\nPROVEN ABLE TO FAIL: broken six ways on purpose, each turning the right tests red and nothing else, with an unbroken run either side reading the same 38 green — so a crashed run cannot be mistaken for a finding.\n\nNOT MERGED BY THE SHIFT. It edits a file on the money/login list, so it waits for the relay's hand review. Gate green."
+      "note": "WHAT YOU WOULD SEE: you attach a clear photograph of a head of hair to take its colour, and you are told to try a clearer picture. Your picture was fine — our reader answered, and our own length limit threw every word of its answer away. It now says what actually happened and points at the box you are already standing in front of.\n\nIT IS BUILT AND GREEN AND IT IS STUCK BEHIND A PERSON, NOT BEHIND YOU. It touches a file on the money/login list, so by your own rule it waits for a hand review before it merges. Nothing about money or logins moved — it is a comment in that file.\n\nAND SINCE TONIGHT IT ALSO NEEDS A RE-MERGE BEFORE IT CAN BE LOOKED AT. Tonight's concept-picture change landed first, and the two rebuild the same generated map, so they now disagree about it. While they disagree, nothing can run on it at all — its own page still shows green from before, which is why this row says so instead. One person, fifteen minutes: re-merge and it is back in the queue."
+    },
+    {
+      "id": "concept-replace-third-cut-1087",
+      "title": "The concept picture: one control, revealed by your hand — and the drag that felt unresponsive now answers (#1087)",
+      "status": "merged",
+      "prNumber": 1117,
+      "note": "WHAT YOU WOULD SEE: your photograph in the concept window with nothing on it. Hover and one word appears over a light dim — Replace — and a click anywhere on the picture opens the chooser. Drag a picture over it and the same overlay comes up stronger with a hairline ring and Drop to replace.\n\nYOUR THREE CORRECTIONS, ALL THREE: no x, no sentence under the picture, and the photograph fills its frame again.\n\nTHE UNRESPONSIVE FEEL WAS A REAL FAULT. The window held one note of \"a file is over me\", raised by the words half of the dialog, and nothing on the picture read it — so there was no way for the picture to answer while the file was in the air. It counts its own drags now.\n\nDRIVEN IN BOTH THEMES WITH THE REAL READER BEHIND IT, and every state measured rather than eyeballed: invisible at rest, there on hover, stronger with the ring while a file is over it, gone when it leaves. A dropped second picture replaced the first and the description re-wrote itself.\n\nTHE LETTERBOX IS DELETED RATHER THAN SWITCHED OFF, because this window was the only thing using it. A very wide or very tall picture is now cropped in the frame; the reading is unchanged.\n\nPROVEN ABLE TO FAIL: broken seven ways on purpose, every break caught, with an unbroken run either side reading the same green."
     }
   ],
   "problems": [
+    {
+      "id": "queue-shape-0923j-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 38 open, and your own list is empty once tonight's job merges. Nothing urgent, no check-up clock due before tomorrow.",
+      "detail": "Read at 03:53. 38 open — one more than three hours ago, and the new one is a job this shift filed itself: a second place in the old studio that takes a dropped picture without answering the hand.\n\nYour own ordered list had exactly one job on it — the concept window's picture swap — and that is what tonight built.\n\n21 of the 38 have had nothing happen to them for a week. The same 21 as the last six nights, so the backlog is flat rather than growing.\n\nNothing here needs you."
+    },
     {
       "id": "queue-shape-0923i-foreman",
       "severity": "info",
@@ -8040,13 +8069,7 @@
     196
   ],
   "nextUp": {
-    "readAt": "2026-09-23T02:11:44.953Z",
-    "items": [
-      {
-        "issueNumber": 1087,
-        "title": "Concept dialog: no way to clear or replace the picture without discarding the brief — an × and a visible drop-to-replace on the picture (his ask, 23 Sep)",
-        "urgent": false
-      }
-    ]
+    "readAt": "2026-09-23T04:00:19.687Z",
+    "items": []
   }
 }
