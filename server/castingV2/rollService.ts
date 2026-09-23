@@ -38,14 +38,13 @@
 import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 
-import { DEFAULT_CASTING_PATH, type CastingPath } from "../../shared/castingPaths";
+import { type CastingPath } from "../../shared/castingPaths";
 import type { CastStyle } from "../../shared/castStyles";
 import type { CastingSession } from "../../drizzle/schema";
 import {
   captureCastingBornInkEnabled,
   captureCastingBriefFidelityEnabled,
   captureCastingCreativeRegisterEnabled,
-  captureCastingTwoPathsEnabled,
 } from "./castingV2Scope";
 import { mintBornInkRows } from "./bornInkMint";
 import { refusal } from "./refusalTag";
@@ -255,14 +254,6 @@ function renderFaultMetadata(
 
 export type RollServiceDependencies = {
   compileBrief?: BriefCompiler;
-  /**
-   * Whether this account chooses the path its casts are born on.
-   *
-   * A seam rather than a direct `process.env` read at the call site, so the
-   * flag's two sides can be driven in one test with the flag as the only
-   * variable — the pair being the claim. Defaults to the real gate.
-   */
-  twoPathsEnabled?: (userId: number) => boolean;
   engine?: (userId?: number) => CreativeEngine;
   admit?: (candidateCount: number) => AdmissionDecision;
   begin?: typeof beginDirectOperation;
@@ -301,18 +292,6 @@ export type CreateRollInput = {
    * shown on.
    */
   unlock?: readonly UnlockableField[];
-  /**
-   * THE TWO PATHS — which one this sheet is cast on (design §6).
-   *
-   * Absent means the toggle was not sent, which is every client today and every
-   * account with the flag off. It is NOT the same as `wardrobe`: an account
-   * outside the flag writes NULL, and NULL means *cast before the paths
-   * existed*. The `?? DEFAULT_CASTING_PATH` below applies only inside the flag.
-   *
-   * A FOLLOW never carries one — it inherits (§3.1), and its own procedure
-   * deliberately does not offer the switch.
-   */
-  path?: CastingPath | null;
   /**
    * Facts the user set by hand from the brief echo.
    *
@@ -534,18 +513,6 @@ export async function createRoll(
   }
 
   /*
-    WHICH PATH THIS SHEET IS CAST ON — asked once, before anything is compiled.
-
-    `input.path` absent is not `wardrobe`: it is *the toggle was not sent*,
-    which is every client today. Only inside the flag does an unsent toggle
-    become the default the control would have been showing (§6).
-
-    ⚠ **It is read HERE, above the compile, because the PICK is a question the
-    interpreter has to be asked** (§4 case (b), item 4). It used to sit just
-    above the insert, which was the right place while the only thing it decided
-    was two columns.
-  */
-  /*
     THE AUTHOR ROAD, DECIDED FIRST (#131 slice E; review of PR #138, finding 1):
     the register scope captured once, and the road predicate stated here from
     the same input the compiler reads. It used to exclude a follow and a chip
@@ -626,10 +593,25 @@ export async function createRoll(
     );
   }
 
-  const twoPathsEnabled = dependencies.twoPathsEnabled ?? captureCastingTwoPathsEnabled;
-  const bornPath: CastingPath | null = twoPathsEnabled(input.userId) && !authorRoad
-    ? input.path ?? DEFAULT_CASTING_PATH
-    : null;
+  /*
+    NO ROLL IS BORN ON A PATH ANY MORE — the two paths are RETIRED (#203, his
+    ruling 2026-08-28: *"yeah we will retire the wardrobe/basics path
+    obviously"*). The engine dresses the cast from the brief.
+
+    ⚠ **This is `null` for every roll production has written since the author
+    road opened, so the constant changes nothing at the wire** — read before it
+    was believed: the born path required `twoPathsEnabled && !authorRoad`, and
+    the only account inside `CASTING_TWO_PATHS_SCOPE` (`users:1`) is on the
+    author road, so the second term was already false there and the first was
+    already false for everyone else.
+
+    It stays a NAMED `null` rather than being folded away because the three
+    predicates that read a path each answer `unpathed` for their OWN reason and
+    must keep doing so independently (#180's table; `refineSubjects.ts` and
+    `wardrobeCards.ts` carry the argument). Collapsing them is the next slice's
+    work and it is a reading, not a deletion.
+  */
+  const bornPath: CastingPath | null = null;
 
   /*
     ⚠ THREE CONDITIONS, AND EACH ONE IS A ROLL WHOSE PROMPT MUST NOT MOVE.
@@ -786,19 +768,15 @@ export async function createRoll(
       styleProfile: compiled.styleProfile,
       parentCandidatePublicId: input.followCandidatePublicId ?? null,
       /*
-        THE TWO PATHS, resolved once and stamped with the roll (design §3.1).
+        THE PATH COLUMN, now written NULL on every roll (#203 — the road is
+        retired above). NULL keeps the meaning it has always had on this
+        column: *not cast on a path*. The historical rows that DO carry one are
+        untouched and the sheet still reads them, which is why the column stays
+        and only the writer stops choosing.
 
-        Outside the flag both are NULL, which is what NULL means on these
-        columns — *cast before the paths existed* — and is why the fallback to
-        `DEFAULT_CASTING_PATH` lives INSIDE the branch rather than at the read
-        sites. A default applied at a reader would make an account that never
-        had the feature indistinguishable from one that chose Wardrobe.
-
-        The line is stamped in the same breath as the path, so the `incoherent`
-        resolution `wardrobeLine.ts` names cannot be produced from here.
-
-        On a FOLLOW these are ignored: the db layer inherits the parent roll's
-        pair inside the same transaction that re-anchors the parent candidate.
+        On a FOLLOW this is ignored either way: the db layer inherits the
+        parent roll's pair inside the same transaction that re-anchors the
+        parent candidate.
       */
       path: bornPath,
       /* An authored follow is dressed by the engine (#154): the parent's pair stays with the parent. */

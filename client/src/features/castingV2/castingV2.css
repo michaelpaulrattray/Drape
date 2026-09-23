@@ -4246,49 +4246,8 @@
 /* `.dpc-regions__price` was here and is GONE with the chip (fable-1270 §2) —
    the price is stated once per SURFACE, by the panel under the picture. */
 
-/* ============================================================
-   THE TWO PATHS' TOGGLE (design §6) — one control, two surfaces
-   ============================================================ */
-
-/*
-  The lobby hero and the sheet's re-roll box draw the same control, so it has
-  one block rather than two near-identical ones. Vertical rhythm only: the
-  pills, the chrome tag and the note are all house primitives and bring their
-  own type.
-*/
-.dpc-paths {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.dpc-paths__row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-}
-
-/*
-  The tradeoff, told before the roll (his condition). One line, in the quiet
-  register the variance note and the FOLLOWING note already use — it is a
-  statement about what you have chosen, never a warning, so it must not
-  compete with the brief field above it.
-*/
-.dpc-paths__note {
-  margin: 0;
-  /*
-    ONE MEASURE FOR BOTH SURFACES, and it is set by the LONGER of the two jobs
-    this line does. 46ch was the hero's own comfortable measure and it broke the
-    re-roll box's plan sentence — "…Roll again casts on / Basics." — across two
-    lines with a two-word orphan. 66ch fits that sentence whole and still keeps
-    the hero's paragraph off a full-width line.
-  */
-  max-width: 66ch;
-  font-size: 12px;
-  line-height: 1.45;
-  opacity: 0.6;
-}
+/* THE TWO PATHS' TOGGLE stood here and is RETIRED with the control (#203).
+   The record line below it stays: a sheet cast on a path still says so. */
 
 /*
   WHAT THIS SHEET IS WEARING — the record, not the control (§3.3/§6: "a fact

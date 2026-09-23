@@ -124,8 +124,31 @@ the ruled prose above: each states the grammar, the parent, and nothing this
 seat did not read off the code. A flag that deserves a full paragraph should get
 one from whoever owns its road.
 
-- `CASTING_TWO_PATHS_SCOPE` — ⚠ **THIS WHOLE ROAD IS RETIRED BY FOUNDER RULING
-  AND THIS ENTRY DID NOT KNOW IT UNTIL 2026-08-30** (found by the freshness
+- `CASTING_TWO_PATHS_SCOPE` — ✅ **THE ENTRANCE IS CLOSED AND THIS FLAG NOW
+  GOVERNS NOTHING — #203 slice 1, 2026-09-23.** The toggle is deleted from both
+  surfaces it stood on, `createRoll` no longer takes a path, and `rollService`
+  writes the column a constant `null`, so **the only thing the variable still
+  does is sit on the service**. Unsetting it is a no-op the founder can take
+  whenever he likes; it is left at `users:1` rather than changed by a shift,
+  because a production variable is his — and the position below is still what
+  the rite compares against on every push.
+  ⚠ **Read before it was believed, and it is why this slice is invisible**: the
+  toggle needed `twoPathsEnabled && !authorRoad`, and the only account inside
+  this flag (`users:1`) is also inside `CASTING_CREATIVE_REGISTER_SCOPE`
+  (`users:1`), which suppresses it. So the control was drawn for **nobody** the
+  day it was removed, and every roll already wrote `path = NULL`.
+  **What did NOT go, and must not**: the `casting_rolls.path` / `.wardrobeLine`
+  columns, the rows written while the road ran (7 in dev, 0 in production), and
+  the sheet's RECORD line that reads them — that element is byte-identical
+  across the retirement commit. **Still standing and owned by slice 2**: the
+  three predicates that each answer `unpathed` for their own reason
+  (`subjectServedOnPath`, `pathRefusedNounIn`, `wardrobeSectionServed` —
+  #180's table), which must be re-answered independently rather than folded
+  together, and the `path` field left on `createRoll`'s `.strict()` input as a
+  one-deploy TOMBSTONE so an in-flight bundle is not BAD_REQUESTed on the money
+  path.
+  ⚠ **AND THIS ENTRY DID NOT KNOW ABOUT THE RULING UNTIL 2026-08-30** (found by
+  the freshness
   pass, #271; the word *"retire"* reached this file only inside the creative
   register's entry, about the switch not being drawn). **His ruling, verbatim
   (#203, 2026-08-28): *"yeah we will retire the wardrobe/basics path
@@ -137,7 +160,11 @@ one from whoever owns its road.
   which is why the paragraph is stamped rather than deleted, but its remaining
   open item — *"the `build`/`skin` honesty claim before BASICS widens"* — is
   work on a road he has ruled to delete, and **so are #120 (correct
-  `DEFAULT_CASTING_PATH`, still `wardrobe` in `shared/castingPaths.ts`) and
+  `DEFAULT_CASTING_PATH` — ✅ **CLOSED BY DELETION, #203 slice 1**: the constant
+  was *"the toggle's default, and ONLY the toggle's default"* by its own
+  docblock, so when the toggle went there was nothing left for it to be the
+  default OF; it was NOT flipped to `basics`, and nothing replaced it at a
+  reader) and
   #63 (two unbuilt basics-default courts)**; both are recommended into #203's
   retirement rather than worked. N2 owns the execution. **This is the class law
   7's second half names — a ruling closed a path and nothing asked what was

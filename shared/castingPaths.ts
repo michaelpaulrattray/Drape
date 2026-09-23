@@ -47,33 +47,16 @@ export function isCastingPath(value: unknown): value is CastingPath {
   return typeof value === "string" && (CASTING_PATHS as readonly string[]).includes(value);
 }
 
-/**
- * The toggle's default (§6), and ONLY the toggle's default.
- *
- * It is deliberately not named `FALLBACK` or reached for by readers of a roll:
- * a stored `null` means nobody was asked, while this is the answer the control
- * shows when nobody has touched it yet. Conflating the two is how the absence
- * above quietly becomes a member.
- *
- * # WHY `wardrobe` — FOUNDER RULING, 2026-08-22, unprompted
- *
- * This value was a design judgement until he said it himself, in chat, without
- * being asked (relayed fable-1389), verbatim:
- *
- * > *"i think wardrobe should be the default select when people cast someone
- * > basics is more of a advanced selection because if someone truely wanted to
- * > cast someone in basics they would say that in the prompt?"*
- *
- * So the constant does not move; its provenance does. The slice-9 toggle builds
- * to it — wardrobe preselected, Basics the deliberate choice, with the ink
- * trade stated at the point of choice (his standing condition).
- *
- * ⚠ **One nuance that is NOT what his sentence says, and was relayed back to
- * him: prompt-stated "in basics" does not switch the path.** A grey tee asked
- * for on the wardrobe path is an OUTFIT, and the wardrobe path's ink rules stay
- * wardrobe's. The toggle is the only door.
- */
-export const DEFAULT_CASTING_PATH: CastingPath = "wardrobe";
+/* `DEFAULT_CASTING_PATH` stood here and is GONE with the control (#203, and
+   #120 which asked for it to be corrected — the constant dies rather than
+   being flipped). Its own docblock said it was *"the toggle's default (§6),
+   and ONLY the toggle's default"*, so when the toggle went there was nothing
+   left for it to be the default OF.
+
+   ⚠ It is deliberately not replaced by a fallback at any reader. A stored
+   `null` still means *this question was not asked*, and the paragraph above
+   is the argument for why a reader must never quietly turn that into
+   `wardrobe` — that argument outlives the control it was written for. */
 
 /**
  * `casting_rolls.wardrobeLine`'s width, named once so the column, the door that

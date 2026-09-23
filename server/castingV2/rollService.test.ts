@@ -565,28 +565,34 @@ describe("the sequence", () => {
     expect(seen).toEqual(["photoreal"]);
   });
 
-  it("on the author road NO path is born and no wardrobe pick is asked, even inside the two-paths flag (review of #138, finding 1)", async () => {
-    vi.stubEnv("CASTING_V2_SCOPE", "all");
-    vi.stubEnv("CASTING_CREATIVE_REGISTER_SCOPE", `users:${INPUT.userId}`);
-    try {
-      const seen: { path?: unknown; pickWardrobe?: unknown }[] = [];
-      const dependencies = baseDependencies();
-      const compileBrief = (dependencies as { compileBrief: (input: { path?: unknown; pickWardrobe?: unknown }) => unknown }).compileBrief;
-      await createRoll(
-        {
-          ...(dependencies as object),
-          twoPathsEnabled: () => true,
-          compileBrief: (input: { path?: unknown; pickWardrobe?: unknown }) => {
-            seen.push({ path: input.path, pickWardrobe: input.pickWardrobe });
-            return compileBrief(input);
-          },
-        } as never,
-        { ...INPUT, path: "wardrobe" as never },
-      );
-      expect(seen).toEqual([{ path: null, pickWardrobe: false }]);
-    } finally {
-      vi.unstubAllEnvs();
-    }
+  it("hands the compiler a NULL path and no wardrobe pick, even when a path is sent (#203 — the road is retired)", async () => {
+    /*
+      The COMPILER's side of the entrance, which the wire block above does not
+      read: what the prompt is composed from, rather than what the insert gets.
+
+      This arm was once about the author road WINNING over the two-paths flag
+      (review of #138, finding 1) — an account could be inside both and the
+      author road had to decide. There is no longer a second road for it to
+      beat, so the flag stubs are gone and the claim is unconditional: a path
+      sent from anywhere reaches neither the prompt nor the pick.
+    */
+    const seen: { path?: unknown; pickWardrobe?: unknown }[] = [];
+    const dependencies = baseDependencies();
+    const compileBrief = (dependencies as { compileBrief: (input: { path?: unknown; pickWardrobe?: unknown }) => unknown }).compileBrief;
+    await createRoll(
+      {
+        ...(dependencies as object),
+        compileBrief: (input: { path?: unknown; pickWardrobe?: unknown }) => {
+          seen.push({ path: input.path, pickWardrobe: input.pickWardrobe });
+          return compileBrief(input);
+        },
+      } as never,
+      /* The whole object is cast, because the input type NO LONGER DECLARES a
+         path — which is itself the retirement, and is why sending one has to
+         be done deliberately here rather than by accident anywhere else. */
+      { ...INPUT, path: "wardrobe" } as never,
+    );
+    expect(seen).toEqual([{ path: null, pickWardrobe: false }]);
   });
 
   it("and absent stays absent — the author's default is the compiler's to apply, never a second copy here", async () => {
@@ -1194,19 +1200,28 @@ describe("a delivered face gets a thumbnail", () => {
 });
 
 /**
- * THE TWO PATHS ARE STAMPED ON THE ROLL — asserted AT THE WIRE, on what
- * actually reaches the insert (design §3.1, slice 3).
+ * NO ROLL IS BORN ON A PATH — asserted AT THE WIRE, on what actually reaches
+ * the insert (#203, his ruling 2026-08-28: *"yeah we will retire the
+ * wardrobe/basics path obviously"*).
  *
- * Not on the resolver: `wardrobeLine.test.ts` already drives that exhaustively,
- * and a green resolver beside an unwired caller is this campaign's own named
- * failure — the segment store passed both benches while nothing read it. What
- * these arms read is `createRollWithCandidates`'s argument object, which is the
- * last thing before the row.
+ * ⚠ **WHAT THIS BLOCK USED TO BE, AND WHY THE REPLACEMENT IS NOT WEAKER.**
+ * It drove the flag's two sides and the toggle's two values — four rolls, a
+ * pick asked for on exactly one of them, and a CONTROL proving the toggle
+ * really moved the answer. Every one of those arms had the same subject: a
+ * CHOICE a customer could make. The choice is retired, so a driven pair over
+ * it would be a control that cannot fail wearing coverage's clothes.
  *
- * The FLAG IS THE ONLY VARIABLE between the first two arms, because a flag
- * asserted on one side only is a flag whose other side nobody has read.
+ * What replaces it is the claim this slice actually makes, and it is a
+ * REFUSAL rather than an equality: **a `path` sent anyway does not reach the
+ * row.** That arm reddens if the constant is ever quietly turned back into a
+ * read of the input, which is the one regression this retirement can suffer
+ * and the only one worth a driver.
+ *
+ * The follow's inheritance arms are UNTOUCHED and deliberately so: a follow
+ * still inherits its parent's pair, and rolls written while the road ran still
+ * carry one. Retiring the entrance does not retire the record.
  */
-describe("the two paths, at the wire", () => {
+describe("no roll is born on a path", () => {
   const castingDbModule = () => import("../db/castingV2");
 
   /*
@@ -1217,12 +1232,9 @@ describe("the two paths, at the wire", () => {
     test — a stateful fixture re-establishes its state in front of each row it
     is asked about, which is the census corpus's own first law.
   */
-  async function rollWith(enabled: boolean, path?: "wardrobe" | "basics") {
+  async function roll(extra: Record<string, unknown> = {}) {
     seedCandidates();
-    await createRoll(
-      { ...(baseDependencies() as object), twoPathsEnabled: () => enabled } as never,
-      path === undefined ? INPUT : { ...INPUT, path },
-    );
+    await createRoll(baseDependencies(), { ...INPUT, ...extra } as never);
     return lastInsert();
   }
 
@@ -1238,150 +1250,98 @@ describe("the two paths, at the wire", () => {
     (castingDb.createRollWithCandidates as any).mockClear();
   });
 
-  it("⚠ OFF writes NULL for both — the dark landing, and NULL is not `wardrobe`", async () => {
+  it("writes NULL for both columns — and NULL is not `wardrobe`", async () => {
     /*
-      This is the state of every deployment as this lands, and the arm that
-      says so. An account outside the flag must write NULL rather than the
-      default, because NULL means *cast before the paths existed* — and a
-      default applied here would make an account that never had the feature
-      indistinguishable from one that chose Wardrobe, permanently and with no
-      way back.
+      NULL keeps the meaning it has always had on these columns: *not cast on a
+      path*. A default written here would make a roll cast after the retirement
+      indistinguishable from one whose owner chose Wardrobe, permanently and
+      with no way back — which is the argument `shared/castingPaths.ts` makes
+      about the absence, still load-bearing after the control is gone.
     */
-    await createRoll({ ...(baseDependencies() as object), twoPathsEnabled: () => false } as never, INPUT);
-    const written = await lastInsert();
+    const written = await roll();
     expect(written.path).toBeNull();
     expect(written.wardrobeLine).toBeNull();
   });
 
-  it("⚠ ON with no toggle writes `wardrobe` and the house line", async () => {
+  it("⚠ REFUSES a path sent anyway — the entrance is closed at the service, not only at the client", async () => {
     /*
-      The other side of the same sentence. Inside the flag an unsent toggle
-      becomes the default the control would have been showing (§6), and the
-      line is stamped in the same breath — so the `incoherent` resolution
-      cannot be produced from here.
-    */
-    await createRoll({ ...(baseDependencies() as object), twoPathsEnabled: () => true } as never, INPUT);
-    const written = await lastInsert();
-    expect(written.path).toBe("wardrobe");
-    expect(written.wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
-  });
+      THE ARM THAT MATTERS, and it is driven through the real service rather
+      than read off the constant.
 
-  it("⚠ ON with `basics` writes the basics line and NOT the house one", async () => {
-    await createRoll(
-      { ...(baseDependencies() as object), twoPathsEnabled: () => true } as never,
-      { ...INPUT, path: "basics" as const },
-    );
-    const written = await lastInsert();
-    expect(written.path).toBe("basics");
-    expect(written.wardrobeLine).not.toBe(HOUSE_WARDROBE_LINE);
-    expect(written.wardrobeLine).toContain("black");
-  });
-
-  it("⚠ NEVER writes one column without the other", async () => {
-    /*
-      The `incoherent` case's structural guard, checked over every combination
-      this service can produce rather than argued in a comment. A path with no
-      line is a roll that claims a path and cannot say what it is wearing, and
-      on Basics the fallback would put a grey tee on a bare chest.
+      `createRoll`'s input no longer declares a path, and the procedure's schema
+      keeps the field one more deploy purely so a browser holding the previous
+      bundle is not BAD_REQUESTed mid-deploy on the money path. A field the wire
+      still tolerates and the service ignores is exactly the shape that rots
+      into a quiet read again, so this sends one — in both his words — and
+      proves the row is unmoved.
     */
-    for (const enabled of [false, true]) {
-      for (const path of [undefined, "wardrobe" as const, "basics" as const]) {
-        const written = await rollWith(enabled, path);
-        expect(
-          (written.path === null) === (written.wardrobeLine === null),
-          `enabled=${enabled} path=${String(path)} → ${JSON.stringify({ path: written.path, line: written.wardrobeLine })}`,
-        ).toBe(true);
-      }
+    for (const path of ["wardrobe", "basics"]) {
+      const written = await roll({ path });
+      expect(written.path, path).toBeNull();
+      expect(written.wardrobeLine, path).toBeNull();
     }
   });
 
-  it("CONTROL — the toggle really moves the answer", async () => {
-    /* Without this, every arm above is satisfied by a service that ignores
-       both the flag and the toggle and writes one constant. */
-    const wardrobe = await rollWith(true, "wardrobe");
-    const basics = await rollWith(true, "basics");
-    expect(wardrobe.wardrobeLine).not.toBe(basics.wardrobeLine);
-    expect(wardrobe.path).not.toBe(basics.path);
+  it("never writes one column without the other", async () => {
+    /*
+      The `incoherent` case's structural guard. It is satisfied trivially today
+      — both are null — and that is said out loud rather than dressed up: what
+      it is here to catch is a future writer that resolves a line without a
+      path, or a path without a line, which is the shape that would put a grey
+      tee on a bare chest.
+    */
+    const written = await roll();
+    expect((written.path === null) === (written.wardrobeLine === null)).toBe(true);
   });
 
   /**
-   * THE PICK, at its own two wires (design §4, item 4).
+   * THE PICK IS NEVER ASKED FOR — and it is asserted on the COMPILER's
+   * argument object, because the ask is a change to a paid prompt.
    *
-   * Two questions, and they are separate: whether the interpreter is ASKED for
-   * an outfit, and whether what it picked becomes the roll's line. The first is
-   * asserted on the compiler's argument object because the ask is a change to a
-   * paid prompt, which is live behaviour on every account it reaches.
+   * A prompt is live behaviour: every fact on a paid sheet comes out of that
+   * one reply, and context is not additive here — a SUBSET of prompt context
+   * was measured raising the stage wall twice as often as its superset. The
+   * wardrobe question was asked only where its answer was read; nothing reads
+   * one now, so it is asked nowhere.
    */
   describe("the pick", () => {
-    const PICKED = "dark canvas work jacket, straight jeans, plain boots";
     const FOLLOW_CANDIDATE_PUBLIC_ID = "66666666-6666-4666-8666-666666666666";
 
-    /** Records what the service asked the compiler for, and answers with a pick. */
+    /** Records what the service asked the compiler for. */
     function compilerSpy() {
       const asked: (boolean | undefined)[] = [];
       const compileBrief = async (compilerInput: { pickWardrobe?: boolean }) => {
         asked.push(compilerInput.pickWardrobe);
-        const compiled = await deterministicBriefCompiler(compilerInput as never);
-        return { ...compiled, wardrobeLine: compilerInput.pickWardrobe === true ? PICKED : compiled.wardrobeLine };
+        return deterministicBriefCompiler(compilerInput as never);
       };
       return { asked, compileBrief };
     }
 
-    async function rollAsking(
-      enabled: boolean,
-      extra: Record<string, unknown> = {},
-    ) {
+    async function rollAsking(extra: Record<string, unknown> = {}) {
       seedCandidates();
       const spy = compilerSpy();
       await createRoll(
-        {
-          ...(baseDependencies() as object),
-          twoPathsEnabled: () => enabled,
-          compileBrief: spy.compileBrief,
-        } as never,
-        { ...INPUT, ...extra },
+        { ...(baseDependencies() as object), compileBrief: spy.compileBrief } as never,
+        { ...INPUT, ...extra } as never,
       );
-      return { asked: spy.asked, written: await lastInsert() };
+      return spy.asked;
     }
 
-    it("⚠ is asked for ONLY on a fresh Wardrobe roll inside the flag", async () => {
-      /*
-        Four rolls, one question each, and three of them must not carry it.
-
-        A prompt is live behaviour: every fact on a paid sheet comes out of that
-        one reply, and context is not additive here — a SUBSET of prompt context
-        was measured raising the stage wall twice as often as its superset. So
-        the question is asked only where the answer is read. Outside the flag
-        nothing reads a pick; on BASICS the path IS the outfit and
-        `bornWardrobeLine` discards `named`; on a FOLLOW the db layer inherits
-        the parent roll's pair inside the transaction, so a pick made here is
-        overwritten before it is a row.
-      */
-      expect((await rollAsking(false)).asked).toEqual([false]);
-      expect((await rollAsking(true)).asked).toEqual([true]);
-      expect((await rollAsking(true, { path: "basics" })).asked).toEqual([false]);
-      expect(
-        (await rollAsking(true, { followCandidatePublicId: FOLLOW_CANDIDATE_PUBLIC_ID })).asked,
-      ).toEqual([false]);
-    });
-
-    it("writes the picked outfit as the roll's born line", async () => {
-      const { written } = await rollAsking(true);
-      expect(written.wardrobeLine).toBe(PICKED);
-      /* CONTROL — the same service with no pick writes the house line, so the
-         arm above is reading the pick and not a constant. */
-      expect((await rollWith(true, "wardrobe")).wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
+    it("⚠ is asked for on no roll at all, including one that sends a path", async () => {
+      expect(await rollAsking()).toEqual([false]);
+      expect(await rollAsking({ path: "wardrobe" })).toEqual([false]);
+      expect(await rollAsking({ followCandidatePublicId: FOLLOW_CANDIDATE_PUBLIC_ID })).toEqual([false]);
     });
 
     /**
      * ⚠ A FOLLOW WEARS THE SHEET IT DESCENDS FROM, IN THE PICTURE AS WELL AS
-     * IN THE ROW — the divergence item 5 created and has to close (§3.1).
+     * IN THE ROW — and this OUTLIVES the retirement (§3.1).
      *
-     * The db layer inherits the parent's pair inside the transaction, and that
-     * is the authority for what is STORED. It arrives too late for the eight
-     * PROMPTS. So the pair is read owner-scoped before the compile, and these
-     * arms assert on what the COMPILER was handed — the last thing before the
-     * pictures — rather than on the insert, which the db mock would answer for.
+     * Rolls written while the road ran still carry a pair, and a follow from
+     * one of them must be dressed in it: the db layer inherits inside the
+     * transaction, which is the authority for what is STORED, and that arrives
+     * too late for the eight PROMPTS. So the pair is read owner-scoped before
+     * the compile, and these arms assert on what the COMPILER was handed.
      */
     describe("a follow", () => {
       const PARENT_LINE = "a red apron over a plain white tee, dark straight jeans, plain low shoes";
@@ -1394,7 +1354,6 @@ describe("the two paths, at the wire", () => {
         await createRoll(
           {
             ...(baseDependencies() as object),
-            twoPathsEnabled: () => true,
             compileBrief: async (compilerInput: Record<string, unknown>) => {
               seen.push(compilerInput);
               return deterministicBriefCompiler(compilerInput as never);
@@ -1414,10 +1373,9 @@ describe("the two paths, at the wire", () => {
 
       it("⚠ carries the parent's NULLS when the parent predates the paths", async () => {
         /*
-          The same divergence with its sign flipped, and the one a conditional
-          read would have produced: this account IS inside the flag, so a
-          service that resolved a line here would paint eight people in the
-          house outfit while the transaction wrote the parent's NULL pair.
+          The same divergence with its sign flipped: a service that resolved a
+          line here would paint eight people in the house outfit while the
+          transaction wrote the parent's NULL pair.
         */
         const compilerInput = await followWith({ path: null, wardrobeLine: null });
         expect(compilerInput.inheritedWardrobe).toEqual({ path: null, line: null });
