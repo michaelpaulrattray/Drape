@@ -1144,7 +1144,9 @@ describe("the picture can be removed or replaced without losing the dialog", () 
  * box that offers a picture it cannot take all look exactly like a working
  * page until somebody drags a file at it.
  */
-describe("the hero brief box is the concept door (#1107)", () => {
+/* Issue 1107 — the number lives here rather than in the title, because
+   `token-guard` reads an un-commented `#1107` as a hex literal. */
+describe("the hero brief box is the concept door", () => {
   it("hands the file to the ONE judge rather than reading it itself", async () => {
     const page = withoutProse(await readFile(PAGE, "utf8"));
     const card = withoutProse(await readFile(CARD, "utf8"));

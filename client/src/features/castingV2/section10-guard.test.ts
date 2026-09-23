@@ -597,7 +597,8 @@ describe("what the hero must NOT grow back (§2f)", () => {
       D-180 exists to refuse — and it is the shape a later shift reaches for
       when it wants the link back "just for now".
     */
-    expect(page, "the `Start from photos` link is removed on his word (#1107), not hidden")
+    /* His word on issue 1107; the number stays in prose for `token-guard`. */
+    expect(page, "the `Start from photos` link is removed on his word, not hidden")
       .not.toContain("dpc-hero__photos");
     expect(page).not.toContain("Start from photos");
   });
