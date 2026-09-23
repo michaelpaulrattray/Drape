@@ -2920,7 +2920,22 @@ export const CASTING_REFERENCE_READ_OUTCOMES = [
      class read and the presence gate) and from `unreadable` (which sends her for
      a different photograph, and hers was fine): this one is OUR cap, so a tally
      that merged it into either would aim the next repair at a picture instead of
-     at the ask. #1076. */
+     at the ask. #1076.
+
+     AND THE HAIR READER FILES HERE TOO (#1076's law-7 sibling, #1077) — no
+     migration, because the value it needed already existed. Two of its three
+     `no_colour_readable` sites were the same defect: the reader answered and our
+     own fence refused every word, and she was told to find a clearer picture.
+     What it does NOT keep is the third site, which stays `no_colour_readable`
+     because the reader genuinely answered *I cannot tell* — the ask asks for
+     exactly that empty list, so a clearer photograph is real advice there.
+
+     ⚠ One place the word is wider than its literal reading, declared rather
+     than left to be found: hair's fence refuses a section for a field over its
+     cap OR for a tone that named no place, and only the first is length. It is
+     one value today because the length door is measured firing (4 runs of 4 in
+     the module header's court) and the placeless one has never been seen fire.
+     `hairColourFromReference.readButUnusable` carries what would split it. */
   "answers_over_cap",
 ] as const;
 

@@ -189,6 +189,24 @@ export const HAIR_COLOUR_READ_REFUSAL_CODES = [
     paid for twice (`negative-arm-cannot-find-yes-defects`).
   */
   "noColourReadable",
+  /*
+    AND THIS IS A THIRD FACT, split out of the one above (#1077, the law-7
+    sibling of #1076's makeup defect).
+
+    `noColourReadable` said two things at once and only one of them was about
+    her picture: *the reader looked and could not tell what colour it is* — its
+    own empty-list answer, which the ask asks for in as many words — and *the
+    reader ANSWERED and our fence refused every word of it*. The second is ours.
+
+    It takes the COLUMN VALUE migration 0065 added for makeup rather than a
+    fifth word of its own, and that is a decision rather than a convenience:
+    the fact is the same fact, the repair is the same repair, and the `intent`
+    column beside the outcome is what tells the two readers apart — which is
+    exactly the job 0044 gave it. See {@link readHairColourFromReference}'s
+    branch for the one place the word is WIDER than its literal reading, and
+    for what would earn hair its own value.
+  */
+  "answersOverCap",
 ] as const;
 
 type HairColourReadRefusalCode = (typeof HAIR_COLOUR_READ_REFUSAL_CODES)[number];
@@ -416,6 +434,62 @@ export type HairColourReadInput = {
 };
 
 /**
+ * THE READ WE COULD NOT USE — the refusal for every road where the reader
+ * answered and OUR OWN FENCE refused its words (#1077).
+ *
+ * # Her sentence, and what it is forbidden to do
+ *
+ * It says the picture was read, it puts the fault on our description rather
+ * than on her photograph, and it **never sends her looking for another one** —
+ * that last is `unreadable`'s sentence and it would be the same lie in a
+ * different suit, because a different picture gets the same reader and the
+ * same fence.
+ *
+ * It offers the one action she actually has: the box she is already standing
+ * in front of. A block of colour we cannot speak for is one she can type
+ * herself, which she cannot do if nobody tells her.
+ *
+ * It names no cap, no field and no character count (#1067's call, kept): she
+ * did not write the read and cannot act on its length.
+ *
+ * # Why it is a form rather than makeup's "too long"
+ *
+ * Makeup's sibling says *"came back too long to use"*, and it may, because
+ * over-length is the ONLY way its four fixed slots arrive empty. Hair's fence
+ * has two doors — a field over its cap, and a tone that named no place — and a
+ * sentence claiming length for the second would be a new small lie in the
+ * place of the old one. *"In a form we couldn't use"* is true of both, and it
+ * is as far as a customer's sentence should ever go into our machinery.
+ *
+ * # THE ONE PLACE THE COLUMN VALUE IS WIDER THAN ITS LITERAL READING
+ *
+ * The demand row files this as `answers_over_cap`, which is precisely right for
+ * the length door and slightly wide for the placeless one. **That is a declared
+ * trade rather than an oversight**, and the measurement is what decides it: the
+ * length door is measured firing — the module header's own court dropped a
+ * block on 4 runs out of 4, and hair's field caps (20 and 28) are tighter than
+ * makeup's 52. The placeless door has **never been measured firing at all**;
+ * the fence's log line above this branch was added precisely because a court
+ * could not see it. A second column value bought today would split a tally that
+ * has one live row in it.
+ *
+ * **What would earn hair its own value:** that log line showing the placeless
+ * door firing in live use. The repairs genuinely differ — a cap that is too
+ * tight is a different fix from an ask whose structure is not landing — so if
+ * it fires, split it. Until it does, one word and one honest sentence.
+ */
+function readButUnusable(): HairColourReadOutcome {
+  return {
+    ok: false,
+    refusal: {
+      code: "answersOverCap",
+      message:
+        "We read that picture, but our description of its colour came back in a form we couldn't use — tell us the colour you want in your own words instead.",
+    },
+  };
+}
+
+/**
  * Read one reference's hair colour. One call, house money, and nothing is kept.
  *
  * Degrades to a REFUSAL rather than to a guess, for `makeupFromReference`'s
@@ -538,9 +612,32 @@ export async function readHairColourFromReference(
     /* The reader's own words are logged because they are the whole mechanism
        under test, and the demand row deliberately cannot carry them. */
     log.info(
-      { sections: parsed.sections },
+      { offered, sections: parsed.sections },
       "[hairColourFromReference] hair was present and no section could be spoken for",
     );
+    /*
+      TWO WAYS TO ARRIVE HERE WITH AN EMPTY LIST, AND ONLY ONE OF THEM IS ABOUT
+      HER PHOTOGRAPH (#1077, the law-7 sibling of #1076).
+
+      `offered` is the count the fence's own log line four lines above already
+      had in hand — the disappearing-technology law's clause 4, read what the
+      machinery already gives you before reaching for anything else. It is not
+      a new reading and it costs nothing.
+
+        offered === 0   the reader ANSWERED with an empty list, which the ask
+                        asks for in as many words: *"use an empty list if there
+                        is hair but you cannot tell what colour it is."* It
+                        looked and it could not tell. A clearer photograph is
+                        real advice, so that sentence keeps its word.
+
+        offered > 0     the reader wrote sections and OUR FENCE refused every
+                        one of them. Her picture was fine. Sending her to find
+                        a better one sends her looking for a different picture
+                        of our problem — the credits come back, so nobody
+                        reports it, and the tally records a head whose colour
+                        could not be read.
+    */
+    if (offered > 0) return readButUnusable();
     return {
       ok: false,
       refusal: {
@@ -552,17 +649,31 @@ export async function readHairColourFromReference(
 
   const { sentence, used, dropped } = composeHairColourSentence(sections);
   if (!sentence) {
-    /* A single section longer than the whole budget. Not "no colour here" — it
-       is a reading we could not carry, and it takes the same sentence as the
-       shape above rather than the presence gate's. */
+    /*
+      A single section longer than the whole budget — and its own comment has
+      conceded the point since the day it was written: *"Not 'no colour here' —
+      it is a reading we could not carry."* It then handed her a sentence saying
+      *try a clearer picture*, which is the same lie as the branch above and is
+      now the same refusal. There is no reading of this branch that is about her
+      photograph: every field here is already inside its own cap, and what it
+      overran is OUR composed budget.
+
+      ⚠ **AND IT IS STRUCTURALLY UNREACHABLE THROUGH THIS READER TODAY, WHICH
+      THE CARD DID NOT KNOW AND IS RECORDED RATHER THAN QUIETLY RELIED ON.**
+      A section's longest possible phrase is `HAIR_TONE_MAX_LENGTH` (20) + a
+      space + `HAIR_WHERE_MAX_LENGTH` (28) + the longest side clause, and
+      `MAX_HAIR_COLOUR_LENGTH` is 220 — so the FIRST candidate always fits and
+      `sentence` is never empty with sections in hand. It is `makeupFrom-
+      Reference`'s `dropped` exactly: the emergency path for a reading that
+      broke its own contract, fixed anyway because it means the same thing when
+      it fires and because a cap is one edit away from making it live.
+
+      The arithmetic is not left as a comment — `hairColourFromReference.test`
+      derives it from the four constants, so raising a cap or narrowing the
+      budget reddens and says this branch has become reachable.
+    */
     log.info({ sections }, "[hairColourFromReference] the first section alone overran the budget");
-    return {
-      ok: false,
-      refusal: {
-        code: "noColourReadable",
-        message: "We could see the hair but couldn't pin down its colour — try a clearer picture.",
-      },
-    };
+    return readButUnusable();
   }
 
   if (dropped.length > 0) {
