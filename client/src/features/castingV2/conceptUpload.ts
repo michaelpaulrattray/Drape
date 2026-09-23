@@ -225,41 +225,48 @@ export const CONCEPT_REVIEW_RETRY = "Try again";
 export const CONCEPT_REVIEW_ANOTHER = "Choose another picture";
 
 /**
- * THE × ON THE PICTURE (his ask, #1087) — its accessible name, since the
- * control itself is a glyph.
+ * THE ONE WORD ON THE PICTURE (his ruling, #1087, third cut).
  *
- * Verbatim: *"there should be a way to clear the image without closing the
- * brief like a small x or something so i can replace the image"*. Until this,
- * the only way out of a picture was Discard, which threw the words away and
- * shut the dialog — so swapping a photograph meant starting the whole road
- * again.
+ * The second cut put two controls on the photograph — an × in the corner and a
+ * caption band under it offering a drop and a picker — and he judged it,
+ * verbatim: *"i also dont think we need an x and a sentence below the image
+ * whats the standard practice which is the best UX?"*, then answered his own
+ * question and made it the spec: *"ONE affordance, revealed by intent, nothing
+ * permanent on the picture … On HOVER the picture dims a touch and one quiet
+ * word appears over it — Replace — and clicking anywhere on the picture opens
+ * the picker."*
  *
- * It says REMOVE rather than "clear" because remove is what a person does to a
- * picture; and the picture's words go with it, because a description of a
- * photograph nobody is looking at any more is the one thing this dialog exists
- * to make impossible.
+ * So the word is the whole control. It is not drawn until a pointer, a focus
+ * ring or a dragged file says someone is interested in the picture, which is
+ * the disappearing-technology law's clause 6 in one element: nothing to learn,
+ * nothing to read, the affordance arrives with the hand.
  */
-export const CONCEPT_REMOVE_PICTURE = "Remove this picture";
+export const CONCEPT_REPLACE_WORD = "Replace";
 
 /**
- * THE LINE UNDER THE PICTURE, and it is documentation of a road that already
- * worked.
+ * THE SAME OVERLAY, STRONGER, WHILE A FILE IS HELD OVER THE PICTURE.
  *
- * Dropping a new picture over the old one has replaced it since #196 — the
- * dialog body and the picture slot are both drop targets — and NOTHING on
- * screen said so, which is the same as it not being possible (the
- * disappearing-technology law, clause 6). He asked for it as though it were
- * missing: *"or dragging and dropping a new image over the old one should work
- * also?"*. It was; it was invisible.
+ * His second-cut finding, verbatim: *"when i drag the new image over the old
+ * image and am holding it over the old image before dropping to replace it the
+ * card doesnt highlight or indicate im about to drop a new image in e.g it
+ * feels unresponsive."* He was right and the seam was not where the drop was:
+ * the drop landed, and the dialog's over-state was a single flag raised by the
+ * BODY's zone and read by nothing drawn over the picture. The picture now
+ * counts its own drags, and this is what it says while one is over it.
  *
- * The second half is a real button, so the answer is one tap for anyone who
- * does not drag — which is the same road the refusal's "Choose another
- * picture" has always taken.
+ * It names the ACT rather than the file or the mechanism — she is about to
+ * replace a photograph, and the sentence says exactly that and stops.
  */
-export const CONCEPT_REPLACE_HINT = "Drop another picture here to replace it, or";
+export const CONCEPT_REPLACE_DROP = "Drop to replace";
 
-/** The clickable half of the line above. Lowercase: it finishes that sentence. */
-export const CONCEPT_REPLACE_CHOOSE = "choose one";
+/**
+ * THE ACCESSIBLE NAME OF THAT ONE CONTROL.
+ *
+ * The visible word is *Replace*, which is enough beside the picture it is drawn
+ * on and not enough read out on its own — a screen reader gets the button and
+ * none of the context, so the name says which picture and what happens.
+ */
+export const CONCEPT_REPLACE_ACTION = "Replace this picture";
 
 /**
  * THE REFUSED STATE'S OWN TITLE — and it exists because the frame said so.

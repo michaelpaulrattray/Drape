@@ -15,9 +15,9 @@ import {
   CONCEPT_CARD_DROP,
   CONCEPT_DROP_LINE,
   CONCEPT_NOT_A_PICTURE,
-  CONCEPT_REMOVE_PICTURE,
-  CONCEPT_REPLACE_CHOOSE,
-  CONCEPT_REPLACE_HINT,
+  CONCEPT_REPLACE_ACTION,
+  CONCEPT_REPLACE_DROP,
+  CONCEPT_REPLACE_WORD,
   CONCEPT_REVIEW_ANOTHER,
   CONCEPT_REVIEW_CAST,
   CONCEPT_REVIEW_EMPTY_EXPLAINER,
@@ -47,6 +47,9 @@ import { readableGatedFailure } from "./failureCopy";
  */
 const CARD = new URL("./components/ConceptUploadCard.tsx", import.meta.url);
 const REVIEW_SOURCE = new URL("./components/ConceptReviewModal.tsx", import.meta.url);
+/* The half of his ruling that lives in the stylesheet: what is drawn on the
+   picture, and when (#1087). */
+const MODALS_CSS = new URL("../../foundation/modals.css", import.meta.url);
 const PAGE = new URL("../../pages/CastingV2.tsx", import.meta.url);
 const FIELD = new URL("./components/BriefField.tsx", import.meta.url);
 
@@ -876,10 +879,7 @@ describe("two entrances, one read", () => {
          DragEvent (its window listener takes the DOM one) and the dialog does
          not, so a type-bearing anchor reads one file and returns "" for the
          other — which is an empty slice quietly passing as a clean one. */
-      const over = source.slice(
-        source.indexOf("const onDragOver = (event:"),
-        source.indexOf("const onDrop = (event:"),
-      );
+      const over = source.slice(source.indexOf("onDragOver"), source.indexOf("onDrop"));
       expect(over).toContain("event.preventDefault();");
     }
   });
@@ -889,12 +889,18 @@ describe("two entrances, one read", () => {
       `dragleave` fires every time the pointer crosses into a CHILD element — the
       icon, the title, the line — so a naive enter/leave pair strobes the drop
       state as the cursor moves across the target's own text. Both targets count.
+
+      ⚠ THE DIALOG'S COUNTER MOVED INTO A HOOK (#1087): it has TWO zones now —
+      the body and the picture — and ONE shared flag between them was the defect
+      he reported (*"it feels unresponsive"*), so the counting is written once
+      and used twice. Anchored on the SHAPE rather than on one variable's name,
+      or this arm quietly reads only the file that happened not to change.
     */
     for (const url of [CARD, REVIEW_SOURCE]) {
       const source = withoutProse(await readFile(url, "utf8"));
-      expect(source).toContain("dragDepth.current += 1;");
-      expect(source).toContain("dragDepth.current = Math.max(0, dragDepth.current - 1);");
-      expect(source).toContain("if (dragDepth.current === 0) setDragging(false);");
+      expect(source, String(url)).toMatch(/(\w+)\.current \+= 1;/);
+      expect(source, String(url)).toMatch(/(\w+)\.current = Math\.max\(0, \1\.current - 1\);/);
+      expect(source, String(url)).toMatch(/if \((\w+)\.current === 0\) set\w+\(false\);/);
     }
   });
 
@@ -1053,77 +1059,119 @@ describe("a refused read keeps her picture and offers a way on", () => {
 });
 
 /**
- * A WAY OFF A PICTURE THAT IS NOT DISCARD (his ask, #1087).
+ * ONE AFFORDANCE ON THE PICTURE, REVEALED BY INTENT (his ruling, #1087).
  *
- * Verbatim: *"another small QOL thing when uploading a image concept there
- * should be a way to clear the image without closing the brief like a small x
- * or something so i can replace the image and or dragging and dropping a new
- * image over the old one should work also?"*
+ * Three cuts, and each one is his eye rather than a review note. The first was
+ * *"too much … more minimal more subtle"*. The second put an × in the corner
+ * and a caption band under the face, and he answered it with the spec this
+ * block guards, verbatim: *"i also dont think we need an x and a sentence below
+ * the image whats the standard practice which is the best UX? … ONE affordance,
+ * revealed by intent, nothing permanent on the picture. No ×. No sentence under
+ * it. The picture fills the panel. On HOVER the picture dims a touch and one
+ * quiet word appears over it — Replace — and clicking anywhere on the picture
+ * opens the picker. On DRAG-OVER the same overlay shows, stronger … Keyboard:
+ * the picture is focusable, Enter opens the picker."*
  *
- * Until this, the only exit from a picture in the read state was Discard —
- * which shuts the dialog and throws the words away — so swapping a photograph
- * cost the whole road. And the second half of his sentence was not true
- * either: the dialog BODY and the EMPTY slot were drop targets, the picture
- * itself was not, so a drop aimed at the picture was swallowed by the page's
- * own guard and did nothing at all.
+ * And the drag-over half is a real defect he found by driving it: *"when i drag
+ * the new image over the old image … the card doesnt highlight … it feels
+ * unresponsive."* The drop landed; the ANSWER while the file was in the air did
+ * not, because the dialog had a single over-flag raised by the body's zone and
+ * nothing drawn over the picture read it.
  */
-describe("the picture can be removed or replaced without losing the dialog", () => {
-  it("clears everything about the picture and leaves the dialog standing", async () => {
-    const card = withoutProse(await readFile(CARD, "utf8"));
-    const clear = card.slice(card.indexOf("const clearPicture ="));
-    const body = clear.slice(0, clear.indexOf("};") + 2);
-    /* The whole picture goes — the file, the words read off it, a refusal and
-       the not-a-picture note — or the dialog keeps a claim about something
-       nobody is looking at. */
-    expect(body).toContain("setPicture(null)");
-    expect(body).toContain("setDescription(null)");
-    expect(body).toContain("setFailure(null)");
-    expect(body).toContain("setNotAPicture(false)");
-    /* And the one thing `close` does that this must NOT: shut the dialog. */
-    expect(body).not.toContain("setOpen(false)");
-    /* The staleness guard, same as `close` and `beginRead`: a read still in
-       flight must not land afterwards and describe a picture that is gone. */
-    expect(body).toContain("readId.current += 1");
-    /* It is wired — a control nobody calls does not exist (invariant 7). */
-    expect(card).toContain("onClear={clearPicture}");
-  });
-
-  it("draws the controls on the picture, and only where there is one to act on", async () => {
+describe("the picture carries ONE control, and it appears with the hand", () => {
+  it("is a single button over the whole slot — no ×, no sentence", async () => {
     const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
     /*
       BOUNDED AT THE NEXT PROP, and that is the arm's own negative control:
       sliced to the end of the file it swallows the dialog BODY, which carries
-      `{...dropHandlers}` of its own — so a drop target deleted from the
-      picture still read as present. Caught by sabotage, not by review.
+      a drop target of its own — so a target deleted from the picture would
+      still read as present. Caught by sabotage, not by review.
     */
     const from = review.indexOf("portraitOverlay={");
     const overlay = review.slice(from, review.indexOf("busy={", from));
     /* Never over the empty slot, which already says what to do, and never
        mid-read, where the words are still arriving. */
     expect(overlay.slice(0, 120)).toContain("preview && !reading");
-    expect(overlay).toContain("onClick={onClear}");
-    /* THE DROP TARGET — the whole point of the layer covering the slot. The
-       picture had none of its own before this. */
-    expect(overlay).toContain("{...dropHandlers}");
-    /* And the picker, so replacing is one tap for anyone who does not drag. */
+    /* ONE element: a real button, so the click, the focus and Enter are the
+       browser's rather than three hand-rolled handlers. */
+    expect(overlay).toContain("<button");
+    expect(overlay.match(/<button/g) ?? []).toHaveLength(1);
     expect(overlay).toContain("picker.current?.click()");
-    /* The LINE stands down on a refusal, where the action row already says
-       "Choose another picture" — the × and the drop target do not. */
-    expect(overlay).toContain("refused ? null : (");
+    /* THE TWO CONTROLS HE RULED OFF THE PICTURE. Both were shipped and both
+       were judged; an arm that only adds the new one lets either come back. */
+    expect(overlay).not.toContain("onClear");
+    expect(overlay).not.toContain("<X ");
+    expect(review).not.toContain("onClear");
+    const card = withoutProse(await readFile(CARD, "utf8"));
+    expect(card).not.toContain("clearPicture");
   });
 
-  it("says out loud that the picture takes a drop", () => {
+  it("counts ITS OWN drags, which is the unresponsive feel he reported", async () => {
+    const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
+    const from = review.indexOf("portraitOverlay={");
+    const overlay = review.slice(from, review.indexOf("busy={", from));
     /*
-      The road existed and was invisible, which is the same as not existing
-      (the disappearing-technology law, clause 6). The line is the fix for the
-      half of his ask that was already built.
+      THE WHOLE FINDING IN ONE ASSERTION: the picture's over-state must come
+      from the PICTURE's zone. Wired to the body's flag instead, the overlay
+      lights while the hand is two columns away and says nothing when the file
+      is actually over the face — which is what shipped.
     */
-    expect(CONCEPT_REPLACE_HINT.toLowerCase()).toContain("drop");
-    expect(CONCEPT_REPLACE_HINT.toLowerCase()).toContain("replace");
-    expect(CONCEPT_REPLACE_CHOOSE.toLowerCase()).toContain("choose");
-    /* The × is a glyph, so its accessible name is the only thing a reader
-       gets — and it names the object, not the state. */
-    expect(CONCEPT_REMOVE_PICTURE.toLowerCase()).toContain("picture");
-    expect(CONCEPT_REMOVE_PICTURE.toLowerCase()).not.toContain("clear");
+    expect(overlay).toContain("pictureZone.over");
+    expect(overlay).toContain("{...pictureZone.handlers}");
+    expect(overlay).not.toContain("bodyZone");
+    /* Two zones, one implementation — a second hand-rolled copy of the depth
+       counting is the drift working law 4 is about. */
+    expect(review).toContain("const bodyZone = useDropZone(");
+    expect(review).toContain("const pictureZone = useDropZone(");
+    const hook = review.slice(review.indexOf("function useDropZone("));
+    /* `preventDefault` on dragover is what MAKES it a drop target; without it
+       the browser navigates the tab to the file and takes her brief with it. */
+    expect(hook.slice(0, hook.indexOf("return { over, handlers };"))).toContain(
+      "event.preventDefault()",
+    );
+  });
+
+  it("says Replace on intent and Drop to replace while a file is over it", () => {
+    /*
+      The word is the whole control, so what it says is the whole instruction.
+      Neither string names a mechanism, a file type or a format — they name what
+      is about to happen to her photograph (the disappearing-technology law,
+      clause 6).
+    */
+    expect(CONCEPT_REPLACE_WORD).toBe("Replace");
+    expect(CONCEPT_REPLACE_DROP.toLowerCase()).toContain("drop");
+    expect(CONCEPT_REPLACE_DROP.toLowerCase()).toContain("replace");
+    /* The visible word is enough beside the picture and not enough read out on
+       its own — a screen reader gets the button with none of the context. */
+    expect(CONCEPT_REPLACE_ACTION.toLowerCase()).toContain("picture");
+    for (const copy of [CONCEPT_REPLACE_WORD, CONCEPT_REPLACE_DROP, CONCEPT_REPLACE_ACTION]) {
+      expect(copy).not.toMatch(/upload|file|jpe?g|png/i);
+    }
+  });
+
+  it("draws nothing until a pointer, a focus ring or a dragged file asks", async () => {
+    /*
+      *"nothing permanent on the picture"* is the half of his ruling that lives
+      in the stylesheet, and it is invisible to every source arm above: the
+      button can be correct in the component and still sit on the photograph all
+      day if the rule that hides it goes.
+    */
+    const css = await readFile(MODALS_CSS, "utf8");
+    const rule = css.slice(
+      css.indexOf(".dpc-modal__replace {"),
+      css.indexOf(".dpc-modal__replaceword {"),
+    );
+    expect(rule).toContain("opacity: 0");
+    expect(rule).toContain(".dpc-modal__replace:hover");
+    expect(rule).toContain(".dpc-modal__replace:focus-visible");
+    /* And the drag-over state is STRONGER than the hover, or crossing the edge
+       with a file reads as the same event as passing over it. */
+    const over = rule.slice(rule.indexOf(".dpc-modal__replace--over {"));
+    expect(over).toContain("opacity: 1");
+    /* The ring, and it is INSET — flush with the edge it is swallowed by the
+       slot's own `overflow: hidden` and the answer he asked for is invisible. */
+    expect(over).toContain(".dpc-modal__replace--over::after {");
+    expect(over).toContain("inset: 8px");
+    expect(over).toContain("border: 1px solid");
   });
 });

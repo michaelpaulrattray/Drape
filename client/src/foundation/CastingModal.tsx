@@ -168,7 +168,6 @@ export function CastingModal({
   label,
   portrait,
   portraitMuted = false,
-  portraitWhole = false,
   portraitFallback,
   portraitOverlay,
   busy,
@@ -184,17 +183,6 @@ export function CastingModal({
    * The person is already half-gone, and that does work no warning label can.
    */
   portraitMuted?: boolean;
-  /**
-   * SHOW THE WHOLE PICTURE rather than filling the frame with it (#196).
-   *
-   * The default crops to 4:5, which is right for the two dialogs that show OUR
-   * OWN renders — every one of them is already that shape. The concept review
-   * shows a picture the CUSTOMER chose, of unknown proportions, and its entire
-   * job is letting her check a description against it: a cover-crop can hide
-   * the very thing the words are describing. Caught by looking at the frame, on
-   * a 2:3 upload whose lower half was cropped away.
-   */
-  portraitWhole?: boolean;
   /**
    * WHAT STANDS IN THE PORTRAIT SLOT WHEN THERE IS NO PICTURE YET (#196,
    * amendment 2).
@@ -231,11 +219,19 @@ export function CastingModal({
 }) {
   return (
     <ModalScrim label={label} cardClassName="dpc-modal__card" busy={busy} onDismiss={onDismiss}>
-      <div
-        className={
-          portraitWhole ? "dpc-modal__portrait dpc-modal__portrait--whole" : "dpc-modal__portrait"
-        }
-      >
+      {/*
+        ⚠ ONE PORTRAIT TREATMENT, AND IT IS THE FILL (#1087, his third cut).
+
+        There was a `portraitWhole` here from #196: the concept review showed a
+        customer's own photograph letterboxed inside the 4:5 slot, on the
+        argument that a crop can hide the very thing the description is about.
+        He looked at it and ruled the other way, verbatim: *"the image no longer
+        fills the card … The picture must fill its panel again — object-fit:
+        cover on the picture, the 4:5 panel, no letterbox."* Law 9, and the
+        concept review was the only caller, so the option goes with it rather
+        than staying behind as a road nobody takes.
+      */}
+      <div className="dpc-modal__portrait">
         {portrait ? (
           <span className={portraitMuted ? "dpc-modal__muted" : undefined}>
             <img src={portrait} alt="" />
