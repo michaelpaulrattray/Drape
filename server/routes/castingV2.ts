@@ -40,7 +40,6 @@ import {
   captureCastingConceptUploadEnabled,
   captureCastingRepaintEnabled,
   captureCastingCreativeRegisterEnabled,
-  captureCastingTwoPathsEnabled,
   captureCastingV2Enabled,
 } from "../castingV2/castingV2Scope";
 import { reimagineBrief } from "../castingV2/reimagine";
@@ -1048,26 +1047,17 @@ export const castingV2Router = router({
     */
     conceptUploadEnabled: captureCastingConceptUploadEnabled(ctx.user.id),
     /*
-      AND WHETHER THIS ACCOUNT CHOOSES THE PATH ITS CASTS ARE BORN ON — the
-      two paths' toggle (design §6, item 5's last slice).
+      THE TWO PATHS' GATE STOOD HERE AND IS GONE (#203, his ruling 2026-08-28:
+      *"yeah we will retire the wardrobe/basics path obviously"*). No client
+      asks whether it may choose a path, because there is no path to choose:
+      `rollService` writes `bornPath` as a constant `null` now.
 
-      A FIFTH gate, on the pattern the four above are written on, and §6 is
-      unusually explicit about what it decides: *"it does not appear when
-      `CASTING_TWO_PATHS_SCOPE` is off. No disabled control, no coming-soon — a
-      disabled toggle is a question with no answer, which is D-180's dead end
-      wearing a tap target."*
-
-      ⚠ **It decides whether a control is DRAWN and nothing else.** The server
-      is already safe without it: `rollService` resolves `bornPath` as
-      `twoPathsEnabled(userId) ? input.path ?? DEFAULT_CASTING_PATH : null`, so
-      a `path` sent by an account outside the flag is IGNORED rather than
-      refused — read at that site, not assumed. Which is exactly the shape
-      `stepBackEnabled` has: the client asks so it does not offer a control
-      that would do nothing.
-
-      Named for the capability rather than for the flag, like the four above.
+      Removing a field FROM a projection is the safe direction and was read
+      before it was believed: both call sites compared `=== true`, so a bundle
+      that outlives this deploy reads `undefined` and draws no control, which
+      is the end state anyway. The `path` field on `createRoll`'s input is the
+      UNSAFE direction and is kept one deploy — see the tombstone there.
     */
-    twoPathsEnabled: captureCastingTwoPathsEnabled(ctx.user.id),
     /*
       WHETHER THIS ACCOUNT IS ON THE AUTHOR ROAD (#131 slice E) — and therefore
       whether the RE-IMAGINE glyph is drawn on the brief boxes (#535), the
@@ -1300,16 +1290,23 @@ export const castingV2Router = router({
           unlock: unlockList,
           overrides: overrideObject,
           /*
-            THE TWO PATHS' TOGGLE (design §6). Optional, because every client
-            today sends nothing and an account outside the flag has no control
-            to send from — and absent is NOT `wardrobe`: the service turns an
-            unsent toggle into the default only INSIDE the flag, so a roll cast
-            without the feature stays honestly NULL.
+            ⚠ TOMBSTONE (#203): the two paths are RETIRED and nothing reads
+            this field — `rollService` writes the column `null` for every roll.
+            It STAYS in the schema for exactly one deploy because this input is
+            `.strict()`: a browser holding the previous bundle still sends
+            `path` from the toggle it drew, and deleting the field in the
+            commit that stops sending it BAD_REQUESTs that roll mid-deploy —
+            on the money path, for a customer who did nothing wrong (the
+            input-removal rule, invariant 4's billing clause).
 
-            A closed enum of his two words, so a third path is a migration and
-            a decision rather than a string that reaches the column and errors
-            at the insert. `follow` deliberately does not take one: a Follow
-            inherits the sheet's path (§3.1) and is not offered the switch.
+            ⚠ **Deleting the config gate in this same commit does NOT make that
+            window empty**, which is the tempting reading: a bundle already
+            mounted holds its config answer until the query refetches, so for
+            that stretch it still believes it may send a path. The tombstone is
+            what covers the stretch, not the gate's removal.
+
+            It goes in the slice that collapses the read paths, with
+            `imagination` beside it — the same shape, one road older.
           */
           path: z.enum(CASTING_PATHS).optional(),
           /*
@@ -1339,7 +1336,6 @@ export const castingV2Router = router({
         briefText: input.briefText,
         unlock: input.unlock,
         overrides: input.overrides,
-        path: input.path,
         style: input.style,
       });
       return loadRollProjection(ctx.user.id, result.rollPublicId);

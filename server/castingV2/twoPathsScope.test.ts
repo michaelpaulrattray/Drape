@@ -35,7 +35,7 @@ import {
   parseCastingTwoPathsScope,
   validateCastingTwoPathsEnvironment,
 } from "./castingV2Scope";
-import { CASTING_PATHS, DEFAULT_CASTING_PATH, isCastingPath } from "../../shared/castingPaths";
+import { CASTING_PATHS, isCastingPath } from "../../shared/castingPaths";
 
 describe("the boot guard", () => {
   it("refuses while casting itself is off — a path is chosen when a roll is bought", () => {
@@ -145,14 +145,16 @@ describe("the vocabulary the flag opens", () => {
     }
   });
 
-  it("keeps the toggle's default distinct from a stored value", () => {
-    /*
-      `DEFAULT_CASTING_PATH` is what the CONTROL shows before anyone touches it
-      (§6). It is deliberately not a fallback for a stored `null`, and the two
-      are named apart so that `?? DEFAULT_CASTING_PATH` at a read site reads as
-      the mistake it would be.
-    */
-    expect(DEFAULT_CASTING_PATH).toBe("wardrobe");
-    expect(isCastingPath(DEFAULT_CASTING_PATH)).toBe(true);
-  });
+  /*
+    ⚠ THE TOGGLE'S-DEFAULT ARM STOOD HERE AND IS GONE WITH THE CONSTANT (#203).
+
+    It held `DEFAULT_CASTING_PATH` apart from a stored value, so that
+    `?? DEFAULT_CASTING_PATH` at a read site would read as the mistake it would
+    be. The control is retired and the constant with it, so there is no default
+    left to confuse with a stored `null`.
+
+    **The fence it was half of still stands and is the arm above**: the absence
+    is still not a member, and that is now the WHOLE of the rule rather than
+    one side of a distinction.
+  */
 });

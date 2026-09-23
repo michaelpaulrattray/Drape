@@ -58,7 +58,6 @@ import { sheetGoneRefusal, sheetGoneState } from "@/features/castingV2/sheetGone
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
 import {
   CASTING_PATH_NAMES,
-  pathSwitchNote,
   wardrobeLineText,
 } from "@/features/castingV2/castingPathCopy";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
@@ -68,8 +67,6 @@ import {
   useReimagine,
 } from "@/features/castingV2/components/Reimagine";
 import { castSettingsRecord } from "@/features/castingV2/castSettingsCopy";
-import { PathToggle } from "@/features/castingV2/components/PathToggle";
-import { DEFAULT_CASTING_PATH, type CastingPath } from "@shared/castingPaths";
 import { DEFAULT_CAST_STYLE, type CastStyle } from "@shared/castStyles";
 import { viewerCompareFor } from "@/features/castingV2/viewerCompare";
 import {
@@ -402,19 +399,6 @@ export default function CastingSheet() {
   const shownRollId = viewedRollId ?? activeRollId;
   const viewingHistory = Boolean(shownRollId && activeRollId && shownRollId !== activeRollId);
 
-  /*
-    WHICH PATH THE NEXT ROLL USES — the re-roll box's half of the toggle
-    (design §6: *"a re-roll may switch it"*).
-
-    ⚠ **`null` means "whatever this sheet is", and that is what stops this
-    being a mirror.** The sheet's own path is server truth arriving on a query
-    that re-resolves as the rail is walked and as the poll lands; copying it
-    into state with an effect would be working law 4 with a race attached —
-    the pill would show a stale path for a frame every time the sheet changed
-    under it. So the control is DERIVED (`pathChoice ?? sheetPath`) and this
-    holds only the user's own departure from it.
-  */
-  const [pathChoice, setPathChoice] = useState<CastingPath | null>(null);
   /* The settings for the NEXT roll (#142): her choice if she touched it, else the sheet's own, else the default. The imagination half left with #535. */
   const [styleChoice, setStyleChoice] = useState<CastStyle | null>(null);
 
@@ -944,23 +928,6 @@ export default function CastingSheet() {
             its own reason. Two branches each carrying a copy is how they drift.
           */
           ...rollAdjustments({ authorRoad, unlocked, overrides: sendOverrides }),
-          /*
-            THE PATH, ONLY WHERE ONE WAS EVER SHOWN (design §6).
-
-            `nextRollPath` is null on three sheets, and each one must send
-            nothing rather than a default: an account outside the flag, a sheet
-            cast before the paths existed, and a sheet being read from history.
-            The optional field is what keeps *the toggle was not sent* distinct
-            from *the toggle said Wardrobe* all the way to the column, which is
-            the distinction `shared/castingPaths.ts` refuses to let MySQL
-            destroy with a DEFAULT.
-
-            The `follow` branch above deliberately has no equivalent: a Follow
-            INHERITS the sheet's path (§3.1) and is not offered the switch —
-            dressing eight strangers in a path chosen mid-lineage is the same
-            argument `refineSubjects.ts` makes about expression.
-          */
-          ...(nextRollPath ? { path: nextRollPath } : {}),
           ...(nextStyle ? { style: nextStyle } : {}),
         },
         options,
@@ -1054,7 +1021,6 @@ export default function CastingSheet() {
     of this draws at all.
   */
   const sheetWardrobe = roll.data?.wardrobe ?? null;
-  const twoPathsEnabled = config.data?.twoPathsEnabled === true;
   /*
     THE AUTHOR ROAD RETIRES THE PATH SWITCH on this account (#131 slice E,
     ruling rule 11) and draws the IMAGINATION meter where it stood — not while
@@ -1075,48 +1041,6 @@ export default function CastingSheet() {
   */
   const nextStyle: CastStyle | null = dockSettingsVisible
     ? (styleChoice ?? roll.data?.style ?? DEFAULT_CAST_STYLE)
-    : null;
-
-  /*
-    ⚠ **AN UNPATHED SHEET IS OFFERED THE SWITCH TOO, AND THE LINE THAT DECIDES
-    IT IS THE RECORD/PLAN LINE** (ruled fable-1483 ASK 1(b)).
-
-    `shared/castingPaths.ts` argues at length that *the absence is not a member
-    and must never become one*, and a first build here read that as forbidding a
-    control preselected to Wardrobe over eight faces nobody chose a path for.
-    **That argument protects the ROLL'S RECORD — and this control is a statement
-    about the NEXT roll.** So the two halves part company:
-
-      the record line   ABSENT on an unpathed sheet, exactly as before. Nothing
-                        claims these eight were cast on a path
-      this switch       DRAWN, preselected to the default, and its note NEVER
-                        falls silent there (`pathSwitchNote`) — so the pills
-                        cannot be read as a label of a sheet that has none
-
-    The case is day one rather than hypothetical: **every existing customer's
-    sheets are unpathed on the day the flag opens**, and without this the lobby
-    would be their only door to a path.
-
-    Hidden while reading history for the reason the FOLLOWING chip is: this says
-    what Roll again will do, and Roll again always applies to the live sheet.
-  */
-  const dockPathVisible = twoPathsEnabled && !authorRoad && !viewingHistory && !standingFollowId;
-  /** The LIVE sheet's own path, or `null` when it predates the paths. */
-  const sheetPath = dockPathVisible ? (sheetWardrobe?.path ?? null) : null;
-  /*
-    WHAT THE NEXT ROLL SENDS, and it is `null` exactly where no control was
-    shown — outside the flag, while reading history, and during a standing
-    follow.
-
-    ⚠ **The history case therefore rolls UNPATHED unless she touched the pills**,
-    and that is deliberate rather than overlooked: the live roll's path is not
-    on this page while a historical one is being read (`roll.data` is the SHOWN
-    roll), so the alternative would be defaulting to Wardrobe on a sheet whose
-    live roll may be Basics — a silent wrong answer on a paid action. An unsent
-    toggle is not a claim; a wrong one is.
-  */
-  const nextRollPath = dockPathVisible
-    ? (pathChoice ?? sheetPath ?? DEFAULT_CASTING_PATH)
     : null;
 
   const candidates = roll.data?.candidates ?? [];
@@ -2930,46 +2854,24 @@ export default function CastingSheet() {
       <div className="dp-dock-fade">
         <Dock>
           {/*
-            THE RE-ROLL BOX'S HALF OF THE TOGGLE (design §6).
+            THE PATH SWITCH STOOD HERE AND IS RETIRED (#203, his ruling
+            2026-08-28: *"yeah we will retire the wardrobe/basics path
+            obviously"*). A re-roll is cast from the brief, and the engine
+            dresses the cast from it — there is nothing to switch.
 
-            §6 puts a control on BOTH places a roll is bought, *"because a
-            toggle on only one of them is a path a customer can change by
-            accident"* — and here it does two jobs at once: it SHOWS the path
-            this sheet was cast on, and a re-roll may switch it.
-
-            Above the brief row rather than beside the button, because it is a
-            statement about the next roll in the same register as FOLLOWING,
-            and because the row below is already the sentence and the priced
-            action.
-
-            ⚠ **NOT DRAWN DURING A STANDING FOLLOW.** A Follow inherits the
-            sheet's path (§3.1) and `follow` takes no path at all, so a switch
-            there would be a control that silently does nothing — D-107's dead
-            control. The path is still readable: the record line above the grid
-            says it, on every pathed sheet, follow or not.
-
-            The note appears once the selection leaves the sheet's own path —
-            when the pills stop being a label and become a plan — and on an
-            UNPATHED sheet it never falls silent at all, because there the pills
-            were never a label of anything (fable-1483 ASK 1(b)).
+            What did NOT go with it is the RECORD line above the grid: a sheet
+            that was cast on a path still says so, because that is a property
+            of the roll rather than of the control that set it (§6's own rule,
+            and the rows are still in the table).
           */}
           {/*
-            NEITHER CONTROL ON A CLOSED SHEET (#854). Both set up "the next
-            roll", and a closed sheet has none: a style or path chosen here
-            would land nowhere — the casting page the words travel to has its
-            own gear. Absent rather than disabled (D-180); the words travel,
-            the settings do not, and a control whose effect never lands is
-            D-107's dead control.
+            NOT ON A CLOSED SHEET (#854). The gear sets up "the next roll", and
+            a closed sheet has none: a style chosen here would land nowhere —
+            the casting page the words travel to has its own gear. Absent
+            rather than disabled (D-180); the words travel, the settings do
+            not, and a control whose effect never lands is D-107's dead
+            control.
           */}
-          {dockPathVisible && nextRollPath ? (
-            <PathToggle
-              idPrefix="dpc-dock-path"
-              label="How the next roll is cast"
-              value={nextRollPath}
-              onChange={setPathChoice}
-              note={pathSwitchNote({ sheetPath, selected: nextRollPath })}
-            />
-          ) : null}
           {/* THE GEAR (#142) for the next roll — style alone since #535. */}
           {nextStyle ? (
             <CastSettingsButton
