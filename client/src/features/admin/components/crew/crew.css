@@ -166,9 +166,27 @@
   color: var(--ink);
 }
 
+/*
+  ⚠ **A BLANK LINE IN A BODY IS A PARAGRAPH BREAK, AND IT USED TO COLLAPSE
+  (#1135).** Every string this class renders is prose a shift WROTE FOR HIM —
+  a card's product impact, its worked example, its recommendation, a problem's
+  detail, an eye item's question — and with no `white-space` declared, the
+  newlines in them rendered as single spaces. Measured at edition 491: **110
+  of those strings carry a newline**, and the four-paragraph problem detail he
+  reads first came out as a fifteen-line wall with its headings buried
+  mid-sentence. Found by LOOKING at the page (law 6) while writing #1132's
+  cards, which had been drafted as if this worked.
+
+  `pre-line` and not `pre-wrap`: runs of spaces still collapse, so the leading
+  indentation 16 strings use for pseudo-code lines behaves exactly as it does
+  today and nothing reflows sideways. Markdown is deliberately NOT parsed here
+  — that is a bigger decision (links, escaping, a stray asterisk) and the
+  paragraph break is the whole of the defect he can see.
+*/
 .dp-crew__body {
   font: 400 13px/1.6 var(--font-sans);
   color: var(--ink);
+  white-space: pre-line;
 }
 
 .dp-crew__body--soft {
@@ -896,11 +914,20 @@
   color: var(--ink);
 }
 
+/*
+  The sibling of `.dp-crew__body` above, found by the #1135 class sweep rather
+  than by looking: a pipeline note is shift-written prose too, and **80 of them
+  carry a newline** at edition 491. It is already `display: block`, so the same
+  one property does the same thing. ⚠ It changes NOTHING on today's page — the
+  section renders the not-done rows, and none of those notes is multi-line —
+  which is why it is stated here instead of being claimed as a visible fix.
+*/
 .dp-crew__rowwhy {
   display: block;
   margin-top: 2px;
   font: 400 11px/1.55 var(--font-sans);
   color: var(--meta);
+  white-space: pre-line;
 }
 
 .dp-crew__hold {
