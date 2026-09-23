@@ -1,7 +1,7 @@
 {
-  "edition": 497,
-  "updatedAt": "2026-09-24T05:10:00+10:00",
-  "shift": "Foreman — a refusal that named a path you can no longer buy comes out",
+  "edition": 498,
+  "updatedAt": "2026-09-24T07:10:00+10:00",
+  "shift": "Foreman — the prompt and the face panel stop asking which path a cast was born on",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -47,6 +47,10 @@
         },
         {
           "title": "The retirement's first READ path is out: a refusal that told a customer \"this one was cast on Basics — cast on Wardrobe to change what someone is wearing\" is gone. Nobody could follow that instruction any more. Eight places in the studio ask a path question, not the three the plan knew about, and all eight are now written down with the order they come out in",
+          "state": "done"
+        },
+        {
+          "title": "Two more of the eight: the instruction the studio sends when it reads your refine sentence no longer changes shape depending on which path a cast was bought on, and the face panel's Wardrobe section — which no account has ever been shown — is gone. The instruction was checked character by character before and after and did not move a single letter",
           "state": "done"
         }
       ]
@@ -126,7 +130,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T18:58:16.544Z",
+      "readAt": "2026-09-23T21:01:12.338Z",
       "items": [
         {
           "issueNumber": 10,
@@ -7634,6 +7638,13 @@
       "status": "merged",
       "prNumber": 1147,
       "note": "Nothing changes on screen. It had never once been shown to anybody, and the studio's own map had been flagging it as unreachable for a month."
+    },
+    {
+      "id": "served-subjects-203-2a",
+      "title": "The refine instruction and the face panel stop asking which path a cast was born on",
+      "status": "merged",
+      "prNumber": 1149,
+      "note": "Nothing changes on screen. The four instructions the studio can send were hashed before and after and are identical."
     }
   ],
   "problems": [
@@ -8533,7 +8544,7 @@
     199
   ],
   "nextUp": {
-    "readAt": "2026-09-23T18:58:16.543Z",
+    "readAt": "2026-09-23T21:01:12.337Z",
     "items": [
       {
         "issueNumber": 1132,
