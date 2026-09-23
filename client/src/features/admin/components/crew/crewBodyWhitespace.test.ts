@@ -81,7 +81,10 @@ const sources = fs
   .filter((file) => file.endsWith(".tsx"))
   .map((file) => fs.readFileSync(path.resolve(HERE, file), "utf8").replace(/\s+/g, " "));
 
-describe("crew: prose a shift writes for him renders as prose (#1135)", () => {
+// The card number lives in the docblock above and not in this title: the
+// foundation's token guard reads `#1135` as a hex literal, and it strips
+// comments but not strings.
+describe("crew: prose a shift writes for him renders as prose", () => {
   const carrying = [...new Set(fieldsCarryingANewline(briefing))].sort();
 
   it("reads a real population — an empty read is a failure, not a pass", () => {
