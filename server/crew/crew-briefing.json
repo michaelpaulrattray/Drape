@@ -1,7 +1,7 @@
 {
-  "edition": 480,
-  "updatedAt": "2026-09-22T23:30:00.000Z",
-  "shift": "TWO REPAIRS TO THE PAGE AND THE TOOLS BEHIND IT. Nothing here needs you.\n\nTHE FIRST ONE YOU COULD SEE. Last night this page listed the makeup fix twice — two separate lines, both saying \"in review\", for one piece of work. Last night's shift tidied it away by hand; tonight the page REFUSES it. One job in progress gets one line, from now on, and nothing a shift types can produce a second one.\n\nTHE DECISION INSIDE IT, because it is about your record rather than about a bug. The obvious rule — one line per job, ever — would also have thrown out a pair of finished lines from back in June that describe two different pieces of work that happened to be released together. Deleting a line of your history to satisfy a guard is not a fix, so the rule only covers work still in progress: two lines telling you the same thing is happening NOW is always wrong, and what is already finished keeps whatever was written about it.\n\nTHE SECOND ONE IS THE TEAM'S OWN TOOLING. Four different tools ask \"can this fix still be released?\" and three of them had written the question out separately, so they could drift into three different answers about the same job — and the one sentence in the code claiming they could not drift was itself wrong. They all ask it one way now. One of the three had a real hole: if the question to GitHub were ever shortened, it would have answered \"nothing wrong here\" about something it could not see. It says \"I cannot tell\" now, which is the answer that makes somebody look.\n\nAND THE GUARD I WROTE TO CATCH THAT FAILED ITS OWN TEST FIRST. I deliberately broke the tools six ways to see whether the new guard complained. Five times it did; the sixth time it sat there — because it was looking for tools that mention the question BY NAME, and the one tool whose whole job is reading the live board does not mention it, it hands the work to something else. The guard written to catch a blind spot had the same blind spot. Fixed, re-broken, caught.\n\nRELEASING TONIGHT'S WORK BROKE THE MAKEUP FIX TWICE MORE, which is the fourth and fifth time in three days and is exactly what last night's new check predicted would keep happening. Both were named within a minute and repaired; it is green and ready again. That fix is still the one thing waiting on the review lane rather than on you — it touches the database, so the night team does not release it.",
+  "edition": 481,
+  "updatedAt": "2026-09-23T00:05:00.000Z",
+  "shift": "YOUR “good” IS IN, AND YOUR SWITCH PANEL HAS STOPPED OFFERING A JOB NOBODY COULD TAKE. Nothing here needs you.\n\nYOU PASSED THE SHEET CARDS. Your one word on the unsigned-sheets row — a sheet being cast, a sheet that was refused, a sheet with faces, all in one line — settles that gallery, and it comes off the list of pictures waiting for your eye. The other one, the x on your picture in the concept dialog, is still on your page and still one word either way.\n\nTHE HOUSEKEEPING ROW WAS TELLING YOU SOMETHING SLIGHTLY UNTRUE. It showed one job on offer. That job's own description hands its decision to the tidy-up round that runs on its own three-day clock — so no ordinary night could actually take it, and your panel was counting it as work waiting to be done. It now says what it is: held for that clock, which comes round tomorrow. Third time a card has needed this, and the number under your switches is the better for it each time.\n\nAND READING IT FINISHED THE PART IT HAD LEFT OPEN. The card said three development-only records carry a badly-formed name, and admitted out loud that it had not checked whether anything else in the database had the same fault. I checked all of it — every table that keeps that kind of name, thirteen of them, 360 records — and those three are the only ones anywhere. So whoever picks it up tomorrow is fixing three records, not hunting. No customer touches any of this.\n\nTHE MAKEUP FIX IS STILL THE ONE THING IN THE REVIEW LANE, green and ready, waiting on its review rather than on you. It did not drift tonight, because nothing was released underneath it.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-22T23:22:07.955Z",
+      "readAt": "2026-09-23T00:02:02.525Z",
       "items": [
         {
           "issueNumber": 16,
@@ -2602,7 +2602,7 @@
       "id": "sheet-card-states-1086-frames",
       "title": "Your unsigned sheets row: a sheet being cast, a sheet that was refused, and a sheet with faces - all four cards in one line",
       "question": "Do these cards read right to you? Left to right: two faces then the two states, a roll the engine refused entirely, a roll still being cast (four frames with a soft sweep moving through them, and \"casting...\" in the line), and an untouched sheet with four faces - proof that nothing which shows today stopped showing. The only words are \"Refused\" and \"Didn't arrive\": no engine, no stage, no percentage. If the loading frames are too quiet or too loud on your screen, say so - it is one line either way.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-22T15:15:00.000Z",
       "issueNumber": 1086,
       "frames": [
@@ -7162,9 +7162,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0923f-foreman",
+      "id": "queue-shape-0923g-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 37 open, your own list still EMPTY, none urgent. The tidy-up clock comes round tomorrow.",
+      "detail": "Read at 23:58 tonight. 37 open — nothing written and nothing closed since the last reading, so the board is exactly where it was.\n\nYour own ordered list is still empty, so the team keeps working from the background categories you have switched on. All seven are on. One of the seven — housekeeping — was showing a job that no ordinary night could take; it is marked as held now, so that row reads zero and means it.\n\n21 of the 37 have had nothing happen to them — no comment, no close, no code — for a week. The same 21 as the last five nights, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0923f-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 37 open, your own list still EMPTY, none urgent. No check-up clock fires before tomorrow.",
       "detail": "Read at 23:21 tonight. 37 open - two closed tonight and nothing new written, so the board is down two on the reading six hours ago. Both closures are tonight's own work: the guard that stops this page listing a job twice, and the tidy-up of the team's own tools.\n\nYour own ordered list is still empty, so the team keeps working from the background categories you have switched on. All seven are on.\n\n21 of the 37 have had nothing happen to them - no comment, no close, no code - for a week. The same 21 as the last four nights, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
     },
@@ -8001,10 +8008,11 @@
     192,
     193,
     194,
-    195
+    195,
+    196
   ],
   "nextUp": {
-    "readAt": "2026-09-22T23:22:07.954Z",
+    "readAt": "2026-09-23T00:02:02.524Z",
     "items": []
   }
 }
