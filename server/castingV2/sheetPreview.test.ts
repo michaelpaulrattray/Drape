@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { previewKeyOf, previewStateOf, sheetPreviewKeys, sheetPreviewTiles } from "./sheetPreview";
+import { previewKeyOf, previewStateOf, sheetPreviewTiles } from "./sheetPreview";
 
 /**
  * The faces on an unsigned sheet's card.
@@ -29,11 +29,11 @@ describe("a sheet card previews what is on the sheet", () => {
     const kept = [ready("kept-a.png")];
     const roll = [ready("roll-a.png"), ready("roll-b.png"), ready("roll-c.png")];
 
-    expect(sheetPreviewKeys(kept, roll)).toEqual([
-      "kept-a.png",
-      "roll-a.png",
-      "roll-b.png",
-      "roll-c.png",
+    expect(sheetPreviewTiles(kept, roll)).toEqual([
+      { kind: "face", key: "kept-a.png" },
+      { kind: "face", key: "roll-a.png" },
+      { kind: "face", key: "roll-b.png" },
+      { kind: "face", key: "roll-c.png" },
     ]);
   });
 
@@ -46,14 +46,14 @@ describe("a sheet card previews what is on the sheet", () => {
     const shared = ready("shared.png");
     const other = ready("other.png");
 
-    expect(sheetPreviewKeys([shared], [shared, other])).toEqual([
-      "shared.png",
-      "other.png",
+    expect(sheetPreviewTiles([shared], [shared, other])).toEqual([
+      { kind: "face", key: "shared.png" },
+      { kind: "face", key: "other.png" },
     ]);
   });
 
   it("falls back to the roll when nothing is kept", () => {
-    expect(sheetPreviewKeys([], [ready("only.png")])).toEqual(["only.png"]);
+    expect(sheetPreviewTiles([], [ready("only.png")])).toEqual([{ kind: "face", key: "only.png" }]);
   });
 
   it("still previews when the kept faces cannot be projected", () => {
@@ -65,12 +65,14 @@ describe("a sheet card previews what is on the sheet", () => {
       unprojectable kept row simply contributes nothing and the roll fills in.
     */
     const signedKeep = { id: 900, status: "signed", faceImageKey: "gone.png", faceThumbKey: null };
-    expect(sheetPreviewKeys([signedKeep], [ready("roll.png")])).toEqual(["roll.png"]);
+    expect(sheetPreviewTiles([signedKeep], [ready("roll.png")])).toEqual([
+      { kind: "face", key: "roll.png" },
+    ]);
   });
 
   it("stops at the strip's width", () => {
     const many = Array.from({ length: 8 }, () => ready());
-    expect(sheetPreviewKeys([], many)).toHaveLength(4);
+    expect(sheetPreviewTiles([], many)).toHaveLength(4);
   });
 
   it("prefers a thumbnail but never requires one", () => {
@@ -186,15 +188,5 @@ describe("a sheet card shows the state of the sheet, not only its faces", () => 
     const shared = ready("kept.png");
     const tiles = sheetPreviewTiles([shared], [shared, at(70, "queued")]);
     expect(tiles).toEqual([{ kind: "face", key: "kept.png" }, { kind: "pending" }]);
-  });
-
-  it("keeps the faces-only view exactly as it was", () => {
-    /*
-      `sheetPreviewKeys` is what the previous bundle reads for one more deploy.
-      It is DERIVED from the tiles now, so this arm is the proof that deriving
-      it did not change a single card: states contribute nothing to it.
-    */
-    const roll = [at(1, "queued"), ready("a.png"), at(3, "failed", "content_policy"), ready("b.png")];
-    expect(sheetPreviewKeys([], roll)).toEqual(["a.png", "b.png"]);
   });
 });
