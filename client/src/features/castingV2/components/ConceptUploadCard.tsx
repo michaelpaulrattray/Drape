@@ -203,23 +203,6 @@ export const ConceptUploadCard = forwardRef<ConceptUploadHandle, {
   };
 
   /*
-    THE × ON THE PICTURE (his ask, #1087) — `close` without the closing.
-
-    Everything about the picture goes and the dialog stays standing, so the
-    empty state's drop zone is what she is left looking at. The `readId` bump
-    is the same guard `close` and `beginRead` take: a read still in flight when
-    she removes the picture must not arrive afterwards and fill the dialog with
-    words about a photograph that is no longer there.
-  */
-  const clearPicture = () => {
-    readId.current += 1;
-    setPicture(null);
-    setDescription(null);
-    setFailure(null);
-    setNotAPicture(false);
-  };
-
-  /*
     THE TWO FAILURES ARE CAUGHT SEPARATELY, because they ask her to do
     different things and because the alternative is comparing an error's
     message text to a string another module authored — a coupling that goes
@@ -398,7 +381,6 @@ export const ConceptUploadCard = forwardRef<ConceptUploadHandle, {
           notAPicture={notAPicture}
           priceCredits={priceCredits}
           onFiles={offerFile}
-          onClear={clearPicture}
           onRetry={() => {
             if (picture) beginRead(picture);
           }}

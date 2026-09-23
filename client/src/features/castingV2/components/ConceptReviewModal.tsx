@@ -4,9 +4,9 @@ import {
   CONCEPT_DROP_CHOOSE,
   CONCEPT_DROP_LINE,
   CONCEPT_NOT_A_PICTURE,
-  CONCEPT_REMOVE_PICTURE,
-  CONCEPT_REPLACE_CHOOSE,
-  CONCEPT_REPLACE_HINT,
+  CONCEPT_REPLACE_ACTION,
+  CONCEPT_REPLACE_DROP,
+  CONCEPT_REPLACE_WORD,
   CONCEPT_READING_LABEL,
   CONCEPT_REVIEW_ANOTHER,
   CONCEPT_REVIEW_CANCEL,
@@ -23,7 +23,6 @@ import {
   CONCEPT_REVIEW_USE,
   conceptCountLabel,
 } from "../conceptUpload";
-import { X } from "lucide-react";
 
 import { ACCEPTED_PICTURE_FILES } from "../pictureBytes";
 import { ReimagineButton, ReimagineLine, useReimagine } from "./Reimagine";
@@ -84,6 +83,49 @@ import { CastingModal } from "@/foundation/CastingModal";
  * nothing (D-180). They are disabled at zero instead, which is
  * `CastSettingsModal`'s Reset rule applied to a confirm.
  */
+/**
+ * ONE DROP TARGET THAT KNOWS WHETHER A FILE IS OVER *IT* (#1087).
+ *
+ * Written as a hook because this dialog now has two of them — the body (with
+ * the empty picture slot, which is the same target seen from the other side)
+ * and the picture itself — and a second hand-rolled copy of the counting is
+ * the drift working law 4 is about. The count is the load-bearing part:
+ * `dragleave` fires every time the pointer crosses into a CHILD element, so a
+ * naive enter/leave pair flickers the state on and off as the cursor moves over
+ * the text inside the zone.
+ *
+ * `preventDefault` on dragover is what MAKES an element a drop target — without
+ * it the browser refuses the drop and then navigates the tab to the file, which
+ * would take her whole brief with it.
+ */
+function useDropZone(onFiles: (files: FileList | null) => void) {
+  const [over, setOver] = useState(false);
+  const depth = useRef(0);
+  const handlers = {
+    onDragEnter: (event: DragEvent) => {
+      if (!event.dataTransfer?.types?.includes("Files")) return;
+      depth.current += 1;
+      setOver(true);
+    },
+    onDragOver: (event: DragEvent) => {
+      if (!event.dataTransfer?.types?.includes("Files")) return;
+      event.preventDefault();
+    },
+    onDragLeave: () => {
+      depth.current = Math.max(0, depth.current - 1);
+      if (depth.current === 0) setOver(false);
+    },
+    onDrop: (event: DragEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      depth.current = 0;
+      setOver(false);
+      onFiles(event.dataTransfer?.files ?? null);
+    },
+  };
+  return { over, handlers };
+}
+
 export function ConceptReviewModal({
   file,
   description,
@@ -91,7 +133,6 @@ export function ConceptReviewModal({
   notAPicture,
   priceCredits,
   onFiles,
-  onClear,
   onRetry,
   onUse,
   onCast,
@@ -116,13 +157,6 @@ export function ConceptReviewModal({
   priceCredits: number;
   /** Files arrived here rather than at the card. The card judges and reads them. */
   onFiles: (files: FileList | null) => void;
-  /**
-   * REMOVE THE PICTURE AND KEEP THE DIALOG (his ask, #1087). Back to the empty
-   * state — the drop zone in the picture's own slot — rather than closed, which
-   * is what Discard does and is what made swapping a photograph cost the whole
-   * road.
-   */
-  onClear: () => void;
   /** Read the SAME picture again — the plain retry his build notes ask for. */
   onRetry: () => void;
   /** Put the words in the brief box and stop. The card decides where they go. */
@@ -133,9 +167,6 @@ export function ConceptReviewModal({
 }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [text, setText] = useState("");
-  /** Whether a drag is currently over the dialog. Depth-counted; see `onDragEnter`. */
-  const [dragging, setDragging] = useState(false);
-  const dragDepth = useRef(0);
   const picker = useRef<HTMLInputElement>(null);
   const firstAction = useRef<HTMLButtonElement>(null);
 
@@ -195,36 +226,19 @@ export function ConceptReviewModal({
   const reimagine = useReimagine({ value: text, onValue: setText, enabled: true });
 
   /*
-    DEPTH-COUNTED, because `dragleave` fires every time the pointer crosses into
-    a CHILD element — a naive pair of enter/leave handlers flickers the drop
-    state on and off as the cursor moves over the text inside the zone.
+    TWO ZONES, EACH COUNTING ITS OWN DRAGS (#1087, his third cut).
+
+    There was one flag for the whole dialog, and that is precisely the defect he
+    reported: *"when i drag the new image over the old image … the card doesnt
+    highlight or indicate im about to drop a new image in e.g it feels
+    unresponsive."* The drop itself landed — what was missing was any answer
+    while the file was still in the air. A single shared flag could not give
+    one, because the question is not *is a file over this dialog* but *is it
+    over THIS picture*: one flag raised by the body's zone would light the
+    picture while the hand was two columns away.
   */
-  const onDragEnter = (event: DragEvent) => {
-    if (!event.dataTransfer?.types?.includes("Files")) return;
-    dragDepth.current += 1;
-    setDragging(true);
-  };
-  const onDragLeave = () => {
-    dragDepth.current = Math.max(0, dragDepth.current - 1);
-    if (dragDepth.current === 0) setDragging(false);
-  };
-  /*
-    `preventDefault` on dragover is what MAKES an element a drop target — without
-    it the browser refuses the drop and then navigates the tab to the file,
-    which would take her whole brief with it.
-  */
-  const onDragOver = (event: DragEvent) => {
-    if (!event.dataTransfer?.types?.includes("Files")) return;
-    event.preventDefault();
-  };
-  const onDrop = (event: DragEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    dragDepth.current = 0;
-    setDragging(false);
-    onFiles(event.dataTransfer?.files ?? null);
-  };
-  const dropHandlers = { onDragEnter, onDragOver, onDragLeave, onDrop };
+  const bodyZone = useDropZone(onFiles);
+  const pictureZone = useDropZone(onFiles);
 
   const reading = file !== null && description === null && failure === null;
   const refused = failure !== null;
@@ -251,73 +265,61 @@ export function ConceptReviewModal({
       }
       portrait={preview}
       /*
-        THE WHOLE PICTURE. She is checking words against a photograph she chose,
-        of unknown proportions — a 4:5 crop can take away the thing the
-        description is about, which is this dialog failing at its one job.
-      */
-      portraitWhole
-      /*
         THE DROP ZONE STANDS IN THE PICTURE'S OWN SLOT while there is no picture
         — it is the picture-shaped hole the picture is about to fill, so the
         dialog does not change shape when one arrives.
       */
       portraitFallback={
         <span
-          className={dragging ? "dpc-modal__drop dpc-modal__drop--over" : "dpc-modal__drop"}
-          {...dropHandlers}
+          className={
+            bodyZone.over ? "dpc-modal__drop dpc-modal__drop--over" : "dpc-modal__drop"
+          }
+          {...bodyZone.handlers}
         >
           {CONCEPT_DROP_LINE}
         </span>
       }
       /*
-        THE TWO WAYS OFF A PICTURE, ON THE PICTURE (his ask, #1087): *"there
-        should be a way to clear the image without closing the brief like a
-        small x or something so i can replace the image and or dragging and
-        dropping a new image over the old one should work also?"*
+        ONE AFFORDANCE, REVEALED BY INTENT (his ruling, #1087, third cut).
 
-        The × removes it and leaves the dialog standing. The line under it is
-        documentation of a road that has worked since #196 and said nothing
-        about itself — this slot is a drop target, and dropping a picture on it
-        replaces the one there — with its second half a real button, so nobody
-        has to drag to get there.
+        The second cut wore two controls — an × and a caption band under the
+        face — and he replaced both with a single one and named the standard
+        himself: *"On HOVER the picture dims a touch and one quiet word appears
+        over it — Replace — and clicking anywhere on the picture opens the
+        picker. On DRAG-OVER the same overlay shows, stronger … so the intent is
+        answered the moment the file crosses the edge. … Discard already covers
+        abandoning the whole thing, so a separate clear is a second control for
+        a job the first one does."*
 
-        Drawn only where there is a picture to act on: never over the empty
-        slot, which already says what to do, and never during the read, where
-        the words are still arriving and removing the picture mid-flight would
-        ask a question the progress line has not finished answering.
+        So it is ONE element doing three jobs, which is why it is a `<button>`
+        covering the whole slot rather than a label with handlers bolted on: the
+        click is a real activation, the keyboard gets it free (focusable, Enter
+        opens the picker, and the overlay shows on `:focus-visible` so the
+        keyboard is told the same thing the pointer is), and it is the drop
+        target the picture never had until the second cut.
+
+        Drawn wherever there is a picture to replace — including a refusal,
+        where dropping another photograph is the fastest way out of the wall —
+        but never mid-read, where the words are still arriving and swapping the
+        subject would strand a read in flight.
       */
       portraitOverlay={
         preview && !reading ? (
-          <span className="dpc-modal__pictureacts" {...dropHandlers}>
-            <button
-              type="button"
-              className="dpc-modal__pictureclear"
-              aria-label={CONCEPT_REMOVE_PICTURE}
-              title={CONCEPT_REMOVE_PICTURE}
-              onClick={onClear}
-            >
-              <X size={13} strokeWidth={2} aria-hidden="true" />
-            </button>
-            {/*
-              NOT ON A REFUSAL, where the action row already carries "Choose
-              another picture" two inches away — the same offer twice is a
-              busier dialog, not a clearer one. The × and the drop target both
-              stay: removing the picture and dropping a new one on it are still
-              the fastest ways out of a wall.
-            */}
-            {refused ? null : (
-              <span className="dpc-modal__picturehint">
-                {CONCEPT_REPLACE_HINT}{" "}
-                <button
-                  type="button"
-                  className="dpc-modal__picturepick"
-                  onClick={() => picker.current?.click()}
-                >
-                  {CONCEPT_REPLACE_CHOOSE}
-                </button>
-              </span>
-            )}
-          </span>
+          <button
+            type="button"
+            className={
+              pictureZone.over
+                ? "dpc-modal__replace dpc-modal__replace--over"
+                : "dpc-modal__replace"
+            }
+            aria-label={CONCEPT_REPLACE_ACTION}
+            onClick={() => picker.current?.click()}
+            {...pictureZone.handlers}
+          >
+            <span className="dpc-modal__replaceword">
+              {pictureZone.over ? CONCEPT_REPLACE_DROP : CONCEPT_REPLACE_WORD}
+            </span>
+          </button>
         ) : null
       }
       /*
@@ -336,7 +338,7 @@ export function ConceptReviewModal({
         — which is where a hand actually aims. Same handler, same state; the two
         attachments are one target between them.
       */}
-      <div className="dpc-modal__bodydrop" {...dropHandlers}>
+      <div className="dpc-modal__bodydrop" {...bodyZone.handlers}>
         <input
           ref={picker}
           type="file"

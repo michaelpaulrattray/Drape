@@ -398,77 +398,99 @@
 }
 
 /*
-  THE CONTROLS THAT LIVE ON A PICTURE (#1087).
+  THE ONE CONTROL ON THE PICTURE (#1087, his third cut).
 
-  It covers the WHOLE slot rather than hugging the corner, and that is the
-  load-bearing part: this layer is the drop target for replacing the picture.
-  Until now the portrait slot had no drop handling at all once a picture was in
-  it — only the empty slot and the dialog BODY did — so dropping a new picture
-  on the old one did nothing the customer wanted. A picture is the obvious
-  place to aim, so it is a target now.
+  It covers the WHOLE slot, and that is load-bearing three times over: it is the
+  click target (*"clicking anywhere on the picture opens the picker"*), it is
+  the drop target the portrait never had until the second cut, and it is the
+  surface the dim is painted on. Nothing under it is interactive — it is an
+  `<img>` — so covering it costs no affordance.
 
-  Nothing under it is interactive (it is an `<img>`), so covering it costs no
-  affordance.
+  Invisible until someone shows intent: a pointer, a focus ring, or a file held
+  over it. His words, and the reason there is no × and no caption here any
+  more: *"ONE affordance, revealed by intent, nothing permanent on the
+  picture."*
+
+  The dim is a SCRIM rather than a semantic colour — it sits on the customer's
+  own photograph, which is neither theme's surface, so it is the same value in
+  both and belongs here rather than in `tokens.css` (the token guard's own
+  standing rule for scrims).
 */
-.dpc-modal__pictureacts {
+.dpc-modal__replace {
   position: absolute;
   inset: 0;
-  display: block;
-}
-
-/*
-  The × — top right, on a scrim disc so it survives whatever the customer's
-  own photograph puts behind it. Quiet until it is wanted.
-*/
-.dpc-modal__pictureclear {
-  position: absolute;
-  top: 8px;
-  right: 8px;
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 100%;
+  height: 100%;
   padding: 0;
   border: none;
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--secondary);
-  opacity: 0.82;
+  border-radius: 12px;
+  background: rgba(10, 10, 11, 0.42);
   cursor: pointer;
-  transition: opacity var(--t-fast), color var(--t-fast);
-}
-
-.dpc-modal__pictureclear:hover {
-  opacity: 1;
-  color: var(--ink);
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease);
 }
 
 /*
-  The line that says the slot takes a drop. Along the bottom, over a soft
-  wash so it reads on a light photograph as well as a dark one.
+  ⚠ THE FOCUS RESET CARRIES AN ELEMENT SELECTOR AND NO `.dp-root` PREFIX, and
+  both halves are load-bearing (`foundation/anchoredPanel.test.ts` reads this
+  rule and reddened on the first form of it).
+
+  `tokens.css`'s blanket is `.dp-root :focus-visible` at (0,2,0). A bare
+  `.dpc-modal__replace:focus-visible` TIES with it and then wins or loses on
+  stylesheet order — which nobody can see while writing CSS, and when it loses
+  the accent ring draws over the photograph beside our own mark. The prefix is
+  the usual repair and it is WRONG here: this dialog portals to `document.body`,
+  outside that wrapper, so a prefixed rule would match nothing at all. The
+  element selector wins the tie without moving the rule out of reach.
+
+  And focus is still SHOWN rather than suppressed — the overlay IS the mark: it
+  goes to full opacity on `:focus-visible`, which is the same answer the pointer
+  gets, said to the keyboard.
 */
-.dpc-modal__picturehint {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 14px 8px 6px;
-  text-align: center;
-  font-size: 10.5px;
-  line-height: 1.3;
-  color: var(--secondary);
-  background: linear-gradient(to top, var(--surface), transparent);
+.dpc-modal__replace:hover,
+button.dpc-modal__replace:focus-visible {
+  opacity: 1;
+  outline: none;
 }
 
-.dpc-modal__picturepick {
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
+/*
+  THE ANSWER WHILE THE FILE IS STILL IN THE AIR, which is the half he reported
+  missing: *"it feels unresponsive."* Stronger than the hover — a heavier wash
+  and a hairline ring inset from the edge — so crossing the edge with a file
+  reads as a different event from merely passing over.
+*/
+.dpc-modal__replace--over {
+  opacity: 1;
+  background: rgba(10, 10, 11, 0.56);
+}
+
+/*
+  The ring, drawn INSIDE the panel rather than along its edge — his word was
+  *"a hairline inset ring"*, and an edge-flush one is swallowed by the slot's
+  own `overflow: hidden` and reads as nothing at all. A pseudo-element rather
+  than an `outline`, which would lose to the hover rule's `outline: none` on
+  specificity the moment the pointer is over the picture — which, during a
+  drag, it always is.
+*/
+.dpc-modal__replace--over::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+/*
+  The word itself. White on the wash rather than a token, for the same reason
+  the wash is not one: it is drawn over a photograph, not over a theme surface.
+*/
+.dpc-modal__replaceword {
+  font: 400 12px var(--font-sans);
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.96);
 }
 
 /*
@@ -501,39 +523,22 @@
 }
 
 /*
-  THE WHOLE PICTURE, NOT A CROP OF IT (#196). The two dialogs that show OUR OWN
-  renders can crop freely — every one of them is already 4:5. The concept review
-  shows a picture the CUSTOMER chose, of unknown proportions, and its entire job
-  is letting her check a description against it: a crop can remove the very thing
-  the words are describing. Found by looking at the frame — a 2:3 upload lost its
-  lower half. The letterbox is `--media`, the same fill the empty portrait slot
-  uses, so it reads as the frame rather than as a gap.
+  ⚠ THE LETTERBOX IS GONE, AND IT WAS A FOUNDER RULING RATHER THAN A TIDY-UP
+  (#1087, 2026-09-23).
 
-  ⚠ `object-position` is RE-STATED here and it is load-bearing, not decoration.
-  The cascade resolves each property on its own: this rule wins `object-fit`
-  because it comes later at equal specificity, but where it says NOTHING about
-  `object-position` the base rule above — which matches this same element — is
-  the winning declaration, and the letterbox would hang entirely below the
-  picture. Contain-centred is what #196 shipped and what he has seen.
+  `.dpc-modal__portrait--whole img` lived here from #196: `object-fit: contain`
+  for the concept review, so a customer's own photograph of unknown proportions
+  was shown whole rather than cropped to 4:5. He looked at it beside the second
+  cut's controls and ruled, verbatim: *"the image no longer fills the card …
+  The picture must fill its panel again — object-fit: cover on the picture, the
+  4:5 panel, no letterbox."* Law 9, so the rule and its `portraitWhole` prop
+  both went; all three dialogs now lay out by the one rule above.
 
-  Not INHERITANCE, which is a different mechanism and the wrong word for it:
-  `object-position` is not an inherited property, and nothing here is reading a
-  value off a parent. This is cascade fallthrough between two rules matching one
-  element (caught in review of #198 — the surrounding reasoning was right and the
-  term would have sent the next reader to the wrong half of the spec).
-
-  ⚠ One latent conflict recorded rather than left to be rediscovered: it
-  PREDATES this rule and nothing exercises it. A consumer passing `--whole` and
-  `__muted` together would hand `object-fit: cover` to `.dpc-modal__muted > img`
-  on order, beating this rule's `contain`. No caller does; `ConceptReviewModal`
-  is the only `portraitWhole` and it never mutes.
+  ⚠ The trade is recorded rather than glossed, because #196 measured it: cover
+  CROPS, and the crop is top-anchored, so a picture much wider or much taller
+  than 4:5 loses its edges in this slot. Nothing about the READ changes — the
+  description is taken from the whole file, not from what the panel shows.
 */
-.dpc-modal__portrait--whole img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-}
 
 /*
   THE DROP ZONE STANDS WHERE THE PICTURE WILL (#196, amendment 2) — the portrait
