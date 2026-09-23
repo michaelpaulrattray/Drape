@@ -26,7 +26,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { adminProcedure, router } from "../_core/trpc";
-import { readCrewBriefing } from "../crew/crewBriefing";
+import { crewBriefingForPage, readCrewBriefing } from "../crew/crewBriefing";
 import { captureCrewTabEnabled } from "../crew/crewTabScope";
 import { readCrewCardIntents, setCrewCardIntent } from "../db/crewCardIntents";
 import { insertCrewReply, listCrewReplies } from "../db/crewReplies";
@@ -131,8 +131,15 @@ export const crewRouter = router({
     if (!captureCrewTabEnabled(ctx.user.id)) refuseOutsideScope();
 
     /* The briefing never throws — a malformed edition degrades and says so in
-       its own `problems` list, which is why this is not in a try. */
-    const briefing = readCrewBriefing();
+       its own `problems` list, which is why this is not in a try.
+
+       ⚠ PROJECTED, NOT THE FILE (#1137): the finished pipeline rows are
+       dropped here rather than sent and filtered away in the browser. At
+       edition 492 that was 281 of 281 rows and 351 KB of a 1.0 MB payload,
+       re-read every 60 seconds while the page is open. Nothing he sees
+       changes and nothing is deleted — `crewBriefingForPage`'s docblock has
+       the reading. */
+    const briefing = crewBriefingForPage(readCrewBriefing());
     const replies = await listCrewReplies();
     /* Degrades to `available: false` on an absent table (the window between
        this deploy and the founder's ceremony) and throws on anything else. */

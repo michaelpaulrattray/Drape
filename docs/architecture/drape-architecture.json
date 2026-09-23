@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ed79ea7859379021"
+    "sourceFingerprint": "8d020d8bd8bff635"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 58
+      "moduleCount": 59
     },
     {
       "id": "domain:staff",
@@ -5848,6 +5848,12 @@
     {
       "id": "module:shared/crewPipelineGroups.ts",
       "path": "shared/crewPipelineGroups.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewPipelineStatus.ts",
+      "path": "shared/crewPipelineStatus.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -14357,6 +14363,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "to": "module:shared/crewNextUpHold.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "to": "module:shared/crewPipelineStatus.ts",
       "kind": "imports"
     },
     {
@@ -28052,6 +28063,11 @@
     {
       "from": "module:server/crew/crewBriefing.ts",
       "to": "module:shared/crewPipelineGroups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/crewBriefing.ts",
+      "to": "module:shared/crewPipelineStatus.ts",
       "kind": "imports"
     },
     {

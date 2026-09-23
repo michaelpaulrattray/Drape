@@ -10,6 +10,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 
 import { crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { resolveHold, type CrewHold } from "../../../../../../shared/crewNextUpHold";
+import { crewPipelineRowIsDone } from "../../../../../../shared/crewPipelineStatus";
 import type { AppRouter } from "../../../../../../server/routers";
 
 type CrewState = inferRouterOutputs<AppRouter>["crew"]["getState"];
@@ -137,7 +138,13 @@ const NOT_DONE_RANK: Record<string, number> = {
 
 export function pipelineNotDone(items: readonly CrewPipelineItem[]): CrewPipelineItem[] {
   return items
-    .filter((item) => item.status !== "merged")
+    /* ⚠ THE SERVER NO LONGER SENDS THESE (#1137) — `crewBriefingForPage` drops
+       every finished row before the wire, because the page has nowhere to draw
+       one and it was 351 KB of a 1.0 MB payload re-read every 60 seconds. This
+       line is not thereby dead: it is the DEFINITION of what this list holds,
+       the projection asks the same shared question, and it is what still holds
+       if the projection is ever taken out. */
+    .filter((item) => !crewPipelineRowIsDone(item.status))
     /* Stable within a rank: the file is already newest-first, and `sort` is
        stable in every engine this ships to, so equal-rank rows keep the order
        the shifts recorded. */
