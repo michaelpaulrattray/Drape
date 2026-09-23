@@ -1,7 +1,7 @@
 {
-  "edition": 488,
-  "updatedAt": "2026-09-23T07:04:42.928Z",
-  "shift": "THE BROKEN SENTENCE ON YOUR SHEET IS FIXED, AND IT IS LIVE.\n\nLast night's audit found your own brief being handed back to you cut inside a word — \"cast as a beauty campaign casting, luminous skin, wide-set eyes, cro\". That is gone. The sheet now reads:\n\n    Everyone on this sheet is cast as a beauty campaign casting, luminous skin, wide-set eyes.\n\nWHAT WAS ACTUALLY WRONG, and it is worth thirty seconds because it is a shape we keep paying for. The studio had already found and fixed this exact bug once, in the place where it borrows your sentence — it stops at a whole word there. A second piece of code then cut the same sentence again, further along, and nobody carried the rule across. One rule, two copies, and the second copy was the wrong one. The rule now lives in one place and both cuts read it.\n\nTHE SAME SWEEP FOUND SOMETHING QUIETER AND WORSE. When you name something you are wearing — \"heavy tortoiseshell reading spectacles\" — the sheet was allowed to cut that mid-word too, and the studio checks every word against your brief before it shows anything. A half word is not a word you typed, so the whole thing was dropped and the sheet simply said nothing about it. You had typed it and paid for it. Fixed in the same change.\n\nAND TWO THINGS STOPPED BEING SENT TO YOUR BROWSER. Every sheet was carrying twelve \"chips\" and a variance flag that nothing on the page has read since you killed the clone line in August. Nothing you can see changes; the studio just stopped shipping two facts nobody asked for. The records themselves are untouched, so a future page that says what is held still has its evidence waiting.\n\nONE DECISION IS YOURS AND IT IS ONE WORD. Should the sheet repeat your own sentence back to you at all as the casting category? You have made this complaint once already, about the follow prompt. My recommendation is to wait — the only reason to keep it dies with the wardrobe path retirement, which is in this same rung. It is on your desk below.\n\nTHE QUEUE: 33 open, nothing urgent, your own list still empty. 17 untouched for a week. No check-up clock fires before tomorrow.",
+  "edition": 489,
+  "updatedAt": "2026-09-23T08:28:56.935Z",
+  "shift": "Foreman — #203 slice 1",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -18,8 +18,8 @@
           "state": "done"
         },
         {
-          "title": "⚠ EVERY WIDEN IS YOUR WORD, NOT OURS — a shift may never flip a switch past your own account. So N2 is largely a sequence of decisions only you can make, and the card on your desk asks how you want them put to you: one batched sitting, or one at a time",
-          "state": "waiting"
+          "title": "⚠ EVERY WIDEN IS YOUR WORD — and you have said how you want them put to you: \"One sitting — prepare every switch with its evidence and I'll go down the list in one go.\" 20 switches stand on your account alone; the list is being prepared and you see it complete, not half-done",
+          "state": "done"
         },
         {
           "title": "First N2 brief cut and finished — the ghost audit (#180): fourteen facts traced, one customer-visible bug found and driven, four cards filed",
@@ -31,6 +31,14 @@
         },
         {
           "title": "The N1 milestone-close deep review over the whole rung's diff (1,080 commits) — asked for on #1121; it runs in parallel and does not hold N2 up",
+          "state": "in-progress"
+        },
+        {
+          "title": "The wardrobe/basics retirement has started: the ENTRANCE is closed (#203) — no path switch on either page, and no roll is born on one. The setting now governs nothing. The read paths are next",
+          "state": "done"
+        },
+        {
+          "title": "Next: the switch list itself — one row per setting, what a customer gets, the evidence it is safe, what it costs, and a recommendation. That is the sitting you asked for",
           "state": "in-progress"
         }
       ]
@@ -84,33 +92,33 @@
     ],
     "chips": [
       {
-        "label": "N1 signed off by you",
+        "label": "N1 signed off, and the drive passed",
         "tone": "good",
-        "source": "“im happy to sign off on the cyborg breif now” — your eye on both bars, 23 Sept."
+        "source": "“All tests passed” — your reply on the completion card, 23 Sept."
       },
       {
-        "label": "… and live on one account",
+        "label": "… and still live on one account",
         "tone": "warn",
-        "source": "20 of 36 switches read at “your account only”, checked against the live site 04:43Z."
+        "source": "20 of 36 switches read “your account only”, against the live site 04:43Z."
       },
       {
-        "label": "Nothing is stuck tonight",
+        "label": "The path switch is retired",
         "tone": "good",
-        "source": "The tattoo fix shipped. The two-night block has a cause and a way round it."
+        "source": "Gone from both pages, and no roll is born on one. You see no difference: it drew for nobody."
       },
       {
         "label": "Your desk",
         "tone": "neutral",
-        "source": "197 of 197 replies acted on. One new card below, and it wants your hands first."
+        "source": "199 of 199 replies acted on. Both of this morning’s are done; nothing needs you tonight."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "30 open, none ordered by you, none urgent. 16 untouched for 7 days, down from 21."
+        "source": "35 open, 1 ordered by you, none urgent. 17 untouched for 7 days, read at the timeline."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T07:02:22.743Z",
+      "readAt": "2026-09-23T08:29:06.853Z",
       "items": [
         {
           "issueNumber": 10,
@@ -276,8 +284,8 @@
           "consequence": "The only reason to keep it dies with that road, and then taking it out is obvious rather than a trade. Nothing happens in the meantime."
         }
       ],
-      "recommendation": "C — wait for #203, which is already in this rung. If seeing your own sentence repeated bothers you before then, say take it out and it goes for your account in one small change.",
-      "state": "open",
+      "recommendation": "ANSWERED — your word: \"C — wait for #203\". It now waits on the wardrobe/basics retirement rather than on you. Slice 1 of that closed the entrance tonight; the read paths, which are what actually carry the borrowed line into the block, are slice 2. Nothing more is needed from you here.",
+      "state": "answered",
       "filedAt": "2026-09-23T07:04:42.929Z",
       "issueNumber": 1129
     },
@@ -325,8 +333,8 @@
           "consequence": "Each widen lands as soon as you say yes, so customers get things sooner. But it is roughly a dozen separate interruptions over N2, and you judge each switch without seeing the others beside it."
         }
       ],
-      "recommendation": "A. Every widen is your word and no shift may flip a switch past your own account, so N2 is mostly a sequence of decisions only you can make — which means the real choice is how they reach you. Batched is better here because the question “is this ready for a stranger?” is easier to answer about twenty switches side by side than about one in isolation, and because a dozen interruptions is the more expensive of the two for you. Drive the seven items above first either way.",
-      "state": "open",
+      "recommendation": "ANSWERED — your word: \"All tests passed. One sitting — prepare every switch with its evidence and I'll go down the list in one go.\" That is option A, and the test drive is discharged. The list is being built: 20 switches stand on your account alone, each one gets a plain sentence for what a customer would get, the evidence it is safe, what it costs and a recommendation. You will see it when it is complete rather than half-done.",
+      "state": "answered",
       "filedAt": "2026-09-23T05:30:00.000Z",
       "issueNumber": 1121
     },
@@ -5245,6 +5253,13 @@
   ],
   "pipeline": [
     {
+      "id": "two-paths-entrance-203",
+      "title": "Nobody chooses a path before casting any more",
+      "status": "merged",
+      "prNumber": 1131,
+      "note": "The Wardrobe / Basics switch is gone — from the casting page and from the re-roll box — and a roll can no longer be born on a path. This is the retirement you ruled in advance (\"yeah we will retire the wardrobe/basics path obviously\"), and it is the first piece of it.\n\nYou will see no difference, and that was checked rather than hoped: the switch only ever drew for an account inside its own flag AND off the author road, and the one account inside that flag is yours, which is on the author road. So it was drawn for nobody on the day it came out. Both pages were opened and looked at afterwards.\n\nWhat deliberately stayed: a sheet that WAS cast on a path still says so. Those rows exist and the line that shows them is untouched to the byte — it is a fact about that sheet, not about the control that set it.\n\nThe switch itself now governs nothing at all, so it is the easiest row on your coming list: turning it off is a no-op with no behaviour behind it. It was left alone rather than changed, because a live setting is yours to move."
+    },
+    {
       "id": "role-cut-1122",
       "title": "Your brief is no longer handed back cut inside a word",
       "status": "merged",
@@ -8109,10 +8124,18 @@
     194,
     195,
     196,
-    197
+    197,
+    198,
+    199
   ],
   "nextUp": {
-    "readAt": "2026-09-23T07:02:22.742Z",
-    "items": []
+    "readAt": "2026-09-23T08:29:06.852Z",
+    "items": [
+      {
+        "issueNumber": 1132,
+        "title": "N2: THE SWITCH LIST — every users:1 flag with its evidence, for one sitting (his word, 23 Sep: 'prepare every switch with its evidence and I'll go down the list in one go')",
+        "urgent": false
+      }
+    ]
   }
 }
