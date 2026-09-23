@@ -30,11 +30,6 @@ import { CAST_STYLES, type CastStyle } from "../../shared/castStyles";
 import { candidateFailureKind, type CandidateFailureKind } from "../../shared/candidateFailure";
 import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzle/schema";
 import { storagePublicUrl } from "../storage";
-import {
-  UNLOCKABLE_FIELDS,
-  type CastingChip,
-  type UnlockableField,
-} from "./briefCompiler";
 import { capForEcho } from "./capAtWordBoundary";
 import { statesWardrobe } from "./statedWardrobe";
 import type { CastingPath } from "../../shared/castingPaths";
@@ -94,7 +89,15 @@ export type RollProjection = {
   rollIndex: number;
   status: CastingRoll["status"];
   briefText: string;
-  chips: CastingChip[];
+  /*
+    `chips` and `varianceHeld` were here and are GONE (#1124, found by the #180
+    ghost audit). Both crossed to the browser with no reader in the studio: the
+    sheet draws `facts` through `BriefEcho`, and the one line that rendered on
+    `varianceHeld` was killed by his #166 ruling. Neither ROW changes — the
+    compiled brief still carries the chips and the whole variance plan, so a
+    future surface that says what is held has its evidence waiting and a
+    validator away from the wire again.
+  */
   /** The brief echo's facts — see `readBriefFacts`. */
   facts: BriefFacts;
   /**
@@ -104,14 +107,6 @@ export type RollProjection = {
    * true and useless — a roll has eight faces and the user pointed at one.
    */
   lineage: { fromCandidateId?: string; fromCandidateLabel?: string; fromRollId?: string };
-  /**
-   * The sheet could not be varied, and the user is entitled to know.
-   *
-   * A boolean, not the count: the count is a taste instrument and belongs
-   * inside `compiledBrief` with the rest of the internals. What crosses the
-   * boundary is the one thing the user can act on.
-   */
-  varianceHeld: boolean;
   /**
    * The interpreter could not be read and this roll was compiled from the raw
    * sentence — so nothing the brief stated was pinned. See `readFellBack`.
@@ -331,7 +326,7 @@ export function readBriefFacts(
 
     The interpreter already refuses a phrase carrying a word the brief does not
     contain, and this asks the same question a second time at the boundary the
-    text actually crosses — the same reason `readVarianceHeld` re-validates a
+    text actually crosses — the same reason `readFellBack` re-validates a
     stored JSON column rather than forwarding it. The compiled brief is written
     by a model behind a seam, and a projection that trusted it would be an
     injection path to the client (invariant 8).
@@ -356,40 +351,6 @@ export function readBriefFacts(
     : [];
 
   return { role, locks, open, variationAxis, statedAccessories };
-}
-
-const CHIP_KINDS = new Set<CastingChip["kind"]>(["subject", "style", "direction", "lineage"]);
-
-/**
- * Chips are stored inside the internal compiled brief, so they are read back
- * through a validator rather than trusted. The compiled brief is written by a
- * compiler that will one day be an LLM behind a seam — a projection that
- * forwarded whatever it found there would be an injection path straight to
- * the client.
- */
-export function readChips(compiledBrief: unknown): CastingChip[] {
-  if (!compiledBrief || typeof compiledBrief !== "object") return [];
-  const raw = (compiledBrief as { chips?: unknown }).chips;
-  if (!Array.isArray(raw)) return [];
-  const chips: CastingChip[] = [];
-  for (const entry of raw) {
-    if (!entry || typeof entry !== "object") continue;
-    const { label, kind, removable, field } = entry as Record<string, unknown>;
-    if (typeof label !== "string" || !label) continue;
-    if (typeof kind !== "string" || !CHIP_KINDS.has(kind as CastingChip["kind"])) continue;
-    chips.push({
-      label: label.slice(0, 60),
-      kind: kind as CastingChip["kind"],
-      removable: removable === true,
-      // Checked against the closed list, not forwarded: the sheet sends this
-      // back as an `unlock`, so a value invented upstream would be a value the
-      // client then posts to a strict enum and gets refused for.
-      ...(typeof field === "string" && UNLOCKABLE_FIELDS.includes(field as UnlockableField)
-        ? { field: field as UnlockableField }
-        : {}),
-    });
-  }
-  return chips.slice(0, 12);
 }
 
 /**
@@ -492,20 +453,6 @@ export function projectCandidate(
     kept: candidate.keptAt !== null,
     failure: candidate.status === "failed" ? { kind: candidateFailureKind(candidate.failureClass) } : null,
   };
-}
-
-/**
- * Did the sheet fail to reach the variance floor even after the release?
- *
- * Validated rather than trusted, like every other read of a json column — the
- * shape is written by the compiler today, but a column parsed as whatever it
- * happens to contain is one migration away from being a lie the echo repeats.
- */
-function readVarianceHeld(compiledBrief: unknown): boolean {
-  if (!compiledBrief || typeof compiledBrief !== "object") return false;
-  const variance = (compiledBrief as { variance?: unknown }).variance;
-  if (!variance || typeof variance !== "object") return false;
-  return (variance as { confess?: unknown }).confess === true;
 }
 
 /**
@@ -641,8 +588,6 @@ export function projectRoll(input: {
     status: input.roll.status,
     // The user's own sentence, returned to them. Never the compiled brief.
     briefText: input.roll.briefText,
-    chips: readChips(input.roll.compiledBrief),
-    varianceHeld: readVarianceHeld(input.roll.compiledBrief),
     fellBack: readFellBack(input.roll.compiledBrief),
     /*
       Derived from the sentence rather than persisted beside it.
