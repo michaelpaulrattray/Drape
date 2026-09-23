@@ -1,7 +1,7 @@
 {
-  "edition": 491,
-  "updatedAt": "2026-09-23T20:25:00+10:00",
-  "shift": "Foreman — the switch list",
+  "edition": 492,
+  "updatedAt": "2026-09-23T21:05:00+10:00",
+  "shift": "Foreman — your cards read as written",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -118,7 +118,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "38 open · 17 untouched for 7 days · 14 now waiting on you · none urgent."
+        "source": "37 open · 17 untouched for 7 days · 14 waiting on you · none urgent."
       }
     ],
     "ladderCards": {
@@ -5565,6 +5565,13 @@
   ],
   "pipeline": [
     {
+      "id": "crew-card-paragraphs-1135",
+      "title": "Your cards read the way they were written",
+      "status": "merged",
+      "prNumber": 1136,
+      "note": "Your cards are written in paragraphs and, until tonight, the page threw the paragraphs away: a blank line between them collapsed into a single space, so a card written as four short paragraphs reached you as one long block with its headings buried mid-sentence.\n\nOne line of styling fixes it, in the two places the page shows our writing. Nothing else moves — your thirteen switch cards were measured before and after and are identical to the pixel, because they had already been written flat to survive this.\n\nThe clearest example is the top note in Problems, about the two-night block: it was meant to start lines with WHAT I FOUND and WHAT I DID INSTEAD, and now it does."
+    },
+    {
       "id": "two-paths-entrance-203",
       "title": "Nobody chooses a path before casting any more",
       "status": "merged",
@@ -7576,14 +7583,14 @@
     {
       "id": "queue-shape-0923i-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 37 open, your own list has one job on it, none urgent. No check-up clock fires before tomorrow.",
       "detail": "Read at 02:05. 37 open — one fewer than three hours ago, because your settings-chip job closed once it was confirmed live on the real site rather than just merged.\n\nYour own ordered list has ONE job on it: the concept window's missing way to swap the picture without losing what you typed. Nothing is urgent.\n\n21 of the 37 have had nothing happen to them — no comment, no close, no code — for a week. The same 21 as the last six nights, so the backlog is flat rather than growing.\n\nNothing here needs you."
     },
     {
       "id": "queue-shape-0923h-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 38 open, your own list back to EMPTY, none urgent. No check-up clock fires before tomorrow.",
       "detail": "Read at 01:06. 38 open — up one on the reading three hours ago. Your drop-a-picture job was written, built and closed inside the same night, and the wrap it shipped with was written, fixed and closed beside it.\n\nYour own ordered list is back to empty, so the team returns to the background categories you have switched on. All seven are on.\n\n21 of the 38 have had nothing happen to them — no comment, no close, no code — for a week. The same 21 as the last five nights, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
     },
