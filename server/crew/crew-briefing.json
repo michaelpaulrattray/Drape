@@ -1,7 +1,7 @@
 {
-  "edition": 496,
-  "updatedAt": "2026-09-24T03:50:00+10:00",
-  "shift": "Foreman — three retired settings stop being accepted, and the paths retirement takes its next step",
+  "edition": 497,
+  "updatedAt": "2026-09-24T05:10:00+10:00",
+  "shift": "Foreman — a refusal that named a path you can no longer buy comes out",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -43,6 +43,10 @@
         },
         {
           "title": "Two things the audit found and filed on the way: the safety check for one switch is written onto a row that gets deleted (#1133), and the new engine's cost per picture has never been read (#1134). Neither blocks the four widens",
+          "state": "done"
+        },
+        {
+          "title": "The retirement's first READ path is out: a refusal that told a customer \"this one was cast on Basics — cast on Wardrobe to change what someone is wearing\" is gone. Nobody could follow that instruction any more. Eight places in the studio ask a path question, not the three the plan knew about, and all eight are now written down with the order they come out in",
           "state": "done"
         }
       ]
@@ -118,11 +122,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "37 open · 17 untouched for 7 days · 14 waiting on you · none urgent."
+        "source": "39 open · 17 untouched for 7 days · 14 waiting on you · none urgent."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T17:35:50.631Z",
+      "readAt": "2026-09-23T18:58:16.544Z",
       "items": [
         {
           "issueNumber": 10,
@@ -2929,6 +2933,28 @@
       ],
       "recommendation": "Flip the switch off. Your written instruction is the more recent deliberate statement of what you wanted, and the switch was most likely turned on when you turned the whole panel on at once. Either answer takes one tap; leaving it as it is means every future shift keeps making the guess.",
       "filedAt": "2026-09-07T12:45:00Z"
+    },
+    {
+      "id": "wardrobe-capability-1148",
+      "title": "Should a customer be able to change what a cast is WEARING? — a question the wardrobe retirement makes permanent",
+      "productImpact": "Somebody casts a model, likes her, and types into the refine box:\n\n    put her in a long black coat\n\nShe gets back: \"Refining changes the person, not the shoot — a coat is a garment, a prop or the set, which comes after Sign.\" She can change the face, the hair, the skin, the build and anything worn as jewellery. Not the clothes.\n\nThat is true today and has been true for every cast on the live site. Nothing tonight changed it. But the studio DOES have a wardrobe editor in it, and it is switched on by one thing only: the cast was bought on the Wardrobe path. You ruled that path retired, so when it goes that condition can never be true again — and the refusal above becomes permanent by default rather than by decision.\n\nThis is NOT part of the one-sitting switch list and does not hold it up. It is a separate question and it can wait as long as you like; the retirement proceeds on A in the meantime, which changes nothing anybody can see.",
+      "workedExample": "Open any cast on the live site, type \"put her in a long black coat\" into the refine box, and read the refusal. Every cast answers the same way — there are thirteen rolls in the whole database that were ever on a path, all yours, all from 24–26 August, and not one of them still has a picture attached.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Retire the wardrobe editor with the path",
+          "consequence": "The refusal becomes permanent and honest — the studio genuinely cannot name a garment. Someone who wants different clothes says so in the brief and re-rolls, which the studio already does well. No work beyond the retirement already running."
+        },
+        {
+          "key": "B",
+          "label": "Give it to everyone",
+          "consequence": "\"Put her in a long black coat\" becomes an edit anybody can buy on any cast, like changing her hair. This is a new feature rather than a cleanup: the machinery behind it was built assuming the outfit was chosen BEFORE the roll, so it needs its own build and its own look at the results."
+        }
+      ],
+      "recommendation": "A for now, and B carded separately if you want it. Folding a new capability into a retirement is how a half-built feature ships under a cleanup's name — and B is not a switch flip, it is a garment edit on the paid road.",
+      "state": "waiting",
+      "filedAt": "2026-09-24",
+      "issueNumber": 1148
     }
   ],
   "eyeItems": [
@@ -7601,6 +7627,13 @@
       "status": "merged",
       "prNumber": 1145,
       "note": "Nothing changes on screen — nothing has sent either setting for weeks. The studio now refuses them outright instead of quietly ignoring them, and a check proves Style still works."
+    },
+    {
+      "id": "basics-wardrobe-refusal-203-2",
+      "title": "A refusal that named a path you can no longer buy comes out of the studio",
+      "status": "merged",
+      "prNumber": 1147,
+      "note": "Nothing changes on screen. It had never once been shown to anybody, and the studio's own map had been flagging it as unreachable for a month."
     }
   ],
   "problems": [
@@ -8500,7 +8533,7 @@
     199
   ],
   "nextUp": {
-    "readAt": "2026-09-23T17:35:50.630Z",
+    "readAt": "2026-09-23T18:58:16.543Z",
     "items": [
       {
         "issueNumber": 1132,
