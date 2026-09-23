@@ -62,6 +62,7 @@ import { z } from "zod";
 import { CREW_CARD_STATES, crewCardNeedsHim } from "../../shared/crewCardState.js";
 import { CREW_HELD_STATES, CREW_HOLD_REASON_MAX } from "../../shared/crewNextUpHold.js";
 import { CREW_LADDER_GROUP_KEYS, onePlaceViolations } from "../../shared/crewPipelineGroups.js";
+import { CREW_PIPELINE_STATUSES, crewPipelineRowIsDone } from "../../shared/crewPipelineStatus.js";
 
 import briefingJson from "./crew-briefing.json";
 
@@ -206,8 +207,22 @@ const needsYouSchema = z.object({
 const pipelineItemSchema = z.object({
   id: z.string(),
   title: z.string(),
-  status: z.enum(["building", "in-review", "waiting-founder", "merged", "blocked"]),
+  /* Derived from `CREW_PIPELINE_STATUSES` (#1137), for `state`'s reason one
+     schema up: the enum and the predicate that reads it must never be two
+     lists. */
+  status: z.enum(CREW_PIPELINE_STATUSES),
   prNumber: z.number().int().positive().nullable(),
+  /**
+   * Why this row is where it is — and ⚠ **ON A `merged` ROW IT IS A RECORD,
+   * NOT A SURFACE (#1137).**
+   *
+   * The page draws `pipelineNotDone` only, and #438 deleted the one section
+   * that ever showed a finished row, so a merged row's note reaches no screen.
+   * `crewBriefingForPage` below no longer even sends it. Keep a finished row's
+   * note to ONE LINE: the shift's narrative belongs in its mailbox entry and
+   * in the close note his Recent shifts strip draws, both of which he can
+   * actually reach. A four-paragraph note here is written to nobody.
+   */
   note: z.string().nullable(),
   /**
    * The needs-you card this row is waiting on — REQUIRED on a
@@ -597,6 +612,36 @@ export function readCrewBriefing(): CrewBriefing {
     );
     return degradedCrewBriefing();
   }
+}
+
+/**
+ * THE BRIEFING AS THE PAGE GETS IT — an explicit projection, not the file
+ * (#1137; invariant 8, *read paths return an explicit projection*).
+ *
+ * It drops every FINISHED pipeline row, because the page has no way to draw
+ * one: `CrewPipeline` renders `pipelineNotDone` and #438 deleted the only
+ * section that ever showed a merged row. Measured at edition 492 — **281 of
+ * 281 pipeline rows were `merged`, 351 KB of a 1.0 MB briefing, 298 KB of it
+ * prose in the `note` field** — and `/admin/crew` re-reads `crew.getState`
+ * every 60 seconds while it is open, so that is a third of a megabyte a minute
+ * sent to be thrown away by a `.filter()` in the browser.
+ *
+ * ⚠ **NOTHING IS DELETED AND NOTHING HE SEES CHANGES.** The rows stay in
+ * `crew-briefing.json`, in git and in the mailbox entries that point at them —
+ * the record is exactly where `crewTypes.ts` says it is kept. This is only the
+ * wire. If a folded *already dealt with* strip is ever wanted back, that is
+ * HIS call (#1137 option B) and it is one line here.
+ *
+ * ⚠ **AND THE CLIENT'S FILTER STAYS.** It is not redundant belt-and-braces: it
+ * is the DEFINITION, shared with this function through
+ * `crewPipelineRowIsDone`, and it is what still holds if this projection is
+ * ever removed.
+ */
+export function crewBriefingForPage(briefing: CrewBriefing): CrewBriefing {
+  return {
+    ...briefing,
+    pipeline: briefing.pipeline.filter((row) => !crewPipelineRowIsDone(row.status)),
+  };
 }
 
 /** Test seam. Nothing in the product calls it. */

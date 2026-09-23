@@ -41,6 +41,8 @@ vi.mock("../db/crewReplies", () => ({
 }));
 
 import { crewRouter } from "../routes/crew";
+import { readCrewBriefing } from "./crewBriefing";
+import { pipelineNotDone } from "../../client/src/features/admin/components/crew/crewTypes";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -183,6 +185,63 @@ describe("invariant 3 — the author is the session, structurally (§9 arm 4)", 
     await expect(
       caller.reply({ cardId: "a-card-no-briefing-holds", body: "still a ruling" }),
     ).resolves.toMatchObject({ body: "still a ruling" });
+  });
+});
+
+describe("the wire carries only the rows the page can draw (#1137)", () => {
+  /* The file as it sits on disk, read rather than imported through the parser,
+     so "the record is kept" is asserted against the artifact itself. */
+  const file = JSON.parse(
+    readFileSync(path.join(__dirname, "crew-briefing.json"), "utf8"),
+  ) as { pipeline: Array<{ id: string; status: string; note: string | null }> };
+
+  it("⚠ CONTROL — the deployed file still HOLDS finished rows, so there is something to drop", () => {
+    const merged = file.pipeline.filter((row) => row.status === "merged");
+    expect(
+      merged.length,
+      "no merged rows in the file means this whole suite is asserting nothing",
+    ).toBeGreaterThan(0);
+    /* The record is the point: #1137 is not a deletion, and an arm that cannot
+       tell a projection from a purge would pass on either. */
+    expect(merged.some((row) => (row.note ?? "").length > 0)).toBe(true);
+  });
+
+  it("getState sends no finished row, and every unfinished one survives byte for byte", async () => {
+    process.env.CREW_TAB_SCOPE = "all";
+    const state = await crewRouter.createCaller(contextFor()).getState();
+
+    expect(state.briefing.pipeline.filter((row) => row.status === "merged")).toEqual([]);
+    expect(state.briefing.pipeline).toEqual(
+      file.pipeline.filter((row) => row.status !== "merged"),
+    );
+  });
+
+  it("⚠ every other section is untouched — a projection, never an edit", async () => {
+    process.env.CREW_TAB_SCOPE = "all";
+    const state = await crewRouter.createCaller(contextFor()).getState();
+    const onTheWire = { ...state.briefing, pipeline: [] };
+    const fromTheFile = { ...readCrewBriefing(), pipeline: [] };
+    expect(onTheWire).toEqual(fromTheFile);
+  });
+
+  it("the page's filter and the wire projection ask ONE question (working law 4)", async () => {
+    process.env.CREW_TAB_SCOPE = "all";
+    const state = await crewRouter.createCaller(contextFor()).getState();
+    /* The client's own derivation over what it is now sent: it must find
+       nothing left to drop. The day the two definitions disagree, the page
+       draws a shorter list than the server meant and nothing else can see it. */
+    expect(pipelineNotDone(state.briefing.pipeline)).toEqual(state.briefing.pipeline);
+  });
+
+  it("the saving is measured at the serialized payload, not asserted", async () => {
+    process.env.CREW_TAB_SCOPE = "all";
+    const state = await crewRouter.createCaller(contextFor()).getState();
+    const wire = Buffer.byteLength(JSON.stringify(state.briefing), "utf8");
+    const whole = Buffer.byteLength(JSON.stringify(readCrewBriefing()), "utf8");
+    /* At edition 492: 1,014,967 → 663,497 bytes, 351 KB off a payload the page
+       re-reads every 60 seconds. The arm holds the DIRECTION rather than the
+       number, because the number moves every edition. */
+    expect(wire).toBeLessThan(whole);
   });
 });
 
