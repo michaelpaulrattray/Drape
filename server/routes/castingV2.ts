@@ -124,7 +124,6 @@ const tuple = <T extends string>(values: readonly T[]) => values as unknown as [
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { retryCandidate } from "../castingV2/retryService";
 import { captureCastingRetryEnabled } from "../castingV2/castingV2Scope";
-import { CASTING_PATHS } from "../../shared/castingPaths";
 import { signCandidate } from "../castingV2/signService";
 import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "../castingV2/refineLimits";
 import {
@@ -1289,37 +1288,6 @@ export const castingV2Router = router({
           briefText: z.string().trim().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD),
           unlock: unlockList,
           overrides: overrideObject,
-          /*
-            ⚠ TOMBSTONE (#203): the two paths are RETIRED and nothing reads
-            this field — `rollService` writes the column `null` for every roll.
-            It STAYS in the schema for exactly one deploy because this input is
-            `.strict()`: a browser holding the previous bundle still sends
-            `path` from the toggle it drew, and deleting the field in the
-            commit that stops sending it BAD_REQUESTs that roll mid-deploy —
-            on the money path, for a customer who did nothing wrong (the
-            input-removal rule, invariant 4's billing clause).
-
-            ⚠ **Deleting the config gate in this same commit does NOT make that
-            window empty**, which is the tempting reading: a bundle already
-            mounted holds its config answer until the query refetches, so for
-            that stretch it still believes it may send a path. The tombstone is
-            what covers the stretch, not the gate's removal.
-
-            It goes in the slice that collapses the read paths, with
-            `imagination` beside it — the same shape, one road older.
-          */
-          path: z.enum(CASTING_PATHS).optional(),
-          /*
-            ⚠ TOMBSTONE (#535): the imagination meter is GONE — the level left
-            the product with the Re-imagine press, and nothing reads this
-            field. It STAYS in the schema because this input is `.strict()`
-            and deleting it in the commit that stops sending it would
-            BAD_REQUEST every in-flight bundle mid-deploy (the input-removal
-            rule, invariant 4's billing clause). An inline pair rather than
-            the retired `shared/imagination.ts` vocabulary: the wire tolerance
-            outlives the module by exactly one deploy, then this line goes.
-          */
-          imagination: z.enum(["low", "max"]).optional(),
           /* The settings modal's style (#142) — optional, absent means photoreal. */
           style: z.enum(CAST_STYLES).optional(),
         })
@@ -1357,14 +1325,6 @@ export const castingV2Router = router({
           briefText: z.string().trim().min(1).max(BRIEF_TEXT_MAX_AUTHOR_ROAD), // #816, as createRoll
           unlock: unlockList,
           overrides: overrideObject,
-          /*
-            ⚠ TOMBSTONE (#535), the createRoll field's twin — see the comment
-            there. Nothing reads it; it stays one deploy past the client's
-            last send (the input-removal rule). No `path`: a follow is dressed
-            by the engine on the author road and inherits the sheet's path
-            off it.
-          */
-          imagination: z.enum(["low", "max"]).optional(),
           style: z.enum(CAST_STYLES).optional(),
         })
         .strict(),

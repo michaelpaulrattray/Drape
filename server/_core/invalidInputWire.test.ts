@@ -59,6 +59,7 @@ const AUTHORED_REFUSAL =
 
 const probeRouter = router({
   createRoll: publicProcedure.input(realInputSchema("createRoll")).mutation(() => ({ ok: true })),
+  follow: publicProcedure.input(realInputSchema("follow")).mutation(() => ({ ok: true })),
   waitlistJoin: publicProcedure.input(realWaitlistSchema()).mutation(() => ({ ok: true })),
   modelCreate: publicProcedure.input(modelCreateInputSchema).mutation(() => ({ ok: true })),
   authored: publicProcedure.input(z.object({}).strict()).mutation(() => {
@@ -112,6 +113,37 @@ function expectNoMachineText(sentence: string) {
   expect(sentence, "zod's own prose").not.toContain("expected string");
   expect(sentence, "a validation regex, printed at a person").not.toContain("[0-9a-fA-F]");
   expect(sentence, "an internal field name").not.toContain("briefText");
+}
+
+/**
+ * The same call, for an input that is expected to be ACCEPTED.
+ *
+ * `callOverTheWire` throws when no error payload comes back, which makes it
+ * unable to express "this rode fine" — and a rejection arm with no accept arm
+ * beside it passes just as happily when `.strict()` has been put on the wrong
+ * object and is refusing customers. So the two halves are different functions
+ * and both are used below.
+ */
+async function ridesOverTheWire(path: string, input: unknown): Promise<boolean> {
+  const app = express();
+  app.use(
+    "/api/trpc",
+    createExpressMiddleware({ router: probeRouter, createContext: () => ({}) as never }),
+  );
+  const server = await listenOnFetchablePort((port) => app.listen(port, "127.0.0.1"));
+  try {
+    const response = await fetch(`${baseUrlOf(server)}/api/trpc/${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ json: input }),
+    });
+    const parsed = JSON.parse(await response.text()) as { error?: unknown };
+    return parsed.error === undefined;
+  } finally {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  }
 }
 
 const VALID_SESSION_ID = "22222222-2222-4222-8222-222222222222";
@@ -176,6 +208,62 @@ describe("a rejected input speaks to a person", () => {
 
     expect(error.message).toBe(INVALID_INPUT_FALLBACK);
     expect(error.message).not.toContain("smuggledField");
+  });
+});
+
+/**
+ * THE TWO TOMBSTONES ARE OFF THE WIRE (#203 slice 2a, #535).
+ *
+ * `path` and `imagination` each stayed in a `.strict()` schema for exactly one
+ * deploy after the client stopped sending them, because removing a field the
+ * previous bundle still sends is a BAD_REQUEST on the money path mid-deploy
+ * (`CLAUDE.md`'s input-removal rule). Both deploys have been and gone, and this
+ * is where the removal is PROVEN rather than asserted beside the schema: the
+ * arms run against the real procedures' own input, over the real adapter.
+ *
+ * ⚠ The accept arm is the half that matters. A rejection arm alone is satisfied
+ * by `.strict()` landing on the wrong object and refusing every customer, which
+ * is the exact way the billing five nearly went wrong (`CLAUDE.md`, invariant 4).
+ */
+describe("a retired field no longer rides the wire", () => {
+  const CREATE_ROLL_MINIMUM = {
+    clientRequestId: VALID_REQUEST_ID,
+    sessionId: VALID_SESSION_ID,
+    briefText: "a fitness creator in their 30s",
+  };
+  const FOLLOW_MINIMUM = {
+    ...CREATE_ROLL_MINIMUM,
+    candidateId: "33333333-3333-4333-8333-333333333333",
+  };
+
+  it("refuses a path on createRoll, and says nothing about it to the person", async () => {
+    const error = await callOverTheWire("createRoll", { ...CREATE_ROLL_MINIMUM, path: "wardrobe" });
+    expect(error.message).toBe(INVALID_INPUT_FALLBACK);
+    expect(error.message).not.toContain("path");
+  });
+
+  it("refuses an imagination level on createRoll", async () => {
+    const error = await callOverTheWire("createRoll", { ...CREATE_ROLL_MINIMUM, imagination: "max" });
+    expect(error.message).toBe(INVALID_INPUT_FALLBACK);
+    expect(error.message).not.toContain("imagination");
+  });
+
+  it("refuses an imagination level on follow — the twin field, same removal", async () => {
+    const error = await callOverTheWire("follow", { ...FOLLOW_MINIMUM, imagination: "low" });
+    expect(error.message).toBe(INVALID_INPUT_FALLBACK);
+    expect(error.message).not.toContain("imagination");
+  });
+
+  it("⚠ CONTROL — style still rides on both, and so does a roll that sends no settings", async () => {
+    /*
+      Without this, every arm above is satisfied by a schema that rejects
+      everything. `style` is the one setting the modal still has (his #535
+      ruling), so it is the field whose loss a customer would actually feel.
+    */
+    expect(await ridesOverTheWire("createRoll", { ...CREATE_ROLL_MINIMUM, style: "photoreal" })).toBe(true);
+    expect(await ridesOverTheWire("createRoll", CREATE_ROLL_MINIMUM)).toBe(true);
+    expect(await ridesOverTheWire("follow", { ...FOLLOW_MINIMUM, style: "photoreal" })).toBe(true);
+    expect(await ridesOverTheWire("follow", FOLLOW_MINIMUM)).toBe(true);
   });
 });
 
