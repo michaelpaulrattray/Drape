@@ -27,7 +27,7 @@ Two of them are his own unusual arms and are marked.
 | `Cast it` stays baseline-aligned | ✅ button bottom sits **12px** above the field bottom at rest AND at the cap (415.3/427.3, 421.6/433.6) |
 | receipt line, all three derived | ✅ `8 CANDIDATES · ~160 CR · ~50 SECONDS`, every value from the config payload |
 | settings control: no chevron, radius 8, mono value | ✅ `--r-sm`, no chevron in the button, `Photoreal · Low` from `castSettingsSummary` |
-| `Start from photos` opens the concept flow | ✅ opens the dialog on its drop zone: *"UPLOAD A CONCEPT / Start from a picture / Drop a picture in…"* |
+| `Start from photos` opens the concept flow | ✅ opens the dialog on its drop zone: *"UPLOAD A CONCEPT / Start from a picture / Drop a picture in…"* — ⚠ **SUPERSEDED 2026-09-23 (#1107): the link no longer exists.** The row is kept because this file is a dated receipt of what #435 verified on the day, not a description of the product; the door is now the brief box itself. |
 | no TRY chips, no count selector | ✅ absent |
 
 ### Modal

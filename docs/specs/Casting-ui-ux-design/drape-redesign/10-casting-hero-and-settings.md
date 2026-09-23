@@ -107,11 +107,11 @@ Three deliberate choices, each correcting a misread:
 - **Radius 8, not a pill.** Pills in this system are read-only state — kind badges, count pills, `IN USE`. A rounded rect is what clickable controls use, so the shape says press rather than read.
 - **Value in mono.** These are set values, and it ties the control to the receipt line directly above it, so the row reads as one thought: what this costs, how it is set.
 
-**Right — `Start from photos`.** Image glyph + `400 11.5px`, `--metaStrong` → `--ink` on hover. Opens `ConceptUploadCard`'s flow.
+⚠ **`Start from photos` WAS HERE AND IS GONE (#1107, his word: *"build option C"*).** This section described it as *"Image glyph + `400 11.5px`, `--metaStrong` → `--ink` on hover"*, sitting right of the settings chip with a spacer between, on #435's reasoning: *the explainer already promises photos, and the flow already exists — but the only way in was a card further down the page.*
 
-The explainer already promises photos, and the flow already exists — but the only way in was a card further down the page. Both paths are now named in the row where you decide.
+**The reasoning held and the answer changed.** His refinement, verbatim: *"my only opposition with going with only C over A and C is because upload a concept card already exists."* Two labelled entrances to one flow is furniture, so the promise and the way in are now in the SAME element rather than merely the same row: **the brief box itself takes a dropped picture**, its placeholder says so, and it wears the house focus ring while a file is over it. See §2c.
 
-Different weights are correct here: the settings control displays state as well as acting, so it is a chip; `Start from photos` is purely an action, so it is a link.
+**So the actions row is the settings chip alone**, and it is absent off the author road. The concept door's own absent-not-disabled proof moved with the door — it is the placeholder clause and the drag handlers, neither of which is mounted outside the scope.
 
 ### 2f. What is NOT in this column
 
@@ -233,7 +233,7 @@ Each card carries its full `IMAGINATION_LINES` text at `400 11.5px/1.6`.
 - [ ] `Cast it` stays baseline-aligned as the box grows.
 - [ ] Receipt line present, numerals, all three values derived.
 - [ ] Settings control: no chevron, radius 8, mono value from `castSettingsSummary`.
-- [ ] `Start from photos` opens the concept flow.
+- [ ] Dragging a picture over the brief box rings it and says so; dropping opens the concept review with the picture read; the placeholder carries the `or drop a picture` clause. (No `Start from photos` link — removed, #1107.)
 - [ ] No TRY chips, no count selector.
 
 **Modal**

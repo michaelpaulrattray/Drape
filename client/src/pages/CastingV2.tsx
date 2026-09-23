@@ -232,9 +232,11 @@ export default function CastingV2() {
   */
   const sheetRow = useRef<HTMLDivElement>(null);
   /*
-    THE CONCEPT CARD'S SECOND DOOR (#435 §2e) — the hero's `Start from photos`
-    opens the card's own dialog, empty on its drop zone, exactly as tapping the
-    card does. A handle rather than lifted state: see `ConceptUploadHandle`.
+    THE CONCEPT CARD'S DOORS THAT ARE NOT ON THE CARD. — #435 §2e gave the hero
+    a `Start from photos` link; #1107 removed it and made the BRIEF BOX the
+    door instead, so what the page holds this handle for now is `openWith`: a
+    picture dropped on the box, handed to the card's own judge. A handle rather
+    than lifted state: see `ConceptUploadHandle`.
   */
   const conceptCard = useRef<ConceptUploadHandle>(null);
   const focusBrief = () => {
