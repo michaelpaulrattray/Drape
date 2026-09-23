@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImagePlus, Loader2, RotateCcw, X } from "lucide-react";
 import type { useInkAddWorkflow } from "./useInkAddWorkflow";
 import { inkCandidateIsExpired } from "./inkAddUxPolicy";
+import { useFileDropTarget } from "@/foundation/useFileDropTarget";
+import { cn } from "@/lib/utils";
 
 type InkWorkflow = ReturnType<typeof useInkAddWorkflow>;
 
@@ -34,6 +36,16 @@ function ActionError({ workflow }: { workflow: InkWorkflow }) {
     </div>
   );
 }
+
+/**
+ * What the button says while a picture is HELD over it (card 1118).
+ *
+ * It names what is about to happen to her picture, not the mechanism that
+ * would carry it — the disappearing-technology law, clause 6. *Attach* is this
+ * panel's own word for it ("Reference attached" the moment it lands), so the
+ * word she reads mid-drag is the word she reads after.
+ */
+export const INK_REFERENCE_DROP_WORD = "Drop to attach";
 
 export function InkAddComposer({
   workflow,
@@ -117,10 +129,16 @@ export function InkAddComposer({
     if (!file || hasAttachedReference) return;
     workflow.setReferenceFile(file);
   };
-  const onDrop = (event: DragEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    acceptFile(event.dataTransfer.files[0]);
-  };
+  /*
+    THE WHOLE FINDING (card 1118): this button TOOK a dropped picture and said
+    nothing at all while one was held over it — `onDragOver` calling
+    `preventDefault` and not one thing else. The dashed border it wears is a
+    permanent hint, not an answer: it looked identical whether a file was over
+    it or the pointer was on the other side of the screen, which is why his
+    word for the same defect on the concept dialog was *"it feels
+    unresponsive"*. The counting is the shared hook's, not a second copy.
+  */
+  const reference = useFileDropTarget((files) => acceptFile(files?.[0]));
 
   if (active?.candidateStatus === "processing" || workflow.action === "generate") {
     return (
@@ -349,10 +367,14 @@ export function InkAddComposer({
             onClick={() => {
               if (!hasAttachedReference) fileInputRef.current?.click();
             }}
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={onDrop}
+            {...reference.handlers}
             disabled={hasAttachedReference || controlsBusy}
-            className="flex w-full items-center gap-3 rounded-canvas-md border-hairline border-dashed border-canvas-border-strong px-3 py-2 text-left disabled:cursor-default"
+            className={cn(
+              "flex w-full items-center gap-3 rounded-canvas-md border-hairline border-dashed px-3 py-2 text-left transition-colors disabled:cursor-default",
+              reference.over
+                ? "border-canvas-ink bg-canvas-surface-inset"
+                : "border-canvas-border-strong",
+            )}
           >
             {workflow.referenceUrl ? (
               <img
@@ -367,9 +389,11 @@ export function InkAddComposer({
             )}
             <span className="min-w-0">
               <span className="block truncate text-canvas-sm font-medium text-canvas-ink">
-                {hasAttachedReference
-                  ? "Reference attached"
-                  : workflow.referenceFile?.name ?? "Drop or choose an image"}
+                {reference.over
+                  ? INK_REFERENCE_DROP_WORD
+                  : hasAttachedReference
+                    ? "Reference attached"
+                    : workflow.referenceFile?.name ?? "Drop or choose an image"}
               </span>
               <span className="mt-0.5 block text-canvas-xs text-canvas-ink-faint">
                 JPEG, PNG or WebP · up to 10 MB
