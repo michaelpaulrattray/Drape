@@ -340,7 +340,7 @@ export type CrewShiftOutcome = (typeof CREW_SHIFT_OUTCOMES)[number];
  * `#01079` is), and a branch matches when one of its maximal digit runs IS the
  * number — so `team/relay1079b` matches and `team/relaysmall` does not.
  */
-export type CardPullRequestWhere = "title" | "body" | "branch";
+type CardPullRequestWhere = "title" | "body" | "branch";
 
 export interface CardPullRequestMatch<T> {
   readonly pr: T;

@@ -2828,7 +2828,7 @@ export const CASTING_ROLL_ENGINE_SCOPE_ENV = "CASTING_ROLL_ENGINE_SCOPE";
  * behind it would silently paint on GPT Image 2 while its row says otherwise.
  */
 export const CASTING_ROLL_ENGINE_MODEL_ENV = "CASTING_ROLL_ENGINE_MODEL";
-export const CASTING_ROLL_ENGINE_MODELS = ["flare", "sunburst"] as const;
+const CASTING_ROLL_ENGINE_MODELS = ["flare", "sunburst"] as const;
 export type CastingRollEngineModel = (typeof CASTING_ROLL_ENGINE_MODELS)[number];
 
 class CastingRollEngineModelConfigurationError extends Error {
@@ -2841,7 +2841,7 @@ class CastingRollEngineModelConfigurationError extends Error {
   }
 }
 
-export function parseCastingRollEngineModel(raw: string | undefined): CastingRollEngineModel | null {
+function parseCastingRollEngineModel(raw: string | undefined): CastingRollEngineModel | null {
   if (raw === undefined || raw.trim() === "") return null;
   const value = raw.trim().toLowerCase();
   return (CASTING_ROLL_ENGINE_MODELS as readonly string[]).includes(value) ? (value as CastingRollEngineModel) : null;
