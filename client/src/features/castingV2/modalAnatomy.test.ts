@@ -29,6 +29,15 @@ const CASTING_CSS = new URL("./castingV2.css", import.meta.url);
 const readCss = async () =>
   (await readFile(MODALS_CSS, "utf8")) + "\n" + (await readFile(CASTING_CSS, "utf8"));
 
+/*
+  PROSE IS ALLOWED TO REMEMBER A ROAD THE CODE NO LONGER TAKES, and one arm
+  below is about exactly that: `portraitWhole` is gone from the shell and its
+  history is written in the comment where it used to be declared. An arm reading
+  the raw file cannot tell the two apart, so it reads the code without them.
+*/
+const withoutProse = (source: string): string =>
+  source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+
 describe("sign and delete share one shell", () => {
   it("both render through it rather than rebuilding a scrim", async () => {
     for (const url of [SIGN, DELETE]) {
@@ -232,31 +241,60 @@ describe("the concept review shares the shell without inheriting its latch", () 
   });
 });
 
-describe("the concept review shows the WHOLE picture she chose", () => {
-  it("asks for it, rather than inheriting the crop our own renders can take", async () => {
+describe("the concept picture FILLS its panel, by his ruling", () => {
+  /*
+    #196 shipped the opposite and this is the reversal, not a drift: the concept
+    review letterboxed a customer's own photograph inside the 4:5 slot
+    (`portraitWhole` / `object-fit: contain`) on the argument that a crop can
+    hide the thing the description is about. He looked at it, verbatim: *"the
+    image no longer fills the card … The picture must fill its panel again —
+    object-fit: cover on the picture, the 4:5 panel, no letterbox."* Law 9.
+  */
+  it("takes the one portrait treatment rather than asking for its own", async () => {
+    /* The option went with the ruling — the concept review was its only caller,
+       and a road nobody takes is how the letterbox comes back by accident. */
+    expect(withoutProse(await readFile(REVIEW, "utf8"))).not.toContain("portraitWhole");
+    expect(withoutProse(await readFile(SHELL, "utf8"))).not.toContain("portraitWhole");
+    const css = await readCss();
+    /* The RULE, not the name: the comment where it used to live says what
+       happened to it, and a bare-name arm cannot tell that from the rule. */
+    expect(css).not.toContain(".dpc-modal__portrait--whole img {");
+    expect(css).not.toContain(".dpc-modal__portrait--whole {");
+  });
+
+  it("fills it, top-anchored, by the rule all three dialogs share", async () => {
     /*
-      The other two consumers show OUR renders, every one of them already 4:5.
-      This one shows a picture the CUSTOMER chose, of unknown proportions, and
-      its whole job is letting her check a description against it — a crop can
-      remove the very thing the words describe.
+      THE POSITIVE HALF, and it is the one that matters: an arm that only says
+      `contain` is gone passes just as well with no picture rule at all. The
+      slot is still 4:5 and the picture still covers it, anchored to the top so
+      a tall picture keeps the face rather than its middle.
     */
-    expect(await readFile(REVIEW, "utf8")).toContain("portraitWhole");
-    expect(await readFile(SHELL, "utf8")).toContain("dpc-modal__portrait--whole");
+    const css = await readCss();
+    const slot = css.slice(
+      css.indexOf(".dpc-modal__portrait {"),
+      css.indexOf(".dpc-modal__replace {"),
+    );
+    expect(slot).toContain("aspect-ratio: 4 / 5");
+    const picture = css.slice(
+      css.indexOf(".dpc-modal__portrait img {"),
+      css.indexOf(".dpc-modal__drop {"),
+    );
+    expect(picture).toContain("object-fit: cover");
+    expect(picture).toContain("object-position: top");
   });
 
   it("styles it as a DESCENDANT, because a child selector is inert here", async () => {
     /*
       ⚠ THE FINDING THIS ARM EXISTS FOR, measured at the running app rather than
       read: `CastingModal` wraps the image in a `<span>`, so `.dpc-modal__portrait
-      > img` matches NOTHING — the sign and delete portraits are sized by the
-      browser and clipped by `overflow: hidden` instead. Written the same way,
-      this rule computed `object-fit: fill` (the initial value) and looked
-      exactly as though it had worked. A future tidy-up that "consistently"
-      restores the child combinator here would put it back to inert, silently.
+      > img` matches NOTHING — the portraits are sized by the browser and clipped
+      by `overflow: hidden` instead, which on our own 4:5 renders looks exactly
+      as though the rule had worked. A future tidy-up that "consistently"
+      restores the child combinator would put it back to inert, silently.
     */
     const css = await readCss();
-    expect(css).toContain(".dpc-modal__portrait--whole img {");
-    expect(css).not.toContain(".dpc-modal__portrait--whole > img");
+    expect(css).toContain(".dpc-modal__portrait img {");
+    expect(css).not.toContain(".dpc-modal__portrait > img");
   });
 });
 
@@ -307,43 +345,38 @@ describe("all three portraits lay out by ONE mechanism", () => {
     expect(base).toContain("object-position: top");
   });
 
-  it("⚠ both neighbours RE-STATE object-position, and the two values are his ruling", async () => {
+  it("⚠ the ONE remaining neighbour RE-STATES object-position, and says why", async () => {
     /*
-      THE ARM THAT MATTERS, and its subject is the RE-STATEMENT rather than any
-      one value. The cascade resolves each property independently: `--whole` and
-      `__muted` come later and win `object-fit` on order, but where they declare
-      no `object-position` the base rule — which matches the same element — is
-      the winning declaration, and its `top` applies. Deleting either declaration
-      is silent at the source and visible only in a frame nobody re-opens.
+      THE ARM THAT MATTERS, and its subject is the RE-STATEMENT rather than the
+      value. The cascade resolves each property independently: `__muted` comes
+      later and wins `object-fit` on order, but where it declares no
+      `object-position` the base rule — which matches the same element — is the
+      winning declaration, and its `top` applies. Deleting the declaration is
+      silent at the source and visible only in a frame nobody re-opens.
 
       Cascade fallthrough, NOT inheritance — `object-position` is not an
       inherited property and no parent's value is being read. The distinction
       decides where a future reader looks when this breaks (review of #198).
 
-      ⚠ THE TWO VALUES NOW DIFFER, AND SO DOES WHAT THIS ARM BUYS FOR EACH.
-
-      `--whole` is `center` for the concept review's own reason: it letterboxes a
-      customer's picture of unknown proportions, and `top` would hang the
-      letterbox entirely below it. That hazard is LIVE — delete the declaration
-      and the next frame is visibly wrong.
-
-      `__muted` is `top` on the founder's word (Crew reply #27, 2026-08-29:
+      ⚠ THERE WERE TWO NEIGHBOURS UNTIL #1087 and the other one carried the LIVE
+      hazard: `--whole` declared `center`, because a letterbox anchored `top`
+      hangs entirely below the picture. His ruling deleted that rule (the
+      concept picture fills its panel now), so what is left is the LATENT case
+      alone: `__muted` is `top` on his own word (Crew reply #27, 2026-08-29:
       *"left and middle should match. Top crop on both. Don't ship the right
-      panel."*), which is the same value the base rule carries. So for THIS
-      selector the hazard is now LATENT: deleting the line changes nothing today
-      and changes the delete dialog silently the day the base rule moves. Said
-      out loud because an arm that implies both cases bite is an arm whose reason
-      a future reader cannot check.
+      panel."*), which is the same value the base rule carries — deleting the
+      line changes nothing today and changes the delete dialog silently the day
+      the base rule moves. Said out loud because an arm whose reason a future
+      reader cannot check is an arm they will delete.
     */
     const css = await readCss();
-    expect(block(css, ".dpc-modal__portrait--whole img")).toContain("object-position: center");
     expect(block(css, ".dpc-modal__muted > img")).toContain("object-position: top");
   });
 
-  it("and the base rule is declared BEFORE both, which is what that guard assumes", async () => {
+  it("and the base rule is declared BEFORE it, which is what that guard assumes", async () => {
     /*
       The guard above is about cascade ORDER, so it is only true while the base
-      rule comes first. Move it below its neighbours and they would win
+      rule comes first. Move it below its neighbour and the neighbour would win
       `object-position` without declaring it — the arm would still pass and the
       reason it was written would be gone.
     */
@@ -351,9 +384,7 @@ describe("all three portraits lay out by ONE mechanism", () => {
     const base = css.indexOf("\n.dpc-modal__portrait img {");
     /* Or an absent base rule is index -1 and every neighbour "comes after" it. */
     expect(base, "no base portrait rule to order against").toBeGreaterThan(-1);
-    for (const selector of [".dpc-modal__portrait--whole img", ".dpc-modal__muted > img"]) {
-      expect(css.indexOf(`\n${selector} {`), selector).toBeGreaterThan(base);
-    }
+    expect(css.indexOf("\n.dpc-modal__muted > img {")).toBeGreaterThan(base);
   });
 });
 
