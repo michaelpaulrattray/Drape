@@ -206,10 +206,63 @@ mattered is re-asked at the entrance through the real interpreter rather than at
 the helper, including on a `basics` resolution — the one state that used to open
 the door — so the deletion is proven rather than merely unreached.
 
-**Not changed:** Q1 and Q3 (one commit, with the prompt bytes asserted before
-and after), Q4 (a panel deletion), Q5 (blocked on #1123's court for its second
-half), Q6–Q8 (the sheet and the ask box, where the `null` branch is live copy
-and the path branches are the dead ones).
+**Not changed by the first commit:** Q1 and Q3, Q4 (a panel deletion), Q5
+(blocked on #1123's court for its second half), Q6–Q8 (the sheet and the ask
+box, where the `null` branch is live copy and the path branches are the dead
+ones).
+
+### ✅ Q1 AND Q3 LANDED NEXT, 2026-09-24 — PR #1149, step (a) of the order below
+
+`subjectsServedOnPath(path)` is the constant `SERVED_SUBJECTS`; the fifth,
+composed-on-the-spot interpreter prompt and `bornPathOf` are retired; and the
+panel's wardrobe section — its group, its heading, its loop and the
+`hasContent` clause that let a boxless outfit row through — is gone with
+`wardrobeSectionServed` and `wardrobePanelPieces`.
+
+**The bar was the bytes and it was driven.** The four precomputed prompts were
+hashed at `fe4fa258` and again on the branch, and all four are identical:
+
+| prompt | sha256 | chars |
+|---|---|---|
+| classify · closed lane | `15c4b3201bd016d3bc536d1802b6d4e3c1ea765ab54d5bd70d0afece1b95b086` | 12,125 |
+| classify · open lane | `5166fdbcbef357f66191aae5029ffd60d3da33339d5c7a06d78909000f794756` | 12,990 |
+| edit · closed lane | `2171633282e22d4f8d36921c19c833c095dee1aa74eb717f4dccb0b94ec0d00b` | 9,682 |
+| edit · open lane | `d938853edbc22068b696eab704ad0ae80849457583b3a3a58e103b7420e9cb57` | 10,547 |
+
+The served list is 29 of the 30 free subjects either side, `wardrobe` withheld.
+⚠ **These are a RECORD and deliberately not a pinned guard**: a hash that
+reddens on every honest edit to a prompt sentence teaches a reader to re-stamp
+it rather than read it. What the suite guards instead is that no prompt names a
+subject nothing serves, derived from the cards and driven both ways.
+
+**Three things the doing of it turned up:**
+
+1. ⚠ **The branch comment on `refineParseSystemPrompt` described the opposite
+   of its own code.** It read *"every branch except a BASICS one is served the
+   whole vocabulary … a Basics branch gets one composed on the spot"*. Measured:
+   an unpathed branch is served 29 and takes a PRECOMPUTED prompt, a basics
+   branch takes the identical one, and the composed prompt was the WARDROBE
+   branch's alone. The sentence had been true of nothing since the day it was
+   written; it dies with the branch it describes.
+2. ⚠ **A founder ruling was bolted to the panel section**: outfit rows live
+   boxless (fable-1465 §3, 2026-08-23), his explicit exception to fable-414. It
+   is named at the site it leaves rather than dropped — the closing-commit sweep
+   this repository has three path-three deaths on record for. His ruling stands
+   and is what option **B** of **#1148** would be rebuilt on.
+3. ⚠ **`wardrobeCardsAreDisplayOnly` acquired a trap the moment its expected
+   importer list became empty**: an empty edge list, a misspelled id and a stale
+   Atlas all read identically. It now asserts the module is on the Atlas's
+   module INVENTORY — a different collection from its edges — so the claim is
+   *this module is on the map and nothing imports it* rather than *I found
+   nothing*. The same class is worth carrying into steps (b)–(e): every one of
+   them empties a list somebody is asserting on.
+
+**And one instrument lesson from the sabotage**, because it reads as a defect
+and is not: restoring the panel loop WITHOUT the `hasContent` clause reddens
+only one of the three new arms. That is correct — rows that are all filtered
+out are still no section drawn — but a shift driving a partial restoration and
+reading one red as "the other arms are asleep" would be wrong about its own
+guard.
 
 **Not changed and not a shift's to change:** `shared/castingPaths.ts` and the
 two columns. `drizzle/schema.ts` reads `CASTING_PATHS` for two column enums and
