@@ -65,6 +65,15 @@ export const CONCEPT_READING_LABEL = "Reading the picture…";
  * discoverable" from his build notes.
  */
 export const CONCEPT_CARD_DROP = "Drop it here — we'll read it straight away.";
+/**
+ * THE BRIEF BOX AS THE DROP DOOR (card 1107, his word 2026-09-23: "build
+ * option C"). The hero's `Start from photos` link is gone; the box itself takes
+ * a dropped picture and its placeholder says so once. Both strings live here
+ * beside the card's copy because they describe the same door in the same
+ * words, and they are shown only where the door exists (D-180).
+ */
+export const CONCEPT_BRIEF_PLACEHOLDER_CLAUSE = " — or drop a picture of someone like them";
+export const CONCEPT_BRIEF_DROP = "Drop a picture to describe someone like them";
 
 /**
  * OUR SENTENCE WHEN THE SERVER'S NEVER ARRIVED (`readableFailure`'s fallback).

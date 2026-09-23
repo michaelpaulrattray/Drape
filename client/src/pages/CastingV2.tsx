@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import { useLocation } from "wouter";
 import { useHistoryState } from "wouter/use-browser-location";
 import { ArrowRight, Plus, Search } from "lucide-react";
@@ -31,12 +31,11 @@ import {
   ConceptUploadCard,
   type ConceptUploadHandle,
 } from "@/features/castingV2/components/ConceptUploadCard";
-import { briefWithDescription } from "@/features/castingV2/conceptUpload";
+import { briefWithDescription, CONCEPT_BRIEF_DROP, CONCEPT_BRIEF_PLACEHOLDER_CLAUSE } from "@/features/castingV2/conceptUpload";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { ConfirmDialog } from "@/foundation";
-import { Icon, P } from "@/foundation";
 import { HeroDeck } from "@/features/castingV2/components/HeroDeck";
 import { CardMenu } from "@/foundation";
 import { DestructiveConfirm } from "@/foundation";
@@ -133,6 +132,47 @@ function sheetDeleteCopy(sheet: {
   return `${who}. The sheet and its unsigned candidates will be gone. This cannot be undone.`;
 }
 
+/**
+ * THE HERO BRIEF BOX'S EXAMPLE — PLACEHOLDER LAW (founder, 2026-08-01): a
+ * placeholder obeys every clause the seeds obey. It is the most-read example on
+ * the page — seen by everyone, tapped by nobody — so a bad one teaches the
+ * wrong shape to every visitor.
+ *
+ * The text before it broke four at once: "a dad in his 30s, dry humour, hands
+ * that have done some work" was the wrong audience, named a pronoun (which pins
+ * sex), asked for humour (performance, which the expression law forbids), and
+ * promised HANDS — which the waist-up frame with arms at the sides cannot show
+ * at all.
+ *
+ * ⚠ They are module constants rather than a literal at the prop since card
+ * 1111, because the prop composes and a law about an EXAMPLE should not be read
+ * as covering the offer appended after it.
+ */
+const HERO_BRIEF_EXAMPLE = "a fitness creator in their 30s, close-cropped hair";
+
+/**
+ * THE SAME EXAMPLE, SHORTER, FOR THE COMPOSED PLACEHOLDER (card 1111) — and the
+ * reason is a measurement rather than a preference.
+ *
+ * ⚠ Section 10 §2c states the only hard constraint on this string in as many
+ * words: **"The placeholder must fit one line at this width."** Card 1107 added
+ * his drop offer to the full example and it SHIPPED WRAPPED. Driven in the
+ * running app at 1440 (textarea 427px, 13px on 19.5px): the full example plus
+ * the offer is **91 characters and renders on two lines**, taking the resting
+ * box from 27px to 46px and the row from 55px to 70px — so the box he presses
+ * Cast it on looks FILLED before anyone types, and the wrap lands mid-phrase
+ * ("or drop a picture of / someone like them").
+ *
+ * His clause is his and is kept verbatim; what gives is the second half of the
+ * example, because the deck's brief block beside it already demonstrates a
+ * full-length brief — which §2c itself says teaches it better than a
+ * placeholder can. Measured: 71 characters, one line, box back to 27/55.
+ *
+ * **Outside the concept scope nothing changes**: no offer, no shortening, the
+ * example exactly as it has always been.
+ */
+const HERO_BRIEF_EXAMPLE_SHORT = "a fitness creator in their 30s";
+
 export default function CastingV2() {
   const [, navigate] = useLocation();
   /*
@@ -214,6 +254,41 @@ export default function CastingV2() {
     card does. A handle rather than lifted state: see `ConceptUploadHandle`.
   */
   const conceptCard = useRef<ConceptUploadHandle>(null);
+  /*
+    THE BRIEF BOX TAKES A DROPPED PICTURE (card 1107, his word: "build option
+    C"). The hero's `Start from photos` link is gone: the box itself is the
+    drop door and its placeholder says so once. The card below is unchanged —
+    the click door, the explainer, and the only door on a phone, where nobody
+    drags. Depth-counted like the card's own handlers (a naive enter/leave
+    flickers over the textarea and the glyphs), `preventDefault` on dragover
+    because that is what makes a drop target, and Files only so dragging
+    selected text into the box still works. Nothing here is drawn where the
+    door is shut (D-180).
+  */
+  const [briefDragging, setBriefDragging] = useState(false);
+  const briefDragDepth = useRef(0);
+  const briefDrop = {
+    onDragEnter: (event: ReactDragEvent) => {
+      if (!event.dataTransfer?.types?.includes("Files")) return;
+      briefDragDepth.current += 1;
+      setBriefDragging(true);
+    },
+    onDragLeave: () => {
+      briefDragDepth.current = Math.max(0, briefDragDepth.current - 1);
+      if (briefDragDepth.current === 0) setBriefDragging(false);
+    },
+    onDragOver: (event: ReactDragEvent) => {
+      if (!event.dataTransfer?.types?.includes("Files")) return;
+      event.preventDefault();
+    },
+    onDrop: (event: ReactDragEvent) => {
+      if (!event.dataTransfer?.types?.includes("Files")) return;
+      event.preventDefault();
+      briefDragDepth.current = 0;
+      setBriefDragging(false);
+      conceptCard.current?.offerFiles(event.dataTransfer?.files ?? null);
+    },
+  };
   const focusBrief = () => {
     const field = briefField.current;
     if (!field) return;
@@ -728,7 +803,17 @@ export default function CastingV2() {
               the sheet in its own commit and the start page kept the defect,
               which is what a sweep at the time would have caught.
             */}
-            <Field className="dpc-hero__field dpc-briefrow">
+            <Field
+              className={
+                briefDragging && conceptUploadEnabled
+                  ? "dpc-hero__field dpc-briefrow dpc-hero__field--drop"
+                  : "dpc-hero__field dpc-briefrow"
+              }
+              {...(conceptUploadEnabled ? briefDrop : {})}
+            >
+              {briefDragging && conceptUploadEnabled ? (
+                <span className="dpc-hero__dropsay" aria-hidden="true">{CONCEPT_BRIEF_DROP}</span>
+              ) : null}
               <BriefField
                 ref={briefField}
                 value={brief}
@@ -751,19 +836,14 @@ export default function CastingV2() {
                     void startCasting(brief);
                   }
                 }}
-                /*
-                  PLACEHOLDER LAW (founder, 2026-08-01): a placeholder obeys every
-                  clause the seeds obey. It is the most-read example on the page —
-                  seen by everyone, tapped by nobody — so a bad one teaches the
-                  wrong shape to every visitor.
-
-                  The previous text broke four at once: "a dad in his 30s, dry
-                  humour, hands that have done some work" was the wrong audience,
-                  named a pronoun (which pins sex), asked for humour (performance,
-                  which the expression law forbids), and promised HANDS — which the
-                  waist-up frame with arms at the sides cannot show at all.
-                */
-                placeholder="a fitness creator in their 30s, close-cropped hair"
+                /* The two examples are `HERO_BRIEF_EXAMPLE` and
+                   `HERO_BRIEF_EXAMPLE_SHORT` above, where the placeholder law
+                   they obey and the one-line measurement are written down. */
+                placeholder={
+                  conceptUploadEnabled
+                    ? `${HERO_BRIEF_EXAMPLE_SHORT}${CONCEPT_BRIEF_PLACEHOLDER_CLAUSE}`
+                    : HERO_BRIEF_EXAMPLE
+                }
                 aria-label="Casting brief"
               />
               {/*
@@ -898,26 +978,19 @@ export default function CastingV2() {
               where the server did not open concept upload. An account with
               neither sees no row at all.
             */}
-            {authorRoad || conceptUploadEnabled ? (
+            {authorRoad ? (
               <div className="dpc-hero__actions">
-                {authorRoad ? (
-                  <CastSettingsButton
-                    idPrefix="dpc-hero"
-                    style={style}
-                    onStyle={setStyle}
-                  />
-                ) : null}
-                <span className="dpc-hero__actionsair" aria-hidden="true" />
-                {conceptUploadEnabled ? (
-                  <button
-                    type="button"
-                    className="dpc-hero__photos"
-                    onClick={() => conceptCard.current?.openEmpty()}
-                  >
-                    <Icon d={P.image} size={13} />
-                    Start from photos
-                  </button>
-                ) : null}
+                <CastSettingsButton
+                  idPrefix="dpc-hero"
+                  style={style}
+                  onStyle={setStyle}
+                />
+                {/*
+                  `Start from photos` used to sit at the right of this row (card
+                  1107, his word: "build option C"). The brief box is the drop
+                  door now and its placeholder says so; the card below is the
+                  click door. A second link was a second door to one room.
+                */}
               </div>
             ) : null}
             </div>

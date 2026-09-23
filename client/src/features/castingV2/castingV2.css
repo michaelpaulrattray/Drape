@@ -117,6 +117,34 @@
 
 .dpc-hero__field {
   margin-top: 0;
+  position: relative;
+}
+
+/*
+  THE BRIEF BOX AS A DROP TARGET (card 1107). The same two moves the concept
+  card makes when a file crosses it — ink border, raised ground — plus one
+  sentence laid over the field saying what the drop will do, in the customer's
+  words. The textarea underneath dims so the sentence reads; nothing else on
+  the row changes.
+*/
+.dpc-hero__field--drop {
+  border-color: var(--ink);
+  background: var(--raised);
+}
+
+.dpc-hero__field--drop > :not(.dpc-hero__dropsay) {
+  opacity: 0.25;
+}
+
+.dpc-hero__dropsay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font: 500 13px/1.4 var(--font-sans);
+  color: var(--ink);
+  z-index: 1;
 }
 
 /*
@@ -163,9 +191,9 @@
 }
 
 /*
-  THE ACTIONS ROW (§2e) — settings chip left, `Start from photos` right, an
-  element between them. `flex-wrap` so a narrow column stacks the two rather
-  than crushing either, and the spacer collapses when it does.
+  THE ACTIONS ROW (§2e) — the settings chip alone. `Start from photos` and the
+  spacer that held it to the right left this row (card 1107): the brief box is
+  the drop door now. `flex-wrap` stays so a narrow column never crushes the chip.
 */
 .dpc-hero__actions {
   display: flex;
@@ -174,31 +202,6 @@
   flex-wrap: wrap;
   min-width: 0;
 }
-
-.dpc-hero__actionsair {
-  flex: 1;
-  min-width: 0;
-}
-
-/*
-  `Start from photos` — a link, not a chip. It only ever acts, where the
-  settings control also displays state, and the weights say which is which.
-*/
-.dpc-hero__photos {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font: 400 11.5px/1.4 var(--font-sans);
-  color: var(--metaStrong);
-  cursor: pointer;
-  flex: none;
-  transition: color 0.15s ease;
-}
-
-.dpc-hero__photos:hover { color: var(--ink); }
 
 /*
   THE DECK COLUMN (#234, spec §2 and §4) — what replaced the split-face pair.
