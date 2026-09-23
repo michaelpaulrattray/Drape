@@ -148,18 +148,13 @@
 }
 
 /*
-  THE RECEIPT LINE (§2d) — mono values, then a hairline that takes the rest of
-  the row. The rule is what stops a short line of small grey mono reading as a
-  fragment: it finishes the row, the way a section head's rule does.
+  THE RECEIPT VALUES (§2d) — mono values at the RIGHT end of the settings row
+  (card 1114, his word: "the 8 candidates and 160 cr across to the right"); the
+  hairline before them takes the rest of the row. The rule is what stops a
+  short line of small grey mono reading as a fragment: it finishes the row, the
+  way a section head's rule does. The row itself is `.dpc-hero__actions` below —
+  the receipt's own `<p>` left with the move, so there is one row and one rule.
 */
-.dpc-hero__receipt {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
 .dpc-hero__receiptvals {
   font: 400 10.5px/1.4 var(--font-mono);
   letter-spacing: 0.03em;
@@ -191,9 +186,12 @@
 }
 
 /*
-  THE ACTIONS ROW (§2e) — the settings chip alone. `Start from photos` and the
-  spacer that held it to the right left this row (card 1107): the brief box is
-  the drop door now. `flex-wrap` stays so a narrow column never crushes the chip.
+  THE SETTINGS-AND-RECEIPT ROW (§2e, joined with §2d on his word, card 1114):
+  the settings chip at the left (author road only), the hairline across, the
+  receipt values at the right end. `Start from photos` and the spacer that held
+  it to the right left this row on card 1107 (the brief box is the drop door
+  now); the receipt moved up into the slack it left. `flex-wrap` stays so a
+  narrow column drops the receipt under the chip rather than crushing either.
 */
 .dpc-hero__actions {
   display: flex;
