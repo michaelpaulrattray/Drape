@@ -1,7 +1,7 @@
 {
-  "edition": 487,
-  "updatedAt": "2026-09-23T05:56:35.101Z",
-  "shift": "THE FIRST N2 JOB IS DONE, AND IT FOUND A BUG YOU CAN SEE.\n\nBack in August you asked whether the new studio was “probably running on categories like the old lane did”. I went and traced it — every fact the studio still works out about a cast, and who still believes it. Fourteen of them, read in the code rather than in any document.\n\nTHE ONE THAT MATTERS. Type a model-ish brief — something like “a beauty campaign casting, luminous skin, wide-set eyes, cropped platinum hair, strong brows” — and the sheet tells you, in the sentence that explains who was cast:\n\n    Everyone on this sheet is cast as a beauty campaign casting, luminous skin, wide-set eyes, cro\n\nYour own sentence handed back to you, stopped in the middle of the word “cropped”. It is not adjustable and there is no control to fix it. It happens on every account, not only yours. I drove it rather than reasoning about it, so that line is the real output.\n\nWHY IT HAPPENS, IN ONE LINE. When the studio cannot find a short role in your brief it borrows the first eighty characters of the brief itself, so that an internal block has something to say — and the sheet then cuts that at sixty without minding words. The new road does not even build that internal block, so the borrowing does nothing at all except change what you read. There is a small safe fix and a better one that is your call; the card is below.\n\nTHE REST OF THE ANSWER TO YOUR QUESTION IS REASSURING. The dice that caused the Follow mistake are properly fenced — I checked every door into them, including the one at Sign, which is the expensive one. What is left is mostly machinery that runs and is thrown away: eight tile captions nothing shows, a piece of casting prose nothing sends, a rolled-up “direction” that nothing anywhere reads. None of it reaches a customer. It becomes deletable when N2 widens the switches, and that is now a written list instead of a memory.\n\nAND ONE THING FOR WHOEVER RETIRES THE WARDROBE PATH. That job has a trap in it, and I have written it down on the card: three different questions in the code look identical and must keep two opposite answers. Getting it wrong once would have refused “put her in a long black coat” for every customer we have.\n\nTHE QUEUE: 34 open, nothing urgent, your own list still empty. 17 untouched for a week. No check-up clock fires before tomorrow.",
+  "edition": 488,
+  "updatedAt": "2026-09-23T07:04:42.928Z",
+  "shift": "THE BROKEN SENTENCE ON YOUR SHEET IS FIXED, AND IT IS LIVE.\n\nLast night's audit found your own brief being handed back to you cut inside a word — \"cast as a beauty campaign casting, luminous skin, wide-set eyes, cro\". That is gone. The sheet now reads:\n\n    Everyone on this sheet is cast as a beauty campaign casting, luminous skin, wide-set eyes.\n\nWHAT WAS ACTUALLY WRONG, and it is worth thirty seconds because it is a shape we keep paying for. The studio had already found and fixed this exact bug once, in the place where it borrows your sentence — it stops at a whole word there. A second piece of code then cut the same sentence again, further along, and nobody carried the rule across. One rule, two copies, and the second copy was the wrong one. The rule now lives in one place and both cuts read it.\n\nTHE SAME SWEEP FOUND SOMETHING QUIETER AND WORSE. When you name something you are wearing — \"heavy tortoiseshell reading spectacles\" — the sheet was allowed to cut that mid-word too, and the studio checks every word against your brief before it shows anything. A half word is not a word you typed, so the whole thing was dropped and the sheet simply said nothing about it. You had typed it and paid for it. Fixed in the same change.\n\nAND TWO THINGS STOPPED BEING SENT TO YOUR BROWSER. Every sheet was carrying twelve \"chips\" and a variance flag that nothing on the page has read since you killed the clone line in August. Nothing you can see changes; the studio just stopped shipping two facts nobody asked for. The records themselves are untouched, so a future page that says what is held still has its evidence waiting.\n\nONE DECISION IS YOURS AND IT IS ONE WORD. Should the sheet repeat your own sentence back to you at all as the casting category? You have made this complaint once already, about the follow prompt. My recommendation is to wait — the only reason to keep it dies with the wardrobe path retirement, which is in this same rung. It is on your desk below.\n\nTHE QUEUE: 33 open, nothing urgent, your own list still empty. 17 untouched for a week. No check-up clock fires before tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -23,6 +23,10 @@
         },
         {
           "title": "First N2 brief cut and finished — the ghost audit (#180): fourteen facts traced, one customer-visible bug found and driven, four cards filed",
+          "state": "done"
+        },
+        {
+          "title": "The audit's first two fixes are shipped: the broken sentence on the sheet (#1122) and two dead fields off the wire (#1124). Four of the audit's cards remain, one of them a question for you (#1129)",
           "state": "done"
         },
         {
@@ -106,7 +110,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T05:56:46.400Z",
+      "readAt": "2026-09-23T07:02:22.743Z",
       "items": [
         {
           "issueNumber": 10,
@@ -251,9 +255,36 @@
   },
   "needsYou": [
     {
+      "id": "borrowed-role-1129",
+      "title": "One word: should the sheet repeat your own sentence back as the casting category?",
+      "productImpact": "When your brief names no job title, the studio borrows your brief's own opening and shows it back as the category the eight were cast to:\n\n    Everyone on this sheet is cast as a beauty campaign casting, luminous skin, wide-set eyes\n\nNothing is broken about that sentence now. The question is whether it belongs there at all.\n\nYou have made this complaint once already, about the follow prompt: \"I made the change, I don't need it repeated.\" The studio's own note in that file argues your side without noticing — it says a category \"is not the user's sentence\", and on these briefs it is exactly your sentence.\n\nThe one reason to keep it: on the OLD road that borrowed line really does feed the block every candidate is judged against, so the sheet is reporting something real. On the new road that block is never built at all, so there it is a sentence with no job. The card is #1129.",
+      "workedExample": "Roll \"a beauty campaign casting, luminous skin, wide-set eyes, cropped platinum hair, strong brows\" and read the line under the sheet. Any brief asking for a KIND OF FACE — model, editorial, runway, beauty, campaign — without naming a plain occupation does it.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Leave it",
+          "consequence": "The sheet keeps naming the borrowed category. No work, and on the old road it keeps reporting something the studio is genuinely enforcing."
+        },
+        {
+          "key": "B",
+          "label": "Take it out",
+          "consequence": "The sentence stops repeating your words and says only what the reader genuinely found. Shorter and quieter on model-ish briefs. One small change."
+        },
+        {
+          "key": "C",
+          "label": "Wait for the wardrobe retirement (#203)",
+          "consequence": "The only reason to keep it dies with that road, and then taking it out is obvious rather than a trade. Nothing happens in the meantime."
+        }
+      ],
+      "recommendation": "C — wait for #203, which is already in this rung. If seeing your own sentence repeated bothers you before then, say take it out and it goes for your account in one small change.",
+      "state": "open",
+      "filedAt": "2026-09-23T07:04:42.929Z",
+      "issueNumber": 1129
+    },
+    {
       "id": "promoted-role-1122",
-      "title": "Your own sentence is being shown back to you as the cast role, cut mid-word — one small fix, and one decision",
-      "productImpact": "Write a model-ish brief and the sheet says, at full ink, in the line that explains who was cast:\n\n    Everyone on this sheet is cast as a beauty campaign casting, luminous skin, wide-set eyes, cro\n\nThat is your own sentence, truncated twice — once at eighty characters, and again at sixty without minding where a word ends. There is no control to adjust it; the only way out is to rewrite the brief. It is live for every account, not only yours.\n\nIt happens because when the studio finds no short role in your brief it borrows the brief's own opening as one, so that an internal casting block has something to say. On the new road that block is never composed at all — so the borrowing changes nothing except what you read.\n\nI drove it rather than reasoning about it, so the line above is the real output. The full card is #1122.",
+      "title": "Your own sentence is no longer shown back cut mid-word — fixed and live",
+      "productImpact": "Fixed this morning and released. The sheet read \"cast as a beauty campaign casting, luminous skin, wide-set eyes, cro\"; it now reads \"… wide-set eyes.\" — no half word, and no stray comma left where the cut landed.\n\nI took option A, which needed nothing from you. The same change fixed a quieter one beside it: a thing you said you were wearing could be cut mid-word too, and the studio drops anything whose words do not match your brief — so a half word meant the whole accessory vanished from the sentence without a trace.\n\nOption C — whether your sentence should be repeated back at all — is still yours, and is the row above.",
       "workedExample": "Roll a brief like “a beauty campaign casting, luminous skin, wide-set eyes, cropped platinum hair, strong brows” and read the sentence under the sheet. Anything asking for a KIND OF FACE — model, editorial, runway, beauty, campaign — that does not also name a plain occupation will do it. A short brief will not: it only bites once your sentence runs past sixty characters.",
       "options": [
         {
@@ -273,7 +304,7 @@
         }
       ],
       "recommendation": "A now, C as the real answer. Cutting a word in half is never right, and fixing that needs nothing from you — I would rather it stopped this week than waited on a decision. But C is the same complaint you already made once: “I made the change, I don't need it repeated.” The studio's own note in that file argues your side without realising it — it says a category “is not the user's sentence”, and on these briefs it is exactly your sentence. Say the word on C and a shift takes both together.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T05:56:35.101Z",
       "issueNumber": 1122
     },
@@ -5214,6 +5245,20 @@
   ],
   "pipeline": [
     {
+      "id": "role-cut-1122",
+      "title": "Your brief is no longer handed back cut inside a word",
+      "status": "merged",
+      "prNumber": 1127,
+      "note": "The sheet said \"cast as a beauty campaign casting, luminous skin, wide-set eyes, cro\" — your own sentence, stopped in the middle of \"cropped\", at full ink and with no control to fix it. It now stops at a whole word, and the stray comma the cut left behind goes with it.\n\nThe cause is worth naming: this bug had already been found and fixed once, in the place that borrows your sentence. A second piece of code cut the same sentence again further along, and nobody carried the rule across. The rule now has one home and both cuts read it.\n\nFound beside it: a thing you say you are wearing could be cut mid-word too — and because the studio checks every word against your brief before showing it, a half word meant the whole accessory was dropped from the sentence silently. Fixed in the same change."
+    },
+    {
+      "id": "dead-wire-1124",
+      "title": "Two facts stopped being sent to your browser with nobody reading them",
+      "status": "merged",
+      "prNumber": 1128,
+      "note": "Not a product change — nothing you can see moves. Every sheet was carrying up to twelve \"chips\" and a variance flag, both computed on every roll and sent to the page, and nothing on the page has read either since you killed the clone line in August.\n\nThe records are untouched on purpose: the chips and the whole variance plan are still kept with the roll, so a future page that says WHAT is held still has its evidence.\n\nFound by the same audit as the fix above. I also listed every other field these two pages send — 24 of them — and all the rest are genuinely read."
+    },
+    {
       "id": "brief-box-one-line-1111",
       "title": "The brief box is one line again — the wrap that rode in with the drop feature, found by looking at the released page",
       "status": "merged",
@@ -8067,7 +8112,7 @@
     197
   ],
   "nextUp": {
-    "readAt": "2026-09-23T05:56:46.399Z",
+    "readAt": "2026-09-23T07:02:22.742Z",
     "items": []
   }
 }
