@@ -866,52 +866,6 @@ export default function CastingV2() {
             {/* The one quiet line about what just happened to her words — under the box they happened in. */}
             <ReimagineLine state={reimagine} />
             {/*
-              THE RECEIPT LINE (#435, his brief 10 §2d) — what you get, what it
-              costs, how long it takes, directly under the box that buys it.
-
-              His reason: *"Every paid button in the product is priced except
-              this one."* The sheet prices its roll, the composer prices its
-              run, the templates modal prices its run — the hero's primary was
-              the only unpriced spend in the product, and this also answers
-              *what do I get* before the money rather than after it.
-
-              ⚠ **BOTH VALUES ARE DERIVED, AND THAT IS THE WHOLE POINT** —
-              his rule, verbatim: *"A hand-written price that disagrees with the
-              charge does the opposite of what this line is for."* The count and
-              the price are the server's own roll constants. (The duration
-              segment left this line on his word, card 1090.)
-
-              ⚠ **HIS BRIEF'S OWN EXAMPLE READ `4 CR` AND THE CHARGE IS 160** —
-              the rule above is what settles it, and the rule is his. Numerals
-              rather than words, because mono is this system's machine-value
-              face and these are machine values.
-            */}
-            <p className="dpc-hero__receipt">
-              <span className="dp-chrome dpc-hero__receiptvals">
-                {candidatesPerRoll ? `${candidatesPerRoll} CANDIDATES` : null}
-                {price ? (
-                  <>
-                    {candidatesPerRoll ? " · " : null}
-                    {/*
-                      ⚠ **THE TILDE STAYS ON THE PRICE, AND HIS BRIEF'S EXAMPLE
-                      PUTS IT ONLY ON THE DURATION.** D-109 is why: every cost
-                      line in this product hedges the same way, because *"a
-                      number presented as exact that then differs is worse than
-                      one that never claimed to be"* — a roll is eight
-                      independently refundable slices, so what is finally paid
-                      can be less than what is quoted. It is one character on a
-                      money surface against a written rule, so the rule keeps
-                      it; the Sign confirm and the dock's cost line wear the
-                      same one.
-                    */}
-                    <span className="dpc-modal__tilde">~</span>
-                    {price} CR
-                  </>
-                ) : null}
-              </span>
-              <span className="dpc-hero__receiptrule" aria-hidden="true" />
-            </p>
-            {/*
               THE PATH, CHOSEN BEFORE THE MONEY (design §6; founder ruling
               2026-08-21, *"this is the way foward 100%"*).
 
@@ -946,8 +900,13 @@ export default function CastingV2() {
               />
             ) : null}
             {/*
-              THE ACTIONS ROW (#435, his brief 10 §2e) — the two ways in, in the
-              row where you decide, with the slack between them.
+              THE SETTINGS-AND-RECEIPT ROW (#435 §2d + §2e, joined on his word,
+              card 1114: *"move the settings up and the 8 candidates and 160 cr
+              across to the right"*). One row under the box: the settings chip
+              at the left, the hairline running across, the receipt at the
+              right end. §2e's own reason for the chip's mono value was that it
+              *"ties it to the receipt line … so the pair reads as one thought:
+              what this costs, how it is set"* — they are on one line now.
 
               LEFT is the settings control (#142's gear, restyled). Three of his
               choices here each correct a specific misread, and none is
@@ -960,39 +919,59 @@ export default function CastingV2() {
                 · **RADIUS 8, NOT A PILL.** Pills in this system are read-only
                   state (kind badges, count pills, IN USE). A rounded rect is
                   what clickable controls wear, so the shape says press.
-                · **THE VALUE IN MONO**, which ties it to the receipt line
-                  directly above so the pair reads as one thought: what this
-                  costs, how it is set.
+                · **THE VALUE IN MONO**, which ties it to the receipt beside it.
 
-              RIGHT is `Start from photos`. The explainer already promises photos and
-              the flow already existed — but the only door was a card further
-              down the page, so the promise and the way in were nowhere near
-              each other.
+              ⚠ **THE CHIP IS ABSENT RATHER THAN DISABLED OFF THE AUTHOR ROAD**
+              (D-180); the row itself is drawn for everyone, because the receipt
+              is. (`Start from photos` used to sit at the right of this row —
+              card 1107, his word: "build option C" — the brief box is the drop
+              door now.)
 
-              The two carry different weights on purpose: the settings control
-              DISPLAYS state as well as acting, so it is a chip; this is purely
-              an action, so it is a link.
+              RIGHT is THE RECEIPT (#435, his brief 10 §2d) — what you get and
+              what it costs, under the box that buys it. His reason: *"Every
+              paid button in the product is priced except this one."*
 
-              ⚠ **EACH IS ABSENT RATHER THAN DISABLED WHERE ITS DOOR IS SHUT**
-              (D-180) — the settings chip off the author road, the photos link
-              where the server did not open concept upload. An account with
-              neither sees no row at all.
+              ⚠ **BOTH VALUES ARE DERIVED, AND THAT IS THE WHOLE POINT** —
+              his rule, verbatim: *"A hand-written price that disagrees with the
+              charge does the opposite of what this line is for."* The count and
+              the price are the server's own roll constants. (The duration
+              segment left this line on his word, card 1090.) His brief's own
+              example read `4 CR` and the charge is 160 — the rule above is what
+              settles it. Numerals rather than words, because mono is this
+              system's machine-value face and these are machine values.
             */}
-            {authorRoad ? (
-              <div className="dpc-hero__actions">
+            <div className="dpc-hero__actions">
+              {authorRoad ? (
                 <CastSettingsButton
                   idPrefix="dpc-hero"
                   style={style}
                   onStyle={setStyle}
                 />
-                {/*
-                  `Start from photos` used to sit at the right of this row (card
-                  1107, his word: "build option C"). The brief box is the drop
-                  door now and its placeholder says so; the card below is the
-                  click door. A second link was a second door to one room.
-                */}
-              </div>
-            ) : null}
+              ) : null}
+              <span className="dpc-hero__receiptrule" aria-hidden="true" />
+              <span className="dp-chrome dpc-hero__receiptvals">
+                {candidatesPerRoll ? `${candidatesPerRoll} CANDIDATES` : null}
+                {price ? (
+                  <>
+                    {candidatesPerRoll ? " · " : null}
+                    {/*
+                      ⚠ **THE TILDE STAYS ON THE PRICE, AND HIS BRIEF'S EXAMPLE
+                      PUTS IT ONLY ON THE DURATION.** D-109 is why: every cost
+                      line in this product hedges the same way, because *"a
+                      number presented as exact that then differs is worse than
+                      one that never claimed to be"* — a roll is eight
+                      independently refundable slices, so what is finally paid
+                      can be less than what is quoted. It is one character on a
+                      money surface against a written rule, so the rule keeps
+                      it; the Sign confirm and the dock's cost line wear the
+                      same one.
+                    */}
+                    <span className="dpc-modal__tilde">~</span>
+                    {price} CR
+                  </>
+                ) : null}
+              </span>
+            </div>
             </div>
           </div>
 

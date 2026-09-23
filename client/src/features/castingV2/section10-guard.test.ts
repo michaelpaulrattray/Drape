@@ -205,9 +205,11 @@ describe("the receipt line is derived, never typed (§2d)", () => {
 
   it("the line carries no hand-written count, price or duration", async () => {
     const page = await read(PAGE);
-    const at = page.indexOf('<p className="dpc-hero__receipt">');
-    expect(at, "the receipt line must exist to be read").toBeGreaterThan(-1);
-    const block = code(page.slice(at, page.indexOf("</p>", at)));
+    /* The receipt lives at the right end of the settings row now (card 1114);
+       the arm reads the values span, whichever row it sits in. */
+    const at = page.indexOf('<span className="dp-chrome dpc-hero__receiptvals">');
+    expect(at, "the receipt values must exist to be read").toBeGreaterThan(-1);
+    const block = code(page.slice(at, page.indexOf("</div>", at)));
     /*
       His rule: *"A hand-written price that disagrees with the charge does the
       opposite of what this line is for."* His own brief's example read `4 CR`
