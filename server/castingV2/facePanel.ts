@@ -78,7 +78,6 @@ import {
   type SlotDefinition,
   type SlotGroup,
 } from "./referenceSlotCatalogue";
-import type { WardrobeResolution } from "./wardrobeLine";
 import {
   INSTANCES,
   type Instance,
@@ -105,6 +104,23 @@ import {
  * the garment-crop court that explains why those rows carried no picture are
  * kept in `wardrobeCards.ts`, and `#1148` is where a customer getting her
  * clothes back is decided.
+ *
+ * ⚠ **AND THE PANEL'S OTHER PATH READING WENT WITH IT THE SAME WEEK — the
+ * *"as dressed"* label (§6.1, ruled fable-1467 as §8.2's part (b), retired
+ * #203 slice 2 step (b)).** It was a third channel beside a row's words and
+ * its absence: `build` and `skin` are measured through a garment, so on a cast
+ * born on the Wardrobe path those two rows said which world their picture came
+ * from. **Nobody has ever seen it.** It was drawn on that path alone —
+ * deliberately not on Basics, where the row is still unmeasured, and
+ * deliberately not on an unpathed cast, where the sentence would have been
+ * TRUE (they all wear the house crew tee) and drawing it would have changed a
+ * live surface for accounts that had never met the feature. With the paths
+ * unbuyable the label's one state is unreachable, so the field, the catalogue's
+ * `pathProvenance`, the span and its class are gone rather than left returning
+ * null forever. **The honesty problem it made visible is not fixed and was
+ * never fixed by it**: a below-head crop is still a dressed torso and `skin`'s
+ * 11.5–12.5% was still read on frames of people in a crew tee — the catalogue
+ * still says so at both slots, in the paragraphs the label used to end.
  */
 export type PanelSection = SlotGroup | "open";
 
@@ -345,31 +361,6 @@ export type PanelRow = {
    * somebody had asked for it.
    */
   absent: string | null;
-  /**
-   * WHAT THE PICTURE THIS ROW WAS READ FROM ACTUALLY SHOWS — *"as dressed"*
-   * (the two paths, design §6.1, from §8.2; ruled fable-1467).
-   *
-   * Non-null only on a cast born on the WARDROBE path, and only on the rows
-   * the catalogue authors it for: `build`, whose crop is a dressed torso and
-   * therefore carries the garment as much as the body, and `skin`, whose
-   * *"11.5–12.5% of what a tan touches"* was measured on three frames of people
-   * in the house crew tee. Null on every other row, on Basics, and on every
-   * cast that predates the paths — which is all of them in production.
-   *
-   * ⚠ **IT IS A LABEL AND NEVER A HEDGE.** *"as dressed"* is a true statement
-   * about the picture. *"we think"* or *"approximately"* would be the product
-   * apologising for a reading it never claimed to make: **the row is not less
-   * accurate on Wardrobe, it is accurate about something smaller.**
-   *
-   * A THIRD channel beside {@link PanelRow.words} and {@link PanelRow.absent},
-   * and deliberately not {@link PanelRow.from}. `from` answers *where this row
-   * came from* — "she came with it", "from an edit" — and a wardrobe-path
-   * `build` that has been edited needs to say both at once, so folding them
-   * would make one of the two unsayable. Like `absent`, it is the panel's own
-   * statement about the photograph and never the customer's: nothing carries it
-   * into a recipe and nothing files it in the library.
-   */
-  provenance: string | null;
   /** "she came with it", "from an edit" — null when nothing has happened to it. */
   from: string | null;
   /** The opening of their own sentence, written into the ask box on a tap. */
@@ -673,20 +664,6 @@ export function facePanel(input: {
    * landed, and the panel is then exactly what it was.
    */
   carriedGeometry?: ReadonlyMap<string, PanelBox>;
-  /**
-   * WHAT THIS BRANCH IS WEARING — the resolution, never a bare line (§8.1).
-   *
-   * ⚠ **ITS FIRST READER IS GONE AND ITS SECOND IS NOT** (#203 slice 2): it
-   * drew the wardrobe section, which is retired with the paths, and it is still
-   * read by `provenanceSays` — the *"as dressed"* label on a body row. Absent is
-   * the ordinary case and always has been: every roll in production, on every
-   * account.
-   *
-   * ⚠ **The RESOLUTION and not the line**, for `classifyInkPlacement`'s reason
-   * one surface over: `unpathed`, `incoherent` and a real line do not flatten,
-   * and a bare string cannot say which of the three this is.
-   */
-  wardrobe?: WardrobeResolution | null;
 }): FacePanel {
   const live = liveReferences(input.rows);
   const bySlot = new Map<FeatureSlot, StoredReference[]>();
@@ -803,36 +780,6 @@ export function facePanel(input: {
     return says;
   };
 
-  /**
-   * WHAT THE PICTURE THIS ROW WAS READ FROM SHOWS — *"as dressed"* (§6.1).
-   *
-   * Two conditions, and both are somebody's decision rather than an inference:
-   *
-   *   the catalogue authored it     `pathProvenance`, set on `build` and `skin`
-   *                                 beside the measurements that make it true,
-   *                                 and on nothing else. `ink` already splits by
-   *                                 path (7a, shipped) and `scars` is not a slot
-   *   the cast is on the WARDROBE   through the ONE OWNER's resolution, which is
-   *   path                          the same answer the sheet's line is drawn
-   *                                 from (the panel's wardrobe section was the
-   *                                 third reader and is retired, #203 slice 2)
-   *
-   * ⚠ **`basics` and `unpathed` both answer null, and they are two different
-   * silences.** On Basics the row is still not measured — that capability is
-   * unbuilt and is the fourth precondition of the flag widening — so a label
-   * appearing on Wardrobe alone would be read as *"and on Basics it IS
-   * measured"*. On an unpathed cast the label would be TRUE (every production
-   * master wears the house crew tee) and is still refused, because drawing it
-   * would be this dark feature changing a live surface for every account that
-   * has never met it.
-   */
-  const provenanceSays = (definition: SlotDefinition): string | null => {
-    const says = definition.pathProvenance?.onWardrobe;
-    if (says === undefined) return null;
-    if (input.wardrobe?.kind !== "line" || input.wardrobe.path !== "wardrobe") return null;
-    return says;
-  };
-
   const definitions = catalogueSlots();
 
   /**
@@ -892,7 +839,6 @@ export function facePanel(input: {
         spoken: spokenName,
         words,
         absent: absentSays(definition, words, state),
-        provenance: provenanceSays(definition),
         from: state.from,
         prefill: prefillFor(spokenName),
         cutouts: state.thumb ? [state.thumb] : [],
@@ -997,11 +943,6 @@ export function facePanel(input: {
           swallow an admission somebody meant to make.
         */
         absent: null,
-        /* AND NO BILATERAL ROW CARRIES THE PICTURE LABEL EITHER, for the same
-           reason as the line above: `pathProvenance` is authored on `build`
-           and `skin`, and both are one-of-it. A pair reaching this line with
-           one would be a catalogue change nobody argued for. */
-        provenance: null,
         /* And where it came from is only sayable when both sides came from the
            same place. Two different provenances is not a fact about the pair. */
         from: leftState.from === rightState.from ? leftState.from : null,
@@ -1237,12 +1178,6 @@ export function facePanel(input: {
       */
       words: [],
       absent: null,
-      /* `ink` ALREADY SPLITS BY PATH and did so before §6.1 — that is 7a,
-         shipped: the wardrobe decides where a tattoo can go, so an ink row on
-         a dressed cast is about a surface the outfit leaves BARE rather than a
-         reading taken through a garment. Nothing here is measured through
-         clothing, so there is nothing to label. */
-      provenance: null,
       from: null,
       prefill: prefillFor(spokenName),
       /*
@@ -1420,10 +1355,6 @@ export function facePanel(input: {
            Nobody has catalogued this thing, so nobody has made that argument
            about it. */
         absent: null,
-        /* Nobody has catalogued this thing, so nobody has argued which world
-           its picture was read in — the same sentence as the absence above,
-           about the other of the panel's two statements. */
-        provenance: null,
         from: state.from,
         prefill: prefillFor(spokenName),
         cutouts: state.thumb ? [state.thumb] : [],
@@ -1474,8 +1405,6 @@ export function facePanel(input: {
         )
         : sides.find((side) => side.state.words.length > 0)?.state.words ?? [],
       absent: null,
-      /* Uncatalogued, exactly as above. */
-      provenance: null,
       /* Sayable only when both sides came from the same place; two provenances
          is not a fact about the kind. */
       from: sides.every((side) => side.state.from === sides[0]!.state.from) ? sides[0]!.state.from : null,

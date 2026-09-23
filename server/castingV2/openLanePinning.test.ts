@@ -202,6 +202,17 @@ describe("2. the closed grammar is unchanged for every non-open key", () => {
       ordinary slot does not carry the key at all (`lips` resolves to the same
       twelve keys it always had), and the open branch is once again not in this
       list to move.
+
+      ⚠ **AND MOVED BACK 2026-09-24, `ff09fb9ade91215d` → `5a5d1dca79131a23`,
+      BY THE RETIREMENT OF THE THING THAT MOVED IT** (#203 slice 2 step (b)):
+      `pathProvenance` is gone from `build` and `skin` with the paths
+      themselves, so the catalogue is byte-identical to what it was before §6.1
+      authored it — **the digest is the SAME STRING the bald row left behind on
+      2026-08-17**, not a new one. That is the reading, and it is the strongest
+      thing this pin has ever said: the retirement put the catalogue back and
+      added nothing on the way. Still 25 slots, no slot carries the key under
+      any spelling (`referenceSlotCatalogue.test.ts` drives that and reads the
+      values too), and the open branch is once again not in this list to move.
     */
     const digest = crypto
       .createHash("sha256")
@@ -209,7 +220,7 @@ describe("2. the closed grammar is unchanged for every non-open key", () => {
       .digest("hex")
       .slice(0, 16);
     expect(catalogueSlots()).toHaveLength(25);
-    expect(digest).toBe("ff09fb9ade91215d");
+    expect(digest).toBe("5a5d1dca79131a23");
   });
 });
 

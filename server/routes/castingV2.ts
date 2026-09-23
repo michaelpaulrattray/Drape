@@ -165,7 +165,6 @@ import {
   CastingV2OwnershipError,
   abandonCastingSession,
   createCastingSession,
-  getOwnedCandidateRollWardrobe,
   getOwnedCandidateWithSelectedFace,
   getOwnedCastingSession,
   getOwnedRoll,
@@ -175,13 +174,6 @@ import {
   listRollCandidates,
   listSessionRolls,
 } from "../db/castingV2";
-import { readStoredDelta } from "../castingV2/refineLegacy";
-import {
-  currentWardrobeLine,
-  editedWardrobeLine,
-  type WardrobeResolution,
-} from "../castingV2/wardrobeLine";
-import type { CastingPath } from "../../shared/castingPaths";
 import { CAST_NAME_MAX_LENGTH } from "../../shared/inputLimits";
 
 /** Opaque public ids. Bounded so a hostile value never reaches a query. */
@@ -326,27 +318,21 @@ async function readOwnedFaceForPanel(
   anchor: Awaited<ReturnType<typeof listCandidateVariants>>[number] | null;
   rows: Awaited<ReturnType<typeof listLineageReferences>>;
   identitySex: string | undefined;
-  /**
-   * WHAT THIS BRANCH IS WEARING (item 8's §8.1), resolved once for both panel
-   * procedures — two `currentWardrobeLine` calls in one request are two answers
-   * waiting to disagree (condition (v), §3.1a).
-   */
-  wardrobe: WardrobeResolution;
 }> {
   /*
-    THE ROLL'S TWO COLUMNS, FETCHED ALONGSIDE rather than after: the candidate
-    resolve is a round trip this walk already makes, and the roll join has no
-    dependency on its answer. A sequential read here would put a hop on the
+    ⚠ **THIS READ USED TO FETCH THE ROLL'S TWO PATH COLUMNS ALONGSIDE, AND
+    NOTHING READS THEM ANY MORE** (#203 slice 2 step (b), 2026-09-24). The panel
+    resolved what a branch was wearing so it could draw a wardrobe section and,
+    later, the *"as dressed"* label on `build` and `skin`; both are retired with
+    the paths, so the join went with them rather than being left to be read by
+    the next person who saw a field on the shape. One fewer round trip on the
     panel's FIRST look, which is the one measured against
-    `FIRST_LOOK_PATIENCE_MS`.
+    `FIRST_LOOK_PATIENCE_MS` — a side effect and not the reason.
   */
-  const [candidateId, rollWardrobe] = await Promise.all([
-    resolveOwnedCandidateId({
-      userId,
-      candidatePublicId: input.candidateId,
-    }).catch(() => null),
-    getOwnedCandidateRollWardrobe(userId, input.candidateId).catch(() => null),
-  ]);
+  const candidateId = await resolveOwnedCandidateId({
+    userId,
+    candidatePublicId: input.candidateId,
+  }).catch(() => null);
   if (candidateId === null) throw new TRPCError({ code: "NOT_FOUND", message: "Candidate not found" });
 
   const variants = await listCandidateVariants(userId, input.candidateId);
@@ -376,26 +362,6 @@ async function readOwnedFaceForPanel(
     anchor: anchor ?? null,
     rows,
     identitySex: identity?.sex,
-    /*
-      THE VERSION BEING LOOKED AT, and not the selected one.
-
-      `editedWardrobeLine` reads a branch's own composed delta, so the panel
-      must hand it the ANCHOR's — the face on screen. With no version selected
-      the master is the face, and the master has no delta: it wears the line the
-      roll was born with, which is exactly what `currentWardrobeLine` returns
-      from `rollLine` alone.
-
-      A failed roll read arrives as `undefined` on both fields rather than as an
-      error, and `currentWardrobeLine` reads that as `unpathed` — silence, not a
-      claim (`WardrobeBranch.rollPath`'s own rule). The panel is then exactly
-      what it was, which is the correct way for a face chart to fail: losing a
-      wardrobe section is not worth losing the face.
-    */
-    wardrobe: currentWardrobeLine({
-      rollPath: rollWardrobe?.rollPath as CastingPath | null | undefined,
-      rollLine: rollWardrobe?.rollWardrobeLine ?? null,
-      editedLine: editedWardrobeLine(readStoredDelta(anchor?.deltas)),
-    }),
   };
 }
 
@@ -428,9 +394,6 @@ function panelFor(
   return facePanel({
     scanning,
     carriedGeometry,
-    /* Resolved once at the read, by the one owner — see `readOwnedFaceForPanel`.
-       `unpathed` on every roll in both worlds today, which draws no section. */
-    wardrobe: face.wardrobe,
     rows: face.rows,
     pronouns: pronounsForSex(face.identitySex),
     contentUrl: storagePublicUrl,

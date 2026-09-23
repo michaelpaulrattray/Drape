@@ -458,18 +458,25 @@ describe("the panel's copy, classified", () => {
     */
     const rendered = panel.match(/>\{row\.[a-zA-Z.]+\}/g) ?? [];
     /*
-      ⚠ **BACK TO THREE, 2026-08-24, BY THE TWO PATHS' §6.1** — the "as dressed"
-      provenance label, ruled fable-1467 as §8.2's part (b). It joins this set
-      on the same terms every member is here on: it is a FIELD OF THE ROW,
-      composed by the server from the catalogue's own `pathProvenance` and the
-      one wardrobe owner's resolution, and never a sentence this component
-      builds. `referenceSlotCatalogue.test.ts` pins which two rows may carry it
-      and that it may never be a hedge; `facePanel.test.ts` pins that it
-      appears on the Wardrobe path alone and on no unpathed cast. Nothing about
-      it is decided here — which is what this line exists to keep true.
+      BACK TO THREE 2026-08-24 BY THE TWO PATHS' §6.1 — the "as dressed"
+      provenance label, ruled fable-1467 as §8.2's part (b) — AND BACK TO TWO
+      2026-09-24 WITH THE PATHS THEMSELVES (#203 slice 2 step (b)).
+
+      It left the way the "bald" row did, and for a different reason worth
+      keeping apart: the bald row went because the FOUNDER ruled the view away
+      while the field stayed. This one went because its one state became
+      unreachable — it was drawn on a cast born on the Wardrobe path alone,
+      slice 1 made that path unbuyable, and so the field, the catalogue's
+      `pathProvenance`, this span and its class are all gone rather than left
+      answering null forever. **Nobody ever saw it**: it was refused on every
+      unpathed cast, which is every cast in production.
+
+      So the set is two again, and this line is still what would notice a third
+      arriving — which is the whole reason it is an enumeration and not a
+      count.
     */
     expect(new Set(rendered))
-      .toEqual(new Set([">{row.name}", ">{row.from}", ">{row.provenance}"]));
+      .toEqual(new Set([">{row.name}", ">{row.from}"]));
   });
 
   it("shows NOTHING where there is no crop — his words were 'never as empty squares'", async () => {

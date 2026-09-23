@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "32855143a9453f4e"
+    "sourceFingerprint": "008752870890cc49"
   },
   "domains": [
     {
@@ -23862,11 +23862,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/facePanel.ts",
-      "to": "module:server/castingV2/wardrobeLine.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/castingV2/faceScan.ts",
       "to": "module:server/castingV2/bornWornDetector.ts",
       "kind": "imports"
@@ -30908,11 +30903,6 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/castingV2/refineLegacy.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/refineLimits.ts",
       "kind": "imports"
     },
@@ -30969,11 +30959,6 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/uploadRefusalCopy.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/castingV2/wardrobeLine.ts",
       "kind": "imports"
     },
     {
@@ -31054,11 +31039,6 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/storage.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
-      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {
@@ -34862,17 +34842,17 @@
       "message": "Names 2 of TiltReading's 4 fields (server/castingV2/canthalTilt.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:571",
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:562",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:571",
+      "subject": "server/castingV2/facePanel.ts:562",
       "message": "Names 2 of PresentationClause's 2 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:572",
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:563",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:572",
+      "subject": "server/castingV2/facePanel.ts:563",
       "message": "Names 2 of PresentationClause's 2 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

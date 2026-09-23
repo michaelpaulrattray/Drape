@@ -182,14 +182,6 @@ export type SlotDefinition = {
    */
   whenAbsent?: { says: string; why: string };
   /**
-   * WHAT THE PICTURE THIS ROW WAS READ FROM SHOWS, ON THE WARDROBE PATH.
-   *
-   * See {@link CatalogueEntry.pathProvenance}. Absent on almost every slot, and
-   * absent means the panel says nothing — which is what every row did before
-   * §6.1 and what every row still does on an unpathed cast.
-   */
-  pathProvenance?: { onWardrobe: string; why: string };
-  /**
    * WHY THIS SLOT HAS A QUESTION AND NO GUARD — the open lane's carve-out.
    *
    * Present on open slots ONLY, and never on a catalogued one. The invariant
@@ -384,50 +376,6 @@ type CatalogueEntry = {
    * recipe or files them in the library.
    */
   whenAbsent?: { says: string; why: string };
-  /**
-   * ⚠ WHAT THE PICTURE THIS ROW WAS READ FROM ACTUALLY SHOWS, ON THE WARDROBE
-   * PATH — the two paths' §6.1, assigned to the toggle's own sitting by
-   * fable-1467 as §8.2's part (b).
-   *
-   * Absent on almost every row and that is the whole design: it is set here,
-   * beside the measurement notes it is about, on exactly the rows whose notes
-   * were taken on a DRESSED torso and whose honesty therefore depends on which
-   * path the cast was born on. `build` and `skin` are those rows. `ink` already
-   * splits by path (7a, shipped) and `scars` is not a slot at all — marks fold
-   * into `skin` by the catalogue's own note.
-   *
-   * # It is a LABEL and never a hedge (§6.1, ruled)
-   *
-   * *"as dressed"* is a true statement about what the picture shows.
-   * *"we think"* or *"approximately"* would be the product apologising for a
-   * reading it never claimed to make. **The row is not less accurate on
-   * Wardrobe — it is accurate about something smaller.**
-   *
-   * # Why it is a catalogue field and not a list in the panel
-   *
-   * A `["build", "skin"]` array in `facePanel` would be a second list shadowing
-   * a decision this file already records at length, and it would drift the
-   * first time somebody added a body row (working law 4). The panel asks the
-   * catalogue; the catalogue answers where the reasoning lives.
-   *
-   * # It is drawn on ONE path only, and the other two silences are different
-   *
-   * `wardrobe` — shown. The crop is a garment carrier and the label says so.
-   * `basics`   — NOT shown, and not because the row is measured there: it is
-   *              not. Measuring skin on a body is an unbuilt capability and the
-   *              fourth precondition of the Basics flag widening. A label that
-   *              appeared only on Wardrobe would be read as *"and on Basics it
-   *              IS measured"*, which is why that precondition exists rather
-   *              than a second string here.
-   * unpathed   — NOT shown. Every cast in production is unpathed and every one
-   *              of them wears the house crew tee, so the label would be true
-   *              of all of them — and drawing it would be this dark feature
-   *              changing a live surface, which is the one thing §10 promises
-   *              it does not do. It becomes reachable for those casts the day
-   *              they are cast on a path, which is the day the fact is knowable
-   *              from the row rather than from an assumption about the tee.
-   */
-  pathProvenance?: { onWardrobe: string; why: string };
 };
 
 const STRUCTURE_IS_WORDS = (part: string): PanelPlacement => ({
@@ -747,21 +695,19 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       It is an enumerated precondition of the Basics flag widening rather than a
       note here — see `CASTING_TWO_PATHS_SCOPE`'s own paragraph.
 
-      ⚠ **AND SINCE §6.1, ONE THING DOES NOTICE, AND IT IS THE PERSON READING
-      THE PANEL.** The paragraph above says *no code notices the difference*,
-      which was true of every consumer and is still true of every render — what
-      changed is that the row now SAYS which world its picture came from. That
-      is not the capability arriving; it is the honesty problem being visible on
-      the surface instead of only in this file.
+      ⚠ **FOR FIVE WEEKS ONE THING DID NOTICE — THE PERSON READING THE PANEL —
+      AND IT IS RETIRED WITH THE PATHS (#203 slice 2, 2026-09-24).** §6.1 gave
+      this row a `pathProvenance` label, *"as dressed"*, drawn beside its words
+      on a cast born on the Wardrobe path. It was correct and nobody ever saw
+      it: the panel refused it on Basics (where the row is still unmeasured) and
+      on every unpathed cast (where drawing it would have changed a live surface
+      for accounts that had never met the feature), and after slice 1 no cast
+      can be born on a path at all. **So the paragraph above is true again
+      without an exception: no code notices, and neither does anybody reading.**
+      The honesty problem is exactly where it was — stated here, in this file,
+      beside the measurement it is about — and `#1148` is where a customer
+      getting her clothes back, and this row getting a world to name, is decided.
     */
-    pathProvenance: {
-      onWardrobe: "as dressed",
-      why:
-        "the below-head crop this row is drawn from is a DRESSED torso on the Wardrobe "
-        + "path — it carries the garment as much as the body, which is the same fact "
-        + "`remint: \"everyRender\"` below exists for. The row is not less accurate for "
-        + "saying so; it is accurate about something smaller",
-    },
     /*
       AND IT IS RE-CUT EVERY RENDER, because a below-head crop is not only her
       build — it is her CLOTHES (opus-328 §4, ruled in fable-424 §4).
@@ -824,20 +770,18 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       fixed here, because the fix is a capability (measuring skin on a body) and
       not a caption.
 
-      ⚠ **AND SINCE §6.1 THE ROW SAYS WHICH WORLD ITS PICTURE CAME FROM.** Still
-      not the capability — nothing measures skin on a body — but the sentence
-      *"no code notices"* now has one exception and it is the reader's eye,
-      which is where fable-1467 sent this half deliberately: the split is
-      DECIDED at the catalogue and READ on a surface.
+      ⚠ **§6.1 GAVE THE ROW A WORLD TO NAME FOR FIVE WEEKS, AND IT IS RETIRED
+      WITH THE PATHS (#203 slice 2, 2026-09-24).** The *"as dressed"* label made
+      the sentence *"no code notices"* carry one exception — the reader's eye —
+      and the exception is gone with the road that fed it: it was drawn on the
+      Wardrobe path alone, and after slice 1 nobody can be cast on one. **It was
+      never the capability and is not missed as one**: nothing measured skin on
+      a body then and nothing does now, `display: "face skin"` still says
+      exactly which skin this is, and the understatement above is still stated
+      here rather than on the surface. What the retirement costs is one true
+      sentence nobody was ever shown; `#1148` is where a customer getting her
+      clothes back, and this row getting a world to name again, is decided.
     */
-    pathProvenance: {
-      onWardrobe: "as dressed",
-      why:
-        "the 11.5–12.5% understatement above was measured on three frames of people in "
-        + "the house crew tee, where a face crop is most of the skin there is to see. On "
-        + "a dressed cast that is what the row is honestly about, and saying so is what "
-        + "keeps `display: \"face skin\"` from reading as a claim about all of her skin",
-    },
     /*
       AND THE SAME REGION THE NOTE ABOVE REFUSES AS A CROP IS THE ONE THE PANEL
       DRAWS HER SKIN FROM (founder's box rule, ruled in fable-428 §2).
@@ -1209,10 +1153,6 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
     /* Carried only where it was authored: a slot with nothing here says nothing
        when its read is empty, which is what every slot did before this field. */
     ...(entry.whenAbsent ? { whenAbsent: entry.whenAbsent } : {}),
-    /* Same rule as `whenAbsent` above and for the same reason: carried only
-       where it was authored, so a row nobody decided this about says nothing —
-       which is what every row did before §6.1. */
-    ...(entry.pathProvenance ? { pathProvenance: entry.pathProvenance } : {}),
     ...(entry.instances.of === "perSide" ? { pairNoun: entry.instances.pairNoun } : {}),
   };
 

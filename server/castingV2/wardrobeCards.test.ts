@@ -16,18 +16,20 @@ import { describe, expect, it } from "vitest";
 import { facePanel, PANEL_GROUPS } from "./facePanel";
 import { pronounsForSex } from "./castPronouns";
 import { HOUSE_WARDROBE_LINE, basicsWardrobeLine } from "./wardrobeLine";
-import type { WardrobeResolution } from "./wardrobeLine";
 import { wardrobePieces } from "./wardrobeCards";
 
-const born = (path: "wardrobe" | "basics", line: string): WardrobeResolution =>
-  ({ kind: "line", line, source: "born", path });
-
-const panelFor = (wardrobe: WardrobeResolution | null) => facePanel({
+/* ⚠ **IT TAKES NO WARDROBE ANY MORE, AND THAT IS STEP (b)'s HALF OF THE
+   PROOF** (#203 slice 2). Step (a) removed the section this panel could draw;
+   step (b) removed the panel's last reader of what a branch is wearing — the
+   *"as dressed"* label — so `facePanel` no longer ACCEPTS a resolution at all.
+   A fixture that hands one in is now a type error, which is a stronger
+   statement than any runtime arm below and is why the loop over the five
+   resolutions is gone: there is nothing left to vary. */
+const panelFor = () => facePanel({
   rows: [],
   pronouns: pronounsForSex("female"),
   contentUrl: (key) => `https://example.test/${key}`,
   maskUrl: (key) => `https://example.test/${key}`,
-  wardrobe,
 });
 
 describe("the split is the join read backwards, and nothing else", () => {
@@ -113,23 +115,16 @@ describe("the split is the join read backwards, and nothing else", () => {
  * deletion nobody proved.
  */
 describe("no panel draws a wardrobe section, on any resolution", () => {
-  it("⚠ not even for a LINE on the Wardrobe path — the state that used to draw one", () => {
-    for (const wardrobe of [
-      born("wardrobe", HOUSE_WARDROBE_LINE),
-      born("basics", basicsWardrobeLine(null)),
-      { kind: "unpathed" } as const,
-      { kind: "incoherent", path: "wardrobe" } as const,
-      null,
-    ]) {
-      const panel = panelFor(wardrobe);
-      const headings = panel.groups.map((group) => group.heading);
-      expect(headings, JSON.stringify(wardrobe)).not.toContain("Wardrobe");
-      /* And no row of any section carries a wardrobe key — a section can be
-         renamed, a row cannot hide. */
-      const slots = panel.groups.flatMap((group) => group.rows).flatMap((row) => row.slots);
-      expect(slots.filter((slot) => String(slot).startsWith("wardrobe:")), JSON.stringify(wardrobe))
-        .toEqual([]);
-    }
+  it("⚠ draws no wardrobe heading and no wardrobe row, whatever it is handed", () => {
+    const panel = panelFor();
+    expect(panel.groups.map((group) => group.heading)).not.toContain("Wardrobe");
+    /* And no row of any section carries a wardrobe key — a section can be
+       renamed, a row cannot hide. */
+    expect(
+      panel.groups.flatMap((group) => group.rows)
+        .flatMap((row) => row.slots)
+        .filter((slot) => String(slot).startsWith("wardrobe:")),
+    ).toEqual([]);
   });
 
   it("⚠ CONTROL — the same reading DOES see a section when there is one", () => {
@@ -150,11 +145,10 @@ describe("no panel draws a wardrobe section, on any resolution", () => {
       pronouns: pronounsForSex("female"),
       contentUrl: (key) => `https://example.test/${key}`,
       maskUrl: (key) => `https://example.test/${key}`,
-      wardrobe: born("wardrobe", HOUSE_WARDROBE_LINE),
     });
     expect(panel.groups.map((group) => group.heading)).toContain("Face");
     expect(panel.groups.flatMap((group) => group.rows).length).toBeGreaterThan(0);
-    /* The same panel, with a wardrobe line on it, still has no wardrobe. */
+    /* The same panel, with real rows on it, still has no wardrobe. */
     expect(panel.groups.map((group) => group.heading)).not.toContain("Wardrobe");
   });
 
