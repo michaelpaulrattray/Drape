@@ -47,6 +47,20 @@ import { readableGatedFailure } from "./failureCopy";
  */
 const CARD = new URL("./components/ConceptUploadCard.tsx", import.meta.url);
 const REVIEW_SOURCE = new URL("./components/ConceptReviewModal.tsx", import.meta.url);
+/*
+  ⚠ THE DEPTH COUNTER LEFT THIS FEATURE (card 1118) AND THESE ARMS FOLLOWED IT
+  RATHER THAN BEING LOWERED. The legacy ink panel needed the same zone, so the
+  hook was promoted to `foundation/useFileDropTarget.ts` and renamed on the way
+  in — `foundation` already exports a `DropZone`, a dashed button with no drag
+  behaviour at all, and a `useDropZone` beside it reads as that component's
+  hook. Every assertion below that is about the COUNTING now reads the hook;
+  every assertion about WHICH ZONE FEEDS WHICH OVERLAY still reads the dialog,
+  because that wiring is this dialog's and was the whole of his finding.
+*/
+const DROP_TARGET_HOOK = new URL(
+  "../../foundation/useFileDropTarget.ts",
+  import.meta.url,
+);
 /* The half of his ruling that lives in the stylesheet: what is drawn on the
    picture, and when (#1087). */
 const MODALS_CSS = new URL("../../foundation/modals.css", import.meta.url);
@@ -778,8 +792,10 @@ describe("two entrances, one read", () => {
     const review = withoutProse(await readFile(REVIEW_SOURCE, "utf8"));
     expect(review).toContain("file: File | null;");
     expect(review).toContain("const empty = file === null;");
-    /* The dialog's own drop and picker hand the files UP rather than judging them. */
-    expect(review).toContain("onFiles(event.dataTransfer?.files ?? null);");
+    /* The dialog's own drop and picker hand the files UP rather than judging them.
+       The drop half is the shared hook's line; the picker half is the dialog's. */
+    const dropHook = withoutProse(await readFile(DROP_TARGET_HOOK, "utf8"));
+    expect(dropHook).toContain("onFiles(event.dataTransfer?.files ?? null);");
     expect(review).toContain("onFiles(files);");
     expect(review).toContain("notAPicture: boolean;");
     /* The drop zone stands in the picture's own slot, so nothing moves when one arrives. */
@@ -864,8 +880,9 @@ describe("two entrances, one read", () => {
        browser's own behaviour, which is the absent-or-live gate again. */
     const guard = card.slice(card.indexOf("useEffect(() => {"));
     expect(guard.slice(0, 200)).toContain("if (!describe) return;");
-    /* Both the card and the dialog are real drop targets, not decorations. */
-    for (const url of [CARD, REVIEW_SOURCE]) {
+    /* Both the card and the shared hook are real drop targets, not decorations —
+       the dialog's two zones and the ink panel's one all get theirs from the hook. */
+    for (const url of [CARD, DROP_TARGET_HOOK]) {
       const source = withoutProse(await readFile(url, "utf8"));
       /*
         ⚠ SLICED TO THE NEXT DECLARATION, NOT TO A CHARACTER COUNT — this arm
@@ -896,7 +913,7 @@ describe("two entrances, one read", () => {
       and used twice. Anchored on the SHAPE rather than on one variable's name,
       or this arm quietly reads only the file that happened not to change.
     */
-    for (const url of [CARD, REVIEW_SOURCE]) {
+    for (const url of [CARD, DROP_TARGET_HOOK]) {
       const source = withoutProse(await readFile(url, "utf8"));
       expect(source, String(url)).toMatch(/(\w+)\.current \+= 1;/);
       expect(source, String(url)).toMatch(/(\w+)\.current = Math\.max\(0, \1\.current - 1\);/);
@@ -1121,9 +1138,10 @@ describe("the picture carries ONE control, and it appears with the hand", () => 
     expect(overlay).not.toContain("bodyZone");
     /* Two zones, one implementation — a second hand-rolled copy of the depth
        counting is the drift working law 4 is about. */
-    expect(review).toContain("const bodyZone = useDropZone(");
-    expect(review).toContain("const pictureZone = useDropZone(");
-    const hook = review.slice(review.indexOf("function useDropZone("));
+    expect(review).toContain("const bodyZone = useFileDropTarget(");
+    expect(review).toContain("const pictureZone = useFileDropTarget(");
+    const hookSource = withoutProse(await readFile(DROP_TARGET_HOOK, "utf8"));
+    const hook = hookSource.slice(hookSource.indexOf("export function useFileDropTarget("));
     /* `preventDefault` on dragover is what MAKES it a drop target; without it
        the browser navigates the tab to the file and takes her brief with it. */
     expect(hook.slice(0, hook.indexOf("return { over, handlers };"))).toContain(

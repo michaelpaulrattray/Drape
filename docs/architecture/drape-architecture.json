@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "145c920af3b23f90"
+    "sourceFingerprint": "f7d10100b8c26b31"
   },
   "domains": [
     {
@@ -63,7 +63,7 @@
     {
       "id": "domain:foundation",
       "name": "foundation",
-      "moduleCount": 26
+      "moduleCount": 27
     },
     {
       "id": "domain:home",
@@ -2434,6 +2434,12 @@
     {
       "id": "module:client/src/foundation/useAnchoredPanel.ts",
       "path": "client/src/foundation/useAnchoredPanel.ts",
+      "domain": "foundation",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/foundation/useFileDropTarget.ts",
+      "path": "client/src/foundation/useFileDropTarget.ts",
       "domain": "foundation",
       "lifecycle": "active"
     },
@@ -10283,6 +10289,10 @@
       "path": "client/src/features/casting/castingPrices.test.ts"
     },
     {
+      "id": "test:client/src/features/casting/evidence/inkReferenceDrop.test.ts",
+      "path": "client/src/features/casting/evidence/inkReferenceDrop.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/briefDraft.test.ts",
       "path": "client/src/features/castingV2/briefDraft.test.ts"
     },
@@ -15847,6 +15857,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/casting/evidence/InkAddPanel.tsx",
+      "to": "module:client/src/foundation/useFileDropTarget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/evidence/InkAddPanel.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/casting/evidence/inkProjectionEvents.ts",
       "to": "module:shared/boardTypes.ts",
       "kind": "imports"
@@ -16329,6 +16349,11 @@
     {
       "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
       "to": "module:client/src/foundation/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/ConceptReviewModal.tsx",
+      "to": "module:client/src/foundation/useFileDropTarget.ts",
       "kind": "imports"
     },
     {
@@ -18679,6 +18704,11 @@
     {
       "from": "module:client/src/foundation/index.ts",
       "to": "module:client/src/foundation/useAnchoredPanel.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/foundation/useFileDropTarget.ts",
       "kind": "imports"
     },
     {
