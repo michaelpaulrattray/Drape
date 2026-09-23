@@ -133,3 +133,4 @@ export type { Severity } from "./severity";
 */
 export { POPOVER_MARKER, useAnchoredPanel } from "./useAnchoredPanel";
 export type { AnchoredPanel, PanelAlign } from "./useAnchoredPanel";
+export { useFileDropTarget } from "./useFileDropTarget";

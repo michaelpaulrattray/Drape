@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   CONCEPT_DROP_CHOOSE,
@@ -27,6 +27,7 @@ import {
 import { ACCEPTED_PICTURE_FILES } from "../pictureBytes";
 import { ReimagineButton, ReimagineLine, useReimagine } from "./Reimagine";
 import { CastingModal } from "@/foundation/CastingModal";
+import { useFileDropTarget } from "@/foundation/useFileDropTarget";
 
 /**
  * THE REVIEW STEP — the photograph beside the words, and the cast (#196).
@@ -83,48 +84,6 @@ import { CastingModal } from "@/foundation/CastingModal";
  * nothing (D-180). They are disabled at zero instead, which is
  * `CastSettingsModal`'s Reset rule applied to a confirm.
  */
-/**
- * ONE DROP TARGET THAT KNOWS WHETHER A FILE IS OVER *IT* (#1087).
- *
- * Written as a hook because this dialog now has two of them — the body (with
- * the empty picture slot, which is the same target seen from the other side)
- * and the picture itself — and a second hand-rolled copy of the counting is
- * the drift working law 4 is about. The count is the load-bearing part:
- * `dragleave` fires every time the pointer crosses into a CHILD element, so a
- * naive enter/leave pair flickers the state on and off as the cursor moves over
- * the text inside the zone.
- *
- * `preventDefault` on dragover is what MAKES an element a drop target — without
- * it the browser refuses the drop and then navigates the tab to the file, which
- * would take her whole brief with it.
- */
-function useDropZone(onFiles: (files: FileList | null) => void) {
-  const [over, setOver] = useState(false);
-  const depth = useRef(0);
-  const handlers = {
-    onDragEnter: (event: DragEvent) => {
-      if (!event.dataTransfer?.types?.includes("Files")) return;
-      depth.current += 1;
-      setOver(true);
-    },
-    onDragOver: (event: DragEvent) => {
-      if (!event.dataTransfer?.types?.includes("Files")) return;
-      event.preventDefault();
-    },
-    onDragLeave: () => {
-      depth.current = Math.max(0, depth.current - 1);
-      if (depth.current === 0) setOver(false);
-    },
-    onDrop: (event: DragEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-      depth.current = 0;
-      setOver(false);
-      onFiles(event.dataTransfer?.files ?? null);
-    },
-  };
-  return { over, handlers };
-}
 
 export function ConceptReviewModal({
   file,
@@ -237,8 +196,8 @@ export function ConceptReviewModal({
     over THIS picture*: one flag raised by the body's zone would light the
     picture while the hand was two columns away.
   */
-  const bodyZone = useDropZone(onFiles);
-  const pictureZone = useDropZone(onFiles);
+  const bodyZone = useFileDropTarget(onFiles);
+  const pictureZone = useFileDropTarget(onFiles);
 
   const reading = file !== null && description === null && failure === null;
   const refused = failure !== null;
