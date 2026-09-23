@@ -1,7 +1,7 @@
 {
-  "edition": 486,
-  "updatedAt": "2026-09-23T05:30:00.000Z",
-  "shift": "N1 IS CLOSED. You signed it off this morning — “im happy to sign off on the cyborg breif now” — and the completion card the milestone gate owes you is now on your desk below. It is worth ten minutes of your hands before N2 goes much further.\n\nTHE ONE THING IN IT I WOULD NOT WANT YOU TO MISS. Everything N1 built is live for exactly one account: yours. I read this at the switch record the release tool compares against the live site on every push, so it is a measurement and not an impression — 20 of the 36 switches stand at “your account only”. The register, Re-imagine, the new engine, Retry, Upload a concept. A customer signing up today gets none of it. Nothing went wrong: each one was flipped to you on your word and was always meant to widen on your eye. But it means N1 is SIGNED OFF and not yet SHIPPED, and those are two different sentences. N2 — “the flags go home” — is exactly the rung that closes the gap, so your “okay make those three changes then start n2” was the right next instruction and nothing here asks you to change it.\n\nTHE TATTOO BUTTON SHIPPED. The second place that took your picture without answering you is live: hold a photograph over the attach button in the tattoo panel and the edge darkens, a wash comes up behind it, and the words change to Drop to attach.\n\nAND THE THING THAT BLOCKED IT TWO NIGHTS RUNNING IS UNDERSTOOD. I found the actual cause and a way round it that needs no new permission, so nothing is stuck tonight. There is still a one-word question about it below, but it is now a small one rather than a blocked night.\n\nTHE QUEUE: 30 open, nothing urgent, and your own list is empty. 16 have had nothing happen to them for a week — down from 21, which is the first time that number has moved in eight nights. No check-up clock fires before tomorrow.",
+  "edition": 487,
+  "updatedAt": "2026-09-23T05:56:35.101Z",
+  "shift": "THE FIRST N2 JOB IS DONE, AND IT FOUND A BUG YOU CAN SEE.\n\nBack in August you asked whether the new studio was “probably running on categories like the old lane did”. I went and traced it — every fact the studio still works out about a cast, and who still believes it. Fourteen of them, read in the code rather than in any document.\n\nTHE ONE THAT MATTERS. Type a model-ish brief — something like “a beauty campaign casting, luminous skin, wide-set eyes, cropped platinum hair, strong brows” — and the sheet tells you, in the sentence that explains who was cast:\n\n    Everyone on this sheet is cast as a beauty campaign casting, luminous skin, wide-set eyes, cro\n\nYour own sentence handed back to you, stopped in the middle of the word “cropped”. It is not adjustable and there is no control to fix it. It happens on every account, not only yours. I drove it rather than reasoning about it, so that line is the real output.\n\nWHY IT HAPPENS, IN ONE LINE. When the studio cannot find a short role in your brief it borrows the first eighty characters of the brief itself, so that an internal block has something to say — and the sheet then cuts that at sixty without minding words. The new road does not even build that internal block, so the borrowing does nothing at all except change what you read. There is a small safe fix and a better one that is your call; the card is below.\n\nTHE REST OF THE ANSWER TO YOUR QUESTION IS REASSURING. The dice that caused the Follow mistake are properly fenced — I checked every door into them, including the one at Sign, which is the expensive one. What is left is mostly machinery that runs and is thrown away: eight tile captions nothing shows, a piece of casting prose nothing sends, a rolled-up “direction” that nothing anywhere reads. None of it reaches a customer. It becomes deletable when N2 widens the switches, and that is now a written list instead of a memory.\n\nAND ONE THING FOR WHOEVER RETIRES THE WARDROBE PATH. That job has a trap in it, and I have written it down on the card: three different questions in the code look identical and must keep two opposite answers. Getting it wrong once would have refused “put her in a long black coat” for every customer we have.\n\nTHE QUEUE: 34 open, nothing urgent, your own list still empty. 17 untouched for a week. No check-up clock fires before tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -22,8 +22,8 @@
           "state": "waiting"
         },
         {
-          "title": "First N2 brief cut — not yet; tonight went on closing N1 honestly",
-          "state": "blocked"
+          "title": "First N2 brief cut and finished — the ghost audit (#180): fourteen facts traced, one customer-visible bug found and driven, four cards filed",
+          "state": "done"
         },
         {
           "title": "The N1 milestone-close deep review over the whole rung's diff (1,080 commits) — asked for on #1121; it runs in parallel and does not hold N2 up",
@@ -106,7 +106,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T05:19:27.542Z",
+      "readAt": "2026-09-23T05:56:46.400Z",
       "items": [
         {
           "issueNumber": 10,
@@ -141,6 +141,12 @@
         {
           "issueNumber": 209,
           "title": "The remainder of #206: the ID-LESS refusals need a name before the map can hold them, and the ~70 non-doors may be correct as they are",
+          "kind": "roadmap",
+          "rung": "N2"
+        },
+        {
+          "issueNumber": 1123,
+          "title": "N2: the brief reader is still asked for four fields the author road discards — a court, because trimming the ask can move the facts we keep",
           "kind": "roadmap",
           "rung": "N2"
         },
@@ -244,6 +250,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "promoted-role-1122",
+      "title": "Your own sentence is being shown back to you as the cast role, cut mid-word — one small fix, and one decision",
+      "productImpact": "Write a model-ish brief and the sheet says, at full ink, in the line that explains who was cast:\n\n    Everyone on this sheet is cast as a beauty campaign casting, luminous skin, wide-set eyes, cro\n\nThat is your own sentence, truncated twice — once at eighty characters, and again at sixty without minding where a word ends. There is no control to adjust it; the only way out is to rewrite the brief. It is live for every account, not only yours.\n\nIt happens because when the studio finds no short role in your brief it borrows the brief's own opening as one, so that an internal casting block has something to say. On the new road that block is never composed at all — so the borrowing changes nothing except what you read.\n\nI drove it rather than reasoning about it, so the line above is the real output. The full card is #1122.",
+      "workedExample": "Roll a brief like “a beauty campaign casting, luminous skin, wide-set eyes, cropped platinum hair, strong brows” and read the sentence under the sheet. Anything asking for a KIND OF FACE — model, editorial, runway, beauty, campaign — that does not also name a plain occupation will do it. A short brief will not: it only bites once your sentence runs past sixty characters.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Stop it cutting mid-word, and leave the rest alone",
+          "consequence": "The typo goes and the sentence stays. Strictly better than today, needs no decision from you, and a shift can do it this week. It does not answer whether your brief should be quoted back at all."
+        },
+        {
+          "key": "B",
+          "label": "Stop borrowing your brief as the role on the new road",
+          "consequence": "The internal block it feeds is not built on that road, so nothing is lost. The sentence then names no category at all on those briefs, which is quieter than today. This falls out of N2's retirement work anyway."
+        },
+        {
+          "key": "C",
+          "label": "Never show a borrowed role — only a real one the reader actually found",
+          "consequence": "The sheet stops repeating your own words back at you, which is the complaint you already made about the follow prompt. On model-ish briefs the sentence gets shorter and says only what it genuinely knows."
+        }
+      ],
+      "recommendation": "A now, C as the real answer. Cutting a word in half is never right, and fixing that needs nothing from you — I would rather it stopped this week than waited on a decision. But C is the same complaint you already made once: “I made the change, I don't need it repeated.” The studio's own note in that file argues your side without realising it — it says a category “is not the user's sentence”, and on these briefs it is exactly your sentence. Say the word on C and a shift takes both together.",
+      "state": "open",
+      "filedAt": "2026-09-23T05:56:35.101Z",
+      "issueNumber": 1122
+    },
     {
       "id": "n1-completion",
       "title": "N1 is signed off — and everything it built is live on exactly one account: yours",
@@ -8034,7 +8067,7 @@
     197
   ],
   "nextUp": {
-    "readAt": "2026-09-23T05:19:27.541Z",
+    "readAt": "2026-09-23T05:56:46.399Z",
     "items": []
   }
 }
