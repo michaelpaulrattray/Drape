@@ -1,7 +1,7 @@
 {
-  "edition": 494,
-  "updatedAt": "2026-09-24T00:20:00+10:00",
-  "shift": "Foreman — your page stops carrying the rest of what it cannot show",
+  "edition": 495,
+  "updatedAt": "2026-09-24T02:05:00+10:00",
+  "shift": "Janitor — the workshop floor swept, and one instrument put back at its floor",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -122,7 +122,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T14:13:34.383Z",
+      "readAt": "2026-09-23T15:50:00.009Z",
       "items": [
         {
           "issueNumber": 10,
@@ -7579,6 +7579,14 @@
       "status": "merged",
       "prNumber": 1120,
       "note": "WHAT YOU WOULD SEE: in the old studio's tattoo panel, drag a photograph over the Reference button. Before tonight it did nothing at all until you let go. Now the moment your picture crosses its edge the outline darkens, a pale wash comes up behind it, and the words change to Drop to attach. Take the picture away and it goes back. Drag selected text over it and nothing happens, which is correct — it is a picture target.\n\nIt is the same fault you reported on the concept window, in a second place, and it uses that window's machinery rather than a second copy of it.\n\nSHIPPED TONIGHT. It was submitted twice: the first attempt could not be checked at all because of the clash described in the note below, so the same work was re-submitted on a fresh copy and went through clean."
+    },
+    {
+      "id": "janitor9-knip-floor-1141",
+      "title": "The dead-code check is back at its floor, and the workshop around it is tidy",
+      "status": "merged",
+      "prNumber": 1142,
+      "cardId": null,
+      "note": "Five names nothing uses were marked as shared and are not any more — no behaviour changed. Alongside it: 25 spent scripts, 37 finished branches and 7 leftover folders cleared off this machine."
     }
   ],
   "problems": [
@@ -7592,7 +7600,7 @@
     {
       "id": "queue-shape-0923j-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 38 open, and your own list is empty once tonight's job merges. Nothing urgent, no check-up clock due before tomorrow.",
       "detail": "Read at 03:53. 38 open — one more than three hours ago, and the new one is a job this shift filed itself: a second place in the old studio that takes a dropped picture without answering the hand.\n\nYour own ordered list had exactly one job on it — the concept window's picture swap — and that is what tonight built.\n\n21 of the 38 have had nothing happen to them for a week. The same 21 as the last six nights, so the backlog is flat rather than growing.\n\nNothing here needs you."
     },
@@ -8260,6 +8268,13 @@
       "state": "resolved",
       "title": "The queue: 34 open, your list empty, none urgent. Both open bugs are tonight's work - one in review, one filed from it. No check-up clock has fired.",
       "detail": "Read at 11:55Z. 34 open cards - one filed tonight by the check that looks for the same mistake elsewhere. 17 have had no comment, close, reopen or commit for 7 days, unchanged from last night; they are roadmap rungs you have not reached rather than neglected work.\n\nBoth open bugs came out of tonight: one is the change now waiting on its review, and the other is the one it found in the hair-colour reader. Every other switched category is at zero. The next check-up clock (housekeeping) fires in two days.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0924-janitor",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 38 open, your own list still holds only the switch sitting. Nothing urgent, and the backlog shrank a little.",
+      "detail": "Read at 01:48. 38 open — the same number as last night, though two came off and two new ones went on, both filed by tonight's clean-up and neither needing you.\n\nYour own list is unchanged: the twenty-switch sitting, which is complete and waiting for you rather than for us.\n\n17 of the 38 have had nothing happen to them for a week, down from 21 last night.\n\nNothing here needs you."
     }
   ],
   "acknowledgedReplyIds": [
@@ -8464,7 +8479,7 @@
     199
   ],
   "nextUp": {
-    "readAt": "2026-09-23T14:13:34.382Z",
+    "readAt": "2026-09-23T15:50:00.009Z",
     "items": [
       {
         "issueNumber": 1132,
