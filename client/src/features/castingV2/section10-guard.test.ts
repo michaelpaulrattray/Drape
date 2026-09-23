@@ -1,6 +1,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
+import { CONCEPT_BRIEF_PLACEHOLDER_CLAUSE } from "./conceptUpload";
+
 /**
  * SECTION 10 — the casting hero column and the Cast settings modal (#435, his
  * brief `docs/specs/Casting-ui-ux-design/drape-redesign/10-casting-hero-and-settings.md`).
@@ -555,6 +557,43 @@ describe("what the hero must NOT grow back (§2f)", () => {
     ).not.toContain("align-self");
   });
 
+  /*
+    THE ONE-LINE PLACEHOLDER, AS A NUMBER RATHER THAN A REVIEWER'S MEMORY.
+
+    Section 10 §2c states it in as many words — "The placeholder must fit one
+    line at this width" — and it has now been broken TWICE: once by the
+    100-character text that wrapped to three lines and was clipped, and once by
+    card 1107, whose drop offer appended to the full example came to 91
+    characters and SHIPPED wrapped, taking the resting box from 27px to 46px.
+
+    ⚠ THE BUDGET IS MEASURED, NOT CHOSEN. Driven in the running app at 1440
+    (textarea 427px, 13px on 19.5px): 70 and 71 characters each render on ONE
+    line; 91 renders on two. 72 is the budget — the measured pass plus nothing,
+    because a guard with headroom nobody measured is a guess wearing a number.
+    Re-drive it if the hero column's width ever changes.
+
+    ⚠ AND IT IMPORTS THE CLAUSE rather than restating it. A guard that keeps
+    its own copy of the string it is measuring cannot notice the string growing,
+    which is the failure it exists to catch (working law 4).
+  */
+  it("the hero placeholder fits one line — the plain example and the composed one", async () => {
+    const page = await read(PAGE);
+    const literal = (name: string): string => {
+      const at = page.indexOf(`const ${name} = "`);
+      expect(at, `${name} must be declared in the page`).toBeGreaterThan(-1);
+      const from = page.indexOf('"', at) + 1;
+      return page.slice(from, page.indexOf('"', from));
+    };
+    const plain = literal("HERO_BRIEF_EXAMPLE");
+    const short = literal("HERO_BRIEF_EXAMPLE_SHORT");
+
+    expect(plain.length, "the plain example must fit one line").toBeLessThanOrEqual(72);
+    expect(
+      `${short}${CONCEPT_BRIEF_PLACEHOLDER_CLAUSE}`.length,
+      "the example plus the drop offer must fit one line — it shipped wrapped at 91",
+    ).toBeLessThanOrEqual(72);
+  });
+
   it("each door is absent, never disabled, where the server did not open it", async () => {
     const page = code(await read(PAGE));
     // D-180: a disabled control is a question with no answer wearing a tap target.
@@ -571,7 +610,18 @@ describe("what the hero must NOT grow back (§2f)", () => {
     expect(page).not.toContain("Start from photos");
     expect(page).not.toContain("dpc-hero__photos");
     expect(page).toContain("conceptUploadEnabled ? briefDrop : {}");
-    expect(page).toContain("conceptUploadEnabled ? CONCEPT_BRIEF_PLACEHOLDER_CLAUSE");
+    /*
+      ⚠ THE PLACEHOLDER'S GATE, READ COLLAPSED (card 1111). This arm asserted
+      the one-line expression `conceptUploadEnabled ? CONCEPT_BRIEF_PLACEHOLDER_
+      CLAUSE` verbatim, so it reddened the moment the prop was wrapped across
+      lines — over a change that did not touch the gate at all. An arm keyed on
+      a formatting choice reports a reformat as a missing control, which is the
+      kind of red that teaches a shift to stop reading the message. What must
+      hold is that the offer is appended ONLY inside the scope, and that is what
+      it reads now, whitespace removed.
+    */
+    const flat = page.replace(/\s+/g, " ");
+    expect(flat).toContain("conceptUploadEnabled ? `${HERO_BRIEF_EXAMPLE_SHORT}${CONCEPT_BRIEF_PLACEHOLDER_CLAUSE}` : HERO_BRIEF_EXAMPLE");
     expect(page).toContain("offerFiles(");
   });
 });
