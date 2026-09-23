@@ -85,32 +85,28 @@ import { ConceptReviewModal } from "./ConceptReviewModal";
  * holds by construction: an account outside the scope cannot reach it at all.
  */
 /**
- * THE SECOND DOOR TO THIS FLOW (#435 §2e) — his brief puts `Start from photos`
- * in the hero's actions row, beside the settings control, because *"the
- * explainer already promises photos, and the flow already exists — but the only
- * way in was a card further down the page"*.
+ * THE SECOND DOOR TO THIS FLOW — the hero's brief box. It began as a `Start
+ * from photos` link in the hero's actions row (#435 §2e: *"the explainer
+ * already promises photos, and the flow already exists — but the only way in
+ * was a card further down the page"*); card 1107 replaced the link with the
+ * box itself, on his word "build option C": a picture dropped on the brief
+ * lands here, exactly as a picture dropped on this card does.
  *
  * A handle rather than a lifted `open` flag: the dialog's state is four pieces
  * (the flag, the picture, the words, the refusal) and they belong together
  * here, where every entrance already drives them. Lifting one of the four to
  * the page would put the page in charge of a machine it does not otherwise
- * touch, and entrance 2's whole point is that a tap opens the modal EMPTY —
- * which is exactly what this exposes and nothing more.
+ * touch. `offerFiles` is the whole of what the hero may do — one judge
+ * (`firstPictureFrom`), one road in (`beginRead`), so the brief box and the
+ * card cannot disagree about what a picture is.
  *
- * ⚠ **The hero draws its link only where the server opened this door** — the
+ * ⚠ **The hero arms its drop only where the server opened this door** — the
  * same `conceptUploadEnabled` answer that decides whether this card is live.
- * Off the scope the card renders inert, this handle does nothing, and a link
+ * Off the scope the card renders inert, this handle does nothing, and a drop
  * that opened nothing would be D-180's dead control on the busiest surface in
  * the product.
  */
-/**
- * The card's doors for the hero (card 1107): `openEmpty` opens the dialog on
- * its drop zone; `offerFiles` hands it a dropped file exactly as the card's
- * own drop does — one judge (`firstPictureFrom`), one road in (`beginRead`),
- * so the brief box and the card cannot disagree about what a picture is.
- */
 export type ConceptUploadHandle = {
-  openEmpty: () => void;
   offerFiles: (files: FileList | null) => void;
 };
 
@@ -127,12 +123,11 @@ export const ConceptUploadCard = forwardRef<ConceptUploadHandle, {
   /** Whether the dialog is up. Its own flag, because a tap opens it with no file. */
   const [open, setOpen] = useState(false);
   /*
-    Entrance 2, reached from the hero instead of from this card. Identical to
-    the card's own tap — the modal opens on its drop zone with no file — so the
-    two doors cannot drift into two behaviours.
+    Entrance 2, reached from the hero's brief box instead of from this card.
+    Identical to the card's own drop — same judge, same read — so the two doors
+    cannot drift into two behaviours.
   */
   useImperativeHandle(ref, () => ({
-    openEmpty: () => setOpen(true),
     /* Declared below; the handle is read only after mount, so the reference is live by then. */
     offerFiles: (files: FileList | null) => offerFileRef.current(files),
   }), []);
