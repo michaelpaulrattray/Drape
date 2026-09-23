@@ -1,7 +1,7 @@
 {
-  "edition": 498,
-  "updatedAt": "2026-09-24T07:10:00+10:00",
-  "shift": "Foreman — the prompt and the face panel stop asking which path a cast was born on",
+  "edition": 499,
+  "updatedAt": "2026-09-24T08:00:00+10:00",
+  "shift": "Foreman — the panel stops labelling a row by which path a cast was born on",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -51,6 +51,10 @@
         },
         {
           "title": "Two more of the eight: the instruction the studio sends when it reads your refine sentence no longer changes shape depending on which path a cast was bought on, and the face panel's Wardrobe section — which no account has ever been shown — is gone. The instruction was checked character by character before and after and did not move a single letter",
+          "state": "done"
+        },
+        {
+          "title": "A fourth of the eight is out: two rows on the face chart — her build and her skin — could carry a small label saying the picture they were read from shows her dressed. It only ever appeared on a cast bought on the Wardrobe path, so no account has ever seen it, and that path can no longer be bought. Gone with it: the panel can no longer be told what a cast is wearing at all, and one database read per chart went with it",
           "state": "done"
         }
       ]
@@ -126,11 +130,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "39 open · 17 untouched for 7 days · 14 waiting on you · none urgent."
+        "source": "40 open · 17 untouched for 7 days · 14 waiting on you · none urgent."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T21:01:12.338Z",
+      "readAt": "2026-09-23T21:55:34.818Z",
       "items": [
         {
           "issueNumber": 10,
@@ -7645,6 +7649,13 @@
       "status": "merged",
       "prNumber": 1149,
       "note": "Nothing changes on screen. The four instructions the studio can send were hashed before and after and are identical."
+    },
+    {
+      "id": "as-dressed-203-2b",
+      "title": "The face chart stops labelling a row by which path a cast was born on",
+      "status": "merged",
+      "prNumber": 1150,
+      "note": "Nothing changes on screen: the label could only appear on a path nobody can buy."
     }
   ],
   "problems": [
@@ -8544,7 +8555,7 @@
     199
   ],
   "nextUp": {
-    "readAt": "2026-09-23T21:01:12.337Z",
+    "readAt": "2026-09-23T21:55:34.817Z",
     "items": [
       {
         "issueNumber": 1132,
