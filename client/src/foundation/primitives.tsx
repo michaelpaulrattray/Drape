@@ -125,17 +125,25 @@ export function Instruction({ children }: { children: ReactNode }) {
 
 /* ----------------------------------------------------------------- inputs */
 
+/**
+ * The rest of the div's attributes ride through (card 1107): the casting
+ * hero's field is a drop target, and a wrapper that swallowed `onDragEnter`
+ * quietly made the whole door inert — the handlers compiled, attached to
+ * nothing, and the drive was the only thing that noticed. `Button` and
+ * `IconButton` above already forward theirs; this brings `Field` in line.
+ */
 export function Field({
   invalid,
   compact,
   className,
   children,
+  ...rest
 }: {
   invalid?: boolean;
   compact?: boolean;
   className?: string;
   children: ReactNode;
-}) {
+} & Omit<HTMLAttributes<HTMLDivElement>, "className" | "children">) {
   return (
     <div
       className={cn(
@@ -144,6 +152,7 @@ export function Field({
         invalid && "dp-field--invalid",
         className,
       )}
+      {...rest}
     >
       {children}
     </div>
