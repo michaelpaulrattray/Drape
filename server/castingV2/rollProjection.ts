@@ -32,8 +32,6 @@ import type { CastingCandidate, CastingRoll, CastingSession } from "../../drizzl
 import { storagePublicUrl } from "../storage";
 import { capForEcho } from "./capAtWordBoundary";
 import { statesWardrobe } from "./statedWardrobe";
-import type { CastingPath } from "../../shared/castingPaths";
-import { HOUSE_WARDROBE_LINE, currentWardrobeLine } from "./wardrobeLine";
 import { tokensComeFromBrief } from "./castingIntent";
 import {
   AGE_BANDS,
@@ -144,32 +142,28 @@ export type RollProjection = {
     untouched (the row is the artifact); the field simply has no reader left,
     which is the #534 precedent for dropping one.
   */
-  /**
-   * WHAT THIS SHEET IS WEARING — the two paths (design §3.3, item 6).
-   *
-   * ⚠ **An EXPLICIT projection off the roll's own columns, and it is explicit
-   * for the reason §3.2 refuses the cheaper design.** The same sentence lives
-   * in the Cast's `technicalSchema`, which is INTERNAL and never crosses a
-   * projection boundary, and in `compiledBrief`, whose docblock says the same.
-   * Lifting a display string out of either is how a sensitive blob starts being
-   * read for a caption — so the sheet reads the column, through the one owner.
-   *
-   * `null` is every roll cast before the paths existed and every roll outside
-   * the flag: the sheet says what it says today and nothing appears.
-   *
-   * `enginePicked` is DERIVED, never stored — see the projection site. It is
-   * §4.1's label obligation: *she is never told she asked for it*.
-   *
-   * ⚠ **`path` rides INSIDE this object rather than beside it as its own
-   * field, and that is the dark-ship discipline rather than tidiness** (§6).
-   * Every surface the toggle sitting adds — the sheet's wardrobe line, the
-   * re-roll switch's preselect, the notice's path arm — draws only when this
-   * object is non-null, which is exactly *this roll was cast on a path*. A
-   * top-level `path` would be a second thing a client could key on, and a
-   * client-derived fallback beside it is how a dark feature leaks onto the 206
-   * production rolls that have no path at all.
-   */
-  wardrobe: { path: CastingPath; line: string; enginePicked: boolean } | null;
+  /*
+    ⚠ **THERE IS NO `wardrobe` FIELD ANY MORE — RETIRED WITH THE PATHS (#203
+    slice 2 step c).**
+
+    It carried *what this sheet is wearing* and it was non-null exactly when the
+    roll was cast on a path. Since slice 1 the column is written a constant
+    `null`, so `currentWardrobeLine` answered `unpathed` for every roll a
+    customer can open and this field was `null` on every projection the product
+    has ever served — the sheet's record line, its path name and the
+    engine's-pick label with it. **Nobody has seen any of them.**
+
+    The thirteen pathed rolls in production keep their columns (they are the
+    evidence of which rolls predate the author road) and hold no candidate, so
+    no branch reaches this projection from one either.
+
+    `enginePicked` died here rather than moving: it was DERIVED from three
+    conditions, the first of which was `path === "wardrobe"`, so it could never
+    be computed as `true` for anything reachable. `currentWardrobeLine` itself
+    is untouched — it still owns the read side for the refine road, Sign and the
+    view package, which is why the deletion is this projection's and not the
+    resolver's.
+  */
   priceCredits: number;
   counts: { total: number; ready: number; casting: number; failed: number };
   createdAt: string;
@@ -523,39 +517,6 @@ function readFellBack(compiledBrief: unknown): boolean {
   return (compiledBrief as { interpreted?: unknown }).interpreted === false;
 }
 
-/**
- * The sheet's wardrobe line and whether it was chosen for her.
- *
- * Beside the projection rather than inside it because it is three derivations
- * and one of them — the engine-pick label — is a product promise rather than a
- * field copy.
- */
-function projectWardrobe(
-  roll: CastingRoll,
-): { path: CastingPath; line: string; enginePicked: boolean } | null {
-  const resolution = currentWardrobeLine({
-    rollPath: roll.path,
-    rollLine: roll.wardrobeLine,
-  });
-  if (resolution.kind !== "line") return null;
-  return {
-    /*
-      The path the ONE OWNER resolved, never `roll.path` read again here.
-
-      They cannot disagree today — `currentWardrobeLine` returns the column it
-      was handed — and reading the column a second time three lines below the
-      call that already answered is the parallel-copy shape (working law 4) in
-      miniature. It is also the field a client keys every new §6 surface on, so
-      it should come from the same answer the line does.
-    */
-    path: resolution.path,
-    line: resolution.line,
-    enginePicked: resolution.path === "wardrobe"
-      && resolution.line !== HOUSE_WARDROBE_LINE
-      && !statesWardrobe(roll.briefText),
-  };
-}
-
 export function projectRoll(input: {
   roll: CastingRoll;
   candidates: readonly ProjectableCandidate[];
@@ -601,32 +562,6 @@ export function projectRoll(input: {
     statedWardrobe: statesWardrobe(input.roll.briefText),
     authorRoad: rollComposedOnAuthorRoad(input.roll.compiledBrief),
     style: readCastStyle(input.roll.compiledBrief),
-    /*
-      THE OUTFIT, THROUGH THE ONE OWNER (§3.3), and the label derived beside it.
-
-      `currentWardrobeLine` rather than the column, even though a roll has no
-      branch and its `edited` arm cannot fire here: reading the column directly
-      at one of the six readers is how the seventh reader gets written the same
-      way, and condition (v) exists because that seventh reader was Sign.
-
-      ⚠ **`enginePicked` is derived from facts the row already carries** — never
-      a stored flag, which would be a second copy of something derivable and
-      therefore a copy that can be wrong (the `expiredReason` ruling, and the
-      same argument `statedWardrobe` above is written on). Three conditions, and
-      each one excludes a case that is NOT an engine pick:
-
-        the WARDROBE path        Basics is the path's own outfit, not a choice
-                                 anybody made for her;
-        not the house line       §4(c) is the studio default this product has
-                                 always painted, not something picked;
-        her sentence named no
-        clothing                 if she said "in a red apron", the outfit is
-                                 hers — completed in the same register, but
-                                 hers. §4.1(1): she is never told she asked for
-                                 something she did not, and this is the other
-                                 half of that promise.
-    */
-    wardrobe: projectWardrobe(input.roll),
     facts: readBriefFacts(input.roll.lockContract, input.roll.compiledBrief, input.roll.briefText),
     lineage: {
       ...(input.parentCandidatePublicId ? { fromCandidateId: input.parentCandidatePublicId } : {}),

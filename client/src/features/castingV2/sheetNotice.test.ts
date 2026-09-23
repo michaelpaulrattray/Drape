@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { readFile } from "node:fs/promises";
+
 import {
-  BASICS_WARDROBE_NOTICE,
   FELL_BACK_NOTICE,
   STATED_WARDROBE_NOTICE,
   sheetNotice,
@@ -10,9 +11,6 @@ import {
 const quiet = {
   fellBack: false,
   statedWardrobe: false,
-  /* Every roll in production, and every roll a test wrote before the paths
-     existed: the default here is the world this file was written in. */
-  wardrobePath: null,
   expiryNotice: null,
 } as const;
 
@@ -79,77 +77,80 @@ describe("what the lines actually say", () => {
 });
 
 /*
-  THE TWO PATHS' THREE CELLS (design §6/§3.3).
+  ⚠ **THE THREE CELLS ARE ONE AGAIN — AND THE SURVIVOR IS THE ONE A NAME-LED
+  SWEEP WOULD HAVE DELETED** (#203 slice 2 step c).
 
-  The rung that used to be one boolean is now a boolean and a path, and the
-  three answers are three different products. Driven as a matrix rather than as
-  three independent assertions, because the failure this guards against is one
-  cell quietly borrowing another's sentence.
+  The rung was a boolean AND a path. Two of its three answers were the path's —
+  a Basics sentence, and silence on Wardrobe — and both were reached only
+  through `RollProjection.wardrobe?.path`, which has answered `null` for every
+  roll a customer can open since slice 1. The cell that SURVIVES is the `null`
+  branch, which is live copy on every stated-outfit sheet in production.
+
+  So the arms below are written the way the predecessor's empty-list lesson
+  demands: **every absence arm is preceded by a positive control that proves the
+  subject still exists.** "No sentence mentions Basics" is satisfied by a module
+  that returns null for everything, and a guard that cannot tell those two apart
+  is not a guard.
 */
-describe("the stated-outfit line follows the path the sheet was cast on", () => {
+describe("the stated-outfit line is one sentence again, and it is the live one", () => {
   const stated = { ...quiet, statedWardrobe: true };
 
-  it("keeps today's sentence on an unpathed sheet, which is every sheet in production", () => {
+  /* THE POSITIVE CONTROL. Everything below is an absence; this is the presence
+     it is an absence against. */
+  it("still says the studio-tee sentence when she stated clothes", () => {
     expect(sheetNotice(stated)).toBe(STATED_WARDROBE_NOTICE);
   });
 
   /*
-    §4(a): her words WIN on the Wardrobe path. Confessing that the sheet kept
-    the studio tee would be a confession about something that did not happen —
-    and the sheet is at that moment rendering the outfit she named.
+    ⚠ AND IT NO LONGER DEPENDS ON ANYTHING BUT THAT. The retired branch keyed on
+    a second field; if one came back, some population of sheets would fall
+    through to a different answer. Driven over the whole input space the type
+    still admits rather than asserted about the source.
   */
-  it("says nothing on the Wardrobe path, because her outfit is what she is looking at", () => {
-    expect(sheetNotice({ ...stated, wardrobePath: "wardrobe" })).toBeNull();
+  it("says it for every remaining combination of the facts it is handed", () => {
+    for (const expiryNotice of [null, "This sheet expires today — keep what's worth holding."]) {
+      expect(sheetNotice({ ...stated, expiryNotice })).toBe(STATED_WARDROBE_NOTICE);
+    }
   });
 
-  /* And suppression is suppression of THIS rung only — a lower line still
-     gets the slot rather than the sheet going silent altogether. */
-  it("hands the slot down to the expiry rather than swallowing it", () => {
-    const line = "This sheet expires today — keep what's worth holding.";
-    expect(sheetNotice({ ...stated, wardrobePath: "wardrobe", expiryNotice: line })).toBe(line);
+  /* The rung is still about HER INSTRUCTION, not about the sheet. */
+  it("is silent when she never named an outfit", () => {
+    expect(sheetNotice(quiet)).toBeNull();
   });
 
-  it("says the Basics sentence on the Basics path, where the outfit really was set aside", () => {
-    expect(sheetNotice({ ...stated, wardrobePath: "basics" })).toBe(BASICS_WARDROBE_NOTICE);
-  });
-
-  /*
-    A path with NO stated outfit has no news at all on this rung — the line is
-    about her instruction, not about the path. Without this the Basics arm
-    could pass by firing on every Basics sheet ever cast.
-  */
-  it("is silent on both paths when she never named an outfit", () => {
-    expect(sheetNotice({ ...quiet, wardrobePath: "basics" })).toBeNull();
-    expect(sheetNotice({ ...quiet, wardrobePath: "wardrobe" })).toBeNull();
-  });
-
-  /* The top of the precedence is untouched by any of this. */
-  it("still loses to a lost interpretation on either path", () => {
-    expect(sheetNotice({ ...stated, fellBack: true, wardrobePath: "basics" })).toBe(
-      FELL_BACK_NOTICE,
-    );
+  /* The top of the precedence is untouched by the retirement. */
+  it("still loses to a lost interpretation", () => {
+    expect(sheetNotice({ ...stated, fellBack: true })).toBe(FELL_BACK_NOTICE);
   });
 });
 
-describe("what the Basics line actually says", () => {
+describe("the Basics sentence and the path input are gone from the module", () => {
+  const SOURCE = new URL("./sheetNotice.ts", import.meta.url);
+
   /*
-    The remedy it names must be a control the customer can reach on the same
-    screen — the re-roll box's own switch (§6). A refusal that names a road
-    nobody can walk is the dead end D-180 forbids.
+    ⚠ THE POSITIVE CONTROL FOR THE ABSENCES BELOW — read at the SOURCE, because
+    that is where they are read. A deleted or emptied module satisfies every
+    `not.toContain` in this block; this arm is what says the subject survived.
   */
-  it("names the path that would honour the outfit, and names it as a roll", () => {
-    expect(BASICS_WARDROBE_NOTICE).toContain("Wardrobe");
-    expect(BASICS_WARDROBE_NOTICE.toLowerCase()).toContain("roll again");
+  it("still declares the sentence that survived", async () => {
+    const source = await readFile(SOURCE, "utf8");
+    expect(source).toContain("export const STATED_WARDROBE_NOTICE");
+    expect(source).toContain("export function sheetNotice");
+  });
+
+  it("no longer declares a sentence naming a path nobody can buy", async () => {
+    const source = await readFile(SOURCE, "utf8");
+    expect(source).not.toContain("export const BASICS_WARDROBE_NOTICE");
   });
 
   /*
-    And it must NOT borrow the unpathed sentence's promise. "Outfits come after
-    Sign, in takes" is true of a studio-tee sheet; on Basics the record STAYS in
-    basics, and takes are where an outfit arrives later — but the near-term
-    remedy is the other path, which is what this line is for.
+    ⚠ AND THE INPUT IS GONE, NOT MERELY UNREAD. A field left on the type with no
+    reader is the shape `wardrobeEditsEnabled` was in one file over — it reads as
+    a live fact to the next person who opens it.
   */
-  it("is not the studio-tee sentence wearing a new coat", () => {
-    expect(BASICS_WARDROBE_NOTICE).not.toBe(STATED_WARDROBE_NOTICE);
-    expect(BASICS_WARDROBE_NOTICE).not.toContain("studio tee");
+  it("no longer asks its caller which path the roll was cast on", async () => {
+    const source = await readFile(SOURCE, "utf8");
+    const type = source.slice(source.indexOf("export type SheetNoticeInput"));
+    expect(type.slice(0, type.indexOf("};"))).not.toContain("wardrobePath");
   });
 });

@@ -1030,35 +1030,24 @@ export const castingV2Router = router({
     */
     authorRoadEnabled: captureCastingCreativeRegisterEnabled(ctx.user.id),
     /*
-      AND WHETHER A GARMENT ASK IS ADMITTED FOR THIS ACCOUNT — the sixth gate,
-      and the reason it exists is a sentence that becomes false on day one
-      (design §10's FIFTH flip precondition; ruled fable-1490).
+      ⚠ **THE SIXTH GATE — `wardrobeEditsEnabled` — IS RETIRED WITH THE PATHS**
+      (#203 slice 2 step c).
 
-      `RefinePanel`'s meta line says *"Anything about them — not their clothes or
-      the room"*, and it sits four lines under the panel's WARDROBE section
-      inviting a tap on a garment. It is TRUE today — read at the code before it
-      was believed (law 7b): the wardrobe subject is `admittedOn: "repaintOnly"`
-      (`subjectCards.ts`), so a garment ask needs an account on the repaint road
-      AND a cast on the Wardrobe path, and that population is empty in both
-      worlds. **The flip is what creates it**, for the first customer who opens
-      a pathed cast.
+      It answered *may a garment ask be admitted for this ACCOUNT*, and it was
+      only ever HALF a condition: the other half was the cast's Wardrobe path,
+      and the ask box joined them. With the paths retired the cast half is gone,
+      and this half could not be left standing on its own — it reads
+      `captureCastingRepaintEnabled`, which stands at `all` on production, so a
+      surface keying on it alone would claim a capability the wardrobe subject
+      is served to NOBODY for (`SERVED_SUBJECTS`, `refineSubjects.ts`).
 
-      ⚠ **IT IS A SEPARATE FIELD FROM `stepBackEnabled` THOUGH BOTH READ THE
-      SAME CAPTURE TODAY, and that is the whole point of adding it** (fable-1483
-      ASK 2, ruled fable-1490). `stepBackEnabled`'s name is about the version
-      chip's *take this step back*; reusing it here would be one gate answering
-      two questions under one of their names, which is how the two drift the day
-      the wardrobe subject is promoted off `repaintOnly`. Named for what it
-      decides, exactly like the five above it.
-
-      ⚠ **AND IT IS ONLY HALF THE CONDITION.** A garment ask also needs the CAST
-      to be on the Wardrobe path, which is a property of the roll rather than of
-      the account — the client already holds it as `RollProjection.wardrobe.path`
-      and reads both. A gate that answered alone would tell a Basics customer she
-      may edit an outfit her cast was never dressed for. (The refusal that once
-      said so in the path's own words is retired with the paths — #203 slice 2.)
+      Removed rather than kept for later: a gate with no caller is invariant
+      7's own subject, and this one would read as a live capability switch to
+      the next person who opened the file. **If #1148 promotes the wardrobe
+      subject to `everyPath`, this comes back with the surface that needs it** —
+      and it comes back named for what it decides, which is the one thing worth
+      carrying forward from fable-1490's ASK 2.
     */
-    wardrobeEditsEnabled: captureCastingRepaintEnabled(ctx.user.id),
   })),
 
   createSession: protectedProcedure

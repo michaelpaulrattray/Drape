@@ -477,99 +477,56 @@ describe("the sheet's two confessions survive the projection", () => {
 });
 
 /**
- * WHAT THIS SHEET IS WEARING — the two paths, projected explicitly (§3.3).
+ * ⚠ **WHAT THIS SHEET IS WEARING IS NOT PROJECTED ANY MORE — RETIRED WITH THE
+ * PATHS** (#203 slice 2 step c).
  *
- * The same sentence exists in two INTERNAL places by the time a Cast is signed
- * — `compiledBrief` and the Cast's `technicalSchema` — and §3.2 refuses lifting
- * a display string out of either. These arms hold the boundary, and the
- * engine-pick label, which is a product promise rather than a field copy.
+ * `RollProjection.wardrobe` carried the path, the outfit line and the
+ * engine's-pick label, and it was non-null exactly when the roll was cast on a
+ * path. Since slice 1 the column is written a constant `null`, so it answered
+ * `null` on every projection the product has ever served — the sheet's record
+ * line was never once drawn for anybody.
+ *
+ * ⚠ **THE ABSENCE ARMS HERE EACH SIT UNDER A POSITIVE CONTROL**, because a
+ * projection that returned an empty object would satisfy every one of them
+ * (#1150's sabotage drive). And the arms are driven against a roll that DOES
+ * carry a path in its columns — the thirteen production rows still do — so what
+ * is proven is *the projection drops it*, not *the fixture never had it*.
  */
-describe("the sheet's wardrobe line", () => {
+describe("the sheet is no longer told which path a roll was cast on", () => {
   const PICKED = "dark canvas work jacket, straight jeans, plain boots";
 
-  it("⚠ says nothing at all for a roll cast before the paths existed", () => {
-    /* Every roll in production as this lands, and every roll outside the flag.
-       NULL is not an error and must not become a caption. */
-    expect(projectRoll({ roll: rollRow(), candidates: [candidateRow()] }).wardrobe).toBeNull();
+  /* THE POSITIVE CONTROL: the projection still projects, and still carries the
+     neighbouring fact this rung is actually about. */
+  it("still projects a roll, and still says whether she stated clothes", () => {
+    const projected = projectRoll({
+      roll: rollRow({ briefText: "a woman in a red apron" }),
+      candidates: [candidateRow()],
+    });
+    expect(projected.rollId).toBeTruthy();
+    expect(projected.statedWardrobe).toBe(true);
   });
 
-  it("carries the line, and labels an engine's pick as one", () => {
+  it("⚠ carries no wardrobe field even for a roll whose COLUMNS hold a path", () => {
+    /* The thirteen rows in production look exactly like this. A fixture with no
+       path would pass this arm without the retirement having happened. */
     const projected = projectRoll({
       roll: rollRow({ briefText: "a caveman", path: "wardrobe", wardrobeLine: PICKED }),
       candidates: [candidateRow()],
     });
-    expect(projected.wardrobe).toEqual({ path: "wardrobe", line: PICKED, enginePicked: true });
+    expect(projected).not.toHaveProperty("wardrobe");
   });
 
-  it("⚠ NEVER labels an outfit SHE named as the engine's pick", () => {
-    /*
-      §4.1(1)'s other half: she is never told she asked for something she did
-      not, and equally never told the engine chose something she DID ask for.
-    */
+  it("⚠ carries no engine's-pick label anywhere in the projection", () => {
+    /* It was DERIVED from three conditions, the first of which was the path, so
+       it could never be computed true for anything reachable. Read over the
+       whole projection rather than one key, because a label is the kind of
+       thing that gets re-homed rather than deleted. */
     const projected = projectRoll({
-      roll: rollRow({
-        briefText: "a barista in a red apron",
-        path: "wardrobe",
-        wardrobeLine: "a red apron over a plain white tee, dark jeans, plain shoes",
-      }),
-      candidates: [candidateRow()],
-    });
-    expect(projected.wardrobe?.enginePicked).toBe(false);
-  });
-
-  it("⚠ the HOUSE line is not a pick — it is the studio default", () => {
-    const projected = projectRoll({
-      roll: rollRow({ briefText: "a woman in her 30s", path: "wardrobe", wardrobeLine: HOUSE_WARDROBE_LINE }),
-      candidates: [candidateRow()],
-    });
-    expect(projected.wardrobe)
-      .toEqual({ path: "wardrobe", line: HOUSE_WARDROBE_LINE, enginePicked: false });
-  });
-
-  it("⚠ BASICS is the path's own outfit, never an engine pick", () => {
-    const projected = projectRoll({
-      roll: rollRow({
-        briefText: "a swimmer in her 20s",
-        path: "basics",
-        wardrobeLine: "shirtless, in plain black fitted shorts, barefoot",
-      }),
-      candidates: [candidateRow()],
-    });
-    expect(projected.wardrobe?.enginePicked).toBe(false);
-    expect(projected.wardrobe?.line).toContain("black");
-  });
-
-  /*
-    ⚠ THE PATH RIDES INSIDE THIS OBJECT, and the client keys every §6 surface
-    on it (the sheet's record line, the re-roll switch's preselect, the
-    notice's path arm). It comes from the ONE OWNER's resolution rather than
-    from a second read of the column.
-  */
-  it("⚠ says which path, beside the line, so the sheet needs no second field", () => {
-    const basics = projectRoll({
-      roll: rollRow({
-        briefText: "a swimmer in her 20s",
-        path: "basics",
-        wardrobeLine: "shirtless, in plain black fitted shorts, barefoot",
-      }),
-      candidates: [candidateRow()],
-    });
-    expect(basics.wardrobe?.path).toBe("basics");
-    const dressed = projectRoll({
       roll: rollRow({ briefText: "a caveman", path: "wardrobe", wardrobeLine: PICKED }),
       candidates: [candidateRow()],
     });
-    expect(dressed.wardrobe?.path).toBe("wardrobe");
-  });
-
-  it("⚠ a path with NO line says nothing rather than guessing", () => {
-    /* `incoherent` — the write path cannot produce it, and a sheet that met one
-       must not caption a grey tee onto a Cast whose whole point is a bare
-       chest. */
-    expect(
-      projectRoll({ roll: rollRow({ path: "basics", wardrobeLine: null }), candidates: [candidateRow()] })
-        .wardrobe,
-    ).toBeNull();
+    expect(JSON.stringify(projected)).not.toContain("enginePicked");
+    expect(JSON.stringify(projected)).not.toContain(PICKED);
   });
 });
 

@@ -56,10 +56,6 @@ import { bridgeWithinCandidate } from "@/features/castingV2/panelBridge";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { sheetGoneRefusal, sheetGoneState } from "@/features/castingV2/sheetGone";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
-import {
-  CASTING_PATH_NAMES,
-  wardrobeLineText,
-} from "@/features/castingV2/castingPathCopy";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
 import {
   ReimagineButton,
@@ -1011,16 +1007,12 @@ export default function CastingSheet() {
     && roll.data.status !== "cancelled";
 
   /*
-    ─────────────────────────────────────────────────────────────────────────
-    THE TWO PATHS ON THE SHEET (design §6) — a record, and a switch.
-    ─────────────────────────────────────────────────────────────────────────
-
-    `wardrobe` is non-null exactly when this roll was cast on a path, so every
-    surface below keys on that one server fact and nothing is client-derived.
-    On the 206 production rolls that predate the feature it is null, and none
-    of this draws at all.
+    ⚠ **THE SHEET NO LONGER ASKS WHICH PATH THIS ROLL WAS CAST ON** (#203
+    slice 2 step c). `RollProjection.wardrobe` is retired, so the three surfaces
+    that keyed on it — the record line below, the notice's path arm and the ask
+    box's garment claim — are gone with it. Each drew only when that object was
+    non-null, which never happened on a roll anybody can open.
   */
-  const sheetWardrobe = roll.data?.wardrobe ?? null;
   /*
     THE AUTHOR ROAD RETIRES THE PATH SWITCH on this account (#131 slice E,
     ruling rule 11) and draws the IMAGINATION meter where it stood — not while
@@ -2225,16 +2217,6 @@ export default function CastingSheet() {
   const notice = sheetNotice({
     fellBack: roll.data?.fellBack === true,
     statedWardrobe: roll.data?.statedWardrobe === true,
-    /*
-      THE PATH THE VIEWED ROLL WAS CAST ON — and it is the VIEWED one, like
-      every other fact in this slot, so walking the rail changes what the sheet
-      confesses. `sheetWardrobe` is this roll's own resolution or null.
-
-      It changes the stated-outfit rung in three ways and the module owns which
-      (§6/§3.3): unpathed keeps today's sentence, Basics gets its own, and
-      Wardrobe is silent because her outfit is what she is looking at.
-    */
-    wardrobePath: sheetWardrobe?.path ?? null,
     expiryNotice,
   });
 
@@ -2413,33 +2395,15 @@ export default function CastingSheet() {
         {notice ? <p className="dpc-expiry-note">{notice}</p> : null}
 
         {/*
-          WHAT THIS SHEET IS WEARING — §3.3's row for the sheet, and §6's
-          *"the path is shown after the roll too."*
+          ⚠ **THE PATH RECORD LINE IS RETIRED** (#203 slice 2 step c). It drew
+          the path name in the chrome register and the outfit beside it, off
+          `wardrobe` being non-null — the server saying *this roll was cast on a
+          path*. Every roll a customer can open answered null, so this element
+          was never once drawn.
 
-          Its own line rather than the notice slot, and that is a distinction
-          the notice's own docblock draws: the slot above is NEWS, one thing at
-          a time, and this is a standing fact about the eight faces below. §6:
-          *"a fact that decides what a cast can and cannot do later must be
-          visible on the cast, not only on the control that set it."*
-
-          The path name is set in the chrome register and the outfit beside it
-          in the sentence register, because one is a machine fact and the other
-          is a description of a picture — the mono law's line falls exactly
-          between them.
-
-          Drawn off `wardrobe` being non-null, which is the server saying THIS
-          ROLL WAS CAST ON A PATH. Every roll in production answers null and
-          this whole element is absent, gate or no gate — the record is a
-          property of the roll, not of the account reading it, so it is
-          deliberately NOT behind `twoPathsEnabled`: a sheet that has a path
-          should say so even if the flag were later narrowed under it.
+          `.dpc-wardrobeline` and `.dpc-wardrobeline__line` STAY — the SETTINGS
+          line directly below is their other consumer, and it is live.
         */}
-        {sheetWardrobe ? (
-          <p className="dpc-wardrobeline">
-            <span className="dp-chrome">{CASTING_PATH_NAMES[sheetWardrobe.path].toUpperCase()}</span>
-            <span className="dpc-wardrobeline__line">{wardrobeLineText(sheetWardrobe)}</span>
-          </p>
-        ) : null}
         {/*
           THE SETTINGS THIS SHEET USED (#142: no hidden settings, ever) —
           style alone since #535 (his decision 1: Style is the only setting;
@@ -3333,19 +3297,19 @@ export default function CastingSheet() {
                 and the box then spends 25 credits on whoever you landed on.
               */
               /*
-                THE TWO HALVES OF *MAY SHE EDIT WHAT THEY ARE WEARING* (design
-                §10's fifth flip precondition, ruled fable-1490).
+                ⚠ **THE ASK BOX IS NO LONGER TOLD EITHER HALF OF *MAY SHE EDIT
+                WHAT THEY ARE WEARING*** (#203 slice 2 step c).
 
-                The account's half is the server's own gate, named for what it
-                decides; the cast's half is the roll's path. The panel joins
-                them and decides nothing — it is handed both facts, exactly like
-                `attachPicture` above.
-
-                `sheetWardrobe` is the SHOWN roll's resolution, and the viewer is
-                opened from the shown roll's tiles, so it is this face's path.
+                It took an account half (`wardrobeEdits`, the repaint gate) AND
+                a cast half (`wardrobePath`), and said the box reaches her
+                clothes only when both held. The cast half is retired with the
+                paths, and the account half could not stand alone: the repaint
+                gate is OPEN TO EVERY ACCOUNT on production, so an `AND` reduced
+                to its first term would have flipped that sentence on for
+                everybody — to claim a capability the wardrobe subject is served
+                to nobody for. Both halves left together and the box keeps its
+                one live sentence.
               */
-              wardrobeEdits={config.data?.wardrobeEditsEnabled === true}
-              wardrobePath={sheetWardrobe?.path ?? null}
               key={viewerCandidateId}
               variants={variants.data?.variants ?? []}
               pending={variants.data?.pending ?? []}

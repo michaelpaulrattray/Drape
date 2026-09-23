@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "008752870890cc49"
+    "sourceFingerprint": "a457463ebb740d15"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 47
+      "moduleCount": 46
     },
     {
       "id": "domain:client-shared",
@@ -1228,12 +1228,6 @@
     {
       "id": "module:client/src/features/castingV2/castSettingsCopy.ts",
       "path": "client/src/features/castingV2/castSettingsCopy.ts",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/castingPathCopy.ts",
-      "path": "client/src/features/castingV2/castingPathCopy.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -10321,10 +10315,6 @@
       "path": "client/src/features/castingV2/cardMenuAnatomy.test.ts"
     },
     {
-      "id": "test:client/src/features/castingV2/castingPathCopy.test.ts",
-      "path": "client/src/features/castingV2/castingPathCopy.test.ts"
-    },
-    {
       "id": "test:client/src/features/castingV2/castingV2CssEmitters.test.ts",
       "path": "client/src/features/castingV2/castingV2CssEmitters.test.ts"
     },
@@ -16277,11 +16267,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/castingV2/castingPathCopy.ts",
-      "to": "module:shared/castingPaths.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/castingV2/castSettingsCopy.ts",
       "to": "module:shared/castStyles.ts",
       "kind": "imports"
@@ -19234,11 +19219,6 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/cancelNotice.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingSheet.tsx",
-      "to": "module:client/src/features/castingV2/castingPathCopy.ts",
       "kind": "imports"
     },
     {
@@ -27258,22 +27238,12 @@
     },
     {
       "from": "module:server/castingV2/rollProjection.ts",
-      "to": "module:server/castingV2/wardrobeLine.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/rollProjection.ts",
       "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/castingV2/rollProjection.ts",
       "to": "module:shared/candidateFailure.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/rollProjection.ts",
-      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {
@@ -34954,10 +34924,10 @@
       "message": "Names 5 of RecoverableRollOperation's 5 fields (server/castingV2/rollRecovery.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:234",
+      "id": "finding:redeclared-shape:server/castingV2/rollProjection.ts:228",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollProjection.ts:234",
+      "subject": "server/castingV2/rollProjection.ts:228",
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
