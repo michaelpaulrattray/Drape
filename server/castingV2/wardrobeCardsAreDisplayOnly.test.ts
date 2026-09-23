@@ -27,8 +27,17 @@
  *
  * # What is allowed to reach it
  *
- * The panel, because that is what it is for. **Nothing else** — and in
- * particular nothing under the recipe, the render, the sign or the judge.
+ * ⚠ **NOTHING, SINCE #203 SLICE 2 (2026-09-24).** It was *the panel, because
+ * that is what it is for, and nothing else*; the panel's wardrobe section is
+ * retired with the paths, so the claim has grown one module stronger — **no
+ * module that ships reaches the decomposition at all**, and in particular
+ * nothing under the recipe, the render, the sign or the judge.
+ *
+ * ⚠ **AN EMPTY ANSWER AND A MISSPELLED ID LOOK IDENTICAL, which is the trap
+ * this arm walked into the moment its expected list became empty.** So the
+ * module's EXISTENCE is asserted against the Atlas's module inventory, which is
+ * a different collection from its edges: the claim is *this module is on the
+ * map and nothing imports it*, never *I could not find anything*.
  *
  * ⚠ **TESTS ARE NOT IN THIS GRAPH AT ALL, and the arm says so rather than
  * leaving it to be inferred.** The Atlas records module-to-module edges only:
@@ -44,7 +53,10 @@ import { readFileSync } from "node:fs";
 
 const ATLAS = JSON.parse(
   readFileSync(new URL("../../docs/architecture/drape-architecture.json", import.meta.url), "utf8"),
-) as { edges: Array<{ from: string; to: string; kind: string }> };
+) as {
+  edges: Array<{ from: string; to: string; kind: string }>;
+  modules: Array<{ id: string }>;
+};
 
 const SUBJECT = "module:server/castingV2/wardrobeCards.ts";
 
@@ -57,34 +69,51 @@ function importersOf(id: string): string[] {
 }
 
 describe("nothing that renders can reach the wardrobe decomposition", () => {
-  it("⚠ is reached by the PANEL and by nothing else that ships", () => {
+  it("⚠ is reached by NOTHING that ships — the panel was the last one", () => {
     /*
       Written as an exact list rather than as a set of forbidden names: a
       forbidden-list arm passes for every module nobody thought of, which is
-      always the one that turns up.
+      always the one that turns up. The list was `[facePanel]` until the
+      wardrobe section retired with the paths (#203 slice 2); it is now empty,
+      and the arm below is what stops an empty list from meaning a map this
+      reader could not read.
+
+      ⚠ Written without quotation marks around either word on purpose: the
+      capability census collects a door's pins by looking for its id QUOTED in a
+      suite, so a docblock saying so casually registers this file as driving two
+      interpreter refusals it has never been near. Caught at the generated map
+      the first time this comment was written.
     */
-    expect(importersOf(SUBJECT)).toEqual(["module:server/castingV2/facePanel.ts"]);
+    expect(importersOf(SUBJECT)).toEqual([]);
     /* The graph carries no test edges at all — asserted here rather than
        assumed, because the list above would look identical if it did and the
-       three suites that import this module had simply been forgotten. */
+       two suites that import this module had simply been forgotten. */
     expect(ATLAS.edges.some((edge) => edge.from.startsWith("test:"))).toBe(false);
   });
 
-  it("⚠ CONTROL — the reader really can see importers, on a module that has many", () => {
+  it("⚠ CONTROL — the module is ON the map, so the empty list is a fact and not a typo", () => {
     /*
-      The arm above is an equality against a short list, and a reader that
-      returned nothing at all for every id would satisfy it the moment the list
-      was emptied. `wardrobeLine.ts` is the same feature's other half and is
-      read by the prompt, the recipe, the sign and the sheet — so it must come
-      back with several, including at least one that is NOT a test.
+      ⚠ THE ARM THIS FILE COULD NOT HAVE HAD BEFORE, and the reason it needs it
+      now: an expected list of `[]` is satisfied by a misspelled id, by a stale
+      Atlas, and by a reader that returns nothing for everything. Two readings
+      separate those from the truth.
+
+      First, the module INVENTORY — a different collection from the edges —
+      must carry this exact id, and a deliberately misspelled one must be
+      absent from it. Second, `wardrobeLine.ts` is the same feature's other half
+      and is read by the prompt, the recipe, the sign and the sheet, so the edge
+      reader must still come back with several for it.
     */
+    const onTheMap = (id: string) => ATLAS.modules.some((module) => module.id === id);
+    expect(onTheMap(SUBJECT), "the subject is a module the Atlas knows").toBe(true);
+    expect(onTheMap("module:server/castingV2/wardrobeCardsTypo.ts")).toBe(false);
+
     const many = importersOf("module:server/castingV2/wardrobeLine.ts");
     expect(many.length).toBeGreaterThan(3);
     expect(many).toContain("module:server/castingV2/recipeAssembler.ts");
-    /* And the graph knows this module exists at all — an id with a typo in it
-       answers an empty list, which is exactly how this arm could go quiet. */
+    /* And a misspelled id answers the same empty list the subject does, which
+       is precisely why the inventory reading above is the one that matters. */
     expect(importersOf("module:server/castingV2/wardrobeCardsTypo.ts")).toEqual([]);
-    expect(importersOf(SUBJECT).length).toBeGreaterThan(0);
   });
 
   it("⚠ and the render path is named, so the claim is legible rather than implied", () => {

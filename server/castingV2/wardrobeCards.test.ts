@@ -1,5 +1,10 @@
 /**
- * THE WARDROBE SECTION — the split, the path condition, and the row (§8.1).
+ * THE OUTFIT SPLIT, AND THE SECTION THAT IS NO LONGER DRAWN FROM IT (§8.1).
+ *
+ * ⚠ **The panel section retired with the paths (#203 slice 2, 2026-09-24)**;
+ * the SPLIT RULE did not, and the first describe below is still its whole
+ * specification. The second is the retirement's proof rather than its
+ * description — see its own header for why eleven arms became three.
  *
  * The wire-side negative that ASK 1 made a condition of this landing lives
  * next door in `wardrobeCardsAreDisplayOnly.test.ts`, because it is about a
@@ -12,7 +17,7 @@ import { facePanel, PANEL_GROUPS } from "./facePanel";
 import { pronounsForSex } from "./castPronouns";
 import { HOUSE_WARDROBE_LINE, basicsWardrobeLine } from "./wardrobeLine";
 import type { WardrobeResolution } from "./wardrobeLine";
-import { wardrobePanelPieces, wardrobePieces, wardrobeSectionServed } from "./wardrobeCards";
+import { wardrobePieces } from "./wardrobeCards";
 
 const born = (path: "wardrobe" | "basics", line: string): WardrobeResolution =>
   ({ kind: "line", line, source: "born", path });
@@ -24,9 +29,6 @@ const panelFor = (wardrobe: WardrobeResolution | null) => facePanel({
   maskUrl: (key) => `https://example.test/${key}`,
   wardrobe,
 });
-
-const wardrobeSectionOf = (wardrobe: WardrobeResolution | null) =>
-  panelFor(wardrobe).groups.find((group) => group.group === "wardrobe") ?? null;
 
 describe("the split is the join read backwards, and nothing else", () => {
   it("takes the house line apart into its three pieces", () => {
@@ -93,117 +95,73 @@ describe("the split is the join read backwards, and nothing else", () => {
   });
 });
 
-describe("⚠ which paths get a wardrobe section — all three values, out loud", () => {
-  it("serves the Wardrobe path and refuses the other two", () => {
-    /*
-      The third question (fable-1459 ASK 3). `basics` is refused because §7.2
-      walls an outfit ask in its own words, so a tappable card there is D-180's
-      dead end wearing a tap target; `unpathed` is refused because a path nobody
-      chose is not a path that dresses anyone — and it is EVERY roll in both
-      worlds, so serving it would be live behaviour on a dark feature.
-    */
-    expect(wardrobeSectionServed("wardrobe")).toBe(true);
-    expect(wardrobeSectionServed("basics")).toBe(false);
-    expect(wardrobeSectionServed(null)).toBe(false);
-    expect(wardrobeSectionServed(undefined)).toBe(false);
-  });
 
-  it("draws nothing for `unpathed`, `incoherent` or a Basics line", () => {
-    expect(wardrobePanelPieces({ kind: "unpathed" })).toEqual([]);
-    expect(wardrobePanelPieces({ kind: "incoherent", path: "wardrobe" })).toEqual([]);
-    expect(wardrobePanelPieces(born("basics", basicsWardrobeLine(null)))).toEqual([]);
-    expect(wardrobePanelPieces(null)).toEqual([]);
-    expect(wardrobePanelPieces(undefined)).toEqual([]);
-    /* CONTROL — the same function DOES answer for the path it serves, so the
-       five empties above are a fact about the paths and not about the reader. */
-    expect(wardrobePanelPieces(born("wardrobe", HOUSE_WARDROBE_LINE))).toHaveLength(3);
-  });
-});
-
-describe("the section on the panel", () => {
-  it("⚠ IS ABSENT on an unpathed cast — every roll in both worlds today", () => {
-    expect(wardrobeSectionOf({ kind: "unpathed" })).toBeNull();
-    expect(wardrobeSectionOf(null)).toBeNull();
-    /* And the panel it produces is the panel that shipped: no group of any kind
-       appears for a face with no rows, which is the state this section must not
-       disturb. */
-    expect(panelFor(null).groups).toEqual([]);
-  });
-
-  it("draws one row per piece, in the line's own order", () => {
-    const section = wardrobeSectionOf(born("wardrobe", HOUSE_WARDROBE_LINE));
-    expect(section?.heading).toBe("Wardrobe");
-    expect(section?.rows.map((row) => row.name)).toEqual([
-      /* Her words, with the ENUMERATION'S article taken off the front and the
-         first letter raised — de-listing, not re-wording. */
-      "Plain unbranded crew-neck tee in neutral grey",
-      "Plain straight-leg trousers in the same neutral grey",
-      "Plain unbranded low shoes",
-    ]);
-  });
-
-  it("⚠ says no possessive — this is not part of the person", () => {
-    /*
-      fable-1312's *never mixed with body features*, reaching the grammar.
-      Every other row on this panel says "her" something because every other row
-      IS her.
-    */
-    const section = wardrobeSectionOf(born("wardrobe", HOUSE_WARDROBE_LINE));
-    for (const row of section?.rows ?? []) {
-      expect(row.spoken, row.name).not.toMatch(/\bher\b/i);
-      expect(row.prefill, row.name).not.toMatch(/\bher\b/i);
-    }
-    /* CONTROL — the possessive really is what the rest of the panel uses, so
-       the absence above is a decision rather than a field nobody set. */
-    expect(panelFor(null).possessive).toBe("her");
-  });
-
-  it("opens the ask the way every other row does", () => {
-    const section = wardrobeSectionOf(born("wardrobe", "a red apron, dark jeans, plain shoes"));
-    expect(section?.rows[0]?.prefill).toBe("Red apron — ");
-  });
-
-  it("⚠ carries NO picture and NO rectangle, and is drawn anyway", () => {
-    /*
-      The panel's oldest rule is *no box, no row*, because a rectangle is a
-      promise about pixels. A wardrobe row makes no such promise: nothing has
-      read this frame for a garment (that is 8B), so it has no crop and no
-      region — and it must still appear, or the panel forgets what she is
-      wearing because it could not photograph it.
-    */
-    const section = wardrobeSectionOf(born("wardrobe", HOUSE_WARDROBE_LINE));
-    expect(section?.rows).toHaveLength(3);
-    for (const row of section?.rows ?? []) {
-      expect(row.cutouts).toEqual([]);
-      expect(row.regions).toEqual([]);
-      expect(row.instances).toEqual([]);
-      /* SETTLED and never pending: a pending row is a place kept for a read
-         that is running, and no read is running for a garment. */
-      expect(row.state).toBe("settled");
-      /* No words underneath the label — the phrase IS the row, and repeating it
-         would be the row's own name pretending to be a reading of the frame. */
-      expect(row.words).toEqual([]);
+/**
+ * ⚠ THE SECTION IS RETIRED, AND THIS IS THE ARM THAT PROVES IT RATHER THAN
+ * THE ONES THAT DESCRIBED IT (#203 slice 2, 2026-09-24).
+ *
+ * Eleven arms stood here across two describes: which of the three path values
+ * got a section, and then what that section drew — its heading, its row order,
+ * its keys, its missing rectangle, its place last on the panel. Every one of
+ * them was a fact about machinery that is now deleted, and they die with it.
+ *
+ * What replaces them is the question they were really guarding: **no panel
+ * draws a wardrobe section for anything, including the state that used to draw
+ * one.** The type still admits a `line` on the Wardrobe path — thirteen rolls
+ * on production carry a path, none of them holds a candidate — so the arm is
+ * driven on exactly that resolution. A deletion the suite cannot see is a
+ * deletion nobody proved.
+ */
+describe("no panel draws a wardrobe section, on any resolution", () => {
+  it("⚠ not even for a LINE on the Wardrobe path — the state that used to draw one", () => {
+    for (const wardrobe of [
+      born("wardrobe", HOUSE_WARDROBE_LINE),
+      born("basics", basicsWardrobeLine(null)),
+      { kind: "unpathed" } as const,
+      { kind: "incoherent", path: "wardrobe" } as const,
+      null,
+    ]) {
+      const panel = panelFor(wardrobe);
+      const headings = panel.groups.map((group) => group.heading);
+      expect(headings, JSON.stringify(wardrobe)).not.toContain("Wardrobe");
+      /* And no row of any section carries a wardrobe key — a section can be
+         renamed, a row cannot hide. */
+      const slots = panel.groups.flatMap((group) => group.rows).flatMap((row) => row.slots);
+      expect(slots.filter((slot) => String(slot).startsWith("wardrobe:")), JSON.stringify(wardrobe))
+        .toEqual([]);
     }
   });
 
-  it("⚠ keys each row by POSITION, never by her phrase", () => {
+  it("⚠ CONTROL — the same reading DOES see a section when there is one", () => {
     /*
-      A key spelled out of a customer's words looks exactly like a key that
-      meant something. These name no library slot, no facet and no region — they
-      exist so a list has stable keys and so hovering one lights one.
+      Without this the arm above passes on a panel builder that returns nothing
+      at all, which is exactly what it would look like if the fixture had gone
+      wrong rather than the section having gone away.
     */
-    const section = wardrobeSectionOf(born("wardrobe", "a red apron, dark jeans, plain shoes"));
-    expect(section?.rows.map((row) => row.slots)).toEqual([
-      ["wardrobe:0"], ["wardrobe:1"], ["wardrobe:2"],
-    ]);
-    /* And they are UNIQUE, which is the defect this shape exists to avoid: a
-       shared key would collide in any list that renders by it. */
-    const keys = section!.rows.map((row) => row.slots.join(" "));
-    expect(new Set(keys).size).toBe(keys.length);
+    const panel = facePanel({
+      rows: [{
+        id: 1, publicId: "pub-1", candidateId: 7, variantId: 11,
+        role: "carry", tier: "anatomy", slot: "lips" as never, noun: "lips",
+        words: ["a fuller lip"], storageKey: null, maskKey: null, digest: null,
+        geometry: { bbox: { x: 10, y: 20, width: 30, height: 40 }, frame: { width: 1000, height: 1500 } },
+        guard: null, refusal: null, version: 1, retiredAt: null,
+        createdAt: new Date(2026, 7, 10, 12, 0, 1),
+      }] as never,
+      pronouns: pronounsForSex("female"),
+      contentUrl: (key) => `https://example.test/${key}`,
+      maskUrl: (key) => `https://example.test/${key}`,
+      wardrobe: born("wardrobe", HOUSE_WARDROBE_LINE),
+    });
+    expect(panel.groups.map((group) => group.heading)).toContain("Face");
+    expect(panel.groups.flatMap((group) => group.rows).length).toBeGreaterThan(0);
+    /* The same panel, with a wardrobe line on it, still has no wardrobe. */
+    expect(panel.groups.map((group) => group.heading)).not.toContain("Wardrobe");
   });
 
-  it("⚠ comes LAST, after every part of the person", () => {
-    /* Reading order is how the panel says this is not her. */
-    expect(PANEL_GROUPS.at(-1)).toEqual({ group: "wardrobe", heading: "Wardrobe" });
+  it("⚠ and the section is gone from the panel's own list of sections", () => {
+    /* PANEL_GROUPS is what a renderer reads; a heading left in it would draw an
+       empty section the moment anything else filled it. */
+    expect(PANEL_GROUPS.map((group) => group.group)).not.toContain("wardrobe");
+    expect(PANEL_GROUPS.at(-1)).toEqual({ group: "open", heading: "Also on this cast" });
   });
 });

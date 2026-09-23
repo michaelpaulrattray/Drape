@@ -1,7 +1,15 @@
 /**
- * THE OUTFIT, AS THINGS SHE CAN POINT AT — the panel's wardrobe section
+ * THE OUTFIT, TAKEN APART INTO THINGS SHE COULD POINT AT
  * (design `CASTING_V2_TWO_PATHS_DESIGN.md` §8.1, from fable-1312; the split
- * rule and the path condition ruled fable-1459 ASK 1 and ASK 3).
+ * rule ruled fable-1459 ASK 1).
+ *
+ * ⚠ **THE PANEL SECTION THIS FED IS RETIRED (#203 slice 2, 2026-09-24) AND THE
+ * SPLIT RULE IS NOT.** What is left is the decomposition itself and the record
+ * of what it cost to learn — the garment-crop court below, and the reason there
+ * is no crop. Its one surviving reader is the WIRE GUARD in
+ * `refineService.test.ts`, which uses this split as its instrument to prove the
+ * engine is never handed the line in parts; hand-rolling a second splitter
+ * there would be working law 4 on the one rule this file exists to state.
  *
  * A Cast on the Wardrobe path is wearing one stored SENTENCE. The panel speaks
  * in things a stylist can tap — *her jacket*, *her boots* — so the sentence has
@@ -97,13 +105,11 @@
  * apart, the engine is never handed in parts"* — a real repaint's outgoing
  * prompt has the whole LINE subtracted from it and no piece may survive in the
  * remainder. STRUCTURALLY — `wardrobeCardsAreDisplayOnly.test.ts` — the import
- * graph says nothing that ships reaches this module but the panel. The first
+ * graph says nothing that ships reaches this module **at all** since the panel
+ * section retired, which is the same claim grown one module stronger. The first
  * proves the road it drove; the second is about the caller nobody has written
  * yet.
  */
-import type { CastingPath } from "../../shared/castingPaths";
-import { subjectServedOnPath } from "./refineSubjects";
-import type { WardrobeResolution } from "./wardrobeLine";
 
 /**
  * ONE THING SHE IS WEARING, as the panel needs it.
@@ -156,58 +162,34 @@ export function wardrobePieces(line: string | null | undefined): readonly Wardro
     .map((phrase, index) => ({ phrase, index }));
 }
 
-/**
- * MAY THIS BRANCH BE ASKED ABOUT ITS WARDROBE AT ALL — the predicate both the
- * prompt and the panel read (ruled fable-1459 ASK 3).
- *
- * ⚠ **THIS IS A THIRD QUESTION AND IT IS WRITTEN OUT BECAUSE THE SECOND ONE
- * ALREADY WENT WRONG.** `subjectsServedOnPath` answers *what may be shown to
- * the model*; item 8 reused it for *what a chosen path refuses a customer* and
- * that was a real defect — `unpathed` must be WITHHELD from the first and must
- * not REFUSE on the second, because a path nobody chose is not a path that
- * refuses. One list, one value, two opposite correct answers. **The second
- * question is retired (#203 slice 2) and this paragraph is kept as origin: the
- * retirement collapses the three one at a time for exactly this reason, and
- * `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md` re-answers each in writing.**
- *
- * So the third question is stated rather than assumed: **does this cast get a
- * wardrobe SECTION on its panel.**
- *
- * ```
- * wardrobe   YES — she chose the path, the subject is in front of the model,
- *            and tapping a card reaches a real edit
- * basics     NO  — the path IS the outfit, so a card she can tap whose every
- *            road ends at a wall is D-180's dead end wearing a tap target.
- *            (§7.2's refusal said so in the path's own words until #203 slice 2
- *            retired it with the paths; the answer here is unchanged)
- * unpathed   NO  — and here the answer AGREES with the prompt question while
- *            DISAGREEING with the refusal one, which is exactly why all three
- *            values are checked out loud. Every roll in both worlds is
- *            unpathed; drawing a section for them would be live behaviour on a
- *            feature whose flag exists to keep it dark
- * ```
- *
- * It derives from the card's own `bornPathsServing` rather than naming the path
- * twice, so a future subject that becomes path-sensitive cannot land silently.
- */
-export function wardrobeSectionServed(path: CastingPath | null | undefined): boolean {
-  return subjectServedOnPath("wardrobe", path);
-}
+/*
+  ⚠ THE PANEL SIDE OF THIS FILE IS RETIRED — #203 slice 2, 2026-09-24.
 
-/**
- * THE PIECES A PANEL SHOULD DRAW FOR THIS BRANCH, or none.
- *
- * One function so a caller cannot get the path right and the line wrong, or
- * take the pieces from a resolution the section rule would have refused.
- *
- * `incoherent` draws nothing, and that is the same answer for the same reason it
- * gets everywhere else: a roll claiming a path and unable to say what it is
- * wearing has told us nothing, and a section built from that would be the
- * product describing an outfit it does not know.
- */
-export function wardrobePanelPieces(
-  wardrobe: WardrobeResolution | null | undefined,
-): readonly WardrobePiece[] {
-  if (!wardrobe || wardrobe.kind !== "line") return [];
-  return wardrobeSectionServed(wardrobe.path) ? wardrobePieces(wardrobe.line) : [];
-}
+  Two functions stood here: `wardrobeSectionServed`, *does this cast get a
+  wardrobe SECTION on its panel*, and `wardrobePanelPieces`, which drew it. Both
+  answered off `casting_rolls.path`, and both answered NO for every branch but
+  one born on the Wardrobe path — which slice 1 made unbuyable by writing that
+  column a constant `null`, and which no production roll has ever had a
+  candidate on. So the section was already drawn for nobody, and what remained
+  was a predicate that could only return `false` sitting in front of a loop that
+  could only run zero times.
+
+  **What a customer sees: nothing.** The panel filters out a section with no
+  rows, so the heading has never appeared on any account.
+
+  **The third question is not thereby answered differently** — it is no longer a
+  question. `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md` records all three
+  and why each one was collapsed on its own argument rather than on its
+  neighbour's: reusing the prompt's WITHHOLDING as a refusal's condition, once,
+  turned *"put her in a long black coat"* into a Basics refusal for the whole
+  customer base.
+
+  **And it is reversible on his word rather than on a rewrite.** If #1148 is
+  answered B — the wardrobe subject becomes a capability for everyone — what
+  comes back is a section served unconditionally, drawing `wardrobePieces` of
+  the current resolution's line. What does NOT come back is the path condition.
+  The founder's own ruling about these rows survives in `facePanel`'s header:
+  outfit rows live boxless, because a row that makes no promise about pixels
+  needs no rectangle, and the garment-crop court below says a reliable crop may
+  never exist.
+*/

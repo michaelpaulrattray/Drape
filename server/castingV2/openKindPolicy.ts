@@ -416,6 +416,25 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
     },
     standing: "silence",
   },
+  SERVED_SUBJECTS: {
+    file: "refineSubjects.ts",
+    asks: "which subjects the interpreter prompt names as the free lane's vocabulary",
+    answer: "none of them — an open ask never travels as a free subject, and must not",
+    basis: {
+      derived: "the list is derived from the subject cards and an open kind has no card, "
+        + "so it cannot appear here by construction. The stronger reason is that the open "
+        + "lane is a DIFFERENT road: an ask the catalogue has no word for is admitted by "
+        + "`openLaneKind` and named in its own clause, and the prompt's last-resort "
+        + "sentence is added by `CASTING_OPEN_LANE_SCOPE` rather than by this table. "
+        + "Putting an open kind on this list would be the product inventing a subject "
+        + "word for it, which is the closed-vocabulary drift D-89 exists to stop. "
+        + "⚠ It became visible to this policy only in #203 slice 2, when the path "
+        + "predicate collapsed into a constant — the same rule was a FUNCTION before and "
+        + "the scan sees tables, not functions. Nothing about the answer changed; what "
+        + "changed is that it is now written down",
+    },
+    standing: "silence",
+  },
   PRESENTATION_SUBJECTS: {
     file: "refineSubjects.ts",
     asks: "does this file as presentation instead of identity",

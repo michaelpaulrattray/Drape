@@ -25,12 +25,10 @@
  * is what stops "green eyes" quietly losing its iris prose and its
  * failed-candidate teeth by taking the free lane instead.
  */
-import type { CastingPath } from "../../shared/castingPaths";
 import type { RefinableAxis } from "./refineDelta";
 import {
   FREE_SUBJECT_KEYS,
   REPAINT_ONLY_SUBJECTS,
-  SUBJECT_CARDS,
   SUBJECT_CARD_ENTRIES,
   subjectsWhere,
   tableOf,
@@ -247,56 +245,43 @@ const _guaranteedSubjectsAreExcluded: GuaranteedSubjectsAreExcluded = true;
 void _guaranteedSubjectsAreExcluded;
 
 /**
- * The subjects this BRANCH may be asked about — the path condition, derived
- * from `bornPathsServing` (item 8, shape ruled fable-1455 Q1).
+ * THE SUBJECTS A BRANCH MAY BE ASKED ABOUT — one list, for everybody.
  *
- * ⚠ **A `wardrobeOnly` subject is served ONLY on an explicit `wardrobe` path,
- * and `unpathed` is NOT that.** It would be easy to read *"a Basics cast cannot
- * be asked this"* as *"everybody else can"*, and it is wrong in the one
- * direction that matters: every roll in production today is `unpathed` (both
- * columns NULL, cast before the paths existed), so serving them would put the
- * wardrobe subject in front of every customer the moment this landed, on a
- * feature whose whole flag exists to keep it dark.
+ * Derived from `bornPathsServing` (item 8, shape ruled fable-1455 Q1), which
+ * this file still reads rather than restates: a card saying `everyPath` is
+ * served, and the one card saying `wardrobeOnly` is not.
  *
- * It costs an unpathed customer nothing she has today: a wardrobe ask has
- * always refused for her, and after this it refuses in exactly the same words.
- * What opens it is buying a cast on the Wardrobe path, which is the product
- * decision the Two Paths ruling made.
+ * ⚠ **IT WAS A FUNCTION OF THE PATH UNTIL #203 SLICE 2, AND ITS ANSWER HAS NOT
+ * MOVED A CHARACTER.** The path it asked about was `casting_rolls.path`, and
+ * since slice 1 that column is written a constant `null` — so the only branch
+ * that was ever served the whole vocabulary is one nobody can buy, and the
+ * thirteen rolls in production that hold a path hold no candidate, which is to
+ * say no branch at all. `subjectsServedOnPath(null)` returned these
+ * twenty-nine; this constant IS those twenty-nine, and **the four precomputed
+ * interpreter prompts were driven and hashed either side of the collapse and
+ * did not move a character** — the four sha256s are in
+ * `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md`. They are a RECORD and not a
+ * guard on purpose: a pinned hash would redden on every honest edit to a prompt
+ * sentence, which trains a reader to re-stamp it rather than read it. What
+ * `bornPathSubjects.test.ts` guards instead is the thing the collapse could
+ * actually break — that no prompt names a subject nothing serves.
+ *
+ * ⚠ **WHAT IS WITHHELD IS STILL WITHHELD, AND THAT IS NOT THIS FILE'S CALL TO
+ * REVERSE.** The wardrobe subject is served to nobody, so an outfit ask meets
+ * the same wall it has always met for every customer. Whether it should instead
+ * become a capability for everyone is **#1148**, and it is a product decision
+ * and a scope widening — a retirement that quietly widens something is the same
+ * mistake as one that quietly narrows it.
+ *
+ * `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md` re-answers each of the
+ * predicates in writing, and records what folding them together once cost:
+ * reusing this WITHHOLDING as a refusal's condition turned *"put her in a long
+ * black coat"* into a Basics refusal for the whole customer base. Two of the
+ * three are now retired — §7.2's door and the panel's wardrobe section — and
+ * each went on its own argument rather than on this one.
  */
-export function subjectsServedOnPath(path: CastingPath | null | undefined): readonly FreeSubject[] {
-  return FREE_SUBJECT_KEYS.filter((subject) => subjectServedOnPath(subject, path));
-}
-
-/**
- * THE SAME RULE FOR ONE SUBJECT — the predicate the list above is built from.
- *
- * Extracted rather than copied when the panel needed to ask about exactly one
- * card (item 8's §8.1, ruled fable-1459 ASK 3). A second reader spelling out
- * `path === "wardrobe" || card.bornPathsServing === "everyPath"` beside this
- * one is working law 4 on a rule that has already produced one real defect, and
- * the drift would be a panel section drawn for a path the model is not shown
- * the subject on.
- *
- * ⚠ **IT ANSWERED ONLY ONE OF THREE QUESTIONS, AND THE OTHER TWO ARE WHY THIS
- * PARAGRAPH IS STILL HERE.** *What may the model be shown* is this function.
- * *What does a chosen path REFUSE* was §7.2's door, and it is RETIRED (#203
- * slice 2, 2026-09-24): a path nobody chose is not a path that refuses, and
- * after slice 1 nobody can choose one — so the door answered `null` for every
- * branch that can reach it and its wall named a path the product no longer
- * sells. *Does the panel draw a wardrobe SECTION* is still
- * `wardrobeCards.wardrobeSectionServed`, which reads this predicate.
- *
- * The three were once one, and `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md`
- * records what that cost: reusing this WITHHOLDING as the refusal's condition
- * turned *"put her in a long black coat"* into a Basics refusal for the whole
- * customer base. The retirement collapses them one at a time for that reason.
- */
-export function subjectServedOnPath(
-  subject: FreeSubject,
-  path: CastingPath | null | undefined,
-): boolean {
-  return path === "wardrobe" || SUBJECT_CARDS[subject].bornPathsServing === "everyPath";
-}
+export const SERVED_SUBJECTS: readonly FreeSubject[] =
+  subjectsWhere((card) => card.bornPathsServing === "everyPath");
 
 /**
  * The instruction the interpreter is given about where each free ask belongs.
@@ -312,9 +297,15 @@ export function subjectServedOnPath(
  * subject reaches the prompt only where a branch may be served it, and the
  * flag-off prompt stays byte-identical to the one that shipped
  * (`refineOpenLaneClause.test.ts` pins that, and it caught this addition).
+ *
+ * ⚠ **AND THE DEFAULT IS `SERVED_SUBJECTS`, NOT EVERY KEY** (#203 slice 2). It
+ * was `FREE_SUBJECT_KEYS` while a wardrobe branch existed to be served them
+ * all; with that branch retired, a caller who omits the argument would be
+ * handing the model the one subject nothing serves. No caller omits it today —
+ * this is the trap closed rather than a behaviour changed.
  */
 export function freeSubjectGuidance(
-  served: readonly FreeSubject[] = FREE_SUBJECT_KEYS,
+  served: readonly FreeSubject[] = SERVED_SUBJECTS,
 ): string {
   return served.join(", ");
 }
