@@ -41,8 +41,13 @@ vi.mock("../db/crewReplies", () => ({
 }));
 
 import { crewRouter } from "../routes/crew";
-import { readCrewBriefing } from "./crewBriefing";
-import { pipelineNotDone } from "../../client/src/features/admin/components/crew/crewTypes";
+import { eyeFrameKeys, readCrewBriefing } from "./crewBriefing";
+import { crewCardNeedsHim } from "../../shared/crewCardState";
+import { crewProblemIsOpen } from "../../shared/crewProblemState";
+import {
+  pipelineNotDone,
+  replyFallsToGeneral,
+} from "../../client/src/features/admin/components/crew/crewTypes";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -188,12 +193,17 @@ describe("invariant 3 — the author is the session, structurally (§9 arm 4)", 
   });
 });
 
-describe("the wire carries only the rows the page can draw (#1137)", () => {
+describe("the wire carries only the rows the page can draw (#1137, #1138)", () => {
   /* The file as it sits on disk, read rather than imported through the parser,
      so "the record is kept" is asserted against the artifact itself. */
   const file = JSON.parse(
     readFileSync(path.join(__dirname, "crew-briefing.json"), "utf8"),
-  ) as { pipeline: Array<{ id: string; status: string; note: string | null }> };
+  ) as {
+    pipeline: Array<{ id: string; status: string; note: string | null }>;
+    needsYou: Array<{ id: string; state: string; title: string; productImpact: string }>;
+    eyeItems: Array<{ id: string; state: string; title: string; frames: Array<{ key: string }> }>;
+    problems: Array<{ id: string; state: string; detail: string }>;
+  };
 
   it("⚠ CONTROL — the deployed file still HOLDS finished rows, so there is something to drop", () => {
     const merged = file.pipeline.filter((row) => row.status === "merged");
@@ -201,9 +211,24 @@ describe("the wire carries only the rows the page can draw (#1137)", () => {
       merged.length,
       "no merged rows in the file means this whole suite is asserting nothing",
     ).toBeGreaterThan(0);
-    /* The record is the point: #1137 is not a deletion, and an arm that cannot
-       tell a projection from a purge would pass on either. */
+    /* The record is the point: neither card is a deletion, and an arm that
+       cannot tell a projection from a purge would pass on either. */
     expect(merged.some((row) => (row.note ?? "").length > 0)).toBe(true);
+
+    /* #1138's three, each with the heavy field that makes dropping it worth
+       doing — a file holding only stubs would pass every arm below while
+       proving nothing about bytes. */
+    const finishedCards = file.needsYou.filter((card) => !crewCardNeedsHim(card.state));
+    expect(finishedCards.length).toBeGreaterThan(0);
+    expect(finishedCards.some((card) => card.productImpact.length > 0)).toBe(true);
+
+    const finishedEye = file.eyeItems.filter((item) => !crewCardNeedsHim(item.state));
+    expect(finishedEye.length).toBeGreaterThan(0);
+    expect(finishedEye.some((item) => item.frames.length > 0)).toBe(true);
+
+    const resolved = file.problems.filter((problem) => !crewProblemIsOpen(problem.state));
+    expect(resolved.length).toBeGreaterThan(0);
+    expect(resolved.some((problem) => problem.detail.length > 0)).toBe(true);
   });
 
   it("getState sends no finished row, and every unfinished one survives byte for byte", async () => {
@@ -214,23 +239,95 @@ describe("the wire carries only the rows the page can draw (#1137)", () => {
     expect(state.briefing.pipeline).toEqual(
       file.pipeline.filter((row) => row.status !== "merged"),
     );
+
+    expect(state.briefing.needsYou).toEqual(
+      file.needsYou.filter((card) => crewCardNeedsHim(card.state)),
+    );
+    expect(state.briefing.eyeItems).toEqual(
+      file.eyeItems.filter((item) => crewCardNeedsHim(item.state)),
+    );
+    expect(state.briefing.problems).toEqual(
+      file.problems.filter((problem) => crewProblemIsOpen(problem.state)),
+    );
+  });
+
+  it("⚠ THE GENERAL BOX KEEPS ITS TITLES — every dropped host is still named on the wire (#1138)", async () => {
+    process.env.CREW_TAB_SCOPE = "all";
+    const state = await crewRouter.createCaller(contextFor()).getState();
+
+    /* The one thing a finished card is still DRAWN for: a reply he left on it
+       renders in the General box labelled *on "<title>"*. Lose the host and
+       that line degrades to the slug — the single user-visible way this trim
+       could go wrong, so it is asserted over the whole population rather than
+       sampled. */
+    const hosts = new Map(state.briefing.threadHosts.map((host) => [host.id, host]));
+    for (const host of [...file.needsYou, ...file.eyeItems]) {
+      expect(hosts.get(host.id)).toEqual({
+        id: host.id,
+        state: host.state,
+        title: host.title,
+      });
+    }
+    /* POSITIVE CONTROL — the list is the whole host population, the open ones
+       included, so an arm that "found every finished host" cannot be passing
+       over a list that is short for some other reason. */
+    expect(state.briefing.threadHosts).toHaveLength(file.needsYou.length + file.eyeItems.length);
+
+    /* Driven through the page's own rule rather than asserted about it: a
+       reply on a card the wire no longer carries in `needsYou` must fall to
+       the General box AND find its title there. */
+    const dropped = file.needsYou.find((card) => !crewCardNeedsHim(card.state));
+    expect(dropped, "the control above proves there is one").toBeDefined();
+    expect(replyFallsToGeneral(dropped!.id, state.briefing.threadHosts)).toBe(true);
+    expect(hosts.get(dropped!.id)?.title).toBe(dropped!.title);
+  });
+
+  it("⚠ THE EYE-FRAME ALLOWLIST IS NOT PROJECTED — a judged frame still serves (#1138)", () => {
+    /* `/api/crew/eye-frame` serves exactly the keys the DEPLOYED BRIEFING
+       names, and `crewEyeFrames.ts` builds that set from `readCrewBriefing()`
+       — the whole file. Every eye item in the file is `done`, so feeding it
+       the page projection instead would 404 every frame the route has, which
+       is the one way a payload trim on this page could reach his eyes. */
+    const keys = eyeFrameKeys(readCrewBriefing());
+    const framesInFile = file.eyeItems.flatMap((item) => item.frames.map((frame) => frame.key));
+    expect(framesInFile.length).toBeGreaterThan(0);
+    for (const key of framesInFile) expect(keys.has(key)).toBe(true);
+
+    /* AND THE ROUTE'S OWN CALL SITE, read at the source — `productionDependencies`
+       is not exported, so no behavioural arm here can see which briefing it
+       hands over, and the arm above would stay green through exactly the
+       mistake it is about. Comments stripped: this file's header discusses
+       the allowlist in prose. */
+    const route = readFileSync(path.join(__dirname, "..", "routes", "crewEyeFrames.ts"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    expect(route).toContain("eyeFrameKeys(readCrewBriefing())");
+    expect(route).not.toContain("crewBriefingForPage");
   });
 
   it("⚠ every other section is untouched — a projection, never an edit", async () => {
     process.env.CREW_TAB_SCOPE = "all";
     const state = await crewRouter.createCaller(contextFor()).getState();
-    const onTheWire = { ...state.briefing, pipeline: [] };
-    const fromTheFile = { ...readCrewBriefing(), pipeline: [] };
-    expect(onTheWire).toEqual(fromTheFile);
+    /* Everything the projection does not name must arrive byte for byte. The
+       four trimmed lists are blanked on both sides and `threadHosts` is taken
+       off, so what this arm compares is the REST of the briefing — the
+       program, NEXT UP, the ladder, the acknowledgement list, the edition. */
+    const blanked = { needsYou: [], eyeItems: [], problems: [], pipeline: [] };
+    const { threadHosts, ...wire } = state.briefing;
+    expect(threadHosts.length).toBeGreaterThan(0);
+    expect({ ...wire, ...blanked }).toEqual({ ...readCrewBriefing(), ...blanked });
   });
 
-  it("the page's filter and the wire projection ask ONE question (working law 4)", async () => {
+  it("the page's filters and the wire projection ask ONE question (working law 4)", async () => {
     process.env.CREW_TAB_SCOPE = "all";
     const state = await crewRouter.createCaller(contextFor()).getState();
-    /* The client's own derivation over what it is now sent: it must find
-       nothing left to drop. The day the two definitions disagree, the page
-       draws a shorter list than the server meant and nothing else can see it. */
+    /* The client's own derivations over what it is now sent: each must find
+       nothing left to drop. The day two definitions disagree, the page draws a
+       shorter list than the server meant and nothing else can see it. */
     expect(pipelineNotDone(state.briefing.pipeline)).toEqual(state.briefing.pipeline);
+    expect(state.briefing.needsYou.every((card) => crewCardNeedsHim(card.state))).toBe(true);
+    expect(state.briefing.eyeItems.every((item) => crewCardNeedsHim(item.state))).toBe(true);
+    expect(state.briefing.problems.every((problem) => crewProblemIsOpen(problem.state))).toBe(true);
   });
 
   it("the saving is measured at the serialized payload, not asserted", async () => {
@@ -238,10 +335,12 @@ describe("the wire carries only the rows the page can draw (#1137)", () => {
     const state = await crewRouter.createCaller(contextFor()).getState();
     const wire = Buffer.byteLength(JSON.stringify(state.briefing), "utf8");
     const whole = Buffer.byteLength(JSON.stringify(readCrewBriefing()), "utf8");
-    /* At edition 492: 1,014,967 → 663,497 bytes, 351 KB off a payload the page
-       re-reads every 60 seconds. The arm holds the DIRECTION rather than the
-       number, because the number moves every edition. */
-    expect(wire).toBeLessThan(whole);
+    /* At edition 493: 943,955 bytes whole, 592,105 under #1137's projection
+       alone, 69,106 under this one. The arm holds the DIRECTION rather than
+       the number, because the number moves every edition — but it holds a
+       FACTOR rather than a bare inequality, so a projection that quietly
+       stopped trimming three of its four sections could not pass it. */
+    expect(wire).toBeLessThan(whole / 2);
   });
 });
 

@@ -63,6 +63,7 @@ import { CREW_CARD_STATES, crewCardNeedsHim } from "../../shared/crewCardState.j
 import { CREW_HELD_STATES, CREW_HOLD_REASON_MAX } from "../../shared/crewNextUpHold.js";
 import { CREW_LADDER_GROUP_KEYS, onePlaceViolations } from "../../shared/crewPipelineGroups.js";
 import { CREW_PIPELINE_STATUSES, crewPipelineRowIsDone } from "../../shared/crewPipelineStatus.js";
+import { CREW_PROBLEM_STATES, crewProblemIsOpen } from "../../shared/crewProblemState.js";
 
 import briefingJson from "./crew-briefing.json";
 
@@ -300,7 +301,10 @@ const problemSchema = z.object({
   title: z.string(),
   detail: z.string(),
   severity: z.enum(["info", "warning", "urgent"]),
-  state: z.enum(["open", "resolved"]),
+  /* Derived from `CREW_PROBLEM_STATES` (#1138), for `CREW_CARD_STATES`'
+     reason: the enum and the predicate that reads it must never be two
+     lists. */
+  state: z.enum(CREW_PROBLEM_STATES),
 }).strict();
 
 /**
@@ -615,32 +619,88 @@ export function readCrewBriefing(): CrewBriefing {
 }
 
 /**
- * THE BRIEFING AS THE PAGE GETS IT — an explicit projection, not the file
- * (#1137; invariant 8, *read paths return an explicit projection*).
+ * A THREAD HOST, AS THE GENERAL BOX NEEDS IT (#1138).
  *
- * It drops every FINISHED pipeline row, because the page has no way to draw
- * one: `CrewPipeline` renders `pipelineNotDone` and #438 deleted the only
- * section that ever showed a merged row. Measured at edition 492 — **281 of
- * 281 pipeline rows were `merged`, 351 KB of a 1.0 MB briefing, 298 KB of it
- * prose in the `note` field** — and `/admin/crew` re-reads `crew.getState`
- * every 60 seconds while it is open, so that is a third of a megabyte a minute
- * sent to be thrown away by a `.filter()` in the browser.
+ * Every needs-you card and every eye item — finished ones included — reduced
+ * to the triple a reply needs to name where it was said. `CrewGeneral` catches
+ * a reply whose card no longer renders a thread and labels it *on "<title>"*;
+ * without the finished host it would say *on "<id>", a card since closed*, and
+ * he would read a slug instead of the question he answered.
  *
- * ⚠ **NOTHING IS DELETED AND NOTHING HE SEES CHANGES.** The rows stay in
- * `crew-briefing.json`, in git and in the mailbox entries that point at them —
- * the record is exactly where `crewTypes.ts` says it is kept. This is only the
- * wire. If a folded *already dealt with* strip is ever wanted back, that is
- * HIS call (#1137 option B) and it is one line here.
- *
- * ⚠ **AND THE CLIENT'S FILTER STAYS.** It is not redundant belt-and-braces: it
- * is the DEFINITION, shared with this function through
- * `crewPipelineRowIsDone`, and it is what still holds if this projection is
- * ever removed.
+ * ⚠ **It is the WHOLE host population, not the finished remainder.** The open
+ * ones cost 3 KB of 32 and the alternative is the page stitching two lists
+ * together to ask one question — the shape working law 4 is about.
  */
-export function crewBriefingForPage(briefing: CrewBriefing): CrewBriefing {
+export type CrewThreadHost = Pick<CrewBriefing["needsYou"][number], "id" | "state" | "title">;
+
+/** The briefing as the wire carries it: the file's shape, plus the hosts the
+ *  trimmed sections would otherwise take away from the General box. */
+export type CrewBriefingPage = CrewBriefing & { threadHosts: CrewThreadHost[] };
+
+/**
+ * THE BRIEFING AS THE PAGE GETS IT — an explicit projection, not the file
+ * (#1137/#1138; invariant 8, *read paths return an explicit projection*).
+ *
+ * Four sections are trimmed to what the page can actually draw, and every one
+ * of them is a thing the browser was already throwing away:
+ *
+ *   - **finished pipeline rows** — `CrewPipeline` renders `pipelineNotDone`,
+ *     and #438 deleted the only section that ever showed a merged one (#1137).
+ *   - **finished needs-you cards** — `CrewNeedsYou` and NEXT UP's hold chip
+ *     both ask `crewCardNeedsHim`, so an `answered` or `done` card's
+ *     `productImpact`, `workedExample`, `options` and `recommendation` reach
+ *     no screen.
+ *   - **finished eye items** — `CrewEyeGallery` asks the same question, and
+ *     their `frames` lists are the heaviest rows in the file.
+ *   - **resolved problems** — `CrewProblems` draws open rows only.
+ *
+ * Measured at the file, edition 493: **943,955 bytes whole; 592,105 on the
+ * wire under #1137's pipeline-only projection; 69,106 under this one.** Of
+ * what goes: 271,589 bytes of finished cards (115 of 129), 196,760 of finished
+ * eye items (100 of 100 — every eye item in the file is done, so the gallery
+ * draws NONE of them), 87,054 of resolved problems (95 of 97). `/admin/crew`
+ * re-reads `crew.getState` every 60 seconds while it is open and the app ships
+ * no compression middleware, so that is half a megabyte a minute sent to be
+ * dropped by three `.filter()` calls in the browser.
+ *
+ * ⚠ **NOTHING IS DELETED AND NOTHING HE SEES CHANGES.** Every card, item, row
+ * and problem stays in `crew-briefing.json`, in git and in the mailbox entries
+ * that point at them — the record is exactly where `crewTypes.ts` says it is
+ * kept. This is the wire only. If a folded *already dealt with* strip is ever
+ * wanted back, that is HIS call (#1137 option B) and it is one line here.
+ *
+ * ⚠ **THE CLIENT'S FILTERS STAY.** They are not belt-and-braces: each is the
+ * DEFINITION, shared with this function through `crewCardNeedsHim`,
+ * `crewProblemIsOpen` and `crewPipelineRowIsDone`, and each is what still
+ * holds if this projection is ever removed.
+ *
+ * ⚠ **AND `eyeFrameKeys` IS DELIBERATELY NOT FED FROM HERE.** The serving
+ * allowlist behind `/api/crew/eye-frame` is built from `readCrewBriefing()` —
+ * the WHOLE file — in `server/routes/crewEyeFrames.ts`. Projecting it instead
+ * would 404 every frame of every judged item the moment this filter landed,
+ * which is the one way a payload trim on this page could reach his eyes.
+ *
+ * ⚠ **THE SHAPE IS ADDITIVE ON PURPOSE (the #1088 removal contract).** A tab
+ * holding the previous bundle still reads `briefing.needsYou` and
+ * `briefing.eyeItems`, which are still arrays of the same element — shorter,
+ * never absent — so the worst an old tab sees until it reloads is a General
+ * note reading *on "<id>", a card since closed*. No field an in-flight bundle
+ * dereferences is removed.
+ */
+export function crewBriefingForPage(briefing: CrewBriefing): CrewBriefingPage {
   return {
     ...briefing,
+    needsYou: briefing.needsYou.filter((card) => crewCardNeedsHim(card.state)),
+    eyeItems: briefing.eyeItems.filter((item) => crewCardNeedsHim(item.state)),
+    problems: briefing.problems.filter((problem) => crewProblemIsOpen(problem.state)),
     pipeline: briefing.pipeline.filter((row) => !crewPipelineRowIsDone(row.status)),
+    /* Built from the FILE's lists, above the filters, so a host cannot be lost
+       by the same trim that makes it necessary. */
+    threadHosts: [...briefing.needsYou, ...briefing.eyeItems].map((host) => ({
+      id: host.id,
+      state: host.state,
+      title: host.title,
+    })),
   };
 }
 

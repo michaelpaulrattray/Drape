@@ -453,8 +453,16 @@ export default function AdminCrew() {
               replies={stateQuery.data.replies}
               /* Threads render under open needs-you cards AND open eye items
                  (#75), so the General box's fall-through covers both — a
-                 verdict on a closed eye item must land here, never nowhere. */
-              cards={[...stateQuery.data.briefing.needsYou, ...stateQuery.data.briefing.eyeItems]}
+                 verdict on a closed eye item must land here, never nowhere.
+
+                 ⚠ **`threadHosts`, NOT the two section lists (#1138).** Those
+                 two now carry only what still needs him, so stitching them
+                 together would name the population this box exists to catch
+                 the ABSENTEES of: every reply on a card he has already dealt
+                 with would lose its title and read *on "<id>", a card since
+                 closed*. The server sends the whole host list as the triple
+                 this box asks for. */
+              cards={stateQuery.data.briefing.threadHosts}
               acknowledgedReplyIds={stateQuery.data.briefing.acknowledgedReplyIds}
               sending={replyMutation.isPending}
               onSend={send}
