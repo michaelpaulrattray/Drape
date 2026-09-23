@@ -1,7 +1,7 @@
 {
-  "edition": 493,
-  "updatedAt": "2026-09-23T22:40:00+10:00",
-  "shift": "Foreman — the page stops carrying what it cannot show",
+  "edition": 494,
+  "updatedAt": "2026-09-24T00:20:00+10:00",
+  "shift": "Foreman — your page stops carrying the rest of what it cannot show",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -118,11 +118,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "38 open · 17 untouched for 7 days · 14 waiting on you · none urgent."
+        "source": "37 open · 17 untouched for 7 days · 14 waiting on you · none urgent."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T12:36:36.563Z",
+      "readAt": "2026-09-23T14:13:34.383Z",
       "items": [
         {
           "issueNumber": 10,
@@ -5565,6 +5565,14 @@
   ],
   "pipeline": [
     {
+      "id": "crew-wire-projection-1138",
+      "title": "Your Crew page stopped downloading the other half-megabyte nobody can see",
+      "status": "merged",
+      "prNumber": 1140,
+      "cardId": null,
+      "note": "609,541 bytes a refresh before, 86,542 after — finished cards, judged frames and solved problems stop being sent. Nothing you see changed."
+    },
+    {
       "id": "crew-wire-projection-1137",
       "title": "Your Crew page stopped downloading the third of it nobody can see",
       "status": "merged",
@@ -8456,7 +8464,7 @@
     199
   ],
   "nextUp": {
-    "readAt": "2026-09-23T12:36:36.562Z",
+    "readAt": "2026-09-23T14:13:34.382Z",
     "items": [
       {
         "issueNumber": 1132,
