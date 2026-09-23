@@ -1,7 +1,7 @@
 {
-  "edition": 481,
-  "updatedAt": "2026-09-23T00:05:00.000Z",
-  "shift": "YOUR “good” IS IN, AND YOUR SWITCH PANEL HAS STOPPED OFFERING A JOB NOBODY COULD TAKE. Nothing here needs you.\n\nYOU PASSED THE SHEET CARDS. Your one word on the unsigned-sheets row — a sheet being cast, a sheet that was refused, a sheet with faces, all in one line — settles that gallery, and it comes off the list of pictures waiting for your eye. The other one, the x on your picture in the concept dialog, is still on your page and still one word either way.\n\nTHE HOUSEKEEPING ROW WAS TELLING YOU SOMETHING SLIGHTLY UNTRUE. It showed one job on offer. That job's own description hands its decision to the tidy-up round that runs on its own three-day clock — so no ordinary night could actually take it, and your panel was counting it as work waiting to be done. It now says what it is: held for that clock, which comes round tomorrow. Third time a card has needed this, and the number under your switches is the better for it each time.\n\nAND READING IT FINISHED THE PART IT HAD LEFT OPEN. The card said three development-only records carry a badly-formed name, and admitted out loud that it had not checked whether anything else in the database had the same fault. I checked all of it — every table that keeps that kind of name, thirteen of them, 360 records — and those three are the only ones anywhere. So whoever picks it up tomorrow is fixing three records, not hunting. No customer touches any of this.\n\nTHE MAKEUP FIX IS STILL THE ONE THING IN THE REVIEW LANE, green and ready, waiting on its review rather than on you. It did not drift tonight, because nothing was released underneath it.",
+  "edition": 482,
+  "updatedAt": "2026-09-23T01:10:00.000Z",
+  "shift": "YOUR DROP-A-PICTURE BOX IS LIVE — and it shipped with one thing wrong, which is now fixed and live too. Nothing here needs you.\n\nWHAT YOU ASKED FOR THIS MORNING IS BUILT AND RELEASED. “Start from photos” is gone from the casting page. The box you type a cast into takes a picture dropped straight onto it: drag one over and the box outlines itself and says what will happen; let go and the same review window opens with your picture already read. Dropping charges nothing — Cast it is still the only thing that spends. The Upload-a-concept card below is exactly as it was, and it is still the only way in on a phone.\n\nTWO OF US BUILT IT AT THE SAME TIME, and I am telling you because it was your money. I checked for somebody else's work on it before I started and there was none; the other build began eighty-five seconds later. Theirs is the one that shipped and mine was thrown away. It cost one session, and why it can happen is now written up on the card that owns that problem.\n\nTHE DUPLICATE WORK WAS NOT ENTIRELY WASTED, THOUGH. Instead of arguing about whose build was better I opened the released one and measured it — and your brief box was TWO LINES TALL before you typed anything. Adding the new hint to the end of the example made the sentence too long for the line, so it wrapped, broke in the middle of a phrase, and read like a box that already had something in it.\n\nYOUR HINT IS KEPT WORD FOR WORD. What gave way is the example in front of it, which is ours rather than yours — and the deck beside the box already shows a full-length brief better than a grey example can. The box is back to one line. Both fixes are on the live site.\n\nAND THE PAGE WILL NOT LET IT HAPPEN A THIRD TIME. How long that line may be is a checked number now rather than something somebody has to remember — it has been broken twice on this one box.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,7 +142,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T00:02:02.525Z",
+      "readAt": "2026-09-23T01:06:53.345Z",
       "items": [
         {
           "issueNumber": 16,
@@ -5216,6 +5216,13 @@
   ],
   "pipeline": [
     {
+      "id": "brief-box-one-line-1111",
+      "title": "The brief box is one line again — the wrap that rode in with the drop feature, found by looking at the released page",
+      "status": "merged",
+      "prNumber": 1113,
+      "note": "Adding the new “or drop a picture” hint to the end of the example made the placeholder too long for the line, so your brief box stood two lines tall before you typed a word and the sentence broke mid-phrase. It looked like a box with something already in it.\n\nFound by opening the released page and measuring it, not by reading the change. Your hint is kept word for word; the example in front of it is shorter. The box is back to the height it has always been.\n\nHow long that line may be is now a checked number, because this is the second time this box has been broken the same way."
+    },
+    {
       "id": "one-live-row-1104",
       "title": "This page can no longer list the same job twice",
       "status": "merged",
@@ -7162,9 +7169,16 @@
   ],
   "problems": [
     {
-      "id": "queue-shape-0923g-foreman",
+      "id": "queue-shape-0923h-foreman",
       "severity": "info",
       "state": "open",
+      "title": "The queue: 38 open, your own list back to EMPTY, none urgent. No check-up clock fires before tomorrow.",
+      "detail": "Read at 01:06. 38 open — up one on the reading three hours ago. Your drop-a-picture job was written, built and closed inside the same night, and the wrap it shipped with was written, fixed and closed beside it.\n\nYour own ordered list is back to empty, so the team returns to the background categories you have switched on. All seven are on.\n\n21 of the 38 have had nothing happen to them — no comment, no close, no code — for a week. The same 21 as the last five nights, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0923g-foreman",
+      "severity": "info",
+      "state": "resolved",
       "title": "The queue: 37 open, your own list still EMPTY, none urgent. The tidy-up clock comes round tomorrow.",
       "detail": "Read at 23:58 tonight. 37 open — nothing written and nothing closed since the last reading, so the board is exactly where it was.\n\nYour own ordered list is still empty, so the team keeps working from the background categories you have switched on. All seven are on. One of the seven — housekeeping — was showing a job that no ordinary night could take; it is marked as held now, so that row reads zero and means it.\n\n21 of the 37 have had nothing happen to them — no comment, no close, no code — for a week. The same 21 as the last five nights, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
     },
@@ -8012,7 +8026,7 @@
     196
   ],
   "nextUp": {
-    "readAt": "2026-09-23T00:02:02.524Z",
+    "readAt": "2026-09-23T01:06:53.344Z",
     "items": []
   }
 }
