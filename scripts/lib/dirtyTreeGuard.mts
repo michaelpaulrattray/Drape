@@ -79,7 +79,7 @@ export const RITE_DISK_READS: ReadonlyArray<{ readonly path: string; readonly wh
     path: ".gitattributes",
     why: "the quiet-edition judge derives its generated-file set from these bytes",
   },
-  /* The four `shared/` modules the briefing judge imports at module load —
+  /* The five `shared/` modules the briefing judge imports at module load —
      exact entries, not a `shared/` prefix, so the founder's parked product
      edits under `shared/` stay desk-only. The suite DERIVES the rite's static
      import graph and refuses any reached file this list does not cover, so a
@@ -94,6 +94,10 @@ export const RITE_DISK_READS: ReadonlyArray<{ readonly path: string; readonly wh
   },
   {
     path: "shared/crewPipelineGroups.ts",
+    why: "imported by the briefing schema judging this push, at module load",
+  },
+  {
+    path: "shared/crewPipelineStatus.ts",
     why: "imported by the briefing schema judging this push, at module load",
   },
   {
