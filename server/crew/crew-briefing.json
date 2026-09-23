@@ -1,7 +1,7 @@
 {
-  "edition": 484,
-  "updatedAt": "2026-09-23T03:59:55.515Z",
-  "shift": "YOUR PICTURE, AND NOTHING ON IT UNTIL YOUR HAND ARRIVES. Five frames are waiting for your eye.\n\nYOUR THIRD NOTE ON THE CONCEPT WINDOW IS BUILT, TO YOUR WORDS. No x. No sentence under the picture. The photograph fills its frame again. Move the pointer onto it and it dims a touch with one word over it — Replace — and clicking anywhere on the picture opens the file chooser. A keyboard gets the same road: one Tab lands on the picture, Enter opens the chooser.\n\nAND THE THING YOU SAID FELT UNRESPONSIVE IS FIXED, BECAUSE IT WAS REAL. Drag a new picture over the old one and the answer now arrives the moment the file crosses the edge: the same overlay, stronger, with a hairline ring drawn inside the frame and the words Drop to replace. What was wrong: the window kept ONE note of \"a file is over me\", counted by the words half of the dialog, and nothing drawn on the picture ever read it — so the drop worked and the picture could not answer. The picture counts its own now.\n\nTHE PICTURE FILLING ITS FRAME IS A REVERSAL, AND IT IS WORTH ONE SENTENCE. It was deliberately letterboxed back in July so a picture of unusual shape could be seen whole beside the words written from it. You looked at it and ruled the other way, so the option is deleted rather than left switched off. The trade is real and small: a very wide or very tall photograph now loses its edges IN THE FRAME. Nothing about the reading changes — the description is still taken from the whole file, not from what the frame shows.\n\nDRIVEN RATHER THAN READ, WHICH IS WHAT YOU ASKED FOR. Real photographs through the real reader in both themes: a 1024x1536 picture fills the 214x268 frame exactly; at rest the overlay is invisible; on hover it is there; with a file held over it, stronger with the ring; when the file leaves, gone again. A second picture dropped over the first replaced it and the description re-wrote itself to a different person. No errors on either theme.\n\nFOUND ON THE WAY AND FILED, NOT FIXED: one more place in the old studio takes a dropped picture and never answers the hand holding it. It is the attach-a-picture button in the ink panel, and it is the only one of six drop targets in the app with nothing to say while a file hovers. It is on the board as its own job.",
+  "edition": 485,
+  "updatedAt": "2026-09-23T04:45:00.000Z",
+  "shift": "THE SECOND PLACE THAT TOOK YOUR PICTURE WITHOUT ANSWERING YOU IS FIXED — and it is waiting on one command before it can ship.\n\nYOU SAID \"good\" TO THE CONCEPT WINDOW. Thank you — that one is closed and off your page.\n\nTHE SAME COMPLAINT, ONE ROOM OVER. Last night's job found a second button with exactly the fault you described: the attach-a-picture button in the tattoo panel of the old studio. Hold a photograph over it and it said nothing at all — same dashed outline whether your picture was an inch above it or your pointer was on the other side of the screen. The drop always worked; it just never told you it would. Now the edge darkens, a pale wash comes up behind it, and the words change to Drop to attach.\n\nIT SHARES THE CONCEPT WINDOW'S MACHINERY RATHER THAN COPYING IT. The counting that makes the answer hold steady while your pointer crosses the button's own icon and label is the same code the concept window uses — moved to one place that both now call. Two copies of a thing like that always drift apart, and the one that drifts is the one that starts lying to you.\n\nI WATCHED IT IN THE RUNNING APP RATHER THAN READING THE CODE. At rest, the pale outline and \"Drop or choose an image\". Picture held over it: dark edge, wash, \"Drop to attach\". Pointer crossing its own icon: still held, no flicker. Picture taken away: back to rest. Dragging selected TEXT over it: nothing happens, correctly. Nine deliberate attempts to break it, all nine caught by the checks.\n\nONE HONEST CORRECTION. Last night's note said this was the only one of SIX places in the app that takes a drop. Counted properly it is one of SEVEN — the note left out the concept window itself, which had been fixed hours earlier. Nothing changes about the job; the number was wrong and is now right.\n\nAND ONE THING IS STUCK, WHICH IS WHY THIS IS ON YOUR PAGE. The finished work cannot be submitted for checking because of a mechanical clash — explained below. It is the second night running this has happened, so it is worth your eye once rather than mine twice.\n\nTHE QUEUE: 34 open, nothing urgent, and your own list is empty. 21 have had nothing happen to them for a week — the same 21 as the last seven nights, so it is flat rather than growing. No check-up clock fires before tomorrow.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -142,24 +142,12 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T04:00:19.688Z",
+      "readAt": "2026-09-23T04:41:23.004Z",
       "items": [
-        {
-          "issueNumber": 16,
-          "title": "N1 — The creative register: built and live on his account; the milestone gate waits on his eye once the pipeline is cleared (his word, 4 Sep)",
-          "kind": "design-unbuilt",
-          "rung": "N1"
-        },
         {
           "issueNumber": 22,
           "title": "Creative Casts, phase A: which downstream doors are honest for a creature, now that the register can roll one",
           "kind": "design-unbuilt",
-          "rung": "N1"
-        },
-        {
-          "issueNumber": 1068,
-          "title": "N1: the ROLL engine re-asked — GPT Image 2.5 vs GPT Image 2 on his fixture briefs, judged on N1's two bars, refusal rate and cost beside (his word, 22 Sep; #801 covers refine only)",
-          "kind": "roadmap",
           "rung": "N1"
         },
         {
@@ -2427,7 +2415,7 @@
         }
       ],
       "recommendation": "Answered 12:13 — \"Not passing the gate yet: fix 219's class (#121), per-slice fidelity and spread, then re-roll for my eye.\" That is the order of work now; nothing more needed from you until the re-roll lands in your gallery.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-26T11:55:00+10:00",
       "issueNumber": 16
     },
@@ -2622,7 +2610,7 @@
       "id": "concept-picture-swap-1087-frames",
       "title": "The concept picture with ONE control on it: nothing at rest, Replace on hover, Drop to replace while a file is over it",
       "question": "Is this the quiet you meant? At rest your photograph wears nothing at all. On hover it dims a touch and says Replace, and a click anywhere on it opens the chooser. While a file is held over it, the same overlay goes stronger with a hairline ring inside the frame and Drop to replace. The picture fills its frame again, which means a photograph far from this shape loses its edges here — the reading still uses the whole file. If the dim is too heavy or too light, or the ring wants to be tighter, say so: each is one line.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-23T03:59:55.515Z",
       "issueNumber": 1087,
       "frames": [
@@ -4871,7 +4859,7 @@
       "id": "creative-register-roll-217",
       "title": "Roll 217 — your cyborg brief through the creative register, on your account, through the real entrance",
       "question": "Does this sheet reach your raw prompt's conviction (jaw plate present and prominent, amber eye, porcelain skin committed, no beard, no bodybuilder) — and is the spread across the eight enough? The sheet first, then each face with the one line of variation it was given.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-08-26T11:55:00+10:00",
       "issueNumber": 16,
       "frames": [
@@ -5201,7 +5189,7 @@
       "id": "gpt25-roll-court-1068-strips",
       "title": "Your cyborg, one prompt, three engines — GPT Image 2 (roll 266) against GPT Image 2.5 Flare and Sunburst",
       "question": "WHAT YOU ARE JUDGING — the same 4,310-character prompt your roll 266 sent, rendered eight times on each engine at the same size and quality. Row one is roll 266 itself (the sheet you have). Row two is GPT Image 2.5 Flare. Row three is GPT Image 2.5 Sunburst. Judge each row on N1's two bars: does it reach the conviction of your raw brief (bald, mid-40s, weathered porcelain skin, severe bone structure, the implant ports above the right temple, scalp seams, jaw plate, studs below the ears, the amber-red right eye, augmentation integrated not worn), and is the spread across the eight enough? No refusals on any engine; Flare ~20 s a tile, Sunburst ~23 s. One word per row is enough — pass, or what it misses.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-22T11:54:14.851Z",
       "issueNumber": 1068,
       "cardId": null,
@@ -7184,7 +7172,7 @@
     {
       "id": "hair-cap-unstuck-1077",
       "title": "The hair reader stops telling you your photograph was no good when our own limit ate the answer (#1077)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1116,
       "note": "WHAT YOU WOULD SEE: you attach a clear photograph of a head of hair to take its colour, and you are told to try a clearer picture. Your picture was fine — our reader answered, and our own length limit threw every word of its answer away. It now says what actually happened and points at the box you are already standing in front of.\n\nIT IS BUILT AND GREEN AND IT IS STUCK BEHIND A PERSON, NOT BEHIND YOU. It touches a file on the money/login list, so by your own rule it waits for a hand review before it merges. Nothing about money or logins moved — it is a comment in that file.\n\nAND SINCE TONIGHT IT ALSO NEEDS A RE-MERGE BEFORE IT CAN BE LOOKED AT. Tonight's concept-picture change landed first, and the two rebuild the same generated map, so they now disagree about it. While they disagree, nothing can run on it at all — its own page still shows green from before, which is why this row says so instead. One person, fifteen minutes: re-merge and it is back in the queue."
     },
@@ -7194,9 +7182,23 @@
       "status": "merged",
       "prNumber": 1117,
       "note": "WHAT YOU WOULD SEE: your photograph in the concept window with nothing on it. Hover and one word appears over a light dim — Replace — and a click anywhere on the picture opens the chooser. Drag a picture over it and the same overlay comes up stronger with a hairline ring and Drop to replace.\n\nYOUR THREE CORRECTIONS, ALL THREE: no x, no sentence under the picture, and the photograph fills its frame again.\n\nTHE UNRESPONSIVE FEEL WAS A REAL FAULT. The window held one note of \"a file is over me\", raised by the words half of the dialog, and nothing on the picture read it — so there was no way for the picture to answer while the file was in the air. It counts its own drags now.\n\nDRIVEN IN BOTH THEMES WITH THE REAL READER BEHIND IT, and every state measured rather than eyeballed: invisible at rest, there on hover, stronger with the ring while a file is over it, gone when it leaves. A dropped second picture replaced the first and the description re-wrote itself.\n\nTHE LETTERBOX IS DELETED RATHER THAN SWITCHED OFF, because this window was the only thing using it. A very wide or very tall picture is now cropped in the frame; the reading is unchanged.\n\nPROVEN ABLE TO FAIL: broken seven ways on purpose, every break caught, with an unbroken run either side reading the same green."
+    },
+    {
+      "id": "ink-drop-answers-1118",
+      "title": "The tattoo panel's attach-a-picture button now answers the hand holding one (#1118)",
+      "status": "in-review",
+      "prNumber": 1119,
+      "note": "WHAT YOU WOULD SEE: in the old studio's tattoo panel, drag a photograph over the Reference button. Today it does nothing until you let go. After this, the moment your picture crosses its edge the outline darkens, a pale wash comes up behind it, and the words change to Drop to attach. Take the picture away and it goes back. Drag selected text over it and nothing happens, which is correct — it is a picture target.\n\nIt is the same fault you reported on the concept window, in a second place, and it uses that window's machinery rather than a second copy of it.\n\nNOT YET SUBMITTED FOR CHECKING — see the problem row about the clash."
     }
   ],
   "problems": [
+    {
+      "id": "pr-conflict-blocks-two-nights",
+      "severity": "warning",
+      "state": "open",
+      "title": "Two nights running, a finished job could not be submitted for checking — and the fix is one command a night shift is not allowed to run",
+      "detail": "WHAT HAPPENS. A night shift copies the project, does its job, and submits it. If the main project moves while it works, the two versions both rebuild the same machine-generated map file, and GitHub calls that a clash. A clashing submission gets NO automatic checks at all — its page sits blank rather than showing a failure, so it looks like it is waiting when nothing is coming.\n\nTHE FIX IS ONE COMMAND and the project already has a tool that resolves this exact map file automatically. But the command is a version-control merge inside a second copy of the project, and the safety rules the shifts run under refuse it unattended.\n\nIT HAS NOW COST TWO NIGHTS. Last night it was the hair-reader job; a person unstuck it this morning. Tonight it is the tattoo-panel job (#1119). Both were finished and correct; both just sat there.\n\nWHAT I RECOMMEND: let the shifts run that one merge command in their own working copy. It cannot touch the live site — it only updates the shift's private copy before asking for checks, and every real safety gate still runs afterwards. The alternative is that a person keeps unsticking these by hand, roughly one night in two.\n\nNothing is lost either way — the work is committed and pushed. It is waiting, not gone."
+    },
     {
       "id": "queue-shape-0923j-foreman",
       "severity": "info",
@@ -8066,10 +8068,11 @@
     193,
     194,
     195,
-    196
+    196,
+    197
   ],
   "nextUp": {
-    "readAt": "2026-09-23T04:00:19.687Z",
+    "readAt": "2026-09-23T04:41:23.003Z",
     "items": []
   }
 }
