@@ -163,9 +163,13 @@
 }
 
 /*
-  THE ACTIONS ROW (§2e) — settings chip left, `Start from photos` right, an
-  element between them. `flex-wrap` so a narrow column stacks the two rather
-  than crushing either, and the spacer collapses when it does.
+  THE ACTIONS ROW (§2e) — the settings chip, and since #1107 nothing else.
+
+  ⚠ It held `Start from photos` on the right with a spacer between, and both
+  went with the link (his *"build option C"*): the concept door is the brief
+  box itself now. `flex-wrap` and `min-width` stay because the row is still a
+  flex row in a column that narrows, and a one-child row that cannot wrap is a
+  different bug waiting for the second child to come back.
 */
 .dpc-hero__actions {
   display: flex;
@@ -174,31 +178,6 @@
   flex-wrap: wrap;
   min-width: 0;
 }
-
-.dpc-hero__actionsair {
-  flex: 1;
-  min-width: 0;
-}
-
-/*
-  `Start from photos` — a link, not a chip. It only ever acts, where the
-  settings control also displays state, and the weights say which is which.
-*/
-.dpc-hero__photos {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font: 400 11.5px/1.4 var(--font-sans);
-  color: var(--metaStrong);
-  cursor: pointer;
-  flex: none;
-  transition: color 0.15s ease;
-}
-
-.dpc-hero__photos:hover { color: var(--ink); }
 
 /*
   THE DECK COLUMN (#234, spec §2 and §4) — what replaced the split-face pair.
@@ -2690,6 +2669,52 @@
   align-items: flex-end;
   gap: 10px;
   padding: 11px 13px 11px 14px;
+  /* The over-state sentence below is laid over this box, so it anchors here.
+     Scoped to the hero's own row rather than added to `.dp-field`, which every
+     form in the product uses and none of the others needs positioned. */
+  position: relative;
+}
+
+/*
+  THE BRIEF BOX AS A DROP TARGET (#1107, his *"build option C"*).
+
+  ⚠ **QUIET IS THE WHOLE SPEC.** This box is the 160-credit button's own
+  field; a loud target over it reads as an error state on the thing she is
+  about to buy. So the over-state is EXACTLY the state this same box already
+  wears when you click into it — `.dp-field:focus-within`, which is
+  `border-color: var(--ink)` and nothing else. No dashes, no fill, no colour
+  the product does not already own, and no second visual vocabulary for
+  "something is about to happen here". It is up only while a file is over it.
+*/
+.dp-field.dpc-briefrow--drop {
+  border-color: var(--ink);
+}
+
+/*
+  The sentence, laid over the box so it replaces what is under it for the one
+  second it is up, rather than reflowing the row (a row that grows a line while
+  you are holding a file moves the target out from under the cursor).
+
+  ⚠ `pointer-events: none` is load-bearing, not tidiness: this element covers
+  the box, so with pointer events on it would take the `drop` itself — and it
+  has no handler, so the window guard would swallow the file and the drop would
+  do nothing at all, silently, which is the one failure worse than no target.
+*/
+.dpc-briefrow__drop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border-radius: inherit;
+  /* The field's own background, so the sentence sits ON the box rather than in
+     a panel of its own floating over it. */
+  background: var(--surface);
+  font: 400 12.5px/1.4 var(--font-sans);
+  color: var(--metaStrong);
+  text-align: center;
+  pointer-events: none;
 }
 
 

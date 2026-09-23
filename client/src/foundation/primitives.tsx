@@ -125,17 +125,30 @@ export function Instruction({ children }: { children: ReactNode }) {
 
 /* ----------------------------------------------------------------- inputs */
 
+/**
+ * ⚠ **IT PASSES THE REST THROUGH, AND THAT IS WHY (#1107).** `Input` and
+ * `IconButton` in this same file already spread their caller's DOM props;
+ * `Field` was the one primitive that swallowed them, so a caller needing the
+ * BOX itself to respond to something — the casting hero's brief field, which
+ * takes a dropped picture — had to wrap it in a div and hope the extra element
+ * did not disturb a row whose padding and alignment are measured. Passing them
+ * through costs nothing, changes no existing caller (they pass none), and it
+ * makes this primitive consistent with its two neighbours rather than the
+ * exception. The three styling inputs are destructured, so `className` cannot
+ * arrive twice and silently win.
+ */
 export function Field({
   invalid,
   compact,
   className,
   children,
+  ...rest
 }: {
   invalid?: boolean;
   compact?: boolean;
   className?: string;
   children: ReactNode;
-}) {
+} & Omit<HTMLAttributes<HTMLDivElement>, "className" | "children">) {
   return (
     <div
       className={cn(
@@ -144,6 +157,7 @@ export function Field({
         invalid && "dp-field--invalid",
         className,
       )}
+      {...rest}
     >
       {children}
     </div>

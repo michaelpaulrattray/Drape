@@ -85,10 +85,20 @@ import { ConceptReviewModal } from "./ConceptReviewModal";
  * holds by construction: an account outside the scope cannot reach it at all.
  */
 /**
- * THE SECOND DOOR TO THIS FLOW (#435 §2e) — his brief puts `Start from photos`
- * in the hero's actions row, beside the settings control, because *"the
+ * THE DOORS TO THIS FLOW THAT ARE NOT ON THIS CARD (#435 §2e, #1107).
+ *
+ * #435 put a `Start from photos` link in the hero's actions row because *"the
  * explainer already promises photos, and the flow already exists — but the only
  * way in was a card further down the page"*.
+ *
+ * ⚠ **THAT LINK IS GONE AND THE HERO'S BRIEF BOX IS THE DOOR INSTEAD (#1107,
+ * his word: *"build option C"*).** His reason for taking C alone rather than
+ * keeping both: *"my only opposition with going with only C over A and C is
+ * because upload a concept card already exists."* Two labelled entrances to one
+ * flow is furniture; the box she is already typing in is not. So the page drops
+ * a file on the brief box and calls `openWith`, the card keeps its own tap and
+ * its own drop, and this card — the click door, and the only door on a phone,
+ * where nothing is dragged — is unchanged.
  *
  * A handle rather than a lifted `open` flag: the dialog's state is four pieces
  * (the flag, the picture, the words, the refusal) and they belong together
@@ -97,13 +107,26 @@ import { ConceptReviewModal } from "./ConceptReviewModal";
  * touch, and entrance 2's whole point is that a tap opens the modal EMPTY —
  * which is exactly what this exposes and nothing more.
  *
- * ⚠ **The hero draws its link only where the server opened this door** — the
+ * ⚠ **The hero takes a drop only where the server opened this door** — the
  * same `conceptUploadEnabled` answer that decides whether this card is live.
- * Off the scope the card renders inert, this handle does nothing, and a link
- * that opened nothing would be D-180's dead control on the busiest surface in
- * the product.
+ * Off the scope the card renders inert, this handle does nothing, the brief
+ * box's placeholder does not offer a picture and its handlers are not mounted:
+ * D-180 again — absent, never disabled — on the busiest surface in the product.
+ * A box that said *drop a picture* and then ate it would be worse than the dead
+ * link this replaces, because a drop LOOKS like it was accepted.
  */
-export type ConceptUploadHandle = { openEmpty: () => void };
+export type ConceptUploadHandle = {
+  /** Entrance 2 (#435 §2e): open on the empty drop zone, no file. */
+  openEmpty: () => void;
+  /**
+   * Entrance 4 (#1107): open with the files a drop handed the HERO'S BRIEF BOX.
+   *
+   * It takes a `FileList` rather than a `File` on purpose — it goes straight
+   * to `offerFile`, which is the one place a file is judged, so the box cannot
+   * grow its own idea of what a picture is or what to do with a PDF.
+   */
+  openWith: (files: FileList | null) => void;
+};
 
 export const ConceptUploadCard = forwardRef<ConceptUploadHandle, {
   /** The door, or nothing. See the header — this is the whole gate. */
@@ -117,12 +140,6 @@ export const ConceptUploadCard = forwardRef<ConceptUploadHandle, {
 }>(function ConceptUploadCard({ describe, priceCredits, onDescribed, onCast }, ref) {
   /** Whether the dialog is up. Its own flag, because a tap opens it with no file. */
   const [open, setOpen] = useState(false);
-  /*
-    Entrance 2, reached from the hero instead of from this card. Identical to
-    the card's own tap — the modal opens on its drop zone with no file — so the
-    two doors cannot drift into two behaviours.
-  */
-  useImperativeHandle(ref, () => ({ openEmpty: () => setOpen(true) }), []);
   /** The picture under review, and the words for it — `null` while they are in flight. */
   const [picture, setPicture] = useState<File | null>(null);
   const [description, setDescription] = useState<string | null>(null);
@@ -294,6 +311,24 @@ export const ConceptUploadCard = forwardRef<ConceptUploadHandle, {
     setNotAPicture(true);
     setOpen(true);
   };
+
+  /*
+    THE ENTRANCES THAT ARE NOT ON THIS CARD (#435 §2e, #1107). Both are
+    identical to acts the card already has — `openEmpty` is its tap, `openWith`
+    is its drop — so the four doors cannot drift into four behaviours.
+
+    ⚠ IT IS DECLARED HERE, BELOW `offerFile`, AND ITS DEPS NAME IT. The earlier
+    shape sat above every one of these functions with `[]`, which was correct
+    while the only member was `setOpen` (stable forever) and is a stale-closure
+    trap the moment a member closes over a PROP: `offerFile` reads `describe`,
+    and `describe` arrives from the server a render or two after mount, so a
+    handle frozen at the first render would have judged every dropped file
+    against a door that was still `null` and done nothing at all, silently.
+  */
+  useImperativeHandle(ref, () => ({
+    openEmpty: () => setOpen(true),
+    openWith: (files: FileList | null) => offerFile(files),
+  }), [offerFile]);
 
   /*
     DEPTH-COUNTED, because `dragleave` fires every time the pointer crosses into

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { DragEvent } from "react";
 import { useLocation } from "wouter";
 import { useHistoryState } from "wouter/use-browser-location";
 import { ArrowRight, Plus, Search } from "lucide-react";
@@ -31,12 +32,15 @@ import {
   ConceptUploadCard,
   type ConceptUploadHandle,
 } from "@/features/castingV2/components/ConceptUploadCard";
-import { briefWithDescription } from "@/features/castingV2/conceptUpload";
+import {
+  briefWithDescription,
+  CONCEPT_HERO_BRIEF_CLAUSE,
+  CONCEPT_HERO_DROP,
+} from "@/features/castingV2/conceptUpload";
 import { PathToggle } from "@/features/castingV2/components/PathToggle";
 import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { ConfirmDialog } from "@/foundation";
-import { Icon, P } from "@/foundation";
 import { HeroDeck } from "@/features/castingV2/components/HeroDeck";
 import { CardMenu } from "@/foundation";
 import { DestructiveConfirm } from "@/foundation";
@@ -132,6 +136,25 @@ function sheetDeleteCopy(sheet: {
     : `${sheet.signedCastNames.length} casts came from this sheet — ${names} are safe`;
   return `${who}. The sheet and its unsigned candidates will be gone. This cannot be undone.`;
 }
+
+/**
+ * THE HERO BRIEF BOX'S EXAMPLE — PLACEHOLDER LAW (founder, 2026-08-01): a
+ * placeholder obeys every clause the seeds obey. It is the most-read example on
+ * the page — seen by everyone, tapped by nobody — so a bad one teaches the
+ * wrong shape to every visitor.
+ *
+ * The text before it broke four at once: "a dad in his 30s, dry humour, hands
+ * that have done some work" was the wrong audience, named a pronoun (which pins
+ * sex), asked for humour (performance, which the expression law forbids), and
+ * promised HANDS — which the waist-up frame with arms at the sides cannot show
+ * at all.
+ *
+ * ⚠ It is a module constant rather than a literal at the prop since #1107,
+ * because the prop now composes: inside the concept scope the box also offers
+ * `CONCEPT_HERO_BRIEF_CLAUSE`, and a law about an EXAMPLE should not be read as
+ * covering the offer appended after it.
+ */
+const HERO_BRIEF_PLACEHOLDER = "a fitness creator in their 30s, close-cropped hair";
 
 export default function CastingV2() {
   const [, navigate] = useLocation();
@@ -471,10 +494,57 @@ export default function CastingV2() {
   */
   /*
     WHETHER THE CONCEPT DOOR IS OPEN — the same server answer the card itself
-    reads, so the hero's `Start from photos` link and the card can never
-    disagree about whether the flow exists (D-180: absent, not disabled).
+    reads, so the hero's brief box and the card can never disagree about
+    whether the flow exists (D-180: absent, not disabled).
   */
   const conceptUploadEnabled = config.data.conceptUploadEnabled === true;
+  /*
+    THE BRIEF BOX TAKES A DROPPED PICTURE (#1107 — his word: *"build option
+    C"*), which is what replaced the hero's `Start from photos` link.
+
+    ⚠ **DEPTH-COUNTED, for the reason the concept card's own handlers are**:
+    `dragleave` fires every time the pointer crosses into a CHILD, and this row
+    has three (the textarea, Re-imagine, Cast it), so a naive enter/leave pair
+    flickers the box's over-state as the cursor moves across it.
+
+    ⚠ **A drop does not spend anything.** It hands the file to the card's
+    `offerFile` through `openWith`, which is the one place a file is judged for
+    all four entrances — so the box cannot grow its own idea of what a picture
+    is — and the dialog that opens is the same review step every other entrance
+    opens. Cast it stays the only thing that spends, which is #535's rule and
+    the reason the over-state sentence says *describe* rather than *cast*.
+  */
+  const [briefDrag, setBriefDrag] = useState(false);
+  const briefDragDepth = useRef(0);
+  const briefDropHandlers = conceptUploadEnabled
+    ? {
+      onDragEnter: (event: DragEvent<HTMLDivElement>) => {
+        if (!event.dataTransfer?.types?.includes("Files")) return;
+        briefDragDepth.current += 1;
+        setBriefDrag(true);
+      },
+      /*
+        `preventDefault` on dragover is what MAKES an element a drop target.
+        Without it the browser refuses the drop and the concept card's
+        window-level guard swallows it — so the box would show its ring and
+        then silently eat the file, which is worse than no target at all.
+      */
+      onDragOver: (event: DragEvent<HTMLDivElement>) => {
+        if (!event.dataTransfer?.types?.includes("Files")) return;
+        event.preventDefault();
+      },
+      onDragLeave: () => {
+        briefDragDepth.current = Math.max(0, briefDragDepth.current - 1);
+        if (briefDragDepth.current === 0) setBriefDrag(false);
+      },
+      onDrop: (event: DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        briefDragDepth.current = 0;
+        setBriefDrag(false);
+        conceptCard.current?.openWith(event.dataTransfer?.files ?? null);
+      },
+    }
+    : {};
   /*
     WHETHER THIS ACCOUNT CHOOSES ITS PATH — server-owned, asked not decided.
 
@@ -728,7 +798,14 @@ export default function CastingV2() {
               the sheet in its own commit and the start page kept the defect,
               which is what a sweep at the time would have caught.
             */}
-            <Field className="dpc-hero__field dpc-briefrow">
+            <Field
+              className={
+                briefDrag
+                  ? "dpc-hero__field dpc-briefrow dpc-briefrow--drop"
+                  : "dpc-hero__field dpc-briefrow"
+              }
+              {...briefDropHandlers}
+            >
               <BriefField
                 ref={briefField}
                 value={brief}
@@ -751,19 +828,20 @@ export default function CastingV2() {
                     void startCasting(brief);
                   }
                 }}
+                /* The example itself is `HERO_BRIEF_PLACEHOLDER` above, where
+                   the placeholder law it obeys is written down. */
                 /*
-                  PLACEHOLDER LAW (founder, 2026-08-01): a placeholder obeys every
-                  clause the seeds obey. It is the most-read example on the page —
-                  seen by everyone, tapped by nobody — so a bad one teaches the
-                  wrong shape to every visitor.
-
-                  The previous text broke four at once: "a dad in his 30s, dry
-                  humour, hands that have done some work" was the wrong audience,
-                  named a pronoun (which pins sex), asked for humour (performance,
-                  which the expression law forbids), and promised HANDS — which the
-                  waist-up frame with arms at the sides cannot show at all.
+                  ⚠ AND THE SECOND HALF IS THE DOOR (#1107). The clause is
+                  appended only where the server opened concept upload, so
+                  off the scope the placeholder is exactly the example it has
+                  always been and the box offers nothing it cannot do — D-180
+                  reaching the copy, not only the controls.
                 */
-                placeholder="a fitness creator in their 30s, close-cropped hair"
+                placeholder={
+                  conceptUploadEnabled
+                    ? `${HERO_BRIEF_PLACEHOLDER} — ${CONCEPT_HERO_BRIEF_CLAUSE}`
+                    : HERO_BRIEF_PLACEHOLDER
+                }
                 aria-label="Casting brief"
               />
               {/*
@@ -782,6 +860,17 @@ export default function CastingV2() {
                 {starting ? "Casting…" : "Cast it"}
                 {starting ? null : <ArrowRight size={12} strokeWidth={2.2} aria-hidden="true" />}
               </Button>
+              {/*
+                THE OVER-STATE SENTENCE, laid over the box rather than added
+                under it: a row that grows a line while you are holding a file
+                moves the target out from under the cursor. It is
+                `pointer-events: none` in the stylesheet for a reason the
+                stylesheet states — it covers the box, so with pointer events
+                on it would take the drop itself and there is no handler here.
+              */}
+              {briefDrag ? (
+                <span className="dpc-briefrow__drop">{CONCEPT_HERO_DROP}</span>
+              ) : null}
             </Field>
             {/* The one quiet line about what just happened to her words — under the box they happened in. */}
             <ReimagineLine state={reimagine} />
@@ -884,40 +973,29 @@ export default function CastingV2() {
                   directly above so the pair reads as one thought: what this
                   costs, how it is set.
 
-              RIGHT is `Start from photos`. The explainer already promises photos and
-              the flow already existed — but the only door was a card further
-              down the page, so the promise and the way in were nowhere near
-              each other.
+              ⚠ **RIGHT WAS `Start from photos`, AND IT IS GONE (#1107 — his word:
+              *"build option C"*).** #435 put it here because the explainer
+              promised photos while the only door was a card further down the
+              page. The promise and the way in are now in the SAME PLACE, one
+              element up: the brief box itself takes a dropped picture and its
+              placeholder says so. His reason for taking that INSTEAD of keeping
+              both, rather than as well: *"my only opposition with going with
+              only C over A and C is because upload a concept card already
+              exists."* A second labelled entrance to one flow is furniture.
 
-              The two carry different weights on purpose: the settings control
-              DISPLAYS state as well as acting, so it is a chip; this is purely
-              an action, so it is a link.
-
-              ⚠ **EACH IS ABSENT RATHER THAN DISABLED WHERE ITS DOOR IS SHUT**
-              (D-180) — the settings chip off the author road, the photos link
-              where the server did not open concept upload. An account with
-              neither sees no row at all.
+              So this row is the settings chip alone, and it is absent off the
+              author road (D-180). The concept door's own absent-not-disabled
+              proof moved WITH the door — it is the placeholder clause and the
+              drop handlers on the box above, which are not mounted at all
+              outside the scope.
             */}
-            {authorRoad || conceptUploadEnabled ? (
+            {authorRoad ? (
               <div className="dpc-hero__actions">
-                {authorRoad ? (
-                  <CastSettingsButton
-                    idPrefix="dpc-hero"
-                    style={style}
-                    onStyle={setStyle}
-                  />
-                ) : null}
-                <span className="dpc-hero__actionsair" aria-hidden="true" />
-                {conceptUploadEnabled ? (
-                  <button
-                    type="button"
-                    className="dpc-hero__photos"
-                    onClick={() => conceptCard.current?.openEmpty()}
-                  >
-                    <Icon d={P.image} size={13} />
-                    Start from photos
-                  </button>
-                ) : null}
+                <CastSettingsButton
+                  idPrefix="dpc-hero"
+                  style={style}
+                  onStyle={setStyle}
+                />
               </div>
             ) : null}
             </div>

@@ -67,6 +67,39 @@ export const CONCEPT_READING_LABEL = "Reading the picture…";
 export const CONCEPT_CARD_DROP = "Drop it here — we'll read it straight away.";
 
 /**
+ * THE HERO BRIEF BOX'S TWO SENTENCES (#1107, his word: *"build option C"*).
+ *
+ * The box she is already typing in became the door, and the hero's separate
+ * `Start from photos` link went with it — his own refinement being that a
+ * second labelled entrance to one flow is one too many when *"upload a concept
+ * card already exists"*. So these two sentences carry what that link used to
+ * carry, in the place she is already looking.
+ *
+ * ⚠ **BOTH SAY WHAT HAPPENS TO HER PICTURE, NEVER WHAT READS IT.** No engine,
+ * no stage, no percentage — the disappearing-technology law's third question,
+ * answered in the copy rather than in a review note. And neither promises
+ * likeness: *someone like them* is the same careful claim the card's own line
+ * makes, because this road describes a person and casts a NEW one.
+ */
+
+/**
+ * Appended to the placeholder, under the flag only. A placeholder is the
+ * most-read example on the page (the PLACEHOLDER LAW at its call site), so the
+ * clause has to survive being read as part of the example: it is an offer in
+ * the second half of the sentence, after the seed, never inside it.
+ */
+export const CONCEPT_HERO_BRIEF_CLAUSE = "or drop a picture of someone like them";
+
+/**
+ * Said in the box while a file is over it. A drop target nobody can see is not
+ * a drop target — the same reason `CONCEPT_CARD_DROP` exists — and this one
+ * also has to say WHICH of the two things a drop does, because the box it
+ * covers is the one that spends 160 credits when you press the button beside
+ * it. Dropping describes; it never casts.
+ */
+export const CONCEPT_HERO_DROP = "Drop a picture to describe someone like them";
+
+/**
  * OUR SENTENCE WHEN THE SERVER'S NEVER ARRIVED (`readableFailure`'s fallback).
  *
  * The door's own refusals are written for a reader and pass through untouched —

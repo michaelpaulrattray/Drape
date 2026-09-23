@@ -13,6 +13,8 @@ import {
   CONCEPT_REVIEW_TITLE,
   CONCEPT_REVIEW_USE,
   CONCEPT_CARD_DROP,
+  CONCEPT_HERO_BRIEF_CLAUSE,
+  CONCEPT_HERO_DROP,
   CONCEPT_DROP_LINE,
   CONCEPT_NOT_A_PICTURE,
   CONCEPT_REMOVE_PICTURE,
@@ -1125,5 +1127,111 @@ describe("the picture can be removed or replaced without losing the dialog", () 
        gets — and it names the object, not the state. */
     expect(CONCEPT_REMOVE_PICTURE.toLowerCase()).toContain("picture");
     expect(CONCEPT_REMOVE_PICTURE.toLowerCase()).not.toContain("clear");
+  });
+});
+
+/**
+ * THE FOURTH ENTRANCE — THE HERO'S BRIEF BOX TAKES A DROPPED PICTURE (#1107).
+ *
+ * His word on the four drawn options was *"build option C"*, with his own
+ * refinement one message earlier: *"my only opposition with going with only C
+ * over A and C is because upload a concept card already exists."* So the
+ * `Start from photos` link went and the box she is already typing in became the
+ * door.
+ *
+ * ⚠ **EVERY ARM HERE IS ABOUT A WAY THIS CAN FAIL SILENTLY**, because that is
+ * the shape this road has: a drop that does nothing, a drop that spends, or a
+ * box that offers a picture it cannot take all look exactly like a working
+ * page until somebody drags a file at it.
+ */
+describe("the hero brief box is the concept door (#1107)", () => {
+  it("hands the file to the ONE judge rather than reading it itself", async () => {
+    const page = withoutProse(await readFile(PAGE, "utf8"));
+    const card = withoutProse(await readFile(CARD, "utf8"));
+
+    /* The page hands the whole FileList over, untouched. */
+    expect(page).toContain("conceptCard.current?.openWith(event.dataTransfer?.files ?? null)");
+    /* And `openWith` is `offerFile`, which is where `firstPictureFrom` lives. */
+    expect(card.replace(/\s+/g, " ")).toContain("openWith: (files: FileList | null) => offerFile(files)");
+    /*
+      THE ARM THAT MATTERS: the page must not judge a file itself. A second
+      opinion about what a picture is would send a PDF down a different road
+      from the one the card's own drop sends it down, and the dialog is where
+      "that is not a picture" is said.
+    */
+    expect(page, "the page must never decide what a picture is").not.toContain("firstPictureFrom");
+  });
+
+  it("a dropped picture describes; it never spends", async () => {
+    const page = withoutProse(await readFile(PAGE, "utf8"));
+    const drop = page.slice(page.indexOf("onDrop:"), page.indexOf("onDrop:") + 400);
+    expect(drop, "the drop handler must exist to be read").toContain("openWith");
+    /*
+      Cast it is the only thing that spends (#535). A drop that reached
+      `startCasting` would charge 160 credits for a dragged file, which is the
+      worst outcome available on this surface.
+    */
+    expect(drop).not.toContain("startCasting");
+    /* And the sentence she reads while holding the file says so. */
+    expect(CONCEPT_HERO_DROP.toLowerCase()).toContain("describe");
+    expect(CONCEPT_HERO_DROP.toLowerCase()).not.toContain("cast");
+  });
+
+  it("claims the drop from the browser, or the window guard eats the file", async () => {
+    const page = withoutProse(await readFile(PAGE, "utf8"));
+    const over = page.slice(page.indexOf("onDragOver:"), page.indexOf("onDragLeave:"));
+    /*
+      `preventDefault` on dragover is what MAKES an element a drop target.
+      Without it the browser refuses the drop and the card's window-level
+      guard swallows it — so the box would show its ring and then silently eat
+      the picture, with nothing anywhere saying a thing.
+    */
+    expect(over, "dragover must preventDefault").toContain("event.preventDefault()");
+    expect(over, "and only for files, so dragging TEXT into the box still works")
+      .toContain('types?.includes("Files")');
+  });
+
+  it("counts drag depth, so the ring does not flicker across the row's own children", async () => {
+    const page = withoutProse(await readFile(PAGE, "utf8"));
+    /*
+      `dragleave` fires every time the pointer crosses into a child, and this
+      row has three (the textarea, Re-imagine, Cast it). The card's own
+      handlers learned this first; a boolean here would strobe.
+    */
+    expect(page).toContain("briefDragDepth.current += 1");
+    expect(page).toContain("briefDragDepth.current = Math.max(0, briefDragDepth.current - 1)");
+    expect(page).toContain("if (briefDragDepth.current === 0) setBriefDrag(false)");
+  });
+
+  it("the over-state sentence cannot take the drop it is covering", async () => {
+    const css = await readFile(new URL("./castingV2.css", import.meta.url), "utf8");
+    const rule = css.slice(css.indexOf(".dpc-briefrow__drop {"));
+    expect(rule.slice(0, 600), "the rule must be readable").toContain("position: absolute");
+    /*
+      It covers the box. With pointer events on it would receive the `drop`
+      itself — and it has no handler — so the window guard would swallow the
+      file and the drop would do nothing at all.
+    */
+    expect(rule.slice(0, 600)).toContain("pointer-events: none");
+  });
+
+  it("neither sentence names an engine, a stage or a likeness", () => {
+    /*
+      The disappearing-technology law's third question, in the copy rather than
+      in a review note; and the same likeness care the card's own line takes,
+      because this road describes a person and casts a NEW one.
+    */
+    for (const line of [CONCEPT_HERO_DROP, CONCEPT_HERO_BRIEF_CLAUSE]) {
+      const said = line.toLowerCase();
+      for (const forbidden of ["ai", "model", "gpt", "gemini", "engine", "upload", "%"]) {
+        expect(said.split(/[^a-z%]+/).includes(forbidden), `"${line}" must not say "${forbidden}"`)
+          .toBe(false);
+      }
+      expect(said).not.toContain("your own photos");
+      expect(said).not.toContain("of you");
+    }
+    /* Both are about the same act, so both say what she is dropping. */
+    expect(CONCEPT_HERO_DROP.toLowerCase()).toContain("picture");
+    expect(CONCEPT_HERO_BRIEF_CLAUSE.toLowerCase()).toContain("picture");
   });
 });

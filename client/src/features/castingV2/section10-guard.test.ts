@@ -555,13 +555,51 @@ describe("what the hero must NOT grow back (§2f)", () => {
     ).not.toContain("align-self");
   });
 
+  /*
+    ⚠ **THIS ARM MOVED WITH ITS DOOR (#1107), IT WAS NOT DELETED WITH IT.**
+
+    It used to read `authorRoad || conceptUploadEnabled ?` off the actions row,
+    because the row held two doors: the settings chip and `Start from photos`.
+    His *"build option C"* removed the link — the brief box takes the dropped
+    picture instead — so the row is the chip alone and that literal is gone.
+
+    The OBLIGATION did not go anywhere. D-180 says each door is absent rather
+    than disabled where the server did not open it, and there are still two
+    doors on this page; one of them simply moved one element up. So the arm now
+    proves the same sentence about where the concept door actually lives — the
+    placeholder clause and the drag handlers — which is the whole reason a
+    ruling's sweep asks what was bolted to the thing it closed.
+  */
   it("each door is absent, never disabled, where the server did not open it", async () => {
     const page = code(await read(PAGE));
     // D-180: a disabled control is a question with no answer wearing a tap target.
-    expect(page).toContain("authorRoad || conceptUploadEnabled ?");
-    expect(page).toContain("conceptUploadEnabled ? (");
+
+    /* The settings chip: the row exists only on the author road. */
+    expect(page).toContain("authorRoad ? (");
     const actions = page.slice(page.indexOf('className="dpc-hero__actions"'));
     expect(actions.slice(0, 900)).not.toContain("disabled");
+
+    /*
+      The concept door, where it lives now. Both halves are gated on the same
+      server answer: the handlers are not mounted outside the scope, and the
+      placeholder does not offer a picture it cannot take.
+    */
+    /* Collapsed, so the arm asserts the GATE rather than this file's indentation. */
+    const flat = page.replace(/\s+/g, " ");
+    expect(flat, "the drop handlers must be built only inside the concept scope")
+      .toContain("const briefDropHandlers = conceptUploadEnabled ? {");
+    expect(flat, "the placeholder must offer the picture only inside the concept scope")
+      .toContain("placeholder={ conceptUploadEnabled ? `${HERO_BRIEF_PLACEHOLDER}");
+
+    /*
+      AND THE LINK IS GONE, NOT HIDDEN. A door removed on his word must not
+      come back as a disabled or `display: none` control, which is the shape
+      D-180 exists to refuse — and it is the shape a later shift reaches for
+      when it wants the link back "just for now".
+    */
+    expect(page, "the `Start from photos` link is removed on his word (#1107), not hidden")
+      .not.toContain("dpc-hero__photos");
+    expect(page).not.toContain("Start from photos");
   });
 });
 
