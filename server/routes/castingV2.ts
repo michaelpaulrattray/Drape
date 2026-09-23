@@ -24,7 +24,7 @@ import { storageReadBytes } from "../storage";
 
 import { router, protectedProcedure } from "../_core/trpc";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
-import { sheetPreviewKeys, sheetPreviewTiles } from "../castingV2/sheetPreview";
+import { sheetPreviewTiles } from "../castingV2/sheetPreview";
 import { castPronouns } from "../castingV2/castPronouns";
 import { runFinalCastDeletionCeremony } from "../casting/finalCastDeletionCeremony";
 import { assertFinalModelDeleteEnabled } from "./models";
@@ -1193,21 +1193,11 @@ export const castingV2Router = router({
             tile.kind === "face"
               ? { kind: "face" as const, url: storagePublicUrl(tile.key) }
               : tile);
-          /*
-            The faces alone, for ONE more deploy. A browser holding the previous
-            bundle reads `previewUrls` and would take the lobby down on
-            `.length` if this vanished under it; the field goes in the deploy
-            after the one that stops reading it (#1088). Derived from the tiles
-            above rather than computed beside them, so the two cannot disagree.
-          */
-          const previewUrls = sheetPreviewKeys(kept, rollCandidates)
-            .map((key) => storagePublicUrl(key));
 
           return {
             sessionId: session.publicId,
             briefText: latest?.briefText ?? null,
             previewTiles,
-            previewUrls,
             rollCount: rolls.length,
             keptCount: kept.length,
             /*
