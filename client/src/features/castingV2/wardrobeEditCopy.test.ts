@@ -2,30 +2,43 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
 /**
- * THE ASK BOX'S CAPABILITY LINE, AND THE ONE CELL WHERE IT USED TO BE FALSE —
- * design §10's fifth flip precondition (found opus-1132 §5, ruled fable-1490).
+ * THE ASK BOX SAYS ONE THING ABOUT CLOTHES AGAIN — and the cell that went was
+ * the one that had never been shown (#203 slice 2 step c).
+ *
+ * # What this file used to guard, and why the answer inverted
  *
  * `RefinePanel`'s meta line is capability disclosure: it says what the box can
- * do BEFORE somebody types something it cannot, which is worth more than a
- * refusal after the fact. It said *"Anything about them — not their clothes or
- * the room"* on every surface, and the two paths gave the panel a WARDROBE
- * section four lines above it — so on a Wardrobe-path cast, whose owner is on
- * the repaint road, the sentence denies a capability the panel is inviting a tap
- * on.
+ * do BEFORE somebody types something it cannot. From fable-1490 it had two
+ * cells — *"including what they're wearing"* for an account on the repaint road
+ * looking at a cast born on the WARDROBE path, and today's sentence for
+ * everybody else. The suite pinned that BOTH halves of that condition were
+ * present, because either half alone was a contradiction one path over.
  *
- * ⚠ **IT WAS TRUE THE DAY IT WAS FOUND AND IT WAS STILL WORTH FIXING.** The
- * wardrobe subject is `admittedOn: "repaintOnly"`, so a garment ask needs an
- * account on the repaint road AND a cast on the Wardrobe path — a population
- * that is empty in both worlds while `CASTING_TWO_PATHS_SCOPE` is off. The flip
- * creates it, on day one, for the first customer who opens a pathed cast.
+ * ⚠ **THE PATHS ARE RETIRED, AND THE HALF THAT WENT WAS THE ONLY ONE HOLDING
+ * THE SENTENCE SHUT.** `wardrobePath` came off `RollProjection.wardrobe`, which
+ * has been `null` for every roll a customer can open since slice 1 wrote the
+ * column a constant `null` — so the garment cell has never once been drawn. The
+ * ACCOUNT half was `captureCastingRepaintEnabled`, and that flag stands at
+ * **`all`** on production. So a sweep that deleted "the path clause" and left
+ * `wardrobeEdits &&` standing would have turned the claim ON for every
+ * customer, in the commit that was meant to remove dead code — and it would
+ * have been FALSE: the wardrobe subject is served to no branch at all
+ * (`SERVED_SUBJECTS`, `server/castingV2/refineSubjects.ts`), so an outfit ask
+ * meets the generic wall for everybody.
+ *
+ * **That is what this file now guards: the live sentence stands alone, and
+ * neither half of the retired condition came back.**
+ *
+ * Whether a garment ask should become a real capability for everyone is
+ * **#1148** and it is his. It is filed rather than folded into a retirement.
  *
  * # Why this is a SOURCE test rather than a render
  *
- * The condition is a join of two facts the panel is HANDED — the server's own
- * gate and the roll's path — and what has to be pinned is that it decides
- * neither of them, that both are required, and that every other cell keeps
- * today's sentence. That is a claim about the component's source, in the shape
- * `facePanelAnatomy.test.ts` and `referenceAttachCopy.test.ts` already use.
+ * The claim is about which sentences the component can emit at all, which is a
+ * property of its source in the shape `facePanelAnatomy.test.ts` already uses.
+ * ⚠ **Every absence arm below is preceded by a POSITIVE CONTROL**, because a
+ * deleted or gutted panel satisfies every `not.toContain` in this file — the
+ * lesson #1150's sabotage drive paid for.
  */
 const PANEL = new URL("./components/RefinePanel.tsx", import.meta.url);
 const SHEET = new URL("../../pages/CastingSheet.tsx", import.meta.url);
@@ -36,71 +49,76 @@ function withoutProse(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
 }
 
-describe("the ask box says what it can do, on the path where it can do it", () => {
-  it("says the capability where a garment ask is admitted", async () => {
-    const panel = withoutProse(await readFile(PANEL, "utf8"));
-    expect(panel).toContain("including what they");
-    expect(panel).toContain("re wearing");
-  });
-
+describe("the ask box says what it can do, and it is one sentence", () => {
   /*
-    AND KEEPS TODAY'S SENTENCE EVERYWHERE ELSE, byte for byte. A Basics cast has
-    nothing to change, an unpathed cast has no wardrobe to edit, and an account
-    off the repaint road meets the subject card's own `repaintOnly`. Three
-    cells, one sentence, unchanged.
+    THE POSITIVE CONTROL. Every arm below asserts an absence, and an absence
+    arm on a file that no longer draws a meta line passes for the wrong reason.
   */
-  it("keeps the old sentence for every other cell", async () => {
+  it("still tells somebody what the box can do, before they type", async () => {
     const panel = withoutProse(await readFile(PANEL, "utf8"));
     expect(panel).toContain("not their clothes or the room");
+    expect(panel).toContain("credits each");
   });
 
   /*
-    ⚠ BOTH HALVES, OR IT IS A NEW CONTRADICTION ONE PATH OVER. The gate alone
-    would tell a BASICS customer the box reaches her clothes on the one path
-    that refuses an outfit by design; the path alone would tell an account off
-    the repaint road the same thing about a subject that is `repaintOnly`.
+    ⚠ THE SENTENCE IS UNCONDITIONAL NOW. This is the arm that would have caught
+    the naive sweep: with the path clause deleted and the gate left in place,
+    the source still contains today's sentence — it is just no longer what
+    everybody gets. Pinning the STRING is not enough; the branch must be gone.
   */
-  it("requires the account's gate AND the cast's path, not either", async () => {
+  it("does not make the claim conditional on anything", async () => {
     const panel = withoutProse(await readFile(PANEL, "utf8"));
-    expect(panel).toMatch(/wardrobeEdits\s*&&\s*wardrobePath === "wardrobe"/);
+    /* ⚠ The WHOLE element, opening tag included — the first shape of this arm
+       sliced from the sentence, which begins AFTER a ternary's `?`, so it
+       stayed green through the exact sabotage it was written for. */
+    const open = panel.lastIndexOf('<p className="dpc-refine__note">', panel.indexOf("not their clothes or the room"));
+    const element = panel.slice(open, panel.indexOf("</p>", open));
+    expect(element).not.toContain("?");
+    expect(element).not.toContain("&&");
+  });
+
+  it("never claims it can reach her clothes", async () => {
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+    expect(panel).not.toContain("including what they");
+    expect(panel).not.toContain("re wearing");
   });
 
   /*
-    THE DEFAULT IS THE CLAIM WE DO NOT MAKE. A caller that passes neither prop —
-    or an older bundle against a server without the field — must get today's
-    sentence rather than a capability claim.
+    ⚠ NEITHER HALF OF THE RETIRED CONDITION COMES BACK ALONE. The account half
+    is the dangerous one — it is the term that stands at `all` on production.
   */
-  it("defaults to claiming nothing", async () => {
+  it("takes neither the account's gate nor the cast's path", async () => {
     const panel = withoutProse(await readFile(PANEL, "utf8"));
-    expect(panel).toMatch(/wardrobeEdits = false/);
-    expect(panel).toMatch(/wardrobePath = null/);
+    expect(panel).not.toContain("wardrobeEdits");
+    expect(panel).not.toContain("wardrobePath");
   });
 });
 
-describe("the panel is HANDED both facts and decides neither", () => {
-  it("reads the server's own gate rather than a flag", async () => {
-    const route = withoutProse(await readFile(ROUTE, "utf8"));
-    /* Named for the capability, like the five gates beside it. */
-    expect(route).toMatch(/wardrobeEditsEnabled:\s*captureCastingRepaintEnabled/);
+describe("nothing upstream still hands the panel a path or a garment gate", () => {
+  /* THE POSITIVE CONTROL: the panel is still rendered with its real props. */
+  it("still renders the panel from the sheet", async () => {
+    const sheet = withoutProse(await readFile(SHEET, "utf8"));
+    expect(sheet).toContain("<RefinePanel");
+    expect(sheet.slice(sheet.indexOf("<RefinePanel"))).toContain("priceCredits");
+  });
+
+  it("passes neither prop", async () => {
+    const sheet = withoutProse(await readFile(SHEET, "utf8"));
+    const call = sheet.slice(sheet.indexOf("<RefinePanel"));
+    expect(call).not.toContain("wardrobeEdits");
+    expect(call).not.toContain("wardrobePath");
   });
 
   /*
-    ⚠ A SEPARATE FIELD FROM `stepBackEnabled` THOUGH BOTH READ THE SAME CAPTURE
-    TODAY, and that is the whole reason it was added (fable-1483 ASK 2, ruled
-    fable-1490). `stepBackEnabled` is named for the version chip's "take this
-    step back"; one gate answering two questions under one of their names is how
-    the two drift the day the wardrobe subject is promoted off `repaintOnly`.
+    ⚠ AND THE SERVER GATE IS GONE, NOT MERELY UNREAD — invariant 7's own
+    subject. A config field with no caller reads as a live capability switch to
+    the next person who opens the file, which is exactly the state
+    `stepBackEnabled` has been in since `e6d17fe9` took its menu (carded).
   */
-  it("does not reuse the step-back gate under its own name", async () => {
-    const sheet = withoutProse(await readFile(SHEET, "utf8"));
-    const call = sheet.slice(sheet.indexOf("<RefinePanel"));
-    expect(call).toContain("wardrobeEditsEnabled");
-    expect(call.slice(0, call.indexOf("wardrobePath="))).not.toContain("stepBackEnabled");
-  });
-
-  it("takes the path from the roll rather than from the account", async () => {
-    const sheet = withoutProse(await readFile(SHEET, "utf8"));
-    const call = sheet.slice(sheet.indexOf("<RefinePanel"));
-    expect(call).toMatch(/wardrobePath=\{sheetWardrobe\?\.path \?\? null\}/);
+  it("no longer sends a garment gate the client cannot use", async () => {
+    const route = withoutProse(await readFile(ROUTE, "utf8"));
+    /* Positive control: the config projection and its siblings still stand. */
+    expect(route).toContain("authorRoadEnabled");
+    expect(route).not.toContain("wardrobeEditsEnabled");
   });
 });
