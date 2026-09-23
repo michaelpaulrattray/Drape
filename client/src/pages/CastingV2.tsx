@@ -132,6 +132,47 @@ function sheetDeleteCopy(sheet: {
   return `${who}. The sheet and its unsigned candidates will be gone. This cannot be undone.`;
 }
 
+/**
+ * THE HERO BRIEF BOX'S EXAMPLE — PLACEHOLDER LAW (founder, 2026-08-01): a
+ * placeholder obeys every clause the seeds obey. It is the most-read example on
+ * the page — seen by everyone, tapped by nobody — so a bad one teaches the
+ * wrong shape to every visitor.
+ *
+ * The text before it broke four at once: "a dad in his 30s, dry humour, hands
+ * that have done some work" was the wrong audience, named a pronoun (which pins
+ * sex), asked for humour (performance, which the expression law forbids), and
+ * promised HANDS — which the waist-up frame with arms at the sides cannot show
+ * at all.
+ *
+ * ⚠ They are module constants rather than a literal at the prop since card
+ * 1111, because the prop composes and a law about an EXAMPLE should not be read
+ * as covering the offer appended after it.
+ */
+const HERO_BRIEF_EXAMPLE = "a fitness creator in their 30s, close-cropped hair";
+
+/**
+ * THE SAME EXAMPLE, SHORTER, FOR THE COMPOSED PLACEHOLDER (card 1111) — and the
+ * reason is a measurement rather than a preference.
+ *
+ * ⚠ Section 10 §2c states the only hard constraint on this string in as many
+ * words: **"The placeholder must fit one line at this width."** Card 1107 added
+ * his drop offer to the full example and it SHIPPED WRAPPED. Driven in the
+ * running app at 1440 (textarea 427px, 13px on 19.5px): the full example plus
+ * the offer is **91 characters and renders on two lines**, taking the resting
+ * box from 27px to 46px and the row from 55px to 70px — so the box he presses
+ * Cast it on looks FILLED before anyone types, and the wrap lands mid-phrase
+ * ("or drop a picture of / someone like them").
+ *
+ * His clause is his and is kept verbatim; what gives is the second half of the
+ * example, because the deck's brief block beside it already demonstrates a
+ * full-length brief — which §2c itself says teaches it better than a
+ * placeholder can. Measured: 71 characters, one line, box back to 27/55.
+ *
+ * **Outside the concept scope nothing changes**: no offer, no shortening, the
+ * example exactly as it has always been.
+ */
+const HERO_BRIEF_EXAMPLE_SHORT = "a fitness creator in their 30s";
+
 export default function CastingV2() {
   const [, navigate] = useLocation();
   /*
@@ -795,19 +836,14 @@ export default function CastingV2() {
                     void startCasting(brief);
                   }
                 }}
-                /*
-                  PLACEHOLDER LAW (founder, 2026-08-01): a placeholder obeys every
-                  clause the seeds obey. It is the most-read example on the page —
-                  seen by everyone, tapped by nobody — so a bad one teaches the
-                  wrong shape to every visitor.
-
-                  The previous text broke four at once: "a dad in his 30s, dry
-                  humour, hands that have done some work" was the wrong audience,
-                  named a pronoun (which pins sex), asked for humour (performance,
-                  which the expression law forbids), and promised HANDS — which the
-                  waist-up frame with arms at the sides cannot show at all.
-                */
-                placeholder={`a fitness creator in their 30s, close-cropped hair${conceptUploadEnabled ? CONCEPT_BRIEF_PLACEHOLDER_CLAUSE : ""}`}
+                /* The two examples are `HERO_BRIEF_EXAMPLE` and
+                   `HERO_BRIEF_EXAMPLE_SHORT` above, where the placeholder law
+                   they obey and the one-line measurement are written down. */
+                placeholder={
+                  conceptUploadEnabled
+                    ? `${HERO_BRIEF_EXAMPLE_SHORT}${CONCEPT_BRIEF_PLACEHOLDER_CLAUSE}`
+                    : HERO_BRIEF_EXAMPLE
+                }
                 aria-label="Casting brief"
               />
               {/*
