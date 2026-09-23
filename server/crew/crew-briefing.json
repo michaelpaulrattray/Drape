@@ -1,7 +1,7 @@
 {
-  "edition": 499,
-  "updatedAt": "2026-09-24T08:00:00+10:00",
-  "shift": "Foreman — the panel stops labelling a row by which path a cast was born on",
+  "edition": 500,
+  "updatedAt": "2026-09-23T22:37:05.557Z",
+  "shift": "Foreman — the sheet and the ask box stop asking which path a cast was born on",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -56,6 +56,10 @@
         {
           "title": "A fourth of the eight is out: two rows on the face chart — her build and her skin — could carry a small label saying the picture they were read from shows her dressed. It only ever appeared on a cast bought on the Wardrobe path, so no account has ever seen it, and that path can no longer be bought. Gone with it: the panel can no longer be told what a cast is wearing at all, and one database read per chart went with it",
           "state": "done"
+        },
+        {
+          "state": "done",
+          "title": "A fifth and sixth of the eight are out, and one of them nearly went wrong: the sheet no longer carries a line naming which path it was cast on, and the ask box no longer promises it can change what someone is wearing. That promise was switched off by a condition that is now dead — and deleting only the dead half would have switched the promise ON for every customer, for something the studio cannot actually do. The whole sentence went instead. Checked in the running app, before and after, in both themes: nothing on the page moved."
         }
       ]
     },
@@ -130,11 +134,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "40 open · 17 untouched for 7 days · 14 waiting on you · none urgent."
+        "source": "41 open · 17 untouched for 7 days · 14 waiting on you · none urgent."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T21:55:34.818Z",
+      "readAt": "2026-09-23T22:37:34.451Z",
       "items": [
         {
           "issueNumber": 10,
@@ -7656,6 +7660,13 @@
       "status": "merged",
       "prNumber": 1150,
       "note": "Nothing changes on screen: the label could only appear on a path nobody can buy."
+    },
+    {
+      "id": "sheet-askbox-203-2c",
+      "title": "The sheet and the ask box stop asking which path a cast was born on",
+      "status": "merged",
+      "prNumber": 1152,
+      "note": "Nothing changes on screen — and keeping half of one dead condition would have."
     }
   ],
   "problems": [
@@ -8555,7 +8566,7 @@
     199
   ],
   "nextUp": {
-    "readAt": "2026-09-23T21:55:34.817Z",
+    "readAt": "2026-09-23T22:37:34.450Z",
     "items": [
       {
         "issueNumber": 1132,
