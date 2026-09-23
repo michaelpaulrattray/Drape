@@ -35,6 +35,7 @@ import {
   type CastingChip,
   type UnlockableField,
 } from "./briefCompiler";
+import { capForEcho } from "./capAtWordBoundary";
 import { statesWardrobe } from "./statedWardrobe";
 import type { CastingPath } from "../../shared/castingPaths";
 import { HOUSE_WARDROBE_LINE, currentWardrobeLine } from "./wardrobeLine";
@@ -307,11 +308,22 @@ export function readBriefFacts(
     only field here that cannot be. The interpreter caps it at 12 words; this
     is the belt to that braces, because the compiled brief is written by a
     model behind a seam.
+
+    ⚠ AND THE BOUND IS A WORD-BOUNDARY CUT, NOT A SLICE (#1122).
+
+    The echo renders this at full ink, in the sentence that says who was cast,
+    with no picker to correct it — and on a brief that names no category the
+    role IS the brief's own opening (`promoteStatedRole`). A bare `slice(0, 60)`
+    therefore showed the founder his own sentence cut inside a word:
+    "cast as a beauty campaign casting, luminous skin, wide-set eyes, cro".
+    The promotion had already capped at a word boundary at 80; this second cut
+    was written without it, which is a correction reaching a copy and not its
+    source. Both now read one rule from `./capAtWordBoundary`.
   */
   const rawRole = intent?.role;
   const role =
     typeof rawRole === "string" && rawRole.trim().length > 0
-      ? rawRole.replace(/\s+/g, " ").trim().slice(0, 60)
+      ? capForEcho(rawRole.replace(/\s+/g, " ").trim(), 60)
       : null;
 
   /*
@@ -330,7 +342,15 @@ export function readBriefFacts(
   const statedAccessories = Array.isArray(rawAccessories)
     ? rawAccessories
         .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
-        .map((entry) => entry.replace(/\s+/g, " ").trim().slice(0, 40))
+        /*
+          Word-boundary again, and here it is not only typography (#1122's
+          sibling): the containment check on the next line reads EVERY token,
+          so a cut landing inside "glasses" leaves "glass", which is not a word
+          the brief contains — and the accessory she typed and paid to have
+          rendered is dropped from the sentence entirely, silently. The echo's
+          own contract is that a stated fact is never dropped.
+        */
+        .map((entry) => capForEcho(entry.replace(/\s+/g, " ").trim(), 40))
         .filter((entry) => tokensComeFromBrief(entry, briefText))
         .slice(0, 3)
     : [];
