@@ -1,7 +1,7 @@
 {
-  "edition": 495,
-  "updatedAt": "2026-09-24T02:05:00+10:00",
-  "shift": "Janitor — the workshop floor swept, and one instrument put back at its floor",
+  "edition": 496,
+  "updatedAt": "2026-09-24T03:50:00+10:00",
+  "shift": "Foreman — three retired settings stop being accepted, and the paths retirement takes its next step",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -122,7 +122,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T15:50:00.009Z",
+      "readAt": "2026-09-23T17:35:50.631Z",
       "items": [
         {
           "issueNumber": 10,
@@ -7587,6 +7587,20 @@
       "prNumber": 1142,
       "cardId": null,
       "note": "Five names nothing uses were marked as shared and are not any more — no behaviour changed. Alongside it: 25 spent scripts, 37 finished branches and 7 leftover folders cleared off this machine."
+    },
+    {
+      "id": "preview-tombstone-1088",
+      "title": "A field no screen reads comes off the sheet card",
+      "status": "merged",
+      "prNumber": 1144,
+      "note": "Nothing changes on screen. Five checks that guard sheet-card bugs you reported yourself were re-pointed rather than deleted with the field they were written against."
+    },
+    {
+      "id": "wire-tombstones-203-2a",
+      "title": "Wardrobe/Basics and the old imagination level stop being accepted at all",
+      "status": "merged",
+      "prNumber": 1145,
+      "note": "Nothing changes on screen — nothing has sent either setting for weeks. The studio now refuses them outright instead of quietly ignoring them, and a check proves Style still works."
     }
   ],
   "problems": [
@@ -8272,9 +8286,16 @@
     {
       "id": "queue-shape-0924-janitor",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 38 open, your own list still holds only the switch sitting. Nothing urgent, and the backlog shrank a little.",
       "detail": "Read at 01:48. 38 open — the same number as last night, though two came off and two new ones went on, both filed by tonight's clean-up and neither needing you.\n\nYour own list is unchanged: the twenty-switch sitting, which is complete and waiting for you rather than for us.\n\n17 of the 38 have had nothing happen to them for a week, down from 21 last night.\n\nNothing here needs you."
+    },
+    {
+      "id": "queue-shape-0924b-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "The queue: 38 open, your own list still holds only the switch sitting. Nothing urgent, no check-up clock due before tomorrow.",
+      "detail": "Read at 03:40. 38 open — the same number as three hours ago: one job finished and closed tonight, and one new one filed in its place, which nobody needs to look at yet.\n\nYour own list is unchanged: the twenty-switch sitting, which is complete and waiting on you rather than on us.\n\n17 of the 38 have had nothing happen to them for a week — flat against last night.\n\nNothing here needs you."
     }
   ],
   "acknowledgedReplyIds": [
@@ -8479,7 +8500,7 @@
     199
   ],
   "nextUp": {
-    "readAt": "2026-09-23T15:50:00.009Z",
+    "readAt": "2026-09-23T17:35:50.630Z",
     "items": [
       {
         "issueNumber": 1132,
