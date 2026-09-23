@@ -381,7 +381,11 @@ describe("the read, end to end on a fake transport", () => {
   });
 
   it("a flattened answer refuses rather than filing a placeless colour", async () => {
-    /* END TO END, the wrong answer from §9.2: every tone named, no place. */
+    /* END TO END, the wrong answer from §9.2: every tone named, no place.
+       The CODE moved with #1077 — the reader offered a section and our fence
+       refused it, which is ours rather than her photograph's — and the thing
+       this arm is about, that a placeless tone is never filed as a colour, is
+       unchanged. */
     const { engine } = engineSaying(JSON.stringify({
       hair: "yes",
       sections: [{ tone: "copper, blonde and black" }],
@@ -389,7 +393,7 @@ describe("the read, end to end on a fake transport", () => {
     const outcome = await readHairColourFromReference({ ...BYTES, engine });
     expect(outcome.ok).toBe(false);
     if (outcome.ok) throw new Error("unreachable");
-    expect(outcome.refusal.code).toBe("noColourReadable");
+    expect(outcome.refusal.code).toBe("answersOverCap");
   });
 
   it("refuses with no transport, and never guesses", async () => {
@@ -442,7 +446,178 @@ describe("the demand value is spelled mechanically", () => {
       "unreadable",
       "no_hair_visible",
       "no_colour_readable",
+      /* #1077 — and it needed NO migration: 0065 put this value on the column
+         for the makeup reader, and `referenceReadDemand.test` walks this whole
+         list against `CASTING_REFERENCE_READ_OUTCOMES`, so a code whose value
+         the column does not hold reddens there rather than in a tally. */
+      "answers_over_cap",
     ]);
+  });
+});
+
+/**
+ * #1077 — OUR OWN FENCE, TOLD AS HER PHOTOGRAPH'S FAULT.
+ *
+ * The law-7 sibling of #1076: a refusal that states a fact about the customer's
+ * picture when what happened is that we refused our own reader's answer. She
+ * attaches a perfectly clear photograph of a head of hair, is told to *try a
+ * clearer picture*, and goes looking for a better picture of our problem — the
+ * credits come back, so nobody ever reports it.
+ *
+ * Every arm below is written against what the sentence must DO rather than
+ * against its words, except the one that pins the two sentences apart, which is
+ * the arm a pure rename has to fail.
+ */
+describe("the read we could not use is ours, and says so", () => {
+  /** The customer's sentence for the honest branch, quoted once. */
+  const CLEARER_PICTURE = "We could see the hair but couldn't pin down its colour — try a clearer picture.";
+
+  /** Every way the family's sentences send her to find another photograph. */
+  const SENDS_HER_AWAY = ["clearer picture", "another one", "another picture", "different picture", "try a picture"];
+
+  async function refusalFor(sections: unknown): Promise<{ code: string; message: string }> {
+    const { engine } = engineSaying(JSON.stringify({ hair: "yes", sections }));
+    const outcome = await readHairColourFromReference({ ...BYTES, engine });
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) throw new Error("unreachable");
+    return { code: outcome.refusal.code, message: outcome.refusal.message };
+  }
+
+  it("THE REPORTED DEFECT: a tone one character over its cap is ours, not her picture's", async () => {
+    /*
+      END TO END through the real reader, and the length is DERIVED from the cap
+      rather than typed — a literal here would stop testing the defect the day
+      the cap moves, which is exactly the edit that would make somebody look.
+
+      One character. The reader answered, it named a place, its words describe
+      her hair — and `readHairColourField` returns `null` because the answer is
+      21 characters against 20, so the composer is handed nothing.
+    */
+    const tone = "a".repeat(HAIR_TONE_MAX_LENGTH + 1);
+    const { code, message } = await refusalFor([{ tone, where: "at the fringe" }]);
+    expect(code).toBe("answersOverCap");
+    for (const phrase of SENDS_HER_AWAY) {
+      expect(message.toLowerCase(), `the sentence still sends her away: "${phrase}"`)
+        .not.toContain(phrase);
+    }
+  });
+
+  it("a PLACE one character over its cap is the same fact", async () => {
+    /* The other field, because a repair that read only the tone would pass the
+       arm above and leave half the door open — the defect is the FENCE, and the
+       fence has two fields. */
+    const where = "a".repeat(HAIR_WHERE_MAX_LENGTH + 1);
+    const { code } = await refusalFor([{ tone: "copper", where }]);
+    expect(code).toBe("answersOverCap");
+  });
+
+  it("ONE section over its cap among several still delivers the rest", async () => {
+    /* The branch fires only when NOTHING survived. A reader that lost one block
+       of four and refused the whole read would be a worse bug than the one being
+       fixed, and nothing above would have caught it. */
+    const { engine } = engineSaying(JSON.stringify({
+      hair: "yes",
+      sections: [
+        { tone: "a".repeat(HAIR_TONE_MAX_LENGTH + 1), where: "at the fringe" },
+        { tone: "near-black", where: "at the roots" },
+      ],
+    }));
+    const outcome = await readHairColourFromReference({ ...BYTES, engine });
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) throw new Error("unreachable");
+    expect(outcome.sentence).toBe("near-black at the roots");
+  });
+
+  it("THE POSITIVE CONTROL: the reader's own 'I cannot tell' keeps its sentence", async () => {
+    /*
+      ⚠ THE ARM A LAZIER FIX FAILS, and it is why this is a branch rather than
+      two string replacements.
+
+      The ask says in as many words: *"use an empty list if there is hair but
+      you cannot tell what colour it is."* An empty list is the reader ANSWERING
+      that question — it looked and it could not tell — and a clearer photograph
+      is real advice for it. A fix that swapped both sentences would take a true
+      one away and start telling her our description was unusable when no
+      description was ever written.
+    */
+    const { code, message } = await refusalFor([]);
+    expect(code).toBe("noColourReadable");
+    expect(message).toBe(CLEARER_PICTURE);
+  });
+
+  it("the two sentences are pinned APART — a rename passes everything else", async () => {
+    /* `makeupFromReference.test`'s arm, borrowed on purpose: every other arm in
+       this file passes if both branches are given the same words, and the whole
+       defect was two facts wearing one sentence. */
+    const ours = await refusalFor([{ tone: "a".repeat(HAIR_TONE_MAX_LENGTH + 1), where: "all over" }]);
+    const hers = await refusalFor([]);
+    expect(ours.code).not.toBe(hers.code);
+    expect(ours.message).not.toBe(hers.message);
+  });
+
+  it("her sentence names no cap, no field and no number, and offers the box", async () => {
+    /*
+      #1067's call, held as behaviour: she did not write the read and cannot act
+      on its length, so a sentence quoting one would be the machinery showing
+      through (the disappearing-technology law's clause 6). What she CAN act on
+      is the box she is standing in front of, and the sentence has to point at
+      it or the refusal is a dead end.
+    */
+    const { message } = await refusalFor([{ tone: "a".repeat(HAIR_TONE_MAX_LENGTH + 1), where: "all over" }]);
+    expect(message).not.toMatch(/\d/);
+    for (const term of ["cap", "character", "tone", "field", "budget", "JSON", "model"]) {
+      expect(message.toLowerCase(), `the sentence says "${term}" out loud`).not.toContain(term.toLowerCase());
+    }
+    expect(message.toLowerCase()).toContain("your own words");
+  });
+
+  it("the presence gate is untouched — 'no hair here' is still its own fact", async () => {
+    /* The third site, the one the card called honest. It says something true
+       about her photograph and it keeps its sentence: a repair that widened to
+       all three would have started telling her we could not use a description
+       of hair that was never there. */
+    const { engine } = engineSaying(JSON.stringify({ hair: "no", sections: [] }));
+    const outcome = await readHairColourFromReference({ ...BYTES, engine });
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) throw new Error("unreachable");
+    expect(outcome.refusal.code).toBe("noHairVisible");
+  });
+
+  it("the composed-budget branch cannot fire today, and this is what will say when it can", () => {
+    /*
+      ⚠ THE CARD SAID TWO DISHONEST SITES AND ONE OF THEM CANNOT BE REACHED
+      THROUGH THE READER — measured here rather than asserted in a comment
+      (#909: re-count the population a card asserts before building it).
+
+      The `!sentence` branch needs the FIRST section alone to overrun the whole
+      budget, and every field reaching it is already inside its own cap. So the
+      longest phrase this reader can build is bounded by three constants, and
+      the budget is a fourth. It is fixed anyway — it means the same thing when
+      it fires — and this arm is what tells the next person that raising a cap
+      or narrowing `hairShade` has just made it live.
+    */
+    const longestSideClause = Math.max(
+      pictureSideClause("left").length,
+      pictureSideClause("right").length,
+    );
+    const longestPhrase = HAIR_TONE_MAX_LENGTH + 1 + HAIR_WHERE_MAX_LENGTH + longestSideClause;
+    expect(
+      longestPhrase,
+      "a single section can now overrun the whole budget — the `!sentence` branch is reachable, "
+      + "so drive it end to end rather than trusting this arithmetic",
+    ).toBeLessThanOrEqual(MAX_HAIR_COLOUR_LENGTH);
+  });
+
+  it("and the branch itself refuses as OURS when it does fire", () => {
+    /* Driven at the composer, which is the only door that can reach the shape —
+       an empty sentence with sections in hand — so the branch's verdict is
+       proven rather than inferred from the arithmetic above. */
+    const monster: HairColourSection[] = [
+      { tone: "copper", where: "a".repeat(MAX_HAIR_COLOUR_LENGTH), side: null },
+    ];
+    const { sentence, dropped } = composeHairColourSentence(monster);
+    expect(sentence).toBe("");
+    expect(dropped).toEqual(monster);
   });
 });
 
