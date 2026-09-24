@@ -10,7 +10,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CastPronouns } from "./castPronouns";
-import { facePanel, type PanelInkWorn, type PanelRow } from "./facePanel";
+import { facePanel, maskFetchUrl, type PanelInkWorn, type PanelRow } from "./facePanel";
 import type { StoredReference } from "./referenceLibrary";
 
 let nextId = 1;
@@ -1297,5 +1297,40 @@ describe("no row says which world its picture came from", () => {
       maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
     }).groups.flatMap((group) => group.rows);
     expect(built.find((entry) => entry.name === "Build")!.from).toBe("from an edit");
+  });
+});
+
+/**
+ * THE STENCIL URL, ported here with its function by #1160 slice 2.
+ *
+ * `maskFetchUrl` lived in `segmentsOnFace.ts` and these are that module's own
+ * two arms, re-pointed rather than rewritten — the retirement removed the
+ * segment panel, not the CORS fact the face panel's stencils still live under.
+ *
+ * ⚠ **The arms in this file above RESTATE the proxy shape as a test double**
+ * (`maskUrl: (key) => "/api/image-proxy?url=…"`), so not one of them would have
+ * noticed the real function going back to a bucket URL. These call it.
+ */
+describe("the stencil url is same-origin, because a CSS mask is a CORS fetch", () => {
+  it("wraps a bucket url in the proxy", () => {
+    /*
+      A CSS `mask-image` is a CORS-mode fetch and the bucket sends no
+      `Access-Control-Allow-Origin`, so a bucket URL here loads NOTHING and the
+      row renders an empty box with every stylesheet assertion still true. Found
+      by looking at the running app; asserted here so the wire cannot quietly go
+      back to the direct URL.
+    */
+    expect(maskFetchUrl("https://cdn.example/a-mask.png")).toBe(
+      `/api/image-proxy?url=${encodeURIComponent("https://cdn.example/a-mask.png")}`,
+    );
+  });
+
+  it("CONTROL — what it returns is never the bucket's own url", () => {
+    /* The whole class in one line: if a stencil is cross-origin, it is
+       invisible in the product and green everywhere else. */
+    const url = maskFetchUrl("https://pub-test.r2.dev/casting-v2/library/a-mask.png");
+    expect(url.startsWith("http")).toBe(false);
+    expect(url.startsWith("/")).toBe(true);
+    expect(url).toContain("/api/image-proxy?url=");
   });
 });

@@ -18,7 +18,6 @@ import {
 } from "../referenceAttachCopy";
 import { ACCEPTED_PICTURE_FILES, asBase64 } from "../pictureBytes";
 import { READ_CAPTION, READ_USE, droppedNote } from "../referenceReadCopy";
-import { SegmentsOnFace, type FaceRow } from "./SegmentsOnFace";
 import { VersionRail } from "./VersionRail";
 import type { PendingStage } from "../refineBusy";
 import { waitExceeds } from "../waitNotice";
@@ -190,8 +189,6 @@ export function RefinePanel({
   reask,
   shownCut,
   onDismissOutcome,
-  kept = [],
-  keptPossessive = "their",
   draft,
   onDraft,
   stackHoisted = false,
@@ -277,11 +274,6 @@ export function RefinePanel({
   shownCut?: string | null;
   onDismissOutcome?: () => void;
   /**
-   * What this version is keeping — read-only, and empty until the segment store
-   * is armed for this account. Absent or empty renders nothing at all.
-   */
-  kept?: readonly FaceRow[];
-  /**
    * The selected version's OWN request, or null on the original — what a fresh
    * take would ask for again. The server owns it; this only carries it back.
    *
@@ -292,14 +284,6 @@ export function RefinePanel({
    * most of them, and on every version landed before the record existed.
    */
   regenerates?: { instruction: string; scope: string | null; variantId: string } | null;
-  /**
-   * This face's own possessive, from the server — see `SegmentsOnFace`.
-   *
-   * Defaults to "their", which is the honest word for a face whose record
-   * cannot say, and is never seen anyway: with no kept rows the panel does not
-   * render at all.
-   */
-  keptPossessive?: string;
   /**
    * THE ASK BOX'S TEXT, HELD ABOVE THIS PANEL — because it now has three doors.
    *
@@ -617,24 +601,6 @@ export function RefinePanel({
           ))}
         </div>
       ) : null}
-
-      {/*
-        WHAT SHE IS KEEPING — panel v1, immediately above the box it writes into
-        (fable-113). Tapping a row prefills the ask, so the row and the field it
-        fills are adjacent and the cause of the text appearing is visible in one
-        glance.
-
-        Panel v2 is NOT here. It is the whole catalogue rather than a short list
-        of what one version keeps, and at that length it belongs beside the
-        picture instead of under it — `CandidateViewer`'s `beside`. The caller
-        hands this one an empty list whenever v2 is armed, so the two are never
-        two answers to one question.
-      */}
-      <SegmentsOnFace
-        rows={kept}
-        possessive={keptPossessive}
-        onPrefill={(prefill) => setInstruction(prefill)}
-      />
 
       {/*
         WHAT MADE THE VERSION SHE IS LOOKING AT (founder, screenshots #317–319,

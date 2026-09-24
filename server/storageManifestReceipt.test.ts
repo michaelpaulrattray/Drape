@@ -195,7 +195,6 @@ const registersABatch = (source: string): boolean =>
  * `cleanupBatchId` to the statement that files the referencing row.
  */
 const KEEPERS: Readonly<Record<string, string>> = {
-  "server/castingV2/bornWornCatalogue.ts": "a born-worn mask and crop, referenced by the catalogue row",
   /*
     ⚠ TWO ROWS LEFT THIS TABLE WITH THE INK STUDIO (#1158 slice 2), and they
     left for two DIFFERENT reasons worth telling apart.
@@ -229,7 +228,24 @@ const KEEPERS: Readonly<Record<string, string>> = {
   "server/castingV2/keptFaceScan.ts": "the scan's stencils — THE ONE THAT WAS MISSING, fixed 2026-08-19",
   "server/castingV2/referenceAttachService.ts": "the picture a customer attached to her Cast",
   "server/castingV2/referenceMint.ts": "a library crop and its mask",
-  "server/castingV2/segmentPersistence.ts": "a kept edit's mask and crop",
+  /*
+    ⚠ TWO ROWS LEFT THIS TABLE WITH THE SEGMENT STORE (#1160 slice 2), and both
+    left the simplest way there is: the modules are DELETED. They read
+    *"a born-worn mask and crop, referenced by the catalogue row"*
+    (`bornWornCatalogue.ts`) and *"a kept edit's mask and crop"*
+    (`segmentPersistence.ts`).
+
+    His ruling of 2026-09-24 — *"Retire both. The paste road is gone; nothing
+    reads these"* — retired the pair, and the premise was verified from three
+    directions before anything was cut: zero segment rows in production AND in
+    dev (which holds 59 live variants, so there is no purge to hide behind), and
+    an explanation rather than a coincidence — `repaintOnce` declares
+    `evidence: undefined` and `keepSegmentsFromRender` refused without it, so
+    the store was structurally unwritable on the live road.
+
+    Doctrine 23 pins the act at whoever OWNS A BATCH; with no module there is no
+    owner and nothing to pin.
+  */
   "server/castingV2/signService.ts": "the anchor copy a Sign makes, released as the ceremony's last act",
   "server/castingV2/refineService.ts": "the variant image a paid refine is about to write",
   "server/db/castingV2FaceScans.ts": "the REPLACED reading's stencils, at the moment nothing references them",

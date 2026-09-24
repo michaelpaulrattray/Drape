@@ -366,9 +366,16 @@ function resolveSpecifier(fromFile: string, specifier: string): string | null {
  * ⚠ **TIGHTENING IT COSTS NOTHING, AND THAT WAS MEASURED RATHER THAN ASSUMED.**
  * The review suggested declaring the looseness instead, on the ground that it
  * was load-bearing for `server/segmentsOnFaceEndpoint.test.ts` (which imports
- * `./db/castingV2Segments`). Read at the artifact: that file holds **no pins at
- * all** — it never quotes a door id — so nothing rests on the substring. The
+ * `./db/castingV2Segments`). Read at the artifact: that file held **no pins at
+ * all** — it never quoted a door id — so nothing rested on the substring. The
  * exact rule keeps every real pin and the atlas is byte-identical.
+ *
+ * ⚠ **That specimen file no longer exists — #1160 slice 2 deleted it with the
+ * segment store's route.** The finding is kept in the past tense because it is
+ * the RECORD OF WHY the rule is exact, and the argument does not depend on the
+ * file: a specifier naming `castingV2` while resolving elsewhere is still
+ * refused, and the arm that proves it in `server/capabilityAtlas.test.ts` passes
+ * the path as a STRING to a pure function, so it never needed the file on disk.
  */
 export function reachesDoors(relPath: string, text: string): boolean {
   if (relPath.startsWith(`${DOOR_MODULE_DIR}/`)) return true;

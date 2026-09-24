@@ -1217,8 +1217,8 @@ export default function CastingSheet() {
     # AND IT IS DERIVED HERE, ABOVE THE PANEL, BECAUSE THE PANEL IS A READER TOO
     # (fable-740/742, and it is the same family's third sweep)
 
-    The three reads below — kept segments, the library panel, the auto-scan —
-    were keyed on `variants.data.selectedVariantId`, the SERVER-confirmed value,
+    The reads below — the library panel and the auto-scan — were keyed on
+    `variants.data.selectedVariantId`, the SERVER-confirmed value,
     while the photograph beside them rode this override. That is fable-546's
     defect exactly, on the surfaces nobody swept when it was fixed for the chip:
     the founder landed a slit-pupil edit and the panel went on describing the
@@ -1280,26 +1280,6 @@ export default function CastingSheet() {
       originalImageUrl: variants.data.originalImageUrl,
     })
     : null;
-
-  /*
-    WHAT THIS VERSION IS KEEPING (fable-113).
-
-    Asked for the SELECTED version, because "what is kept" is a question about a
-    branch and never about the candidate — going back to an earlier version and
-    forking from it shows that version's layers, not the newest one's
-    (fable-091, the founder's own semantics).
-
-    No polling. Kept segments change only when a refinement lands, and that is
-    exactly when `variants` refetches, so this rides the same cadence rather
-    than adding an interval of its own.
-  */
-  const kept = trpc.castingV2.segmentsOnFace.useQuery(
-    {
-      candidateId: viewerCandidateId ?? "",
-      variantId: shownVariantId,
-    },
-    { enabled: viewerRefinable && Boolean(viewerCandidateId) },
-  );
 
   /*
     PANEL v2 — everything about this face, from the reference library.
@@ -1628,13 +1608,6 @@ export default function CastingSheet() {
     selectionLoop.current = loop;
     return loop;
   };
-  /*
-    v1 AND v2 ARE NEVER BOTH ON SCREEN. They answer different questions — what
-    this version KEEPS versus everything that can be changed — so two lists would
-    be two answers. Derived, not mirrored: v2 armed means v1 is handed nothing.
-  */
-  const keptRows = facePanelData ? [] : (kept.data?.rows ?? []);
-
   /*
     The refinement the picture narrates while it runs (D-169).
 
@@ -3369,13 +3342,6 @@ export default function CastingSheet() {
               */
               busy={viewerBusy}
               outcome={refineOutcome?.text ?? null}
-              /* Empty until the segment store is armed for this account — and
-                 empty by construction whenever panel v2 is, since v2 replaces v1
-                 rather than joining it. An empty list renders nothing at all. */
-              kept={keptRows}
-              /* The heading's one derived word — his/her/their, from the server,
-                 which is the only side that may read a face's sex. */
-              keptPossessive={kept.data?.possessive ?? "their"}
               /* The one sentence all three doors write into. */
               draft={askDraft}
               onDraft={setAskDraft}

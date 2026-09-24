@@ -18,7 +18,6 @@ vi.mock("../db/storageCleanup", () => ({
 
 import { harvestRefinement, regionNameOf, type RegionReader } from "./maskedRefine";
 import { cutSegments, encodeCut } from "./segmentCuts";
-import { keepSegmentsFromRender } from "./segmentPersistence";
 import { readRaster, type Mask } from "./maskedComposite";
 import { facetOfSubject } from "./refineFacets";
 import {
@@ -487,47 +486,22 @@ describe("an accessory segment is cut, kept and carried like any other facet", (
     expect(dropped).toEqual([]);
   });
 
-  it("keeps it through the store's own front door, verdict and all", async () => {
-    const harvested = await harvestHoops();
-    const recorded: Array<{ facet: string; region: string }> = [];
+  /*
+    ⚠ ONE ARM LEFT THIS BLOCK WITH THE SEGMENT STORE (#1160 slice 2): *"keeps it
+    through the store’s own front door, verdict and all"*, which drove
+    `keepSegmentsFromRender` and asserted the recorded bbox spanned BOTH lobes.
 
-    const result = await keepSegmentsFromRender({
-      userId: 1,
-      variantId: 7,
-      image: { bytes: harvested.bytes, evidence: harvested.evidence },
-      facets: [facetOfSubject("statedAccessories")],
-      regionOverrides: { statedAccessories: "earring" },
-      verdict: "verified",
-      verifiedAt: new Date(0),
-      dependencies: {
-        enabledFor: () => true,
-        store: async ({ key }: { key: string }) => ({ key }),
-        record: (async (input: { patches: Array<{ facet: string; region: string }> }) => {
-          recorded.push(...input.patches);
-          return input.patches.map((patch, index) => ({
-            id: index + 1,
-            publicId: `p${index}`,
-            candidateId: 1,
-            facet: patch.facet,
-            version: 1,
-            retired: 0,
-          }));
-        }) as never,
-      },
-    });
+    It is deleted rather than re-pointed, because there is no door left to keep
+    it through — his ruling of 2026-09-24 retired the store.
 
-    expect(result.outcome).toBe("stored");
-    expect(recorded.map((patch) => [patch.facet, patch.region]))
-      .toEqual([[facetOfSubject("statedAccessories"), "earring"]]);
-    /*
-      AND IT IS A PAIR, on the row. The box has to span both lobes — a segment
-      cut from one ear would keep the founder's single hoop forever, which is the
-      defect the pair law and this store are closing from two ends.
-    */
-    const kept = recorded[0] as unknown as { geometry: { bbox: { x: number; width: number } } };
-    expect(kept.geometry.bbox.x).toBeLessThanOrEqual(LEFT_LOBE.x);
-    expect(kept.geometry.bbox.x + kept.geometry.bbox.width).toBeGreaterThanOrEqual(RIGHT_LOBE.x);
-  });
+    **The PAIR LAW it also touched is untouched and is still driven here**, at
+    the ground and at the delivered regions rather than at the row: a pair is
+    both lobes (§"her left lobe" / "and her right"), the delivered halves are
+    told apart, and `deliveredRegions` claims both. Those run on `cutSegments`,
+    which survives. What was lost with the arm is the STORE’s acceptance of the
+    cut, which is the thing being retired.
+  */
+
 });
 
 /**
