@@ -1414,3 +1414,24 @@
   why: "the sentence a customer reads when her feature is RULED but not built — 'her hair', and the money promised back. Orphaned by #1158 slice 4e with `referenceIntentWrongDoor` above, same caller, same module, same argument; the two are one finding with two instances"
   argued: "#1158"
   blocker: "the reference road's own intent door — see the row above. Same hold (Crew reply #213), same two outcomes, and they are decided together because a road that asks what a picture is for needs both sentences or neither"
+
+- symbol: assembleWithCarriedSegments
+  file: server/castingV2/carriedSegments.ts
+  verdict: HELD
+  blocker: "#1160 slice 2 — the read paths. It dies with its own module, not before"
+  why: "the composite that pasted a face's kept segments back over a fresh render. ⚠ ORPHANED BY #1160 SLICE 1, deliberately and in the card's own order: entrance first, then read paths. Its only production caller was `refineService`'s paste road and that call is gone, so this is the retirement's designed halfway state rather than a find. It is NOT held for a reason of its own — there is no argument for keeping it — and it must not be read as a KEEP: slice 2 deletes `carriedSegments`, `segmentPersistence`, `bornWornCatalogue`, `segmentPrune` and `segmentAssembly` together. ⚠ `segmentAssembly` is the FIFTH and is not on the card's list of four: its only reaches are `carriedSegments` and `segmentPrune`, both retiring, so it falls with them. Its own suite still drives it until then"
+  argued: "#1160"
+
+- symbol: keepSegmentsFromRender
+  file: server/castingV2/segmentPersistence.ts
+  verdict: HELD
+  blocker: "#1160 slice 2 — the read paths. It dies with its own module, not before"
+  why: "the segment store's only WRITER, called on every refine and — read at the rows 2026-09-25 — successful on none: `casting_segments` holds ZERO rows on production and zero on dev, all time, with 4 and 7 users as the positive control. The reason is structural rather than luck: it refuses without `image.evidence`, and `repaintOnce` (the road every production render takes under `CASTING_REPAINT_SCOPE=all`) declares that field `undefined`. ⚠ Orphaned by #1160 slice 1 in the card's order; `accessoryCorridor.test.ts` still drives it directly until slice 2 deletes the module"
+  argued: "#1160"
+
+- symbol: settleCarriedChecks
+  file: server/castingV2/renderVerification.ts
+  verdict: HELD
+  blocker: "#1160 slice 3 — the shared constants. Its module is NOT the segment road's and survives this retirement"
+  why: "marked a verification check non-binding when the fact was pasted rather than painted, so a reader that could not find it did not spend a refusal. ⚠ ORPHANED BY #1160 SLICE 1, and it is the one of the three that does NOT die with a segment module: `renderVerification.ts` is the live verification net and stays. Both its arguments came from the composite's arithmetic, so with the paste road gone it can only ever be handed two empty lists — and its own first line is `if (carried.facets.length === 0) return verdict`, which is why removing the call was provably behaviour-preserving rather than argued. Deleting the function itself is a decision about `renderVerification`, not a consequence of this retirement, so it waits for slice 3. `renderVerification.test.ts` drives it directly"
+  argued: "#1160"
