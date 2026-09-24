@@ -281,3 +281,5 @@ describe("the reader itself, before its verdict counts for anything", () => {
     expect(unscopedStatements(checkThenRead).length).toBe(1);
   });
 });
+
+/* atlas hook probe — reverted in the same breath */
