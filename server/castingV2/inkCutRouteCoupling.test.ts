@@ -23,7 +23,14 @@
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+
+/* This suite reads every module in two directories off the real tree, which is
+   the #741 class: green alone, red under load on somebody else's machine. It
+   joined the class on 2026-09-24 when its writer arm stopped naming one file. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 import { castingInkDesigns } from "../../drizzle/schema";
 import { INK_CUT_ROUTES, isInkCutRoute } from "../../shared/inkCutRoute";
