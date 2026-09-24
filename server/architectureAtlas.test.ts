@@ -5,7 +5,9 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { atlasSourcePaths, checkArchitecture } from "../scripts/check-architecture.mts";
-import { buildAtlas, sourceText } from "../scripts/generate-architecture.mts";
+import { Project } from "ts-morph";
+
+import { buildAtlas, sourceText, unparseableSourcesIn } from "../scripts/generate-architecture.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 /* This suite drives a real child process, so it declares the class's timeout
@@ -618,6 +620,90 @@ describe("architecture atlas", () => {
 
     expect(JSON.stringify(second)).toEqual(JSON.stringify(first));
   }, 120_000);
+});
+
+/**
+ * ⚠ A FILE THAT WILL NOT PARSE MUST STOP THE MAP, NOT SHRINK IT (#1156).
+ *
+ * The measurement behind these arms, reproduced deliberately: one `/*` deleted
+ * from `server/routes/castingV2.ts` and the generator wrote **241 procedures
+ * where the repaired tree writes 270** — all 29 `castingV2.*` procedures gone,
+ * **exit 0**, and the commit hook then staged that map saying it carried the map
+ * of its own tree.
+ *
+ * ⚠ Why the gate being red is not the answer: the Atlas is the DELETION
+ * AUTHORITY, and a shift reads it LOCALLY to decide what is safe to remove. On a
+ * tree with one unparseable file, routers read as absent and modules read as
+ * having no callers — the reading that says *removable*. `architecture:check`
+ * cannot see it either: a map faithfully built from a broken tree is FRESH.
+ *
+ * ⚠ THE NEGATIVE CONTROLS ARE THE POINT OF THIS DESCRIBE, not decoration. A
+ * generator that refuses too eagerly stops every commit in the repository, so
+ * two things must NOT trip it: a healthy file, and a TYPE error. The second is
+ * the design line — `pnpm check` owns type errors and the gate blocks on them,
+ * while a mid-edit type error is ordinary; a SYNTAX error is different in kind,
+ * because it means the collectors are reading a file the compiler could not
+ * finish and everything they say about it is fiction.
+ */
+describe("the generator refuses a tree that does not parse", () => {
+  function projectWith(files: Record<string, string>): Project {
+    const project = new Project({ useInMemoryFileSystem: true });
+    for (const [relative, text] of Object.entries(files)) {
+      project.createSourceFile(path.join(repoRoot, relative).replaceAll("\\", "/"), text);
+    }
+    return project;
+  }
+
+  it("⚠ POSITIVE CONTROL — a syntax error inside a scanned root is reported, with its file and line", () => {
+    const broken = unparseableSourcesIn(projectWith({
+      "server/routes/__atlas_fixture__.ts": "export const a = 1;\nexport const b = ;\n",
+    }));
+    expect(broken.length).toBeGreaterThan(0);
+    expect(broken.join("\n")).toContain("server/routes/__atlas_fixture__.ts:2");
+  });
+
+  it("NEGATIVE CONTROL — a healthy file is not reported", () => {
+    expect(unparseableSourcesIn(projectWith({
+      "server/routes/__atlas_fixture__.ts": "export const a: number = 1;\n",
+    }))).toEqual([]);
+  });
+
+  it("⚠ NEGATIVE CONTROL — a TYPE error is NOT a parse failure and must not stop the map", () => {
+    /* The design line. Refusing here would stop every commit made mid-edit,
+       and `pnpm check` already owns this class with the gate behind it. */
+    expect(unparseableSourcesIn(projectWith({
+      "server/routes/__atlas_fixture__.ts": "export const a: number = \"not a number\";\n",
+    }))).toEqual([]);
+  });
+
+  it("NEGATIVE CONTROL — a syntax error OUTSIDE the scanned roots is not ours to refuse", () => {
+    expect(unparseableSourcesIn(projectWith({
+      "scripts/__atlas_fixture__.mts": "export const b = ;\n",
+    }))).toEqual([]);
+  });
+
+  it("⚠ THE WIRE — buildAtlas asks before it builds", () => {
+    /*
+      A TEXT PIN, and its limit is stated rather than left to be discovered: it
+      proves the call SITE exists inside `buildAtlas`, not that the call fires.
+      The firing was driven by hand against the card's own reproduction — the
+      `/*` removed from the real `server/routes/castingV2.ts`, generator exit 1
+      naming `server/routes/castingV2.ts:1`, and exit 0 with a 241-procedure map
+      before this change. A suite cannot hold that arm without breaking a real
+      file on disk, which is the one thing a test run must never do.
+
+      It is here because the reader above is a pure function, and a pure
+      function nothing calls is invariant 7 exactly — the shape this repository
+      has been bitten by four times.
+    */
+    const generator = fs.readFileSync(
+      path.join(repoRoot, "scripts/generate-architecture.mts"),
+      "utf8",
+    );
+    const body = generator.slice(generator.indexOf("export function buildAtlas"));
+    expect(body.slice(0, body.indexOf("const procedures")))
+      .toContain("refuseUnparseableSources(project)");
+  });
 });
 
 function sha(text: string): string {
