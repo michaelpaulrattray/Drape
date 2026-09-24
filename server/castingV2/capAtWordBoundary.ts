@@ -57,3 +57,31 @@ export function capForEcho(text: string, max: number): string {
   const stripped = capped.replace(/[\s,;:.!?—–-]+$/, "");
   return stripped.length > 0 ? stripped : capped;
 }
+
+/**
+ * The same cut, for a sentence that is HERS with a tail that is OURS.
+ *
+ * # The defect it closes, and why cutting the whole thing is not it (#1126)
+ *
+ * A re-ask resolves into her sentence plus a clarifier we composed — *"… (her
+ * left)"*, *"… — the hair"*, *"… (exactly as written)"*. The clarifier is the
+ * only thing telling two versions of one ask apart on the rail, so it is the
+ * WORST part of the sentence to lose, and a cut that reads from the left loses
+ * exactly it: {@link capForEcho} over the whole composition returns her words
+ * and an unclosed bracket.
+ *
+ * So the room comes out of HER part and the tail crosses whole. She loses the
+ * tail of a sentence she wrote and can still see in the box; she keeps the
+ * words that say which version this is.
+ *
+ * **When the tail alone cannot fit** there is nothing left to protect and this
+ * falls back to the plain cut — a field narrower than our own clause is a
+ * defect somewhere else, and a third behaviour invented here would hide it.
+ */
+export function capForEchoWithTail(head: string, tail: string, max: number): string {
+  const composed = `${head}${tail}`;
+  if (composed.length <= max) return composed;
+  const room = max - tail.length;
+  if (room <= 0) return capForEcho(composed, max);
+  return `${capForEcho(head, room)}${tail}`;
+}

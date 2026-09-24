@@ -276,14 +276,14 @@ describe("resolveAnswer — the sentence never dead-ends (D-180)", () => {
   const which = whichFacetReask("pinker");
 
   it("takes the chip's words typed by hand", () => {
-    expect(resolveAnswer(which, "the hair")).toBe("pinker — the hair");
-    expect(resolveAnswer(which, "hair")).toBe("pinker — the hair");
-    expect(resolveAnswer(which, "makeup")).toBe("pinker — makeup");
+    expect(resolveAnswer(which, "the hair")?.resolves).toBe("pinker — the hair");
+    expect(resolveAnswer(which, "hair")?.resolves).toBe("pinker — the hair");
+    expect(resolveAnswer(which, "makeup")?.resolves).toBe("pinker — makeup");
   });
 
   it("takes the feature named inside an ordinary reply", () => {
-    expect(resolveAnswer(which, "the eyes please")).toBe("pinker — the eyes");
-    expect(resolveAnswer(which, "do the hair")).toBe("pinker — the hair");
+    expect(resolveAnswer(which, "the eyes please")?.resolves).toBe("pinker — the eyes");
+    expect(resolveAnswer(which, "do the hair")?.resolves).toBe("pinker — the hair");
   });
 
   it("returns null for anything that is not an answer, so it runs as a new instruction", () => {
@@ -301,11 +301,11 @@ describe("resolveAnswer — the sentence never dead-ends (D-180)", () => {
     /* The answers live in the chips now, so the sentence stops naming them —
        but typing them must still work, which is the rest of this block. */
     expect(typo.question).not.toContain("Say yes");
-    expect(resolveAnswer(typo, "yes")).toBe("pink hair");
-    expect(resolveAnswer(typo, "yeah")).toBe("pink hair");
-    expect(resolveAnswer(typo, "pink")).toBe("pink hair");
+    expect(resolveAnswer(typo, "yes")?.resolves).toBe("pink hair");
+    expect(resolveAnswer(typo, "yeah")?.resolves).toBe("pink hair");
+    expect(resolveAnswer(typo, "pink")?.resolves).toBe("pink hair");
     /* Their word survives a "no" — the record keeps what they wrote (D-172). */
-    expect(resolveAnswer(typo, "no")).toContain("piink hair");
+    expect(resolveAnswer(typo, "no")?.resolves).toContain("piink hair");
   });
 });
 
@@ -377,9 +377,9 @@ describe("a chip submits ONE instruction — the compound the parser cannot hold
     expect(reask.options[0]!.resolves).toBe("remove her glasses");
     /* And the other chip is still exactly her own sentence. */
     expect(reask.options[1]!.resolves).toBe("fox eyes");
-    expect(resolveAnswer(reask, "Take them off first")).toBe("remove her glasses");
-    expect(resolveAnswer(reask, "yes")).toBe("remove her glasses");
-    expect(resolveAnswer(reask, "no")).toBe("fox eyes");
+    expect(resolveAnswer(reask, "Take them off first")?.resolves).toBe("remove her glasses");
+    expect(resolveAnswer(reask, "yes")?.resolves).toBe("remove her glasses");
+    expect(resolveAnswer(reask, "no")?.resolves).toBe("fox eyes");
   });
 
   it("no question in the family offers a chip carrying two instructions", () => {
@@ -510,7 +510,7 @@ describe("the answer path rebuilds every question it asks", () => {
       expect(rebuilt!.kind).toBe(row.kind);
       for (const option of raised.options) {
         expect(
-          resolveAnswer(rebuilt!, option.label),
+          resolveAnswer(rebuilt!, option.label)?.resolves,
           `${row.kind} lost the chip ${JSON.stringify(option.label)}`,
         ).toBe(option.resolves);
       }
@@ -903,10 +903,10 @@ describe("the replace offer names what it would destroy", () => {
     */
     const rebuilt = pendingReaskFor(offer().about!, false, HER)!;
     for (const yes of ["yes", "Yes", "yep", "ok"]) {
-      expect(resolveAnswer(rebuilt, yes), yes).toBe(ASKED);
+      expect(resolveAnswer(rebuilt, yes)?.resolves, yes).toBe(ASKED);
     }
     for (const no of ["no", "No", "nope", "nah"]) {
-      expect(resolveAnswer(rebuilt, no), no).toBe(DISCARD_THE_DESIGN);
+      expect(resolveAnswer(rebuilt, no)?.resolves, no).toBe(DISCARD_THE_DESIGN);
     }
   });
 

@@ -14,9 +14,30 @@
  * it keeps the re-export so nothing here has two names for one number.
  */
 import { REFINE_INSTRUCTION_MAX_LENGTH } from "../../shared/refineLimits";
-import { REASK_HANDLE_MAX_LENGTH } from "./refineReask";
+import { REASK_HANDLE_MAX_LENGTH, REFINE_REQUEST_TEXT_MAX_LENGTH } from "./refineReask";
 
 export { REFINE_INSTRUCTION_MAX_LENGTH };
+
+/**
+ * AND THE FIELD THE ANSWER IS STORED IN, re-exported so the three numbers can
+ * be read against each other in one place (#1126).
+ *
+ * It is declared in `refineReask`, which composes the echo and cannot import
+ * this module without a cycle. The arithmetic worth seeing together:
+ *
+ * | number | value | what it governs |
+ * |---|---|---|
+ * | {@link REFINE_INSTRUCTION_MAX_LENGTH} | 200 | what the refine box accepts |
+ * | {@link REFINE_ANSWERING_MAX_LENGTH} | 309 | what an ANSWER may carry |
+ * | {@link REFINE_REQUEST_TEXT_MAX_LENGTH} | 220 | what the column STORES |
+ *
+ * ⚠ **The third is smaller than the second, and that is the defect #1126 is
+ * about rather than a rule.** An answer composed with our own clause reaches
+ * 341 against a field that holds 220, so something is always cut; what the
+ * echo decides is only that the cut lands on her words rather than on ours.
+ * The complete fix is widening the column, which is a founder-run ceremony.
+ */
+export { REFINE_REQUEST_TEXT_MAX_LENGTH };
 
 /**
  * AND THE FIELD AN ANSWER TRAVELS IN, which has to be WIDER.
