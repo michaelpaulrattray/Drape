@@ -17,8 +17,30 @@
  * sign views     SIGN_VIEW_CONCURRENCY     3   paid      a package's five views
  * refine edits   REFINE_EDIT_CONCURRENCY   3   paid      one paid edit at a time-ish
  * region reads   FAL_CONCURRENCY           5   courtesy  scans, harvests, guards
- * ink plates     INK_PLATE_CONCURRENCY     1   courtesy  a design drawn onto a form
+ * ink plates     INK_PLATE_CONCURRENCY     1   courtesy  RESERVED FOR NOTHING — see below
  * ```
+ *
+ * ⚠ **THE FIFTH ROW NOW SPENDS NOTHING, AND IT IS STILL DECLARED ON PURPOSE**
+ * (#1158 slice 2, 2026-09-24). His ruling on card `switch-10-ink-studio` —
+ * *"It retires with N2"* — retired the ink studio, and `inkPlateEngine.ts`, the
+ * only caller of `falAllowanceOf("INK_PLATE_CONCURRENCY")`, is deleted with it.
+ * So no code draws on this slot.
+ *
+ * It is NOT removed here, and the reason is the direction of the risk rather
+ * than tidiness: the variable is SET on the service, `assertFalBudget()` is a
+ * BOOT gate, and a declaration leaving this array while its value stays in the
+ * environment changes what the gate computes on the next restart. That is
+ * #1158 slice 4's act — the flags and shared constants, children-first, at the
+ * Atlas's retirement view — and it is written down here rather than left for
+ * somebody to find, because a reserved slot nobody can spend reads exactly like
+ * a path somebody forgot to wire.
+ *
+ * ⚠ **AND THE FREED SLOT IS NOT GIVEN BACK TO THE COURTESY POOL.** Region reads
+ * went 6 → 5 to pay for the plate mint (see the re-cut below); handing the 1
+ * back would raise a live path's concurrency, which is a capability change
+ * wearing a cleanup's clothes — his own rule from the switch sitting: *"Folding
+ * a new capability into a retirement is how a half-built feature ships under a
+ * cleanup's name."* If the pool should grow, that is its own card.
  *
  * `signEngine` already reasoned about it in prose — *"one account-level fal
  * concurrency ceiling that the sheet is also drawing on"* — and nothing
@@ -111,8 +133,10 @@ export const FAL_ALLOWANCES: readonly FalAllowance[] = [
   { name: "sign views", env: "SIGN_VIEW_CONCURRENCY", fallback: 3, kind: "paid" },
   { name: "refine edits", env: "REFINE_EDIT_CONCURRENCY", fallback: 3, kind: "paid" },
   { name: "region reads", env: "FAL_CONCURRENCY", fallback: 5, kind: "courtesy" },
-  /* The plate mint — see the header's re-cut. Courtesy: the customer is charged
-     nothing for it, and it is never on a paid render's critical path. */
+  /* ⚠ The plate mint RETIRED with the ink studio (#1158 slice 2) and nothing
+     draws on this slot any more. Kept declared until slice 4 because the
+     variable is set on the service and this array feeds a BOOT gate — the
+     header says why in full, including why the 1 is not handed back. */
   { name: "ink plates", env: "INK_PLATE_CONCURRENCY", fallback: 1, kind: "courtesy" },
 ];
 

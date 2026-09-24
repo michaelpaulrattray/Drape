@@ -64,7 +64,6 @@ import {
   referenceReadOutcomeFor,
   type ReferenceReadOutcome,
 } from "../db/castingV2ReferenceReads";
-import { uploadInkDesign } from "../castingV2/inkUploadService";
 import { removeInkDesign } from "../db/castingV2InkDesignRemoval";
 import { attachReference } from "../castingV2/referenceAttachService";
 import { describeConcept } from "../castingV2/conceptDescribe";

@@ -99,6 +99,29 @@ export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
       "guard that replaced it — names it in the sentence explaining what stood there and why " +
       "the replacement is half positive control. The mention is the provenance.",
   },
+  "inkUploadService.test.ts": {
+    why:
+      "Deleted with the studio upload's orchestration (#1158 slice 2, 2026-09-24). It drove " +
+      "`uploadInkDesign` and `defaultMintPlate` end to end with fakes and referenced neither of " +
+      "the two exports that survive, so it was coverage of the thing removed. " +
+      "`castingV2-ink-design-db.test.ts` names it in the sentence saying where the ORDER used to " +
+      "be proved, which is the provenance a later reader of that file needs; the surviving " +
+      "exports are driven by `inkReferenceMint.test.ts` (as identities) and pinned by " +
+      "`inkStudioServiceRetired.test.ts`.",
+  },
+  "inkPlateDoor.test.ts": {
+    why:
+      "Deleted with the plate road (#1158 slice 2). The ink studio's second half — drawing a " +
+      "design onto a blank form — retired with the studio itself, and this suite drove the " +
+      "door's refusals and its prompt. `castingV2-ink-plate-db.test.ts` names it to say where " +
+      "the DECISIONS used to be proved, and that file is now the table's only surviving proof.",
+  },
+  "inkPlateMint.test.ts": {
+    why:
+      "Deleted with the plate road (#1158 slice 2), for `inkPlateDoor.test.ts`'s reason — it " +
+      "drove the mint's ORDER, and `mintInkPlate`'s only non-test caller went with the upload. " +
+      "Named in `castingV2-ink-plate-db.test.ts` alongside its sibling.",
+  },
   "velocityLimits.test.ts": {
     why:
       "Deleted with the credit-velocity caps (2026-08-19). `prosePointerDiscipline.test.ts` " +

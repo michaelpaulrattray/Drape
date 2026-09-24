@@ -420,7 +420,7 @@ export async function readInkDesign(input: {
  * THE CAST'S OWN BUILD, for the design's sake — one owner-scoped statement.
  *
  * A design plates onto a blank form, and which torso form depends on the build
- * of the Cast the design is attached to (`inkTemplates.inkTemplateFor`). That
+ * of the Cast the design is attached to (the retired `inkTemplateFor`, #1158). That
  * fact lives on the candidate's `internalPrompt`, which is INTERNAL and never
  * projected, so it is read here and parsed by its one owner
  * (`rollService.readResolvedIdentity`) rather than re-parsed at the call site.

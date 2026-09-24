@@ -173,7 +173,8 @@ export const isReportedPath = (repoRelative: string): boolean =>
  * (`shared/inkTemplateKinds.ts`) is `mysqlEnum("templateKind", …)` at
  * `drizzle/schema.ts:3289` — the schema is its production consumer — and the
  * widened timeline reported it DIED the day slice 2b removed a dead re-export
- * of it from `server/castingV2/inkTemplates.ts`. A reader that cannot see the
+ * of it from `server/castingV2/inkTemplates.ts` (a module since retired with the
+ * ink studio, #1158 — the reading it illustrates is unchanged). A reader that cannot see the
  * schema calls a live column definition a death, which is the toward-NOISE
  * direction, and it is the exact specimen the sweep repaired on 2026-08-24
  * (`WARDROBE_LINE_MAX_LENGTH`, live at `drizzle/schema.ts:2076`). The same
