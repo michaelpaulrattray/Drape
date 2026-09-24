@@ -598,8 +598,8 @@ the live service on every push.
 | `CASTING_FACE_SCAN_SCOPE` | the face panel's auto-scan |
 | `CASTING_SCAN_TABLE_SCOPE` | whether a finished scan is kept |
 | `CASTING_OPEN_LANE_SCOPE` | the open lane — an ask naming its own kind |
-| `CASTING_INK_STUDIO_SCOPE` | the ink studio's door — RETIRED on his word *"It retires with N2"*; since #1158 slices 1–4b nothing in the product asks it whether a user may do anything, and since 2026-09-24 the variable is UNSET on the service. Its one surviving reader is the retention sweep's, not a door |
-| `CASTING_INK_CUT_SCOPE` | whether an uploaded design is cut out of its picture before it is stored — RETIRED with the studio and UNSET on the service 2026-09-24, in ONE act with its parent because its boot fence refuses past an off parent |
+| `CASTING_INK_STUDIO_SCOPE` | the ink studio's door — RETIRED on his *"It retires with N2"*; UNSET on the service since 2026-09-24 (#1158) |
+| `CASTING_INK_CUT_SCOPE` | whether an uploaded design is cut out of its picture before it is stored — RETIRED with the studio; UNSET 2026-09-24 (#1158) |
 | `CASTING_INK_REGION_CROP_SCOPE` | whether the named surface, rather than the patch inside it, is what is cut |
 | `CASTING_REFERENCE_ATTACH_SCOPE` | the door that takes her picture at all |
 | `CASTING_HAIR_REFERENCE_SCOPE` | taking her hair from an attached picture |
