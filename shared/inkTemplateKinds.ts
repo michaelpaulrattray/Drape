@@ -15,7 +15,8 @@
  * stands on exactly and unambiguously — pinning bytes is what a digest is for.
  * Widening this enum would give the table a second, COARSER encoding of a fact
  * it already holds precisely, which is working law 4 pointed at itself. The
- * digest → descriptor lookup lives in `server/castingV2/inkTemplates.ts`
+ * digest → descriptor lookup lived in `server/castingV2/inkTemplates.ts`, which
+ * retired with the ink studio (#1158 slice 2, his ruling 2026-09-24)
  * (`inkTemplateByDigest`), so the join is a function call rather than a hunt
  * through the source tree.
  *
@@ -29,7 +30,7 @@
  * widening, `casting_ink_plates.templateKind` is a written column, and that is a
  * migration and a production ceremony in that order.
  *
- * # Why this is a shared file and not a line in `server/castingV2/inkTemplates.ts`
+ * # Why this is a shared file and not a line in the (now retired) template module
  *
  * Because the plate table has a `templateKind` column, and `drizzle/schema.ts`
  * derives its enum from a constant rather than retyping one (working law 4 —

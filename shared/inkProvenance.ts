@@ -35,7 +35,7 @@
  *
  * ⚠ And it does not say the upload is safe to MINT. The fence above is about
  * the RENDER; the plate mint receives the stored upload's raw bytes today
- * (`inkPlateMint.ts`), which is the gap build 3a closes — see
+ * (the retired `inkPlateMint.ts`, #1158 slice 2), which is the gap build 3a closed — see
  * `shared/referenceIntents.ts` and V3B §7.11's fence section for the whole
  * truth, the founder's call, and the widening tripwire that bounds it.
  */

@@ -2,7 +2,8 @@
  * The ink design store against a real database (migration 0034).
  *
  * The doors are proved in `castingV2/inkUploadDoor.test.ts` and the order in
- * `castingV2/inkUploadService.test.ts`. This file proves the **statements** —
+ * `castingV2/inkUploadService.test.ts`, which retired with the studio upload it
+ * drove (#1158 slice 2). This file proves the **statements** —
  * that a stranger's Cast cannot be written to however good the ids are, that
  * the cap is a fact about the table rather than a number in a comment, that the
  * manifest holding the bytes is released by the row that claims them, and that

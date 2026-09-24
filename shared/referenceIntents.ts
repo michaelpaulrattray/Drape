@@ -42,7 +42,8 @@
  * # ⚠ THE FENCE IS SCOPED TO THE RENDER, AND THE MINT IS A SECOND ENGINE
  *
  * *"The photograph never reaches a render"* is true and was verified at the
- * code on 2026-08-19. It is not the whole truth: `inkPlateMint.ts` hands the
+ * code on 2026-08-19. It is not the whole truth: the retired `inkPlateMint.ts`
+ * (#1158 slice 2) handed the
  * plate engine the STORED UPLOAD UNCHANGED, and `inkUploadDoor.ts` gates
  * placement, size, format, edge, intent and the per-Cast cap — nothing about
  * who is in the picture. **So a full-person photograph rode wholesale to the
