@@ -745,10 +745,8 @@ describe("a candidate's segments purge with it", () => {
     expect(calls.deleteInkDesigns).toHaveBeenCalledTimes(1);
   });
 
-  it("tolerates an absent ink plate table only while the studio is disarmed", async () => {
-    /* Production has taken neither 0034 nor 0037, and a plate cannot exist
-       without a design, so this window is doubly empty — and armed, the same
-       silence is a fault said out loud. */
+  it("tolerates an absent ink plate table only while EVERY door that mints a design is shut", async () => {
+    /* A plate hangs off a design row, so its window is the design's window. */
     const missing = Object.assign(new Error("Table 'x.casting_ink_plates' doesn't exist"), {
       code: "ER_NO_SUCH_TABLE",
       errno: 1146,
@@ -758,15 +756,9 @@ describe("a candidate's segments purge with it", () => {
     const result = await runCandidateRetentionSweep();
     expect(result.candidatesPurged).toBe(1);
     expect(calls.deleteInkPlates).not.toHaveBeenCalled();
-
-    process.env.CASTING_INK_STUDIO_SCOPE = "users:1";
-    await expect(runCandidateRetentionSweep()).rejects.toThrow(/doesn't exist/);
   });
 
-  it("tolerates an absent ink design table only while the studio is disarmed", async () => {
-    /* Production has NOT taken migration 0034 and runs this sweep every pass,
-       so the window where this code knows the table and the database does not
-       is live right now. Armed, the same silence would be a fault. */
+  it("tolerates an absent ink design table only while EVERY door that mints one is shut", async () => {
     const missing = Object.assign(new Error("Table 'x.casting_ink_designs' doesn't exist"), {
       code: "ER_NO_SUCH_TABLE",
       errno: 1146,
@@ -776,9 +768,50 @@ describe("a candidate's segments purge with it", () => {
     const result = await runCandidateRetentionSweep();
     expect(result.candidatesPurged).toBe(1);
     expect(calls.deleteInkDesigns).not.toHaveBeenCalled();
+  });
 
-    process.env.CASTING_INK_STUDIO_SCOPE = "users:1";
-    await expect(runCandidateRetentionSweep()).rejects.toThrow(/doesn't exist/);
+  it("⚠ REFUSES an absent design or plate table once EITHER door is open — including the one the studio's retirement leaves behind", async () => {
+    /*
+      THE ARM THIS SLICE EXISTS FOR (#1158 slice 4b), and it is driven from BOTH
+      doors for the reason the delivery crop's twin already is: the arming
+      predicate is an OR, and a single-door arm leaves half of it untested.
+
+      ⚠ **Until slice 4b both of these tolerances were armed by
+      `CASTING_INK_STUDIO_SCOPE` ALONE, and the arms above drove only that door
+      — so they passed identically either way.** The studio retires on his
+      ruling; the take from an attached picture does NOT, and
+      `inkReferenceMint.ts` is `recordInkDesign`'s only surviving non-test
+      caller. Armed by the retiring flag, these would have flipped from *throw*
+      to *swallow* the moment that variable came off the service in slice 4c —
+      over a table the surviving road still writes.
+
+      **The `CASTING_INK_REFERENCE_SCOPE` half of this loop is red on the code as
+      it stood before slice 4b**, for both tables, which is what makes it a
+      control rather than a restatement.
+    */
+    const absent = (table: string) => Object.assign(
+      new Error(`Table 'x.${table}' doesn't exist`),
+      { code: "ER_NO_SUCH_TABLE", errno: 1146 },
+    );
+
+    for (const door of ["CASTING_INK_STUDIO_SCOPE", "CASTING_INK_REFERENCE_SCOPE"] as const) {
+      for (const table of ["casting_ink_designs", "casting_ink_plates"] as const) {
+        delete process.env.CASTING_INK_STUDIO_SCOPE;
+        delete process.env.CASTING_INK_REFERENCE_SCOPE;
+        process.env[door] = "users:1";
+        calls.listInkDesigns.mockResolvedValue([]);
+        calls.listInkPlates.mockResolvedValue([]);
+        calls.deleteCandidates.mockClear();
+        if (table === "casting_ink_designs") calls.listInkDesigns.mockRejectedValue(absent(table));
+        else calls.listInkPlates.mockRejectedValue(absent(table));
+
+        await expect(
+          runCandidateRetentionSweep(),
+          `${table} absent with ${door} open must be a fault said out loud, not a swallowed warning`,
+        ).rejects.toThrow(new RegExp(table));
+        expect(calls.deleteCandidates).not.toHaveBeenCalled();
+      }
+    }
   });
 
   it("tolerates an absent scan table only while the scan table is disarmed", async () => {

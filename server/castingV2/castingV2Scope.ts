@@ -1069,18 +1069,27 @@ export function parseCastingInkStudioScope(raw: string | undefined): CastingV2Sc
   });
 }
 
-/**
- * Whether this user may attach an ink design.
- *
- * An AND of the whole chain at the point of use, for the reason its siblings
- * carry: the boot check refuses a scope that reaches past its parent, and a
- * boot check nobody invoked is the second way a flag pair goes wrong.
- */
-export function captureCastingInkStudioEnabled(userId: number): boolean {
-  const child = parseCastingInkStudioScope(process.env[CASTING_INK_STUDIO_SCOPE_ENV]);
-  if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingRepaintEnabled(userId);
-}
+/*
+  THE STUDIO'S POINT-OF-USE PREDICATE IS GONE — #1158 slice 4b, his ruling
+  *"It retires with N2"*.
+
+  `captureCastingInkStudioEnabled` answered *"may this user attach an ink
+  design?"* and the door it answered for was retired in slices 1–2:
+  `uploadInkDesign` does not exist, and slice 1 left the import behind in
+  `server/routes/castingV2.ts` calling nothing. Its last reader of any kind was
+  `captureCastingInkCutEnabled`, deleted in the same commit as this.
+
+  Recorded rather than silently removed, because a predicate that vanishes
+  without a trace is indistinguishable from one that was never wired — the
+  reading this campaign keeps having to repair.
+
+  ⚠ **WHAT DID NOT GO WITH IT IS `castingInkStudioArmed` BELOW, AND THE
+  DIFFERENCE IS THE WHOLE POINT.** That one is not a door: it asks whether a row
+  could EVER have been written, which is the retention sweep's question, and a
+  purge path that narrows when a feature retires is how a customer's photograph
+  outlives the Cast it was promised to leave with. The flag leaves the service in
+  slice 4c; the collecting does not.
+*/
 
 /**
  * Whether the studio is armed AT ALL, regardless of user.
@@ -1574,24 +1583,50 @@ export function captureCastingInkReferenceEnabled(userId: number): boolean {
 }
 
 /**
- * Whether a design may reach a Cast AT ALL, by either road — the retention
- * sweep's question about the delivered-tattoo store (0049), and only ever
- * about whether a MISSING TABLE is tolerable.
+ * WHETHER A DESIGN ROW CAN EXIST AT ALL, BY EITHER ROAD — the retention sweep's
+ * question about `casting_ink_designs` (0034) and the plates hanging off it
+ * (0037), and only ever about whether a MISSING TABLE is tolerable.
  *
  * Two doors mint a design row and neither is the other's parent: the studio's
  * upload (`CASTING_INK_STUDIO_SCOPE`) and the take from an attached picture
- * (`CASTING_INK_REFERENCE_SCOPE`, whose parent is the attach door). A delivery
- * crop cannot exist without a design row, so this is the OR of the two rather
- * than a third list of conditions to keep in step (law 4).
+ * (`CASTING_INK_REFERENCE_SCOPE`, whose parent is the attach door). So this is
+ * the OR of the two rather than a second list of conditions to keep in step
+ * (law 4).
  *
- * It never gates the purge itself. A crop cut while a flag was on must be
+ * ⚠ **ONLY ONE OF THOSE TWO DOORS SURVIVES, AND THAT IS EXACTLY WHY THE OR IS
+ * HERE RATHER THAN THE STUDIO FLAG ALONE** (#1158 slice 4b). The studio retires
+ * on his ruling *"It retires with N2"*; `recordInkDesign`'s only remaining
+ * non-test caller is `inkReferenceMint.ts`, on the reference road he HELD (Crew
+ * reply #213). Armed by the studio flag alone, these tolerances would flip from
+ * *throw* to *swallow* the moment that variable comes off the service in slice
+ * 4c — over a table the surviving road can still write. That is a customer's
+ * own photograph outliving the Cast it was promised to leave with, with no
+ * failing test and no error: the same shape #203 rule 1 names, and the reason
+ * the crop tolerance below already ORed the pair.
+ *
+ * It never gates the purge itself. A row written while a flag was on must be
  * collected after it goes off, and a retention path that narrows with a feature
  * flag is how a picture of a real person's neck outlives the Cast it was
  * promised to leave with.
  */
-export function castingInkDeliveryCropArmed(): boolean {
+export function castingInkDesignArmed(): boolean {
   return castingInkStudioArmed()
     || parseCastingInkReferenceScope(process.env[CASTING_INK_REFERENCE_SCOPE_ENV]).kind !== "off";
+}
+
+/**
+ * And the delivered-tattoo crop (0049), which DERIVES rather than repeating it.
+ *
+ * A delivery crop cannot exist without a design row — the retention sweep says
+ * so in its own comment, and the row's foreign key says it in the schema — so
+ * the question *"can a crop exist?"* is the question above, not a second OR
+ * kept in step with it by hand. It was that second OR until #1158 slice 4b,
+ * which is working law 4 caught one edit before it could drift: the design
+ * store's own tolerance was armed on the studio flag alone while this one,
+ * asking a STRICTLY NARROWER question, was armed on both.
+ */
+export function castingInkDeliveryCropArmed(): boolean {
+  return castingInkDesignArmed();
 }
 
 /*
@@ -1658,11 +1693,19 @@ export function validateCastingInkReferenceEnvironment(input: {
  * paced was retired in slices 1–2 — `uploadInkDesign` does not exist — and
  * slice 4a moved its one remaining dependant, `CASTING_INK_REGION_CROP_SCOPE`,
  * onto the road that actually cuts (`CASTING_INK_REFERENCE_SCOPE`). So nothing
- * reads this flag, nothing is parented on it, and `captureCastingInkCutEnabled`
- * has no production caller left. **It is scaffolding awaiting its own removal**
- * — deleted with `captureCastingInkStudioEnabled` in #1158 slice 4b, and the
- * variable comes off the service only after that ships, because a boot fence
- * validating a value is the one thing that can turn an unset into a crash loop.
+ * reads this flag and nothing is parented on it; `captureCastingInkCutEnabled`
+ * was **deleted in slice 4b** along with `captureCastingInkStudioEnabled`, and
+ * what stands below it now is the BOOT FENCE and this constant, nothing else.
+ *
+ * ⚠ **THOSE TWO LEAVE TOGETHER, IN SLICE 4c, IN THE SAME ACT AS THE VARIABLE —
+ * AND THE ORDER MATTERS FOR A DIFFERENT REASON THAN THE CENSUS GAVE.**
+ * `server/scopeParentChain.test.ts` holds the declared scope constants and the
+ * `validate…Environment` fences equal as SETS, so a declaration outliving its
+ * fence by one slice is red in between — and rightly, because that shape is a
+ * variable somebody can still set with nothing checking it. The crash the census
+ * worried about is real but points elsewhere: it is unsetting the PARENT
+ * (`CASTING_INK_STUDIO_SCOPE`) while this child still reads `users:1`, which
+ * this fence refuses at boot. Unset the two together and there is no window.
  * The history is kept below rather than rewritten: what a retired road used to
  * decide is how the next reader understands the rows it left behind.
  *
@@ -1754,18 +1797,29 @@ export function parseCastingInkCutScope(raw: string | undefined): CastingV2Scope
   });
 }
 
-/**
- * Whether this user's uploaded design is cut before it is stored.
- *
- * An AND of the whole chain at the point of use, like every sibling: the boot
- * check refuses a scope reaching past its parent, and a boot check nobody
- * invoked is the second way a flag pair goes wrong.
- */
-export function captureCastingInkCutEnabled(userId: number): boolean {
-  const child = parseCastingInkCutScope(process.env[CASTING_INK_CUT_SCOPE_ENV]);
-  if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingInkStudioEnabled(userId);
-}
+/*
+  AND THE CUT'S POINT-OF-USE PREDICATE WITH IT — #1158 slice 4b.
+
+  `captureCastingInkCutEnabled` asked whether an uploaded design was cut before
+  it was stored. The upload it paced died in slices 1–2, and its one remaining
+  dependant — `CASTING_INK_REGION_CROP_SCOPE` — was moved in slice 4a onto the
+  road that actually cuts (`CASTING_INK_REFERENCE_SCOPE`, the reference mint).
+  So it had no production caller left, and deleting it is what makes
+  `captureCastingInkStudioEnabled` above callerless too.
+
+  ⚠ **THE BOOT FENCE AND THE `*_ENV` CONSTANT DELIBERATELY STAY, AND THIS
+  CORRECTS THE CENSUS'S ORDER** (`docs/specs/INK_STUDIO_RETIREMENT_2026-09-24.md`
+  §8, which had them leaving here). `server/scopeParentChain.test.ts` holds the
+  declared scope constants and the `validate…Environment` fences equal AS SETS —
+  *"a flag with no boot check is invariant 7's 'a control that is not invoked
+  does not exist', wearing an env var"* — so the declaration and its fence cannot
+  die one slice apart without going red in between. And they should not: the
+  variable still stands at `users:1` on the service, so the fence is a live check
+  on a live value and the declaration is what keeps the deploy rite comparing it.
+  Both leave in slice 4c, in the same act as the variable, and the crash the
+  census feared is avoided by unsetting the CHILD and the PARENT together rather
+  than by deleting a fence early.
+*/
 
 /**
  * **WHETHER THE THING SHE POINTED AT IS THE SURFACE, NOT THE PATCH** — the

@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  CASTING_INK_CUT_SCOPE_ENV,
   CastingInkCutCoverageError,
   CastingInkCutScopeConfigurationError,
-  captureCastingInkCutEnabled,
   parseCastingInkCutScope,
   validateCastingInkCutEnvironment,
 } from "./castingV2Scope";
@@ -87,7 +85,28 @@ describe("the boot guard", () => {
   });
 });
 
-describe("the grammar, and the point of use", () => {
+/*
+  ⚠ THE POINT-OF-USE ARMS ARE GONE, AND THE SUBJECT IS GONE RATHER THAN THE
+  COVERAGE — #1158 slice 4b.
+
+  Two arms stood here and drove `captureCastingInkCutEnabled`: one that it is
+  off with nothing set, and one that it stays off for a NAMED user when the
+  parent is shut. That predicate was deleted in slice 4b, having had no
+  production caller since slice 4a moved `CASTING_INK_REGION_CROP_SCOPE` onto
+  the reference road, so the arms went with their subject.
+
+  **The fact the second one protected did not die with it**, which is the only
+  reason deleting them is honest: the AND-of-the-chain-at-the-point-of-use shape
+  is driven for every LIVE sub-flag by its own suite, and
+  `server/scopeParentChain.test.ts` holds the whole chain — the fences, their
+  boot call sites, and the catalogue bullets — equal across all twenty.
+
+  What remains below is the BOOT GUARD and the grammar, and they remain because
+  the variable still stands at `users:1` on the service. Both leave in slice 4c,
+  in the same act as the variable itself.
+*/
+
+describe("the grammar", () => {
   it("refuses a scope that is not the grammar", () => {
     expect(() => parseCastingInkCutScope("everyone"))
       .toThrow(CastingInkCutScopeConfigurationError);
@@ -95,38 +114,5 @@ describe("the grammar, and the point of use", () => {
 
   it("absent means off", () => {
     expect(parseCastingInkCutScope(undefined)).toEqual({ kind: "off" });
-  });
-
-  it("is off for every user with nothing set — the state everywhere today", () => {
-    const before = process.env[CASTING_INK_CUT_SCOPE_ENV];
-    delete process.env[CASTING_INK_CUT_SCOPE_ENV];
-    try {
-      expect(captureCastingInkCutEnabled(1)).toBe(false);
-      expect(captureCastingInkCutEnabled(999)).toBe(false);
-    } finally {
-      if (before === undefined) delete process.env[CASTING_INK_CUT_SCOPE_ENV];
-      else process.env[CASTING_INK_CUT_SCOPE_ENV] = before;
-    }
-  });
-
-  it("⚠ stays off for a named user when the PARENT is shut, at the point of use", () => {
-    /*
-      The AND of the whole chain, answered where it is asked rather than trusted
-      from boot. This is the arm that would go red if `captureCastingInkCutEnabled`
-      were ever simplified to read its own variable alone — which is how a
-      sub-flag comes to be armed over a road its user cannot enter.
-    */
-    const before = process.env[CASTING_INK_CUT_SCOPE_ENV];
-    const beforeStudio = process.env.CASTING_INK_STUDIO_SCOPE;
-    process.env[CASTING_INK_CUT_SCOPE_ENV] = "users:1";
-    delete process.env.CASTING_INK_STUDIO_SCOPE;
-    try {
-      expect(captureCastingInkCutEnabled(1)).toBe(false);
-    } finally {
-      if (before === undefined) delete process.env[CASTING_INK_CUT_SCOPE_ENV];
-      else process.env[CASTING_INK_CUT_SCOPE_ENV] = before;
-      if (beforeStudio === undefined) delete process.env.CASTING_INK_STUDIO_SCOPE;
-      else process.env.CASTING_INK_STUDIO_SCOPE = beforeStudio;
-    }
   });
 });
