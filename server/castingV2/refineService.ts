@@ -121,7 +121,6 @@ import {
   missingFromPrompt,
   presenceItemsOfFacet,
   withoutCarriedInkWords,
-  withoutFacets,
   presentationOf,
   presentationWordsOfFacet,
   /* `readDelta` is deliberately NOT imported here any more. This module reads
@@ -201,15 +200,12 @@ import { readStepProvenance, verifyReadToken, type StepProvenance } from "./refe
 import { ENV } from "../_core/env";
 import {
   facetBindsOnPresence,
-  facetHeading,
   facetOfAxis,
   facetOfSubject,
   type Facet,
 } from "./refineFacets";
 import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
-import { assembleWithCarriedSegments, listCarriedRows } from "./carriedSegments";
 import { makeupRegionFor } from "./makeupPlacement";
-import { keepSegmentsFromRender } from "./segmentPersistence";
 import { mintReferencesForRender } from "./referenceMint";
 import { carriedInkSlotsForGeometry, carriedSlotsForGeometry, reMintCarriedGeometry } from "./carriedGeometry";
 import type { DeliveryAdjudication } from "./deliveryCourt";
@@ -316,7 +312,6 @@ import {
   facetIn,
   joinClauses,
   missingFacts,
-  settleCarriedChecks,
   shortfalls,
   scopedToInstance,
   verifyRender,
@@ -4460,42 +4455,22 @@ async function refineCandidateCounted(
     unlikely.
   */
   /*
-    WHAT THIS RENDER WILL PASTE INSTEAD OF ASKING FOR (segment permanence).
+    THE SEGMENT STORE'S READ USED TO SIT HERE, and it is retired rather than
+    disabled — his ruling of 2026-09-24, verbatim and entire: *"retire all of
+    it."*
 
-    # The defect this ends, found on the first production walk
+    What it did: listed the facets this face was already carrying and subtracted
+    them from the ask, so the painter was not paid to re-roll pixels an earlier
+    render had earned. That is a real capability and this is not a tidy-up of
+    dead code — it is the removal of a road he has decided is not the one this
+    studio carries on.
 
-    The store was armed, the rows were written, and every render still re-rolled
-    every earlier facet — her freckles arrived on step 1, vanished on step 2 and
-    step 3, and came back on step 4 by luck. Two independent reasons, and BOTH
-    had to go:
-
-    1. The carried set was computed against `facetsAnsweredBy(composed)` — the
-       ACCUMULATED recipe — so every facet that could be carried was disqualified
-       as "one this edit writes". A segment only ever exists for a facet the
-       recipe names, so the exclusion was total by construction. The right notion
-       was three hundred lines above it the whole time: `writtenFacets`, which
-       the caption machinery has used since D-163.
-    2. Even carried, the prompt still ASKED for the facet, so the painter
-       repainted it and the fresh paint — applied last, by design, because the
-       current ask outranks every memory — won the pixels straight back.
-
-    So the ask narrows here, on the recipe, before a string is composed: the
-    facets whose pixels are about to be pasted are removed from what the painter
-    is told. §13 of the design: *"the thing to remove is not the guards, it is
-    the words."*
-
-    Read BEFORE the claim, so a store we cannot read refuses free — and read
-    ONCE, with the rows handed down to the composite, so the prompt and the
-    paste can never disagree about what is being carried.
+    What replaces it is not nothing: the REFERENCE LIBRARY carries a crop into
+    the repaint recipe (`CASTING_REFERENCE_LIBRARY_SCOPE`, `CASTING_REPAINT_SCOPE`,
+    both `all`), which is the mechanism actually keeping her earlier work today.
+    That is a different table and a different pair of flags and it is untouched
+    here.
   */
-  const carriedRows = await listCarriedRows({
-    userId: input.userId,
-    candidateId: source.candidate.id,
-    /* The branch she is looking at, not the newest — fable-091's fork rule. */
-    anchorVariantId: predecessor?.id ?? null,
-    writing: Array.from(writtenFacets),
-  });
-  const facetsToCarry = new Set<Facet>(carriedRows.map((row) => row.facet as Facet));
   /*
     THE TATTOOS SHE ALREADY WORE BEFORE THIS SENTENCE — derived once, two
     consumers, and read off `priorDelta` rather than off `composed` for the
@@ -4532,59 +4507,9 @@ async function refineCandidateCounted(
       is on.
     */
     : [];
-  const asked = withoutCarriedInkWords(
-    withoutFacets(composed, facetsToCarry), inkAlreadyWorn, instruction,
-  );
+  const asked = withoutCarriedInkWords(composed, inkAlreadyWorn, instruction);
 
   const preview = composeRenderPrompt(asked, EDIT_PROSE, carriedCaptions);
-  /*
-    AND THE CLAUSE IS GONE FROM THE STRING, not just from the object (D-143's
-    own discipline, pointed at the new subtraction).
-
-    Empty by construction — `withoutFacets` cleared these lanes — and asserted
-    anyway on the PRODUCED PROMPT, exactly like the contradiction check below.
-    The whole finding this shift was a subtraction everyone assumed and nothing
-    measured, and a carried facet still named in the prompt is that defect
-    resurrected: she would be charged for a re-roll of something she already
-    owns, and the paste would be overpainted.
-
-    `missingFromPrompt` is the existing matcher, pointed at a recipe holding
-    only the carried facets — every one of them must be missing.
-  */
-  if (facetsToCarry.size > 0) {
-    /*
-      MATCHED ON THE CLAUSE, NOT ON THE WORD (fable-105).
-
-      The first form of this asked whether the carried facet's VALUE appeared
-      anywhere in the produced string, and a legitimate sentence tripped it: her
-      kept `marks` reads "freckles", and "a bronzer that mimics freckles" is an
-      ask about her cheeks that happens to say the word. That refusal is a wall
-      in front of a real request, and the specimen is pinned in the suite.
-
-      A genuine leak has a shape: the facet's own HEADING, carrying a value, in
-      the ask lane — `MARKS: freckles…`, the same `HEADING: value` form the D-87
-      sweep looks for. The bronzer sentence composes no MARKS clause, because
-      bronzer files as makeup. A regression that re-adds the carried clause is
-      caught exactly as before.
-    */
-    const stillAsked = Array.from(facetsToCarry).filter((facet) => {
-      const heading = facetHeading(facet).toLowerCase();
-      /* The clause opens a lane: the heading, then its colon. Compared on the
-         lowered string so a heading's own casing cannot decide a refusal. */
-      return preview.edits.toLowerCase().includes(`${heading}:`);
-    });
-    if (stillAsked.length > 0) {
-      log.error(
-        { stillAsked, carried: Array.from(facetsToCarry) },
-        "[refineService] a carried facet is still being asked for — refusing rather than paying to re-roll kept pixels",
-      );
-      throw spokenError({
-        code: "PRECONDITION_FAILED",
-        message: "That edit would have re-done something this face already keeps, so it was "
-          + "refused rather than rendered. Nothing was charged.",
-      });
-    }
-  }
   const dropped = missingFromPrompt(asked, preview.edits);
   if (dropped.length > 0) {
     log.error({ dropped }, "[refineService] composition would drop filed facts — refusing");
@@ -6087,25 +6012,11 @@ async function refineCandidateCounted(
       rendered-but-not-filed, which nothing can. What IS re-asserted is the
       property that matters on the string actually being sent.
     */
-    /*
-      THE SAME SUBTRACTION, ON THE PERSISTED ROW — wall (d) again.
-
-      The pre-claim preview narrowed the ask against `composed`; this narrows
-      the ROW, which is the thing actually sent. One list of carried facets,
-      decided once above, used in both places and handed to the composite — so
-      the prompt, the mask and the paste cannot hold three different opinions
-      about what this face is keeping.
-
-      When nothing is carried — a dark store, a first edit, a fork with no
-      ancestry — `withoutFacets` returns the recipe unchanged and every line
-      below behaves exactly as it did before segments existed.
-    */
-    /* The same subtraction the pre-claim preview made, from the same list —
-       one derivation, so the check and the render cannot disagree about which
-       tattoo this render is painting and which it is carrying (D-166). */
-    const askedFiled = withoutCarriedInkWords(
-      withoutFacets(filed, facetsToCarry), inkAlreadyWorn, instruction,
-    );
+    /* The ink subtraction stays — it is the REPAINT road's carry and has
+       nothing to do with the retired segment store (see the note above the
+       pre-claim composition). What went with the segments is the facet
+       subtraction that used to wrap this call. */
+    const askedFiled = withoutCarriedInkWords(filed, inkAlreadyWorn, instruction);
     /*
       WHERE THIS ASK LIVES ON HER FACE (law 8, fable-103's table ruling).
 
@@ -6186,12 +6097,11 @@ async function refineCandidateCounted(
       # What it deliberately does NOT produce
 
       No `evidence`. That is not an omission: the harvest's masks exist to scope
-      a PASTE, and nothing is pasted. Two things downstream read it and both are
-      already correct without it — `keepSegmentsFromRender` returns
-      `nothing-to-keep` with no evidence (the old carrier retiring by
-      construction rather than by anyone remembering to skip it), and the mint
-      reads `applied ?? wholeFrame`, which is the honest answer when the whole
-      frame was painted. The mint's REGION source is the declared shortfall: with
+      a PASTE, and nothing is pasted. The segment store used to read it here and
+      is retired (#1160) — its refusal without evidence is why that store never
+      held a row on this road. What still reads it is the mint, which takes
+      `applied ?? wholeFrame`, the honest answer when the whole frame was
+      painted. The mint's REGION source is the declared shortfall: with
       no harvest map it files words rather than crops, and the fresh
       delivered-frame read that closes it lands before the flag is flipped for
       anybody (opus-227 §3, fable-281).
@@ -7423,42 +7333,6 @@ async function refineCandidateCounted(
         master region never meets `applied` has already been answered and does
         not need a stochastic reader rolled against it again.
       */
-      /*
-        AND WHAT SHE ALREADY HAS, PUT BACK (segment permanence, slice 1).
-
-        Three sources in a fixed order — the master, then every kept segment
-        whose facet this edit does not write, then the fresh paint last,
-        because the current ask outranks every memory. Dark until the store is
-        armed for her, and when it is dark this returns the harvest's own bytes
-        unchanged, byte for byte.
-
-        The refusal inside is deliberate and is the reason this is not
-        wrapped in a `catch`: a face assembled from a list we could not finish
-        reading looks exactly like a correct render, and she would simply find
-        her freckles gone again on a picture she had paid for.
-      */
-      const assembled = await assembleWithCarriedSegments({
-        userId: input.userId,
-        candidateId: variant.candidateId,
-        /* The branch, not the candidate: what the SELECTED face keeps. */
-        anchorVariantId: variant.parentVariantId,
-        /*
-          WHAT THIS ASK WRITES — not what the recipe holds.
-
-          This read `facetsAnsweredBy(composed)`, the accumulated recipe, and
-          that single wrong noun made the whole architecture inert: a segment
-          exists only for a facet the recipe names, so every carriable facet
-          disqualified itself. `writtenFacets` is the notion the caption
-          machinery has used since D-163 — an edit writes what IT says, plus
-          what a removal took away.
-        */
-        writing: Array.from(writtenFacets),
-        /* Decided before the prompt was composed, so the string and the paste
-           agree by construction rather than by two queries agreeing. */
-        rows: carriedRows,
-        master: { bytes: base.bytes, contentType: base.contentType },
-        harvested,
-      });
 
       /*
         The composite's own working, carried to the verification step rather
@@ -7469,31 +7343,30 @@ async function refineCandidateCounted(
       */
       return {
         ...painted,
-        bytes: assembled.bytes,
-        contentType: assembled.contentType,
-        evidence: assembled.evidence,
-        carried: assembled.carriedFacets,
         /*
-          THE ASSEMBLY'S OWN WORKING, KEPT ON THE ROW (fable-109).
+          THE HARVEST ITSELF — which is exactly what the retired assembler
+          returned on every render this product has ever delivered.
 
-          A carried fact cannot be adjudicated by a reader — the freckles this
-          architecture pastes sit at the reader's own floor, and it called them
-          absent three times on a frame that provably contains 20,036 of their
-          24,056 pixels. The instrument that CAN judge them is arithmetic: every
-          pixel the segment owns is either byte-identical in the delivered frame
-          or accounted for by a recorded intersection.
-
-          That judgement needs the intersections, and they only existed in a log
-          line — so the walk could never adjudicate itself, and a log is not an
-          artifact a report can be derived from. They ride the row now, beside
-          the verdict, where the reliability report already looks.
+          `assembleWithCarriedSegments` opened by building an `unchanged` object
+          out of the harvest and returned it whenever the store was dark, held
+          no rows, or the render carried no evidence. Production's store has
+          held ZERO rows all time (read in both worlds, 2026-09-25), so that
+          branch is the only one that ever ran. These four fields are that
+          object, field for field.
         */
-        assembly: assembled.assembly && {
-          segmentsApplied: assembled.assembly.segmentsApplied,
-          intersections: assembled.assembly.intersections,
-          superseded: assembled.assembly.supersededCandidates,
-          excluded: assembled.assembly.segmentsExcluded,
-        },
+        bytes: harvested.bytes,
+        contentType: harvested.contentType,
+        evidence: harvested.evidence ?? null,
+        /*
+          `undefined`, not `[]` — the same value the repaint branch declares, so
+          the two roads now agree on shape. Identical downstream either way:
+          `new Set(image.carried ?? [])` and `rendered.carried ?? []` are the
+          only readers and both give the empty set. Typing it `[]` instead
+          narrowed the union to `never[]` and broke those readers at the
+          compiler rather than at runtime.
+        */
+        carried: undefined,
+        assembly: undefined,
         /*
           AND THE SEAM VERDICT, FOR THE SAME REASON, ON EVERY RENDER (fable-119).
 
@@ -8023,25 +7896,21 @@ async function refineCandidateCounted(
         masterRegions: rendered.evidence?.masterRegions,
       });
       /*
-        AND A CARRIED FACT IS SETTLED BEFORE IT COUNTS AS ANYTHING (fable-120).
-
-        Inside `read`, not after it, so all three of D-194's readings are settled
-        the same way. Applied after the reading rather than by building the fact
-        non-binding up front, because the question is about the frame this
-        attempt actually produced: which segments were pasted, and which of them
-        this attempt's own paint then covered. A re-render answers both
-        differently.
+        `settleCarriedChecks` used to wrap this (fable-120): a pasted fact the
+        reader could not find was marked non-binding, because the paste put it
+        there and the paint may have covered it. Both of its lists came from the
+        composite's arithmetic, which #1160 retires — and its own first line is
+        `if (carried.facets.length === 0) return verdict`, so with no paste road
+        it was the identity function. Removed rather than called with two empty
+        lists.
       */
-      const read = async () => settleCarriedChecks(
-        await verifyRender({
-          bytes: rendered.bytes,
-          contentType: rendered.contentType,
-          ...(detail ? { detail } : {}),
-          facts,
-          engine: dependencies.verifier,
-        }),
-        { facets: rendered.carried ?? [], superseded: rendered.assembly?.superseded },
-      );
+      const read = async () => verifyRender({
+        bytes: rendered.bytes,
+        contentType: rendered.contentType,
+        ...(detail ? { detail } : {}),
+        facts,
+        engine: dependencies.verifier,
+      });
       return {
         rendered,
         /*
@@ -8536,11 +8405,6 @@ async function refineCandidateCounted(
       if (said) picturedCaptions[subject] = said;
     }
 
-    /*
-      Taken from the render that actually LANDED, so a re-render's own
-      carrying is what gets recorded rather than the first attempt's.
-    */
-    const carriedFacets = new Set(image.carried ?? []);
 
     /*
       A REMOVAL IS ADJUDICATED BEFORE THE PICTURE LANDS (chunk 3,
@@ -8932,8 +8796,11 @@ async function refineCandidateCounted(
       ? []
       : verification.checks.filter((check) => {
         const facet = facetOfCheck(check);
-        return facet !== null
-          && check.read && writtenFacets.has(facet) && !carriedFacets.has(facet);
+        /* `&& !carriedFacets.has(facet)` stood here: a fact the paste put in the
+           frame was not this render's own reading to claim. The paste road is
+           retired (#1160), the set was always empty, and the clause was
+           therefore always true. */
+        return facet !== null && check.read && writtenFacets.has(facet);
       });
     const missedFacets = new Set(
       readChecks.filter((check) => !check.verified).flatMap((check) => facetOfCheck(check) ?? []),
@@ -8990,20 +8857,16 @@ async function refineCandidateCounted(
         return check.read && !check.verified && !writtenFacets.has(facet) ? [facet] : [];
       }),
     ));
-    await keepSegmentsFromRender({
-      userId: input.userId,
-      variantId: variant.id,
-      image,
-      facets: earned,
-      /* The harvest's own placement map — see `regionOverrides` in renderOnce. */
-      regionOverrides,
-      /* The reading that earned these pixels, so a paste never re-asks. Every
-         facet here verified on its own reading — the string is no longer a
-         constant standing in for one. */
-      verdict: earned.length > 0 ? "verified" : null,
-      verifiedAt: earned.length > 0 ? new Date() : null,
-      operationId,
-    });
+    /*
+      THE SEGMENT STORE'S WRITE USED TO SIT HERE, and it never wrote a row.
+
+      It refused without `image.evidence`, and `repaintOnce` — the road every
+      production render takes, `CASTING_REPAINT_SCOPE=all` — declares that field
+      `undefined`. So the store was structurally unwritable on the live road,
+      which is why `casting_segments` holds zero rows all time in BOTH worlds.
+      `earned` is untouched and still feeds the reference library below, which
+      is the store that actually carries her work forward.
+    */
 
     /*
       AND TELL THE LIBRARY WHAT THIS FACE NOW IS (the reference library, §2.3).
@@ -9868,30 +9731,22 @@ async function refineCandidateCounted(
              (D-194). The reader's own reliability, recorded per render. */
           readings: verification.readings ?? 1,
           /*
-            WHICH FACTS WERE CARRIED RATHER THAN PAINTED — the two-column
-            report's only writer.
+            ⚠ THE `carried: true` MARK USED TO BE WRITTEN HERE, AND #1160 TAKES
+            ITS ONLY WRITER — named rather than left to be discovered.
 
-            Marked here, on the row, because the report is derived from stored
-            rows and nothing else knows this: by the time a reader looks at the
-            frame, a pasted segment and a fresh paint are indistinguishable —
-            which is the point of the store and exactly why the honesty column
-            cannot be inferred later.
+            It said *this fact is in the frame because a segment was pasted, not
+            because the painter drew it*, and it fed the two-column honesty
+            report. Nothing infers it later: to a reader, a paste and a fresh
+            paint are indistinguishable.
 
-            The check keeps its verdict either way. A carried fact that the
-            reader cannot find is still a false pass, because the product
-            promised to keep it.
+            It is removed rather than kept because with the paste road retired
+            nothing can ever be carried by paste — every fact in every frame is
+            painted, which is the very thing the column existed to distinguish.
+            A column that can only ever hold one value is not an honesty
+            column. If a future carry road needs the distinction back, this is
+            the line it is written on.
           */
-          checks: carriedFacets.size === 0
-            ? verification.checks
-            : verification.checks.map((check) => {
-              /* Carried-by-PASTE, which is a facet list from the composite's own
-                 arithmetic. An open kind carried by CROP rides the repaint road,
-                 which pastes nothing and produces no such list. */
-              const facet = facetIn(check.subject);
-              return facet !== null && carriedFacets.has(facet)
-                ? { ...check, carried: true }
-                : check;
-            }),
+          checks: verification.checks,
           ...(verification.unavailable ? { unavailable: true } : {}),
           /*
             AND WHAT THE READ-BACK COULD NOT CORROBORATE. Absent on the renders

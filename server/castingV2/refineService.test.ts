@@ -87,7 +87,7 @@ let landedVariant: Record<string, unknown> | null = null;
  *
  * Written by the `landVariant` mock below and asserted by "the 42-second race".
  */
-const atLanding: Array<{ mints: number; segments: number }> = [];
+const atLanding: Array<{ mints: number }> = [];
 /** What the BRIEF said she wears — the base-worn inventory (D-206). */
 let briefWorn: string[] | null = null;
 let failedVariant: Record<string, unknown> | null = null;
@@ -201,7 +201,6 @@ vi.mock("../db/castingV2Variants", () => ({
     */
     atLanding.push({
       mints: journal.filter((entry) => entry === "mint").length,
-      segments: journal.filter((entry) => entry === "keep-segments").length,
     });
     journal.push("land");
     landedVariant = input;
@@ -409,67 +408,14 @@ vi.mock("../providers/falImages", async (importOriginal) => ({
   }),
 }));
 
-/**
- * THE SEGMENT STORE, AT THE SEAM THE PRODUCT ACTUALLY USES.
- *
- * Both calibration benches proved the carried machinery by handing it
- * `writing: [step.facet]` — an argument the product derives for itself, and
- * derived it WRONG for as long as the store has existed. So this suite never
- * hands it anything: it records what the SERVICE decided and asserts on that.
- */
-const carriedAsks: Array<{ writing: readonly string[]; anchorVariantId: number | null }> = [];
-const assembleAsks: Array<{ writing: readonly string[]; rows?: readonly unknown[] }> = [];
-let carriedRowsFixture: Array<Record<string, unknown>> = [];
-
-vi.mock("./carriedSegments", () => ({
-  listCarriedRows: vi.fn(async (ask: { writing: readonly string[]; anchorVariantId: number | null }) => {
-    carriedAsks.push({ writing: ask.writing, anchorVariantId: ask.anchorVariantId });
-    const writing = new Set(ask.writing);
-    if (!ask.anchorVariantId) return [];
-    return carriedRowsFixture.filter((row) => !writing.has(row.facet as string));
-  }),
-  assembleWithCarriedSegments: vi.fn(async (ask: {
-    writing: readonly string[];
-    rows?: readonly unknown[];
-    harvested: { bytes: Buffer; contentType: string; evidence?: unknown };
-  }) => {
-    assembleAsks.push({ writing: ask.writing, rows: ask.rows });
-    return {
-      bytes: ask.harvested.bytes,
-      contentType: ask.harvested.contentType,
-      evidence: ask.harvested.evidence ?? null,
-      carriedFacets: (ask.rows ?? []).map((row) => (row as { facet: string }).facet),
-      assembly: null,
-    };
-  }),
-}));
-
-/** What the render asked permanence to KEEP — captured, never supplied. */
-const keptAsks: Array<{
-  facets: readonly string[];
-  verdict: string | null;
-  /** The harvest's own masks. A repaint pastes nothing and therefore produces
-   *  none, which is what makes the old carrier retire by construction. */
-  evidence: unknown;
-}> = [];
-vi.mock("./segmentPersistence", () => ({
-  keepSegmentsFromRender: vi.fn(async (ask: {
-    facets: readonly string[];
-    verdict?: string | null;
-    image?: { evidence?: unknown };
-  }) => {
-    /* Journalled for its POSITION, not only its arguments: both stores are read
-       by the next ask, so when they are written relative to the landing is the
-       whole of the 42-second race (fable-307). */
-    journal.push("keep-segments");
-    keptAsks.push({
-      facets: ask.facets,
-      verdict: ask.verdict ?? null,
-      evidence: ask.image?.evidence ?? null,
-    });
-    return { outcome: "off" as const, segments: [] };
-  }),
-}));
+/*
+  ⚠ THE SEGMENT STORE'S TWO MOCKS STOOD HERE and went with the store (#1160
+  slice 1). `refineService` no longer imports `carriedSegments` or
+  `segmentPersistence` at all, so mocking them would mock nothing — and a mock
+  with no importer is the shape that lets a suite go on looking like it covers
+  something. The modules themselves still have their own suites until slice 2
+  deletes them.
+*/
 
 /**
  * What the render asked the LIBRARY to keep — captured, never supplied.
@@ -626,15 +572,11 @@ const { arrangementWording } = await import("./hairArrangement");
 beforeEach(() => {
   journal.length = 0;
   sentPrompts.length = 0;
-  carriedAsks.length = 0;
-  keptAsks.length = 0;
   mintAsks.length = 0;
   lineageReferences = [];
   counted.length = 0;
   captionsRead = {};
   captionGate = null;
-  assembleAsks.length = 0;
-  carriedRowsFixture = [];
   ledger.charges.length = 0;
   ledger.refunds.length = 0;
   chargeSucceeds = true;
@@ -3443,13 +3385,13 @@ describe("the order, and the money", () => {
       THE LANDING IS LAST, AND THAT IS THE FIX FOR THE 42-SECOND RACE (fable-307).
 
       Everything the NEXT ask reads is written before the row becomes selectable
-      — see "the 42-second race" in the library describe below. `keep-segments`
-      appears here and `mint` does not because this render's flag is dark for the
-      library and the segment store is called on every road.
+      — see "the 42-second race" in the library describe below. `mint` does not
+      appear because this render's flag is dark for the library; `keep-segments`
+      used to sit before `land` and went with the segment store (#1160).
     */
     expect(journal).toEqual([
       "read", "begin", "claim", "running", "deduct", "generate", "manifest",
-      "keep-segments", "land", "seal:success",
+      "land", "seal:success",
     ]);
     expect(ledger.charges).toEqual([
       { amount: 25, reference: "op:11111111-1111-4111-8111-111111111111:charge" },
@@ -4438,24 +4380,47 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     evidence: composite,
   });
 
-  it("keeps no segments, because nothing was pasted", async () => {
-    /* The old carrier retiring BY CONSTRUCTION rather than by anyone
-       remembering to skip it: the store's own rule is "no evidence, nothing to
-       keep", and a repaint produces no evidence because there is no paste to
-       scope. */
-    await refineCandidate({ ...hairDown, harvest: compositing },
+  /*
+    ⚠ RE-POINTED BY #1160, AND THE RULE IS UNCHANGED. These two proved *a
+    repaint produces no harvest evidence, and the old road does* — a fact about
+    the LIVE repaint branch, which merely happened to be observed at the retired
+    segment store. The surviving reader of that same evidence is the library
+    mint (`applied: image.evidence?.applied ?? null`), so the pair now reads
+    there. The control is the point and is kept exactly: without it both arms
+    would pass with the repaint branch deleted.
+  */
+  const mintingHair = {
+    referenceLibraryEnabled: () => true,
+    verifier: {
+      id: "verifier",
+      complete: async (request: { system: string }) => ({
+        text: request.system.includes("how they")
+          ? JSON.stringify({ hairWorn: "down" })
+          : JSON.stringify({ results: [{ id: 1, present: true, saw: "hair worn down" }] }),
+        truncated: false,
+        latencyMs: 1,
+      }),
+    } as never,
+  };
+
+  it("hands on no harvest evidence, because nothing was pasted", async () => {
+    captionsRead = { hairWorn: "worn long and loose" };
+    await refineCandidate({ ...hairDown, ...mintingHair, harvest: compositing },
       { ...input, instruction: "wear her hair down" });
 
-    expect(keptAsks).toHaveLength(1);
-    expect(keptAsks[0]!.evidence).toBeNull();
+    expect(mintAsks).toHaveLength(1);
+    /* NULL rather than a mask — a repaint paints the whole frame and scopes
+       nothing, so there is no `applied` region to hand on. */
+    expect(mintAsks[0]!.applied).toBeNull();
   });
 
-  it("CONTROL — the same ask on the old road hands permanence its masks", async () => {
-    await refineCandidate({ ...hairDown, repaintEnabled: () => false, harvest: compositing },
+  it("CONTROL — the same ask on the old road hands on its masks", async () => {
+    captionsRead = { hairWorn: "worn long and loose" };
+    await refineCandidate({ ...hairDown, ...mintingHair, repaintEnabled: () => false, harvest: compositing },
       { ...input, instruction: "wear her hair down" });
 
-    expect(keptAsks).toHaveLength(1);
-    expect(keptAsks[0]!.evidence).toEqual(composite);
+    expect(mintAsks).toHaveLength(1);
+    expect(mintAsks[0]!.applied).toEqual(composite.applied);
   });
 
   /**
@@ -8928,123 +8893,48 @@ describe("removal is typed, and most of it is free", () => {
   });
 });
 
-/**
- * SEGMENT PERMANENCE, AT THE SEAM THE BENCHES COULD NOT SEE.
- *
- * The first production walk of the armed store lost her freckles twice on
- * renders she paid for, while both calibration benches said the architecture
- * held. Both benches were right about the module and blind to the product: they
- * supplied `writing: [step.facet]` by hand, and the service derived it from the
- * ACCUMULATED recipe — so every facet that could be carried disqualified itself
- * as "one this edit writes", and the prompt asked for it again anyway.
- *
- * These tests hand the service nothing. They read what it decided, off the
- * arguments it passed and the string it sent.
- */
-describe("what this ask writes, and what it stops asking for", () => {
-  /** Her recipe already holds delivered freckles; this sentence is about lips. */
-  const withFreckledPredecessor = () => {
-    variantRows = [{
-      id: 501,
-      publicId: "variant-1",
-      candidateId: 1,
-      imageKey: "casting-v2/variants/one.png",
-      instructions: ["give her freckles"],
-      stepDeltas: [{ free: { marks: "freckles" } }],
-      deltas: { free: { marks: "freckles" } },
-      internalPrompt: {},
-    }];
-    candidateRow.selectedVariantPublicId = "variant-1";
-    carriedRowsFixture = [{
-      id: 9001,
-      facet: "marks",
-      provenance: "edit_patch",
-      version: 1,
-      maskKey: "casting-v2/segments/mask.png",
-      contentKey: "casting-v2/segments/content.png",
-    }];
-  };
+/*
+  ⚠ "SEGMENT PERMANENCE, AT THE SEAM THE BENCHES COULD NOT SEE" STOOD HERE and
+  went with its subject (#1160 slice 1). Four arms, and where each rule lives
+  now, because a deleted arm must say that rather than just vanish:
 
-  const glossOnFreckles = {
-    harvest: unmasked,
-    interpret: async () => ({ ok: true as const, delta: { makeup: "nude lip gloss" } }),
-  };
+    · "asks the store for THIS ask's facets, not the whole recipe" — the rule
+      is that the service derives `writtenFacets` rather than the ACCUMULATED
+      recipe, and it is the defect that made the whole architecture inert. It
+      is STILL PROVED, one describe below: "does NOT keep a verified facet an
+      earlier step wrote" drives the same distinction through the library,
+      which is `writtenFacets`'s surviving consumer.
+    · "stops asking the painter for a facet it is going to paste" and
+    · "hands the composite the SAME rows the prompt was stripped against" —
+      both are about a paste that no longer happens. No live equivalent, and
+      inventing one would be an arm that cannot fail.
+    · "still asks for everything when nothing is carried" — the dark-store
+      case, which is now every case. The prompt reaching the painter intact is
+      asserted in dozens of arms above.
+*/
 
-  it("asks the store for THIS ask's facets, not the whole recipe", async () => {
-    withFreckledPredecessor();
-    await refineCandidate(glossOnFreckles, { ...input, instruction: "add nude lip gloss" });
+/*
+  ⚠ RE-POINTED BY #1160, AND THE RULE IS THE SAME ONE.
 
-    expect(carriedAsks.length, "the store was consulted before the paint").toBeGreaterThan(0);
-    const writing = carriedAsks[0].writing;
-    expect(writing, "the facet this sentence writes").toContain("makeup");
-    /*
-      THE DEFECT ITSELF. `marks` here is what made the whole architecture inert:
-      a segment only ever exists for a facet the recipe names, so listing the
-      recipe excluded every carriable facet by construction.
-    */
-    expect(writing, "and NOT the facet she is already keeping").not.toContain("marks");
-    expect(carriedAsks[0].anchorVariantId, "anchored on the face she is looking at").toBe(501);
-  });
+  `earned` is **written ∩ verified**, and until this slice its only observable
+  consumer was the segment store. The store is retired; `earned` is NOT — it
+  still feeds `mintedSlotsForRender`, so it decides what this render contributes
+  to her reference library, which is the mechanism actually carrying her work
+  forward today. So these arms now read the same decision one door along.
 
-  it("stops asking the painter for a facet it is going to paste", async () => {
-    withFreckledPredecessor();
-    await refineCandidate(glossOnFreckles, { ...input, instruction: "add nude lip gloss" });
-
-    expect(sentPrompts.length, "a prompt reached the painter").toBeGreaterThan(0);
-    for (const prompt of sentPrompts) {
-      /*
-        Asserted on the string that LEFT, not on the recipe object. Carrying the
-        pixels while still asking for them is worse than not carrying at all:
-        the paste lands, the fresh paint is applied last by design, and the
-        re-roll wins the pixels straight back — which is exactly what her walk
-        recorded.
-      */
-      expect(prompt, "her kept freckles are not re-asked for").not.toMatch(/freckle/i);
-      expect(prompt, "and the thing she actually asked for is").toMatch(/gloss/i);
-    }
-  });
-
-  it("hands the composite the SAME rows the prompt was stripped against", async () => {
-    withFreckledPredecessor();
-    await refineCandidate(glossOnFreckles, { ...input, instruction: "add nude lip gloss" });
-
-    expect(assembleAsks.length).toBeGreaterThan(0);
-    /* One list, decided once. Two reads of the store could disagree, and then
-       the prompt and the paste would hold different opinions about her face. */
-    expect(assembleAsks[0].rows, "the rows travelled with the render").toHaveLength(1);
-    expect(assembleAsks[0].writing).not.toContain("marks");
-  });
-
-  it("still asks for everything when nothing is carried", async () => {
-    /* The dark-store case, and the first edit of any face: no anchor, no rows,
-       and the prompt must be exactly what it always was. */
-    carriedRowsFixture = [];
-    await refineCandidate(
-      { harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { free: { marks: "freckles" } } }) },
-      { ...input, instruction: "give her freckles" },
-    );
-    expect(sentPrompts.length).toBeGreaterThan(0);
-    expect(sentPrompts[0], "the ask is untouched when there is nothing to paste").toMatch(/freckle/i);
-  });
-});
-
-/**
- * WHAT PERMANENCE IS ALLOWED TO KEEP (fable-102 §4).
- *
- * The first production walk filed `marks@v2` and `marks@v3` from the two frames
- * where her freckles had been LOST — each stamped `verified` by a constant,
- * while the render's own reading of that exact facet said `verified:false`. The
- * lineage walk takes the newest version, so the store had quietly made the loss
- * the truth, and a promotion at Sign would have written it onto her Cast.
- *
- * D-235 at permanence's front door: an affirmative without a `saw` is not a
- * reading, and a reading that says NO keeps nothing.
- */
-describe("a render keeps only the facets its own reading earned", () => {
+  The library files an earned facet as an UNMARKED slot and a disputed one as
+  `disputed: true` — so "what did this render earn" is `slots` with `disputed`
+  falsy, which is exactly the shape the library describe below already asserts.
+*/
+describe("a render files in the library only the facets its own reading earned", () => {
   const freckles = {
+    referenceLibraryEnabled: () => true,
     harvest: unmasked,
     interpret: async () => ({ ok: true as const, delta: { free: { marks: "freckles" } } }),
   };
+  /** Earned = filed and unmarked. Disputed rides the same list marked. */
+  const earnedSlots = () => (mintAsks[0]?.slots ?? [])
+    .filter((slot) => !slot.disputed).map((slot) => slot.slot);
   const readerSays = (present: boolean, saw: string) => ({
     id: "verifier",
     complete: async () => ({
@@ -9059,9 +8949,10 @@ describe("a render keeps only the facets its own reading earned", () => {
       { ...freckles, verifier: readerSays(true, "light scattered freckles across nose and cheeks") },
       { ...input, instruction: "give her freckles" },
     );
-    expect(keptAsks, "the render offered its pixels to the store").toHaveLength(1);
-    expect(keptAsks[0].facets).toContain("marks");
-    expect(keptAsks[0].verdict, "and the verdict is the reading that earned them").toBe("verified");
+    expect(mintAsks, "the render told the library what it made").toHaveLength(1);
+    /* `marks` is filed under the SKIN slot — tone, character and marks are all
+       facts about her skin and share one reference. */
+    expect(earnedSlots(), "the facet its reading found is filed").toContain("skin");
   });
 
   it("keeps NOTHING when the reading says the facet is not there", async () => {
@@ -9069,14 +8960,11 @@ describe("a render keeps only the facets its own reading earned", () => {
       { ...freckles, verifier: readerSays(false, "no freckling visible") },
       { ...input, instruction: "give her freckles" },
     );
-    expect(keptAsks, "the store was still called — silently, as it must be").toHaveLength(1);
     /*
-      The exact row the walk filed. Keeping this would make the LOSS the newest
-      version of the facet, and every later render would paste it back.
+      The exact row the walk filed. Filing this as earned would make the LOSS
+      the truth about the facet, and every later render would build on it.
     */
-    expect(keptAsks[0].facets, "a facet that did not arrive keeps no pixels").not.toContain("marks");
-    expect(keptAsks[0].facets).toHaveLength(0);
-    expect(keptAsks[0].verdict, "and no verdict is invented for it").toBeNull();
+    expect(earnedSlots(), "a facet that did not arrive earns nothing").not.toContain("skin");
   });
 
   /*
@@ -9111,95 +8999,81 @@ describe("a render keeps only the facets its own reading earned", () => {
     }),
   } as never;
 
-  /** A predecessor that already wrote `makeup`, so the composed recipe holds a
-   *  facet THIS ask does not — the founder's shape, reproduced. */
-  const withEarlierMakeupStep = (): void => {
+  /*
+    A predecessor that already wrote `hairWorn` — the founder's own row, and
+    chosen over the `makeup` this helper used to write for a reason worth
+    keeping: **no reference slot claims `makeup` at all**, so an arm using it
+    could never have filed `makeup` whatever the predicate did. It would have
+    passed for the wrong reason. `hairWorn` files under the `hair` slot, so the
+    two predicates give visibly different answers, and the sabotage run drives
+    exactly that.
+  */
+  const withEarlierHairStep = (): void => {
     variantRows = [{
       id: 601,
-      publicId: "variant-makeup",
+      publicId: "variant-hair",
       candidateId: 1,
-      imageKey: "casting-v2/variants/makeup.png",
+      imageKey: "casting-v2/variants/hair.png",
       internalPrompt: candidateRow.internalPrompt,
-      instructions: ["add nude lip gloss"],
-      deltas: { makeup: "nude lip gloss" },
-      stepDeltas: [{ makeup: "nude lip gloss" }],
+      instructions: ["wear her hair down"],
+      deltas: { hairWorn: "down" },
+      stepDeltas: [{ hairWorn: "down" }],
       status: "ready",
     }];
-    candidateRow.selectedVariantPublicId = "variant-makeup";
+    candidateRow.selectedVariantPublicId = "variant-hair";
+    /* So the earlier facet COULD file if the predicate let it through — without
+       a caption the arm would be inert whichever rule was in force. */
+    captionsRead = { hairWorn: "worn long and loose", marks: "light scattered freckles" };
   };
 
-  it("keeps the facet THIS ask wrote", async () => {
-    withEarlierMakeupStep();
+  it("files the facet THIS ask wrote", async () => {
+    withEarlierHairStep();
     await refineCandidate(
       { ...freckles, verifier: readerAffirmsEverything },
       { ...input, instruction: "give her freckles" },
     );
-    expect(keptAsks).toHaveLength(1);
-    expect(keptAsks[0].facets, "the ask's own facet is kept").toContain("marks");
+    expect(mintAsks).toHaveLength(1);
+    expect(earnedSlots(), "the ask's own facet is filed").toContain("skin");
   });
 
-  it("does NOT keep a verified facet an earlier step wrote — the founder's hairWorn row", async () => {
-    withEarlierMakeupStep();
-    await refineCandidate(
-      { ...freckles, verifier: readerAffirmsEverything },
-      { ...input, instruction: "give her freckles" },
-    );
-    expect(keptAsks).toHaveLength(1);
-    /*
-      `makeup` is in the composed recipe, was READ, and was VERIFIED — every
-      condition the old predicate asked for. It is kept only if the rule has
-      drifted back to "everything the net affirmed".
-    */
-    expect(keptAsks[0].facets, "a facet this ask never wrote earns nothing").not.toContain("makeup");
-    expect(keptAsks[0].facets, "and nothing else sneaks in either").toEqual(["marks"]);
-  });
+  /*
+    ⚠ "does NOT file a verified facet an earlier step wrote — the founder's
+    hairWorn row" STOOD HERE, AND IT IS DELETED RATHER THAN RE-POINTED. This is
+    a REAL LOSS and is on the PR as one, not buried.
+
+    The rule is `earned` = **written ∩ verified**, and its origin is the
+    founder's own face: variant 158, asked *"give her freckles"*, banked `marks`
+    AND `hairWorn`. `readChecks` still carries the `writtenFacets` half that
+    enforces it (`refineService.ts`), and that half is now UNPROVEN by any
+    driven arm.
+
+    It was re-pointed onto the library, the arm went green, and the sabotage
+    said it was inert: with `writtenFacets.has(facet)` deleted the arm still
+    passed. The reason is real rather than a fixture slip — the mint gates a
+    slot on WORDS (a caption carried from the predecessor row, or this ask's own
+    words), and an earlier step's facet has neither in this harness. So it can
+    never file, whichever predicate is in force, and the green arm was proving
+    the mint's gate rather than the rule.
+
+    Shipping it would have been an arm that cannot fail — the exact defect the
+    sabotage run exists to catch. Filed instead.
+  */
+
 });
 
-/**
- * THE GUARD'S PREDICATE, SHARPENED TO THE CLAUSE (fable-105).
- *
- * The first form asked whether the carried facet's VALUE appeared anywhere in
- * the produced prompt, and a legitimate sentence tripped it: her kept `marks`
- * reads "freckles", and "a bronzer that mimics freckles" is an ask about her
- * cheeks that happens to say the word. A free refusal is still a wall in front
- * of a real request.
- *
- * A genuine leak has a shape — the facet's own HEADING opening a lane,
- * `MARKS: freckles…` — and the bronzer sentence composes no MARKS clause,
- * because bronzer files as makeup. So the predicate matches the lane, not the
- * word, and this specimen is pinned as the boundary.
- */
-describe("the carried-clause guard matches the lane, not the word", () => {
-  it("lets through a sentence that merely SAYS a carried facet's value", async () => {
-    variantRows = [{
-      id: 501,
-      publicId: "variant-1",
-      candidateId: 1,
-      imageKey: "casting-v2/variants/one.png",
-      instructions: ["give her freckles"],
-      stepDeltas: [{ free: { marks: "freckles" } }],
-      deltas: { free: { marks: "freckles" } },
-      internalPrompt: {},
-    }];
-    candidateRow.selectedVariantPublicId = "variant-1";
-    carriedRowsFixture = [{ id: 9001, facet: "marks", provenance: "edit_patch", version: 1 }];
+/*
+  ⚠ "THE GUARD'S PREDICATE, SHARPENED TO THE CLAUSE" (fable-105) STOOD HERE.
 
-    const result = await refineCandidate(
-      {
-        harvest: unmasked,
-        interpret: async () => ({ ok: true as const, delta: { makeup: "a bronzer that mimics freckles" } }),
-      },
-      { ...input, instruction: "a bronzer that mimics freckles" },
-    );
+  It pinned a specimen — *"a bronzer that mimics freckles"* must not be walled
+  merely for saying the word "freckles" — against the carried-clause guard,
+  which refused an edit whose prompt still named a facet about to be pasted.
+  #1160 removes that guard with the paste road, so the wall this specimen was
+  pinned against cannot fire at all. The change is strictly toward rendering:
+  the guard could only ever refuse.
 
-    expect(result.kind, "her bronzer is rendered, not walled").toBe("rendered");
-    expect(ledger.charges.length, "and paid for like any other edit").toBeGreaterThan(0);
-    /* The kept facet is still carried, and still not asked for. */
-    expect(carriedAsks[0].writing).not.toContain("marks");
-    for (const prompt of sentPrompts) expect(prompt.toLowerCase()).not.toContain("marks:");
-  });
-
-});
+  Not replaced by an equivalent, deliberately: an arm asserting that a deleted
+  wall does not fire is an arm that cannot fail.
+*/
 
 /**
  * WHERE AN ACCESSORY LIVES, DERIVED BY THE SERVICE AND ASSERTED ON THE WIRE.
@@ -9493,7 +9367,7 @@ describe("the render tells the library what it made of her", () => {
     }),
   } as never);
 
-  it("sends a facet its own reader disputed to the LIBRARY and never to permanence", async () => {
+  it("sends a facet its own reader disputed to the LIBRARY, marked", async () => {
     captionsRead = { lips: "Natural, slim, no pronounced fuller cupid's bow visible" };
     await refineCandidate(
       {
@@ -9516,12 +9390,15 @@ describe("the render tells the library what it made of her", () => {
        the ask in the same direction, or one of them is wrong. */
     expect(mintAsks[0].slots[0]!.words[0]).toContain("no pronounced fuller cupid's bow");
 
-    /* AND THE HALF THAT MUST NOT MOVE. Permanence keeps pixels a render EARNED;
-       filing an unverified one would make the loss the truth on the next lineage
-       walk, which is the `marks@v2` incident the `earned` gate exists for. */
-    expect(keptAsks).toHaveLength(1);
-    expect(keptAsks[0]!.facets).toEqual([]);
-    expect(keptAsks[0]!.verdict).toBeNull();
+    /*
+      AND THE HALF THAT MUST NOT MOVE: it is filed MARKED, never as earned. The
+      second half of this used to read the segment store — *"and never to
+      permanence"* — and went with it (#1160). The marking is the surviving
+      statement of the same rule: a facet its own reader denied is kept for a
+      human to look at, and is not recorded as a thing this render delivered.
+    */
+    expect(mintAsks[0].slots.filter((slot) => !slot.disputed), "nothing was filed as earned")
+      .toEqual([]);
   });
 
   it("CONTROL — the same facet, believed, is unmarked and DOES reach permanence", async () => {
@@ -9543,8 +9420,10 @@ describe("the render tells the library what it made of her", () => {
 
     expect(mintAsks[0].slots.map((slot) => [slot.slot, slot.disputed ?? false]))
       .toEqual([["lips", false]]);
-    expect(keptAsks[0]!.facets).toEqual(["lips"]);
-    expect(keptAsks[0]!.verdict).toBe("verified");
+    /* The control's whole job: the SAME facet, believed, files UNMARKED. If
+       both arms did not move, the marking would be a constant. */
+    expect(mintAsks[0].slots.filter((slot) => !slot.disputed).map((slot) => slot.slot))
+      .toEqual(["lips"]);
   });
 
   it("CONTROL — with the flag dark it never speaks to the library at all", async () => {
@@ -9681,14 +9560,14 @@ describe("the render tells the library what it made of her", () => {
     );
 
     expect(atLanding, "the picture landed once").toHaveLength(1);
-    /* Read INSIDE the landing: both stores had already been written when the
+    /* Read INSIDE the landing: the library had already been written when the
        row became selectable. An ask submitted in the very next millisecond
        assembles from a library that holds this render's crops. */
     expect(atLanding[0]!.mints).toBe(1);
-    expect(atLanding[0]!.segments).toBe(1);
-    /* The same fact said the other way, so a future reorder trips on both. */
+    /* The same fact said the other way, so a future reorder trips on both. The
+       segment store's half of this pair went with it (#1160); the library's is
+       the one that still carries her work into the next ask. */
     expect(journal.indexOf("mint")).toBeLessThan(journal.indexOf("land"));
-    expect(journal.indexOf("keep-segments")).toBeLessThan(journal.indexOf("land"));
     /* And the render is still a render — nothing about the ordering changed
        what the customer got. */
     expect(ledger.refunds).toHaveLength(0);
