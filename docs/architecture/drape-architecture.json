@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "a457463ebb740d15"
+    "sourceFingerprint": "2cf5cdbc6121c9fe"
   },
   "domains": [
     {
@@ -11253,6 +11253,10 @@
     {
       "id": "test:server/casting/wholeCastRestore.test.ts",
       "path": "server/casting/wholeCastRestore.test.ts"
+    },
+    {
+      "id": "test:server/castingConfigReaders.test.ts",
+      "path": "server/castingConfigReaders.test.ts"
     },
     {
       "id": "test:server/castingOptions.test.ts",
