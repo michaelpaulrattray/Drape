@@ -30,12 +30,19 @@
  *
  * It proves the LINE: every statement those readers run carries an owner clause.
  * It does NOT prove the BEHAVIOUR — that a stranger's public id actually comes
- * back empty against a real database. That is #1181 option A, it is still owed,
- * and it is blocked rather than skipped: the harness it wants lives in
- * <server/castingV2-variant-lineage-db.test.ts>, which does not exist on `main`
- * (it arrives with #1160 slice 3, PR #1185), and a db suite runs only where a
- * disposable database exists — never on the gate. This one runs everywhere,
- * every PR, which is the trade the card names.
+ * back empty against real SQL. That is #1181 option A and it is the arm beside
+ * this one, in `server/castingV2-variant-lineage-db.test.ts`: driven against a
+ * throwaway database, with the owner's own resolve as its positive control.
+ *
+ * ⚠ **NEITHER IS A SUBSTITUTE FOR THE OTHER, WHICH IS THE CARD'S WHOLE POINT.**
+ * The behaviour arm skips without `TEST_DATABASE_URL`, so it never runs on the
+ * gate — coverage that reports green by not running. This one runs everywhere,
+ * on every PR, and only ever reads a line.
+ *
+ * (Option A was blocked when this file was written — the harness it needs
+ * arrived with #1160 slice 3, which merged twelve minutes later. It is built
+ * here rather than left as a card because the blocker died, not because the
+ * scope grew.)
  *
  * # THE POPULATION IS DERIVED FROM THE CLAIM, NOT FROM THE STATEMENTS
  *
@@ -49,11 +56,12 @@
  * fails to resolve; a reader whose WHERE loses `userId` fails the clause arm.
  *
  * ⚠ **AND THE DECLARATION IS FOUND BY WALKING `server/db/`, NOT BY A PATH** —
- * that is not tidiness, it is measured: `resolveOwnedCandidateId` is MOVING
- * between modules right now (`castingV2Segments.ts` → `castingV2.ts`, #1160
- * slice 3), because it was never a segment function and that file is being
- * reduced to the purge path. A guard pinned to a path would have gone red on a
- * move that changes nothing about ownership, which teaches a shift to delete it.
+ * not tidiness, and no longer even a prediction: `resolveOwnedCandidateId` MOVED
+ * modules (`castingV2Segments.ts` → `castingV2.ts`) in #1160 slice 3, which
+ * merged in the hour this file was written, because it was never a segment
+ * function and that module was being reduced to the purge path. The walk carried
+ * it with no edit. A guard pinned to a path would have gone red on a move that
+ * changes nothing about ownership, which is how a shift learns to delete a guard.
  *
  * # WHERE THIS READER CAN BE FOOLED, said rather than implied
  *
