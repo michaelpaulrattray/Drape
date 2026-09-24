@@ -91,6 +91,20 @@ export type PointerReading = {
  * instead of a mystery.
  */
 export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
+  "segmentsOnFaceEndpoint.test.ts": {
+    why:
+      "Deleted with the segment store's route (#1160 slice 2, 2026-09-25, on his ruling " +
+      "'Retire both. The paste road is gone; nothing reads these'). It drove the " +
+      "`castingV2.segmentsOnFace` PROCEDURE end to end, so it was coverage of the thing " +
+      "removed rather than of anything that survives. It is named in " +
+      "`scripts/lib/capabilityAtlas.mts`, which records a PR #615 review finding that used " +
+      "this file as its worked example — that paragraph is the provenance a later reader " +
+      "needs, and it is kept in the past tense rather than deleted, because the argument it " +
+      "settles (a specifier naming `castingV2` while resolving elsewhere earns no door pin) " +
+      "does not depend on the file existing. The arm proving it in " +
+      "`server/capabilityAtlas.test.ts` passes the path as a STRING to a pure function, so it " +
+      "never read the file from disk.",
+  },
   "castingV2InkUpload.test.ts": {
     why:
       "Deleted with the ink studio's upload door (#1158 slice 1, 2026-09-24, on his ruling " +

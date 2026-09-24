@@ -64,9 +64,8 @@ import {
 } from "../db/castingV2ReferenceAttachments";
 import { spokenError } from "../_core/spokenError";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
-import { listLineageSegments, resolveOwnedCandidateId } from "../db/castingV2Segments";
-import { maskFetchUrl, segmentsOnFace } from "../castingV2/segmentsOnFace";
-import { facePanel, type PanelBox, type PanelInkWorn, type PanelScan } from "../castingV2/facePanel";
+import { resolveOwnedCandidateId } from "../db/castingV2Segments";
+import { facePanel, maskFetchUrl, type PanelBox, type PanelInkWorn, type PanelScan } from "../castingV2/facePanel";
 import { readCarriedGeometry } from "../db/castingV2FaceScans";
 import { listInkDeliveryPlacements } from "../db/castingV2InkDeliveryCrops";
 import { createModuleLogger } from "../logging/logger";
@@ -1973,98 +1972,24 @@ export const castingV2Router = router({
     }),
 
   /**
-   * WHAT THIS VERSION IS KEEPING — the segments panel's only read (fable-113,
-   * founder-cleared in fable-122).
+   * THE FACE PANEL — the only read of what a face is holding.
    *
-   * Read-only by design, and that is a product decision rather than a slice
-   * boundary: the panel tells her what her face is holding and PREFILLS a
-   * sentence when she taps a row. Nothing changes until she finishes it and
-   * asks, so there is no delete here, no restyle, and no reorder.
+   * It lists what is EDITABLE, which by the founder's ruling is everything — so
+   * the rows come from the slot catalogue and the library says what each one
+   * currently is.
    *
-   * It is derived from `listLineageSegments` — the compositor's OWN source —
-   * rather than from a second query shaped for the screen. A panel with its own
-   * notion of what is kept would eventually disagree with the picture, and the
-   * disagreement would be invisible until she noticed her freckles were listed
-   * and absent (law 4).
-   *
-   * `variantId: null` is the original, and the original keeps nothing: the first
-   * edit of a face carries nothing by definition (fable-091).
-   */
-  segmentsOnFace: protectedProcedure
-    .input(z.object({ candidateId: publicId, variantId: publicId.nullable() }).strict())
-    .query(async ({ ctx, input }) => {
-      requireCastingV2(ctx.user.id);
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
-      /* No version selected means the original, which keeps nothing — and an
-         empty list renders no panel at all, so the pronoun is never used. */
-      if (input.variantId === null) return { possessive: "their", rows: [] };
-
-      /* Owner proved inside the statements that read, never in a check before
-         them (invariant 1) — `resolveOwnedCandidateId` and
-         `listCandidateVariants` each carry `userId` into their own WHERE. */
-      const candidateId = await resolveOwnedCandidateId({
-        userId: ctx.user.id,
-        candidatePublicId: input.candidateId,
-      }).catch(() => null);
-      if (candidateId === null) throw new TRPCError({ code: "NOT_FOUND", message: "Candidate not found" });
-
-      const variants = await listCandidateVariants(ctx.user.id, input.candidateId);
-      const anchor = variants.find((variant) => variant.publicId === input.variantId);
-      if (!anchor) throw new TRPCError({ code: "NOT_FOUND", message: "Version not found" });
-
-      const segments = await listLineageSegments({
-        userId: ctx.user.id,
-        candidateId,
-        anchorVariantId: anchor.id,
-      });
-
-      /*
-        HER OWN WORDS FOR THE THING, taken from the variant that DELIVERED it —
-        the same string the painter was handed and the reader was asked about.
-        A row whose value cannot be found is dropped rather than shown as a
-        facet id, which is the projection's rule, not this route's.
-      */
-      const byId = new Map(variants.map((variant) => [variant.id, variant]));
-
-      /*
-        THIS FACE'S OWN PRONOUN, from the version she is looking at.
-
-        Taken from the ANCHOR rather than per segment, because a pronoun is a
-        fact about the person and not about the edit — and because the heading
-        above the rows has to agree with them. Derived from the resolved
-        identity's sex through the same helper the room uses; `they` when the
-        record cannot say, which is correct English rather than a guess.
-      */
-      const pronouns = pronounsForSex(readResolvedIdentity(anchor.internalPrompt)?.sex);
-      return {
-        /* The heading is "On {possessive} face" — his ruling's structure, with
-           the one word the product is able to know. */
-        possessive: pronouns.possessive,
-        rows: segmentsOnFace({
-          segments,
-          deliveredValue: (segment) => {
-            const source = segment.variantId === null ? null : byId.get(segment.variantId);
-            if (!source) return null;
-            return currentValueOfFacet(readResolvedIdentity(source.internalPrompt), segment.facet);
-          },
-          urlOf: storagePublicUrl,
-          pronouns,
-        }),
-      };
-    }),
-
-  /**
-   * THE FACE PANEL — panel v2's only read, and it is dark until the library is.
-   *
-   * v1 (`segmentsOnFace`) lists what a version is KEEPING and stays live for
-   * everyone. This one lists what is EDITABLE, which by the founder's ruling is
-   * everything — so the rows come from the slot catalogue and the library says
-   * what each one currently is.
+   * ⚠ **It had a v1 beside it until #1160 slice 2 and now it has none.**
+   * `segmentsOnFace` listed what a version was KEEPING out of the segment store,
+   * and this paragraph used to say it "stays live for everyone" — his ruling of
+   * 2026-09-24 (*"Retire both. The paste road is gone; nothing reads these"*)
+   * retired that store, and the client had already superseded the panel: the
+   * sheet dropped v1's rows on the floor whenever this one answered.
    *
    * **Gated on `CASTING_REFERENCE_LIBRARY_SCOPE`.** The flag governs whether
    * rows are written; a panel over an empty library would be a list of every
    * feature with nothing said about any of them, which is true and useless. Off,
-   * this returns an empty panel and the client renders v1 exactly as today.
+   * this returns an empty panel — and with v1 gone that is now a face holding
+   * NOTHING on screen rather than a fallback to the older list.
    *
    * ⚠ **The clause above read *"which is unset everywhere"* until 2026-08-24
    * and the flag is `all` in production** — it rode with the repaint road, which

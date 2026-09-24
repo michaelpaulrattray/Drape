@@ -161,7 +161,6 @@ describe("which bucket each casting procedure was handed", () => {
       renameCast: "castingSheet",
       deleteCast: "castingSheet",
       getCast: "castingRead",
-      segmentsOnFace: "castingRead",
       /* Panel v2's read — a read, on the read bucket, like its v1 sibling. */
       facePanel: "castingRead",
       /* The auto-scan is a READ of a face, house-funded and idempotent per

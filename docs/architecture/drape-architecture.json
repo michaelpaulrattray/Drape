@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "352bb3b1739f3a35"
+    "sourceFingerprint": "81b8501280412e18"
   },
   "domains": [
     {
@@ -33,12 +33,12 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 184
+      "moduleCount": 178
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 46
+      "moduleCount": 45
     },
     {
       "id": "domain:client-shared",
@@ -1324,12 +1324,6 @@
     {
       "id": "module:client/src/features/castingV2/components/Reimagine.tsx",
       "path": "client/src/features/castingV2/components/Reimagine.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/components/SegmentsOnFace.tsx",
-      "path": "client/src/features/castingV2/components/SegmentsOnFace.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -3476,12 +3470,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:server/castingV2/bornWornCatalogue.ts",
-      "path": "server/castingV2/bornWornCatalogue.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:server/castingV2/bornWornDetector.ts",
       "path": "server/castingV2/bornWornDetector.ts",
       "domain": "casting-v2",
@@ -3556,12 +3544,6 @@
     {
       "id": "module:server/castingV2/carriedGeometry.ts",
       "path": "server/castingV2/carriedGeometry.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/castingV2/carriedSegments.ts",
-      "path": "server/castingV2/carriedSegments.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -4370,32 +4352,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:server/castingV2/segmentAssembly.ts",
-      "path": "server/castingV2/segmentAssembly.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:server/castingV2/segmentCuts.ts",
       "path": "server/castingV2/segmentCuts.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/castingV2/segmentPersistence.ts",
-      "path": "server/castingV2/segmentPersistence.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/castingV2/segmentPrune.ts",
-      "path": "server/castingV2/segmentPrune.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/castingV2/segmentsOnFace.ts",
-      "path": "server/castingV2/segmentsOnFace.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7255,16 +7213,6 @@
       "id": "route:castingV2.roster",
       "namespace": "castingV2",
       "name": "roster",
-      "type": "query",
-      "auth": "protected",
-      "input": "strict",
-      "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
-    },
-    {
-      "id": "route:castingV2.segmentsOnFace",
-      "namespace": "castingV2",
-      "name": "segmentsOnFace",
       "type": "query",
       "auth": "protected",
       "input": "strict",
@@ -10329,10 +10277,6 @@
       "path": "client/src/features/castingV2/imageGrammar.test.ts"
     },
     {
-      "id": "test:client/src/features/castingV2/keptPanelAnatomy.test.ts",
-      "path": "client/src/features/castingV2/keptPanelAnatomy.test.ts"
-    },
-    {
       "id": "test:client/src/features/castingV2/keptStrip.test.ts",
       "path": "client/src/features/castingV2/keptStrip.test.ts"
     },
@@ -11301,10 +11245,6 @@
       "path": "server/castingV2/bornPathSubjects.test.ts"
     },
     {
-      "id": "test:server/castingV2/bornWornCatalogue.test.ts",
-      "path": "server/castingV2/bornWornCatalogue.test.ts"
-    },
-    {
       "id": "test:server/castingV2/bornWornDetector.test.ts",
       "path": "server/castingV2/bornWornDetector.test.ts"
     },
@@ -11367,10 +11307,6 @@
     {
       "id": "test:server/castingV2/carriedGeometry.test.ts",
       "path": "server/castingV2/carriedGeometry.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/carriedSegments.test.ts",
-      "path": "server/castingV2/carriedSegments.test.ts"
     },
     {
       "id": "test:server/castingV2/carrySurvival.test.ts",
@@ -12109,24 +12045,8 @@
       "path": "server/castingV2/seedFidelity.test.ts"
     },
     {
-      "id": "test:server/castingV2/segmentAssembly.test.ts",
-      "path": "server/castingV2/segmentAssembly.test.ts"
-    },
-    {
       "id": "test:server/castingV2/segmentCuts.test.ts",
       "path": "server/castingV2/segmentCuts.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/segmentPersistence.test.ts",
-      "path": "server/castingV2/segmentPersistence.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/segmentPrune.test.ts",
-      "path": "server/castingV2/segmentPrune.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/segmentsOnFace.test.ts",
-      "path": "server/castingV2/segmentsOnFace.test.ts"
     },
     {
       "id": "test:server/castingV2/sexCoding.test.ts",
@@ -13311,10 +13231,6 @@
     {
       "id": "test:server/security/trustedImageFetch.test.ts",
       "path": "server/security/trustedImageFetch.test.ts"
-    },
-    {
-      "id": "test:server/segmentsOnFaceEndpoint.test.ts",
-      "path": "server/segmentsOnFaceEndpoint.test.ts"
     },
     {
       "id": "test:server/selfInvocationCheck.test.ts",
@@ -16373,11 +16289,6 @@
     {
       "from": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "to": "module:client/src/features/castingV2/signTarget.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
-      "to": "module:client/src/features/castingV2/components/SegmentsOnFace.tsx",
       "kind": "imports"
     },
     {
@@ -23016,61 +22927,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/bornWornCatalogue.ts",
-      "to": "module:server/castingV2/bornWornDetector.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/bornWornCatalogue.ts",
-      "to": "module:server/castingV2/castingV2Scope.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/bornWornCatalogue.ts",
-      "to": "module:server/castingV2/maskedComposite.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/bornWornCatalogue.ts",
-      "to": "module:server/castingV2/maskedRefine.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/bornWornCatalogue.ts",
-      "to": "module:server/castingV2/segmentCuts.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/bornWornCatalogue.ts",
-      "to": "module:server/castingV2/segmentPersistence.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/bornWornCatalogue.ts",
-      "to": "module:server/db/castingV2Segments.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/bornWornCatalogue.ts",
-      "to": "module:server/db/connection.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/bornWornCatalogue.ts",
-      "to": "module:server/db/storageCleanup.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/bornWornCatalogue.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/bornWornCatalogue.ts",
-      "to": "module:server/storage.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/castingV2/bornWornDetector.ts",
       "to": "module:server/castingV2/accessoryKinds.ts",
       "kind": "imports"
@@ -23393,46 +23249,6 @@
     {
       "from": "module:server/castingV2/carriedGeometry.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/carriedSegments.ts",
-      "to": "module:server/castingV2/castingV2Scope.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/carriedSegments.ts",
-      "to": "module:server/castingV2/maskedComposite.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/carriedSegments.ts",
-      "to": "module:server/castingV2/maskedRefine.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/carriedSegments.ts",
-      "to": "module:server/castingV2/segmentAssembly.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/carriedSegments.ts",
-      "to": "module:server/db/castingV2Segments.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/carriedSegments.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/carriedSegments.ts",
-      "to": "module:server/providers/types.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/carriedSegments.ts",
-      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {
@@ -27166,16 +26982,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/segmentAssembly.ts",
-      "to": "module:server/castingV2/maskedComposite.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentAssembly.ts",
-      "to": "module:server/castingV2/segmentCuts.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/castingV2/segmentCuts.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
       "kind": "imports"
@@ -27183,106 +26989,6 @@
     {
       "from": "module:server/castingV2/segmentCuts.ts",
       "to": "module:server/castingV2/maskGeometry.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPersistence.ts",
-      "to": "module:server/castingV2/castingV2Scope.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPersistence.ts",
-      "to": "module:server/castingV2/maskedComposite.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPersistence.ts",
-      "to": "module:server/castingV2/maskedRefine.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPersistence.ts",
-      "to": "module:server/castingV2/refineFacets.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPersistence.ts",
-      "to": "module:server/castingV2/segmentCuts.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPersistence.ts",
-      "to": "module:server/db/castingV2Segments.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPersistence.ts",
-      "to": "module:server/db/connection.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPersistence.ts",
-      "to": "module:server/db/storageCleanup.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPersistence.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPersistence.ts",
-      "to": "module:server/storage.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPrune.ts",
-      "to": "module:server/castingV2/carriedSegments.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPrune.ts",
-      "to": "module:server/castingV2/castingV2Scope.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPrune.ts",
-      "to": "module:server/castingV2/maskedComposite.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPrune.ts",
-      "to": "module:server/castingV2/segmentAssembly.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPrune.ts",
-      "to": "module:server/db/castingV2Segments.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentPrune.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentsOnFace.ts",
-      "to": "module:server/castingV2/castPronouns.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentsOnFace.ts",
-      "to": "module:server/castingV2/facetCards.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentsOnFace.ts",
-      "to": "module:server/castingV2/refineFacets.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/segmentsOnFace.ts",
-      "to": "module:server/castingV2/zoneScope.ts",
       "kind": "imports"
     },
     {
@@ -30573,11 +30279,6 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/rollService.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/castingV2/segmentsOnFace.ts",
       "kind": "imports"
     },
     {

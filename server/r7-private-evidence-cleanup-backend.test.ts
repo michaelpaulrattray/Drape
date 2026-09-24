@@ -96,10 +96,11 @@ describe("R7-7C5A private evidence cleanup backend", () => {
     expect(callers).toEqual([
       "server/casting/evidence/evidenceFork.ts",
       "server/casting/finalCastDeletion.ts",
-      // The born-worn catalogue (slice 1) writes a mask and a crop of a thing
-      // the master already had — the same pieces of a person's face, at the
-      // same permanently public keys, registered before they exist.
-      "server/castingV2/bornWornCatalogue.ts",
+      // ⚠ THE BORN-WORN CATALOGUE WAS HERE AND IS GONE (#1160 slice 2). It
+      // wrote a mask and a crop of a thing the master already had, registered
+      // before they existed. His ruling of 2026-09-24 retired the segment pair
+      // and the catalogue was on that road; the store was measured empty in
+      // both worlds, so nothing it ever registered is outstanding.
       // Casting V2 candidate retention (M4). It names `public_r2` explicitly
       // for every item, which is what this pin is here to require: candidate
       // images live in the public bucket, evidence does not, and a manifest
@@ -167,11 +168,11 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // are the cast's recipe in sentences, and the one bucket they may never
       // reach is the public one. Born held for 30 days, then collected.
       "server/castingV2/refusalLoopCapture.ts",
-      // Segment permanence (slice 1) registers a kept edit's mask and crop the
-      // same way, and for the same reason: those objects are pieces of a
-      // person's face at permanently public keys, and they are handed to the
-      // cleanup worker before they exist so a crash cannot strand them.
-      "server/castingV2/segmentPersistence.ts",
+      // ⚠ SEGMENT PERMANENCE WAS HERE AND IS GONE (#1160 slice 2), for the same
+      // ruling as the catalogue above. It registered a kept edit's mask and crop
+      // before they existed so a crash could not strand them; with the store
+      // retired there is no writer, and `keepSegmentsFromRender` was proven
+      // structurally unable to file a row on the live road before it was cut.
       "server/castingV2/signService.ts",
       // The kept scan's ROW-FILING statement, and it is the second manifest on
       // that road rather than a duplicate of the one above. `keepScan` registers

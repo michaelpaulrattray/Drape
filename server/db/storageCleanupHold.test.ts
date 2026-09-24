@@ -91,10 +91,21 @@ describe("the discharge accepts a held manifest, and only an untouched one", () 
     defect back. The proof that each one holds correctly is the driven race.
   */
   it("pins every register-before-the-bytes writer as born held", async () => {
+    /*
+      ⚠ TWO WRITERS LEFT THIS LIST WITH THE SEGMENT STORE (#1160 slice 2), both
+      DELETED rather than changed: `segmentPersistence.ts` ("a kept edit’s mask
+      and crop") and `bornWornCatalogue.ts` ("a born-worn mask and crop"). His
+      ruling of 2026-09-24 — *"Retire both. The paste road is gone; nothing reads
+      these"* — retired the road they wrote for, and the store was measured empty
+      in BOTH worlds before a line was cut. There is no module left to demand a
+      receipt from, which is the same shape the plate mint left by.
+
+      ⚠ **The discharge arm below still names `castingV2Segments.ts` and that is
+      deliberate** — the TABLE survives until slice 3, and `candidateRetention`
+      still purges it. A writer dying is not its reader dying.
+    */
     for (const file of [
       "../castingV2/referenceMint.ts",
-      "../castingV2/segmentPersistence.ts",
-      "../castingV2/bornWornCatalogue.ts",
     ]) {
       const writer = await source(file);
       expect(writer, file).toContain("heldUntil: storageCleanupManifestHeldUntil()");

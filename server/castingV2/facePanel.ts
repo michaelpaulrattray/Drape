@@ -1434,3 +1434,37 @@ export function facePanel(input: {
 export function pairSlots(feature: string): FeatureSlot[] {
   return [slotKey(feature, "left"), slotKey(feature, "right")];
 }
+
+/**
+ * THE STENCIL IS FETCHED UNDER CORS AND THE CROP IS NOT, so they cannot come
+ * from the same place.
+ *
+ * A CSS `mask-image` is a CORS-mode fetch; a `background-image` is not. The R2
+ * public bucket sends no `Access-Control-Allow-Origin` — by default, in both
+ * worlds — so a mask served straight off the bucket is BLOCKED, and an element
+ * whose mask failed to load renders nothing at all. Not a degraded thumbnail:
+ * an empty box, silently, with every stylesheet assertion still true.
+ *
+ * Found by looking at the running app (D-101) after twelve green tests and a
+ * browser check that read the computed style and passed on a blank panel.
+ *
+ * The proxy is the product's own established answer to this exact sentence —
+ * `client/src/features/boards/canvas/imageActions.ts` has said "R2 bucket URLs
+ * are cross-origin and CORS-less" since boards was written. It is
+ * authenticated, rate-limited, SSRF-allowlisted and privately cached, and a
+ * mask is a few hundred bytes.
+ *
+ * Built on the SERVER rather than in the client because the reason is a
+ * property of the bytes, not of the surface: any future reader of a stencil
+ * inherits the same constraint, and a rule that lives in one component is a
+ * rule the second component gets wrong.
+ *
+ * ⚠ **It lived in `segmentsOnFace.ts` until #1160 slice 2 retired that module**
+ * and it is the one thing in it that was never about the segment store: its
+ * only caller is the FACE PANEL's own stencil wire, which is why it moved here
+ * rather than dying with its neighbours. The `maskUrl` field above is the
+ * contract it satisfies.
+ */
+export function maskFetchUrl(publicUrl: string): string {
+  return `/api/image-proxy?url=${encodeURIComponent(publicUrl)}`;
+}

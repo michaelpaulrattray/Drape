@@ -8,15 +8,18 @@
  * named a symbol that no longer exists, the run REFUSED, and the refusal was
  * the instrument working: a control that cannot be found is indistinguishable
  * from a sweep that cannot find anything. It is replaced below by a specimen
- * that CANNOT drift — one whose own name declares it test-only — with
- * `catalogueBornWorn` kept beside it as the independent second.
+ * that CANNOT drift — one whose own name declares it test-only — with an
+ * independent second beside it. ⚠ **That second has now been lost the same way
+ * TWICE** (`catalogueBornWorn`, #1160 slice 2); it is chosen for un-driftability
+ * rather than convenience now, and the reasoning is at its own constant.
  *
  * Origin (opus-596 §5): `EYE_SHAPE_ENGINE` WAS a founder-ratified per-class
  * routing row whose only importer is its own test, and whose three green tests
  * assert the constant against its own literal. The roadmap already tracks two
  * siblings by hand — `bornWornCatalogue` has NO CALLERS, D-213's record gate has
  * no call site — so the question this answers is whether the family is three or
- * thirty.
+ * thirty. (`bornWornCatalogue` is DELETED as of #1160 slice 2; it is named here
+ * because it is why this sweep was built, not as a live finding.)
  *
  * WHAT IT MEASURES, stated so a null means something: for every named export
  * under the scanned roots, who imports it, split into PRODUCTION importers and
@@ -479,9 +482,37 @@ const negativeDynamic = flagged("startStorageCleanupWorker");
   have gone red.
 */
 const negativeSchemaOnly = flagged("WARDROBE_LINE_MAX_LENGTH");
-/* Second POSITIVE, and an independent one: the roadmap says this has no
-   callers (§0, filed by fable-121) and the scan was not told. */
-const positiveIndependent = flagged("catalogueBornWorn");
+/*
+  Second POSITIVE, and an independent one: something OUTSIDE this scan already
+  establishes that it has no callers, so the two positives cannot fail the same
+  way. The first is self-declaring (its name says test-only); this one is a real
+  capability that production is FORBIDDEN to reach.
+
+  ⚠ **It was `catalogueBornWorn` until #1160 slice 2, and it is the SECOND
+  specimen this control has lost to a retirement** — `EYE_SHAPE_ENGINE` went the
+  same way in D-248 (the docblock above tells that one). The pattern is worth
+  naming: both were symbols whose disposition was *wire or retire*, so each was
+  always going to move, and a control standing on one is a control with an
+  expiry date. `catalogueBornWorn`'s own row carried the blocker *"a
+  replacement control must land in the same commit"*, which is why this landed
+  with the deletion rather than after it.
+
+  This specimen is chosen for the opposite property — it CANNOT come clean
+  without a reviewed decision:
+
+    stageCanonicalReferencePlate   server/casting/evidence/referencePlateIngestion.ts:73
+                                 → its own docblock, read at the bytes:
+                                   "Internal C2 orchestration only. No route,
+                                   worker, startup hook, or production delivery
+                                   adapter may call this until the later
+                                   reviewed C4 capability."
+
+  Its disposition is KEEP rather than HELD, and the R7 evidence family it
+  belongs to is explicitly PARKED (PROGRAM.md), so nothing is queued that would
+  delete it or wire it. A caller appearing here is a genuine finding about C4,
+  not drift — which is what a control is supposed to be.
+*/
+const positiveIndependent = flagged("stageCanonicalReferencePlate");
 
 console.log("CONTROLS");
 console.log(
@@ -491,7 +522,7 @@ console.log(
   `  negative  maskedEditingEnabledFor   ${negativeImported ? "FLAGGED  FAIL" : "not flagged      PASS"}`,
 );
 console.log(
-  `  positive  catalogueBornWorn         ${positiveIndependent ? "FOUND            PASS" : "NOT FOUND  FAIL"}`,
+  `  positive  stageCanonicalReferencePlate ${positiveIndependent ? "FOUND            PASS" : "NOT FOUND  FAIL"}`,
 );
 console.log(
   `  negative  MASKED_EDITING_SCOPE      ${negativeSelfRead ? "FLAGGED  FAIL" : "not flagged      PASS"}`,

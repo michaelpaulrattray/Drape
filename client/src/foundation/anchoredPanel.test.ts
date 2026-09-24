@@ -369,7 +369,6 @@ describe("a panel row wears the quieter focus mark, not the accent ring", () => 
   it("the listbox row and casting V2's own rows all carry the one convention", () => {
     const rows: Array<[string, string]> = [
       ["foundation/foundation.css", ".dp-root .dp-pop__option:focus-visible"],
-      ["features/castingV2/castingV2.css", ".dp-root .dpc-kept__row:focus-visible"],
       ["features/castingV2/castingV2.css", ".dp-root .dpc-face__row:focus-visible"],
     ];
     for (const [file, selector] of rows) {
