@@ -1,7 +1,7 @@
 {
-  "edition": 512,
-  "updatedAt": "2026-09-24T12:47:56.273Z",
-  "shift": "Foreman — the tattoo studio's last leftover instructions are deleted, and our own list of them was one short",
+  "edition": 513,
+  "updatedAt": "2026-09-24T14:22:14.631Z",
+  "shift": "Foreman — the paid Sign stops looking for a tattoo that was never there",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -104,6 +104,14 @@
         {
           "title": "And deleting them left two small pieces of writing stranded — the sentences a customer would read if she sent us a picture for something we do not do yet. We are KEEPING those, deliberately, because they belong to the picture road you put on hold rather than to the tattoo studio we are retiring. They are written down as waiting on that road, with what would settle them either way.",
           "state": "done"
+        },
+        {
+          "state": "done",
+          "title": "The last step of the tattoo studio's retirement, and it touches the part you pay for. When you signed a cast, the five finished angles were built by a step that first went and looked up \"the tattoos this cast is wearing\" in the tattoo studio's own records. That lookup is now gone. It never once found anything: there are no records in it on the live site or on our test site, nothing has been able to write to it since last night, and a separate switch you set in August turned every answer away regardless — three separate reasons it has never put a tattoo into anybody's finished angles."
+        },
+        {
+          "state": "done",
+          "title": "The thing worth trusting here is that we did not just believe that. We took the exact words a cast is sent to the engine — for a cast that really is wearing a tattoo — before the change and again after it, and they came back identical down to the character, with the same pictures attached in the same order. Tattoos that were actually applied to a cast still ride into the angles exactly as before; that road was untouched and now it is the only one."
         }
       ]
     },
@@ -182,7 +190,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T12:47:18.200Z",
+      "readAt": "2026-09-24T14:22:23.474Z",
       "items": [
         {
           "issueNumber": 179,
@@ -7844,6 +7852,13 @@
       "status": "merged",
       "prNumber": 1175,
       "note": "Six were listed, a seventh was found by hand, and two more turned up that we are keeping on purpose."
+    },
+    {
+      "id": "ink-sign-read-1158-s4f",
+      "title": "The paid Sign stops looking for a tattoo that was never there",
+      "status": "merged",
+      "prNumber": 1176,
+      "note": "The last of the tattoo studio's code; the words a cast is sent are identical to the character."
     }
   ],
   "problems": [
@@ -8767,7 +8782,7 @@
     216
   ],
   "nextUp": {
-    "readAt": "2026-09-24T12:47:18.199Z",
+    "readAt": "2026-09-24T14:22:23.473Z",
     "items": [
       {
         "issueNumber": 1158,
