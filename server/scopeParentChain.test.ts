@@ -58,6 +58,10 @@ const scopeSource = readFileSync(
   path.join(repoRoot, "server/castingV2/castingV2Scope.ts"),
   "utf8",
 );
+const envSource = readFileSync(
+  path.join(repoRoot, "server/_core/env.ts"),
+  "utf8",
+);
 /*
   ⚠ THE BULLETS MOVED, THE ARM DID NOT (2026-08-31, #330).
 
@@ -127,6 +131,48 @@ function scopeFences(source: string): Fence[] {
     fences.push({ flag, parents });
   }
   return fences;
+}
+
+/**
+ * WHAT `validateEnv()` ACTUALLY HANDS EACH FENCE — flag → the set of OTHER
+ * scope variables passed in its call.
+ *
+ * The argument object is brace-matched from the `(` of the call rather than
+ * regex-scanned to the next `)`, because every one of these calls spans lines
+ * and several carry nested shapes; a line-bounded read would find the first
+ * parent and stop. `declared` is injectable for the fixture control below and
+ * defaults to the real constants, so the reader and the fence derivation are
+ * reading one table rather than two.
+ */
+function bootCallSites(
+  source: string,
+  declared: Record<string, string> = declaredScopeEnvs(scopeSource),
+): Map<string, Set<string>> {
+  const passed = new Map<string, Set<string>>();
+  for (const hit of source.matchAll(/validate(\w+)Environment\(/g)) {
+    const flag = `${hit[1]!.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase()}_SCOPE`;
+    if (!Object.values(declared).includes(flag)) continue;
+    const open = hit.index! + hit[0].length - 1;
+    let depth = 0;
+    let args = "";
+    for (let i = open; i < source.length; i += 1) {
+      if (source[i] === "(") depth += 1;
+      else if (source[i] === ")") {
+        depth -= 1;
+        if (depth === 0) {
+          args = source.slice(open, i + 1);
+          break;
+        }
+      }
+    }
+    const parents = new Set(
+      [...args.matchAll(/([A-Z][A-Z0-9_]*_SCOPE_ENV)/g)]
+        .map((env) => declared[env[1]!])
+        .filter((name): name is string => name !== undefined && name !== flag),
+    );
+    passed.set(flag, parents);
+  }
+  return passed;
 }
 
 /** The catalogue entry for one flag, from its own `- \`FLAG\`` to the next. */
@@ -217,6 +263,85 @@ describe("the scope fences, derived from the code", () => {
     expect(child!.flag).toBe("CASTING_MADE_UP_SCOPE");
     expect(child!.parents).toEqual(["CASTING_OTHER_MADE_UP_SCOPE"]);
     expect(bulletFor("CASTING_MADE_UP_SCOPE")).toBe("");
+  });
+
+  /*
+    ⚠ THE THIRD READER, AND THE HOLE IT CLOSES WAS FOUND BY A SURVIVING
+    SABOTAGE (#1158 slice 3, 2026-09-24).
+
+    Until this arm, two readers agreed about the chain — the fence's own body
+    and the catalogue bullet — and NEITHER of them reads the line that actually
+    decides a flag's parent on the running service: the CALL SITE in
+    `validateEnv()`. The fence is handed a string; the FIELD NAME saying which
+    parent it is (`castingScope`, `studioScope`) is documentation, and a call
+    site passing the wrong variable under the right field name typechecks,
+    boots, and reads correct in both of the other two places.
+
+    Driven rather than argued: with `CASTING_INK_TRANSFORM_SCOPE` re-parented
+    onto `CASTING_V2_SCOPE` in the fence, the catalogue and the code, changing
+    ONLY `_core/env.ts` to pass `CASTING_INK_STUDIO_SCOPE_ENV` left **the whole
+    tree green** — `pnpm check`, this file's other arms, and the flag's own
+    twelve arms. A production boot then enforces the OLD parent while three
+    documents and one fence say the new one.
+
+    ⚠ AND THE BAD SABOTAGE IS WORTH RECORDING BESIDE THE GOOD ONE, because it
+    is the reason this arm is pointed where it is. The first attempt swapped
+    the fence's PARSER (`parseCastingV2Scope` → `parseCastingInkStudioScope`)
+    and also stayed green — correctly, because the two are one grammar
+    differing only in the error type they throw on a malformed value. That was
+    a near-inert edit, not a coverage hole; chasing it as one would have armed
+    this file over the wrong line.
+  */
+  it("⚠ every fence's parent is the variable validateEnv actually PASSES it", () => {
+    const passed = bootCallSites(envSource);
+    for (const fence of fences) {
+      if (fence.parents.length === 0) continue;
+      const atBoot = passed.get(fence.flag);
+      expect(
+        atBoot,
+        `${fence.flag} has a boot fence and validateEnv() never calls it — invariant 7's "a control that is not invoked does not exist", wearing an env var`,
+      ).toBeDefined();
+      expect(
+        [...atBoot!].sort(),
+        `${fence.flag}'s fence refuses on ${fence.parents.join(", ")}, and validateEnv() hands it ${[...atBoot!].join(", ") || "no parent at all"} — the field name in between is prose, so this mismatch typechecks, boots, and reads correct in the fence and in the catalogue alike`,
+      ).toEqual([...fence.parents].sort());
+    }
+  });
+
+  it("CONTROL — a call site passing the wrong parent variable is caught", () => {
+    /*
+      The fixture is the sabotage that survived, in miniature: a fence refusing
+      on one flag, a call site handing it another. Without this arm the one
+      above says only that nothing is wrong today.
+    */
+    const fixture = `
+      validateCastingMadeUpEnvironment({
+        scope: process.env[CASTING_MADE_UP_SCOPE_ENV],
+        parentScope: process.env[CASTING_WRONG_PARENT_SCOPE_ENV],
+      });
+    `;
+    const declared = {
+      CASTING_MADE_UP_SCOPE_ENV: "CASTING_MADE_UP_SCOPE",
+      CASTING_WRONG_PARENT_SCOPE_ENV: "CASTING_WRONG_PARENT_SCOPE",
+      CASTING_RIGHT_PARENT_SCOPE_ENV: "CASTING_RIGHT_PARENT_SCOPE",
+    };
+    const passed = bootCallSites(fixture, declared);
+    expect(passed.get("CASTING_MADE_UP_SCOPE")).toEqual(new Set(["CASTING_WRONG_PARENT_SCOPE"]));
+    expect(passed.get("CASTING_MADE_UP_SCOPE")).not.toEqual(
+      new Set(["CASTING_RIGHT_PARENT_SCOPE"]),
+    );
+  });
+
+  it("CONTROL — the call-site reader is not returning an empty map over the real file", () => {
+    /*
+      The vacuous green this whole family refuses: a brace matcher pointed at
+      the wrong brace returns nothing, every set comes back empty, and the arm
+      above agrees with a fence that has no parents. So the population is
+      asserted large, and one known pair is asserted by name.
+    */
+    const passed = bootCallSites(envSource);
+    expect(passed.size).toBeGreaterThan(15);
+    expect(passed.get("CASTING_INK_CUT_SCOPE")).toEqual(new Set(["CASTING_INK_STUDIO_SCOPE"]));
   });
 
   it("CONTROL — a stem that maps to no declared flag REFUSES rather than passing", () => {
