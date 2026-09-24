@@ -2,11 +2,13 @@
  * ONE QUEUE, TWO ENGINES (#1079) — asserted at the object identity handed to
  * the engine factory.
  *
- * `assertFalBudget()` proves at boot that five paths' concurrency allowances
- * sum to the provider account's ceiling of 20 requests in flight
+ * `assertFalBudget()` proves at boot that the declared paths' concurrency
+ * allowances fit inside the provider account's ceiling of 20 requests in flight
  * (`ROLL_IMAGE_CONCURRENCY` 8 + `SIGN_VIEW_CONCURRENCY` 3 +
- * `REFINE_EDIT_CONCURRENCY` 3 + `FAL_CONCURRENCY` 5 + `INK_PLATE_CONCURRENCY`
- * 1). **That arithmetic counts requests, not models.** So the moment the roll
+ * `REFINE_EDIT_CONCURRENCY` 3 + `FAL_CONCURRENCY` 5 = 19 of 20; it was five
+ * paths summing to exactly 20 until the plate mint's row retired with the ink
+ * studio, #1158 slice 4d). **That arithmetic counts requests, not models.**
+ * So the moment the roll
  * road gained a second engine, the thing keeping it honest stopped being the
  * boot check and became one line — the queue instance both engines are handed.
  *
