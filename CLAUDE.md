@@ -590,8 +590,8 @@ the live service on every push.
 | flag | the road it governs |
 |---|---|
 | `CASTING_V2_SCOPE` | the whole `castingV2.*` namespace — the root of every scope chain below, and spendable surface |
-| `CASTING_SEGMENTS_SCOPE` | the segment store (segment permanence) — RETIRING on his *"Retire both. The paste road is gone; nothing reads these"* (#1160); since slice 1 the refine road no longer reads or writes the store, so it governs nothing on a customer's road |
-| `CASTING_SEGMENTS_DELIVERED_SCOPE` | cutting a segment from the delivered frame's own extent rather than the master's — RETIRING with its parent (#1160); governs nothing since slice 1 |
+| `CASTING_SEGMENTS_SCOPE` | the segment store (segment permanence) — RETIRING (#1160, his word); governs nothing on the refine road since slice 1 |
+| `CASTING_SEGMENTS_DELIVERED_SCOPE` | cutting a segment from the delivered frame's own extent rather than the master's — RETIRING with its parent (#1160) |
 | `CASTING_REFERENCE_LIBRARY_SCOPE` | the compositor swap's reference library |
 | `CASTING_REPAINT_SCOPE` | the compositor swap itself — repaint instead of paste |
 | `CASTING_SIDE_PHRASING_SCOPE` | whether a per-side ask also says where that side is |
