@@ -1551,7 +1551,7 @@ an unflipped flag read as a positive licence.
 
 #### Why a FLAG and not a straight swap
 
-`CASTING_INK_STUDIO_SCOPE` is `users:1` in production — the founder's own
+⚠ **`CASTING_INK_STUDIO_SCOPE` IS UNSET AS OF 2026-09-24 — the studio retired on his *"It retires with N2"* (#1158 slice 4c), and everything from here down is the record of what the road decided rather than a description of the product.** When this was written it was `users:1` in production — the founder's own
 account. Cutting before storing changes what an upload DOES: two segmenter calls
 of house money, and a refusal where one succeeds today. Landing that unflagged
 would change live behaviour on the deploy that shipped it.
@@ -1620,7 +1620,7 @@ What happened to it:
   `shared/inkDesignDelivery.ts` and served by the `/api/ink-design` route;
 - **the surface exists** — `957b4dc5`, 2026-08-20, the shown cut drawn in
   `RefinePanel` above the chips that answer for it, dying with the question;
-- **the flag is flipped** — `CASTING_INK_CUT_SCOPE=users:1`, and that is read
+- **the flag is flipped** — `CASTING_INK_CUT_SCOPE=users:1` (⚠ **UNSET since 2026-09-24, #1158 slice 4c**), and that is read
   off the SERVICE by the deploy rite rather than off any document. Its road is
   the founder's own: he closed the frames gate with his eyes and his words,
   *"yes its acceptable"* (fable-1257 §1), and the flip was performed with

@@ -47,12 +47,21 @@ const log = createModuleLogger("routes/inkDesignDelivery");
  *
  * # WHY THERE IS NO SCOPE FLAG ON IT
  *
- * A design row only exists for an account that was inside
- * `CASTING_INK_STUDIO_SCOPE` when it uploaded. Gating the READ on a flag that
- * can move would make an owner's own stored picture unviewable the day the flag
+ * A design row only exists for an account that was inside one of the two doors
+ * that mint one when its bytes were stored. Gating the READ on a flag that can
+ * move would make an owner's own stored picture unviewable the day the flag
  * changed under her — a refusal about our configuration wearing the shape of a
  * refusal about her design. The control here is ownership, and it is in the
  * statement.
+ *
+ * ✅ **AND THAT ARGUMENT WAS PAID ON 2026-09-24 RATHER THAN MERELY MADE.** This
+ * paragraph named `CASTING_INK_STUDIO_SCOPE` as the one door; the studio
+ * retired on his *"It retires with N2"* (#1158) and that variable is now UNSET
+ * on the service. A read gated on it would have taken every design row this
+ * route serves with it, on the deploy that shipped the unset, with no failing
+ * test and no error. **Two doors mint a design row** — the retired upload and
+ * the HELD take from a picture she attached (`inkReferenceMint.ts`), which is
+ * the one that survives — which is why this sentence no longer names either.
  *
  * # THE TWO REFUSALS THAT ARE NOT ABOUT WHO IS ASKING
  *

@@ -18,7 +18,15 @@
  *                            replaced that with a narrower condition of his own,
  *                            HIS ACCOUNT ONLY until the preview ships
  *                            (fable-1257 §1). It was flipped to `users:1` on
- *                            that word (fable-1260) and has stood there since.
+ *                            that word (fable-1260) and stood there until
+ *                            2026-09-24, when his *"It retires with N2"* took
+ *                            the whole studio road and this variable came OFF
+ *                            the service (#1158 slice 4c). ⚠ The specimen is
+ *                            kept because the LESSON is what this file is for,
+ *                            and it has now been paid twice by one flag: a
+ *                            paragraph saying `users:1` about a variable that
+ *                            is gone is the same defect as one saying `off`
+ *                            about a variable that is set.
  *   CASTING_INK_WORDS_SCOPE  the page said *"do not widen this flag on the
  *                            strength of this paragraph"* and called it armed
  *                            ahead of its own court. The court had run and been
@@ -107,16 +115,82 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "capability this program took from users:1 to all",
   },
   CASTING_INK_STUDIO_SCOPE: {
-    position: "users:1",
+    position: "off",
+    /* ⚠ RETIRED AND UNSET ON THE SERVICE, 2026-09-24 — his Crew reply #208 (card
+       switch-10-ink-studio), verbatim and entire: "It retires with N2".
+
+       The two-paths row below is the shape this follows and the precedent for
+       it: the variable is GONE from the service, and `off` is how this table
+       says so. It is not a narrow — there is nothing behind it to narrow.
+       #1158 slices 1–2 closed the entrance (`castingV2.ink.upload` does not
+       exist and the plate road is deleted whole), and slice 4b deleted the last
+       point-of-use predicate that read this flag, so from `00ca107a` nothing in
+       the product asks it whether a user may do anything.
+
+       ⚠ THE ONE READER THAT SURVIVES IS NOT A DOOR, AND IT IS WHY THE CODE
+       BELOW THIS ROW DOES NOT GO WITH THE VARIABLE. `castingInkStudioArmed()`
+       asks whether a design row could EVER have been written, which is the
+       retention sweep's question, and since slice 4b it is one half of
+       `castingInkDesignArmed()`'s OR — the other half being the HELD reference
+       road, which stands at `users:1` and still mints design rows. Driven at
+       the predicate before the variable was touched: with this unset, a design
+       row and a delivery crop are both still ARMED, so the sweep still throws
+       on a missing table rather than swallowing it. A purge path that narrows
+       when a feature retires is how a customer's own photograph outlives the
+       Cast it was promised to leave with.
+
+       ⚠ AND IT LEAVES WITH ITS PARENT-SIDE CHILD IN ONE ACT, NEVER ALONE —
+       `CASTING_INK_CUT_SCOPE`'s boot fence refuses for a user who is not inside
+       this flag, so unsetting this one while that one still read `users:1` is a
+       crash-looping deploy. Rehearsed through the real `validateEnv()` against
+       the service's own 36 values before either was touched, with that exact
+       case as a NEGATIVE control: it refused, naming `CASTING_INK_CUT_SCOPE`.
+
+       Everything below this line is the row's HISTORY and is kept because the
+       reading outlives the position. ⚠ Where it says this row reads `users:1`,
+       that was true until today and is not true now. */
+    /* ~~the widening tripwire (fable-1052 §2) — it does not pass users:1 while
+       uploads ride uncropped to the plate mint; the sole account behind it is
+       his~~ — superseded: the plate mint it tripped on is deleted. */
     why:
-      "the widening tripwire (fable-1052 §2) — it does not pass users:1 while "
-      + "uploads ride uncropped to the plate mint; the sole account behind it is his",
+      "RETIRED — his Crew reply #208, 'It retires with N2'. Unset on the service "
+      + "2026-09-24 (#1158 slice 4c) once slices 1–4b left it with no door to open. "
+      + "Its one surviving reader, castingInkStudioArmed(), is the retention sweep's "
+      + "question and not a door, and it is ORed with the HELD reference road",
   },
   CASTING_INK_CUT_SCOPE: {
-    position: "users:1",
+    position: "off",
+    /* ⚠ RETIRED AND UNSET ON THE SERVICE, 2026-09-24 — the same ruling, in the
+       same act as its parent above, for the reason stated there.
+
+       This flag had exactly ONE read in the whole product — the retired
+       upload's `cutEnabled` dependency — so from slice 2 nothing consulted it,
+       and slice 4b deleted the predicate itself. ⚠ IT WAS STILL NOT REMOVABLE
+       ALONE, and that is the finding this row should be read for: until slice
+       4a it was the BOOT PARENT of `CASTING_INK_REGION_CROP_SCOPE`, which the
+       held reference road's surface cut consults on every take. Unsetting a
+       parent over a live child is the crash loop described above; 4a re-parented
+       the child onto `CASTING_INK_REFERENCE_SCOPE`, the road that actually calls
+       the cut, which is what made this row possible.
+
+       What a customer sees: nothing. `inkReferenceMint.ts`'s own header says
+       **`CASTING_INK_CUT_SCOPE` IS NOT CONSULTED** on the surviving road — a
+       photograph she attached has no not-cutting position to take — and the
+       surface cut is still on for his account, driven before and after.
+
+       **#10 retires with it**, as #1158 says: its subject is a preview on an
+       upload surface that no longer exists.
+
+       Everything below this line is HISTORY. ⚠ Where it says this row reads
+       `users:1`, that was true from fable-1260 until today. */
+    /* ~~his verbatim yes, fable-1257 §1 — his account only until the
+       customer-facing preview (3a.2(b)) ships; flipped fable-1260~~ —
+       superseded: the preview (#10) closed with the upload surface. */
     why:
-      "his verbatim yes, fable-1257 §1 — his account only until the "
-      + "customer-facing preview (3a.2(b)) ships; flipped fable-1260",
+      "RETIRED — his Crew reply #208, 'It retires with N2'. Unset on the service "
+      + "2026-09-24 (#1158 slice 4c), in one act with CASTING_INK_STUDIO_SCOPE because "
+      + "this flag's boot fence refuses past an off parent. Its last read died with the "
+      + "upload; the surviving surface cut is parented on CASTING_INK_REFERENCE_SCOPE",
   },
   CASTING_INK_REFERENCE_SCOPE: {
     position: "users:1",

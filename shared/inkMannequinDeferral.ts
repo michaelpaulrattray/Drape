@@ -6,8 +6,12 @@
  *
  * # What that has to mean in code, and why it is a constant rather than a flag
  *
- * `CASTING_INK_STUDIO_SCOPE` is ON for his account. The upload door is open, and
- * two things behind it belonged to the road he just parked:
+ * `CASTING_INK_STUDIO_SCOPE` was ON for his account when this was written; it
+ * is UNSET as of 2026-09-24 and the upload door is gone entirely — his *"It
+ * retires with N2"* (#1158). ⚠ **This constant is NOT thereby redundant**:
+ * `signService.ts` reads `MANNEQUIN_ROAD_DEFERRED` on the paid sign road, which
+ * is why slice 2 left it standing. The door was open when it was written, and
+ * two things behind it belonged to the road he had just parked:
  *
  *   1. **every upload MINTED A PLATE** — house money, a fal call and ~37s, to
  *      draw a design onto a mannequin form for a road nobody is building;

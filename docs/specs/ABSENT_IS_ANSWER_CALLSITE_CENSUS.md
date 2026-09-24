@@ -99,7 +99,7 @@ This answers the card's own first proposed item: **where the product uses it.**
 - `server/castingV2/inkReferenceCutter.ts:520` · asked: `word` · absent-is-answer
 - `server/castingV2/inkReferenceCutter.ts:699` · asked: `INK_REGION` · absent-is-answer
 - `server/castingV2/inkReferenceCutter.ts:735` · asked: `FACE_REGION` · absent-is-answer
-- **live:** CASTING_INK_CUT_SCOPE / CASTING_INK_REGION_CROP_SCOPE = users:1 (his account)
+- **live:** ~~CASTING_INK_CUT_SCOPE~~ / CASTING_INK_REGION_CROP_SCOPE = users:1 (his account) — ⚠ the cut flag is UNSET as of 2026-09-24 (#1158 slice 4c); the region crop is re-parented onto `CASTING_INK_REFERENCE_SCOPE` and still stands at `users:1`
 - **floor:** the licence is `pixels > 0` by design and may never carry a percentage floor
 - **exposure:** Both safety reads fail the SAFE way: a substituted `human skin` says a person IS present, which routes to CUTTING rather than to riding her photograph whole; a substituted `face` over-excludes. The dangerous direction here is the false NEGATIVE, which is already the documented padded-licence finding
 

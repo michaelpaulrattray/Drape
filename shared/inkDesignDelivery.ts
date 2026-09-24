@@ -12,10 +12,15 @@
  * frames gate himself — *"yes its acceptable"* — and replaced that condition
  * with a narrower one of his own: **his account only until the customer-facing
  * preview ships** (fable-1257 §1). The flag was flipped on that word and
- * production holds `CASTING_INK_CUT_SCOPE=users:1` (fable-1260). So this path
- * serves the bytes today, 3a.2(b) — the room that DRAWS them — is still
- * unbuilt, and what the missing half now gates is WIDENING past `users:1`
- * rather than existing at all. `CLAUDE.md` took the same correction on
+ * production held `CASTING_INK_CUT_SCOPE=users:1` (fable-1260) until 2026-09-24.
+ * ⚠ **IT IS UNSET NOW — the whole studio retired on his *"It retires with N2"*
+ * (#1158 slice 4c) and 3a.2(b), the room that would have DRAWN these bytes,
+ * retired with it (#10).** What still serves them is the HELD reference road,
+ * whose cut this flag never gated: `inkReferenceMint.ts` says in its own header
+ * that `CASTING_INK_CUT_SCOPE` **IS NOT CONSULTED** there, because a photograph
+ * she attached has no not-cutting position to take. So this path serves the
+ * bytes today for the same account it always did, and the condition about
+ * WIDENING past `users:1` is moot rather than met. `CLAUDE.md` took the same correction on
  * 2026-08-23; this copy is a day and a surface behind it.
  *
  * # Why the path lives in `shared/` and not in the route that serves it

@@ -1158,9 +1158,12 @@ export function validateCastingInkStudioEnvironment(input: {
  *
  * # A THIRD FLAG RATHER THAN THE STUDIO'S, and the reason is what it keeps
  *
- * `CASTING_INK_STUDIO_SCOPE` is `users:1` in production. Landing this door
- * behind it would not be a dark landing at all — it would open a new store on
- * the founder's live account on the deploy that shipped it, and the thing that
+ * `CASTING_INK_STUDIO_SCOPE` was `users:1` in production when this was written
+ * (it is UNSET as of 2026-09-24, #1158 slice 4c — the studio retired on his
+ * word, and this flag is one of the reasons the attach road outlived it).
+ * Landing this door behind it would not have been a dark landing at all — it
+ * would have opened a new store on the founder's live account on the deploy
+ * that shipped it, and the thing that
  * store keeps is a FULL PHOTOGRAPH of whoever is in the picture. A road that
  * keeps people's photographs earns its own switch, off by default, so that
  * opening it is a decision somebody makes rather than a side effect of where the
@@ -1697,17 +1700,42 @@ export function validateCastingInkReferenceEnvironment(input: {
  * was **deleted in slice 4b** along with `captureCastingInkStudioEnabled`, and
  * what stands below it now is the BOOT FENCE and this constant, nothing else.
  *
- * ⚠ **THOSE TWO LEAVE TOGETHER, IN SLICE 4c, IN THE SAME ACT AS THE VARIABLE —
- * AND THE ORDER MATTERS FOR A DIFFERENT REASON THAN THE CENSUS GAVE.**
+ * ✅ **THE VARIABLE IS GONE FROM THE SERVICE — UNSET 2026-09-24, SLICE 4c, IN
+ * ONE ACT WITH `CASTING_INK_STUDIO_SCOPE`.** The crash the census worried about
+ * is real and it points here: it is unsetting the PARENT while this child still
+ * reads `users:1`, which this fence refuses at boot. Rehearsed through the real
+ * `validateEnv()` against the service's own values with that exact case as a
+ * NEGATIVE control — it refused, naming this flag. Unset together, there is no
+ * window. `productionFlagPositions.mts` records the pair as `off`, which is how
+ * that table says *the variable is not on the service*, and the rite compares it
+ * on every push.
+ *
+ * ⚠ **THE FENCE AND THIS CONSTANT DID NOT GO WITH IT, AND SLICE 4b'S OWN
+ * PARAGRAPH HERE SAID THEY WOULD — CORRECTED AT THE CODE, 2026-09-24.** It read
+ * *"those two leave together, in slice 4c, in the same act as the variable"*.
+ * They cannot, and the blocker is one level up rather than in this flag:
  * `server/scopeParentChain.test.ts` holds the declared scope constants and the
- * `validate…Environment` fences equal as SETS, so a declaration outliving its
- * fence by one slice is red in between — and rightly, because that shape is a
- * variable somebody can still set with nothing checking it. The crash the census
- * worried about is real but points elsewhere: it is unsetting the PARENT
- * (`CASTING_INK_STUDIO_SCOPE`) while this child still reads `users:1`, which
- * this fence refuses at boot. Unset the two together and there is no window.
- * The history is kept below rather than rewritten: what a retired road used to
- * decide is how the next reader understands the rows it left behind.
+ * `validate…Environment` fences equal as SETS, so the two must move together —
+ * true, and it says nothing about WHEN. **`CASTING_INK_STUDIO_SCOPE_ENV` cannot
+ * leave at all today**, because `castingInkStudioArmed()` reads it and that
+ * reader is the retention sweep's question, which slice 4b deliberately kept
+ * and ORed with the held reference road. Deleting the constant means deleting
+ * that term, which is a purge-path narrowing — the exact thing 4b's whole PR
+ * existed to prevent, one slice later and under a cleanup's name.
+ *
+ * **And the position table cannot lose a row while any reader remains**: its
+ * population arm takes the union of the Atlas's flag inventory and a constant
+ * scan, and the Atlas reads `process.env["X"]` as well as the constant form, so
+ * inlining the string would not help either. `CASTING_TWO_PATHS_SCOPE` is the
+ * worked precedent and it is exact — unset on his word 2026-09-24, its row at
+ * `off`, its fence and constant still standing.
+ *
+ * So what remains is a NAMED remainder rather than a slice: the studio
+ * constant, its fence and this one leave when the retention sweep's *"could a
+ * design row ever have been written?"* is answered without reading a variable
+ * nobody can set. That is a reading, not a deletion, and it is not folded in
+ * here. The history is kept below rather than rewritten: what a retired road
+ * used to decide is how the next reader understands the rows it left behind.
  *
  * Off, and absent means off, `uploadInkDesign` behaves exactly as it does today:
  * her photograph is stored unchanged, no segmenter is called, and not one thing
@@ -1718,9 +1746,10 @@ export function validateCastingInkReferenceEnvironment(input: {
  *
  * # A FLAG RATHER THAN A STRAIGHT SWAP, and the reason is that the door is LIVE
  *
- * `CASTING_INK_STUDIO_SCOPE` is `users:1` in production — the founder's own
- * account, uploading his own designs. Cutting before storing changes what an
- * upload DOES: it spends two segmenter calls of house money, and it can refuse
+ * `CASTING_INK_STUDIO_SCOPE` was `users:1` in production when this was written
+ * — the founder's own account, uploading his own designs; it is UNSET as of
+ * 2026-09-24 and there is no upload. Cutting before storing changed what an
+ * upload DID: it spends two segmenter calls of house money, and it can refuse
  * a picture that succeeds today (a photographed person the reader could isolate
  * no design on). Landing that unflagged would change live behaviour on the
  * deploy that shipped it, which the standing autonomy grant forbids by name.

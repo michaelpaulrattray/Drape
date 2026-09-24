@@ -19,7 +19,11 @@
  *                            lands"* — superseded by his own verbatim yes and a
  *                            narrower condition, HIS ACCOUNT ONLY until the
  *                            preview ships (fable-1257 §1); flipped to `users:1`
- *                            on that word (fable-1260).
+ *                            on that word (fable-1260), and OFF the service
+ *                            entirely on 2026-09-24 — his *"It retires with
+ *                            N2"* (#1158 slice 4c). The specimen has now been
+ *                            wrong in both directions on one flag, which is
+ *                            why it is kept rather than replaced.
  *   CASTING_INK_WORDS_SCOPE  *"do not widen this flag on the strength of this
  *                            paragraph"* — the court had run and been ratified
  *                            and the flip to `all` went through HIS OWN HAND
@@ -134,9 +138,19 @@ describe("the position table's population", () => {
   it("⚠ holds the two positions whose CLAUDE.md paragraphs had gone stale", () => {
     /* Pinned BY NAME rather than left to the population check, because these two
        are the specimens this whole file was built from. If either moves, the
-       paragraph in CLAUDE.md moves with it — that is the coupling. */
+       paragraph in the flag catalogue moves with it — that is the coupling.
+
+       ⚠ AND THE COUPLING FIRED, WHICH IS THE ONLY REASON THIS COMMENT IS BEING
+       WRITTEN (2026-09-24, #1158 slice 4c). `CASTING_INK_CUT_SCOPE` moved from
+       `users:1` to `off` — his ruling *"It retires with N2"* took the whole
+       studio road, and the variable came off the service in one act with its
+       parent. This line is the thing that made the catalogue entry and
+       `CLAUDE.md`'s own index row move in the same commit instead of being
+       rediscovered as stale in a month. The specimen is KEPT rather than
+       re-pointed at some other flag: a position that has now been wrong in both
+       directions on one flag is a better specimen than a fresh one. */
     expect(PRODUCTION_FLAG_POSITIONS.CASTING_INK_WORDS_SCOPE?.position).toBe("all");
-    expect(PRODUCTION_FLAG_POSITIONS.CASTING_INK_CUT_SCOPE?.position).toBe("users:1");
+    expect(PRODUCTION_FLAG_POSITIONS.CASTING_INK_CUT_SCOPE?.position).toBe("off");
   });
 });
 

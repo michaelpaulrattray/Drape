@@ -52,8 +52,12 @@
  * ⚠ **THAT SENTENCE SAID *"rides … today"* UNTIL 2026-08-24, AND IT WAS WRONG
  * IN ITS TENSE — twice over, both in the safe direction.** Nothing rides to any
  * engine now: `MANNEQUIN_ROAD_DEFERRED` parks the mint for every account, and
- * `CASTING_INK_CUT_SCOPE=users:1` means what is stored is the CUT rather than
- * her photograph. **Neither retires the tripwire below**, which is why it is
+ * `CASTING_INK_CUT_SCOPE=users:1` meant what is stored is the CUT rather than
+ * her photograph. ⚠ **Both flags named in this paragraph are UNSET as of
+ * 2026-09-24** — the studio retired on his *"It retires with N2"* (#1158
+ * slice 4c) and there is no upload door at all, so the ride this sentence is
+ * about cannot begin. The cut itself survives on the HELD reference road,
+ * which never consulted `CASTING_INK_CUT_SCOPE`. **Neither retires the tripwire below**, which is why it is
  * kept word for word: a deferral is not a scope, a flag that can be off is not
  * a structural fact, and rows written before the cut flipped still hold whole
  * pictures. The bound RE-ARMS the moment the mannequin road resumes.
@@ -125,10 +129,13 @@ const ENTRIES: Readonly<Record<ReferenceIntent, ReferenceIntentEntry>> = Object.
     form: "mannequinPlate",
     /* The upload is built; the plate is not (the mannequin template is a
        founder taste gate). Open here means a design may be ATTACHED — the whole
-       road is behind `CASTING_INK_STUDIO_SCOPE`, which is `users:1` in
-       production. ⚠ It said "which is off" until 2026-08-24; the flag has been
-       on his account since fable-1260, and what holds the plate shut is
-       `MANNEQUIN_ROAD_DEFERRED` rather than this flag. */
+       road was behind `CASTING_INK_STUDIO_SCOPE`. ⚠ **THAT DOOR IS RETIRED
+       AND THE FLAG IS UNSET AS OF 2026-09-24** — his *"It retires with N2"*,
+       #1158 — so nothing may be attached by the studio road at all; what
+       survives is the take from a picture she attached, on the HELD reference
+       road. It said "which is off" until 2026-08-24 and "`users:1`" until
+       today: this one line has now been wrong in both directions, which is why
+       the correction is stamped rather than swapped. */
     open: true,
   }),
   hair: Object.freeze({
