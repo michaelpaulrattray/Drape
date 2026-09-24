@@ -1,7 +1,7 @@
 {
-  "edition": 513,
-  "updatedAt": "2026-09-24T14:22:14.631Z",
-  "shift": "Foreman — the paid Sign stops looking for a tattoo that was never there",
+  "edition": 514,
+  "updatedAt": "2026-09-24T16:51:15.254Z",
+  "shift": "Foreman — the studio stops consulting a memory it never had",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -112,6 +112,10 @@
         {
           "state": "done",
           "title": "The thing worth trusting here is that we did not just believe that. We took the exact words a cast is sent to the engine — for a cast that really is wearing a tattoo — before the change and again after it, and they came back identical down to the character, with the same pictures attached in the same order. Tattoos that were actually applied to a cast still ride into the angles exactly as before; that road was untouched and now it is the only one."
+        },
+        {
+          "title": "The part of the studio that was meant to remember your earlier edits is being retired, on your word — and the reason it costs you nothing is that it never once remembered anything. It was switched on for your account, and the road every render actually takes could never feed it, so it has held zero rows since the day it was built. What genuinely carries your work forward is the reference library, which is a different thing entirely and is untouched.",
+          "state": "done"
         }
       ]
     },
@@ -190,7 +194,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T14:22:23.474Z",
+      "readAt": "2026-09-24T16:50:41.821Z",
       "items": [
         {
           "issueNumber": 179,
@@ -7859,6 +7863,13 @@
       "status": "merged",
       "prNumber": 1176,
       "note": "The last of the tattoo studio's code; the words a cast is sent are identical to the character."
+    },
+    {
+      "id": "segment-store-retire-1160-s1",
+      "title": "The segment store leaves the road you pay for",
+      "status": "merged",
+      "prNumber": 1178,
+      "note": "Retired on his word; the store had held zero rows all time, and the prompt is byte-identical before and after."
     }
   ],
   "problems": [
@@ -8782,13 +8793,8 @@
     216
   ],
   "nextUp": {
-    "readAt": "2026-09-24T14:22:23.473Z",
+    "readAt": "2026-09-24T16:50:41.820Z",
     "items": [
-      {
-        "issueNumber": 1158,
-        "title": "N2: RETIRE the tattoo studio — his ruling, 'It retires with N2' (the upload-a-design road, four flags, NOT born-ink)",
-        "urgent": false
-      },
       {
         "issueNumber": 1160,
         "title": "N2: RETIRE the segment pair — his ruling, 'Retire both. The paste road is gone; nothing reads these'",
