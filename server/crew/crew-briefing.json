@@ -1,7 +1,7 @@
 {
-  "edition": 507,
-  "updatedAt": "2026-09-24T06:13:32.352Z",
-  "shift": "Foreman — the transform comes off the studio's leash, and the map stops lying quietly",
+  "edition": 508,
+  "updatedAt": "2026-09-24T07:25:49.421Z",
+  "shift": "Foreman — the surface cut stops asking the retired studio's permission, and the retirement turns out to be four steps rather than one",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -76,6 +76,10 @@
         {
           "title": "✅ YOU FINISHED THE LIST — all thirteen answered. Five settings are on for everyone and live now; the wardrobe/basics setting is unset; you ordered three retirements (the tattoo studio, the segment pair, and the wardrobe capability, which was already going); and four are held, each with the one thing that would change your mind written down. Nothing on the list is waiting on you",
           "state": "done"
+        },
+        {
+          "title": "The tattoo studio's retirement turned out to be four steps, not one — and the read is the finding. Two of its settings looked like settings nothing uses, and one of them was in fact the thing keeping YOUR picture-cut road switched on. Turning it off would have quietly changed what gets stored when you point at a tattoo in a photo you attached, with no test failing. Step one is out and changes nothing: the picture-cut road now answers to its own setting instead of the retired one",
+          "state": "done"
         }
       ]
     },
@@ -128,14 +132,14 @@
     ],
     "chips": [
       {
-        "label": "The switch list is ready",
-        "tone": "good",
-        "source": "20 settings, 13 answers: four on, one retired, eight held. Cards 1–13."
+        "label": "Three retirements in flight",
+        "tone": "neutral",
+        "source": "The tattoo studio, the segment pair and the wardrobe path — all three on your word."
       },
       {
-        "label": "Four answers ship the studio",
+        "label": "A setting nothing read was load-bearing",
         "tone": "good",
-        "source": "The author road, long briefs, Retry and the open lane. The rest can wait."
+        "source": "A setting nothing reads was holding your picture-cut road open. Caught before it was turned off."
       },
       {
         "label": "One customer, and it is you",
@@ -145,16 +149,16 @@
       {
         "label": "Your desk",
         "tone": "neutral",
-        "source": "199 of 199 replies acted on. Thirteen cards now wait on you, by your own ask."
+        "source": "216 of 216 replies acted on. Nothing is waiting on you right now."
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "41 open · 17 untouched for 7 days · 8 carry a hold on your word (the 'blocked' label) · none urgent."
+        "source": "40 open · 14 untouched for 7 days · 6 carry a hold · none urgent."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T06:13:43.513Z",
+      "readAt": "2026-09-24T07:26:37.503Z",
       "items": [
         {
           "issueNumber": 179,
@@ -7781,6 +7785,13 @@
       "status": "merged",
       "prNumber": 1169,
       "note": "Merged c99681c3. It used to draw a map missing 29 things and say nothing."
+    },
+    {
+      "id": "ink-regioncrop-reparent-1158-s4a",
+      "title": "Cutting a tattoo out of your own photo stops depending on the retired studio being switched on",
+      "status": "in-review",
+      "prNumber": 1170,
+      "note": "Nothing changes for any account — proved by running the real check before and after. It is the step that lets the tattoo studio's two settings come off the service without quietly switching your picture-cut road off."
     }
   ],
   "problems": [
@@ -8704,7 +8715,7 @@
     216
   ],
   "nextUp": {
-    "readAt": "2026-09-24T06:13:43.512Z",
+    "readAt": "2026-09-24T07:26:37.502Z",
     "items": [
       {
         "issueNumber": 1158,

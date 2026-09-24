@@ -324,6 +324,15 @@ drop a whole router silently, and *absent* is exactly the reading that says *rem
 Five things landed on slice 4's desk on 2026-09-24, each named where it lives rather than left to be
 rediscovered:
 
+⚠ **ITEM 1 BELOW WAS RIGHT ABOUT THE CUT FLAG AND WRONG ABOUT WHOSE DECISION IT WAS, AND IT MISSED
+THE STUDIO FLAG SITTING IN THE SAME CHAIN — READ *SLICE 4a'S READ* BELOW FIRST.** It closed *"re-parenting
+is a change to what a live road is gated by, so it is his, not a shift's"*, and offered *"or the parent
+stays as scaffolding"* as the conservative alternative. The second is not conservative: leaving the chain
+alone keeps `CASTING_INK_STUDIO_SCOPE` a live ENABLING term inside the held reference road's `AND`, which
+is the thing that would make a later unset turn the surface cut off silently. The re-parent was taken as a
+shift's act on slice 3's ground — driven identity for every account — and disclosed on PR #1170 for the
+relay to overturn.
+
 1. **`CASTING_INK_CUT_SCOPE` is a flag nothing reads and cannot simply be unset.** Its single read
    died with the upload; it remains the boot PARENT of `CASTING_INK_REGION_CROP_SCOPE`, which
    `defaultCutDesign` still consults on the HELD reference road. Either the child is re-parented — a
@@ -369,3 +378,105 @@ is trusted, because a file that will not parse makes the Atlas drop a whole rout
 
 Nothing is added here, and nothing is KEPT "because a future feature might want it" — what stays,
 stays because a road he has HELD still reads it, and §2 names each one.
+
+---
+
+## 8 · SLICE 4a'S READ — DONE 2026-09-24, AND IT RE-SCOPES SLICE 4 ENTIRELY
+
+Slice 4 was *"the four flags and the shared constants leave, children-first"*. **Read at the bytes, not
+one of the four can leave the service today**, and the two the census expected to go are held in place by
+a road the founder HELD.
+
+### The chain, with every live reader named
+
+```
+captureCastingInkRegionCropEnabled   castingV2Scope.ts   LIVE
+   |   inkUploadService.ts:147,169 — defaultCutDesign
+   |   whose only caller is inkReferenceMint.ts:215 (MINT_DEPENDENCIES.cut)
+   |   reached only behind captureCastingInkReferenceEnabled (refineService.ts:1805, :4978)
+   v
+captureCastingInkCutEnabled          no direct reader — an ENABLING TERM only
+   v
+captureCastingInkStudioEnabled       no direct reader — an ENABLING TERM only
+   v
+captureCastingRepaintEnabled         `all`
+```
+
+| flag | can it leave? | why not |
+|---|---|---|
+| `CASTING_INK_TRANSFORM_SCOPE` | **no** | live on every account's refine road (`refineService.ts:1554`); slice 3 re-parented it precisely so it could stay |
+| `CASTING_INK_REGION_CROP_SCOPE` | **no** | live — the held reference road's surface cut |
+| `CASTING_INK_CUT_SCOPE` | **not yet** | was the region crop's boot parent and an enabling term in its `AND` |
+| `CASTING_INK_STUDIO_SCOPE` | **not yet** | the same, one level up — **and** `castingInkStudioArmed()` arms three missing-table tolerances in `candidateRetention.ts` |
+
+### ⚠ THE STUDIO FLAG WAS NOT AN UNREAD FLAG. IT WAS A LIVE ENABLING TERM.
+
+`captureCastingInkStudioEnabled` has no caller outside its own chain, so every grep for the studio door
+answers *nothing consults this*. Unsetting it would have made `captureCastingInkRegionCropEnabled(1)`
+**false** — the held reference road's cut silently storing the patch rather than the surface, with no
+failing test and no error. **This is §7 rule 1 with the sign flipped: the clause that looks dead is the
+one doing the work**, and the census's own item 1 had spotted it one level down and missed it here.
+
+It would not have reached production in any case: a child scope refuses to boot past an `off` parent, so
+`CASTING_INK_CUT_SCOPE=users:1` over an unset studio is a crash-looping deploy. **Both failure modes point
+the same way — the child moves, never the parent.**
+
+### What slice 4a did, and its whole claim is that nothing moved
+
+`CASTING_INK_REGION_CROP_SCOPE` re-parented from `CASTING_INK_CUT_SCOPE` to
+`CASTING_INK_REFERENCE_SCOPE`, in the fence, the `validateEnv()` call site, the catalogue bullet and the
+suite's own stated reason together (PR #1170, `6809e39a`).
+
+**The old reason died with the upload and the code says so in two places** — the mirror of slice 3's
+finding. The fence's reason was *"the region road is an escalation of the `cut` route — reached only after
+the routing has already decided to cut"*; that routing was `uploadInkDesign`'s, retired by slices 1–2.
+`inkReferenceMint.ts`'s own header says **`CASTING_INK_CUT_SCOPE` IS NOT CONSULTED** on the surviving road,
+because a photograph she attached has no not-cutting position to take.
+
+**Driven, not argued** — `captureCastingInkRegionCropEnabled` under the recorded production positions, on
+the tree before and after the change:
+
+| user | before | after |
+|---|---|---|
+| 1 | true | true |
+| 2 | false | false |
+| 7 | false | false |
+
+One boot allowance changed: an account inside the reference road that was never inside the retired studio
+now boots. No account but his names this flag.
+
+### ⚠ A SABOTAGE LESSON, AND IT RUNS OPPOSITE TO SLICE 3'S
+
+Slice 3 recorded *a sabotage that survived was not a hole*. Slice 4a's two survivors were not holes
+either, **and for a duller reason: the edits never happened.** One `sed` pattern spanned lines (sed is
+line-based); the other left the new parent still named elsewhere in the same bullet. Both reddened at
+once when re-driven by a script that asserts its own anchor and prints what it changed.
+
+**So the rule has two halves and both are now paid for: a surviving sabotage is not a finding until the
+edit is proved to have MEANT something — and not until it is proved to have HAPPENED.** A green run and a
+no-op edit look identical, exactly as `surviving-sabotage-may-be-inert` records.
+
+### The corrected order for what remains
+
+1. **4b — the deletions and the purge-path re-arm.** `captureCastingInkCutEnabled` and
+   `captureCastingInkStudioEnabled` now have no production caller; the cut fence, its parse, its errors
+   and its `validateEnv()` call site go with them. ⚠ **And the retention tolerances must be re-armed in
+   the same PR**: `tolerateAbsentInkDesignStore` and `tolerateAbsentInkPlateStore` read
+   `castingInkStudioArmed()`, while **two doors mint design rows and only the reference one survives** —
+   the same law-4 shape `castingInkDeliveryCropArmed` already fixed by ORing the two. Left as it is, the
+   studio flag going off flips those tolerances from *throw* to *swallow* over a table the reference road
+   can still write, which is a customer's photograph outliving the Cast it was promised to leave with.
+   A purge path, so its own PR and its own reading. `inkCutScope.test.ts` loses its subject and needs a
+   `DELIBERATELY_ABSENT` row; `scopeParentChain.test.ts`'s call-site CONTROL names
+   `CASTING_INK_CUT_SCOPE → CASTING_INK_STUDIO_SCOPE` as its known pair and must be re-pointed, not
+   deleted.
+2. **4c — the variables leave the service**, with their `productionFlagPositions.mts` rows, rehearsed
+   against the boot gate first (the five-widens road). **Never before 4b ships**: a fence still validating
+   a value is the one thing that turns an unset into a crash loop.
+3. **4d — `INK_PLATE_CONCURRENCY`** (boot arithmetic 20 → 19; the freed slot is not handed back to the
+   courtesy pool without its own card).
+4. **4e — the five TAKE rows executed**, one commit.
+5. **4f — `signService.carriedInkPlates`** — a money surface, its own reading and its own PR.
+
+**Neither `CASTING_INK_REGION_CROP_SCOPE` nor `CASTING_INK_TRANSFORM_SCOPE` appears on that list.** Both
+are live, both stay at `users:1`, and both are now parented on roads that actually produce their subjects.
