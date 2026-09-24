@@ -464,14 +464,24 @@ export function validateEnv(): void {
     cutScope: process.env[CASTING_INK_CUT_SCOPE_ENV],
   });
   /*
-    WHETHER SHE MAY CHANGE A TATTOO SHE ALREADY HAS. Its parent is the STUDIO
-    door and nothing else: a transform's whole content is a picture of a tattoo
-    this product already delivered, so a user outside that door has no subject
-    for it. Every other parent rides in through the studio flag's own check.
+    WHETHER SHE MAY CHANGE A TATTOO SHE ALREADY HAS. Its parent is
+    `CASTING_V2_SCOPE`, for the same reason the words road's is and read off the
+    same fact: a transform's subject is the DELIVERED CROP, and the words road
+    delivers one with no design row and no studio door — so the subject exists
+    for every casting account.
+
+    ⚠ THIS PARAGRAPH NAMED THE STUDIO DOOR UNTIL 2026-09-24 (#1158 slice 3), AND
+    THE PARAGRAPH DIRECTLY BELOW IT REFUTED IT. That one says, of the words
+    road, *"crop #1 is a delivery with `designId` NULL — so hanging it off the
+    studio door would gate a lane whose subject does not require it"*, which is
+    word for word the mistake this one was making. Two adjacent comments arguing
+    opposite sides of one question is how a wrong parent survives being read.
+    Nothing moved for any account when it was fixed; what it unblocks is #1158
+    unsetting the studio flag without taking a live lane down with it.
   */
   validateCastingInkTransformEnvironment({
     scope: process.env[CASTING_INK_TRANSFORM_SCOPE_ENV],
-    studioScope: process.env[CASTING_INK_STUDIO_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
   /*
     WHETHER A WORDS-BORN TATTOO MAY LAND BEYOND HER NECK. Its parent is

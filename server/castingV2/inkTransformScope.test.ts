@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   CASTING_INK_TRANSFORM_SCOPE_ENV,
+  CASTING_V2_SCOPE_ENV,
   CastingInkTransformCoverageError,
   CastingInkTransformScopeConfigurationError,
   captureCastingInkTransformEnabled,
@@ -27,44 +28,56 @@ import {
  * nevertheless what a dark landing means, and the negative control in
  * `refineService.test.ts` is what proves the flag really is a flag.
  *
- * # Why the parent is the studio door
+ * # Why the parent is `CASTING_V2_SCOPE`
  *
- * A transform's whole content is a picture of a tattoo this product already
- * delivered, and the studio door is what makes a tattoo deliverable at all.
- * Armed over a user outside it, this flag would guard a lane whose subject
- * cannot exist — inert, and indistinguishable from mistaken.
+ * ⚠ **EVERY ARM BELOW NAMED THE STUDIO DOOR UNTIL 2026-09-24, AND THE DOCBLOCK
+ * THEY SAT UNDER ARGUED FOR IT — #1158 slice 3.** It read *"a transform's whole
+ * content is a picture of a tattoo this product already delivered, and the
+ * studio door is what makes a tattoo deliverable at all."* The first clause is
+ * right and the second is the error: **the subject is the delivered CROP**, and
+ * `CASTING_INK_WORDS_SCOPE` — at `all` — delivers crops carrying no design row
+ * and passing through no studio door. So the studio parent armed this flag over
+ * a lane whose subject does not require it, which is the exact failure the
+ * words flag's own docblock names one paragraph away.
+ *
+ * ⚠ **AND THE WRONG PARENT COULD NOT HAVE BEEN CAUGHT BY REWRITING THESE ARMS
+ * MORE CAREFULLY, WHICH IS THE POINT WORTH KEEPING.** Every arm here passed on
+ * both parents; they test that the fence HOLDS, and a fence can hold perfectly
+ * around the wrong field. What settled it was reading what the road consumes
+ * (`deliveredInkOnChain`, keyed by slot and valued by crop id) rather than what
+ * the flag's prose asserted.
  */
 describe("the boot guard", () => {
-  it("refuses while the studio door is shut — no tattoo, nothing to change", () => {
+  it("refuses while casting itself is off — no render, so no delivered crop to change", () => {
     expect(() => validateCastingInkTransformEnvironment({
-      scope: "all", studioScope: "off",
-    })).toThrow(/cannot be enabled while CASTING_INK_STUDIO_SCOPE is off/);
+      scope: "all", castingScope: "off",
+    })).toThrow(/cannot be enabled while CASTING_V2_SCOPE is off/);
   });
 
   it("refuses with the coverage error's own type, not a bare throw", () => {
     expect(() => validateCastingInkTransformEnvironment({
-      scope: "users:1", studioScope: "off",
+      scope: "users:1", castingScope: "off",
     })).toThrow(CastingInkTransformCoverageError);
   });
 
-  it("refuses `all` while the studio door is limited to named users", () => {
+  it("refuses `all` while casting is limited to named users", () => {
     expect(() => validateCastingInkTransformEnvironment({
-      scope: "all", studioScope: "users:1",
+      scope: "all", castingScope: "users:1",
     })).toThrow(/cannot be "all"/);
   });
 
-  it("refuses a user the studio door does not cover, and NAMES them", () => {
+  it("refuses a user casting does not cover, and NAMES them", () => {
     expect(() => validateCastingInkTransformEnvironment({
-      scope: "users:1,7", studioScope: "users:1",
-    })).toThrow(/names users outside CASTING_INK_STUDIO_SCOPE: 7/);
+      scope: "users:1,7", castingScope: "users:1",
+    })).toThrow(/names users outside CASTING_V2_SCOPE: 7/);
   });
 
   it("admits a covered user, and `all` under an `all` parent", () => {
     expect(validateCastingInkTransformEnvironment({
-      scope: "users:1", studioScope: "users:1",
+      scope: "users:1", castingScope: "users:1",
     })).toEqual({ kind: "users", userIds: [1] });
     expect(validateCastingInkTransformEnvironment({
-      scope: "all", studioScope: "all",
+      scope: "all", castingScope: "all",
     })).toEqual({ kind: "all" });
   });
 
@@ -72,11 +85,29 @@ describe("the boot guard", () => {
     /* THE NEGATIVE CONTROL. A validator that refused everything would pass
        every arm above and be useless. */
     expect(validateCastingInkTransformEnvironment({
-      scope: undefined, studioScope: undefined,
+      scope: undefined, castingScope: undefined,
     })).toEqual({ kind: "off" });
     expect(validateCastingInkTransformEnvironment({
-      scope: "off", studioScope: "off",
+      scope: "off", castingScope: "off",
     })).toEqual({ kind: "off" });
+  });
+
+  it("⚠ ADMITS PRODUCTION'S OWN POSITIONS — the arm that would have gone red on the old parent", () => {
+    /*
+      THE RE-PARENT'S WHOLE CLAIM, DRIVEN RATHER THAN ARGUED: the same values
+      the service carries today (`productionFlagPositions.mts` — casting `all`,
+      transform `users:1`) boot clean, and so does the configuration the studio
+      parent made IMPOSSIBLE — an account inside casting that was never inside
+      the tattoo studio. That second line is the behaviour that actually
+      changed, and it is a boot allowance rather than a capability: no account
+      names this flag but his, and widening it is still his word.
+    */
+    expect(validateCastingInkTransformEnvironment({
+      scope: "users:1", castingScope: "all",
+    })).toEqual({ kind: "users", userIds: [1] });
+    expect(validateCastingInkTransformEnvironment({
+      scope: "users:7", castingScope: "all",
+    })).toEqual({ kind: "users", userIds: [7] });
   });
 });
 
@@ -110,14 +141,43 @@ describe("the grammar, and the point of use", () => {
       comes to be armed over a road its user cannot enter.
     */
     const before = process.env[CASTING_INK_TRANSFORM_SCOPE_ENV];
-    const beforeStudio = process.env.CASTING_INK_STUDIO_SCOPE;
+    const beforeCasting = process.env[CASTING_V2_SCOPE_ENV];
     process.env[CASTING_INK_TRANSFORM_SCOPE_ENV] = "users:1";
-    delete process.env.CASTING_INK_STUDIO_SCOPE;
+    delete process.env[CASTING_V2_SCOPE_ENV];
     try {
       expect(captureCastingInkTransformEnabled(1)).toBe(false);
     } finally {
       if (before === undefined) delete process.env[CASTING_INK_TRANSFORM_SCOPE_ENV];
       else process.env[CASTING_INK_TRANSFORM_SCOPE_ENV] = before;
+      if (beforeCasting === undefined) delete process.env[CASTING_V2_SCOPE_ENV];
+      else process.env[CASTING_V2_SCOPE_ENV] = beforeCasting;
+    }
+  });
+
+  it("⚠ NO LONGER CONSULTS THE STUDIO DOOR — the re-parent, proven at the point of use", () => {
+    /*
+      THE ARM THAT IS THE COMMIT. With casting open and the transform naming the
+      user, the answer is YES **with the tattoo studio shut** — which is the
+      state #1158 slice 4 leaves the service in when it unsets that flag. Under
+      the old parent this read `false`, and the transform road would have gone
+      dark for his account on a cleanup commit, silently, with no test red
+      anywhere: `captureCastingInkTransformEnabled` was the only thing that knew.
+    */
+    const before = process.env[CASTING_INK_TRANSFORM_SCOPE_ENV];
+    const beforeCasting = process.env[CASTING_V2_SCOPE_ENV];
+    const beforeStudio = process.env.CASTING_INK_STUDIO_SCOPE;
+    process.env[CASTING_INK_TRANSFORM_SCOPE_ENV] = "users:1";
+    process.env[CASTING_V2_SCOPE_ENV] = "all";
+    delete process.env.CASTING_INK_STUDIO_SCOPE;
+    try {
+      expect(captureCastingInkTransformEnabled(1)).toBe(true);
+      /* And still nobody else — the flag is the narrowing, as it always was. */
+      expect(captureCastingInkTransformEnabled(2)).toBe(false);
+    } finally {
+      if (before === undefined) delete process.env[CASTING_INK_TRANSFORM_SCOPE_ENV];
+      else process.env[CASTING_INK_TRANSFORM_SCOPE_ENV] = before;
+      if (beforeCasting === undefined) delete process.env[CASTING_V2_SCOPE_ENV];
+      else process.env[CASTING_V2_SCOPE_ENV] = beforeCasting;
       if (beforeStudio === undefined) delete process.env.CASTING_INK_STUDIO_SCOPE;
       else process.env.CASTING_INK_STUDIO_SCOPE = beforeStudio;
     }

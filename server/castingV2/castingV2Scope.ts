@@ -2257,6 +2257,45 @@ export function validateCastingBornInkEnvironment(input: {
   return child;
 }
 
+/**
+ * WHETHER SHE MAY CHANGE A TATTOO SHE ALREADY HAS (founder-ordered fable-1269
+ * §2, designed opus-940, countersigned fable-1274).
+ *
+ * # Why the parent is `CASTING_V2_SCOPE` and NOT the studio door
+ *
+ * ⚠ **IT WAS THE STUDIO DOOR UNTIL 2026-09-24 AND THAT WAS WRONG ON ITS OWN
+ * TERMS — #1158 slice 3.** The sentence that parented it read *"a transform's
+ * whole content is a picture of a tattoo this product already delivered, so a
+ * user outside that door has no subject for it"*. The first half is exactly
+ * right and it is what refutes the second: **the subject is the DELIVERED
+ * CROP, not the design row**, and the studio door is not what produces one.
+ *
+ * `CASTING_INK_WORDS_SCOPE` stands at `all`, a words-born tattoo carries no
+ * design row at all (crop #1 is a delivery with `designId` NULL), and
+ * `inkApplied.ts` says so in its own header — *"on D-137's road there is no
+ * design at all … this is the whole record of the tattoo"*. Delivered ink is
+ * counted by SLOT and valued by the crop id, with no design id anywhere in the
+ * reading. **So every account already has a subject for a transform, and the
+ * studio parent was gating a lane whose subject does not require it** — the
+ * same mistake `CASTING_INK_WORDS_SCOPE`'s own docblock names one flag away,
+ * in a paragraph that sat directly beside the wrong one in `_core/env.ts`.
+ *
+ * # What moved, and what did not
+ *
+ * **Nothing moved for any account.** The transform stays at `users:1` and the
+ * AND at the point of use is the same AND: his account had the studio door and
+ * has the casting door, and no other account names this flag. What changes is
+ * what a FUTURE flip may do — under the studio parent, widening this flag
+ * required widening the retiring tattoo studio with it, which is a widen
+ * nobody wants and the reason the two had to come apart before #1158 can unset
+ * the studio flag at all.
+ *
+ * ⚠ **AND WHETHER A WORDS-ROAD TATTOO MAY BE TRANSFORMED IS STILL HIS
+ * QUESTION, DELIBERATELY NOT ANSWERED HERE.** Today such an account meets
+ * D-137's free wall; opening it turns a free refusal into a 25-credit render,
+ * so it is a widen with numbers attached and not a consequence of a re-parent.
+ * This commit makes the question ASKABLE; it does not answer it.
+ */
 export const CASTING_INK_TRANSFORM_SCOPE_ENV = "CASTING_INK_TRANSFORM_SCOPE";
 
 export class CastingInkTransformScopeConfigurationError extends Error {
@@ -2285,33 +2324,33 @@ export function parseCastingInkTransformScope(raw: string | undefined): CastingV
 export function captureCastingInkTransformEnabled(userId: number): boolean {
   const child = parseCastingInkTransformScope(process.env[CASTING_INK_TRANSFORM_SCOPE_ENV]);
   if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingInkStudioEnabled(userId);
+  return captureCastingV2Enabled(userId);
 }
 
 export function validateCastingInkTransformEnvironment(input: {
   scope: string | undefined;
-  studioScope: string | undefined;
+  castingScope: string | undefined;
 }): CastingV2Scope {
   const child = parseCastingInkTransformScope(input.scope);
   if (child.kind === "off") return child;
 
-  const parent = parseCastingInkStudioScope(input.studioScope);
+  const parent = parseCastingV2Scope(input.castingScope);
   if (parent.kind === "off") {
     throw new CastingInkTransformCoverageError(
-      `cannot be enabled while ${CASTING_INK_STUDIO_SCOPE_ENV} is off — a transform changes a tattoo `
-      + "this product delivered, and a user outside the studio door has none",
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — a transform rides the crop of a tattoo `
+      + "this product delivered, and a user outside casting has no render that delivered one",
     );
   }
   if (parent.kind === "all") return child;
   if (child.kind === "all") {
     throw new CastingInkTransformCoverageError(
-      `cannot be "all" while ${CASTING_INK_STUDIO_SCOPE_ENV} is limited to specific users`,
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
     );
   }
   const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
   if (uncovered.length > 0) {
     throw new CastingInkTransformCoverageError(
-      `names users outside ${CASTING_INK_STUDIO_SCOPE_ENV}: ${uncovered.join(",")}`,
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
     );
   }
   return child;
