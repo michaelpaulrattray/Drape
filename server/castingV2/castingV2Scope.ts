@@ -1653,6 +1653,19 @@ export function validateCastingInkReferenceEnvironment(input: {
  * build 3a.2's upload wire (`V3B_INK_AND_MARKS_DESIGN_NOTE.md` §7.12, ruled
  * fable-1130 §1 and fable-1133 §3a).
  *
+ * ⚠ **THIS FLAG NOW GOVERNS NOTHING AT ALL, AND EVERYTHING BELOW DESCRIBES A
+ * DOOR THAT IS GONE** (#1158, his ruling *"It retires with N2"*). The upload it
+ * paced was retired in slices 1–2 — `uploadInkDesign` does not exist — and
+ * slice 4a moved its one remaining dependant, `CASTING_INK_REGION_CROP_SCOPE`,
+ * onto the road that actually cuts (`CASTING_INK_REFERENCE_SCOPE`). So nothing
+ * reads this flag, nothing is parented on it, and `captureCastingInkCutEnabled`
+ * has no production caller left. **It is scaffolding awaiting its own removal**
+ * — deleted with `captureCastingInkStudioEnabled` in #1158 slice 4b, and the
+ * variable comes off the service only after that ships, because a boot fence
+ * validating a value is the one thing that can turn an unset into a crash loop.
+ * The history is kept below rather than rewritten: what a retired road used to
+ * decide is how the next reader understands the rows it left behind.
+ *
  * Off, and absent means off, `uploadInkDesign` behaves exactly as it does today:
  * her photograph is stored unchanged, no segmenter is called, and not one thing
  * about the door moves. On, the same upload asks two measured questions of her
@@ -1865,13 +1878,27 @@ export function captureCastingInkCutEnabled(userId: number): boolean {
  * So the offer is a condition on WIDENING and on relaxing the containment test,
  * and it is not something a customer has today.
  *
- * # The parent is the CUT scope and nothing else
+ * # The parent is the INK REFERENCE road and nothing else
  *
- * The region road is an escalation of the `cut` route — it is reached only after
- * the routing has already decided to cut, so a user whose uploads are not cut
- * has no road to escalate. The studio, repaint, library and transport parents
- * ride in through that flag's own check rather than being restated here; two
- * checks of one fact drift apart.
+ * ⚠ **THIS SAID `CASTING_INK_CUT_SCOPE` UNTIL 2026-09-24 (#1158 slice 4a), AND
+ * ITS REASON DIED WITH THE STUDIO'S UPLOAD.** The reason given was *"the region
+ * road is an escalation of the `cut` route — it is reached only after the
+ * routing has already decided to cut, so a user whose uploads are not cut has
+ * no road to escalate"*. That routing was the upload door's, and the upload
+ * door is gone (#1158 slices 1–2). **The one road that reads this flag today is
+ * the take from an attached picture** — `defaultCutDesign`, called by
+ * `inkReferenceMint.ts` as its real `cut` — and that road says in its own
+ * header that **`CASTING_INK_CUT_SCOPE` IS NOT CONSULTED** there, because on it
+ * there is no not-cutting position to take. So the parent named here was a
+ * parent that the only surviving caller deliberately ignores.
+ *
+ * The parent is `CASTING_INK_REFERENCE_SCOPE`: the road that produces this
+ * flag's subject is the road that gates it. Nothing moved for any account when
+ * it changed — both flags stand at `users:1` and the attach door above them
+ * does too, so the same one account answers true either way, driven rather than
+ * argued in this flag's own suite. The attach, repaint, library and transport
+ * parents ride in through the reference flag's own check rather than being
+ * restated here; two checks of one fact drift apart.
  *
  * It declares no fal allowance of its own. One extra call (`face`) on the road
  * that already asks three, riding the shared `FAL_CONCURRENCY` courtesy pool, so
@@ -1905,33 +1932,34 @@ export function parseCastingInkRegionCropScope(raw: string | undefined): Casting
 export function captureCastingInkRegionCropEnabled(userId: number): boolean {
   const child = parseCastingInkRegionCropScope(process.env[CASTING_INK_REGION_CROP_SCOPE_ENV]);
   if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingInkCutEnabled(userId);
+  return captureCastingInkReferenceEnabled(userId);
 }
 
 export function validateCastingInkRegionCropEnvironment(input: {
   scope: string | undefined;
-  cutScope: string | undefined;
+  referenceScope: string | undefined;
 }): CastingV2Scope {
   const child = parseCastingInkRegionCropScope(input.scope);
   if (child.kind === "off") return child;
 
-  const parent = parseCastingInkCutScope(input.cutScope);
+  const parent = parseCastingInkReferenceScope(input.referenceScope);
   if (parent.kind === "off") {
     throw new CastingInkRegionCropCoverageError(
-      `cannot be enabled while ${CASTING_INK_CUT_SCOPE_ENV} is off — the region road is an escalation of `
-      + "the cut, so a user whose uploads are stored whole has no road to escalate",
+      `cannot be enabled while ${CASTING_INK_REFERENCE_SCOPE_ENV} is off — the only road that cuts `
+      + "is the take from her attached picture, so a user who cannot document a tattoo with a "
+      + "picture has no cut to widen",
     );
   }
   if (parent.kind === "all") return child;
   if (child.kind === "all") {
     throw new CastingInkRegionCropCoverageError(
-      `cannot be "all" while ${CASTING_INK_CUT_SCOPE_ENV} is limited to specific users`,
+      `cannot be "all" while ${CASTING_INK_REFERENCE_SCOPE_ENV} is limited to specific users`,
     );
   }
   const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
   if (uncovered.length > 0) {
     throw new CastingInkRegionCropCoverageError(
-      `names users outside ${CASTING_INK_CUT_SCOPE_ENV}: ${uncovered.join(",")}`,
+      `names users outside ${CASTING_INK_REFERENCE_SCOPE_ENV}: ${uncovered.join(",")}`,
     );
   }
   return child;
