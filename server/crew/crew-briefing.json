@@ -1,7 +1,7 @@
 {
-  "edition": 501,
-  "updatedAt": "2026-09-24T00:27:31.923Z",
-  "shift": "Foreman — the studio stops asking the reader to pick an outfit, and the config stops sending two dead switches",
+  "edition": 502,
+  "updatedAt": "2026-09-24T01:10:56.798Z",
+  "shift": "Foreman — your switch sitting, applied: five settings on for everyone, one retired",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -68,6 +68,10 @@
         {
           "state": "done",
           "title": "And a tidy-up worth reporting because of what it turned up: the studio was sending the app two switches nobody reads — one for a menu you had removed, one for a count in the Sign window that stopped being drawn on 3 August, in a change about deleting a Cast. The card named the first; counting all thirteen switches found the second, fourteen lines away and seven weeks dead. Both are gone, and the count is now kept automatically so the next one shows up the day it happens."
+        },
+        {
+          "title": "✅ YOU WENT DOWN THE LIST — eleven replies in twelve minutes, and the five you said yes to are on for everyone: your own words straight to the engine, upload-a-picture, long briefs keeping their facts, Retry on a failed picture, and asking for something we have never heard of. The wardrobe/basics setting is unset. Three of the thirteen are still unanswered and are waiting on you",
+          "state": "done"
         }
       ]
     },
@@ -146,7 +150,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-23T22:37:34.451Z",
+      "readAt": "2026-09-24T01:11:06.093Z",
       "items": [
         {
           "issueNumber": 10,
@@ -303,7 +307,7 @@
         }
       ],
       "recommendation": "Go down cards 1 to 13. They are ordered so the ones I would say yes to come first. Answer each on its own card, or all of them in one reply if that is quicker.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": 1132
     },
@@ -325,7 +329,7 @@
         }
       ],
       "recommendation": "YES — turn it on for everyone. It is the thing you signed off this morning, it costs less than what it replaces, and three other cards on this list are waiting behind it.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": null
     },
@@ -347,7 +351,7 @@
         }
       ],
       "recommendation": "YES if you are comfortable with the supplier sentence above, and only alongside card 1, because this road is built on that one. If the supplier question wants thinking about, hold this one alone — nothing else on the list waits behind it.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": null
     },
@@ -374,7 +378,7 @@
         }
       ],
       "recommendation": "YES, at the same moment as card 1 and not before it. On its own it puts the lifted cap onto the old road, which is exactly where the worry lives; together they are safe. The measurement above answers the court that was going to settle this, so nothing is waiting on a test.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": null
     },
@@ -396,7 +400,7 @@
         }
       ],
       "recommendation": "YES — turn it on for everyone. It is the smallest and safest thing on this list: it cannot lose a customer money, and the alternative is that they quietly get seven pictures for the price of eight.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": null
     },
@@ -418,7 +422,7 @@
         }
       ],
       "recommendation": "YES — turn it on for everyone. It is the only one on the list with no cost, no chain and no owed measurement, and the behaviour it replaces is the studio pretending to understand.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": null
     },
@@ -440,7 +444,7 @@
         }
       ],
       "recommendation": "YES — unset it. Then the other nineteen switches on this list all mean something, which they do not today.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": 203
     },
@@ -462,7 +466,7 @@
         }
       ],
       "recommendation": "HOLD on your account. Not because anything is wrong — your eye picked it twice — but because widening an engine without knowing its price per picture is exactly the half-judgement we are not meant to make. Filed as #1134: both numbers are reads, not experiments, and cost nothing.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": 1134
     },
@@ -486,7 +490,7 @@
       "recommendation": "HOLD both. Filed as #1133 — a reading of that statistic that outlives the row it is written on. It is a class rather than one bug: anything measured per render and written only to that row is a measurement that exists exactly until somebody needs it.",
       "state": "open",
       "filedAt": "2026-09-23T20:10:00+10:00",
-      "issueNumber": 1133
+      "issueNumber": 1132
     },
     {
       "id": "switch-09-reference-pictures",
@@ -508,7 +512,7 @@
       "recommendation": "HOLD all three. The blocker is #62 and it is small — three measurements, already specified, that nobody has run. Worth putting in front of a shift soon: this is the feature you personally asked for, and it is closer than the list makes it look.",
       "state": "open",
       "filedAt": "2026-09-23T20:10:00+10:00",
-      "issueNumber": 62
+      "issueNumber": 1132
     },
     {
       "id": "switch-10-ink-studio",
@@ -533,7 +537,7 @@
         }
       ],
       "recommendation": "HOLD — but this is really a question rather than a hold: does the tattoo studio resume, or does it retire with the rest of N2? Either answer is workable and the second is cheaper. I would not resume it before the rest of this list has shipped.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": 10
     },
@@ -555,7 +559,7 @@
         }
       ],
       "recommendation": "HOLD for now, and re-ask it the moment card 3 lands. It is the one card on this list whose answer is genuinely decided by another card.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": null
     },
@@ -579,7 +583,7 @@
       "recommendation": "HOLD. Widen it when something reads it and not before: storing more people's sentences for a reader that does not exist is the wrong order, and your own 42 refusals are already a bigger sample than that reader has ever seen.",
       "state": "open",
       "filedAt": "2026-09-23T20:10:00+10:00",
-      "issueNumber": 129
+      "issueNumber": 1132
     },
     {
       "id": "switch-13-r7-pair",
@@ -594,7 +598,7 @@
         }
       ],
       "recommendation": "NOTHING NEEDED — they stay exactly as they are until you un-park the evidence family at launch prep. Tap this away once you have read it.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": null
     },
@@ -8585,10 +8589,21 @@
     196,
     197,
     198,
-    199
+    199,
+    200,
+    201,
+    202,
+    203,
+    204,
+    205,
+    206,
+    207,
+    208,
+    209,
+    210
   ],
   "nextUp": {
-    "readAt": "2026-09-23T22:37:34.450Z",
+    "readAt": "2026-09-24T01:11:06.092Z",
     "items": [
       {
         "issueNumber": 1132,
@@ -8597,6 +8612,16 @@
         "held": {
           "state": "blocked"
         }
+      },
+      {
+        "issueNumber": 1158,
+        "title": "N2: RETIRE the tattoo studio — his ruling, 'It retires with N2' (the upload-a-design road, four flags, NOT born-ink)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1159,
+        "title": "N2: re-ask born-ink now that the brief cap is 2,000 for everyone — his 'Hold, and re-ask with card 3'",
+        "urgent": false
       }
     ]
   }

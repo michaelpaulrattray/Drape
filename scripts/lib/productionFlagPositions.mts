@@ -140,7 +140,18 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: "users:1",
     why: "the door that takes her picture at all; parent of the two reference lanes",
   },
-  CASTING_OPEN_LANE_SCOPE: { position: "users:1", why: "the open lane; his account" },
+  CASTING_OPEN_LANE_SCOPE: {
+    position: "all",
+    why:
+      "the open lane — an ask naming its own kind. WIDENED to `all` 2026-09-24 on his Crew "
+      + "reply #205 (card switch-05-open-lane), verbatim and entire: \"Turn it on for "
+      + "everyone\". " + "HIS SWITCH SITTING, 2026-09-24 (#1132) — he went down the whole list in one go, as he "
+      + "said he would (\"One sitting — prepare every switch with its evidence and I'll go "
+      + "down the list in one go\"). "
+      + "Evidence he was shown: 18 demand rows on production (tail, ornaments, orb), last "
+      + "5 Sep, one served and the rest answered in words. Its parent CASTING_REPAINT_SCOPE "
+      + "was already `all`, so it had no chain above it",
+  },
   CASTING_FACE_SCAN_SCOPE: {
     position: "all",
     why:
@@ -179,9 +190,28 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     why: "FLIPPED users:1 2026-08-25 on the founder's order ('flip everything on thats currently off so i can check the rolls myself', fable-1654). Prerequisite held: user 1 is inside CASTING_SEGMENTS_SCOPE. never flipped on production; additive and inert while off",
   },
   CASTING_BRIEF_FIDELITY_SCOPE: {
-    position: "users:1",
+    position: "all",
     why:
-      "the brief fidelity build — the announced cap on characterNotes, the bound the reply is "
+      "WIDENED to `all` 2026-09-24 on his Crew reply #203 (card switch-03-brief-fidelity), "
+      + "verbatim and entire: \"Turn it on for everyone\". " + "HIS SWITCH SITTING, 2026-09-24 (#1132) — he went down the whole list in one go, as he "
+      + "said he would (\"One sitting — prepare every switch with its evidence and I'll go "
+      + "down the list in one go\"). "
+      + "⚠ ITS STATED BLOCKER IS DISCHARGED BY MEASUREMENT AND NOT BY HIS WORD ALONE, WHICH "
+      + "IS THE PART WORTH KEEPING. fable-1670 §4 held this flag at users:1 until court E1 "
+      + "reported, on the worry that a lifted cap stops the reader filling `role` — the only "
+      + "field that produces the CASTING CATEGORY (ABSOLUTE) block. That worry is a "
+      + "HOUSE-ROAD worry and the house road is what the row above retires: on the author "
+      + "road the eight prompts are `seeded.prompt` and the house composer is never called "
+      + "(briefCompiler.ts, where the author road takes `const candidates = seeded`), so `role` "
+      + "reaches the SHEET and not the engine. Read at the "
+      + "production rows the same day: `role` absent on 3 of 75 author rolls (4%) against 28 "
+      + "of 216 on the old road (13%) — the feared effect is rarer than what it replaces. "
+      + "⚠ THE ORDER WAS LOAD-BEARING: this one widened WITH the register and never alone, "
+      + "because alone it puts the lifted cap onto the house road, which is exactly where "
+      + "E1's worry lives. Both were set in one act. What it buys: his own 553-character "
+      + "brief lost SEVEN of the fourteen facts he typed, and the seven that lived were the "
+      + "seven inside the first 180 characters — cut by position, not judgement. --- the "
+      + "record before this widen: the brief fidelity build — the announced cap on characterNotes, the bound the reply is "
       + "held to, and the stated skin lane. Flipped users:1 2026-08-25 on the founder's own "
       + "order (\"run the cyborg re-roll on my account\", fable-1636) for the stage-3 gate: his "
       + "cyborg brief re-rolled with the fidelity lane live, judged by his eyes. Its lifespan is "
@@ -191,9 +221,21 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "taken while it is narrow states which side it drove.",
   },
   CASTING_CREATIVE_REGISTER_SCOPE: {
-    position: "users:1",
+    position: "all",
     why:
-      "the creative register (#16, rung N1 of the rebaseline) — BUILT DARK 2026-08-26 on the "
+      "THE AUTHOR ROAD, NOW EVERY ACCOUNT'S ROAD. WIDENED to `all` 2026-09-24 on his Crew "
+      + "reply #201 (card switch-01-author-road), verbatim and entire: \"Yes\". " + "HIS SWITCH SITTING, 2026-09-24 (#1132) — he went down the whole list in one go, as he "
+      + "said he would (\"One sitting — prepare every switch with its evidence and I'll go "
+      + "down the list in one go\"). "
+      + "This is the flip N1 was signed off for and never shipped: his sign-off the day "
+      + "before (\"im happy to sign off on the cyborg breif now\") is law 9 satisfied, and "
+      + "until today every account that was not his still cast through the old house "
+      + "compiler. It REMOVES a text call from every roll rather than adding one — since "
+      + "Re-imagine the prompt is composed by code — so it is cheaper than what it replaces. "
+      + "75 rolls had gone through this road on production since 26 August, all his. It is "
+      + "the parent of CASTING_CONCEPT_UPLOAD_SCOPE, which widened in the same act and could "
+      + "not have widened before it. Still owed and NOT blocking: the N1 milestone-close deep "
+      + "review (#1121, the relay's). --- the record before this widen: the creative register (#16, rung N1 of the rebaseline) — BUILT DARK 2026-08-26 on the "
       + "founder's own verdict on the court (\"I think C is worth building to find out how close "
       + "we can get\"), and FLIPPED TO users:1 2026-08-26 01:21Z on his word on the Crew tab, "
       + "verbatim: \"flip it\" (reply #4 on card register-flip-users1; set by foreman-16 under "
@@ -204,7 +246,27 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "been seen at his eye through the built road yet.",
   },
   CASTING_TWO_PATHS_SCOPE: {
-    position: "users:1",
+    position: "off",
+    /* ⚠ RETIRED AND UNSET ON THE SERVICE, 2026-09-24 — his Crew reply #206 (card
+       switch-06-two-paths-retire), verbatim and entire: "Unset it".
+
+       Not a widen and not a narrow: the variable is GONE from the service, and
+       `off` is how this table says so. It governs nothing — #203 slice 1
+       (`67f422b9`) closed the entrance, so no toggle exists on either surface,
+       `createRoll` takes no path, and `rollService` writes the column a constant
+       null. Read at the rows the day he was asked: 282 of 295 production rolls
+       carry no path and the last pathed roll was 2026-08-26.
+
+       ⚠ The COLUMN and its thirteen pathed rows are deliberately kept — #203
+       slice 2 step (e) owns them, and they are the evidence of which rolls
+       predate the author road. Unsetting the flag does not touch them, and they
+       are not to be backfilled or nulled.
+
+       Everything below this line is the row's HISTORY and is kept because its
+       lesson outlives the position it describes. ⚠ Where it says this row reads
+       `users:1`, that was true from 2026-08-24 until today and is not true now —
+       the sentence is struck rather than deleted, which is this repository's own
+       rule for a superseded ruling. */
     /* ⚠ THE FOURTH COPY OF ONE STALE SENTENCE, AND THIS FILE IS THE LAST PLACE
        IT SHOULD HAVE SURVIVED (repaired 2026-08-24, opus-1175).
 
@@ -311,9 +373,17 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "the chosen model's fal price and refusal rate read first",
   },
   CASTING_RETRY_SCOPE: {
-    position: "users:1",
+    position: "all",
     why:
-      "the Retry button (#122 shape 1) — one failed sheet slice rendered again for 20 credits, "
+      "WIDENED to `all` 2026-09-24 on his Crew reply #204 (card switch-04-retry), verbatim "
+      + "and entire: \"Turn it on for everyone\". " + "HIS SWITCH SITTING, 2026-09-24 (#1132) — he went down the whole list in one go, as he "
+      + "said he would (\"One sitting — prepare every switch with its evidence and I'll go "
+      + "down the list in one go\"). "
+      + "Evidence he was shown: 5 retries on production, 4 succeeded, 1 failed and was "
+      + "refunded, 5 Sep -> 22 Sep. The customer pays 20 credits and is refunded again if the "
+      + "retry also fails — the charge is its own operation with its own refund key, so it "
+      + "cannot collide with the original slice's refund. --- the record before this widen: "
+      + "the Retry button (#122 shape 1) — one failed sheet slice rendered again for 20 credits, "
       + "his own word (\"should we also allow a try option aswell?\" — yes). BUILT DARK "
       + "2026-08-27; users:1 on his Crew reply #10 the same day (\"Flip it on for your account, "
       + "AND widen it to content-filter tiles\"), which also put content-filter tiles on the "
@@ -321,9 +391,23 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "zero. Wider than users:1 on his eye and not before",
   },
   CASTING_CONCEPT_UPLOAD_SCOPE: {
-    position: "users:1",
+    position: "all",
     why:
-      "UPLOAD A CONCEPT (#185, his order 2026-08-28) — a picture in, a description of the "
+      "WIDENED to `all` 2026-09-24 on his Crew reply #202 (card switch-02-concept-upload), "
+      + "verbatim and entire: \"yes, turn it on\". " + "HIS SWITCH SITTING, 2026-09-24 (#1132) — he went down the whole list in one go, as he "
+      + "said he would (\"One sitting — prepare every switch with its evidence and I'll go "
+      + "down the list in one go\"). "
+      + "⚠ THE VENDOR-EXPOSURE QUESTION THIS ENTRY RESERVED WAS PUT TO HIM IN HIS OWN WORDS "
+      + "AND HE ANSWERED IT — it was not widened past him by anybody's judgement. The card "
+      + "said it plainly: the picture goes WHOLE to our text-model supplier, and while it is "
+      + "his account that is his own picture and his own choice, but for everyone it is a "
+      + "stranger's photograph of a person reaching a third party — \"a privacy decision, not "
+      + "an engineering one, and it is yours\". What is unchanged and is why the row could be "
+      + "put at all: the photograph is never kept and never rendered (the bytes ride the text "
+      + "call and are dropped when it returns — no row, no file, no public URL), and what "
+      + "reaches the image engine is WORDS, so the studio makes a type and never a likeness. "
+      + "Its parent CASTING_CREATIVE_REGISTER_SCOPE widened in the same act; it could not "
+      + "have gone first. --- the record before this widen: UPLOAD A CONCEPT (#185, his order 2026-08-28) — a picture in, a description of the "
       + "PERSON out, into her own brief box. BUILT DARK 2026-08-28 — BOTH slices: the door, "
       + "and (the same day) the start page card it is reached from, which draws the honest "
       + "coming-state for every account outside this scope. FLIPPED to users:1 2026-08-28 on "
