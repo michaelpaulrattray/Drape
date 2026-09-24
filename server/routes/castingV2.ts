@@ -64,7 +64,6 @@ import {
 } from "../db/castingV2ReferenceAttachments";
 import { spokenError } from "../_core/spokenError";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
-import { resolveOwnedCandidateId } from "../db/castingV2Segments";
 import { facePanel, maskFetchUrl, type PanelBox, type PanelInkWorn, type PanelScan } from "../castingV2/facePanel";
 import { readCarriedGeometry } from "../db/castingV2FaceScans";
 import { listInkDeliveryPlacements } from "../db/castingV2InkDeliveryCrops";
@@ -155,6 +154,7 @@ import {
   listOpenCastingSessions,
   listRollCandidates,
   listSessionRolls,
+  resolveOwnedCandidateId,
 } from "../db/castingV2";
 import { CAST_NAME_MAX_LENGTH } from "../../shared/inputLimits";
 

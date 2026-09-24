@@ -872,8 +872,6 @@
       "CASTING_RETRY_SCOPE",
       "CASTING_ROLL_ENGINE_SCOPE",
       "CASTING_SCAN_TABLE_SCOPE",
-      "CASTING_SEGMENTS_DELIVERED_SCOPE",
-      "CASTING_SEGMENTS_SCOPE",
       "CASTING_SIDE_PHRASING_SCOPE",
       "CASTING_TWO_PATHS_SCOPE",
       "CASTING_V2_SCOPE"
@@ -1673,9 +1671,7 @@
         "doorsNote": "Panel and scan speak in projections, not refusal ids; their guarantees are pinned by their own suites.",
         "flags": [
           "CASTING_FACE_SCAN_SCOPE",
-          "CASTING_SCAN_TABLE_SCOPE",
-          "CASTING_SEGMENTS_SCOPE",
-          "CASTING_SEGMENTS_DELIVERED_SCOPE"
+          "CASTING_SCAN_TABLE_SCOPE"
         ],
         "notes": [
           "Discovery mints nothing into a recipe — the panel shows crops the founder's eyes judge; a crop becomes a carry only through the roads built for that."

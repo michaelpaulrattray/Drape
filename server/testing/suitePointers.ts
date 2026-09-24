@@ -91,6 +91,24 @@ export type PointerReading = {
  * instead of a mystery.
  */
 export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
+  "castingV2-segment-store-db.test.ts": {
+    why:
+      "Deleted with the segment store's database layer (#1160 slice 3, 2026-09-25, on his " +
+      "ruling 'Retire both. The paste road is gone; nothing reads these'). All six symbols it " +
+      "drove — recordEditPatchSegments, recordDetectedSegments, listLiveSegments, " +
+      "listLineageSegments, listSegmentHistory, retireSegmentFacet — are gone. " +
+      "⚠ BUT TWO OF ITS ARMS WERE NEVER THE STORE'S AND THIS GUARD IS WHAT CAUGHT THEM: it " +
+      "reported three live modules pointing here, and two of those cite this file as the " +
+      "RECEIPT for the migration-before-code rule about " +
+      "`casting_candidate_variants.parentVariantId` — the lineage column the reference " +
+      "library's carry rests on, written on every claim. That arm and the invariant-2 arm " +
+      "beside it (a parent variant on another face is refused inside the statement) were " +
+      "MOVED to `castingV2-variant-lineage-db.test.ts`, unchanged. The four mentions that " +
+      "remain are all prose explaining where those arms used to live and what the deletion " +
+      "cost, which is the provenance a later reader needs: a suite's NAME is not its " +
+      "population, and this is the fourth time #1160 was handed that lesson after " +
+      "maskFetchUrl (slice 2), resolveOwnedCandidateId and the ceremony script's live half.",
+  },
   "segmentsOnFaceEndpoint.test.ts": {
     why:
       "Deleted with the segment store's route (#1160 slice 2, 2026-09-25, on his ruling " +

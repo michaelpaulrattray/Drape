@@ -207,7 +207,7 @@ export const ROADS: readonly Road[] = [
       + "widening); a clean scan is kept in casting_face_scans, geometry only, stencils as objects under the purge path.",
     doors: [],
     doorsNote: "Panel and scan speak in projections, not refusal ids; their guarantees are pinned by their own suites.",
-    flags: ["CASTING_FACE_SCAN_SCOPE", "CASTING_SCAN_TABLE_SCOPE", "CASTING_SEGMENTS_SCOPE", "CASTING_SEGMENTS_DELIVERED_SCOPE"],
+    flags: ["CASTING_FACE_SCAN_SCOPE", "CASTING_SCAN_TABLE_SCOPE"],
     notes: [
       "Discovery mints nothing into a recipe — the panel shows crops the founder's eyes judge; a crop becomes a carry only through the roads built for that.",
     ],

@@ -138,225 +138,6 @@ export function captureCastingV2Enabled(userId: number): boolean {
   return castingV2EnabledForUser(parseCastingV2Scope(process.env[CASTING_V2_SCOPE_ENV]), userId);
 }
 
-/* ------------------------------------------------- the segment sub-flag */
-
-/**
- * Segment permanence — its OWN switch, and the reason is not tidiness.
- *
- * `CASTING_V2_SCOPE` is already open in production — it read *"for the
- * founder's own dogfooding"* until 2026-08-24 and the position is `all`, so the
- * argument below holds for everyone rather than for one account, which is more
- * of the reason and not less. A store that shipped under that flag alone would
- * begin writing
- * segment rows into a database whose table does not exist yet the moment it
- * deployed, and would do it on the paid path. The sub-flag is what makes
- * "dark from the first commit" true rather than aspirational: absent means off,
- * off means no row is ever written and no composite ever reads one.
- *
- * It is also the ordering device for the production migration. The table lands
- * by ceremony; the flag is flipped afterwards. Neither step alone changes
- * behaviour, so neither step alone can break a live roll.
- */
-export const CASTING_SEGMENTS_SCOPE_ENV = "CASTING_SEGMENTS_SCOPE";
-
-export class CastingSegmentsScopeConfigurationError extends Error {
-  constructor() {
-    super(
-      `${CASTING_SEGMENTS_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
-    );
-    this.name = "CastingSegmentsScopeConfigurationError";
-  }
-}
-
-/**
- * A segment belongs to a candidate, and only Casting V2 makes candidates. A
- * segment scope wider than the casting scope is either inert or a mistake, and
- * the two are indistinguishable from the outside — so it refuses instead of
- * quietly doing nothing (invariant 7).
- */
-export class CastingSegmentsCoverageError extends Error {
-  constructor(detail: string) {
-    super(`${CASTING_SEGMENTS_SCOPE_ENV} ${detail}`);
-    this.name = "CastingSegmentsCoverageError";
-  }
-}
-
-/**
- * Segments write mask and crop objects to the public bucket. Without the
- * cleanup worker nothing ever deletes them, so the retention promise this
- * store makes in the same transaction as its writes would be false at the far
- * end. The same posture the roll flag takes, for the same reason.
- */
-export class CastingSegmentsCleanupWorkerError extends Error {
-  constructor() {
-    super(
-      `${CASTING_SEGMENTS_SCOPE_ENV} cannot be enabled unless ENABLE_STORAGE_CLEANUP_WORKER is exactly "true"`,
-    );
-    this.name = "CastingSegmentsCleanupWorkerError";
-  }
-}
-
-export function parseCastingSegmentsScope(raw: string | undefined): CastingV2Scope {
-  return parseScopeGrammar(raw, () => {
-    throw new CastingSegmentsScopeConfigurationError();
-  });
-}
-
-/**
- * Whether this user's faces keep their segments.
- *
- * Deliberately an AND of both flags rather than a read of the sub-flag alone.
- * The boot check already refuses a segment scope that reaches past the casting
- * scope, and this is the same rule enforced a second time at the point of use —
- * the two ways a flag pair goes wrong are a bad value and a boot check that was
- * never invoked, and this closes the second.
- */
-export function captureCastingSegmentsEnabled(userId: number): boolean {
-  const segments = parseCastingSegmentsScope(process.env[CASTING_SEGMENTS_SCOPE_ENV]);
-  if (!castingV2EnabledForUser(segments, userId)) return false;
-  return captureCastingV2Enabled(userId);
-}
-
-/**
- * Whether the store is armed AT ALL, regardless of user.
- *
- * The retention sweep reads this one. Purging is deliberately NOT per-user:
- * the sweep must collect segments for every user who has any, including one
- * removed from the scope list after their rows were written. The narrower read
- * belongs on the write path; a retention path that narrows is how objects
- * outlive the sheet that promised to purge them.
- */
-export function castingSegmentsArmed(): boolean {
-  return parseCastingSegmentsScope(process.env[CASTING_SEGMENTS_SCOPE_ENV]).kind !== "off";
-}
-
-export function validateCastingSegmentsEnvironment(input: {
-  scope: string | undefined;
-  castingScope: string | undefined;
-  cleanupWorker: string | undefined;
-}): CastingV2Scope {
-  const segments = parseCastingSegmentsScope(input.scope);
-  if (segments.kind === "off") return segments;
-
-  if (input.cleanupWorker !== "true") throw new CastingSegmentsCleanupWorkerError();
-
-  const casting = parseCastingV2Scope(input.castingScope);
-  if (casting.kind === "off") {
-    throw new CastingSegmentsCoverageError(
-      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — segments belong to candidates, and nothing can create one`,
-    );
-  }
-  if (casting.kind === "all") return segments;
-  if (segments.kind === "all") {
-    throw new CastingSegmentsCoverageError(
-      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
-    );
-  }
-  const uncovered = segments.userIds.filter((userId) => !casting.userIds.includes(userId));
-  if (uncovered.length > 0) {
-    throw new CastingSegmentsCoverageError(
-      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
-    );
-  }
-  return segments;
-}
-
-/* ------------------------------------ the delivered-anchored sub-sub-flag */
-
-/**
- * DELIVERED-ANCHORED SEGMENTS — the silhouette change, on its own switch.
- *
- * `CASTING_SEGMENTS_SCOPE` is already open for the founder, so a segment cut
- * differently under that flag alone would change what his very next paid render
- * keeps, on the day it deployed. This change is small in code and large in
- * consequence: it moves a segment's territory from *where the thing used to be*
- * to *where the thing now is*, which manufactures a boundary class no seam
- * instrument in this product has ever been calibrated against
- * (`CASTING_V2_DELIVERED_ANCHORED_SEGMENTS_DESIGN.md`, "The seam implication").
- *
- * The design's own prerequisite is that the coherence statistic be recorded
- * first. It IS recorded, on every render, beside amplitude — and the table held
- * **zero verdicts** on 2026-08-10 because nobody had rendered since. So the
- * mechanism is there and the specimens are not, and that is precisely a reason
- * for a switch rather than a reason to argue about a date.
- *
- * Absent means off. Off means `cutSegments` is handed no delivered map and
- * behaves byte-for-byte as it did before this existed.
- */
-export const CASTING_SEGMENTS_DELIVERED_SCOPE_ENV = "CASTING_SEGMENTS_DELIVERED_SCOPE";
-
-export class CastingSegmentsDeliveredScopeConfigurationError extends Error {
-  constructor() {
-    super(
-      `${CASTING_SEGMENTS_DELIVERED_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
-    );
-    this.name = "CastingSegmentsDeliveredScopeConfigurationError";
-  }
-}
-
-/**
- * A delivered-anchored cut is a way of cutting a segment, so it is inert for a
- * user whose faces keep no segments at all. Inert and mistaken look identical
- * from outside, so it refuses rather than quietly doing nothing (invariant 7) —
- * the same rule the segment scope takes against the casting scope.
- */
-export class CastingSegmentsDeliveredCoverageError extends Error {
-  constructor(detail: string) {
-    super(`${CASTING_SEGMENTS_DELIVERED_SCOPE_ENV} ${detail}`);
-    this.name = "CastingSegmentsDeliveredCoverageError";
-  }
-}
-
-export function parseCastingSegmentsDeliveredScope(raw: string | undefined): CastingV2Scope {
-  return parseScopeGrammar(raw, () => {
-    throw new CastingSegmentsDeliveredScopeConfigurationError();
-  });
-}
-
-/**
- * Whether this user's segments are cut from the DELIVERED thing's own extent.
- *
- * An AND of the whole chain, for `captureCastingSegmentsEnabled`'s reason: the
- * boot check already refuses a scope that reaches past its parent, and this is
- * the same rule enforced again where it is used, because a boot check that was
- * never invoked is the second way a flag pair goes wrong.
- */
-export function deliveredAnchoredSegmentsEnabled(userId: number): boolean {
-  const delivered = parseCastingSegmentsDeliveredScope(
-    process.env[CASTING_SEGMENTS_DELIVERED_SCOPE_ENV],
-  );
-  if (!castingV2EnabledForUser(delivered, userId)) return false;
-  return captureCastingSegmentsEnabled(userId);
-}
-
-export function validateCastingSegmentsDeliveredEnvironment(input: {
-  scope: string | undefined;
-  segmentsScope: string | undefined;
-}): CastingV2Scope {
-  const delivered = parseCastingSegmentsDeliveredScope(input.scope);
-  if (delivered.kind === "off") return delivered;
-
-  const segments = parseCastingSegmentsScope(input.segmentsScope);
-  if (segments.kind === "off") {
-    throw new CastingSegmentsDeliveredCoverageError(
-      `cannot be enabled while ${CASTING_SEGMENTS_SCOPE_ENV} is off — there is no segment to cut differently`,
-    );
-  }
-  if (segments.kind === "all") return delivered;
-  if (delivered.kind === "all") {
-    throw new CastingSegmentsDeliveredCoverageError(
-      `cannot be "all" while ${CASTING_SEGMENTS_SCOPE_ENV} is limited to specific users`,
-    );
-  }
-  const uncovered = delivered.userIds.filter((userId) => !segments.userIds.includes(userId));
-  if (uncovered.length > 0) {
-    throw new CastingSegmentsDeliveredCoverageError(
-      `names users outside ${CASTING_SEGMENTS_SCOPE_ENV}: ${uncovered.join(",")}`,
-    );
-  }
-  return delivered;
-}
-
 /* ---------------------------------------- the reference-library sub-flag */
 
 /**
@@ -373,10 +154,13 @@ export function validateCastingSegmentsDeliveredEnvironment(input: {
  * flipped afterwards; neither step alone changes behaviour, and neither alone
  * can break a live roll.
  *
- * It is deliberately NOT a child of `CASTING_SEGMENTS_SCOPE`. The library is
- * not built from the segment store and never reads it — the store seeds nothing
- * (fable-173/196), and the two answer different questions about a face. Its
- * parent is the casting scope, because its rows hang off a candidate.
+ * It was deliberately NOT a child of `CASTING_SEGMENTS_SCOPE`: the library is
+ * not built from the segment store and never read it — the store seeded nothing
+ * (fable-173/196), and the two answered different questions about a face. ⚠ That
+ * flag and its store are RETIRED (#1160, his word of 2026-09-24, *"Retire both.
+ * The paste road is gone; nothing reads these"*), so the contrast is kept in the
+ * past tense as the reason this parentage was chosen. Its parent is the casting
+ * scope, because its rows hang off a candidate.
  */
 export const CASTING_REFERENCE_LIBRARY_SCOPE_ENV = "CASTING_REFERENCE_LIBRARY_SCOPE";
 
@@ -404,8 +188,9 @@ export class CastingReferenceLibraryCoverageError extends Error {
 /**
  * The library writes crops of a person's face to the public bucket. Without the
  * cleanup worker nothing ever deletes them, so the retention promise the write
- * transaction makes would be false at the far end — the same posture the
- * segment store takes, for the same reason.
+ * transaction makes would be false at the far end. That is the founder's
+ * storage condition, and it is the rule rather than a borrowed posture — the
+ * segment store that used to be cited here is retired (#1160).
  */
 export class CastingReferenceLibraryCleanupWorkerError extends Error {
   constructor() {
@@ -423,8 +208,14 @@ export function parseCastingReferenceLibraryScope(raw: string | undefined): Cast
 }
 
 /** Whether this user's faces build a reference library. An AND of both flags,
- *  for `captureCastingSegmentsEnabled`'s reason: a boot check that was never
- *  invoked is the second way a flag pair goes wrong. */
+ *  and this is where that reason is WRITTEN DOWN — the siblings below point
+ *  here: the boot check already refuses a scope that reaches past its parent,
+ *  and the same rule is enforced a second time at the point of use, because the
+ *  two ways a flag pair goes wrong are a bad value and a boot check that was
+ *  never invoked. ⚠ Every one of those siblings cited
+ *  `captureCastingSegmentsEnabled` until #1160 retired the segment pair on his
+ *  word — a pointer outliving its target is how a load-bearing reason becomes a
+ *  deletion nobody argues with, so the reason moved here rather than dying. */
 export function captureCastingReferenceLibraryEnabled(userId: number): boolean {
   const library = parseCastingReferenceLibraryScope(
     process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
@@ -540,10 +331,10 @@ export function parseCastingRepaintScope(raw: string | undefined): CastingV2Scop
 /**
  * Whether this user's refines go through the new compositor.
  *
- * An AND of the whole chain, for `captureCastingSegmentsEnabled`'s reason: the
- * boot check already refuses a scope that reaches past its parent, and this is
- * the same rule enforced again where it is used, because a boot check that was
- * never invoked is the second way a flag pair goes wrong.
+ * An AND of the whole chain, for `captureCastingReferenceLibraryEnabled`'s
+ * reason: the boot check already refuses a scope that reaches past its parent,
+ * and this is the same rule enforced again where it is used, because a boot
+ * check that was never invoked is the second way a flag pair goes wrong.
  */
 export function captureCastingRepaintEnabled(userId: number): boolean {
   const repaint = parseCastingRepaintScope(process.env[CASTING_REPAINT_SCOPE_ENV]);
@@ -627,10 +418,10 @@ export function parseCastingSidePhrasingScope(raw: string | undefined): CastingV
 /**
  * Whether this user's per-side asks say where the side is.
  *
- * An AND of the whole chain, for `captureCastingSegmentsEnabled`'s reason: the
- * boot check already refuses a scope that reaches past its parent, and this is
- * the same rule enforced again where it is used, because a boot check that was
- * never invoked is the second way a flag pair goes wrong.
+ * An AND of the whole chain, for `captureCastingReferenceLibraryEnabled`'s
+ * reason: the boot check already refuses a scope that reaches past its parent,
+ * and this is the same rule enforced again where it is used, because a boot
+ * check that was never invoked is the second way a flag pair goes wrong.
  */
 export function captureCastingSidePhrasingEnabled(userId: number): boolean {
   const child = parseCastingSidePhrasingScope(process.env[CASTING_SIDE_PHRASING_SCOPE_ENV]);
@@ -727,10 +518,10 @@ export function parseCastingFaceScanScope(raw: string | undefined): CastingV2Sco
 /**
  * Whether this user's untouched faces are read on selection.
  *
- * An AND of the whole chain, for `captureCastingSegmentsEnabled`'s reason: the
- * boot check already refuses a scope that reaches past its parent, and this is
- * the same rule enforced again where it is used, because a boot check that was
- * never invoked is the second way a flag pair goes wrong.
+ * An AND of the whole chain, for `captureCastingReferenceLibraryEnabled`'s
+ * reason: the boot check already refuses a scope that reaches past its parent,
+ * and this is the same rule enforced again where it is used, because a boot
+ * check that was never invoked is the second way a flag pair goes wrong.
  */
 export function captureCastingFaceScanEnabled(userId: number): boolean {
   const scan = parseCastingFaceScanScope(process.env[CASTING_FACE_SCAN_SCOPE_ENV]);
@@ -804,12 +595,13 @@ export function validateCastingV2Environment(input: {
  * sits inside `CASTING_V2_SCOPE`, so naming a user here names them all the way
  * down.
  *
- * # And the cleanup worker, for the same reason segments needed it
+ * # And the cleanup worker, for the founder's storage condition
  *
  * A kept scan owns OBJECTS: one stencil per feature found, under the
  * candidate's own path. A persisted artifact class without a running purge is
  * the thing the founder's storage condition forbids, so this refuses to boot
- * without the worker exactly as the segment store does.
+ * without the worker — as every store that owns objects in this file does. (The
+ * segment store was the sibling named here until #1160 retired it.)
  *
  * Purging is deliberately NOT gated on this flag — see {@link
  * castingScanTableArmed}.

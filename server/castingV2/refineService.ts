@@ -5801,8 +5801,14 @@ async function refineCandidateCounted(
         and passes `default` for the ones a caller leaves out, so the column is
         in the INSERT whether or not this line has a value for it — proved by
         dropping the column under a real claim in
-        `castingV2-segment-store-db.test.ts`. The migration-before-code ordering
-        is what protects that deploy, and it still does.
+        `castingV2-variant-lineage-db.test.ts`. The migration-before-code
+        ordering is what protects that deploy, and it still does.
+
+        ⚠ That arm lived in `castingV2-segment-store-db.test.ts` until #1160
+        slice 3 deleted that suite with the segment store. It was never the
+        store's arm — it is this column's, and this column is the carry's —
+        so it was MOVED rather than lost, and the suite-pointer guard is what
+        noticed the receipt was about to go missing.
 
         And the lineage is no longer the store's private fact. THE CARRY READS
         IT: `listLineageReferences` anchors on this variant and climbs its
@@ -8715,9 +8721,14 @@ async function refineCandidateCounted(
       for its ancestors' pending mints — is filed as the optimisation that buys
       that time back, not built.
 
-      # The segment store, unchanged in everything but position
+      # The segment store — RETIRED (#1160, 2026-09-25), and this is what it was
 
-      Dark until `CASTING_SEGMENTS_SCOPE` names her, and silent in both
+      ⚠ The paragraph below describes a road that no longer exists: his ruling of
+      2026-09-24 took the store, its two flags and every module that read them,
+      and slice 1 had already removed this very call. It is kept in the past
+      tense because the POSITION argument above is still the live one and this was
+      its second worked example. Dark until `CASTING_SEGMENTS_SCOPE` named her,
+      and silent in both
       directions — it never throws, and a failure costs this render nothing at
       all. The facet simply keeps no pixels, and the next render carries it the
       way every render does today: with words. It moved with the mint because it

@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "81b8501280412e18"
+    "sourceFingerprint": "89091a76c1ec923a"
   },
   "domains": [
     {
@@ -8885,16 +8885,6 @@
       "valueRecorded": false
     },
     {
-      "id": "env:CASTING_SEGMENTS_DELIVERED_SCOPE",
-      "name": "CASTING_SEGMENTS_DELIVERED_SCOPE",
-      "valueRecorded": false
-    },
-    {
-      "id": "env:CASTING_SEGMENTS_SCOPE",
-      "name": "CASTING_SEGMENTS_SCOPE",
-      "valueRecorded": false
-    },
-    {
       "id": "env:CASTING_SIDE_INFERENCE",
       "name": "CASTING_SIDE_INFERENCE",
       "valueRecorded": false
@@ -9269,16 +9259,6 @@
     {
       "id": "flag:CASTING_SCAN_TABLE_SCOPE",
       "name": "CASTING_SCAN_TABLE_SCOPE",
-      "grammar": "off|all|users:<ids>"
-    },
-    {
-      "id": "flag:CASTING_SEGMENTS_DELIVERED_SCOPE",
-      "name": "CASTING_SEGMENTS_DELIVERED_SCOPE",
-      "grammar": "off|all|users:<ids>"
-    },
-    {
-      "id": "flag:CASTING_SEGMENTS_SCOPE",
-      "name": "CASTING_SEGMENTS_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -11189,12 +11169,12 @@
       "path": "server/castingV2-roll-domain-db.test.ts"
     },
     {
-      "id": "test:server/castingV2-segment-store-db.test.ts",
-      "path": "server/castingV2-segment-store-db.test.ts"
-    },
-    {
       "id": "test:server/castingV2-settled-failures-db.test.ts",
       "path": "server/castingV2-settled-failures-db.test.ts"
+    },
+    {
+      "id": "test:server/castingV2-variant-lineage-db.test.ts",
+      "path": "server/castingV2-variant-lineage-db.test.ts"
     },
     {
       "id": "test:server/castingV2/accessoryCorridor.test.ts",
@@ -27927,11 +27907,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/db/castingV2Segments.ts",
-      "to": "module:server/db/storageCleanup.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/db/castingV2Sign.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -30334,11 +30309,6 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2ReferenceReads.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/db/castingV2Segments.ts",
       "kind": "imports"
     },
     {

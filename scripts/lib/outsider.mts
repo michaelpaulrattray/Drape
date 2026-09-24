@@ -83,8 +83,6 @@ export type Outsider = {
 /** The flags a driver might want to be outside of, and the env var each reads. */
 export const SCOPE_FLAGS = [
   "CASTING_V2_SCOPE",
-  "CASTING_SEGMENTS_SCOPE",
-  "CASTING_SEGMENTS_DELIVERED_SCOPE",
   "CASTING_REFERENCE_LIBRARY_SCOPE",
   "CASTING_REPAINT_SCOPE",
   "CASTING_FACE_SCAN_SCOPE",
