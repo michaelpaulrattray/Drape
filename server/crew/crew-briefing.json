@@ -1,7 +1,7 @@
 {
-  "edition": 505,
-  "updatedAt": "2026-09-24T02:57:21.433Z",
-  "shift": "Foreman — tattoos get written down for everyone, on your word",
+  "edition": 506,
+  "updatedAt": "2026-09-24T04:20:21.437Z",
+  "shift": "Foreman — the tattoo studio's machinery comes out, and you answered the segment question",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3035,7 +3035,7 @@
         }
       ],
       "recommendation": "A. It does the cleanup you actually asked for and takes no capability off your refine road on a guess. The live half is a real feature, it is only on for you, and it deserves its own look rather than riding out under a cleanup's name — which is your own rule from the switch sitting.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-24T03:05:54.605Z",
       "issueNumber": 1160
     }
@@ -7763,12 +7763,26 @@
     {
       "id": "born-ink-widen-1159",
       "title": "Tattoos named in a brief get written down — for every account, not just yours",
-      "status": "in-review",
-      "note": "Your reply #215. The switch is already set; this carries the record and one guard fix.",
+      "status": "merged",
+      "note": "Merged 389fa4a1 and deployed; tattoos in a brief are written down for every account.",
       "prNumber": 1163
+    },
+    {
+      "id": "ink-studio-service-1158-s2",
+      "title": "The tattoo studio's machinery comes out",
+      "status": "merged",
+      "note": "Merged eef3c5c4. The tattoo studio's machinery is out; nothing a customer can see changes.",
+      "prNumber": 1165
     }
   ],
   "problems": [
+    {
+      "id": "queue-shape-0924c-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "Queue shape",
+      "detail": "42 open. 1 needs you (the segment retirement, now answered). 15 have had no comment, close, reopen or commit for 7 days — unchanged from this morning, and the two oldest are design cards waiting on a rung rather than rotting work."
+    },
     {
       "id": "pr-conflict-blocks-two-nights",
       "severity": "info",
@@ -8678,7 +8692,8 @@
     212,
     213,
     214,
-    215
+    215,
+    216
   ],
   "nextUp": {
     "readAt": "2026-09-24T02:56:19.929Z",
