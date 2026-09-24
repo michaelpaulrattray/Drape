@@ -55,33 +55,60 @@ describe("the arithmetic", () => {
   });
 
   it("allows the sum to EQUAL the ceiling — the provider's limit is inclusive", () => {
+    /*
+      ⚠ DRIVEN, NOT INHERITED (#1158 slice 4d). This arm used to read the
+      defaults and assert 20, which proved the inclusive limit only for as long
+      as the declared paths happened to add up to exactly the ceiling. The plate
+      mint's retirement took the sum to 19 and the arm would have gone red
+      having lost its SUBJECT rather than found a defect. So the equality is
+      now CONFIGURED — one path raised until the sum meets the ceiling — and the
+      property survives any future re-cut of who owns which slot.
+    */
     process.env.FAL_ACCOUNT_CEILING = "20";
+    const headroom = 20 - FAL_ALLOWANCES.reduce((sum, one) => sum + one.fallback, 0);
+    expect(headroom, "the declared defaults already exceed the ceiling — assertFalBudget should be refusing").toBeGreaterThanOrEqual(0);
+    process.env.FAL_CONCURRENCY = String(falAllowanceOf("FAL_CONCURRENCY") + headroom);
+
     const budget = assertFalBudget();
     expect(budget.total).toBe(20);
+    expect(budget.total).toBe(budget.ceiling);
     expect(() => assertFalBudget()).not.toThrow();
   });
 
-  it("spends the WHOLE ceiling, and the plate mint's slot came out of courtesy", () => {
+  it("leaves ONE slot unowned since the plate mint retired, and the courtesy pool did not take it back", () => {
     /*
-      THE RE-CUT, PINNED (2026-08-18). The fifth path could not be declared out
-      of thin air — the four before it spent 20 of 20 — so the arithmetic of who
-      paid is a contract rather than a memory: the courtesy pool went 6 to 5 and
-      not one paid path moved.
+      THE RE-CUT, PINNED (2026-08-18) AND THEN HALF-UNDONE (2026-09-24, #1158
+      slice 4d). The fifth path could not be declared out of thin air — the four
+      before it spent 20 of 20 — so the courtesy pool went 6 to 5 and not one
+      paid path moved. When the plate mint retired, the 1 it had been given was
+      NOT handed back: that would raise a live path's concurrency, which is his
+      own rule's "capability change wearing a cleanup's clothes".
+
+      ⚠ So the account now runs at 19 of 20 ON PURPOSE, and the two assertions
+      that matter are the LOW one (region reads are still 5 — the edit this arm
+      exists to catch is a later reader "closing the gap" by putting it back to
+      6) and the ABSENCE one below (the row is really gone, not merely zeroed).
 
       A future path that quietly takes its slot from `roll images` would still
-      satisfy the sum check above and would still boot. This is the assertion
+      satisfy the sum check above and would still boot. These are the assertions
       that would redden instead.
     */
     const budget = assertFalBudget();
-    expect(budget.total).toBe(20);
+    expect(budget.total).toBe(19);
+    expect(budget.ceiling).toBe(20);
     expect(falAllowanceOf("ROLL_IMAGE_CONCURRENCY")).toBe(8);
     expect(falAllowanceOf("SIGN_VIEW_CONCURRENCY")).toBe(3);
     expect(falAllowanceOf("REFINE_EDIT_CONCURRENCY")).toBe(3);
-    expect(falAllowanceOf("FAL_CONCURRENCY")).toBe(5);
-    expect(falAllowanceOf("INK_PLATE_CONCURRENCY")).toBe(1);
-    /* And the mint is house money, which is the argument for where the slot
-       came from — a kind, not a comment. */
-    expect(FAL_ALLOWANCES.find((one) => one.env === "INK_PLATE_CONCURRENCY")?.kind).toBe("courtesy");
+    expect(
+      falAllowanceOf("FAL_CONCURRENCY"),
+      "region reads went back up — that is a capability change and wants its own card, not a cleanup",
+    ).toBe(5);
+
+    /* ⚠ The positive control on the removal itself: an undeclared allowance
+       THROWS, so this cannot pass because the name merely reads as absent from
+       a list nobody consults. */
+    expect(FAL_ALLOWANCES.map((one) => one.env)).not.toContain("INK_PLATE_CONCURRENCY");
+    expect(() => falAllowanceOf("INK_PLATE_CONCURRENCY")).toThrow(/not a declared fal allowance/);
   });
 
   it("reads every allowance from the table, and refuses one that is not in it", () => {

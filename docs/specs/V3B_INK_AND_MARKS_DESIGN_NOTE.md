@@ -434,6 +434,14 @@ at upload, so still ahead of the ask; still once per design).
 form is ruled-but-not-built is refused by name, and a mixed declaration is
 refused on its unbuilt half so that "we took part of it" is never silent.
 
+⚠ **RETIRED 2026-09-24 — everything in this paragraph is the record of a road
+that is gone.** `uploadInkDesign` and `inkPlateEngine.ts` went with the ink
+studio (#1158 slice 2) and the fal allowance row went in slice 4d, so nothing
+mints a plate today. The one fact here that still governs live behaviour is
+that the courtesy pool paid for the slot (region reads 6 → 5) and **did not
+take it back** when the road retired — `FAL_CONCURRENCY` stands at 5 and the
+account's budget is 19 of 20 on purpose.
+
 **The plate is wired as of 2026-08-18** (fable-968 §2). `uploadInkDesign` mints
 it as step 5, after the row commits, on the ruled engine (`INK_PLATE_ENGINE` —
 Nano Banana Pro, fable-963 §2) through its own declared fal allowance

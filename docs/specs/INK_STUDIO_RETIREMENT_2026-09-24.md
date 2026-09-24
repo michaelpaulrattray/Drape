@@ -228,6 +228,22 @@ so at the row rather than continuing to describe *"a design drawn onto a form"*.
 is not handed back to the courtesy pool** — region reads went 6 → 5 to pay for the plate mint, and
 raising a live path's concurrency is a capability change wearing a cleanup's clothes.
 
+⚠ **THE PREMISE IN THAT PARAGRAPH WAS FALSE AND IT WAS NEVER READ — CORRECTED AT SLICE 4d,
+2026-09-24.** *"The variable is set on the service"* was written into this census, into
+`falBudget.ts`'s own docblock, into `inkStudioServiceRetired.test.ts`'s arm and into the shift
+handoffs, and **not one of those four ever opened the service to check it.** Read on the day the row
+came out, by two independent readers — the rite's own `railway variables --service Drape --kv` parse
+and a JSON key-presence read — each carrying a positive control (`CASTING_V2_SCOPE` present) and a
+negative one (a name that cannot exist): **none of the five fal allowance variables is set on
+production, and none ever has been.** All five run on the fallbacks declared in `FAL_ALLOWANCES`.
+
+**So slice 4d contained no production act at all**, where the census, the card and two handoffs each
+described it as a second one requiring its own boot rehearsal. The deferral cost two slices and
+nothing worse — the direction of the caution was safe — but the way it survived is the point: **the
+live boot line reads `ink plates 1`, and that sentence is equally true of "set to 1" and of "unset,
+defaulting to 1".** A number that agrees with both readings was quoted as evidence for one of them.
+Law 7b, and the cheap check was thirty seconds against a service the rite already reads every push.
+
 **One guard grew a third class because the deletion forced it, and it is worth reading.**
 `storageManifestReceipt.test.ts` sorted every module that writes a cleanup manifest into KEEPERS or
 COLLECTORS. After slice 2, `inkUploadService.ts` still WRITES one — through `defaultManifest` — and
@@ -347,9 +363,12 @@ relay to overturn.
    design decision, and the obvious candidate is the attach door that already parents
    `CASTING_INK_REFERENCE_SCOPE` — or the parent stays as scaffolding. **Re-parenting is a change to
    what a live road is gated by, so it is his, not a shift's.**
-2. **`INK_PLATE_CONCURRENCY` is declared and spends nothing.** Removing the row from `FAL_ALLOWANCES`
+2. ~~**`INK_PLATE_CONCURRENCY` is declared and spends nothing.** Removing the row from `FAL_ALLOWANCES`
    changes what `assertFalBudget()` computes at BOOT while the variable is still set on the service,
-   so it is rehearsed against the target values before it is pushed — the road the five widens took.
+   so it is rehearsed against the target values before it is pushed — the road the five widens took.~~
+   ⚠ **DONE at slice 4d, and the struck half was wrong: the variable was never set on the service**
+   (read twice with controls — see the correction in § the fal allowance above). There was no
+   production act and no target-value rehearsal to run.
    The sum goes 20 → 19 of a ceiling of 20, and **the freed 1 is not given to the courtesy pool**
    without its own card.
 3. **Five TAKE rows in `docs/specs/cleanup-dispositions.yaml`** — `inkIntentRefusal`,
@@ -511,8 +530,10 @@ no-op edit look identical, exactly as `surviving-sabotage-may-be-inert` records.
    the cut's parse leave when the sweep's *"could a design row ever have been written?"* is answered
    without reading a variable nobody can set. That is a reading, not a deletion, and folding it into
    a cleanup is what his own rule forbids.
-3. **4d — `INK_PLATE_CONCURRENCY`** (boot arithmetic 20 → 19; the freed slot is not handed back to the
-   courtesy pool without its own card).
+3. ✅ **4d — `INK_PLATE_CONCURRENCY`** (boot arithmetic 20 → 19; the freed slot is not handed back to the
+   courtesy pool without its own card). **DONE 2026-09-24.** ⚠ **No production act after all** — the
+   variable was never set on the service; the correction and how a wrong premise survived four
+   documents is above.
 4. **4e — the five TAKE rows executed**, one commit.
 5. **4f — `signService.carriedInkPlates`** — a money surface, its own reading and its own PR.
 

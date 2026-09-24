@@ -44,15 +44,21 @@
  * The population is the `*_ENV` constant pattern and ONLY that. An environment
  * variable named some other way is invisible here, and there is a real family
  * of them in the tree: `FAL_ALLOWANCES` (`server/castingV2/falBudget.ts`)
- * carries five — `ROLL_IMAGE_CONCURRENCY`, `SIGN_VIEW_CONCURRENCY`,
- * `REFINE_EDIT_CONCURRENCY`, `FAL_CONCURRENCY`, `INK_PLATE_CONCURRENCY` — as
- * `env:` fields on a table rather than as exported constants. All five ARE in
+ * carries four — `ROLL_IMAGE_CONCURRENCY`, `SIGN_VIEW_CONCURRENCY`,
+ * `REFINE_EDIT_CONCURRENCY`, `FAL_CONCURRENCY` — as
+ * `env:` fields on a table rather than as exported constants. All four ARE in
  * `CLAUDE.md` today, verified by hand 2026-08-23 along with their arithmetic
- * (8+3+3+5+1 = 20, the account ceiling, matching the sentence exactly), and
+ * (then 8+3+3+5+1 = 20 over five paths; **8+3+3+5 = 19 of 20 since #1158 slice
+ * 4d, 2026-09-24**, when the plate mint's row retired and its slot was
+ * deliberately not handed back), and
  * that family has its own boot check (`assertFalBudget`) which refuses an
- * undeclared caller. So it is guarded, differently — but a SIXTH declaration
+ * undeclared caller. So it is guarded, differently — but a FIFTH declaration
  * shape would be guarded by nothing, and this paragraph is here so the next
  * reader knows the floor rather than inferring coverage from a green.
+ *
+ * ⚠ Nothing in this paragraph is what the arms below read: the population and
+ * all three numbers come off the imported table, which is why the retirement
+ * cost one edit here and none there.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -285,10 +291,14 @@ ${row}`,
  * allowances overspend the account ceiling.
  *
  * ⚠ THE CODE SIDE TURNED OUT TO BE BETTER COVERED THAN THAT NOTE IMPLIED, and
- * saying so is the point of writing this down. `falBudget.test.ts:64` pins all
- * five per-path defaults BY NAME and the total at 20, precisely so that a sixth
- * path quietly taking its slot from `roll images` reddens rather than booting.
+ * saying so is the point of writing this down. `falBudget.test.ts` pins every
+ * per-path default BY NAME and the total, precisely so that a further path
+ * quietly taking its slot from `roll images` reddens rather than booting.
  * Between that arm and `assertFalBudget`, the code cannot drift alone.
+ * (Five paths and a total of 20 when this was written; **four and 19 of 20
+ * since #1158 slice 4d, 2026-09-24** — the line number and the two figures are
+ * dropped from this sentence rather than re-typed, because both had already
+ * moved once by the time anyone read it again.)
  *
  * WHAT NOTHING REACHED IS THE DOCUMENT. The boot check counts slots and the pin
  * reads the table; neither has ever opened CLAUDE.md. So the gap is narrower
@@ -324,8 +334,14 @@ describe("the fal allowances — the family the scanner above cannot see", () =>
       compare fewer pairs, and that is the failure mode worth a control.
     */
     expect(sentence, "CLAUDE.md's FAL_ACCOUNT_CEILING arithmetic sentence has moved — re-point this arm at it").not.toBeNull();
-    expect(sentence![3]).toContain("ROLL_IMAGE_CONCURRENCY");
-    expect(sentence![3]).toContain("INK_PLATE_CONCURRENCY");
+    /* ⚠ FIRST AND LAST, derived (#1158 slice 4d). The specimen pinned here used
+       to be `INK_PLATE_CONCURRENCY` — the sentence's last name — and it left
+       the table with the plate mint's retirement. Naming the ends by hand would
+       just queue the same edit for the next re-cut, so both come off
+       `FAL_ALLOWANCES`: a match that stops at the first pair fails the second
+       assertion, which is the short-match failure this control exists for. */
+    expect(sentence![3]).toContain(FAL_ALLOWANCES[0]!.env);
+    expect(sentence![3]).toContain(FAL_ALLOWANCES[FAL_ALLOWANCES.length - 1]!.env);
   });
 
   it("⚠ names every fal allowance, with the number the code actually defaults to", () => {
