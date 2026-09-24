@@ -1331,7 +1331,12 @@
 # reason the header gives: a TAKE row deletes nothing by itself, the execution is
 # its own commit, and a reviewer sees the reading before the knife. All five lost
 # the SAME caller — `uploadInkDesign` or the plate mint it called at step 5 — so
-# they are one finding with five instances, not five findings.
+# they are one finding with SIX instances, not six findings.
+#
+# ⚠ THE SENTENCE ABOVE SAID "FIVE" AND THE TABLE HELD SIX. Slice 3 added
+# `INK_DESIGNS_PER_CANDIDATE_REFUSAL` below without re-counting the paragraph, and
+# two shift handoffs then carried "the five TAKE rows" forward. Read at the file
+# on 2026-09-24 (slice 4e), which is the only place the number was ever true.
 #
 # ⚠ NONE OF THEM IS HELD, AND THAT IS DELIBERATE. The tempting blocker is *"the
 # reference road may want this when he un-holds it"* (Crew reply #213, moved to
@@ -1341,39 +1346,71 @@
 # it; a road that needs a placement door when it wakes writes one against its own
 # vocabulary. They are read, the reading says remove, and #1158 slice 4 removes
 # them at the Atlas's retirement view.
+#
+# ⚠ AND THE CLAUSE ABOVE IS ABOUT THE STUDIO'S OWN DOORS, NOT ABOUT EVERY SYMBOL
+# THE RETIREMENT TOUCHES. Executing these six ORPHANED two functions in
+# `shared/referenceIntents.ts` — `referenceIntentWrongDoor` and
+# `referenceIntentNotOpen`, whose only production caller was `inkIntentRefusal`.
+# They are HELD below rather than taken, and the distinction is the whole reason
+# the two rows exist: those six were the retired road's OWN machinery, and
+# keeping them would be keeping a dead road's parts. The other two are the copy
+# layer of a LIVE shared vocabulary whose siblings are on `candidateRetention`'s
+# request path today. Whether a live shared module keeps its sentences is a
+# decision about that module, judged on its own terms — which is his rule 1 read
+# from the other end, not an exception to it.
 
 - symbol: inkIntentRefusal
   file: server/castingV2/inkUploadDoor.ts
-  verdict: TAKE
+  verdict: TAKEN
   why: "the studio upload's FIRST door - 'no extraction without intent', asked before the placement and long before the bytes. Its only production caller was `uploadInkDesign`, retired 2026-09-24 by his ruling on card `switch-10-ink-studio` (*\"It retires with N2\"*). Driven today only by `inkUploadDoor.test.ts`, whose arms go with it; the reference road's own intent handling is in `referenceIntents.ts` and does not pass through here"
   argued: "#1158"
 
 - symbol: inkPlacementRefusal
   file: server/castingV2/inkUploadDoor.ts
-  verdict: TAKE
+  verdict: TAKEN
   why: "the studio upload's placement/side door, answered against the master framing. Only production caller was `uploadInkDesign`. ⚠ It is NOT the placement narrowing's pin any more - #1158 slice 1 re-aimed `inkPlacementCoupling.test.ts` onto `InkDesignToRecord[\"placement\"]`, the input type every road must pass through, precisely so a text pin on one writer's file could not miss a second writer widening. So removing this function does not weaken that coupling, which is the one question worth asking of it"
   argued: "#1158"
 
 - symbol: candidateBelongsTo
   file: server/db/castingV2InkDesigns.ts
-  verdict: TAKE
+  verdict: TAKEN
   why: "the FREE owner read the upload did before it spent anything (#860) - two segmenter calls and an R2 write used to run on a candidateId nobody had resolved. Its only production caller was `uploadInkDesign`'s `prove` dependency. ⚠ It was never the ownership AUTHORITY and removing it takes no control with it: invariant 1's authority is the locked read inside `recordInkDesign`'s own transaction, which is unchanged and still scopes the owner in the statement that writes. Driven by `castingV2-ink-design-db.test.ts` against a real database"
   argued: "#1158"
 
 - symbol: readInkDesignCastIdentity
   file: server/db/castingV2InkDesigns.ts
-  verdict: TAKE
+  verdict: TAKEN
   why: "the identity read the PLATE MINT made to draw a design onto a form. Zero readers anywhere in the tree after slice 2 - not a test, not a script - because the mint was its only one and the mint is deleted. The plainest row of the five"
   argued: "#1158"
 
 - symbol: recordInkPlate
   file: server/db/castingV2InkPlates.ts
-  verdict: TAKE
+  verdict: TAKEN
   why: "the ONLY writer of `casting_ink_plates`, called by `mintInkPlate` alone, and the mint is deleted. ⚠ The TABLE and its read path are NOT in this row and must not be taken with it: `signService.carriedInkPlates` reads it on the live sign road (a paid surface), `candidateRetention` purges it and `castingV2InkDesignRemoval` clears it, so the module stays and only this statement is dead. Production held zero plate rows all time, so nothing is orphaned by a table that can no longer gain one. Driven by `castingV2-ink-plate-db.test.ts` against a real database"
   argued: "#1158"
 
 - symbol: INK_DESIGNS_PER_CANDIDATE_REFUSAL
   file: server/castingV2/inkUploadDoor.ts
-  verdict: TAKE
+  verdict: TAKEN
   why: "the studio upload's CAP sentence — what a customer was told when a Cast already held its eight designs. Its only consumer was the retired `ink.upload` route, which went on slice 1 and left the IMPORT behind; slice 3 removed that import and this row is the consequence the instrument asked for. ⚠ The NUMBER it interpolates, `INK_DESIGNS_PER_CANDIDATE`, is NOT in this row and must not travel with it: three live consumers read it (`inkReferenceMint.ts:93`, `referenceAttachDoor.ts:31` which derives `REFERENCE_PICTURES_PER_CANDIDATE` from it, and the door's own suite). ⚠ And the HELD reference road does not lose a sentence when this goes - it carries its OWN copy of the same words at `inkReferenceMint.ts:245`, which is why removing this one resolves a duplicate rather than creating a gap"
   argued: "#1158"
+
+- symbol: listInkPlatesForDesign
+  file: server/db/castingV2InkPlates.ts
+  verdict: TAKEN
+  why: "the studio's own per-design plate read, and the SEVENTH symbol of a six-row slice. ⚠ It reached this table by a law-7 sibling sweep rather than by the instrument, because the uncalled-export sweep CANNOT SEE IT: the only file naming it is `castingV2-ink-plate-db.test.ts`, which reaches it as `plates.listInkPlatesForDesign` off a namespace held in a variable (`plates = await import(...)`) — a fourth dynamic shape the reader does not resolve, so it appeared in neither TEST-ONLY EXPORTS nor NAMED BY NOBODY. `recordInkPlate` sat in the same blind spot and only reached the table by hand. Zero production callers, read across the whole tree 2026-09-24. Taken in slice 4e rather than filed, because the arms that drove it were the deleted writer's and leaving it would have made it invisible to every instrument at once"
+  argued: "#1158"
+
+- symbol: referenceIntentWrongDoor
+  file: shared/referenceIntents.ts
+  verdict: HELD
+  why: "the sentence a customer reads when her feature is OPEN but served by another door. ⚠ ORPHANED BY #1158 SLICE 4e rather than found dead: its only production caller was `inkIntentRefusal`, the studio upload's intent door, deleted in that slice. It is NOT the studio's machinery — it is the copy layer of a live shared vocabulary whose siblings (`referenceIntentIsOpen`, `referenceIntentIngestionForm`, `REFERENCE_INTENTS`) are on `candidateRetention`'s request path today, so deleting it is a decision about that module and not a consequence of this retirement. Its suite drives it DIRECTLY and says why: the per-form derivation it carries pins a defect that is invisible until hair opens, and the door could never reach that branch"
+  argued: "#1158"
+  blocker: "the reference road's own intent door. He HELD that road on 2026-09-24 (Crew reply #213, verbatim: *\"Hold. The attach and picture road isn't finished. It moves to N3, after the engine court, and gets built on whichever engine wins.\"*). When N3 builds that door this row flips to KEEP if it calls these, or to TAKE if it writes its own — and either answer is one reading, not a guess"
+
+- symbol: referenceIntentNotOpen
+  file: shared/referenceIntents.ts
+  verdict: HELD
+  why: "the sentence a customer reads when her feature is RULED but not built — 'her hair', and the money promised back. Orphaned by #1158 slice 4e with `referenceIntentWrongDoor` above, same caller, same module, same argument; the two are one finding with two instances"
+  argued: "#1158"
+  blocker: "the reference road's own intent door — see the row above. Same hold (Crew reply #213), same two outcomes, and they are decided together because a road that asks what a picture is for needs both sentences or neither"

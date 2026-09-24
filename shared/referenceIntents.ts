@@ -155,8 +155,10 @@ const ENTRIES: Readonly<Record<ReferenceIntent, ReferenceIntentEntry>> = Object.
     /* BUILT 2026-08-18 (ruled fable-940/941): `castingV2.reference.readMakeup`
        reads the picture once and keeps nothing. It is a different DOOR from the
        ink upload — a words-form reference has no bytes to attach — which is why
-       `inkIntentRefusal` now names the road instead of asking her to say what
-       she is taking. */
+       `inkIntentRefusal` named the road instead of asking her to say what she
+       was taking. ⚠ That door retired with the ink studio (#1158 slice 4e); the
+       distinction it drew is the reason `referenceIntentWrongDoor` still says
+       what it says, and N3's reference door inherits the question. */
     open: true,
   }),
   eyeColour: Object.freeze({
@@ -217,8 +219,17 @@ export function referenceIntentIngestionForm(key: ReferenceIntent): IngestionFor
  * This function used to pick its subject by key and then say one hard-coded
  * thing: *"…isn't attached to a Cast — we read it from the picture and hand you
  * the words."* That was true of the only feature which could reach it, because
- * `inkIntentRefusal` checks OPENNESS first and makeup was the only open feature
- * served elsewhere.
+ * `inkIntentRefusal` checked OPENNESS first and makeup was the only open
+ * feature served elsewhere.
+ *
+ * ⚠ **THAT CALLER IS GONE AND THE REASONING IS NOT** (#1158 slice 4e, 2026-09-24).
+ * `inkIntentRefusal` was the studio upload's intent door and it retired with
+ * the studio, so this function has **no production caller today** and its row
+ * in `docs/specs/cleanup-dispositions.yaml` is HELD on the reference road's own
+ * intent door, which is N3's (his Crew reply #213). **Whoever builds that door
+ * reads the paragraph below before writing a refusal sentence**: the defect it
+ * describes is a property of deriving copy from a KEY while the content assumes
+ * a FORM, and it survives being rewritten in a new file.
  *
  * **The day hair's `open` flips, that ordering reverses and the sentence goes
  * out about a CROP** — telling a customer her hair is not attached to a Cast
