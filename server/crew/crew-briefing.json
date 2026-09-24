@@ -1,7 +1,7 @@
 {
-  "edition": 517,
-  "updatedAt": "2026-09-24T21:07:52.927Z",
-  "shift": "Foreman — #1126 the cut answer",
+  "edition": 518,
+  "updatedAt": "2026-09-24T23:00:40.257Z",
+  "shift": "Foreman — #1177 the deploy that refused for nothing",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -7929,9 +7929,23 @@
       "status": "merged",
       "prNumber": 1186,
       "note": "Merged 47229990. The card stays open: the complete fix is a database change and it is on your desk."
+    },
+    {
+      "id": "eyeframe-retry-1177",
+      "title": "A night no longer loses its deploy because the picture store blinked",
+      "status": "merged",
+      "prNumber": 1189,
+      "note": "Merged 42cc0b44. The check asks a second time before it refuses; the concurrency limit the card asked for was measured at the real bucket and declined."
     }
   ],
   "problems": [
+    {
+      "id": "queue-shape-0925a-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "Queue shape",
+      "detail": "47 open, one more than this morning: tonight closed one and filed one. One waits on you — the 220-character limit on the record of what a customer typed (#1126). 14 have had no comment, close, reopen or commit for 7 days, unchanged, and the two oldest are design cards waiting on a rung rather than rotting work."
+    },
     {
       "id": "queue-shape-0924c-foreman",
       "severity": "info",
