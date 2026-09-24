@@ -83,6 +83,24 @@ export class InkDesignCapError extends Error {
 export type InkDesignToRecord = {
   userId: number;
   candidatePublicId: string;
+  /**
+   * THE CLOSED LIST IS THE CONTRACT, and this is where it is kept now.
+   *
+   * The column beneath it is `varchar(64)` — migration 0046 opened it, because
+   * an ask is never refused on placement — so this narrow type is the only
+   * reason `$type<InkPlacement>()` on the row is an honest description of the
+   * contents. Every road that mints a design passes through here, which is why
+   * the pin sits on the INSERT's input rather than on any one writer's file:
+   * there are two writers today (the retired studio upload's heir and
+   * `inkReferenceMint`) and a third would inherit the narrowing by construction.
+   *
+   * ⚠ **This sentence moved here from the studio's `upload` procedure when
+   * #1158 slice 1 retired it** (his ruling, *"It retires with N2"*).
+   * `castingV2/inkPlacementCoupling.test.ts` reads this file for it and names
+   * what must happen on the day the placement opens — widen this type, widen
+   * BOTH `$type<InkPlacement>()` declarations, fix what `pnpm check` then names,
+   * all in one commit.
+   */
   placement: InkPlacement;
   side: InkSide;
   provenance: InkProvenance;

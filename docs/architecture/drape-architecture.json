@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "c500f93b41e45392"
+    "sourceFingerprint": "c6a0d8f35915416e"
   },
   "domains": [
     {
@@ -7218,16 +7218,6 @@
       "file": "server/routes/castingV2.ts"
     },
     {
-      "id": "route:castingV2.ink.upload",
-      "namespace": "castingV2.ink",
-      "name": "upload",
-      "type": "mutation",
-      "auth": "protected",
-      "input": "strict",
-      "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
-    },
-    {
       "id": "route:castingV2.keep",
       "namespace": "castingV2",
       "name": "keep",
@@ -12383,10 +12373,6 @@
       "path": "server/castingV2/zoneScope.test.ts"
     },
     {
-      "id": "test:server/castingV2InkUpload.test.ts",
-      "path": "server/castingV2InkUpload.test.ts"
-    },
-    {
       "id": "test:server/castingV2SheetGone.test.ts",
       "path": "server/castingV2SheetGone.test.ts"
     },
@@ -12729,6 +12715,10 @@
     {
       "id": "test:server/inkInstructionRoute.test.ts",
       "path": "server/inkInstructionRoute.test.ts"
+    },
+    {
+      "id": "test:server/inkUploadEntranceRetired.test.ts",
+      "path": "server/inkUploadEntranceRetired.test.ts"
     },
     {
       "id": "test:server/instrumentDoctrine.test.ts",

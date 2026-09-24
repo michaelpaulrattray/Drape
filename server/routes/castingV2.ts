@@ -535,135 +535,33 @@ async function inkWornBy(
 }
 
 /**
- * THE INK STUDIO — attaching a design a customer owns to her Cast (M12 row 15).
+ * THE INK STUDIO IS RETIRED — his ruling, 2026-09-24, Crew reply #208 on card
+ * `switch-10-ink-studio`, verbatim and entire:
  *
- * Dark by default: `CASTING_INK_STUDIO_SCOPE` is absent-means-off, and it opens
- * onto a room that is still being built — the mannequin plate a design is drawn
- * onto does not exist until the founder's one-time taste gate is answered, which
- * is why nothing here charges anybody anything (fable-921 §3b).
+ * > *"It retires with N2"*
  *
- * ⚠ **AND IT IS NOT DARK IN PRODUCTION, WHICH IS WHAT THIS SAID UNTIL
- * 2026-08-24.** The flag is `users:1` — the founder's own account, his own
- * uploads — held there by the widening tripwire (fable-1052 §2): it does not
- * pass `users:1` while uploads ride uncropped to the plate mint. So this door is
- * OPEN for exactly one person, the free-of-charge sentence above is still true
- * of it, and the plate is held shut by `MANNEQUIN_ROAD_DEFERRED` rather than by
- * this flag.
+ * `upload` stood here and is gone (#1158 slice 1, the entrance). It attached a
+ * design a customer owns to her Cast, behind `CASTING_INK_STUDIO_SCOPE` at
+ * `users:1` — his own account, the only one that ever reached it. It had no
+ * client caller at all, and the plate it existed to feed had been held shut
+ * since 2026-08-19 by `MANNEQUIN_ROAD_DEFERRED`, so the studio never drew
+ * anything. Production held **zero** ink designs, plates, delivery crops and
+ * form-demand rows at the retirement, read at the rows rather than assumed.
  *
- * Everything this namespace decides is decided elsewhere on purpose: the
- * doors in `castingV2/inkUploadDoor.ts`, the order in `inkUploadService.ts`,
- * the statements in `db/castingV2InkDesigns.ts`. What is HERE is the wire —
- * the schema, the flag, and the sentence a customer reads.
+ * ⚠ **`remove` STAYS, AND THE REASON IS THE WHOLE SCOPE OF THIS RETIREMENT.**
+ * Two doors mint a design row and neither is the other's parent: the studio's
+ * upload, which retires, and the take from an attached picture
+ * (`CASTING_INK_REFERENCE_SCOPE`, whose parent is the attach door). **He HELD
+ * that second road and moved it to N3** — Crew reply #213 — so
+ * `casting_ink_designs` keeps a live writer, and a customer must keep the one
+ * door that lets her delete a picture of her own that we are still holding.
+ * Deleting `remove` alongside `upload` is the shape of mistake that sweep would
+ * make by reading the word "ink" instead of the road.
+ *
+ * The remaining slices, the census behind them and every module this card may
+ * NOT touch: `docs/specs/INK_STUDIO_RETIREMENT_2026-09-24.md`.
  */
 const inkRouter = router({
-  upload: protectedProcedure
-    .input(z.object({
-      candidateId: publicId,
-      /* THE CLOSED LIST IS THE CONTRACT, derived from the vocabulary rather
-         than retyped (law 4). `forearm` is refused here — it is the word that
-         returned upper-arm skin from the opposite side of the body on three
-         frames of four, and no reader is asked its opinion. */
-      placement: z.enum(INK_PLACEMENTS),
-      side: z.enum(INK_SIDES),
-      /* No default, ever. A guessed provenance is precisely the value the
-         real-person fence cannot tolerate (`shared/inkProvenance.ts`). */
-      provenance: z.enum(INK_PROVENANCES),
-      /*
-        WHAT IS BEING TAKEN FROM THIS PICTURE (ruled fable-937). A set, because
-        "the tattoo and the hair from this one" is a legal ask, and required,
-        because his catch is a reference uploaded for a feature nobody would
-        have guessed. Which members are servable TODAY is the door's question
-        and not the schema's: a closed feature earns a sentence naming it rather
-        than an unreadable enum error.
-      */
-      intents: z.array(z.enum(REFERENCE_INTENTS)).min(1).max(REFERENCE_INTENTS.length),
-      /*
-        A COARSE WIRE BOUND, not the real one. This stops a payload too large
-        to be worth decoding; whether the BYTES are acceptable is decided
-        after decoding, by what they turn out to be.
-      */
-      imageBase64: z.string().max(Math.ceil(INK_DESIGN_MAX_BYTES * 4 / 3) + 256),
-    }).strict())
-    .mutation(async ({ ctx, input }) => {
-      /*
-        THE FLAG FIRST, and NOT_FOUND rather than a refusal — outside the
-        scope there is no such capability, and a code that says "not yet"
-        advertises one. The AND of the whole chain is inside this call.
-      */
-      if (!captureCastingInkStudioEnabled(ctx.user.id)) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "No such thing." });
-      }
-      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingInkUpload);
-
-      const bytes = decodeUploadedImage(input.imageBase64);
-      try {
-        const outcome = await uploadInkDesign({
-          /* From the session, never from input (invariant 3). */
-          userId: ctx.user.id,
-          candidatePublicId: input.candidateId,
-          placement: input.placement,
-          side: input.side,
-          provenance: input.provenance,
-          intents: input.intents,
-          bytes,
-        });
-        if (!outcome.ok) {
-          throw spokenError({ code: "BAD_REQUEST", message: outcome.refusal.message });
-        }
-        /* An explicit projection (invariant 8): what she attached and where.
-           Neither object's key is in it — not the design's and not the
-           plate's. A URL here would be a permanently public address handed
-           out before anything renders, for no reason anybody can name. */
-        return {
-          /*
-            WHETHER A PLATE WAS DRAWN FROM IT, and it is a second fact rather
-            than a property of the design (fable-968 §2). Her picture is stored
-            either way; a transport that was down for ninety seconds must not
-            read as an upload that failed.
-
-            The engine and the plate's size are here because they are what the
-            court and the founder ask of a plate — which model drew it and
-            whether the shape survived — and both come off the row rather than
-            from what was asked for.
-          */
-          plate: outcome.plate,
-          designId: outcome.design.publicId,
-          placement: outcome.design.placement,
-          side: outcome.design.side,
-          provenance: outcome.design.provenance,
-          intents: outcome.design.intents,
-          width: outcome.design.width,
-          height: outcome.design.height,
-          /*
-            WHAT WAS ACTUALLY STORED — the design cut out of her picture, or her
-            frame whole, or `null` when nothing looked at all.
-
-            The width and height above already describe the CUT rather than her
-            upload once this account is inside `CASTING_INK_CUT_SCOPE`, and a
-            surface handed smaller numbers with no reason for them would have to
-            guess. Still no key and still no URL: the address of a design is not
-            something to hand out before anything renders, and that is unchanged
-            by the object at it being a cutout.
-          */
-          cut: outcome.cut,
-        };
-      } catch (error) {
-        /* Somebody else's Cast is answered the way a missing one is. */
-        if (error instanceof InkDesignOwnershipError) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
-        }
-        /* A real TOO_MANY_REQUESTS at the cap, never a 200 carrying an error
-           field the client cannot tell from a validation failure (6). */
-        if (error instanceof InkDesignCapError) {
-          throw spokenError({
-            code: "TOO_MANY_REQUESTS",
-            message: INK_DESIGNS_PER_CANDIDATE_REFUSAL,
-          });
-        }
-        throw error;
-      }
-    }),
-
   /**
    * REMOVING A DESIGN — the other half of "see or reject" (ruled fable-1138 §3).
    *
