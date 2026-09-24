@@ -716,9 +716,9 @@
 
 - symbol: listSegmentHistory
   file: server/db/castingV2Segments.ts
-  verdict: KEEP
-  why: the reader a db suite asserts the retire-not-delete asymmetry through — a retired segment's row survives as evidence of a delivered render
-  argued: 6a/8c
+  verdict: TAKEN
+  why: "the reader a db suite asserted the retire-not-delete asymmetry through. ⚠ Its KEEP reason was the SUITE, and the suite dies with the store — so this row was a KEEP that quietly depended on the thing #1160 retires, and the checker found it rather than a shift noticing. Taken in slice 3 with the rest of the store's read paths; the asymmetry it proved (a retired segment's row survives as evidence of a delivered render) is a fact about a table nobody writes any more"
+  argued: 6a/8c, taken under "#1160"
 
 - symbol: listOrphanedVariants
   file: server/db/castingV2Variants.ts
@@ -1427,35 +1427,30 @@
 
 - symbol: settleCarriedChecks
   file: server/castingV2/renderVerification.ts
-  verdict: HELD
-  blocker: "#1160 slice 3 — the shared constants. Its module is NOT the segment road's and survives this retirement"
-  why: "marked a verification check non-binding when the fact was pasted rather than painted, so a reader that could not find it did not spend a refusal. ⚠ ORPHANED BY #1160 SLICE 1, and it is the one of the three that does NOT die with a segment module: `renderVerification.ts` is the live verification net and stays. Both its arguments came from the composite's arithmetic, so with the paste road gone it can only ever be handed two empty lists — and its own first line is `if (carried.facets.length === 0) return verdict`, which is why removing the call was provably behaviour-preserving rather than argued. Deleting the function itself is a decision about `renderVerification`, not a consequence of this retirement, so it waits for slice 3. `renderVerification.test.ts` drives it directly"
+  verdict: TAKEN
+  why: "marked a verification check non-binding when the fact was pasted rather than painted, so a reader that could not find it did not spend a refusal. ⚠ ORPHANED BY #1160 SLICE 1, and it is the one of the three that does NOT die with a segment module: `renderVerification.ts` is the live verification net and stays. Both its arguments came from the composite's arithmetic, so with the paste road gone it can only ever be handed two empty lists — and its own first line is `if (carried.facets.length === 0) return verdict`, which is why removing the call was provably behaviour-preserving rather than argued. Deleting the function itself is a decision about `renderVerification`, not a consequence of this retirement, so it waits for slice 3. `renderVerification.test.ts` drives it directly ⚠ TAKEN in slice 3, and the decision it waited for was answered the way the row predicted: with the paste road gone it can only ever be handed two empty lists, so it was DEAD rather than merely orphaned. Its module survives untouched and so do the three helpers it used (facetIn, isMiss, okOf), each of which has other consumers — checked before the cut, not after. The 125-line describe block that drove it went with it: every arm passes a non-empty carried list, which nothing on any road can now produce."
   argued: "#1160"
 
 - symbol: deliveredAnchoredSegmentsEnabled
   file: server/castingV2/castingV2Scope.ts
-  verdict: HELD
-  blocker: "#1160 slice 3 — the columns, the table and the shared constants"
-  why: "CASTING_SEGMENTS_DELIVERED_SCOPE's gate, and the flag half of the pair his ruling retired. Its only production reader was segmentPersistence, deleted in this slice, so it is test-only from here. ⚠ It is NOT deletable with the modules: the flag is still SET on the service at users:1, and a scope chain's child refuses to boot when it reaches past its parent — so the variable leaves the service before the code that declares it, and both are slice 3"
+  verdict: TAKEN
+  why: "CASTING_SEGMENTS_DELIVERED_SCOPE's gate, and the flag half of the pair his ruling retired. Its only production reader was segmentPersistence, deleted in this slice, so it is test-only from here. ⚠ It is NOT deletable with the modules: the flag is still SET on the service at users:1, and a scope chain's child refuses to boot when it reaches past its parent — so the variable leaves the service before the code that declares it, and both are slice 3 ⚠ TAKEN in slice 3, and the order the row warned about was honoured and PROVEN rather than asserted: CASTING_SEGMENTS_DELIVERED_SCOPE left the service before CASTING_SEGMENTS_SCOPE and both left before this code, driven through the real validateEnv() with the parent-first case as a negative control that had to name the right variable."
   argued: "#1160"
 
 - symbol: recordEditPatchSegments
   file: server/db/castingV2Segments.ts
-  verdict: HELD
-  blocker: "#1160 slice 3 — the columns, the table and the shared constants"
-  why: "the store's INSERT. Orphaned by deleting segmentPersistence, its only production caller. Held to slice 3 with the rest of the db module: the table is not dropped yet and a writer removed before its table is a migration question, not a code one"
+  verdict: TAKEN
+  why: "the store's INSERT. Orphaned by deleting segmentPersistence, its only production caller. Held to slice 3 with the rest of the db module: the table is not dropped yet and a writer removed before its table is a migration question, not a code one ⚠ TAKEN in slice 3, and the migration question the row raised is answered by NOT answering it: the table is NOT dropped, because a DROP is a destructive migration and therefore the founder's own act. The purge helpers stay for exactly that reason."
   argued: "#1160"
 
 - symbol: listLiveSegments
   file: server/db/castingV2Segments.ts
-  verdict: HELD
-  blocker: "#1160 slice 3 — the columns, the table and the shared constants"
-  why: "one of the store's two reads, orphaned with carriedSegments. Held to slice 3 with its module"
+  verdict: TAKEN
+  why: "one of the store's two reads, orphaned with carriedSegments. Held to slice 3 with its module ⚠ TAKEN in slice 3 with its module's read paths."
   argued: "#1160"
 
 - symbol: retireSegmentFacet
   file: server/db/castingV2Segments.ts
-  verdict: HELD
-  blocker: "#1160 slice 3 — the columns, the table and the shared constants"
-  why: "the store's retire-a-facet write, orphaned with segmentPrune. Held to slice 3 with its module"
+  verdict: TAKEN
+  why: "the store's retire-a-facet write, orphaned with segmentPrune. Held to slice 3 with its module ⚠ TAKEN in slice 3 with its module's write paths."
   argued: "#1160"

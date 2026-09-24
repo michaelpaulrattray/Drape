@@ -167,6 +167,37 @@ export class CastingV2OwnershipError extends Error {
   }
 }
 
+/**
+ * Prove a candidate is this user's, and hand back its internal id.
+ *
+ * The public id is what a request carries; a statement that wants the internal
+ * one must not take it on trust, and the only safe way across that boundary is
+ * to ask for both facts at once (invariant 1).
+ *
+ * ⚠ It lived in `castingV2Segments.ts` until #1160 retired the segment store,
+ * and it was never a segment function: its only caller is the FACE PANEL, whose
+ * own docblock names it as one of the three statements that carry `userId` into
+ * their WHERE. Deleting that module wholesale — which its name invited — would
+ * have taken an ownership check with it.
+ */
+export async function resolveOwnedCandidateId(input: {
+  userId: number;
+  candidatePublicId: string;
+}): Promise<number> {
+  assertPositiveId(input.userId, "userId");
+  const db = await requireDb();
+  const [candidate] = await db
+    .select({ id: castingCandidates.id })
+    .from(castingCandidates)
+    .where(and(
+      eq(castingCandidates.publicId, input.candidatePublicId),
+      eq(castingCandidates.userId, input.userId),
+    ))
+    .limit(1);
+  if (!candidate) throw new CastingV2OwnershipError("candidate");
+  return candidate.id;
+}
+
 export async function getOwnedCastingSession(
   userId: number,
   publicId: string,

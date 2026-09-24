@@ -239,10 +239,6 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       "widened WITH face-scan as one pair (the boot guard requires it; his "
       + "same 'widen the pair' word) — the keeper makes every later look free",
   },
-  CASTING_SEGMENTS_SCOPE: {
-    position: "users:1",
-    why: "the segment store (migration 0025, ceremony run)",
-  },
   CASTING_SIDE_PHRASING_SCOPE: {
     position: "all",
     why:
@@ -258,10 +254,6 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
   CASTING_DIAGNOSTIC_CAPTURE_SCOPE: {
     position: "users:1",
     why: "keeps the frame from a refused render, on the private evidence adapter",
-  },
-  CASTING_SEGMENTS_DELIVERED_SCOPE: {
-    position: "users:1",
-    why: "FLIPPED users:1 2026-08-25 on the founder's order ('flip everything on thats currently off so i can check the rolls myself', fable-1654). Prerequisite held: user 1 is inside CASTING_SEGMENTS_SCOPE. never flipped on production; additive and inert while off",
   },
   CASTING_BRIEF_FIDELITY_SCOPE: {
     position: "all",

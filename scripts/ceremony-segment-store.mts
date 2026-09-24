@@ -1,5 +1,25 @@
 /**
- * Founder ceremony — segment permanence, slice 1 (production).
+ * Founder ceremony — segment permanence, slice 1 (production). **SPENT, and half
+ * of what it landed is RETIRED.**
+ *
+ * ⚠ IT RAN, AND IT IS KEPT AS THE RECORD OF A PRODUCTION ACT RATHER THAN AS AN
+ * INSTRUCTION. Of its two migrations, one is dead and one is load-bearing:
+ *
+ *   `casting_segments` (0025)  the segment store — RETIRED 2026-09-25 (#1160), on
+ *                             his ruling *"Retire both. The paste road is gone;
+ *                             nothing reads these"*. The table still exists,
+ *                             because a DROP is a destructive migration and
+ *                             therefore his own act, and the candidate sweep
+ *                             still purges it. Nothing writes it and nothing can.
+ *   `parentVariantId` (0026)   **STILL LIVE, and it is the reason this file is not
+ *                             deleted.** The reference-library carry rests on that
+ *                             one column: it is written on every claim, and four
+ *                             refunded renders were once lost to it being written
+ *                             under another flag's name. Its arm is in
+ *                             `refineService.test.ts`.
+ *
+ * Do not run this again. Its step (b) below named `CASTING_SEGMENTS_SCOPE`, a
+ * variable that no longer exists on the service or in the code.
  *
  * TWO migrations, ONE ceremony (fable-093). Both are additive and neither
  * changes the meaning of a column that exists today:
@@ -113,7 +133,11 @@ try {
   console.log("\nCEREMONY COMPLETE. Next, IN THIS ORDER:");
   console.log("  a. merge `segment-lineage` into main and let it deploy and SETTLE");
   console.log("     (uptime backwards, SUCCESS on the deployment row with the SHA read off it)");
-  console.log("  b. only then set CASTING_SEGMENTS_SCOPE=users:1 on the Drape service");
+  /* ⚠ Step (b) named CASTING_SEGMENTS_SCOPE, retired by #1160 (2026-09-25). The
+     line is kept as what the ceremony's own road was, and says so, because a
+     spent ceremony printing a live instruction is how a retired variable gets
+     set again by somebody following the receipt. */
+  console.log("  b. (RETIRED — CASTING_SEGMENTS_SCOPE no longer exists; #1160 took it, 2026-09-25)");
   console.log("  c. check /api/health after each");
 } catch (error) {
   failed = true;

@@ -239,8 +239,13 @@ export async function claimVariant(input: ClaimVariantInput): Promise<ClaimedVar
           Drizzle names every column in the schema and passes `default` for the
           ones a caller left out. Proved by dropping the column under a real
           claim rather than by reading the library:
-          `castingV2-segment-store-db.test.ts`, "a variant cannot be claimed at
-          all until the lineage column exists".
+          `castingV2-variant-lineage-db.test.ts`, "a variant cannot be claimed
+          at all until the lineage column exists".
+
+          ⚠ It lived in `castingV2-segment-store-db.test.ts` until #1160 slice 3
+          retired the segment store. The arm is unchanged and so is the arm
+          beside it — the one refusing a parent variant on another face, which
+          is invariant 2 driven — because neither was ever about segments.
 
           So the rule is an ORDERING rule, and it is written into the ceremony:
           **the migration lands before the code, always.**

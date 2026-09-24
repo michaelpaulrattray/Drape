@@ -86,8 +86,8 @@ does its condition still exist?**
 |---|---|---|---|
 | `CASTING_FACE_SCAN_SCOPE` | nothing named. It spends house money ($0.100 per version looked at) and fills a panel | 2026-08-16 | **READ** — the per-user cost at `all` has never been modelled |
 | `CASTING_SCAN_TABLE_SCOPE` | nothing. It makes a paid scan durable, which strictly reduces spend | 2026-08-16 | **WIDEN** — the cheapest win on this page |
-| `CASTING_SEGMENTS_SCOPE` | ~~nothing named~~ **nothing — he has ruled** | 2026-09-24 (his *"Retire both. The paste road is gone; nothing reads these"*, Crew reply #212) | ~~**HOLD**~~ **RETIRE** (#1160). Slice 1 has closed the refine entrance; the flag leaves the service when its machinery is gone, not before |
-| `CASTING_SEGMENTS_DELIVERED_SCOPE` | its parent | 2026-09-24 | ~~**HOLD**~~ **RETIRE** with its parent (#1160) |
+| `CASTING_SEGMENTS_SCOPE` | ~~nothing named~~ **nothing — he has ruled** | 2026-09-24 (his *"Retire both. The paste road is gone; nothing reads these"*, Crew reply #212) | ~~**HOLD**~~ ~~**RETIRE**~~ ✅ **RETIRED** — #1160, all three slices merged 2026-09-25. Slice 1 closed the refine entrance, slice 2 took every read path, route and panel, slice 3 took the flags, their boot checks and the store's db layer down to the purge. The variable left the service BEFORE the code that declared it, child first, rehearsed through the real `validateEnv()` with the parent-first case as a negative control. ⚠ The `casting_segments` TABLE is still there: a DROP is destructive and therefore his own act, so the purge path outlives the store on purpose |
+| `CASTING_SEGMENTS_DELIVERED_SCOPE` | its parent | 2026-09-24 | ~~**HOLD**~~ ~~**RETIRE**~~ ✅ **RETIRED** with its parent (#1160), and it left the service FIRST — a child fence refuses to boot for a user outside its parent, so the order was load-bearing rather than tidy |
 | `CASTING_SIDE_PHRASING_SCOPE` | nothing. Measured p≈0.09, never once worse, free per render | 2026-08-21 | **WIDEN** — the evidence is in and it costs nothing |
 
 ### The composer family — 4 flags, and this is where this week's rulings bite

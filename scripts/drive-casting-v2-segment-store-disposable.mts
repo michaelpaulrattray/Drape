@@ -107,7 +107,13 @@ try {
   const suiteFlag = process.argv.indexOf("--suite");
   const suite = suiteFlag > -1
     ? process.argv[suiteFlag + 1]
-    : "server/castingV2-segment-store-db.test.ts";
+    /* ⚠ The default MOVED with #1160 slice 3: the segment store and its own db
+       suite are retired, and what still needs a disposable database on this road
+       is the LINEAGE column's two arms, rescued out of that suite because they
+       were never the store's. The machinery here is generic — it creates a
+       database, replays the journal and runs one vitest file — so `--suite`
+       still points it anywhere. */
+    : "server/castingV2-variant-lineage-db.test.ts";
   const command = script
     ? ["tsx", script, ...rest]
     : ["vitest", "run", suite];

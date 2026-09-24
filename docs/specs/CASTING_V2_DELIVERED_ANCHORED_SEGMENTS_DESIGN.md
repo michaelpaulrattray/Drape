@@ -5,6 +5,12 @@ it is measured on production artifacts.*
 
 > ## BUILT, DARK, AND MEASURED — 2026-08-10 (shift 20)
 >
+> ⚠ **RETIRED 2026-09-25 (#1160), with its parent** — his ruling of 2026-09-24,
+> *"Retire both. The paste road is gone; nothing reads these."* The flag below no
+> longer exists in the code or on the service, and neither does the cut it
+> governed. A DATED RECORD of a design decision; read it for the reasoning, never
+> for what the product does.
+>
 > Behind `CASTING_SEGMENTS_DELIVERED_SCOPE` (absent = off; nothing in production
 > is cut differently until a founder flips one Railway variable). The shipped
 > cutter, run twice over the founder's own v#163 frames out of production R2
