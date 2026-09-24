@@ -3011,6 +3011,33 @@
       "state": "done",
       "filedAt": "2026-09-24",
       "issueNumber": 1159
+    },
+    {
+      "id": "segment-retirement-premise-1160",
+      "title": "Before I retire the segment pair: half of it is still running on your refine road",
+      "productImpact": "You told me to retire both segment settings, and your reason was \"the paste road is gone; nothing reads these\". I checked that sentence against the code before touching anything, the way that card says to. YOU ARE HALF RIGHT, and the half that is wrong matters.\n\nTwo of the four pieces really are dead — nothing but their own tests has ever called them. I can delete those today and nothing changes.\n\nBut the other two are called on every refine you do. They are the machinery that CARRIES WHAT YOU ALREADY PAID FOR into your next edit: when you change her hair, the tattoo you added an hour ago is kept rather than re-invented from the words. Retiring them would take that off your own account — and \"an edit I paid for came back wrong after the next one\" is a complaint this studio has already had and fixed once.\n\nNobody else is affected either way: these settings are on for your account only, and yours is still the only account that has ever cast. So this is a question about YOUR refine road, not about customers.",
+      "workedExample": "The two live ones are called from the refine service itself, on the paid path: the studio lists what she is already carrying before it charges you (so the prompt and the picture cannot disagree about it), and it keeps the pixels a successful render earned so the next edit does not have to paint them again.\n\nThe two dead ones are a born-worn catalogue and a segment pruner. Three separate places in the code already say in writing that the catalogue has no callers, and I confirmed it: outside their own test files, nothing in the product reaches either one, by any route.\n\nOne smaller thing, since it will confuse the next person: the card names a setting called CASTING_SEGMENTS_DELIVERED that does not exist under that name in the code. The real one is spelled differently. Nothing is wrong with the setting; the card is wrong about its name, and I have corrected it there.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Delete the two dead pieces now, leave your refine road alone",
+          "consequence": "The genuinely dead code goes, which is what you were asking for. Both settings STAY as they are, so your refine keeps carrying your earlier edits forward. Nothing you can see changes. I would come back to you about the live half separately, with the actual before-and-after on one of your own casts."
+        },
+        {
+          "key": "B",
+          "label": "Retire all of it, including the carrying",
+          "consequence": "Everything goes and both settings come off. Your next refine after an edit would compose from the words again rather than from the pixels it already earned. I would not do this without showing you that difference on a real cast first — it is the one thing here you would actually feel."
+        },
+        {
+          "key": "C",
+          "label": "Hold all of it until you have seen what the carrying does",
+          "consequence": "Nothing is deleted yet. I roll one refine on your account with it and one without, put both in front of you, and you decide with the pictures in hand. Slower, and it is the option that cannot get your own road wrong."
+        }
+      ],
+      "recommendation": "A. It does the cleanup you actually asked for and takes no capability off your refine road on a guess. The live half is a real feature, it is only on for you, and it deserves its own look rather than riding out under a cleanup's name — which is your own rule from the switch sitting.",
+      "state": "open",
+      "filedAt": "2026-09-24T03:05:54.605Z",
+      "issueNumber": 1160
     }
   ],
   "eyeItems": [
@@ -7738,7 +7765,7 @@
       "title": "Tattoos named in a brief get written down — for every account, not just yours",
       "status": "in-review",
       "note": "Your reply #215. The switch is already set; this carries the record and one guard fix.",
-      "prNumber": null
+      "prNumber": 1163
     }
   ],
   "problems": [
