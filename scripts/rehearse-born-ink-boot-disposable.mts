@@ -13,6 +13,7 @@
  *                                     parent
  *   users:2, casting users:1          must REFUSE, NAMING THE UNCOVERED USER
  *   users:1, casting users:1          must BOOT — a covered user is admitted
+ *   all, casting all                  must BOOT — THE TARGET VALUE (#1159)
  *
  * The middle four are what prove the wire. If somebody deletes the call in
  * `_core/env.ts`, the unit test stays green and all four go red.
@@ -111,6 +112,17 @@ const noCasting = attempt("users:1 with casting OFF — the wire's own arm", "us
 const outrun = attempt("all while casting is users:1 — a child cannot outrun its parent", "all", "users:1");
 const uncovered = attempt("users:2 while casting is users:1 — names the uncovered user", "users:2", "users:1");
 const covered = attempt("users:1 with casting open to her", "users:1", "users:1");
+/*
+  ⚠ THE ARM THIS SCRIPT DID NOT HAVE, ADDED THE NIGHT THE FLAG WAS ACTUALLY SET
+  (#1159, his reply #215: "Turn it on for everyone").
+
+  Every `all` arm above tests `all` against a NARROWED parent, where the right
+  answer is REFUSE. So the six original arms prove every refusal and prove
+  nothing about the ONE value an operator was about to write to the service.
+  A rehearsal that cannot say "the value you are setting boots" is not a
+  rehearsal of the act; it is a rehearsal of everything except the act.
+*/
+const everyone = attempt("all with casting all — THE TARGET VALUE", "all", "all");
 
 console.log("");
 const failures: string[] = [];
@@ -157,6 +169,14 @@ if (uncovered.booted) {
 
 if (!covered.booted) {
   failures.push(`a covered user was refused: ${covered.message.slice(0, 200)}`);
+}
+
+/* The act's own positive control: the value being written must boot. */
+if (!everyone.booted) {
+  failures.push(
+    `THE TARGET VALUE WAS REFUSED — "all" over a parent of "all" did not boot, so the `
+    + `flip must not be made: ${everyone.message.slice(0, 200)}`,
+  );
 }
 
 console.log(failures.length === 0
