@@ -287,6 +287,19 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
   "server/scriptConnectionDiscipline.test.ts": ["DOOR — scripts/lib/dbConnection.mts, the exempted door itself"],
   "server/queueOrdinalDiscipline.test.ts": ["ROADMAP — docs/specs/POST_SIGN_ROADMAP.md, the §10 table"],
   "server/storageCleanupEnumCopies.test.ts": ["server/casting/evidence/evidenceComposerSchema.ts, the startup fence"],
+  /*
+     JOINED THE CLASS ON 2026-09-24 (#1158 slice 2), and the row is why rather
+     than a quieting. That suite pinned the cutRoute column's writer by NAME —
+     `inkUploadService.ts` — and the ink studio's retirement deleted the named
+     writer, so the arm was re-aimed at a WALK of the two directories a design's
+     columns are decided in. The walk reads through `readListedSource`; this one
+     bare read is the file's own `read` helper, used only for FIXED names.
+  */
+  "server/castingV2/inkCutRouteCoupling.test.ts": [
+    "`read` — the drizzle migration 0047, its ceremony and the cutter, each by"
+    + " fixed name, and each must keep THROWING: a coupling guard whose migration"
+    + " has vanished is broken, not tolerant",
+  ],
   "server/castingV2/uploadRefusalCopy.test.ts": [
     "OWNER — the module that must stay a leaf",
     "each LITERAL_ALLOWED carve-out, a two-name list guarded by existsSync",

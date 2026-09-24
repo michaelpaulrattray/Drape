@@ -14,7 +14,7 @@
  *
  * # THE DIGEST MOVES WITH THE BYTES, IN THE SAME ACT
  *
- * `inkPlateMint.ts` re-hashes the fetched object and compares it against
+ * `inkPlateMint.ts` (retired, #1158 slice 2) re-hashed the fetched object and compared it against
  * `design.digest`, and refuses when they differ (fable-1137 §3b's moved-bytes
  * refusal). That fence is a good one and is not blinked off for this: the row's
  * `digest` and `byteSize` are written immediately after the object, and the

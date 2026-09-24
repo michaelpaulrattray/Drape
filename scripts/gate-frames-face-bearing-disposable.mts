@@ -12,7 +12,7 @@
  *
  * # ⚠ THE ARTIFACT IS SUBSTITUTED, AND THAT IS A RULING (fable-1243 §2a)
  *
- * A PLATE is minted by `inkPlateMint`, and minting sits behind
+ * A PLATE was minted by `inkPlateMint` (retired, #1158 slice 2), and minting sat behind
  * `MANNEQUIN_ROAD_DEFERRED` — deferred into the sitting that also holds the
  * release door, D-138's taste gate and the fence court. **So the artifact the
  * gate names cannot be produced today.** What exists is the CUT (the object

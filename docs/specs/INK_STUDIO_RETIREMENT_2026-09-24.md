@@ -129,11 +129,114 @@ and `ink.remove` are untouched. `server/inkUploadEntranceRetired.test.ts` pins t
 positive control** — it asserts `ink.remove` is still reachable, because a guard that only asserts an
 absence passes just as well when the whole router failed to load.
 
-**Slice 2 — the studio's own service chain**, now unreachable: `inkUploadService.ts`,
-`inkUploadDoor.ts`, the cut and region-crop machinery (`inkReferenceCutter`, `inkReferenceCrop`,
-`inkDeliveryCrop`) **where it is not shared with the reference road** — checked per module at the
-bytes, not assumed from the file name. `#10` (the ink-cut preview) closes with this slice: it is the
-widening condition for a flag that will no longer exist.
+**Slice 2 — the studio's own service chain** — ✅ **DONE, and ⚠ THE SENTENCE THIS PARAGRAPH USED
+TO CARRY WAS WRONG IN BOTH DIRECTIONS.** It is kept below, struck, because the way it was wrong is
+the most useful thing in this document.
+
+> ~~now unreachable: `inkUploadService.ts`, `inkUploadDoor.ts`, the cut and region-crop machinery
+> (`inkReferenceCutter`, `inkReferenceCrop`, `inkDeliveryCrop`) **where it is not shared with the
+> reference road** — checked per module at the bytes, not assumed from the file name.~~
+
+Its own escape clause — *checked per module at the bytes* — is what saved it, and the check
+disagreed with the list:
+
+**THREE MODULES IT NAMED ARE THE HELD ROAD'S AND SURVIVE.** Each is reached by something live, so
+deleting any of them would have broken the paid refine road or pre-emptied a road he HELD:
+
+| module | what actually reaches it |
+|---|---|
+| `inkUploadDoor.ts` | **ten** importers outside the studio — `referenceAttachService`, `referenceAttachDoor`, `inkReferenceMint`, `inkReferenceCutter`, `inkReferenceCrop`, `inkReferenceUpscale`, `inkRideFloor`, `uploadRefusalCopy`, `makeupFromReference`, and the deleted plate door |
+| `inkReferenceCutter.ts` | `inkReferenceMint.ts`, plus `refineService.ts` and `refineReask.ts` for its `InkCutFocus` type — **live for every account** |
+| `inkReferenceCrop.ts` | the cutter, the delivered-crop arithmetic, and the reference mint |
+
+`inkDeliveryCrop.ts` is a fourth of the same kind: `refineService.ts:9686` calls
+`mintInkDeliveryCrop` on the live carry road, so the delivered-crop road is not the studio's at all.
+
+**AND THE ROAD IT DID NOT NAME IS WHAT WAS ACTUALLY UNREACHABLE — the PLATE road**, the studio's
+second half, which draws a design onto the blank form. Deleted whole, 3,448 lines with its suites:
+
+```
+server/castingV2/inkPlateMint.ts      383   only non-test caller: defaultMintPlate
+server/castingV2/inkPlateEngine.ts    100   only caller: defaultMintPlate
+server/castingV2/inkPlateEngines.ts   215   only callers: the two above
+server/castingV2/inkPlateDoor.ts      336   only non-test importer: inkPlateMint
+server/castingV2/inkTemplates.ts      437   only readers: the plate door and the plate mint
+```
+
+`inkTemplates.ts` is the one worth noticing: nothing in its name says *plate*, and it came out of the
+closure because its only two readers did. The mirror of `inkUploadDoor.ts`, whose name says *upload*
+and which stays.
+
+**What changed in `inkUploadService.ts` rather than being deleted.** `uploadInkDesign` (the order),
+`defaultMintPlate`, `readBytes`, `REAL` and the four studio-only types are gone; 580 lines → 181.
+**`defaultManifest` and `defaultCutDesign` stay**, because `inkReferenceMint.ts` wires both as its
+REAL dependencies and `inkDeliveryMint.ts` wires the manifest on the live carry road —
+`inkReferenceMint.test.ts` asserts that as an IDENTITY, which is the arm that made the reading
+certain rather than probable. The filename is kept deliberately: a rename is a repository-wide sweep
+over the text guards that name this path, and folding one into a retirement grows the cleanup a
+second job.
+
+**⚠ A DEAD IMPORT SLICE 1 LEFT BEHIND, and it is the class `CLAUDE.md` has a founder ruling about.**
+`server/routes/castingV2.ts` still carried `import { uploadInkDesign } from "../castingV2/inkUploadService"`
+with no caller anywhere in the file. *An import is not a call site* — but the Atlas builds its edges
+from imports, so a dead one makes a retired module read as **reached**, and reached is exactly the
+reading that stops a later slice removing it. Removed, and pinned by an arm.
+
+**#10 closes with this slice**, and the reason is narrower than "the flag goes away". Its subject is
+*an uploaded tattoo design cut out of its picture before it is stored*, and the preview it asks for
+is a customer-facing preview on the upload surface. There is no upload surface. ⚠ **The CUT itself
+does not close with it** — `defaultCutDesign` survives for the held road, so the cut road is alive
+and only the studio's entrance to it is gone.
+
+**⚠ AND ONE FLAG CHANGED CHARACTER RATHER THAN DYING, WHICH SLICE 4 MUST NOT MISREAD.**
+`CASTING_INK_CUT_SCOPE` had exactly one read in the whole product — the retired upload's `cutEnabled`
+dependency — so from slice 2 nothing consults it. **It is not therefore removable**: it is the boot
+PARENT of `CASTING_INK_REGION_CROP_SCOPE`, which `defaultCutDesign` still reads, and a child scope
+refuses to boot when it reaches past its parent. Unsetting the parent over a live child is a
+crash-looping deploy. `CASTING_INK_REGION_CROP_SCOPE` is fully live and is NOT this card's to touch.
+
+**Five exports lost their last caller and are TAKE rows in `docs/specs/cleanup-dispositions.yaml`**
+rather than deletions in the same commit, which is that table's own contract — a TAKE row deletes
+nothing by itself and the execution is its own commit: `inkIntentRefusal`, `inkPlacementRefusal`
+(both `inkUploadDoor.ts`), `candidateBelongsTo`, `readInkDesignCastIdentity` (both
+`castingV2InkDesigns.ts`) and `recordInkPlate` (`castingV2InkPlates.ts`, the only writer of
+`casting_ink_plates`). **None is HELD**: the tempting blocker is *"the reference road may want this
+when he un-holds it"*, and that is precisely what his rule from the switch sitting forbids.
+`INK_SITS_ON_THE_FORM_LINES` was deleted outright instead — it was a second wrapped form of a live
+sentence, kept honest by an arm, existing solely for the plate prompt's bullet shape.
+
+**Four tracked court drivers were deleted with the road they drove** — `court-ink-containment`,
+`court-single-view-arm-mirror`, `court-view-reference` and `court-wrap-reference`. Each entered
+through `uploadInkDesign` or the plate modules, so none can run again; their findings live in
+`V3B_INK_AND_MARKS_DESIGN_NOTE.md` and `V4_SIDE_INFERENCE_COURT.md`, which is where a court's record
+belongs.
+
+**⚠ THE FAL ALLOWANCE IS NAMED AND DEFERRED, NOT QUIETLY LEFT.** `INK_PLATE_CONCURRENCY` (1,
+courtesy) now spends nothing — `inkPlateEngine.ts` was the only caller of
+`falAllowanceOf("INK_PLATE_CONCURRENCY")`. It stays DECLARED until slice 4 because the variable is
+set on the service and `assertFalBudget()` is a **boot** gate, so removing the declaration while the
+value stays in the environment changes what the gate computes on the next restart. The docblock says
+so at the row rather than continuing to describe *"a design drawn onto a form"*. **And the freed slot
+is not handed back to the courtesy pool** — region reads went 6 → 5 to pay for the plate mint, and
+raising a live path's concurrency is a capability change wearing a cleanup's clothes.
+
+**One guard grew a third class because the deletion forced it, and it is worth reading.**
+`storageManifestReceipt.test.ts` sorted every module that writes a cleanup manifest into KEEPERS or
+COLLECTORS. After slice 2, `inkUploadService.ts` still WRITES one — through `defaultManifest` — and
+owns no batch, because the id now always comes from its caller. It is neither class, and labelling it
+either would have been a false claim on a purge path. So it is a **WRAPPER**, with two arms making
+that safe rather than convenient: a wrapper must mint no id of its own, and **every module reaching
+the store through it must itself be classified** — which is the same hole the 2026-08-23 widening
+closed, held shut from the other side. The instrument's own positive control was hard-coded to read
+`inkUploadService.ts` for the word `cleanupBatchId`; it is derived from the keeper table now, so it
+follows the population instead of shadowing it.
+
+**What slice 2 deliberately did NOT touch, each for a stated reason:** the four flags (slice 4);
+`server/db/castingV2InkPlates.ts` and the `casting_ink_plates` table (`signService.carriedInkPlates`
+reads it on the paid sign road, retention purges it, the owner's removal clears it);
+`shared/inkMannequinDeferral.ts` (**`signService.ts:986` reads `MANNEQUIN_ROAD_DEFERRED`** — this one
+looked studio-only and is not, and it is the sharpest near-miss of the slice); `signService`'s plate
+read itself, which is a money-surface change and needs its own reading.
 
 **Slice 3 — the transform ask**, and it is the delicate one. `captureCastingInkTransformEnabled` is
 read inside `refineService.ts`, a live file every account uses, and the thing it governs is *changing
@@ -144,6 +247,40 @@ gets its own read before it gets a branch.
 **Slice 4 — the flags and the shared constants**, children-first, at the Atlas's retirement view —
 with **#1156 read before that view is trusted**, because a file that will not parse makes the Atlas
 drop a whole router silently, and *absent* is exactly the reading that says *removable*.
+
+
+### ⚠ WHAT SLICE 4 INHERITED FROM SLICE 2 — read this before the flags
+
+Five things landed on slice 4's desk on 2026-09-24, each named where it lives rather than left to be
+rediscovered:
+
+1. **`CASTING_INK_CUT_SCOPE` is a flag nothing reads and cannot simply be unset.** Its single read
+   died with the upload; it remains the boot PARENT of `CASTING_INK_REGION_CROP_SCOPE`, which
+   `defaultCutDesign` still consults on the HELD reference road. Either the child is re-parented — a
+   design decision, and the obvious candidate is the attach door that already parents
+   `CASTING_INK_REFERENCE_SCOPE` — or the parent stays as scaffolding. **Re-parenting is a change to
+   what a live road is gated by, so it is his, not a shift's.**
+2. **`INK_PLATE_CONCURRENCY` is declared and spends nothing.** Removing the row from `FAL_ALLOWANCES`
+   changes what `assertFalBudget()` computes at BOOT while the variable is still set on the service,
+   so it is rehearsed against the target values before it is pushed — the road the five widens took.
+   The sum goes 20 → 19 of a ceiling of 20, and **the freed 1 is not given to the courtesy pool**
+   without its own card.
+3. **Five TAKE rows in `docs/specs/cleanup-dispositions.yaml`** — `inkIntentRefusal`,
+   `inkPlacementRefusal`, `candidateBelongsTo`, `readInkDesignCastIdentity`, `recordInkPlate`. A TAKE
+   row is *read, and the reading says remove*; executing them is one commit, and the table will
+   refuse the commit until each row is flipped to TAKEN, which is the door closing behind the knife.
+4. **`signService.carriedInkPlates` reads a table nothing can write.** It returns early on zero rows
+   and has since before the retirement, so removing it changes no behaviour — but it is on the PAID
+   sign road, so it is a money-surface diff and gets its own reading and its own PR rather than
+   riding a flag slice.
+5. **`server/castingV2-ink-plate-db.test.ts` is the last proof of the plate table's rules**, now that
+   the door and mint suites are gone. If `recordInkPlate` is TAKEN, that suite loses its subject and
+   the table keeps only read paths — decide what proves the table's conditions before deleting the
+   arms that currently do.
+
+**And the standing warning for slice 4's own act:** #1156 is read before the Atlas's retirement view
+is trusted, because a file that will not parse makes the Atlas drop a whole router silently, and
+*absent* is exactly the reading that says *removable*.
 
 ---
 

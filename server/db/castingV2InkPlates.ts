@@ -2,9 +2,19 @@
  * THE PLATE STORE'S STATEMENTS (migration 0037, ruled fable-959 §3).
  *
  * One row is a design re-drawn onto a blank ghost mannequin by a named engine.
- * The DECISIONS — when a mint may refuse, what the engine is told, which blank
- * form a placement stands on — live in `castingV2/inkPlateDoor.ts` and
- * `castingV2/inkTemplates.ts`, where each can be driven without a database.
+ * ⚠ **NOTHING WRITES A ROW HERE ANY MORE, AND THIS MODULE STAYS ANYWAY**
+ * (#1158 slice 2). His ruling of 2026-09-24 — *"It retires with N2"* — retired
+ * the ink studio, and the mint was the road's second half: `inkPlateDoor.ts`
+ * and `castingV2/inkTemplates.ts`, which held the decisions this paragraph used
+ * to point at, are deleted, and `recordInkPlate` below is a TAKE row in
+ * `docs/specs/cleanup-dispositions.yaml` waiting on slice 4.
+ *
+ * **The READ paths are why the module is still here**, and they are live:
+ * `listCandidateInkPlates` is called by `signService.carriedInkPlates` on the
+ * paid sign road, `candidateRetention` purges the table with its Cast, and
+ * `castingV2InkDesignRemoval` clears it when an owner deletes her design.
+ * Production held zero plate rows all time, so a table that can no longer gain
+ * one orphans nothing — read at the rows on 2026-09-24 rather than assumed.
  *
  * # The three rules it inherits from its sibling, and one it adds
  *

@@ -560,17 +560,30 @@ describe("readMakeupFromReference", () => {
 
       AND THE CHECKER GETS A POSITIVE CONTROL, in the same test, because an
       absence assertion that cannot fail proves nothing (working law 2). The
-      same three patterns are run against `inkUploadService.ts` — the module on
-      this very road that DOES keep bytes — and every one of them must fire
-      there. If a rename ever makes these patterns inert, this half reddens
-      first and the green half stops being believed.
+      same three patterns are run against a module on this very road that DOES
+      keep bytes, and every one of them must fire there. If a rename ever makes
+      these patterns inert, this half reddens first and the green half stops
+      being believed.
+
+      ⚠ THE CONTROL WAS `inkUploadService.ts` AND HAD TO MOVE (#1158 slice 2,
+      2026-09-24). His ruling retired the ink studio; `uploadInkDesign` went, and
+      with it the `storagePut` and the `../storage` import that made that module
+      a keeper — so the control would have stopped firing and this arm's green
+      half would have gone on being believed for the wrong reason. **That is the
+      failure mode the control exists to catch, arriving on the control itself.**
+
+      It is `referenceAttachService.ts` now: the picture a customer attached,
+      kept, on the same reference road this reader sits on, and reached from a
+      procedure rather than from a retired one. A control naming a module by hand
+      can always rot this way — the mitigation here is that this arm goes RED
+      when it does, loudly, rather than passing quietly.
     */
     const fs = await import("node:fs/promises");
     const read = (name: string) => fs.readFile(new URL(`./${name}`, import.meta.url), "utf8");
 
     const keepsBytes = [/from "\.\.\/storage"/, /from "\.\.\/db\//, /storagePut/];
 
-    const control = await read("inkUploadService.ts");
+    const control = await read("referenceAttachService.ts");
     for (const pattern of keepsBytes) expect(control).toMatch(pattern);
 
     const source = await read("makeupFromReference.ts");
