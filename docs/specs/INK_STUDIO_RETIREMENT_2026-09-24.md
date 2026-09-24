@@ -485,9 +485,32 @@ no-op edit look identical, exactly as `surviving-sabotage-may-be-inert` records.
    `DELIBERATELY_ABSENT` row; `scopeParentChain.test.ts`'s call-site CONTROL names
    `CASTING_INK_CUT_SCOPE → CASTING_INK_STUDIO_SCOPE` as its known pair and must be re-pointed, not
    deleted.
-2. **4c — the variables leave the service**, with their `productionFlagPositions.mts` rows, rehearsed
-   against the boot gate first (the five-widens road). **Never before 4b ships**: a fence still validating
-   a value is the one thing that turns an unset into a crash loop.
+2. **4c — the variables leave the service.** ✅ **DONE 2026-09-24.** Both are UNSET, their
+   `productionFlagPositions.mts` rows read `off`, and the act was rehearsed through the real
+   `validateEnv()` against the service's own 36 values first, with the dangerous case as a NEGATIVE
+   control: unsetting `CASTING_INK_STUDIO_SCOPE` while `CASTING_INK_CUT_SCOPE` still read `users:1`
+   REFUSED, naming the child. **So the two moved in one act and there is no window.** No ink predicate
+   moved for users 1, 2 or 7, and `castingInkDesignArmed()` is still true — 4b's OR doing its job.
+
+   ⚠ **AND THE CODE DID NOT GO WITH THE VARIABLES. SLICE 4b'S OWN HANDOFF SAID IT WOULD, AND IT
+   CANNOT — READ AT THE CODE, NOT AT THE CARD.** 4b wrote that 4c would take *"both fences, both
+   `*_ENV` constants"*. `CASTING_INK_STUDIO_SCOPE_ENV` cannot leave at all today, because
+   `castingInkStudioArmed()` reads it — and that reader is the retention sweep's question, which 4b
+   deliberately KEPT and ORed with the held reference road. **Deleting the constant means deleting
+   that term, which is the purge-path narrowing 4b's whole PR existed to prevent**, one slice later
+   and under a cleanup's name. `scopeParentChain.test.ts` holds constants and fences equal as SETS,
+   so the studio's fence cannot go without its constant either.
+
+   **And the position row cannot be deleted while any reader remains**: the table's population arm
+   takes the union of the Atlas's inventory and a constant scan, and the Atlas reads
+   `process.env["X"]` as well as the constant form — so inlining the string would not help.
+   `CASTING_TWO_PATHS_SCOPE` is the exact worked precedent, four days old: unset on his *"Unset it"*,
+   row at `off`, fence and constant still standing.
+
+   **The remainder is therefore NAMED rather than scheduled**: the two fences, their constants and
+   the cut's parse leave when the sweep's *"could a design row ever have been written?"* is answered
+   without reading a variable nobody can set. That is a reading, not a deletion, and folding it into
+   a cleanup is what his own rule forbids.
 3. **4d — `INK_PLATE_CONCURRENCY`** (boot arithmetic 20 → 19; the freed slot is not handed back to the
    courtesy pool without its own card).
 4. **4e — the five TAKE rows executed**, one commit.
