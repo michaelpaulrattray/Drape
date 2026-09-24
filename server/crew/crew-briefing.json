@@ -1,7 +1,7 @@
 {
-  "edition": 500,
-  "updatedAt": "2026-09-23T22:37:05.557Z",
-  "shift": "Foreman — the sheet and the ask box stop asking which path a cast was born on",
+  "edition": 501,
+  "updatedAt": "2026-09-24T00:27:31.923Z",
+  "shift": "Foreman — the studio stops asking the reader to pick an outfit, and the config stops sending two dead switches",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -60,6 +60,14 @@
         {
           "state": "done",
           "title": "A fifth and sixth of the eight are out, and one of them nearly went wrong: the sheet no longer carries a line naming which path it was cast on, and the ask box no longer promises it can change what someone is wearing. That promise was switched off by a condition that is now dead — and deleting only the dead half would have switched the promise ON for every customer, for something the studio cannot actually do. The whole sentence went instead. Checked in the running app, before and after, in both themes: nothing on the page moved."
+        },
+        {
+          "state": "done",
+          "title": "A seventh piece of the eight is out: the studio no longer asks the brief reader to choose an outfit for a sheet. It could not have picked one since the path was retired, so the words sent to the reader are unchanged — and that is now PROVEN on the message itself rather than argued, because on a paid roll every fact on the sheet comes out of that one reply. The last piece is the two database columns, which go last."
+        },
+        {
+          "state": "done",
+          "title": "And a tidy-up worth reporting because of what it turned up: the studio was sending the app two switches nobody reads — one for a menu you had removed, one for a count in the Sign window that stopped being drawn on 3 August, in a change about deleting a Cast. The card named the first; counting all thirteen switches found the second, fourteen lines away and seven weeks dead. Both are gone, and the count is now kept automatically so the next one shows up the day it happens."
         }
       ]
     },
@@ -134,7 +142,7 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "41 open · 17 untouched for 7 days · 14 waiting on you · none urgent."
+        "source": "41 open · 17 untouched for 7 days · 8 carry a hold on your word (the 'blocked' label) · none urgent."
       }
     ],
     "ladderCards": {
@@ -7667,6 +7675,20 @@
       "status": "merged",
       "prNumber": 1152,
       "note": "Nothing changes on screen — and keeping half of one dead condition would have."
+    },
+    {
+      "id": "pick-retired-203-2d",
+      "title": "The studio stops asking the reader to pick an outfit",
+      "status": "merged",
+      "prNumber": 1154,
+      "note": "Nothing changes on screen, and the words sent to the reader are the same ones, byte for byte."
+    },
+    {
+      "id": "config-dead-gates-1153",
+      "title": "The studio stops sending the app two switches nobody has read since August",
+      "status": "merged",
+      "prNumber": 1157,
+      "note": "Nothing changes on screen. Counting the class found a second dead switch nobody had noticed."
     }
   ],
   "problems": [
