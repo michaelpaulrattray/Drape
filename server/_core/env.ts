@@ -455,13 +455,26 @@ export function validateEnv(): void {
   });
   /*
     WHETHER THE CUT IS THE SURFACE RATHER THAN THE PATCH INSIDE IT. Its parent is
-    the CUT door and nothing else: the region road is reached only after the
-    routing has decided to cut, so a user whose uploads are stored whole has no
-    road to escalate. Every other parent rides in through that flag's own check.
+    the INK REFERENCE road and nothing else: the only road that cuts is the take
+    from her attached picture, so the road that produces this flag's subject is
+    the road that gates it. Every other parent rides in through that flag's own
+    check.
+
+    ⚠ THIS PARAGRAPH NAMED THE CUT DOOR UNTIL 2026-09-24 (#1158 slice 4a), AND
+    THE REASON IT GAVE DIED WITH THE STUDIO'S UPLOAD. It read *"the region road
+    is reached only after the routing has decided to cut"* — that routing was
+    the upload door's, and the upload door went with slices 1–2. The one
+    surviving caller of the cut is `inkReferenceMint.ts`, whose own header says
+    **`CASTING_INK_CUT_SCOPE` IS NOT CONSULTED** there, because on that road
+    there is no not-cutting position to take. So this fence refused on a flag
+    the only live road ignores. Nothing moved for any account when it changed —
+    reference and region crop both stand at `users:1` — and what it unblocks is
+    #1158 retiring the cut and studio flags without turning the held reference
+    road's surface cut off underneath them.
   */
   validateCastingInkRegionCropEnvironment({
     scope: process.env[CASTING_INK_REGION_CROP_SCOPE_ENV],
-    cutScope: process.env[CASTING_INK_CUT_SCOPE_ENV],
+    referenceScope: process.env[CASTING_INK_REFERENCE_SCOPE_ENV],
   });
   /*
     WHETHER SHE MAY CHANGE A TATTOO SHE ALREADY HAS. Its parent is

@@ -32,11 +32,20 @@
  *
  * `CASTING_INK_CUT_SCOPE` had exactly one read in the product and it was the
  * retired upload's `cutEnabled` dependency, so after slice 2 nothing consults
- * it directly. ⚠ **It is not therefore removable**: it is the boot PARENT of
- * `CASTING_INK_REGION_CROP_SCOPE`, which `defaultCutDesign` still reads below,
- * and a child scope refuses to boot when it reaches past its parent. Unsetting
- * the parent over a live child is a crash-looping deploy. What becomes of the
- * chain is #1158 slice 4's, at the Atlas's retirement view.
+ * it directly. It was still the boot PARENT of `CASTING_INK_REGION_CROP_SCOPE`,
+ * which `defaultCutDesign` reads below — so unsetting it would have been a
+ * crash-looping deploy, and leaving it a live enabling term inside a held
+ * road's AND.
+ *
+ * ⚠ **SLICE 4a (2026-09-24) MOVED THE CHILD RATHER THAN THE PARENT, AND THE
+ * REASON IS AT THE BYTES HERE.** The only caller of `defaultCutDesign` is
+ * `inkReferenceMint.ts`, and that road's own header says
+ * **`CASTING_INK_CUT_SCOPE` IS NOT CONSULTED** on it — there is no not-cutting
+ * position to take when the bytes are a photograph she attached. So the region
+ * crop's parent is now `CASTING_INK_REFERENCE_SCOPE`: the road that produces
+ * its subject is the road that gates it. Nothing moved for any account (both
+ * stand at `users:1`), and the cut and studio flags are left reading nothing,
+ * which is what slice 4b removes.
  *
  * # COPY, NEVER POINTER — and never a re-encode either
  *
@@ -111,20 +120,24 @@ export async function defaultManifest(input: {
  *
  * `refusingRegionReader` when there is no key, which makes the missing-transport
  * case a REFUSAL rather than a photograph stored as though it had been cut. The
- * boot guard on `CASTING_INK_CUT_SCOPE` is what stops that being reachable in
- * production; this is the second half of the same posture, because a guard and
- * a fallback that disagree are how a fence gets a hole.
+ * boot chain is what stops that being reachable in production — every scope
+ * above this road ends at `CASTING_V2_SCOPE`, which refuses to boot without
+ * `FAL_KEY`; this is the second half of the same posture, because a guard and
+ * a fallback that disagree are how a fence gets a hole. (It named
+ * `CASTING_INK_CUT_SCOPE`'s boot guard until #1158 slice 4a; that flag now
+ * gates nothing, and the transport fact it was quoted for was always the
+ * root's.)
  */
 export function defaultCutDesign(
   input: {
     userId: number;
     candidatePublicId: string;
     bytes: Buffer;
-    /* WHERE IN HER PICTURE TO LOOK — forwarded, never invented here. The studio
-       upload door passes none (it has no ask yet, only a picture); the
-       attach-pointed mint passes one derived from the address her sentence
-       named. A `scope` this function made up would be a narrowing nobody
-       asked for. */
+    /* WHERE IN HER PICTURE TO LOOK — forwarded, never invented here. The one
+       caller left is the attach-pointed mint, which passes a scope derived from
+       the address her sentence named; the studio upload door passed none (it
+       had no ask, only a picture) and is gone. Optional still, because a
+       `scope` this function made up would be a narrowing nobody asked for. */
     scope?: CutInkDesignInput["scope"];
   },
 ): Promise<CutInkDesignResult> {
@@ -139,10 +152,12 @@ export function defaultCutDesign(
       the flag is a fact about the world. The unit under test is `cutInkDesign`
       itself, which takes the decision as an argument and is driven both ways.
 
-      It only ever matters when a `scope` arrived: the studio upload door passes
-      none (it has no ask yet, only a picture), so the region road belongs to the
-      attach-pointed mint, which derives its region word from the placement her
-      sentence named.
+      It only ever matters when a `scope` arrived, and the attach-pointed mint
+      is now the only caller that sends one — it derives its region word from
+      the placement her sentence named. That is why #1158 slice 4a re-parented
+      this flag onto `CASTING_INK_REFERENCE_SCOPE`: the road that produces its
+      subject is the road that gates it, and the cut flag the fence used to name
+      is one this road deliberately does not consult.
     */
     regionCrop: captureCastingInkRegionCropEnabled(input.userId),
     /*
