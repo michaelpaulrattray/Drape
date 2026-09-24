@@ -30,6 +30,7 @@
  * the answer resolves the question exactly as tapping it would.
  */
 import { randomUUID } from "node:crypto";
+import { capForEcho, capForEchoWithTail } from "./capAtWordBoundary";
 import { capitalize, type CastPronouns } from "./castPronouns";
 
 import { mentionsUpsweptAsk } from "./eyeShapeRouting";
@@ -86,11 +87,40 @@ export type ReaskKind = (typeof REASK_KINDS)[number];
  * turns into, so both routes end in the same instruction and neither is a
  * second implementation of the other.
  */
+export type ReaskOption = {
+  label: string;
+  /**
+   * THE INSTRUCTION. Complete, always — it is what the render is built from
+   * (`refineService` pushes it onto the recipe), so nothing may shorten it.
+   */
+  resolves: string;
+  /**
+   * AND THE SAME ANSWER AS IT IS STORED AND SHOWN BACK TO HER (#1126).
+   *
+   * `castingCandidateVariants.requestText` is `varchar(220)` while the router
+   * accepts an `answering` of {@link REFINE_ANSWERING_MAX_LENGTH}, so a
+   * composed answer reaches 341 characters against a field that holds 220.
+   * **The overflow is ours, not hers**: her sentence is capped where she types
+   * it, and it is the clause we compose onto it that does not fit.
+   *
+   * ⚠ **The tempting repair is to cap `resolves` itself, and it is wrong.**
+   * The resolved sentence is pushed onto the recipe that renders the picture
+   * she is paying for, so capping it there buys a tidy rail label with a
+   * shorter paid render. This field exists so the two can differ: the engine
+   * gets everything she said, the rail gets a sentence that fits.
+   *
+   * Absent on any option whose `resolves` is her sentence unchanged or a short
+   * constant — those always fit, and an echo equal to the instruction is a
+   * second copy of it.
+   */
+  echo?: string;
+};
+
 export type Reask = {
   kind: ReaskKind;
   /** The sentence, in their words. */
   question: string;
-  options: Array<{ label: string; resolves: string }>;
+  options: Array<ReaskOption>;
   /**
    * THE SENTENCE THIS QUESTION IS ABOUT, when it is not the one they typed.
    *
@@ -239,6 +269,52 @@ export const REASK_HANDLE_MAX_LENGTH = REASK_KINDS.reduce(
   ),
   0,
 );
+
+/**
+ * WHAT THE STORED ECHO HAS ROOM FOR — the column width, named once (#1126).
+ *
+ * ⚠ **It is a MIRROR of `drizzle/schema.ts`'s `requestText: varchar(220)`, and
+ * a mirror drifts** (working law 4), so it is not left to hold:
+ * `server/refineEchoWidth.test.ts` reads the width out of the schema and
+ * reddens if the two disagree. It cannot be DERIVED — the schema is a drizzle
+ * builder call rather than a value a module can import — so the guard is the
+ * derivation.
+ *
+ * ⚠ **The rite cannot tell you this number is stale, and says so in its own
+ * header**: `schemaConformance.mts` compares NAMES, so a column the code has
+ * outgrown passes its verdict without a word, and that file names THIS column
+ * as its worked example. Widening it is a `MODIFY COLUMN`, which the migration
+ * classifier fails closed on — a founder-run ceremony. Until that happens this
+ * number is the truth.
+ */
+export const REFINE_REQUEST_TEXT_MAX_LENGTH = 220;
+
+/** Her sentence, cut so our own clause survives it. See {@link ReaskOption.echo}. */
+function echoOf(head: string, tail: string): string {
+  return capForEchoWithTail(head, tail, REFINE_REQUEST_TEXT_MAX_LENGTH);
+}
+
+/**
+ * WHAT AN ANSWERED REFINE STORES AS ITS ECHO — one reader, every option.
+ *
+ * ⚠ **The composing options are not the whole population, and believing they
+ * were is how this defect survived two measurements** (#1126). Four questions
+ * compose a clause onto her sentence and those carry {@link ReaskOption.echo};
+ * but *"Yes — pink"* on a typo question resolves to her whole CORRECTED
+ * sentence, and *"Go ahead anyway"*, *"Yes — use this design"* and *"Yes —
+ * replace it"* resolve to her sentence unchanged. An answer may be 309
+ * characters long, so every one of those overflows the column too — with no
+ * clause of ours in it to protect, and nothing to make them look like the
+ * defect.
+ *
+ * So the fallback is the plain word-boundary cut, and it lives HERE rather
+ * than at the call site: a rule spelled out where it is consumed is the second
+ * copy working law 4 is about, and `server/refineEchoWidth.test.ts` drives
+ * this function over every option of every question the product can ask.
+ */
+export function storedEchoOf(option: ReaskOption): string {
+  return option.echo ?? capForEcho(option.resolves, REFINE_REQUEST_TEXT_MAX_LENGTH);
+}
 
 /**
  * The questions rebuilt BY NAME rather than from the words, and their builders.
@@ -461,6 +537,7 @@ export function whichFacetReask(instruction: string): Reask {
     options: COLOUR_BEARING.map((entry) => ({
       label: entry.label,
       resolves: `${asked} — ${entry.label}`,
+      echo: echoOf(asked, ` — ${entry.label}`),
     })),
   };
 }
@@ -885,7 +962,7 @@ const NO = ["no", "nope", "nah", "n"];
  * have moved on, and it runs as a fresh instruction. The only thing this
  * function decides is whether the words in front of it are an ANSWER.
  */
-export function resolveAnswer(reask: Reask, typed: string): string | null {
+export function resolveAnswer(reask: Reask, typed: string): ReaskOption | null {
   const said = ours(typed.trim().toLowerCase().replace(/^[-—]\s*/, "").replace(/[.!?]+$/, ""));
   if (!said) return null;
   const bare = said.replace(/^(the|my|her|his|their)\s+/, "");
@@ -894,7 +971,7 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
     const label = option.label.toLowerCase();
     const core = label.replace(/^(yes|no)\b[\s,—-]*/, "").replace(/^the\s+/, "").trim();
     /* They typed the chip, or the noun inside it: "the hair", "hair". */
-    if (said === label || bare === core || said === core) return option.resolves;
+    if (said === label || bare === core || said === core) return option;
   }
 
   if (
@@ -913,8 +990,8 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
        "yes" replaces, "no" keeps the resident, both typed. */
     || reask.kind === "replace-design"
   ) {
-    if (YES.includes(bare)) return reask.options[0]?.resolves ?? null;
-    if (NO.includes(bare)) return reask.options[1]?.resolves ?? null;
+    if (YES.includes(bare)) return reask.options[0] ?? null;
+    if (NO.includes(bare)) return reask.options[1] ?? null;
     return null;
   }
 
@@ -927,7 +1004,7 @@ export function resolveAnswer(reask: Reask, typed: string): string | null {
     const singular = core.replace(/s$/, "");
     return words.includes(core) || words.includes(`${singular}s`) || words.includes(singular);
   });
-  return hits.length === 1 ? hits[0].resolves : null;
+  return hits.length === 1 ? hits[0] : null;
 }
 
 /**
@@ -1328,7 +1405,11 @@ export function alreadyUpsweptReask(instruction: string, pronouns: CastPronouns)
     question: `${capitalize(pronouns.possessive)} eyes already sweep up at the outer corners. `
       + `Push them further, or ${leaveAsTheyAre(pronouns)}? Either way this costs nothing.`,
     options: [
-      { label: "More tilt", resolves: `${asked} — further than they already are` },
+      {
+        label: "More tilt",
+        resolves: `${asked} — further than they already are`,
+        echo: echoOf(asked, " — further than they already are"),
+      },
       /* As easy as the accept, and genuinely free: it lands on her current
          picture and never reaches the claim. */
       { label: "Never mind", resolves: leaveAsTheyAre(pronouns) },
@@ -1467,8 +1548,16 @@ export function whichSideReask(instruction: string, pronouns: CastPronouns): Rea
     question: `Which one — ${pronouns.possessive} left or ${pronouns.possessive} right? `
       + "Nothing has been charged.",
     options: [
-      { label: `${capitalize(pronouns.possessive)} left`, resolves: `${asked} (${pronouns.possessive} left)` },
-      { label: `${capitalize(pronouns.possessive)} right`, resolves: `${asked} (${pronouns.possessive} right)` },
+      {
+        label: `${capitalize(pronouns.possessive)} left`,
+        resolves: `${asked} (${pronouns.possessive} left)`,
+        echo: echoOf(asked, ` (${pronouns.possessive} left)`),
+      },
+      {
+        label: `${capitalize(pronouns.possessive)} right`,
+        resolves: `${asked} (${pronouns.possessive} right)`,
+        echo: echoOf(asked, ` (${pronouns.possessive} right)`),
+      },
     ],
   };
 }
@@ -1489,7 +1578,11 @@ export function didYouMeanReask(instruction: string, miss: { typed: string; mean
       { label: `Yes — ${miss.meant}`, resolves: corrected },
       /* Their word, unchanged, is always an answer. A question that can only be
          answered one way is not a question. */
-      { label: `No, ${miss.typed} is right`, resolves: `${instruction} (exactly as written)` },
+      {
+        label: `No, ${miss.typed} is right`,
+        resolves: `${instruction} (exactly as written)`,
+        echo: echoOf(instruction, " (exactly as written)"),
+      },
     ],
   };
 }
