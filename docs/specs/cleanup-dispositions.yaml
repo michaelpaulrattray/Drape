@@ -1371,3 +1371,9 @@
   verdict: TAKE
   why: "the ONLY writer of `casting_ink_plates`, called by `mintInkPlate` alone, and the mint is deleted. ⚠ The TABLE and its read path are NOT in this row and must not be taken with it: `signService.carriedInkPlates` reads it on the live sign road (a paid surface), `candidateRetention` purges it and `castingV2InkDesignRemoval` clears it, so the module stays and only this statement is dead. Production held zero plate rows all time, so nothing is orphaned by a table that can no longer gain one. Driven by `castingV2-ink-plate-db.test.ts` against a real database"
   argued: "#1158"
+
+- symbol: INK_DESIGNS_PER_CANDIDATE_REFUSAL
+  file: server/castingV2/inkUploadDoor.ts
+  verdict: TAKE
+  why: "the studio upload's CAP sentence — what a customer was told when a Cast already held its eight designs. Its only consumer was the retired `ink.upload` route, which went on slice 1 and left the IMPORT behind; slice 3 removed that import and this row is the consequence the instrument asked for. ⚠ The NUMBER it interpolates, `INK_DESIGNS_PER_CANDIDATE`, is NOT in this row and must not travel with it: three live consumers read it (`inkReferenceMint.ts:93`, `referenceAttachDoor.ts:31` which derives `REFERENCE_PICTURES_PER_CANDIDATE` from it, and the door's own suite). ⚠ And the HELD reference road does not lose a sentence when this goes - it carries its OWN copy of the same words at `inkReferenceMint.ts:245`, which is why removing this one resolves a duplicate rather than creating a gap"
+  argued: "#1158"

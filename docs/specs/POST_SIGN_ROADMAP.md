@@ -3153,7 +3153,7 @@ feature, not the bug. It is the narrow thing that builds without settling the
 general wardrobe question, which now has an owner (§3c). Same pattern the
 frames-gate walk used.
 
-**Flag:** `CASTING_INK_TRANSFORM_SCOPE`, child of `CASTING_INK_STUDIO_SCOPE` —
+**Flag:** `CASTING_INK_TRANSFORM_SCOPE`, child of `CASTING_V2_SCOPE` (~~`CASTING_INK_STUDIO_SCOPE`~~, re-parented 2026-09-24, #1158 slice 3: the subject is the delivered CROP and the words road delivers one with no design row and no studio door — nothing moved for any account) —
 except the two copy items, which land UNGATED: they replace a wrong sentence with
 a right one on a live lane, and gating an apology is how the apology stays wrong
 for everyone outside the flag.
