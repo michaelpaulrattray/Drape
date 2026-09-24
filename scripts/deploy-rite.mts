@@ -820,7 +820,17 @@ function productionUrl(): string | undefined {
     : await judgeEyeFramePresence(
       eyeFrameKeysOf(shown.stdout),
       base,
-      async (url) => await fetch(url, { method: "HEAD" }).then((response) => response.status).catch(() => null),
+      /* ⚠ THE TIMEOUT IS NOT A NICETY — IT IS WHAT MAKES THE JUDGE'S BOUNDED
+         POOL SAFE (#1177). A bare HEAD against a host that accepts the
+         connection and never answers takes 306.6s to reject (measured, node 24,
+         undici's `headersTimeout`). Unbounded that cost is paid ONCE for all
+         314 keys in parallel; bounded, it would be paid once per wave. Ten
+         seconds is ~100x a live HEAD against this bucket, so a real answer is
+         never cut off, and the module owns no fetch policy of its own. */
+      async (url) =>
+        await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(10_000) })
+          .then((response) => response.status)
+          .catch(() => null),
     );
   if (!frames.ok && !DRY) {
     die(`an eye frame this edition names is not in the production bucket — the push does not fire; his card would draw broken images (#320).

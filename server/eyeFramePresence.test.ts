@@ -23,7 +23,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { eyeFrameKeysOf, judgeEyeFramePresence } from "../scripts/lib/eyeFramePresence.mts";
+import {
+  EYE_FRAME_HEAD_CONCURRENCY,
+  EYE_FRAME_RETRY_GIVE_UP_AFTER,
+  eyeFrameKeysOf,
+  judgeEyeFramePresence,
+} from "../scripts/lib/eyeFramePresence.mts";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const realBriefing = readFileSync(path.join(repoRoot, "server/crew/crew-briefing.json"), "utf8");
@@ -127,6 +132,127 @@ describe("judgeEyeFramePresence", () => {
   });
 });
 
+/**
+ * THE BURST AND THE RETRY (#1177).
+ *
+ * The rite refused a real push because four of 314 simultaneous HEADs came back
+ * with no answer while all four frames were present in the bucket. These arms
+ * drive the second ask, and the shape that matters is the one the card asked
+ * for: a `head` that FAILS ONCE and then answers — the happy path passing
+ * proves nothing about a retry that does not exist.
+ *
+ * ⚠ Every arm here also carries its negative control in the same describe, and
+ * they are the reason the arms mean anything: a retry that turned `unread` into
+ * a pass would satisfy "flake survives" while destroying the whole point of the
+ * module, so "never answers" must still refuse, and "404 twice" must still be
+ * missing.
+ */
+describe("a burst is asked twice before it counts (#1177)", () => {
+  /** A `head` that gives no answer the first N times it is asked about a key. */
+  const flakesThenAnswers = (flakes: number, answer = 200) => {
+    const asked = new Map<string, number>();
+    const head = async (url: string) => {
+      const seen = (asked.get(url) ?? 0) + 1;
+      asked.set(url, seen);
+      return seen <= flakes ? null : answer;
+    };
+    return { head, asked };
+  };
+
+  it("PASSES a frame that answered nothing the first time and 200 the second", async () => {
+    const { head, asked } = flakesThenAnswers(1);
+    const verdict = await judgeEyeFramePresence(["crew-eye/a.png", "crew-eye/b.png"], BASE, head);
+    expect(verdict.ok).toBe(true);
+    expect(verdict.unread).toEqual([]);
+    expect(verdict.missing).toEqual([]);
+    /* Asked exactly twice each: once in the burst, once in the retry. */
+    expect([...asked.values()]).toEqual([2, 2]);
+  });
+
+  it("REFUSES when the second ask is unanswered too — the negative control", async () => {
+    const never = async () => null;
+    const verdict = await judgeEyeFramePresence(["crew-eye/a.png"], BASE, never);
+    expect(verdict.ok).toBe(false);
+    expect(verdict.unread).toEqual(["crew-eye/a.png"]);
+    expect(verdict.why).toContain("UNREAD");
+  });
+
+  it("never retries a 404 — an answer is an answer, and re-asking only costs time", async () => {
+    const asked = new Map<string, number>();
+    const verdict = await judgeEyeFramePresence(["crew-eye/a.png"], BASE, async (url) => {
+      asked.set(url, (asked.get(url) ?? 0) + 1);
+      return 404;
+    });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.missing).toEqual(["crew-eye/a.png"]);
+    expect([...asked.values()]).toEqual([1]);
+  });
+
+  it("lets the retry turn an unread into MISSING when the second ask says 404", async () => {
+    const { head } = flakesThenAnswers(1, 404);
+    const verdict = await judgeEyeFramePresence(["crew-eye/a.png"], BASE, head);
+    expect(verdict.ok).toBe(false);
+    expect(verdict.missing).toEqual(["crew-eye/a.png"]);
+    expect(verdict.unread).toEqual([]);
+  });
+
+  it("holds at most EYE_FRAME_HEAD_CONCURRENCY requests in flight at once", async () => {
+    const keys = Array.from({ length: 200 }, (_, index) => `crew-eye/${index}.png`);
+    let inFlight = 0;
+    let peak = 0;
+    const verdict = await judgeEyeFramePresence(keys, BASE, async () => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      inFlight -= 1;
+      return 200;
+    });
+    expect(verdict.ok).toBe(true);
+    expect(peak).toBe(EYE_FRAME_HEAD_CONCURRENCY);
+    /* The bound is the point: without it this reads 200, which is the defect. */
+    expect(peak).toBeLessThan(keys.length);
+  });
+
+  it("stops retrying a bucket that will not answer, and still refuses every key", async () => {
+    const keys = Array.from({ length: 200 }, (_, index) => `crew-eye/${index}.png`);
+    let asks = 0;
+    const verdict = await judgeEyeFramePresence(keys, BASE, async () => {
+      asks += 1;
+      return null;
+    });
+    expect(verdict.ok).toBe(false);
+    /* Nothing is passed for not having been asked twice. */
+    expect(verdict.unread).toEqual(keys);
+    expect(verdict.checked).toBe(keys.length);
+    expect(asks).toBe(keys.length + EYE_FRAME_RETRY_GIVE_UP_AFTER);
+  });
+
+  it("keeps retrying while the retries are answering — a run of flakes is not a dead bucket", async () => {
+    const keys = Array.from({ length: 20 }, (_, index) => `crew-eye/${index}.png`);
+    const { head } = flakesThenAnswers(1);
+    const verdict = await judgeEyeFramePresence(keys, BASE, head);
+    expect(verdict.ok).toBe(true);
+    expect(verdict.unread).toEqual([]);
+  });
+
+  it("names the same keys every run — the refusal is read by a human and acted on", async () => {
+    const keys = Array.from({ length: 40 }, (_, index) => `crew-eye/${index}.png`);
+    const absent = new Set([keys[31]!, keys[7]!, keys[19]!]);
+    const run = async () =>
+      await judgeEyeFramePresence(keys, BASE, async (url) => {
+        /* Answers arrive out of order, which is what a real network does and
+           what made the old completion-ordered lists a lottery. */
+        await new Promise((resolve) => setTimeout(resolve, Math.floor(Math.random() * 3)));
+        return absent.has(url.slice(BASE.length + 1)) ? 404 : 200;
+      });
+    const first = await run();
+    const second = await run();
+    expect(first.missing).toEqual([keys[7], keys[19], keys[31]]);
+    expect(second.missing).toEqual(first.missing);
+    expect(first.why).toBe(second.why);
+  });
+});
+
 describe("the rite actually calls it (invariant 7)", () => {
   const rite = readFileSync(path.join(repoRoot, "scripts/deploy-rite.mts"), "utf8");
 
@@ -143,6 +269,28 @@ describe("the rite actually calls it (invariant 7)", () => {
     expect(block).toContain('"variables", "--service", SERVICE');
     expect(block).toContain('"R2_PUBLIC_URL"');
     expect(block).not.toContain("process.env");
+  });
+
+  /**
+   * ⚠ THE BOUNDED POOL IS ONLY SAFE WITH THIS (#1177).
+   *
+   * A bare HEAD against a host that accepts the connection and never answers
+   * takes 306.6s to reject (measured on node 24). Unbounded, all 314 keys pay
+   * that once, together; bounded, they would pay it once per wave. The judge
+   * owns no fetch policy, so the timeout has to live here — and if it is ever
+   * removed, the bound it makes safe stays behind and the rite gets slower on
+   * exactly the day it is already in trouble.
+   */
+  it("hands the judge a head that times out, which is what makes the bound safe", () => {
+    const block = rite.slice(rite.indexOf("AND THE EYE FRAMES IT NAMES"), rite.indexOf("AND THE SCRIPT GUARDS"));
+    expect(block).toContain("AbortSignal.timeout(");
+    const timeout = block.match(/AbortSignal\.timeout\((\d[\d_]*)\)/);
+    expect(timeout).not.toBeNull();
+    const ms = Number(timeout![1]!.replaceAll("_", ""));
+    /* Long enough that a real answer is never cut off, short enough that a
+       dead bucket costs waves of seconds rather than waves of minutes. */
+    expect(ms).toBeGreaterThanOrEqual(5_000);
+    expect(ms).toBeLessThanOrEqual(30_000);
   });
 
   it("judges the briefing at the COMMIT being pushed, not the working tree", () => {

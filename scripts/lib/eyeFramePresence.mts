@@ -45,7 +45,65 @@
  * facts and only one of them names a repair.
  *
  * This is a MODULE (imported by the rite and by its suite) and it never exits.
+ *
+ * # ONE ANSWER IS NOT AN ANSWER — THE BURST AND THE RETRY (#1177)
+ *
+ * The first version asked every key at once: `Promise.all(keys.map(...))`. On
+ * 2026-09-24 that was **314 HEAD requests launched at one CDN host in the same
+ * tick**, four of them came back with no answer at all, and the rite REFUSED a
+ * push whose frames were all present — read afterwards at the bucket with
+ * `curl -I`, four 200s, and an unchanged re-run passed. The population only
+ * grows: every edition with an eye item adds keys permanently, so the odds of
+ * at least one dropped connection rise with every shift.
+ *
+ * ⚠ **The defect was never the three-way split, and it must not be "fixed" by
+ * folding `unread` into a pass.** Refusing on an unanswered request is
+ * invariant 7 and it is the good part of this module. What was missing is the
+ * ability to tell *"this bucket will not answer"* from *"I asked 314 questions
+ * at once and four got dropped"* — and the only way to tell them apart is to
+ * ask a second time, quietly.
+ *
+ * So: a BOUNDED pool asks, then every key still unread is asked ONCE MORE,
+ * SERIALLY. A `missing` is never retried — a 404 is an answer.
+ *
+ * ⚠ **THE BOUND NEEDS A PER-REQUEST TIMEOUT AT THE CALL SITE OR IT MAKES THINGS
+ * WORSE, AND THAT WAS MEASURED RATHER THAN REASONED.** A bare `fetch(url,
+ * {method:"HEAD"})` against a host that accepts the connection and never
+ * answers takes **306.6 seconds** to reject (node 24, undici's `headersTimeout`;
+ * driven against a local server that never responds). Unbounded, 314 of those
+ * hang side by side and the whole check costs one 306s wait. Bounded at 8 with
+ * no timeout it would cost FORTY of them. The rite therefore hands in a `head`
+ * carrying `AbortSignal.timeout`, and with that the worst case here is better
+ * than what it replaces in both directions: {@link EYE_FRAME_HEAD_CONCURRENCY}
+ * waves of a short timeout on a dead bucket, ~2s on a live one.
+ *
+ * ⚠ **AND THE RETRY GIVES UP RATHER THAN WALKING A DEAD BUCKET KEY BY KEY.** A
+ * serial retry of 314 unread keys is the bound's cost paid a second time, one
+ * at a time, to learn something the first three already said. See
+ * {@link EYE_FRAME_RETRY_GIVE_UP_AFTER}.
  */
+
+/**
+ * How many HEADs may be in flight at once.
+ *
+ * Sixteen rather than eight: the number governs the DEAD-bucket wall clock as
+ * well as the burst, at one timeout per wave, and 314 keys in waves of 16 is 20
+ * waves where eight would be 40. The live-bucket cost is a rounding error
+ * either way (~20 waves of a ~100ms HEAD).
+ */
+export const EYE_FRAME_HEAD_CONCURRENCY = 16;
+
+/**
+ * How many retries in a row may come back unread before the retry pass stops.
+ *
+ * The retry exists to survive a HANDFUL of dropped connections in a burst, and
+ * a handful answers on the second ask. Three unanswered serial requests, made
+ * with nothing else in flight, are not congestion — they are a bucket that will
+ * not answer, and asking it three hundred more times costs a shift minutes to
+ * reach the same refusal. Keys not reached by the give-up stay UNREAD and still
+ * refuse, with the same wording; nothing is ever passed for not being asked.
+ */
+export const EYE_FRAME_RETRY_GIVE_UP_AFTER = 3;
 
 export type EyeFramePresence = {
   ok: boolean;
@@ -125,16 +183,44 @@ export const judgeEyeFramePresence = async (
   }
 
   const root = base.replace(/\/+$/, "");
-  const missing: string[] = [];
-  const unread: string[] = [];
-  await Promise.all(
-    keys.map(async (key) => {
-      const status = await head(`${root}/${key}`).catch(() => null);
-      if (status === 200) return;
-      if (status === 404 || status === 403) missing.push(key);
-      else unread.push(key);
-    }),
+
+  /* An answer per key, kept BY INDEX rather than pushed on arrival, so the
+     refusal names the same five keys every run. Under `Promise.all` the two
+     lists were in completion order, which made the message a lottery over a
+     population of 314 — and a repair instruction that names different files
+     each time is a repair instruction nobody can act on. */
+  const answers: ("present" | "missing" | "unread")[] = new Array(keys.length).fill("unread");
+  const classify = (status: number | null) =>
+    status === 200 ? "present" as const
+      : status === 404 || status === 403 ? "missing" as const
+        : "unread" as const;
+  const ask = async (index: number) => {
+    const status = await head(`${root}/${keys[index]!}`).catch(() => null);
+    answers[index] = classify(status);
+  };
+
+  let next = 0;
+  const workers = Array.from(
+    { length: Math.min(EYE_FRAME_HEAD_CONCURRENCY, keys.length) },
+    async () => {
+      for (let index = next++; index < keys.length; index = next++) await ask(index);
+    },
   );
+  await Promise.all(workers);
+
+  /* Pass two: every key still unread asked ONCE more, alone. `missing` is not
+     retried — a 404 is an answer, and re-asking it would only make an absent
+     frame cost twice as long to report. */
+  let consecutiveUnread = 0;
+  for (let index = 0; index < keys.length; index += 1) {
+    if (answers[index] !== "unread") continue;
+    if (consecutiveUnread >= EYE_FRAME_RETRY_GIVE_UP_AFTER) break;
+    await ask(index);
+    consecutiveUnread = answers[index] === "unread" ? consecutiveUnread + 1 : 0;
+  }
+
+  const missing = keys.filter((_, index) => answers[index] === "missing");
+  const unread = keys.filter((_, index) => answers[index] === "unread");
 
   if (missing.length === 0 && unread.length === 0) {
     return {
