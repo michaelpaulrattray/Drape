@@ -1,7 +1,7 @@
 {
-  "edition": 511,
-  "updatedAt": "2026-09-24T10:49:13.928Z",
-  "shift": "Foreman — the retired tattoo road gives back its share of the provider, and four of our own notes were wrong about a live setting",
+  "edition": 512,
+  "updatedAt": "2026-09-24T12:47:56.273Z",
+  "shift": "Foreman — the tattoo studio's last leftover instructions are deleted, and our own list of them was one short",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -96,6 +96,14 @@
         {
           "state": "done",
           "title": "And the useful part of that step was finding we had been wrong. Four of our own notes — including the plan for this very job — said this reservation was switched on at the live site and that turning it off would be a change to the running site. We read the live site properly, twice, with checks that would have caught a bad reading: it has NEVER been switched on there, and there was no change to make. What let it survive is that our start-up log prints the number either way, so it looked like proof and was not. The gap that hid it is now its own job on the list."
+        },
+        {
+          "title": "Step five of the tattoo studio's retirement, and the last of the code itself: the leftover instructions it stopped using are deleted. Nothing on any screen changes — none of them had been reachable by anybody for weeks. What makes it worth a line is that our own list of them said FIVE and there were SIX, and a seventh was not on any list at all because the tool that finds unused code cannot see that particular shape. It was found by reading, not by the tool.",
+          "state": "done"
+        },
+        {
+          "title": "And deleting them left two small pieces of writing stranded — the sentences a customer would read if she sent us a picture for something we do not do yet. We are KEEPING those, deliberately, because they belong to the picture road you put on hold rather than to the tattoo studio we are retiring. They are written down as waiting on that road, with what would settle them either way.",
+          "state": "done"
         }
       ]
     },
@@ -174,7 +182,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T10:53:34.894Z",
+      "readAt": "2026-09-24T12:47:18.200Z",
       "items": [
         {
           "issueNumber": 179,
@@ -7829,6 +7837,13 @@
       "status": "merged",
       "prNumber": 1173,
       "note": "19 of 20 now. Nothing gets slower; the spare slot is left unused on purpose."
+    },
+    {
+      "id": "ink-take-rows-1158-s4e",
+      "title": "The tattoo studio's last leftover instructions are deleted",
+      "status": "merged",
+      "prNumber": 1175,
+      "note": "Six were listed, a seventh was found by hand, and two more turned up that we are keeping on purpose."
     }
   ],
   "problems": [
@@ -8752,7 +8767,7 @@
     216
   ],
   "nextUp": {
-    "readAt": "2026-09-24T10:53:34.893Z",
+    "readAt": "2026-09-24T12:47:18.199Z",
     "items": [
       {
         "issueNumber": 1158,
