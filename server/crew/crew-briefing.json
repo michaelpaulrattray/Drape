@@ -1,7 +1,7 @@
 {
-  "edition": 516,
-  "updatedAt": "2026-09-24T19:52:51.133Z",
-  "shift": "Foreman — #1160 slice 3",
+  "edition": 517,
+  "updatedAt": "2026-09-24T21:07:52.927Z",
+  "shift": "Foreman — #1126 the cut answer",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -210,7 +210,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T19:52:05.295Z",
+      "readAt": "2026-09-24T21:09:19.982Z",
       "items": [
         {
           "issueNumber": 179,
@@ -3088,6 +3088,28 @@
       "state": "answered",
       "filedAt": "2026-09-24T03:05:54.605Z",
       "issueNumber": 1160
+    },
+    {
+      "id": "refine-record-width-1126",
+      "title": "The studio's record of what she asked is smaller than what she is allowed to ask. Widen it?",
+      "productImpact": "When the studio has to check something before it spends your credits — *which side?*, *did you mean pink?*, *use this design?* — it takes her answer, writes down the whole sentence, and shows that sentence back on the version rail so she can tell one version from another.\n\nThree numbers that have never agreed:\n\n· the box she types in accepts **200** characters\n· an ANSWER may carry **309** — her sentence with the question's own name in front of it\n· the field the studio writes it down in holds **220**\n\nSo on a long ask something is ALWAYS thrown away, and until tonight the studio threw away whatever happened to be past character 220 — which was our own clarifying words. Every chip on *\"which part?\"* produced the same label and the part she actually tapped was invisible.\n\n**That is fixed and shipped tonight.** What is thrown away now is the last few words of her own sentence, cut cleanly between words, and our clarifying clause always survives. It is the better of two losses.\n\n**The only way to lose nothing at all is to make the field bigger**, and that is a database change. I cannot make it myself — the tooling refuses anything that alters an existing column, on purpose, because it cannot tell widening from narrowing and getting that backwards deletes data.",
+      "workedExample": "A real answer, put through the real studio tonight:\n\nShe asks for something in 309 characters and answers *which part? — the hair*. The full sentence the studio needs is 320 characters.\n\n· **Before tonight** it recorded 320 → cut to 220, landing mid-word: *\"…and keep the lig\"*. The words *\"— the hair\"* were gone, so her version was labelled with a sentence that does not say what she chose.\n· **After tonight** it records 218: *\"…across the whole frame — the hair\"*. Clean break, and what she chose is there.\n· **If you widen the field** it records all 320 and nothing is lost.\n\n**And it costs nothing to do.** I read the live table: it holds **zero rows** — nobody has completed a refine on the live site yet (331 casts and 210 sheets, but no saved refine versions). So this is a change to an empty table: instant, with no existing writing to rewrite and nothing that can be damaged. It will never again be this cheap.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Widen it to 400 — nothing she types is ever thrown away",
+          "consequence": "One command against the live database, on an empty table, taking about a second. After it, every answer the studio accepts fits the space it writes it down in, and the trimming I shipped tonight sits underneath as a belt beside a brace. Nothing changes on any screen; nothing to learn."
+        },
+        {
+          "key": "B",
+          "label": "Leave it — tonight's fix is enough",
+          "consequence": "The mid-word cut and the lost clause are gone either way. What stays is that a very long answer loses its last few words on the rail. Nobody has hit it on the live site yet because nobody has refined there; the first person to write a long ask will, and it will still read as a tidy truncation rather than a mistake."
+        }
+      ],
+      "recommendation": "A — widen it. The table is empty, so the change is instant and risk-free today and gets more expensive every week we wait. It is the only option where a customer's own words are never thrown away, and it needs nothing from her and nothing new on any screen. I have left the card open with a guard that goes red the day the number moves, so nothing anywhere can quietly keep believing the old one.",
+      "state": "open",
+      "filedAt": "2026-09-25",
+      "issueNumber": 1126
     }
   ],
   "eyeItems": [
@@ -7900,6 +7922,13 @@
       "status": "in-review",
       "prNumber": 1185,
       "note": "Money/auth diff (the boot-gate file) — opened ready and left for the relay; a shift does not merge it."
+    },
+    {
+      "id": "refine-echo-1126",
+      "title": "Her answer reaches the version rail with our clarifying words still on it",
+      "status": "merged",
+      "prNumber": 1186,
+      "note": "Merged 47229990. The card stays open: the complete fix is a database change and it is on your desk."
     }
   ],
   "problems": [
@@ -8823,7 +8852,7 @@
     216
   ],
   "nextUp": {
-    "readAt": "2026-09-24T19:52:05.294Z",
+    "readAt": "2026-09-24T21:09:19.981Z",
     "items": [
       {
         "issueNumber": 1160,
