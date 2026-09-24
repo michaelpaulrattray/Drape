@@ -1,7 +1,7 @@
 {
-  "edition": 510,
-  "updatedAt": "2026-09-24T09:47:09.598Z",
-  "shift": "Foreman — the tattoo studio's two settings are off the live site, and the reviewer caught the record running ahead of it",
+  "edition": 511,
+  "updatedAt": "2026-09-24T10:49:13.928Z",
+  "shift": "Foreman — the retired tattoo road gives back its share of the provider, and four of our own notes were wrong about a live setting",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -88,6 +88,14 @@
         {
           "state": "done",
           "title": "Step three of the tattoo studio's retirement, and it is the one you can point at: its two settings are GONE from the live site. Nothing on any screen changed — the four tattoo roads you kept (a tattoo from your words, a tattoo from a picture you attach, changing one you already have, being born with one) all answer exactly as they did, checked for three accounts before and after. The two had to go together: one refuses to start up without the other, so removing just one would have taken the site down."
+        },
+        {
+          "state": "in-progress",
+          "title": "Step four of the tattoo studio's retirement, and it is bookkeeping you will never see: the image provider lets us have 20 jobs running at once, and one of those was reserved for drawing an uploaded tattoo onto a cast. That road is gone, so the reservation is given up — we now use 19 of the 20. Nothing you do gets slower; every other job keeps exactly what it had. The spare one is deliberately left unused rather than handed to another job, because that would be quietly giving that job more capacity under a tidy-up's name. Submitted and waiting on the reviewer."
+        },
+        {
+          "state": "done",
+          "title": "And the useful part of that step was finding we had been wrong. Four of our own notes — including the plan for this very job — said this reservation was switched on at the live site and that turning it off would be a change to the running site. We read the live site properly, twice, with checks that would have caught a bad reading: it has NEVER been switched on there, and there was no change to make. What let it survive is that our start-up log prints the number either way, so it looked like proof and was not. The gap that hid it is now its own job on the list."
         }
       ]
     },
@@ -145,9 +153,9 @@
         "source": "The tattoo studio, the segment pair and the wardrobe path — all three on your word."
       },
       {
-        "label": "The reviewer caught it",
+        "label": "We were wrong about our own setting",
         "tone": "neutral",
-        "source": "Our write-up said two settings were already off the site. They weren't. Caught, fixed, re-passed."
+        "source": "Four of our notes said one was switched on at the live site. It never has been — read there twice."
       },
       {
         "label": "One customer, and it is you",
@@ -162,11 +170,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "40 open · 14 untouched for 7 days · 6 carry a hold · none urgent."
+        "source": "41 open · 14 untouched for 7 days · 6 carry a hold · none urgent."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T09:46:13.168Z",
+      "readAt": "2026-09-24T10:49:32.172Z",
       "items": [
         {
           "issueNumber": 179,
@@ -7814,6 +7822,13 @@
       "status": "merged",
       "prNumber": 1172,
       "note": "Both removed together — one will not start without the other. Nothing moved for any account."
+    },
+    {
+      "id": "ink-fal-slot-1158-s4d",
+      "title": "The retired tattoo road gives up its share of the image provider",
+      "status": "in-review",
+      "prNumber": 1173,
+      "note": "19 of 20 now. Nothing gets slower; the spare slot is left unused on purpose."
     }
   ],
   "problems": [
@@ -8737,7 +8752,7 @@
     216
   ],
   "nextUp": {
-    "readAt": "2026-09-24T09:46:13.167Z",
+    "readAt": "2026-09-24T10:49:32.172Z",
     "items": [
       {
         "issueNumber": 1158,
