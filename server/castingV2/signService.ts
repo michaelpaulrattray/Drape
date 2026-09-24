@@ -69,9 +69,7 @@ import {
 import { createHash } from "node:crypto";
 import { createModuleLogger } from "../logging/logger";
 import { storageCopyExact, storageReadBytes } from "../storage";
-import { listCandidateInkPlates, type CandidateInkPlate } from "../db/castingV2InkPlates";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
-import { MANNEQUIN_ROAD_DEFERRED } from "../../shared/inkMannequinDeferral";
 import type { BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
 import { readOpenKindProperties } from "../db/castingV2OpenKindProperties";
 import { deriveLibrary } from "./referenceLibrary";
@@ -85,7 +83,6 @@ import {
   inkViewCropClause,
   placementRideCoverage,
   type CarriedInkCrop,
-  type CarriedInkPlate,
 } from "./inkViewReferences";
 import { listInkDeliveryCrops } from "../db/castingV2InkDeliveryCrops";
 import { readDeliveredInk } from "./inkApplied";
@@ -94,44 +91,6 @@ import { slotDefinition } from "./referenceSlotCatalogue";
 import { isInkPlacement } from "../../shared/inkPlacementVocabulary";
 import { castPronouns, type CastPronouns } from "./castPronouns";
 
-/**
- * WHETHER A DESIGN'S ARTWORK REACHED THIS CAST'S VIEWS, AND IF NOT WHY — one
- * shape for every way it can fail (ordered fable-1005 §2).
- *
- * `noPlate` — uploaded and never plated, so there is nothing an engine may be
- * shown (D-138 forbids the customer's own photograph absolutely).
- * `engineUndecided` — plated by more than one engine, and which artwork is HER
- * tattoo is the plate court's open question; picking one by array order is the
- * quiet dispatch fallback this product has already paid for.
- * `bytesUnreadable` — the row is there and the object is not.
- * `surfaceCovered` — THIS CAST'S wardrobe covers the surface this design sits
- * on, so no view can honestly show it. The court measured what happens without
- * this: told to put an upper-chest design on a crew-necked frame the engine
- * printed it on the shirt, and told that ink goes on skin it rewrote the
- * neckline into a scoop — both of which the wardrobe check fails and refunds.
- * It used to be a fact about the PLACEMENT (fable-1006 §2's interim); item 7a
- * made it a fact about the outfit, which is what it always described.
- * `surfaceCoverageUnread` — nobody has read whether THIS outfit leaves that
- * surface showing. A separate name on purpose (fable-1368 ruling 1): it fails
- * closed like a covering and it must never be REPORTED as one, because a
- * refusal that lies about why it closed teaches a customer to distrust every
- * refusal this product writes.
- */
-export type InkDesignDisposition =
-  | { designPublicId: string; rode: true }
-  | {
-    designPublicId: string;
-    rode: false;
-    reason:
-      | "noPlate"
-      | "engineUndecided"
-      | "bytesUnreadable"
-      | "surfaceCovered"
-      | "surfaceCoverageUnread"
-      | "mannequinDeferred"
-      | "carriedAsDelivered";
-    engines?: readonly string[];
-  };
 
 /**
  * WHETHER A TATTOO THIS BRANCH WEARS REACHED ITS VIEWS, AND IF NOT WHY — the
@@ -191,22 +150,10 @@ export type SignServiceDependencies = PackageOrchestratorDependencies & {
   deduct?: typeof deductCredits;
   copyImage?: typeof storageCopyExact;
   readBytes?: typeof storageReadBytes;
-  /** Her plated tattoos, injected in tests. Absent, the real statement runs —
-   *  owner-scoped through the design to the candidate. */
-  listInkPlates?: typeof listCandidateInkPlates;
   /** The tattoos she has actually been given, cut out of the frames that
    *  delivered them. Injected in tests; absent, the real owner-scoped
    *  statement runs. */
   listInkDeliveryCrops?: typeof listInkDeliveryCrops;
-  /**
-   * Whether the mannequin road is parked — defaults to the ruling's own
-   * constant, and is a seam rather than a switch.
-   *
-   * It exists so the PARKED road keeps its tests: the plate lane's arms drive it
-   * with `false`, because deleting them would leave the day it resumes with
-   * nothing proving how it behaves. Production never passes it.
-   */
-  mannequinDeferred?: boolean;
   /** The feature library of the branch this Sign anchors on, injected in tests.
    *  Absent, the real statement runs — owner-scoped in its own WHERE. */
   listLibrary?: typeof listLineageReferences;
@@ -649,14 +596,15 @@ function detach(run: () => Promise<void>): void {
  * *"crop and reference any tattos it can find and see - this would intrun carry
  * into the signing angles"*).
  *
- * # Why this exists beside a lane that already claimed to do it
+ * # It is the only ink lane there is, and it was the second of two
  *
- * `carriedInkPlates` has carried tattoos into the five views since fable-987 §3,
- * from `casting_ink_plates` — and the mannequin road is parked, so that table
- * is empty in both worlds and **not one signed Cast has ever carried a tattoo
- * into a view.** A control that reads as live and carries nothing is working
- * law 7's exact face. Meanwhile the delivery store has held real crops of real
- * ink since migration 0049, and nothing looked at it.
+ * `carriedInkPlates` read `casting_ink_plates` and handed plates to the same
+ * package from fable-987 §3 until **#1158 slice 4f deleted it** on his *"It
+ * retires with N2"*. It never carried anything: the mannequin road was parked
+ * the whole time, so **not one signed Cast has ever carried a plate into a
+ * view** — a control that read as live and carried nothing, working law 7's
+ * exact face. This lane is the one with a real source, and it has held real
+ * crops of real ink since migration 0049.
  *
  * # THE CHAIN DECIDES AND THE STORE ONLY LOOKS THINGS UP
  *
@@ -876,195 +824,6 @@ export async function carriedInkCrops(
 }
 
 /**
- * HER PLATED TATTOOS, READ AND HANDED TO THE PACKAGE — and every way one can
- * fail to ride is NAMED (FOUNDER RULING fable-987 §3; the naming ordered
- * fable-1004 §3).
- *
- * Three things can go wrong here and none of them may be silent, because a
- * reference that quietly did not ride is indistinguishable from a Cast with no
- * tattoo — and the customer paid for the tattoo:
- *
- *   NO PLATE        the design was uploaded and never plated (the studio flag
- *                   was off, or the mint failed). The design cannot ride: there
- *                   is nothing to show an engine but the customer's own
- *                   photograph, and D-138 forbids that absolutely
- *   TWO PLATES      one design plated by two engines. Which artwork is HER
- *                   tattoo is the plate court's open question, and picking the
- *                   newest would be a quiet dispatch fallback — the class this
- *                   product has paid for before. It does not ride, and it says
- *                   which design and which engines
- *   BYTES GONE      the row is there and the object is not. The picture cannot
- *                   ride and the log says which design lost it
- *
- * A failure here NEVER fails the Sign. The Cast exists, the views are worth
- * having, and a tattoo missing from five frames is a smaller harm than five
- * frames nobody gets — so this returns what it could read and reports the rest.
- *
- * **Exported to be driven** (working law 3): every refusal here is reachable
- * only through a whole Sign, and a backstop whose only test runs through a
- * caller that usually behaves is a backstop nothing has tested.
- */
-export async function carriedInkPlates(
-  dependencies: SignServiceDependencies,
-  input: {
-    userId: number;
-    candidateId: number;
-    operationId: string;
-    /**
-     * THE SLOTS THE DELIVERED-CROP LANE HAS ALREADY CARRIED — so one tattoo can
-     * never ride twice.
-     *
-     * Unreachable today and closed anyway, at the moment both lanes exist
-     * rather than on the day the second one wakes up. `MANNEQUIN_ROAD_DEFERRED`
-     * refuses every plate at the first door, so there is no configuration in
-     * which this fires — and the day that ruling lifts, a design with both a
-     * plate and a delivered crop would send ONE tattoo as TWO pictures with two
-     * different sentences about what it is, which is the shape the recipe
-     * assembler refuses outright (`carriesItsOwnEdit`) one road along.
-     *
-     * The crop wins, and not by accident of ordering: a crop is the ink as it
-     * actually sits on this person, and a plate is artwork on a grey form.
-     */
-    carriedSlots?: ReadonlySet<string>;
-    /**
-     * THE CAST'S SNAPSHOTTED OUTFIT — what decides whether a surface is showing.
-     *
-     * `null` is *no line recorded*, which is every Cast signed before the paths,
-     * and it answers the house table exactly. Threaded from the Sign's own
-     * statement rather than re-read here for the reason `anchorDeltas` is: a
-     * second read could answer about a different branch and nothing would say
-     * so.
-     *
-     * ⚠ **Optional, and absent means the same as `null`** — `WardrobeBranch`'s
-     * own rule, and the same one `classifyInkPlacement` carries. An absent
-     * column is not a claim; it is silence, and silence is *no line recorded*,
-     * which answers the house table. A required field here would turn every
-     * partial projection and every test double into a compile error over a
-     * question that has a correct absent answer.
-     */
-    wardrobeLine?: string | null;
-  },
-): Promise<{ plates: readonly CarriedInkPlate[]; dispositions: readonly InkDesignDisposition[] }> {
-  let rows: readonly CandidateInkPlate[];
-  try {
-    rows = await (dependencies.listInkPlates ?? listCandidateInkPlates)({
-      userId: input.userId,
-      candidateId: input.candidateId,
-    });
-  } catch (error) {
-    log.error(
-      { operationId: input.operationId, err: error },
-      "[signService] her tattoos could not be read — the package renders without them",
-    );
-    return { plates: [], dispositions: [] };
-  }
-  if (rows.length === 0) return { plates: [], dispositions: [] };
-
-  const byDesign = new Map<string, CandidateInkPlate[]>();
-  for (const row of rows) {
-    const held = byDesign.get(row.designPublicId) ?? [];
-    held.push(row);
-    byDesign.set(row.designPublicId, held);
-  }
-
-  const plates: CarriedInkPlate[] = [];
-  const dispositions: InkDesignDisposition[] = [];
-  const read = dependencies.readBytes ?? storageReadBytes;
-  for (const [designPublicId, rowsOfDesign] of Array.from(byDesign.entries())) {
-    /*
-      THE MANNEQUIN ROAD IS PARKED, so nothing plated on one rides (founder,
-      fable-1053 §2, gated fable-1060 §2). First door of all: a parked road does
-      not read storage, weigh engines or consult a surface table to decide it is
-      parked.
-
-      **Verified at the wire before it was written, and the verification is the
-      reason this is here rather than assumed**: a neck plate DID ride, and the
-      thing believed to be stopping it — the empty `RELEASED_INK_TUPLES` — has no
-      caller anywhere outside its own test. What kept plates out of signed views
-      was the absence of a plate, which the studio flag then removed.
-    */
-    if (dependencies.mannequinDeferred ?? MANNEQUIN_ROAD_DEFERRED) {
-      dispositions.push({ designPublicId, rode: false, reason: "mannequinDeferred" });
-      continue;
-    }
-    /*
-      THE SURFACE'S OWN DOOR, BEFORE THE PLATE'S — a design the package cannot
-      show honestly does not ride, whether or not it was ever plated, and saying
-      `noPlate` about it would name the wrong fact.
-    */
-    const coverage = placementRideCoverage(rowsOfDesign[0]!.placement, input.wardrobeLine);
-    if (coverage !== "bare") {
-      dispositions.push({
-        designPublicId,
-        rode: false,
-        reason: coverage === "covered" ? "surfaceCovered" : "surfaceCoverageUnread",
-      });
-      continue;
-    }
-    /*
-      AND NOT TWICE — see `carriedSlots`. The delivered crop of this very slot
-      is already riding, and it is the better picture of the two.
-    */
-    const placed = rowsOfDesign[0]!;
-    const slotOfPlate = placed.side === "centre"
-      ? inkSlotKey(placed.placement)
-      : inkSideSlotKey(placed.placement, placed.side);
-    if (input.carriedSlots?.has(slotOfPlate)) {
-      dispositions.push({ designPublicId, rode: false, reason: "carriedAsDelivered" });
-      continue;
-    }
-    const minted = rowsOfDesign.filter((row) => row.storageKey !== null);
-    if (minted.length === 0) {
-      dispositions.push({ designPublicId, rode: false, reason: "noPlate" });
-      continue;
-    }
-    if (minted.length > 1) {
-      dispositions.push({
-        designPublicId,
-        rode: false,
-        reason: "engineUndecided",
-        engines: minted.map((row) => row.engine ?? "unnamed"),
-      });
-      continue;
-    }
-    const plate = minted[0]!;
-    try {
-      const bytes = await read(plate.storageKey!);
-      plates.push({
-        designPublicId,
-        placement: plate.placement,
-        side: plate.side,
-        bytes: bytes.bytes,
-        contentType: bytes.contentType,
-      });
-      dispositions.push({ designPublicId, rode: true });
-    } catch (error) {
-      dispositions.push({ designPublicId, rode: false, reason: "bytesUnreadable" });
-      log.error(
-        { operationId: input.operationId, designPublicId, err: error },
-        "[signService] a plate's own bytes could not be read",
-      );
-    }
-  }
-
-  /*
-    ONE LINE, EVERY DESIGN, RODE OR NOT — the amendment fable-1005 §2 ordered.
-
-    As first built the three refusals reported at two different altitudes: a
-    design with no plate produced nothing at all (it was invisible to a reader
-    that started from plates), and the other two produced log lines of their own.
-    Two refusals of the same promise on two surfaces is how a fact ends up
-    collected and never asserted. This is the single surface: every design on the
-    Cast, whether it rode, and if not, why.
-  */
-  log.info(
-    { operationId: input.operationId, dispositions },
-    "[signService] the tattoos this Cast's views carry — every design, rode or not",
-  );
-  return { plates, dispositions };
-}
-
-/**
  * WHAT THE ANCHOR CANNOT SHOW, GATHERED FOR THE VIEWS — arrow 6 (FOUNDER,
  * 2026-08-19: *"when signing a cast to make the angles the refined image is
  * supplied as the reference and a description so that any features not visible
@@ -1218,12 +977,14 @@ async function completeSignPackage(
   try {
     const anchorBytes = await (dependencies.readBytes ?? storageReadBytes)(input.anchorStorageKey);
     /*
-      THE DELIVERED CROPS FIRST, AND THE PLATES AFTER THEM.
+      THE DELIVERED CROPS, AND THERE IS NO SECOND LANE BEHIND THEM ANY MORE.
 
-      Order matters for one reason and it is not preference: a design that has
-      both a plate and a delivered crop must ride ONCE, as the picture of the
-      ink on her rather than as artwork on a grey form. Unreachable while the
-      mannequin road is parked; closed anyway, at the moment both lanes exist.
+      This read used to be followed by `carriedInkPlates`, and the ordering
+      between them was load-bearing: a design with both a plate and a delivered
+      crop had to ride ONCE, as the picture of the ink on her rather than as
+      artwork on a grey form. #1158 slice 4f deleted that lane on his *"It
+      retires with N2"*, so the rule has nothing left to order and the Sign's
+      `carriedSlots` hand-off went with it.
     */
     const delivered = await carriedInkCrops(dependencies, {
       userId: input.userId,
@@ -1231,13 +992,6 @@ async function completeSignPackage(
       anchorDeltas: input.anchorDeltas,
       pronouns: input.pronouns,
       operationId: input.operationId,
-      wardrobeLine: input.wardrobeLine,
-    });
-    const ink = await carriedInkPlates(dependencies, {
-      userId: input.userId,
-      candidateId: input.candidateId,
-      operationId: input.operationId,
-      carriedSlots: new Set(delivered.crops.map((crop) => crop.slot)),
       wardrobeLine: input.wardrobeLine,
     });
     const featureWords = await carriedFeatureWords(dependencies, {
@@ -1253,7 +1007,6 @@ async function completeSignPackage(
       identityRevisionId: input.identityRevisionId,
       identityText: input.identityText,
       anchor: anchorBytes,
-      inkPlates: ink.plates,
       inkCrops: delivered.crops,
       pronouns: input.pronouns,
       featureWords,

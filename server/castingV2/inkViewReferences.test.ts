@@ -16,24 +16,13 @@ import {
   inkPlacementPhrase,
   inkViewCropClause,
   inkViewPlacementDisciplineClause,
-  inkViewReferenceClause,
   placementRideCoverage,
   type CarriedInkCrop,
-  type CarriedInkPlate,
 } from "./inkViewReferences";
 import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 import { HOUSE_WARDROBE_LINE, basicsWardrobeLine } from "./wardrobeLine";
 import { inkDeliveredCarrySentence } from "./inkRealism";
 import { pronounsForSex } from "./castPronouns";
-
-const plate = (over: Partial<CarriedInkPlate> = {}): CarriedInkPlate => ({
-  designPublicId: "design-1",
-  placement: "upperArm",
-  side: "left",
-  bytes: Buffer.from("plate"),
-  contentType: "image/png",
-  ...over,
-});
 
 describe("where a tattoo is said to live", () => {
   it("uses the surface word the vocabulary MEASURED, never the key", () => {
@@ -58,168 +47,32 @@ describe("where a tattoo is said to live", () => {
   });
 });
 
-describe("the clause that rides beside the anchor", () => {
-  it("is EMPTY when nothing rides — every signed Cast without ink is untouched", () => {
-    /*
-      The inertness control, and it is the one that matters most: this lane
-      reaches every package view in the product. A Cast with no plated tattoo
-      must compose the prompt it composed yesterday, or the whole Sign surface
-      has quietly changed on the strength of a feature nobody used.
-    */
-    expect(inkViewReferenceClause({ plates: [], firstOrdinal: 2 })).toBe("");
-  });
+/*
+  ⚠ **THE PLATE LANE'S ARMS ARE GONE WITH THEIR SUBJECT — #1158 slice 4f, and
+  what happened to their COVERAGE is the part worth reading.**
 
-  it("names the ordinal the reference actually occupies", () => {
-    /* The anchor is reference 1, so plates start at 2 — and the ordinal is
-       passed rather than assumed, because a sentence quoting the wrong slot is a
-       prompt pointing at the wrong picture. */
-    const clause = inkViewReferenceClause({ plates: [plate(), plate({ designPublicId: "d2", placement: "neck", side: "centre" })], firstOrdinal: 2 });
-    expect(clause).toContain("Reference 2 is the tattoo at her left upper arm (on the right");
-    expect(clause).toContain("Reference 3 is the tattoo at her neck.");
-  });
+  Two describe blocks stood here: `inkViewReferenceClause`'s own eight arms, and
+  a per-side block that drove `imageHalfClause`'s mirror rule THROUGH that
+  clause. The first died with its function. The second was the §8c question —
+  *which of these prove LIVE code?* — and the answer is that its rule is proved
+  twice over on the lane that actually paints:
 
-  it("says COPY THE ARTWORK and excludes the mannequin explicitly", () => {
-    /*
-      D-138's fence held from the inside. The plate is the only ink artifact an
-      engine is ever shown, and the sentence has to say which part of it is the
-      subject — otherwise the safest reading of a grey limb on white is that the
-      photograph should look like that.
-    */
-    const clause = inkViewReferenceClause({ plates: [plate()], firstOrdinal: 2 });
-    expect(clause).toContain("Copy the ARTWORK from it");
-    expect(clause).toContain("The mannequin form in those pictures is NOT part of the tattoo");
-    expect(clause).toContain("must not appear anywhere in the photograph");
-    /* And it must protect the person, not only the background: a grey form is a
-       skin tone, a build and a pose as well as a colour. */
-    expect(clause).toContain("never change her skin, her build or her pose");
-  });
+    "carries the SIDE in prose"          the same mirror, both directions, the
+                                         same one owner — below, on the crop lane
+    "never says a side for a surface
+     there is one of"                    the centred case, below
+    "where a tattoo is said to live"     `inkPlacementPhrase` driven DIRECTLY,
+                                         above, which is the shared thing both
+                                         lanes always called
 
-  it("forbids relocation, mirroring and duplication — D-145 one surface along", () => {
-    /*
-      "A stated placement is never relocated" was earned on the words road when
-      a chest tattoo landed on the collarbones. The same law applies to a
-      reference: an engine handed a picture of a tattoo will find somewhere to
-      put it.
-    */
-    const clause = inkViewReferenceClause({ plates: [plate()], firstOrdinal: 2 });
-    expect(clause).toContain("do not move one to a nearby part of the body");
-    expect(clause).toContain("do not mirror it to her other side");
-    expect(clause).toContain("do not draw a second copy of it");
-  });
+  So nothing was re-pointed here, because nothing needed to be: the live lane's
+  arms were not derived from the plate lane's and do not share a fixture with
+  them. ONE arm had no live equivalent and is simply gone — *"says it on the
+  copy instruction too"*, which asserted the positional clause appeared TWICE
+  because the plate clause said the surface in two sentences. The crop lane says
+  it in one, so there is no second place for it to disagree with itself.
+*/
 
-  it("forbids the tattoo being printed on CLOTHING — the court's own finding", () => {
-    /*
-      MEASURED, on the first conformance court (2026-08-19). Handed an
-      upper-chest plate and a `frontFull` view whose wardrobe is a crew-neck tee,
-      the engine printed "SEMPRE" and its olive sprig ON THE SHIRT — faithfully
-      drawn, in the wrong material. It is the obvious resolution of an
-      instruction it could not otherwise satisfy: the upper chest is COVERED on a
-      crew neck (the placement vocabulary says so in its own table), so the only
-      place that artwork could go in that frame was the garment.
-
-      It is not a cosmetic miss. The package's wardrobe check calls printed text
-      or a logo on the garment a failure WHEREVER it appears, so that view would
-      have been refused and refunded — an upper-chest tattoo would have cost a
-      slice of every Sign it rode.
-
-      So the clause says the thing the engine needed told: ink goes on skin.
-
-      AND WHAT "COVERED" MEANS IS HIS RULING (2026-08-19, fable-1081 §2), not a
-      side effect this arm may state loosely. Clothing COVERS ink rather than
-      deleting it — *"if you had a chest tatto reference with neck continuation
-      you might see it poking out the top of the shirt but thats the extent for
-      now"* — so a design that runs onto bare skin shows that part and no more,
-      and the garment is never altered to reveal the rest. The arm asserts both
-      halves, because a clause carrying only the first would license the scoop
-      neck the ruling refuses and one carrying only the second would delete the
-      poke he asked for.
-    */
-    const clause = inkViewReferenceClause({ plates: [plate()], firstOrdinal: 2 });
-    expect(clause).toContain("It is ink on her skin");
-    expect(clause).toContain("never printed, embroidered or otherwise placed on her clothing");
-    expect(clause).toContain("the part of it on bare skin appears exactly as it is");
-    expect(clause).toContain("the covered part simply does not show");
-    expect(clause).toContain("Never change, move or open a garment to reveal more of a tattoo");
-  });
-
-  it("tells the engine that a view which cannot show a tattoo simply does not", () => {
-    /*
-      The ruling rides the reference into EVERY view, so the prompt must say what
-      a back view is meant to do with a chest tattoo. Without this sentence the
-      instruction "copy this onto her upper chest" is unsatisfiable from behind,
-      and an engine with an unsatisfiable instruction improvises.
-    */
-    const clause = inkViewReferenceClause({ plates: [plate()], firstOrdinal: 2 });
-    expect(clause).toContain("that tattoo simply does not appear in that view");
-  });
-
-  it("speaks once per plate and carries every one of them", () => {
-    const clause = inkViewReferenceClause({
-      plates: [
-        plate(),
-        plate({ designPublicId: "d2", placement: "upperArm", side: "right" }),
-        plate({ designPublicId: "d3", placement: "upperChest", side: "centre" }),
-      ],
-      firstOrdinal: 2,
-    });
-    expect(clause).toContain("Reference 2 is the tattoo at her left upper arm (on the right");
-    expect(clause).toContain("Reference 3 is the tattoo at her right upper arm (on the left");
-    expect(clause).toContain("Reference 4 is the tattoo at her upper chest.");
-    /* One picture, one sentence — a plate with no sentence is a picture the
-       engine has to guess the purpose of. */
-    expect(clause.match(/is the tattoo at/g)).toHaveLength(3);
-  });
-});
-
-/**
- * THE SIDE IS SAID BOTH WAYS — anatomy and the half of the picture it lives in
- * (ordered fable-1006 §3, on the court's own miss).
- *
- * The court's arm plate said HER LEFT upper arm and the render put the tattoo on
- * her RIGHT — the image's left half. That is per-side-paint-favours-image-right
- * arriving in a new lane, and this product already measured the lever for it:
- * saying the side both ways took a per-side edit from four misses in twelve to
- * none, never once worse, at no cost per render.
- *
- * The phrase comes from the ONE owner (`sidePhrasing.imageHalfClause`) rather
- * than being spelled here or there — a second copy of it would drift at exactly
- * the point it exists to hold still.
- */
-describe("a per-side tattoo says which half of the picture it is in", () => {
-  it("puts HER LEFT on the picture's RIGHT — and the mirror on the left", () => {
-    /*
-      THE MIRROR IS DRIVEN, both directions, because a per-side claim asserted
-      one way round passes just as well when the mapping is inverted. Her left is
-      the viewer's right; said as the painter sees it, because the painter is
-      looking at the picture.
-    */
-    const left = inkViewReferenceClause({ plates: [plate({ side: "left" })], firstOrdinal: 2 });
-    expect(left).toContain("her left upper arm (on the right of the picture as you look at it)");
-
-    const right = inkViewReferenceClause({ plates: [plate({ side: "right" })], firstOrdinal: 2 });
-    expect(right).toContain("her right upper arm (on the left of the picture as you look at it)");
-  });
-
-  it("says it on the copy instruction too, not only on the naming line", () => {
-    /* Both sentences name the surface, and a positional clause on one of them is
-       a recipe that says two different things about where the ink goes. */
-    const clause = inkViewReferenceClause({ plates: [plate({ side: "left" })], firstOrdinal: 2 });
-    expect(clause.match(/on the right of the picture as you look at it/g)).toHaveLength(2);
-  });
-
-  it("says NOTHING positional for a centred surface", () => {
-    /*
-      A neck or an upper chest has one of itself, and there is no half of the
-      picture it lives in. A clause that volunteered one would be inventing a
-      laterality the customer never named — the thing this whole lane refuses to
-      do about a mask's side label.
-    */
-    const clause = inkViewReferenceClause({
-      plates: [plate({ placement: "neck", side: "centre" })], firstOrdinal: 2,
-    });
-    expect(clause).not.toContain("of the picture as you look at it");
-  });
-});
 
 /**
  * A SURFACE THE PACKAGE'S OWN WARDROBE COVERS DOES NOT RIDE — the interim

@@ -12,10 +12,13 @@
  *
  * # ⚠ THE ARTIFACT IS SUBSTITUTED, AND THAT IS A RULING (fable-1243 §2a)
  *
- * A PLATE was minted by `inkPlateMint` (retired, #1158 slice 2), and minting sat behind
- * `MANNEQUIN_ROAD_DEFERRED` — deferred into the sitting that also holds the
- * release door, D-138's taste gate and the fence court. **So the artifact the
- * gate names cannot be produced today.** What exists is the CUT (the object
+ * A PLATE was minted by `inkPlateMint` (retired, #1158 slice 2), and minting sat
+ * behind `MANNEQUIN_ROAD_DEFERRED` — deferred into the sitting that also held
+ * the release door, D-138's taste gate and the fence court. ⚠ **THAT SITTING IS
+ * NOT PENDING ANY MORE: the road was RETIRED rather than resumed** (his *"It
+ * retires with N2"*, #1158), and slice 4f deleted the deferral constant itself
+ * once its last gate went with the sign road's plate read. **So the artifact
+ * the gate names cannot be produced today and will not be produced later.** What exists is the CUT (the object
  * `CASTING_INK_CUT_SCOPE` stores) and the DELIVERED FRAME. fable-1243 §2a
  * granted the substitution as a decision rather than an executor's convenience:
  * 919 §3's intent — *no stranger's face survives into anything we keep or send*

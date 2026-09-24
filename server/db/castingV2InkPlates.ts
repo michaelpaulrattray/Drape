@@ -3,21 +3,29 @@
  *
  * One row is a design re-drawn onto a blank ghost mannequin by a named engine.
  *
- * ⚠ **THIS TABLE CAN NO LONGER GAIN A ROW, AND THE MODULE STAYS ANYWAY.** His
- * ruling of 2026-09-24 — *"It retires with N2"* — retired the ink studio;
- * slice 2 deleted the mint (`inkPlateDoor.ts`, `castingV2/inkTemplates.ts`)
- * and **slice 4e deleted the statement itself**, `recordInkPlate`, with its
- * two error classes and its two types. Production held zero plate rows all
- * time, read at the rows rather than assumed, so a table that can no longer
- * gain one orphans nothing.
+ * ⚠ **THIS TABLE CAN NO LONGER GAIN A ROW, NOBODY READS IT FOR CONTENT ANY
+ * MORE, AND THE MODULE STAYS ANYWAY.** His ruling of 2026-09-24 — *"It retires
+ * with N2"* — retired the ink studio; slice 2 deleted the mint
+ * (`inkPlateDoor.ts`, `castingV2/inkTemplates.ts`), **slice 4e deleted the
+ * statement itself**, `recordInkPlate`, and **slice 4f deleted the last
+ * CONTENT read**, `listCandidateInkPlates`, when the paid Sign road stopped
+ * carrying plates. Both worlds held zero plate rows at slice 4f, read at the
+ * rows rather than assumed, so a table that can no longer gain one orphans
+ * nothing.
  *
- * **What is left is every LIVE path, and each one is named with its caller**:
+ * **What is left is PURGE ONLY, and each path is named with its caller**:
  *
- *   `listCandidateInkPlates`            `signService.carriedInkPlates`, the paid sign road
  *   `listPurgeableInkPlatesIn` + `deleteInkPlateRowsIn`
  *                                        `candidateRetention`, the Cast sweep
  *   `listPurgeableInkPlatesForDesignIn` + `deleteInkPlateRowsForDesignIn`
  *                                        `castingV2InkDesignRemoval`, an owner's delete
+ *
+ * ⚠ **A TABLE THAT CANNOT GAIN A ROW STILL NEEDS ITS SWEEP, AND THAT IS NOT A
+ * CONTRADICTION.** The purge pair is what makes the emptiness a fact rather
+ * than a reading taken on one night: any row that ever existed leaves with its
+ * Cast, and its bytes leave at a permanently public URL with it. Deleting the
+ * sweep because the count is zero today is how a row written before a retirement
+ * outlives every account that could reach it.
  *
  * ⚠ **AND THE FOUR WRITE RULES THAT USED TO BE DOCUMENTED HERE LEFT WITH THE
  * STATEMENT THAT IMPLEMENTED THEM.** They were real — the owner in the writing
@@ -68,81 +76,6 @@ async function requireDb() {
 function affectedRows(result: unknown): number {
   const header = Array.isArray(result) ? result[0] : result;
   return (header as { affectedRows?: number })?.affectedRows ?? 0;
-}
-
-/**
- * EVERY PLATED TATTOO THIS CANDIDATE WEARS — what a Sign carries into its views
- * (FOUNDER RULING, his words at fable-987 §3).
- *
- * Through the DESIGN rather than a mirrored candidate column on the plate, for
- * the reason the purge reader gives one section down (working law 4): the plate
- * hangs off the design and the design hangs off the candidate, and a second
- * parent id on the plate row would be a copy that can disagree with its source.
- *
- * Owner-scoped at every link: the plate's `userId` is a claim, the design's
- * is a claim, and the candidate is where they stop being claims. (This used to
- * say "exactly as `listInkPlatesForDesign` is", and that sibling left in #1158
- * slice 4e — a property is stated here rather than pointed at, so the next
- * deletion cannot quietly take the reason with the neighbour.)
- *
- * It returns the DESIGN's placement and side beside the plate, because the
- * sentence that rides with the picture names the surface, and reading it from
- * the design's own row is what stops a caller supplying one.
- */
-export type CandidateInkPlate = {
-  readonly designPublicId: string;
-  readonly placement: InkPlacement;
-  readonly side: InkSide;
-  /**
-   * NULL when the design has no plate at all — the row is the DESIGN's and the
-   * plate half is absent.
-   *
-   * A LEFT JOIN rather than two statements, and the difference is the whole
-   * point: a caller that read plates alone cannot see the design that has none,
-   * and "this design did not ride" is exactly the fact that has to be sayable
-   * (fable-1005 §2). Two reads would also be two moments, and a design uploaded
-   * between them would appear in one and not the other.
-   */
-  readonly engine: string | null;
-  readonly storageKey: string | null;
-  readonly digest: string | null;
-  readonly mime: string | null;
-};
-
-export async function listCandidateInkPlates(input: {
-  userId: number;
-  candidateId: number;
-}): Promise<readonly CandidateInkPlate[]> {
-  const db = await requireDb();
-  const rows = await db
-    .select({
-      designPublicId: castingInkDesigns.publicId,
-      placement: castingInkDesigns.placement,
-      side: castingInkDesigns.side,
-      engine: castingInkPlates.engine,
-      storageKey: castingInkPlates.storageKey,
-      digest: castingInkPlates.digest,
-      mime: castingInkPlates.mime,
-    })
-    .from(castingInkDesigns)
-    .innerJoin(castingCandidates, eq(castingCandidates.id, castingInkDesigns.candidateId))
-    /* LEFT, so a design with no plate still arrives — see the type's own note.
-       The owner is carried on the JOIN rather than in the WHERE, because a
-       plate belonging to somebody else must not silence this design; it must
-       fail to join at all. */
-    .leftJoin(castingInkPlates, and(
-      eq(castingInkPlates.designId, castingInkDesigns.id),
-      eq(castingInkPlates.userId, input.userId),
-    ))
-    .where(and(
-      eq(castingInkDesigns.candidateId, input.candidateId),
-      eq(castingInkDesigns.userId, input.userId),
-      eq(castingCandidates.userId, input.userId),
-    ))
-    /* Stable order, so the reference array a package sends and the sentence that
-       quotes its ordinals are built from the same list twice running. */
-    .orderBy(castingInkDesigns.id, castingInkPlates.id);
-  return rows;
 }
 
 /* ------------------------------------------------------------ retention */

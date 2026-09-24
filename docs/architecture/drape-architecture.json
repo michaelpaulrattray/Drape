@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "893feee4353bc7fd"
+    "sourceFingerprint": "7b342888a14159bf"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 60
+      "moduleCount": 59
     },
     {
       "id": "domain:staff",
@@ -5912,12 +5912,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:shared/inkMannequinDeferral.ts",
-      "path": "shared/inkMannequinDeferral.ts",
-      "domain": "shared",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:shared/inkPlacementVocabulary.ts",
       "path": "shared/inkPlacementVocabulary.ts",
       "domain": "shared",
@@ -11637,10 +11631,6 @@
     {
       "id": "test:server/castingV2/inkIsNotASlotsWords.test.ts",
       "path": "server/castingV2/inkIsNotASlotsWords.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/inkMannequinDeferral.test.ts",
-      "path": "server/castingV2/inkMannequinDeferral.test.ts"
     },
     {
       "id": "test:server/castingV2/inkPlacementCoupling.test.ts",
@@ -27527,11 +27517,6 @@
     },
     {
       "from": "module:server/castingV2/signService.ts",
-      "to": "module:server/db/castingV2InkPlates.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/signService.ts",
       "to": "module:server/db/castingV2OpenKindProperties.ts",
       "kind": "imports"
     },
@@ -27578,11 +27563,6 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/signService.ts",
-      "to": "module:shared/inkMannequinDeferral.ts",
       "kind": "imports"
     },
     {

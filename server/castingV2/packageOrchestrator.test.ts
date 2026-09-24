@@ -671,68 +671,42 @@ describe("a signed Cast's tattoos ride into every view", () => {
     provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
   }));
 
-  it("sends the plate BESIDE the anchor on all five views, with the clause", async () => {
-    /* Typed on the REQUEST, so `mock.calls` carries what was sent — an untyped
-       mock records the arguments and hands them back as `never`, which is how a
-       wire assertion turns into a cast that proves nothing. */
-    const generateView = vi.fn(async (_request: ViewRequest) => ({
-      bytes: Buffer.from("view"),
-      contentType: "image/png",
-      latencyMs: 1,
-      provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
-    }));
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+  it("carries several crops in order, and their ordinals match their slots", async () => {
+    /*
+      ⚠ **RE-POINTED FROM THE PLATE LANE BY #1158 slice 4f, and it is the one arm
+      in this block that was doing work for a rule that OUTLIVED its subject.**
 
-    await buildCastPackage(deps({ identityEngine }), { ...input, inkPlates: [plate()] });
-
-    expect(generateView).toHaveBeenCalledTimes(CAST_PACKAGE_VIEWS.length);
-    for (const call of generateView.mock.calls) {
-      const request = call[0];
-      /* The anchor first and the plate second — the ordinal the clause quotes. */
-      expect(request.references).toHaveLength(2);
-      expect(request.references[0]!.bytes.toString()).toBe("anchor");
-      expect(request.references[1]!.bytes.toString()).toBe("plate-bytes");
-      /* Every view, including the ones that cannot show an upper arm: the
-         ruling is that the engine must KNOW about the tattoo, and the clause
-         tells it that a view which does not show the surface shows nothing. */
-      /* The positional clause rides with the surface word now (fable-1006 §3),
-         so the assertion names the prefix rather than a full stop that moved. */
-      expect(request.prompt).toContain("Reference 2 is the tattoo at her left upper arm (on the right");
-      expect(request.prompt).toContain("that tattoo simply does not appear in that view");
-      /* And the view's own prompt is still all there — the clause is added, never
-         substituted. */
-      expect(request.prompt).toContain("Keep this exact person unchanged");
-    }
-  });
-
-  it("carries several plates in order, and their ordinals match their slots", async () => {
-    /* Typed on the REQUEST, so `mock.calls` carries what was sent — an untyped
-       mock records the arguments and hands them back as `never`, which is how a
-       wire assertion turns into a cast that proves nothing. */
-    const generateView = vi.fn(async (_request: ViewRequest) => ({
-      bytes: Buffer.from("view"),
-      contentType: "image/png",
-      latencyMs: 1,
-      provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
-    }));
+      The rule is not about plates: it is that the sentence quoting reference N
+      and the picture actually sitting in slot N are built from one list. A
+      clause and an array that drift apart is a prompt pointing at the wrong
+      tattoo, on a package a customer paid for, and nothing downstream could
+      tell. It was driven here only through `inkPlates` — so deleting that lane
+      without re-pointing would have left the surviving lane's ordinals proved
+      at the CLAUSE (`inkViewReferences.test.ts`) and nowhere at the WIRE.
+    */
+    const generateView = recordView();
     const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
 
     await buildCastPackage(deps({ identityEngine }), {
       ...input,
-      inkPlates: [
-        plate({ bytes: Buffer.from("arm-plate") }),
-        plate({ designPublicId: "d2", placement: "neck", side: "centre", bytes: Buffer.from("neck-plate") }),
+      inkCrops: [
+        crop({ bytes: Buffer.from("arm-crop") }),
+        crop({
+          bytes: Buffer.from("neck-crop"),
+          slot: "ink:neck",
+          placement: "neck",
+          side: "centre",
+          noun: "neck tattoo",
+        }),
       ],
+      pronouns: pronounsForSex("male"),
     });
 
     const request = generateView.mock.calls[0]![0];
     expect(request.references.map((reference) => reference.bytes.toString()))
-      .toEqual(["anchor", "arm-plate", "neck-plate"]);
-    /* The sentence for reference 3 must be about the picture actually in slot 3.
-       A clause and an array that drift apart is a prompt pointing at the wrong
-       tattoo, and nothing downstream could tell. */
-    expect(request.prompt).toContain("Reference 2 is the tattoo at her left upper arm (on the right");
-    expect(request.prompt).toContain("Reference 3 is the tattoo at her neck.");
+      .toEqual(["anchor", "arm-crop", "neck-crop"]);
+    expect(request.prompt).toContain("Reference 2 is the exact left upper arm tattoo he already has");
+    expect(request.prompt).toContain("Reference 3 is the exact neck tattoo he already has");
   });
 
   it("is INERT for a Cast with no ink — one reference, and not a word added", async () => {
@@ -800,30 +774,6 @@ describe("a signed Cast's tattoos ride into every view", () => {
     }
   });
 
-  it("puts the crops AFTER the plates, with ordinals derived from the array itself", async () => {
-    /*
-      Two ink lanes, one reference array. A sentence quoting an ordinal the
-      array does not hold is a prompt pointing at the wrong tattoo, and nothing
-      downstream could tell. Unreachable in production while the mannequin road
-      is parked — which is exactly why it is driven here.
-    */
-    const generateView = recordView();
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
-
-    await buildCastPackage(deps({ identityEngine }), {
-      ...input,
-      inkPlates: [plate({ bytes: Buffer.from("arm-plate") })],
-      inkCrops: [crop({ bytes: Buffer.from("neck-crop"), slot: "ink:neck", placement: "neck", side: "centre", noun: "neck tattoo" })],
-      pronouns: pronounsForSex("male"),
-    });
-
-    const request = generateView.mock.calls[0]![0];
-    expect(request.references.map((reference) => reference.bytes.toString()))
-      .toEqual(["anchor", "arm-plate", "neck-crop"]);
-    expect(request.prompt).toContain("Reference 2 is the tattoo at her left upper arm (on the right");
-    expect(request.prompt).toContain("Reference 3 is the exact neck tattoo he already has");
-  });
-
   it("is INERT for a Cast with no delivered crop — absent and empty alike", async () => {
     const generateView = recordView();
     const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
@@ -837,27 +787,21 @@ describe("a signed Cast's tattoos ride into every view", () => {
     }
   });
 
-  it("is inert for an EMPTY plate list too, not only an absent one", async () => {
-    /* Two spellings of nothing, and a caller that loads zero rows produces the
-       second. If they behaved differently the inertness above would be a promise
-       about a field name rather than about the feature. */
-    /* Typed on the REQUEST, so `mock.calls` carries what was sent — an untyped
-       mock records the arguments and hands them back as `never`, which is how a
-       wire assertion turns into a cast that proves nothing. */
-    const generateView = vi.fn(async (_request: ViewRequest) => ({
-      bytes: Buffer.from("view"),
-      contentType: "image/png",
-      latencyMs: 1,
-      provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
-    }));
-    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+  /*
+    ⚠ **TWO PLATE ARMS STOOD HERE AND #1158 slice 4f TOOK THEM — the empty-list
+    one had a LIVE rule, and this is where it went.**
 
-    await buildCastPackage(deps({ identityEngine }), { ...input, inkPlates: [] });
-
-    const request = generateView.mock.calls[0]![0];
-    expect(request.references).toHaveLength(1);
-    expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
-  });
+      "puts the crops AFTER the plates"   the two-lane ORDERING. Its subject is
+                                          gone: there is one ink lane now, so
+                                          there is nothing left to order.
+      "is inert for an EMPTY plate list"  *two spellings of nothing must behave
+                                          alike*, which is a real rule about a
+                                          caller that loads zero rows. It is
+                                          held above, on the lane that has rows
+                                          — "absent and empty alike" drives
+                                          `inkCrops: []`, and "no ink" drives
+                                          the absent spelling.
+  */
 });
 
 /**
@@ -872,6 +816,20 @@ describe("a signed Cast's tattoos ride into every view", () => {
  * and that a Cast with nothing hidden is untouched.
  */
 describe("a signed Cast's hidden features ride into every view as words", () => {
+  /* The ink fixture this block's last arm needs — a delivered crop, declared
+     here rather than lifted to the file because the tattoo block above owns its
+     own and two blocks sharing one mutable default is how a fixture edit moves
+     an assertion nobody was looking at. */
+  const crop = (over: Record<string, unknown> = {}) => ({
+    cropPublicId: "11111111-1111-4111-8111-111111111111",
+    slot: "ink:upperArm@left",
+    placement: "upperArm" as const,
+    side: "left" as const,
+    noun: "left upper arm tattoo",
+    bytes: Buffer.from("arm-crop"),
+    contentType: "image/png",
+    ...over,
+  });
   const hidden = (over: Record<string, unknown> = {}) => ({
     slot: "open:tail",
     noun: "tail",
@@ -937,25 +895,26 @@ describe("a signed Cast's hidden features ride into every view as words", () => 
     expect(request.prompt).toBe(composePackageViewPrompt(request.viewAngle));
   });
 
-  it("rides BESIDE a tattoo plate without either clause eating the other", async () => {
+  it("rides BESIDE a delivered crop without either clause eating the other", async () => {
+    /*
+      ⚠ **RE-POINTED FROM THE PLATE LANE BY #1158 slice 4f.** The rule is that
+      two things appended to one prompt both survive — it was driven with a
+      plate because that lane existed, never because the rule was about plates.
+      The surviving ink lane is the delivered crop, so it drives it now.
+    */
     const generateView = recorder();
     const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
 
     await buildCastPackage(deps({ identityEngine }), {
       ...input,
-      inkPlates: [{
-        designPublicId: "design-1",
-        placement: "upperArm" as const,
-        side: "left" as const,
-        bytes: Buffer.from("plate-bytes"),
-        contentType: "image/png",
-      }],
+      inkCrops: [crop()],
+      pronouns: pronounsForSex("male"),
       featureWords: [hidden()],
     });
 
     const request = generateView.mock.calls[0]![0];
     expect(request.references).toHaveLength(2);
-    expect(request.prompt).toContain("Reference 2 is the tattoo at her left upper arm");
+    expect(request.prompt).toContain("Reference 2 is the exact left upper arm tattoo he already has");
     expect(request.prompt).toContain("a long scaled tail at the base of the spine");
   });
 });

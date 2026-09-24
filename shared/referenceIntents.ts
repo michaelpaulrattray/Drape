@@ -51,7 +51,10 @@
  *
  * ⚠ **THAT SENTENCE SAID *"rides … today"* UNTIL 2026-08-24, AND IT WAS WRONG
  * IN ITS TENSE — twice over, both in the safe direction.** Nothing rides to any
- * engine now: `MANNEQUIN_ROAD_DEFERRED` parks the mint for every account, and
+ * engine now, and since #1158 slice 4f the reason is structural rather than
+ * conditional: **there is no plate mint and no plate carry left in the
+ * product at all.** `MANNEQUIN_ROAD_DEFERRED` parked the mint for every
+ * account until its last gate was deleted with the sign road's plate read, and
  * `CASTING_INK_CUT_SCOPE=users:1` meant what is stored is the CUT rather than
  * her photograph. ⚠ **Both flags named in this paragraph are UNSET as of
  * 2026-09-24** — the studio retired on his *"It retires with N2"* (#1158

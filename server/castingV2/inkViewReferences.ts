@@ -74,22 +74,6 @@ import { imageHalfClause } from "./sidePhrasing";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
 
 /**
- * One plate as a view render sees it: the artwork's bytes and the surface they
- * belong on.
- *
- * The design's own public id travels so an outcome can NAME the tattoo that did
- * or did not ride — a reference that silently failed to ride is the same defect
- * as a control nobody invokes.
- */
-export type CarriedInkPlate = {
-  readonly designPublicId: string;
-  readonly placement: InkPlacement;
-  readonly side: InkSide;
-  readonly bytes: Buffer;
-  readonly contentType: string;
-};
-
-/**
  * WHERE THIS TATTOO LIVES, in the word the reading measured.
  *
  * `readerWord` rather than the customer noun, for the reason `inkPlatePrompt`
@@ -257,82 +241,6 @@ export function placementRideCoverage(
   wardrobeLine: string | null | undefined,
 ): SurfaceCoverage {
   return coverageOfWardrobeLine(wardrobeLine, placement);
-}
-
-/**
- * The clause that rides beside the anchor, one sentence group per plate.
- *
- * `firstOrdinal` is the position of the FIRST plate in the request's reference
- * array — the anchor is reference 1, so plates start at 2. It is passed rather
- * than assumed, because the ordinal a sentence quotes and the slot a reference
- * actually occupies drifting apart is a prompt that points at the wrong picture.
- *
- * Empty string when nothing rides: a Cast with no plated tattoo must produce the
- * prompt it produces today, byte for byte, or every signed Cast in the product
- * has quietly changed.
- */
-export function inkViewReferenceClause(input: {
-  plates: readonly CarriedInkPlate[];
-  firstOrdinal: number;
-}): string {
-  if (input.plates.length === 0) return "";
-  const lines: string[] = [
-    "HER TATTOOS — each of the following reference pictures shows one tattoo she already has, "
-    + "drawn on a plain grey mannequin form so the artwork can be seen clearly.",
-  ];
-  input.plates.forEach((plate, index) => {
-    /* "her", because every sentence around it says "her" — see the parameter's
-       own docblock. The pronoun defect on this lane is fixed by fixing the
-       lane, not by making one clause disagree with its neighbours. */
-    const where = inkPlacementPhrase({ ...plate, possessive: "her" });
-    lines.push(
-      `Reference ${input.firstOrdinal + index} is the tattoo at ${where}. Copy the ARTWORK from it — `
-      + "its shapes, its line weight, its shading and any lettering exactly as they appear — onto her "
-      + `own skin at ${where}, following the form of her body so it sits as ink on skin rather than as `
-      + "a flat sticker. Do not restyle it, do not simplify it, and do not add to it.",
-    );
-  });
-  lines.push(
-    "The mannequin form in those pictures is NOT part of the tattoo: its grey colour, its shape, its "
-    + "background and its lighting must not appear anywhere in the photograph, and it must never "
-    + "change her skin, her build or her pose.",
-  );
-  /*
-    INK IS ON SKIN, AND A COVERED SURFACE MEANS ABSENT — the first conformance
-    court's own finding (2026-08-19), and it cost a render to learn.
-
-    Handed an upper-chest plate and a `frontFull` view whose wardrobe is a
-    crew-neck tee, the engine printed the design ON THE SHIRT: the artwork
-    reproduced faithfully, in the wrong material. It was the only way to satisfy
-    what it had been told — the upper chest is COVERED on a crew neck, which the
-    placement vocabulary states in its own table, so there was no skin in that
-    frame to put it on.
-
-    And it is a money defect rather than a cosmetic one: the package's wardrobe
-    check calls printed text or a logo on the garment a failure WHEREVER it
-    appears, so that view would have been refused and its slice refunded. An
-    upper-chest tattoo would have cost a slice of every Sign it rode.
-
-    # AND WHAT THE COVERED CASE LOOKS LIKE IS NOW HIS RULING, NOT A SIDE EFFECT
-
-    Founder, 2026-08-19 (relayed fable-1081), on the same question that closed
-    the scoop-neck card:
-
-    > *"tattos can still ride they may just not be visible fully yet so if you
-    > had a chest tatto reference with neck continuation you might see it poking
-    > out the top of the shirt but thats the extent for now"*
-
-    So clothing COVERS ink rather than deleting it, and the sentence below says
-    so in those terms. The earlier wording — *"the tattoo is simply not visible
-    in that view"* — was true of a design wholly under a collar and WRONG of the
-    one he described: a chest piece that runs up the neck has a part on bare
-    skin, and that part shows. The wardrobe is never altered to reveal more of
-    it, and no view is added to; a poke above the collar is the whole of what a
-    covered design gets, and that is the promise rather than the compromise.
-  */
-  lines.push(INK_NOT_ON_CLOTHING);
-  lines.push(INK_VIEW_PLACEMENT_DISCIPLINE);
-  return lines.join("\n");
 }
 
 /**

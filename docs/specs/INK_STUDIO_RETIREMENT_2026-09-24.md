@@ -270,6 +270,13 @@ reads it on the paid sign road, retention purges it, the owner's removal clears 
 looked studio-only and is not, and it is the sharpest near-miss of the slice); `signService`'s plate
 read itself, which is a money-surface change and needs its own reading.
 
+⚠ **TWO OF THOSE THREE REASONS WERE SPENT BY SLICE 4f AND THE PARAGRAPH ABOVE IS KEPT AS THE RECORD
+OF WHAT SLICE 2 DECIDED, NOT AS A DESCRIPTION OF THE TREE.** 4f deleted `carriedInkPlates`, so
+`castingV2InkPlates.ts` is **purge-only** now (retention and the owner's removal, both untouched) and
+`shared/inkMannequinDeferral.ts` **is deleted** — that 986 read was its LAST gate, the mint having
+gone in slice 2, so the constant was left deferring a road that no longer exists. The near-miss slice
+2 caught was real; what changed is that the thing it protected has since been retired outright.
+
 **Slice 3 — the transform ask**, and it is the delicate one. `captureCastingInkTransformEnabled` is
 read inside `refineService.ts`, a live file every account uses, and the thing it governs is *changing
 a tattoo she already has*. ⚠ **A resident design can come from the reference road**, so the transform
@@ -390,10 +397,14 @@ relay to overturn.
    is the point: those are the copy layer of a LIVE shared vocabulary, not the retired road's own
    machinery, so whether they go is a decision about that module. Blocker: N3's reference intent
    door (his Crew reply #213).
-4. **`signService.carriedInkPlates` reads a table nothing can write.** It returns early on zero rows
-   and has since before the retirement, so removing it changes no behaviour — but it is on the PAID
-   sign road, so it is a money-surface diff and gets its own reading and its own PR rather than
-   riding a flag slice.
+4. ✅ **`signService.carriedInkPlates` read a table nothing can write — DONE 2026-09-24 in slice 4f,
+   and the behaviour claim was PROVEN rather than repeated.** The composed prompt for a Cast wearing
+   a delivered tattoo is byte-identical across the deletion (sha256 `374d0d42…`, 11,746 chars,
+   references `[anchor, arm-crop]`), captured on the unmodified tree before the cut and again after.
+   The rows were read first, both worlds with a positive control: **zero plate rows in production and
+   in dev**. ⚠ **It orphaned two things of its own** — `MANNEQUIN_ROAD_DEFERRED` (deleted; its last
+   gate was this very read) and `INK_NOT_ON_CLOTHING` (**HELD**, on this same list's own distinction:
+   its twin `inkNotOnClothingClause` is on `recipeAssembler`'s request path today).
 5. ✅ **`server/castingV2-ink-plate-db.test.ts` — ANSWERED IN SLICE 4e, and the answer was not "keep
    the arms".** §8c's question was asked of all nine arms — *which were proving LIVE code through the
    dead function?* — and exactly one answered yes: the retention sweep, which runs
@@ -557,7 +568,17 @@ no-op edit look identical, exactly as `surviving-sabotage-may-be-inert` records.
    documents is above.
 4. ✅ **4e — the TAKE rows executed (SIX, plus a seventh the sweep could not see), one commit. DONE
    2026-09-24.** See item 3 above for what it orphaned and why those two are HELD rather than taken.
-5. **4f — `signService.carriedInkPlates`** — a money surface, its own reading and its own PR.
+5. ✅ **4f — `signService.carriedInkPlates` — DONE 2026-09-24, PR #1176.** ⚠ **The "money surface"
+   label was the PRODUCT reading and the triage disagrees**: read against both halves of
+   `.github/money-surfaces.sh`, neither matches, so it is an ordinary diff by the repository's own
+   declaration. It was still opened READY and left for the relay rather than merged on the gate —
+   the surface customers pay for is the Sign, and a predecessor had named this slice for the relay.
+
+**⚠ THAT IS THE LAST SLICE ON THIS CARD.** What remains is what every slice deliberately left, and
+it is NOT a remainder to schedule: `castingInkStudioArmed()` stays (it is half of
+`castingInkDesignArmed()`'s OR, the other half being the HELD reference road), both fences and both
+`*_ENV` constants stay with it, and the `casting_ink_plates` table itself is a founder-only DROP that
+belongs to the Atlas's retirement view rather than to this card.
 
 **Neither `CASTING_INK_REGION_CROP_SCOPE` nor `CASTING_INK_TRANSFORM_SCOPE` appears on that list.** Both
 are live, both stay at `users:1`, and both are now parented on roads that actually produce their subjects.

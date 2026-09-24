@@ -12,8 +12,9 @@
  *      below are what make a reword show up as a deliberate diff in a review
  *      rather than as a silent change to a paid prompt.
  *
- * The sign-view lane PAINTS TODAY. Its prose moved house; it did not change
- * clothes, and pin 2 is the thing that says so.
+ * ⚠ **AND SINCE #1158 slice 4f, `INK_NOT_ON_CLOTHING` HAS NO LANE AT ALL** —
+ * see the note below the imports. Failure 1 for the sentence it holds is
+ * proved on its LIVE TWIN in another file; failure 2 is still proved here.
  */
 import { describe, expect, it } from "vitest";
 
@@ -25,7 +26,6 @@ import {
   inkRealismClause,
 } from "./inkRealism";
 import { inkTakeSentence } from "./inkReferenceTake";
-import { inkViewReferenceClause } from "./inkViewReferences";
 
 /*
   ⚠ ONE LANE LEFT THIS FILE WITH THE ROAD IT SPOKE FOR (#1158 slice 2).
@@ -42,6 +42,33 @@ import { inkViewReferenceClause } from "./inkViewReferences";
   pinned literally, and failure 1 (two lanes drifting) is still proved on the
   lane that PAINTS TODAY — the sign views'. What is removed is coverage of a
   lane that no longer exists, not coverage that was doing work.
+
+  ⚠ **AND THE SECOND LANE LEFT THE SAME WAY ONE SLICE LATER (#1158 slice 4f),
+  WHICH CHANGES WHAT THAT LAST SENTENCE MEANS — read this before trusting it.**
+
+  `inkViewReferenceClause` was the sign views' PLATE clause and the only thing
+  in the product that rendered `INK_NOT_ON_CLOTHING`. Slice 4f deleted it with
+  the rest of the plate read, so:
+
+    failure 2   UNCHANGED. The literal pin below is now the ONLY thing standing
+                between that sentence and a silent reword, which makes it more
+                load-bearing than it was, not less.
+    failure 1   MOVED HOUSE, and it is named rather than assumed. The sentence
+                itself is still shipped on every account — as
+                `inkNotOnClothingClause`, its pronoun-bearing twin, which
+                `recipeAssembler.ts` puts in the refine prompt and
+                `recipeAssembler.test.ts` proves with the owner's own string
+                (three arms, `expect(recipe.prompt).toContain(...)`). THAT is
+                where "the lane renders the owner's string" is now driven.
+
+  ⚠ **`INK_NOT_ON_CLOTHING` IS THEREFORE AN ORPHAN AS OF SLICE 4f, AND IT IS
+  HELD RATHER THAN TAKEN** — the disposition row carries the blocker. It is the
+  copy layer of a live shared vocabulary, not a retired road's machinery: its
+  twin is on `recipeAssembler`'s request path today and the two are held equal
+  by "the two shapes of the clothing rule say the same thing" below. Taking the
+  constant means moving that equality pin onto the twin, which is a decision
+  about `inkRealism.ts` judged on its own terms rather than a cleanup's to
+  absorb — his own rule 1 from the switch sitting.
 */
 
 describe("the house sentences, pinned so a reword is a deliberate diff", () => {
@@ -56,22 +83,6 @@ describe("the house sentences, pinned so a reword is a deliberate diff", () => {
       + "covered part simply does not show. Never change, move or open a garment to reveal more of a "
       + "tattoo — the clothing in a view is what it is, and the tattoo shows only where skin shows.",
     );
-  });
-});
-
-describe("every lane that says it, says the OWNER'S string", () => {
-  it("the sign views' clause carries the clothing rule — the lane that paints today", () => {
-    const clause = inkViewReferenceClause({
-      plates: [{
-        designPublicId: "d1",
-        placement: "upperArm",
-        side: "left",
-        bytes: Buffer.from("a plate"),
-        contentType: "image/png",
-      }],
-      firstOrdinal: 2,
-    });
-    expect(clause).toContain(INK_NOT_ON_CLOTHING);
   });
 });
 

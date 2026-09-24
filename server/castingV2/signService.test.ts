@@ -296,7 +296,7 @@ vi.mock("../storage", () => ({
   storagePublicUrl: (key: string) => `https://cdn.example/${key}`,
 }));
 
-const { carriedInkPlates, signCandidate } = await import("./signService");
+const { signCandidate } = await import("./signService");
 const { CASTING_V2_SIGN_PRICE_CREDITS } = await import("./castViewPackage");
 const { basicsWardrobeLine } = await import("./wardrobeLine");
 
@@ -957,128 +957,48 @@ describe("Sign reads the selected face, not the candidate", () => {
 });
 
 /**
- * HER PLATED TATTOOS REACH THE PACKAGE, AND EVERY WAY ONE FAILS TO IS NAMED
- * (FOUNDER RULING, his words at fable-987 §3: *"tattoo reference will need to be
- * supplied to each view generated otherwise it wont know what the tattoo is"*;
- * the naming ordered fable-1004 §3).
+ * THE TATTOOS A SIGN CARRIES INTO ITS VIEWS — and it is ONE lane now.
  *
- * A reference that quietly did not ride is indistinguishable from a Cast with no
- * tattoo — and the customer paid for the tattoo. So each of the three ways a
- * plate can fail to travel has its own arm here, and each one asserts that the
- * SIGN STILL SUCCEEDS: a tattoo missing from five frames is a smaller harm than
- * five frames nobody gets.
+ * ⚠ **#1158 slice 4f DELETED THE PLATE LANE AND THREE DESCRIBE BLOCKS WITH IT.**
+ * His ruling of 2026-09-24 — *"It retires with N2"* — retired the ink studio;
+ * `carriedInkPlates`, its disposition type and `listCandidateInkPlates` are
+ * gone, so twenty-odd arms here lost their subject in one commit. They are
+ * listed rather than quietly dropped, because "the arms went with the code" and
+ * "we deleted coverage of a live rule" look identical in a diff:
+ *
+ *   "the tattoos a Sign carries into its views"   the three refusals (noPlate,
+ *                                                 engineUndecided, bytesGone),
+ *                                                 the empty read, the statement
+ *                                                 failing, and the two-lane
+ *                                                 no-tattoo-twice rule
+ *   "what a Cast's views carry, design by design" the whole disposition surface,
+ *                                                 whose TYPE is deleted
+ *   "a covered surface says so ..."               `placementRideCoverage` driven
+ *                                                 through the plate lane
+ *
+ * **WHERE EACH LIVE RULE IS STILL PROVED, named so this can be checked rather
+ * than believed:**
+ *
+ *   the surface/outfit rule    `inkViewReferences.test.ts`, on
+ *                              `placementRideCoverage` DIRECTLY — including the
+ *                              basics cases and the unread-outfit case, which
+ *                              is a better altitude than through a lane
+ *   every crop-lane refusal    `signInkCrops.test.ts` — covered surface, open
+ *                              placement, bytes moved, bytes unreadable, the
+ *                              store refusing, one refusal never silencing a
+ *                              ride, and the log carrying slots only
+ *   the Sign never failing
+ *   over a table               `signInkCrops.test.ts`, "NEVER fails the Sign
+ *                              when the store will not answer"
+ *
+ * What survives HERE is the one thing those files cannot see: that the crops
+ * actually reach `buildPackage`. That is the wire, and it is the arm below.
  */
-/*
-  Driven UN-DEFERRED throughout: the mannequin road is parked (fable-1053 §2)
-  and these arms describe the road itself, so they keep their subject alive for
-  the day it resumes. The deferral's own arms live in
-  `inkMannequinDeferral.test.ts`.
-*/
 describe("the tattoos a Sign carries into its views", () => {
-  const plateRow = (over: Record<string, unknown> = {}) => ({
-    designPublicId: "design-1",
-    placement: "upperArm" as const,
-    side: "left" as const,
-    engine: "fal-ai/nano-banana-pro",
-    storageKey: "casting-v2/candidates/plate-1.png",
-    digest: "d".repeat(64),
-    mime: "image/png",
-    ...over,
-  });
-
-  it("hands the package one carried plate per design, with its surface", async () => {
-    const buildPackage = packageReturning({});
-    await signCandidate({
-      schedulePackage: awaitPackage,
-      buildPackage,
-      mannequinDeferred: false, listInkPlates: async () => [plateRow(), plateRow({
-        designPublicId: "design-2", placement: "neck", side: "centre",
-        storageKey: "casting-v2/candidates/plate-2.png",
-      })],
-      readBytes: async (key: string) => ({
-        bytes: Buffer.from(`bytes:${key}`), contentType: "image/png",
-      }),
-    }, input);
-
-    const sent = buildPackage.mock.calls[0]![1];
-    expect(sent.inkPlates).toBeDefined();
-    if (!sent.inkPlates) return;
-    expect(sent.inkPlates.map((plate) => plate.designPublicId)).toEqual(["design-1", "design-2"]);
-    expect(sent.inkPlates.map((plate) => `${plate.side}:${plate.placement}`))
-      .toEqual(["left:upperArm", "centre:neck"]);
-    /* The PLATE's own bytes, read from the plate's key — not the anchor's, which
-       is the other thing this function reads and the easy thing to hand over by
-       accident. */
-    expect(sent.inkPlates[0]!.bytes.toString()).toContain("plate-1.png");
-  });
-
-  it("carries NOTHING, and still signs, when the candidate has no plated design", async () => {
-    const buildPackage = packageReturning({});
-    await signCandidate({
-      schedulePackage: awaitPackage, buildPackage, mannequinDeferred: false, listInkPlates: async () => [],
-    }, input);
-
-    const sent = buildPackage.mock.calls[0]![1];
-    expect(sent.inkPlates).toEqual([]);
-    expect(journal).toContain("package");
-  });
-
-  it("REFUSES to pick between two engines' plates of one design", async () => {
-    /*
-      Which artwork is HER tattoo is the plate court's open question. Taking the
-      newest would be a quiet dispatch fallback — the class this product has
-      already paid for — so the design rides no view and the log says which
-      design and which engines. The OTHER design still rides: one ambiguous
-      answer must not silence an unambiguous one.
-    */
-    const buildPackage = packageReturning({});
-    await signCandidate({
-      schedulePackage: awaitPackage,
-      buildPackage,
-      mannequinDeferred: false, listInkPlates: async () => [
-        plateRow(),
-        plateRow({ engine: "gpt-image-2", storageKey: "casting-v2/candidates/plate-1b.png" }),
-        plateRow({ designPublicId: "design-2", placement: "neck", side: "centre" }),
-      ],
-      readBytes: async (key: string) => ({
-        bytes: Buffer.from(`bytes:${key}`), contentType: "image/png",
-      }),
-    }, input);
-
-    const sent = buildPackage.mock.calls[0]![1];
-    expect(sent.inkPlates).toBeDefined();
-    if (!sent.inkPlates) return;
-    expect(sent.inkPlates.map((plate) => plate.designPublicId)).toEqual(["design-2"]);
-  });
-
-  it("drops a plate whose BYTES are gone, keeps the others, and still signs", async () => {
-    /* The row is there and the object is not — retention, a failed write, a
-       bucket outage. The picture cannot ride; the Cast is still worth having. */
-    const buildPackage = packageReturning({});
-    await signCandidate({
-      schedulePackage: awaitPackage,
-      buildPackage,
-      mannequinDeferred: false, listInkPlates: async () => [
-        plateRow(),
-        plateRow({ designPublicId: "design-2", storageKey: "gone.png" }),
-      ],
-      readBytes: async (key: string) => {
-        if (key === "gone.png") throw new Error("NoSuchKey");
-        return { bytes: Buffer.from(`bytes:${key}`), contentType: "image/png" };
-      },
-    }, input);
-
-    const sent = buildPackage.mock.calls[0]![1];
-    expect(sent.inkPlates).toBeDefined();
-    if (!sent.inkPlates) return;
-    expect(sent.inkPlates.map((plate) => plate.designPublicId)).toEqual(["design-1"]);
-    expect(journal).toContain("package");
-  });
-
-  /* A refined face WEARING a tattoo — the branch's composed state is what says
-     so, and it is read in the same statement as its pixels. Male on purpose:
-     "her" is this room's oldest scar, and a pronoun that is derived rather than
-     assumed has to be provable from a Cast that is not one. */
+  /* The branch state a Cast wearing one delivered tattoo has: the composed
+     delta names the slot and the crop id, which is what the Sign reads. Written
+     here rather than re-read from the store — the words, the picture and the
+     branch state describing one face is a property of being read TOGETHER. */
   const inkedBranch = () => ({
     id: 77,
     publicId: "variant-public",
@@ -1090,6 +1010,7 @@ describe("the tattoos a Sign carries into its views", () => {
     },
     deltas: { inkDelivered: { "ink:upperArm@left": "11111111-1111-4111-8111-111111111111" } },
   });
+
 
   it("carries the tattoos the BRANCH wears into the package, as crops of her own frame", async () => {
     /*
@@ -1126,308 +1047,8 @@ describe("the tattoos a Sign carries into its views", () => {
        just sealed rather than from a default. */
     expect(sent.pronouns?.possessive).toBe("his");
   });
-
-  it("never sends one tattoo TWICE when a design has both a plate and a delivered crop", async () => {
-    /*
-      Unreachable in production — the mannequin road is parked, so no plate row
-      exists — and closed at the moment both lanes exist rather than on the day
-      the deferral lifts (working law 7 run forwards). Two pictures of one
-      tattoo with two different sentences about what it is would be the shape
-      the recipe assembler refuses outright one road along.
-
-      The CROP wins, and not by accident of ordering: it is the ink as it
-      actually sits on her, and the plate is artwork on a grey form.
-    */
-    selectedVariant = inkedBranch();
-    const buildPackage = packageReturning({});
-
-    await signCandidate({
-      schedulePackage: awaitPackage,
-      buildPackage,
-      mannequinDeferred: false,
-      listInkPlates: async () => [plateRow(), plateRow({
-        designPublicId: "design-2", placement: "neck", side: "centre",
-        storageKey: "casting-v2/candidates/neck-plate.png",
-      })],
-      listInkDeliveryCrops: async () => [{
-        publicId: "11111111-1111-4111-8111-111111111111",
-        designPublicId: "design-1",
-        slot: "ink:upperArm@left",
-        storageKey: "casting-v2/candidates/ink-delivery/arm.png",
-        digest: createHash("sha256").update(Buffer.from("bytes:casting-v2/candidates/ink-delivery/arm.png")).digest("hex"),
-        width: 224,
-        height: 348,
-      }] as never,
-      readBytes: async (key: string) => ({
-        bytes: Buffer.from(`bytes:${key}`), contentType: "image/png",
-      }),
-    }, input);
-
-    const sent = buildPackage.mock.calls[0]![1];
-    expect(sent.inkCrops?.map((crop) => crop.slot)).toEqual(["ink:upperArm@left"]);
-    /* design-1 rode as a crop, so it does not ride again as a plate — and the
-       OTHER design still does: one lane's refusal never silences another's. */
-    expect(sent.inkPlates?.map((plate) => plate.designPublicId)).toEqual(["design-2"]);
-  });
-
-  it("signs anyway when the plate STATEMENT itself fails", async () => {
-    /* A database that will not answer must never cost somebody the Cast they
-       just paid for. The views render without the tattoos and the error is
-       loud. */
-    const buildPackage = packageReturning({});
-    await signCandidate({
-      schedulePackage: awaitPackage,
-      buildPackage,
-      mannequinDeferred: false, listInkPlates: async () => { throw new Error("Database not available"); },
-    }, input);
-
-    const sent = buildPackage.mock.calls[0]![1];
-    expect(sent.inkPlates).toEqual([]);
-    expect(journal).toContain("package");
-  });
 });
 
-/**
- * EVERY DESIGN GETS ONE DISPOSITION, RODE OR NOT — driven directly
- * (ordered fable-1005 §2).
- *
- * Driven rather than reached through a Sign, because three of the four answers
- * are unreachable from a caller that behaves: a design with no plate, a design
- * plated twice, and a plate whose object is gone. A backstop whose only test
- * runs through the happy path is a backstop nothing has tested.
- */
-describe("what a Cast's views carry, design by design", () => {
-  const designRow = (over: Record<string, unknown> = {}) => ({
-    designPublicId: "design-1",
-    placement: "upperArm" as const,
-    side: "left" as const,
-    engine: "fal-ai/nano-banana-pro",
-    storageKey: "casting-v2/candidates/plate-1.png",
-    digest: "d".repeat(64),
-    mime: "image/png",
-    ...over,
-  });
-
-  const drive = async (rows: unknown[], readBytes?: (key: string) => Promise<{ bytes: Buffer; contentType: string }>) =>
-    carriedInkPlates({
-      /* Driven UN-DEFERRED: the mannequin road is parked (fable-1053 §2) and
-         these arms describe the road itself. Deleting them would leave the day
-         it resumes with nothing proving how it behaves. The deferral's own arms
-         live in `inkMannequinDeferral.test.ts`. */
-      mannequinDeferred: false,
-      listInkPlates: async () => rows as never,
-      readBytes: readBytes ?? (async (key: string) => ({
-        bytes: Buffer.from(`bytes:${key}`), contentType: "image/png",
-      })),
-    } as never, { userId: 1, candidateId: 9, operationId: "op-1" });
-
-  it("says RODE for a design with exactly one plate", async () => {
-    const { plates, dispositions } = await drive([designRow()]);
-    expect(plates.map((plate) => plate.designPublicId)).toEqual(["design-1"]);
-    expect(dispositions).toEqual([{ designPublicId: "design-1", rode: true }]);
-  });
-
-  it("says noPlate for a design that was never plated — the case a plate-only read cannot see", async () => {
-    /*
-      The LEFT JOIN's whole purpose. Read from the plates table alone, this
-      design does not exist: an uploaded tattoo that never reached a view would
-      be indistinguishable from a Cast that never had one.
-    */
-    const { plates, dispositions } = await drive([
-      designRow({ engine: null, storageKey: null, digest: null, mime: null }),
-    ]);
-    expect(plates).toEqual([]);
-    expect(dispositions).toEqual([{ designPublicId: "design-1", rode: false, reason: "noPlate" }]);
-  });
-
-  it("says engineUndecided, and NAMES the engines, for a design plated twice", async () => {
-    const { plates, dispositions } = await drive([
-      designRow(),
-      designRow({ engine: "gpt-image-2", storageKey: "casting-v2/candidates/plate-1b.png" }),
-    ]);
-    expect(plates).toEqual([]);
-    expect(dispositions).toEqual([{
-      designPublicId: "design-1",
-      rode: false,
-      reason: "engineUndecided",
-      engines: ["fal-ai/nano-banana-pro", "gpt-image-2"],
-    }]);
-  });
-
-  it("says bytesUnreadable when the row is there and the object is not", async () => {
-    const { plates, dispositions } = await drive([designRow()], async () => {
-      throw new Error("NoSuchKey");
-    });
-    expect(plates).toEqual([]);
-    expect(dispositions).toEqual([{
-      designPublicId: "design-1", rode: false, reason: "bytesUnreadable",
-    }]);
-  });
-
-  it("reports all four side by side, and one bad answer never silences a good one", async () => {
-    const { plates, dispositions } = await drive([
-      designRow(),
-      designRow({ designPublicId: "d2", engine: null, storageKey: null }),
-      designRow({ designPublicId: "d3" }),
-      designRow({ designPublicId: "d3", engine: "gpt-image-2", storageKey: "b.png" }),
-      designRow({ designPublicId: "d4", storageKey: "gone.png" }),
-    ], async (key: string) => {
-      if (key === "gone.png") throw new Error("NoSuchKey");
-      return { bytes: Buffer.from(`bytes:${key}`), contentType: "image/png" };
-    });
-
-    expect(plates.map((plate) => plate.designPublicId)).toEqual(["design-1"]);
-    expect(dispositions).toEqual([
-      { designPublicId: "design-1", rode: true },
-      { designPublicId: "d2", rode: false, reason: "noPlate" },
-      { designPublicId: "d3", rode: false, reason: "engineUndecided", engines: ["fal-ai/nano-banana-pro", "gpt-image-2"] },
-      { designPublicId: "d4", rode: false, reason: "bytesUnreadable" },
-    ]);
-  });
-});
-
-/**
- * A SURFACE THE PACKAGE'S WARDROBE COVERS DOES NOT RIDE — the interim ordered
- * fable-1006 §2, on the conformance court's own frames.
- */
-describe("a covered surface says so on the same disposition surface", () => {
-  const chestRow = {
-    designPublicId: "chest-1",
-    placement: "upperChest" as const,
-    side: "centre" as const,
-    engine: "fal-ai/nano-banana-pro",
-    storageKey: "casting-v2/candidates/chest-plate.png",
-    digest: "d".repeat(64),
-    mime: "image/png",
-  };
-
-  it("refuses an upper-chest design its ride, and names the surface as the reason", async () => {
-    /*
-      Not `noPlate` — it HAS a plate, and a refusal that named the wrong fact
-      would send the next person looking for a mint that already happened.
-    */
-    const { plates, dispositions } = await carriedInkPlates({
-      /* Un-deferred — see the note on `drive` above. */
-      mannequinDeferred: false,
-      listInkPlates: async () => [chestRow] as never,
-      readBytes: async () => ({ bytes: Buffer.from("plate"), contentType: "image/png" }),
-    } as never, { userId: 1, candidateId: 9, operationId: "op-1", wardrobeLine: null });
-
-    expect(plates).toEqual([]);
-    expect(dispositions).toEqual([{
-      designPublicId: "chest-1", rode: false, reason: "surfaceCovered",
-    }]);
-  });
-
-  it("⚠ ON A BASICS CAST THE SAME DESIGN RIDES — the outfit decides, and it is the point", async () => {
-    /*
-      Item 7a (countersigned fable-1368). The arm above passes `undefined` for
-      the line, which is *no line recorded* and answers the house crew tee — so
-      the two arms differ in exactly one thing, which is the whole claim.
-
-      ⚠ THIS ARM HAS BEEN WRITTEN THREE TIMES AND THE HISTORY IS THE LESSON:
-
-        `rode: true`   off the Basics SPEC's own sentence — *"scooped low at
-                       the chest"* — rather than off a photograph
-        `rode: false`  `surfaceCoverageUnread`, after the Two Paths court asked
-                       `upper chest` of eight Basics candidates and got **0 px
-                       on 4 of 4** (opus-1111, ruled fable-1453 ASK 2). NOT
-                       `surfaceCovered`: her chest is plainly visible, and a
-                       refusal that calls it covered is the lie fable-1368
-                       ruling 1 forbids
-        `rode: true`   EARNED, 2026-08-23. The founder lowered the spec's
-                       neckline to name the collarbones and the sternum, and the
-                       re-court read the amended frames **12 of 12 across three
-                       sheets and two wordings** with the masks opened and
-                       looked at. He then closed the trade knowing the lowered
-                       neckline costs about one slice in four at the vendor's
-                       content checker
-
-      **The first and the third assert the same thing and they are not the same
-      assertion.** One was a claim about a sentence we wrote; this one is a
-      reading of photographs, and `inkSurfaceCoverage.ts` carries the rounds.
-
-      This is the moment the Basics path delivers what it exists for: a chest
-      piece reaching the five signed views a customer paid for.
-    */
-    const { plates, dispositions } = await carriedInkPlates({
-      mannequinDeferred: false,
-      listInkPlates: async () => [chestRow] as never,
-      readBytes: async () => ({ bytes: Buffer.from("plate"), contentType: "image/png" }),
-    } as never, {
-      userId: 1, candidateId: 9, operationId: "op-1",
-      wardrobeLine: basicsWardrobeLine("male"),
-    });
-
-    expect(plates).toHaveLength(1);
-    expect(dispositions).toEqual([{ designPublicId: "chest-1", rode: true }]);
-  });
-
-  it("⚠ AND ITS ARM STILL RIDES — the outfit decides, not the placement", async () => {
-    /*
-      The claim item 7a actually bought, kept alive on the placement whose
-      coverage the court did NOT overturn: a Basics cast wears no sleeve, so an
-      upper-arm design rides where a crew-tee cast's would too. Without this arm
-      the change above reads as *Basics rides nothing*, which is false.
-    */
-    const { plates, dispositions } = await carriedInkPlates({
-      mannequinDeferred: false,
-      listInkPlates: async () => [{
-        ...chestRow, designPublicId: "arm-1", placement: "upperArm", side: "left",
-        storageKey: "casting-v2/candidates/arm-plate.png",
-      }] as never,
-      readBytes: async () => ({ bytes: Buffer.from("plate"), contentType: "image/png" }),
-    } as never, {
-      userId: 1, candidateId: 9, operationId: "op-1",
-      wardrobeLine: basicsWardrobeLine("male"),
-    });
-
-    expect(plates).toHaveLength(1);
-    expect(dispositions).toEqual([{ designPublicId: "arm-1", rode: true }]);
-  });
-
-  it("⚠ AN OUTFIT NOBODY HAS READ SAYS SO — it does not borrow the covering's name", async () => {
-    /*
-      fable-1368 ruling 1. Unknown fails closed like a covering and must never be
-      REPORTED as one: *"her top covers her chest"* said about an outfit whose
-      coverage nobody has read is a refusal that lies about why it closed, and
-      that is how a customer learns to distrust every refusal we write.
-    */
-    const { plates, dispositions } = await carriedInkPlates({
-      mannequinDeferred: false,
-      listInkPlates: async () => [chestRow] as never,
-      readBytes: async () => ({ bytes: Buffer.from("plate"), contentType: "image/png" }),
-    } as never, {
-      userId: 1, candidateId: 9, operationId: "op-1",
-      wardrobeLine: "a charcoal roll-neck jumper, dark jeans and boots",
-    });
-
-    expect(plates).toEqual([]);
-    expect(dispositions).toEqual([{
-      designPublicId: "chest-1", rode: false, reason: "surfaceCoverageUnread",
-    }]);
-  });
-
-  it("still carries the arm design beside it — one refusal never silences a ride", async () => {
-    const { plates, dispositions } = await carriedInkPlates({
-      /* Un-deferred — see the note on `drive` above. */
-      mannequinDeferred: false,
-      listInkPlates: async () => [chestRow, {
-        ...chestRow, designPublicId: "arm-1", placement: "upperArm", side: "left",
-        storageKey: "casting-v2/candidates/arm-plate.png",
-      }] as never,
-      readBytes: async (key: string) => ({
-        bytes: Buffer.from(`bytes:${key}`), contentType: "image/png",
-      }),
-    } as never, { userId: 1, candidateId: 9, operationId: "op-1" });
-
-    expect(plates.map((plate) => plate.designPublicId)).toEqual(["arm-1"]);
-    expect(dispositions).toEqual([
-      { designPublicId: "chest-1", rode: false, reason: "surfaceCovered" },
-      { designPublicId: "arm-1", rode: true },
-    ]);
-  });
-});
 
 /**
  * THE `masterPrompt` FALLBACK — the branch with no production population.

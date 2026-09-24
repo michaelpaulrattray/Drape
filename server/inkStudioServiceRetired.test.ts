@@ -79,13 +79,11 @@ const MUST_SURVIVE: Readonly<Record<string, string>> = {
   "server/castingV2/inkRealism.ts":
     "the ink prose's owner — recipeAssembler and inkViewReferences say it on live roads",
   "server/castingV2/inkViewReferences.ts":
-    "the sign views' clause — the lane that PAINTS today",
+    "the sign views' clause — the DELIVERED-CROP lane, which is the one that paints",
   "server/db/castingV2InkDesigns.ts":
     "the design store, whose table keeps a live writer in the held road",
   "server/db/castingV2InkPlates.ts":
-    "the plate store — nothing writes it now, but signService READS it on the paid sign road",
-  "shared/inkMannequinDeferral.ts":
-    "his 2026-08-19 deferral, still read by signService.carriedInkPlates",
+    "the plate store — PURGE ONLY since slice 4f; retention and an owner's delete still sweep it",
 };
 
 describe("the studio's service chain is retired", () => {
