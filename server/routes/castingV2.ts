@@ -138,7 +138,7 @@ import {
   selectVariant,
 } from "../db/castingV2Variants";
 import { filedSubjectsOf } from "../castingV2/refineDelta";
-import { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEWS } from "../castingV2/castViewPackage";
+import { CASTING_V2_SIGN_PRICE_CREDITS } from "../castingV2/castViewPackage";
 import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { CASTING_V2_ROLL_TYPICAL_SECONDS } from "../castingV2/rollDuration";
 import { projectSignedCast } from "../castingV2/castProjection";
@@ -957,20 +957,27 @@ export const castingV2Router = router({
     */
     retryEnabled: captureCastingRetryEnabled(ctx.user.id),
     retryPriceCredits: CASTING_V2_RETRY_PRICE_CREDITS,
-    packageViewCount: CAST_PACKAGE_VIEWS.length,
     /*
-      WHETHER THE REPAINT ROAD SERVES THIS ACCOUNT — and therefore whether the
-      surfaces that only IT can perform may be drawn (fable-542 §3).
+      ⚠ TWO FIELDS LEFT THIS RESPONSE ON 2026-09-24 (#1153), AND THE SECOND ONE
+      IS WHY THE CARD ASKED FOR A COUNT RATHER THAN A FIX.
 
-      "Take this step back" on a version chip is the first of those: the prune
-      it performs is measured on the repaint road and nowhere else, so a menu
-      item anywhere else would be a control that refuses. The client asks; it
-      never decides — the scope is server-owned, exactly like `enabled` above.
+      `stepBackEnabled` gated the version chip's three-dot menu; the founder
+      killed that menu by name and `e6d17fe9` (2026-08-15) took its only reader
+      with it, correctly. `packageViewCount` fed the Sign modal's view count,
+      and `3b974796` (2026-08-03) — a commit about DELETING A CAST — dropped the
+      one line that read it.
 
-      One gate, not two lists: when the road widens, the affordance widens with
-      it, which is fable-525's doctrine applied to a surface.
+      Both are working law 7's path-three death: written, wired, live, then
+      orphaned by a change aimed at something else, leaving no failing test and
+      no error. They sat fourteen lines apart for seven weeks, and the second
+      was found only because the class was counted: every field this response
+      sends was read against the client, and these two were the only ones with
+      no reader at all.
+
+      `server/castingConfigReaders.test.ts` is that count, kept. It derives the
+      population from this object rather than listing it, so a field added here
+      is covered the moment it lands.
     */
-    stepBackEnabled: captureCastingRepaintEnabled(ctx.user.id),
     /*
       THE TWO READ GATES ARE GONE WITH THEIR DOORS (fable-1103 §2).
 
