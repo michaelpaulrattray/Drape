@@ -23,7 +23,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Project, SyntaxKind, type SourceFile, type Node } from "ts-morph";
+import { Project, SyntaxKind, ts, type SourceFile, type Node } from "ts-morph";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT_DIR = process.env.ATLAS_OUT_DIR
@@ -1674,8 +1674,82 @@ function newAtlasProject(): Project {
   });
 }
 
+/**
+ * ⚠ A FILE THAT WILL NOT PARSE MAKES THE MAP LIE IN THE ONE DIRECTION THAT
+ * COSTS SOMETHING — SO THE GENERATOR REFUSES (#1156, 2026-09-24).
+ *
+ * Measured, and reproduced deliberately: one comment opener deleted from
+ * `server/routes/castingV2.ts` and the generator wrote **241 procedures where
+ * the repaired tree writes 270** — all 29 `castingV2.*` procedures gone from
+ * the map, **exit 0**, with a cheerful summary line. `.githooks/atlas-stage`
+ * then staged that map and printed *"this commit carries the map of its own
+ * tree"*, which was true and useless.
+ *
+ * **The gate catching it is not the answer, because the gate is not who reads
+ * this.** The Atlas is the deletion authority for the legacy-retirement program
+ * — `CLAUDE.md`: *"nothing is removed while its retirement view still shows live
+ * callers"* — and a shift reads the map LOCALLY, on its own tree, to decide what
+ * is safe to delete. On a tree with one uncompilable file, whole routers read as
+ * absent and modules read as having no callers, **which is precisely the reading
+ * that says safe to remove**. It is the 2026-08-23 edge-graph hole arriving
+ * through a different door, and `architecture:check` cannot see it either: a map
+ * faithfully generated from a broken tree is FRESH.
+ *
+ * ⚠ **SYNTACTIC DIAGNOSTICS ONLY, AND THAT LINE IS THE WHOLE DESIGN.** A type
+ * error is a different thing from a file that cannot be read: `pnpm check` owns
+ * the first and the gate blocks on it, while mid-edit type errors are ordinary
+ * and refusing on them would stop every commit in the repository — the card's
+ * own warning. A syntax error, by contrast, means the collectors are reading a
+ * file the compiler could not finish, and everything they say about it is
+ * fiction.
+ *
+ * ⚠ **AND IT IS NOT A FLOOR ON THE TOTAL.** The card's third candidate — refuse
+ * below N procedures — was declined: a magic number drifts and teaches
+ * re-stamping. `CLAUDE.md`'s existing rule (*"every collector that can come up
+ * EMPTY throws"*) does not fire here either, because a router losing 29 of its
+ * procedures returns a SHORT list, not an empty one. This asks the question one
+ * layer earlier, where the answer is not a threshold at all.
+ *
+ * Exported for the reason {@link proceduresFrom} is: a checker driven only over
+ * the tree it already runs on cannot show its own blind spots, and the negative
+ * controls here matter as much as the positive one.
+ */
+export function unparseableSourcesIn(project: Project): string[] {
+  return project
+    .getProgram()
+    .getSyntacticDiagnostics()
+    .map((diagnostic) => {
+      const file = diagnostic.getSourceFile();
+      if (file === undefined) return null;
+      const relative = path.relative(repoRoot, file.getFilePath()).replaceAll("\\", "/");
+      if (!SCANNED_ROOTS.some((root) => relative === root || relative.startsWith(`${root}/`))) {
+        return null;
+      }
+      const start = diagnostic.getStart();
+      const where = start === undefined
+        ? relative
+        : `${relative}:${file.getLineAndColumnAtPos(start).line}`;
+      return `${where} — ${ts.flattenDiagnosticMessageText(diagnostic.compilerObject.messageText, " ")}`;
+    })
+    .filter((line): line is string => line !== null);
+}
+
+function refuseUnparseableSources(project: Project): void {
+  const broken = unparseableSourcesIn(project);
+  if (broken.length === 0) return;
+  throw new Error(
+    "[atlas] REFUSING to build a map from a tree that does not parse.\n"
+    + broken.map((line) => `  - ${line}`).join("\n")
+    + "\n\nThis is a SYNTAX error, not a type error — the collectors would read the file"
+    + "\nas though it were empty, so whole routers go missing and modules read as having"
+    + "\nno callers, which is exactly the reading that says 'safe to remove'. Fix the file"
+    + "\nand run again. (#1156)",
+  );
+}
+
 export function buildAtlas(options: { freshProject?: boolean } = {}) {
   const project = options.freshProject ? newAtlasProject() : (sharedProject ??= newAtlasProject());
+  refuseUnparseableSources(project);
 
   const procedures = collectProcedures(project, resolveNamespaces(project));
 
