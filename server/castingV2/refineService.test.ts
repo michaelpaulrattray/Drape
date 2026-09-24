@@ -87,7 +87,7 @@ let landedVariant: Record<string, unknown> | null = null;
  *
  * Written by the `landVariant` mock below and asserted by "the 42-second race".
  */
-const atLanding: Array<{ mints: number; segments: number }> = [];
+const atLanding: Array<{ mints: number }> = [];
 /** What the BRIEF said she wears — the base-worn inventory (D-206). */
 let briefWorn: string[] | null = null;
 let failedVariant: Record<string, unknown> | null = null;
