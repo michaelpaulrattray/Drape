@@ -1,7 +1,7 @@
 {
-  "edition": 502,
-  "updatedAt": "2026-09-24T01:10:56.798Z",
-  "shift": "Foreman — your switch sitting, applied: five settings on for everyone, one retired",
+  "edition": 503,
+  "updatedAt": "2026-09-24T01:28:41.357Z",
+  "shift": "Foreman — you finished the switch list: all thirteen answered",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -71,6 +71,10 @@
         },
         {
           "title": "✅ YOU WENT DOWN THE LIST — eleven replies in twelve minutes, and the five you said yes to are on for everyone: your own words straight to the engine, upload-a-picture, long briefs keeping their facts, Retry on a failed picture, and asking for something we have never heard of. The wardrobe/basics setting is unset. Three of the thirteen are still unanswered and are waiting on you",
+          "state": "done"
+        },
+        {
+          "title": "✅ YOU FINISHED THE LIST — all thirteen answered. Five settings are on for everyone and live now; the wardrobe/basics setting is unset; you ordered three retirements (the tattoo studio, the segment pair, and the wardrobe capability, which was already going); and four are held, each with the one thing that would change your mind written down. Nothing on the list is waiting on you",
           "state": "done"
         }
       ]
@@ -150,17 +154,11 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T01:11:06.093Z",
+      "readAt": "2026-09-24T01:28:50.724Z",
       "items": [
         {
           "issueNumber": 10,
           "title": "3a.2(b) — the preview that shows her the cut, and it is what widens CASTING_INK_CUT_SCOPE",
-          "kind": "roadmap",
-          "rung": "N2"
-        },
-        {
-          "issueNumber": 62,
-          "title": "L&F: Hair-road owed court arms — gate hair.open, and the flag register cannot see them",
           "kind": "roadmap",
           "rung": "N2"
         },
@@ -231,6 +229,12 @@
           "rung": "N3"
         },
         {
+          "issueNumber": 62,
+          "title": "L&F: Hair-road owed court arms — gate hair.open, and the flag register cannot see them",
+          "kind": "roadmap",
+          "rung": "N3"
+        },
+        {
           "issueNumber": 64,
           "title": "L&F: Compositor diagnostics umbrella — five takeable-but-untaken items on the live repaint path",
           "kind": "roadmap",
@@ -287,6 +291,12 @@
         {
           "issueNumber": 1064,
           "title": "Toolbelt: Jev (TypeSafe AI) — a fast calibrated yes/no/choice model on text; we have a key; the fit rule and the held candidates",
+          "kind": "parked",
+          "rung": null
+        },
+        {
+          "issueNumber": 1161,
+          "title": "PROPOSAL (his permission, not an order): should a customer be able to change what a cast is WEARING? — option B, a garment edit on the paid road",
           "kind": "parked",
           "rung": null
         }
@@ -488,7 +498,7 @@
         }
       ],
       "recommendation": "HOLD both. Filed as #1133 — a reading of that statistic that outlives the row it is written on. It is a class rather than one bug: anything measured per render and written only to that row is a measurement that exists exactly until somebody needs it.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": 1132
     },
@@ -510,7 +520,7 @@
         }
       ],
       "recommendation": "HOLD all three. The blocker is #62 and it is small — three measurements, already specified, that nobody has run. Worth putting in front of a shift soon: this is the feature you personally asked for, and it is closer than the list makes it look.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": 1132
     },
@@ -581,7 +591,7 @@
         }
       ],
       "recommendation": "HOLD. Widen it when something reads it and not before: storing more people's sentences for a reader that does not exist is the wrong order, and your own 42 refusals are already a bigger sample than that reader has ever seen.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-23T20:10:00+10:00",
       "issueNumber": 1132
     },
@@ -2976,7 +2986,7 @@
         }
       ],
       "recommendation": "A for now, and B carded separately if you want it. Folding a new capability into a retirement is how a half-built feature ships under a cleanup's name — and B is not a switch flip, it is a garment edit on the paid road.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-09-24",
       "issueNumber": 1148
     }
@@ -8600,19 +8610,15 @@
     207,
     208,
     209,
-    210
+    210,
+    211,
+    212,
+    213,
+    214
   ],
   "nextUp": {
-    "readAt": "2026-09-24T01:11:06.092Z",
+    "readAt": "2026-09-24T01:28:50.723Z",
     "items": [
-      {
-        "issueNumber": 1132,
-        "title": "N2: THE SWITCH LIST — every users:1 flag with its evidence, for one sitting (his word, 23 Sep: 'prepare every switch with its evidence and I'll go down the list in one go')",
-        "urgent": false,
-        "held": {
-          "state": "blocked"
-        }
-      },
       {
         "issueNumber": 1158,
         "title": "N2: RETIRE the tattoo studio — his ruling, 'It retires with N2' (the upload-a-design road, four flags, NOT born-ink)",
@@ -8621,6 +8627,11 @@
       {
         "issueNumber": 1159,
         "title": "N2: re-ask born-ink now that the brief cap is 2,000 for everyone — his 'Hold, and re-ask with card 3'",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1160,
+        "title": "N2: RETIRE the segment pair — his ruling, 'Retire both. The paste road is gone; nothing reads these'",
         "urgent": false
       }
     ]
