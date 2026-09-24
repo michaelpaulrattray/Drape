@@ -57,7 +57,7 @@ import {
 import { createModuleLogger } from "../logging/logger";
 import { checkCandidateInvariants } from "./candidateInvariants";
 import {
-  castingInkStudioArmed,
+  castingInkDesignArmed,
   castingReferenceAttachArmed,
   castingReferenceLibraryArmed,
   castingScanTableArmed,
@@ -212,10 +212,23 @@ function tolerateAbsentReferenceAttachmentStore(error: unknown): never | [] {
   return [];
 }
 
+/**
+ * A DESIGN (0034), and its arming question is the OR of the two doors that mint
+ * one — never the studio flag alone.
+ *
+ * ⚠ **IT WAS THE STUDIO FLAG ALONE UNTIL #1158 SLICE 4B, AND THAT WAS THE BUG
+ * THE RETIREMENT WOULD HAVE SPRUNG.** The studio retires on his ruling; the
+ * take from an attached picture does not, and `inkReferenceMint.ts` is
+ * `recordInkDesign`'s only surviving non-test caller. Armed by the retiring
+ * flag, this would have flipped from *throw* to *swallow* the moment that
+ * variable came off the service — over a table the surviving road still writes,
+ * with no failing test and no error. `castingInkDesignArmed` is that OR, derived
+ * where the scopes live rather than spelled a second time here (law 4).
+ */
 function tolerateAbsentInkDesignStore(error: unknown): never | [] {
-  if (!isMissingTable(error) || castingInkStudioArmed()) throw error;
+  if (!isMissingTable(error) || castingInkDesignArmed()) throw error;
   log.warn(
-    "[candidateRetention] the ink design table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the ink-studio migration lands.",
+    "[candidateRetention] the ink design table is absent — neither the studio's upload nor the take from an attached picture is open, so nothing can have been written to it and nothing is being left behind.",
   );
   return [];
 }
@@ -224,15 +237,26 @@ function tolerateAbsentInkDesignStore(error: unknown): never | [] {
  * And the same again for a PLATE (0037) — a different table with a different
  * migration, so a different tolerance rather than one that covers both.
  *
- * Its window is the widest of the three: production has taken neither 0034 nor
- * 0037, and a plate cannot exist without a design, so an absent plate table is
- * doubly empty. Armed by the same flag, because the same door governs whether
- * either row is ever written.
+ * A plate cannot exist without a design, so it is armed by the DESIGN's own
+ * question rather than by a third list of doors: whatever can mint a design can
+ * reach a plate, and nothing else can. That is strictly wider than the plate's
+ * own writer needs today — `recordInkPlate` has no non-test caller at all,
+ * read 2026-09-24 — and wider is the right direction for a tolerance, because
+ * every error on this side of the question is a missing table said out loud
+ * rather than a row swallowed in silence.
+ *
+ * ⚠ **THE FACT THAT USED TO STAND HERE WAS STALE AND SAID THE OPPOSITE OF THE
+ * ROWS.** It read *"production has taken neither 0034 nor 0037"*; read at the
+ * production rows on 2026-09-24, `casting_ink_designs`, `casting_ink_plates`
+ * and `casting_ink_delivery_crops` are all PRESENT and all hold zero rows. So
+ * this tolerance cannot fire on production at all today, and every word below
+ * about it being the widest window was describing a database that has since
+ * taken both migrations.
  */
 function tolerateAbsentInkPlateStore(error: unknown): never | [] {
-  if (!isMissingTable(error) || castingInkStudioArmed()) throw error;
+  if (!isMissingTable(error) || castingInkDesignArmed()) throw error;
   log.warn(
-    "[candidateRetention] the ink plate table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the plate migration lands.",
+    "[candidateRetention] the ink plate table is absent — no door that mints a design row is open, and a plate hangs off one, so nothing can have been written to it and nothing is being left behind.",
   );
   return [];
 }
@@ -478,9 +502,11 @@ export async function runCandidateRetentionSweep(now = new Date()): Promise<Rete
         row. Delete the designs first and every plate becomes an orphan nothing
         can find, with its bytes left at a permanently public URL forever.
 
-        Unconditional, like everything above it, and on the same terms: the
-        studio flag governs whether a plate is written and nothing governs
-        whether it is purged.
+        Unconditional, like everything above it, and on the same terms: a flag
+        governs whether a plate is ever WRITTEN and nothing governs whether it
+        is purged. Which flag that is moved in #1158 slice 4b — the tolerance
+        above now asks the DESIGN's question, because a plate hangs off a design
+        row and the studio is not the only door that mints one.
       */
       const inkPlates = await listPurgeableInkPlatesIn(tx, candidateIds).catch(
         (error: unknown) => tolerateAbsentInkPlateStore(error),

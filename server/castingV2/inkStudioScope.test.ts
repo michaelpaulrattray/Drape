@@ -3,7 +3,6 @@ import {
   CASTING_INK_STUDIO_SCOPE_ENV,
   CastingInkStudioCoverageError,
   CastingInkStudioScopeConfigurationError,
-  captureCastingInkStudioEnabled,
   castingInkStudioArmed,
   parseCastingInkStudioScope,
   validateCastingInkStudioEnvironment,
@@ -114,41 +113,23 @@ describe("it cannot be armed past the road that would render it", () => {
   });
 });
 
-describe("the chain is re-checked where it is used, not only at boot", () => {
-  it("is off for everyone when the flag is absent", () => {
-    setEnv({
-      CASTING_REPAINT_SCOPE: "users:1",
-      CASTING_REFERENCE_LIBRARY_SCOPE: "users:1",
-      CASTING_V2_SCOPE: "users:1",
-    });
-    expect(captureCastingInkStudioEnabled(1)).toBe(false);
-  });
+/*
+  ⚠ THE POINT-OF-USE ARMS ARE GONE WITH THEIR SUBJECT — #1158 slice 4b, his
+  ruling *"It retires with N2"*.
 
-  it("is off for a user the parent chain does not cover, even if this flag names them", () => {
-    /*
-      A boot check nobody invoked is the second way a flag pair goes wrong, so
-      the AND of the chain is enforced at the point of use as well.
-    */
-    setEnv({
-      CASTING_INK_STUDIO_SCOPE: "users:1",
-      CASTING_REPAINT_SCOPE: "off",
-      CASTING_REFERENCE_LIBRARY_SCOPE: "users:1",
-      CASTING_V2_SCOPE: "users:1",
-    });
-    expect(captureCastingInkStudioEnabled(1)).toBe(false);
-  });
+  Three arms stood here driving `captureCastingInkStudioEnabled` — the AND of
+  the whole chain answered where it is asked. **The door it answered for was
+  retired in slices 1–2**: `uploadInkDesign` does not exist, and after slice 4b
+  deleted `captureCastingInkCutEnabled` the studio predicate had no reader of
+  any kind. A predicate with no caller cannot be proven to guard anything, and
+  an arm that drives one is measuring its own fixture.
 
-  it("is on only for a named user with the whole chain behind them", () => {
-    setEnv({
-      CASTING_INK_STUDIO_SCOPE: "users:1",
-      CASTING_REPAINT_SCOPE: "users:1",
-      CASTING_REFERENCE_LIBRARY_SCOPE: "users:1",
-      CASTING_V2_SCOPE: "users:1",
-    });
-    expect(captureCastingInkStudioEnabled(1)).toBe(true);
-    expect(captureCastingInkStudioEnabled(2)).toBe(false);
-  });
-});
+  **What survives is the half that is NOT a door**, below: `castingInkStudioArmed`
+  is the retention sweep's question, and the sweep does not retire when the
+  feature does. Its arms are unchanged and are the reason this file stays.
+*/
+
+
 
 describe("armed at all — the retention sweep's only question", () => {
   it("is false when absent and when off", () => {
@@ -167,7 +148,6 @@ describe("armed at all — the retention sweep's only question", () => {
     */
     setEnv({ CASTING_INK_STUDIO_SCOPE: "users:2" });
     expect(castingInkStudioArmed()).toBe(true);
-    expect(captureCastingInkStudioEnabled(1)).toBe(false);
   });
 
   it("refuses to answer at all on a scope it cannot parse", () => {
