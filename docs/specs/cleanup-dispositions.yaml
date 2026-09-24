@@ -1386,7 +1386,7 @@
 - symbol: recordInkPlate
   file: server/db/castingV2InkPlates.ts
   verdict: TAKEN
-  why: "the ONLY writer of `casting_ink_plates`, called by `mintInkPlate` alone, and the mint is deleted. ⚠ The TABLE and its read path are NOT in this row and must not be taken with it: `signService.carriedInkPlates` reads it on the live sign road (a paid surface), `candidateRetention` purges it and `castingV2InkDesignRemoval` clears it, so the module stays and only this statement is dead. Production held zero plate rows all time, so nothing is orphaned by a table that can no longer gain one. Driven by `castingV2-ink-plate-db.test.ts` against a real database"
+  why: "the ONLY writer of `casting_ink_plates`, called by `mintInkPlate` alone, and the mint is deleted. ⚠ The TABLE is NOT in this row and must not be taken with it: `candidateRetention` purges it and `castingV2InkDesignRemoval` clears it, so the module stays. ⚠ **Its READ path was named here as surviving and it no longer does** — slice 4f deleted `signService.carriedInkPlates` and `listCandidateInkPlates` with it, so the module is PURGE-ONLY; that sentence is corrected rather than struck because the next reader of this row needs the tree it is looking at. Production held zero plate rows all time, so nothing is orphaned by a table that can no longer gain one. Driven by `castingV2-ink-plate-db.test.ts` against a real database"
   argued: "#1158"
 
 - symbol: INK_DESIGNS_PER_CANDIDATE_REFUSAL
