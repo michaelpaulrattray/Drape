@@ -169,12 +169,10 @@ describe("which bucket each casting procedure was handed", () => {
          it fills, not in a bucket that would let a refetch storm buy scans. */
       faceScan: "castingRead",
       cancel: "castingSheet",
-      /* The ink studio's upload — its OWN bucket, and an hourly one. It is not
-         a sheet action: it writes megabytes to a permanently public bucket and
-         has no charge path to pace it, so it is limited by what a person
-         choosing files can plausibly do rather than by what a click storm
-         can. */
-      upload: "castingInkUpload",
+      /* `upload: "castingInkUpload"` stood here and left with the door and its
+         bucket (#1158 slice 1). The studio's upload is retired; `remove` below
+         is NOT its replacement and keeps its own bucket for the reason its own
+         comment gives. */
       /* Removing a design — its OWN bucket, deliberately not the upload's.
          Sharing one would make deleting a design she disliked cost her an
          upload, which is the opposite of what "see or reject" is for. */

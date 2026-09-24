@@ -195,21 +195,20 @@ export const RATE_LIMITS = {
     keyPrefix: 'casting_read',
   },
   /*
-    UPLOADING AN INK DESIGN — bytes we keep, on a road with no charge path to
-    pace them (fable-921 §3b).
+    UPLOADING AN INK DESIGN — `castingInkUpload` stood here and went with the
+    door it paced (#1158 slice 1, his ruling *"It retires with N2"*).
 
-    Its own bucket rather than the sheet's, because the two limits protect
-    different things: `castingSheet` stops a loop hammering the database, and
-    this one stops an account writing megabytes to a permanently public bucket
-    faster than a person could choose files. An hour rather than a minute for
-    the same reason — a burst of eight is a customer with a folder open, and
-    the per-candidate cap (8) already bounds how many can land on one Cast.
+    It is removed rather than left standing, and that is the point of naming it
+    here: a limiter nothing calls is a control that does not exist (invariant 7),
+    and this repository's "currently not enforced" list is four instances of
+    exactly that mistake reading as live protection for months.
+
+    ⚠ **`castingReferenceAttach` below is NOT its heir and must not be folded
+    into anything.** The attach road is HELD and moved to N3 (his Crew reply
+    #213); its bucket was deliberately separate from this one so that neither
+    road could spend the other's allowance, and it keeps its own for the same
+    reason now that it is the only one left.
   */
-  castingInkUpload: {
-    windowMs: 60 * 60 * 1000, // 1 hour
-    maxRequests: 24,
-    keyPrefix: 'casting_ink_upload',
-  },
   /*
     READING A REFERENCE FOR ITS MAKEUP — its own bucket, and tighter than the
     upload's for the opposite reason.

@@ -91,6 +91,14 @@ export type PointerReading = {
  * instead of a mystery.
  */
 export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
+  "castingV2InkUpload.test.ts": {
+    why:
+      "Deleted with the ink studio's upload door (#1158 slice 1, 2026-09-24, on his ruling " +
+      "'It retires with N2'). It drove the PROCEDURE, so it is coverage of the thing removed " +
+      "rather than of anything that survives. `inkUploadEntranceRetired.test.ts` — the absence " +
+      "guard that replaced it — names it in the sentence explaining what stood there and why " +
+      "the replacement is half positive control. The mention is the provenance.",
+  },
   "velocityLimits.test.ts": {
     why:
       "Deleted with the credit-velocity caps (2026-08-19). `prosePointerDiscipline.test.ts` " +
