@@ -165,6 +165,36 @@ open precisely because trimming that ask needs a court (*context is not
 additive* — a SUBSET of prompt context raised the stage wall twice as often as
 its superset). The safe half and the unsafe half must not ride one commit.
 
+#### ✅ THE SAFE HALF LANDED — step (d), 2026-09-24
+
+`pickWardrobe` is gone from `rollService`, from `BriefCompilerInput`, from
+`resolveSheet` and from both compilers' calls; the compiler hands the reader a
+literal `wardrobe: false`. **And with it the `named` seam on
+`bornWardrobeLine`**, which no caller could reach once the pick was gone — it
+went in the commit that emptied it rather than being left as a parameter
+nothing can pass, which is the same bar step (a) set for `facePanel`'s loop.
+
+**The claim this rests on is about BYTES and it is now asserted at the wire**
+rather than argued: a compile records the system prompt it handed the engine,
+on an unpathed roll and on both paths, and it equals `interpreterSystemPrompt()`
+exactly — with a two-way control (the `WARDROBE_BLOCK` marker is present with
+`{ wardrobe: true }` and absent with `false` and with no options at all).
+
+⚠ **What is left standing, deliberately, and it is a control with no
+consequence:** `parseWardrobePick` and `wardrobeDoor.ts` still run on every
+reply, and their verdict now reaches nothing — an admitted pick and a refused
+one produce the identical sheet. They are named as such at both sites and they
+belong to **#1123**: the ask, its parse and its door are one act. A sweep that
+takes the door on its own leaves a reader that is still asked and no longer
+checked.
+
+Two arms changed shape rather than value, and the reason is worth carrying into
+step (e): they compared the compile's `pickWardrobe` against `false`, and
+`toEqual` cannot tell an undefined property from a missing one — **the same
+assertion would have passed over a compiler that was never handed the field,
+which is precisely the change being made.** They read the KEY now (`in`), each
+with a positive control on a key the compile does carry.
+
 ### Q6 · What is the sheet told about the outfit? ⚠ not on the card
 
 `wardrobeOf` / `enginePicked` — `server/castingV2/rollProjection.ts:535–555`
@@ -280,8 +310,10 @@ predate the author road and are not to be backfilled or nulled.
    branch is provably the only one reachable when its dead branches come out.
    ⚠ Q7's `null` branch is LIVE COPY on every cast; it is the thing this whole
    sweep is most likely to break.
-4. **Q5's safe half** — the `pickWardrobe` plumbing down to
-   `interpretBrief({ wardrobe: false })`. Its unsafe half waits for **#1123**.
+4. ✅ **Q5's safe half — DONE, step (d), 2026-09-24.** The `pickWardrobe`
+   plumbing down to `interpretBrief({ wardrobe: false })`, plus the `named`
+   seam it fed. Its unsafe half — the ask, its parse and the door — waits for
+   **#1123** and goes as one act.
 5. **The columns and `shared/castingPaths.ts`** — last, at the Atlas's
    retirement view, and only once nothing above reads a path.
 

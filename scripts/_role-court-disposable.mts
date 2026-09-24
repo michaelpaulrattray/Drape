@@ -157,16 +157,23 @@ async function runArm(fidelity: boolean): Promise<void> {
            cached shape; the INTERPRETER call is identical either way. */
         rollSeed: `role-court-${fidelity ? "on" : "off"}-${i}`,
         /*
-          ⚠ HELD AT HIS ROLL'S SHAPE. Rolls 213 and 214 are both `path:
-          wardrobe`, so `rollService` passed `pickWardrobe: true` — and the
-          compiler forwards it into the INTERPRETER call. The first version of
-          this court omitted it and was therefore compiling a different ask
-          from the one that produced the finding. Caught by the N=1 validation
-          run before the full spend, which is what that run is for.
+          ⚠ THIS COURT CAN NO LONGER REPRODUCE THE ASK IT WAS DRIVEN ON, and
+          that is recorded here rather than quietly repaired (#203 slice 2,
+          step (d), 2026-09-24).
+
+          It held his roll's shape: rolls 213 and 214 are both `path: wardrobe`,
+          so `rollService` passed `pickWardrobe: true` and the compiler forwarded
+          it into the INTERPRETER call — the first version of this court omitted
+          it and was compiling a different ask from the one that produced the
+          finding. That field is now retired with the paths, so a re-drive sends
+          the interpreter the prompt WITHOUT `WARDROBE_BLOCK`: the same prompt
+          every production roll gets today, and NOT the one the recorded
+          findings came from. Read the old numbers as history; do not compare a
+          fresh run against them.
+
           `readInk` stays false: `CASTING_BORN_INK_SCOPE` is unset on the
           service, so his rolls had it false too.
         */
-        pickWardrobe: true,
         briefFidelity: fidelity,
         engine: meteredEngine(base!),
       }) as unknown as Record<string, any>;

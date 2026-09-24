@@ -370,16 +370,20 @@ export function basicsWardrobeLine(sex: string | null | undefined): string {
  * they are in one file so that the sentence a roll is stamped with and the
  * sentence every reader derives cannot come from two places.
  *
+ * ⚠ **THE PICK IS GONE AND WITH IT THE `named` SEAM** — #203 slice 2, step (d).
  * Case (a) — *her words win* — and case (b) — *the engine picks one per sheet*
- * — are the PICK, and they arrive with the brief stage. `named` is the seam
- * they land on: when it is present it is already the resolved, complete,
- * door-checked outfit, and this function's only job is to prefer it.
+ * — arrived with the brief stage, and the brief stage stopped asking for them
+ * when slice 1 stopped writing a path. The seam is removed in the same commit
+ * that empties it rather than being left as a parameter nothing can pass: a
+ * constant-false branch reads to the next person as a live one.
+ *
+ * So a Wardrobe-path roll takes the house line, which is the answer every
+ * reachable roll already got. The function itself is only reachable at all with
+ * a non-null path, and that is the retirement's LAST step, not this one.
  */
 export function bornWardrobeLine(input: {
   path: CastingPath;
   sex?: string | null;
-  /** A resolved outfit from the brief — cases (a) and (b) of §4. */
-  named?: string | null;
 }): string {
   if (input.path === "basics") {
     /*
@@ -390,10 +394,15 @@ export function bornWardrobeLine(input: {
       named outfit through here would make the two paths one path with a
       confusing name, and it would break the promise the Basics toggle makes
       about the chest being bare.
+
+      Since #203 slice 2 step (d) the ruling is held STRUCTURALLY rather than by
+      this branch refusing: there is no pick to refuse. The argument is kept
+      because it is the reason the seam was never opened, and because a reader
+      re-opening one needs to meet it before, not after.
     */
     return basicsWardrobeLine(input.sex);
   }
-  return stated(input.named) ?? HOUSE_WARDROBE_LINE;
+  return HOUSE_WARDROBE_LINE;
 }
 
 /**

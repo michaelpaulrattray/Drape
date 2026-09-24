@@ -2,6 +2,23 @@
  * THE DOOR OVER AN ENGINE-PICKED OUTFIT — design
  * `docs/specs/CASTING_V2_TWO_PATHS_DESIGN.md` §4.1, item 4 of §10's build.
  *
+ * ⚠ **ITS VERDICT NO LONGER REACHES A PICTURE — #203 slice 2, step (d),
+ * 2026-09-24. READ THIS BEFORE TRUSTING ANYTHING BELOW.**
+ *
+ * The door still RUNS: `parseWardrobePick` (`castingIntent.ts`) calls it on
+ * every interpreter reply, so a volunteered outfit is still refused rather than
+ * believed. What has gone is everything downstream — `intent.wardrobe` is read
+ * by nothing, `bornWardrobeLine` has no `named` seam, and the eight prompts
+ * carry the house line whatever this file decides. **So admitting and refusing
+ * now produce the identical sheet**, and that is a control with no consequence,
+ * which invariant 7 says to name rather than leave looking live.
+ *
+ * It is kept, deliberately and only until **#1123**: that card owns trimming
+ * the reader's ASK, and while the field is still asked for — even as `false`,
+ * which appends no block — a reply that volunteers an outfit meets a door
+ * rather than a shrug. When #1123 closes, this file and `parseWardrobePick` go
+ * together or neither goes.
+ *
  * # Why a door exists here at all
  *
  * Every free value in this product must appear in the customer's own sentence
@@ -31,7 +48,9 @@
  *
  * The garment guard's founder ruling stands: *never patch a language model's
  * output with code, and never fail a roll over it*. A refused line becomes
- * `null`, `bornWardrobeLine` falls back to the house line, and the roll runs.
+ * `null` and the roll runs. (Until step (d) that `null` then fell through
+ * `bornWardrobeLine` to the house line; now the house line is the only answer
+ * that branch has, refusal or no refusal.)
  *
  * The one thing that is EDITED rather than refused is a brand mark, because
  * `scrubBrands` is the product's standing answer to that class and it keeps the

@@ -17,7 +17,7 @@ import {
   composeCandidatePrompt,
   resolveCandidateIdentity,
 } from "./cohortPhotorealHuman";
-import { interpretBrief } from "./interpreter";
+import { interpretBrief, interpreterSystemPrompt } from "./interpreter";
 import type { TextEngine } from "../providers/types";
 import { HOUSE_WARDROBE_LINE } from "./wardrobeLine";
 
@@ -31,6 +31,23 @@ function engineReturning(text: string): TextEngine {
       provenance: { provider: "openrouter" as const, model: "test", servedModel: "test" },
     }),
   };
+}
+
+/** The same engine, keeping every system prompt it was handed. */
+function engineRecording(text: string): TextEngine & { systems: string[] } {
+  const systems: string[] = [];
+  return {
+    id: "test:interpreter",
+    systems,
+    complete: async (call: { system?: string }) => {
+      systems.push(call.system ?? "");
+      return {
+        text,
+        latencyMs: 12,
+        provenance: { provider: "openrouter" as const, model: "test", servedModel: "test" },
+      };
+    },
+  } as TextEngine & { systems: string[] };
 }
 
 const BASE_INTENT: CastingIntent = {
@@ -133,43 +150,53 @@ describe("the precedence fix", () => {
     ]);
   });
 
-  it("⚠ an UNASKED wardrobe never becomes this sheet's outfit", async () => {
+  it("⚠ a VOLUNTEERED wardrobe never becomes this sheet's outfit — on any road, now that none asks", async () => {
     /*
       The M3 defect in its newest costume. A model may volunteer a field nobody
       offered it — that is how a plaid shirt and a captioned mug reached all
       eight candidates in the first place — and the PARSE cannot tell an offer
-      from an answer, because it does not know what was asked. So the compiler
-      is where the two are matched, and this is the arm that says so.
+      from an answer, because it does not know what was asked.
 
-      Both directions in one test, because an assertion that a value is absent
-      is worth nothing beside a fixture that could never have produced it.
+      ⚠ **This arm used to have two halves, and one of them is RETIRED** (#203
+      slice 2, step (d)). It compared an unasked roll against an asked one,
+      because the pick existed and the only variable was the question. Nothing
+      can ask now: the paths are gone, `pickWardrobe` is gone with them, and
+      `intent.wardrobe` is read by nothing. So the claim gets stronger and its
+      shape gets weaker — there is no second arm to contrast with, which is
+      exactly when an absence assertion turns decorative.
+
+      **The positive control below is what keeps it real**: the poison IS in the
+      parsed intent, so the outfit's absence from the sheet is a value being
+      dropped rather than a fixture that never carried one.
     */
     const engine = engineReturning(POISONED);
-    /* Both rolls are on the WARDROBE path, so both resolve a real line and the
-       only variable is whether the question was asked. */
-    const unasked = await castingBriefCompiler({
-      briefText: "a handyman in his 30s",
-      candidateCount: 8,
-      rollSeed: "seed-unasked",
-      path: "wardrobe",
-      engine,
-    });
-    expect(unasked.wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
 
-    const asked = await castingBriefCompiler({
+    /* CONTROL — the field arrives, admitted by the door, on the intent. */
+    const parsedPoison = parseCastingIntent(POISONED);
+    expect(parsedPoison.ok).toBe(true);
+    if (!parsedPoison.ok) return;
+    expect(parsedPoison.intent.wardrobe).toBe("plaid flannel");
+
+    /* On the WARDROBE path — the one road that used to be able to prefer it. */
+    const pathed = await castingBriefCompiler({
       briefText: "a handyman in his 30s",
       candidateCount: 8,
-      rollSeed: "seed-asked",
+      rollSeed: "seed-volunteered",
       path: "wardrobe",
-      pickWardrobe: true,
       engine,
     });
-    expect(asked.wardrobeLine).toBe("plaid flannel");
-    /* And it reached the PICTURE, not only the column — the whole of item 5. */
-    for (const candidate of asked.candidates) {
-      expect(candidate.prompt).toContain("WARDROBE: plaid flannel.");
-    }
-    for (const candidate of unasked.candidates) {
+    expect(pathed.wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
+
+    /* And on the road every production roll actually takes: no path at all. */
+    const unpathed = await castingBriefCompiler({
+      briefText: "a handyman in his 30s",
+      candidateCount: 8,
+      rollSeed: "seed-volunteered-unpathed",
+      engine,
+    });
+    expect(unpathed.wardrobeLine).toBeNull();
+
+    for (const candidate of pathed.candidates) {
       /*
         Asserted on the WARDROBE SENTENCE and not on the prompt as a whole, and
         the difference is this fixture's own honest boundary: `characterNotes`
@@ -181,9 +208,49 @@ describe("the precedence fix", () => {
       expect(candidate.prompt).toContain(`WARDROBE: ${HOUSE_WARDROBE_LINE}.`);
       expect(candidate.prompt).not.toContain("WARDROBE: plaid flannel");
     }
+    for (const candidate of unpathed.candidates) {
+      expect(candidate.prompt).not.toContain("WARDROBE: plaid flannel");
+    }
   });
 
-  it("⚠ a FOLLOW's inherited pair beats the pick, and its NULLS are honoured", async () => {
+  it("⚠ ASSERTED AT THE WIRE — no compile asks the reader about clothes at all", async () => {
+    /*
+      #203 slice 2 step (d) rests on one claim about BYTES: dropping the pick's
+      plumbing cannot move a paid prompt, because `wardrobe: false` appends no
+      `WARDROBE_BLOCK` and nothing could pass `true`. A claim about what gets
+      SENT is proven on the outgoing call, never on a constant near it
+      (invariant 5) — so this reads the system prompt the compiler actually
+      handed the engine.
+
+      The ask itself is deliberately still `false` rather than absent: removing
+      the FIELD is #1123's court, and until it runs this arm is what says the
+      two are the same bytes.
+    */
+    const marker = "THE ONE OUTFIT ALL EIGHT OF THESE PEOPLE WEAR";
+
+    /* CONTROL, both ways — the marker is real, and the option is what adds it. */
+    expect(interpreterSystemPrompt({ wardrobe: true })).toContain(marker);
+    expect(interpreterSystemPrompt()).not.toContain(marker);
+    expect(interpreterSystemPrompt({ wardrobe: false })).not.toContain(marker);
+
+    for (const extra of [{}, { path: "wardrobe" as const }, { path: "basics" as const }]) {
+      const engine = engineRecording(POISONED);
+      await castingBriefCompiler({
+        briefText: "a handyman in his 30s",
+        candidateCount: 8,
+        rollSeed: "seed-wire",
+        engine,
+        ...extra,
+      });
+      expect(engine.systems, JSON.stringify(extra)).toHaveLength(1);
+      expect(engine.systems[0], JSON.stringify(extra)).not.toContain(marker);
+      /* And the prompt IS the real one, not an empty string the arm would
+         pass over: the unflagged base is what every production roll sends. */
+      expect(engine.systems[0], JSON.stringify(extra)).toBe(interpreterSystemPrompt());
+    }
+  });
+
+  it("⚠ a FOLLOW's inherited pair beats a fresh resolution, and its NULLS are honoured", async () => {
     /*
       The db layer inherits the parent roll's pair inside the transaction that
       writes the row. The prompts are composed before that, so the compiler is
@@ -197,7 +264,6 @@ describe("the precedence fix", () => {
       candidateCount: 8,
       rollSeed: "seed-follow",
       path: "wardrobe",
-      pickWardrobe: true,
       inheritedWardrobe: { path: "wardrobe", line: "a red apron over a plain white tee" },
       engine,
     });
@@ -207,13 +273,12 @@ describe("the precedence fix", () => {
     }
 
     /* And the nulls: a parent cast before the paths existed leaves the follow
-       unpathed, even though this caller passed a path and asked for a pick. */
+       unpathed, even though this caller passed a path. */
     const unpathedParent = await castingBriefCompiler({
       briefText: "a handyman in his 30s",
       candidateCount: 8,
       rollSeed: "seed-follow-null",
       path: "wardrobe",
-      pickWardrobe: true,
       inheritedWardrobe: { path: null, line: null },
       engine,
     });
@@ -284,14 +349,22 @@ describe("the precedence fix", () => {
       candidateCount: 8,
       rollSeed: "seed-pathed",
       path: "wardrobe",
-      pickWardrobe: true,
       engine: engineReturning(JSON.stringify({
         cohort: "photoreal_human",
         role: "a barista",
         wardrobe: "a red apron over a plain white tee, dark straight jeans, plain low shoes",
       })),
     });
-    expect(compiled.wardrobeLine).toContain("red apron");
+    /*
+      ⚠ The line is the HOUSE line, and the reply's own apron is not in it —
+      #203 slice 2 step (d). This arm asked for a pick until that commit and
+      read its apron back here; what it guards is unchanged (a composed line
+      re-points the constant), and the reply is deliberately left naming an
+      outfit so the composition being guarded is still driven by a fixture that
+      COULD have moved it.
+    */
+    expect(compiled.wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
+    expect(compiled.wardrobeLine).not.toContain("red apron");
 
     const markers = cohortConstantBlocks(compiled.wardrobeLine);
     for (const candidate of compiled.candidates) {

@@ -313,40 +313,46 @@ describe("⚠ the Basics spec has two forms and `SEXES` has three members", () =
 });
 
 describe("the born line — the write side of the same owner", () => {
-  it("takes the brief's own outfit on the Wardrobe path", () => {
-    expect(bornWardrobeLine({ path: "wardrobe", named: "a red apron over a white tee, dark trousers, plain shoes" }))
-      .toBe("a red apron over a white tee, dark trousers, plain shoes");
+  it("⚠ gives the HOUSE line on the Wardrobe path — the brief's own outfit cannot arrive any more", () => {
+    /*
+      Two arms used to stand here: *takes the brief's own outfit* and *falls to
+      the house line when the brief named nothing*. The `named` seam they drove
+      is retired (#203 slice 2, step (d)) — nothing composes a pick, so the
+      parameter went in the commit that emptied it rather than being left as a
+      branch nobody can reach.
+
+      What survives is the answer every reachable roll already received, and it
+      is worth an arm because it is now the ONLY answer this path has.
+    */
+    expect(bornWardrobeLine({ path: "wardrobe" })).toBe(HOUSE_WARDROBE_LINE);
+    /* CONTROL — `sex` is the basics form's argument and must not reach this
+       branch; a resolver reading it here would answer differently. */
+    expect(bornWardrobeLine({ path: "wardrobe", sex: "male" })).toBe(HOUSE_WARDROBE_LINE);
+    expect(bornWardrobeLine({ path: "wardrobe", sex: "female" })).toBe(HOUSE_WARDROBE_LINE);
   });
 
-  it("falls to the house line when the brief named nothing", () => {
-    for (const named of [null, undefined, "   "]) {
-      expect(bornWardrobeLine({ path: "wardrobe", named }), String(named)).toBe(HOUSE_WARDROBE_LINE);
-    }
-  });
-
-  it("⚠ REFUSES to let a brief dress a Basics cast", () => {
+  it("⚠ the Basics form is the path's own, and nothing outside it is consulted", () => {
     /*
       The path IS the outfit. "Born and signed in plain black basics" is what
       the customer chose when she chose the toggle, and a brief that also names
       a red apron has asked for the other path.
 
-      Letting a named outfit through here would make the two paths one path
-      with a confusing name — and it would break the promise the Basics toggle
-      makes about the chest, which is the only thing a customer picks it for.
+      This arm REFUSED a named outfit here until step (d); the ruling now holds
+      structurally, because there is no pick to refuse. It is kept pointed at
+      the two forms so that the promise the toggle made about the chest is
+      still driven by something rather than only argued in a comment.
     */
-    expect(bornWardrobeLine({ path: "basics", sex: "male", named: "a red apron" }))
-      .toBe(basicsWardrobeLine("male"));
-    expect(bornWardrobeLine({ path: "basics", sex: "female", named: "a ballgown" }))
-      .toBe(basicsWardrobeLine("female"));
+    expect(bornWardrobeLine({ path: "basics", sex: "male" })).toBe(basicsWardrobeLine("male"));
+    expect(bornWardrobeLine({ path: "basics", sex: "female" })).toBe(basicsWardrobeLine("female"));
   });
 
   it("⚠ never returns a line the column cannot hold", () => {
     /*
       `wardrobeLine` is varchar(240) and MySQL runs STRICT_TRANS_TABLES, so an
       over-long line is an INSERT error in the middle of a paid roll claim
-      rather than a truncation. Both house-owned answers are checked here; a
-      brief-supplied one is the PICK's door to bound, and it is named in that
-      slice rather than silently trimmed in this one.
+      rather than a truncation. Both house-owned answers are checked here — and
+      since step (d) they are the ONLY answers: the brief-supplied one, whose
+      bound was the pick's door to enforce, cannot arrive.
     */
     for (const line of [HOUSE_WARDROBE_LINE, basicsWardrobeLine("male"), basicsWardrobeLine("female")]) {
       expect(line.length, line).toBeLessThanOrEqual(240);
