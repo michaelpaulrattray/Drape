@@ -109,16 +109,28 @@ export function inkTupleKey(tuple: InkTuple): string {
  * on for one account removed that, and a neck plate rode into a signed Cast's
  * views in a wire test written to check exactly this.
  *
- * **What holds today** is `MANNEQUIN_ROAD_DEFERRED` (`shared/inkMannequinDeferral.ts`)
- * — the founder's own deferral of the mannequin road, gated at the mint and at
- * the view-reference lane. That is a named mechanism rather than luck, and it is
- * the only one.
+ * ⚠ **WHAT HOLDS TODAY IS NO LONGER A MECHANISM — IT IS AN ABSENCE, AND THAT IS
+ * STRONGER (corrected #1158 slice 4f, 2026-09-24).** This paragraph named
+ * `MANNEQUIN_ROAD_DEFERRED` (`shared/inkMannequinDeferral.ts`) as *"a named
+ * mechanism rather than luck, and it is the only one"*, gated **at the mint and
+ * at the view-reference lane**. Both of those gates have since been deleted —
+ * the mint by slice 2, the view-reference lane by slice 4f — so the constant
+ * was left gating nothing and went with them. His retirement of 2026-09-24
+ * (*"It retires with N2"*) supersedes his deferral of 2026-08-19 on its own
+ * subject: **a road that no longer exists does not need deferring.**
+ *
+ * **There is now no code anywhere that draws a plate or carries one into a
+ * render**, which is a structural fact rather than a conditional one — it
+ * cannot be flipped by a variable, and nothing has to stay `true` for it to
+ * hold.
  *
  * **This table is therefore UNBUILT MACHINERY, not a control**, and no document
- * may describe it as governing anything until a door consults it. The resumption
- * prerequisite in `inkMannequinDeferral.ts` is where that gets fixed: the road
- * does not resume until the release door exists, is wired at the dispatch it
- * claims to govern, and has been driven RED.
+ * may describe it as governing anything until a door consults it. ⚠ **AND ITS
+ * RESUMPTION PREREQUISITE SURVIVES ITS FILE, WHICH IS WHY IT IS RESTATED HERE
+ * RATHER THAN LEFT IN GIT**: were the mannequin road ever rebuilt, it does not
+ * resume until the release door exists, is wired at the dispatch it claims to
+ * govern, and has been driven RED. That is the term his deferral was written
+ * on, and it is recorded on the table it is about.
  */
 
 /**

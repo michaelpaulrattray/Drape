@@ -59,9 +59,7 @@ import {
 } from "./castViewPackage";
 import {
   inkViewCropClause,
-  inkViewReferenceClause,
   type CarriedInkCrop,
-  type CarriedInkPlate,
 } from "./inkViewReferences";
 import { pronounsForSex, type CastPronouns } from "./castPronouns";
 import {
@@ -152,30 +150,17 @@ export type BuildPackageInput = {
   identityText: string;
   anchor: ReferenceImage;
   /**
-   * HER TATTOOS, AS PICTURES — the view-reference lane (FOUNDER RULING, his
-   * words at fable-987 §3: *"tattoo reference will need to be supplied to each
-   * view generated otherwise it wont know what the tattoo is"*).
-   *
-   * The anchor is a chest-up photograph of her face. A tattoo on her upper arm
-   * is barely in it or outside it, so every view an engine rendered from the
-   * anchor alone was drawing that surface from nothing.
-   *
-   * What rides is the PLATE — the design already drawn onto a blank mannequin
-   * form — never the customer's uploaded photograph (D-138). Absent or empty,
-   * every view composes exactly the prompt and the single reference it composed
-   * before this existed, which is what a Cast with no ink still gets.
-   */
-  inkPlates?: readonly CarriedInkPlate[];
-  /**
    * THE TATTOOS SHE ACTUALLY HAS, AS PICTURES OF HER — the delivered-crop lane
    * (fable-1297 §3, from his own *"crop and reference any tattos it can find
    * and see - this would intrun carry into the signing angles"*).
    *
-   * The lane above has never carried anything: its source is the plate table
-   * and the mannequin road is parked. This one's source is the frame that
-   * really delivered the ink, cut down to the tattoo as it sits on her — which
-   * is a better picture than a plate as well as an available one, because it
-   * holds her own skin, her own tone and the size the design really is on her.
+   * ⚠ **It is the only ink lane this package has**, and until #1158 slice 4f it
+   * was the second of two: `inkPlates` read the plate table, which the parked
+   * mannequin road never filled, so that lane carried nothing into any signed
+   * Cast in its whole life. This one's source is the frame that really
+   * delivered the ink, cut down to the tattoo as it sits on her — a better
+   * picture than a plate as well as an available one, because it holds her own
+   * skin, her own tone and the size the design really is on her.
    *
    * Absent or empty, every view composes exactly the prompt and the single
    * reference it composed before this existed.
@@ -209,7 +194,7 @@ export type BuildPackageInput = {
   /**
    * WHAT THIS CAST IS WEARING — snapshotted at Sign (design §3.3, item 6).
    *
-   * Rides beside the anchor for the same reason the plates and the feature
+   * Rides beside the anchor for the same reason the crops and the feature
    * words do: it is a fact about this Cast that the composer cannot derive.
    * `null` or absent composes and judges exactly today's sentence, which is
    * every Cast signed to date.
@@ -446,36 +431,34 @@ async function buildOneView(
     let stored: { key: string; url: string } | null = null;
     try {
       /*
-        THE PLATES RIDE BESIDE THE ANCHOR, INTO EVERY VIEW — his ruling, and the
-        ordinal the clause quotes is derived from the array it is quoting about
-        rather than assumed, so a sentence can never point at a slot the request
-        does not hold.
-      */
-      const plates = input.inkPlates ?? [];
-      /*
-        AND THE TATTOOS SHE REALLY HAS, BEHIND THEM.
+        THE TATTOOS SHE REALLY HAS RIDE BESIDE THE ANCHOR, INTO EVERY VIEW — his
+        ruling, and the ordinal the clause quotes is derived from the array it is
+        quoting about rather than assumed, so a sentence can never point at a
+        slot the request does not hold.
 
-        Two ink lanes, one array, and every ordinal derived from the array
-        itself — the crops start where the plates stop, so neither sentence can
-        come to quote a slot the request does not hold. The two lanes never
-        carry one tattoo twice: the Sign hands the plate lane the slots this one
-        already took.
+        ⚠ **THE ANCHOR IS REFERENCE 1 AND THE CROPS START AT 2, AND THAT IS NOT
+        A NEW FACT** — it is what the arithmetic has always evaluated to. A
+        plate lane sat between them until #1158 slice 4f (*"It retires with
+        N2"*), reading `2 + plates.length`; its source table never held a row in
+        either world and `MANNEQUIN_ROAD_DEFERRED` refused every design at its
+        first door regardless, so `plates.length` was 0 on every signed Cast
+        this product has ever rendered. The composed prompt is byte-identical
+        across that deletion, which is asserted at the wire rather than argued
+        here — `packageOrchestrator.test.ts`, "the crops start at reference 2".
       */
       const crops = input.inkCrops ?? [];
       const references: ReferenceImage[] = [
         input.anchor,
-        ...plates.map((plate) => ({ bytes: plate.bytes, contentType: plate.contentType })),
         ...crops.map((crop) => ({ bytes: crop.bytes, contentType: crop.contentType })),
       ];
-      const inkClause = inkViewReferenceClause({ plates, firstOrdinal: 2 });
       const cropClause = inkViewCropClause({
         crops,
-        firstOrdinal: 2 + plates.length,
+        firstOrdinal: 2,
         pronouns: input.pronouns ?? pronounsForSex(null),
       });
       /*
         THE WORDS FOR WHAT THE ANCHOR CANNOT SHOW ride in the same place the
-        plates' clause does, so there is one shape for "things that travel
+        crops' clause does, so there is one shape for "things that travel
         beside the anchor" rather than two. Both are appended rather than
         substituted: a Cast with neither sends the composer's own output, byte
         for byte, which is the inertness both lanes are asserted on.
@@ -520,7 +503,6 @@ async function buildOneView(
       const image = await engine.generateView({
         prompt: [
           composePackageViewPrompt(angle, input.wardrobeLine ?? null),
-          inkClause,
           cropClause,
           wordsClause,
         ]
