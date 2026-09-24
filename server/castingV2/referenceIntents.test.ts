@@ -72,14 +72,20 @@ describe("the ingestion map — his words, pinned", () => {
 
       `referenceIntentWrongDoor` picked its subject by key and then said one
       hard-coded thing — *"we read it from the picture and hand you the words"*.
-      Reachable only by makeup today, because `inkIntentRefusal` checks OPENNESS
-      before it checks the door and hair is closed. **The day hair opens, that
+      Reachable only by makeup, because `inkIntentRefusal` checked OPENNESS
+      before it checked the door and hair is closed. **The day hair opens, that
       ordering reverses** and a crop feature is told it keeps nothing and will be
       handed words. Both halves false: a crop IS kept, and there are none.
 
       Driven directly rather than through the door, precisely because the door
-      cannot reach this branch yet — a guard whose only test runs through the
+      could not reach this branch — a guard whose only test runs through the
       caller that currently refuses first is a guard with no test at all.
+
+      ⚠ **AND THE DOOR IS NOW GONE ENTIRELY** (#1158 slice 4e): `inkIntentRefusal`
+      retired with the ink studio, so this arm is the ONLY thing holding the
+      per-form derivation, and the decision to drive directly is what kept it
+      alive through its caller's deletion. The function's own row is HELD on
+      N3's reference intent door (Crew reply #213).
     */
     const hair = referenceIntentWrongDoor("hair");
     expect(referenceIntentIngestionForm("hair")).toBe("crop");

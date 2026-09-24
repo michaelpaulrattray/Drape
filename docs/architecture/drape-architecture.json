@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "f6ad85963552294b"
+    "sourceFingerprint": "893feee4353bc7fd"
   },
   "domains": [
     {
@@ -24552,27 +24552,7 @@
     },
     {
       "from": "module:server/castingV2/inkUploadDoor.ts",
-      "to": "module:shared/bodyAnchorRegions.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/inkUploadDoor.ts",
-      "to": "module:shared/inkPlacementVocabulary.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/inkUploadDoor.ts",
-      "to": "module:shared/inkReleasedPlacements.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/inkUploadDoor.ts",
       "to": "module:shared/pictureFormats.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/inkUploadDoor.ts",
-      "to": "module:shared/referenceIntents.ts",
       "kind": "imports"
     },
     {
@@ -28122,22 +28102,12 @@
     },
     {
       "from": "module:server/db/castingV2InkPlates.ts",
-      "to": "module:server/db/storageCleanup.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/db/castingV2InkPlates.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/db/castingV2InkPlates.ts",
       "to": "module:shared/inkReleasedPlacements.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/db/castingV2InkPlates.ts",
-      "to": "module:shared/inkTemplateKinds.ts",
       "kind": "imports"
     },
     {

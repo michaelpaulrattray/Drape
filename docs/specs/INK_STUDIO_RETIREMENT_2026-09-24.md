@@ -203,7 +203,15 @@ PARENT of `CASTING_INK_REGION_CROP_SCOPE`, which `defaultCutDesign` still reads,
 refuses to boot when it reaches past its parent. Unsetting the parent over a live child is a
 crash-looping deploy. `CASTING_INK_REGION_CROP_SCOPE` is fully live and is NOT this card's to touch.
 
-**Five exports lost their last caller and are TAKE rows in `docs/specs/cleanup-dispositions.yaml`**
+⚠ **SIX, NOT FIVE — CORRECTED AT THE FILE 2026-09-24 (slice 4e).** This paragraph counted five and
+the table held six: slice 3 added `INK_DESIGNS_PER_CANDIDATE_REFUSAL` without re-counting the prose,
+and two shift handoffs then carried *"the five TAKE rows"* forward unchecked. ⚠ **A seventh,
+`listInkPlatesForDesign`, was never on the table at all** — the uncalled-export sweep cannot see a
+symbol reached only as `plates.NAME` off a namespace held in a variable, which is how the plate
+module's test reaches it, so it appeared in neither of the sweep's two sections. It was found by
+hand, by the law-7 sibling sweep, and taken with the rest. **All seven are TAKEN as of slice 4e.**
+
+**Six exports lost their last caller and were TAKE rows in `docs/specs/cleanup-dispositions.yaml`**
 rather than deletions in the same commit, which is that table's own contract — a TAKE row deletes
 nothing by itself and the execution is its own commit: `inkIntentRefusal`, `inkPlacementRefusal`
 (both `inkUploadDoor.ts`), `candidateBelongsTo`, `readInkDesignCastIdentity` (both
@@ -371,18 +379,31 @@ relay to overturn.
    production act and no target-value rehearsal to run.
    The sum goes 20 → 19 of a ceiling of 20, and **the freed 1 is not given to the courtesy pool**
    without its own card.
-3. **Five TAKE rows in `docs/specs/cleanup-dispositions.yaml`** — `inkIntentRefusal`,
-   `inkPlacementRefusal`, `candidateBelongsTo`, `readInkDesignCastIdentity`, `recordInkPlate`. A TAKE
-   row is *read, and the reading says remove*; executing them is one commit, and the table will
-   refuse the commit until each row is flipped to TAKEN, which is the door closing behind the knife.
+3. ✅ **The TAKE rows in `docs/specs/cleanup-dispositions.yaml` — SIX of them, not five — DONE
+   2026-09-24 (slice 4e).** `inkIntentRefusal`, `inkPlacementRefusal`,
+   `INK_DESIGNS_PER_CANDIDATE_REFUSAL`, `candidateBelongsTo`, `readInkDesignCastIdentity`,
+   `recordInkPlate` — plus `listInkPlatesForDesign`, which no instrument could see. The table did
+   refuse the commit until every row was flipped, exactly as predicted: six `stale` and six
+   `unreadable` on the first run after the knife. ⚠ **And executing them ORPHANED two more** —
+   `referenceIntentWrongDoor` and `referenceIntentNotOpen` in `shared/referenceIntents.ts`, whose
+   only production caller was `inkIntentRefusal`. They are **HELD**, not taken, and the distinction
+   is the point: those are the copy layer of a LIVE shared vocabulary, not the retired road's own
+   machinery, so whether they go is a decision about that module. Blocker: N3's reference intent
+   door (his Crew reply #213).
 4. **`signService.carriedInkPlates` reads a table nothing can write.** It returns early on zero rows
    and has since before the retirement, so removing it changes no behaviour — but it is on the PAID
    sign road, so it is a money-surface diff and gets its own reading and its own PR rather than
    riding a flag slice.
-5. **`server/castingV2-ink-plate-db.test.ts` is the last proof of the plate table's rules**, now that
-   the door and mint suites are gone. If `recordInkPlate` is TAKEN, that suite loses its subject and
-   the table keeps only read paths — decide what proves the table's conditions before deleting the
-   arms that currently do.
+5. ✅ **`server/castingV2-ink-plate-db.test.ts` — ANSWERED IN SLICE 4e, and the answer was not "keep
+   the arms".** §8c's question was asked of all nine arms — *which were proving LIVE code through the
+   dead function?* — and exactly one answered yes: the retention sweep, which runs
+   `listPurgeableInkPlatesIn` + `deleteInkPlateRowsIn` on **every sweep** and is otherwise driven
+   only through mocks. That arm was **re-pointed onto a raw INSERT**; the other eight were deleted
+   with their subject, because an arm kept after its subject is gone is green and checks nothing.
+   ⚠ **The raw-INSERT fixture is not an invention**: `castingV2-ink-design-db.test.ts`'s *"takes a
+   design's plates with it"* has built its plate exactly that way since before this slice, for the
+   other live caller — so the idiom was already this repository's, and writing a test-only writer
+   instead would have been a second writer of a table the product cannot write.
 
 **And the standing warning for slice 4's own act:** #1156 is read before the Atlas's retirement view
 is trusted, because a file that will not parse makes the Atlas drop a whole router silently, and
@@ -534,7 +555,8 @@ no-op edit look identical, exactly as `surviving-sabotage-may-be-inert` records.
    courtesy pool without its own card). **DONE 2026-09-24.** ⚠ **No production act after all** — the
    variable was never set on the service; the correction and how a wrong premise survived four
    documents is above.
-4. **4e — the five TAKE rows executed**, one commit.
+4. ✅ **4e — the TAKE rows executed (SIX, plus a seventh the sweep could not see), one commit. DONE
+   2026-09-24.** See item 3 above for what it orphaned and why those two are HELD rather than taken.
 5. **4f — `signService.carriedInkPlates`** — a money surface, its own reading and its own PR.
 
 **Neither `CASTING_INK_REGION_CROP_SCOPE` nor `CASTING_INK_TRANSFORM_SCOPE` appears on that list.** Both

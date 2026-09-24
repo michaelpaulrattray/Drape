@@ -240,8 +240,10 @@ function tolerateAbsentInkDesignStore(error: unknown): never | [] {
  * A plate cannot exist without a design, so it is armed by the DESIGN's own
  * question rather than by a third list of doors: whatever can mint a design can
  * reach a plate, and nothing else can. That is strictly wider than the plate's
- * own writer needs today — `recordInkPlate` has no non-test caller at all,
- * read 2026-09-24 — and wider is the right direction for a tolerance, because
+ * own writer needs, because ⚠ **THERE IS NO WRITER AT ALL ANY MORE**:
+ * `recordInkPlate` had no non-test caller (read 2026-09-24) and was DELETED in
+ * #1158 slice 4e, so this table can no longer gain a row. Wider is still the
+ * right direction for a tolerance, because
  * every error on this side of the question is a missing table said out loud
  * rather than a row swallowed in silence.
  *
