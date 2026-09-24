@@ -163,16 +163,22 @@ describe("the studio's service chain is retired", () => {
     expect(scope).toContain("CASTING_INK_CUT_SCOPE");
   });
 
-  it("no fal path draws on the plate mint's allowance, and the slot is still declared", () => {
+  it("the plate mint's fal allowance is gone, and the courtesy pool did not take its slot back", () => {
     /*
-      Both halves matter and they point opposite ways. Nothing spends the slot —
-      `inkPlateEngine.ts` was its only caller and it is deleted. The slot stays
-      declared until slice 4 because the variable is set on the service and
-      `assertFalBudget()` is a BOOT gate, so removing the declaration changes
-      what the gate computes on the next restart.
+      ⚠ THIS ARM USED TO ASSERT THE OPPOSITE (#1158 slice 4d, 2026-09-24). It
+      read *"the slot stays declared until slice 4 because the variable is set
+      on the service"* — and that premise was never true. Read at the running
+      service on the day the row came out, by two independent readers with a
+      positive and a negative control: **not one of the five allowance
+      variables is set on production.** All five ran on their declared
+      fallbacks, so there was no production act in this slice at all. The
+      caution cost two slices of delay and nothing else; it is recorded here
+      because a reason nobody re-reads is how a wrong premise survives.
+
+      What has NOT changed is the second half, which is the one with teeth.
     */
     const budget = read("server/castingV2/falBudget.ts");
-    expect(budget).toContain("INK_PLATE_CONCURRENCY");
+    expect(budget).not.toContain('env: "INK_PLATE_CONCURRENCY"');
     const spenders = ["server/castingV2/inkPlateEngine.ts", ...PLATE_ROAD].filter(has);
     expect(spenders).toEqual([]);
     /* The courtesy pool is NOT widened by the retirement — handing the freed 1

@@ -10,37 +10,47 @@
  * (`falConcurrency.ts`). But gating one caller closes one instance of the
  * class, and the class is that **independent paths draw on one account
  * allowance and none of them knows the others exist** — four when this was
- * written, five since the plate mint (see the re-cut below):
+ * written, five while the plate mint lived, and four again since it retired
+ * (see the re-cut below, kept as origin):
  *
  * ```
  * roll images    ROLL_IMAGE_CONCURRENCY    8   paid      a sheet's eight faces
  * sign views     SIGN_VIEW_CONCURRENCY     3   paid      a package's five views
  * refine edits   REFINE_EDIT_CONCURRENCY   3   paid      one paid edit at a time-ish
  * region reads   FAL_CONCURRENCY           5   courtesy  scans, harvests, guards
- * ink plates     INK_PLATE_CONCURRENCY     1   courtesy  RESERVED FOR NOTHING — see below
  * ```
  *
- * ⚠ **THE FIFTH ROW NOW SPENDS NOTHING, AND IT IS STILL DECLARED ON PURPOSE**
- * (#1158 slice 2, 2026-09-24). His ruling on card `switch-10-ink-studio` —
- * *"It retires with N2"* — retired the ink studio, and `inkPlateEngine.ts`, the
- * only caller of `falAllowanceOf("INK_PLATE_CONCURRENCY")`, is deleted with it.
- * So no code draws on this slot.
+ * ⚠ **THE PLATE MINT'S ROW IS GONE — #1158 slice 4d, 2026-09-24.** His ruling
+ * on card `switch-10-ink-studio` — *"It retires with N2"* — retired the ink
+ * studio, and `inkPlateEngine.ts`, the only caller of
+ * `falAllowanceOf("INK_PLATE_CONCURRENCY")`, went with it in slice 2. The row
+ * outlived its caller by two slices on purpose and is now removed: the sum is
+ * **19 of 20**.
  *
- * It is NOT removed here, and the reason is the direction of the risk rather
- * than tidiness: the variable is SET on the service, `assertFalBudget()` is a
- * BOOT gate, and a declaration leaving this array while its value stays in the
- * environment changes what the gate computes on the next restart. That is
- * #1158 slice 4's act — the flags and shared constants, children-first, at the
- * Atlas's retirement view — and it is written down here rather than left for
- * somebody to find, because a reserved slot nobody can spend reads exactly like
- * a path somebody forgot to wire.
+ * ⚠ **AND THE REASON IT WAITED WAS WRONG — READ THIS BEFORE REPEATING IT.**
+ * Slice 2's docblock, this file's own paragraph, the census § 8 and the card
+ * all said the row had to stay because *"the variable is SET on the service"*
+ * and a declaration leaving this array while its value stayed in the
+ * environment would change what the boot gate computes. **It was never set.**
+ * Read at the running service on 2026-09-24 by two independent readers — the
+ * rite's own `railway variables --service Drape --kv` parse and a JSON
+ * key-presence read — with a positive control (`CASTING_V2_SCOPE` present) and
+ * a negative one (a name that cannot exist): **not one of the five allowance
+ * variables is set on production.** All five run on the fallbacks declared
+ * below, which is why the live boot line reads `ink plates 1` — that 1 was the
+ * FALLBACK, not a value anybody had configured. So there was no production act
+ * in this slice and there never was one; the caution was real, the premise
+ * under it was not. **A number in a log agrees with "set to 1" and with "unset,
+ * defaulting to 1" equally, and only one of those two was ever checked.**
  *
- * ⚠ **AND THE FREED SLOT IS NOT GIVEN BACK TO THE COURTESY POOL.** Region reads
+ * ⚠ **THE FREED SLOT IS NOT GIVEN BACK TO THE COURTESY POOL.** Region reads
  * went 6 → 5 to pay for the plate mint (see the re-cut below); handing the 1
  * back would raise a live path's concurrency, which is a capability change
  * wearing a cleanup's clothes — his own rule from the switch sitting: *"Folding
  * a new capability into a retirement is how a half-built feature ships under a
- * cleanup's name."* If the pool should grow, that is its own card.
+ * cleanup's name."* If the pool should grow, that is its own card. **So the
+ * account keeps one slot no path may spend, deliberately** — see the invariant
+ * below, where that used to be the thing this table refused.
  *
  * `signEngine` already reasoned about it in prose — *"one account-level fal
  * concurrency ceiling that the sheet is also drawing on"* — and nothing
@@ -69,13 +79,28 @@
  * by scheduling.
  *
  * The sum may EQUAL the ceiling. The provider's limit is inclusive — the
- * twenty-first request is the one refused — so twenty in flight is legal and
- * the defaults deliberately spend the whole allowance rather than leaving an
- * unowned remainder that no path may use.
+ * twenty-first request is the one refused — so twenty in flight is legal.
+ *
+ * ⚠ **AND THE DEFAULTS NO LONGER SPEND THE WHOLE ALLOWANCE — 19 of 20 since
+ * #1158 slice 4d, and that is a RULING rather than an oversight.** This
+ * sentence used to end *"the defaults deliberately spend the whole allowance
+ * rather than leaving an unowned remainder that no path may use"*, which was
+ * true of every reading until the plate mint retired. The remainder now exists
+ * because the only way to close it is to raise a live path's concurrency, and
+ * his rule forbids doing that inside a retirement. **A later reader who finds
+ * the gap and "fixes" it by bumping `FAL_CONCURRENCY` back to 6 is making a
+ * capability change, not tidying arithmetic** — `falBudget.test.ts` pins the
+ * 5 by name so that edit cannot land quietly, and growing the pool is its own
+ * card with its own measurement.
  */
 
 /*
  * # THE FIFTH PATH, AND WHY THE COURTESY POOL PAID FOR IT (2026-08-18)
+ *
+ * ⚠ **KEPT AS ORIGIN — THE FIFTH PATH RETIRED 2026-09-24 (#1158 slice 4d) AND
+ * ITS ROW IS NO LONGER IN THE TABLE BELOW.** This section is why region reads
+ * stand at 5 rather than 6, which is the one fact about it that still governs
+ * live behaviour; everything else here is the history of a road that is gone.
  *
  * The plate mint is a fal call — one per uploaded design, on the ruled engine
  * (`INK_PLATE_ENGINE`, Nano Banana Pro). The four paths above spent 20 of 20
@@ -132,12 +157,10 @@ export const FAL_ALLOWANCES: readonly FalAllowance[] = [
   { name: "roll images", env: "ROLL_IMAGE_CONCURRENCY", fallback: 8, kind: "paid" },
   { name: "sign views", env: "SIGN_VIEW_CONCURRENCY", fallback: 3, kind: "paid" },
   { name: "refine edits", env: "REFINE_EDIT_CONCURRENCY", fallback: 3, kind: "paid" },
+  /* ⚠ The 5 is load-bearing and is NOT a spare: it was 6 until the plate mint
+     took one, and the plate mint's retirement (#1158 slice 4d) deliberately did
+     not hand it back. Raising it is a capability change with its own card. */
   { name: "region reads", env: "FAL_CONCURRENCY", fallback: 5, kind: "courtesy" },
-  /* ⚠ The plate mint RETIRED with the ink studio (#1158 slice 2) and nothing
-     draws on this slot any more. Kept declared until slice 4 because the
-     variable is set on the service and this array feeds a BOOT gate — the
-     header says why in full, including why the 1 is not handed back. */
-  { name: "ink plates", env: "INK_PLATE_CONCURRENCY", fallback: 1, kind: "courtesy" },
 ];
 
 /** One path's allowance, read the same way by the boot check and by the queue. */

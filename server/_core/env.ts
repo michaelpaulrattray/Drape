@@ -133,12 +133,17 @@ const OPTIONAL_VARS: Record<string, string> = {
  * of the customer reading a lie.
  *
  * ⚠ THE FAL ALLOWANCES ARE DELIBERATELY NOT HERE. `ROLL_IMAGE_CONCURRENCY`,
- * `SIGN_VIEW_CONCURRENCY`, `REFINE_EDIT_CONCURRENCY`, `FAL_CONCURRENCY`,
- * `INK_PLATE_CONCURRENCY` and `FAL_ACCOUNT_CEILING` are governed by
+ * `SIGN_VIEW_CONCURRENCY`, `REFINE_EDIT_CONCURRENCY`, `FAL_CONCURRENCY`
+ * and `FAL_ACCOUNT_CEILING` are governed by
  * `FAL_ALLOWANCES` and `assertFalBudget()`, which already refuses to boot
  * naming the offending variable — `Number("")` is 0 there, not NaN, and a path
  * with no slots is precisely what that check exists to refuse. Two owners for
  * one variable would be worse than the defect this table fixes.
+ *
+ * (That list named a fifth, `INK_PLATE_CONCURRENCY`, until #1158 slice 4d on
+ * 2026-09-24. The plate mint retired and its allowance row went with it, so the
+ * name is governed by nothing now rather than by the other owner — it is not
+ * set on the service and never was, and setting it would do nothing.)
  *
  * `PORT` is also not here and is also clear: it reads `|| "3000"`, which DOES
  * catch the empty string, and a non-numeric value makes `findAvailablePort`
