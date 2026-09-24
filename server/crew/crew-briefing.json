@@ -1,7 +1,7 @@
 {
-  "edition": 509,
-  "updatedAt": "2026-09-24T08:35:49.727Z",
-  "shift": "Foreman — the tidy-up would have quietly stopped collecting a photograph you attached, and the switch it asked was the wrong one",
+  "edition": 510,
+  "updatedAt": "2026-09-24T09:47:09.598Z",
+  "shift": "Foreman — the tattoo studio's two settings are off the live site, and the reviewer caught the record running ahead of it",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -84,6 +84,10 @@
         {
           "title": "Step two of the tattoo studio's retirement, and it caught the thing that would have gone wrong quietly. When you delete a cast, a cleanup runs and removes every picture attached to it. That cleanup was asking the tattoo studio's switch whether those pictures could exist — but the studio is the road being retired, and the one still open is attaching a photo of your own. So the moment the studio's switch came off, the cleanup would have stopped collecting, and a photograph you attached could have outlived the cast it was promised to leave with. No test would have gone red. It now asks about both roads, and the check that proves it is red on the old code",
           "state": "done"
+        },
+        {
+          "state": "done",
+          "title": "Step three of the tattoo studio's retirement, and it is the one you can point at: its two settings are GONE from the live site. Nothing on any screen changed — the four tattoo roads you kept (a tattoo from your words, a tattoo from a picture you attach, changing one you already have, being born with one) all answer exactly as they did, checked for three accounts before and after. The two had to go together: one refuses to start up without the other, so removing just one would have taken the site down."
         }
       ]
     },
@@ -141,9 +145,9 @@
         "source": "The tattoo studio, the segment pair and the wardrobe path — all three on your word."
       },
       {
-        "label": "Caught before the tidy-up ran",
-        "tone": "good",
-        "source": "A cleanup was about to stop collecting attached photos. Found by reading, not by a failing test."
+        "label": "The reviewer caught it",
+        "tone": "neutral",
+        "source": "Our write-up said two settings were already off the site. They weren't. Caught, fixed, re-passed."
       },
       {
         "label": "One customer, and it is you",
@@ -158,11 +162,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "40 open · 14 untouched for 7 days · 11 carry a hold · none urgent."
+        "source": "40 open · 14 untouched for 7 days · 6 carry a hold · none urgent."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T08:35:57.506Z",
+      "readAt": "2026-09-24T09:46:13.168Z",
       "items": [
         {
           "issueNumber": 179,
@@ -7803,6 +7807,13 @@
       "status": "merged",
       "prNumber": 1171,
       "note": "The cleanup that runs when a cast is deleted was checking the retiring switch, not the one still in use."
+    },
+    {
+      "id": "ink-flags-off-1158-s4c",
+      "title": "The tattoo studio's two settings are off the live site",
+      "status": "merged",
+      "prNumber": 1172,
+      "note": "Both removed together — one will not start without the other. Nothing moved for any account."
     }
   ],
   "problems": [
@@ -8726,7 +8737,7 @@
     216
   ],
   "nextUp": {
-    "readAt": "2026-09-24T08:35:57.505Z",
+    "readAt": "2026-09-24T09:46:13.167Z",
     "items": [
       {
         "issueNumber": 1158,
