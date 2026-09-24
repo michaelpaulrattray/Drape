@@ -1,7 +1,7 @@
 {
-  "edition": 503,
-  "updatedAt": "2026-09-24T01:28:41.357Z",
-  "shift": "Foreman — you finished the switch list: all thirteen answered",
+  "edition": 504,
+  "updatedAt": "2026-09-24T02:19:49.570Z",
+  "shift": "Foreman — the tattoo studio starts retiring, and one held question comes back",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -2989,6 +2989,28 @@
       "state": "done",
       "filedAt": "2026-09-24",
       "issueNumber": 1148
+    },
+    {
+      "id": "born-ink-reask-1159",
+      "title": "Your briefs mention tattoos. Should every account's be read, or only yours?",
+      "productImpact": "You held this one last night and told me to bring it back with card 3. Card 3 is on, so here it is.\n\nWhat it does: when a brief says \"extensive irezumi-style tattoos covering arms and legs\", the studio WRITES THAT DOWN against the cast and shows it on her sheet. With it off, the sentence still reaches the picture — the tattoos get drawn — but nothing records that she has them, so nothing later in the studio knows. It is the difference between a cast who happens to have tattoos in one photograph and a cast the product knows is tattooed.\n\nWhy you held it: turning it on re-opened the 180-character brief cap, because the briefs long enough to hit that cap are exactly the briefs describing tattoos. THAT REASON IS GONE. You turned card 3 on for everyone in the same sitting, and I checked it at the live site rather than at the record: the cap is 2,000 characters for every account, and this switch's only parent is already on for everyone. It moves on its own now — nothing else has to move with it.\n\nIt has been on for your account for a month, and yours is the only account that has ever cast. So this changes nothing about any picture that exists; it decides what happens the first time somebody else describes a tattoo.",
+      "workedExample": "Nine of your 295 rolls name a tattoo in your own words. Six of them were rolled since the switch went on, and the studio read all six — 75 notes across 40 casts, filed under arms (31), below the waist (21), neck (12) and torso (11).\n\nThe three it did not read are the honest part. Two were from 1 August, before the switch existed. The third was 26 August, after it, and it is worth your eye: the brief said \"a few small black cross tattoos on the scalp\". The studio knows four places tattoos go — arms, below the waist, neck, torso — and the scalp is not one of them, so it read the sentence, found nowhere to file it, and wrote nothing. That is a gap in the list of places, not a fault in the reading, and it is NOT part of this decision. Say so and I will card it separately — folding it in here is exactly the thing you told me not to do.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Turn it on for everyone",
+          "consequence": "Any account's brief that names a tattoo gets it recorded and shown on the sheet, the way yours has been for a month. No new screen, nothing to learn, nothing to switch. It cannot disturb an existing customer because there is not one yet."
+        },
+        {
+          "key": "B",
+          "label": "Keep it on your account only",
+          "consequence": "Nothing changes. The day a second person casts, their \"he has a full sleeve\" is drawn into the picture and then silently forgotten — and the difference will not be visible to them or to you until something downstream needs to know she is tattooed."
+        }
+      ],
+      "recommendation": "A — turn it on. The one reason you held it is measurably gone, it widens by itself with no other switch moving, and it has a month of your own rolls behind it: six briefs named tattoos in a place the studio knows, and it read six. The scalp gap is real and is its own card if you want it.",
+      "state": "open",
+      "filedAt": "2026-09-24",
+      "issueNumber": 1159
     }
   ],
   "eyeItems": [
@@ -7703,6 +7725,13 @@
       "status": "merged",
       "prNumber": 1157,
       "note": "Nothing changes on screen. Counting the class found a second dead switch nobody had noticed."
+    },
+    {
+      "id": "ink-studio-retire-1158-slice1",
+      "title": "The tattoo studio stops taking uploads — the first slice of retiring it",
+      "status": "in-review",
+      "prNumber": 1162,
+      "note": "Nothing on screen changes; it never drew anything. Held for the reviewer — it touches a rate limiter."
     }
   ],
   "problems": [
