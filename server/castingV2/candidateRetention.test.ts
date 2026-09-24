@@ -74,9 +74,18 @@ vi.mock("../db/storageCleanup", () => ({
 /*
   Segments purge with their candidate, in the SAME transaction and onto the
   SAME manifest — the founder's condition on the store, held from its first
-  migration. Mocked here so the sweep's own orchestration can be driven; the
-  statements themselves are proved against real MySQL in
-  `server/castingV2-segment-store-db.test.ts`.
+  migration. Mocked here so the sweep's own orchestration can be driven.
+
+  ⚠ THE REAL-MYSQL PROOF OF THOSE STATEMENTS IS GONE, and it is named rather
+  than quietly dropped: it was `server/castingV2-segment-store-db.test.ts`,
+  deleted with the store by #1160 slice 3 on his ruling of 2026-09-24. What it
+  proved about the SWEEP — that a segment's objects ride the candidate's own
+  cleanup manifest inside the same transaction — has no driver now. The purge
+  itself survives on purpose (the `casting_segments` table outlives the store
+  until the founder drops it, which is a destructive migration and therefore
+  his act), and it has always collected an empty set: zero rows on production
+  and zero on dev, all time. So what is unproven is the handling of rows that
+  cannot exist.
 */
 vi.mock("../db/castingV2Segments", () => ({
   listPurgeableSegmentsIn: (_tx: unknown, ...args: unknown[]) => calls.listSegments(...args),
@@ -191,7 +200,6 @@ beforeEach(() => {
   calls.listInkDeliveryCrops.mockResolvedValue([]);
   calls.deleteInkDeliveryCrops.mockResolvedValue(0);
   mapState.cropOpen = null;
-  delete process.env.CASTING_SEGMENTS_SCOPE;
   delete process.env.CASTING_REFERENCE_LIBRARY_SCOPE;
   delete process.env.CASTING_SCAN_TABLE_SCOPE;
   delete process.env.CASTING_INK_STUDIO_SCOPE;
@@ -298,7 +306,6 @@ describe("a candidate's segments purge with it", () => {
       candidate row goes, and the only record of those objects goes with it.
       Nothing may gate the collection of bytes that already exist.
     */
-    process.env.CASTING_SEGMENTS_SCOPE = "off";
     calls.listSegments.mockResolvedValue([
       { id: 5, maskKey: "segments/orphan-mask.png", contentKey: "segments/orphan-content.png" },
     ]);
@@ -572,15 +579,6 @@ describe("a candidate's segments purge with it", () => {
     expect(calls.deleteSegments).not.toHaveBeenCalled();
   });
 
-  it("still refuses a wrapped absence once the store is armed", async () => {
-    process.env.CASTING_SEGMENTS_SCOPE = "users:1";
-    calls.listSegments.mockRejectedValue(Object.assign(new Error("Failed query"), {
-      cause: Object.assign(new Error("no such table"), { code: "ER_NO_SUCH_TABLE", errno: 1146 }),
-    }));
-
-    await expect(runCandidateRetentionSweep()).rejects.toThrow(/Failed query/);
-  });
-
   it("does not mistake an unrelated wrapped failure for an absent table", async () => {
     // The chain walk must not become "anything with a cause is forgiven".
     calls.listSegments.mockRejectedValue(Object.assign(new Error("Failed query"), {
@@ -590,16 +588,29 @@ describe("a candidate's segments purge with it", () => {
     await expect(runCandidateRetentionSweep()).rejects.toThrow(/Failed query/);
   });
 
-  it("refuses to tolerate the missing table once the store is armed", async () => {
-    process.env.CASTING_SEGMENTS_SCOPE = "users:1";
-    calls.listSegments.mockRejectedValue(Object.assign(new Error("no such table"), {
-      code: "ER_NO_SUCH_TABLE",
-      errno: 1146,
-    }));
+  /*
+    ⚠ TWO ARMS WERE HERE AND #1160 SLICE 3 TOOK THEM, WHICH IS A REAL LOSS AND
+    NOT A CLEAN-UP — recorded so nobody re-derives them from an empty space.
 
-    // Armed and missing is a real fault, and a warning would bury it.
-    await expect(runCandidateRetentionSweep()).rejects.toThrow(/no such table/);
-  });
+    They were *"still refuses a wrapped absence once the store is armed"* and
+    *"refuses to tolerate the missing table once the store is armed"*. Both set
+    `CASTING_SEGMENTS_SCOPE=users:1` and required the sweep to RETHROW a missing
+    `casting_segments` table, because an armed store over a missing table is a
+    fault a warning would bury.
+
+    **They cannot be expressed any more.** His ruling of 2026-09-24 retired the
+    segment store, so there is no flag to set, no `castingSegmentsArmed()` to
+    read, and nothing that could ever arm it — `tolerateAbsentSegmentStore` is
+    unconditional by construction now, and its docblock says so at the site.
+    Driven before they were cut: with the tolerance unconditional these two were
+    the ONLY two of 36 that failed.
+
+    What survives is the half that was doing the work, and it is immediately
+    below: an unrelated wrapped failure (a deadlock) is still rethrown, so the
+    tolerance has not become "anything with a cause is forgiven". The seven
+    sibling tolerances in this module keep their own armed-and-missing arms,
+    because their features are alive.
+  */
 
   it("purges the reference library whatever ITS flag says, and takes the words-only rows too", async () => {
     /*

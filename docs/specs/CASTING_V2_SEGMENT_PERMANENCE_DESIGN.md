@@ -1,6 +1,20 @@
 # Segment permanence — the implementation design
 
-> **Status: built.** Design-time record — the feature shipped (the segment store, CASTING_SEGMENTS_SCOPE); the code and CLAUDE.md govern current behaviour (#69 stamping sweep, 2026-08-28).
+> ⚠ **Status: RETIRED (2026-09-25, #1160).** The feature shipped and has now been
+> removed in full. His ruling, 2026-09-24 (Crew reply #212), verbatim and entire:
+> *"Retire both. The paste road is gone; nothing reads these."*
+>
+> Everything below is a DATED RECORD of a design decision and no longer describes
+> the product: there is no segment store, no `CASTING_SEGMENTS_SCOPE`, no
+> `listLineageSegments`, no `retireSegmentFacet`. **It was measured empty before a
+> line was cut** — zero rows on production and zero on dev, all time, with 4 and 7
+> users as the positive control — and it was empty *structurally*, not by luck: the
+> only writer refused without `image.evidence`, and `repaintOnce`, the road every
+> production render takes, declares that field `undefined`. The `casting_segments`
+> TABLE still exists, because dropping one is a destructive migration and therefore
+> the founder's own act; the candidate sweep still purges it.
+>
+> Read this for WHY the decisions were made, never for what the code does.
 
 
 *Design document. No code has been written. Ordered by the founder

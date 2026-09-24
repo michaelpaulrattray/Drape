@@ -2328,8 +2328,15 @@ export const castingCandidateVariants = mysqlTable("casting_candidate_variants",
    *
    * NULL on rows written before this column; the projection falls back to the
    * instruction list, which was correct for every one of them.
+   *
+   * 400 since migration 0066 (#1126, his "a" on the Desk card, 2026-09-25) —
+   * it was 220 while an ANSWER to a clarifying question may carry 309 plus the
+   * studio's own clause, so a long answer always lost something. Widened by
+   * ceremony on both worlds before this declaration moved (production held zero
+   * rows); `REFINE_REQUEST_TEXT_MAX_LENGTH` is pinned to this number by
+   * `server/refineEchoWidth.test.ts`.
    */
-  requestText: varchar("requestText", { length: 220 }),
+  requestText: varchar("requestText", { length: 400 }),
   // INTERNAL — the composed instruction and the FULL resolved identity of this
   // variant. Sign reads its identity documents from here when it is selected,
   // which is why it must be written from the same deltas the prompt was.

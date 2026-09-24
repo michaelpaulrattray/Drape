@@ -38,8 +38,6 @@ import {
   CASTING_ROLL_ENGINE_MODEL_ENV,
   CASTING_REPAINT_SCOPE_ENV,
   CASTING_SIDE_PHRASING_SCOPE_ENV,
-  CASTING_SEGMENTS_DELIVERED_SCOPE_ENV,
-  CASTING_SEGMENTS_SCOPE_ENV,
   CASTING_SCAN_TABLE_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
   validateCastingFaceScanEnvironment,
@@ -73,8 +71,6 @@ import {
   validateCastingRepaintEnvironment,
   validateCastingSidePhrasingEnvironment,
   validateCastingScanTableEnvironment,
-  validateCastingSegmentsDeliveredEnvironment,
-  validateCastingSegmentsEnvironment,
   validateCastingV2Environment,
 } from "../castingV2/castingV2Scope";
 
@@ -279,28 +275,15 @@ export function validateEnv(): void {
     validatorConfigured: Boolean(process.env.OPENROUTER_API_KEY),
   });
   /*
-    Segment permanence: its own sub-flag, checked against the flag above it.
-
-    Absent means off and asserts nothing — the 2026-07-31 posture. Set, it must
-    name users the casting scope already covers and it must have the cleanup
-    worker, because a segment writes objects the same transaction promises to
-    purge.
+    ⚠ SEGMENT PERMANENCE USED TO BE CHECKED HERE, AND ITS TWO FLAGS ARE GONE —
+    `CASTING_SEGMENTS_SCOPE` and `CASTING_SEGMENTS_DELIVERED_SCOPE`, retired by
+    #1160 on his word of 2026-09-24 (*"Retire both. The paste road is gone;
+    nothing reads these"*). Both variables left the production service before
+    this block did, in that order, because the child fence refuses to boot for a
+    user outside its parent and deleting the parent first is a crash-looping
+    deploy — rehearsed through this very function before either was touched.
+    Nothing replaces the check: there is no flag left to validate.
   */
-  validateCastingSegmentsEnvironment({
-    scope: process.env[CASTING_SEGMENTS_SCOPE_ENV],
-    castingScope: process.env[CASTING_V2_SCOPE_ENV],
-    cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
-  });
-  /*
-    And how those segments are CUT — the delivered-anchored silhouette change,
-    one flag deeper again, checked against the segment scope for the same
-    reason that one is checked against the casting scope: a switch that reaches
-    past its parent is inert or wrong, and the two look the same from outside.
-  */
-  validateCastingSegmentsDeliveredEnvironment({
-    scope: process.env[CASTING_SEGMENTS_DELIVERED_SCOPE_ENV],
-    segmentsScope: process.env[CASTING_SEGMENTS_SCOPE_ENV],
-  });
   /*
     The reference library (migration 0028): a new table on the paid path, so the
     ceremony lands it and the flag is flipped afterwards. Checked against the

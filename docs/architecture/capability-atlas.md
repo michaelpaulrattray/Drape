@@ -148,7 +148,7 @@ _Entrances:_ `server/castingV2/referenceAttachDoor.ts` · `server/castingV2/hair
 
 The panel's rows come from the catalogue; content comes from the library and the delivery crops (the chain decides, the store looks up). The auto-scan fills empty rows on first look by asking a segmenter where each catalogue feature is (closed checklist — it cannot see tattoos or open kinds; cast-born discovery is the queued widening); a clean scan is kept in casting_face_scans, geometry only, stencils as objects under the purge path.
 
-_Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanService.ts`  ·  _Flags:_ `CASTING_FACE_SCAN_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SEGMENTS_SCOPE` · `CASTING_SEGMENTS_DELIVERED_SCOPE`
+_Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanService.ts`  ·  _Flags:_ `CASTING_FACE_SCAN_SCOPE` · `CASTING_SCAN_TABLE_SCOPE`
 
 > Panel and scan speak in projections, not refusal ids; their guarantees are pinned by their own suites.
 
@@ -298,9 +298,9 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | wall_unfileable | interpreter-refusal |  | colourContextDoor.test.ts, inventionDoor.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineFacets.test.ts, refineInterpreterVouchedRecheck.test.ts, refineService.test.ts, refusalTag.test.ts |
 | whichInkToChange | cannot-say | free | cannotSayCopy.test.ts |
 
-## Flags (25)
+## Flags (23)
 
-`CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATIVE_REGISTER_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SEGMENTS_DELIVERED_SCOPE` · `CASTING_SEGMENTS_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_TWO_PATHS_SCOPE` · `CASTING_V2_SCOPE`
+`CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATIVE_REGISTER_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_TWO_PATHS_SCOPE` · `CASTING_V2_SCOPE`
 
 ## Findings (50)
 

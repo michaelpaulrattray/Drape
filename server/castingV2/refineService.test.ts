@@ -3794,37 +3794,34 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   });
 
   /**
-   * THE CARRY'S OWN ROOT, AT THE CLAIM — and the segment store is dark here.
+   * THE CARRY'S OWN ROOT, AT THE CLAIM.
    *
    * `listLineageReferences` anchors on the new variant and climbs its parents,
-   * so the whole carry rests on one written column. That column used to be
-   * written only while `CASTING_SEGMENTS_SCOPE` named the user, on a reason
-   * that had gone stale twice over, and nothing in this suite could see it:
-   * every test above hands the lineage rows in directly (`lineageReferences`),
-   * which is the harness supplying the very argument the product has to derive.
+   * so the whole carry rests on one written column — and every other test in
+   * this suite hands the lineage rows in directly (`lineageReferences`), which
+   * is the harness supplying the very argument the product has to derive. This
+   * is the one arm that asserts the fact at the site that WRITES it.
    *
-   * Driven on a fixture inside the repaint and library scopes and outside the
-   * segment one, the consequence was four renders in a row that came back
-   * without the earrings the previous render had delivered — `carried: []`
-   * beside two healthy library rows, and a refund each time.
+   * # Why it was written, and it is worth keeping the reason
    *
-   * So this asserts the fact at the site that writes it, with the flag proved
-   * OFF first: an assertion that passes because the environment happens to be
-   * armed would be measuring the harness again.
+   * That column used to be written only while `CASTING_SEGMENTS_SCOPE` named the
+   * user, on a reason that had gone stale twice over. Driven on a fixture inside
+   * the repaint and library scopes and OUTSIDE the segment one, the consequence
+   * was four renders in a row that came back without the earrings the previous
+   * render had delivered — `carried: []` beside two healthy library rows, and a
+   * refund each time. A fact written under another flag's name.
+   *
+   * ⚠ SO THIS ARM USED TO CARRY A CONTROL — it forced
+   * `CASTING_SEGMENTS_SCOPE=off` and proved the gate answered false before
+   * asserting anything, because an assertion that passes only because the
+   * machine happens to be armed is measuring the harness. **#1160 retired that
+   * flag and its store on his word of 2026-09-24, so the control can no longer
+   * be expressed: there is no gate to read and no scope to force off.** The
+   * control was dropped rather than faked, and what it guarded is now
+   * structural — the column has no flag over it at all. The ASSERTION is
+   * untouched, and it is the half that caught the defect.
    */
-  it("records the version it came from even while the segment store is dark", async () => {
-    const { captureCastingSegmentsEnabled } = await import("./castingV2Scope.js");
-    /* Set here rather than assumed: `vitest.setup.ts` loads the developer's own
-       `.env`, so this suite inherits whatever that machine has the store set to
-       — the first cut of this test read `true` on mine. A control that depends
-       on a dotfile is not a control. */
-    const wasScoped = process.env.CASTING_SEGMENTS_SCOPE;
-    process.env.CASTING_SEGMENTS_SCOPE = "off";
-    expect(
-      captureCastingSegmentsEnabled(input.userId),
-      "the control is the point: the store must be OFF for this to mean anything",
-    ).toBe(false);
-
+  it("records the version it came from", async () => {
     variantRows = [{
       id: 720,
       publicId: "variant-born",
@@ -3845,7 +3842,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       mock: { calls: Array<[Record<string, unknown>]> };
     }).mock.calls.at(-1)?.[0];
     expect(claimed?.parentVariantPublicId).toBe("variant-born");
-    process.env.CASTING_SEGMENTS_SCOPE = wasScoped;
   });
 
   it("carries a minted crop as its own reference, in the recipe's own order", async () => {

@@ -62,7 +62,6 @@ import {
   castingReferenceLibraryArmed,
   castingScanTableArmed,
   castingInkDeliveryCropArmed,
-  castingSegmentsArmed,
   parseCastingV2Scope,
   CASTING_V2_SCOPE_ENV,
 } from "./castingV2Scope";
@@ -95,24 +94,37 @@ function isMissingTable(error: unknown): boolean {
 }
 
 /**
- * THE ONE TOLERATED FAILURE OF THE SEGMENT PURGE, and its exact limit.
+ * THE ONE TOLERATED FAILURE OF THE SEGMENT PURGE — now UNCONDITIONAL, and the
+ * reason it stopped having a condition is the whole point of this comment.
  *
- * A database whose segment table has not been created yet is a real state:
- * production gets the table by ceremony, and the code that knows about it
- * deploys on its own schedule. In that window there are no segments to purge,
- * because nothing can have written one — so skipping is not a lost object, it
- * is an empty set arrived at the slow way.
+ * Its seven siblings below each read their own `*Armed()`: tolerate a missing
+ * table only while the feature that writes it is off, because an armed feature
+ * over a missing table is a fault a warning would bury. **The segment store has
+ * no such flag any more.** #1160 retired it on his word of 2026-09-24 — *"Retire
+ * both. The paste road is gone; nothing reads these"* — so
+ * `CASTING_SEGMENTS_SCOPE`, `castingSegmentsArmed()` and everything that wrote a
+ * segment are gone, and the condition this function used to ask could only ever
+ * answer false.
  *
- * The tolerance ends the moment the store is armed. If the flag is on and the
- * table is missing, something is wrong that a warning would bury, and the
- * sweep says so instead. Every other error — a lock, a connection, a syntax
- * mistake of ours — is rethrown at every setting: swallowing those is how a
- * purge becomes a claim rather than a fact.
+ * ⚠ SO IT IS WRITTEN AS THE CONSTANT IT HAS BECOME, rather than left as a call
+ * that looks like a live question. The store is permanently unarmed and
+ * `casting_segments` is a table nobody writes, kept only until the founder drops
+ * it — a destructive migration, and therefore his act and not a shift's. An
+ * absent table is EXPECTED from here, in both directions: before his drop it
+ * holds zero rows (measured, both worlds, all time), and after it there is no
+ * table to read.
+ *
+ * ⚠ AND WHAT THAT COSTS, NAMED RATHER THAN QUIETLY DROPPED: the arm proving
+ * *an armed store refuses to tolerate absence* dies with the flag, because
+ * nothing arms the store. The half that was doing the real work is untouched —
+ * every other error, a lock, a connection, a syntax mistake of ours, is still
+ * rethrown, and that is the difference between a purge that is a fact and one
+ * that is a claim.
  */
 function tolerateAbsentSegmentStore(error: unknown): never | [] {
-  if (!isMissingTable(error) || castingSegmentsArmed()) throw error;
+  if (!isMissingTable(error)) throw error;
   log.warn(
-    "[candidateRetention] the segment store's table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the segment migration lands.",
+    "[candidateRetention] the segment store's table is absent — the store is retired (#1160) and nothing has ever written a row to it, so nothing is being left behind.",
   );
   return [];
 }

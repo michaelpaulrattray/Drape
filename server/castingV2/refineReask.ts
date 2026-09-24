@@ -97,7 +97,7 @@ export type ReaskOption = {
   /**
    * AND THE SAME ANSWER AS IT IS STORED AND SHOWN BACK TO HER (#1126).
    *
-   * `castingCandidateVariants.requestText` is `varchar(220)` while the router
+   * `castingCandidateVariants.requestText` WAS `varchar(220)` (400 since migration 0066, 2026-09-25) while the router
    * accepts an `answering` of {@link REFINE_ANSWERING_MAX_LENGTH}, so a
    * composed answer reaches 341 characters against a field that holds 220.
    * **The overflow is ours, not hers**: her sentence is capped where she types
@@ -273,7 +273,7 @@ export const REASK_HANDLE_MAX_LENGTH = REASK_KINDS.reduce(
 /**
  * WHAT THE STORED ECHO HAS ROOM FOR — the column width, named once (#1126).
  *
- * ⚠ **It is a MIRROR of `drizzle/schema.ts`'s `requestText: varchar(220)`, and
+ * ⚠ **It is a MIRROR of `drizzle/schema.ts`'s `requestText: varchar(400)` (220 until migration 0066), and
  * a mirror drifts** (working law 4), so it is not left to hold:
  * `server/refineEchoWidth.test.ts` reads the width out of the schema and
  * reddens if the two disagree. It cannot be DERIVED — the schema is a drizzle
@@ -284,10 +284,16 @@ export const REASK_HANDLE_MAX_LENGTH = REASK_KINDS.reduce(
  * header**: `schemaConformance.mts` compares NAMES, so a column the code has
  * outgrown passes its verdict without a word, and that file names THIS column
  * as its worked example. Widening it is a `MODIFY COLUMN`, which the migration
- * classifier fails closed on — a founder-run ceremony. Until that happens this
- * number is the truth.
+ * classifier fails closed on — a founder-run ceremony.
+ *
+ * ✅ **THAT CEREMONY RAN 2026-09-25** (his "a" on the Desk card
+ * `refine-record-width-1126`): migration 0066, `scripts/ceremony-request-text-width.mts`,
+ * applied on dev (59 rows unchanged) and production (0 rows) and read back at
+ * the column before this number moved. 400 now holds the longest answer the
+ * router accepts (309) plus the studio's own clause, so nothing she types is
+ * thrown away; `capForEcho` stays underneath as the belt beside the brace.
  */
-export const REFINE_REQUEST_TEXT_MAX_LENGTH = 220;
+export const REFINE_REQUEST_TEXT_MAX_LENGTH = 400;
 
 /** Her sentence, cut so our own clause survives it. See {@link ReaskOption.echo}. */
 function echoOf(head: string, tail: string): string {

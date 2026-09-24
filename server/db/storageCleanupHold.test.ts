@@ -20,10 +20,19 @@ import { DEFAULT_GENERATION_OPERATION_LEASE_MS } from "./generationOperations";
  * then correctly refused because their bytes were being deleted.
  *
  * This file proves the two halves that live here — the grace is DERIVED, and
- * the discharge's new state is exactly "the worker has never touched it". The
- * race itself is driven against real SQL by
- * `scripts/drive-born-held-race-disposable.mts`; a predicate is not proved by
- * reading it.
+ * the discharge's new state is exactly "the worker has never touched it".
+ *
+ * ⚠ AND THE REAL-SQL RACE PROOF IS GONE, WHICH IS A LOSS AND NOT A TIDY-UP.
+ * `scripts/drive-born-held-race-disposable.mts` drove the race itself against a
+ * throwaway database built from the repo's own migrations, with an UNHELD
+ * manifest as its control so that "not claimed" could not be confused with a
+ * driver that never claims anything. Its specimen was
+ * `recordDetectedSegments` — one of the segment store's writers — so #1160
+ * slice 3 left it unable to compile, let alone run. It was DELETED rather than
+ * re-pointed at one of the seven surviving born-held writers, because choosing a
+ * new specimen and re-proving it is new coverage judged on its own terms, not a
+ * consequence of a retirement. What is left here is a PIN, and its own comment
+ * below has always said so. Filed, with the seven names on it.
  */
 
 const source = (file: string) =>
@@ -122,8 +131,27 @@ describe("the discharge accepts a held manifest, and only an untouched one", () 
     expect(retention).not.toContain("heldUntil");
   });
 
+  /*
+    ### A ONE-ENTRY LIST, SAID OUT LOUD RATHER THAN LEFT TO BE NOTICED
+
+    #1160 slice 3 took `castingV2Segments.ts` off this list, and it had to: the
+    discharge lived inside the store's two WRITERS and the module is now the
+    purge path alone, which registers no manifest and therefore discharges
+    nothing. Slice 2 kept it here on purpose and said why — *the TABLE survives
+    until slice 3, and a writer dying is not its reader dying* — and slice 3 is
+    where that stops being true of the discharge.
+
+    ⚠ THAT LEAVES BOTH POPULATIONS IN THIS SUITE AT ONE FILE EACH, which is
+    the shape that goes green while proving nothing: a hand-written list cannot
+    notice a NEW writer that forgets to hold, and it cannot notice its own last
+    entry leaving either. Deriving them — every module calling
+    `createStorageCleanupManifest*` must either hold or be the retention sweep —
+    is real work and a judgement about the shape of the rule, so it is FILED
+    rather than folded into a retirement (his rule: a capability inside a
+    cleanup ships half-built under the cleanup's name).
+  */
   it("pins every discharge of a held manifest to the shared predicate", async () => {
-    for (const file of ["./castingV2ReferenceLibrary.ts", "./castingV2Segments.ts"]) {
+    for (const file of ["./castingV2ReferenceLibrary.ts"]) {
       const discharge = await source(file);
       expect(discharge, file).toContain("undischargedStorageCleanupBatchWhere()");
       /* The old one-state test is what let a claimed batch and a held batch be
