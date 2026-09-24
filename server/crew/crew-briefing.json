@@ -1,7 +1,7 @@
 {
-  "edition": 506,
-  "updatedAt": "2026-09-24T04:20:21.437Z",
-  "shift": "Foreman — the tattoo studio's machinery comes out, and you answered the segment question",
+  "edition": 507,
+  "updatedAt": "2026-09-24T06:13:32.352Z",
+  "shift": "Foreman — the transform comes off the studio's leash, and the map stops lying quietly",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -154,14 +154,8 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T02:56:19.930Z",
+      "readAt": "2026-09-24T06:13:43.513Z",
       "items": [
-        {
-          "issueNumber": 10,
-          "title": "3a.2(b) — the preview that shows her the cut, and it is what widens CASTING_INK_CUT_SCOPE",
-          "kind": "roadmap",
-          "rung": "N2"
-        },
         {
           "issueNumber": 179,
           "title": "Legacy author-road rows (96 per DB) still hold unmarked unsent identity records — data ceremony to mark them (#176 residue)",
@@ -7773,6 +7767,20 @@
       "status": "merged",
       "note": "Merged eef3c5c4. The tattoo studio's machinery is out; nothing a customer can see changes.",
       "prNumber": 1165
+    },
+    {
+      "id": "ink-transform-reparent-1158-s3",
+      "title": "Changing a tattoo you already have stops depending on the studio being switched on",
+      "status": "merged",
+      "prNumber": 1168,
+      "note": "Merged ecbd3e90. Nothing changes on your account; it unblocks the last slice of the retirement."
+    },
+    {
+      "id": "atlas-parse-refusal-1156",
+      "title": "The map of the codebase now refuses to be drawn from a file it cannot read",
+      "status": "merged",
+      "prNumber": 1169,
+      "note": "Merged c99681c3. It used to draw a map missing 29 things and say nothing."
     }
   ],
   "problems": [
@@ -7781,7 +7789,7 @@
       "severity": "info",
       "state": "open",
       "title": "Queue shape",
-      "detail": "42 open. 1 needs you (the segment retirement, now answered). 15 have had no comment, close, reopen or commit for 7 days — unchanged from this morning, and the two oldest are design cards waiting on a rung rather than rotting work."
+      "detail": "41 open. Nothing needs you. 14 have had no comment, close, reopen or commit for 7 days — one fewer than this morning, and the two oldest are design cards waiting on a rung rather than rotting work."
     },
     {
       "id": "pr-conflict-blocks-two-nights",
@@ -8696,7 +8704,7 @@
     216
   ],
   "nextUp": {
-    "readAt": "2026-09-24T02:56:19.929Z",
+    "readAt": "2026-09-24T06:13:43.512Z",
     "items": [
       {
         "issueNumber": 1158,
