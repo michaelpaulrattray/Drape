@@ -1,7 +1,7 @@
 {
-  "edition": 514,
-  "updatedAt": "2026-09-24T16:51:15.254Z",
-  "shift": "Foreman — the studio stops consulting a memory it never had",
+  "edition": 515,
+  "updatedAt": "2026-09-24T17:59:52.053Z",
+  "shift": "Foreman — the list that never had anything in it leaves the screen",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -116,6 +116,10 @@
         {
           "title": "The part of the studio that was meant to remember your earlier edits is being retired, on your word — and the reason it costs you nothing is that it never once remembered anything. It was switched on for your account, and the road every render actually takes could never feed it, so it has held zero rows since the day it was built. What genuinely carries your work forward is the reference library, which is a different thing entirely and is untouched.",
           "state": "done"
+        },
+        {
+          "state": "done",
+          "title": "And now the screen it fed is gone with it. There was a small list under your picture called \"things this version is keeping\" — it never once had anything in it, for two separate reasons either of which was enough on its own, so nothing you look at changes. We opened a cast in both light and dark to be sure of that rather than to assume it. One thing in there was NOT part of the retirement and nearly went with it: the small piece of plumbing that lets the face panel's outlines load at all. It was moved to safety, with its own tests."
         }
       ]
     },
@@ -194,7 +198,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T16:50:41.821Z",
+      "readAt": "2026-09-24T17:59:21.444Z",
       "items": [
         {
           "issueNumber": 179,
@@ -7870,6 +7874,13 @@
       "status": "merged",
       "prNumber": 1178,
       "note": "Retired on his word; the store had held zero rows all time, and the prompt is byte-identical before and after."
+    },
+    {
+      "id": "segment-store-retire-1160-s2",
+      "title": "The part that was meant to remember your edits is gone from the screen too",
+      "status": "merged",
+      "prNumber": 1180,
+      "note": "Five modules, a route and the panel itself; it had never shown you a single row."
     }
   ],
   "problems": [
@@ -8793,7 +8804,7 @@
     216
   ],
   "nextUp": {
-    "readAt": "2026-09-24T16:50:41.820Z",
+    "readAt": "2026-09-24T17:59:21.443Z",
     "items": [
       {
         "issueNumber": 1160,
