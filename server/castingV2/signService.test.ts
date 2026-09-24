@@ -957,24 +957,6 @@ describe("Sign reads the selected face, not the candidate", () => {
 });
 
 /**
- * HER PLATED TATTOOS REACH THE PACKAGE, AND EVERY WAY ONE FAILS TO IS NAMED
- * (FOUNDER RULING, his words at fable-987 §3: *"tattoo reference will need to be
- * supplied to each view generated otherwise it wont know what the tattoo is"*;
- * the naming ordered fable-1004 §3).
- *
- * A reference that quietly did not ride is indistinguishable from a Cast with no
- * tattoo — and the customer paid for the tattoo. So each of the three ways a
- * plate can fail to travel has its own arm here, and each one asserts that the
- * SIGN STILL SUCCEEDS: a tattoo missing from five frames is a smaller harm than
- * five frames nobody gets.
- */
-/*
-  Driven UN-DEFERRED throughout: the mannequin road is parked (fable-1053 §2)
-  and these arms describe the road itself, so they keep their subject alive for
-  the day it resumes. The deferral's own arms live in
-  `inkMannequinDeferral.test.ts`.
-*/
-/**
  * THE TATTOOS A SIGN CARRIES INTO ITS VIEWS — and it is ONE lane now.
  *
  * ⚠ **#1158 slice 4f DELETED THE PLATE LANE AND THREE DESCRIBE BLOCKS WITH IT.**
