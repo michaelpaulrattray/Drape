@@ -90,8 +90,8 @@
           "title": "Step three of the tattoo studio's retirement, and it is the one you can point at: its two settings are GONE from the live site. Nothing on any screen changed — the four tattoo roads you kept (a tattoo from your words, a tattoo from a picture you attach, changing one you already have, being born with one) all answer exactly as they did, checked for three accounts before and after. The two had to go together: one refuses to start up without the other, so removing just one would have taken the site down."
         },
         {
-          "state": "in-progress",
-          "title": "Step four of the tattoo studio's retirement, and it is bookkeeping you will never see: the image provider lets us have 20 jobs running at once, and one of those was reserved for drawing an uploaded tattoo onto a cast. That road is gone, so the reservation is given up — we now use 19 of the 20. Nothing you do gets slower; every other job keeps exactly what it had. The spare one is deliberately left unused rather than handed to another job, because that would be quietly giving that job more capacity under a tidy-up's name. Submitted and waiting on the reviewer."
+          "state": "done",
+          "title": "Step four of the tattoo studio's retirement, and it is bookkeeping you will never see: the image provider lets us have 20 jobs running at once, and one of those was reserved for drawing an uploaded tattoo onto a cast. That road is gone, so the reservation is given up — we now use 19 of the 20. Nothing you do gets slower; every other job keeps exactly what it had. The spare one is deliberately left unused rather than handed to another job, because that would be quietly giving that job more capacity under a tidy-up's name. Reviewed by hand, merged and live."
         },
         {
           "state": "done",
@@ -174,7 +174,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T10:49:32.172Z",
+      "readAt": "2026-09-24T10:53:34.894Z",
       "items": [
         {
           "issueNumber": 179,
@@ -7826,7 +7826,7 @@
     {
       "id": "ink-fal-slot-1158-s4d",
       "title": "The retired tattoo road gives up its share of the image provider",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1173,
       "note": "19 of 20 now. Nothing gets slower; the spare slot is left unused on purpose."
     }
@@ -8752,7 +8752,7 @@
     216
   ],
   "nextUp": {
-    "readAt": "2026-09-24T10:49:32.172Z",
+    "readAt": "2026-09-24T10:53:34.893Z",
     "items": [
       {
         "issueNumber": 1158,
