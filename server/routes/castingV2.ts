@@ -16,11 +16,7 @@
  */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { ENV } from "../_core/env";
 import { BRIEF_TEXT_MAX_AUTHOR_ROAD } from "../castingV2/briefLength";
-import { issueReadToken } from "../castingV2/referenceProvenance";
-import { resolveAskReference } from "../castingV2/askReference";
-import { storageReadBytes } from "../storage";
 
 import { router, protectedProcedure } from "../_core/trpc";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
@@ -34,8 +30,6 @@ import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS,
   CASTING_V2_RETRY_PRICE_CREDITS,
 } from "../casting/castingCreditCosts";
 import {
-  captureCastingHairReferenceEnabled,
-  captureCastingInkStudioEnabled,
   captureCastingReferenceAttachEnabled,
   captureCastingConceptUploadEnabled,
   captureCastingRepaintEnabled,
@@ -45,23 +39,14 @@ import {
 import { reimagineBrief } from "../castingV2/reimagine";
 import { authorTextEngine } from "../castingV2/promptAuthor";
 import { CAST_STYLES } from "../../shared/castStyles";
-import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 import { INK_PROVENANCES } from "../../shared/inkProvenance";
-import { REFERENCE_INTENTS } from "../../shared/referenceIntents";
-import { INK_SIDES } from "../../shared/inkReleasedPlacements";
 import sharp from "sharp";
 import {
-  INK_DESIGNS_PER_CANDIDATE_REFUSAL,
   INK_DESIGN_MAX_BYTES,
-  inkDesignBytesRefusal,
   inkDesignContentType,
   isInkDesignFormat,
 } from "../castingV2/inkUploadDoor";
-import { readMakeupFromReference } from "../castingV2/makeupFromReference";
-import { readHairColourFromReference } from "../castingV2/hairColourFromReference";
 import {
-  recordReferenceRead,
-  referenceReadOutcomeFor,
   type ReferenceReadOutcome,
 } from "../db/castingV2ReferenceReads";
 import { removeInkDesign } from "../db/castingV2InkDesignRemoval";
@@ -77,7 +62,6 @@ import {
   ReferenceAttachmentCapError,
   ReferenceAttachmentOwnershipError,
 } from "../db/castingV2ReferenceAttachments";
-import { InkDesignCapError, InkDesignOwnershipError } from "../db/castingV2InkDesigns";
 import { spokenError } from "../_core/spokenError";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
 import { listLineageSegments, resolveOwnedCandidateId } from "../db/castingV2Segments";

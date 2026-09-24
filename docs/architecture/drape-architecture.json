@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6def271fb0d28a97"
+    "sourceFingerprint": "1d9837d902585ac7"
   },
   "domains": [
     {
@@ -30482,11 +30482,6 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/_core/env.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/_core/spokenError.ts",
       "kind": "imports"
     },
@@ -30503,11 +30498,6 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/casting/finalCastDeletionCeremony.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/castingV2/askReference.ts",
       "kind": "imports"
     },
     {
@@ -30572,22 +30562,12 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/castingV2/hairColourFromReference.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/inkApplied.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/inkUploadDoor.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/castingV2/makeupFromReference.ts",
       "kind": "imports"
     },
     {
@@ -30613,11 +30593,6 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/referenceAttachService.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/castingV2/referenceProvenance.ts",
       "kind": "imports"
     },
     {
@@ -30707,11 +30682,6 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/db/castingV2InkDesigns.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2ReferenceAttachments.ts",
       "kind": "imports"
     },
@@ -30777,27 +30747,12 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
-      "to": "module:shared/inkPlacementVocabulary.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
       "to": "module:shared/inkProvenance.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/routes/castingV2.ts",
-      "to": "module:shared/inkReleasedPlacements.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
       "to": "module:shared/inputLimits.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
-      "to": "module:shared/referenceIntents.ts",
       "kind": "imports"
     },
     {
