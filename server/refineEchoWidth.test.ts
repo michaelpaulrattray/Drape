@@ -2,16 +2,24 @@
  * THE ANSWER SHE GETS BACK FITS THE FIELD, AND THE RENDER STILL GETS ALL OF IT
  * (#1126).
  *
- * # The defect
+ * # The defect, and its two halves
  *
  * A re-ask resolves into a sentence that does two jobs: it is pushed onto the
  * recipe the picture is rendered from, and it is stored in
  * `castingCandidateVariants.requestText` as the label the version rail shows
- * her. The column is `varchar(220)`; the router accepts an `answering` of 309.
- * So an answered refine can resolve into 341 characters against a field that
- * holds 220, and a bare `slice(0, 220)` decided what fell off the end — which
- * was our own clarifying clause, the only thing that tells two versions of one
- * ask apart on the rail.
+ * her. The column was `varchar(220)` while the router accepts an `answering` of
+ * 309, so an answered refine resolved into 341 characters against a field that
+ * held 220, and a bare `slice(0, 220)` decided what fell off the end — which was
+ * our own clarifying clause, the only thing that tells two versions of one ask
+ * apart on the rail.
+ *
+ * PR #1186 fixed the LOSS: her sentence is cut at a word boundary and our clause
+ * survives (`storedEchoOf`). Migration 0066 (his "a" on the Desk card,
+ * 2026-09-25; `scripts/ceremony-request-text-width.mts`, applied on both
+ * worlds and read back at the column) removed the loss: the column is 400, and
+ * nothing she is allowed to type is thrown away. Both halves are guarded here —
+ * the second as the promise, the first as the belt beside the brace, driven at
+ * the width it was built for so the widening cannot have made it inert.
  *
  * # ⚠ THE ARM THAT MATTERS MOST IS THE ONE THAT LOOKS REDUNDANT
  *
@@ -25,12 +33,11 @@
  *
  * The card named four composing sites. Driving every question the product can
  * ask, at the longest answer the router accepts, turned up options that
- * overflow with no clause of ours in them at all — *"Yes — pink"* resolves to
- * her whole corrected sentence, *"Go ahead anyway"* and the two design chips
- * resolve to her sentence unchanged. They were cut mid-word by the same slice
- * and looked nothing like the defect. {@link storedEchoOf} is the single reader
- * that answers for all of them, and the sweep below drives it rather than a
- * list of sites.
+ * overflowed the old column with no clause of ours in them at all — *"Yes —
+ * pink"* resolves to her whole corrected sentence, *"Go ahead anyway"* and the
+ * two design chips resolve to her sentence unchanged. {@link storedEchoOf} is
+ * the single reader that answers for all of them, and the sweep below drives it
+ * rather than a list of sites.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -67,9 +74,16 @@ const HER: CastPronouns = {
 };
 
 /**
- * A sentence at the longest an ANSWER may be — the case the column cannot
- * hold, and the reason every number here is measured at 309 rather than at the
- * 200 the typing box allows.
+ * The width the column had when the loss was real. The trimming arms are
+ * driven at THIS number, not at the live one: at 400 nothing overflows, and an
+ * arm that finds nothing to trim passes by having nothing to check.
+ */
+const OLD_WIDTH = 220;
+
+/**
+ * A sentence at the longest an ANSWER may be — the case the old column could
+ * not hold, and the reason every number here is measured at 309 rather than at
+ * the 200 the typing box allows.
  */
 function askedAtFullLength(seed: string): string {
   const filler = " and keep the lighting soft and even across the whole frame";
@@ -127,10 +141,9 @@ function tailOf(head: string, option: ReaskOption): string {
     : "";
 }
 
-/** Options that cannot fit the column as they stand — the ones the echo is for. */
-function overflowing(reask: Reask): ReaskOption[] {
-  return reask.options.filter((option) =>
-    option.resolves.length > REFINE_REQUEST_TEXT_MAX_LENGTH);
+/** Options that cannot fit a column of `width` as they stand. */
+function overflowing(reask: Reask, width: number): ReaskOption[] {
+  return reask.options.filter((option) => option.resolves.length > width);
 }
 
 describe("#1126 — the field, the router and the column", () => {
@@ -146,17 +159,27 @@ describe("#1126 — the field, the router and the column", () => {
     expect(Number(declared![1])).toBe(REFINE_REQUEST_TEXT_MAX_LENGTH);
   });
 
-  it("the field an ANSWER travels in is wider than the column that stores it — the defect, stated", () => {
-    /* Not a rule: the mismatch IS #1126. The arm is here so that widening the
-       column — a founder-run `MODIFY COLUMN`, which the rite's classifier fails
-       closed on — arrives with a red pointing at every belief built on 220. */
-    expect(REFINE_ANSWERING_MAX_LENGTH).toBeGreaterThan(REFINE_REQUEST_TEXT_MAX_LENGTH);
+  it("the column holds every answer the product can compose — nothing she types is thrown away", () => {
+    /* THE PROMISE migration 0066 bought, measured rather than assumed: the
+       longest thing any question can resolve to, at the longest answer the
+       router accepts, fits the column whole. A new question that composes a
+       longer clause, or a router that accepts more, reddens here on its day. */
+    const longest = Math.max(
+      ...QUESTIONS.flatMap((row) => row.reask.options.map((option) => option.resolves.length)),
+    );
+    expect(REFINE_REQUEST_TEXT_MAX_LENGTH).toBeGreaterThan(REFINE_ANSWERING_MAX_LENGTH);
+    expect(longest, "an option resolves to more than the column can hold").toBeLessThanOrEqual(
+      REFINE_REQUEST_TEXT_MAX_LENGTH,
+    );
+    expect(QUESTIONS.flatMap((row) => overflowing(row.reask, REFINE_REQUEST_TEXT_MAX_LENGTH)))
+      .toEqual([]);
   });
 
-  it("the sweep below is looking at something — overflow really happens", () => {
-    /* A control on the sweep itself: if the builders ever stopped producing an
-       overflowing option, every arm under it would pass by finding nothing. */
-    const found = QUESTIONS.flatMap((row) => overflowing(row.reask));
+  it("the trimming below is looking at something — the OLD width really did overflow", () => {
+    /* A control on the belt-and-brace arms: they are driven at the old width,
+       and if the builders ever stopped producing an option that overflows it,
+       every arm under them would pass by finding nothing. */
+    const found = QUESTIONS.flatMap((row) => overflowing(row.reask, OLD_WIDTH));
     expect(found.length).toBeGreaterThanOrEqual(QUESTIONS.length);
   });
 });
@@ -192,7 +215,8 @@ describe("#1126 — the resolved instruction is never cut", () => {
           `${kind} cut the instruction at ${JSON.stringify(option.label)} — `
             + `the last words she typed are not in what would be rendered`,
         ).toBe(true);
-        expect(option.resolves.length).toBeGreaterThan(REFINE_REQUEST_TEXT_MAX_LENGTH);
+        /* (No length floor here on purpose: "Yes — pink" resolves to her
+           CORRECTED sentence, one character shorter than what she typed.) */
 
         /* And where a clause was composed on, it is composed onto ALL of her
            sentence rather than onto a shortened one. */
@@ -204,15 +228,30 @@ describe("#1126 — the resolved instruction is never cut", () => {
 });
 
 describe("#1126 — what is stored fits, and never cuts a word", () => {
-  for (const { kind, head, reask } of QUESTIONS) {
-    it(`${kind}: every chip stores a sentence the column can hold`, () => {
+  for (const { kind, reask } of QUESTIONS) {
+    it(`${kind}: at the live width every chip stores exactly what it resolves to`, () => {
+      /* The customer-facing promise after 0066: the rail label IS the
+         instruction, whole — there is no trimming left to notice. */
       for (const option of reask.options) {
-        const stored = storedEchoOf(option);
-        expect(stored.length, `${kind} · ${option.label} overflows the column`)
-          .toBeLessThanOrEqual(REFINE_REQUEST_TEXT_MAX_LENGTH);
+        expect(storedEchoOf(option), `${kind} · ${option.label} was trimmed`).toBe(option.resolves);
+      }
+    });
+  }
 
+  for (const { kind, head, reask } of QUESTIONS) {
+    it(`${kind}: at the OLD width the echo fits, keeps our clause and never cuts a word`, () => {
+      /* The belt beside the brace, driven at the width that overflows so it is
+         proved to do work: {@link capForEchoWithTail} is what `storedEchoOf`
+         uses, called here at OLD_WIDTH rather than the live constant. */
+      for (const option of reask.options) {
         const tail = tailOf(head, option);
-        if (tail !== "" && option.resolves.length > REFINE_REQUEST_TEXT_MAX_LENGTH) {
+        const stored = tail !== ""
+          ? capForEchoWithTail(head, tail, OLD_WIDTH)
+          : capForEcho(option.resolves, OLD_WIDTH);
+        expect(stored.length, `${kind} · ${option.label} overflows the old column`)
+          .toBeLessThanOrEqual(OLD_WIDTH);
+
+        if (tail !== "" && option.resolves.length > OLD_WIDTH) {
           expect(stored.endsWith(tail), `${kind} dropped our clause ${JSON.stringify(tail)}`)
             .toBe(true);
         }
@@ -238,11 +277,14 @@ describe("#1126 — what is stored fits, and never cuts a word", () => {
     }
   });
 
-  it("NEGATIVE CONTROL — the reader really does cut, and really does keep a clause", () => {
+  it("NEGATIVE CONTROL — the live reader really does cut, and really does keep a clause", () => {
+    /* Past 400, so the live width is the one being exercised: the fallback
+       behind the promise is doing work, not sitting behind a column that is
+       always wide enough. */
     const composed: ReaskOption = {
       label: "Her left",
-      resolves: `${"word ".repeat(60)}(her left)`,
-      echo: capForEchoWithTail("word ".repeat(60), "(her left)", REFINE_REQUEST_TEXT_MAX_LENGTH),
+      resolves: `${"word ".repeat(100)}(her left)`,
+      echo: capForEchoWithTail("word ".repeat(100), "(her left)", REFINE_REQUEST_TEXT_MAX_LENGTH),
     };
     expect(composed.resolves.length).toBeGreaterThan(REFINE_REQUEST_TEXT_MAX_LENGTH);
     expect(storedEchoOf(composed).length).toBeLessThanOrEqual(REFINE_REQUEST_TEXT_MAX_LENGTH);
@@ -250,7 +292,7 @@ describe("#1126 — what is stored fits, and never cuts a word", () => {
 
     /* And with no echo it still fits — the fallback is doing work, not sitting
        behind an echo that is always present. */
-    const bare: ReaskOption = { label: "Go ahead anyway", resolves: "word ".repeat(60).trim() };
+    const bare: ReaskOption = { label: "Go ahead anyway", resolves: "word ".repeat(100).trim() };
     expect(bare.resolves.length).toBeGreaterThan(REFINE_REQUEST_TEXT_MAX_LENGTH);
     expect(storedEchoOf(bare).length).toBeLessThanOrEqual(REFINE_REQUEST_TEXT_MAX_LENGTH);
     expect(storedEchoOf(bare).endsWith("word")).toBe(true);
