@@ -1,7 +1,7 @@
 {
-  "edition": 504,
-  "updatedAt": "2026-09-24T02:19:49.570Z",
-  "shift": "Foreman — the tattoo studio starts retiring, and one held question comes back",
+  "edition": 505,
+  "updatedAt": "2026-09-24T02:57:21.433Z",
+  "shift": "Foreman — tattoos get written down for everyone, on your word",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -154,7 +154,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T01:28:50.724Z",
+      "readAt": "2026-09-24T02:56:19.930Z",
       "items": [
         {
           "issueNumber": 10,
@@ -3008,7 +3008,7 @@
         }
       ],
       "recommendation": "A — turn it on. The one reason you held it is measurably gone, it widens by itself with no other switch moving, and it has a month of your own rolls behind it: six briefs named tattoos in a place the studio knows, and it read six. The scalp gap is real and is its own card if you want it.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-24",
       "issueNumber": 1159
     }
@@ -7729,9 +7729,16 @@
     {
       "id": "ink-studio-retire-1158-slice1",
       "title": "The tattoo studio stops taking uploads — the first slice of retiring it",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1162,
       "note": "Nothing on screen changes; it never drew anything. Held for the reviewer — it touches a rate limiter."
+    },
+    {
+      "id": "born-ink-widen-1159",
+      "title": "Tattoos named in a brief get written down — for every account, not just yours",
+      "status": "in-review",
+      "note": "Your reply #215. The switch is already set; this carries the record and one guard fix.",
+      "prNumber": null
     }
   ],
   "problems": [
@@ -8643,19 +8650,15 @@
     211,
     212,
     213,
-    214
+    214,
+    215
   ],
   "nextUp": {
-    "readAt": "2026-09-24T01:28:50.723Z",
+    "readAt": "2026-09-24T02:56:19.929Z",
     "items": [
       {
         "issueNumber": 1158,
         "title": "N2: RETIRE the tattoo studio — his ruling, 'It retires with N2' (the upload-a-design road, four flags, NOT born-ink)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1159,
-        "title": "N2: re-ask born-ink now that the brief cap is 2,000 for everyone — his 'Hold, and re-ask with card 3'",
         "urgent": false
       },
       {

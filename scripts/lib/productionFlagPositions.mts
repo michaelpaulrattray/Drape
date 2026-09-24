@@ -313,10 +313,31 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "closes 7a-bis as a precondition — it builds on the tally instead",
   },
   CASTING_BORN_INK_SCOPE: {
-    position: "users:1",
+    position: "all",
     why:
-      "FLIPPED users:1 2026-08-25 on the founder's order ('flip everything on thats currently off so i can check the rolls myself', fable-1654). 7b(a); widening it re-opens the NOTES_MAX park first (fable-1431 §1) — the "
-      + "cap population IS the born-ink population",
+      "WIDENED to `all` 2026-09-24 on his Crew reply #215 (card born-ink-reask-1159), verbatim "
+      + "and entire: \"Turn it on for everyone. Recording tattoos is better than forgetting "
+      + "them, and the long-brief reason for holding it is gone.\" "
+      + "THE RE-ASK HE ORDERED, and its condition was met rather than assumed: at the switch "
+      + "sitting (#1132) he answered row 11 \"Hold, and re-ask with card 3\", and card 3 "
+      + "(CASTING_BRIEF_FIDELITY_SCOPE) went to `all` in that same sitting on reply #203. "
+      + "⚠ THE BLOCKER THIS ENTRY USED TO CARRY IS DISCHARGED, and it is the whole reason the "
+      + "hold existed: `widening it re-opens the NOTES_MAX park first (fable-1431 §1) — the "
+      + "cap population IS the born-ink population`. That coupling was real — the only briefs "
+      + "long enough to hit the old 180-char cap are the briefs describing tattoos, one "
+      + "population and not two — and it DIED when card 3 widened: the announced cap is 2,000 "
+      + "for every account, confirmed at the RUNNING SERVICE (not at this record) before the "
+      + "flip. "
+      + "It widens ALONE: its only parent is CASTING_V2_SCOPE, already `all`, and nothing takes "
+      + "born-ink as a parent — so no chain moved with it. "
+      + "⚠ WHAT IT BUYS IS A RECORD AND NOT A PICTURE, which is exactly what he ruled on: a "
+      + "brief naming ink files words-only library rows, `recipeAssembler` skips them by name, "
+      + "`selectCarriedFeatureWords` declines them `markingDiscloses`, and the package road "
+      + "that would DISCLOSE them is R7_EVIDENCE_PACKAGE_SCOPE=off and parked (#6). So nothing "
+      + "a customer looks at changes today; what changed is that the words stop being dropped. "
+      + "Spends nothing new — the reading rides the interpreter call that already runs. "
+      + "--- the record before this widen: FLIPPED users:1 2026-08-25 on the founder's order "
+      + "('flip everything on thats currently off so i can check the rolls myself', fable-1654)",
   },
   CREW_TAB_SCOPE: {
     position: "all",

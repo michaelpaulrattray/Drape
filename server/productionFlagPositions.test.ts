@@ -171,10 +171,41 @@ describe("the comparator, proven able to say no", () => {
   it("reports a flag the record says is off and the service has switched on", () => {
     /* The direction that matters most: a scope quietly widened past what the
        record says. `off` is the absence of a variable, so this is a reading the
-       naive "compare what is set" shape would never make. */
-    const verdict = comparePositions([...agreeing, { name: "CASTING_BORN_INK_SCOPE", value: "all" }]);
+       naive "compare what is set" shape would never make.
+
+       ⚠ THIS ARM NAMED `CASTING_BORN_INK_SCOPE` UNTIL 2026-09-24 AND WAS NOT
+       DOING WHAT THIS COMMENT SAYS. That flag's recorded position was `users:1`,
+       never `off`, so `agreeing` already carried a reading for it and appending
+       `all` produced a mismatch by DISAGREEING ON A VALUE — the same thing the
+       arm above this one tests, with a duplicate reading in the array. The `off`
+       → switched-on direction, which is the one the comment calls the direction
+       that matters most, had no coverage here at all.
+
+       It surfaced when born-ink was widened to `all` on his reply #215: the
+       literal came to AGREE with the record, the mismatch count fell to 0, and
+       the arm went red. A guard that reddens because the product changed
+       legitimately was keyed on the wrong thing.
+
+       So the fixture is DERIVED rather than named (working law 4): whichever
+       flags the record genuinely holds at `off`. A named one rots the next time
+       that flag's position moves, which is precisely what just happened, and
+       the three `off` rows today are a retiring flag and two in a parked family
+       — none of them a position worth pinning a guard to. */
+    const recordedOff = Object.entries(PRODUCTION_FLAG_POSITIONS)
+      .filter(([, entry]) => entry.position === "off")
+      .map(([name]) => name);
+    /* VACUITY GUARD. With no `off` row this arm would append nothing, compare an
+       agreeing service against itself and pass with zero mismatches — green,
+       and proving the opposite of its name. */
+    expect(
+      recordedOff.length,
+      "no flag in the record is `off`, so this arm has nothing to switch on and cannot test its direction",
+    ).toBeGreaterThan(0);
+
+    const name = recordedOff[0];
+    const verdict = comparePositions([...agreeing, { name, value: "all" }]);
     expect(verdict.mismatches).toHaveLength(1);
-    expect(verdict.mismatches[0]).toContain("CASTING_BORN_INK_SCOPE");
+    expect(verdict.mismatches[0]).toContain(name);
   });
 
   it("reports a flag the record says is ON that the service does not hold at all", () => {
