@@ -765,7 +765,11 @@ the lip staircase, which D-244 cancelled.
    be asked of, with the question-less slots words-only by construction.
    **The CALLER landed 2026-08-11**, in `refineService` immediately after
    `keepSegmentsFromRender` and reusing that step's own `earned` list (written ∩
-   verified ∩ not-carried — one derivation, two stores). `castingV2/mintedSlots.ts`
+   verified ∩ not-carried — one derivation, two stores). ⚠ **THAT LANDMARK IS
+   GONE — #1160 slice 1 retired the segment store's call, so a reader locating
+   the mint by it will not find it.** `earned` is unchanged and the mint is now
+   its ONLY consumer, so the parenthesis reads `written ∩ verified` today: the
+   not-carried term was a set that was always empty. `castingV2/mintedSlots.ts`
    turns those facets into slots and their captions into each slot's word stack;
    the accessory family resolves through the SAME `accessoryKindOf` string the
    harvest and the segment cutter use, which is what gives an earring a slot at
@@ -827,7 +831,11 @@ the lip staircase, which D-244 cancelled.
    rather than by anyone remembering: `keepSegmentsFromRender` writes nothing,
    because its own rule is *no evidence, nothing to keep* and a repaint produces
    no evidence; and the mint reads `applied ?? wholeFrame`, which is the honest
-   answer when the whole frame was painted.
+   answer when the whole frame was painted. ⚠ **The first of those is now true
+   for a second and stronger reason: #1160 slice 1 removed the call entirely.**
+   The sentence is kept because it is the READING that justified the removal —
+   it is why `casting_segments` holds zero rows all time in both worlds, which
+   is the evidence his retirement ruling was checked against.
 
    **DECLARED SHORTFALL (opus-227 §3, ratified fable-281).** The mint's
    `regionsToCut` is seeded from the harvest's map alone, so on this road every
