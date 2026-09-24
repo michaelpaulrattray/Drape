@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
-  EYE_FRAME_HEAD_CONCURRENCY,
+
   EYE_FRAME_RETRY_GIVE_UP_AFTER,
   eyeFrameKeysOf,
   judgeEyeFramePresence,
@@ -196,7 +196,22 @@ describe("a burst is asked twice before it counts (#1177)", () => {
     expect(verdict.unread).toEqual([]);
   });
 
-  it("holds at most EYE_FRAME_HEAD_CONCURRENCY requests in flight at once", async () => {
+  /**
+   * ⚠ THIS ARM GUARDS THE ABSENCE OF A BOUND, WHICH IS THE OPPOSITE OF WHAT
+   * #1177's CARD RECOMMENDED — AND THE MEASUREMENT IS WHY.
+   *
+   * A bounded pool was built first. Driven at the real bucket over the real 312
+   * keys, cold: unbounded 1.4s / 0 unread, pool of 16 2.6s / 0 unread — so the
+   * bound does not prevent a drop. Drops track sustained volume, not the burst
+   * (three back-to-back sweeps go 0 -> 9-13 -> 312 unread, and pools of
+   * 16/32/64 scatter 5/17/6 with no relationship to the bound). And with the
+   * timeout in hand the bound inverts: a dead host aborts all 312 together for
+   * one 10s wait, where a pool of 16 would be 20 waves and 200s.
+   *
+   * So a future shift reading the card alone would "fix" this by adding the
+   * pool back. This arm is here to argue with them, in numbers.
+   */
+  it("asks every key in one pass — the bound the card asked for was measured and declined", async () => {
     const keys = Array.from({ length: 200 }, (_, index) => `crew-eye/${index}.png`);
     let inFlight = 0;
     let peak = 0;
@@ -208,9 +223,7 @@ describe("a burst is asked twice before it counts (#1177)", () => {
       return 200;
     });
     expect(verdict.ok).toBe(true);
-    expect(peak).toBe(EYE_FRAME_HEAD_CONCURRENCY);
-    /* The bound is the point: without it this reads 200, which is the defect. */
-    expect(peak).toBeLessThan(keys.length);
+    expect(peak).toBe(keys.length);
   });
 
   it("stops retrying a bucket that will not answer, and still refuses every key", async () => {

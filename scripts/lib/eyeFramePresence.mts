@@ -63,44 +63,58 @@
  * at once and four got dropped"* — and the only way to tell them apart is to
  * ask a second time, quietly.
  *
- * So: a BOUNDED pool asks, then every key still unread is asked ONCE MORE,
+ * So: every key is asked, and then every key still unread is asked ONCE MORE,
  * SERIALLY. A `missing` is never retried — a 404 is an answer.
  *
- * ⚠ **THE BOUND NEEDS A PER-REQUEST TIMEOUT AT THE CALL SITE OR IT MAKES THINGS
- * WORSE, AND THAT WAS MEASURED RATHER THAN REASONED.** A bare `fetch(url,
- * {method:"HEAD"})` against a host that accepts the connection and never
- * answers takes **306.6 seconds** to reject (node 24, undici's `headersTimeout`;
- * driven against a local server that never responds). Unbounded, 314 of those
- * hang side by side and the whole check costs one 306s wait. Bounded at 8 with
- * no timeout it would cost FORTY of them. The rite therefore hands in a `head`
- * carrying `AbortSignal.timeout`, and with that the worst case here is better
- * than what it replaces in both directions: {@link EYE_FRAME_HEAD_CONCURRENCY}
- * waves of a short timeout on a dead bucket, ~2s on a live one.
+ * # ⚠ THE CARD ALSO ASKED FOR A BOUNDED POOL. IT WAS BUILT, MEASURED AT THE
+ * REAL BUCKET, AND REMOVED — THE MEASUREMENT SAYS IT IS THE WRONG MEDICINE.
  *
- * ⚠ **AND THE RETRY GIVES UP RATHER THAN WALKING A DEAD BUCKET KEY BY KEY.** A
- * serial retry of 314 unread keys is the bound's cost paid a second time, one
- * at a time, to learn something the first three already said. See
- * {@link EYE_FRAME_RETRY_GIVE_UP_AFTER}.
- */
-
-/**
- * How many HEADs may be in flight at once.
+ * Driven against the production bucket over the 312 keys the committed briefing
+ * names, one reading per process with a cooldown between (the first attempt
+ * measured the previous attempt, and reported a 12x slowdown that was its own
+ * contamination):
  *
- * Sixteen rather than eight: the number governs the DEAD-bucket wall clock as
- * well as the burst, at one timeout per wave, and 314 keys in waves of 16 is 20
- * waves where eight would be 40. The live-bucket cost is a rounding error
- * either way (~20 waves of a ~100ms HEAD).
+ * - **Cold, unbounded: 1.4s, 0 unread. Cold, pool of 16: 2.6s, 0 unread.** The
+ *   bound does not prevent a drop; it costs a second.
+ * - Drops track SUSTAINED VOLUME, not the burst. Three back-to-back sweeps go
+ *   `0 unread -> 9-13 unread -> 312 unread`, and pool sizes 16/32/64 scattered
+ *   `5/17/6` with no relationship to the bound at all.
+ * - ⚠ **And with a timeout in hand the bound INVERTS**: unbounded, a dead host
+ *   aborts all 312 together for one 10s wait; at a pool of 16 that is 20 waves,
+ *   200s. The bound would make the worst case twenty times worse to buy nothing
+ *   the measurement can see.
+ *
+ * **So the concurrency is left exactly as it was, deliberately.** What changed
+ * is that one unanswered request no longer decides a push.
+ *
+ * ⚠ **THE TIMEOUT IS THE OTHER HALF, AND IT IS MEASURED TOO.** A bare
+ * `fetch(url, {method:"HEAD"})` against a host that accepts the connection and
+ * never answers takes **306.6 seconds** to reject (node 24, undici's
+ * `headersTimeout`, driven against a local server that never responds). The
+ * rite hands in a `head` carrying `AbortSignal.timeout`, so a dead bucket costs
+ * ten seconds and not five minutes. This module owns no fetch policy.
  */
-export const EYE_FRAME_HEAD_CONCURRENCY = 16;
 
 /**
  * How many retries in a row may come back unread before the retry pass stops.
  *
- * The retry exists to survive a HANDFUL of dropped connections in a burst, and
- * a handful answers on the second ask. Three unanswered serial requests, made
- * with nothing else in flight, are not congestion — they are a bucket that will
- * not answer, and asking it three hundred more times costs a shift minutes to
- * reach the same refusal. Keys not reached by the give-up stay UNREAD and still
+ * ⚠ **THIS NUMBER CAME FROM THE BUCKET, NOT FROM AN ARGUMENT, AND THE ARGUMENT
+ * WAS WRONG.** The first draft reasoned that three unanswered serial requests
+ * meant a bucket that would not answer, so walking the rest was waste. Then the
+ * real bucket was driven into a total blackout — a sweep where **all 312 keys
+ * came back unread** — and the serial retry recovered **308 of 312**. A bucket
+ * answering nothing at all is exactly the case the retry rescues, so "it has
+ * stopped answering" is not a reason to stop asking.
+ *
+ * What the same runs DID show is the honest discriminator: across two blackout
+ * recoveries the **longest run of consecutive unanswered retries was 1**, and
+ * the first retry answered 344ms and 94ms in. A genuinely unreachable host
+ * answers none of them, so three in a row separates the two cases with margin,
+ * and the budget can never trip on a recovery that is working.
+ *
+ * It exists only to bound the wall clock: a full serial pass over 312 keys took
+ * ~85s when every one of them had to be re-asked, and against a host that never
+ * answers it would be 312 timeouts. Keys not reached stay UNREAD and still
  * refuse, with the same wording; nothing is ever passed for not being asked.
  */
 export const EYE_FRAME_RETRY_GIVE_UP_AFTER = 3;
@@ -199,14 +213,9 @@ export const judgeEyeFramePresence = async (
     answers[index] = classify(status);
   };
 
-  let next = 0;
-  const workers = Array.from(
-    { length: Math.min(EYE_FRAME_HEAD_CONCURRENCY, keys.length) },
-    async () => {
-      for (let index = next++; index < keys.length; index = next++) await ask(index);
-    },
-  );
-  await Promise.all(workers);
+  /* Pass one, every key at once — unchanged on purpose, and the docblock above
+     carries the measurement that kept it that way. */
+  await Promise.all(keys.map((_, index) => ask(index)));
 
   /* Pass two: every key still unread asked ONCE more, alone. `missing` is not
      retried — a 404 is an answer, and re-asking it would only make an absent
