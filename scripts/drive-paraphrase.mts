@@ -252,7 +252,7 @@ for (const klass of CLASSES) {
          this call used to carry went with the hair question it existed for
          (founder ruling 2026-08-19, fable-1087). */
       const question = pendingReaskFor(ask, false, HER_PRONOUNS);
-      const resolved = question ? resolveAnswer(question, klass.reask.answer) : null;
+      const resolved = question ? (resolveAnswer(question, klass.reask.answer)?.resolves ?? null) : null;
       const problems: string[] = [];
       if (!question) problems.push("no question was raised");
       else if (question.kind !== klass.reask.kind) problems.push(`asked ${question.kind}`);
