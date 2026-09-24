@@ -176,6 +176,8 @@ import {
   pendingReaskFor,
   redirectColourTo,
   resolveAnswer,
+  REFINE_REQUEST_TEXT_MAX_LENGTH,
+  storedEchoOf,
   whichFacetReask,
   whichSideReask,
   designNamedIn,
@@ -1536,7 +1538,17 @@ async function refineCandidateCounted(
       ? sameAgainReask({ asked: input.answering.trim(), priceCredits: CASTING_V2_REFINE_PRICE_CREDITS, pronouns })
       : pendingReaskFor(input.answering, lastColourFacet != null, pronouns))
     : null;
-  const answered = outstanding ? resolveAnswer(outstanding, input.instruction) : null;
+  /*
+    THE MATCHED OPTION, not just its sentence (#1126).
+
+    One match answers two questions — what to RENDER and what to STORE — and
+    they are deliberately allowed to differ: the column that holds the echo is
+    narrower than the answer the router accepts, so a composed answer has to be
+    cut somewhere, and cutting the instruction would shorten a paid render.
+    Everything below reads `answered` exactly as it always did.
+  */
+  const answeredOption = outstanding ? resolveAnswer(outstanding, input.instruction) : null;
+  const answered = answeredOption?.resolves ?? null;
   const instruction = answered ?? input.instruction;
   /* Her own sentence, read once. Pure, code-owned and free — but read TWICE it
      would be two answers to one question in a function where the two readers are
@@ -5785,7 +5797,21 @@ async function refineCandidateCounted(
         memory surgery — so without this the in-flight ghost chip would show the
         last SURVIVING sentence while the user waited on "remove the earrings".
       */
-      requestText: instruction.trim().slice(0, 220),
+      /*
+        ⚠ AND THE ECHO IS NOT ALWAYS THE INSTRUCTION (#1126).
+
+        An ANSWER may be half as long again as the box allows, so an answered
+        refine can resolve into a sentence this column cannot hold. The
+        instruction keeps all of it — it is what the render is built from — and
+        {@link storedEchoOf} decides what is kept of it here: our own clause
+        intact where a question composed one, a word-boundary cut where it did
+        not. The slice stays as the column's own backstop and should never bind.
+
+        An unanswered refine is her typed sentence, which the router caps well
+        under this width, so it crosses untouched.
+      */
+      requestText: (answeredOption ? storedEchoOf(answeredOption) : instruction)
+        .trim().slice(0, REFINE_REQUEST_TEXT_MAX_LENGTH),
       /*
         THE BRANCH SHE IS ON (fable-091). The selected face, which is already
         the predecessor everything above reasons from — recorded so the segment

@@ -1,7 +1,7 @@
 {
-  "edition": 515,
-  "updatedAt": "2026-09-24T17:59:52.053Z",
-  "shift": "Foreman — the list that never had anything in it leaves the screen",
+  "edition": 516,
+  "updatedAt": "2026-09-24T19:52:51.133Z",
+  "shift": "Foreman — #1160 slice 3",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -120,6 +120,18 @@
         {
           "state": "done",
           "title": "And now the screen it fed is gone with it. There was a small list under your picture called \"things this version is keeping\" — it never once had anything in it, for two separate reasons either of which was enough on its own, so nothing you look at changes. We opened a cast in both light and dark to be sure of that rather than to assume it. One thing in there was NOT part of the retirement and nearly went with it: the small piece of plumbing that lets the face panel's outlines load at all. It was moved to safety, with its own tests."
+        },
+        {
+          "state": "done",
+          "title": "The last of that retirement is written and waiting on a review: the two settings behind it, the start-up checks that read them, and the storage code underneath, all removed. Nothing you can see changes — and the reason it is safe is that we proved the settings were live on your account and bought nothing: the store they controlled has held zero rows since it was built, on the live site and ours, and the road every render takes could never have written to it."
+        },
+        {
+          "state": "done",
+          "title": "The part worth telling you: FOUR times in this one job, something still in use was hiding inside a name we were deleting. The sharpest was the check that proves a cast belongs to you before the face panel will show it — it was sitting in a file named after the thing being retired, and deleting that file, which its name invited, would have taken the check with it. It was moved to safety and then driven in the running app from two accounts: yours opens the cast, a stranger asking for the very same cast is turned away."
+        },
+        {
+          "state": "done",
+          "title": "And that drive is the only proof there was. We deliberately broke that ownership check to see what would notice, and ran every test we have: nothing failed. It has never had a test, before or after the move — so the running app was the only thing that could tell us the move was sound. That gap is now its own job rather than something quietly fixed inside a tidy-up."
         }
       ]
     },
@@ -198,7 +210,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T17:59:21.444Z",
+      "readAt": "2026-09-24T19:52:05.295Z",
       "items": [
         {
           "issueNumber": 179,
@@ -7881,6 +7893,13 @@
       "status": "merged",
       "prNumber": 1180,
       "note": "Five modules, a route and the panel itself; it had never shown you a single row."
+    },
+    {
+      "id": "segment-store-retire-1160-s3",
+      "title": "The settings behind the retired memory are removed, and one live safety check was rescued out of it",
+      "status": "in-review",
+      "prNumber": 1185,
+      "note": "Money/auth diff (the boot-gate file) — opened ready and left for the relay; a shift does not merge it."
     }
   ],
   "problems": [
@@ -8804,7 +8823,7 @@
     216
   ],
   "nextUp": {
-    "readAt": "2026-09-24T17:59:21.443Z",
+    "readAt": "2026-09-24T19:52:05.294Z",
     "items": [
       {
         "issueNumber": 1160,
