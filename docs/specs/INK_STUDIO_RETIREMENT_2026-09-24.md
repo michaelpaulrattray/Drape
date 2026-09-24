@@ -244,6 +244,76 @@ a tattoo she already has*. ⚠ **A resident design can come from the reference r
 road's removal must be read against the held road rather than against the studio alone. This slice
 gets its own read before it gets a branch.
 
+
+### ⚠ SLICE 3'S READ — DONE 2026-09-24, AND ITS ANSWER IS *DO NOT RETIRE THE TRANSFORM*
+
+The card said this slice *"gets its own read before it gets a branch"*. The read is done and it
+**disagrees with the slice as scoped above**, for the same reason slice 2's list was wrong: the word
+*ink* names four roads and this flag does not belong to the one that retires.
+
+**What the transform actually is, read at `shared/inkTransforms.ts` and both consumption sites.** Its
+subject is **THE SAME DELIVERED CROP** — *"the design as it actually sits on him, at his own tone and
+in his own light"* — with one clause of the instruction changed. Its document is the crop. There is no
+field in the vocabulary for what the tattoo IS, *because the picture already says that*. `refineService`
+reads the flag once (`:1553`) and uses it twice:
+
+- **`:1876`** — whether D-137's *"a design invented from a sentence"* wall opens for a `change` ask.
+  With the flag shut the ask is **refused FREE**, which the code's own paragraph argues is the RIGHT
+  answer for an account that cannot transform: open the wall without the road and the ask falls
+  through to the words road, which paints a fresh design from her prose and **charges 25 credits for
+  it**.
+- **`:3846`** — the transform itself: one axis only, the address taken from the slot through the same
+  field the words road uses, and the delivery mint writes the NEW crop as the next carry's baseline.
+
+**So the transform's subject is a DELIVERED TATTOO, whatever road delivered it** — and the road that
+delivers for everybody is not the studio. Read at the artifacts rather than argued:
+
+| fact | read at |
+|---|---|
+| `CASTING_INK_WORDS_SCOPE` stands at **`all`** — *"the FIRST capability this program took from users:1 to all"* | `scripts/lib/productionFlagPositions.mts:102` |
+| a words-road delivery carries **no design row** — crop #1 is a delivery with `designId` NULL | `server/_core/env.ts`'s own words-road paragraph |
+| delivered ink is counted **by SLOT**, valued by the crop's id, with no design id anywhere in the reading | `readDeliveredInk` / `readInkPointers`, `inkApplied.ts:163` |
+
+**Therefore every account already has a subject for a transform, and no account but his can use one.**
+
+#### ⚠ THE FLAG IS MIS-PARENTED TODAY, AND THE CODE SAYS BOTH THINGS IN ADJACENT PARAGRAPHS
+
+`captureCastingInkTransformEnabled` ANDs `captureCastingInkStudioEnabled`
+(`castingV2Scope.ts:2285-2289`), and `validateCastingInkTransformEnvironment` makes the studio scope
+its boot parent. The reason given at the call site (`server/_core/env.ts:468`) is:
+
+> *"a transform's whole content is a picture of a tattoo this product already delivered, so a user
+> outside that door has no subject for it."*
+
+**The very next paragraph in the same file refutes it**, about the words road:
+
+> *"this road needs no design row and no uploaded picture — crop #1 is a delivery with `designId`
+> NULL — so hanging it off the studio door would gate a lane whose subject does not require it."*
+
+Both cannot be true. The second is the one the code implements: a words-road delivery is a subject,
+and it needs no studio door. **This is a pre-existing defect, not one the retirement creates** — but
+the retirement is what forces it into the open, because unsetting the studio flag would take the
+transform down with it on the one account that has it.
+
+#### What slice 3 therefore IS, and it is smaller than the card assumed
+
+1. ⚠ **Nothing is deleted.** `captureCastingInkTransformEnabled`, `shared/inkTransforms.ts`, both
+   `refineService` sites and the whole transform road **stay**. Retiring them would remove a live
+   capability from the live ink road under a cleanup's name, which is his own rule inverted.
+2. **The repair is a RE-PARENT and it changes nothing for anybody**: point the transform's parent at
+   `CASTING_V2_SCOPE`, exactly as the words road is pointed, and leave
+   `CASTING_INK_TRANSFORM_SCOPE` at `users:1`. Same accounts, same behaviour, and the studio flag is
+   then free for slice 4 to unset. It is mechanical, and it is a shift's act rather than his.
+3. **The capability question is separate and it is genuinely his**, so it is NOT folded in: *should an
+   account whose tattoo came from words be able to say "make it bigger"?* Today the honest answer the
+   product gives them is D-137's free wall. Opening it is a widen, it costs 25 credits a render on a
+   road that currently refuses for free, and it is the kind of decision the switch sitting exists for.
+   **It is not filed as a switch here** — slice 4 puts it to him with the numbers, or it waits.
+
+⚠ **And the docblock at `server/_core/env.ts:468` is corrected as part of whichever slice moves the
+parent**, not left standing: it is the sentence that would make the next reader re-derive the wrong
+parenting from scratch.
+
 **Slice 4 — the flags and the shared constants**, children-first, at the Atlas's retirement view —
 with **#1156 read before that view is trusted**, because a file that will not parse makes the Atlas
 drop a whole router silently, and *absent* is exactly the reading that says *removable*.
