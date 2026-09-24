@@ -6,7 +6,18 @@
  * 4e). His ruling of 2026-09-24 retired the ink studio; slice 2 deleted the
  * mint and this slice deleted `recordInkPlate`, the table's only statement,
  * with its two error classes, its two types and the studio's own per-design
- * read. **Eight of this file's nine arms went with it**, and that is the
+ * read.
+ *
+ * **The decisions and the mint's order used to be proved next door, in
+ * `castingV2/inkPlateDoor.test.ts` and `castingV2/inkPlateMint.test.ts`, and
+ * both were deleted with the road in slice 2.** That sentence is this file's
+ * job to carry: `server/testing/suitePointers.ts` excuses both absences and
+ * names THIS file as where a later reader finds out they existed, so dropping
+ * the mention leaves an allowlist entry nobody can audit. ⚠ **It was dropped —
+ * by this very slice's header rewrite — and `suitePointerDiscipline.test.ts`
+ * caught it**, reddening on `inkPlateMint.test.ts` within a minute of the
+ * rewrite. The other entry survived only because its sibling's own reason
+ * happens to name it, which is luck rather than provenance. **Eight of this file's nine arms went with it**, and that is the
  * correct outcome rather than a loss: an arm kept after its subject is deleted
  * is the `directory-population-loses-promoted-subject` shape — green, and
  * checking nothing.

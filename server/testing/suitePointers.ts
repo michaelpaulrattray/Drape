@@ -114,13 +114,18 @@ export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
       "Deleted with the plate road (#1158 slice 2). The ink studio's second half — drawing a " +
       "design onto a blank form — retired with the studio itself, and this suite drove the " +
       "door's refusals and its prompt. `castingV2-ink-plate-db.test.ts` names it to say where " +
-      "the DECISIONS used to be proved, and that file is now the table's only surviving proof.",
+      "the DECISIONS used to be proved. ⚠ That file is no longer the table's proof of its RULES: " +
+      "#1158 slice 4e deleted `recordInkPlate` and eight of its nine arms went with the writer, " +
+      "leaving one arm on the live retention purge. The mention is the provenance and that is now " +
+      "the whole of what it is.",
   },
   "inkPlateMint.test.ts": {
     why:
       "Deleted with the plate road (#1158 slice 2), for `inkPlateDoor.test.ts`'s reason — it " +
       "drove the mint's ORDER, and `mintInkPlate`'s only non-test caller went with the upload. " +
-      "Named in `castingV2-ink-plate-db.test.ts` alongside its sibling.",
+      "Named in `castingV2-ink-plate-db.test.ts` alongside its sibling — and that mention was " +
+      "briefly LOST when slice 4e rewrote that file's header, which this guard caught. Both " +
+      "names are load-bearing there, not decoration.",
   },
   "velocityLimits.test.ts": {
     why:
