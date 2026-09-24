@@ -161,15 +161,43 @@ describe("#1126 — the field, the router and the column", () => {
   });
 });
 
+/**
+ * ⚠ THE FIRST VERSION OF THIS ARM WAS BLIND TO THE EXACT THING IT GUARDS, and
+ * a sabotage run is the only reason that is known.
+ *
+ * It read the clause as `resolves.slice(head.length)` and skipped any option
+ * whose `resolves` did not START WITH her whole sentence — so under the card's
+ * own road, where `resolves` becomes a CUT of her sentence, the filter matched
+ * nothing and the arm passed by having nothing to check. **A guard whose
+ * population is derived from the value under test cannot see that value go
+ * wrong.**
+ *
+ * What it asserts instead is a property the defect destroys and nothing else
+ * touches: the END of what she said is still in the instruction. A fixed answer
+ * of ours — *"leave them as they are"*, *"remove her glasses"* — is not built
+ * from her sentence at all and is exempt by length, which is stated here rather
+ * than inferred.
+ */
 describe("#1126 — the resolved instruction is never cut", () => {
+  /** Longer than any answer of ours that is not built from her sentence. */
+  const OURS_ALONE_MAX = 60;
+
   for (const { kind, head, reask } of QUESTIONS) {
-    it(`${kind}: every chip renders her whole sentence and our whole clause`, () => {
+    it(`${kind}: every chip renders the END of what she said`, () => {
+      const herEnding = head.slice(-30);
       for (const option of reask.options) {
-        const tail = tailOf(head, option);
-        if (tail === "") continue;
-        expect(option.resolves, `${kind} cut the instruction at ${JSON.stringify(option.label)}`)
-          .toBe(`${head}${tail}`);
+        if (option.resolves.length <= OURS_ALONE_MAX) continue;
+        expect(
+          option.resolves.includes(herEnding),
+          `${kind} cut the instruction at ${JSON.stringify(option.label)} — `
+            + `the last words she typed are not in what would be rendered`,
+        ).toBe(true);
         expect(option.resolves.length).toBeGreaterThan(REFINE_REQUEST_TEXT_MAX_LENGTH);
+
+        /* And where a clause was composed on, it is composed onto ALL of her
+           sentence rather than onto a shortened one. */
+        const tail = tailOf(head, option);
+        if (tail !== "") expect(option.resolves).toBe(`${head}${tail}`);
       }
     });
   }
