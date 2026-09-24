@@ -1,8 +1,14 @@
 /**
  * The plate store against a real database (migration 0037).
  *
- * The doors are proved in `castingV2/inkPlateDoor.test.ts` and the order in
- * `castingV2/inkPlateMint.test.ts`. This file proves the **statements** — that a
+ * ⚠ The doors and the order used to be proved next door, in
+ * `castingV2/inkPlateDoor.test.ts` and `castingV2/inkPlateMint.test.ts`. Both are
+ * DELETED — his ruling of 2026-09-24 retired the ink studio and the plate mint
+ * with it (#1158 slice 2), so nothing writes a row here any more and this file is
+ * the only surviving proof of the table's own rules. It is kept because the READ
+ * paths are live (`signService.carriedInkPlates`, the retention purge, the owner's
+ * removal) and because `recordInkPlate` is a TAKE row rather than a cut one.
+ * This file proves the **statements** — that a
  * stranger's design cannot be plated however good the ids are, that "one plate
  * per design per engine" is a fact about the table rather than a number in a
  * comment, that the manifest holding the bytes is released by the row that

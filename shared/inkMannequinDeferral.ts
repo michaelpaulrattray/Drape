@@ -38,7 +38,12 @@
  * code (opus-821 §0), ordered into this file by fable-1114 §1, and it is one
  * import hop away from invisible:
  *
- *     recordInkFormDemand   ← one non-test caller: inkPlateMint's
+ *     recordInkFormDemand   ← refineService.ts's coverage-demand tally. ⚠ This
+ *                             line read "one non-test caller: inkPlateMint's"
+ *                             and was stale in BOTH directions by 2026-09-24:
+ *                             the refine road had become a caller, and the
+ *                             plate mint was then deleted outright (#1158
+ *                             slice 2). The tally is LIVE; only its caller moved.
  *                             `dependencies.countMissingForm` call
  *     mintInkPlate          ← one non-test caller: inkUploadService's
  *                             `dependencies.mint` call

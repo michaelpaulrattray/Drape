@@ -364,12 +364,6 @@
   why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
   argued: 6a
 
-- symbol: resetInkPlateEngineForTests
-  file: server/castingV2/inkPlateEngine.ts
-  verdict: KEEP
-  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
-  argued: 6c/13a
-
 - symbol: interpreterParseStats
   file: server/castingV2/interpreter.ts
   verdict: KEEP
@@ -1331,3 +1325,49 @@
   why: "the D-30 strategy-(b) pure core, reached only by its own suite now that #108 slice 2b removed the ownership-checked wrapper (`composeIdentityPayload`, dark-born at every one of 378 timeline boundaries). The module carries the Atlas lifecycle `delete` (scripts/generate-architecture.mts) and has NO production importer left, so it is a whole-module retirement, which is #29's act and the Atlas's retirement view is its authority"
   argued: 37a
   blocker: "#29 — legacy-studio retirement is the FINISH LINE, begun only on the founder's word; a Janitor slice removes dead exports, never a legacy module"
+
+# ── #1158 slice 2: THE INK STUDIO'S RETIREMENT LEFT FIVE EXPORTS WITHOUT A
+# CALLER, and each one is here rather than deleted in the same commit for the
+# reason the header gives: a TAKE row deletes nothing by itself, the execution is
+# its own commit, and a reviewer sees the reading before the knife. All five lost
+# the SAME caller — `uploadInkDesign` or the plate mint it called at step 5 — so
+# they are one finding with five instances, not five findings.
+#
+# ⚠ NONE OF THEM IS HELD, AND THAT IS DELIBERATE. The tempting blocker is *"the
+# reference road may want this when he un-holds it"* (Crew reply #213, moved to
+# N3), and it is precisely the thing his own rule from the switch sitting forbids:
+# *"Folding a new capability into a retirement is how a half-built feature ships
+# under a cleanup's name."* Nothing is kept here because a future road might want
+# it; a road that needs a placement door when it wakes writes one against its own
+# vocabulary. They are read, the reading says remove, and #1158 slice 4 removes
+# them at the Atlas's retirement view.
+
+- symbol: inkIntentRefusal
+  file: server/castingV2/inkUploadDoor.ts
+  verdict: TAKE
+  why: "the studio upload's FIRST door - 'no extraction without intent', asked before the placement and long before the bytes. Its only production caller was `uploadInkDesign`, retired 2026-09-24 by his ruling on card `switch-10-ink-studio` (*\"It retires with N2\"*). Driven today only by `inkUploadDoor.test.ts`, whose arms go with it; the reference road's own intent handling is in `referenceIntents.ts` and does not pass through here"
+  argued: "#1158"
+
+- symbol: inkPlacementRefusal
+  file: server/castingV2/inkUploadDoor.ts
+  verdict: TAKE
+  why: "the studio upload's placement/side door, answered against the master framing. Only production caller was `uploadInkDesign`. ⚠ It is NOT the placement narrowing's pin any more - #1158 slice 1 re-aimed `inkPlacementCoupling.test.ts` onto `InkDesignToRecord[\"placement\"]`, the input type every road must pass through, precisely so a text pin on one writer's file could not miss a second writer widening. So removing this function does not weaken that coupling, which is the one question worth asking of it"
+  argued: "#1158"
+
+- symbol: candidateBelongsTo
+  file: server/db/castingV2InkDesigns.ts
+  verdict: TAKE
+  why: "the FREE owner read the upload did before it spent anything (#860) - two segmenter calls and an R2 write used to run on a candidateId nobody had resolved. Its only production caller was `uploadInkDesign`'s `prove` dependency. ⚠ It was never the ownership AUTHORITY and removing it takes no control with it: invariant 1's authority is the locked read inside `recordInkDesign`'s own transaction, which is unchanged and still scopes the owner in the statement that writes. Driven by `castingV2-ink-design-db.test.ts` against a real database"
+  argued: "#1158"
+
+- symbol: readInkDesignCastIdentity
+  file: server/db/castingV2InkDesigns.ts
+  verdict: TAKE
+  why: "the identity read the PLATE MINT made to draw a design onto a form. Zero readers anywhere in the tree after slice 2 - not a test, not a script - because the mint was its only one and the mint is deleted. The plainest row of the five"
+  argued: "#1158"
+
+- symbol: recordInkPlate
+  file: server/db/castingV2InkPlates.ts
+  verdict: TAKE
+  why: "the ONLY writer of `casting_ink_plates`, called by `mintInkPlate` alone, and the mint is deleted. ⚠ The TABLE and its read path are NOT in this row and must not be taken with it: `signService.carriedInkPlates` reads it on the live sign road (a paid surface), `candidateRetention` purges it and `castingV2InkDesignRemoval` clears it, so the module stays and only this statement is dead. Production held zero plate rows all time, so nothing is orphaned by a table that can no longer gain one. Driven by `castingV2-ink-plate-db.test.ts` against a real database"
+  argued: "#1158"

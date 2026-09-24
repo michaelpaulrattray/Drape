@@ -19,7 +19,7 @@
  *   lane                                anti-sticker   not-on-clothing   healed
  *   ──────────────────────────────────────────────────────────────────────────
  *   legacy evidence composer                 —                —          healed
- *   the plate mint (inkPlateDoor)            ✓                —             —
+ *   the plate mint — RETIRED 2026-09-24       ✓                —             —
  *   the sign views (inkViewReferences)       —                ✓             —
  *   THE REPAINT RECIPE — THE LIVE LANE       ✗                ✗             ✗
  * ```
@@ -81,20 +81,23 @@ import { inkTransformClause, type InkTransform } from "../../shared/inkTransform
 export const INK_SITS_ON_THE_FORM =
   "Follow the form underneath, so the design sits on the surface as ink on skin rather than as a flat sticker.";
 
-/**
- * The same sentence in the plate prompt's own shape — a bullet, wrapped where
- * that prompt wraps.
- *
- * **Two forms of one sentence is exactly the drift this module exists to stop**,
- * so they are not two sentences: `inkRealism.test.ts` unwraps these lines and
- * asserts they ARE {@link INK_SITS_ON_THE_FORM}, which is a derived check rather
- * than a second list (working law 4). Change the sentence and the lines go red
- * until they agree with it.
- */
-export const INK_SITS_ON_THE_FORM_LINES = Object.freeze([
-  "- Follow the form underneath, so the design sits on the surface as ink on",
-  "  skin rather than as a flat sticker.",
-]);
+/*
+  ⚠ THE WRAPPED-BULLET FORM OF THE SENTENCE ABOVE IS GONE, AND SO IS THE ARM
+  THAT DERIVED IT (#1158 slice 2).
+
+  `INK_SITS_ON_THE_FORM_LINES` existed for exactly one consumer — the plate
+  prompt's own bullet shape in `inkPlateDoor.ts` — and it was kept honest by an
+  arm in `inkRealism.test.ts` that unwrapped it and asserted it WAS the sentence
+  above. His ruling of 2026-09-24 (*"It retires with N2"*) took the plate road,
+  so the second form had no reader and the arm guarded a duplicate of a sentence
+  against nothing.
+
+  **It is deleted rather than kept for the day a plate road returns**, which is
+  his own rule from the switch sitting: nothing stays in a retirement because a
+  future feature might want it. The sentence itself stays — it is the house
+  sentence, {@link inkRealismClause} says it to every live ink road, and the
+  literal pin on it in `inkRealism.test.ts` stays with it.
+*/
 
 /**
  * INK IS NOT A GRAPHIC ON A GARMENT — the founder's first named defect class,

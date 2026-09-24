@@ -17,32 +17,34 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { inkPlatePrompt } from "./inkPlateDoor";
 import {
   INK_NOT_ON_CLOTHING,
   INK_SITS_ON_THE_FORM,
-  INK_SITS_ON_THE_FORM_LINES,
   inkDeliveredCarrySentence,
   inkNotOnClothingClause,
   inkRealismClause,
 } from "./inkRealism";
 import { inkTakeSentence } from "./inkReferenceTake";
-import { inkTemplateFor } from "./inkTemplates";
 import { inkViewReferenceClause } from "./inkViewReferences";
 
-describe("one sentence, two shapes, and they cannot drift apart", () => {
-  it("DERIVES the plate's wrapped bullet from the sentence rather than restating it", () => {
-    /*
-      Unwrap the bullet: drop the leading "- ", drop each continuation line's
-      two-space indent, join with single spaces. What is left must BE the
-      sentence — a derived check, not a second list (working law 4).
-    */
-    const unwrapped = INK_SITS_ON_THE_FORM_LINES
-      .map((line, at) => (at === 0 ? line.replace(/^- /, "") : line.replace(/^ {2}/, "")))
-      .join(" ");
-    expect(unwrapped).toBe(INK_SITS_ON_THE_FORM);
-  });
+/*
+  ⚠ ONE LANE LEFT THIS FILE WITH THE ROAD IT SPOKE FOR (#1158 slice 2).
 
+  Two arms above drove the PLATE prompt: one unwrapped
+  `INK_SITS_ON_THE_FORM_LINES` and asserted it was the sentence, and one rendered
+  `inkPlatePrompt` and found the owner's own string inside it. His ruling of
+  2026-09-24 retired the studio, `inkPlateDoor.ts` is gone, and both arms are
+  gone with it — the wrapped second form is deleted at its declaration for the
+  same reason.
+
+  **The file's purpose is unchanged and its remaining arms are the ones that
+  matter**: failure 2 (a paid prompt's prose changing by accident) is still
+  pinned literally, and failure 1 (two lanes drifting) is still proved on the
+  lane that PAINTS TODAY — the sign views'. What is removed is coverage of a
+  lane that no longer exists, not coverage that was doing work.
+*/
+
+describe("the house sentences, pinned so a reword is a deliberate diff", () => {
   it("pins both sentences literally — a reword is a deliberate diff, never a silent one", () => {
     expect(INK_SITS_ON_THE_FORM).toBe(
       "Follow the form underneath, so the design sits on the surface as ink on skin rather than as a flat sticker.",
@@ -58,17 +60,6 @@ describe("one sentence, two shapes, and they cannot drift apart", () => {
 });
 
 describe("every lane that says it, says the OWNER'S string", () => {
-  it("the plate mint's prompt carries the anti-sticker clause, wrapped as it always was", () => {
-    const choice = inkTemplateFor({ placement: "upperArm", side: "left", build: "female" });
-    expect(choice.ok).toBe(true);
-    if (!choice.ok) return;
-    const prompt = inkPlatePrompt({ placement: "upperArm", side: "left", template: choice.template });
-
-    /* The rendered bytes, not a paraphrase of them: the two lines exactly as the
-       prompt joins them. */
-    expect(prompt).toContain(INK_SITS_ON_THE_FORM_LINES.join("\n"));
-  });
-
   it("the sign views' clause carries the clothing rule — the lane that paints today", () => {
     const clause = inkViewReferenceClause({
       plates: [{

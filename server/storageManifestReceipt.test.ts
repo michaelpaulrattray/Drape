@@ -196,8 +196,25 @@ const registersABatch = (source: string): boolean =>
  */
 const KEEPERS: Readonly<Record<string, string>> = {
   "server/castingV2/bornWornCatalogue.ts": "a born-worn mask and crop, referenced by the catalogue row",
-  "server/castingV2/inkPlateMint.ts": "the plate an engine is shown on every later render",
-  "server/castingV2/inkUploadService.ts": "the customer's own design photograph",
+  /*
+    ⚠ TWO ROWS LEFT THIS TABLE WITH THE INK STUDIO (#1158 slice 2), and they
+    left for two DIFFERENT reasons worth telling apart.
+
+    `inkPlateMint.ts` is DELETED — his ruling of 2026-09-24 retired the studio
+    and the plate mint was the road's second half, so there is no module to
+    demand a receipt from. It read: *"the plate an engine is shown on every
+    later render"*.
+
+    `inkUploadService.ts` still EXISTS and is no longer a PRODUCER, which is the
+    subtler one. It read *"the customer's own design photograph"* because
+    `uploadInkDesign` minted a batch id and handed it to the row; that function
+    retired, and what stayed is the `defaultManifest` wrapper the two mints
+    below call. Doctrine 23 puts the arm at whoever OWNS A BATCH, and after the
+    retirement this module owns none — it writes the manifest on behalf of a
+    caller that minted the id. Both mints below are in this table already, so
+    the act is still pinned at its producer; only the wrapper's row was a claim
+    about a road that no longer exists.
+  */
   /*
     THE TWO THAT WERE OUTSIDE THIS SWEEP ENTIRELY, added 2026-08-23. Neither
     names the helper: both import `defaultManifest` from `inkUploadService`, and
@@ -272,6 +289,32 @@ const COLLECTORS: Readonly<Record<string, string>> = {
      for the design to go, so the manifest is the delete rather than a hold over
      bytes about to be claimed — there is no row left to carry a receipt. */
   "server/db/castingV2InkDesignRemoval.ts": "a design its owner removed, and the plates drawn from it",
+};
+
+/**
+ * ⚠ A THIRD CLASS, AND THE INK STUDIO'S RETIREMENT IS WHAT REVEALED IT
+ * (#1158 slice 2) — a module that WRITES a manifest and OWNS no batch.
+ *
+ * Doctrine 23 already names this shape in prose one screen above: *"a caller is
+ * a module that OWNS A BATCH, and it owns one whether it names the helper or
+ * names a wrapper."* Until now the only wrapper in the tree was
+ * `inkUploadService.ts`, and it was ALSO a producer — `uploadInkDesign` minted
+ * its own `cleanupBatchId` and handed it to the design row — so the wrapper never
+ * needed a class of its own. His ruling of 2026-09-24 retired that upload. What
+ * is left exports `defaultManifest` and writes whatever `id` its caller minted.
+ *
+ * **Its keep/collect answer belongs to its CALLERS, and the arm below is what
+ * makes saying so safe rather than convenient**: every module that imports the
+ * wrapper must itself be classified, so a new writer cannot reach the store
+ * through this door and escape the sweep. That is the exact hole the 2026-08-23
+ * widening was bought to close, and it stays closed from the other side.
+ *
+ * Nothing goes in here to quiet a red. A module belongs here only if it mints no
+ * batch id of its own — proved, not asserted, in the second arm.
+ */
+const WRAPPERS: Readonly<Record<string, string>> = {
+  "server/castingV2/inkUploadService.ts":
+    "`defaultManifest` — the hold on bytes with no row yet, written for whichever ink road minted the id",
 };
 
 describe("the manifest receipt, swept across every caller", () => {
@@ -349,7 +392,11 @@ describe("the manifest receipt, swept across every caller", () => {
       adds a writer next month, forgets the receipt, and no test anywhere knows
       the module exists. That is precisely how this defect shipped.
     */
-    const classified = new Set([...Object.keys(KEEPERS), ...Object.keys(COLLECTORS)]);
+    const classified = new Set([
+      ...Object.keys(KEEPERS),
+      ...Object.keys(COLLECTORS),
+      ...Object.keys(WRAPPERS),
+    ]);
     expect(callers.filter((file) => !classified.has(file))).toEqual([]);
     /* And the other direction: a name here that no longer calls the manifest is
        a stale pin claiming to guard something that moved. */
@@ -434,6 +481,43 @@ describe("the manifest receipt, swept across every caller", () => {
     expect(Object.keys(KEEPERS).filter((file) => file in COLLECTORS)).toEqual([]);
     expect(Object.keys(KEEPERS).length).toBeGreaterThan(0);
     expect(Object.keys(COLLECTORS).length).toBeGreaterThan(0);
+    /* And the third class against both, for the same reason (#1158 slice 2). */
+    expect(Object.keys(WRAPPERS).filter((file) => file in KEEPERS || file in COLLECTORS)).toEqual([]);
+    expect(Object.keys(WRAPPERS).length).toBeGreaterThan(0);
+  });
+
+  it("⚠ a WRAPPER owns no batch, and everything reaching the store through it IS classified", () => {
+    /*
+      The whole safety of the third class, in two readings.
+
+      1 · IT MINTS NOTHING. A wrapper's `id` comes from its input; the moment one
+          starts minting its own it is a producer and owes a keep/collect answer
+          like everybody else. Read at the bytes rather than trusted: the
+          declaration must take `id` in, and no `randomUUID()` may reach `id:`.
+      2 · ITS IMPORTERS ARE CLASSIFIED. Derived over the server tree, so a new
+          module cannot reach the cleanup store through this door and sit outside
+          the sweep — which is precisely the hole the 2026-08-23 widening found
+          and closed from the other side.
+    */
+    for (const wrapper of Object.keys(WRAPPERS)) {
+      const source = readFileSync(path.resolve(ROOT, wrapper), "utf8");
+      expect(source, `${wrapper} must take the batch id in, not mint one`)
+        .toMatch(/\bid:\s*string\b/);
+      expect(/\bid:\s*randomUUID\(\)/.test(source), `${wrapper} mints its own batch id — it is a producer`)
+        .toBe(false);
+
+      const base = wrapper.replace(/^server\//, "").replace(/\.ts$/, "");
+      const importers = inScope
+        .filter(({ file, source: text }) => file !== wrapper && text.includes(`/${base.split("/").pop()}"`))
+        .map(({ file }) => file);
+      /* The control first: an importer reading that finds nothing would make the
+         assertion below vacuous, which is this file's own founding lesson. */
+      expect(importers.length, `no importer of ${wrapper} was found — the reading is broken`)
+        .toBeGreaterThan(0);
+      const classified = new Set([...Object.keys(KEEPERS), ...Object.keys(COLLECTORS)]);
+      expect(importers.filter((file) => callers.includes(file) && !classified.has(file)))
+        .toEqual([]);
+    }
   });
 
   it("the reader can actually SEE the word it is looking for", () => {
@@ -441,8 +525,22 @@ describe("the manifest receipt, swept across every caller", () => {
       The instrument's own control. Both assertions above are absence tests over
       a string, and a mis-resolved path or an unreadable file would make them
       pass while examining nothing.
+
+      ⚠ IT NAMED `inkUploadService.ts` BY HAND AND THAT ROTTED THE DAY THAT FILE
+      STOPPED MINTING A BATCH (#1158 slice 2). The ink studio's upload retired,
+      the module kept only its shared `defaultManifest` wrapper, and a control
+      pointing at it went red for a reason that had nothing to do with the
+      instrument being broken — which is the noisiest way for a control to fail
+      and the quietest way for one to be deleted in irritation.
+
+      DERIVED from the keeper table now (working law 4), so it follows the
+      population rather than shadowing it: every keeper must hand a
+      `cleanupBatchId` on — that is the arm above — so any of them proves the
+      reader can resolve a path, open a file and see the token. The disjointness
+      arm already refuses an empty table, so this cannot pass vacuously.
     */
-    const keeper = readFileSync(path.resolve(ROOT, "server/castingV2/inkUploadService.ts"), "utf8");
+    const first = Object.keys(KEEPERS).sort()[0]!;
+    const keeper = readFileSync(path.resolve(ROOT, first), "utf8");
     expect(keeper).toContain("cleanupBatchId");
     expect(keeper).not.toContain("a-token-no-source-file-contains");
   });
