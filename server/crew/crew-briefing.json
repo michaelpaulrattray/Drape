@@ -1,7 +1,7 @@
 {
-  "edition": 508,
-  "updatedAt": "2026-09-24T07:25:49.421Z",
-  "shift": "Foreman — the surface cut stops asking the retired studio's permission, and the retirement turns out to be four steps rather than one",
+  "edition": 509,
+  "updatedAt": "2026-09-24T08:35:49.727Z",
+  "shift": "Foreman — the tidy-up would have quietly stopped collecting a photograph you attached, and the switch it asked was the wrong one",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -80,6 +80,10 @@
         {
           "title": "The tattoo studio's retirement turned out to be four steps, not one — and the read is the finding. Two of its settings looked like settings nothing uses, and one of them was in fact the thing keeping YOUR picture-cut road switched on. Turning it off would have quietly changed what gets stored when you point at a tattoo in a photo you attached, with no test failing. Step one is out and changes nothing: the picture-cut road now answers to its own setting instead of the retired one",
           "state": "done"
+        },
+        {
+          "title": "Step two of the tattoo studio's retirement, and it caught the thing that would have gone wrong quietly. When you delete a cast, a cleanup runs and removes every picture attached to it. That cleanup was asking the tattoo studio's switch whether those pictures could exist — but the studio is the road being retired, and the one still open is attaching a photo of your own. So the moment the studio's switch came off, the cleanup would have stopped collecting, and a photograph you attached could have outlived the cast it was promised to leave with. No test would have gone red. It now asks about both roads, and the check that proves it is red on the old code",
+          "state": "done"
         }
       ]
     },
@@ -137,9 +141,9 @@
         "source": "The tattoo studio, the segment pair and the wardrobe path — all three on your word."
       },
       {
-        "label": "A setting nothing read was load-bearing",
+        "label": "Caught before the tidy-up ran",
         "tone": "good",
-        "source": "A setting nothing reads was holding your picture-cut road open. Caught before it was turned off."
+        "source": "A cleanup was about to stop collecting attached photos. Found by reading, not by a failing test."
       },
       {
         "label": "One customer, and it is you",
@@ -154,11 +158,11 @@
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "40 open · 14 untouched for 7 days · 6 carry a hold · none urgent."
+        "source": "40 open · 14 untouched for 7 days · 11 carry a hold · none urgent."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T07:26:37.503Z",
+      "readAt": "2026-09-24T08:35:57.506Z",
       "items": [
         {
           "issueNumber": 179,
@@ -7789,9 +7793,16 @@
     {
       "id": "ink-regioncrop-reparent-1158-s4a",
       "title": "Cutting a tattoo out of your own photo stops depending on the retired studio being switched on",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1170,
       "note": "Nothing changes for any account — proved by running the real check before and after. It is the step that lets the tattoo studio's two settings come off the service without quietly switching your picture-cut road off."
+    },
+    {
+      "id": "ink-purge-rearm-1158-s4b",
+      "title": "Deleting a cast keeps collecting the pictures attached to it, even after the tattoo studio is switched off",
+      "status": "merged",
+      "prNumber": 1171,
+      "note": "The cleanup that runs when a cast is deleted was checking the retiring switch, not the one still in use."
     }
   ],
   "problems": [
@@ -8715,7 +8726,7 @@
     216
   ],
   "nextUp": {
-    "readAt": "2026-09-24T07:26:37.502Z",
+    "readAt": "2026-09-24T08:35:57.505Z",
     "items": [
       {
         "issueNumber": 1158,

@@ -83,6 +83,14 @@ touching production — that is the road this sitting's five widens took.
 
 ## 4 · THE POPULATION — read at the production rows, 2026-09-24
 
+⚠ **AND THREE DOCBLOCKS IN `candidateRetention.ts` STATED THE OPPOSITE OF THE ROWS UNTIL SLICE 4b.**
+They read *"production has taken neither 0034 nor 0037"*. Read at the production rows on 2026-09-24:
+`casting_ink_designs`, `casting_ink_plates` and `casting_ink_delivery_crops` are **all PRESENT and all
+hold zero rows** — the additive migrations landed, most likely through the deploy rite's own auto-apply
+(#322). The tolerances those docblocks justify therefore cannot fire on production at all today. Corrected
+in the same commit, because a comment that argues from a database state that has moved is how the next
+reader inherits a wrong premise.
+
 ```
 casting_ink_designs           0
 casting_ink_plates            0
@@ -458,9 +466,16 @@ no-op edit look identical, exactly as `surviving-sabotage-may-be-inert` records.
 
 ### The corrected order for what remains
 
-1. **4b — the deletions and the purge-path re-arm.** `captureCastingInkCutEnabled` and
-   `captureCastingInkStudioEnabled` now have no production caller; the cut fence, its parse, its errors
-   and its `validateEnv()` call site go with them. ⚠ **And the retention tolerances must be re-armed in
+1. **4b — the deletions and the purge-path re-arm.** ✅ **DONE 2026-09-24, PR #1171** — and it corrects
+   the two sentences below rather than following them. `captureCastingInkCutEnabled` and
+   `captureCastingInkStudioEnabled` had no production caller and are gone. ⚠ **THE CUT FENCE, ITS PARSE,
+   ITS ERRORS AND ITS `validateEnv()` CALL SITE DID NOT GO WITH THEM, AND MUST NOT** —
+   `server/scopeParentChain.test.ts` holds the declared scope constants and the `validate…Environment`
+   fences equal AS SETS (*"a flag with no boot check is invariant 7's 'a control that is not invoked does
+   not exist', wearing an env var"*), so a declaration outliving its fence by one slice is RED in between.
+   **They leave in 4c, in the same act as the variable.** And the crash this census feared points
+   elsewhere: it is unsetting the **PARENT** while the child still reads `users:1`, which that fence
+   refuses at boot — so 4c unsets the two TOGETHER and there is no window. ⚠ **And the retention tolerances must be re-armed in
    the same PR**: `tolerateAbsentInkDesignStore` and `tolerateAbsentInkPlateStore` read
    `castingInkStudioArmed()`, while **two doors mint design rows and only the reference one survives** —
    the same law-4 shape `castingInkDeliveryCropArmed` already fixed by ORing the two. Left as it is, the
