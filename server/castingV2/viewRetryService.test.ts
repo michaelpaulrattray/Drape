@@ -100,6 +100,10 @@ vi.mock("./signService", async (importOriginal) => ({
 }));
 
 import { TRPCError } from "@trpc/server";
+import {
+  castViewRetrySubjectHash,
+  hashGenerationOperationClaim,
+} from "../casting/operationContract";
 import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
 import { retryCastView, type ViewRetryServiceDependencies } from "./viewRetryService";
 import type { CastSlotProjection } from "./castProjection";
@@ -417,6 +421,120 @@ describe("try again on one view — what moves, and in what order", () => {
     expect(references).toHaveLength(2);
     /* Her words ride in the composed prompt, not in a second call. */
     expect(enginePrompts[0]).toContain("banded tail");
+  });
+
+  /**
+   * ⚠ THE DOUBLE CHARGE HIS THIRD REPORT FOUND (#1235).
+   *
+   * Press Try again, leave the room, come back, press it again. Until #1235 the
+   * tile offered the button because the slot knew nothing about the operation:
+   * `castSlotRetryOffer` re-read `failed-refunded`, still offered 50, and
+   * `beginDirectOperation` keyed on the NEW request id — so nothing refused it.
+   * Two renders, two charges, one slot, and the loser's picture orphaned.
+   *
+   * The refusal is not a new rule bolted on: the projection marks the slot
+   * `building` while its own retry runs, and this entrance re-reads the SAME
+   * offer function it always has. These arms prove the refusal is FREE and
+   * before the claim, and that it names what is actually happening.
+   */
+  it("a view already being asked for is refused FREE, and says so", async () => {
+    const asking = slot({
+      /* Exactly what the projection produces for a slot with a running retry —
+         and `retry: undefined` is not a fixture convenience, it is what the
+         offer function answers for anything that is not finished. */
+      state: "building",
+      url: null,
+      note: null,
+      retrying: true,
+      retry: undefined,
+    });
+
+    await expect(retryCastView(dependencies([asking]), input)).rejects.toThrow(
+      /already being asked for/,
+    );
+    /* Nothing claimed, nothing charged — the whole point of the card. */
+    expect(journal).toEqual([]);
+    expect(deducts).toHaveLength(0);
+  });
+
+  it("accepts the same press once the first one has settled", async () => {
+    /*
+      THE POSITIVE CONTROL, and without it the arm above proves only that some
+      refusal exists. The same request, same angle, same everything — with the
+      retry no longer running — goes all the way through and pays once.
+    */
+    const settled = slot({ state: "failed-refunded", retrying: undefined });
+    const result = await retryCastView(dependencies([settled]), input);
+
+    expect(result.outcome).toBe("ready");
+    expect(deducts).toEqual([
+      { amount: CAST_PACKAGE_VIEW_PRICE, reference: `op:${OPERATION_ID}:charge` },
+    ]);
+  });
+
+  it("distinguishes the two free refusals by their sentence", async () => {
+    /*
+      One refusal, two facts. "You cannot ask for that one" is WRONG about a
+      view being made right now, and a customer who has just pressed a button is
+      owed the reason it did nothing. The arm is here rather than on the
+      constants because the branch is what could get them the wrong way round.
+    */
+    const nothing = slot({ state: "ready", url: "https://cdn.example/x.png", retry: undefined });
+    await expect(retryCastView(dependencies([nothing]), input)).rejects.toThrow(
+      /isn't one you can ask for again/,
+    );
+    const asking = slot({ state: "building", url: null, retrying: true, retry: undefined });
+    await expect(retryCastView(dependencies([asking]), input)).rejects.toThrow(
+      /already being asked for/,
+    );
+  });
+
+  /**
+   * ⚠ THE CLAIM AND THE BUSY READ MUST BE ABOUT THE SAME THING — ASSERTED AT
+   * THE WIRE (#1235, invariant 5).
+   *
+   * The refusal above works because `listRunningViewRetryAngles` recognises
+   * THIS claim's row by recomputing its subject hash. `generation_operations`
+   * stores `payloadHash` and no payload, so that hash is the only thing
+   * connecting a running operation to a slot — and if this entrance ever sends
+   * a different payload shape, every arm in this file stays green while the
+   * double charge quietly returns.
+   *
+   * So the claim is captured as it is MADE and hashed, rather than compared to a
+   * constant near it. The negative control is the same hash for the wrong angle:
+   * a shape that hashed identically for every view would pass the positive half
+   * and destroy the per-slot independence his second report asked for.
+   */
+  it("claims a subject the busy read can recognise", async () => {
+    const claims: Array<{ kind: string; modelId?: number | null; payload: unknown }> = [];
+    const deps = dependencies([slot()], {
+      begin: async (claim) => {
+        claims.push(claim as never);
+        journal.push("claim");
+        return { type: "execute" as const, operationId: OPERATION_ID };
+      },
+    });
+
+    await retryCastView(deps, input);
+
+    expect(claims).toHaveLength(1);
+    const claimed = hashGenerationOperationClaim({
+      clientRequestId: input.clientRequestId,
+      kind: claims[0]!.kind as never,
+      modelId: claims[0]!.modelId,
+      payload: claims[0]!.payload,
+    });
+    expect(claimed).toBe(castViewRetrySubjectHash({
+      modelId: 7,
+      castId: input.castId,
+      angle: input.angle,
+    }));
+    /* The control: the reader must not recognise a DIFFERENT view as this one. */
+    expect(claimed).not.toBe(castViewRetrySubjectHash({
+      modelId: 7,
+      castId: input.castId,
+      angle: "closeUp",
+    }));
   });
 
   it("the same request id returns the view it already bought", async () => {

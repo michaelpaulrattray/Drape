@@ -49,9 +49,13 @@ import {
   completeDirectOperationSuccess,
   failClaimedDirectOperation,
 } from "../casting/directOperation";
-import { operationChargeReference } from "../casting/operationContract";
+import { castViewRetryClaimPayload, operationChargeReference } from "../casting/operationContract";
 import { deductCredits } from "../db/credits";
-import { commitRetriedViewAsset, readCastViewRenderSource } from "../db/castingV2ViewRetry";
+import {
+  commitRetriedViewAsset,
+  listRunningViewRetryAngles,
+  readCastViewRenderSource,
+} from "../db/castingV2ViewRetry";
 import {
   getCastLineage,
   getOwnedCastByPublicId,
@@ -116,6 +120,26 @@ export const VIEW_RETRY_NOTHING_TO_ASK_MESSAGE =
   "That view isn't one you can ask for again. Nothing was charged.";
 
 /**
+ * A SECOND PRESS ON A VIEW ALREADY BEING MADE — free, and it says which of the
+ * two refusals it is (#1235).
+ *
+ * The refusal itself is not decided here: the slot is `building` while its
+ * retry runs, `castSlotRetryOffer` answers nothing for anything that is not
+ * finished, and the entrance falls into the same free exit it has always had.
+ * What this constant changes is the SENTENCE, because the two facts are
+ * different for the person reading them — "you cannot ask for that one" is
+ * wrong about a view that is being made right now, and a customer who has just
+ * pressed a button is owed the reason it did nothing.
+ *
+ * ⚠ **His third report is why it exists at all**: leave the room mid-retry and
+ * come back, and until #1235 the tile offered the button again — a second press
+ * claimed under a new request id, deducted a second 50, and rendered a second
+ * picture into one slot. Nothing refused it, because nothing asked.
+ */
+export const VIEW_RETRY_ALREADY_ASKING_MESSAGE =
+  "That view is already being asked for. Nothing was charged.";
+
+/**
  * What the room would show for this Cast right now.
  *
  * The SAME reads and the SAME projection `getCast` runs, minus the siblings —
@@ -127,12 +151,16 @@ export const VIEW_RETRY_NOTHING_TO_ASK_MESSAGE =
 async function readCastSlots(userId: number, castPublicId: string): Promise<CastSlotsRead | null> {
   const model = await getOwnedCastByPublicId(userId, castPublicId);
   if (!model) return null;
-  const [assets, lineage, promisedAngles] = await Promise.all([
+  const [assets, lineage, promisedAngles, retryingAngles] = await Promise.all([
     listCastAssets(userId, model.id),
     getCastLineage(userId, model),
     listCastPromisedAngles(userId, model.id),
+    /* WHAT IS ALREADY BEING ASKED FOR (#1235). The room reads this too, from
+       the same statement, which is what makes a slot's Try again disappear and
+       this entrance refuse for the same reason at the same moment. */
+    listRunningViewRetryAngles({ userId, modelId: model.id, castId: castPublicId }),
   ]);
-  const projection = projectSignedCast({ model, assets, lineage, promisedAngles });
+  const projection = projectSignedCast({ model, assets, lineage, promisedAngles, retryingAngles });
   return { modelId: model.id, slots: projection.slots };
 }
 
@@ -163,7 +191,12 @@ export async function retryCastView(
   if (!offer) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: VIEW_RETRY_NOTHING_TO_ASK_MESSAGE,
+      /* ONE refusal, two sentences. The slot's own state decided the refusal a
+         line above; this only reads back WHY, so a customer who pressed twice
+         is told what is happening rather than that it is impossible (#1235). */
+      message: slot.retrying === true
+        ? VIEW_RETRY_ALREADY_ASKING_MESSAGE
+        : VIEW_RETRY_NOTHING_TO_ASK_MESSAGE,
     });
   }
   const price = offer.priceCredits;
@@ -209,7 +242,11 @@ export async function retryCastView(
     /* Bound at the claim, BEFORE any money moves, so the sweep can always ask
        whether a picture landed for this Cast. */
     modelId: read.modelId,
-    payload: { castId: input.castId, angle: input.angle },
+    /* THE ONE PLACE THIS SHAPE IS WRITTEN — the busy read hashes the same
+       builder to recognise this very claim as running (#1235). A literal here
+       would be a mirror of it, and its drift would reopen the double charge
+       silently. */
+    payload: castViewRetryClaimPayload({ castId: input.castId, angle: input.angle }),
   });
   if (gate.type === "replay") {
     // Idempotency, not an error: the same request id returns the view it

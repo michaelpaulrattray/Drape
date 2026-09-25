@@ -346,6 +346,38 @@ export function stableCanonicalJson(value: unknown): string {
   return canonicalize(value, new Set());
 }
 
+/**
+ * WHAT A CLAIM IS ABOUT, hashed — the operation's SUBJECT, with no request id
+ * in it.
+ *
+ * `payloadHash` is the only persisted request material on an operation row
+ * (`generation_operations` stores no payload), and it is what the claim path
+ * already compares to detect a request id reused for a different subject. So
+ * it is also the one column that can answer "is an operation for THIS subject
+ * running right now" — which is what {@link castViewRetrySubjectHash} asks,
+ * and why the canonical form is extracted here rather than inlined below.
+ *
+ * Two different clients asking for the same thing hash the same on purpose:
+ * that is what makes the column a subject, and the claim's own uniqueness
+ * lives on `(userId, clientRequestId)` where it belongs.
+ */
+function hashGenerationOperationSubject(input: {
+  kind: GenerationOperationKind;
+  modelId?: number | null;
+  originBoardId?: number | null;
+  originItemId?: number | null;
+  payload: unknown;
+}): string {
+  const canonical = stableCanonicalJson({
+    kind: input.kind,
+    modelId: input.modelId ?? null,
+    originBoardId: input.originBoardId ?? null,
+    originItemId: input.originItemId ?? null,
+    payload: input.payload,
+  });
+  return createHash("sha256").update(canonical).digest("hex");
+}
+
 export function hashGenerationOperationClaim(input: {
   clientRequestId: string;
   kind: GenerationOperationKind;
@@ -355,14 +387,44 @@ export function hashGenerationOperationClaim(input: {
   payload: unknown;
 }): string {
   assertClientRequestId(input.clientRequestId);
-  const canonical = stableCanonicalJson({
-    kind: input.kind,
-    modelId: input.modelId ?? null,
-    originBoardId: input.originBoardId ?? null,
-    originItemId: input.originItemId ?? null,
-    payload: input.payload,
+  return hashGenerationOperationSubject(input);
+}
+
+/**
+ * WHAT A TRY AGAIN IS ABOUT — one Cast, one view (#1235).
+ *
+ * ⚠ **THE ONE PLACE THIS SHAPE IS WRITTEN.** The retry entrance claims with it
+ * and the busy read below hashes it; a second copy in either would be working
+ * law 4 on a money surface, and its drift would be silent in the worst
+ * direction — a slot that no longer matches offers a Try again the customer
+ * has already paid for, which is the double charge #1235 was filed about.
+ * `server/castingV2/viewRetryBusy.test.ts` asserts the claim the entrance
+ * actually sends hashes to the same value, at the wire rather than beside it.
+ */
+export function castViewRetryClaimPayload(input: {
+  castId: string;
+  angle: string;
+}): { castId: string; angle: string } {
+  return { castId: input.castId, angle: input.angle };
+}
+
+/**
+ * The `payloadHash` a running Try again on this Cast's view would carry.
+ *
+ * `modelId` is part of it because the claim binds the model at the claim — so
+ * the hash is unambiguous about WHICH Cast even though the public id is in the
+ * payload too.
+ */
+export function castViewRetrySubjectHash(input: {
+  modelId: number;
+  castId: string;
+  angle: string;
+}): string {
+  return hashGenerationOperationSubject({
+    kind: "castingV2.viewRetry",
+    modelId: input.modelId,
+    payload: castViewRetryClaimPayload(input),
   });
-  return createHash("sha256").update(canonical).digest("hex");
 }
 
 export function operationChargeReference(operationId: string): string {

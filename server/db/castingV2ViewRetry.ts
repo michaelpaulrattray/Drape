@@ -24,7 +24,7 @@
  * Sign's to cover both would have relaxed a live money path to serve a new
  * one.
  */
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 
 import {
   castingCandidateVariants,
@@ -33,8 +33,9 @@ import {
   modelAssets,
   models,
 } from "../../drizzle/schema";
-import type { CastViewAngle } from "../../shared/boardTypes";
+import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { identityStampFor } from "../casting/identity/anchorSelector";
+import { castViewRetrySubjectHash } from "../casting/operationContract";
 import { getDb, withTransaction } from "./connection";
 
 /** A positive integer id, or a throw — the same assertion `castingV2Sign` makes
@@ -299,6 +300,97 @@ export async function commitRetriedViewAsset(input: {
   } catch {
     return null;
   }
+}
+
+/**
+ * WHICH VIEWS ARE BEING ASKED FOR RIGHT NOW — the busy read (#1235).
+ *
+ * His three reports, and all three are this one fact missing: the tile said
+ * *"Asking…"* instead of going into the casting state every other view being
+ * made uses; one Try again disabled the other tiles; and leaving the page and
+ * coming back showed a button over a render that was still running — where a
+ * second press **charged a second time**, because the offer is re-read off the
+ * slot and the slot knew nothing about the operation.
+ *
+ * So busy becomes SERVER TRUTH, per slot (D-161). One statement, read by the
+ * projection the room is shown AND by the entrance that spends the money, so
+ * the button and the till cannot disagree.
+ *
+ * ⚠ **THE ANGLE IS NOT A COLUMN, AND THE CARD SAID IT WAS.** #1235 says "read
+ * at the rows, the same way the Sign's own building state is" — read at the
+ * code, `generation_operations` stores `payloadHash` and **no payload**, and
+ * the Sign's building state is the MODEL's `provisioning` status, which is
+ * cast-level and cannot say which of five slots. What the row does carry is
+ * the hash of the claim's subject, which is exactly "this Cast, this view":
+ * {@link castViewRetrySubjectHash} recomputes it for each angle from the same
+ * payload builder the entrance claims with, so nothing is mirrored and a
+ * changed payload shape reddens a test rather than silently reopening the
+ * double charge.
+ *
+ * ⚠ **LEASE EXPIRY IS DELIBERATELY NOT A FILTER.** A dead operation's rows stay
+ * non-terminal until the recovery sweep settles them (~6 minutes, and that
+ * window is a documented, accepted cost). Treating an expired lease as "not
+ * busy" would offer a paid Try again against a slot whose charge is still
+ * unsettled and whose picture may yet be adjudicated as landed. The slot comes
+ * back by itself the moment the sweep finishes, and the customer's money is
+ * never the thing that pays for our impatience.
+ *
+ * ⚠ **`recovery_required` IS NOT BUSY, and that is the other direction of the
+ * same judgement.** The sweep has already given up on those and support must
+ * settle them; holding the slot as "being made" would be a lie about a render
+ * that will never happen, and it would leave the customer unable to ask for
+ * the view they still do not have.
+ */
+export const RUNNING_VIEW_RETRY_STATUSES = ["claimed", "running"] as const;
+
+/**
+ * The filter, exported so its WHERE clause can be read at the wire rather than
+ * described beside it (invariant 5). Every arm of it is load-bearing: the user
+ * scopes ownership, the model scopes the Cast, the kind keeps other operations
+ * out, and `subjectDeletedAt` keeps a deleted Cast's receipts from making a
+ * new Cast's slot look busy.
+ */
+export function runningViewRetryFilter(input: { userId: number; modelId: number }) {
+  return and(
+    eq(generationOperations.userId, input.userId),
+    eq(generationOperations.modelId, input.modelId),
+    eq(generationOperations.kind, "castingV2.viewRetry"),
+    inArray(generationOperations.status, [...RUNNING_VIEW_RETRY_STATUSES]),
+    isNull(generationOperations.subjectDeletedAt),
+  );
+}
+
+/**
+ * The angles of this Cast that have a Try again in flight, newest state of the
+ * world, read at the operation rows.
+ *
+ * Returns [] when the database is unavailable, which is the same answer as "no
+ * retry is running" — and that direction is stated rather than accidental: the
+ * projection would then offer a Try again, and the ENTRANCE makes this same
+ * read again before it claims. A database that cannot answer refuses the spend
+ * elsewhere (the frozen-account read is the first statement the entrance
+ * makes), so an empty answer costs a tile its skeleton, never a second charge.
+ */
+export async function listRunningViewRetryAngles(input: {
+  userId: number;
+  modelId: number;
+  castId: string;
+}): Promise<CastViewAngle[]> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ payloadHash: generationOperations.payloadHash })
+    .from(generationOperations)
+    .where(runningViewRetryFilter({ userId: input.userId, modelId: input.modelId }));
+  if (rows.length === 0) return [];
+  const running = new Set(rows.map((row) => row.payloadHash));
+  return CAST_VIEW_ANGLES.filter((angle) => running.has(castViewRetrySubjectHash({
+    modelId: input.modelId,
+    castId: input.castId,
+    angle,
+  })));
 }
 
 /**

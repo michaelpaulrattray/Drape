@@ -136,6 +136,7 @@ import {
   listSessionSignedCastNames,
   listSignedCasts,
 } from "../db/castingV2Sign";
+import { listRunningViewRetryAngles } from "../db/castingV2ViewRetry";
 import { discard, setKept, undo } from "../castingV2/candidateService";
 import { updateModel } from "../db/models";
 import {
@@ -1934,13 +1935,27 @@ export const castingV2Router = router({
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
       if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
-      const [assets, lineage, promisedAngles, sessionId] = await Promise.all([
+      const [assets, lineage, promisedAngles, sessionId, retryingAngles] = await Promise.all([
         listCastAssets(ctx.user.id, model.id),
         getCastLineage(ctx.user.id, model),
         listCastPromisedAngles(ctx.user.id, model.id),
         model.sourceCandidateId
           ? getCastSessionId(ctx.user.id, model.sourceCandidateId)
           : Promise.resolve(null),
+        /*
+          WHICH VIEWS ARE BEING ASKED FOR RIGHT NOW (#1235).
+
+          The same statement the retry entrance makes before it spends, so the
+          tile the customer is looking at and the answer the server would give
+          to a press are one reading. It is what puts a retried slot into the
+          casting state on a reload, in a second tab, and after the page was
+          left — none of which the client's own memory of a press can survive.
+        */
+        listRunningViewRetryAngles({
+          userId: ctx.user.id,
+          modelId: model.id,
+          castId: input.castId,
+        }),
       ]);
       const siblingRows = sessionId && model.sourceCandidateId
         ? await listCastSiblings({
@@ -1965,6 +1980,7 @@ export const castingV2Router = router({
         assets,
         lineage,
         promisedAngles,
+        retryingAngles,
         siblings,
         // Whether her sheet is still a place you can go (§G.6 protects the
         // candidates, not the session).

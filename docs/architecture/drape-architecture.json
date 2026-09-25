@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "e7303e46d531ae50"
+    "sourceFingerprint": "b13a5eeb2c97b4dd"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 46
+      "moduleCount": 47
     },
     {
       "id": "domain:client-shared",
@@ -1474,6 +1474,12 @@
     {
       "id": "module:client/src/features/castingV2/rollOnScreen.ts",
       "path": "client/src/features/castingV2/rollOnScreen.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/roomBusy.ts",
+      "path": "client/src/features/castingV2/roomBusy.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -10421,6 +10427,10 @@
       "path": "client/src/features/castingV2/roomAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/roomBusy.test.ts",
+      "path": "client/src/features/castingV2/roomBusy.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/section10-guard.test.ts",
       "path": "client/src/features/castingV2/section10-guard.test.ts"
     },
@@ -12255,6 +12265,10 @@
     {
       "id": "test:server/castingV2/viewFeatureWords.test.ts",
       "path": "server/castingV2/viewFeatureWords.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/viewRetryBusy.test.ts",
+      "path": "server/castingV2/viewRetryBusy.test.ts"
     },
     {
       "id": "test:server/castingV2/viewRetryOffer.test.ts",
@@ -19236,6 +19250,11 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/features/castingV2/roomBusy.ts",
       "kind": "imports"
     },
     {
@@ -28370,6 +28389,11 @@
     },
     {
       "from": "module:server/db/castingV2ViewRetry.ts",
+      "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ViewRetry.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -30756,6 +30780,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2Variants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/db/castingV2ViewRetry.ts",
       "kind": "imports"
     },
     {
