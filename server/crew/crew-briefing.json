@@ -1,7 +1,7 @@
 {
-  "edition": 533,
-  "updatedAt": "2026-09-25T18:09:38.000Z",
-  "shift": "Fable - the author road writes her wardrobe line from the brief (#1222)",
+  "edition": 534,
+  "updatedAt": "2026-09-25T19:35:00.000Z",
+  "shift": "Machinist — patrol #5: the performance ledger, on its weekly clock",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -259,7 +259,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-25T16:39:31.310Z",
+      "readAt": "2026-09-25T19:30:07.955Z",
       "items": [
         {
           "issueNumber": 179,
@@ -5954,7 +5954,7 @@
       "id": "sifr-outfit-light-1207",
       "title": "Your Sifr cast: the trousers and the flash were ours — before and after, on your own master",
       "question": "WHAT YOU ARE JUDGING — you said the full front had pants and shoes that were nothing like her brief, and the side profile had a harsh flash that did not match the master or the close-up. Both were things WE were telling the engine to do, not things it invented. Left is what shipped, right is the fix, rendered against your own Sifr master. On the full front, look at whether the lower half now belongs to the same outfit as the top. On the side profile, look at the hard shadow thrown on the paper behind her head, and whether the skin now reads like skin. Two words is enough — right, or what it still misses.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-25T04:48:31.637Z",
       "issueNumber": 1207,
       "cardId": null,
@@ -8567,7 +8567,7 @@
     219
   ],
   "nextUp": {
-    "readAt": "2026-09-25T16:39:31.309Z",
+    "readAt": "2026-09-25T19:30:07.954Z",
     "items": [
       {
         "issueNumber": 1237,
