@@ -105,7 +105,11 @@ import {
   hashGenerationOperationClaim,
 } from "../casting/operationContract";
 import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
-import { retryCastView, type ViewRetryServiceDependencies } from "./viewRetryService";
+import {
+  retryCastView,
+  VIEW_RETRY_ALREADY_ASKING_MESSAGE,
+  type ViewRetryServiceDependencies,
+} from "./viewRetryService";
 import type { CastSlotProjection } from "./castProjection";
 
 const journal: string[] = [];
@@ -535,6 +539,67 @@ describe("try again on one view — what moves, and in what order", () => {
       castId: input.castId,
       angle: "closeUp",
     }));
+  });
+
+  it("locks THIS SLOT at the claim, and re-proves it when the money moves", async () => {
+    /*
+      ONE SLOT, ONE TRY AGAIN (#1257) — asserted at the WIRE (invariant 5).
+
+      The admission read two arms up is the refusal a customer normally meets;
+      it is a READ, and the window between it and the claim is a few hundred
+      milliseconds because the entrance still has her render source and her
+      signed face to fetch. The lock is what closes that window, and the only
+      honest place to assert it is the outgoing claim.
+    */
+    const claims: Array<{ lockKey?: string; lockBusyMessage?: string }> = [];
+    const proofs: Array<string | undefined> = [];
+    const deps = dependencies([slot()], {
+      begin: async (claim) => {
+        claims.push(claim as never);
+        return { type: "execute" as const, operationId: OPERATION_ID };
+      },
+      markRunning: (async (start: { requiredLockKey?: string }) => {
+        proofs.push(start.requiredLockKey);
+        return { operationId: OPERATION_ID, chargeReferenceId: `op:${OPERATION_ID}:charge` };
+      }) as ViewRetryServiceDependencies["markRunning"],
+    });
+
+    await retryCastView(deps, input);
+
+    expect(claims).toHaveLength(1);
+    expect(claims[0]!.lockKey).toBe("cast-view:7:backFull");
+    /* The sentence travels with the key, so the customer who loses the race is
+       told what the customer who pressed twice slowly is told. */
+    expect(claims[0]!.lockBusyMessage).toBe(VIEW_RETRY_ALREADY_ASKING_MESSAGE);
+    /* Re-proved immediately before the deduct — the shape every other
+       lock-taking road uses. */
+    expect(proofs).toEqual(["cast-view:7:backFull"]);
+  });
+
+  it("a second view may be asked for while the first one renders — the key is per slot", async () => {
+    /*
+      HIS SECOND REPORT, GUARDED FROM THE OTHER SIDE (#1235, #1257).
+
+      A `model:` key would have served the exclusion and re-broken this: asking
+      for her profile while her close-up renders is a thing the product does on
+      purpose, and a Cast-wide lock refuses it. The two keys must differ.
+    */
+    const keys: Array<string | undefined> = [];
+    const capture = (slots: CastSlotProjection[]) => dependencies(slots, {
+      begin: async (claim: { lockKey?: string }) => {
+        keys.push(claim.lockKey);
+        return { type: "execute" as const, operationId: OPERATION_ID };
+      },
+    });
+
+    await retryCastView(capture([slot()]), input);
+    await retryCastView(
+      capture([slot({ angle: "closeUp", label: "Close-up" })]),
+      { ...input, angle: "closeUp" },
+    );
+
+    expect(keys).toEqual(["cast-view:7:backFull", "cast-view:7:closeUp"]);
+    expect(new Set(keys).size).toBe(2);
   });
 
   it("the same request id returns the view it already bought", async () => {

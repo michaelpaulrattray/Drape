@@ -26,8 +26,8 @@ import {
   assertGenerationOperationStatus,
   assertOperationLockKey,
   isGenerationOperationKind,
+  allowedOperationLockKeys,
   assertPublicOperationResult,
-  boardItemOperationLockKey,
   castingCandidateOperationLockKey,
   type GenerationOperationChildStatus,
   type GenerationOperationKind,
@@ -811,10 +811,9 @@ export async function acquireGenerationOperationLock(input: {
 }): Promise<AcquireGenerationOperationLockResult> {
   const opened = await openOperationLock(input);
   const { operation } = opened;
-  const allowedLockKeys = [
-    operation.modelId ? modelOperationLockKey(operation.modelId) : null,
-    operation.originItemId ? boardItemOperationLockKey(operation.originItemId) : null,
-  ].filter((lockKey): lockKey is string => lockKey !== null);
+  /* The door's rule, in the one place it is written — `allowedOperationLockKeys`
+     is pure, so the gate can drive it without a database (#1257). */
+  const allowedLockKeys = allowedOperationLockKeys(operation);
   if (!allowedLockKeys.includes(input.lockKey)) {
     throw new Error("Operation lock does not match a resource in the trusted claim");
   }
