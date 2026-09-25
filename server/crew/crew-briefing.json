@@ -1,7 +1,7 @@
 {
-  "edition": 522,
-  "updatedAt": "2026-09-25T03:27:26.135Z",
-  "shift": "Foreman — #1208 slice 1 (failed views keep trying) and #1204 (a limit nobody could reach)",
+  "edition": 523,
+  "updatedAt": "2026-09-25T04:48:31.636Z",
+  "shift": "Foreman — #1207: a signed cast's views wear her outfit and her master's light",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -226,7 +226,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-25T03:28:30.804Z",
+      "readAt": "2026-09-25T04:47:43.727Z",
       "items": [
         {
           "issueNumber": 179,
@@ -5851,6 +5851,27 @@
           "caption": "GPT Image 2.5 Sunburst, the slower 'precision' model. 8/8 delivered, no refusals, ~23 seconds a tile."
         }
       ]
+    },
+    {
+      "id": "sifr-outfit-light-1207",
+      "title": "Your Sifr cast: the trousers and the flash were ours — before and after, on your own master",
+      "question": "WHAT YOU ARE JUDGING — you said the full front had pants and shoes that were nothing like her brief, and the side profile had a harsh flash that did not match the master or the close-up. Both were things WE were telling the engine to do, not things it invented. Left is what shipped, right is the fix, rendered against your own Sifr master. On the full front, look at whether the lower half now belongs to the same outfit as the top. On the side profile, look at the hard shadow thrown on the paper behind her head, and whether the skin now reads like skin. Two words is enough — right, or what it still misses.",
+      "state": "waiting",
+      "filedAt": "2026-09-25T04:48:31.637Z",
+      "issueNumber": 1207,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/b6acf007-bbfc-41f1-87ed-91e5eef286ee.jpg",
+          "arm": "the outfit",
+          "caption": "Full front. Left: plain taupe trousers and plain taupe shoes — our words, not hers. Right: the lower half continues her own outfit, same straps, buckles and grime as the top, with boots that belong to it."
+        },
+        {
+          "key": "crew-eye/9a336562-b209-4ad8-a6a6-d03deadd05fd.jpg",
+          "arm": "the light",
+          "caption": "Side profile. Left: a hard shadow thrown on the backdrop behind her head and a hot sheen on the cheek — the on-camera flash we were ordering. Right: open shadows, no shadow on the paper, skin reading as skin."
+        }
+      ]
     }
   ],
   "pipeline": [
@@ -8080,41 +8101,55 @@
       "status": "merged",
       "prNumber": 1213,
       "note": "#1204; no behaviour moves — every account was already on the 4,000 bound."
+    },
+    {
+      "id": "sign-views-outfit-light-1207",
+      "title": "A signed cast's five views wear her own outfit, and the light her master was shot in",
+      "status": "merged",
+      "prNumber": 1215,
+      "note": "#1207; both halves of your Sifr report — the trousers and the flash were ours, ordered in the prompt."
+    },
+    {
+      "id": "view-docblock-citation-1207",
+      "title": "A note in the code pointed at something that does not exist",
+      "status": "merged",
+      "prNumber": 1219,
+      "note": "#1207 follow-up; the reviewer caught it, one word, nothing moves."
     }
   ],
   "problems": [
     {
       "id": "queue-shape-0925c-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "Queue shape",
       "detail": "47 open, and tonight filed one and answered none away: the price reading turned up a second question about the OLD engine's cost, which now has its own card. Two wait on you - whether the row showing your own sentence may wrap, and the roll-engine question above. 14 have had no comment, close, reopen or commit for 7 days, unchanged, and the oldest of them are design cards waiting on a rung rather than rotting work. One is urgent and yours, making this page live, and it is claimed and being built."
     },
     {
       "id": "queue-shape-0925b-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "Queue shape",
       "detail": "47 open, unchanged: three closed tonight — the segment retirement, the 220-character record and the ownership arms — and three filed. One waits on you: whether the row that shows your own sentence may wrap. 14 have had no comment, close, reopen or commit for 7 days, unchanged. One is urgent and yours — making this page live — and it is claimed and being built right now."
     },
     {
       "id": "queue-shape-0925a-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "Queue shape",
       "detail": "47 open, one more than this morning: tonight closed one and filed one. One waits on you — the 220-character limit on the record of what a customer typed (#1126). 14 have had no comment, close, reopen or commit for 7 days, unchanged, and the two oldest are design cards waiting on a rung rather than rotting work."
     },
     {
       "id": "queue-shape-0924c-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "Queue shape",
       "detail": "41 open. Nothing needs you. 14 have had no comment, close, reopen or commit for 7 days — one fewer than this morning, and the two oldest are design cards waiting on a rung rather than rotting work."
     },
     {
       "id": "pr-conflict-blocks-two-nights",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The two-night block is understood, and nothing is stuck — but it costs an extra fifteen minutes a night and one word from you could stop it",
       "detail": "WHAT WAS HAPPENING. A night shift copies the project, does its job, and submits it. If the main project moves while it works, both versions rebuild the same machine-generated map file and GitHub calls that a clash. A clashing submission gets NO automatic checks at all — its page sits blank rather than showing a failure, so it looks like it is waiting when nothing is coming. It cost two finished jobs a night each.\n\nWHAT I FOUND. The one command that fixes it is refused because YOU asked for it to be refused. It is in your own settings file, on the list of version-control commands a shift must ask a person about — alongside the one that wipes uncommitted work. That list was added after a shift ran exactly that kind of command in the wrong copy of the project and lost work. So this is a deliberate guard doing its job, not a glitch, and I would not simply remove it.\n\nWHAT I DID INSTEAD, AND IT NEEDS NO NEW PERMISSION. The clash was never in the actual work — only in the generated map. So I started a fresh copy from the current project, put the same six files back on it, let the map rebuild itself, and submitted that. It went through clean and is live. I checked the two versions were identical before pushing, so nothing was lost or quietly changed.\n\nSO THIS IS NOW A SMALL QUESTION, NOT A BLOCKED NIGHT. The way round costs about fifteen extra minutes and uses up a new submission number each time it happens. If you would rather it did not, the narrow fix is to allow shifts that ONE command — and only when it is a merge of the main project into the shift's own copy — while leaving every other command on that list exactly where it is. My recommendation is to allow it: it cannot reach the live site, every real check still runs afterwards, and the incident that created the guard was a different command doing a different thing. But it is your safety rule and it is now costing minutes rather than nights, so it is entirely reasonable to leave it alone."
     },
@@ -8800,7 +8835,7 @@
     {
       "id": "queue-shape-0924b-foreman",
       "severity": "info",
-      "state": "open",
+      "state": "resolved",
       "title": "The queue: 38 open, your own list still holds only the switch sitting. Nothing urgent, no check-up clock due before tomorrow.",
       "detail": "Read at 03:40. 38 open — the same number as three hours ago: one job finished and closed tonight, and one new one filed in its place, which nobody needs to look at yet.\n\nYour own list is unchanged: the twenty-switch sitting, which is complete and waiting on you rather than on us.\n\n17 of the 38 have had nothing happen to them for a week — flat against last night.\n\nNothing here needs you."
     }
@@ -9026,7 +9061,7 @@
     218
   ],
   "nextUp": {
-    "readAt": "2026-09-25T03:28:30.803Z",
+    "readAt": "2026-09-25T04:47:43.726Z",
     "items": [
       {
         "issueNumber": 1208,
@@ -9044,11 +9079,6 @@
           "state": "blocked",
           "because": "the design — his word in the terminal, 2026-09-25: *\"we are still developing it\"*. The mockups are being settled with him board by board (five boards, private…"
         }
-      },
-      {
-        "issueNumber": 1204,
-        "title": "The house road's 2,000-character brief bound guards a road nobody is on since the register widened (N1 deep review, path-three class)",
-        "urgent": false
       }
     ]
   }
