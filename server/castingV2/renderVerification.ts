@@ -708,6 +708,45 @@ export async function verifyRender(input: {
   return { ...verdict, checks, ok: okOf(checks) };
 }
 
+/**
+ * HOW MUCH ROOM THIS READING NEEDS — derived from the ask, not a constant.
+ *
+ * # The constant was 700 and it did not fit (#1228)
+ *
+ * This reader answers with one ROW PER FACT — a verdict, an `absent`, and a
+ * `saw` naming what it looked at — so the reply's length is a function of the
+ * ask. A flat ceiling is therefore a bet that the ask never grows, and the bet
+ * was already lost: measured through the real provider on a real production
+ * frame (asset 322, his Sifr2 close-up), with the facts the net actually posts:
+ *
+ *     2 facts →  98 tokens      6 facts → 243 tokens
+ *     4 facts → 172 tokens      8 facts → 827, 842, 965 tokens (three runs)
+ *
+ * At eight facts the shipped 700 was exceeded in 3 of 3 readings, and at the
+ * shipped ceiling the reply came back a fragment 2 of 2 — unterminated JSON,
+ * `JSON.parse` threw, and the render was **delivered and charged with nothing
+ * having checked it**. Not a refusal: this net fails open by design, so the
+ * cost of a starved reader here is a silent unverified delivery, which is
+ * #1220's own shape one surface over.
+ *
+ * # Why a per-fact allowance rather than a bigger constant
+ *
+ * 250 is ~2.4x the worst per-fact cost measured (105 at eight facts, where the
+ * frame disputed several of them and a disagreement is what makes the reader
+ * write at length). The growth is not clean — six facts cost 243 and eight cost
+ * 842, because content matters as much as count — so the allowance is sized
+ * against the WORST observed per-fact rate rather than a fitted line.
+ *
+ * ⚠ An unused ceiling is free: output tokens are billed on what is generated,
+ * so raising this costs nothing on the readings that already fitted, and every
+ * ask of six facts or fewer is unchanged in behaviour and in price. The floor
+ * keeps the short asks at a sane minimum, and the cap stops a pathological
+ * fact list asking for an unbounded completion.
+ */
+export function ceilingFor(facts: number): number {
+  return Math.min(4_000, Math.max(1_000, 250 * facts));
+}
+
 /** One reading of one image over a list of facts. */
 async function readOnce(input: {
   engine: TextEngine;
@@ -728,9 +767,33 @@ async function readOnce(input: {
       images: [input.image],
       json: true,
       temperature: 0,
-      maxOutputTokens: 700,
+      maxOutputTokens: ceilingFor(input.facts.length),
       signal: input.signal,
     });
+    /*
+      A REPLY CUT OFF AT THE CEILING IS SAID BY ITS OWN NAME (#1228).
+
+      The transport hands `truncated` to every caller and this reader used to
+      drop it on the floor — so a fragment went to `JSON.parse`, threw a
+      `SyntaxError`, and landed in the catch below as *"the reader could not be
+      reached"*. That sentence is what a shift reads when it asks why a paid
+      render went unverified, and it pointed at the provider when the ceiling
+      was ours. #1220 fixed the EMPTY case in the transport; a PARTIAL reply is
+      not empty, so it never reached that arm.
+
+      It still DELIVERS — the fail-open below is deliberate and is not this
+      card's to move (D-194/D-246: every silence is resolved in the direction
+      that does not take the user's money). What changes is that the log names
+      the real cause, which is the whole difference between a diagnosable
+      silence and the one that cost #1220 its morning.
+    */
+    if (reply.truncated) {
+      log.warn(
+        { facts: input.facts.length, ceiling: ceilingFor(input.facts.length), chars: reply.text.length },
+        "[renderVerification] the reader was cut off at the token ceiling — delivering unverified",
+      );
+      return { ok: true, checks: [], unavailable: true };
+    }
     const parsed = JSON.parse(
       reply.text.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, ""),
     );
