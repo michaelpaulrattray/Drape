@@ -15,6 +15,8 @@ A BRIEF is compiled and a ROLL renders eight candidates onto a SHEET (each an in
 
 _Entrances:_ `server/routes/castingV2.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE`
 
+_Called as:_ `castingV2.config` · `castingV2.createSession` · `castingV2.openSessions` · `castingV2.getSession` · `castingV2.abandonSession` · `castingV2.createRoll` · `castingV2.getRoll` · `castingV2.follow` · `castingV2.retry` · `castingV2.cancel` · `castingV2.keep` · `castingV2.discard` · `castingV2.undo` · `castingV2.selectVariant` · `castingV2.variants` · `castingV2.roster` · `castingV2.getCast` · `castingV2.renameCast` · `castingV2.deleteCast`
+
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
 | `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1257<br>server/castingV2/briefRefusalCopy.ts:116 | 5 test(s) | _documented-unreachable or gap — see findings_ |
@@ -38,6 +40,8 @@ Everything before the claim is FREE: ownership and state doors, the interpreter'
 
 _Entrances:_ `server/castingV2/refineService.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE`
 
+_Called as:_ `castingV2.refine`
+
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
 | `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1207 | 1 test(s) | _documented-unreachable or gap — see findings_ |
@@ -60,6 +64,8 @@ _Entrances:_ `server/castingV2/refineService.ts`  ·  _Flags:_ `CASTING_V2_SCOPE
 The customer's sentence is read by a text model whose OUTPUT is policed by code: values must appear in the customer's own words (source containment), facets resolve against the subject cards, and refusals carry their own names. Walls refuse the ASK's kind; gates refuse an ask the road cannot serve YET and say what would work. An unreadable or empty sentence refuses free — the product never guesses.
 
 _Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refineDelta.ts`  ·  _Flags:_ `CASTING_OPEN_LANE_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_INK_WORDS_SCOPE`
+
+_Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
@@ -91,6 +97,8 @@ A delivered tattoo is remembered as a CROP row cut from the delivered frame by t
 
 _Entrances:_ `server/castingV2/inkPriorAsk.ts` · `server/castingV2/inkDeliveryMint.ts` · `server/castingV2/refineService.ts`  ·  _Flags:_ `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE`
 
+_Called as:_ `castingV2.refine`
+
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
 | `noInkToChange` | cannot-say | free | server/castingV2/cannotSayCopy.ts:300 | 1 test(s) | ink.transform.wrongslot, ink.scoped.none.prefill |
@@ -117,6 +125,8 @@ Signing renders the package views fresh from the anchor, judges each against the
 
 _Entrances:_ `server/castingV2/signService.ts` · `server/castingV2/packageOrchestrator.ts` · `server/castingV2/inkViewReferences.ts` · `server/castingV2/viewRetryService.ts`  ·  _Flags:_ `CASTING_V2_SCOPE`
 
+_Called as:_ `castingV2.sign` · `castingV2.retryView`
+
 > Sign's refusals and dispositions are service-internal (not the refine entrance's declared set); its behaviour is pinned by signInkCrops.test.ts and the wire courts rather than census rows. A sign corpus is future work — sign spends ~450 credits, so it is recorded from courts, never driven by the census.
 
 - Description-stated ink rides the sign THROUGH THE DESCRIPTION even where the waist-up master cannot show it (founder ruling, fable-1356 §4) — the full-length views show arms and legs; a view that delivers it mints its crop as the document going forward.
@@ -130,6 +140,8 @@ A customer's tattoo design is stored as OUR COPY under the cast's purge path, ca
 
 _Entrances:_ `server/castingV2/inkUploadService.ts` · `server/castingV2/inkUploadDoor.ts` · `server/castingV2/inkReferenceCutter.ts`  ·  _Flags:_ `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_REFERENCE_SCOPE`
 
+_Called as:_ `castingV2.ink.remove`
+
 > The upload door's refusals (placement, size, format, edge, intent, cap) are its own vocabulary, censused via its suite rather than the refine corpus. An upload-entrance corpus is future work — it needs bytes fixtures.
 
 - The licence is a COUNT and never geometry; no percentage floor may ever be added (a floor that excludes the paper admits the man).
@@ -141,6 +153,8 @@ Attach stores the customer's picture unchanged (a copy, ours to purge; the diges
 
 _Entrances:_ `server/castingV2/referenceAttachDoor.ts` · `server/castingV2/hairReferenceTake.ts` · `server/castingV2/inkReferenceTake.ts`  ·  _Flags:_ `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_REFERENCE_SCOPE`
 
+_Called as:_ `castingV2.reference.attach`
+
 > The attach/take doors are their own vocabulary; a reference-attached census state exists in the corpus and is the next fixture to build.
 
 - What returns to a caller is the storage KEY, never a URL — the server fetches bytes itself; the address is the only thing between a photograph of a person and a stranger.
@@ -151,9 +165,86 @@ The panel's rows come from the catalogue; content comes from the library and the
 
 _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanService.ts`  ·  _Flags:_ `CASTING_FACE_SCAN_SCOPE` · `CASTING_SCAN_TABLE_SCOPE`
 
+_Called as:_ `castingV2.facePanel` · `castingV2.faceScan`
+
 > Panel and scan speak in projections, not refusal ids; their guarantees are pinned by their own suites.
 
 - Discovery mints nothing into a recipe — the panel shows crops the founder's eyes judge; a crop becomes a carry only through the roads built for that.
+
+### Re-imagine — one press turns her own words into a new idea, in her own box
+
+Wherever there is a brief box, one press sends the words IN the box through the author and writes the result back INTO the box — visible, editable, undoable; casting then uses whatever is in the box, so there is no hidden mode a sheet could lie about. Sex, age and species are LOCKED when typed and nothing else is; lighting, camera, framing, backdrop and scene are banned in the instruction. One press is at most two text calls — a draft, then one re-ask naming the refusal — and a second refusal or a failed call answers `nothing`, leaving the box exactly as she typed it. Nothing is charged, nothing is stored, nothing renders.
+
+_Entrances:_ `server/routes/castingV2.ts` · `server/castingV2/reimagine.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `CASTING_CREATIVE_REGISTER_SCOPE`
+
+_Called as:_ `castingV2.reimagine`
+
+> THIS ROAD DECLARES NO DOOR, AND THAT IS ITS SHAPE RATHER THAN A GAP (#1203). Its three exits are none of the four declared shapes the census reads: outside the register scope it answers `NOT_FOUND` (`captureCastingCreativeRegisterEnabled` in `server/routes/castingV2.ts`) — a DARK door, not a refusal, because a code saying 'not yet' advertises a capability; the ceiling is `RATE_LIMITS.reimagine` (`server/security/rateLimit.ts`); and every other outcome is the free answer `{ kind: "nothing" }` — no text engine configured, the author's SECOND draft refused too, or the call threw (both of the last two inside `reimagineBrief`, `server/castingV2/reimagine.ts`). The customer reads ONE sentence for all three (`Nothing to offer this time — your words stand.`, `client/src/features/castingV2/components/Reimagine.tsx`) and that is deliberate: an outage and a refusal ask her for the same next act. ⚠ AND NO CORPUS ROW CAN REACH THIS ENTRANCE — the corpus drives `refineCandidate` and nothing else, so #1203's own instruction to add 'a corpus row per door' is not something this harness can do; a reimagine corpus needs its own driver, and that is the map's next growth ring here.
+
+- IT REPLACED THE IMAGINATION METER ENTIRELY (#535, his 'build it', Crew replies #145/#146, 2026-09-06): there is no level, no mode and no setting between the box and the picture except Style, so the #252 lie — a sheet reading 'Max' over words nobody authored — has nothing left to fall out of. The design is `docs/specs/REIMAGINE_DESIGN_2026-09-06.md` §3.
+- A NEW IDEA, NOT A POLISH, and the locked trio is the whole of what survives verbatim (his decisions 3–4). An earlier reading had every named feature and material surviving; his own rolled courts overturned it at the frames (244 vs 245, '10x better'; 243 vs 246, 'much better') — named colours and materials are PIECES the author may reinvent, and the qualities paragraph beat the keep-every-piece paragraph both times.
+- THE BOX IS THE FIDELITY CONTROL. `droppedFactIn` is retired for this road on purpose: the result lands in the customer's own box where she reads, edits and undoes it before she spends, so her reading is the check that a fact-survival guard used to be.
+- AN EDITING INSTRUCTION IN THE BOX ('make her young', '50s') is applied by the SAME press and returns one clean brief (decision 11) — never appended to the sentence, never handled on the way to the engine.
+- The reader is `about: "author"` on the engine, so a census pricing authored prose counts these presses with the roll's author calls rather than missing them.
+
+### Upload a concept — a picture in, a description of the person out
+
+A picture of a person is read ONCE, inline, and dropped; what comes back is WORDS, which land in her own brief box where she reads and edits them before she spends anything. There is no row, no table, no storage write and no purge path — which is what makes this road smaller than the attach door beside it rather than a variant of it, and why no stranger's photograph ends up at a permanently public URL. Reached from the start page, before any cast exists.
+
+_Entrances:_ `server/routes/castingV2.ts` · `server/castingV2/conceptDescribe.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `CASTING_CREATIVE_REGISTER_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE`
+
+_Called as:_ `castingV2.concept.describe`
+
+| door | kind | charge | where it lives | pinned | reached by |
+|---|---|---|---|---|---|
+| `concept.no_being` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1253<br>server/castingV2/conceptDescribeCopy.ts:79 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.not_about_the_person` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:82 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.not_a_casting_note` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:87 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.ran_long` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:111 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1245<br>server/castingV2/conceptDescribe.ts:1282<br>(+1) | 21 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.no_transport` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1198<br>server/castingV2/conceptDescribeCopy.ts:114 | 4 test(s) | _documented-unreachable or gap — see findings_ |
+
+> ⚠ THIS ROAD'S DOORS REACHED THE MAP BEFORE THE ROAD DID — the six were declared with #192 and every one of them is documented-unreachable (the corpus sends sentences, not pictures), while the ENTRANCE they belong to had no road until #1203. That is the forward/backward asymmetry in one specimen: the map could prove every door it named was real and could not notice it had never named the road. The FLAG and the two byte doors above the six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared `referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences reused rather than restated.
+
+- His own order, 2026-08-28 (#185): 'if you have a model already or concept or image you can upload it the image analyzer will analyze and describe it to the authour and cast it with the description ... that way its easy for someone to upload an image and get a prompt to create someone similar without having to type it all out.' Production holds `CASTING_CONCEPT_UPLOAD_SCOPE` at `all` since 2026-09-24 on his Crew reply #202 ('yes, turn it on').
+- THE FORMAT IS WHAT THE BYTES ARE, never what the payload claimed — the ink door's rule reused. It matters twice here: the picture rides to the describer as a `data:<mime>;base64,` URI, so a JPEG announced as a PNG is a malformed request to the vendor rather than a bad row in our database.
+- EVERY REFUSAL IS A DIFFERENT SENTENCE ON PURPOSE: 'there is nobody in this picture' and 'the reader did not answer' ask her to do different things, and telling her the wrong one sends her looking for a better photograph of a problem that was ours. They live in `CONCEPT_DESCRIBE_COPY` — exhaustive over the union by type — because composed inline they were invisible to the census: three of this entrance's five refusals could not be seen at all (#192).
+- `concept.no_being` is the twin of the roll road's `not_a_being`, and it reached the map FIRST while its sibling stayed invisible — the pair is the reason both entrances' copy tables are now the declared source rather than a grep.
+
+## Every way in — the 28 procedures the casting entrance exposes
+
+Derived from the architecture Atlas's own extractor. A procedure with no road is an error finding, not a blank cell — the map is held to what EXISTS, not only to what it cites (#1203).
+
+| called as | on which road |
+|---|---|
+| `castingV2.abandonSession` | life-of-a-cast |
+| `castingV2.cancel` | life-of-a-cast |
+| `castingV2.concept.describe` | concept-upload |
+| `castingV2.config` | life-of-a-cast |
+| `castingV2.createRoll` | life-of-a-cast |
+| `castingV2.createSession` | life-of-a-cast |
+| `castingV2.deleteCast` | life-of-a-cast |
+| `castingV2.discard` | life-of-a-cast |
+| `castingV2.facePanel` | panel-scan |
+| `castingV2.faceScan` | panel-scan |
+| `castingV2.follow` | life-of-a-cast |
+| `castingV2.getCast` | life-of-a-cast |
+| `castingV2.getRoll` | life-of-a-cast |
+| `castingV2.getSession` | life-of-a-cast |
+| `castingV2.ink.remove` | ink-studio |
+| `castingV2.keep` | life-of-a-cast |
+| `castingV2.openSessions` | life-of-a-cast |
+| `castingV2.reference.attach` | references |
+| `castingV2.refine` | refine-money, refine-reading, refine-ink |
+| `castingV2.reimagine` | reimagine |
+| `castingV2.renameCast` | life-of-a-cast |
+| `castingV2.retry` | life-of-a-cast |
+| `castingV2.retryView` | sign-views |
+| `castingV2.roster` | life-of-a-cast |
+| `castingV2.selectVariant` | life-of-a-cast |
+| `castingV2.sign` | sign-views |
+| `castingV2.undo` | life-of-a-cast |
+| `castingV2.variants` | life-of-a-cast |
 
 ## The laws that hold on every road
 
@@ -164,6 +255,7 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 - **Source containment: a free value must appear in the customer's own sentence; engine-picked exceptions are declared, labelled, and doored.** _(refineDelta.ts (D-172); Two Paths design §4.1)_
 - **Derive, never mirror: one owner per fact (the wardrobe line, the served-placements lists, the refusal registry); second lists are defects.** _(CLAUDE.md working law 4; wardrobeLine.ts (item 5))_
 - **Every door has a name, a site, a pin and a reach — or a written reason; the census refuses the gap.** _(capabilityAtlas.mts coverage contract (fable-1357))_
+- **Every entrance a customer can call is on some road, or carries a written reason — the map is held to what EXISTS, not only to what it cites.** _(capability-atlas-roads.mts `procedures` / UNMAPPED_ENTRANCES (#1203))_
 
 ## The asks
 
