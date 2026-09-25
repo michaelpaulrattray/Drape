@@ -261,3 +261,37 @@ describe("deriveLiveDesk", () => {
     ]);
   });
 });
+
+describe("a card with two work labels is drawn and counted ONCE (his question, 2026-09-25)", () => {
+  const rows = [
+    item({ number: 1221, labels: ["bug", "casting-upkeep"], title: "strips her tattoos" }),
+    item({ number: 1187, labels: ["bug", "small-fix"], title: "capped at 701px" }),
+    item({ number: 1218, labels: ["casting-upkeep", "rung:N2"], title: "a fourth axis" }),
+    item({ number: 1183, labels: ["small-fix"], title: "born-held race" }),
+  ];
+  const work = liveWorkCounts(reading(rows, []));
+  const numbersUnder = (key: string) => work.counts.find((c) => c.categoryKey === key)!.titles.map((t) => t.number);
+
+  it("homes the double-labelled card under Bugs and NOT under the second category", () => {
+    expect(numbersUnder("bugs")).toEqual([1221, 1187]);
+    expect(numbersUnder("castingUpkeep")).toEqual([1218]);
+    expect(numbersUnder("smallFixes")).toEqual([1183]);
+    expect(work.counts.find((c) => c.categoryKey === "bugs")!.openCount).toBe(2);
+    expect(work.counts.find((c) => c.categoryKey === "castingUpkeep")!.openCount).toBe(1);
+  });
+
+  it("GUARD — no card number appears under two categories, and the category counts sum to the number of labelled cards", () => {
+    const seen = new Map<number, string[]>();
+    for (const count of work.counts) {
+      for (const title of count.titles) seen.set(title.number, [...(seen.get(title.number) ?? []), count.categoryKey]);
+    }
+    for (const [number, homes] of seen) expect(homes, `#${number} is drawn under ${homes.join(" and ")}`).toHaveLength(1);
+    expect(work.counts.reduce((sum, c) => sum + c.openCount, 0)).toBe(rows.length);
+  });
+
+  it("CONTROL — the same reader would have seen the double-up: counting by label alone finds #1221 in two populations", () => {
+    const byLabel = (label: string) => rows.filter((row) => row.labels.includes(label)).map((row) => row.number);
+    expect(byLabel("bug")).toContain(1221);
+    expect(byLabel("casting-upkeep")).toContain(1221);
+  });
+});

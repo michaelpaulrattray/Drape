@@ -27,7 +27,7 @@ import { CREW_PIPELINE_GROUPS } from "../../shared/crewPipelineGroups";
 import { exclusionFor, type CrewQueueExclusions } from "../../shared/crewQueueExclusions";
 import { QUEUE_POSSIBLY_DONE_CAP } from "../../shared/crewQueuePossiblyDone";
 import { QUEUE_TITLES_PER_CATEGORY, type CrewQueueTitle } from "../../shared/crewQueueTitles";
-import { CREW_WORK_CATEGORIES } from "../../shared/crewWorkSwitches";
+import { CREW_WORK_CATEGORIES, homeWorkCategoryFor } from "../../shared/crewWorkSwitches";
 import type { CrewPipelineGroupView, CrewQueueCountView } from "../db/crewWorkSwitches";
 import type { LiveQueueItem, LiveQueueReading } from "./liveQueue";
 
@@ -218,7 +218,14 @@ export function liveWorkCounts(reading: LiveQueueReading): LiveDesk["work"] {
   const namedByMerge = (number: number) => mergedTitles.some((title) => cardsNamedIn(title, new Set([number])).length > 0);
 
   const counts: CrewQueueCountView[] = CREW_WORK_CATEGORIES.map((category) => {
-    const population = issues.filter((item) => item.labels.includes(category.queueLabel));
+    /*
+      HOMED ONCE (his question, 2026-09-25): a card with two work labels used
+      to be drawn and counted under both. The home is the first matching
+      category in list order — `homeWorkCategoryFor` — so the sum of the
+      category counts is a count of cards, the way the groups' total already
+      was. A card with no work label homes nowhere here and stays the groups'.
+    */
+    const population = issues.filter((item) => homeWorkCategoryFor(item.labels) === category.key);
     const offered: LiveQueueItem[] = [];
     const excluded: Record<string, number> = {};
     for (const item of population) {
