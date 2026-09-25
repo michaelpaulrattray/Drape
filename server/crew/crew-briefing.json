@@ -1,7 +1,7 @@
 {
-  "edition": 532,
-  "updatedAt": "2026-09-25T16:37:40Z",
-  "shift": "Foreman — Try again is a view being made, on every screen that shows it, and a second press cannot be charged twice",
+  "edition": 533,
+  "updatedAt": "2026-09-25T18:09:38.000Z",
+  "shift": "Fable - the author road writes her wardrobe line from the brief (#1222)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3284,6 +3284,22 @@
   ],
   "eyeItems": [
     {
+      "id": "sifr-wardrobe-line-1222",
+      "title": "Sifr's full front, dressed by her own brief - four takes on your master",
+      "question": "WHAT YOU ARE JUDGING - last time the full front put her in overall pants and black boots. The fix: the studio now reads the outfit straight out of your brief, keeps it word for word, and every full-length view is built and checked against that sentence - a view that swaps her dress for trousers now fails instead of being delivered. These four takes are her full front rendered that new way, against your own Sifr master. Look at whether the lower half is the dress your brief describes, on all four. The hem length and the shoes differ take to take because your brief deliberately leaves them open. Two words is enough - right, or what it still misses. Your word closes #1222.",
+      "state": "waiting",
+      "filedAt": "2026-09-25T18:09:38.000Z",
+      "issueNumber": 1222,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/fd400aaa-595a-467d-bab2-9fe00edffcfb.jpg",
+          "arm": "the outfit",
+          "caption": "Left: her master, the picture every view is rendered from. Then four full fronts, each built from the outfit sentence taken word for word out of your brief - the white body-conscious dress with qipao structure, industrial straps, buckles and the worn graphic on the chest. No trousers on any of them."
+        }
+      ]
+    },
+    {
       "id": "switched-off-buttons-1237",
       "title": "Switched-off buttons: does the faded look read right to you?",
       "question": "WHAT YOU ARE JUDGING — not whether it works, but whether it looks right. Each frame shows the same five buttons twice: working on top, switched off underneath. The whole product now uses this one look, so whatever you decide here is what every switched-off button in Drape looks like, billing windows included. Two things to weigh: can you still READ a switched-off button, and is it obviously NOT pressable at a glance? If it is too faint, or not faint enough, say so — it is one number and a one-line change. Light and dark are the same five buttons.",
@@ -5938,7 +5954,7 @@
       "id": "sifr-outfit-light-1207",
       "title": "Your Sifr cast: the trousers and the flash were ours — before and after, on your own master",
       "question": "WHAT YOU ARE JUDGING — you said the full front had pants and shoes that were nothing like her brief, and the side profile had a harsh flash that did not match the master or the close-up. Both were things WE were telling the engine to do, not things it invented. Left is what shipped, right is the fix, rendered against your own Sifr master. On the full front, look at whether the lower half now belongs to the same outfit as the top. On the side profile, look at the hard shadow thrown on the paper behind her head, and whether the skin now reads like skin. Two words is enough — right, or what it still misses.",
-      "state": "waiting",
+      "state": "answered",
       "filedAt": "2026-09-25T04:48:31.637Z",
       "issueNumber": 1207,
       "cardId": null,
@@ -8255,6 +8271,13 @@
       "status": "merged",
       "prNumber": 1259,
       "note": "Live on production as build 2e2e5a0b (#1235, closed by hand with its receipt)."
+    },
+    {
+      "id": "wardrobe-line-1222",
+      "title": "A signed view stops guessing her outfit: the studio records the outfit her brief states and builds every full-length view against it (#1222)",
+      "status": "merged",
+      "prNumber": 1261,
+      "note": "Live on production as build 6f43e1b3. The card waits on his eye over the court frames."
     }
   ],
   "problems": [
