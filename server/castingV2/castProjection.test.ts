@@ -438,3 +438,54 @@ describe("the signed Cast projection", () => {
     expect(projection.lineage.fromRollPublicId).toBe("roll-public");
   });
 });
+
+/*
+  ⚠ AT THE SENTENCE, NOT AT THE SYMBOL (#1208).
+
+  Every other arm in this file asserts `note).toBe(FAILED_SLOT_CONFESSION)` —
+  the constant compared to itself — so the copy could say anything at all and
+  this suite would stay green. That is how *"repairs come with revisions"*
+  survived thirteen months of a green file after the feature it named stopped
+  being planned.
+
+  His ruling is about WORDS, so these arms read words. They are deliberately
+  narrow: they pin the one property he ruled on — a failure sentence never
+  promises a repair path the product does not have — and say nothing about
+  phrasing, which is his to change.
+*/
+describe("the failure copy promises nothing that does not exist (#1208)", () => {
+  const UNBUILT_PROMISES = [
+    "revision",
+    "repairs ship",
+    "when repairs",
+    "coming soon",
+    "in a future",
+  ];
+
+  for (const [name, sentence] of Object.entries({
+    FAILED_SLOT_CONFESSION,
+    TOTAL_LOSS_CONFESSION,
+    ANCHOR_STANDIN_NOTE,
+  })) {
+    it(`${name} names no unbuilt repair path`, () => {
+      for (const promise of UNBUILT_PROMISES) {
+        expect(sentence.toLowerCase()).not.toContain(promise);
+      }
+      // A positive control: these are real sentences, not empty strings that
+      // would pass every arm above by containing nothing at all.
+      expect(sentence.length).toBeGreaterThan(20);
+      expect(sentence).toContain("didn't arrive");
+    });
+  }
+
+  /*
+    The negative control for the guard itself (working law 2): the reader must
+    FAIL on the sentence this card removed, or it proves nothing about the one
+    that replaced it.
+  */
+  it("would reject the sentence this card removed", () => {
+    const removed = "This view didn't arrive — refunded; repairs come with revisions";
+    const caught = UNBUILT_PROMISES.some((promise) => removed.toLowerCase().includes(promise));
+    expect(caught).toBe(true);
+  });
+});
