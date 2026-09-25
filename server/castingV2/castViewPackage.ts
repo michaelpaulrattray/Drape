@@ -30,7 +30,7 @@ import {
   type CastViewAngle,
 } from "../../shared/boardTypes";
 import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
-import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
+import { PHOTOREAL_HUMAN_BLOCKS, referenceRealism } from "./cohortPhotorealHuman";
 import { CAPTURE_SENTENCES } from "./houseBlock";
 
 /**
@@ -240,12 +240,28 @@ export function castPackageWardrobeSpec(wardrobeLine: string | null): string {
  * visible, names the additions as failures, and states plainly that seeing no
  * garment at all is a PASS. An axis that can fail for a real reason and cannot
  * fail for a silly one.
+ *
+ * ⚠ **THE LIST WAS ABSOLUTE AND IS NOW RELATIVE — founder ruling, 2026-09-25
+ * (#1221).** It read *"No earrings, no glasses, no piercings, no hat, no
+ * headphones, no visible logo or text"* and then, at the end, *"nothing worn
+ * that the reference photograph does not show"* — **two rules, and the list
+ * came first.** His word on re-reading it: the closing clause is the one that
+ * is right, *"never as a list"*. A customer whose signed master wears a nose
+ * stud and a pair of hoops had them banned by our own spec, and this sentence
+ * is the JUDGE's as well as the generator's, so it could fail her close-up for
+ * wearing her own jewellery. The addition half is kept — it is the thing this
+ * crop can genuinely check — and every item in it now hangs off *absent from
+ * the reference*, with the other direction stated out loud so the rule cannot
+ * be read as a ban with an exception. Same posture as `CAST_PACKAGE_WARDROBE_SPEC`,
+ * which was already relative and needed no change.
  */
 const CLOSE_UP_WARDROBE =
   "at this crop the garment may be barely visible, and that is fine — if no clothing is in "
   + "frame, this passes. Where the collar IS visible it matches the reference's neckline and "
-  + "colour. No earrings, no glasses, no piercings, no hat, no headphones, no visible logo or "
-  + "text — nothing worn that the reference photograph does not show.";
+  + "colour. Nothing worn that the reference photograph does not show: an earring, glasses, a "
+  + "piercing, a hat, headphones or a visible logo or text that is absent from the reference is "
+  + "a failure wherever it appears — and anything of that kind the reference DOES show is this "
+  + "person's own and must be there.";
 
 export type CastPackageViewSpec = {
   /** What the customer is looking at. */
@@ -703,6 +719,36 @@ function belowWaistFor(angle: CastViewAngle, wardrobeLine: string | null): strin
  * path so the product can keep reproducing retired blocks forever. **A package
  * re-rendered today is rendered by today's product**; the declined option is
  * named here rather than in a report nobody re-reads.
+ *
+ * ⚠ **AND THE REALISM BLOCK IS THE SIGN VIEW'S OWN NOW, FOR THE SAME REASON ONE
+ * BLOCK OVER — founder ruling, 2026-09-25 (#1221), the third instance of this
+ * class after the trousers and the flash.**
+ *
+ * His report: a signed cast's close-up came back with a **bare unmade face and
+ * no neck tattoos**, from a master that has heavy neck ink, dark makeup and a
+ * high collar. His ruling on the root, verbatim: *"yeah thats because this was
+ * a legacy prompt for when our casts were not allowed outfits and were wearing
+ * the bare minimum now we have a fully open concept"*.
+ *
+ * This prompt sent `PHOTOREAL_HUMAN_BLOCKS.realism` whole, and that block's
+ * four stated-X doors each defer to *"the character description"* — of which a
+ * Sign view HAS NONE. So they collapsed to their defaults and the wire carried,
+ * verbatim, *"Never invent damage, scars or ink that was not asked for"* and
+ * *"the default is a bare, unmade face"*. **Her tattoos were removed on our
+ * instruction.** It now sends {@link referenceRealism}, which keeps every
+ * photographic sentence by reference and replaces the eleven description-bound
+ * ones with the founder's single rule: the reference photograph is the
+ * document. The ROLL road is untouched and its bytes are pinned by hash —
+ * there the brief IS the description and the doors have a referent.
+ *
+ * ⚠ **The words that could have carried her ink were declined by design, and
+ * that is NOT repaired here.** The Sign's own log for this Cast reads
+ * `rode=[] declined=[{"slot":"bornInk:wholeBody","reason":"markingDiscloses"}]`
+ * — born ink is kept out of a view's words on purpose (fable-1399 §3: a marking
+ * under fabric has nothing visible to carry). **That design is right for a
+ * covered tattoo and wrong for a neck**, and it is a separate question from
+ * this one: the repair here makes the PICTURE the document, which is the road
+ * his ruling names, and it holds whether or not the words ever ride.
  */
 export function composePackageViewPrompt(angle: CastViewAngle, wardrobeLine: string | null = null): string {
   const view = VIEWS[angle];
@@ -713,7 +759,7 @@ export function composePackageViewPrompt(angle: CastViewAngle, wardrobeLine: str
     `${view.directive}${belowWaistFor(angle, wardrobeLine)}`,
     `WARDROBE: ${wardrobeSpecFor(angle, wardrobeLine)}`,
     PACKAGE_CAPTURE,
-    PHOTOREAL_HUMAN_BLOCKS.realism,
+    referenceRealism(),
     PHOTOREAL_HUMAN_BLOCKS.identityIntegrity,
     PHOTOREAL_HUMAN_BLOCKS.negatives,
     PHOTOREAL_HUMAN_BLOCKS.authority,

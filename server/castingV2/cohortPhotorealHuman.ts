@@ -339,7 +339,71 @@ const REALISM_SENTENCES: readonly string[] = [
   "Skin, vellus hair and fine texture carry tactile, three-dimensional local contrast that makes the surface feel physical — a face you could touch, not a surface that has been rendered.",
   "No beauty retouching, no surface smoothing, no CGI sheen, no painterly softness, no excessive symmetry.",
 ];
-const SKIN_AND_FEATURES = [
+/**
+ * THE CAMERA HALF of the lashes sentence — true of a bare lash and a mascaraed
+ * one alike, so it rides both roads. Its other half is the next constant.
+ */
+const LASHES_CRAFT =
+  "LASHES: individual strands clumping in irregular groups, with varying length and slight curl "
+  + "variation, each catching light on its own and casting micro-shadows on the skin below.";
+
+/** The lashes sentence's DEFERRAL half — the roll road, where a description exists. */
+const LASHES_UNSTATED_DEFAULT =
+  "Unless the description states otherwise, bare and natural — never a solid dark mass, never uniform.";
+
+/**
+ * THE FOUR LEGACY DOORS, named so one road can decline them.
+ *
+ * Each is a licence of the same shape — *when the character description names
+ * X, render X; absent that, the default holds* — and each was added after a
+ * real defect where a stated fact failed to appear (the comments below each one
+ * carry their own incidents and are the reason they are worth keeping on the
+ * road they were written for). **On the ROLL road the brief IS the description
+ * and every one of them has a referent.** On a SIGN VIEW there is no
+ * description at all, so each collapses to its default half: no ink, no makeup,
+ * no accessory, no covering — which is what stripped the founder's Sifr2
+ * close-up on 2026-09-25.
+ */
+const STRUCTURAL_FEATURES_DOOR: readonly string[] = [
+  "STRUCTURAL FEATURES: When the character description names a permanent physical feature — the shape of the nose, cheekbones, jaw, chin, lips or teeth, a broken or crooked nose, a scar, a cleft, cauliflower ear, a missing or chipped tooth, asymmetry, a birthmark, freckling, active acne or acne scarring, weathered or sun-damaged skin, a shaved head, a tattoo — render it plainly and accurately as a real, permanent part of this person.",
+  "This covers ORDINARY feature shape as much as damage: a button nose, a strong jaw, high cheekbones, a receding chin, thin lips, gapped or crowded teeth. These are how a face is built, not flaws to be resolved toward a conventional one.",
+  "These are casting facts, not blemishes to correct. Do not idealise them away, do not soften them, and do not substitute an unmarked face. A named feature that fails to appear is a failed candidate.",
+];
+
+const RENDER_ONLY_WHAT_THE_DESCRIPTION_NAMES =
+  "Render only what the description names. Never invent damage, scars or ink that was not asked for.";
+
+const STATED_ACCESSORIES_DOOR: readonly string[] = [
+  "STATED ACCESSORIES: When the character description names something WORN on the face or body — glasses, a nose stud, a named earring, a chain, a wedding ring — render it plainly and accurately as this person's own, exactly as described. A named accessory that fails to appear is a failed candidate.",
+  "This licenses only what the description names. It does NOT permit props, objects held in the hands, headwear, or anything in the scene: those remain forbidden, and an accessory the description did not name must never be invented.",
+];
+
+const STATED_MAKEUP_DOOR: readonly string[] = [
+  "STATED MAKEUP: When the character description names makeup — mascara, a red lip, gloss, blush, liner, a smoky eye, bold brows — render it plainly and accurately as worn by this person, exactly as described. Named makeup that fails to appear is a failed candidate.",
+  "This licenses only what the description names. Makeup is never added to a face the description left unmade: the default is a bare, unmade face, and it stays that way unless the words ask otherwise.",
+];
+
+const STATED_COVERINGS_DOOR: readonly string[] = [
+  "STATED COVERINGS are the ONE exception to the headwear and hat exclusions above: where a STATED COVERING block appears, that garment is this person's own and is rendered exactly as that block describes. It overrules every no-hats and no-headwear line in these instructions.",
+  "This exception is narrow and never inferred. No head covering is added to a person the description left uncovered — not from their heritage, their name, their occupation, or any faith the description mentions. Absent a STATED COVERING block, the head is bare and the exclusions above hold in full.",
+];
+
+/**
+ * ⚠ **AN ARRAY WITH ITS DOORS NAMED, BECAUSE TWO ROADS READ IT AND ONLY ONE OF
+ * THEM HAS A DESCRIPTION — 2026-09-25 (#1221).**
+ *
+ * Every sentence below is in the order it has always been in and the ROLL
+ * prompt's bytes do not move (`realismRollBlockBytes` in the guard pins the
+ * whole string by hash). What changed is that the clauses which defer to *"the
+ * character description"* are now NAMED CONSTANTS instead of anonymous
+ * literals, so `referenceRealism()` can build the SIGN VIEW's block by
+ * SUBTRACTING them rather than by re-typing the eleven photographic sentences
+ * beside them. A second array of the same prose is the drift working law 4 is
+ * about, and this file has already been bitten by exactly that (see the list
+ * docblock below, where a hand-kept second array had forgotten
+ * `SKIN_AND_FEATURES` entirely).
+ */
+const SKIN_AND_FEATURES_SENTENCES: readonly string[] = [
   ...REALISM_SENTENCES,
   "EYES: the iris is not a flat disc — render radial striations and fibre-like collagen structure, lighter near the pupil and deepening to richer saturation toward the outer edge, closed by a distinct dark limbal ring where the iris meets the sclera.",
   "CATCHLIGHTS: one or two small, sharp specular reflections of the studio flash, high on the cornea. Without them the eyes read dead. Render the wet corneal gloss over the whole eye surface — visible, not glassy.",
@@ -368,7 +432,19 @@ const SKIN_AND_FEATURES = [
     That half is the craft: a lash line of identical strands and a brow of one
     flat colour are the two tells that survive an otherwise convincing face.
   */
-  "LASHES: individual strands clumping in irregular groups, with varying length and slight curl variation, each catching light on its own and casting micro-shadows on the skin below. Unless the description states otherwise, bare and natural — never a solid dark mass, never uniform.",
+  LASHES_CRAFT,
+  /*
+    ⚠ SPLIT FROM THE SENTENCE ABOVE, AND THE JOIN PUTS IT BACK (#1221).
+
+    These two were one string. `join(" ")` re-inserts exactly the space that sat
+    between them, so the roll prompt is byte-identical — the guard's hash arm is
+    what proves that rather than this comment. They are apart because the first
+    half is camera craft and the second half is a DEFERRAL to a description, and
+    a Sign view has no description for it to defer to: read there, it says the
+    words did not ask for mascara, so render none. That is half of the bare face
+    the founder reported on his Sifr2 close-up.
+  */
+  LASHES_UNSTATED_DEFAULT,
   "LIPS: vertical plicae and a natural moisture gradient, glossier at the centre and drier toward the edges, with natural colour variation from the vermillion border inward. Lips have topography, never a flat matte fill. The border is organic and slightly irregular, never a vector-sharp line.",
   "BROWS: individual hairs with visible growth direction — upward near the nose, arching laterally, tapering at the tail — with natural gaps, overlapping strands and subtle colour variation from root to tip. Never a solid drawn-on block.",
   "Vellus fuzz is translucent and near-invisible, catching light only at extreme angles — it is NOT terminal hair, NOT stubble, NOT dark and NOT pigmented.",
@@ -409,10 +485,8 @@ const SKIN_AND_FEATURES = [
     So the list now names geometry alongside damage. The teeth were always the
     point of this clause; they now reach the features people actually describe.
   */
-  "STRUCTURAL FEATURES: When the character description names a permanent physical feature — the shape of the nose, cheekbones, jaw, chin, lips or teeth, a broken or crooked nose, a scar, a cleft, cauliflower ear, a missing or chipped tooth, asymmetry, a birthmark, freckling, active acne or acne scarring, weathered or sun-damaged skin, a shaved head, a tattoo — render it plainly and accurately as a real, permanent part of this person.",
-  "This covers ORDINARY feature shape as much as damage: a button nose, a strong jaw, high cheekbones, a receding chin, thin lips, gapped or crowded teeth. These are how a face is built, not flaws to be resolved toward a conventional one.",
-  "These are casting facts, not blemishes to correct. Do not idealise them away, do not soften them, and do not substitute an unmarked face. A named feature that fails to appear is a failed candidate.",
-  "Render only what the description names. Never invent damage, scars or ink that was not asked for.",
+  ...STRUCTURAL_FEATURES_DOOR,
+  RENDER_ONLY_WHAT_THE_DESCRIPTION_NAMES,
   /*
     STATED ACCESSORIES — the same licence, for the same reason, after the same
     kind of evidence (founder verification, 2026-08-02).
@@ -442,8 +516,7 @@ const SKIN_AND_FEATURES = [
     said, and staying silent about a stated fact made it quietly incomplete. It
     reads them back as the user's own words, never as an adjustable chip.
   */
-  "STATED ACCESSORIES: When the character description names something WORN on the face or body — glasses, a nose stud, a named earring, a chain, a wedding ring — render it plainly and accurately as this person's own, exactly as described. A named accessory that fails to appear is a failed candidate.",
-  "This licenses only what the description names. It does NOT permit props, objects held in the hands, headwear, or anything in the scene: those remain forbidden, and an accessory the description did not name must never be invented.",
+  ...STATED_ACCESSORIES_DOOR,
   /*
     STATED MAKEUP — the same licence again, and the third time this exact shape
     has been needed (D-116, founder ruling 2026-08-03).
@@ -464,8 +537,7 @@ const SKIN_AND_FEATURES = [
     failure clause is the one that gives the licence teeth — without it this is
     a sentence the prior can ignore, which is precisely what happened before.
   */
-  "STATED MAKEUP: When the character description names makeup — mascara, a red lip, gloss, blush, liner, a smoky eye, bold brows — render it plainly and accurately as worn by this person, exactly as described. Named makeup that fails to appear is a failed candidate.",
-  "This licenses only what the description names. Makeup is never added to a face the description left unmade: the default is a bare, unmade face, and it stays that way unless the words ask otherwise.",
+  ...STATED_MAKEUP_DOOR,
   /*
     STATED COVERINGS — the fourth door, and the one that had been standing open
     by accident (D-124, founder ruling 2026-08-03).
@@ -485,9 +557,88 @@ const SKIN_AND_FEATURES = [
     stays there. The code decides only WHETHER the user said it; the STATED
     COVERING block above says how it sits.
   */
-  "STATED COVERINGS are the ONE exception to the headwear and hat exclusions above: where a STATED COVERING block appears, that garment is this person's own and is rendered exactly as that block describes. It overrules every no-hats and no-headwear line in these instructions.",
-  "This exception is narrow and never inferred. No head covering is added to a person the description left uncovered — not from their heritage, their name, their occupation, or any faith the description mentions. Absent a STATED COVERING block, the head is bare and the exclusions above hold in full.",
-].join(" ");
+  ...STATED_COVERINGS_DOOR,
+];
+const SKIN_AND_FEATURES = SKIN_AND_FEATURES_SENTENCES.join(" ");
+
+/**
+ * ⚠ **THE ELEVEN SENTENCES A SIGN VIEW DECLINES — founder ruling, 2026-09-25
+ * (#1221), verbatim after he read the full view prompt:**
+ *
+ * > *"yeah thats because this was a legacy prompt for when our casts were not
+ * > allowed outfits and were wearing the bare minimum now we have a fully open
+ * > concept"*
+ *
+ * Every one of them defers to a character description, and **a Sign view sends
+ * no description** — it says *"Keep this exact person unchanged … as the
+ * reference photograph"* and defers everything else to the picture. So on that
+ * road each door reads as its default half and the product ORDERS the loss:
+ * *"Never invent damage, scars or ink that was not asked for"* and *"the
+ * default is a bare, unmade face"* are why his Sifr2 close-up came back with a
+ * bare face and no neck ink while the master she was signed from has both.
+ * **The tattoos were removed on our instruction**, the way #1207's trousers
+ * were added on ours and #1207's flash was ordered by ours.
+ *
+ * ⚠ **THIS IS A SUBTRACTION, NOT A SECOND BLOCK.** The list holds the same
+ * constants the roll array holds, so a sentence cannot be edited on one road
+ * and not the other, and a sentence that leaves the roll array without leaving
+ * here reddens the guard. The ROLL road is untouched by all of this — his
+ * ruling says so in terms (*"The roll's own block is untouched here — on the
+ * author road the brief IS the description and those clauses still have a
+ * referent"*), and the guard pins its bytes by hash rather than by trust.
+ */
+const VIEW_DECLINED_SENTENCES: readonly string[] = [
+  LASHES_UNSTATED_DEFAULT,
+  ...STRUCTURAL_FEATURES_DOOR,
+  RENDER_ONLY_WHAT_THE_DESCRIPTION_NAMES,
+  ...STATED_ACCESSORIES_DOOR,
+  ...STATED_MAKEUP_DOOR,
+  ...STATED_COVERINGS_DOOR,
+];
+
+/**
+ * THE ONE RULE THAT STANDS IN THEIR PLACE — his words, put into prompt register
+ * and nothing more.
+ *
+ * His instruction, verbatim: *"everything the reference photograph shows on her
+ * — tattoos, piercings, makeup, accessories, her outfit — is hers and is
+ * rendered where the view's frame reaches it; add nothing the reference does
+ * not show."*
+ *
+ * **The failure clause is not decoration and it is not mine.** Every licence in
+ * the block above carries one, and this file's own comment says why: *"The
+ * failure clause is the one that gives the licence teeth — without it this is a
+ * sentence the prior can ignore, which is precisely what happened before."* A
+ * studio portrait's prior is an unmarked, unmade face; a rule with no
+ * consequence loses to it exactly as the four doors did before their failure
+ * clauses were added.
+ *
+ * **"where the frame reaches it" is load-bearing.** A close-up cannot show an
+ * arm tattoo, and an instruction to render one there would invite the engine to
+ * migrate it onto the neck. The sentence asks for what this crop can honestly
+ * contain and nothing beyond it.
+ */
+const REFERENCE_IS_THE_DOCUMENT: readonly string[] = [
+  "THE REFERENCE PHOTOGRAPH IS THE DESCRIPTION: there is no written description of this person, and none is needed. Everything the reference shows on her — tattoos and ink, piercings, scars, birthmarks and freckling, makeup, jewellery and worn accessories, her hair and her outfit — is hers, and is rendered plainly and accurately wherever the frame of THIS view reaches it.",
+  "Do not idealise them away, do not soften them, and do not substitute an unmarked face or a bare, unmade one: a marking, a piercing or makeup the reference shows and this photograph loses is a failed view.",
+  "Add nothing the reference photograph does not show. This is not a licence to invent — no damage, no ink, no makeup, no accessory and no head covering that is absent from the reference may appear, and nothing visible in it may migrate to a part of the body where it is not.",
+];
+
+/**
+ * The SIGN VIEW's realism block — the roll's, minus the doors, plus the rule.
+ *
+ * Derived rather than declared (working law 4). The photographic craft — skin
+ * realism, the eye protocols, the ocular-symmetry carve-out, lips, brows, the
+ * vellus clause — is the same photograph on both roads and is shared by
+ * reference, so a repair to any of it reaches a signed customer's package on
+ * the same commit.
+ */
+export function referenceRealism(): string {
+  const kept = SKIN_AND_FEATURES_SENTENCES.filter(
+    (sentence) => !VIEW_DECLINED_SENTENCES.includes(sentence),
+  );
+  return [...kept, ...REFERENCE_IS_THE_DOCUMENT].join(" ");
+}
 
 /**
  * B2 — the ethnicity phenotype lock, restored by the craft-port audit
@@ -711,6 +862,14 @@ export const PHOTOREAL_HUMAN_BLOCKS = {
   captureSentences: CAPTURE_SENTENCES,
   realismSentences: REALISM_SENTENCES,
   negativeSentences: NEGATIVE_SENTENCES,
+  /*
+    THE SIGN VIEW's two halves (#1221) — exported so the guard can name the
+    sentences instead of re-typing them. A drop list proven by a copy of its own
+    prose is a drop list that stops being true the day somebody edits a comma.
+  */
+  realismSentencesAll: SKIN_AND_FEATURES_SENTENCES,
+  viewDeclinedSentences: VIEW_DECLINED_SENTENCES,
+  referenceDocumentSentences: REFERENCE_IS_THE_DOCUMENT,
   /*
     The signed package's authority paragraph, and it takes the UNPATHED form
     deliberately for now: the package composes its own wardrobe spec
