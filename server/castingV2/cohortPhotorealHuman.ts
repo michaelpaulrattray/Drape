@@ -196,8 +196,12 @@ const FRAMING_FIXED = [
  * ⚠ **`null` is the whole of today's product and must stay byte-identical.**
  * A roll outside `CASTING_TWO_PATHS_SCOPE`, and every one of the 206
  * production rolls cast before the paths existed, resolves to `unpathed` — and
- * the honest answer there is *paint what you always painted*. So the two
- * sentences below are the ones this file has always carried, character for
+ * the honest answer there is *paint what you always painted*. ⚠ **That flag was
+ * DELETED on 2026-09-25 (#203 slice 2 step (e)) and the sentence gets stronger
+ * rather than staler: there is no longer any roll that can be inside it, so
+ * `null` is not merely today's product but every future one.** A non-null line
+ * now reaches here only from a FOLLOW carrying its parent's stored sentence.
+ * So the two sentences below are the ones this file has always carried, character for
  * character, and an arm asserts that rather than trusting the diff.
  *
  * With a line, two things change and both are forced by the same fact:

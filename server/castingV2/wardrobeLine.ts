@@ -260,6 +260,23 @@ export const HOUSE_WARDROBE_LINE =
  * The alternative — refusing Basics for a cast whose sex is unstated — is
  * D-180's dead end wearing a toggle: a control the product offers and then
  * declines to honour.
+ *
+ * # WHY THIS SURVIVES THE RETIREMENT, AND THE RULING IT CARRIES
+ *
+ * ⚠ **Nothing WRITES a basics sentence any more** — #203 slice 2 step (e)
+ * deleted the born road. This function stays because it is still the one
+ * declaration of what those sentences SAY, and `inkSurfaceCoverage.ts` derives
+ * its `BASICS_LINES` coverage rows from it so that a historical basics cast
+ * refined today gets its chest read correctly rather than from copied strings.
+ *
+ * ⚠ **AND IT CARRIES THE RULING THE RETIRED BRANCH USED TO HOLD, because a
+ * ruling outlives the code that obeyed it.** *The Basics spec is not negotiable
+ * by a brief:* the path IS the outfit — *"born and signed in plain black
+ * basics"* is what the customer chose when she chose it, and a brief that also
+ * names a red apron has asked for the other path. Letting a named outfit
+ * through would make the two paths one path with a confusing name, and it would
+ * break the promise Basics makes about the chest being bare. **Anybody
+ * re-opening a born-outfit road meets that here, before writing it.**
  */
 export function basicsWardrobeLine(sex: string | null | undefined): string {
   if (sex === "male") {
@@ -363,69 +380,35 @@ export function basicsWardrobeLine(sex: string | null | undefined): string {
     + "upper chest and sternum are bare, plain black fitted shorts, barefoot";
 }
 
-/**
- * THE LINE A ROLL IS BORN WITH, before anybody has edited anything.
- *
- * This is the WRITE side's owner and `currentWardrobeLine` is the READ side's;
- * they are in one file so that the sentence a roll is stamped with and the
- * sentence every reader derives cannot come from two places.
- *
- * ⚠ **THE PICK IS GONE AND WITH IT THE `named` SEAM** — #203 slice 2, step (d).
- * Case (a) — *her words win* — and case (b) — *the engine picks one per sheet*
- * — arrived with the brief stage, and the brief stage stopped asking for them
- * when slice 1 stopped writing a path. The seam is removed in the same commit
- * that empties it rather than being left as a parameter nothing can pass: a
- * constant-false branch reads to the next person as a live one.
- *
- * So a Wardrobe-path roll takes the house line, which is the answer every
- * reachable roll already got. The function itself is only reachable at all with
- * a non-null path, and that is the retirement's LAST step, not this one.
- */
-export function bornWardrobeLine(input: {
-  path: CastingPath;
-  sex?: string | null;
-}): string {
-  if (input.path === "basics") {
-    /*
-      ⚠ THE BASICS SPEC IS NOT NEGOTIABLE BY A BRIEF, and that is the ruling
-      rather than an omission. The path IS the outfit — "born and signed in
-      plain black basics" is what the customer chose when she chose it, and a
-      brief that also names a red apron has asked for the other path. Letting a
-      named outfit through here would make the two paths one path with a
-      confusing name, and it would break the promise the Basics toggle makes
-      about the chest being bare.
+/*
+  ⚠ **THE WRITE SIDE STOOD HERE AND IS GONE — #203 slice 2, step (e), the
+  retirement's LAST step.** `bornWardrobeLine` (which path a new roll is born
+  wearing) and `sheetBasicsSex` (which of the two Basics forms a whole sheet
+  resolves to) are deleted, and this file is now a READ side alone:
+  `currentWardrobeLine` over the stored pair, plus the two constants the stored
+  sentences are made of.
 
-      Since #203 slice 2 step (d) the ruling is held STRUCTURALLY rather than by
-      this branch refusing: there is no pick to refuse. The argument is kept
-      because it is the reason the seam was never opened, and because a reader
-      re-opening one needs to meet it before, not after.
-    */
-    return basicsWardrobeLine(input.sex);
-  }
-  return HOUSE_WARDROBE_LINE;
-}
+  **They were UNREACHABLE, not merely unused, and that is why they went.** Slice
+  1 (`67f422b9`) made the compiler's `path` a named constant `null`; step (d)
+  removed the `named` seam; so from slice 1 onward `bornWardrobeLine` was called
+  only from a ternary arm that `null` could never take, and `sheetBasicsSex` had
+  no caller but that arm. A function whose only road is a dead branch reads to
+  the next person as live machinery.
 
-/**
- * THE ONE FORM A WHOLE SHEET WEARS — because the line is one per sheet.
- *
- * §B2's comparability law says a sheet compares people and not clothes, so
- * eight candidates share one outfit. On the Basics path the spec's two forms
- * are sex-dependent, and a sheet whose eight are not all the same sex has to
- * resolve to ONE of them anyway.
- *
- * **The male form is used only when the entire sheet is male.** It is the
- * covered-form rule of `basicsWardrobeLine` applied one level up, and it holds
- * for the same reason: the covered form fits everybody and costs the chest
- * nothing, so a mixed sheet takes it rather than putting one of the eight in a
- * form nobody chose for them.
- *
- * An empty sheet cannot happen (a roll is exactly eight) and answers `null`
- * rather than `"male"`, because `every` on an empty list is vacuously true and
- * that is the one way this could return the uncovered form by accident.
- */
-export function sheetBasicsSex(
-  sexes: readonly (string | null | undefined)[],
-): "male" | null {
-  if (sexes.length === 0) return null;
-  return sexes.every((sex) => sex === "male") ? "male" : null;
-}
+  # WHAT IS DELIBERATELY KEPT, AND WHY EACH ONE STAYS
+
+  - **`basicsWardrobeLine`** — it still has a live non-test consumer.
+    `inkSurfaceCoverage.ts` DERIVES `BASICS_LINES` from it, because a stored
+    basics sentence on one of the thirteen historical pathed rolls must still
+    have its coverage read when that cast is refined today. Deriving it there
+    rather than copying the strings is working law 4 and outlives the writer.
+  - **`HOUSE_WARDROBE_LINE`** — the sentence every unpathed cast wears, read on
+    every road.
+  - **The Basics spec's own argument** — *the path IS the outfit, and a brief
+    naming a red apron has asked for the other path* — is not lost with the
+    branch that carried it: it lives in `basicsWardrobeLine`'s own docblock,
+    where anybody re-opening a born road meets it before writing, not after.
+  - **`CASTING_PATHS` and the columns** — see `shared/castingPaths.ts`. The
+    vocabulary is a PREREQUISITE of the retained columns, not a remnant of the
+    retired road.
+*/

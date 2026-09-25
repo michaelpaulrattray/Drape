@@ -515,7 +515,7 @@
           "server/castingV2/stageWallBackstop.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1223",
+          "server/castingV2/briefCompiler.ts:1234",
           "server/castingV2/briefRefusalCopy.ts:116"
         ]
       },
@@ -528,7 +528,7 @@
           "server/castingV2/creativeRegisterScope.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1226",
+          "server/castingV2/briefCompiler.ts:1237",
           "server/castingV2/briefRefusalCopy.ts:122"
         ]
       },
@@ -543,7 +543,7 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1152",
+          "server/castingV2/briefCompiler.ts:1163",
           "server/castingV2/briefRefusalCopy.ts:128"
         ]
       },
@@ -555,8 +555,8 @@
           "server/castingV2/briefRefusalCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1077",
-          "server/castingV2/briefCompiler.ts:1507",
+          "server/castingV2/briefCompiler.ts:1088",
+          "server/castingV2/briefCompiler.ts:1517",
           "server/castingV2/briefRefusalCopy.ts:108"
         ]
       },
@@ -572,8 +572,8 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1205",
-          "server/castingV2/briefCompiler.ts:1212",
+          "server/castingV2/briefCompiler.ts:1216",
+          "server/castingV2/briefCompiler.ts:1223",
           "server/castingV2/briefRefusalCopy.ts:110"
         ]
       },
@@ -873,7 +873,6 @@
       "CASTING_ROLL_ENGINE_SCOPE",
       "CASTING_SCAN_TABLE_SCOPE",
       "CASTING_SIDE_PHRASING_SCOPE",
-      "CASTING_TWO_PATHS_SCOPE",
       "CASTING_V2_SCOPE"
     ],
     "subjects": [

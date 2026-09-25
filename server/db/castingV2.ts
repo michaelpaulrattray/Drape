@@ -877,9 +877,24 @@ export async function getBriefForOwnedCandidate(
  * user in the same statement that finds it (invariant 1), exactly as
  * `getBriefForOwnedCandidate` above — a caller holding a candidate id cannot
  * reach a stranger's sheet through this.
+ *
+ * # ⚠ IT WAS A PAIR AND IT IS ONE FIELD NOW — #203 slice 2 step (e)
+ *
+ * `path` was selected beside the sentence, on the stated ground that *a caller
+ * needs to tell "this cast wears the house line" from "this cast predates the
+ * paths" and a bare string cannot say the second.* True of a caller who
+ * RESOLVES a line; this one does not — it hands the sentence to the compiler
+ * verbatim whenever it is present, so the path could never change the answer,
+ * and the one caller in the tree never read it.
+ *
+ * So it is off the projection rather than left as a field with no reader
+ * (invariant 7 — the call step (d) made about `wardrobeEditsEnabled`). **The
+ * distinction itself is not lost**: `getOwnedCandidateWithSelectedFace` below
+ * still returns both `rollPath` and `rollWardrobeLine`, and the refine and Sign
+ * roads still resolve them through `currentWardrobeLine`, which is where telling
+ * *house* from *predates the paths* actually decides something.
  */
 export type OwnedRollWardrobe = {
-  path: CastingPath | null;
   wardrobeLine: string | null;
 };
 
@@ -891,7 +906,6 @@ export async function getRollWardrobeForOwnedCandidate(
   const db = await requireDb();
   const [row] = await db
     .select({
-      path: castingRolls.path,
       wardrobeLine: castingRolls.wardrobeLine,
     })
     .from(castingCandidates)
@@ -905,7 +919,7 @@ export async function getRollWardrobeForOwnedCandidate(
     ))
     .limit(1);
   if (!row) return null;
-  return { path: row.path ?? null, wardrobeLine: row.wardrobeLine ?? null };
+  return { wardrobeLine: row.wardrobeLine ?? null };
 }
 
 /**

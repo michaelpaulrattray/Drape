@@ -428,7 +428,9 @@ export async function createRoll(
   let followStatedAnchor: FollowAnchor | null = null;
   /** The SELECTED face's frame key (#177 Row A) — the picture the customer is pointing at, resolved through selection like everything a follow inherits. */
   let followAnchorImageKey: string | null = null;
-  let inheritedWardrobe: { path: CastingPath | null; wardrobeLine: string | null } | null = null;
+  /* The parent's `path` travelled here beside its sentence until #203 slice 2
+     step (e); nothing downstream ever read it, so it is off the projection. */
+  let inheritedWardrobe: { wardrobeLine: string | null } | null = null;
   if (input.followCandidatePublicId) {
     /*
       Read through SELECTION — §11's second landmine (D-123).
@@ -500,16 +502,16 @@ export async function createRoll(
       STORED and arrives too late for the eight PROMPTS. Read here, owner-scoped
       through the owned candidate, so the pictures and the row agree.
 
-      Read UNCONDITIONALLY, outside the flag as well, and that is deliberate: a
-      parent cast before the paths existed answers `{ null, null }`, which is
-      exactly what the prompt needs to stay unpathed. Making the read
-      conditional on this account's flag would resolve a fresh line for a follow
-      whose row is about to be written NULL.
+      Read UNCONDITIONALLY, and that is deliberate: a parent cast before the
+      paths existed answers `null`, which is exactly what the prompt needs to
+      stay unpathed. This used to say *"outside the flag as well"* — there is no
+      flag to be outside of since #203 slice 2 step (e) retired it, and the
+      unconditional read is now simply the only read there is.
     */
     inheritedWardrobe = (await getRollWardrobeForOwnedCandidate(
       input.userId,
       input.followCandidatePublicId,
-    )) ?? { path: null, wardrobeLine: null };
+    )) ?? { wardrobeLine: null };
   }
 
   /*
@@ -610,6 +612,16 @@ export async function createRoll(
     must keep doing so independently (#180's table; `refineSubjects.ts` and
     `wardrobeCards.ts` carry the argument). Collapsing them is the next slice's
     work and it is a reading, not a deletion.
+
+    ⚠ **STEP (e) IS THAT NEXT SLICE AND IT DELIBERATELY DID NOT COLLAPSE THEM.**
+    It deleted the compiler's `path` input, the born road behind it and the flag
+    that was its door — so this constant now has exactly ONE consumer, the column
+    write below, and the sentence above is discharged as far as the WRITER goes.
+    The three predicates are untouched: they agree today by arithmetic rather
+    than by design, folding them is a reading of #180's table and not part of a
+    retirement, and this repository's rule against folding a capability into a
+    cleanup cuts the same way for a simplification. It stays NAMED for the
+    column's sake — what a roll's path column is set to is still a decision.
   */
   const bornPath: CastingPath | null = null;
 
@@ -667,14 +679,18 @@ export async function createRoll(
       /*
         THE LINE REACHES THE EIGHT PROMPTS FROM HERE (§3.3, item 5).
 
-        The path is resolved before the compile because the constant carries the
-        outfit now; on a FOLLOW the pair is the parent's, verbatim and including
-        its nulls, because that is what the transaction is about to write.
+        ⚠ **`path: bornPath` stood here and is gone — #203 slice 2 step (e).**
+        It was the compiler's entire born-outfit input and it was a constant
+        `null` from slice 1 onward, so the branch it fed could never be taken.
+        `bornPath` itself stays, one use further down, because the COLUMN is
+        still written and its value is still a decision worth naming.
+
+        On a FOLLOW the sentence is the parent's, verbatim and including its
+        null, because that is what the transaction is about to write.
       */
-      path: bornPath,
-      /* On the author road the house prompts are discarded and the row inherits nothing, so the compiler is handed no pair. */
+      /* On the author road the house prompts are discarded and the row inherits nothing, so the compiler is handed no sentence. */
       inheritedWardrobe: inheritedWardrobe && !authorRoad
-        ? { path: inheritedWardrobe.path, line: inheritedWardrobe.wardrobeLine }
+        ? { line: inheritedWardrobe.wardrobeLine }
         : undefined,
       readInk,
       briefFidelity,

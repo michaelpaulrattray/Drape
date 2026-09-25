@@ -220,6 +220,21 @@ export const SYSTEM_PROMPT_FOR_TESTS = () => SYSTEM_PROMPT;
  * `SYSTEM_PROMPT` remains the base and is what every existing contract test
  * reads.
  *
+ * ⚠ **THERE IS NO FLAG TO DECIDE IT ANY MORE, AND THIS BLOCK IS STILL HERE ON
+ * PURPOSE — #203 slice 2 steps (d) and (e).** Step (d) made `wardrobe: false`
+ * unconditional (nothing composes a pick, so the answer is read by nothing) and
+ * step (e) deleted `CASTING_TWO_PATHS_SCOPE` outright, so the paragraph above
+ * describes a condition that no longer has two sides. **What has NOT changed is
+ * the bytes**: `wardrobe: false` appends nothing, which is exactly what every
+ * production roll has always sent, and `briefCompiler.test.ts` asserts that on
+ * the outgoing call rather than on a constant nearby (invariant 5).
+ *
+ * ⚠ **Removing the ASK is #1123's court and is deliberately not done here**, by
+ * the same argument this docblock already makes and measures: context is not
+ * additive, so deleting a block from a live prompt is a behaviour change that
+ * wants measuring, not a tidy-up that rides a retirement. Until that court runs,
+ * the block stays and the option stays `false`.
+ *
  * # ⚠ THE BOREDOM CLAUSE CAME OUT ON 2026-08-25, AND IT WAS NEVER ONE CLAUSE
  *
  * Founder order (relayed fable-1595, verbatim): *"whats up with the wardrobe

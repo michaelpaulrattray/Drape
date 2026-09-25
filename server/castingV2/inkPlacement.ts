@@ -271,6 +271,15 @@ export type InkPlacement =
    * against the ROWS because that is what actually gates it: production held 208
    * rolls, 0 pathed, at the flip. A claim about a flag dies when the flag moves;
    * a claim about the rule survives it.
+   *
+   * ⚠ **AND THE FLAG MOVED ONE LAST TIME — #203 slice 2 step (e), 2026-09-25:
+   * it is DELETED, along with the born road and the writer.** So "reachable on
+   * the first pathed one" describes something that can no longer happen: the
+   * thirteen pathed rolls already in production are the whole population this
+   * state will ever be reached from, and 7a-bis is no longer a precondition of a
+   * flip that cannot occur. **The paragraph above is left standing on purpose —
+   * it is the worked example of its own last sentence**, and this stamp is the
+   * third time that rule has paid for itself on this one state.
    */
   | { kind: "coverage_unread"; place: string; surface: InkPlacementKey; alternatives: readonly string[] }
   /** Needs a design document. Gated until the body-art studio ships (D-137). */

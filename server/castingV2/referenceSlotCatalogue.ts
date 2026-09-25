@@ -693,7 +693,14 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       that is a capability nobody has built rather than a bug anybody has.
 
       It is an enumerated precondition of the Basics flag widening rather than a
-      note here — see `CASTING_TWO_PATHS_SCOPE`'s own paragraph.
+      note here — see `CASTING_TWO_PATHS_SCOPE`'s own paragraph. ⚠ **THAT FLAG
+      AND ITS PARAGRAPH ARE GONE (#203 slice 2 step (e), 2026-09-25), so there is
+      no widening this can be a precondition OF.** The pointer is corrected
+      rather than left: a pointer outliving its target is how a load-bearing
+      reason becomes a deletion nobody argues with. What survives is the fact —
+      a Basics frame would change what this row could honestly say — and it now
+      applies only to the thirteen historical pathed casts, since no new one can
+      be born on a path.
 
       ⚠ **FOR FIVE WEEKS ONE THING DID NOTICE — THE PERSON READING THE PANEL —
       AND IT IS RETIRED WITH THE PATHS (#203 slice 2, 2026-09-24).** §6.1 gave

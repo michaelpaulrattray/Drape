@@ -311,73 +311,23 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "under the flag still compiles house to the byte, but the creative population has not "
       + "been seen at his eye through the built road yet.",
   },
-  CASTING_TWO_PATHS_SCOPE: {
-    position: "off",
-    /* ⚠ RETIRED AND UNSET ON THE SERVICE, 2026-09-24 — his Crew reply #206 (card
-       switch-06-two-paths-retire), verbatim and entire: "Unset it".
+  /* ⚠ `CASTING_TWO_PATHS_SCOPE`'s ROW STOOD HERE AND IS GONE — #203 slice 2
+     step (e), 2026-09-25, and it is REMOVED rather than left at `off` because
+     this table's own population arm requires it: `productionFlagPositions.test.ts`
+     refuses a row "for a variable the code no longer declares", and step (e)
+     deleted the constant, the parser, the capture and the boot fence.
 
-       Not a widen and not a narrow: the variable is GONE from the service, and
-       `off` is how this table says so. It governs nothing — #203 slice 1
-       (`67f422b9`) closed the entrance, so no toggle exists on either surface,
-       `createRoll` takes no path, and `rollService` writes the column a constant
-       null. Read at the rows the day he was asked: 282 of 295 production rolls
-       carry no path and the last pathed roll was 2026-08-26.
+     Its history, kept because the row's lesson outlives the row: the variable was
+     unset from the service on 2026-09-24 on his word (Crew reply #206, card
+     switch-06-two-paths-retire, verbatim and entire: "Unset it"), and its `why`
+     had carried a stale sentence about a court that had already run — the FOURTH
+     copy of one stale sentence, repaired here in 2026-08-24 because no rule
+     pointed at this file: the thing assumed to go stale on a flags' table is a
+     POSITION, and what actually went stale was the REASON.
 
-       ⚠ The COLUMN and its thirteen pathed rows are deliberately kept — #203
-       slice 2 step (e) owns them, and they are the evidence of which rolls
-       predate the author road. Unsetting the flag does not touch them, and they
-       are not to be backfilled or nulled.
-
-       Everything below this line is the row's HISTORY and is kept because its
-       lesson outlives the position it describes. ⚠ Where it says this row reads
-       `users:1`, that was true from 2026-08-24 until today and is not true now —
-       the sentence is struck rather than deleted, which is this repository's own
-       rule for a superseded ruling. */
-    /* ⚠ THE FOURTH COPY OF ONE STALE SENTENCE, AND THIS FILE IS THE LAST PLACE
-       IT SHOULD HAVE SURVIVED (repaired 2026-08-24, opus-1175).
-
-       This `why` read *"the flip waits on a 320-credit dev court and then his
-       eyes"* until now. The court RAN on 2026-08-23 — both arms, two Signs —
-       and three commits have already chased that same sentence off three other
-       surfaces: `8adb18dd` off `POST_SIGN_ROADMAP.md`, `d234f53c` off
-       `CLAUDE.md`, and the design's own §10 the night after. **Nobody asked
-       this file**, because no rule pointed at it: it is the flags' table, and
-       the thing that goes stale on a flags' table is assumed to be a POSITION.
-       The position was correct throughout; the prose beside it was a day
-       behind, on a file that PRINTS ON EVERY PUSH beside the flip a seat acts
-       on the moment he answers.
-
-       The lesson belongs here rather than in a report: a `why` is prose, and
-       prose in an instrument rots exactly like prose in a document.
-
-       ✅ **AND THE FLIP CAME THE NEXT HOUR, WHICH IS WHY THIS ROW READS
-       `users:1` (2026-08-24, fable-1530).** He looked at the §6 pack and
-       accepted it — *"as for everything else you mentioned im happy"* — and the
-       flip was executed on that word by the reviewer seat under the established
-       variable procedure, read back by name, redeployed, health ×3 200.
-
-       ⚠ **AND THE RECORD LEARNED IT FROM THE SERVICE RATHER THAN FROM THE
-       RULING, which is this file's whole purpose firing for the first time on a
-       real divergence.** The executor seat's rite pushed 94 seconds later and
-       exited 1: `<unset>` at 2026-08-23T23:41:22Z, `users:1` at
-       2026-08-24T00:19:24Z, with a Railway deployment at 10:19:53 +10:00 that no
-       push produced — which is what a variable change looks like. Neither seat
-       had told the other yet. **The instrument closed a gap that a message was
-       still crossing**, which is a better reason to keep it than the one it was
-       built for.
-
-       ⚠ **A POSITION IS NOT AN ACCEPTANCE, and one of the two open items was
-       closed separately and by his own word.** He answered *"yes"* to the
-       refuse-until-read state (fable-1531 §1), so 7a-bis builds when the
-       `surfaceCoverageUnread` tally says so rather than before the flip. The
-       other item — the `build`/`skin` honesty claim before BASICS widens — is
-       still open and this position does not touch it. Production held 208 rolls,
-       0 pathed, 0 with a wardrobe line the hour it flipped. */
-    why:
-      "his acceptance of the §6 pack (fable-1530), flipped on that word and read "
-      + "back by name; his separate 'yes' to refuse-until-read (fable-1531 §1) "
-      + "closes 7a-bis as a precondition — it builds on the tally instead",
-  },
+     ⚠ The COLUMN and its thirteen pathed rows are deliberately kept. They are the
+     evidence of which rolls predate the author road, they are not backfilled and
+     not nulled, and nothing about deleting this row touches them. */
   CASTING_BORN_INK_SCOPE: {
     position: "all",
     why:

@@ -82,8 +82,6 @@ import { houseLaneFor } from "./houseBlock";
 import { followClause } from "./familyClause";
 import { rewriteBrief } from "@shared/briefRewrite";
 import type { CastStyle } from "../../shared/castStyles";
-import { bornWardrobeLine, sheetBasicsSex } from "./wardrobeLine";
-import type { CastingPath } from "../../shared/castingPaths";
 import { breakSignatureClusters, type VarianceReport } from "./varianceBudget";
 import { HAIR_PARTS, type HairPart } from "../../shared/castingRealization";
 
@@ -232,23 +230,25 @@ export type CompiledRollBrief = {
    * eight prompts were composed from.
    *
    * ⚠ **Resolved HERE rather than by the caller, and that is the whole point.**
-   * Item 4 returned the raw pick and let `rollService` call `bornWardrobeLine`
-   * on it, which was correct while the line only had to reach a column. The
-   * moment it also reaches the eight PROMPTS, two callers resolving the same
-   * sentence is the parallel-copy shape (working law 4) with a picture on one
-   * side and a database row on the other — a sheet painted in one outfit and
-   * recorded in another, which Sign then judges against the record.
+   * Item 4 returned the raw pick and let `rollService` resolve the born line on
+   * it, which was correct while the line only had to reach a column. The moment
+   * it also reaches the eight PROMPTS, two callers resolving the same sentence
+   * is the parallel-copy shape (working law 4) with a picture on one side and a
+   * database row on the other — a sheet painted in one outfit and recorded in
+   * another, which Sign then judges against the record.
    *
-   * So `bornWardrobeLine` is called exactly once, in `resolveSheet`, before
-   * composition; this field is that call's answer; and the caller WRITES it
-   * rather than re-deriving it.
+   * So the sentence is resolved exactly once, in `resolveSheet`, before
+   * composition; this field is that answer; and the caller WRITES it rather
+   * than re-deriving it.
    *
    * An explicit field rather than something lifted out of `compiledBrief`:
    * that column's docblock says INTERNAL and never projected, and a durable
    * fact read out of an internal blob is the shape §3.2 refuses by name.
    *
-   * `null` whenever `path` was null — the unpathed roll, which is every roll
-   * outside the flag.
+   * ⚠ **`null` on every roll this product can now compose — #203 slice 2 step
+   * (e).** The born road that could make it anything else is gone (there is no
+   * path to be born on), so the only non-null answer left is a FOLLOW's, which
+   * is its parent's stored sentence carried verbatim and never re-resolved.
    */
   wardrobeLine: string | null;
   /**
@@ -349,30 +349,44 @@ export type BriefCompilerInput = {
    * the whole guarantee.
    */
   overrides?: LockOverrides;
+  /*
+    ⚠ `path` STOOD HERE AND IS GONE — #203 slice 2, step (e), the retirement's
+    LAST step. It said *which path this sheet is cast on, resolved by the caller
+    before the compile because the born line reaches the eight PROMPTS (§3.3)*,
+    and the only caller resolved it to a named constant `null` from slice 1
+    (`67f422b9`) onward. So the born branch below it was unreachable code
+    describing a live decision, which is the reading this program has been
+    bitten by: a constant-false branch reads to the next person as a choice.
+
+    The COLUMN is untouched and is not this step's to touch. `casting_rolls.path`
+    still holds the thirteen production rows cast while the paths existed, still
+    types itself from `CASTING_PATHS`, and is still read — by `currentWardrobeLine`
+    through the refine and Sign roads — because it is the only evidence of which
+    rolls predate the author road. What ended is the WRITING of it and the
+    composing from it, not the remembering.
+  */
   /**
-   * WHICH PATH this sheet is cast on, resolved by the caller before the
-   * compile because the born line reaches the eight PROMPTS (§3.3).
+   * On a FOLLOW: the parent sheet's stored sentence, read owner-scoped before
+   * the compile and used VERBATIM — including its null.
    *
-   * `null` — absent, outside the flag, or a roll cast before the paths existed
-   * — composes the constant exactly as it always has, character for character.
-   */
-  path?: CastingPath | null;
-  /**
-   * On a FOLLOW: the parent sheet's pair, read owner-scoped before the compile
-   * and used VERBATIM — including its nulls.
-   *
-   * A follow inherits both columns (§3.1) and the db layer performs that
+   * A follow inherits the column (§3.1) and the db layer performs that
    * inheritance in the statement that writes the row. It cannot help the
    * PROMPT, which is composed first — so without this the eight would be
    * PAINTED in a freshly resolved outfit and RECORDED in the parent's, and
    * then five signed views judged against a line they were never painted in.
    *
-   * ⚠ **Verbatim means the NULLS too.** Following a candidate from a sheet cast
+   * ⚠ **Verbatim means the NULL too.** Following a candidate from a sheet cast
    * before the paths existed must produce an unpathed prompt, because the db is
-   * about to write that parent's NULL pair — resolving a line here "because the
-   * account is inside the flag" is the same divergence with its sign flipped.
+   * about to write that parent's NULL — resolving a line here would be the same
+   * divergence with its sign flipped.
+   *
+   * ⚠ **The parent's `path` used to travel beside the line and does not any
+   * more (step (e)).** Nothing here ever read it: the line is taken verbatim
+   * whenever this field is present, so the path could not change the answer,
+   * and a field with no reader reads as a live capability (invariant 7) — the
+   * same call slice 2 step (d) made about `wardrobeEditsEnabled`.
    */
-  inheritedWardrobe?: { path: CastingPath | null; line: string | null };
+  inheritedWardrobe?: { line: string | null };
   /**
    * ASK THE INTERPRETER ABOUT TATTOOS THE BRIEF DESCRIBED — 7b(a), inside
    * `CASTING_BORN_INK_SCOPE`.
@@ -866,10 +880,9 @@ function resolveSheet(input: {
   candidateCount: number;
   rollSeed: string;
   anchor?: FollowAnchor;
-  /** The two paths (§3.1). `null` composes exactly today's constant. */
-  path?: CastingPath | null;
-  /** A follow's inherited pair, used verbatim when present — nulls too (§3.1). */
-  inheritedWardrobe?: { path: CastingPath | null; line: string | null };
+  /* `path` stood here and is gone with the born road — #203 slice 2 step (e). */
+  /** A follow's inherited sentence, used verbatim when present — null too (§3.1). */
+  inheritedWardrobe?: { line: string | null };
 }): { candidates: CandidateSpec[]; variance: VarianceReport; wardrobeLine: string | null } {
   const { intent, briefText, archetype, rollSeed, anchor } = input;
   /*
@@ -996,21 +1009,26 @@ function resolveSheet(input: {
   const sheet = freed;
 
   /*
-    WHAT THIS SHEET IS WEARING — resolved ONCE, here, in the only window where
-    the sheet exists whole and nothing has been written to a prompt yet.
+    WHAT THIS SHEET IS WEARING — and since #203 slice 2 step (e) there is only
+    one way it is ever anything: a FOLLOW carrying its parent's stored sentence.
 
-    That window is the same one the taste pass and the signature cap use, and
-    for the same reason: on the Basics path the outfit's form depends on the
-    RESOLVED sexes of the eight (`sheetBasicsSex`), which do not exist until
-    resolution has finished — and it must exist before composition, because
-    every prompt carries it.
+    ⚠ **THE WHOLE BORN BRANCH IS GONE, AND IT WAS UNREACHABLE RATHER THAN
+    UNUSED.** It read `path === null ? null : bornWardrobeLine({ path, sex })`,
+    and slice 1 made the caller's `path` a named constant `null` — so the
+    ternary had one live arm from `67f422b9` onward and the dead one was the
+    only thing mentioning the two paths by name. It is deleted rather than left
+    behind a comment, because the next person reading a ternary reads a choice.
 
-    A FOLLOW takes the parent sheet's born line verbatim. Not out of caution:
-    the db layer will inherit that pair anyway when the row is written, so
-    re-resolving here would paint eight people in an outfit the row is about to
+    A FOLLOW takes the parent's sentence verbatim. Not out of caution: the db
+    layer will inherit that column anyway when the row is written, so resolving
+    anything here would paint eight people in an outfit the row is about to
     contradict.
+
+    ⚠ **The ONE thing to meet before re-opening a born road here**: the resolved
+    sexes of the eight only exist at this point in the function, which is why
+    the resolution stood here rather than at the caller. That constraint is a
+    fact about composition and outlives the feature that needed it.
   */
-  const path = input.inheritedWardrobe ? input.inheritedWardrobe.path : input.path ?? null;
   /*
     ⚠ NO SHEET IS DRESSED BY A PICK ANY MORE — #203 slice 2, step (d).
 
@@ -1030,14 +1048,7 @@ function resolveSheet(input: {
     Until that court has run, a volunteered field is still refused at the door
     rather than being silently believed.
   */
-  const wardrobeLine = input.inheritedWardrobe
-    ? input.inheritedWardrobe.line
-    : path === null
-      ? null
-      : bornWardrobeLine({
-        path,
-        sex: sheetBasicsSex(sheet.map((identity) => identity.sex)),
-      });
+  const wardrobeLine = input.inheritedWardrobe ? input.inheritedWardrobe.line : null;
 
   return {
     variance,
@@ -1306,7 +1317,6 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     candidateCount: input.candidateCount,
     rollSeed: input.rollSeed,
     anchor: effectiveAnchor ?? undefined,
-    path: input.path ?? null,
     inheritedWardrobe: input.inheritedWardrobe,
   });
   /*
@@ -1516,7 +1526,6 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
     archetype,
     candidateCount: input.candidateCount,
     rollSeed: input.rollSeed,
-    path: input.path ?? null,
     inheritedWardrobe: input.inheritedWardrobe,
   });
 
@@ -1546,9 +1555,9 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
        could hear — `fallbackIntent` answers null and this hands that on rather
        than composing a second null beside it. */
     statedInk: intent.statedInk,
-    /* No interpreter runs here at all, so there is nothing to pick with; the
-       path still resolves, so a Basics roll compiled this way is still dressed
-       in basics. §4(c) is the Wardrobe fallback. */
+    /* `null` unless this is a FOLLOW, and then it is the parent's own stored
+       sentence — the same answer the real compiler gives, because since #203
+       slice 2 step (e) there is no born road for either of them to differ on. */
     wardrobeLine,
   };
 };
