@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "4e44d9b23d79ce44"
+    "sourceFingerprint": "8533660b0211b211"
   },
   "domains": [
     {
@@ -11704,6 +11704,10 @@
     {
       "id": "test:server/castingV2/invisibleRemoval.test.ts",
       "path": "server/castingV2/invisibleRemoval.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/judgeAnswers.test.ts",
+      "path": "server/castingV2/judgeAnswers.test.ts"
     },
     {
       "id": "test:server/castingV2/keptFaceScan.test.ts",

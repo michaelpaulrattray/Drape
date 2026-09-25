@@ -557,12 +557,33 @@ describe("the judge cannot be trusted to be available", () => {
     const judge = () => vi.fn(async () => {
       throw new ProviderError("transport", "judge unreachable");
     });
-    const result = await buildCastPackage(deps({ judge }), input);
+    /*
+      AND THE ROW IS WHERE THE FACT LIVES (#1220). The delivery was asserted
+      here; what it was RECORDED as was not, and that field is the only trace a
+      customer's unchecked view leaves — it is what the census read to find three
+      of them charged on his two Sifr casts.
+    */
+    const provenances: Array<Record<string, unknown>> = [];
+    const result = await buildCastPackage(
+      deps({
+        judge,
+        commitSlot: vi.fn(async (slot: Record<string, unknown>) => {
+          provenances.push(slot.provenance as Record<string, unknown>);
+          committed.push(slot.angle as string);
+          return committed.length;
+        }),
+      }),
+      input,
+    );
 
     expect(result.committed).toHaveLength(CAST_PACKAGE_VIEWS.length);
     expect(result.failed).toHaveLength(0);
     expect(result.refundedCredits).toBe(0);
     expect(result.totalLoss).toBe(false);
+    expect(provenances).toHaveLength(CAST_PACKAGE_VIEWS.length);
+    for (const provenance of provenances) {
+      expect(provenance.conformanceMethod).toBe("unavailable");
+    }
   });
 
   it("still refuses a view the judge LOOKED AT and rejected", async () => {
