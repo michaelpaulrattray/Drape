@@ -150,6 +150,26 @@ export async function resolveInkReferenceTake(input: {
       maxOutputTokens: 200,
       ...(input.signal ? { signal: input.signal } : {}),
     });
+    /*
+      A REPLY CUT OFF AT THE CEILING IS NO TAKE (#1272).
+
+      The transport hands `truncated` to every caller and this reader dropped it.
+      This ask has TWO fields, which is what makes the parseable fragment sharp:
+      a reply cut off after `placement` parses with `side` simply absent, and an
+      absent side is this module's word for "she never said one". So a truncated
+      reply could drop a side she DID state and look exactly like obedience to
+      the rule that a side is only ever reported when she used the word.
+
+      `null` is what the transport branch below already returns, so the caller's
+      handling is unchanged; what changes is that the log names our ceiling.
+    */
+    if (reply.truncated) {
+      log.warn(
+        { ceiling: 200 },
+        "[inkReferenceTake] the reader was cut off at the token ceiling — no take",
+      );
+      return null;
+    }
     raw = reply.text ?? "";
   } catch (error) {
     log.warn({ err: error }, "[inkReferenceTake] the take could not be read");

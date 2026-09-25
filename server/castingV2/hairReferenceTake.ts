@@ -478,6 +478,24 @@ export async function resolveHairTake(input: {
       maxOutputTokens: 200,
       ...(input.signal ? { signal: input.signal } : {}),
     });
+    /*
+      A REPLY CUT OFF AT THE CEILING IS NO TAKE (#1272).
+
+      The transport hands `truncated` to every caller and this reader dropped it.
+      A fragment that still PARSES is the case that matters: `{"take": "colour"}`
+      cut off anywhere after the value reads as a decision about how much of her
+      hair to copy, made from a sentence the model had not finished reading.
+
+      `null` is what the transport branch below already returns, so the caller's
+      handling is unchanged; what changes is that the log names our ceiling.
+    */
+    if (reply.truncated) {
+      log.warn(
+        { ceiling: 200 },
+        "[hairReferenceTake] the reader was cut off at the token ceiling — no take",
+      );
+      return null;
+    }
     raw = reply.text ?? "";
   } catch (error) {
     log.warn({ err: error }, "[hairReferenceTake] the take could not be read");

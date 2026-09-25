@@ -245,6 +245,28 @@ export async function captionRealization(input: {
       maxOutputTokens: 300,
       signal: input.signal,
     });
+    /*
+      A REPLY CUT OFF AT THE CEILING PINS NOTHING, AND WOULD HAVE BLAMED THE
+      RENDER FOR IT (#1272).
+
+      The transport hands `truncated` to every caller and this reader dropped it.
+      The parseable fragment is the case that matters and it is not the caption —
+      it is `matches`. A reply cut off after `caption` parses with `matches`
+      simply absent, `matches !== true` holds, and the log below then says *"the
+      edit is not visible in the render"* about a render nobody finished looking
+      at. That is a claim about the picture standing in for a fact about our
+      ceiling, which is the wrong half of the two to record.
+
+      `null` is what a missing caption already returns, so the conservative
+      no-pin outcome is unchanged; what changes is that the reason is true.
+    */
+    if (reply.truncated) {
+      log.warn(
+        { facet: input.facet, ceiling: 300 },
+        "[realizationCaption] the reader was cut off at the token ceiling — no pin, and no claim about the render",
+      );
+      return null;
+    }
     const parsed = JSON.parse(reply.text.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, ""));
     const caption = typeof parsed?.caption === "string" ? parsed.caption.trim() : "";
     if (!caption) return null;
@@ -380,6 +402,28 @@ async function askAboutSlot(input: {
       maxOutputTokens: 300,
       signal: input.signal,
     });
+  /*
+    A REPLY CUT OFF AT THE CEILING IS NOT A SIGHTING (#1272).
+
+    The transport hands `truncated` to every caller and this reader dropped it,
+    and here the default is the dangerous way round. `visible` is read as
+    `parsed?.visible !== false`, so ABSENT means SEEN — and a fragment cut off
+    after `caption` parses with `visible` missing. The ask above spends four
+    lines telling the model to answer `visible:false` when it cannot see the
+    thing; our own ceiling could take that answer away and the caption would be
+    filed as a description of the person regardless, which is the exact class
+    the docblock above says this whole change exists to end.
+
+    `null` is already this function's "no reading" value and its callers take it,
+    so nothing is filed rather than something being filed on no evidence.
+  */
+  if (reply.truncated) {
+    log.warn(
+      { noun: input.noun, view: input.view, ceiling: 300 },
+      "[realizationCaption] the slot reader was cut off at the token ceiling — no reading, and no sighting claimed",
+    );
+    return null;
+  }
   const parsed = JSON.parse(reply.text.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, ""));
   const caption = typeof parsed?.caption === "string" ? parsed.caption.trim() : "";
   return { caption, visible: parsed?.visible !== false };

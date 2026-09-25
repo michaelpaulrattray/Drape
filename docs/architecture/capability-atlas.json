@@ -160,6 +160,7 @@
           "server/castingV2/referenceWordsLane.test.ts",
           "server/castingV2/refineInterpreterCeiling.test.ts",
           "server/castingV2/refineService.test.ts",
+          "server/castingV2/truncatedReplyReaders.test.ts",
           "server/castingV2/uploadRefusalCopy.test.ts",
           "server/db/referenceReadDemand.test.ts"
         ],
@@ -715,6 +716,7 @@
           "server/castingV2/referenceWordsLane.test.ts",
           "server/castingV2/refineInterpreterCeiling.test.ts",
           "server/castingV2/refineService.test.ts",
+          "server/castingV2/truncatedReplyReaders.test.ts",
           "server/castingV2/uploadRefusalCopy.test.ts",
           "server/db/referenceReadDemand.test.ts"
         ],

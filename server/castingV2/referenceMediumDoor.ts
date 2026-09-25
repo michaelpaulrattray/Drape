@@ -173,6 +173,27 @@ export async function readReferenceMedium(input: MediumReadInput): Promise<Refer
       maxOutputTokens: 200,
       ...(input.signal ? { signal: input.signal } : {}),
     });
+    /*
+      A REPLY CUT OFF AT THE CEILING IS NOT AN ANSWER (#1272).
+
+      The transport hands `truncated` to every caller and this reader dropped it.
+      The case that matters here is not the unparseable fragment — it is that a
+      quoted bare word is VALID JSON, so a reply cut off after `"photograph"`
+      parses to a string and `readMediumAnswer` reads it as a positive medium.
+      A fragment would then be answering a question the model had not finished.
+
+      `unreadable` is what every other unanswered road here returns, and
+      `cropTakeAllowedOn` treats it exactly as it treats `photograph`, so no
+      customer road moves. What changes is that a medium we never actually read
+      stops being recorded as one we did.
+    */
+    if (reply.truncated) {
+      log.warn(
+        { ceiling: 200 },
+        "[referenceMediumDoor] the reader was cut off at the token ceiling — the medium is unread",
+      );
+      return "unreadable";
+    }
     return readMediumAnswer(reply.text ?? "");
   } catch (error) {
     log.warn({ err: error }, "[referenceMediumDoor] the medium could not be read");

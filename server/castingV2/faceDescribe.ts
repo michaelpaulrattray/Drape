@@ -279,6 +279,27 @@ async function ask(
       maxOutputTokens: 600,
       ...(input.signal ? { signal: input.signal } : {}),
     });
+    /*
+      A REPLY CUT OFF AT THE CEILING DESCRIBES NOTHING (#1272).
+
+      The transport hands `truncated` to every caller and this reader dropped it.
+      The ceiling note above is about the EMPTY completion; a fragment is the
+      other half of the same fact and is sharper, because this ask carries one
+      field per question. A reply cut off after `build` parses with `skin` and
+      `teeth` absent, and `blank` for a missing key is this reader's word for a
+      face it could not describe — so a partial reading looks like an honest
+      silence about the questions it never reached.
+
+      `blank` is what the catch below already returns, so nothing downstream
+      changes; what changes is that the log names our ceiling.
+    */
+    if (reply.truncated) {
+      log.warn(
+        { ceiling: 600, keys: keys.length },
+        "[faceDescribe] the reader was cut off at the token ceiling — no description",
+      );
+      return blank;
+    }
     const parsed = parse(reply.text ?? "");
     if (!parsed) return blank;
     return Object.fromEntries(keys.map((key) => [key, readLine(parsed[key])]));
