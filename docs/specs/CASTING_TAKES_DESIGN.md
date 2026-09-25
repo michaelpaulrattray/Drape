@@ -221,6 +221,15 @@ nothing about them presumes cinema.
    reusing the pipeline's existing readers — and per law 9 a reader
    PROPOSES, never rules, which is why the result wears its badge and
    waits for a human glance.
+   **AMENDED same day (founder catch: 8 candidates share one brief — same
+   personality?): candidates have no personality, CASTS do (minted at
+   Sign, and one is signed) — and the SIGNED PICTURE always contributes
+   the differentiating layer, not only when words are thin.** The brief
+   is the ROLE; the chosen candidate is her particular read of it (the
+   smirk, the level stare, the heavy stillness that made the user pick
+   her over her siblings). Two siblings signed from one roll derive two
+   different lines because the pictures differ. The brief supplies the
+   register; the picture personalizes; law 9's rank unchanged.
 3. **Vocabulary — RULED: keep it as it is.** The earlier two-noun
    recommendation is REVERSED. Words are scoped per surface by design:
    the casting page speaks **candidates** (rolling) and **versions**
