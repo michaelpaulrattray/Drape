@@ -174,7 +174,7 @@ export default function CastingRoom() {
    * tile left open in another tab cannot spend against a slot that has since
    * been filled.
    */
-  const askAgain = (angle: string, priceCredits: number) => {
+  const askAgain = (angle: string) => {
     if (!data || retryingAngle) return;
     setRetryingAngle(angle);
     retryView.mutate(
@@ -183,12 +183,13 @@ export default function CastingRoom() {
         onSuccess: (result) => {
           setRetryingAngle(null);
           void utils.castingV2.getCast.invalidate({ castId: data.castId });
-          if (result.outcome === "ready") {
-            toast(priceCredits > 0
-              ? `That view is here. ${priceCredits} credits.`
-              : "That view is here.");
-            return;
-          }
+          /*
+            NO TOAST ON SUCCESS — D-110's question, answered honestly: the
+            picture replacing the confession IS the notice, and it is a better
+            one than a sentence about it. The price was on the button before
+            the press, so nothing about the money is news either.
+          */
+          if (result.outcome === "ready") return;
           /*
             Truthful about the money even when it went wrong: a refund that did
             not record is never reported as "you weren't charged" (the refund
@@ -687,7 +688,7 @@ export default function CastingRoom() {
                             type="button"
                             className="dpc-slot__again"
                             disabled={retryingAngle !== null}
-                            onClick={() => askAgain(slot.angle, slot.retry!.priceCredits)}
+                            onClick={() => askAgain(slot.angle)}
                           >
                             {retryingAngle === slot.angle
                               ? "Asking…"

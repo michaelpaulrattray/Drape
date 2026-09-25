@@ -49,6 +49,17 @@ const ALLOWED: Array<{ match: string; because: string }> = [
     because:
       "A retry (issue 122, shape 1) that was REFUSED or failed a second time. The tile shows the chip and the line again — the same face it wore before the tap — so nothing on the surface says the tap was refused, why (the filter's kind, a cancelled roll, not enough credits), or that the second attempt's 20 credits came back. The server's own sentence passes through readableFailure; this is only the fallback when it has none.",
   },
+  // ---- CastingRoom.tsx (Try again on one view — #1208 slice 2)
+  {
+    match: "It didn't arrive again.",
+    because:
+      "A Try again (#1208 slice 2) that failed a second time. NOTHING on the surface changes — the tile wears the same confession it wore before the press — so without this the press reads as having done nothing at all. It also carries the money, which the room never shows: the 50 came back, or (the truthful third branch) the refund could not be recorded, which is never reported as 'you weren't charged'. The SUCCESS case has no toast on purpose: the picture arriving is the notice.",
+  },
+  {
+    match: "readableFailure(error, \"That view couldn't be asked for again.\")",
+    because:
+      "A REFUSED Try again — not enough credits, or a slot filled by a sweep or another tab between the button being drawn and pressed. The tile is unchanged and a refusal has no surface of its own. The server's own sentence carries the price when the balance is short; this is only the fallback when it has none.",
+  },
   {
     match: '"Discarded — undo is only available on the latest roll"',
     because:
