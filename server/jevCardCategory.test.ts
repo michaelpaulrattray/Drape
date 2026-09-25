@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { CREW_WORK_CATEGORIES } from "../shared/crewWorkSwitches";
+import { CREW_PIPELINE_GROUPS, pipelineGroupFor } from "../shared/crewPipelineGroups";
+import { CREW_WORK_CATEGORIES, homeWorkCategoryFor } from "../shared/crewWorkSwitches";
 import {
   JEV_ENDPOINT,
   JEV_MODEL,
@@ -11,13 +12,19 @@ import {
 } from "../scripts/lib/jev.mts";
 import {
   CARD_CATEGORY_QUESTION_ID,
+  CARD_CATEGORY_TRIAGE_GROUPS,
+  CARD_CATEGORY_WRITE_THRESHOLD,
   NO_CATEGORY,
+  assertApplyThreshold,
   assertCriteriaCover,
   bodyNamesItsOwnCategory,
   buildCardCategoryRequest,
   buildCardState,
+  assertQueueLabelsExist,
   categoryCriteria,
   categoryQuestion,
+  decideCardFiling,
+  filingComment,
 } from "../scripts/lib/jevCardCategory.mts";
 
 /**
@@ -36,13 +43,18 @@ import {
  * proves the constant, not the wire. Every arm below holds the object that
  * `JSON.stringify` will actually serialise into the POST body.
  *
- * # WHAT IS NOT HERE, AND WHY THAT IS THE POINT
+ * # STAGE 2 ARRIVED 2026-09-25 AND ITS ARMS ARE AT THE FOOT OF THIS FILE
  *
- * There are no arms for a WRITER, because no writer exists yet. Stage 2 — the
- * one that may apply a label to a card arriving with none — is gated on stage
- * 1's controls having run and been read, which is the card's own sequencing.
- * Building its threshold gate now would be a control nothing invokes
- * (invariant 7), so it ships with the writer or not at all.
+ * This block read *"there are no arms for a WRITER, because no writer exists
+ * yet"* for exactly one day, which was the correct state while stage 1's
+ * controls were the only thing on the card. They have now run, been read, and
+ * been calibrated against the live queue three times over, so the writer
+ * exists — `scripts/jev-card-category-file.mts` — and its gate ships with the
+ * arms that fire it rather than as a control nothing invokes (invariant 7).
+ *
+ * ⚠ **Its arms drive the DECISION, never the model.** The card asked for
+ * exactly that, and it is working law 3: a threshold whose only test runs
+ * through an LLM that usually behaves has not been tested.
  */
 describe("the Jev wire", () => {
   it("builds the exact body that goes on the POST, model and all", () => {
@@ -301,5 +313,252 @@ describe("the spend line", () => {
     expect(jevSpendUsd(1_000_000)).toBeCloseTo(0.042, 6);
     expect(jevSpendUsd(105_138)).toBeLessThan(0.01);
     expect(jevSpendUsd(0)).toBe(0);
+  });
+});
+
+/**
+ * STAGE 2 — THE WRITER'S DECISION, DRIVEN DIRECTLY.
+ *
+ * ⚠ **Not one arm below goes near Jev, and that is the card's own requirement**
+ * (*"stage 2 refuses to write below threshold — driven directly, not through
+ * Jev"*, working law 3: a backstop whose only test runs through a model that
+ * usually behaves is untested). `decideCardFiling` is a pure function over a
+ * label list, a choice and a number, so every refusal is fired by handing it
+ * the state that should fire it.
+ *
+ * The property worth the most here is not the threshold at all — it is that
+ * **the writer cannot move a card between switches.** A card already carrying
+ * a work label is refused before anything else is looked at, at any
+ * confidence, for every one of the seven labels. That is what makes a wrong
+ * filing cost one deleted label rather than a lost card.
+ */
+describe("the writer's decision (stage 2)", () => {
+  const CONFIDENT = { labels: [] as string[], choice: "bugs", confidence: 0.97 };
+
+  it("files a confident reading on a card that has no work label — the positive control", () => {
+    const decision = decideCardFiling(CONFIDENT);
+    expect(decision.act).toBe("file");
+    expect(decision).toMatchObject({ category: "bugs", queueLabel: "bug" });
+  });
+
+  it("REFUSES to write below the threshold — the arm the card names", () => {
+    const decision = decideCardFiling({ ...CONFIDENT, confidence: 0.84 });
+    expect(decision).toMatchObject({ act: "skip", reason: "below threshold" });
+    expect((decision as { detail: string }).detail).toContain("0.84");
+  });
+
+  it("treats the threshold as a floor a reading may sit exactly on", () => {
+    expect(decideCardFiling({ ...CONFIDENT, confidence: CARD_CATEGORY_WRITE_THRESHOLD }).act).toBe("file");
+    expect(decideCardFiling({ ...CONFIDENT, confidence: CARD_CATEGORY_WRITE_THRESHOLD - 0.0001 }).act).toBe("skip");
+  });
+
+  it("refuses a card that already carries ANY of the seven labels, at full confidence", () => {
+    /* Derived from the source of truth: a category added there is refused here
+       without anyone touching this arm. */
+    for (const category of CREW_WORK_CATEGORIES) {
+      const decision = decideCardFiling({ labels: [category.queueLabel], choice: "bugs", confidence: 1 });
+      expect(decision, `a card carrying ${category.queueLabel} must be left alone`).toMatchObject({
+        act: "skip",
+        reason: "already filed",
+      });
+    }
+  });
+
+  it("checks 'already filed' BEFORE the threshold, so the safety property never depends on the number", () => {
+    const decision = decideCardFiling({ labels: ["bug"], choice: "process", confidence: 0.01 });
+    expect(decision).toMatchObject({ act: "skip", reason: "already filed" });
+  });
+
+  it("agrees with the desk about what 'already filed' means, label for label", () => {
+    for (const category of CREW_WORK_CATEGORIES) {
+      const labels = [category.queueLabel, "rung:N2", "founder-ordered"];
+      expect(homeWorkCategoryFor(labels)).toBe(category.key);
+      expect(decideCardFiling({ labels, choice: "bugs", confidence: 1 }).act).toBe("skip");
+    }
+  });
+
+  it("files nothing when the reader declines the card", () => {
+    expect(decideCardFiling({ ...CONFIDENT, choice: NO_CATEGORY })).toMatchObject({
+      act: "skip",
+      reason: "no category fits",
+    });
+  });
+
+  it("refuses a choice that names no live category rather than handing it to gh", () => {
+    expect(decideCardFiling({ ...CONFIDENT, choice: "seat:warden" })).toMatchObject({
+      act: "skip",
+      reason: "not a live category",
+    });
+    expect(decideCardFiling({ ...CONFIDENT, choice: "" })).toMatchObject({ act: "skip" });
+  });
+
+  it("files every category under its own queue label, derived rather than listed", () => {
+    for (const category of CREW_WORK_CATEGORIES) {
+      expect(decideCardFiling({ labels: [], choice: category.key, confidence: 0.99 })).toMatchObject({
+        act: "file",
+        category: category.key,
+        queueLabel: category.queueLabel,
+      });
+    }
+  });
+
+  it("keeps the gate a real number, where the measurement put it", () => {
+    expect(CARD_CATEGORY_WRITE_THRESHOLD).toBe(0.85);
+    expect(CARD_CATEGORY_WRITE_THRESHOLD).toBeGreaterThan(0);
+    expect(CARD_CATEGORY_WRITE_THRESHOLD).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("the writer refuses a run it cannot finish", () => {
+  const everyLabel = CREW_WORK_CATEGORIES.map((category) => category.queueLabel);
+
+  it("passes when the repository has all seven — the positive control that makes the refusal evidence", () => {
+    expect(() => assertQueueLabelsExist([...everyLabel, "urgent", "blocked"])).not.toThrow();
+  });
+
+  it("refuses when ANY one of them is missing, naming it", () => {
+    for (const missing of everyLabel) {
+      const present = everyLabel.filter((label) => label !== missing);
+      expect(() => assertQueueLabelsExist(present), `a missing ${missing} must refuse`).toThrow(missing);
+    }
+  });
+
+  it("refuses --apply at a lowered gate, and allows a raised one", () => {
+    expect(() => assertApplyThreshold(true, 0.2)).toThrow(/refusing to WRITE/);
+    expect(() => assertApplyThreshold(true, CARD_CATEGORY_WRITE_THRESHOLD)).not.toThrow();
+    expect(() => assertApplyThreshold(true, 0.95)).not.toThrow();
+    /* A report may be run at any gate — that is how the gate was measured. */
+    expect(() => assertApplyThreshold(false, 0.2)).not.toThrow();
+  });
+});
+
+describe("the comment a filed card gets", () => {
+  it("names the category, the confidence and the gate, in the founder's own vocabulary", () => {
+    const comment = filingComment("castingUpkeep", 0.93);
+    expect(comment).toContain("Casting upkeep");
+    expect(comment).toContain("casting-upkeep");
+    expect(comment).toContain("0.93");
+    expect(comment).toContain("0.85");
+  });
+
+  it("says what was NOT done, because that is the reversibility promise", () => {
+    const comment = filingComment("bugs", 0.99);
+    expect(comment).toContain("only ever ADDS");
+    expect(comment).toContain("nothing was moved");
+  });
+
+  it("writes a comment for every category without a hole in the list", () => {
+    for (const category of CREW_WORK_CATEGORIES) {
+      const comment = filingComment(category.key, 0.9);
+      expect(comment, `${category.key} must name its own label`).toContain(category.queueLabel);
+    }
+  });
+});
+
+/**
+ * THE TRIAGE-ONLY REFUSAL — the arms that stopped stage 2's first apply run,
+ * and then its first REVIEW.
+ *
+ * ⚠ **Both specimens are real and both were confident.** #14 and #30 are
+ * unbuilt product features on `rung:N3` that Jev read as `process` at 0.92 —
+ * above any gate the correct readings beside them would survive. And #1196 is
+ * `debt`, read at 0.94, which the ladder guard let through and the relay's
+ * review caught on the PR: filing it homed a card the desk was holding for him
+ * under a switch a shift may take.
+ *
+ * So the population is the two groups the desk itself calls untriaged, and the
+ * `debt` arm below is the finding's pin — **it was a positive control in the
+ * first version of this file, asserting the exact behaviour that was wrong.**
+ */
+describe("the writer files only what the desk calls untriaged", () => {
+  const CONFIDENT = { choice: "process", confidence: 0.99 };
+
+  it("refuses every group that is not a triage group, walking the real list", () => {
+    for (const group of CREW_PIPELINE_GROUPS) {
+      if (CARD_CATEGORY_TRIAGE_GROUPS.includes(group.key)) continue;
+      /* `switched` is the group a work label produces, so it is unreachable
+         here by construction — `already filed` answers first. The rung group
+         has no `queueLabel`; it is matched on the prefix. */
+      if (group.key === "switched") continue;
+      const labels = group.queueLabel !== null ? [group.queueLabel] : ["rung:N3"];
+      expect(pipelineGroupFor(labels), `${group.key} must still be its own group`).toBe(group.key);
+      expect(decideCardFiling({ ...CONFIDENT, labels }), `${group.key} must be left alone`).toMatchObject({
+        act: "skip",
+        reason: "homed elsewhere",
+      });
+    }
+  });
+
+  it("refuses #14, #30 and #1196 as they actually stood, at the confidence Jev actually gave them", () => {
+    /* The measured specimens, not invented ones. */
+    expect(decideCardFiling({ labels: ["debt", "roadmap", "rung:N3"], choice: "process", confidence: 0.92 })).toMatchObject(
+      { act: "skip", reason: "homed elsewhere" },
+    );
+    expect(
+      decideCardFiling({ labels: ["design-unbuilt", "roadmap", "rung:N3"], choice: "process", confidence: 0.92 }),
+    ).toMatchObject({ act: "skip", reason: "homed elsewhere" });
+    /* ⚠ #1196 — `debt` alone. This was a POSITIVE control here until the
+       relay's review, asserting that it files. It is the finding. */
+    expect(pipelineGroupFor(["debt"])).toBe("debt");
+    expect(decideCardFiling({ labels: ["debt"], choice: "process", confidence: 0.94 })).toMatchObject({
+      act: "skip",
+      reason: "homed elsewhere",
+    });
+  });
+
+  it("names the section his desk draws the card under, so the reason is readable", () => {
+    const decision = decideCardFiling({ labels: ["debt"], choice: "process", confidence: 0.94 });
+    expect((decision as { detail: string }).detail).toContain("Debt");
+  });
+
+  it("STILL FILES both triage groups — the positive control that makes the refusal evidence", () => {
+    /* Without this a refusal that swallowed everything would pass the arms
+       above, which is the shape a deny-list-turned-allow-list most easily
+       takes. `unfiled` is no labels at all; `other` is labels the panel does
+       not name. */
+    expect(pipelineGroupFor([])).toBe("unfiled");
+    expect(decideCardFiling({ labels: [], choice: "process", confidence: 0.93 })).toMatchObject({
+      act: "file",
+      queueLabel: "seat:retro",
+    });
+    expect(pipelineGroupFor(["needs-design"])).toBe("other");
+    expect(decideCardFiling({ labels: ["needs-design"], choice: "bugs", confidence: 0.93 })).toMatchObject({
+      act: "file",
+      queueLabel: "bug",
+    });
+  });
+
+  it("keeps every triage group a real group key, which is the one drift a named list can take", () => {
+    const keys = CREW_PIPELINE_GROUPS.map((group) => group.key);
+    for (const key of CARD_CATEGORY_TRIAGE_GROUPS) {
+      expect(keys, `"${key}" must name a live pipeline group`).toContain(key);
+    }
+    expect(CARD_CATEGORY_TRIAGE_GROUPS.length).toBeGreaterThan(0);
+  });
+
+  it("does NOT derive the list from backgroundWork, because that flag answers another question", () => {
+    /* ⚠ The pin on the reason the list is named rather than derived: the flag
+       is TRUE on `debt` and `toolbelt`, the two groups this refusal most needs.
+       If that ever stops being so, this arm reddens and the derivation becomes
+       available — which is the honest way to hold the decision open. */
+    const backgroundWorkKeys = CREW_PIPELINE_GROUPS.filter((group) => group.backgroundWork).map((group) => group.key);
+    expect(backgroundWorkKeys).toContain("debt");
+    expect(backgroundWorkKeys).toContain("toolbelt");
+    expect(CARD_CATEGORY_TRIAGE_GROUPS).not.toContain("debt");
+    expect(CARD_CATEGORY_TRIAGE_GROUPS).not.toContain("toolbelt");
+  });
+
+  it("checks the home BEFORE the reading, so a low confidence cannot disguise the reason", () => {
+    expect(decideCardFiling({ labels: ["roadmap"], choice: NO_CATEGORY, confidence: 0.01 })).toMatchObject({
+      act: "skip",
+      reason: "homed elsewhere",
+    });
+  });
+
+  it("still puts 'already filed' first, because that is the reversibility promise", () => {
+    expect(decideCardFiling({ labels: ["roadmap", "bug"], choice: "process", confidence: 0.99 })).toMatchObject({
+      act: "skip",
+      reason: "already filed",
+    });
   });
 });

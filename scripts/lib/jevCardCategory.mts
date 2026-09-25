@@ -38,6 +38,7 @@
  * the check measures and reports how many do rather than claiming it cannot
  * happen.
  */
+import { CREW_PIPELINE_GROUPS, pipelineGroupFor } from "../../shared/crewPipelineGroups.js";
 import { CREW_WORK_CATEGORIES, type CrewWorkCategoryKey } from "../../shared/crewWorkSwitches.js";
 import { buildSystemOneRequest, type JevChoiceQuestion } from "./jev.mjs";
 
@@ -175,4 +176,213 @@ export function bodyNamesItsOwnCategory(card: CardForReading, homeKey: CrewWorkC
   if (!category) return false;
   const haystack = `${card.title}\n${card.body ?? ""}`.toLowerCase();
   return haystack.includes(category.queueLabel.toLowerCase());
+}
+
+/* ── STAGE 2: THE WRITER'S DECISION ────────────────────────────────────────
+   Everything below is the writer half of #1224. The ACT of writing lives in
+   `scripts/jev-card-category-file.mts`; the DECISION lives here, as a pure
+   function, so the one arm the card names — *refuses to write below
+   threshold, driven directly, not through Jev* — can drive it without a
+   network, a model, or a mock standing in for either (working law 3). */
+
+/**
+ * THE GATE, AND IT IS A MEASURED NUMBER RATHER THAN A CHOSEN ONE.
+ *
+ * ⚠ **The controls cannot set this and the stage-1 script says so out loud.**
+ * With no control WRONG, a fixture sweep only shows the reader was right
+ * everywhere it was looked at; its "lowest correct" figure is a FLOOR, and it
+ * moved 0.47 / 0.52 / 0.58 / 0.64 across four runs of identical fixtures.
+ *
+ * This figure comes from the live queue, read three times over on
+ * 2026-09-25 (63 open cards x 3 passes, $0.0125, recorded on #1224):
+ *
+ *   - **CHOICE is stable**: 62 of 63 cards gave the same answer on all three
+ *     passes. The single flip was #129, at 0.22 — nowhere near this gate.
+ *   - **CONFIDENCE wobbles a little**: spread per card median 0.030, worst
+ *     0.110.
+ *   - **Seven confident disagreements, seven times the LABEL was wrong** —
+ *     the six of #1245 plus #1179, each read at the card by hand. Zero
+ *     confident errors.
+ *   - **Every error the reader has made sat at or below 0.61** (#1212 0.52,
+ *     #1218 0.41, and the arguable band below that).
+ *
+ * So the gate is set where it has 0.24 of headroom over the highest measured
+ * error, which is more than twice the reader's own worst wobble — no error
+ * yet seen could drift across it. **And on the day it was set, no unlabelled
+ * card's confidence straddled it**: the population ran 0.90 and up, then a
+ * clean gap, then 0.80 and down.
+ *
+ * ⚠ **It is a floor for WRITING, never a claim that a lower reading is
+ * wrong.** Below it the card is left exactly as it arrived, for a person.
+ */
+export const CARD_CATEGORY_WRITE_THRESHOLD = 0.85;
+
+export type FilingSkipReason =
+  | "already filed"
+  | "homed elsewhere"
+  | "no category fits"
+  | "below threshold"
+  | "not a live category";
+
+export type FilingDecision =
+  | { readonly act: "file"; readonly category: CrewWorkCategoryKey; readonly queueLabel: string }
+  | { readonly act: "skip"; readonly reason: FilingSkipReason; readonly detail: string };
+
+/**
+ * ⚠ **THE WRITER FILES ONLY WHAT THE DESK ITSELF CALLS UNTRIAGED. EVERY OTHER
+ * GROUP IS SOMEBODY'S, AND THIS LIST GOT THERE IN TWO STEPS — BOTH MEASURED,
+ * AND THE SECOND ONE IS A REVIEW FINDING ON THE PR THAT BUILT IT.**
+ *
+ * **Step one — the ladder.** At a 0.85 gate the writer's first live population
+ * was six cards, and two were **#14** (the Pinterest-style reference selector)
+ * and **#30** (the auto-discovery scan) — unbuilt product features on
+ * `rung:N3`. Jev read both as `process` at **0.92**, confident and wrong, with
+ * correct readings at 0.92–0.98 beside them. **No threshold separates those.**
+ * It is barely even a mis-read: both bodies are mostly prose ABOUT the team's
+ * own filing (*"it fell through the flag-derived register"*, *"naming it here
+ * is the point"*), so the text reads as process work while what the card asks
+ * for is a feature build.
+ *
+ * **Step two — everything else his desk homes.** The ladder guard stopped one
+ * group short, and the first apply run walked straight into the gap: **#1196
+ * is `debt`**, the writer filed it `seat:retro` at 0.94, and the group's own
+ * blurb reads *"Carded cleanup — it needs your word because the scope varies."*
+ * `scope-change` (*"yours to rule on"*) and `blocked` (*"waiting on something
+ * the card names"*) sit the same way; `lost-and-found` is a catalogue and
+ * `patrol` is a clock, and a work label would make either into a queue item.
+ *
+ * **Why the consequence is structural rather than cosmetic**, read at
+ * `pipelineGroupFor`: **a switch label is matched BEFORE every other group.**
+ * So filing any of these takes the card out of the section that was holding it
+ * for him and files it under *On offer above* — a machine moving work into the
+ * population a background shift may take. That is the milestone gate (*"the
+ * team NEVER selects the next feature"*) and the card's own rule: **never a
+ * rung or a road.**
+ *
+ * ⚠ **AND THE TEMPTING DERIVATION IS THE ONE TRAP THIS MODULE HAS ALREADY
+ * FALLEN INTO ONCE.** `CrewPipelineGroup` carries a `backgroundWork` flag that
+ * looks made for this, and it is not: it answers *"could a shift work this if
+ * only a switch reached it"*, which is **`true` on `debt` and `toolbelt`** —
+ * the two groups this list most needs to refuse. Its own field and its own
+ * blurb disagree about `debt` in the same object. Deriving from it would be
+ * working law 4 applied where its precondition fails, exactly as reusing the
+ * switch `blurb`s as Jev's criteria would have been (see the header). **So the
+ * list is NAMED, with its reason, and an arm holds every entry to being a real
+ * group key** — which catches a rename, the only drift a named list can take.
+ *
+ * ⚠ **It narrows the card's stated population, declared rather than quiet.**
+ * #1224 says *"cards that arrive with no work label (the Unfiled row; 0
+ * today)"* — two different populations in one sentence, since the Unfiled row
+ * is cards with no labels at all. This lands on the parenthetical: the Unfiled
+ * row, plus `other`, whose blurb is *"worth a look, they may want a category"*.
+ */
+export const CARD_CATEGORY_TRIAGE_GROUPS: readonly string[] = ["unfiled", "other"];
+
+/**
+ * Should this card be filed, and under which label?
+ *
+ * ⚠ **"already filed" is checked FIRST and it is the whole safety property of
+ * stage 2.** The writer only ever ADDS a label to a card carrying none, so it
+ * is structurally unable to move a card between switches — which is the act
+ * that changes what a shift takes and what his page shows him. A reader that
+ * could relabel would need a human in front of every verdict; one that can
+ * only fill a blank is reversible by deleting one label.
+ *
+ * The other three refusals are ordered after it because they are about the
+ * READING, and a card that is already filed is not read at all.
+ */
+export function decideCardFiling(input: {
+  readonly labels: readonly string[];
+  readonly choice: string;
+  readonly confidence: number;
+  readonly threshold?: number;
+}): FilingDecision {
+  const threshold = input.threshold ?? CARD_CATEGORY_WRITE_THRESHOLD;
+
+  const home = CREW_WORK_CATEGORIES.find((category) => input.labels.includes(category.queueLabel));
+  if (home) {
+    return { act: "skip", reason: "already filed", detail: `carries ${home.queueLabel}` };
+  }
+  /* Only the two triage groups are filed — see the block above this function.
+     `pipelineGroupFor` answers `switched` first for any card carrying a work
+     label, so this reading is only ever reached once we know there is none,
+     which is exactly when it says which section of his desk draws the card. */
+  const group = pipelineGroupFor(input.labels);
+  if (!CARD_CATEGORY_TRIAGE_GROUPS.includes(group)) {
+    const drawn = CREW_PIPELINE_GROUPS.find((candidate) => candidate.key === group);
+    return {
+      act: "skip",
+      reason: "homed elsewhere",
+      detail: `his desk draws it under "${drawn?.label ?? group}"`,
+    };
+  }
+  if (input.choice === NO_CATEGORY) {
+    return { act: "skip", reason: "no category fits", detail: "the reader declined" };
+  }
+  const category = CREW_WORK_CATEGORIES.find((entry) => entry.key === input.choice);
+  /* A choice naming no live category is REFUSED rather than passed to `gh`,
+     which would either fail the run or — worse, if the string happened to be
+     a real label — file the card somewhere the desk cannot home. */
+  if (!category) {
+    return { act: "skip", reason: "not a live category", detail: `read "${input.choice}"` };
+  }
+  if (!(input.confidence >= threshold)) {
+    return {
+      act: "skip",
+      reason: "below threshold",
+      detail: `${input.confidence.toFixed(2)} < ${threshold.toFixed(2)}`,
+    };
+  }
+  return { act: "file", category: category.key, queueLabel: category.queueLabel };
+}
+
+/**
+ * THE WRITER MUST NOT START A RUN IT CANNOT FINISH.
+ *
+ * `gh issue edit --add-label` fails on a label the repository does not have,
+ * so a missing label turns a sweep into a half-applied sweep — some cards
+ * filed, some not, and no record of which. Read the repository's labels once
+ * and refuse the whole run instead.
+ */
+export function assertQueueLabelsExist(repoLabels: readonly string[]): void {
+  const missing = CREW_WORK_CATEGORIES.map((category) => category.queueLabel).filter(
+    (label) => !repoLabels.includes(label),
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      `jevCardCategory: the repository has no label ${missing.map((l) => `"${l}"`).join(", ")} — ` +
+        "refusing the run rather than filing some cards and failing on others",
+    );
+  }
+}
+
+/** The comment a filed card gets: what was done, how sure, and how to undo it. */
+export function filingComment(category: CrewWorkCategoryKey, confidence: number): string {
+  const entry = CREW_WORK_CATEGORIES.find((candidate) => candidate.key === category)!;
+  return [
+    `**Filed by the card-category reader** (#1224 stage 2, his ruling of 2026-09-25: *"Where-ever jev can genuinely improve my agents workflow it should be used"*).`,
+    "",
+    `This card arrived with no work label, so nothing on the crew page knew which switch it belonged under. It reads as **${entry.label}** — \`${entry.queueLabel}\` — at ${confidence.toFixed(2)} confidence, above the ${CARD_CATEGORY_WRITE_THRESHOLD.toFixed(2)} the reader is allowed to write at.`,
+    "",
+    `The reader only ever ADDS a label to a card that had none, so nothing was moved off this card and no work changed hands. If this is the wrong switch, swap the label and say so here — the reader is never consulted twice about the same card.`,
+  ].join("\n");
+}
+
+/**
+ * A CALIBRATION READ MAY LOWER THE GATE. A WRITE MAY NOT.
+ *
+ * `--threshold` exists so the gate itself can be re-measured against the live
+ * queue — which is how the number above was arrived at, and how it will be
+ * re-arrived at when the reader or the criteria change. Combined with
+ * `--apply` it would be a road to filing the whole queue at 0.2 from one
+ * mistyped flag, so the two are refused together. Raising the gate for a
+ * cautious run is allowed, because that direction only files less.
+ */
+export function assertApplyThreshold(apply: boolean, threshold: number): void {
+  if (apply && threshold < CARD_CATEGORY_WRITE_THRESHOLD) {
+    throw new Error(
+      `jevCardCategory: refusing to WRITE at ${threshold.toFixed(2)} — the measured gate is ` +
+        `${CARD_CATEGORY_WRITE_THRESHOLD.toFixed(2)}. Lower it for a report, never for an apply.`,
+    );
+  }
 }
