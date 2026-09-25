@@ -28,6 +28,8 @@ import { z } from "zod";
 import { adminProcedure, router } from "../_core/trpc";
 import { crewBriefingForPage, readCrewBriefing } from "../crew/crewBriefing";
 import { captureCrewTabEnabled } from "../crew/crewTabScope";
+import { deriveLiveDesk, type LiveDeskState } from "../crew/liveDesk";
+import { readLiveQueue } from "../crew/liveQueue";
 import { readCrewCardIntents, setCrewCardIntent } from "../db/crewCardIntents";
 import { insertCrewReply, listCrewReplies } from "../db/crewReplies";
 import { listCrewShiftRuns } from "../db/crewShiftRuns";
@@ -109,6 +111,17 @@ const cardIntentInput = z.object({
   intent: z.enum(CREW_CARD_INTENT_KEYS as unknown as [string, ...string[]]).nullable(),
 }).strict();
 
+async function liveDeskState(rungKeys: readonly string[]): Promise<LiveDeskState> {
+  const queue = await readLiveQueue();
+  if (!queue.available) return { available: false, why: queue.why };
+  return {
+    available: true,
+    stale: queue.stale,
+    why: queue.stale ? queue.why : null,
+    desk: deriveLiveDesk(queue, rungKeys),
+  };
+}
+
 export const crewRouter = router({
   /**
    * The whole page in one call: the deployed briefing, every reply, and what
@@ -151,8 +164,18 @@ export const crewRouter = router({
        titles this same query carries, so two queries would draw one list from
        two moments. */
     const cardIntents = await readCrewCardIntents();
+    /* THE LIVE HALF (#1193). GitHub is read through one cached reader and the
+       page's lists are DERIVED from it here — the ladder's cards per rung,
+       NEXT UP, the open PRs, what finished in the last two days — rather than
+       copied out of the edition. It rides this call for `shiftRuns`' reason:
+       one instant, one page. A GitHub that does not answer degrades to the
+       last good reading marked stale, or to `available: false` when there has
+       never been one, and the page falls back to the edition's own snapshot
+       and SAYS so. It never throws: a Desk that cannot reach GitHub is a Desk
+       that is one cycle behind, which is what it was until today. */
+    const live = await liveDeskState(briefing.program.ladder.map((rung) => rung.key));
 
-    return { briefing, replies, shiftRuns, workState, cardIntents };
+    return { briefing, replies, shiftRuns, workState, cardIntents, live };
   }),
 
   /**

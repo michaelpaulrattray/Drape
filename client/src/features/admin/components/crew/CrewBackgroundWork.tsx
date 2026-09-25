@@ -107,16 +107,7 @@ import { TableHead } from "@/foundation";
 import type { CrewCardIntentsView, CrewWorkStateView } from "./crewTypes";
 
 /** "counted 14 min ago" — coarse, like everything else on this page. */
-function ago(value: Date | string, now: number): string {
-  const then = value instanceof Date ? value.getTime() : new Date(value).getTime();
-  if (!Number.isFinite(then)) return "unknown";
-  const minutes = Math.max(0, Math.round((now - then) / 60_000));
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
-  return `${Math.round(hours / 24)} d ago`;
-}
+import { ago } from "./crewAgo";
 
 /**
  * The switch itself.

@@ -35,7 +35,8 @@ import { TableHead } from "@/foundation";
 import { staffDateTime } from "@/foundation/staffDate";
 import { CardTitles } from "./CrewCardTitles";
 import { milestoneCountLine, milestoneProgress } from "./crewTypes";
-import type { CrewBriefingView, CrewCardIntentsView } from "./crewTypes";
+import type { CrewBriefingView, CrewCardIntentsView, CrewLadderCardsSource, CrewQueueRead } from "./crewTypes";
+import { QueueReadStamp } from "./QueueReadStamp";
 
 const FOCUS_LABEL: Record<string, string> = {
   confirmed: "Confirmed",
@@ -131,9 +132,13 @@ const UNPLACED_KEY = "unplaced";
 const rungSetKey = (key: string) => `rung:${key}`;
 
 export function CrewProgramBanner({
-  program, cardIntents, onIntent, intentPendingCard,
+  program, ladderCards, queueRead, now, cardIntents, onIntent, intentPendingCard,
 }: {
   program: CrewBriefingView["program"];
+  /** The ladder's cards — live from GitHub when it answers, the edition's list otherwise (#1193). */
+  ladderCards: CrewLadderCardsSource;
+  queueRead: CrewQueueRead;
+  now: number;
   cardIntents: CrewCardIntentsView;
   onIntent: (issueNumber: number, intent: "close" | null) => void;
   intentPendingCard: number | null;
@@ -145,6 +150,17 @@ export function CrewProgramBanner({
     always-open would be the split he declined arriving as clutter.
   */
   const [openRungs, setOpenRungs] = useState<ReadonlySet<string>>(new Set());
+  /*
+    FINISHED STEPS FOLD (#1193, 2026-09-25). His words: *"its difficult for me
+    to decipher what is actually going on … i must be able to see the main
+    program we are working on which milestones we are on etc still"*. On the
+    day he said it the milestone held 28 done steps of long prose above the
+    one in progress and the one waiting, so "which milestone we are on" was
+    two screens down. The bar and the count still read off EVERY step; what
+    folds is the reading copy of the finished ones, one tap away. Nothing is
+    trimmed or paraphrased — a folded step is the whole step.
+  */
+  const [showDone, setShowDone] = useState(false);
   const toggleRung = (key: string) =>
     setOpenRungs((current) => {
       const next = new Set(current);
@@ -158,7 +174,7 @@ export function CrewProgramBanner({
     *parked* / *unbuilt design* on the rows that are not ordinary roadmap
     work, from one kind map the titles component draws.
   */
-  const ladderItems = program.ladderCards.items;
+  const ladderItems = ladderCards.items;
   const kindByNumber = new Map(ladderItems.map((item) => [item.issueNumber, item.kind]));
   const markOf = (card: CrewQueueTitle) => LADDER_KIND_WORD[kindByNumber.get(card.number) ?? ""] ?? null;
   const cardsOn = (rungKey: string | null): CrewQueueTitle[] =>
@@ -276,7 +292,7 @@ export function CrewProgramBanner({
           })()}
 
           <ol className="dp-crew__steps">
-            {program.milestone.steps.map((step, index) => (
+            {program.milestone.steps.map((step, index) => (showDone || step.state !== "done") && (
               <li key={`${index}-${step.title}`} className="dp-crew__step">
                 {/* aria-hidden: the state is said in words in the pill at the
                     row's end, so a screen reader hearing the marker too would
@@ -309,6 +325,21 @@ export function CrewProgramBanner({
               </li>
             ))}
           </ol>
+          {(() => {
+            const done = program.milestone.steps.filter((step) => step.state === "done").length;
+            if (done === 0) return null;
+            return (
+              <button
+                type="button"
+                className="dp-crew__more"
+                aria-expanded={showDone}
+                onClick={() => setShowDone((current) => !current)}
+                data-testid="crew-milestone-done-toggle"
+              >
+                {showDone ? `Hide the ${done} finished` : `Show the ${done} finished`}
+              </button>
+            );
+          })()}
         </div>
       )}
 
@@ -319,9 +350,7 @@ export function CrewProgramBanner({
               it looked rather than implying an instant it does not have. */}
           <div className="dp-crew__ladderhead">
             <h3 className="dp-crew__subhead">The ladder</h3>
-            {ladderItems.length > 0 && (
-              <span className="dp-chrome dp-crew__mono">queue read {staffDateTime(program.ladderCards.readAt)}</span>
-            )}
+            <QueueReadStamp read={queueRead} now={now} />
           </div>
 
           {/* The rung bar (#74 item 2) — the whole climb in one glance: filled

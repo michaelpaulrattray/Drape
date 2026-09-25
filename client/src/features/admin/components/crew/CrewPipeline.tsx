@@ -1,62 +1,23 @@
 /**
- * WHAT IS NOT DONE — the pipeline, cut to the rows that can change what he
- * does (#291).
+ * IN FLIGHT — every open pull request, read from GitHub (#1193).
  *
- * His verdict, verbatim: *"yeah your right the current pipeline design is a
- * mess a massive list i cant tell whats going on"*. It held **107 entries and
- * 92 were merged** — a changelog presented as a status view, with the fifteen
- * rows that mattered scattered through it.
+ * This block was NOT DONE YET: the edition's pipeline rows minus the merged
+ * ones, which meant a row read *in review* for an hour after it merged. It
+ * now draws the PRs that are open RIGHT NOW, each with the one word that says
+ * what it is waiting for — the gate, the reviewer's hand verdict, or its own
+ * author (a draft) — and the cards its title names, so a change and the card
+ * it closes are one row rather than two lists.
  *
- * Two changes, and neither is cosmetic:
- *
- *  - **the merged rows left.** They are history and they now live in the one
- *    recent-history block with everything else he has already dealt with.
- *    This section is only what is still moving, still stuck, or still his.
- *  - **the order is by how much a row wants a human** — blocked, then waiting
- *    on him, then in review, then building — rather than by when a shift
- *    happened to write it down.
- *
- * ⚠ **`waiting-founder` IS NOT A WORD A SHIFT MAY SIMPLY TYPE ANY MORE.** Seven
- * rows here said "Waiting on you" while his desk said nothing was, and both
- * sections were on the same screen. The schema now refuses a `waiting-founder`
- * row that does not name an OPEN needs-you card, so the day he answers, the
- * row goes red in the next shift's own commit instead of quietly outliving his
- * reply.
- *
- * ⚠ **THE HEADING KEEPS ITS WORDS (#398 §1).** Brief 08's §3 calls this section
- * `THE PIPELINE`. It says *Not done yet*, which is #291 — his own ruling above
- * — and §1 is explicit that where the mockup and the built Crew disagree on
- * content, the built one wins. The head changed FACE, not words.
- *
- * # ⚠ THE EMPTY LINE SAYS WHAT THE SECTION IS FOR (#438)
- *
- * He asked whether this section and `ALREADY DEALT WITH` were cards he even
- * needed. **The measurement answered the two differently**: at edition 209 the
- * history block held 281 rows and this one held NONE, because every pipeline
- * row was merged. So the history block went and this one stayed — **and its
- * emptiness is the argument FOR it.** This is the only place a card appears
- * that is blocked, waiting on him, in review or building AND is not in his
- * `founder-ordered` queue (that is NEXT UP) and not a step of the current
- * milestone (that is THE PROGRAM). Delete it and that card is invisible until
- * somebody happens to open GitHub — the exact failure of #321, which he found
- * himself.
- *
- * ⚠ **The old line said *"Nothing is in flight. Everything the crew has started
- * has landed."*, which described the rows and taught him nothing.** An empty
- * box has to say what a FULL one would mean, or "nothing is stuck" and "this
- * section is broken" look identical — the same ambiguity §6 protects
- * `CrewNeedsYou`'s empty state from, in his own words: *"its absence would read
- * as a loading failure."*
- *
- * ⚠ **AND THIS IS DELIBERATELY THE OPPOSITE OF BRIEF 07's RULE** for Overview's
- * `NEEDS A HUMAN`, where a section with nothing to show disappears. The
- * difference is the one brief 08 already drew: **Overview is SCANNED for
- * exceptions; this page is READ.** Do not "harmonise" the two.
+ * When GitHub has not answered the edition's rows are drawn instead, under a
+ * stamp that says so; that is the page as it was until today, and it is
+ * still better than an empty block pretending nothing is open.
  */
 import { cn } from "@/lib/utils";
 import { TableHead } from "@/foundation";
+import { ago } from "./crewAgo";
 import { pipelineNotDone } from "./crewTypes";
-import type { CrewPipelineItem } from "./crewTypes";
+import type { CrewLivePullRequest, CrewLiveView, CrewPipelineItem, CrewQueueRead } from "./crewTypes";
+import { QueueReadStamp } from "./QueueReadStamp";
 
 const STATUS_LABEL: Record<string, string> = {
   building: "Building",
@@ -66,7 +27,14 @@ const STATUS_LABEL: Record<string, string> = {
   blocked: "Blocked",
 };
 
-function PipelineRow({ item }: { item: CrewPipelineItem }) {
+/** The one word per PR, in his terms — what it is waiting for, never what tool holds it. */
+const PR_STATE_LABEL: Record<CrewLivePullRequest["state"], string> = {
+  draft: "Still being written",
+  held: "Waiting for review",
+  gate: "In the gate",
+};
+
+function SnapshotRow({ item }: { item: CrewPipelineItem }) {
   const wantsAHuman = item.status === "waiting-founder" || item.status === "blocked";
   return (
     <li className="dp-crew__row">
@@ -77,31 +45,67 @@ function PipelineRow({ item }: { item: CrewPipelineItem }) {
         {item.title}
         {item.note && <span className="dp-crew__rowwhy">{item.note}</span>}
       </span>
-      {/* A PR number is a measured value, so it is mono (§4). */}
       {item.prNumber !== null && <span className="dp-chrome dp-crew__mono">PR {item.prNumber}</span>}
     </li>
   );
 }
 
-export function CrewPipeline({ items }: { items: readonly CrewPipelineItem[] }) {
-  const notDone = pipelineNotDone(items);
+function LiveRow({ pr, now }: { pr: CrewLivePullRequest; now: number }) {
+  return (
+    <li className="dp-crew__row" data-testid={`crew-pr-${pr.number}`}>
+      <span className={cn("dp-crew__status", pr.state === "held" && "dp-crew__status--wants")}>
+        {PR_STATE_LABEL[pr.state]}
+      </span>
+      <span className="dp-crew__rowmain">
+        <a className="dp-crew__link" href={pr.url} target="_blank" rel="noreferrer">{pr.title}</a>
+        <span className="dp-crew__rowwhy">
+          touched {ago(pr.updatedAt, now)}
+          {pr.cards.length > 0 && (
+            <> · for {pr.cards.map((card, index) => (
+              <span key={card}>{index > 0 ? ", " : ""}<a className="dp-chrome dp-crew__ref" href={`#crew-issue-${card}`}>#{card}</a></span>
+            ))}</>
+          )}
+        </span>
+      </span>
+      <span className="dp-chrome dp-crew__mono">PR {pr.number}</span>
+    </li>
+  );
+}
 
+export function CrewPipeline({
+  live, snapshot, queueRead, now,
+}: {
+  live: CrewLiveView;
+  snapshot: readonly CrewPipelineItem[];
+  queueRead: CrewQueueRead;
+  now: number;
+}) {
+  const liveRows = live.available ? live.desk.pullRequests : null;
+  const snapshotRows = pipelineNotDone(snapshot);
+  const count = liveRows ? liveRows.length : snapshotRows.length;
   return (
     <section className="dp-crew__card" data-testid="crew-pipeline">
-      <TableHead eyebrow="Not done yet">
-        {notDone.length > 0 && <span className="dp-crew__meta">{notDone.length} open</span>}
+      <TableHead eyebrow="In flight">
+        {count > 0 && <span className="dp-crew__meta">{count} open</span>}
+        <QueueReadStamp read={queueRead} now={now} />
       </TableHead>
-      {notDone.length === 0 ? (
-        /* A `--well` block, the same treatment as `CrewNeedsYou`'s empty state
-           (§6) — present, and visibly not a thing to act on. */
+      {liveRows ? (
+        liveRows.length === 0 ? (
+          <div className="dp-crew__well dp-crew__gap">
+            Nothing is in flight. A pull request appears here the moment a shift opens one.
+          </div>
+        ) : (
+          <ul className="dp-crew__rows dp-crew__gap">
+            {liveRows.map((pr) => <LiveRow key={pr.number} pr={pr} now={now} />)}
+          </ul>
+        )
+      ) : snapshotRows.length === 0 ? (
         <div className="dp-crew__well dp-crew__gap">
           Nothing is stuck. Blocked work and anything waiting on you appears here.
         </div>
       ) : (
         <ul className="dp-crew__rows dp-crew__gap">
-          {notDone.map((item) => (
-            <PipelineRow key={item.id} item={item} />
-          ))}
+          {snapshotRows.map((item) => <SnapshotRow key={item.id} item={item} />)}
         </ul>
       )}
     </section>

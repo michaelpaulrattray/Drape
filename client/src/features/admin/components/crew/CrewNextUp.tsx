@@ -34,15 +34,20 @@
  */
 import { cn } from "@/lib/utils";
 import { TableHead } from "@/foundation";
-import { staffDateTime } from "@/foundation/staffDate";
 import { heldCount, nextUpRows } from "./crewTypes";
-import type { CrewBriefingView, CrewNeedsYouCard } from "./crewTypes";
+import type { CrewNeedsYouCard, CrewNextUpSource, CrewQueueRead } from "./crewTypes";
+import { QueueReadStamp } from "./QueueReadStamp";
 
 export function CrewNextUp({
   nextUp,
+  queueRead,
+  now,
   cards,
 }: {
-  nextUp: CrewBriefingView["nextUp"];
+  /** Live from GitHub when it answers, the edition's list otherwise (#1193). */
+  nextUp: CrewNextUpSource;
+  queueRead: CrewQueueRead;
+  now: number;
   cards: readonly CrewNeedsYouCard[];
 }) {
   const rows = nextUpRows(nextUp, cards);
@@ -54,7 +59,7 @@ export function CrewNextUp({
           rides beside it — both are measured values, so both are mono. */}
       <TableHead eyebrow="Next up">
         {rows.length > 0 && <span className="dp-crew__meta">{rows.length} open</span>}
-        <span className="dp-chrome dp-crew__mono">queue read {staffDateTime(nextUp.readAt)}</span>
+        <QueueReadStamp read={queueRead} now={now} />
       </TableHead>
 
       {rows.length === 0 ? (
