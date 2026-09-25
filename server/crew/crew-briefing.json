@@ -1,7 +1,7 @@
 {
-  "edition": 520,
-  "updatedAt": "2026-09-25T00:53:30.796Z",
-  "shift": "Foreman - #1134 what a picture costs the house",
+  "edition": 521,
+  "updatedAt": "2026-09-25T02:32:39.650Z",
+  "shift": "Foreman — #203 step (e): the wardrobe/basics path is fully retired",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -136,6 +136,10 @@
         {
           "title": "And now it has two. The check that proves a cast belongs to you — the one we broke on purpose last night and nothing noticed — is driven from both ends: one arm reads the code on every single change and refuses a statement that has stopped naming the owner, the other builds a throwaway database, puts a stranger's cast in front of your account and proves it comes back empty. We broke it again to check each arm notices. Both do, and the throwaway database was dropped either way",
           "state": "done"
+        },
+        {
+          "title": "The wardrobe/basics path is now completely gone (#203) — and this was the last piece of it. Back when a cast was bought you could choose whether she was born in an outfit or in plain black basics. That choice was switched off weeks ago and you unset its setting yourself on Wednesday; what went tonight is the machinery underneath it and the setting itself, so there is nothing left that could turn it back on by accident. Nothing about casting changes for you: every roll already behaved this way. ⚠ What we deliberately KEPT is the part worth knowing — the record of which thirteen old rolls were bought on a path stays exactly as it is, because it is the only way to tell a cast made before the new studio from one made after it, and a cast born in basics still reads correctly when you refine her today.",
+          "state": "done"
         }
       ]
     },
@@ -214,7 +218,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-25T00:54:12.102Z",
+      "readAt": "2026-09-25T02:32:57.078Z",
       "items": [
         {
           "issueNumber": 179,
@@ -225,12 +229,6 @@
         {
           "issueNumber": 180,
           "title": "N2: THE GHOST AUDIT — enumerate every piece of old-lane machinery still running under the author road (categories, dice, archetypes, personas); the Follow ghost (#176) is specimen #1 (founder flag, 2026-08-27)",
-          "kind": "roadmap",
-          "rung": "N2"
-        },
-        {
-          "issueNumber": 203,
-          "title": "N2: RETIRE the wardrobe/basics two-paths machinery — founder ruling in advance ('yeah we will retire the wardrobe/basics path obviously', 2026-08-28)",
           "kind": "roadmap",
           "rung": "N2"
         },
@@ -247,9 +245,9 @@
           "rung": "N2"
         },
         {
-          "issueNumber": 1134,
-          "title": "N2: the roll engine's two unread numbers — what a 2.5 picture costs the house, and a matched refusal rate",
-          "kind": "roadmap",
+          "issueNumber": 1129,
+          "title": "Should the sheet repeat your own sentence back as the casting category? — the decision half of #1122",
+          "kind": "rung",
           "rung": "N2"
         },
         {
@@ -310,6 +308,12 @@
           "issueNumber": 801,
           "title": "N3: the refine engine re-asked — GPT Image 2.5 (Flare, Sunburst) vs today's anti-drift road, measured on his casts (his word, 11 Sep: waits at N3)",
           "kind": "roadmap",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 1125,
+          "title": "The lock check and the unowned-axis sweep have no author-road equivalent — the verification does not travel with the road",
+          "kind": "rung",
           "rung": "N3"
         },
         {
@@ -393,7 +397,7 @@
         }
       ],
       "recommendation": "Recommend A - turn it on for everyone. You chose this engine by eye twice, and the price reading says it costs us about a third of the old one. The refusal reading is the only thing pointing the other way and it is not firm enough to hold a decision against your own eyes. And since nobody but you has ever cast, turning it on today is free of consequence.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-25T00:53:30.796Z",
       "issueNumber": 1134
     },
@@ -777,7 +781,7 @@
         }
       ],
       "recommendation": "ANSWERED — your word: \"All tests passed. One sitting — prepare every switch with its evidence and I'll go down the list in one go.\" That is option A, and the test drive is discharged. The list is being built: 20 switches stand on your account alone, each one gets a plain sentence for what a customer would get, the evidence it is safe, what it costs and a recommendation. You will see it when it is complete rather than half-done.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-23T05:30:00.000Z",
       "issueNumber": 1121
     },
@@ -3177,7 +3181,7 @@
         }
       ],
       "recommendation": "B, capped at three lines. The row's only job is telling one version from another and a fixed 701 pixels cannot do that for a long ask; a tooltip only helps someone who already knows to hover. If you would rather the ask box never moved, say A and it is a one-line change tonight.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-25",
       "issueNumber": 1187
     }
@@ -8017,9 +8021,16 @@
     {
       "id": "roll-engine-price-1134",
       "title": "A roll's cost is recorded against the engine that actually painted it",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1198,
       "note": "The two numbers behind your roll-engine hold, and the reporting fix reading them found."
+    },
+    {
+      "id": "two-paths-retire-1209",
+      "title": "The wardrobe/basics path is fully retired — the last of its machinery and its setting",
+      "status": "merged",
+      "prNumber": 1209,
+      "note": "#203's last slice; the two columns and the thirteen old rolls are deliberately kept."
     }
   ],
   "problems": [
@@ -8962,15 +8973,26 @@
     214,
     215,
     216,
-    217
+    217,
+    218
   ],
   "nextUp": {
-    "readAt": "2026-09-25T00:54:12.101Z",
+    "readAt": "2026-09-25T02:32:57.077Z",
     "items": [
       {
-        "issueNumber": 1199,
-        "title": "Live Desk 2: the switch counts and Not-on-any-road read GitHub live, and a card on a rung is on the road (his word 2026-09-25)",
+        "issueNumber": 1208,
+        "title": "A paid view that fails has no way back: keep trying, then a free Try again (his question on the Sifr cast, 2026-09-25)",
         "urgent": true
+      },
+      {
+        "issueNumber": 1210,
+        "title": "Upload a concept takes a mood board, and a concept + a mood board: three modes, one note — his order and his prompts, 2026-09-25",
+        "urgent": true
+      },
+      {
+        "issueNumber": 1204,
+        "title": "The house road's 2,000-character brief bound guards a road nobody is on since the register widened (N1 deep review, path-three class)",
+        "urgent": false
       }
     ]
   }
