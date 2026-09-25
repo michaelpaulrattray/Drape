@@ -213,6 +213,14 @@ nothing about them presumes cinema.
    editable whenever and possibly never; Cinema consumes it as-is, with
    at most one dismissible "check it" tip on first use. The system's
    moment is Sign; the user's moment is optional.
+   **SOURCE (founder Q, 2026-09-25): words first, picture as backup.**
+   The derivation is a cheap text call over text the system already
+   holds — the roll brief, the refine history (each correction is the
+   user saying who she is), and the compiled sheet's descriptors. A
+   VISION pass over the signed look runs only when the words are thin,
+   reusing the pipeline's existing readers — and per law 9 a reader
+   PROPOSES, never rules, which is why the result wears its badge and
+   waits for a human glance.
 3. **Vocabulary — RULED: keep it as it is.** The earlier two-noun
    recommendation is REVERSED. Words are scoped per surface by design:
    the casting page speaks **candidates** (rolling) and **versions**
