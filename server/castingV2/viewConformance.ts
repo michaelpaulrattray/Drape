@@ -208,7 +208,47 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
         images: [input.anchor, input.candidate],
         json: true,
         temperature: 0,
-        maxOutputTokens: 500,
+        /*
+          THE CEILING IS FOR THE VERDICT, AND NOTHING ELSE MAY EAT IT (#1220).
+
+          Three verdicts and three short notes is ~200 tokens. The judge asked
+          for 500 — twice what the answer needs — and still came back empty
+          twice in thirty seconds on his Sifr2 Sign, because the served model
+          spent 640 and 531 characters on reasoning first and the completion
+          never started. The view was delivered UNJUDGED and charged 50 credits,
+          and it was the one he reported wrong.
+        */
+        reasoning: "off",
+        /*
+          AND THE CEILING IS RAISED ANYWAY, because a transport must not depend
+          on a model honouring a request. 1,000 is five times the answer and
+          still small: a model that reasons regardless cannot get far before the
+          truncation arm below — now retryable rather than "unreachable" — takes
+          over. It costs nothing when unused; `max_tokens` is a bound, not a buy.
+        */
+        maxOutputTokens: 1_000,
+        /*
+          AND THE SECOND ROAD TO AN UNJUDGED VIEW IS THE CLOCK, measured the
+          same hour (#1220).
+
+          Asset 317 — his Sifr side profile, delivered unjudged and charged —
+          died on `TimeoutError` at the transport's 45 s default, and that
+          default is sized for *a describer's short read*. This is not one: the
+          judge posts TWO full-resolution frames as data URIs, **7,578 prompt
+          tokens measured**, and the answer comes back in **23.3 s and 36.3 s**
+          on his own two frames. One of those two needed a second attempt to
+          beat 45 s at all.
+
+          75 s is twice the worst success observed. `retries: 1` is the price of
+          asking for it — the deadline is per ATTEMPT and sits inside the retry
+          loop, so this is a worst case of 150 s against the 135 s three
+          45-second attempts already allowed, while the FIRST attempt now
+          succeeds. The brief interpreter took the same road for the same reason
+          (#121), and the rule it wrote down is that a call lengthening its
+          deadline says how many times it may pay it.
+        */
+        timeoutMs: 75_000,
+        retries: 1,
         signal: input.signal,
       });
       if (reply.truncated) {

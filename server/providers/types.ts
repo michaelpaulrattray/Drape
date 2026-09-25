@@ -479,6 +479,26 @@ export type TextRequest = {
    * asks for a long deadline says how many times it may pay it.
    */
   retries?: number;
+  /**
+   * `"off"` — this call's ceiling is for the ANSWER, not for thinking about it.
+   *
+   * Absent means the model's own default, which is what every creative read
+   * wants: an interpreter or an author may reason as much as it likes and the
+   * quality of the sheet is the reason this field is not a global setting.
+   *
+   * It exists because a fixed-format read can be STARVED by reasoning it never
+   * asked for, silently and on a paid road (#1220). His Sifr2 close-up was
+   * delivered and charged with no verdict at all: the conformance judge asks
+   * for a 500-token ceiling and `anthropic/claude-sonnet-5` spent 640 of its
+   * tokens on reasoning and returned an empty completion on a 200, twice in
+   * thirty seconds. The judge's answer is three verdicts and three short notes
+   * — there is nothing for reasoning to buy, and everything for it to eat.
+   *
+   * ⚠ ONLY A CALL WHOSE OUTPUT SHAPE IS FIXED SETS THIS. A read whose value is
+   * its judgement is a different question and belongs to whoever owns that
+   * read's quality, not to a transport fix.
+   */
+  reasoning?: "off";
 };
 
 export type TextResult = {

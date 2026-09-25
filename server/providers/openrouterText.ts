@@ -155,6 +155,20 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
                   temperature: request.temperature ?? 0.4,
                   max_tokens: request.maxOutputTokens ?? 900,
                   ...(request.json ? { response_format: { type: "json_object" } } : {}),
+                  /*
+                    `max_tokens` IS NOT A BUDGET FOR THE ANSWER — it is a budget
+                    for everything the model emits, and reasoning is emitted
+                    first (#1220). A call that says `reasoning: "off"` is a
+                    fixed-shape read protecting its own ceiling; absent, the
+                    model's default stands and nothing about this request moves.
+
+                    OpenRouter's own field, driven rather than assumed before it
+                    was written: the probe sent it to `anthropic/claude-sonnet-5`
+                    and got a 200 with content, so it is accepted on the served
+                    model. `reasoning.max_tokens` was NOT used — that maps to
+                    Anthropic's `budget_tokens`, which this model family rejects.
+                  */
+                  ...(request.reasoning === "off" ? { reasoning: { enabled: false } } : {}),
                 }),
                 signal,
               });
@@ -216,6 +230,30 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
                 },
                 "[OpenRouterText] empty completion on a 200",
               );
+              /*
+                AND A CEILING HIT IS SAID BY ITS OWN NAME (#1220).
+
+                The log line above already knew which of the three it was; the
+                throw below filed all three as `unknown`, which is NON-retryable,
+                so a reply cut off before it wrote anything left the building as
+                "the interpreter returned nothing" — and the judge, one layer up,
+                wrote **"the conformance judge could not be reached"** onto a
+                paid view. His Sifr2 close-up was delivered and charged on that
+                sentence while the provider had answered 200 both times.
+
+                `transport` for the same reason the judge's own `reply.truncated`
+                arm uses it: the model did not fail, OUR ceiling did, and the
+                retry law is written against that class. It is the SAFETY NET and
+                not the fix — a second attempt at the same ceiling can starve the
+                same way, which is why `reasoning: "off"` exists above.
+              */
+              if (payload.choices?.[0]?.finish_reason === "length") {
+                throw new ProviderError(
+                  "transport",
+                  "The interpreter was cut off at the token ceiling before it wrote anything",
+                  { providerRef },
+                );
+              }
               throw new ProviderError("unknown", "The interpreter returned nothing", {
                 providerRef,
               });
