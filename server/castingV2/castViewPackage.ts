@@ -690,7 +690,7 @@ function belowWaistFor(angle: CastViewAngle, wardrobeLine: string | null): strin
  * `houseBlock.ts` §5e replaces that sentence with the founder's own
  * `LIGHTING_LINE` (*"Large soft frontal key … not as a forced flash sheen on
  * every face"*) — then lists *"front flash"* and *"No gels, no diffusion"* in
- * `FORBIDDEN_HOUSE_PHRASES`. **The Sign was sending phrases the road that made
+ * `DROPPED_FROM_BLOCK`. **The Sign was sending phrases the road that made
  * its own reference bans.** So the fix is a shared constant, not a new
  * sentence: nothing here is authored, and the lighting a customer sees is the
  * one he ratified.
