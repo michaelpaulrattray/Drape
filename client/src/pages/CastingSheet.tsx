@@ -54,6 +54,7 @@ import { waitExceeds } from "@/features/castingV2/waitNotice";
 import { inFlightCandidate, refineBusy, refineGhosts, refineWait } from "@/features/castingV2/refineBusy";
 import { bridgeWithinCandidate } from "@/features/castingV2/panelBridge";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
+import { showingProvisionalRoll } from "@/features/castingV2/rollOnScreen";
 import { sheetGoneRefusal, sheetGoneState } from "@/features/castingV2/sheetGone";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
@@ -477,6 +478,19 @@ export default function CastingSheet() {
    * again answer as immediately as Cast it does.
    */
   const awaitingNewRoll = startingRoll && latch.held && !visibleFailure;
+
+  /**
+   * The roll being paid for is the one ON SCREEN (card 1232).
+   *
+   * `awaitingNewRoll` answers "is a roll being paid for", and the paid
+   * affordances below are right to ask it. The VIEW must ask a narrower
+   * question, or a click on 01 during the latch changes nothing and the sheet
+   * reads as locked — his report, and the whole of this card.
+   *
+   * Everything the customer LOOKS at reads this; everything she SPENDS reads
+   * the latch. The two are deliberately separate and the split is the fix.
+   */
+  const showingProvisional = showingProvisionalRoll({ awaitingNewRoll, viewedRollId });
 
   /**
    * The roll being paid for, or nothing.
@@ -2277,8 +2291,12 @@ export default function CastingSheet() {
             the next poll — so the sheet showed "Roll 1" above the skeletons of
             roll 2. The index and the skeletons now change together, because
             they are driven by the same fact: a roll was dispatched.
+
+            AND ON THE ROLL BEING SHOWN, NOT ON THE LATCH (card 1232). Clicking
+            01 while 02 is being paid for must bring 01's own header back with
+            its faces; the provisional header belongs to the provisional tiles.
           */}
-          {awaitingNewRoll ? (
+          {showingProvisional ? (
             <span className="dp-metadata">
               Roll {provisionalIndex ?? rolls.length + 1} · casting{" "}
               {config.data?.candidatesPerRoll ?? 8}
@@ -2308,8 +2326,15 @@ export default function CastingSheet() {
                 highlighted … and 3 is showing me 04's loading state." A map
                 with two "you are here" marks is wrong, so the real pills stand
                 down for exactly as long as the provisional one is up.
+
+                AND "AS LONG AS IT IS UP" IS NOW "WHILE IT IS WHAT YOU ARE
+                LOOKING AT" (card 1232). 1110's rule is unchanged — exactly one
+                pill is selected, and it is the one whose tiles are on screen.
+                Clicking 01 mid-dispatch moves the mark to 01, where the same
+                click moves the tiles; the dashed 02 stays in the rail with its
+                live dot, unselected, saying where the work is.
               */
-              const shown = !awaitingNewRoll && entry.rollId === shownRollId;
+              const shown = !showingProvisional && entry.rollId === shownRollId;
               const generating = !TERMINAL_ROLL_STATUSES.has(entry.status);
               return (
                 <button
@@ -2334,10 +2359,16 @@ export default function CastingSheet() {
               would show an empty sheet. It becomes the real pill when the row
               lands, and disappears with the classified-failure contract if
               creation fails — the same unwind the tiles use.
+
+              IT IS SELECTED ONLY WHILE IT IS THE ONE ON SCREEN (card 1232).
+              It stays in the rail for the whole dispatch either way — that is
+              where the live dot lives, and taking it away would hide the fact
+              that a roll is being cast at all. What moves is the "you are
+              here" mark, which follows the tiles to 01 and back.
             */}
             {provisionalIndex ? (
               <span
-                className="dpc-rollrail__item is-shown dpc-rollrail__item--provisional"
+                className={`dpc-rollrail__item${showingProvisional ? " is-shown" : ""} dpc-rollrail__item--provisional`}
                 aria-label={`Roll ${String(provisionalIndex).padStart(2, "0")}, still being created`}
               >
                 {String(provisionalIndex).padStart(2, "0")}
@@ -2663,7 +2694,7 @@ export default function CastingSheet() {
             client already knows it is rolling (`startingRoll`).
           */}
           {!visibleFailure
-            && (awaitingNewRoll || session.isPending || (!roll.data && (startingRoll || shownRollId)))
+            && (showingProvisional || session.isPending || (!roll.data && (startingRoll || shownRollId)))
             ? // Eight skeletons the instant a roll is on its way — the sheet's
               // shape is known long before its contents are.
               Array.from({ length: config.data?.candidatesPerRoll ?? 8 }, (_, index) => (
@@ -2677,8 +2708,16 @@ export default function CastingSheet() {
                     the faces already exist. A placeholder that says nothing is
                     the panel's own rule (fable-521) and it is the honest shape
                     for a page that is only fetching.
+
+                    WHICH IS WHY IT READS `showingProvisional` AND NOT THE LATCH
+                    (card 1232). Clicking a roll she has not opened this session
+                    while 02 is being paid for lands in the third clause above —
+                    `!roll.data && startingRoll` — and skeletons are right there,
+                    she is waiting for that roll's rows. But nothing is being
+                    CAST for it, and `startingRoll` is still true, so the old
+                    reading would have labelled somebody else's fetch as casting.
                   */
-                  label={awaitingNewRoll || startingRoll ? `CASTING 0${index + 1}` : undefined}
+                  label={showingProvisional ? `CASTING 0${index + 1}` : undefined}
                 />
               ))
             : candidates
@@ -2944,7 +2983,17 @@ export default function CastingSheet() {
               <Instruction>
                 That face is no longer on this sheet — back to open casting. Nothing was charged.
               </Instruction>
-            ) : awaitingNewRoll ? (
+            ) : /*
+                THIS LINE STAYS ON THE LATCH, NOT ON THE VIEW (card 1232).
+
+                It sits in the dock beside a button reading "Rolling…", and both
+                describe the purchase rather than the tiles. Moving it with the
+                grid would leave that button disabled and silent while she looks
+                at 01 — which is the silence that made him click again in the
+                first place. What she is LOOKING at changed; what she BOUGHT did
+                not.
+              */
+              awaitingNewRoll ? (
               <Instruction>Casting {config.data?.candidatesPerRoll ?? 8}…</Instruction>
             ) : followLabel ? (
               /*
