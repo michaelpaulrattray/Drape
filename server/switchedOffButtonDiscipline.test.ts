@@ -110,7 +110,20 @@ export function rulesIn(css: string, file: string): Rule[] {
  * strict under it rather than going quiet.
  */
 
-const SWITCHED_OFF = /(?::disabled|\[disabled\])/;
+/**
+ * ⚠ **`:not(:disabled)` CONTAINS `:disabled`, and reading it as one cost this
+ * suite its first sabotage.** With the naive test, every hover rule guarded by
+ * this very fix registered as a switched-off rule: the classes so guarded
+ * landed in the "already answers" set, the cross-reading arm exempted them, and
+ * deleting a real switched-off rule left all ten arms green. So the negation
+ * groups come OUT before the question is asked — and the control that found it
+ * is the reason this is a comment rather than a defect.
+ */
+const withoutNegations = (selector: string): string =>
+  selector.replace(/:not\([^)]*\)/g, "");
+const isSwitchedOff = (selector: string): boolean =>
+  /(?::disabled|\[disabled\])/.test(withoutNegations(selector));
+const SWITCHED_OFF = { test: isSwitchedOff };
 const classesIn = (selector: string): string[] =>
   [...selector.matchAll(/\.([A-Za-z0-9_-]+)/g)].map((m) => `.${m[1]}`);
 const declaration = (body: string, property: string): string | null => {
@@ -195,6 +208,90 @@ describe("nothing re-brightens a switched-off control under the pointer (#1237)"
 
     expect(canBeSwitchedOff.size).toBeGreaterThan(10);
     expect(unguarded, "a switched-off control still lights up on hover").toEqual([]);
+  });
+});
+
+describe("no control promises a press it cannot keep (#1237 — the original defect)", () => {
+  /*
+    ⚠ THIS IS THE ARM THAT WOULD HAVE CAUGHT IT, and it is the only one that
+    crosses from the stylesheets into the markup. The other arms prove that what
+    IS declared is right; a rule that says nothing declares nothing, so they
+    would all stay green while a new button family shipped with the same hole.
+
+    It asks the one question the shared block failed: is there a class that
+    hands out the hand pointer, is worn by something a customer can find
+    switched off, and never says what switched off looks like?
+
+    An element is answered if ANY class it wears carries a switched-off rule, or
+    resets the cursor at rest — the rail's and the lobby menu's unbuilt stubs
+    take the second road, wearing a `--stub` modifier that is quiet by
+    construction, and reading the base class alone reports them as defects.
+    That is a real reading this arm got wrong before it was corrected against
+    the running markup, which is why the exemption is a property of the ELEMENT
+    rather than of the class.
+  */
+  const quietingClasses = new Set<string>();
+  for (const rule of ALL_RULES) {
+    const cursor = declaration(rule.body, "cursor");
+    for (const selector of rule.selectors) {
+      if (SWITCHED_OFF.test(selector)) classesIn(selector).forEach((c) => quietingClasses.add(c));
+      else if (cursor && cursor !== "pointer") classesIn(selector).forEach((c) => quietingClasses.add(c));
+    }
+  }
+
+  const handPointerClasses = new Set(
+    ALL_RULES.filter((r) => declaration(r.body, "cursor") === "pointer").flatMap((r) =>
+      r.selectors.filter((s) => !s.includes(":hover")).flatMap(classesIn),
+    ),
+  );
+
+  /** Every opening tag in the client that carries a switched-off attribute. */
+  const switchedOffTags = (): { file: string; tag: string }[] => {
+    const out: { file: string; tag: string }[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir)) {
+        const full = path.join(dir, entry);
+        const stats = statSync(full, { throwIfNoEntry: false });
+        if (!stats) continue;
+        if (stats.isDirectory()) walk(full);
+        else if (/\.tsx$/.test(entry)) {
+          const src = readListedSource(full);
+          if (!src) continue;
+          for (const match of src.matchAll(/<[A-Za-z][^>]*?>/gs)) {
+            if (/\bdisabled[=}\s/>]|\baria-disabled/.test(match[0])) {
+              out.push({ file: path.relative(ROOT, full), tag: match[0] });
+            }
+          }
+        }
+      }
+    };
+    walk(CLIENT_SRC);
+    return out;
+  };
+
+  it("reads a real population of switched-off elements", () => {
+    expect(handPointerClasses.size).toBeGreaterThan(20);
+    expect(switchedOffTags().length).toBeGreaterThan(50);
+  });
+
+  it("every hand-pointer class a customer can find switched off says what that looks like", () => {
+    const offenders: string[] = [];
+    for (const { file, tag } of switchedOffTags()) {
+      const worn = classesIn(
+        (tag.match(/className\s*=\s*(?:"([^"]*)"|\{`([^`]*)`\}|\{"([^"]*)"\})/) ?? [])
+          .slice(1)
+          .filter(Boolean)
+          .join(" ")
+          .split(/\s+/)
+          .map((c) => `.${c}`)
+          .join(" "),
+      );
+      if (worn.some((c) => quietingClasses.has(c))) continue;
+      for (const cls of worn) {
+        if (handPointerClasses.has(cls)) offenders.push(`${file}  ${cls}`);
+      }
+    }
+    expect([...new Set(offenders)], "a switched-off control still promises a press").toEqual([]);
   });
 });
 
