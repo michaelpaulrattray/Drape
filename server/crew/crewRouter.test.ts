@@ -40,6 +40,31 @@ vi.mock("../db/crewReplies", () => ({
   }),
 }));
 
+/* THE LIVE QUEUE IS FAKED HERE (#1193): a unit suite never reaches GitHub.
+   One open ordered card and one merged PR are enough for the derived arm
+   below; the reader's own behaviour is driven in `liveQueue.test.ts`. */
+vi.mock("../crew/liveQueue", () => ({
+  readLiveQueue: vi.fn(async () => ({
+    available: true,
+    stale: false,
+    readAt: "2026-09-25T00:00:00Z",
+    truncated: false,
+    open: [{
+      number: 1193, title: "Live Desk", kind: "issue", status: "open", draft: false,
+      labels: ["founder-ordered", "urgent"], author: "michaelpaulrattray", assignees: [],
+      createdAt: "2026-09-25T00:00:00Z", updatedAt: "2026-09-25T00:00:00Z", closedAt: null, mergedAt: null,
+      holdReason: null, url: "https://github.com/michaelpaulrattray/Drape/issues/1193",
+    }],
+    recent: [{
+      number: 1185, title: "slice 3 (#1160)", kind: "pr", status: "merged", draft: false,
+      labels: ["needs-fable"], author: "michaelpaulrattray", assignees: [],
+      createdAt: "2026-09-24T19:42:18Z", updatedAt: "2026-09-24T23:34:59Z",
+      closedAt: "2026-09-24T23:34:59Z", mergedAt: "2026-09-24T23:34:59Z",
+      holdReason: null, url: "https://github.com/michaelpaulrattray/Drape/pull/1185",
+    }],
+  })),
+}));
+
 import { crewRouter } from "../routes/crew";
 import { eyeFrameKeys, readCrewBriefing } from "./crewBriefing";
 import { crewCardNeedsHim } from "../../shared/crewCardState";
@@ -474,5 +499,22 @@ describe("the card-intent tap — his half, and only his half", () => {
        from an empty list — the panel withholds the buttons on the first and
        draws them on the second. */
     expect(state.cardIntents).toEqual({ available: false, intents: [] });
+  });
+});
+
+describe("the live half rides getState (#1193)", () => {
+  it("returns the derived desk from the reader's reading, stamped with its instant", async () => {
+    process.env.CREW_TAB_SCOPE = "all";
+    const caller = crewRouter.createCaller(contextFor());
+    const state = await caller.getState();
+    expect(state.live.available).toBe(true);
+    if (!state.live.available) throw new Error("unreachable");
+    expect(state.live.stale).toBe(false);
+    expect(state.live.desk.readAt).toBe("2026-09-25T00:00:00Z");
+    expect(state.live.desk.nextUp.items).toEqual([{ issueNumber: 1193, title: "Live Desk", urgent: true }]);
+    expect(state.live.desk.recent.map((row) => [row.number, row.outcome])).toEqual([[1185, "merged"]]);
+    expect(state.live.desk.counts).toEqual({ openCards: 1, openPullRequests: 0, truncated: false });
+    /* The rung keys handed to the derivation are the deployed ladder's own. */
+    expect(state.live.desk.ladderCards.items).toEqual([]);
   });
 });

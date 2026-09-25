@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "030fac11b421acdd"
+    "sourceFingerprint": "5f394fcbc543dab5"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 54
+      "moduleCount": 58
     },
     {
       "id": "domain:api",
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 59
+      "moduleCount": 60
     },
     {
       "id": "domain:staff",
@@ -148,7 +148,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 41
+      "moduleCount": 43
     },
     {
       "id": "domain:wardrobe",
@@ -458,6 +458,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/admin/components/crew/CrewSinceYouLooked.tsx",
+      "path": "client/src/features/admin/components/crew/CrewSinceYouLooked.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/admin/components/crew/CrewSkeleton.tsx",
       "path": "client/src/features/admin/components/crew/CrewSkeleton.tsx",
       "domain": "admin",
@@ -470,8 +476,20 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/admin/components/crew/QueueReadStamp.tsx",
+      "path": "client/src/features/admin/components/crew/QueueReadStamp.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/admin/components/crew/crew.css",
       "path": "client/src/features/admin/components/crew/crew.css",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/crewAgo.ts",
+      "path": "client/src/features/admin/components/crew/crewAgo.ts",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -490,6 +508,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/useCrewState.ts",
       "path": "client/src/features/admin/components/crew/useCrewState.ts",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/useLastSeen.ts",
+      "path": "client/src/features/admin/components/crew/useLastSeen.ts",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -4526,6 +4550,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/crew/liveDesk.ts",
+      "path": "server/crew/liveDesk.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/crew/liveQueue.ts",
+      "path": "server/crew/liveQueue.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/accountDeletion.ts",
       "path": "server/db/accountDeletion.ts",
       "domain": "data",
@@ -5764,6 +5800,12 @@
     {
       "id": "module:shared/crewNextUpHold.ts",
       "path": "shared/crewNextUpHold.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewOrderedBand.ts",
+      "path": "shared/crewOrderedBand.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -8952,6 +8994,11 @@
     {
       "id": "env:GEMINI_API_KEY",
       "name": "GEMINI_API_KEY",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:GITHUB_READ_TOKEN",
+      "name": "GITHUB_READ_TOKEN",
       "valueRecorded": false
     },
     {
@@ -12293,6 +12340,14 @@
       "path": "server/crew/crewTabScope.test.ts"
     },
     {
+      "id": "test:server/crew/liveDesk.test.ts",
+      "path": "server/crew/liveDesk.test.ts"
+    },
+    {
+      "id": "test:server/crew/liveQueue.test.ts",
+      "path": "server/crew/liveQueue.test.ts"
+    },
+    {
       "id": "test:server/crewBriefingFieldReaders.test.ts",
       "path": "server/crewBriefingFieldReaders.test.ts"
     },
@@ -13907,6 +13962,11 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewAgo.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewCardTitles.tsx",
       "kind": "imports"
     },
@@ -14082,12 +14142,12 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
-      "to": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/features/admin/components/crew/QueueReadStamp.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
-      "to": "module:client/src/foundation/staffDate.ts",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -14097,7 +14157,17 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewAgo.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "to": "module:client/src/features/admin/components/crew/QueueReadStamp.tsx",
       "kind": "imports"
     },
     {
@@ -14142,6 +14212,11 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
+      "to": "module:client/src/features/admin/components/crew/QueueReadStamp.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewProgramBanner.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
@@ -14178,6 +14253,31 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewReplyThread.tsx",
       "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewSinceYouLooked.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewAgo.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewSinceYouLooked.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewSinceYouLooked.tsx",
+      "to": "module:client/src/features/admin/components/crew/QueueReadStamp.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewSinceYouLooked.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewSinceYouLooked.tsx",
+      "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
     {
@@ -14223,6 +14323,21 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
       "to": "module:shared/crewShiftState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/QueueReadStamp.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewAgo.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/QueueReadStamp.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/QueueReadStamp.tsx",
+      "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
     {
@@ -18807,7 +18922,17 @@
     },
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewSinceYouLooked.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/features/admin/components/crew/CrewSkeleton.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
     {
@@ -18818,6 +18943,11 @@
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/features/admin/components/crew/useCrewState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/useLastSeen.ts",
       "kind": "imports"
     },
     {
@@ -27426,6 +27556,31 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:server/crew/liveQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/crewNextUpHold.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/crewOrderedBand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/crewPipelineGroups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveQueue.ts",
+      "to": "module:shared/crewNextUpHold.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/accountDeletion.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -30433,6 +30588,16 @@
     {
       "from": "module:server/routes/crew.ts",
       "to": "module:server/crew/crewTabScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:server/crew/liveDesk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:server/crew/liveQueue.ts",
       "kind": "imports"
     },
     {

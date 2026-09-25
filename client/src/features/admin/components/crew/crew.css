@@ -1519,3 +1519,41 @@ a.dp-crew__hold:hover {
 
 .dp-crew__viewernav--prev { left: var(--s-5); }
 .dp-crew__viewernav--next { right: var(--s-5); }
+
+/* ── THE LIVE HALF (#1193) ────────────────────────────────────────────────────
+   One stamp per queue-drawn block says where its reading came from. The dot
+   is the only decoration on the page that moves, and it moves only beside the
+   word "live" — a reading that is stale or a snapshot gets the quiet face and
+   its sentence, never a red dot: a page that cannot reach GitHub is one cycle
+   behind, not broken. */
+.dp-crew__live--stale {
+  color: var(--meta);
+}
+.dp-crew__dot--live {
+  background: var(--ink);
+  animation: dp-crew-live 2.4s ease-in-out infinite;
+}
+@keyframes dp-crew-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dp-crew__dot--live { animation: none; }
+}
+/* A row that landed after his previous visit carries a hairline at its left,
+   the same ink as the text — a mark to scan by, not a highlight to read. */
+.dp-crew__row--new {
+  box-shadow: -10px 0 0 -8px var(--ink);
+}
+/* Titles that are links read as text with the rule underneath, never blue:
+   the page's whole voice is one ink. */
+.dp-crew__link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 3px;
+}
+.dp-crew__link:hover,
+.dp-crew__link:focus-visible {
+  text-decoration-color: var(--ink);
+}

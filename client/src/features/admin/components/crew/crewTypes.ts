@@ -195,7 +195,7 @@ export type CrewNextUpRow = {
 };
 
 export function nextUpRows(
-  nextUp: CrewBriefingView["nextUp"],
+  nextUp: CrewNextUpSource,
   cards: readonly CrewNeedsYouCard[],
 ): CrewNextUpRow[] {
   const askingHim = new Map(
@@ -270,3 +270,69 @@ export type CrewWorkStateView = CrewState["workState"];
  * fact that silently never renders.
  */
 export type CrewCardIntentsView = CrewState["cardIntents"];
+
+/* ─── THE LIVE HALF (#1193). GitHub is read on the server every 30 s and the
+   lists below are derived from it; the edition's own snapshot is the FALLBACK
+   when GitHub has not answered, and the page says which it is drawing. ─── */
+export type CrewLiveView = CrewState["live"];
+export type CrewLiveDesk = Extract<CrewLiveView, { available: true }>["desk"];
+export type CrewLivePullRequest = CrewLiveDesk["pullRequests"][number];
+export type CrewLiveRecentRow = CrewLiveDesk["recent"][number];
+
+/** NEXT UP's input — the shape the live desk and the edition both produce. */
+export type CrewNextUpSource = {
+  readonly readAt: string;
+  readonly items: readonly {
+    readonly issueNumber: number;
+    readonly title: string;
+    readonly urgent: boolean;
+    readonly held?: { readonly state: "blocked" | "fable" | "sitting"; readonly because?: string } | null;
+  }[];
+};
+
+/** The ladder cards input — the shape the live desk and the edition both produce. */
+export type CrewLadderCardsSource = {
+  readonly readAt: string;
+  readonly items: readonly {
+    readonly issueNumber: number;
+    readonly title: string;
+    readonly kind: string;
+    readonly rung: string | null;
+  }[];
+};
+
+/**
+ * Where a queue reading came from, said on the block that draws it. `live` is
+ * GitHub answering now; `stale` is the last good reading with GitHub not
+ * answering since; `snapshot` is the edition's own list, one shift old.
+ */
+export type CrewQueueRead = {
+  readonly kind: "live" | "stale" | "snapshot";
+  readonly readAt: string;
+  readonly why: string | null;
+};
+
+export function queueReadOf(live: CrewLiveView, snapshotReadAt: string): CrewQueueRead {
+  if (!live.available) return { kind: "snapshot", readAt: snapshotReadAt, why: live.why };
+  return { kind: live.stale ? "stale" : "live", readAt: live.desk.readAt, why: live.why };
+}
+
+/** The ladder's cards — live when GitHub answers, the edition's list otherwise. */
+export function ladderCardsFor(live: CrewLiveView, briefing: CrewBriefingView): CrewLadderCardsSource {
+  return live.available ? live.desk.ladderCards : briefing.program.ladderCards;
+}
+
+/**
+ * What still needs him: the edition's cards minus any GitHub has since closed.
+ * The edition's `state` is a shift's hand and can be a cycle old; a closed
+ * card is a fact, and a closed card does not ask questions.
+ */
+export function needsYouFor(live: CrewLiveView, cards: readonly CrewNeedsYouCard[]): CrewNeedsYouCard[] {
+  if (!live.available) return [...cards];
+  const closed = new Set(live.desk.closedCards);
+  return cards.filter((card) => card.issueNumber === null || !closed.has(card.issueNumber));
+}
+
+export function nextUpFor(live: CrewLiveView, briefing: CrewBriefingView): CrewNextUpSource {
+  return live.available ? live.desk.nextUp : briefing.nextUp;
+}

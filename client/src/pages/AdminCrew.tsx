@@ -6,10 +6,27 @@
  * stops mattering: the briefing and the steering wheel live in the product he
  * already opens every day.
  *
- * His reading order: **the program → working now → next up → background work →
- * needs you → for your eyes → what is not done → problems → general.** Single
- * column, restrained, no charts and no KPI tiles — this is a briefing, not a
- * dashboard.
+ * His reading order: **the program → needs you → for your eyes → working now →
+ * in flight → since you last looked → next up → background work → problems →
+ * general.** Single column, restrained, no charts and no KPI tiles — this is a
+ * briefing, not a dashboard.
+ *
+ * ⚠ **THAT ORDER IS #1193's (2026-09-25) AND IT REPLACES #437's.** His words:
+ * *"the feedback on the crew page is so delayed and disoganised in terms of
+ * the Ui/UX like its difficult for me to decipher what is actually going on …
+ * i must be able to see the main program we are working on which milestones
+ * we are on etc still thats important for me"*. So the program stays first
+ * (his "still"), and after it the page runs in order of his attention: what
+ * needs HIM, then what is happening, what just happened, what is next, and
+ * only then the switches. #437 had NEXT UP and BACKGROUND WORK above NEEDS
+ * YOU; that reasoning is kept in git and lost to his.
+ *
+ * **AND THE PAGE IS LIVE.** Every list drawn from the queue — the ladder's
+ * cards, next up, in flight, since you last looked — is derived on the server
+ * from GitHub every 30 s (`server/crew/liveQueue.ts`), never copied from the
+ * edition, and each block stamps where its reading came from. The edition
+ * keeps what only a shift can write: the mission, focus, milestone, rung
+ * states, the card explanations, eye items and problems.
  *
  * ⚠ **`ALREADY DEALT WITH` WAS THE TENTH AND HE DELETED IT (#438, 2026-09-02),
  * verbatim: *"do you think already dealt with and not done yet are card we even
@@ -96,6 +113,9 @@ import { CrewEyeGallery } from "@/features/admin/components/crew/CrewEyeGallery"
 import { CrewGeneral } from "@/features/admin/components/crew/CrewGeneral";
 import { CrewNeedsYou } from "@/features/admin/components/crew/CrewNeedsYou";
 import { CrewPipeline } from "@/features/admin/components/crew/CrewPipeline";
+import { CrewSinceYouLooked } from "@/features/admin/components/crew/CrewSinceYouLooked";
+import { ladderCardsFor, needsYouFor, nextUpFor, queueReadOf } from "@/features/admin/components/crew/crewTypes";
+import { useLastSeen } from "@/features/admin/components/crew/useLastSeen";
 import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
 import { CrewBackgroundWork } from "@/features/admin/components/crew/CrewBackgroundWork";
 import { CrewNextUp } from "@/features/admin/components/crew/CrewNextUp";
@@ -167,6 +187,7 @@ export default function AdminCrew() {
   // staff-poll: watched — the briefing is written by a shift, never by this page; the switch reaches the hook as `live`
   const stateQuery = useCrewState(isAdmin, { live: autoRefresh });
   const now = useNow(stateQuery.dataUpdatedAt);
+  const lastSeenAt = useLastSeen();
   const refreshControls = useStaffRefresh({
     autoRefresh,
     setAutoRefresh,
@@ -345,170 +366,109 @@ export default function AdminCrew() {
           </div>
         )}
 
-        {stateQuery.data && (
+        {stateQuery.data && (() => {
+          const data = stateQuery.data;
+          const live = data.live;
+          const queueRead = queueReadOf(live, data.briefing.program.ladderCards.readAt);
+          const intentPending = cardIntentMutation.isPending ? flyingCard : null;
+          /* A card GitHub has closed stops asking him, whatever the edition
+             still says about it (#1193). */
+          const needsYou = needsYouFor(live, data.briefing.needsYou);
+          return (
           <>
-            {/* FIRST ON THE PAGE, on his own instruction (#437, 2026-09-02):
-                he was offered a split that would put only the one-line mission
-                up here — with a recommendation FOR it — and answered "yes the
-                easier fix", taking the whole banner instead.
-
-                ⚠ **The cost is known and accepted, and is not a defect to
-                report later**: this is the tallest block on the page (chips,
-                mission, focus, his quote, milestone, progress, steps, rungs),
-                so WORKING NOW sits below the fold on a short window. Do NOT
-                "help" by shrinking, collapsing, truncating or making it sticky
-                — every one of those is the split he declined wearing a
-                different name. If it reads badly he will say so, and that will
-                be a new instruction. */}
+            {/* FIRST ON THE PAGE, on his own instruction (#437, 2026-09-02),
+                re-stated 2026-09-25 (#1193): *"i must be able to see the main
+                program we are working on which milestones we are on etc
+                still"*. The rung counts it draws are LIVE now — the ladder's
+                cards come from GitHub through `ladderCardsFor`, the edition's
+                own list only when GitHub has not answered — and the stamp on
+                the ladder head says which. */}
             <CrewProgramBanner
-              program={stateQuery.data.briefing.program}
-              /* The ladder draws its waiting cards now (#493 move 2), and his
-                 "Not relevant" tap must reach every card the page names — so
-                 the intents ride here exactly as they ride the background
-                 panel below. */
-              cardIntents={stateQuery.data.cardIntents}
+              program={data.briefing.program}
+              ladderCards={ladderCardsFor(live, data.briefing)}
+              queueRead={queueRead}
+              now={now}
+              cardIntents={data.cardIntents}
               onIntent={markCard}
-              intentPendingCard={cardIntentMutation.isPending ? flyingCard : null}
+              intentPendingCard={intentPending}
             />
-
-            {/* ⚠ REVERSED BY HIS ORDER (#437). This said "ABOVE the program
-                (#272) … the only thing on the page that outranks the briefing"
-                — honest reasoning that lost to his, not clutter, and kept here
-                so nobody restores the old order as a fix.
-
-                It still leads everything that describes what the team has
-                DONE.
-
-                ⚠ **This sentence used to say `now` comes from "the same ticker
-                the 'checked' stamp uses" — and card 415 DELETED that stamp**,
-                so the comment outlived the fact it asserted. Caught by the gate
-                review of PR #456, and it is the third instance in one change of
-                the class the change itself was correcting: a comment stating
-                something the tree no longer holds.
-
-                What the ticker is for now: `WORKING NOW` draws "started 14 min
-                ago" AND its stalled verdict off one instant, so two readings on
-                one strip can never disagree (#272). */}
-            <CrewWorkingNow shiftRuns={stateQuery.data.shiftRuns} now={now} />
-
-            {/* WHAT IS PLANNED (#290) — moved directly under WORKING NOW on
-                his instruction (#437, 2026-09-02: *"moving the next up card in
-                the crew tab under working now"*). What is happening and what
-                happens next are one question in two halves, and four sections
-                used to sit between them.
-
-                ⚠ **Its own earlier reasoning is REVERSED and kept**: it said
-                "it sits under Needs You rather than above it because a
-                question waiting on him outranks a queue that is merely next."
-                NEXT UP is now ABOVE Needs You, which is exactly what that
-                sentence argued against. A docblock left arguing the opposite
-                of the code is the failure this repository keeps re-finding. */}
+            {/* WHAT NEEDS HIM, before anything the team is doing — #1193's
+                order. A question waiting on him outranks a queue that is
+                merely running (#277's own argument, which #437 overrode and
+                his 2026-09-25 word restores). */}
+            <CrewNeedsYou
+              cards={needsYou}
+              replies={data.replies}
+              acknowledgedReplyIds={data.briefing.acknowledgedReplyIds}
+              sending={replyMutation.isPending}
+              onSend={send}
+            />
+            <CrewEyeGallery
+              items={data.briefing.eyeItems}
+              replies={data.replies}
+              acknowledgedReplyIds={data.briefing.acknowledgedReplyIds}
+              sending={replyMutation.isPending}
+              onSend={send}
+            />
+            {/* WHAT IS HAPPENING: the live shift strip, then every open PR.
+                `now` is one ticker for both, so "started 14 min ago" and a
+                PR's "touched 2 min ago" cannot disagree (#272). */}
+            <CrewWorkingNow shiftRuns={data.shiftRuns} now={now} />
+            <CrewPipeline
+              live={live}
+              snapshot={data.briefing.pipeline}
+              queueRead={queueRead}
+              now={now}
+            />
+            {/* WHAT JUST HAPPENED (#1193) — merged and closed in the last two
+                days, with a mark on what landed after his previous visit. */}
+            <CrewSinceYouLooked live={live} queueRead={queueRead} now={now} lastSeenAt={lastSeenAt} />
+            {/* WHAT IS NEXT (#290) — the ordered band, live. */}
             <CrewNextUp
-              nextUp={stateQuery.data.briefing.nextUp}
-              cards={stateQuery.data.briefing.needsYou}
+              nextUp={nextUpFor(live, data.briefing)}
+              queueRead={queueRead}
+              now={now}
+              cards={needsYou}
             />
-
-            {/* ⚠ ITS ADJACENCY IS BROKEN BY HIS ORDER (#437), and the reason
-                is kept rather than deleted: #277 put this directly under
-                WORKING NOW because "the two answer one question — what is
-                happening while he is not looking." NEXT UP now sits between
-                them on his word. The reasoning was sound; it lost to his. */}
             <CrewBackgroundWork
-              workState={stateQuery.data.workState}
-              cardIntents={stateQuery.data.cardIntents}
+              workState={data.workState}
+              cardIntents={data.cardIntents}
               now={now}
               onToggle={(switchKey, enabled) =>
                 workSwitchMutation.mutate({ switchKey: switchKey as never, enabled })}
               onIntent={markCard}
               pending={workSwitchMutation.isPending}
-              intentPendingCard={cardIntentMutation.isPending ? flyingCard : null}
+              intentPendingCard={intentPending}
             />
-
-            <CrewNeedsYou
-              cards={stateQuery.data.briefing.needsYou}
-              replies={stateQuery.data.replies}
-              acknowledgedReplyIds={stateQuery.data.briefing.acknowledgedReplyIds}
-              sending={replyMutation.isPending}
-              onSend={send}
-            />
-
-            <CrewEyeGallery
-              items={stateQuery.data.briefing.eyeItems}
-              replies={stateQuery.data.replies}
-              acknowledgedReplyIds={stateQuery.data.briefing.acknowledgedReplyIds}
-              sending={replyMutation.isPending}
-              onSend={send}
-            />
-
-            <CrewPipeline items={stateQuery.data.briefing.pipeline} />
-
-            <CrewProblems problems={stateQuery.data.briefing.problems} />
-
-            {/* THE GENERAL BOX (#293) — this was the journal, which carried the
-                shifts' own entries and his cardless replies in one list. He
-                removed the shift entries ("id remove the journal because
-                nights should auto park…"); asked where his cardless replies
-                should then go, his whole answer was "Keep a General box." */}
+            <CrewProblems problems={data.briefing.problems} />
+            {/* THE GENERAL BOX (#293) — his cardless replies. `threadHosts`,
+                not the two section lists (#1138): those carry only what still
+                needs him, and a reply on a card since dealt with must keep its
+                title here. */}
             <CrewGeneral
-              replies={stateQuery.data.replies}
-              /* Threads render under open needs-you cards AND open eye items
-                 (#75), so the General box's fall-through covers both — a
-                 verdict on a closed eye item must land here, never nowhere.
-
-                 ⚠ **`threadHosts`, NOT the two section lists (#1138).** Those
-                 two now carry only what still needs him, so stitching them
-                 together would name the population this box exists to catch
-                 the ABSENTEES of: every reply on a card he has already dealt
-                 with would lose its title and read *on "<id>", a card since
-                 closed*. The server sends the whole host list as the triple
-                 this box asks for. */
-              cards={stateQuery.data.briefing.threadHosts}
-              acknowledgedReplyIds={stateQuery.data.briefing.acknowledgedReplyIds}
+              replies={data.replies}
+              cards={data.briefing.threadHosts}
+              acknowledgedReplyIds={data.briefing.acknowledgedReplyIds}
               sending={replyMutation.isPending}
               onSend={send}
             />
-
-            {/*
-                The edition number, said plainly — there is no history UI and
-                git holds the old ones (design §10).
-
-                ⚠ **THE TIMESTAMP LEFT THIS LINE AND TWO THINGS DELIBERATELY
-                STAYED (#415).** The bar now carries *when the page last
-                checked*, so repeating it here would state the page's freshness
-                twice — which is the double-count this lane has been removing
-                all week. But the bar cannot say either of these:
-
-                - **WHO wrote the briefing.** That is not freshness, it is
-                  authorship, and it is the more useful half of the old
-                  sentence. Losing it while "making things consistent" is
-                  exactly the quiet cost working law 7 exists to catch.
-                - **That the last check FAILED.** A bar stamp reading 14:02
-                  merely looks old; it cannot say *"and I know it is stale"*.
-                  The stamp reports when data last LANDED, this reports the
-                  last ATTEMPT, and they are different facts.
-
-                ⚠ **AND A THIRD THING JOINED THEM (#329): WHEN THE EDITION WAS
-                WRITTEN.** `updatedAt` was the one field of the briefing schema
-                with ZERO readers — written by every edition, drawn nowhere —
-                found by the law-7 class sweep of #293, which removed the
-                journal for exactly that. It is NOT the timestamp #415 took off
-                this line: **the bar says when the PAGE last checked; this says
-                when a SHIFT last wrote.** A page left open all night was
-                equally silent about both, so the sentence named its author and
-                never said when he spoke.
-
-                It sits before the shift sentence rather than after it because
-                that sentence is a paragraph, and a time at the end of a
-                paragraph is a time he will not read.
-            */}
+            {/* The edition stamp — WHO wrote the crew's notes and WHEN (#415,
+                #329) — and beside it the live half's own reading, because the
+                two are different facts: a shift last wrote at 09:01 and
+                GitHub was read twelve seconds ago. The bar above still says
+                when the PAGE last checked. */}
             <p className="dp-chrome dp-crew__stamp" data-testid="crew-edition-stamp">
               Briefing edition {stateQuery.data.briefing.edition}, written{" "}
               {staffDateTime(stateQuery.data.briefing.updatedAt)} by{" "}
               {stateQuery.data.briefing.shift}
+              {live.available
+                ? ` · GitHub read ${staffDateTime(live.desk.readAt)}${live.stale ? " and not answering since" : ""}`
+                : " · GitHub has not answered yet"}
               {stateQuery.isError && " · the last check failed — trying again"}
             </p>
           </>
-        )}
+          );
+        })()}
       </main>
     </StaffSurface>
   );

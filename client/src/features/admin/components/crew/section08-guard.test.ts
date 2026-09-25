@@ -187,14 +187,22 @@ describe("§1 — a paragraph's order does not move", () => {
    * of truth always drifts from it, and this one is the founder's order,
    * which is the last thing that should be written down twice.
    */
+  /* ⚠ REORDERED ON HIS WORD, 2026-09-25 (#1193): *"the feedback on the crew
+     page is so delayed and disoganised in terms of the Ui/UX like its
+     difficult for me to decipher what is actually going on … i must be able
+     to see the main program we are working on which milestones we are on etc
+     still"*. So THE PROGRAM stays first, what needs HIM comes next, then what
+     is happening, what just happened, and what is next. The #437 order this
+     replaces put NEXT UP and BACKGROUND WORK above NEEDS YOU. */
   const HIS_ORDER: [string, string][] = [
     ["the program", "<CrewProgramBanner"],
-    ["working now", "<CrewWorkingNow"],
-    ["next up", "<CrewNextUp"],
-    ["background work", "<CrewBackgroundWork"],
     ["needs you", "<CrewNeedsYou"],
     ["for your eyes", "<CrewEyeGallery"],
-    ["what is not done", "<CrewPipeline"],
+    ["working now", "<CrewWorkingNow"],
+    ["in flight", "<CrewPipeline"],
+    ["since you last looked", "<CrewSinceYouLooked"],
+    ["next up", "<CrewNextUp"],
+    ["background work", "<CrewBackgroundWork"],
     /* ⚠ `["already dealt with", "<CrewRecentHistory"]` was here and is GONE by
        his own word (#438). The section is not re-ordered — it is deleted, and
        §7 below asserts its absence rather than this list asserting its place. */
@@ -595,14 +603,17 @@ describe("§6 — THE PIPELINE keeps an honest empty state", () => {
   });
 
   it("draws it as a well block, the same treatment as the Needs You empty state", () => {
-    expect(pipeline).toMatch(/notDone\.length === 0 \?[\s\S]{0,400}dp-crew__well/);
+    /* Both empty states — GitHub answering with no open PR, and the edition's
+       own snapshot with nothing stuck (#1193) — are wells. */
+    expect(pipeline).toMatch(/liveRows\.length === 0 \?[\s\S]{0,400}dp-crew__well/);
+    expect(pipeline).toMatch(/snapshotRows\.length === 0 \?[\s\S]{0,400}dp-crew__well/);
   });
 
   /* ⚠ THE ROWS ARE THE OTHER HALF: an empty-state change must not become an
      empty SECTION. The populated branch still maps `notDone`. */
-  it("a populated pipeline still draws its rows", () => {
-    expect(pipeline).toMatch(/notDone\.map\(\(item\) => \(/);
-    expect(pipeline).toContain("<PipelineRow");
+  it("a populated pipeline still draws its rows — live PRs first, the snapshot's rows when GitHub has not answered", () => {
+    expect(pipeline).toMatch(/liveRows\.map\(\(pr\) => <LiveRow/);
+    expect(pipeline).toMatch(/snapshotRows\.map\(\(item\) => <SnapshotRow/);
   });
 
   it("POSITIVE CONTROL: the empty-state matcher fires on the line that was here", () => {
