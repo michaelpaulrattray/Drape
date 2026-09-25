@@ -1,7 +1,7 @@
 {
-  "edition": 526,
-  "updatedAt": "2026-09-25T07:55:00.000Z",
-  "shift": "Foreman — #1208 + #1220: a view that went wrong has a way back",
+  "edition": 527,
+  "updatedAt": "2026-09-25T09:22:49.782Z",
+  "shift": "Foreman — #1221: a signed cast's views keep her tattoos and her makeup",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3231,6 +3231,28 @@
       "state": "answered",
       "filedAt": "2026-09-25T03:27:26.134Z",
       "issueNumber": 1208
+    },
+    {
+      "id": "disabled-buttons-1237",
+      "issueNumber": 1237,
+      "title": "A switched-off button looks exactly like one that works, in 43 places",
+      "productImpact": "A button that is switched off looks exactly like a button that works. Same colour, same brightness, and the mouse pointer still turns into the little hand that means \"you can press this\". So she presses it, and nothing happens.\n\nThis is in 43 places, including two on the money pages: the plan-change window and the add-credits window.\n\nIt was never a decision anyone made. Every button in the product is drawn by one shared style rule, and that rule simply never says what a switched-off button should look like. There is one exception, at the bottom of the admin lists, and it is the only place in the whole product where a switched-off button reads as switched off.\n\nIt needs your word because it changes the look of every button in the product that is ever switched off, billing included.",
+      "workedExample": "Press Roll again on a casting sheet, then look at the Follow button under any face on the old sheet while the new one is being made. It is switched off, and it looks exactly like it did a second ago.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Give switched-off buttons a quieter look and a normal pointer",
+          "consequence": "One change in the shared rule, and all 43 read honestly. The product already does this by hand in about a dozen places, so the house answer exists — it just never reached the rule."
+        },
+        {
+          "key": "B",
+          "label": "Leave it, and keep saying what is happening in words nearby",
+          "consequence": "No work. The casting dock already says \"Rolling…\" while it works, but that only covers the places somebody remembered."
+        }
+      ],
+      "recommendation": "A. It is one change, it matches what the product already does by hand, and it is the only option that reaches the two money windows.",
+      "state": "open",
+      "filedAt": "2026-09-25T08:30:00.000Z"
     }
   ],
   "eyeItems": [
@@ -5909,6 +5931,14 @@
   ],
   "pipeline": [
     {
+      "id": "view-keeps-her-ink-1221",
+      "title": "A signed cast's views keep her tattoos, her piercings and her makeup",
+      "status": "merged",
+      "prNumber": 1239,
+      "cardId": null,
+      "note": "The view prompt was ordering her ink removed; it now reads the reference photograph instead."
+    },
+    {
       "id": "view-try-again-1208",
       "title": "A view that went wrong has a way back — Try again on the tile",
       "status": "merged",
@@ -8174,354 +8204,11 @@
       "detail": "Nothing you can see is affected — this is our tooling, not the product. One of the two checks a shift runs before it closes has been failing on a clean tree because six scratch files left behind by earlier shifts have errors in them. It matters because a check that is already red is a check a shift learns to ignore, which is how real breakage gets missed. It has been written up in four shift reports and nobody acted, so it is now a card the tidying round can take: #1231."
     },
     {
-      "id": "queue-shape-0925c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "Queue shape",
-      "detail": "47 open, and tonight filed one and answered none away: the price reading turned up a second question about the OLD engine's cost, which now has its own card. Two wait on you - whether the row showing your own sentence may wrap, and the roll-engine question above. 14 have had no comment, close, reopen or commit for 7 days, unchanged, and the oldest of them are design cards waiting on a rung rather than rotting work. One is urgent and yours, making this page live, and it is claimed and being built."
-    },
-    {
-      "id": "queue-shape-0925b-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "Queue shape",
-      "detail": "47 open, unchanged: three closed tonight — the segment retirement, the 220-character record and the ownership arms — and three filed. One waits on you: whether the row that shows your own sentence may wrap. 14 have had no comment, close, reopen or commit for 7 days, unchanged. One is urgent and yours — making this page live — and it is claimed and being built right now."
-    },
-    {
-      "id": "queue-shape-0925a-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "Queue shape",
-      "detail": "47 open, one more than this morning: tonight closed one and filed one. One waits on you — the 220-character limit on the record of what a customer typed (#1126). 14 have had no comment, close, reopen or commit for 7 days, unchanged, and the two oldest are design cards waiting on a rung rather than rotting work."
-    },
-    {
-      "id": "queue-shape-0924c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "Queue shape",
-      "detail": "41 open. Nothing needs you. 14 have had no comment, close, reopen or commit for 7 days — one fewer than this morning, and the two oldest are design cards waiting on a rung rather than rotting work."
-    },
-    {
-      "id": "pr-conflict-blocks-two-nights",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The two-night block is understood, and nothing is stuck — but it costs an extra fifteen minutes a night and one word from you could stop it",
-      "detail": "WHAT WAS HAPPENING. A night shift copies the project, does its job, and submits it. If the main project moves while it works, both versions rebuild the same machine-generated map file and GitHub calls that a clash. A clashing submission gets NO automatic checks at all — its page sits blank rather than showing a failure, so it looks like it is waiting when nothing is coming. It cost two finished jobs a night each.\n\nWHAT I FOUND. The one command that fixes it is refused because YOU asked for it to be refused. It is in your own settings file, on the list of version-control commands a shift must ask a person about — alongside the one that wipes uncommitted work. That list was added after a shift ran exactly that kind of command in the wrong copy of the project and lost work. So this is a deliberate guard doing its job, not a glitch, and I would not simply remove it.\n\nWHAT I DID INSTEAD, AND IT NEEDS NO NEW PERMISSION. The clash was never in the actual work — only in the generated map. So I started a fresh copy from the current project, put the same six files back on it, let the map rebuild itself, and submitted that. It went through clean and is live. I checked the two versions were identical before pushing, so nothing was lost or quietly changed.\n\nSO THIS IS NOW A SMALL QUESTION, NOT A BLOCKED NIGHT. The way round costs about fifteen extra minutes and uses up a new submission number each time it happens. If you would rather it did not, the narrow fix is to allow shifts that ONE command — and only when it is a merge of the main project into the shift's own copy — while leaving every other command on that list exactly where it is. My recommendation is to allow it: it cannot reach the live site, every real check still runs afterwards, and the incident that created the guard was a different command doing a different thing. But it is your safety rule and it is now costing minutes rather than nights, so it is entirely reasonable to leave it alone."
-    },
-    {
-      "id": "queue-shape-0923j-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 38 open, and your own list is empty once tonight's job merges. Nothing urgent, no check-up clock due before tomorrow.",
-      "detail": "Read at 03:53. 38 open — one more than three hours ago, and the new one is a job this shift filed itself: a second place in the old studio that takes a dropped picture without answering the hand.\n\nYour own ordered list had exactly one job on it — the concept window's picture swap — and that is what tonight built.\n\n21 of the 38 have had nothing happen to them for a week. The same 21 as the last six nights, so the backlog is flat rather than growing.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0923i-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 37 open, your own list has one job on it, none urgent. No check-up clock fires before tomorrow.",
-      "detail": "Read at 02:05. 37 open — one fewer than three hours ago, because your settings-chip job closed once it was confirmed live on the real site rather than just merged.\n\nYour own ordered list has ONE job on it: the concept window's missing way to swap the picture without losing what you typed. Nothing is urgent.\n\n21 of the 37 have had nothing happen to them — no comment, no close, no code — for a week. The same 21 as the last six nights, so the backlog is flat rather than growing.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0923h-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 38 open, your own list back to EMPTY, none urgent. No check-up clock fires before tomorrow.",
-      "detail": "Read at 01:06. 38 open — up one on the reading three hours ago. Your drop-a-picture job was written, built and closed inside the same night, and the wrap it shipped with was written, fixed and closed beside it.\n\nYour own ordered list is back to empty, so the team returns to the background categories you have switched on. All seven are on.\n\n21 of the 38 have had nothing happen to them — no comment, no close, no code — for a week. The same 21 as the last five nights, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0923g-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 37 open, your own list still EMPTY, none urgent. The tidy-up clock comes round tomorrow.",
-      "detail": "Read at 23:58 tonight. 37 open — nothing written and nothing closed since the last reading, so the board is exactly where it was.\n\nYour own ordered list is still empty, so the team keeps working from the background categories you have switched on. All seven are on. One of the seven — housekeeping — was showing a job that no ordinary night could take; it is marked as held now, so that row reads zero and means it.\n\n21 of the 37 have had nothing happen to them — no comment, no close, no code — for a week. The same 21 as the last five nights, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0923f-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 37 open, your own list still EMPTY, none urgent. No check-up clock fires before tomorrow.",
-      "detail": "Read at 23:21 tonight. 37 open - two closed tonight and nothing new written, so the board is down two on the reading six hours ago. Both closures are tonight's own work: the guard that stops this page listing a job twice, and the tidy-up of the team's own tools.\n\nYour own ordered list is still empty, so the team keeps working from the background categories you have switched on. All seven are on.\n\n21 of the 37 have had nothing happen to them - no comment, no close, no code - for a week. The same 21 as the last four nights, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0923e-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 39 open, your own list still EMPTY, none urgent. No check-up clock fires before tomorrow.",
-      "detail": "Read at 22:23 tonight. 39 open - one closed and two written, so the board is up one. The one closed is tonight's build; of the two written, one is a guard against this page listing the same fix twice, and the other is a tidy-up the night team found while sweeping its own work. Neither needs you.\n\nYour own ordered list is still empty, so the team keeps working from the background categories you have switched on. All seven are on.\n\n21 of the 39 have had nothing happen to them - no comment, no close, no code - for a week. The same 21 as the last three nights, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0923d-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 38 open, your own list still EMPTY, none urgent. No check-up clock fires before tomorrow.",
-      "detail": "Read at 21:17 tonight. 38 open - one closed tonight and one written tonight, so the total is flat on last night rather than standing still: the one closed is the blind-spot job I built, the one written is the same fault on this page, which needs a wording decision from you before anybody builds it.\n\nYour own ordered list is still empty, so the team keeps working from the background categories you have switched on. All seven are on.\n\n21 of the 38 have had nothing happen to them - no comment, no close, no code - for a week. The same 21 as the last two nights, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0923c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 38 open, your own list still EMPTY, none urgent. No check-up clock fires before tomorrow.",
-      "detail": "Read at 20:34 tonight. 38 open, up two on last night - and both of the new ones were written by the shifts themselves rather than by anything going wrong: one about a leftover practice record in the test database, one about the blind spot described above.\n\nYour own ordered list is still empty, so the team keeps working from the background categories you have switched on. All seven are on.\n\n21 of the 38 have had nothing happen to them - no comment, no close, no code - for a week. That is the same 21 as last night, so the backlog is flat rather than growing. It over-reports on purpose, so it is the honest figure.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0923b-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 36 open, your own list is now EMPTY, none urgent. No check-up clock fires before tomorrow.",
-      "detail": "Read at 19:30, after tonight's two releases. 36 open, down one - your lobby job closed and nothing new was filed, because tonight's work came entirely off jobs already on the board.\n\nYour own ordered list is empty for the first time in several nights: the lobby fix was the only thing on it and it shipped. That is not a prompt to do anything - it means the team works from the background categories you have switched on until you add something.\n\n21 of the 36 have had nothing happen to them - no comment, no close, no code - for a week. Flat, not growing. That is the honest backlog figure.\n\nOne job is still open and waiting on the relay: the makeup-reader wording fix, which touches a money-adjacent area and so is held for a hand review rather than released by a night shift."
-    },
-    {
-      "id": "queue-shape-0922b-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 33 open, your list empty, none urgent. One bug open and it is the half of tonight's that needs a database change. No check-up clock fires before Wednesday.",
-      "detail": "Read at 11:00, after tonight's merge. 33 open cards, unchanged - one closed and one filed. 17 have had no comment, close, reopen or commit for a week or more, the same as last night; that figure counts real activity only, so a label edit does not reset it. Your own ordered list is empty and nothing is marked urgent. The one open bug is #1076, the makeup half of tonight's fix: a night shift can build it and open it, but it needs a small database change, and a change touching the database is reviewed by hand before it can go in - so it will sit for a review rather than closing itself overnight. That is the lane working as designed, not a blockage. Nothing here needs you."
-    },
-    {
-      "id": "queue-shape-0922-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 33 open, your ordered list empty, none urgent; one bug left and it needs a decision about wording, not a patch; no check-up clock before Wednesday",
-      "detail": "Read at 10:10, after this shift's merge. 33 open cards. 17 have had no comment, close, reopen or commit for a week or more - that number jumped from 1 to 15 earlier this month when the reading was fixed to stop counting a label edit as attention, so it is a truer figure rather than a worse backlog; the oldest are #65, #14, #706, #26, #801, #15 and #60, all long-range casting roadmap items waiting on a milestone rather than rotting through neglect.\n\nUnder your switches: Bugs 1, everything else zero. That one bug is #1072 - two more refusal messages that tell a customer something untrue about her own request, found by sweeping for the same mistake as this morning's. It is deliberately not being batched: each one needs a sentence written for it, which is a wording decision rather than a patch.\n\nCheck-up clocks: Janitor is due 24 September, Warden 27th, Machinist and Retro 26th. None has fired."
-    },
-    {
-      "id": "queue-shape-0921a-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 29 open, one closed tonight (1051); NEXT UP empty; nothing left under any of your switches; no check-up clock fires before Friday",
-      "detail": "Read at 23:21Z after the merge: 29 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading) - roadmap rungs you have not reached rather than neglected work. Every category under your switches is at zero on fresh counts; the three held cards (108, 129, 45) are unchanged. The outside reviewer is still not starting (first call, under half a second, nothing spent), so a money or sign-in change would wait for it; tonight's was neither."
-    },
-    {
-      "id": "socket-skip-1051",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The merge tool called a supply-chain 'skipped' a rejection - fixed (card 1051, change 1052); it now says 'no verdict, push a fresh version'",
-      "detail": "Counted before fixing: of the last 60 changes (104 versions) the scanner skipped 5 - three because GitHub had not sized the change up yet, two because it could not yet see the change's starting point - and rejected none. The tool now reads a skip as its own thing: it still refuses to merge, and it names the remedy (an empty change pushed). A real rejection stops the merge exactly as before, proved in the tests with the real record of the skipped change."
-    },
-    {
-      "id": "queue-shape-0919c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 32 open, none takeable tonight beyond the one landed (1037 closed); NEXT UP empty; the Warden fires tomorrow. The automatic reviewer is not starting (allowance shape) - money and sign-in changes will wait for it",
-      "detail": "Read at 03:31Z: 32 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged from the Retro) - roadmap rungs you have not reached rather than neglected work. Three Performance cards are open (1034, 1035, 1036), each sized at the code tonight as bigger than a batch item; 1035 is noted as waiting on 1034. The reviewer: two runs on PR 1039 died at start in under a second at zero cost (is_error, the #218/#884 shape). Team tooling merges on the gate alone; a money or auth change opened before it returns is held ready with its label, per the orders.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0919b-retro",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 34 open, one filed by the Retro (1037 - the pre-push tool runs the two tests it cannot see), one Retro card built and closing (1006). NEXT UP empty; the Warden's clock fires tomorrow",
-      "detail": "The Retro's weekly read: every shift report this week checked out at the artifacts (108 of 108 verified, 96 of 96 closed-card claims true), all 123 merges trace to a card or a rule of yours, and one repeat was carded - three shifts red on the same test after three green local checks. 17 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged from this morning) - roadmap rungs you have not reached rather than neglected work.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0919a-machinist",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 33 open, nothing closed, three filed by the Machinist (1034, 1035, 1036 - all measurements, none needing you). NEXT UP empty; the Retro's clock fires today",
-      "detail": "The Machinist's weekly reading filed three Performance cards: the gate's serial job (half of every run is the test suite), a bundle-size check the gate can read, and a measured look at the first download. 17 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading) - up from 15, and still roadmap rungs you have not reached rather than neglected work. Nothing was closed: nothing on the board was takeable under a switch except the patrol itself.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0917k-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 30 open, 1003 closed on your eye, nothing filed. NEXT UP empty; nothing on offer under any switch; the Janitor's clock fires tomorrow",
-      "detail": "Closed this shift: card 1003 (Settings on a phone) on your 'good for now' at 21:41 - the build was already on production (PR 1033, build 8e63308b) and only your look was owed. Nothing merged, nothing filed, nothing spent. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level with the last five shifts. NEXT UP: empty. Under the switches, every category is at zero on counts refreshed 21:44: 108 is held rows only, 1006 is the Retro's (clock 19 September), 129 waits on refused rolls, 45 is parked by you. The runner will park itself on the next quiet shift and wake on your next reply."
-    },
-    {
-      "id": "queue-shape-0917j-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 31 open, nothing closed (1003 waits on your eye), nothing filed. NEXT UP empty; the Janitor's clock fires tomorrow",
-      "detail": "Merged this shift: PR 1033 (card 1003, Settings on a phone) - on production as build 8e63308b, verified at the health check. 1003 stays OPEN for your eye: the before/after frames are in your gallery, and your word there closes it. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level with the last four shifts. NEXT UP: empty. Under the switches: 108 (held rows only), 1006 (the Retro's, clock ~19 September), 129 held on its own data. Nothing new filed. The reviewer's one observation on 1033 - the selected chip's outline is fainter than the others', so the selection is carried by the fill and the bolder type - is left for your eye with the frames rather than changed on a guess."
-    },
-    {
-      "id": "queue-shape-0917h-relay",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 31 open, 26 of them roadmap. Nothing on offer under any switch; NEXT UP empty; one card on your desk (1003).",
-      "detail": "Refreshed by the relay at 18:45 after three quiet shifts left the 15:26 counts standing. 108 and 129 left NEXT UP (held on him: five protected rows; refused rolls). 1003 is on his desk. 1006 is the Retro patrol's, due Saturday. 45 parked by him. The team parks on the next quiet close."
-    },
-    {
-      "id": "queue-shape-0917i-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 31 open, one closed (1026), nothing filed. Every background band is empty of takeable cards; the Janitor's clock fires tomorrow",
-      "detail": "Closed this shift: 1026 (the doubled reviewer bill - live). 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 (held rows only, none a Janitor's call), 129 held on its own data (not waiting on you). Your desk: 1003 at your own asking. Left for the Retro (clock ~19 September): 1006, which asks a design question about how your Next Up list is ordered - nothing on it is mis-ordered today, so waiting costs nothing. One flake seen once during the full test run (a throwaway git worktree's registration vanishing under load) is recorded on card 969 with its log line, not filed."
-    },
-    {
-      "id": "queue-shape-0917h-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 32 open, one closed, nothing filed. 108's last slice is done; what is left on it waits on decisions that are not a shift's. The Janitor's clock fires tomorrow",
-      "detail": "Closed tonight: 1022 (the reader's scope - live). 108 stays open for its five held rows, each waiting on something that is not a Janitor's call (a recorded keep, the parked evidence family, the lobby files you said stay); it is not takeable work. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 (held rows only), 129 held on its own data (not waiting on you). Your desk: 1003 at your own asking. Left as before: 1006 and 1026 (the Retro's - its clock fires about 19 September)."
-    },
-    {
-      "id": "queue-shape-0917g-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 33 open, one closed, nothing filed. Every background band is empty of takeable cards; the next thing that fires is the Janitor's clock (about 18 September)",
-      "detail": "Closed tonight: 1028 (the balance endpoints' two names - live, proven on production). 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 open with its remainder on 1022, 129 held on its own data (re-read tonight: still true, not waiting on you). Nothing on your desk. Left as before: 1006, 1022 and 1026 (the Retro's - its clock fires about 19 September), 1003 (a design decision at phone width - not a shift's call)."
-    },
-    {
-      "id": "queue-shape-0917f-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 34 open, one closed, one filed. Every background band but Housekeeping is empty, and Housekeeping's one takeable card is the new one",
-      "detail": "Closed tonight: 1025 (the price table's two names - live). Filed: 1028 (the balance endpoints' two names - three old 'points' reads duplicating the 'credits' ones, no caller since 3 February; recommendation to clear it, one small change). 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 open with its remainder on 1022, 129 held on its own data (re-read tonight: still true, not waiting on you). Nothing on your desk. Left as before: 1006, 1022 and 1026 (the Retro's - its clock fires about 19 September), 1003 (a design decision at phone width)."
-    },
-    {
-      "id": "queue-shape-0917e-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 34 open, one closed, two filed. The Bugs band is empty again",
-      "detail": "Closed tonight: 1014 (the money-guard bug, both halves live). Filed: 1025 (the price table's two names - same class, old studio, recommendation to clear it now) and 1026 (a money-path change marked ready and labelled for review is reviewed twice - $17.19 tonight; for the Retro). 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 open with its remainder on 1022, 129 held on its own data (re-read tonight: still true, not waiting on you). Nothing on your desk. Left as before: 1006 and 1022 (the Retro's), 1003 (a design decision at phone width)."
-    },
-    {
-      "id": "queue-shape-0917d-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 33 open, one filed. 108 is three parts into three; its remainder is a tooling decision (1022)",
-      "detail": "One card filed tonight (1022, for the Retro: whether the history check should also read the customer side and shared code - it decides how the last 256 items on 108 get cleared; recommendation on the card). Nothing closed. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level. NEXT UP: 108 open with its remainder named, 129 held on its own data (re-read tonight: the hold is still true). Nothing on your desk. Two background cards sized and left again: 1006 (the Retro's eye) and 1003 (a design decision at phone width); 1014 is a money-path bug that wants a full session under the reviewer."
-    },
-    {
-      "id": "queue-shape-0917c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 32 open, level. 108 is two parts into three",
-      "detail": "Nothing closed, nothing filed tonight. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level with last night. NEXT UP: 108 takeable (part three, unused types), 129 held on its own data. Nothing on your desk. Two background cards were sized and left: 1006 asks for the Retro's eye on whether your order is a label or a field, and 1003 is a design decision on the Settings modal at phone width."
-    },
-    {
-      "id": "queue-shape-0917b-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 32 open, level. 108 is two parts into three; 1016 closed",
-      "detail": "One card closed tonight (1016, the referral code kept on a bad connection - on production). Nothing filed. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading, not the 'updated' stamp) - level with last night. NEXT UP: 108 takeable (part two's deletion, then part three), 129 held on its own data. Nothing on your desk."
-    },
-    {
-      "id": "queue-shape-0917a-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 33 open, level. Your 105–107 are cleared; 108 is one part into three",
-      "detail": "One card closed tonight (1010, the referral link — fixed and on production) and two filed: 1014, found by 108’s own reading (the money deduction has two names, and about a dozen guards that promise “this road charges nothing” only check one of the spellings — read at the code: 24 test files, more than the card first said, so it is a session of its own, under the reviewer); and 1016, found by the reviewer on the referral fix (one bad connection at the single automatic claim attempt still loses the referral — small, client-only). So the board goes 32 → 33.\n\nOf your five: 527 done, 129’s first part live and its second part waiting on your refused rolls, 105 done, 106 done, 108 one slice in. A shift died overnight mid-wait after opening two finished PRs and never marked them ready for review; this shift found them, read both at the code, and landed them — nothing was lost, and the dead shift’s row on this page is closed with that note.\n\n15 open cards have had no comment, close, reopen or commit for 7 days — level with last night."
-    },
-    {
       "id": "referral-link-dead-1010",
       "severity": "warning",
       "state": "resolved",
       "title": "Your referral link does nothing when a friend opens it — since 4 April",
       "detail": "What a customer sees: Settings shows their referral link with a Copy button. They send it to a friend. The friend opens it — and nothing is captured, nothing is claimed, and neither of them gets the reward when the friend signs up. Only typing the code by hand into “Redeem a referral code” works.\n\nWhy: the small piece of code that reads “?ref=CODE” off the link and claims it after sign-in was only ever used by the old dashboard page, and that page was deleted on 4 April (a Manus clean-up commit). The server half still works and is still tested; it has simply had nothing calling it for five months. Found by 106’s third check — the one that asks not “does anything use this?” but “did something STOP using it, and why?” — which is exactly what that check is for.\n\nThe fix is filed as bug 1010: mount that piece of code once at the app root. One import, one line. It is money-adjacent (it turns referral rewards back on for link sign-ups, through the same reward code the hand-typed road already uses), so the PR carries founder-review and goes through the reviewer whatever its size. Recommendation: wire it — it is the behaviour your settings page already promises. If you would rather retire the link instead, say so on 1010."
-    },
-    {
-      "id": "queue-shape-0916f-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 32 open, level. Your 105 and 106 are cleared; 108 is next",
-      "detail": "Two cards closed tonight (106, your clean-up job, and 1009, the one-line test fix filed last shift) and one filed (1010, the referral link above). So the board goes 33 → 32.\n\nOf your five: 527 done, 129’s first part live, 105 done, 106 done. Still to do, in your order: 108 — one session, duplicates first. One thing on 108 for the relay rather than a shift: your same sentence asked whether 203 and 108 belong under N2 instead of background work; 203 was moved, 108 was not, and nothing on the card says why. A shift will take 108 as ordered unless that is answered first.\n\n15 open cards have had no comment, close, reopen or commit for 7 days — level with last night."
-    },
-    {
-      "id": "queue-shape-0916e-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 33 open, level. Your 105 is cleared; 106 and 108 are next",
-      "detail": "One card closed tonight (105, the clean-up you ordered) and one small one filed from what the test run printed on the way (#1009 — a test file sets the same value twice; harmless, one line, left as a small fix rather than worked unasked). So the board is level at 33.\n\nOf your five: 527 done, 129's first part live, 105 done. Still to do, in your order: 106, then 108 — one session each. 106 now carries one extra item handed on from 105 (the one screen part held back), written on the card.\n\n15 open cards have had no comment, close, reopen or commit for 7 days — level with last night; the oldest is “Takes” at 19 days, a design waiting its turn."
-    },
-    {
-      "id": "queue-shape-0916d-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 33 open, one fewer. The refusal job's first part shipped tonight; your 105, 106 and 108 are next",
-      "detail": "One card closed tonight: the temporary rule that had the relay hand-check money and account changes while the automatic reviewer was out — it is back, and reviewed tonight's change twice. Nothing new filed.\n\nOf your five: 527 is done; 129's first part is live and the job stays open for its next part, which needs a few of your refused sheets on record first. Still to do, in your order: 105, 106, 108.\n\n15 open cards have had no comment, close, reopen or commit for 7 days — level with last night; the oldest is “Takes” at 19 days, which is a design waiting its turn, not stuck work."
-    },
-    {
-      "id": "queue-shape-0916c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 34 open, level. Your second job was measured tonight and handed on rather than guessed at; 3 remain",
-      "detail": "Nothing closed and nothing filed tonight, so the board is level at 34.\n\nOf your five: 527 is done, 129 was measured tonight and passed to the seat that makes privacy and instruction calls — with its numbers already taken, so it is not paid for twice. Still to do, in your order: 105, 106, 108 — one session each.\n\n15 cards have had no comment, close or commit for seven days, level with last night.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0916a-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 36 open. One job built and merged tonight and its card is closed. NEXT UP is empty",
-      "detail": "One job built tonight (#995, a cancel pressed before the charge). The relay hand-reviewed it, merged it and closed it. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days; the oldest is #28. Bugs is now empty. Performance holds one large program (#58) and casting upkeep one patrol build (#129); the housekeeping cards are parked. The reviewer instruction (#988) still stands until the outside reviewer is back."
-    },
-    {
-      "id": "queue-shape-0915k-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 37 open. One job built and merged tonight and its card is closed. NEXT UP is empty",
-      "detail": "One job built tonight (#991, a moderator request stuck at Outcome unconfirmed). The relay hand-reviewed it, merged it and closed it. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days; the oldest is #28. Bugs now holds one job, #995 (a cancel pressed before the charge). It needs a design choice, so it is marked for a Fable shift rather than an ordinary night. Performance holds one large program (#58) and casting upkeep one patrol build (#129); the housekeeping cards are parked. The reviewer instruction (#988) still stands until the outside reviewer is back."
-    },
-    {
-      "id": "queue-shape-0915j-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 38 open. One job built and merged tonight and its card is closed. NEXT UP is empty",
-      "detail": "One job built tonight (#994, two more ways a cancelled roll could keep credits). The relay hand-reviewed it, merged it and closed it. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days; the oldest is 21 days (#28). The two money jobs left in Bugs each need a choice between fix shapes rather than a straight build: #995 (a cancel pressed before the charge) and #991 (a stuck change request). Your casting upkeep list stays at 5. NEXT UP is empty because the relay took the ordered label off your reviewer instruction (#988) so the nights keep working: the rule still stands until the reviewer is back."
-    },
-    {
-      "id": "queue-shape-0915i-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 40 open. One job built and merged tonight (its card closes when the relay reads it back live), two related jobs filed. NEXT UP holds only your reviewer instruction",
-      "detail": "One job built tonight (#955, a cancelled tile's refund lost to a server stop). The relay hand-reviewed and merged it. Two related jobs filed from the same read (#994, #995), both about money coming back when a roll is cancelled, and neither has hit anyone. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days; the oldest is 21 days (#28). The other stuck-request job (#991) needs a choice between two fix shapes on a money page, so it is left for a deliberate pass rather than squeezed in. Your casting upkeep list stays at 5."
-    },
-    {
-      "id": "queue-shape-0915h-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 39 open — one job built and merged tonight (its card closes when the relay reads it back live), one filed; NEXT UP holds only your reviewer instruction",
-      "detail": "One job built tonight (#923, the stuck credit request) and the relay hand-reviewed and merged it. One new job filed (#991) — nine other ways a change request can get stuck, one of them reachable. Nothing is marked urgent. 22 open cards have had no comment, close, reopen or commit for 7 days — the oldest is 21 days. The refund-wording job (#955) is now correctly read as takeable: it is money work and a full night on its own, and the sentence question it carries comes to you with the fix in hand, as the job itself says. Your casting upkeep list stays at 5."
-    },
-    {
-      "id": "queue-shape-0915g-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 43 open — one job built and waiting on a merge, one filed, two unblocked; NEXT UP is empty",
-      "detail": "One job built tonight (#958, the money flag) and it is finished, green and waiting for a merge decision rather than for work. One new job filed (#987) — the tool that merges finished work still reads only half the money check, and the other half is free in data it already fetches. Two jobs unblocked: #955 and #956 were waiting on your refund fix #954, which finished at 3:37 this morning; I read the code to confirm it landed and took the hold off both. Nothing is marked urgent and NEXT UP is empty. 22 cards have gone a week with no comment, close or commit against them — the oldest is 20 days. Your casting upkeep list stays at 5 and all five need your word or your money; three nights running have now read every one of them at the code rather than the title."
-    },
-    {
-      "id": "queue-shape-0915f-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 47 open — one job finished tonight, none filed; NEXT UP is empty and nothing new waits on you",
-      "detail": "One piece of work shipped tonight (#985, closing the third of five items on an old diagnostics job) and nothing new was filed — the one thing I found along the way turned out not to affect anything, so carding it would have been noise. Nothing is running and nothing is marked urgent. 24 cards have gone a week with no comment, close or commit against them — the same 24 as last night — and the oldest is 20 days. Your casting upkeep list stays at 6: the job I worked keeps two items open and both are correctly out of reach for a maintenance shift — one needs a paid measurement, one is a design decision. The five finished money jobs held for the outside reviewer are untouched and still held; I re-measured it at 26 attempts, 0 reviews."
-    },
-    {
-      "id": "queue-shape-0915e-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 47 open — none closed tonight, none filed, and four corrected; NEXT UP is empty and nothing new waits on you",
-      "detail": "Nothing was closed or filed tonight and nothing merged. Four jobs were CORRECTED instead — they were describing work that has already been done, which is the opposite of the usual problem and is harder to spot. Nothing is running and nothing is marked urgent. 24 cards have gone a week with no comment, close or commit against them, down from 27, and the oldest is 20 days. Your casting upkeep count moves 7 to 6: one job is now purely about building something new, so it has moved to the longer-term list where I cannot start it without your word. The five finished money jobs held for the outside reviewer are untouched and still held — I re-measured it at 17 attempts, 0 reviews, and deliberately did not spend the night asking again."
-    },
-    {
-      "id": "queue-shape-0915d-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 46 open — one closed tonight, none filed; NEXT UP is empty and one new thing waits on you",
-      "detail": "One job closed tonight (#979, both halves) and nothing new was filed — the two faults found along the way were the job's own subject, so they were fixed rather than carded. Nothing is running and nothing is marked urgent. 27 cards have gone a week with no comment, close or commit against them — the same 27 as last night — and the oldest is 20 days. NEW ON YOUR PAGE TONIGHT: the two Process jobs that seven shifts running have correctly refused, one of which is about money jobs reaching your eye. The five finished jobs held for the outside reviewer are unchanged and still held."
-    },
-    {
-      "id": "reviewer-no-verdict-0915d",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The outside reviewer stopped after 42 seconds again — and it said in its own words that this is an outage, not a judgement",
-      "detail": "It ran on tonight's first job and died on its first question. Its own log prints: 'NO VERDICT: the Fable reviewer did not complete. This is an OUTAGE, not a rejection — nothing in this diff was judged.' That sentence exists because a red mark here was once read as the reviewer rejecting work, which cost two nights before anyone dug out the log. Tonight's second job got a different answer again — 'declined', meaning the reviewer looked and decided the job did not need a full review, which is the system working rather than failing. Both went through on our own checks under your standing ruling. Nothing here needs you; it is recorded so the reviewer's silence stays visible."
-    },
-    {
-      "id": "queue-shape-0915c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 49 open — two closed tonight and one filed; NEXT UP is still empty and nothing new waits on you",
-      "detail": "Two jobs closed tonight (#969 and #971) and one filed and finished in the same shift (#971). Nothing is running, nothing is marked urgent, and your NEXT UP list is empty. 27 cards have gone a week with no comment, close or commit against them — the same 27 as last night, and the oldest is 20 days old. The five finished jobs held for the outside reviewer are the only thing waiting on you, and they are unchanged."
-    },
-    {
-      "id": "reviewer-declined-0915c",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The outside reviewer did not run tonight — and for once that is it working correctly, not failing",
-      "detail": "Both of tonight's changes were small and touched no money or sign-in code, so the triage step looked at them and decided a paid review was not warranted. That is a decision, not a breakdown — worth saying plainly, because the last few nights this row has reported the reviewer dying on its first call. Nothing about your Fable allowance has changed, and your 'wait' on the five held money jobs stands exactly as it did."
     },
     {
       "id": "fable-reviewer-no-verdict-884-0915",
@@ -8531,32 +8218,11 @@
       "detail": "Tonight's job touched no money and no sign-in code, so it merged on our own checks under your 2026-08-29 ruling. The reviewer job died after 977 milliseconds on its first call having spent six tenths of a cent — the same shape as every other failed run, which is #884's reading: everything about it is identical either side of the boundary, and the only unread thing left is your Fable allowance. Nothing here needs you unless you want to look at that."
     },
     {
-      "id": "queue-shape-0915b-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 50 open — level with last night; NEXT UP is still empty and nothing new waits on you",
-      "detail": "50 open, unchanged: one closed tonight (#967) and one filed (#969, the cause I could not prove). Nothing is marked urgent and NEXT UP — the jobs you have personally ordered — is empty, so tonight ran on the background switches in their fixed order. 27 cards have gone a week with nobody touching them, unchanged for the seventh night; the oldest is #28 at 20 days. That figure is not getting worse, and it is not getting better either."
-    },
-    {
-      "id": "queue-shape-0915-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 50 open — one closed and two filed tonight; NEXT UP is still empty and nothing new waits on you",
-      "detail": "50 open, two more than last night, and the direction is honest rather than bad: #962 was closed and two new jobs (#964, #965) were filed out of what tonight's measurements turned up. 27 cards have had no comment, close or commit for seven days — unchanged for a fifth night — and the oldest is #28 at 20 days. The category order was re-read at the code rather than off card titles: Bugs — #962 was the one takeable card and it is done, the rest are finished-and-held on your word (#804, #940) or blocked on one of those (#923, #955); Small fixes and Security — empty; Process — both are the Retro's own seat and its clock does not fire for four days; Performance — the Machinist's programme, and the two jobs I filed tonight join it; Housekeeping — the Janitor's, due today but not yet overdue; Casting upkeep — seven, none of them small. Worth saying plainly: the raw 50 badly overstates what a shift can pick up. After this card there was genuinely nothing else takeable tonight, which is why no second job was started — that is a correct night, not a slow one. The five held jobs remain the only thing waiting on you, and all five were re-checked tonight and are still one click from going in."
-    },
-    {
       "id": "fable-reviewer-no-verdict-884-0914d",
       "severity": "warning",
       "state": "resolved",
       "title": "The outside reviewer failed again tonight — the 31st in a row, identical to the other thirty, and your 'wait' stands",
       "detail": "Tonight's job touched no money and no sign-in code, so it merged on our own checks as your rule allows — but the reviewer still ran and still died the same way: it reached the point of asking the model, failed in half a second, used nothing and spent nothing. Read out of the run's own log rather than off the red tick, which is the only reading that can tell this apart from a genuine bad verdict. Nothing here is new and nothing was re-diagnosed: you closed #884 saying the only unread thing left is your own Fable allowance. The five finished jobs behind it are on your desk."
-    },
-    {
-      "id": "queue-shape-0914m-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 49 open, one closed tonight and one filed; NEXT UP is empty, and almost nothing in it is actually takeable",
-      "detail": "49 open, level with last night — one closed (#916, on your canvas reply) and one filed (#960, about our own shift tooling). 27 cards have had no comment, close, reopen or commit for seven days, unchanged from last night; the oldest untouched is #28 at 20 days. None are urgent and NEXT UP is empty.\n\n⚠ WORTH KNOWING RATHER THAN THE RAW NUMBER: tonight the queue read as busy and was nearly empty of work anyone could start. Of the bug cards, three are finished and sitting in the held pile and one is blocked on the reviewer. Two more (#955, #956) turned out to depend on a held job — they are now marked blocked so no shift starts them by accident. Four of the housekeeping cards are reserved for the cleanup patrol, which is next due tomorrow, and two more ask for a decision rather than a fix. Your one word on the held pile is what actually moves this list."
     },
     {
       "id": "fable-reviewer-no-verdict-884-0914c",
@@ -8566,25 +8232,11 @@
       "detail": "Tonight's job was not money or sign-in work, so it merged on our own checks as the rule allows — but the reviewer still ran and still failed, identically to every other one: it reached the point of starting, died on its first question in 0.5 seconds, and spent nothing. Read at the run's own record rather than at the red tick, which is the only way to tell a failure from a verdict. You have said the reviewer card is not relevant and it is closed; I did not re-diagnose it. Nothing new here — it is recorded so the run of failures stays countable."
     },
     {
-      "id": "queue-shape-0914l-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 49 open, one closed tonight and three filed; NEXT UP is empty and nothing new waits on you",
-      "detail": "49 open, up from 47 — one card closed (#932) and three filed, which is the honest direction when a job's own sweep finds real things. Two of the three (#955, #956) are the same fault as tonight's fix down two other roads, both measured on the live database as having hurt nobody yet; the third (#958) is about our own safety gate and is the sharpest of them. The main job (#896) is built and waiting on the reviewer rather than closed, which is why the number did not fall further. 27 cards have had no comment, close, reopen or commit for seven days — one more than last night. None are urgent, NEXT UP is empty, and the oldest untouched card is #28 at 20 days."
-    },
-    {
       "id": "fable-reviewer-no-verdict-884-0914b",
       "severity": "warning",
       "state": "resolved",
       "title": "The outside reviewer failed again tonight — at least 40 failed runs, and your 'wait' stands",
       "detail": "Counted rather than carried over: of the last 100 reviewer runs, 40 ended in failure, the oldest of those on 13 September — and the list does not reach back far enough to see the start, so 40 is a floor. Tonight's run on the refund fix died the same way as all of them: it reached the point of starting work, failed on its first question in 0.8 seconds, and spent nothing. You have said the reviewer card is not relevant and it is closed; I did not re-diagnose it. ONE THING WORTH KNOWING FOR ANYONE SCANNING THE LIST: a reviewer run tonight shows GREEN, and it reviewed nothing — the green means 'we looked at this job and decided it did not need a review'. A run finishing is not a verdict."
-    },
-    {
-      "id": "queue-shape-0914k-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 51 open, one closed tonight and one filed; NEXT UP is empty and nothing waits on you",
-      "detail": "51 open. One card closed (#946) and one filed (#950, found by looking at the screen I had just fixed); the second card I worked (#940) is built and waiting on the reviewer rather than closed, which is why the number did not fall. 26 have had no comment, close, reopen or commit for seven days — unchanged for the sixth night. None are urgent, NEXT UP is empty, and the oldest untouched card is #28 at 20 days."
     },
     {
       "id": "fable-reviewer-no-verdict-884-36",
@@ -8594,13 +8246,6 @@
       "detail": "Both of tonight's changes failed the same way as the thirty-four before them: about six hundred milliseconds, one turn, zero dollars, an error on the very first step, all still tracing to 1am on the 12th. I read each run's own numbers rather than the red tick beside it, and I did not re-diagnose it — you said wait. WHAT IS NEW IS THE COST: one of tonight's two changes touches a file the safety net treats as money-related, so our own rule holds it back until a reviewer exists. It is finished, its checks are green, and it needs one click when the reviewer is back. That is the first time this outage has actually stopped work rather than just looked alarming."
     },
     {
-      "id": "queue-shape-0914j-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 50 open, two closed tonight and one filed; NEXT UP is empty and nothing waits on you",
-      "detail": "50 open, down one on last night — two cards closed (#931, #933) and one filed (#938), which is a night that finished both things it started and found one more while inside the second. 26 have had no comment, close, reopen or commit for seven days, unchanged for the third night running. None are urgent, NEXT UP is empty, and the oldest untouched card is #28 at 19 days. The one filed card carries its measurements and the decision it needs written into it, so whoever takes it re-derives nothing."
-    },
-    {
       "id": "fable-reviewer-no-verdict-884-30",
       "severity": "warning",
       "state": "resolved",
@@ -8608,291 +8253,11 @@
       "detail": "Both of tonight's changes failed the same way as the twenty-eight before them: 563 milliseconds, one turn, zero dollars, an error on the very first step, every one of them still tracing to 1am on the 12th. I read each run's own numbers rather than the red tick beside it. You said wait, so I did not re-diagnose it. Neither change touched money or sign-in — the machine confirmed that by applying no label — so both merged on the machine checks alone."
     },
     {
-      "id": "queue-shape-0914i-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 51 open, two closed tonight and three filed; NEXT UP is empty and nothing waits on you",
-      "detail": "51 open, level with last night — two cards closed (#902, #903) and three filed, which is the shape of a night that finished one thing and found three more while inside it. All three filed cards carry their measurements, so whoever takes them re-derives nothing. 26 have had no comment, close, reopen or commit for seven days, unchanged. None are urgent, NEXT UP is empty, and the oldest rotting card is #28 at 19 days."
-    },
-    {
       "id": "fable-reviewer-no-verdict-884-28",
       "severity": "warning",
       "state": "resolved",
       "title": "The outside reviewer has now failed 28 times in a row, all from the same moment — your 'wait' stands",
       "detail": "Both of tonight's changes failed the same way as the twenty-six before them: 753 and 35 milliseconds, one turn, zero dollars, an error on the very first step, every one of them still tracing to 1am on the 12th. I read the runs' own numbers rather than the red tick beside them. You said wait, so I did not re-diagnose it. Neither change touched money or sign-in — the machine confirmed that by applying no label — so both merged on the machine checks alone, which passed first time on both."
-    },
-    {
-      "id": "queue-shape-0914g-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 52 open, one closed tonight (#921) and two filed (#923, #925); NEXT UP is empty",
-      "detail": "52 open, up one on last night — one closed and two genuinely new. 26 have had no comment, close, reopen or commit for seven days, unchanged from last night. None are urgent and NEXT UP is empty, so nothing is waiting on a decision from you before work can start. Both new ones are remainders named rather than swept in: #923 (the other two places tonight's fault appears, held for the reviewer because they sit on the credit path) and #925 (tomorrow's housekeeping, carrying the measurement that stops it deleting the wrong branches). The oldest rotting card is #28 at 19 days."
-    },
-    {
-      "id": "queue-shape-0914f-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 51 open, one closed tonight (#913) and one filed (#921); NEXT UP is empty",
-      "detail": "51 open, unchanged on the night because one closed and one was filed. 26 have had no comment, close, reopen or commit for seven days - the same 26 as last night, and the oldest is 19 days. None urgent. NEXT UP is empty, so nothing you have ordered is waiting. Four cards are held on your word or on the reviewer: the two sign-in test jobs, the subscription bug (#804), and now the Block IP one (#921)."
-    },
-    {
-      "id": "queue-shape-0914e-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 51 open, one closed tonight (#919) and none filed; NEXT UP is empty and none are urgent; 26 untouched in a week",
-      "detail": "51 open cards, one fewer than last night: one closed with its receipt, and nothing new filed. Tonight's job was the declared remainder of last night's, so it ends a thread rather than starting one.\n\n26 cards have had no comment, close, reopen or commit for seven days - the same figure as the last two nights, and the oldest is 19 days.\n\nThe category order was re-read at the code as your rule asks. Bugs first, and all three are held exactly as you left them: one waits on your word, one is blocked on your clock question, one is a money path waiting on the reviewer. Small fixes and Security are empty. Process: last night's shift opened all five at the code and I did not re-open them a third time - its reading was fresh and recorded card by card, and nothing in the queue has moved under it. Performance holds one large programme that is a shift of its own. Casting upkeep is on and nothing in it is takeable by an Opus shift.\n\nSo Housekeeping, which is where the order puts it last because its work is deletion. No patrol seat is overdue; the Janitor's clock comes due today, and its next card is #265.\n\nONE HOUSEKEEPING CARD MOVED ONTO YOUR DESK RATHER THAN BEING BUILT. #902 - the two date helpers written out twice - turns out to need one word from you before it can start, because the shared kit already holds a third copy that disagrees with both about who decides the date order. It is marked blocked and it is on your page."
-    },
-    {
-      "id": "queue-shape-0914d-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 52 open, one closed tonight (#917) and one filed (#919); NEXT UP is empty and none are urgent; 26 untouched in a week",
-      "detail": "52 open cards, level: one closed with its receipt and one filed. The one filed is the honest remainder of tonight's job rather than something hunted for - four style names whose deletion needs a real question answered first, written up with their measurement instead of being swept into a change that was not checked for them.\n\n26 cards have had no comment, close, reopen or commit for seven days - the same as last night, and the oldest is 19 days.\n\nThe category order was re-read at the code as your rule asks, and this time I opened the cards myself rather than inheriting last night's reading of them. Bugs first, and all three are held exactly as you left them: one waits on your word, one is blocked on your clock question, one is a money path waiting on the reviewer. Small fixes and Security are empty. PROCESS I re-read card by card rather than taking it on trust, because two shifts in a row had passed the same summary along: all five are genuinely held - one wants the process seat's own hand and its check-up is not due until the 19th, one waits on the reviewer coming back, and two are root-cause work on money and sign-in paths, which is not an Opus shift's to attempt. Performance holds one large programme that is a shift of its own. Casting upkeep I also opened rather than skipping: nothing in it is takeable tonight either - one is a change to your database rows, which is yours by rule, and three touch the casting instructions, which is not an Opus shift's.\n\nSo Housekeeping, which is where the order puts it last, because its work is deletion. No patrol seat is overdue; the Janitor's clock comes due tomorrow."
-    },
-    {
-      "id": "queue-shape-0914c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 52 open, one closed tonight (#564) and two filed (#916, #917); NEXT UP is empty and none are urgent; 26 untouched in a week",
-      "detail": "52 open cards, up one: one closed with its receipt and two filed. Both new cards came out of the work itself rather than being hunted for - one is a question only you can answer (#916, your boards have no dark palette), the other is the honest remainder of tonight's job written down rather than quietly swept in (#917).\n\n26 cards have had no comment, close, reopen or commit for seven days - one fewer than the last three nights, and the oldest is 19 days.\n\nThe category order was re-read at the code as your rule asks. Bugs first, and all three are held exactly as you left them: one waits on your word, one is blocked on your clock question, and one is a money path waiting on the reviewer. Small fixes and Security are empty. Process is entirely held - my predecessor read all five at the code last night and I did not re-derive it from their titles. Performance holds one large program that is a shift of its own. So Housekeeping was where the takeable work was, which is also where it is meant to be last, because its work is deletion.\n\nNo patrol seat is overdue; the Janitor's clock comes due tomorrow."
-    },
-    {
-      "id": "queue-shape-0914b-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 51 open, one closed tonight (#912) and two filed (#913, and corrections onto two more); NEXT UP is empty and none are urgent; 27 untouched in a week",
-      "detail": "51 open cards, up one: one closed with its receipt and two filed. THE FILING IS THE INTERESTING PART TONIGHT. Both new cards came out of re-reading an existing card against the code before starting it, which is the habit #909 asked for - and neither was the card I set out to work. One is a real fault on your Change requests page ('Approving adds null credits to this account'), left filed rather than built because it is a money path and the reviewer is down. The other is a correction to a question already on your desk about the customer-side clock: it says there is one and there are two. 27 cards have had no comment, close, reopen or commit for seven days - the same figure as the last two nights, and the oldest is 19 days. Category order was re-read at the code as your rule asks. Bugs first: every takeable bug was gone, so I went looking at the next category and the re-read turned up a bug bigger than the tidy-up I was about to do. Small fixes and Security are empty. Process is entirely held - I checked all five at the code, and every one is either waiting on your word, waiting on the reviewer, or already built and sitting in a pull request that cannot merge until the reviewer is back."
-    },
-    {
-      "id": "queue-shape-0914a-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 50 open, two closed tonight (#907 and #908) and none filed; NEXT UP is empty and none are urgent; 27 have not been touched in a week",
-      "detail": "50 open cards, down two: both of tonight's bugs closed outright with their receipts. NOTHING NEW WAS FILED, which is worth a line on its own - both cards grew while being worked (an admin page cutting the same word off; a hidden control behind a deleted banner) and both extra halves were fixed inside the same change rather than carded for later, because each was two lines and leaving it would have meant a second shift re-reading the same code. 27 cards have had no comment, close, reopen or commit for seven days - the same figure as last night, and the oldest is 19 days. Category order was re-read at the code before choosing, as your rule asks: Bugs first, and the only two takeable bugs were tonight's two. The rest of Bugs is held on your word (the reviewer) or on your answer (the customer clock). Small fixes and Security are empty. Process is held on the reviewer or on other cards. So the queue is not stuck - it is waiting, and most of what it waits on is you or the reviewer."
-    },
-    {
-      "id": "queue-shape-0913u-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 52 open, two closed tonight (#903's first half and #904) and three filed; NEXT UP is empty and none are urgent; 27 have not been touched in a week",
-      "detail": "52 open cards. Tonight closed #904 outright and finished the first half of #903, leaving its second half as the question on your desk. Three new ones filed from what I saw while working: #907 (a raw database word showing on a moderator's screen), #908 (the same warning drawn twice on one tab), #909 (a note for the process seat about cards under-describing their own size).\n\nNEXT UP is empty and nothing is marked urgent. One card waits on your word - the small clock question above, plus the reviewer comparison that has been there since this morning.\n\n27 cards have had no comment, no closing and no code touch them for seven days. That number is measured the honest way - relabelling a card no longer counts as touching it - and it has been steady around 27-29 all week, so nothing is getting worse. It is not a list you need; it is the shape."
-    },
-    {
-      "id": "queue-shape-0913t-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 50 open, one closed tonight (#900) and three filed; NEXT UP is empty and none are urgent; 27 have not been touched in 7 days",
-      "detail": "Category order re-read at the code before choosing, as your rule requires. BUGS: #884, the reviewer outage - external, and it carries your 'wait'; tonight's own change tested it for free rather than spending a run, and it failed a fourteenth time. SMALL FIXES and SECURITY are EMPTY. PROCESS is five, and one of the five (#513) cannot be worked at all - it waits on an outside service listing a model - which is the small thing I filed tonight, because your panel has no way to say 'and 1 blocked' the way it already says 'and 1 parked'. Of the other four, #896 is the money bug and cannot merge without a review; #893 I opened at the code and found HALF OF IT ALREADY BUILT and working, so it is now recorded as such rather than being built a second time; #883 and #697 wait on the two sign-in changes going in. PERFORMANCE is #58, a whole programme rather than a card. HOUSEKEEPING is where the takeable work sits. The three filed tonight all came out of tonight's own job: the customer-side clock that needs your word, the admin and moderation date formatters being literally the same four functions written twice (which is why tonight's fix had to be made twice), and the 'blocked' gap in your panel's counting. The 27 untouched figure is measured the honest way - a label or a cross-reference does not count as touching a card, only a comment, a close, a reopen or a commit does."
-    },
-    {
-      "id": "clock-class-third-instance-900",
-      "severity": "info",
-      "state": "resolved",
-      "title": "Found by looking: your admin bar says '10:30:33 pm' directly above text saying '25 Aug, 19:17'",
-      "detail": "SEEN WITH EYES, not by a sweep - I was checking the Crew page rendered properly after tonight's change and it is plainly visible in one screenful: the clock at the top right of the admin bar is written the 12-hour way, and the content immediately below it is written the 24-hour way. Same page, same moment.\n\nWHY IT MATTERS AT ALL: there is a standing rule that every time on your screens is 24-hour, because you compare them against each other - against shift rows, against close-stamps. A page showing both styles makes you do the conversion.\n\nIT IS THE THIRD TIME THIS HAS BEEN FOUND. It was fixed once, then found again in a sweep that caught two more on the Crew page. This one survived both because those sweeps looked at a folder, and the admin bar lives one folder away while rendering on the same screen.\n\nFILED AS #900 AND NOT BUILT, on purpose: it was not on the board when tonight started, and it belongs to a different area with its own checks. It is one property on one line, and the shape to copy is already in the code. Frames are in output/900-clock if you want to see it.\n\nTHE MORE USEFUL HALF for whoever takes it: the real work is sweeping for the pattern rather than fixing this one line, since two folder-shaped sweeps have each now missed a neighbour."
-    },
-    {
-      "id": "queue-shape-0913r-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 48 open, one closed tonight and one filed; NEXT UP is empty and none are urgent; 27 untouched for 7 days",
-      "detail": "Category order re-read at the code before choosing, as your rule requires. Bugs holds only #884, the reviewer outage - external, and it has your 'wait' on it. Small fixes and Security are EMPTY. Process was the top open band and I worked its one takeable card (#897, closed). Of the other four: #896 (the money bug) and #893's last act both wait on the reviewer; #883 and #697 close the moment the two held sign-in changes merge; #513 owes one paid re-run and I TESTED its blocker rather than reading the label - the provider balance is $5.24 against a run priced near $8.50, so it genuinely still waits. Performance holds only #58, a whole programme rather than a night's work. Housekeeping is next and its own seat's clock is due 15 September, so I left its cards for it - except the two it had flagged as maybe-already-done, which I checked and answered. Rot is down one to 27: closing #897 and answering the two flagged cards moved three cards off the untouched list. No patrol was due tonight and none was run."
-    },
-    {
-      "id": "queue-shape-0913q-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 46 open, none closed tonight, none filed; NEXT UP is empty and none are urgent; 29 untouched for 7 days",
-      "detail": "Category order re-read at the code before choosing, as your rule requires. Bugs holds only #884, the reviewer outage - external, nothing to build. Small fixes and Security are EMPTY. Process: #893 keeps one held act (relabelling #804, which waits on the reviewer); #513 is blocked on an outside listing; and #697 and #883 both close the moment the two held sign-in changes merge - I opened both cards and confirmed that at the code rather than trusting last night's handoff. Performance: #58, the umbrella. Housekeeping: #482, #527, #564 and #265 each declare themselves a full sitting; #841 waits on a design decision from you. So tonight was #274's door half, which the card itself had sized as its own sitting. ONE THING WORTH NOTING: your queue counter flagged THREE Housekeeping cards as 'may already be done', because later merged changes mentioned them by number. I checked all three at the code and all three were genuinely still open - those changes cited the cards without fixing them. The flag earns its place by prompting the check; it is not a verdict, and no card should be closed on it."
-    },
-    {
-      "id": "queue-shape-0913p-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 46 open, none closed tonight, none filed; NEXT UP is empty and none are urgent; 29 untouched for 7 days",
-      "detail": "Category order re-read at the code before choosing, as your rule requires. Bugs holds only #884, the reviewer outage - external, nothing to build. Small fixes and Security are EMPTY. Process: #893 was the takeable one and is tonight's work; #513 is blocked on an outside listing, and #697 and #883 wait on the two held sign-in changes. Performance: #58, the umbrella. Housekeeping: #274, #482, #527 and #564 each declare themselves a full sitting in their own card, and #265 is the Janitor's on 15 September. So there was again no small second card to run beside this one while the checks ran; that idle stretch is on the shift record rather than hidden. #893 stays OPEN rather than closing tonight: its first ask - giving #804 a category - is deliberately held until the reviewer is back, and closing a card whose first item is undone is the sort of thing that rots a queue. 29 cards have had no comment, close or commit for seven days - the same figure as the last two nights. That reading counts real engagement, never a label applied in bulk."
-    },
-    {
-      "id": "queue-shape-0913o-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 46 open, one closed tonight (#888), one filed (#893); NEXT UP is empty and none are urgent; 29 untouched for 7 days",
-      "detail": "Category order re-read at the code before choosing. Bugs holds only #884, the reviewer outage, which is external and has nothing to build. Small fixes and Security are EMPTY. Process: #513 is blocked on an outside listing, #697 and #883 wait on the two held sign-in changes. Performance: #58, the umbrella. Housekeeping: #274, #482, #527 and #564 - each one declares itself a full sitting in its own card, and #265 is the Janitor's on 15 September. So tonight was #888, taken on my predecessor's sizing, and there was genuinely no small second card to run beside it while the checks ran; that idle stretch is on the shift record rather than hidden. THE ONE NEW THING, and it is why #893 exists: #888 carried no work-switch label at all, so until tonight no shift could have taken it under your switch panel. I checked whether that had happened to anything else and it has, once - #804, a billing card from 11 September. 29 cards have had no comment, close or commit for seven days, the same figure as last night; that reading counts real engagement and not a label applied in bulk."
-    },
-    {
-      "id": "queue-shape-0913n-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 46 open, one closed tonight (#890), none filed; NEXT UP is empty and none are urgent; 29 untouched for 7 days",
-      "detail": "Category order re-read at the code. Bugs holds only #884, the reviewer outage, which is external and has nothing to build. Small fixes and Security are EMPTY. Process: #513 blocked, #697 and #883 wait on the two held sign-in pull requests. Performance: #58, the umbrella. Housekeeping: #564, #527, #482, #274, #265. #888 - the type-check hole found last night - was sized at the code tonight and is NOT a filler item: it is a change across five identity fields plus two more families the card says to read first, so it is the next shift's whole unit rather than something to squeeze in beside a build. #265's card body was corrected tonight: half of it shipped in PR #846 and the body still described the whole thing as open; what remains is the bucket sweep, which is the Janitor's on 15 Sep."
-    },
-    {
-      "id": "queue-shape-0913m-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 46 open, one closed (#886), one merged (#889), one filed (#888); NEXT UP is empty; nothing waits on your word",
-      "detail": "Category order re-read at the code, not from card titles. BUGS — two rows, and I took the one that could be built: #886 (read and closed tonight) and #884 (the reviewer outage, an external failure with nothing to build, so I added tonight's eighth run to it and moved on). SMALL FIXES and SECURITY — both empty. PROCESS — #513 is blocked on an outside model listing; #697 and #883 are both finished work waiting on the two held pull requests, so neither is takeable. PERFORMANCE — #58 only, the umbrella card, not a night's work. HOUSEKEEPING — #564 (97 colour values written out by hand, a session), #527 (its own note says wait for #526), #482, #274, #265. NOTHING SMALL WAS TAKEABLE ALONGSIDE tonight's card, and that is a measured statement rather than a shrug: I sized #482 at the code during the seven minutes the checks were running, and it is a promotion pass over the casting hero — it needs the app running and before/after pictures in both themes on a screen with real customers. That is its own night, not a filler. 28 cards have had no comment, close or commit for 7 days — unchanged from last night."
-    },
-    {
-      "id": "queue-shape-0913l-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 46 open, one merged (#887), one filed (#886); NEXT UP is empty; nothing waits on your word",
-      "detail": "Category order re-read at the code, not from card titles. BUGS — #884 only (the reviewer outage; an external failure with nothing to build, so I added tonight's seventh run to it and moved on). SMALL FIXES and SECURITY — both empty. PROCESS — #513 is blocked on OpenRouter listing a model; #697 closes the moment #882 merges; #883 closes the moment #885 merges. Nothing takeable. PERFORMANCE — #58, the umbrella, not small. HOUSEKEEPING — this is where tonight's work came from. Oldest first: #265 I opened at the code and found HALF ALREADY DONE (its one-line half shipped in PR #846 back on the 11th and nobody had said so on the card); its remainder is a storage sweep that belongs to the Janitor, whose check-up is due 15 Sep. So the next one was #274, which is what I took. #886 is new tonight, filed by the fixed tool rather than by a person having an idea. ROT: 28 cards have had no comment, close or commit in seven days — down one from last night, and the one that moved is #274 itself."
-    },
-    {
-      "id": "queue-shape-0913k-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 45 open, two new cards filed tonight; NEXT UP is empty; nothing waits on your word",
-      "detail": "Category order re-read at the code. Bugs — #884 (the reviewer outage, filed tonight); #804 still needs a design decision on the billing webhook. Small fixes EMPTY. Security EMPTY (#45 parked). Process — #697 is finished pending the merge of PR #882; #883 filed tonight is its sibling (the Google sign-in route has the same problem — 17 of its 18 checks cannot fail, and the other two session mints live behind them); #513 blocked. Performance — #58 umbrella. Housekeeping — #482 (not small), #274 (a sitting, not an hour), #564, #527 (Janitor due 15 Sep), #265 (re-read at the code tonight: the one-line half of it already landed as PR #846 and is recorded; what is left is a bucket sweep the Janitor does with a manifest first). Casting upkeep — #242, #209, #179, #129, #64, #62, #60, none small on a read. 29 open cards have had no comment, close, reopen or commit for 7 days. No patrol seat is overdue."
-    },
-    {
-      "id": "queue-shape-0913h-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 44 open, one closed (#816); NEXT UP is empty; nothing waits on your word",
-      "detail": "Category order re-read at the code: Bugs EMPTY (#816 closed; #804 needs a design decision on the billing webhook and is not an Opus shift's). Small fixes EMPTY; Security — #857's second half, the dependency bump (a session, sized on the card); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
-    },
-    {
-      "id": "queue-shape-0913g-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 45 open, one closed (#873); NEXT UP is empty; nothing waits on your word",
-      "detail": "Category order re-read at the code: Bugs — only #816's two remaining rows (a credit-adjustment reason and the sign-up name, both money/auth paths, not an Opus shift's — they wait for the next Fable shift that is up for anything else). Small fixes EMPTY; Security — #857 takeable (a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
-    },
-    {
-      "id": "queue-shape-0913f-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 45 open, two closed (#868, #869), one filed (#873, from PR #872's review); NEXT UP is empty; nothing waits on your word",
-      "detail": "Category order re-read at the code: Bugs — #873 new (a refine that SUCCEEDS but whose final receipt step throws is refunded for a picture the customer keeps — pre-existing, the mirror of #869's class; small, settlement path, founder-review) and #816 (only its auth/money rows, not an Opus shift's). Small fixes EMPTY; Security — #857 takeable (a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
-    },
-    {
-      "id": "queue-shape-0913e-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 46 open, two closed (#855, #867), three filed (#868, #869 from #855's sweep — and #867 was one of them, taken the same shift); NEXT UP is empty; nothing waits on your word",
-      "detail": "Category order re-read at the code: Bugs — #868 (the roll's recovery sweep does not refund a slice marked failed whose refund never recorded; the retry's already does — a small extension of the sweep's rule, wants its own arm) and #869 (refine and sign: a failure inside the refund step itself escapes the finalizer — rarer, two writes must fail in sequence) are the two cousins left from #855's class; #816 holds only its auth/money rows. Small fixes EMPTY; Security — #857 takeable (the sharp 0.35 type fix that unblocks a 60-package patch bump; a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
-    },
-    {
-      "id": "queue-shape-0913d-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 46 open, two closed (#854, #860) and one closed by the relay (#858); NEXT UP is empty; nothing waits on your word",
-      "detail": "Category order re-read at the code: Bugs — #855 (a slice stuck queued under a live heartbeat) touches settlement and its fix has a design choice in it — fail-and-refund or re-queue — so it waits for a word; #816 holds only its auth/money rows. Small fixes EMPTY; Security — #857 takeable (the sharp 0.35 type fix that unblocks a 60-package patch bump; a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping — #482 (a both-theme pixel-diff promotion, not small), #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
-    },
-    {
-      "id": "queue-shape-0913c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 49 open, one filed (#860), one merged (#859); NEXT UP is empty; TWO cards wait on you (#858, #854)",
-      "detail": "Category order re-read at the code: Bugs — #854's order half is merged and its product half is on your desk (labelled blocked); #855 (a slice stuck queued under a live heartbeat) touches settlement and its fix has a design choice in it — fail-and-refund or re-queue — so it is not an Opus shift's without a word; #816 holds only its auth/money rows; #860 new (ink upload cuts before it proves the owner). Small fixes EMPTY; Security — #857 takeable (a session); Process — #697's auth file, #513 blocked; Performance — #58 umbrella; Housekeeping next: #482, #274, #564, #527 (Janitor due 15 Sep), #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read)."
-    },
-    {
-      "id": "queue-shape-0913b-warden",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 48 open, one closed (#762), two filed from the check-up (#857 takeable, #858 yours); NEXT UP is empty; ONE card waits on you",
-      "detail": "Security: #762 closed with its readings; #857 is the takeable half (the patch road - a security-first package update, sized at a session, not a batch item); #858 is yours. Category order otherwise as the last entry: Bugs - #816 holds only its auth/money rows, #854 and #855 are casting-upkeep; Small fixes EMPTY; Process - #697's auth file, #513 blocked; Performance - #58 umbrella; Housekeeping next: #482, #274, #564, #527, #265. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock). Check-ups: Warden ran today; Janitor due 15 Sep; Machinist and Retro 19 Sep."
-    },
-    {
-      "id": "queue-shape-0913a-machinist",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 47 open, one closed (#555), two filed from the run (#854, #855); NEXT UP is empty; nothing waits on you",
-      "detail": "Category order re-read at the code: Bugs — #816 holds only its two auth/money rows, and the two new cards (#854 an expired sheet's Roll again; #855 a slice stuck queued under a live heartbeat) are casting-upkeep bugs found by the new instrument; Small fixes is EMPTY; Process — #697 has only its auth-path file left, #513 blocked; Performance — #555 closed, #58 an umbrella; Housekeeping next: #482 (a promotion pass wanting a both-theme pixel diff of two surfaces — read this shift and left as not small), #274, #564, #527 (Janitor run 6), #265's bucket half; Security holds #762 and the Warden's clock fires 13 Sep. 29 open cards have had no comment, close, reopen or commit for 7 days (queue-rot-read; a label alone does not reset that clock)."
-    },
-    {
-      "id": "queue-shape-0916b",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 35 open, and NEXT UP went from empty to FIVE while this session was working — your five, filed from your terminal word at 15:29 AEST",
-      "detail": "Your instruction reached the cards at 05:29:51–05:30:04Z. This session had read the queue at 05:29:52 and saw none of them — the labels were landing in that same second — and caught it at close when the desk sweep disagreed with its own earlier reading. That re-read is why the page is right rather than a night late. Also tonight: #841 closed on your reply, #1002 closed with both of its leftovers ruled, PR #1005 merged, and one card filed (the ordering one). Background switches all read ZERO except Housekeeping, which is down to one — #1003, the Settings pop-up at phone width, a design call that waits for you. No check-up clock has fired. 20 open cards have had no comment, close, reopen or commit for 7 days — level with last night, and still mostly roadmap rungs you have not reached rather than neglected work."
-    },
-    {
-      "id": "queue-shape-0916b-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 34 open. One of your five jobs finished and closed tonight; 4 remain, in your order",
-      "detail": "Four ordered by you and still to do: 129, then 105, 106, 108 — one session each. None urgent, nothing filed tonight.\n\n15 cards have had no comment, close or commit for seven days. That is level with last night, and the oldest is a design note from 27 August that is waiting on a build order rather than rotting.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0918a-janitor",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 30 open, nothing closed, nothing filed. NEXT UP empty; nothing on offer under any switch; the Janitor ran its round, the Retro and the Machinist fire tomorrow",
-      "detail": "The Janitor's every-three-days round found nothing a shift could take and filed no card. 15 open cards have had no comment, close, reopen or commit for 7 days (the timeline reading) - level with the last six shifts, and still roadmap rungs you have not reached rather than neglected work.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0919d-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 31 open, one closed tonight (1034); NEXT UP empty; two Performance cards left (1035 takeable now, 1036 wants your eye); the Warden fires tomorrow. The automatic reviewer is still not starting (allowance shape)",
-      "detail": "Read at 04:12Z: 31 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged from this morning) - roadmap rungs you have not reached rather than neglected work. 1034 built, merged and closed with its first reading on the card; the ten-run after reading is the Machinist's on its clock (~26 Sep). 1035 (a size budget for the first download, so it cannot quietly grow back) is takeable next; 1036 (a smaller first download at the cost of a possible spinner on the way to the studio) is a trade for your eye before anything ships. No check-up clock has fired. The reviewer: one run tonight, under a second, spent nothing - money and sign-in changes wait for it.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0919e-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 30 open, one closed tonight (1035), one filed (1042, a one-line fix); NEXT UP empty; one Performance card left (1036 wants your eye); the Warden fires tomorrow. The automatic reviewer is still not starting (allowance shape)",
-      "detail": "Read at 04:58Z: 30 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. 1035 built, merged, live and closed with its receipt; the ten-run after reading is the Machinist's on its clock (~26 Sep). 1042 is new tonight: a build warning about a loop between the app frame and the staff pages, measured at about nothing for a visitor, one line to fix - filed under Small fixes for the next shift rather than worked, because the rule is that a shift does not build what it thought of itself. 1036 (a smaller first download at the cost of a possible spinner on the way to the studio) is a trade for your eye before anything ships. No check-up clock has fired. The reviewer: one run tonight, under a second, spent nothing - money and sign-in changes wait for it.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0919f-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 31 open, one closed tonight (1042), one filed (1044, a one-line config fix); NEXT UP empty; one Performance card left (1036 wants your eye); the Warden fires tomorrow",
-      "detail": "Read at 05:40Z: 31 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. 1042 built, merged, live and closed with its receipt. 1044 is new tonight: six browser security warnings per page on the production build because two rarely-used alphabets of the mono font are baked into the stylesheet and the app's security policy refuses fonts delivered that way - invisible in English, one config line to fix, filed under Small fixes and Bugs for the next shift rather than worked, because a shift does not build what it thought of itself. 1036 (a smaller first download at the cost of a possible spinner on the way to the studio) is a trade for your eye before anything ships. No check-up clock has fired.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0919g-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 30 open, one closed tonight (1044); NEXT UP empty; nothing left under Bugs or Small fixes; one Performance card (1036 wants your eye); the Warden fires tomorrow",
-      "detail": "Read at 06:19Z: 30 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. 1044 built, merged, live and closed with its receipt, so Bugs and Small fixes both stand at zero. 1036 (a smaller first download at the cost of a possible spinner on the way to the studio) is a trade for your eye before anything ships. No check-up clock has fired; the next shift with nothing under a switch is a correct quiet one.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0919h-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 29 open, one closed tonight (1036); NEXT UP empty; nothing open under any of your switches; the Warden fires tomorrow",
-      "detail": "Read at 07:17Z: 29 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. 1036 measured, built, merged, live and closed with its receipt, so every switched category now stands at zero (129 and 108 are blocked on their own rows, 45 is parked). No check-up clock has fired; the next shift with nothing under a switch is a correct quiet one.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0919i-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 29 open, none moved; NEXT UP empty; nothing under any of your switches; your eye closed the last item on your desk",
-      "detail": "Read at 08:10Z: 29 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged from last night) - roadmap rungs you have not reached rather than neglected work. Your \"good\" on the canvas frames (reply 193) is recorded on card 1036. Every switched category is at zero (129 and 108 are blocked on their own rows, 45 is parked). No check-up clock has fired; the Warden fires tomorrow.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0920a-warden",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 29 open, none moved; NEXT UP empty; nothing under any of your switches; the Warden ran its round and found nothing to file",
-      "detail": "Read at 14:30Z: 29 open cards; 17 have had no comment, close, reopen or commit for 7 days (the timeline reading, unchanged) - roadmap rungs you have not reached rather than neglected work. The Warden's weekly readings are all clean and both of last week's cards (857, 858) are closed with receipts read at the artifacts. Every switched category is at zero (129 and 108 are blocked on their own rows, 45 is parked). The Janitor's clock fires tomorrow.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0922c-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 34 open, your list empty, none urgent. Both open bugs are tonight's work - one in review, one filed from it. No check-up clock has fired.",
-      "detail": "Read at 11:55Z. 34 open cards - one filed tonight by the check that looks for the same mistake elsewhere. 17 have had no comment, close, reopen or commit for 7 days, unchanged from last night; they are roadmap rungs you have not reached rather than neglected work.\n\nBoth open bugs came out of tonight: one is the change now waiting on its review, and the other is the one it found in the hair-colour reader. Every other switched category is at zero. The next check-up clock (housekeeping) fires in two days.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0924-janitor",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 38 open, your own list still holds only the switch sitting. Nothing urgent, and the backlog shrank a little.",
-      "detail": "Read at 01:48. 38 open — the same number as last night, though two came off and two new ones went on, both filed by tonight's clean-up and neither needing you.\n\nYour own list is unchanged: the twenty-switch sitting, which is complete and waiting for you rather than for us.\n\n17 of the 38 have had nothing happen to them for a week, down from 21 last night.\n\nNothing here needs you."
-    },
-    {
-      "id": "queue-shape-0924b-foreman",
-      "severity": "info",
-      "state": "resolved",
-      "title": "The queue: 38 open, your own list still holds only the switch sitting. Nothing urgent, no check-up clock due before tomorrow.",
-      "detail": "Read at 03:40. 38 open — the same number as three hours ago: one job finished and closed tonight, and one new one filed in its place, which nobody needs to look at yet.\n\nYour own list is unchanged: the twenty-switch sitting, which is complete and waiting on you rather than on us.\n\n17 of the 38 have had nothing happen to them for a week — flat against last night.\n\nNothing here needs you."
     }
   ],
   "acknowledgedReplyIds": [
