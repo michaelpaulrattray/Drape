@@ -1,0 +1,18 @@
+-- THE TABLE THAT LANDED AHEAD OF CODE THAT NEVER CAME IS DROPPED (issue #1184,
+-- his word in the terminal, 2026-09-25: "do it").
+--
+-- `casting_cast_segments` (migration 0027, "the promoted segment set") was
+-- created on both databases ahead of the Sign promotion that was to write it.
+-- That promotion was never written, and the road it belonged to — the segment
+-- store — was retired on his ruling (#1160, all three slices merged, both
+-- switches deleted from the live service the same morning). Read at the code
+-- the day this ran: NO reader and NO writer anywhere in the product
+-- (`git grep castSegments -- server client shared scripts`, tests excluded:
+-- nothing). Read at the rows the same hour: ZERO rows on dev (:52008) and ZERO
+-- on production (:23768), all time.
+--
+-- DESTRUCTIVE BY SHAPE, INERT BY CONTENT. A DROP is refused by the rite's
+-- auto-apply on purpose and is his act; he gave it. The ceremony that runs
+-- this reads the row count first and REFUSES if it is not zero, so the one
+-- thing that could make this destructive in fact cannot pass it unnoticed.
+DROP TABLE IF EXISTS `casting_cast_segments`;
