@@ -1112,7 +1112,6 @@ export type CastLineage = {
   rollIndex: number | null;
   sessionPublicId: string | null;
   candidatePublicId: string | null;
-  personaLine: string | null;
   castFromAt: Date | null;
 };
 
@@ -1134,7 +1133,6 @@ export async function getCastLineage(
     rollIndex: null,
     sessionPublicId: null,
     candidatePublicId: null,
-    personaLine: null,
     castFromAt: null,
   };
   if (!model.sourceRollId && !model.sourceCandidateId) return empty;
@@ -1159,10 +1157,7 @@ export async function getCastLineage(
 
   const [candidate] = model.sourceCandidateId
     ? await db
-      .select({
-        publicId: castingCandidates.publicId,
-        personaLine: castingCandidates.personaLine,
-      })
+      .select({ publicId: castingCandidates.publicId })
       .from(castingCandidates)
       .where(and(
         eq(castingCandidates.id, model.sourceCandidateId),
@@ -1176,7 +1171,6 @@ export async function getCastLineage(
     rollIndex: roll?.rollIndex ?? null,
     sessionPublicId: roll?.sessionPublicId ?? null,
     candidatePublicId: candidate?.publicId ?? null,
-    personaLine: candidate?.personaLine ?? null,
     castFromAt: roll?.createdAt ?? null,
   };
 }
@@ -1239,7 +1233,6 @@ export async function listSignedCasts(
 ): Promise<Array<{
   model: Model;
   anchorUrl: string | null;
-  personaLine: string | null;
   frameCount: number;
   brief: string | null;
 }>> {
@@ -1296,7 +1289,6 @@ export async function listSignedCasts(
   const candidates = await db
     .select({
       id: castingCandidates.id,
-      personaLine: castingCandidates.personaLine,
       rollId: castingCandidates.rollId,
     })
     .from(castingCandidates)
@@ -1307,7 +1299,6 @@ export async function listSignedCasts(
       ),
       eq(castingCandidates.userId, userId),
     ));
-  const lineByCandidate = new Map(candidates.map((row) => [row.id, row.personaLine]));
   const rollByCandidate = new Map(candidates.map((row) => [row.id, row.rollId]));
 
   /*
@@ -1328,7 +1319,6 @@ export async function listSignedCasts(
     return {
       model,
       anchorUrl: faceByModel.get(model.id) ?? null,
-      personaLine: candidateId ? lineByCandidate.get(candidateId) ?? null : null,
       frameCount: framesByModel.get(model.id) ?? 0,
       brief: rollId === undefined ? null : briefByRoll.get(rollId) ?? null,
     };

@@ -34,17 +34,20 @@ import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
  */
 export function SignConfirm({
   indexLabel,
-  personaLine,
   imageUrl,
   priceCredits,
   busy,
   onConfirm,
   onCancel,
 }: {
-  /** The sheet index — the eyebrow's first half. */
+  /**
+   * The sheet index — the eyebrow, in full.
+   *
+   * It used to be half of it: a candidate disposition followed it, and seeded
+   * the name placeholder. Candidates are auditioners and carry no disposition
+   * (his ruling, #1241), so the eyebrow is the index alone.
+   */
   indexLabel: string;
-  /** Her disposition — the eyebrow's second half, and the placeholder's seed. */
-  personaLine: string | null;
   /** Her face, at the size a decision this size deserves. */
   imageUrl: string | null;
   priceCredits: number;
@@ -57,8 +60,6 @@ export function SignConfirm({
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
-  const disposition = personaLine?.trim() || null;
-
   return (
     <CastingModal
       label="Sign them to your roster"
@@ -67,13 +68,10 @@ export function SignConfirm({
       onDismiss={onCancel}
     >
           {/*
-            The mono eyebrow, index and disposition. Every titled surface in the
-            app opens with one; this modal was the exception.
+            The mono eyebrow. Every titled surface in the app opens with one;
+            this modal was the exception.
           */}
-          <span className="dpc-modal__eyebrow">
-            CANDIDATE {indexLabel}
-            {disposition ? ` · ${disposition.toUpperCase()}` : ""}
-          </span>
+          <span className="dpc-modal__eyebrow">CANDIDATE {indexLabel}</span>
 
           <h2 className="dpc-modal__title">Sign them to your roster</h2>
 
@@ -96,7 +94,7 @@ export function SignConfirm({
               ref={inputRef}
               value={name}
               maxLength={CAST_NAME_MAX_LENGTH}
-              placeholder={disposition ? `e.g. ${disposition}` : "e.g. Grounded"}
+              placeholder="e.g. Grounded"
               disabled={busy}
               autoComplete="off"
               aria-label={`Name for candidate ${indexLabel}`}

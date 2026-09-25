@@ -1412,7 +1412,7 @@ export default function CastingV2() {
                 ) : null}
               </span>
               <span className="dpc-castcard__name">{cast.name ?? "Unnamed"}</span>
-              <span className="dp-metadata">{cast.personaLine ?? cast.castId}</span>
+              <span className="dp-metadata">{cast.castId}</span>
             </button>
             {/*
               Delete needs BOTH the server's door open AND her package

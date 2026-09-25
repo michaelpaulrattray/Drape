@@ -30,7 +30,6 @@ export type TileCandidate = {
   indexLabel: string;
   status: "casting" | "ready" | "failed-refunded" | "signed";
   imageUrl: string | null;
-  personaLine: string | null;
   kept: boolean;
   /** Set once this candidate became a Cast — the room's address. */
   castId: string | null;
@@ -243,15 +242,14 @@ export function CandidateTile({
             event.preventDefault();
             onOpenCast(candidate.castId);
           }}
-          aria-label={`Open ${candidate.personaLine ?? `candidate ${candidate.indexLabel}`}'s room`}
+          aria-label={`Open candidate ${candidate.indexLabel}'s room`}
         >
           {candidate.imageUrl ? (
-            <img src={candidate.imageUrl} alt={candidate.personaLine ?? candidate.indexLabel} />
+            <img src={candidate.imageUrl} alt={candidate.indexLabel} />
           ) : null}
           <span className="dpc-card__signed">SIGNED</span>
         </a>
         <div className="dpc-card__caption">
-          <span className="dpc-card__line">{candidate.personaLine ?? candidate.indexLabel}</span>
           <span className="dp-metadata">{candidate.indexLabel}</span>
         </div>
         <span className="dp-secondary">In your roster — open their room</span>
@@ -361,7 +359,7 @@ export function CandidateTile({
           >
             <img
               src={candidate.imageUrl}
-              alt={candidate.personaLine ?? `Candidate ${candidate.indexLabel}`}
+              alt={`Candidate ${candidate.indexLabel}`}
             />
           </button>
         ) : null}
@@ -382,7 +380,6 @@ export function CandidateTile({
       </div>
 
       <div className="dpc-card__caption">
-        <span className="dpc-card__line">{candidate.personaLine ?? candidate.indexLabel}</span>
         <span className="dp-metadata">{candidate.indexLabel}</span>
       </div>
 

@@ -48,7 +48,6 @@ function candidateRow(overrides: Record<string, unknown> = {}) {
     provider: "fal",
     providerModel: "openai/gpt-image-2",
     providerRef: "req-9",
-    personaLine: "Warm, unhurried",
     internalPrompt: { prompt: "the compiled instruction" },
     keptAt: null,
     discardedAt: null,

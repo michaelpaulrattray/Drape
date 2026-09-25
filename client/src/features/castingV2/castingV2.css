@@ -680,20 +680,17 @@
   sticky dock absorbed that.
 */
 
+/*
+  ONE INDEX LABEL PER TILE (his ruling, #1241). This row held two spans — the
+  persona slot on the left and the index on the right — and once the author road
+  nulled every disposition both of them drew the same number: "01 … 01". The
+  persona slot is gone with the field, so this is a one-child row and the index
+  sits where the caption starts.
+*/
 .dpc-card__caption {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: 8px;
-}
-
-.dpc-card__line {
-  font: 400 11.5px var(--font-sans);
-  color: var(--secondary);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* An unsigned-sheet card opens on its body; the discard button sits beside. */

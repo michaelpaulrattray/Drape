@@ -423,7 +423,7 @@ export async function createRoll(
     the authoritative lineage link is still re-resolved inside the roll
     transaction (invariant 2), so this read cannot launder a foreign id.
   */
-  let followPersonaLine: string | null = null;
+  let followIndexLabel: string | null = null;
   let followIdentity: ResolvedIdentity | null = null;
   let followStatedAnchor: FollowAnchor | null = null;
   /** The SELECTED face's frame key (#177 Row A) — the picture the customer is pointing at, resolved through selection like everything a follow inherits. */
@@ -450,12 +450,13 @@ export async function createRoll(
       throw new TRPCError({ code: "NOT_FOUND", message: "That candidate is no longer available." });
     }
     /*
-      The candidate's INDEX, not its caption (founder gate 16). The ruling is
-      that the sentence and the lineage pill say "following 08" and "FROM 08" —
-      the face the user pointed at — rather than a persona label that could sit
-      under any of the eight.
+      The candidate's INDEX (founder gate 16). The ruling is that the sentence
+      and the lineage pill say "following 08" and "FROM 08" — the face the user
+      pointed at — rather than a caption that could sit under any of the eight.
+      The caption it was ruled against is itself retired now (#1241), and this
+      field is named for what it has always carried.
     */
-    followPersonaLine = String(parent.candidate.position + 1).padStart(2, "0");
+    followIndexLabel = String(parent.candidate.position + 1).padStart(2, "0");
     /*
       ⚠ A FACT TAKEN FROM A PICTURE IS NOT IN HERE, AND THAT GAP IS NAMED RATHER
       THAN DISCOVERED (design opus-1069 (c), countersigned fable-1432).
@@ -697,7 +698,7 @@ export async function createRoll(
       briefFidelity,
       creativeRegister,
       style: input.style,
-      followPersonaLine,
+      followIndexLabel,
       followIdentity,
       followStatedAnchor,
     });
@@ -791,7 +792,6 @@ export async function createRoll(
       candidates: compiled.candidates.map((spec) => ({
         publicId: randomUUID(),
         position: spec.position,
-        personaLine: spec.personaLine,
         // The resolved identity rides along with the prompt: it is what a
         // follow roll conditions on, and what a later validator compares
         // against. Internal, like everything in this column (§J).

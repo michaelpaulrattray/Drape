@@ -60,7 +60,6 @@ export type CandidateProjection = {
   status: CandidateProjectionStatus;
   imageUrl: string | null;
   thumbUrl: string | null;
-  personaLine: string | null;
   kept: boolean;
   /**
    * The Cast this candidate became, when it became one.
@@ -443,7 +442,6 @@ export function projectCandidate(
     thumbUrl: status === "failed-refunded" || !candidate.faceThumbKey
       ? null
       : storagePublicUrl(candidate.faceThumbKey),
-    personaLine: candidate.personaLine,
     kept: candidate.keptAt !== null,
     failure: candidate.status === "failed" ? { kind: candidateFailureKind(candidate.failureClass) } : null,
   };
@@ -594,7 +592,6 @@ export type ShortlistEntry = {
   candidateId: string;
   thumbUrl: string | null;
   imageUrl: string | null;
-  personaLine: string | null;
   sourceRollIndex: number;
   indexLabel: string;
 };
@@ -608,7 +605,6 @@ export function projectShortlist(
     // the selected refinement, and the tray is where that Sign is aimed.
     thumbUrl: candidate.faceThumbKey ? storagePublicUrl(candidate.faceThumbKey) : null,
     imageUrl: candidate.faceImageKey ? storagePublicUrl(candidate.faceImageKey) : null,
-    personaLine: candidate.personaLine,
     sourceRollIndex: rollIndex,
     // The face's own label, so the dock's Sign can NAME who it is about to
     // spend on rather than saying "sign the selection".

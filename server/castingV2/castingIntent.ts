@@ -216,9 +216,11 @@ export const ENERGIES = {
  * *who to cast*; the whisper is what the face actually does in the frame.
  *
  * **Descriptive names, never house names.** The archetype ruling is explicit
- * that real brand names stay internal vocabulary, and these keys are projected
- * — a `personaLine` is client-visible. The lineage is recorded in comments
- * where it is useful to a reader and nowhere the customer can see.
+ * that real brand names stay internal vocabulary. These keys were once
+ * client-visible through the tile caption, which retired with the persona line
+ * (#1241); the rule stands on the ruling itself rather than on where the words
+ * happened to surface. The lineage is recorded in comments where it is useful
+ * to a reader and nowhere the customer can see.
  */
 export const LOOKS = {
   "commanding glamour": {
@@ -364,8 +366,8 @@ export type SubjectRefusal = "unsupported_cohort" | "likeness" | "not_a_being";
  * WHAT KIND OF BEING the author-road reader said the brief casts. `human` is
  * the reader's `photoreal_human`; `being` is anything else with a face or a
  * body. The intent's `cohort` stays `photoreal_human` either way, because it
- * names the ADAPTER that resolved the reader's record (identities, locks,
- * persona lines), not the subject — the reading itself is filed on the row's
+ * names the ADAPTER that resolved the reader's record (identities, locks), not
+ * the subject — the reading itself is filed on the row's
  * `register.subject`.
  */
 export type SubjectReading = "human" | "being";

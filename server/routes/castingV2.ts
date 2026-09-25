@@ -1826,10 +1826,9 @@ export const castingV2Router = router({
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       const casts = await listSignedCasts(ctx.user.id);
-      return casts.map(({ model, anchorUrl, personaLine, frameCount, brief }) => ({
+      return casts.map(({ model, anchorUrl, frameCount, brief }) => ({
         castId: model.agencyId ?? "",
         name: model.name,
-        personaLine,
         imageUrl: anchorUrl,
         /*
           THE HERO DECK'S TWO FACTS (#234). The deck at the top of this page

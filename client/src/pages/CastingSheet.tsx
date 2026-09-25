@@ -306,7 +306,6 @@ export default function CastingSheet() {
     {
       candidateId: string;
       indexLabel: string;
-      personaLine: string | null;
       imageUrl: string | null;
     } | null
   >(null);
@@ -2021,7 +2020,6 @@ export default function CastingSheet() {
         ? chosenFrame?.previewUrl ?? null
         : null,
       label: candidate.indexLabel,
-      personaLine: candidate.personaLine,
       downloadName: `candidate-${candidate.indexLabel}`,
       candidateId: candidate.candidateId,
     }));
@@ -3116,7 +3114,6 @@ export default function CastingSheet() {
                     ? setSigning({
                         candidateId: signTarget.candidateId,
                         indexLabel: signTarget.indexLabel,
-                        personaLine: signTarget.personaLine ?? null,
                         imageUrl: signTarget.imageUrl ?? signTarget.thumbUrl ?? null,
                       })
                     : undefined
@@ -3437,7 +3434,6 @@ export default function CastingSheet() {
         <SignConfirm
           indexLabel={signing.indexLabel}
           imageUrl={signing.imageUrl}
-          personaLine={signing.personaLine}
           priceCredits={signPrice}
           busy={sign.isPending}
           onCancel={() => setSigning(null)}

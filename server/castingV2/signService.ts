@@ -309,7 +309,6 @@ function identityDocumentsFor(source: SignableCandidate): {
   };
   const preferences = {
     briefText: source.roll.briefText,
-    personaLine: source.candidate.personaLine,
     position: source.candidate.position,
     sourceRollPublicId: source.roll.publicId,
     sourceCandidatePublicId: source.candidate.publicId,

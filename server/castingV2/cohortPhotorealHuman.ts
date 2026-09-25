@@ -2887,33 +2887,6 @@ export function composeCandidatePrompt(input: {
     .join("\n");
 }
 
-/**
- * The label under a tile.
- *
- * Names whichever axis this sheet actually varies along, so the caption
- * explains the difference the user is looking at: the look for a modelling
- * brief, the disposition for a character one.
- */
-export function personaLineFor(resolved: ResolvedIdentity, read?: string | null): string {
-  // A read written for THIS brief beats a label recycled across every sheet.
-  if (read) return read;
-  if (resolved.look) {
-    // Sentence case: these sit under a tile, not in a mono status pill.
-    return resolved.look.charAt(0).toUpperCase() + resolved.look.slice(1);
-  }
-  const labels: Record<EnergyKey, string> = {
-    warm: "Warm, unhurried",
-    dry: "Dry and flat",
-    bright: "Bright, quick",
-    grave: "Still and grave",
-    open: "Open, easy",
-    guarded: "Guarded",
-    wry: "Wry",
-    plain: "Plain and direct",
-  };
-  return labels[resolved.energy];
-}
-
 /** Exported for the contract test: the constant must survive composition. */
 /**
  * Derived, never re-listed. See `cohortConstantBlocks` for why.

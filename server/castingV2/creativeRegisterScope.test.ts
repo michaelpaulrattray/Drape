@@ -394,15 +394,17 @@ describe("the WIRE — on, EVERY roll is the author road: one prompt, verbatim f
     /* The reader's record did not move — but on the author road it is MARKED
        UNSENT (#176): one authored prompt paints all eight, so the per-slice
        dice never reach the wire and their record may not be read as a
-       delivered fact. The caption is dropped for the same reason — a
-       disposition nobody cast must not sit under a tile. */
+       delivered fact.
+
+       The per-slice CAPTION used to be asserted here too — null on this road, a
+       non-empty string on the house road as the positive control. Both arms went
+       with the field: a candidate carries no disposition on either road now (his
+       ruling, #1241), and `candidateDispositionRetired.test.ts` is what reddens
+       if the word comes back. */
     expect(on.lockContract).toEqual(off.lockContract);
     expect(on.candidates.map((c) => c.resolvedIdentity)).toEqual(
       off.candidates.map((c) => ({ ...c.resolvedIdentity, unsent: true })),
     );
-    expect(on.candidates.every((c) => c.personaLine === null)).toBe(true);
-    /* The house road's captions did not move (positive control for the drop). */
-    expect(off.candidates.every((c) => typeof c.personaLine === "string" && c.personaLine.length > 0)).toBe(true);
     /* The row says how it was composed, and carries the whole prompt for the sheet to show. */
     expect(on.compiledBrief.register).toMatchObject({
       kind: "author",

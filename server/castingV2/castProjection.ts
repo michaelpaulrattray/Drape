@@ -102,7 +102,6 @@ export type CastCapability = "full" | "calibrated" | "unsupported";
 export type SignedCastProjection = {
   castId: string;
   name: string | null;
-  personaLine: string | null;
   /** `building` while the package streams in; `ready` once it is terminal. */
   status: "building" | "ready";
   /** The face that was signed. Always present — it is the anchor. */
@@ -152,7 +151,6 @@ export type SignedCastProjection = {
   siblings: Array<{
     candidateId: string;
     imageUrl: string | null;
-    personaLine: string | null;
     indexLabel: string;
     /**
      * Where this tile goes, decided by STATE (founder ruling, 2026-08-02).
@@ -359,7 +357,6 @@ export function projectSignedCast(input: {
     publicId: string;
     imageKey: string | null;
     thumbKey: string | null;
-    personaLine: string | null;
     position: number;
     /** Her own room, when she has been signed too. Null while she is a face. */
     castId?: string | null;
@@ -545,7 +542,6 @@ export function projectSignedCast(input: {
   return {
     castId: input.model.agencyId ?? "",
     name: input.model.name,
-    personaLine: input.lineage.personaLine,
     status: building ? "building" : "ready",
     anchorUrl: anchor?.storageUrl ?? null,
     slots,
@@ -594,7 +590,6 @@ export function projectSignedCast(input: {
         : sibling.imageKey
           ? storagePublicUrl(sibling.imageKey)
           : null,
-      personaLine: sibling.personaLine,
       indexLabel: String(sibling.position + 1).padStart(2, "0"),
     })),
     provenance: input.lineage.castFromAt

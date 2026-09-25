@@ -65,7 +65,6 @@ import {
 import {
   AGE_BANDS,
   composeCandidatePrompt,
-  personaLineFor,
   resolveArchetype,
   resolveCandidateIdentity,
   briefStatesHair,
@@ -189,7 +188,6 @@ export type LockOverrides = Partial<{
 export type CandidateSpec = {
   position: number;
   prompt: string;
-  personaLine: string | null;
   /**
    * Structured, so the validator compares values instead of grepping prose.
    *
@@ -423,7 +421,7 @@ export type BriefCompilerInput = {
   /** The settings modal's style (#142) — read, like the meter, only on the author road. */
   style?: CastStyle;
   /** Set on a follow roll; the sheet narrows around this candidate. */
-  followPersonaLine?: string | null;
+  followIndexLabel?: string | null;
   followIdentity?: ResolvedIdentity | null;
   /**
    * THE HONEST ANCHOR for a follow of an AUTHOR-ROAD candidate (#176). An
@@ -702,7 +700,7 @@ function applyOverrides(intent: CastingIntent, overrides: LockOverrides | undefi
 
 function buildChips(
   intent: CastingIntent,
-  followPersonaLine: string | null,
+  followIndexLabel: string | null,
   /**
    * READ-ONLY CHIPS ON THE AUTHOR ROAD (#154, his answer (2)). The brief
    * travels verbatim there, so a chip derived from the sentence cannot be
@@ -744,8 +742,8 @@ function buildChips(
       field: "heritage",
     });
   }
-  if (followPersonaLine) {
-    chips.push({ label: `Following ${followPersonaLine}`, kind: "lineage", removable: true });
+  if (followIndexLabel) {
+    chips.push({ label: `Following ${followIndexLabel}`, kind: "lineage", removable: true });
   }
 
   return chips.slice(0, 12);
@@ -1065,7 +1063,6 @@ function resolveSheet(input: {
         // Anchored styling renders at full fidelity: the user chose that cut.
         anchored: anchor != null,
       }),
-      personaLine: personaLineFor(identity, intent.reads[position] ?? null),
       resolvedIdentity: withHonestRecord(identity, sheetResolution, statedFacialHairHere, authoredParts, {
         eyes: statedAxis("eyes", stated),
         brows: statedAxis("brows", stated),
@@ -1321,8 +1318,8 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
   });
   /*
     THE REGISTER — decided once per roll (`authorRoad`, above the reader
-    call), recorded once per roll. The identities, the persona lines and the
-    honest record are the HOUSE resolver's, unchanged: the author rewrites what
+    call), recorded once per roll. The identities and the honest record are the
+    HOUSE resolver's, unchanged: the author rewrites what
     the engine is TOLD, not what the sheet records about who was cast. The lock
     validator below still runs over the same identities.
   */
@@ -1333,7 +1330,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     a follow is carried, the locked block last, all composed BY CODE — and all
     eight slices carry it; the engine varies everything the prompt leaves open.
     The interpreter above still ran, as the READER: the identities, locks,
-    persona lines, born ink and the honest record are its and unchanged.
+    born ink and the honest record are its and unchanged.
 
     ⚠ NO TEXT CALL HAPPENS HERE SINCE #535. The imagination meter is gone and
     the author is the visible Re-imagine press (`reimagine.ts`), which writes
@@ -1375,21 +1372,22 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       })
     : null;
   /*
-    ON THE AUTHOR ROAD THE PER-SLICE RECORD IS MARKED UNSENT AND THE CAPTION IS
-    DROPPED (#176). One authored prompt paints all eight, so the dice's
-    identities and the per-position captions describe what was ROLLED, not what
-    was DELIVERED — the founder followed a Mediterranean-looking man whose
-    record claimed South Asian heritage, and the family clause repeated the
-    fiction to the engine as fact. The record is still written (it documents
+    ON THE AUTHOR ROAD THE PER-SLICE RECORD IS MARKED UNSENT (#176). One
+    authored prompt paints all eight, so the dice's identities describe what was
+    ROLLED, not what was DELIVERED — the founder followed a Mediterranean-looking
+    man whose record claimed South Asian heritage, and the family clause repeated
+    the fiction to the engine as fact. The record is still written (it documents
     what the dice rolled, which is how rows like the 578 specimen were
-    diagnosed) but `readResolvedIdentity` refuses it, and a null `personaLine`
-    draws the tile's index label instead of a disposition nobody cast.
+    diagnosed) but `readResolvedIdentity` refuses it.
+
+    The per-slice CAPTION used to be dropped here for the same reason. It is
+    gone outright now — candidates are auditioners and carry no disposition at
+    all (his ruling, #1241) — so there is nothing left to null.
   */
   const candidates = seeded
     ? sheet.candidates.map((candidate) => ({
         ...candidate,
         prompt: seeded.prompt,
-        personaLine: null,
         resolvedIdentity: { ...candidate.resolvedIdentity, unsent: true as const },
       }))
     : sheet.candidates;
@@ -1424,7 +1422,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
       briefText,
       intent,
       archetype,
-      chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad }),
+      chips: buildChips(intent, input.followIndexLabel ?? null, { authorRoad }),
       /*
         HOW THIS SHEET WAS COMPOSED — present ONLY under the flag, so an
         unflagged roll's row is byte-identical to today's. Since #535 there is
@@ -1490,7 +1488,7 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     cohortKey: intent.cohort,
     styleKey: null,
     styleProfile: null,
-    chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad }),
+    chips: buildChips(intent, input.followIndexLabel ?? null, { authorRoad }),
     candidates,
     variance: sheet.variance,
     size: CANDIDATE_RENDER.size,
@@ -1546,7 +1544,7 @@ export const deterministicBriefCompiler: BriefCompiler = async (input) => {
     styleKey: null,
     styleProfile: null,
     /* No register here: this compiler never takes the author road, so every chip stays as it always was. */
-    chips: buildChips(intent, input.followPersonaLine ?? null, { authorRoad: false }),
+    chips: buildChips(intent, input.followIndexLabel ?? null, { authorRoad: false }),
     candidates,
     variance,
     size: CANDIDATE_RENDER.size,

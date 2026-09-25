@@ -91,7 +91,6 @@ const lineage = {
   rollIndex: 2,
   sessionPublicId: "session-public",
   candidatePublicId: "candidate-public",
-  personaLine: "Dry and flat",
   castFromAt: new Date("2026-08-02T10:00:00Z"),
 };
 
@@ -420,7 +419,7 @@ describe("the signed Cast projection", () => {
       assets: ledger(anchor()),
       lineage,
       siblings: [
-        { publicId: "sib-1", imageKey: "k/1.png", thumbKey: null, personaLine: "Dry and flat", position: 3 },
+        { publicId: "sib-1", imageKey: "k/1.png", thumbKey: null, position: 3 },
       ],
     });
     expect(withSiblings.siblings).toHaveLength(1);

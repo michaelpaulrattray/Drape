@@ -2097,7 +2097,6 @@ export const castingCandidates = mysqlTable("casting_candidates", {
   provider: varchar("provider", { length: 32 }),
   providerModel: varchar("providerModel", { length: 96 }),
   providerRef: varchar("providerRef", { length: 96 }),
-  personaLine: varchar("personaLine", { length: 160 }),
   internalPrompt: json("internalPrompt"), // INTERNAL — the compiled instruction
   keptAt: timestamp("keptAt"),
   discardedAt: timestamp("discardedAt"),
