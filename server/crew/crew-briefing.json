@@ -1,6 +1,6 @@
 {
-  "edition": 525,
-  "updatedAt": "2026-09-25T08:10:00.000Z",
+  "edition": 526,
+  "updatedAt": "2026-09-25T07:55:00.000Z",
   "shift": "Foreman — #1208 + #1220: a view that went wrong has a way back",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -158,8 +158,8 @@
           "title": "And it was worth checking the other readers while we were in there. Nine places in the studio show a picture to a model and ask it a question. Only the hard questions make it stop and think — driven rather than guessed: a simple \"what is this person wearing\" answered in under four seconds with no thinking at all, while the two-picture comparison used every token it had, every time. So one other reader is in the same family and is now carded (#1228); the seven simple ones measured clear, and that is a floor rather than a clean bill of health."
         },
         {
-          "title": "A view that went wrong now has a way back (#1208, #1220). A view that didn't arrive gets Try again · 50 CR — you were refunded when it failed, so asking again costs the same as any view, and the 50 comes back if it fails again. A view we couldn't check now says so and gets Try again · free — that one was charged and you kept it. Views that arrived and passed have no button at all. Your rule, in your words: you pay 50 for each view you keep. Waiting on a review before it ships.",
-          "state": "in-progress"
+          "title": "A view that went wrong now has a way back, and it is LIVE (#1208, #1220). A view that didn't arrive gets Try again · 50 CR — you were refunded when it failed, so asking again costs the same as any view, and the 50 comes back if it fails again. A view we couldn't check now says so and gets Try again · free — that one was charged and you kept it. Views that arrived and passed have no button at all. Your rule, in your words: you pay 50 for each view you keep. Reviewed by hand before it merged, because it moves money.",
+          "state": "done"
         }
       ]
     },
@@ -5911,7 +5911,7 @@
     {
       "id": "view-try-again-1208",
       "title": "A view that went wrong has a way back — Try again on the tile",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1233,
       "cardId": null,
       "note": "One button, two prices — 50 for a refunded view, free for one nobody checked."
