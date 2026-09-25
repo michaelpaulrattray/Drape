@@ -19,7 +19,7 @@ import type { Model, ModelAsset } from "../../drizzle/schema";
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { storagePublicUrl } from "../storage";
 import type { CastLineage } from "../db/castingV2Sign";
-import { CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
+import { CAST_PACKAGE_VIEW_PRICE, CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
 import { castPronouns, type CastPronouns } from "./castPronouns";
 
 /**
@@ -54,6 +54,47 @@ export type CastSlotProjection = {
    * nothing does.
    */
   standIn?: true;
+  /**
+   * TRUE when the picture is here and NOBODY LOOKED AT IT (D-246, #1220).
+   *
+   * The judge answering "this is wrong" and the judge not answering at all are
+   * different facts about a view the customer paid for, and only the first is a
+   * reason to take the picture away. D-246 delivers the second, loudly — and
+   * until now "loudly" meant a log line and a column, which the room never
+   * read. It is what makes this slot's Try again FREE: the view was charged and
+   * kept, so asking for it again costs nothing.
+   */
+  unjudged?: true;
+  /**
+   * What asking for this view again would cost, or absent when there is
+   * nothing to ask for.
+   *
+   * Derived from this slot's own state by {@link castSlotRetryOffer}, which is
+   * the SAME function the retry entrance authorizes with — a second reading of
+   * "may this be retried" would be working law 4's parallel copy on a money
+   * surface, and it would drift toward offering a button the server refuses.
+   */
+  retry?: CastSlotRetry;
+};
+
+/**
+ * THE OFFER ON A SLOT — his rule, 2026-09-25, verbatim: *"you pay 50 for each
+ * view you keep."*
+ *
+ * Two prices and one sentence behind both. A view that FAILED was refunded, so
+ * it cost nothing and asking again is an ordinary paid view (his ruling on
+ * #1208: *"If they recieved a refund of 50credits trying again deducts another
+ * 50cr. its not completely free"*). A view that arrived UNJUDGED was charged
+ * and kept, so asking again is free (his ruling on #1220: *"go with the free
+ * try again"*).
+ *
+ * `priceCredits` is the whole difference. There is ONE button on the tile with
+ * one price on it — never two buttons and never a word the customer has to
+ * interpret, which is what "free" would be beside a price somewhere else.
+ */
+export type CastSlotRetry = {
+  /** 0 is a real price and says so on the button. */
+  priceCredits: number;
 };
 
 export type CastCapability = "full" | "calibrated" | "unsupported";
@@ -157,6 +198,24 @@ export type SignedCastProjection = {
 export const FAILED_SLOT_CONFESSION = "This view didn't arrive — refunded";
 
 /**
+ * THE VIEW NOBODY CHECKED, SAID OUT LOUD (#1220 slice 2).
+ *
+ * Every view is checked against the face she signed before it is delivered.
+ * When that check cannot answer, D-246 delivers the picture anyway rather than
+ * charging nothing for something that may be perfect — and until now the room
+ * said nothing at all, so a view that was never looked at was indistinguishable
+ * from one that passed.
+ *
+ * ⚠ **THE SENTENCE IS WHY THE BUTTON EXISTS, AND WITHOUT IT THE BUTTON IS THE
+ * MACHINE SHOWING THROUGH.** A free Try again sitting under one tile and not
+ * the others, with nothing said, is a control the customer has no basis for
+ * pressing — the disappearing-technology law's second question, failed. It
+ * names what happened in her words and never how: no model, no verdict, no
+ * axis.
+ */
+export const UNJUDGED_SLOT_NOTE = "We didn't get to check this one";
+
+/**
  * The signed face standing in for a close-up that never came.
  *
  * Its own sentence rather than the confession above, because the slot is not
@@ -192,6 +251,54 @@ export const ANCHOR_STANDIN_NOTE = "The face you signed, standing in — the clo
 export const TOTAL_LOSS_CONFESSION =
   "The package didn't arrive — everything you paid has been refunded, "
   + "including the Sign itself. The face you chose is still yours.";
+
+/**
+ * Did anybody look at this picture? Read at the row the judge wrote, never
+ * inferred from the picture being here.
+ *
+ * `conformanceMethod` is `"unavailable"` on exactly one road — the judge could
+ * not answer and the orchestrator delivered anyway (D-246). Every other value
+ * means a verdict exists, whichever way it went.
+ */
+function wasDeliveredUnjudged(asset: ModelAsset): boolean {
+  const provenance = asset.provenance as { conformanceMethod?: unknown } | null;
+  return provenance?.conformanceMethod === "unavailable";
+}
+
+/**
+ * WHAT ASKING FOR THIS VIEW AGAIN COSTS — the single authority, read by the
+ * room and by the entrance that spends the money.
+ *
+ * His rule, verbatim (2026-09-25): *"you pay 50 for each view you keep."*
+ *
+ * - A view that failed was REFUNDED, so it has cost nothing. Asking again is
+ *   an ordinary paid view. (#1208, his *"trying again deducts another 50cr.
+ *   its not completely free"*.)
+ * - A view that arrived UNJUDGED was charged and kept. Asking again is free.
+ *   (#1220, his *"go with the free try again"*.)
+ * - The stand-in headshot is the first case wearing a picture: its own view
+ *   failed and was refunded, and the anchor is standing in its place. The
+ *   refund is what identifies it, not the stand-in flag — a stand-in with
+ *   nothing refunded is a Cast that never bought that view.
+ * - Anything still building, and any view that arrived and was judged, has
+ *   nothing to ask for.
+ *
+ * A pure function of the slot the ROOM is shown, which is the point: the
+ * button the customer sees and the price the server charges cannot disagree,
+ * because there is one reading and the server does it.
+ */
+export function castSlotRetryOffer(
+  slot: Pick<CastSlotProjection, "state" | "standIn" | "unjudged" | "refundedCredits">,
+  viewPrice: number,
+): CastSlotRetry | null {
+  if (slot.state === "failed-refunded") return { priceCredits: viewPrice };
+  if (slot.state !== "ready") return null;
+  if (slot.standIn === true) {
+    return slot.refundedCredits === null ? null : { priceCredits: viewPrice };
+  }
+  if (slot.unjudged === true) return { priceCredits: 0 };
+  return null;
+}
 
 type SlotEvidence = {
   /** The newest filled 2K package render, if one landed. */
@@ -323,7 +430,7 @@ export function projectSignedCast(input: {
     (angle) => promised.includes(angle) || evidenceAngles.includes(angle),
   );
 
-  const slots: CastSlotProjection[] = renderedAngles.map((angle) => {
+  const slots: CastSlotProjection[] = renderedAngles.map((angle): CastSlotProjection => {
     const entry = evidence.get(angle) ?? {};
     // The label this CAST bought, not the one today's profile sells. Her
     // waist-up headshot is not retroactively a close-up because the profile
@@ -344,8 +451,12 @@ export function projectSignedCast(input: {
         label,
         state: "ready",
         url: entry.landed.storageUrl,
-        note: null,
+        /* Nobody looked at this one — the room needs the fact, not only the
+           log (D-246, #1220). It is what makes its Try again free, and the
+           sentence is what makes that button pressable on a basis. */
+        note: wasDeliveredUnjudged(entry.landed) ? UNJUDGED_SLOT_NOTE : null,
         refundedCredits: null,
+        ...(wasDeliveredUnjudged(entry.landed) ? { unjudged: true as const } : {}),
       };
     }
 
@@ -412,7 +523,24 @@ export function projectSignedCast(input: {
       note: FAILED_SLOT_CONFESSION,
       refundedCredits: null,
     };
-  });
+  })
+    /*
+      WHAT EACH SLOT OFFERS, DERIVED FROM WHAT IT IS — one pass over the slots
+      the room is about to be shown, rather than a branch inside each of the
+      seven returns above. A rule stated once cannot be forgotten in the eighth
+      case somebody adds.
+
+      NOTHING IS OFFERED WHILE THE PACKAGE IS STILL BUILDING, and that is a
+      money guard rather than tidiness: the Sign's own operation is still
+      running and still owns every slot's slice, so a Try again dispatched
+      underneath it would be a second writer on a view the Sign may yet commit
+      or refund.
+    */
+    .map((slot) => {
+      if (building) return slot;
+      const retry = castSlotRetryOffer(slot, CAST_PACKAGE_VIEW_PRICE);
+      return retry ? { ...slot, retry } : slot;
+    });
 
   return {
     castId: input.model.agencyId ?? "",

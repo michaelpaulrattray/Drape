@@ -103,7 +103,9 @@ import {
 /** `z.enum` wants a non-empty tuple; these three are derived key arrays. */
 const tuple = <T extends string>(values: readonly T[]) => values as unknown as [T, ...T[]];
 import { createRoll, cancelRoll } from "../castingV2/rollService";
+import { CAST_VIEW_ANGLES } from "../../shared/boardTypes";
 import { retryCandidate } from "../castingV2/retryService";
+import { retryCastView } from "../castingV2/viewRetryService";
 import { captureCastingRetryEnabled } from "../castingV2/castingV2Scope";
 import { signCandidate } from "../castingV2/signService";
 import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "../castingV2/refineLimits";
@@ -2172,6 +2174,38 @@ export const castingV2Router = router({
         userId: ctx.user.id,
         clientRequestId: input.clientRequestId,
         candidatePublicId: input.candidateId,
+      });
+    }),
+
+  /**
+   * TRY AGAIN ON ONE VIEW (#1208 slice 2, #1220 slice 2).
+   *
+   * **His rule, verbatim (2026-09-25): *"you pay 50 for each view you keep."***
+   * A view that failed was refunded, so asking again is a paid view; a view
+   * that arrived with nobody having checked it was charged and kept, so asking
+   * again is free. ONE button on the tile, and the price on it comes from the
+   * same reading this procedure authorizes with — `castSlotRetryOffer`, over
+   * the projection the room is shown.
+   *
+   * A PAID procedure, so it sits in the paid bucket with `createRoll`,
+   * `refine` and `retry`. `clientRequestId` is the idempotency key: the same
+   * id returns the view it already bought rather than buying a second one.
+   */
+  retryView: protectedProcedure
+    .input(z.object({
+      clientRequestId: z.string(),
+      castId: z.string().min(1).max(32),
+      angle: z.enum(CAST_VIEW_ANGLES),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.generation);
+      assertClientRequestId(input.clientRequestId);
+      return retryCastView({}, {
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        castId: input.castId,
+        angle: input.angle,
       });
     }),
 
