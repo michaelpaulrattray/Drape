@@ -14,89 +14,28 @@ import { describe, expect, it } from "vitest";
 
 import { CREW_CARD_STATES, crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import {
-  GENERAL_FOLD_VISIBLE,
-  foldTimeline,
+  stepsWithLiveState,
   milestoneCountLine,
   milestoneProgress,
   heldCount,
   nextUpRows,
   pipelineNotDone,
-  replyFallsToGeneral,
 } from "./crewTypes";
 
-const CARDS = [
-  { id: "open-card", state: "open" },
-  /* #354's state, added by #649 finding 2: the fixture claimed to be
-     exhaustive over card states and had never held this one. */
-  { id: "waiting-card", state: "waiting" },
-  { id: "answered-card", state: "answered" },
-  { id: "done-card", state: "done" },
-] as const;
 
-describe("where a reply renders", () => {
-  it("a cardless reply is a general note", () => {
-    expect(replyFallsToGeneral(null, CARDS)).toBe(true);
-  });
-
-  it("a reply on an OPEN card stays with its card's thread", () => {
-    expect(replyFallsToGeneral("open-card", CARDS)).toBe(false);
-  });
-
-  it("⚠ a reply on an ANSWERED or DONE card falls to the General box — the card is listed but renders no thread", () => {
-    expect(replyFallsToGeneral("answered-card", CARDS)).toBe(true);
-    expect(replyFallsToGeneral("done-card", CARDS)).toBe(true);
-  });
-
-  it("a reply whose card left the briefing entirely falls to the General box", () => {
-    expect(replyFallsToGeneral("a-card-no-briefing-holds", CARDS)).toBe(true);
-  });
-
-  it("a reply on a WAITING card keeps its thread — he answered it and it is still his", () => {
-    /* #354: `waiting` is a card he has answered that still needs an act of his,
-       and it renders on his desk WITH its reply box. A reply on it must stay
-       under the card, exactly as an open one does. */
-    expect(replyFallsToGeneral("waiting-card", CARDS)).toBe(false);
-  });
-
-  it("the fixture holds every card state — the arm below is only exhaustive if it does", () => {
-    /*
-      ⚠ THIS IS THE ARM #649 FINDING 2 IS REALLY ABOUT. The one below has been
-      titled "exhaustive" since it was written and was exhaustive over the
-      FIXTURE, never over the states — so `waiting` was added to the product
-      and this file went on passing without it. Derived from the enum, so a
-      fifth state reddens here rather than being quietly untested.
-    */
-    expect([...CARDS].map((card) => card.state).sort())
-      .toEqual([...CREW_CARD_STATES].sort());
-  });
-
-  it("exhaustive: every card state routes every reply somewhere", () => {
-    /*
-      The invariant itself: for ANY cardId, the reply renders in the General box
-      OR under a thread — never neither, never both.
-
-      ⚠ THE MIRROR AT `inThread` USED TO READ `card.state === "open"` AND THAT
-      WAS THE TRAP (#649 finding 2): adding a `waiting` card to the fixture
-      without moving it makes this arm fail WRONGLY — the reply renders under
-      its thread and the mirror insists it does not. It reads the shared
-      predicate now, which does make the two sides one function; what this arm
-      still owns is TOTALITY over every id, and the exhaustiveness it is named
-      for is guarded by the arm above rather than restated here.
-    */
-    const everyCardId = [null, ...CARDS.map((card) => card.id), "gone-card"];
-    for (const cardId of everyCardId) {
-      const inGeneral = replyFallsToGeneral(cardId, CARDS);
-      const inThread =
-        cardId !== null && CARDS.some((card) => card.id === cardId && crewCardNeedsHim(card.state));
-      expect(inGeneral || inThread, `a reply on ${String(cardId)} renders nowhere`).toBe(true);
-      expect(inGeneral && inThread, `a reply on ${String(cardId)} renders twice`).toBe(false);
-    }
+describe("a milestone step that names a closed card reads as done (#1201)", () => {
+  it("overrides waiting and in-progress when the card is closed, and leaves the rest alone", () => {
+    const steps = [
+      { title: "The N1 deep review — asked for on #1121", state: "in-progress" as const },
+      { title: "THE SWITCH LIST IS ON YOUR DESK (#1132)", state: "waiting" as const },
+      { title: "Still open (#999)", state: "waiting" as const },
+      { title: "No card named", state: "blocked" as const },
+    ];
+    expect(stepsWithLiveState(steps, [1132]).map((s) => s.state)).toEqual(["in-progress", "done", "waiting", "blocked"]);
+    expect(stepsWithLiveState(steps, [1121, 1132]).map((s) => s.state)).toEqual(["done", "done", "waiting", "blocked"]);
+    expect(stepsWithLiveState(steps, []).map((s) => s.state)).toEqual(["in-progress", "waiting", "waiting", "blocked"]);
   });
 });
-
-/* ─── #74's derivations. Each is the Desk's information design READ off data
-   the briefing already carries — these arms are what stops the bar, the split
-   and the fold from quietly becoming second copies of state. ─── */
 
 describe("the milestone progress bar (#74)", () => {
   it("counts each state and fills done + half of in-progress", () => {
@@ -221,26 +160,6 @@ describe("NEXT UP — blocked-on-him is derived off his desk, never stored (#290
        --state open`, which is his card's stated check: nothing here may drop
        or reorder a row. */
     expect(nextUpRows(NEXT_UP as never, []).map((row) => row.issueNumber)).toEqual([278, 287]);
-  });
-});
-
-describe("the General box fold (#74 — his standing Desk rule)", () => {
-  it(`shows ${GENERAL_FOLD_VISIBLE} and folds the rest, order preserved`, () => {
-    const items = Array.from({ length: 11 }, (_, index) => index);
-    const { recent, older } = foldTimeline(items);
-    expect(recent).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
-    expect(older).toEqual([8, 9, 10]);
-  });
-
-  it("a short list folds nothing — no empty disclosure button", () => {
-    const { recent, older } = foldTimeline([0, 1, 2]);
-    expect(recent).toEqual([0, 1, 2]);
-    expect(older).toEqual([]);
-  });
-
-  it("the boundary itself: exactly the visible count folds nothing", () => {
-    const items = Array.from({ length: GENERAL_FOLD_VISIBLE }, (_, index) => index);
-    expect(foldTimeline(items).older).toEqual([]);
   });
 });
 

@@ -6,10 +6,18 @@
  * stops mattering: the briefing and the steering wheel live in the product he
  * already opens every day.
  *
- * His reading order: **the program → needs you → for your eyes → working now →
- * in flight → since you last looked → next up → background work → problems →
- * general.** Single column, restrained, no charts and no KPI tiles — this is a
- * briefing, not a dashboard.
+ * His reading order: **the program → needs you → for your eyes →
+ * happening now (working now → in flight → next up) → since you last looked →
+ * background work → problems.** Single column, restrained, no charts and no
+ * KPI tiles — this is a briefing, not a dashboard.
+ *
+ * ⚠ **#1201 (2026-09-25) put WORKING NOW, IN FLIGHT and NEXT UP on one card
+ * and removed the GENERAL box, both on his word**: *"shouldnt next up card
+ * and in flight card and working now card be together or on the same card
+ * for an easy visual overlook?"* and *"remove the general card from the crew
+ * tab i literally never use it"*. His rulings arrive as replies on cards, or
+ * in the terminal through the relay. PROBLEMS now draws only actionable
+ * faults (`problemsFor`).
  *
  * ⚠ **THAT ORDER IS #1193's (2026-09-25) AND IT REPLACES #437's.** His words:
  * *"the feedback on the crew page is so delayed and disoganised in terms of
@@ -110,11 +118,10 @@ import {
 import "@/foundation";
 import "@/features/admin/components/crew/crew.css";
 import { CrewEyeGallery } from "@/features/admin/components/crew/CrewEyeGallery";
-import { CrewGeneral } from "@/features/admin/components/crew/CrewGeneral";
 import { CrewNeedsYou } from "@/features/admin/components/crew/CrewNeedsYou";
 import { CrewPipeline } from "@/features/admin/components/crew/CrewPipeline";
 import { CrewSinceYouLooked } from "@/features/admin/components/crew/CrewSinceYouLooked";
-import { ladderCardsFor, needsYouFor, nextUpFor, queueReadOf } from "@/features/admin/components/crew/crewTypes";
+import { ladderCardsFor, needsYouFor, nextUpFor, problemsFor, queueReadOf } from "@/features/admin/components/crew/crewTypes";
 import { useLastSeen } from "@/features/admin/components/crew/useLastSeen";
 import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
 import { CrewBackgroundWork } from "@/features/admin/components/crew/CrewBackgroundWork";
@@ -122,7 +129,9 @@ import { CrewNextUp } from "@/features/admin/components/crew/CrewNextUp";
 import { CrewSkeleton } from "@/features/admin/components/crew/CrewSkeleton";
 import { CrewProgramBanner } from "@/features/admin/components/crew/CrewProgramBanner";
 import { staffDateTime } from "@/foundation/staffDate";
-import { CrewWorkingNow } from "@/features/admin/components/crew/CrewWorkingNow";
+import { CrewHappeningNow } from "@/features/admin/components/crew/CrewHappeningNow";
+import { CrewNav } from "@/features/admin/components/crew/CrewNav";
+import { landedSince } from "@/features/admin/components/crew/CrewSinceYouLooked";
 import { useCrewState } from "@/features/admin/components/crew/useCrewState";
 
 /**
@@ -374,6 +383,11 @@ export default function AdminCrew() {
           /* A card GitHub has closed stops asking him, whatever the edition
              still says about it (#1193). */
           const needsYou = needsYouFor(live, data.briefing.needsYou);
+          const problems = problemsFor(live, data.briefing.problems);
+          const nextUp = nextUpFor(live, data.briefing);
+          const eyes = data.briefing.eyeItems.length;
+          const landed = live.available ? landedSince(live.desk.recent, lastSeenAt) : 0;
+          const inFlight = live.available ? live.desk.pullRequests.length : 0;
           return (
           <>
             {/* FIRST ON THE PAGE, on his own instruction (#437, 2026-09-02),
@@ -383,9 +397,25 @@ export default function AdminCrew() {
                 cards come from GitHub through `ladderCardsFor`, the edition's
                 own list only when GitHub has not answered — and the stamp on
                 the ladder head says which. */}
+            {/* THE SECTION MENU (#1201) — jumps and counts; it replaces the
+                readings block he barely read. */}
+            <CrewNav
+              items={[
+                { id: "crew-section-program", label: "Program" },
+                { id: "crew-section-needs-you", label: "Needs you", count: needsYou.length + eyes },
+                { id: "crew-section-happening", label: "Happening now", count: inFlight },
+                { id: "crew-section-since", label: "Since you looked", count: landed, fresh: true },
+                { id: "crew-section-next-up", label: "Next up", count: nextUp.items.length },
+                { id: "crew-section-background", label: "Background work" },
+                { id: "crew-section-problems", label: "Problems", count: problems.length },
+              ]}
+            />
+            <div id="crew-section-program" />
             <CrewProgramBanner
               program={data.briefing.program}
               ladderCards={ladderCardsFor(live, data.briefing)}
+              finished={live.available ? live.desk.finishedLadder : []}
+              closedCards={live.available ? live.desk.closedCards : []}
               queueRead={queueRead}
               now={now}
               cardIntents={data.cardIntents}
@@ -396,6 +426,7 @@ export default function AdminCrew() {
                 order. A question waiting on him outranks a queue that is
                 merely running (#277's own argument, which #437 overrode and
                 his 2026-09-25 word restores). */}
+            <div id="crew-section-needs-you" />
             <CrewNeedsYou
               cards={needsYou}
               replies={data.replies}
@@ -410,26 +441,27 @@ export default function AdminCrew() {
               sending={replyMutation.isPending}
               onSend={send}
             />
-            {/* WHAT IS HAPPENING: the live shift strip, then every open PR.
-                `now` is one ticker for both, so "started 14 min ago" and a
-                PR's "touched 2 min ago" cannot disagree (#272). */}
-            <CrewWorkingNow shiftRuns={data.shiftRuns} now={now} />
-            <CrewPipeline
+            {/* WHAT IS HAPPENING, ON ONE CARD (#1201): the live shift strip,
+                every open PR, then the ordered band — the three blocks his
+                word put together. `now` is one ticker for all of them, so
+                "started 14 min ago" and "touched 2 min ago" cannot disagree
+                (#272). */}
+            <div id="crew-section-happening" />
+            <div id="crew-section-next-up" />
+            <CrewHappeningNow
+              shiftRuns={data.shiftRuns}
               live={live}
-              snapshot={data.briefing.pipeline}
+              pipelineSnapshot={data.briefing.pipeline}
+              nextUp={nextUp}
+              cards={needsYou}
               queueRead={queueRead}
               now={now}
             />
             {/* WHAT JUST HAPPENED (#1193) — merged and closed in the last two
                 days, with a mark on what landed after his previous visit. */}
+            <div id="crew-section-since" />
             <CrewSinceYouLooked live={live} queueRead={queueRead} now={now} lastSeenAt={lastSeenAt} />
-            {/* WHAT IS NEXT (#290) — the ordered band, live. */}
-            <CrewNextUp
-              nextUp={nextUpFor(live, data.briefing)}
-              queueRead={queueRead}
-              now={now}
-              cards={needsYou}
-            />
+            <div id="crew-section-background" />
             <CrewBackgroundWork
               workState={data.workState}
               cardIntents={data.cardIntents}
@@ -440,18 +472,9 @@ export default function AdminCrew() {
               pending={workSwitchMutation.isPending}
               intentPendingCard={intentPending}
             />
-            <CrewProblems problems={data.briefing.problems} />
-            {/* THE GENERAL BOX (#293) — his cardless replies. `threadHosts`,
-                not the two section lists (#1138): those carry only what still
-                needs him, and a reply on a card since dealt with must keep its
-                title here. */}
-            <CrewGeneral
-              replies={data.replies}
-              cards={data.briefing.threadHosts}
-              acknowledgedReplyIds={data.briefing.acknowledgedReplyIds}
-              sending={replyMutation.isPending}
-              onSend={send}
-            />
+            {/* Actionable faults only, retired live when their card closes (#1201). */}
+            <div id="crew-section-problems" />
+            <CrewProblems problems={problems} />
             {/* The edition stamp — WHO wrote the crew's notes and WHEN (#415,
                 #329) — and beside it the live half's own reading, because the
                 two are different facts: a shift last wrote at 09:01 and

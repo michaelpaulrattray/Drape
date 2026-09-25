@@ -24,7 +24,7 @@
  * whose argument is that a quote already carries two markers (its rule and its
  * attribution) and a third marker for one fact says nothing new.
  */
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 
 import { Check } from "lucide-react";
 
@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
 import { TableHead } from "@/foundation";
 import { staffDateTime } from "@/foundation/staffDate";
 import { CardTitles } from "./CrewCardTitles";
-import { milestoneCountLine, milestoneProgress } from "./crewTypes";
+import { milestoneCountLine, milestoneProgress, stepsWithLiveState } from "./crewTypes";
 import type { CrewBriefingView, CrewCardIntentsView, CrewLadderCardsSource, CrewQueueRead } from "./crewTypes";
 import { QueueReadStamp } from "./QueueReadStamp";
 
@@ -81,33 +81,6 @@ const RUNG_LABEL: Record<string, string> = {
   parked: "Parked",
 };
 
-/*
-  ⚠ **THE THREE TONES SURVIVED THE PILL; THE PILL DID NOT (#492).**
-
-  His words at a frame of this block: *"the top of the programs card with the
-  little status card readings needs a better design honest it looks terribly
-  designed"*. The tones are not the fault and they do not change — `warn` is
-  still the house red (`--errorInk`, brief 08 §5, and `--errorInk` rather than
-  `--error` because this is TEXT). What changed is what carries them: a 6px dot
-  beside a quiet label, instead of a stroked pill that was the loudest thing on
-  the block while holding the least information on it.
-
-  ⚠ **`warn` SAYS ITS WORD OUT LOUD.** It is the one tone that changes what he
-  does, and a dot is a colour — the only encoding a screen reader cannot hear.
-  `good` and `neutral` get no word on purpose: the absence of a warning is the
-  resting state, and announcing it on every reading is noise.
-*/
-const STATE_DOT: Record<string, string> = {
-  good: "dp-crew__statedot--good",
-  warn: "dp-crew__statedot--warn",
-  neutral: "",
-};
-
-const STATE_SPOKEN: Record<string, string | null> = {
-  good: null,
-  warn: "Needs attention: ",
-  neutral: null,
-};
 
 /**
  * The word beside a ladder card that is not ordinary roadmap work (#493) — a
@@ -130,13 +103,18 @@ const LADDER_KIND_WORD: Record<string, string | null> = {
  */
 const UNPLACED_KEY = "unplaced";
 const rungSetKey = (key: string) => `rung:${key}`;
+const finishedSetKey = (key: string | null) => `finished:${key ?? "unplaced"}`;
 
 export function CrewProgramBanner({
-  program, ladderCards, queueRead, now, cardIntents, onIntent, intentPendingCard,
+  program, ladderCards, finished, closedCards, queueRead, now, cardIntents, onIntent, intentPendingCard,
 }: {
   program: CrewBriefingView["program"];
   /** The ladder's cards — live from GitHub when it answers, the edition's list otherwise (#1193). */
   ladderCards: CrewLadderCardsSource;
+  /** Ladder cards that finished in the window, on their rung — drawn struck through (#1201). */
+  finished: readonly { readonly issueNumber: number; readonly title: string; readonly rung: string | null }[];
+  /** Cards GitHub has closed; a milestone step naming one reads as done (#1201). */
+  closedCards: readonly number[];
   queueRead: CrewQueueRead;
   now: number;
   cardIntents: CrewCardIntentsView;
@@ -161,6 +139,9 @@ export function CrewProgramBanner({
     trimmed or paraphrased — a folded step is the whole step.
   */
   const [showDone, setShowDone] = useState(false);
+  /* A step naming a closed card reads as done, whatever the edition says (#1201). */
+  const steps = program.milestone ? stepsWithLiveState(program.milestone.steps, closedCards) : [];
+  const finishedOn = (rungKey: string | null) => finished.filter((card) => card.rung === rungKey);
   const toggleRung = (key: string) =>
     setOpenRungs((current) => {
       const next = new Set(current);
@@ -197,52 +178,11 @@ export function CrewProgramBanner({
     <section className="dp-crew__card">
       <TableHead eyebrow="The program" />
 
-      {/*
-        STATE AT A GLANCE (#74's readings, #492's shape).
-
-        ⚠ **THE HIERARCHY IS THE FIX.** His frame showed a stroked pill holding
-        a 67-character headline over a 10px grey paragraph carrying the actual
-        reading — the loudest element on the page's first block carrying the
-        least information per pixel. So the label is now a quiet eyebrow capped
-        at 40 AT THE SCHEMA, and `source` — the reading it cites — is drawn in
-        the page's normal reading face. It is still shown under the label and
-        still never hidden in a tooltip he has to discover.
-
-        ⚠ **THE GRID IS WHAT FIXES THE RAGGED EDGE, and it fixes it by
-        construction rather than by a shift writing shorter sentences.** Three
-        pills in a wrapping flex row put two on the first line and orphaned the
-        third, each cell as tall as its own paragraph. Equal grid cells share a
-        row, so the labels align whatever the sources do. The column count is
-        the number of readings (`chips.max(6)` at the schema), capped at three
-        so six readings become two rows of three rather than six slivers —
-        `.dp-set__statcard`'s own pattern, and the reason this sets a custom
-        property instead of a class per count.
-      */}
-      {program.chips.length > 0 && (
-        <div
-          className="dp-crew__state dp-crew__gap"
-          style={{ "--dp-statecols": Math.min(program.chips.length, 3) } as CSSProperties}
-        >
-          {program.chips.map((chip, index) => (
-            /* Composite key (PR #78 review nit): labels are writer-controlled
-               and the schema does not force them unique. */
-            <div key={`${index}-${chip.label}`} className="dp-crew__statecell">
-              <p className="dp-eyebrow dp-crew__statelabel">
-                <span
-                  aria-hidden="true"
-                  className={cn("dp-crew__statedot", STATE_DOT[chip.tone] ?? STATE_DOT.neutral)}
-                />
-                {STATE_SPOKEN[chip.tone] && (
-                  <span className="sr-only">{STATE_SPOKEN[chip.tone]}</span>
-                )}
-                {chip.label}
-              </p>
-              {chip.source && <p className="dp-crew__statesrc">{chip.source}</p>}
-            </div>
-          ))}
-        </div>
-      )}
-
+      {/* THE READINGS BLOCK (#74 → #492) IS GONE ON HIS WORD (#1201, 2026-09-25:
+          *"i barely read the overview circled in red"*). Its place at the top
+          of the page is the section menu (`CrewNav`), which jumps and counts
+          rather than narrates. The edition may still carry `chips`; nothing
+          draws them. */}
       <p className="dp-crew__mission dp-crew__gap">{program.mission}</p>
 
       <div className="dp-crew__rule">
@@ -278,8 +218,8 @@ export function CrewProgramBanner({
           {/* The progress bar (#74 item 1) — READ off the steps below, never a
               second number beside them. An in-progress step fills half, so the
               bar moves the day work starts. */}
-          {program.milestone.steps.length > 0 && (() => {
-            const progress = milestoneProgress(program.milestone.steps);
+          {steps.length > 0 && (() => {
+            const progress = milestoneProgress(steps);
             return (
               <div className="dp-crew__gap">
                 <div className="dp-crew__track">
@@ -296,7 +236,7 @@ export function CrewProgramBanner({
           })()}
 
           <ol className="dp-crew__steps">
-            {program.milestone.steps.map((step, index) => (showDone || step.state !== "done") && (
+            {steps.map((step, index) => (showDone || step.state !== "done") && (
               <li key={`${index}-${step.title}`} className="dp-crew__step">
                 {/* aria-hidden: the state is said in words in the pill at the
                     row's end, so a screen reader hearing the marker too would
@@ -330,7 +270,7 @@ export function CrewProgramBanner({
             ))}
           </ol>
           {(() => {
-            const done = program.milestone.steps.filter((step) => step.state === "done").length;
+            const done = steps.filter((step) => step.state === "done").length;
             if (done === 0) return null;
             return (
               <button
@@ -407,8 +347,29 @@ export function CrewProgramBanner({
                         {cards.length} waiting
                       </button>
                     )}
+                    {finishedOn(rung.key).length > 0 && (
+                      <button
+                        type="button"
+                        className="dp-crew__rungcount dp-crew__rungcount--done"
+                        aria-expanded={openRungs.has(finishedSetKey(rung.key))}
+                        onClick={() => toggleRung(finishedSetKey(rung.key))}
+                        data-testid={`crew-rung-finished-${rung.key}`}
+                      >
+                        {finishedOn(rung.key).length} finished
+                      </button>
+                    )}
                     <span className="dp-chrome dp-crew__mono">{RUNG_LABEL[rung.state] ?? rung.state}</span>
                   </div>
+                  {openRungs.has(finishedSetKey(rung.key)) && finishedOn(rung.key).length > 0 && (
+                    <ul className="dp-crew__titles dp-crew__rungdrop">
+                      {finishedOn(rung.key).map((card) => (
+                        <li key={card.issueNumber} className="dp-crew__finished">
+                          <span className="dp-chrome dp-crew__ref">#{card.issueNumber}</span>
+                          <s>{card.title}</s>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {open && cards.length > 0 && (
                     <ul className="dp-crew__titles dp-crew__rungdrop">
                       <CardTitles

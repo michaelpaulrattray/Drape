@@ -33,7 +33,7 @@
  * closing paragraph are untouched.
  */
 import { cn } from "@/lib/utils";
-import { TableHead } from "@/foundation";
+import { SectionHead, SectionShell } from "./CrewShell";
 import { heldCount, nextUpRows } from "./crewTypes";
 import type { CrewNeedsYouCard, CrewNextUpSource, CrewQueueRead } from "./crewTypes";
 import { QueueReadStamp } from "./QueueReadStamp";
@@ -43,24 +43,29 @@ export function CrewNextUp({
   queueRead,
   now,
   cards,
+  embedded,
+  first,
 }: {
   /** Live from GitHub when it answers, the edition's list otherwise (#1193). */
   nextUp: CrewNextUpSource;
   queueRead: CrewQueueRead;
   now: number;
   cards: readonly CrewNeedsYouCard[];
+  /** One block of the HAPPENING NOW card rather than a card of its own (#1201). */
+  embedded?: boolean;
+  first?: boolean;
 }) {
   const rows = nextUpRows(nextUp, cards);
   const held = heldCount(rows);
 
   return (
-    <section className="dp-crew__card" data-testid="crew-next-up">
+    <SectionShell embedded={embedded} first={first} testId="crew-next-up">
       {/* §3: the count moves to the head's right, and the queue-read stamp
           rides beside it — both are measured values, so both are mono. */}
-      <TableHead eyebrow="Next up">
+      <SectionHead embedded={embedded} eyebrow="Next up">
         {rows.length > 0 && <span className="dp-crew__meta">{rows.length} open</span>}
-        <QueueReadStamp read={queueRead} now={now} />
-      </TableHead>
+        {!embedded && <QueueReadStamp read={queueRead} now={now} />}
+      </SectionHead>
 
       {rows.length === 0 ? (
         <p className="dp-crew__body dp-crew__body--soft dp-crew__gap">
@@ -129,6 +134,6 @@ export function CrewNextUp({
           </>
         )}
       </p>
-    </section>
+    </SectionShell>
   );
 }

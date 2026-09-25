@@ -29,6 +29,7 @@ const SEVERITY_LABEL: Record<string, string> = {
   info: "Note",
 };
 
+/** Takes the list `problemsFor` has already cut to actionable, unresolved faults (#1201). */
 export function CrewProblems({ problems }: { problems: readonly CrewProblem[] }) {
   const open = [...problems]
     /* ⚠ THE SERVER NO LONGER SENDS THE OTHERS (#1138) — `crewBriefingForPage`
