@@ -1,6 +1,6 @@
 # RE-IMAGINE — the design report #535 ordered (2026-09-06, escalated Fable shift)
 
-**Status: DESIGN, nothing built.** The card's own gate: *"He reads the report;
+**Status: BUILT AND LIVE — PR #598, 2026-09-06 (#535 "build it"); the road is `server/castingV2/reimagine.ts`, the entrance `castingV2.reimagine`, behind `CASTING_CREATIVE_REGISTER_SCOPE`, which stands at `all` since 2026-09-24. (This line read "DESIGN, nothing built" until the N1 milestone-close deep review, 2026-09-25.)** The rest of this file is the design as ruled; the card's own gate at the time: The card's own gate: *"He reads the report;
 his word starts the build."* His thirteen confirmed decisions on #535 (plus the
 2026-09-05 correction, his two rolled courts, and the 2026-09-06 read-only-
 sentence ruling) are the contract; this report executes the four deliverables

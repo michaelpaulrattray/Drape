@@ -169,7 +169,7 @@ age rule fighting the author**, not the pipeline-note list.
 
 ⚠ **AND A STATIC SHEET DOES NOT SAY SO.** Read at the projection
 (`rollProjection.ts`): a `static` row shows the customer's brief as
-`authoredPrompt` — which is honest, it IS the prompt — and `readAuthoredFrom`
+`authoredPrompt` (⚠ dropped by #534, 2026-09-22 — the sheet no longer carries the machine's prompt; N1 deep review, 2026-09-25) — which was honest, it WAS the prompt — and `readAuthoredFrom`
 returns null, so no *your words → authored brief* pairing is drawn. The sheet's
 settings record still says **"Photoreal · Max imagination"**. There is a
 precedent for saying otherwise (`authorSatOutRecord`, written for the
