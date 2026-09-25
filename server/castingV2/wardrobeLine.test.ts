@@ -16,9 +16,7 @@ import { describe, expect, it } from "vitest";
 import {
   HOUSE_WARDROBE_LINE,
   basicsWardrobeLine,
-  bornWardrobeLine,
   currentWardrobeLine,
-  sheetBasicsSex,
   type WardrobeResolution,
 } from "./wardrobeLine";
 import { coverageOfWardrobeLine } from "./inkSurfaceCoverage";
@@ -312,81 +310,27 @@ describe("⚠ the Basics spec has two forms and `SEXES` has three members", () =
   });
 });
 
-describe("the born line — the write side of the same owner", () => {
-  it("⚠ gives the HOUSE line on the Wardrobe path — the brief's own outfit cannot arrive any more", () => {
-    /*
-      Two arms used to stand here: *takes the brief's own outfit* and *falls to
-      the house line when the brief named nothing*. The `named` seam they drove
-      is retired (#203 slice 2, step (d)) — nothing composes a pick, so the
-      parameter went in the commit that emptied it rather than being left as a
-      branch nobody can reach.
+/*
+  ⚠ **TWO DESCRIBE BLOCKS STOOD HERE AND ARE RETIRED WITH THEIR SUBJECTS** —
+  #203 slice 2 step (e), 2026-09-25. They drove `bornWardrobeLine` (four arms:
+  the house answer, the Basics form, the column's width, and a control that the
+  two paths differ) and `sheetBasicsSex` (three, including the vacuous-`every`
+  corner). Both functions are DELETED: slice 1 made the compiler's path a named
+  constant `null`, so their only caller was a ternary arm `null` could never
+  take, and step (e) removed the branch.
 
-      What survives is the answer every reachable roll already received, and it
-      is worth an arm because it is now the ONLY answer this path has.
-    */
-    expect(bornWardrobeLine({ path: "wardrobe" })).toBe(HOUSE_WARDROBE_LINE);
-    /* CONTROL — `sex` is the basics form's argument and must not reach this
-       branch; a resolver reading it here would answer differently. */
-    expect(bornWardrobeLine({ path: "wardrobe", sex: "male" })).toBe(HOUSE_WARDROBE_LINE);
-    expect(bornWardrobeLine({ path: "wardrobe", sex: "female" })).toBe(HOUSE_WARDROBE_LINE);
-  });
+  **They are deleted rather than re-pointed, and that is the honest disposition**
+  — a test whose subject no longer exists cannot be salvaged into one that means
+  something; keeping it green against a re-implemented stub is how a suite grows
+  arms that pass over nothing.
 
-  it("⚠ the Basics form is the path's own, and nothing outside it is consulted", () => {
-    /*
-      The path IS the outfit. "Born and signed in plain black basics" is what
-      the customer chose when she chose the toggle, and a brief that also names
-      a red apron has asked for the other path.
-
-      This arm REFUSED a named outfit here until step (d); the ruling now holds
-      structurally, because there is no pick to refuse. It is kept pointed at
-      the two forms so that the promise the toggle made about the chest is
-      still driven by something rather than only argued in a comment.
-    */
-    expect(bornWardrobeLine({ path: "basics", sex: "male" })).toBe(basicsWardrobeLine("male"));
-    expect(bornWardrobeLine({ path: "basics", sex: "female" })).toBe(basicsWardrobeLine("female"));
-  });
-
-  it("⚠ never returns a line the column cannot hold", () => {
-    /*
-      `wardrobeLine` is varchar(240) and MySQL runs STRICT_TRANS_TABLES, so an
-      over-long line is an INSERT error in the middle of a paid roll claim
-      rather than a truncation. Both house-owned answers are checked here — and
-      since step (d) they are the ONLY answers: the brief-supplied one, whose
-      bound was the pick's door to enforce, cannot arrive.
-    */
-    for (const line of [HOUSE_WARDROBE_LINE, basicsWardrobeLine("male"), basicsWardrobeLine("female")]) {
-      expect(line.length, line).toBeLessThanOrEqual(240);
-    }
-  });
-
-  it("CONTROL — the two paths do not produce the same sentence", () => {
-    /* A resolver that ignored its argument would satisfy every arm above that
-       checks one path at a time. */
-    expect(bornWardrobeLine({ path: "wardrobe" }))
-      .not.toBe(bornWardrobeLine({ path: "basics", sex: "female" }));
-  });
-});
-
-describe("⚠ one sheet, one form — the covered-form rule one level up", () => {
-  it("takes the male form only when the WHOLE sheet is male", () => {
-    expect(sheetBasicsSex(["male", "male", "male"])).toBe("male");
-    expect(sheetBasicsSex(["male", "female", "male"])).toBeNull();
-    expect(sheetBasicsSex(["male", null, "male"])).toBeNull();
-    expect(sheetBasicsSex(["male", "nonbinary"])).toBeNull();
-  });
-
-  it("⚠ answers `null` for an empty sheet — `every` is vacuously TRUE", () => {
-    /*
-      The one way this could return the uncovered form by accident, and it is
-      not a hypothetical shape of bug: `[].every(...)` is `true`, so the
-      obvious one-liner puts an empty sheet in the shirtless form. A roll is
-      exactly eight so it cannot happen — which is precisely the reasoning that
-      leaves a corner untested.
-    */
-    expect(sheetBasicsSex([])).toBeNull();
-  });
-
-  it("CONTROL — it is reading the list, not returning a constant", () => {
-    expect(sheetBasicsSex(["male"])).not.toBe(sheetBasicsSex(["female"]));
-  });
-});
+  ⚠ **The one live thing they were incidentally guarding is guarded better
+  elsewhere, which was checked rather than assumed.** The `varchar(240)` arm
+  covered what the born road WROTE, and nothing writes now; what matters about
+  these strings today is that they still MATCH the thirteen historical pathed
+  rolls, and that is `inkSurfaceCoverage.ts`'s `BASICS_LINES` /
+  `RETIRED_BASICS_LINES` pair — whose docblock now carries the rule this
+  deletion created: a wording change to `basicsWardrobeLine` moves the old
+  string into the retired list, because it can no longer be accompanied by a
+  new one being written.
+*/

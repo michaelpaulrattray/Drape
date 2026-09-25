@@ -1518,9 +1518,19 @@ export function validateCastingInkReferenceEnvironment(input: {
  * **And the position table cannot lose a row while any reader remains**: its
  * population arm takes the union of the Atlas's flag inventory and a constant
  * scan, and the Atlas reads `process.env["X"]` as well as the constant form, so
- * inlining the string would not help either. `CASTING_TWO_PATHS_SCOPE` is the
- * worked precedent and it is exact — unset on his word 2026-09-24, its row at
- * `off`, its fence and constant still standing.
+ * inlining the string would not help either.
+ *
+ * ⚠ **`CASTING_TWO_PATHS_SCOPE` WAS CITED HERE AS THE WORKED PRECEDENT FOR
+ * STAYING, AND IT HAS SINCE GONE THE OTHER WAY — corrected 2026-09-25, #203
+ * slice 2 step (e).** This paragraph read *"unset on his word 2026-09-24, its
+ * row at `off`, its fence and constant still standing"*, which was true when
+ * written and is now false in every clause: the fence, the constant and the row
+ * are all deleted. **The precedent it still sets is the RULE rather than the
+ * outcome** — a scope leaves when NOTHING reads it, and the two-paths flag
+ * reached that state while this one has not, because `castingInkStudioArmed()`
+ * is still the retention sweep's question. So the sentence above stands and its
+ * example has changed sides: what stops this constant is a live reader, not a
+ * convention.
  *
  * So what remains is a NAMED remainder rather than a slice: the studio
  * constant, its fence and this one leave when the retention sweep's *"could a
@@ -2259,148 +2269,48 @@ export function validateCastingInkTransformEnvironment(input: {
   return child;
 }
 
-/**
- * THE TWO PATHS — whether a customer may choose how her cast is BORN (founder
- * ruling 2026-08-21, *"this is the way foward 100%"*; relayed fable-1311 with
- * fable-1312's addendum; design `docs/specs/CASTING_V2_TWO_PATHS_DESIGN.md`
- * §10, countersigned fable-1334; migration `0051`, ceremony taken on both
- * databases 2026-08-22).
- *
- * # What it gates
- *
- * Off, and absent means off: **no toggle is rendered, no path is written, every
- * roll composes the wardrobe sentence exactly as it does today, and not one
- * line of the new road runs.** The two columns stay NULL on every roll, which
- * is what NULL means — *cast before the paths existed*.
- *
- * On, a roll is bought on a chosen path. `wardrobe` is born and signed in an
- * outfit — hers if she named one, otherwise one the engine picks for the cast
- * type, otherwise the plain grey tee — and ink lands where that outfit leaves
- * skin. `basics` is born and signed in plain black basics: a clean body record,
- * and the chest is bare.
- *
- * # Why the parent is `CASTING_V2_SCOPE` and nothing narrower
- *
- * ⚠ **This is the one sub-flag on this road whose parent is not the repaint
- * scope, and the difference is the subject rather than a preference.** Every
- * other flag here gates something a REFINE does, and a refine's road is the
- * repaint one. This gates THE ROLL — the spendable surface that is already at
- * `all` — so hanging it off the repaint scope would refuse the path to accounts
- * that can already buy the very thing being pathed.
- *
- * The refine half is gated a second way and NOT by a second flag: the WARDROBE
- * subject card is `admittedOn: "repaintOnly"`, so a garment edit is confined to
- * the road it will be measured on by the card that describes it, which is a
- * fact a reader of the card can see rather than a coupling they have to know.
- *
- * # It requires nothing new of the environment
- *
- * No stored bytes, so no cleanup worker. No new transport and no new engine
- * call, so `assertFalBudget`'s ceiling arithmetic is untouched. The line is
- * written by the interpreter call that already runs.
- *
- * # ⚠ AND A SECOND FLIP PRECONDITION, ADDED BY ITEM 7a (fable-1368 ruling 2)
- *
- * **Every ink placement refuses on a Wardrobe-path cast with a picked or
- * customer-named outfit, until the coverage reader lands.**
- *
- * Item 7a made *does this cast's wardrobe cover this surface* a real question
- * with one owner (`inkSurfaceCoverage.ts`) instead of three frozen constants
- * measured on sixteen masters in the house crew tee. It answers `bare` or
- * `covered` for the lines this product WROTE — the house line and the two
- * Basics forms — and `unknown` for anything else, because guessing what a
- * customer's outfit covers is guessing about her body.
- *
- * `unknown` fails closed. While this flag is absent that costs nobody anything:
- * every roll is `unpathed`, which answers the house table byte for byte. **The
- * day it widens, a cast born in an outfit the picker invented meets an ink
- * refusal on every placement** — an honest one, naming its own reason rather
- * than claiming a covering, but a refusal.
- *
- * So the flip carries ONE of these two, enumerated here rather than remembered:
- *
- *   1. **7a-bis**, the reader that answers coverage for an arbitrary line —
- *      one text read per distinct outfit ever, on the
- *      `casting_open_kind_properties` pattern (a fact about the WORDS, no owner
- *      column, its own migration by ceremony); or
- *   2. **an explicit founder acceptance** of the refuse-until-read state, which
- *      is a real option and not a lesser one — ink and wardrobe are different
- *      features and he may well want the paths before the tattoos.
- *
- * A road named in a ruling is written where the next person acts or it does not
- * exist, and this is that place.
- *
- * # ⚠ THE COLUMNS ARE A PREREQUISITE OF THE CODE, WHICH IS STRICTER THAN A
- * # PREREQUISITE OF THE FLIP — AND IT IS ALREADY DISCHARGED
- *
- * A new column on a table drizzle SELECTs is in every read, flag or no flag, so
- * `casting_rolls.path` and `.wardrobeLine` had to exist in BOTH databases
- * before any of this compiled — not before it was switched on. That is why the
- * order is *ceremony → code lands dark → court → his eyes → flip* and why this
- * boot guard does not check for the columns: by the time it can run, the schema
- * naming them has already shipped. What would have caught the wrong order is
- * `twoPathsMigration.test.ts`'s absence arm, and it did its job before being
- * retired into the three-way arm that replaced it.
- */
-export const CASTING_TWO_PATHS_SCOPE_ENV = "CASTING_TWO_PATHS_SCOPE";
+/*
+  ⚠ **THE TWO PATHS' FLAG STOOD HERE AND IS RETIRED — #203 slice 2 step (e),
+  2026-09-25, the wardrobe/basics retirement's LAST step.**
 
-export class CastingTwoPathsScopeConfigurationError extends Error {
-  constructor() {
-    super(
-      `${CASTING_TWO_PATHS_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
-    );
-    this.name = "CastingTwoPathsScopeConfigurationError";
-  }
-}
+  `CASTING_TWO_PATHS_SCOPE_ENV`, `parseCastingTwoPathsScope`,
+  `captureCastingTwoPathsEnabled`, `validateCastingTwoPathsEnvironment` and both
+  of their error classes are deleted, and the variable was removed from the
+  production service on 2026-09-24 on his own word — Crew reply #206, card
+  `switch-06-two-paths-retire`, verbatim and entire: *"Unset it"*.
 
-export class CastingTwoPathsCoverageError extends Error {
-  constructor(detail: string) {
-    super(`${CASTING_TWO_PATHS_SCOPE_ENV} ${detail}`);
-    this.name = "CastingTwoPathsCoverageError";
-  }
-}
+  **It governed nothing by the time it went, and that was READ rather than
+  assumed.** Slice 1 (`67f422b9`) closed the entrance — no toggle on either
+  surface, `createRoll` takes no path, `rollService` writes the column a constant
+  `null` — and step (e) deleted the born road the flag had been the door to. A
+  scope whose fence still refuses a boot over a value that decides nothing is
+  invariant 7 inverted: not a control that is never invoked, but one invoked
+  forever on behalf of a capability that no longer exists. The next person
+  reading `env.ts` would reasonably conclude that setting this variable did
+  something.
 
-export function parseCastingTwoPathsScope(raw: string | undefined): CastingV2Scope {
-  return parseScopeGrammar(raw, () => {
-    throw new CastingTwoPathsScopeConfigurationError();
-  });
-}
+  # WHAT IS DELIBERATELY KEPT, BECAUSE A RETIREMENT IS NOT A PURGE
 
-/** Whether this account chooses the path its casts are born on. */
-export function captureCastingTwoPathsEnabled(userId: number): boolean {
-  const child = parseCastingTwoPathsScope(process.env[CASTING_TWO_PATHS_SCOPE_ENV]);
-  if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingV2Enabled(userId);
-}
+  - **The COLUMNS.** `casting_rolls.path` and `.wardrobeLine` hold the thirteen
+    production rolls cast while the paths existed, and they are the only evidence
+    of which rolls predate the author road. They are not backfilled and not
+    nulled — his #206 comment says so in as many words.
+  - **`CASTING_PATHS`** (`shared/castingPaths.ts`) — the columns type themselves
+    from it, so the vocabulary is a PREREQUISITE of the retained data rather than
+    a remnant of the retired road. The card asked for that file's deletion; at
+    the code it cannot go while a column declares its enum from it, and saying so
+    is part of this step.
+  - **The READ side** — `currentWardrobeLine` over the stored pair, live on the
+    refine and Sign roads, because a historical pathed cast refined today must
+    still be read as what it was born wearing.
 
-export function validateCastingTwoPathsEnvironment(input: {
-  scope: string | undefined;
-  castingScope: string | undefined;
-}): CastingV2Scope {
-  const child = parseCastingTwoPathsScope(input.scope);
-  if (child.kind === "off") return child;
-
-  const parent = parseCastingV2Scope(input.castingScope);
-  if (parent.kind === "off") {
-    throw new CastingTwoPathsCoverageError(
-      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — a path is chosen when a roll is `
-      + "bought, and a user outside casting has no roll to buy",
-    );
-  }
-  if (parent.kind === "all") return child;
-  if (child.kind === "all") {
-    throw new CastingTwoPathsCoverageError(
-      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
-    );
-  }
-  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
-  if (uncovered.length > 0) {
-    throw new CastingTwoPathsCoverageError(
-      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
-    );
-  }
-  return child;
-}
+  ⚠ **AND THE THREE `unpathed` PREDICATES ARE UNTOUCHED, ON PURPOSE.** Each of
+  `refineSubjects.ts`, `wardrobeCards.ts` and the coverage owner answers
+  *unpathed* for its OWN reason, and they are deliberately not folded into one:
+  they agree today by arithmetic, not by design, and collapsing them is the bug
+  that nearly shipped once. That folding is #180's reading, not a deletion, and
+  it is not this step's.
+*/
 
 /**
  * ⚠ **THE BRIEF FIDELITY BUILD** — whether a customer's own words are RATIONED

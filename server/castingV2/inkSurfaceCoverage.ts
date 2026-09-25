@@ -83,6 +83,24 @@
  * meets an ink refusal on every placement — which is no longer a prediction
  * about a widening but the state of one live account.
  *
+ * ⚠ **AND THERE WILL NEVER BE A NEXT PATHED ROLL — #203 slice 2 step (e),
+ * 2026-09-25.** The flag, the born road and the writer are all deleted, so the
+ * sentence above describes a door that is now closed permanently rather than one
+ * standing ajar on one account. Two things follow and both matter here:
+ *
+ *  - **`unknown` from a BORN outfit is unreachable for good.** The thirteen
+ *    pathed rolls production already holds are the entire population this
+ *    module will ever be asked about from that road, and `BASICS_LINES` plus
+ *    `RETIRED_BASICS_LINES` cover every sentence any of them can carry. What
+ *    can still produce `unknown` is an EDITED line — a customer's own words on
+ *    the refine road — which is a different door and is unaffected.
+ *  - **7a-bis stops being a precondition of anything.** It was enumerated as the
+ *    thing that had to land before the two-paths flag could widen; there is no
+ *    flag to widen. It is not thereby cancelled — a reader that answers coverage
+ *    for an arbitrary line is still what an edited outfit wants — but it is now
+ *    a capability judged on its own merits, which is exactly what his rule about
+ *    folding a capability into a retirement requires.
+ *
  * ⚠ **And the grammar is the lesson, bought inside an hour** (opus-1178/1179): a
  * sweep certified this row and eight siblings as holding, and the three that
  * went false within the hour were the three asserting the WORLD (*"the flag is
@@ -294,9 +312,31 @@ const RETIRED_BASICS_LINES: readonly string[] = Object.freeze([
  * The two Basics forms, derived from the writer rather than restated — plus
  * every form we have retired, which derivation cannot see.
  *
- * `sheetBasicsSex` resolves a whole sheet to `"male"` or `null`, so those are
- * the only two arguments `bornWardrobeLine` ever gives it and these are the
- * only two strings it can have written TODAY.
+ * `sheetBasicsSex` resolved a whole sheet to `"male"` or `null`, so those were
+ * the only two arguments the born resolver ever gave it and these were the only
+ * two strings it could have written.
+ *
+ * ⚠ **THERE IS NO WRITER AT ALL SINCE 2026-09-25 — #203 slice 2 step (e)
+ * retired the born road, and `bornWardrobeLine` and `sheetBasicsSex` are
+ * deleted.** Three consequences, and the third is the one that changes how this
+ * list is maintained:
+ *
+ *  1. **This set is now wholly HISTORICAL.** Every string it can ever match was
+ *     stamped on a roll before the retirement; the thirteen pathed production
+ *     rolls are the whole population, and they are kept precisely so a cast born
+ *     in basics can still be refined honestly today.
+ *  2. **The derivation is kept rather than inlined**, and deliberately.
+ *     `basicsWardrobeLine` survives as the one DECLARATION of what those
+ *     sentences say; copying its two strings here would be the parallel copy
+ *     (working law 4) with nothing left to keep it honest.
+ *  3. ⚠ **So editing `basicsWardrobeLine`'s wording is now a breaking change to
+ *     STORED ROWS and to nothing else.** It used to move what we write next and
+ *     what we match; it can only do the second now, and a change made for
+ *     prompt reasons would silently drop a historical cast to `unknown` — the
+ *     exact 2026-08-25 near-miss the docblock above records, with the half that
+ *     made it survivable (a new sentence being written too) gone. **A wording
+ *     change here moves the old string into `RETIRED_BASICS_LINES`, and that is
+ *     now the ONLY correct way to make one.**
  */
 const BASICS_LINES: readonly string[] = [
   basicsWardrobeLine("male"),

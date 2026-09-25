@@ -47,8 +47,6 @@ import {
   CASTING_INK_WORDS_SCOPE_ENV,
   validateCastingBornInkEnvironment,
   CASTING_BORN_INK_SCOPE_ENV,
-  CASTING_TWO_PATHS_SCOPE_ENV,
-  validateCastingTwoPathsEnvironment,
   CASTING_BRIEF_FIDELITY_SCOPE_ENV,
   CASTING_CREATIVE_REGISTER_SCOPE_ENV,
   validateCastingBriefFidelityEnvironment,
@@ -507,17 +505,14 @@ export function validateEnv(): void {
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
   /*
-    WHETHER A CUSTOMER CHOOSES HOW HER CAST IS BORN. Its parent is
-    `CASTING_V2_SCOPE` and — alone among this road's sub-flags — NOT the repaint
-    scope: every other one gates something a refine does, while this gates THE
-    ROLL, which is already spendable surface at `all`. Hanging it off the
-    repaint scope would refuse the path to accounts that can already buy the
-    thing being pathed.
+    ⚠ `validateCastingTwoPathsEnvironment` STOOD HERE AND IS GONE — #203 slice 2
+    step (e), 2026-09-25. The flag it fenced governed nothing (slice 1 closed the
+    entrance, step (e) deleted the born road) and the variable came off the
+    service on his word of 2026-09-24, *"Unset it"*. A boot fence that still
+    refuses over a value which decides nothing tells the next reader that setting
+    the variable does something. The retirement note is in `castingV2Scope.ts`
+    where the flag was declared.
   */
-  validateCastingTwoPathsEnvironment({
-    scope: process.env[CASTING_TWO_PATHS_SCOPE_ENV],
-    castingScope: process.env[CASTING_V2_SCOPE_ENV],
-  });
 
   /*
     THE BRIEF FIDELITY BUILD, same parent and the same reason one step earlier

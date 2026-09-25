@@ -165,9 +165,17 @@ describe("the precedence fix", () => {
       shape gets weaker — there is no second arm to contrast with, which is
       exactly when an absence assertion turns decorative.
 
-      **The positive control below is what keeps it real**: the poison IS in the
-      parsed intent, so the outfit's absence from the sheet is a value being
-      dropped rather than a fixture that never carried one.
+      ⚠ **AND STEP (e) TOOK THE OTHER CONTRAST — the pathed half, which used to
+      supply the only non-null line this arm could point at.** Replacing it with
+      nothing would leave an absence asserted over a road that can only ever be
+      absent, which is the vacuous shape this file keeps naming. So the second
+      half is a FOLLOW: it is the one road left on which the sheet's outfit is a
+      real sentence, and the poison must lose to THAT rather than to a null.
+
+      **Two positive controls keep it real**: the poison IS in the parsed intent,
+      so the outfit's absence is a value being dropped rather than a fixture that
+      never carried one; and the follow's line IS composed into all eight
+      prompts, so "not the poison" is not being satisfied by an empty block.
     */
     const engine = engineReturning(POISONED);
 
@@ -177,17 +185,7 @@ describe("the precedence fix", () => {
     if (!parsedPoison.ok) return;
     expect(parsedPoison.intent.wardrobe).toBe("plaid flannel");
 
-    /* On the WARDROBE path — the one road that used to be able to prefer it. */
-    const pathed = await castingBriefCompiler({
-      briefText: "a handyman in his 30s",
-      candidateCount: 8,
-      rollSeed: "seed-volunteered",
-      path: "wardrobe",
-      engine,
-    });
-    expect(pathed.wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
-
-    /* And on the road every production roll actually takes: no path at all. */
+    /* The road every production roll takes: nothing dresses the sheet. */
     const unpathed = await castingBriefCompiler({
       briefText: "a handyman in his 30s",
       candidateCount: 8,
@@ -196,12 +194,23 @@ describe("the precedence fix", () => {
     });
     expect(unpathed.wardrobeLine).toBeNull();
 
-    for (const candidate of pathed.candidates) {
+    /* And the one road that still carries a sentence — a FOLLOW, wearing its
+       parent's. The poison does not displace it either. */
+    const following = await castingBriefCompiler({
+      briefText: "a handyman in his 30s",
+      candidateCount: 8,
+      rollSeed: "seed-volunteered-follow",
+      inheritedWardrobe: { line: HOUSE_WARDROBE_LINE },
+      engine,
+    });
+    expect(following.wardrobeLine).toBe(HOUSE_WARDROBE_LINE);
+
+    for (const candidate of following.candidates) {
       /*
         Asserted on the WARDROBE SENTENCE and not on the prompt as a whole, and
         the difference is this fixture's own honest boundary: `characterNotes`
         says *"wearing a red plaid flannel shirt"*, which is free text about a
-        person and reaches the SUBJECT block on every path. What must not happen
+        person and reaches the SUBJECT block on every road. What must not happen
         is that phrase becoming the code-owned outfit — the position guarantee
         the neighbouring arm spells out.
       */
@@ -233,7 +242,11 @@ describe("the precedence fix", () => {
     expect(interpreterSystemPrompt()).not.toContain(marker);
     expect(interpreterSystemPrompt({ wardrobe: false })).not.toContain(marker);
 
-    for (const extra of [{}, { path: "wardrobe" as const }, { path: "basics" as const }]) {
+    /* ⚠ The two PATHED members of this list were removed with the born road
+       (#203 step (e)) and replaced by the FOLLOW, so the loop still drives more
+       than one shape of compile — a one-member loop proves the bytes for one
+       road and reads as though it proved them for all. */
+    for (const extra of [{}, { inheritedWardrobe: { line: HOUSE_WARDROBE_LINE } }]) {
       const engine = engineRecording(POISONED);
       await castingBriefCompiler({
         briefText: "a handyman in his 30s",
@@ -263,8 +276,7 @@ describe("the precedence fix", () => {
       briefText: "a handyman in his 30s",
       candidateCount: 8,
       rollSeed: "seed-follow",
-      path: "wardrobe",
-      inheritedWardrobe: { path: "wardrobe", line: "a red apron over a plain white tee" },
+      inheritedWardrobe: { line: "a red apron over a plain white tee" },
       engine,
     });
     expect(inherited.wardrobeLine).toBe("a red apron over a plain white tee");
@@ -272,14 +284,15 @@ describe("the precedence fix", () => {
       expect(candidate.prompt).toContain("WARDROBE: a red apron over a plain white tee.");
     }
 
-    /* And the nulls: a parent cast before the paths existed leaves the follow
-       unpathed, even though this caller passed a path. */
+    /* And the null: a parent cast before the paths existed leaves the follow
+       unpathed. ⚠ This arm used to add *"even though this caller passed a
+       path"*, and step (e) removed the road that could pass one — what it
+       guards is unchanged, and the clause went with the capability. */
     const unpathedParent = await castingBriefCompiler({
       briefText: "a handyman in his 30s",
       candidateCount: 8,
       rollSeed: "seed-follow-null",
-      path: "wardrobe",
-      inheritedWardrobe: { path: null, line: null },
+      inheritedWardrobe: { line: null },
       engine,
     });
     expect(unpathedParent.wardrobeLine).toBeNull();
@@ -348,7 +361,11 @@ describe("the precedence fix", () => {
       briefText: "a barista in a red apron",
       candidateCount: 8,
       rollSeed: "seed-pathed",
-      path: "wardrobe",
+      /* ⚠ A FOLLOW rather than a path — step (e) retired the born road, and
+         this guard needs a NON-NULL line to follow the composer to. The one
+         that remains is the parent's, and it is the house line, which is the
+         same string this arm was always driven with. */
+      inheritedWardrobe: { line: HOUSE_WARDROBE_LINE },
       engine: engineReturning(JSON.stringify({
         cohort: "photoreal_human",
         role: "a barista",

@@ -110,7 +110,7 @@ vi.mock("../db/castingV2", async (importOriginal) => ({
   /* The parent SHEET's born pair. Its default is the honest one for a fixture
      whose parent predates the paths: both NULL, which must keep the follow's
      prompt unpathed. The follow arms override it. */
-  getRollWardrobeForOwnedCandidate: vi.fn(async () => ({ path: null, wardrobeLine: null })),
+  getRollWardrobeForOwnedCandidate: vi.fn(async () => ({ wardrobeLine: null })),
   getOwnedRoll: vi.fn(async () => ({
     id: 100,
     publicId: "roll-public",
@@ -565,7 +565,7 @@ describe("the sequence", () => {
     expect(seen).toEqual(["photoreal"]);
   });
 
-  it("hands the compiler a NULL path and no wardrobe pick, even when a path is sent (#203 — the road is retired)", async () => {
+  it("hands the compiler NO path key at all and no wardrobe pick, even when a path is sent (#203 — the road is retired)", async () => {
     /*
       The COMPILER's side of the entrance, which the wire block above does not
       read: what the prompt is composed from, rather than what the insert gets.
@@ -575,8 +575,18 @@ describe("the sequence", () => {
       author road had to decide. There is no longer a second road for it to
       beat, so the flag stubs are gone and the claim is unconditional: a path
       sent from anywhere reaches neither the prompt nor the pick.
+
+      ⚠ **AND IT NOW ASKS ABOUT THE KEY RATHER THAN THE VALUE — step (e), the
+      same correction step (d) made one field over, arriving for the same
+      reason.** It asserted `path` was `null`; step (e) stopped passing the
+      field, so `undefined` is what a reader of `input.path` sees and
+      `toBeNull()` FAILED — loudly, which is the good outcome. Had it been
+      written as `toBeFalsy()` or `toEqual({...})` it would have gone green over
+      a compiler that is no longer handed the field, which is the whole change.
+      `in` answers the question actually being asked, and the control below
+      keeps the absence honest.
     */
-    const seen: { path: unknown; hasPick: boolean; keys: string[] }[] = [];
+    const seen: { hasPath: boolean; hasPick: boolean; keys: string[] }[] = [];
     const dependencies = baseDependencies();
     const compileBrief = (dependencies as { compileBrief: (input: { path?: unknown }) => unknown }).compileBrief;
     await createRoll(
@@ -594,7 +604,7 @@ describe("the sequence", () => {
             was pointed at. `in` answers the question actually being asked.
           */
           seen.push({
-            path: input.path,
+            hasPath: "path" in input,
             hasPick: "pickWardrobe" in input,
             keys: Object.keys(input),
           });
@@ -607,12 +617,15 @@ describe("the sequence", () => {
       { ...INPUT, path: "wardrobe" } as never,
     );
     expect(seen).toHaveLength(1);
-    expect(seen[0]!.path).toBeNull();
+    expect(seen[0]!.hasPath).toBe(false);
     expect(seen[0]!.hasPick).toBe(false);
-    /* CONTROL — the spy really saw a compile input, so the absence above is a
-       field that is gone rather than an object that was never populated. */
+    /* CONTROL — the spy really saw a populated compile input, so both absences
+       above are fields that are GONE rather than an object nobody filled in.
+       ⚠ `path` was on this control list until step (e) and has moved to the
+       assertion above: it was the proof the key existed, and it is now the
+       proof it does not. */
     expect(seen[0]!.keys).toContain("briefText");
-    expect(seen[0]!.keys).toContain("path");
+    expect(seen[0]!.keys).toContain("rollSeed");
   });
 
   it("and absent stays absent — the author's default is the compiler's to apply, never a second copy here", async () => {
@@ -1396,7 +1409,11 @@ describe("no roll is born on a path", () => {
     describe("a follow", () => {
       const PARENT_LINE = "a red apron over a plain white tee, dark straight jeans, plain low shoes";
 
-      async function followWith(parent: { path: string | null; wardrobeLine: string | null }) {
+      /* ⚠ The fixture is the db reader's REAL shape and lost its `path` with it
+         (step (e) — `OwnedRollWardrobe` is one field now). A fixture richer than
+         the function it stands in for is how a suite goes on proving something
+         about a shape that can no longer occur. */
+      async function followWith(parent: { wardrobeLine: string | null }) {
         const castingDb = await castingDbModule();
         (castingDb.getRollWardrobeForOwnedCandidate as any).mockResolvedValueOnce(parent);
         seedCandidates();
@@ -1415,21 +1432,25 @@ describe("no roll is born on a path", () => {
       }
 
       it("hands the compiler the PARENT's line, not a freshly resolved one", async () => {
-        const compilerInput = await followWith({ path: "wardrobe", wardrobeLine: PARENT_LINE });
-        expect(compilerInput.inheritedWardrobe).toEqual({ path: "wardrobe", line: PARENT_LINE });
+        const compilerInput = await followWith({ wardrobeLine: PARENT_LINE });
+        expect(compilerInput.inheritedWardrobe).toEqual({ line: PARENT_LINE });
         /* And no pick travelled with it — the field is gone, and the answer
            already exists anyway, which was the older of the two reasons. */
         expect("pickWardrobe" in compilerInput).toBe(false);
+        /* ⚠ Nor a PATH (step (e)), asked with `in` rather than left to `toEqual`
+           — which treats an explicitly-undefined property as a missing one and
+           would pass over a service that still put the key there. */
+        expect("path" in (compilerInput.inheritedWardrobe as object)).toBe(false);
       });
 
-      it("⚠ carries the parent's NULLS when the parent predates the paths", async () => {
+      it("⚠ carries the parent's NULL when the parent predates the paths", async () => {
         /*
           The same divergence with its sign flipped: a service that resolved a
           line here would paint eight people in the house outfit while the
-          transaction wrote the parent's NULL pair.
+          transaction wrote the parent's NULL.
         */
-        const compilerInput = await followWith({ path: null, wardrobeLine: null });
-        expect(compilerInput.inheritedWardrobe).toEqual({ path: null, line: null });
+        const compilerInput = await followWith({ wardrobeLine: null });
+        expect(compilerInput.inheritedWardrobe).toEqual({ line: null });
       });
     });
   });

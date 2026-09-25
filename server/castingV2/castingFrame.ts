@@ -58,7 +58,10 @@
  * *"while the paths are flag-dark (`CASTING_TWO_PATHS_SCOPE` off everywhere)"*
  * until 2026-08-24 and the flag is `users:1` now** (the founder's own hand, on
  * his own account). Production held 208 rolls, 0 pathed, at the flip, so the
- * sentence's conclusion survived its premise. On a pathed cast its
+ * sentence's conclusion survived its premise. ⚠ **And the flag itself is gone as
+ * of 2026-09-25 (#203 slice 2 step (e)), so "while no roll carries a path" is
+ * now permanent for every roll cast from here** — the thirteen historical pathed
+ * rolls are the only ones the next clause can ever describe. On a pathed cast its
  * `waist` entry refuses an edit the photograph could serve — the safe direction,
  * and a named prerequisite of the flip rather than a note here (founder card
  * FQ-a, 2026-08-23).

@@ -613,7 +613,7 @@ the live service on every push.
 | `CASTING_REFINE_DISPATCH_SCOPE` | whether the paid half of a refine stops holding the request |
 | `CASTING_RETRY_SCOPE` | the Retry button on a failed tile |
 | `CASTING_ROLL_ENGINE_SCOPE` | whether the roll road renders on a GPT Image 2.5 model, and for whom — `CASTING_ROLL_ENGINE_MODEL` (`flare` / `sunburst`) says which; GPT Image 2 otherwise |
-| `CASTING_TWO_PATHS_SCOPE` | the Wardrobe / Basics path choice — RETIRED; since #203 slice 1 it governs nothing, and since 2026-09-24 the variable is UNSET on the service (his word, *"Unset it"*) |
+| `CASTING_TWO_PATHS_SCOPE` | the Wardrobe / Basics path choice — ✅ RETIRED OUTRIGHT (#203 step (e)); the flag is gone from the code and the columns are kept |
 | `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` | keeping the frame from a refused render, and the words of a refused roll, for diagnosis |
 | `R7_SNAPSHOT_READ_SCOPE` | the R7-7B snapshot reader rollout |
 | `R7_SNAPSHOT_RESTORE_SCOPE` | the restore half of it |

@@ -17,11 +17,11 @@ _Entrances:_ `server/routes/castingV2.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `C
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1223<br>server/castingV2/briefRefusalCopy.ts:116 | 5 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1226<br>server/castingV2/briefRefusalCopy.ts:122 | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1152<br>server/castingV2/briefRefusalCopy.ts:128 | 5 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1077<br>server/castingV2/briefCompiler.ts:1507<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.unsupported_cohort` | roll-refusal |  | server/castingV2/briefCompiler.ts:1205<br>server/castingV2/briefCompiler.ts:1212<br>(+1) | 6 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1234<br>server/castingV2/briefRefusalCopy.ts:116 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1237<br>server/castingV2/briefRefusalCopy.ts:122 | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1163<br>server/castingV2/briefRefusalCopy.ts:128 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1088<br>server/castingV2/briefCompiler.ts:1517<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.unsupported_cohort` | roll-refusal |  | server/castingV2/briefCompiler.ts:1216<br>server/castingV2/briefCompiler.ts:1223<br>(+1) | 6 test(s) | _documented-unreachable or gap — see findings_ |
 
 > THE ROLL ENTRANCE'S FIVE WALLS ARE ON THE MAP AS OF #206 — declared from `ROLL_REFUSAL_COPY`, entrance-qualified `roll.*`, each citing its own throw. They are DECLARED but not DRIVEN: the census sends a sentence at an existing Cast through `castingV2.refine`, and these are raised inside `castingV2.createRoll` before a roll row exists, so each carries its reason in UNREACHABLE_DOORS instead of a corpus row. A brief-carrying corpus row is the map's next growth ring, and it would be free at all five. The SIGN entrance is still outside the declared set entirely (fable-1357 §2).
 
@@ -298,9 +298,9 @@ _Entrances:_ `server/castingV2/facePanel.ts` · `server/castingV2/faceScanServic
 | wall_unfileable | interpreter-refusal |  | colourContextDoor.test.ts, inventionDoor.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineFacets.test.ts, refineInterpreterVouchedRecheck.test.ts, refineService.test.ts, refusalTag.test.ts |
 | whichInkToChange | cannot-say | free | cannotSayCopy.test.ts |
 
-## Flags (23)
+## Flags (22)
 
-`CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATIVE_REGISTER_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_TWO_PATHS_SCOPE` · `CASTING_V2_SCOPE`
+`CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATIVE_REGISTER_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_OPEN_LANE_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_V2_SCOPE`
 
 ## Findings (50)
 
