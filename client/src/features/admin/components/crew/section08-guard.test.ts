@@ -644,7 +644,7 @@ describe("§6 — THE PIPELINE keeps an honest empty state", () => {
    §2 — WIDTH, AND THE ONE EXCEPTION
    ================================================================ */
 
-describe("§2 — a 790px reading column with exactly one full-bleed section", () => {
+describe("§2 — a reading column (790px, 880 since 2026-09-25 on his word) with exactly one full-bleed section", () => {
   it("the page asks the shell for the reading measure rather than setting a width", () => {
     expect(code(PAGE_TEXT)).toContain('measure="read"');
   });
