@@ -334,6 +334,13 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
     "refineDelta.ts — the union members’ own type lines, by fixed name",
     "cannotSayCopy.ts — the cannot-say copy table, by fixed name",
     "CAPABILITY_JSON — the committed atlas, behind existsSync in readCommittedAtlas",
+    "ARCHITECTURE_JSON — the architecture Atlas, where the casting entrance's own"
+    + " procedure population is read from (#1203), behind its own existsSync which"
+    + " throws a NAMED error telling you to regenerate it. `declaredCastingProcedures`"
+    + " takes the path as a defaulted PARAMETER so its two refusals can be driven, and"
+    + " that does not make it a listed entry: every caller in the product passes"
+    + " nothing, and the only other callers are the arms handing it an mkdtemp fixture"
+    + " they wrote themselves one line earlier",
   ],
   /*
      It joined this class with #1103's vocabulary sweep, which lists `scripts/`
