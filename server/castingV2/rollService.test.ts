@@ -276,7 +276,7 @@ const OPERATION_ID = "33333333-3333-4333-8333-333333333333";
 const { createRoll, cancelRoll } = await import("./rollService");
 const { getOwnedCastingSession } = vi.mocked(await import("../db/castingV2"));
 const { refusalTagOf } = await import("./refusalTag");
-const { BRIEF_TEXT_MAX, BRIEF_TEXT_MAX_AUTHOR_ROAD, BRIEF_TOO_LONG_AUTHOR_ROAD_MESSAGE, BRIEF_TOO_LONG_MESSAGE } = await import("./briefLength");
+const { BRIEF_TEXT_MAX_AUTHOR_ROAD, BRIEF_TOO_LONG_AUTHOR_ROAD_MESSAGE } = await import("./briefLength");
 const { deterministicBriefCompiler, castingBriefCompiler, READER_OUTAGE_MESSAGE } = await import("./briefCompiler");
 const {
   candidateChargeReference,
@@ -485,22 +485,18 @@ describe("the sequence", () => {
   });
 
   /*
-    THE 2,000-CHARACTER BOUND LIVES IN THE SERVICE NOW (#131 slice D,
-    `briefLength.ts`): the entrance admits 4,000 so an authored prompt can come
-    back as the next brief, and this is what keeps every account OFF the
-    author road exactly where it was. Free, before the claim.
-  */
-  it("refuses a brief over 2,000 characters for free off the author road, with the sentence that says so", async () => {
-    const long = "a wiry cyclist ".repeat(140);
-    expect(long.length).toBeGreaterThan(BRIEF_TEXT_MAX);
-    await expect(
-      createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: long }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST", message: BRIEF_TOO_LONG_MESSAGE });
-    expect(journal).not.toContain("claim");
-    expect(journal).not.toContain("charge");
-  });
+    ⚠ THE 2,000-CHARACTER ARM IS DELETED WITH ITS SUBJECT (#1204).
 
-  it("on the author road the same brief reaches the compiler untouched", async () => {
+    It drove a brief over 2,000 with the register flag unset and asserted the
+    house road's refusal. That road's population emptied when the flag went to
+    `all` on 2026-09-24, so the arm proved a refusal nobody could meet — and it
+    could not have gone red, because it set the world it was testing. A test
+    whose subject no longer exists cannot be salvaged into one that means
+    something; what it incidentally guarded (a long brief is refused FREE,
+    before the claim, with a sentence) is guarded at the real bound by the
+    4,000 arm below, which asserts the same three properties.
+  */
+  it("a brief that fits reaches the compiler untouched", async () => {
     const long = "a wiry cyclist ".repeat(140);
     vi.stubEnv("CASTING_V2_SCOPE", "all");
     vi.stubEnv("CASTING_CREATIVE_REGISTER_SCOPE", `users:${INPUT.userId}`);
@@ -634,24 +630,27 @@ describe("the sequence", () => {
     expect(seen).toEqual([undefined]);
   });
 
-  it("the bound keys on the ROAD: a chip-edited roll under the flag is the author road since #154 and admits 2,000+; off the flag the same roll stops at 2,000", async () => {
+  /*
+    ⚠ THE SECOND HALF OF THIS ARM WENT WITH THE SECOND BOUND (#1204).
+
+    It read *"…off the flag the same roll stops at 2,000"* and drove exactly
+    that: register flag unset, 2,100 characters, refused. **That was the whole
+    point of the arm — the bound keying on the ROAD rather than on the flag —
+    and the two roads stopped differing on 2026-09-24.** The half that survives
+    is the one that is still a fact about the product: a chip-edited roll is the
+    author road (#154, the family clause) and carries a brief past 2,000
+    without refusal. It is kept because that is the behaviour #154 bought, and
+    2,000 is still the number the old road would have stopped it at.
+  */
+  it("a chip-edited roll is the author road since #154 and carries a brief past 2,000", async () => {
     const long = "a wiry cyclist ".repeat(140);
+    expect(long.length).toBeGreaterThan(2000);
     vi.stubEnv("CASTING_V2_SCOPE", "all");
     vi.stubEnv("CASTING_CREATIVE_REGISTER_SCOPE", `users:${INPUT.userId}`);
     try {
       await expect(
         createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: long, unlock: ["sex"] as never }),
       ).resolves.toMatchObject({ ready: 8 });
-    } finally {
-      vi.unstubAllEnvs();
-    }
-    journal.length = 0;
-    vi.stubEnv("CASTING_V2_SCOPE", "all");
-    try {
-      await expect(
-        createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: long, unlock: ["sex"] as never }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST", message: BRIEF_TOO_LONG_MESSAGE });
-      expect(journal).not.toContain("claim");
     } finally {
       vi.unstubAllEnvs();
     }

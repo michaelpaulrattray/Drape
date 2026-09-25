@@ -1,13 +1,27 @@
 /**
- * HOW LONG A BRIEF MAY BE — the two numbers, shared because the sheet must know
- * them too (#131 slice D; review of PR #137, finding 1): a *use as brief*
- * button offered on a prompt the entrance would refuse is a dead control
- * wearing a button, so the client reads the same bound the server enforces.
+ * HOW LONG A BRIEF MAY BE — shared because the sheet must know it too (#131
+ * slice D; review of PR #137, finding 1): a *use as brief* button offered on a
+ * prompt the entrance would refuse is a dead control wearing a button, so the
+ * client reads the same bound the server enforces.
  *
  * The RULE lives on the server (`server/castingV2/briefLength.ts`); this file
  * is only the numbers.
+ *
+ * ⚠ **IT WAS TWO NUMBERS UNTIL 2026-09-25 (#1204), AND THE SECOND ONE DIED OF
+ * A RULING AIMED AT SOMETHING ELSE.** `BRIEF_TEXT_MAX` (2,000) bound every roll
+ * that COMPOSED HOUSE — every account outside `CASTING_CREATIVE_REGISTER_SCOPE`.
+ * That flag went to `all` on 2026-09-24 (his Crew reply #201), so the set it
+ * described emptied, and a free refusal, its message and its arms went on
+ * running for a road with nobody on it. Nothing reddened: the call site was
+ * still there, still invoked, still green — the path-three class, which is why
+ * the N1 milestone-close deep review was looking for exactly this shape.
+ * His word, 2026-09-25: *"yes ill let the crew remove it"*.
+ *
+ * **The name keeps `_AUTHOR_ROAD` on purpose.** One bound is left, so the
+ * suffix looks redundant — and it is the only thing recording WHICH of the two
+ * roads' bounds survived, on a rung whose whole job is retiring the other road.
+ * Renaming it would cost the reader that fact to save them a word.
  */
-export const BRIEF_TEXT_MAX = 2000;
 export const BRIEF_TEXT_MAX_AUTHOR_ROAD = 4000;
 
 /**
