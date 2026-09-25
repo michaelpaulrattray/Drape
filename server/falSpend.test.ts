@@ -21,6 +21,7 @@ import {
   priceFalCalls,
   readFalBalance,
   readFalPrices,
+  readFalTraffic,
   type FalTraffic,
 } from "../scripts/lib/falSpend.mts";
 import { FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE } from "./providers/falImages";
@@ -337,5 +338,95 @@ describe("the derived line says derived, and says what it cannot see", () => {
     const line = falLine({ ok: true, remaining: 42.5, currency: "USD", low: false }, { traffic, priced });
     expect(line).toBe("fal $42.50 USD remaining");
     expect(line).not.toContain("DERIVED");
+  });
+});
+
+/**
+ * A ROLL'S ENGINE COMES FROM THE ROW (#1134, 2026-09-25).
+ *
+ * Until this suite gained these arms, `readFalTraffic` added every roll render
+ * to the line as `openai/gpt-image-2` — a constant in the code rather than the
+ * engine the picture was actually painted on. From the day
+ * `CASTING_ROLL_ENGINE_SCOPE` was flipped that priced a GPT Image 2.5 picture
+ * at GPT Image 2's figure, which is measured at roughly six times too high.
+ *
+ * Driven through the real reader with a fake connection, because the point of
+ * the fix is which SQL comes back and what is done with it — asserting on a
+ * constant near the code would prove nothing about either.
+ */
+describe("a roll render is priced on the engine its own row records", () => {
+  /** Answers the two queries `readFalTraffic` makes, in the order it makes them. */
+  function connectionAnswering(variantRows: unknown[], rollRows: unknown[]) {
+    const seen: string[] = [];
+    let call = 0;
+    return {
+      seen,
+      connection: {
+        query: async (sql: string) => {
+          seen.push(sql);
+          call += 1;
+          return [call === 1 ? variantRows : rollRows, []] as [unknown[], unknown];
+        },
+      } as never,
+    };
+  }
+
+  it("splits a window's renders across the engines the rows name", async () => {
+    const { connection } = connectionAnswering([], [
+      { model: "openai/gpt-image-2.5/sunburst/text-to-image", renders: 24 },
+      { model: "openai/gpt-image-2", renders: 8 },
+    ]);
+    const traffic = await readFalTraffic(connection, "2026-09-22T00:00:00.000Z", "2026-09-25T00:00:00.000Z");
+    expect(traffic.rollRenders).toBe(32);
+    const byModel = new Map(traffic.models.map((row) => [row.model, row.calls]));
+    expect(byModel.get("openai/gpt-image-2.5/sunburst/text-to-image")).toBe(24);
+    expect(byModel.get("openai/gpt-image-2")).toBe(8);
+  });
+
+  /* THE ARM THAT WOULD HAVE CAUGHT THE DEFECT. A window with no GPT Image 2 in
+     it must not produce a GPT Image 2 line, and before the fix every one did. */
+  it("never invents GPT Image 2 for a window that rendered on 2.5 alone", async () => {
+    const { connection } = connectionAnswering([], [
+      { model: "openai/gpt-image-2.5/sunburst/text-to-image", renders: 16 },
+    ]);
+    const traffic = await readFalTraffic(connection, "2026-09-22T00:00:00.000Z", "2026-09-25T00:00:00.000Z");
+    expect(traffic.models.map((row) => row.model)).toEqual(["openai/gpt-image-2.5/sunburst/text-to-image"]);
+  });
+
+  /* A refused row records `fal:openai/…` and a delivered one `openai/…`. One
+     engine reported as two models halves both figures and looks healthy. */
+  it("folds the refused spelling into the delivered one", async () => {
+    const { connection } = connectionAnswering([], [
+      { model: "openai/gpt-image-2.5/sunburst/text-to-image", renders: 14 },
+      { model: "fal:openai/gpt-image-2.5/sunburst/text-to-image", renders: 2 },
+    ]);
+    const traffic = await readFalTraffic(connection, "2026-09-22T00:00:00.000Z", "2026-09-25T00:00:00.000Z");
+    expect(traffic.models).toHaveLength(1);
+    expect(traffic.models[0]).toMatchObject({ model: "openai/gpt-image-2.5/sunburst/text-to-image", calls: 16 });
+  });
+
+  /* Production carries an engine on 363 of 363 rows the census reads, all time
+     — but an empty column must be NAMED, never folded into whichever engine
+     happens to sit in the price table, or the defect returns silently. */
+  it("names an unrecorded engine instead of adopting one, so it prices as UNPRICED", async () => {
+    const { connection } = connectionAnswering([], [{ model: null, renders: 3 }]);
+    const traffic = await readFalTraffic(connection, "2026-09-22T00:00:00.000Z", "2026-09-25T00:00:00.000Z");
+    expect(traffic.models[0].model).toBe("unrecorded-roll-engine");
+    const priced = priceFalCalls(traffic.models, await realPrices());
+    expect(priced.unpriced.map((row) => row.model)).toEqual(["unrecorded-roll-engine"]);
+    expect(priced.usd).toBe(0);
+  });
+
+  /* The engine only helps if the table can price it. */
+  it("prices a Sunburst picture from the measured table rather than leaving it unpriced", async () => {
+    const priced = priceFalCalls(
+      [{ model: "openai/gpt-image-2.5/sunburst/text-to-image", calls: 8, ms: 0 }],
+      await realPrices(),
+    );
+    expect(priced.unpriced).toHaveLength(0);
+    expect(priced.usd).toBeCloseTo(8 * FAL_MEASURED_USD["openai/gpt-image-2.5/sunburst/text-to-image"].usd, 6);
+    /* The whole reason the card exists: the old constant would have charged
+       this roll more than six times over. */
+    expect(priced.usd).toBeLessThan(8 * FAL_GPT_IMAGE_2_MEASURED_USD_PER_IMAGE / 5);
   });
 });

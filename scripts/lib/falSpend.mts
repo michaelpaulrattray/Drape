@@ -167,7 +167,48 @@ export const FAL_MEASURED_USD: Record<string, { usd: number; source: string }> =
   "openai/gpt-image-2/edit": { usd: 0.099, source: "measured 2026-07-30, 9 images off the balance" },
   /* fal's own model page: "$0.005 per request", 200 segmentations per dollar. */
   "fal-ai/sam-3/image": { usd: 0.005, source: "fal model page, $0.005 per request" },
+  /* #1134, 2026-09-25 — `scripts/fal-picture-price.mts`, three readings that
+     agree on the size: one window carrying eight Sunburst renders and nothing
+     else at all divides to $0.0150 a picture; seven windows over 176 renders
+     bound it at $0.0113 once face scans are charged their published floor; a
+     least-squares fit over 54 windows says $0.0223. $0.015 is the exact one
+     and the other two bracket it. */
+  "openai/gpt-image-2.5/sunburst/text-to-image": {
+    usd: 0.015,
+    source: "measured 2026-09-25, 8 renders in a clean balance window (#1134)",
+  },
 };
+
+/**
+ * WHAT THIS SHIFT READ ABOUT GPT IMAGE 2, AND WHY THE CONSTANT ABOVE DID NOT
+ * MOVE (#1134, 2026-09-25).
+ *
+ * The same instrument that priced Sunburst re-read GPT Image 2 over the same
+ * series, and it does not agree with $0.099:
+ *
+ *   clean window   $0.0825 per picture   4 renders, nothing else in the window
+ *   upper bound    <= $0.0375            4 windows, 140 renders, scans at their floor
+ *   fitted         $0.0532               54 windows
+ *
+ * ⚠ **Those two disagree with EACH OTHER**, which is the reason nothing was
+ * swapped: the bound is over 140 renders and the clean division over 4, and a
+ * $0.33 window is one stray charge away from any answer you like. Swapping one
+ * wrong figure for another wrong figure would leave every derived line just as
+ * confidently wrong in the other direction — the same argument
+ * `FAL_REPAINT_MEASURED_2026_08_17` makes above, and the same disposition.
+ *
+ * What IS settled is the direction and it is the only part a decision needs:
+ * **every reading of GPT Image 2 taken this way is BELOW $0.099, and every
+ * reading of Sunburst is at least three times below GPT Image 2.** The
+ * reconciliation is its own card.
+ */
+export const FAL_GPT_IMAGE_2_REREAD_2026_09_25 = {
+  cleanWindowUsd: 0.0825,
+  upperBoundUsd: 0.0375,
+  fittedUsd: 0.0532,
+  tableUsd: 0.099,
+  source: "scripts/fal-picture-price.mts over 456 rite balance readings (#1134)",
+} as const;
 
 /**
  * The short, closed-vocabulary half of a thrown error.
@@ -402,9 +443,11 @@ export type FalTraffic = {
 /**
  * WHAT WENT TO FAL IN A WINDOW, off our own rows.
  *
- * Refines contribute their persisted census exactly. Rolls contribute one GPT
- * Image 2 render per candidate attempt, because their census only ever reached
- * a container log. `refineRowsWithCensus` rides beside `refineRows` for the
+ * Refines contribute their persisted census exactly. Rolls contribute one
+ * render per candidate attempt **on the engine the candidate row itself
+ * records**, because their census only ever reached a container log — it used
+ * to be one GPT Image 2 render per attempt whatever engine ran, which is the
+ * defect #1134 names. `refineRowsWithCensus` rides beside `refineRows` for the
  * same reason `labelledCalls` rides beside `calls`: without the denominator, a
  * subset reads as the whole.
  */
@@ -446,18 +489,43 @@ export async function readFalTraffic(
     before the column was kept, and a zero there would price a delivered face
     at nothing. So it is `GREATEST(attemptCount, 1)` per candidate that got as
     far as having an image asked for.
+
+    ⚠ AND THE ENGINE COMES FROM THE ROW, NOT FROM A CONSTANT (#1134,
+    2026-09-25). Until today every roll render was added to the fal line as
+    `openai/gpt-image-2`, hardcoded — so from the day `CASTING_ROLL_ENGINE_SCOPE`
+    was flipped, the census priced a GPT Image 2.5 picture at GPT Image 2's
+    figure. Measured this shift, that is not a rounding error: a Sunburst
+    picture is about a cent and a half and the constant is $0.099, so the roll
+    line was **six times too high** and said nothing about which engine it was
+    pricing. The row has carried the answer the whole time — `providerModel` is
+    recorded on 363 of 363 candidates the census reads, all time, back to
+    2026-07-31 (read at production before this changed) — which is working law
+    4: derive from the source, never mirror it in a constant.
+
+    Two spellings fold to one key: a delivered row records `openai/…` and a
+    refused one records `fal:openai/…`, and a census that reports them
+    separately reports one engine as two.
   */
   const [rollRows] = await connection.query<any[]>(
-    `SELECT COALESCE(SUM(GREATEST(attemptCount, 1)), 0) AS renders
+    `SELECT providerModel AS model,
+            COALESCE(SUM(GREATEST(attemptCount, 1)), 0) AS renders
        FROM casting_candidates
       WHERE createdAt >= ? AND createdAt < ?
-        AND status NOT IN ('queued', 'cancelled')`,
+        AND status NOT IN ('queued', 'cancelled')
+      GROUP BY providerModel`,
     window,
   );
-  const rollRenders = Number(rollRows[0]?.renders ?? 0);
-  if (rollRenders > 0) {
-    const previous = byModel.get("openai/gpt-image-2") ?? { calls: 0, ms: 0 };
-    byModel.set("openai/gpt-image-2", { calls: previous.calls + rollRenders, ms: previous.ms });
+  let rollRenders = 0;
+  for (const row of rollRows) {
+    const renders = Number(row?.renders ?? 0);
+    if (renders <= 0) continue;
+    rollRenders += renders;
+    /* An empty column is NAMED rather than folded into a model, so it prices
+       as UNPRICED and the line says FLOOR — the one thing it must never do is
+       become whichever engine happens to be in the table. */
+    const model = String(row?.model ?? "").replace(/^fal:/, "") || "unrecorded-roll-engine";
+    const previous = byModel.get(model) ?? { calls: 0, ms: 0 };
+    byModel.set(model, { calls: previous.calls + renders, ms: previous.ms });
   }
 
   return {
