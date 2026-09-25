@@ -294,3 +294,66 @@ describe("one field for one fact — the judge cannot contradict itself", () => 
     expect(verdict.unjudged).toBeUndefined();
   });
 });
+
+/**
+ * ⚠ **THE IDENTITY AXIS NAMES MARKINGS AND MAKEUP — #1221.**
+ *
+ * The axis read *"bone structure, facial proportions, skin, hair and build"*,
+ * and a delivery with the right bones and none of her neck ink satisfied every
+ * word of it. His Sifr2 close-up was exactly that, and **this judge would have
+ * passed it** had it run at all.
+ *
+ * Read AT THE WIRE rather than off the constant, which is not exported: these
+ * drive the real judge and assert on the system prompt the engine was actually
+ * handed. A claim about what gets sent is proven on the outgoing request
+ * (working law 5) — and the previous instance of this class (#1207's light) was
+ * missed precisely because a grep was run over the file instead.
+ */
+describe("the judge's identity axis reads her markings", () => {
+  /** The real judge, run once, returning the system prompt the engine got. */
+  async function systemPromptSent(): Promise<string> {
+    const engine = engineReturning(allPass);
+    const judge = createViewConformanceJudge({ engine });
+    await judge({ angle: "closeUp", anchor, candidate });
+    const call = (engine.complete as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
+    return String(call?.system ?? "");
+  }
+
+  it("tells the judge that tattoos, piercings and makeup are part of the person", async () => {
+    const system = await systemPromptSent();
+    for (const word of ["tattoos and ink", "piercings", "scars", "makeup"]) {
+      expect(system, `the identity axis no longer names ${word}`).toContain(word);
+    }
+    expect(system).toContain("a bare, unmade version of the same face is a FAIL");
+  });
+
+  it("⚠ bounds it to what IMAGE 2's frame reaches — an axis that fails when unsure must not fail on a crop", () => {
+    /*
+      The judge is told elsewhere to FAIL an axis it is unsure about, so an
+      unbounded marking clause would refund a close-up for not showing an ankle
+      tattoo. Both halves are asserted: the bound, and the sentence that makes
+      the bound explicit rather than implied.
+    */
+    return systemPromptSent().then((system) => {
+      expect(system).toContain("wherever IMAGE 2's frame reaches it");
+      expect(system).toContain("a marking outside IMAGE 2's crop is not missing");
+    });
+  });
+
+  it("CONTROL — the reader sees the real prompt, and the axis kept what it already judged", async () => {
+    /*
+      Three arms above are `toContain` over a string this helper produced. If
+      `systemPromptSent` ever returned "" — a renamed field, a judge that stops
+      calling the engine — they would all still pass. This proves it returns the
+      real thing, and that the widening did not drop the axis's original job.
+    */
+    const system = await systemPromptSent();
+    expect(system.length).toBeGreaterThan(500);
+    expect(system).toContain("IMAGE 1 is the signed reference photograph");
+    expect(system).toContain("bone structure, facial proportions, skin, hair and build");
+    expect(system).toContain("A similar-looking person of the same type is a FAIL");
+    /* And it is the IDENTITY axis that gained them, not some other line. */
+    const identityLine = system.split(" 2. angle")[0];
+    expect(identityLine).toContain("tattoos and ink");
+  });
+});

@@ -138,11 +138,34 @@ const verdictSchema = z.object({
   wardrobe: axisSchema,
 });
 
+/**
+ * ⚠ **THE IDENTITY AXIS NAMES MARKINGS AND MAKEUP — 2026-09-25 (#1221).**
+ *
+ * It read *"Judge bone structure, facial proportions, skin, hair and build"*,
+ * and a view that came back with the right bones and none of her ink satisfied
+ * every word of it. The founder's Sifr2 close-up did exactly that — heavy neck
+ * tattoos and dark makeup on the master, a bare unmade face in the delivery —
+ * and **this judge would have passed it.**
+ *
+ * ⚠ **IT WOULD NOT HAVE SAVED THAT CLOSE-UP AND THIS IS NOT WHY IT IS HERE** —
+ * that view went unjudged entirely (#1220). This axis is what stops the NEXT
+ * one being delivered, and it is the half of the repair that survives a future
+ * regression in the prompt: the prompt asks for her ink, and the judge is what
+ * notices when the asking stops working.
+ *
+ * **Bounded on purpose, both ways.** *"Wherever IMAGE 2's frame reaches it"*
+ * keeps a full-length view from failing because an ear stud is four pixels
+ * across, and the explicit *"a marking outside IMAGE 2's crop is not missing"*
+ * is there because this judge is told elsewhere that an axis it is unsure about
+ * FAILS — an unbounded marking clause would refund views for being cropped,
+ * which is the refund noise `CLOSE_UP_WARDROBE`'s own docblock was written
+ * about.
+ */
 const JUDGE_SYSTEM = [
   "You inspect photographs for a casting studio before they are delivered to the customer.",
   "You are given two images: IMAGE 1 is the signed reference photograph of the person, and IMAGE 2 is a new photograph that is supposed to be the same person, delivered against a written specification.",
   "Judge three things independently. Do not let one influence another.",
-  "1. identity — is the person in IMAGE 2 the same individual as in IMAGE 1? Judge bone structure, facial proportions, skin, hair and build. A similar-looking person of the same type is a FAIL.",
+  "1. identity — is the person in IMAGE 2 the same individual as in IMAGE 1? Judge bone structure, facial proportions, skin, hair and build, and also the MARKINGS AND MAKEUP her skin carries: tattoos and ink, piercings, scars, birthmarks and freckling, and the makeup she is wearing. Anything of that kind visible in IMAGE 1 must be present in IMAGE 2 wherever IMAGE 2's frame reaches it — a bare, unmade version of the same face is a FAIL, not a match. Judge only where both frames reach: a marking outside IMAGE 2's crop is not missing. A similar-looking person of the same type is a FAIL.",
   "2. angle — does IMAGE 2 show the framing the specification asks for? Judge only what the specification names.",
   "3. wardrobe — does IMAGE 2 show the clothing the specification names, unchanged from IMAGE 1 where both are visible?",
   "Answer ONLY with a JSON object of the form",

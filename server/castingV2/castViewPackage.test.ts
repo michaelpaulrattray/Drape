@@ -1,8 +1,14 @@
+import { createHash } from "node:crypto";
+
 import { describe, expect, it } from "vitest";
 
 import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
-import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
+import {
+  PHOTOREAL_HUMAN_BLOCKS,
+  photorealHumanConstant,
+  referenceRealism,
+} from "./cohortPhotorealHuman";
 import { CAPTURE_SENTENCES, DROPPED_FROM_BLOCK, LIGHTING_LINE } from "./houseBlock";
 import {
   CASTING_V2_SIGN_PRICE_CREDITS,
@@ -184,7 +190,15 @@ describe("the canonical view package", () => {
     const closeUp = packageViewExpectation("closeUp").wardrobe;
     expect(closeUp).not.toBe(packageViewExpectation("frontFull").wardrobe);
     expect(closeUp).toContain("passes");
-    expect(closeUp).toContain("earrings");
+    /*
+      ⚠ This read `toContain("earrings")` until #1221, when the sentence stopped
+      being a ban list and the plural became "an earring". The literal was
+      standing in for the CLAIM — that the axis still points at things added to
+      the face — so the claim is what it asserts now, and the wording it happens
+      to use is pinned next door where that is the actual subject.
+    */
+    expect(closeUp).toContain("earring");
+    expect(closeUp).toContain("a failure wherever it appears");
   });
 
   it("names no absolute garment colour — continuity is with the reference", () => {
@@ -386,5 +400,202 @@ describe("a signed view is lit the way its master was lit", () => {
       .find((sentence) => sentence.startsWith("LIGHTING:"));
     expect(theFlashSentence, "the cohort's flash sentence has moved").toContain("front flash");
     expect(`CAMERA: x ${theFlashSentence}`).toContain("front flash");
+  });
+});
+
+/**
+ * ⚠ **A SIGNED VIEW KEEPS HER INK AND HER MAKEUP — #1221, the third instance of
+ * the class after the trousers (#1207) and the flash (#1207).**
+ *
+ * His Sifr2 close-up came back with a bare unmade face and no neck tattoos from
+ * a master that has both. The cause is one block over from the flash and the
+ * same shape: `composePackageViewPrompt` sent the cohort's realism block whole,
+ * whose four stated-X doors defer to *"the character description"* — and a Sign
+ * view sends none. **The wire carried "Never invent damage, scars or ink that
+ * was not asked for" and "the default is a bare, unmade face" to a render whose
+ * whole job was to reproduce a person who has both.**
+ *
+ * These arms are AT THE WIRE (working law 5): every one composes the real
+ * prompt through the real entrance and reads the string that would be sent. The
+ * card's own grep was run over `castViewPackage.ts` and found nothing, because
+ * the sentences arrive through an import — which is exactly the reading #1207's
+ * docblock says a prompt claim must not be made from.
+ */
+describe("a signed view's realism block reads the reference, not a description", () => {
+  const declined = PHOTOREAL_HUMAN_BLOCKS.viewDeclinedSentences;
+  const theDocumentRule = PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences;
+
+  it("⚠ carries none of the description-bound sentences, on any of the five views", () => {
+    /*
+      Derived from the drop list itself, never from a copy of its prose: a
+      sentence edited in the cohort file moves here on the same commit, and a
+      sentence that leaves the drop list stops being checked LOUDLY rather than
+      silently (the count arm below).
+    */
+    expect(declined.length, "the declined list emptied — this arm would pass on nothing")
+      .toBe(11);
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const prompt = composePackageViewPrompt(angle, null);
+      for (const sentence of declined) {
+        expect(prompt, `${angle} still carries "${sentence.slice(0, 60)}…"`)
+          .not.toContain(sentence);
+      }
+    }
+  });
+
+  it("⚠ CONTROL — the ROLL block carries every one of them, so the absences above are readable claims", () => {
+    /*
+      The positive control the card asked for, and it is the arm that matters:
+      eleven `not.toContain` assertions pass just as happily against a mangled
+      sentence, a renamed export or an empty list. This drives the SAME reader
+      over the SAME strings in the place they are still supposed to be.
+    */
+    const roll = photorealHumanConstant(null);
+    for (const sentence of declined) {
+      expect(roll, `the roll road lost "${sentence.slice(0, 60)}…"`).toContain(sentence);
+    }
+    expect(roll).toContain("Never invent damage, scars or ink that was not asked for.");
+    expect(roll).toContain("the default is a bare, unmade face");
+  });
+
+  it("⚠ the two sentences his close-up was actually lost to are gone from the wire", () => {
+    /* Named literally as well as derived. The derived arm above proves the
+       mechanism; this one proves THIS defect, and survives a refactor that
+       reshapes the lists. */
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const prompt = composePackageViewPrompt(angle, null);
+      expect(prompt, angle).not.toContain("Never invent damage, scars or ink that was not asked for");
+      expect(prompt, angle).not.toContain("the default is a bare, unmade face");
+      expect(prompt, angle).not.toContain("Makeup is never added to a face");
+      expect(prompt, angle).not.toContain("Render only what the description names");
+    }
+  });
+
+  it("puts the founder's one rule in their place, on every view", () => {
+    expect(theDocumentRule.length).toBe(3);
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const prompt = composePackageViewPrompt(angle, null);
+      for (const sentence of theDocumentRule) {
+        expect(prompt, angle).toContain(sentence);
+      }
+      /* The three things his report named, by name, in the sent string. */
+      expect(prompt, angle).toContain("tattoos and ink");
+      expect(prompt, angle).toContain("makeup");
+      expect(prompt, angle).toContain("Add nothing the reference photograph does not show.");
+    }
+  });
+
+  it("⚠ keeps EVERY photographic sentence — the subtraction takes the doors and nothing else", () => {
+    /*
+      The over-subtraction arm, and the reason this is a filter rather than a
+      second array. Without it, a view could pass every absence above by
+      sending no realism block at all.
+    */
+    const kept = PHOTOREAL_HUMAN_BLOCKS.realismSentencesAll
+      .filter((sentence) => !declined.includes(sentence));
+    expect(kept.length, "the kept set collapsed").toBeGreaterThanOrEqual(13);
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const prompt = composePackageViewPrompt(angle, null);
+      for (const sentence of kept) {
+        expect(prompt, `${angle} dropped "${sentence.slice(0, 50)}…"`).toContain(sentence);
+      }
+    }
+    /* Named explicitly because his ruling names them as the keeps. */
+    const one = composePackageViewPrompt("closeUp", null);
+    for (const headline of ["REALISM:", "EYES:", "CATCHLIGHTS:", "SCLERA:", "PUPILS:", "LASHES:", "LIPS:", "BROWS:"]) {
+      expect(one, `the close-up lost ${headline}`).toContain(headline);
+    }
+  });
+
+  it("⚠ every declined sentence is one the ROLL array actually holds — no stale entry", () => {
+    /*
+      A drop list can rot in the other direction: a sentence rewritten in the
+      roll array leaves a declined entry matching nothing, and every absence arm
+      above keeps passing while the real sentence sails through. This is the
+      reading that catches it, and it is why the two lists share constants
+      rather than prose.
+    */
+    for (const sentence of declined) {
+      expect(
+        PHOTOREAL_HUMAN_BLOCKS.realismSentencesAll,
+        `"${sentence.slice(0, 50)}…" is declined but is no longer in the roll block`,
+      ).toContain(sentence);
+    }
+  });
+});
+
+/**
+ * ⚠ **THE ROLL ROAD DOES NOT MOVE — the condition on his ruling, pinned by
+ * hash rather than by trust (#1221).**
+ *
+ * His words: *"The roll's own block is untouched here — on the author road the
+ * brief IS the description and those clauses still have a referent."* The
+ * repair splits one sentence in two and replaces four literal groups with named
+ * constants; every one of those is a chance to move a byte in a prompt that
+ * eight paid candidates a roll are rendered from.
+ *
+ * The hashes are the block as it stood at `26017bc4`, read before the edit.
+ */
+describe("the roll road's realism block is byte-identical", () => {
+  const sha = (value: string) => createHash("sha256").update(value, "utf8").digest("hex");
+
+  it("realism block — 5095 chars, unchanged", () => {
+    expect(PHOTOREAL_HUMAN_BLOCKS.realism.length).toBe(5095);
+    expect(sha(PHOTOREAL_HUMAN_BLOCKS.realism))
+      .toBe("4a5462c9e6f4ce782d0f102357e30f556d0931eb7d0ddc8927780c6eec0d7bfe");
+  });
+
+  it("the whole cohort constant — 11291 chars, unchanged", () => {
+    expect(photorealHumanConstant(null).length).toBe(11291);
+    expect(sha(photorealHumanConstant(null)))
+      .toBe("da30b47c962e3acaeea1ec69c6cf27d044cbc720db6e870aa9207c85bc235f0a");
+  });
+
+  it("CONTROL — the hash reader can tell two blocks apart", () => {
+    /* Without this, a `sha` that returned a constant would pass both arms
+       above forever. */
+    expect(sha(PHOTOREAL_HUMAN_BLOCKS.realism)).not.toBe(sha(referenceRealism()));
+    expect(referenceRealism().length).toBeLessThan(PHOTOREAL_HUMAN_BLOCKS.realism.length);
+  });
+});
+
+/**
+ * ⚠ **THE CLOSE-UP'S WARDROBE SENTENCE STOPPED BANNING HER OWN JEWELLERY
+ * (#1221).**
+ *
+ * It read *"No earrings, no glasses, no piercings, no hat, no headphones, no
+ * visible logo or text"* and only THEN *"nothing worn that the reference
+ * photograph does not show"* — two rules with the absolute one first. His
+ * ruling: the closing clause is the one that is right, *"never as a list"*.
+ * This sentence is the JUDGE's spec as well as the generator's, so under the
+ * old wording a customer whose master wears a nose stud could be refunded for
+ * her own face.
+ */
+describe("the close-up's addition check is relative to the reference", () => {
+  it("bans nothing absolutely", () => {
+    const { wardrobe } = packageViewExpectation("closeUp", null);
+    for (const ban of ["No earrings", "no glasses", "no piercings", "no headphones"]) {
+      expect(wardrobe, `the close-up still bans outright: "${ban}"`).not.toContain(ban);
+    }
+  });
+
+  it("still fails an ADDITION, and says the reference's own are hers", () => {
+    /* The craft half is kept: this crop genuinely can check addition, and an
+       axis that can fail for a real reason is the whole point of the sentence
+       (its own docblock). Both directions are asserted — a sentence that only
+       said "hers" would have deleted the check. */
+    const { wardrobe } = packageViewExpectation("closeUp", null);
+    expect(wardrobe).toContain("absent from the reference is ");
+    expect(wardrobe).toContain("a failure wherever it appears");
+    expect(wardrobe).toContain("the reference DOES show is this person's own and must be there");
+    expect(wardrobe).toContain("if no clothing is in frame, this passes");
+  });
+
+  it("⚠ the judge and the generator still read ONE answer", () => {
+    /* The boundary `packageViewExpectation`'s own docblock exists to keep: a
+       spec composed twice is how a judge comes to fail a view for wearing what
+       the prompt asked for. */
+    expect(composePackageViewPrompt("closeUp", null))
+      .toContain(packageViewExpectation("closeUp", null).wardrobe);
   });
 });
