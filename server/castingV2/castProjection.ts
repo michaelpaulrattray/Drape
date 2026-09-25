@@ -130,8 +130,31 @@ export type SignedCastProjection = {
   signedAt: string | null;
 };
 
-/** The founder's words, kept verbatim because they are the ruling. */
-export const FAILED_SLOT_CONFESSION = "This view didn't arrive — refunded; repairs come with revisions";
+/**
+ * The founder's words, kept verbatim because they are the ruling.
+ *
+ * ⚠ **THE PROMISE CAME OFF THE END 2026-09-25 (#1208), AND ONLY THE PROMISE.**
+ * It read *"…refunded; repairs come with revisions"* — and revisions do not
+ * exist, so the tile named a feature the product does not have to a customer
+ * looking at a view they paid for and did not get. His ruling that day, on his
+ * own Sifr cast: *"the word revisions leaves the tile; it names a feature that
+ * does not exist."*
+ *
+ * **A subtraction, deliberately, and not the sentence he approved.** The copy
+ * he signed off is *"This view didn't arrive. We tried three times — try again
+ * free, or leave it."* — and two thirds of it are claims about a Try again that
+ * is the NEXT slice of #1208. Shipping a promise ahead of its feature is the
+ * exact defect this edit removes, so the addition waits and the false clause
+ * does not: a sentence that says less is honest today and honest after.
+ *
+ * ⚠ **AND IT STAYS CAUSE-AGNOSTIC ON PURPOSE.** The projection shows this one
+ * note for every failed slot — a judge rejection and a content refusal reach it
+ * too — so *"we tried three times"* cannot be stated here as a constant: the
+ * arrival road tries three times, the judged road twice, a terminal refusal
+ * once. Saying a count truthfully needs the count on the row, which is the Try
+ * again slice's work, where the sentence is read rather than assumed.
+ */
+export const FAILED_SLOT_CONFESSION = "This view didn't arrive — refunded";
 
 /**
  * The signed face standing in for a close-up that never came.
@@ -157,11 +180,18 @@ export const ANCHOR_STANDIN_NOTE = "The face you signed, standing in — the clo
  *
  * Without it the room reads as an ordinary partial failure — which would be a
  * quiet lie about the base, the one number that behaves differently here.
+ *
+ * ⚠ **AND ITS LAST CLAUSE WENT THE SAME DAY AS THE CONFESSION'S, AS ITS
+ * SIBLING (#1208, law 7 — fix the class, not the instance).** It ended *"the
+ * views can be rebuilt when repairs ship"*, which is the identical defect one
+ * constant above wearing different words: a customer who has just lost a whole
+ * package was handed a promise with no feature behind it, and this one was not
+ * named on the card. The sweep for the class was a grep of this product's
+ * customer-facing failure copy; it found these two and no third.
  */
 export const TOTAL_LOSS_CONFESSION =
   "The package didn't arrive — everything you paid has been refunded, "
-  + "including the Sign itself. The face you chose is still yours; "
-  + "the views can be rebuilt when repairs ship.";
+  + "including the Sign itself. The face you chose is still yours.";
 
 type SlotEvidence = {
   /** The newest filled 2K package render, if one landed. */

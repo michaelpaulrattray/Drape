@@ -2090,6 +2090,24 @@ again" does not apply to views. That is ratified rather than an oversight.
 > rather than shimmering or sitting blank. The confession is the interim repair
 > path."*
 
+⚠ **SUPERSEDED 2026-09-25 BY HIS OWN WORD (#1208), AND THE INTERIM IS WHAT
+FAILED.** Asked about two dead views on his Sifr cast — *"full back and three
+quater have no way of retrying… whether it keeps retying until it renders or you
+add a retry button? which is the better UX?"* — he answered *"yes"* to both, in
+order: a view that NEVER ARRIVED is retried automatically before it is written
+off, and only then does a free *Try again* appear on the tile. **The condition
+above held for thirteen months on the strength of one word — *revisions* — that
+was true as a plan and never became true as a feature**, so the confession
+stopped being an interim repair path and became the product: the customer read a
+promise, and there was nothing behind it to press.
+
+**Landed in two slices.** The automatic retries and the removal of the false
+promise are `packageOrchestrator.ts` (two budgets: three arrival attempts, one
+regeneration after a judged rejection, unchanged) and `FAILED_SLOT_CONFESSION`,
+now *"This view didn't arrive — refunded"*. The free *Try again*, and the rest
+of the sentence he approved, are #1208's remaining slice — it re-charges a
+refunded slice on success, so it is a money surface and carries its own verdict.
+
 Same law as every refund surface since the cancel rework: the honest answer to
 a thing the product cannot yet do is to say so in place, at the moment and in
 the spot where the user is looking for it. A shimmer promises arrival and a
@@ -3237,6 +3255,17 @@ credits to redraw a view is a purchase surface, and purchase surfaces get
 designed as purchases: price, confirmation, receipt, refusal. This ruling is
 strictly the machine giving itself one more go inside a slot the customer has
 already paid for.
+
+⚠ **BOTH SENTENCES BELOW MOVED 2026-09-25 (#1208) AND THIS ENTRY NOW READS AS
+HISTORY ON TWO POINTS.** (1) *"the loop is bound at two"* was true of the tree
+that wrote it and is not true now: the bound is two BUDGETS — a judged rejection
+still gets one regeneration, unchanged, while a view that never arrived is asked
+for again up to three times, spaced. (2) The M12 deferral above is discharged by
+his word rather than by M12 arriving: the per-slot retry he ordered is **free**,
+and that is what makes it not the purchase surface this paragraph was protecting
+— a refunded slice is re-charged only if the view actually lands, so nobody pays
+twice and nobody is asked to buy back what they already bought. It is the
+remaining slice of #1208.
 
 ### CORRECTION, on implementing it (2026-08-03)
 
@@ -5125,12 +5154,12 @@ same lesson, arriving on the refine side, and the same shape as D-176's
 "hairline contouring".
 
 **The backstop shipped INERT, and the standard it sets is the bigger half.**
-``new RegExp(`${word}`)`` inside a template literal builds `word`
+``new RegExp(`\b${word}\b`)`` inside a template literal builds `\bword\b`
 — a backspace, not a word boundary — so it matched nothing from the moment it
 landed. The driver passed because the PROMPT obeyed, and a backstop exists
 precisely for when the prompt does not: invariant 7's nastier variant, in code
 written the same day. The diagnostic lied too, because printing the regex
-renders backspace as ``.
+renders backspace as `\b`.
 
 > **If the only test for a backstop goes through the interpreter, the backstop
 > is untested.**
