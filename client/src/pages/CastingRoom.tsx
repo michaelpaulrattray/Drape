@@ -279,7 +279,7 @@ export default function CastingRoom() {
       ? [{
         url: data.anchorUrl,
         label: "Master",
-        personaLine: data.name ?? null,
+        caption: data.name ?? null,
         downloadName: `${castName}-master`,
       }]
       : []),
@@ -288,7 +288,7 @@ export default function CastingRoom() {
       .map((slot) => ({
         url: slot.url as string,
         label: slot.label,
-        personaLine: data?.name ?? null,
+        caption: data?.name ?? null,
         downloadName: `${castName}-${slot.angle}`,
       })),
   ];
@@ -305,14 +305,11 @@ export default function CastingRoom() {
         alive to be her sibling. Saying so is the difference between a dead end
         and an explanation: §G.6 is the reason she is still here at all.
       */
-      personaLine: sibling.destination === "viewer"
-        ? [
-          sibling.personaLine,
-          `From a sheet that has expired or was deleted — ${
-            data?.pronouns.subject ?? "they"} remain${
-            data?.pronouns.plural ? "" : "s"} as a sibling of ${data?.name ?? "this Cast"}.`,
-        ].filter(Boolean).join(" · ")
-        : sibling.personaLine,
+      caption: sibling.destination === "viewer"
+        ? `From a sheet that has expired or was deleted — ${
+          data?.pronouns.subject ?? "they"} remain${
+          data?.pronouns.plural ? "" : "s"} as a sibling of ${data?.name ?? "this Cast"}.`
+        : null,
       downloadName: `sibling-${sibling.indexLabel}`,
     }));
 
@@ -400,9 +397,7 @@ export default function CastingRoom() {
                   )}
                   <span className="dpc-room__kind">PERFORMER</span>
                 </div>
-                <p className="dpc-room__read">
-                  {[data.personaLine, data.provenance].filter(Boolean).join(". ")}
-                </p>
+                <p className="dpc-room__read">{data.provenance}</p>
               </div>
               <div className="dpc-room__actions">
                 <button type="button" className="dpc-room__cta" disabled>
@@ -805,10 +800,10 @@ export default function CastingRoom() {
                           }}
                           aria-label={
                             sibling.destination === "cast"
-                              ? `Open ${sibling.personaLine ?? sibling.indexLabel}'s room`
+                              ? `Open ${sibling.indexLabel}'s room`
                               : sibling.destination === "sheet"
-                                ? `Find ${sibling.personaLine ?? sibling.indexLabel} on that sheet`
-                                : `Look at ${sibling.personaLine ?? sibling.indexLabel}`
+                                ? `Find ${sibling.indexLabel} on that sheet`
+                                : `Look at ${sibling.indexLabel}`
                           }
                         >
                           {sibling.imageUrl ? <img src={sibling.imageUrl} alt="" /> : null}

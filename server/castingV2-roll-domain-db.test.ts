@@ -36,7 +36,6 @@ describeWithDatabase("Casting V2 roll domain (disposable DB)", () => {
     Array.from({ length: count }, (_, index) => ({
       publicId: randomUUID(),
       position: index,
-      personaLine: `axis ${index}`,
       internalPrompt: { prompt: `prompt ${index}` },
     }));
 

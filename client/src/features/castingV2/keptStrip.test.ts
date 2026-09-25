@@ -24,7 +24,6 @@ function entry(id: string, label: string, rollIndex = 1): StripEntry {
     candidateId: id,
     thumbUrl: `https://cdn.example/${id}-thumb.jpg`,
     imageUrl: `https://cdn.example/${id}.jpg`,
-    personaLine: null,
     sourceRollIndex: rollIndex,
     indexLabel: label,
   };
@@ -40,7 +39,6 @@ function candidate(
     indexLabel: label,
     imageUrl: `https://cdn.example/${id}.jpg`,
     thumbUrl: `https://cdn.example/${id}-thumb.jpg`,
-    personaLine: null,
     status,
   };
 }

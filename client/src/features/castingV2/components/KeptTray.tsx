@@ -28,7 +28,6 @@ export type KeptEntry = {
   candidateId: string;
   thumbUrl: string | null;
   imageUrl: string | null;
-  personaLine: string | null;
   /** Which roll this face came from — the shortlist spans the whole sheet. */
   sourceRollIndex: number;
   indexLabel: string;
@@ -135,7 +134,6 @@ export function KeptTray({
     .map(({ entry, url }) => ({
       url,
       label: entry.indexLabel,
-      personaLine: entry.personaLine ?? null,
       downloadName: `${labelFor(entry)}-${entry.indexLabel}`,
     }));
 

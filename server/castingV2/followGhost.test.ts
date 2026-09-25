@@ -203,7 +203,7 @@ describe("the WIRE — a follow of 578 composes the Row A prompt with NOTHING fr
       rollSeed: "ghost-fixed",
       engine,
       creativeRegister: true,
-      followPersonaLine: "08",
+      followIndexLabel: "08",
       followStatedAnchor: statedAnchorFrom(SPECIMEN_COMPILED_BRIEF),
       anchorImageAttached: true,
     });
@@ -217,7 +217,6 @@ describe("the WIRE — a follow of 578 composes the Row A prompt with NOTHING fr
     /* And the eight records of THIS roll are themselves marked unsent. */
     for (const candidate of compiled.candidates) {
       expect(candidate.resolvedIdentity.unsent).toBe(true);
-      expect(candidate.personaLine).toBeNull();
     }
   });
 
@@ -229,7 +228,7 @@ describe("the WIRE — a follow of 578 composes the Row A prompt with NOTHING fr
       rollSeed: "ghost-reproduced",
       engine,
       creativeRegister: true,
-      followPersonaLine: "08",
+      followIndexLabel: "08",
       followIdentity: SPECIMEN_RESOLVED as never,
       anchorImageAttached: true,
     });
@@ -250,7 +249,7 @@ describe("the WIRE — a follow of 578 composes the Row A prompt with NOTHING fr
       rollSeed: "ghost-precedence",
       engine,
       creativeRegister: true,
-      followPersonaLine: "08",
+      followIndexLabel: "08",
       followIdentity: SPECIMEN_RESOLVED as never,
       followStatedAnchor: statedAnchorFrom(SPECIMEN_COMPILED_BRIEF),
       anchorImageAttached: true,

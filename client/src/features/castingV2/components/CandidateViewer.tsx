@@ -47,8 +47,17 @@ export type ViewerFrame = {
   previewUrl?: string | null;
   /** Shown in the caption chrome: "03", "Close-up", "Master". */
   label: string;
-  /** The second caption line, where there is one. */
-  personaLine?: string | null;
+  /**
+   * The second caption line, where there is one.
+   *
+   * It was named after the candidate disposition until #1241 retired that field
+   * end to end. The SLOT was never a disposition: on a sheet it carried
+   * one (and carries nothing now), while in the cast room it carries her NAME
+   * and the founder's third-case sentence for a sibling whose sheet is gone.
+   * Renamed to what it is rather than deleted with the field, which would have
+   * taken those two with it.
+   */
+  caption?: string | null;
   /**
    * The saved filename, WITHOUT extension.
    *
@@ -539,7 +548,7 @@ export function CandidateViewer({
       className="dpc-viewer"
       role="dialog"
       aria-modal="true"
-      aria-label={`${frame.label}${frame.personaLine ? ` — ${frame.personaLine}` : ""}`}
+      aria-label={`${frame.label}${frame.caption ? ` — ${frame.caption}` : ""}`}
       /*
         CLOSE ON ANYTHING THAT IS NOT THE PICTURE OR THE CHROME.
 
@@ -675,7 +684,7 @@ export function CandidateViewer({
                   nothing to flash between two layers. */}
               <img
                 src={frame.url}
-                alt={frame.personaLine ?? frame.label}
+                alt={frame.caption ?? frame.label}
                 data-preview={preview ? "true" : "false"}
               />
               {/*
@@ -740,7 +749,7 @@ export function CandidateViewer({
             </span>
             <figcaption className="dpc-viewer__caption">
               <span className="dp-chrome">{frame.label}</span>
-              {frame.personaLine ? <span>{frame.personaLine}</span> : null}
+              {frame.caption ? <span>{frame.caption}</span> : null}
               {canStep ? (
                 <span className="dp-chrome dpc-viewer__count">
                   {index + 1} / {frames.length}

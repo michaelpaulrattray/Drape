@@ -89,7 +89,6 @@ const lineage = {
   rollIndex: 2,
   sessionPublicId: "session-public",
   candidatePublicId: "candidate-public",
-  personaLine: "Dry and flat",
   castFromAt: new Date("2026-09-01T10:00:00Z"),
 };
 

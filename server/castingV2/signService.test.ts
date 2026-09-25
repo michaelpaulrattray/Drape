@@ -59,7 +59,6 @@ const candidateRow = {
   signedCastId: null as number | null,
   imageKey: "casting-v2/candidates/abc.png",
   thumbKey: "casting-v2/candidates/abc-thumb.png",
-  personaLine: "Dry and flat",
   position: 3,
   /* `unknown` because it IS unknown at the boundary this fixture stands in for
      — a JSON column written across several eras — and because one arm below

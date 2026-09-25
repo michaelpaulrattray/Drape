@@ -515,7 +515,7 @@
           "server/castingV2/stageWallBackstop.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1234",
+          "server/castingV2/briefCompiler.ts:1231",
           "server/castingV2/briefRefusalCopy.ts:116"
         ]
       },
@@ -528,7 +528,7 @@
           "server/castingV2/creativeRegisterScope.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1237",
+          "server/castingV2/briefCompiler.ts:1234",
           "server/castingV2/briefRefusalCopy.ts:122"
         ]
       },
@@ -543,7 +543,7 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1163",
+          "server/castingV2/briefCompiler.ts:1160",
           "server/castingV2/briefRefusalCopy.ts:128"
         ]
       },
@@ -555,8 +555,8 @@
           "server/castingV2/briefRefusalCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1088",
-          "server/castingV2/briefCompiler.ts:1517",
+          "server/castingV2/briefCompiler.ts:1085",
+          "server/castingV2/briefCompiler.ts:1515",
           "server/castingV2/briefRefusalCopy.ts:108"
         ]
       },
@@ -572,8 +572,8 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1216",
-          "server/castingV2/briefCompiler.ts:1223",
+          "server/castingV2/briefCompiler.ts:1213",
+          "server/castingV2/briefCompiler.ts:1220",
           "server/castingV2/briefRefusalCopy.ts:110"
         ]
       },
@@ -719,10 +719,10 @@
           "server/db/referenceReadDemand.test.ts"
         ],
         "sites": [
-          "server/castingV2/castingIntent.ts:1280",
-          "server/castingV2/castingIntent.ts:1316",
-          "server/castingV2/castingIntent.ts:1321",
-          "server/castingV2/castingIntent.ts:1336",
+          "server/castingV2/castingIntent.ts:1282",
+          "server/castingV2/castingIntent.ts:1318",
+          "server/castingV2/castingIntent.ts:1323",
+          "server/castingV2/castingIntent.ts:1338",
           "server/castingV2/openLaneAccept.ts:245",
           "server/castingV2/openLaneKind.ts:162",
           "server/castingV2/openLaneKind.ts:220",

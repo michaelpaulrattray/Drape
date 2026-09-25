@@ -29,7 +29,6 @@ export type StripEntry = {
   candidateId: string;
   thumbUrl: string | null;
   imageUrl: string | null;
-  personaLine: string | null;
   sourceRollIndex: number;
   indexLabel: string;
 };
@@ -40,7 +39,6 @@ export type StripCandidate = {
   indexLabel: string;
   imageUrl: string | null;
   thumbUrl: string | null;
-  personaLine: string | null;
   status: "casting" | "ready" | "failed-refunded" | "signed";
 };
 
@@ -135,7 +133,6 @@ export function visibleShortlist(input: VisibleShortlistInput): StripEntry[] {
       candidateId: candidate.candidateId,
       thumbUrl: candidate.thumbUrl,
       imageUrl: candidate.imageUrl,
-      personaLine: candidate.personaLine,
       sourceRollIndex: rollIndex,
       indexLabel: candidate.indexLabel,
     }));

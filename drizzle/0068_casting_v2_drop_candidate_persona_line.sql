@@ -1,0 +1,28 @@
+-- THE CANDIDATE DISPOSITION IS RETIRED, AND THE COLUMN GOES WITH IT (issue
+-- #1241, his brief in the terminal, 2026-09-25: "candidates are auditioners and
+-- carry no personality by design").
+--
+-- What the customer saw, and what he reported: every tile on a sheet read
+-- "01 … 01" — the same index number bottom-left and bottom-right. The left slot
+-- drew this column and fell back to the index when it was null, and since the
+-- author road went to every account (2026-09-24) it is null on every roll by
+-- design (#176: one authored prompt paints all eight, so a disposition rolled
+-- for a slot describes what was ROLLED, not what was DELIVERED). One index
+-- label per tile now, and nothing reads this column any more.
+--
+-- ⚠ DESTRUCTIVE BY SHAPE **AND** BY CONTENT — unlike #1184's empty table, this
+-- DROP deletes data, so the loss was measured before it ran rather than assumed:
+--
+--     production (:23768)  411 candidate rows · 7 non-null · newest 2026-08-02
+--     dev        (:52008)  117 candidate rows · 104 non-null · newest today
+--
+-- Production has not written a disposition in nearly two months. Dev still does,
+-- because the house road runs there. Either way the values are captions nothing
+-- draws: "Disciplined", "Warm, unhurried", "Dry and flat".
+--
+-- His word, 2026-09-25 (terminal), verbatim and scoped to THIS act: "you have
+-- approval to run this act on my behalf no word required". It licenses this
+-- column and nothing else. The code shipped first; the ceremony
+-- (`scripts/ceremony-drop-candidate-persona-line.mts`) runs after it, names its
+-- world, and refuses anything it did not expect.
+ALTER TABLE `casting_candidates` DROP COLUMN `personaLine`;

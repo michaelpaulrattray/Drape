@@ -239,7 +239,6 @@ export async function touchCastingSession(
 export type CandidateSeed = {
   publicId: string;
   position: number;
-  personaLine: string | null;
   internalPrompt: unknown;
 };
 
@@ -435,7 +434,6 @@ export async function createRollWithCandidates(input: CreateRollInput): Promise<
         // The refundable unit is persisted per row, so refund authority reads
         // what was charged instead of dividing a total (§H.3).
         pointsCost: CASTING_V2_COSTS.rollCandidate,
-        personaLine: candidate.personaLine,
         internalPrompt: candidate.internalPrompt ?? null,
         createdAt: now,
       })),
