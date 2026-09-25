@@ -9,10 +9,14 @@
  */
 import { describe, expect, it } from "vitest";
 import { CREW_LADDER_GROUP_KEYS, pipelineGroupFor } from "../../shared/crewPipelineGroups";
+import { CREW_PIPELINE_GROUPS } from "../../shared/crewPipelineGroups";
+import { CREW_WORK_CATEGORIES } from "../../shared/crewWorkSwitches";
 import {
   cardsNamedIn,
   deriveLiveDesk,
+  ladderNoteFor,
   liveLadderCards,
+  liveWorkCounts,
   liveNextUp,
   livePullRequestState,
   livePullRequests,
@@ -60,15 +64,30 @@ describe("the ladder's cards", () => {
     ];
     const cards = liveLadderCards(reading(rows), RUNGS);
     expect(cards).toEqual([
-      { issueNumber: 10, title: "Card 10", kind: "roadmap", rung: "N2" },
-      { issueNumber: 11, title: "Card 11", kind: "parked", rung: null },
-      { issueNumber: 12, title: "Card 12", kind: "design-unbuilt", rung: null },
+      { issueNumber: 10, title: "Card 10", kind: "roadmap", rung: "N2", note: null },
+      { issueNumber: 11, title: "Card 11", kind: "parked", rung: null, note: null },
+      { issueNumber: 12, title: "Card 12", kind: "design-unbuilt", rung: null, note: null },
     ]);
     /* Control: the population is the shared partition's, not this file's. */
     for (const row of rows.filter((r) => r.kind === "issue")) {
       const inLadder = CREW_LADDER_GROUP_KEYS.includes(pipelineGroupFor(row.labels));
       expect(cards.some((c) => c.issueNumber === row.number)).toBe(inLadder);
     }
+  });
+
+  it("⚠ a blocked card on a rung stays ON the rung and says so — his ruling 2026-09-25 (#1199)", () => {
+    const cards = liveLadderCards(reading([
+      item({ number: 1129, labels: ["blocked", "rung:N2"] }),
+      item({ number: 1125, labels: ["debt", "rung:N3"] }),
+      item({ number: 1121, labels: ["blocked", "rung:N1"] }),
+    ]), RUNGS);
+    expect(cards.map((c) => [c.issueNumber, c.kind, c.rung, c.note])).toEqual([
+      [1121, "rung", "N1", "blocked"],
+      [1125, "rung", "N3", "debt"],
+      [1129, "rung", "N2", "blocked"],
+    ]);
+    expect(ladderNoteFor(["awaiting-fable"])).toBe("needs fable");
+    expect(ladderNoteFor(["roadmap"])).toBeNull();
   });
 
   it("a rung the ladder does not hold is the honest remainder, never a guessed rung", () => {
@@ -154,6 +173,50 @@ describe("since you last looked", () => {
       [50, "merged", "2026-09-24T23:34:59Z"],
       [52, "closed-unmerged", "2026-09-24T20:00:00Z"],
     ]);
+  });
+});
+
+describe("the switch counts and the groups, live (#1199)", () => {
+  const rows = [
+    item({ number: 1, labels: ["bug"], createdAt: "2026-09-01T00:00:00Z" }),
+    item({ number: 2, labels: ["bug", "founder-ordered"], createdAt: "2026-09-02T00:00:00Z" }),
+    item({ number: 3, labels: ["bug", "blocked"], createdAt: "2026-09-03T00:00:00Z" }),
+    item({ number: 4, labels: ["bug"], createdAt: "2026-09-04T00:00:00Z", title: "the rail" }),
+    item({ number: 5, labels: ["seat:retro", "debt"] }),
+    item({ number: 6, labels: ["blocked", "rung:N2"] }),
+    item({ number: 7, labels: ["debt"] }),
+    item({ number: 8, labels: [] }),
+    item({ number: 9, kind: "pr", labels: ["bug"] }),
+  ];
+  const merged = [item({ number: 90, kind: "pr", status: "merged", mergedAt: "2026-09-24T00:00:00Z", closedAt: "2026-09-24T00:00:00Z", title: "fix: the rail (#4)" })];
+  const work = liveWorkCounts(reading(rows, merged));
+
+  it("a switch count is the OFFERED population, with what left it named, newest first, and a merged PR flags a card", () => {
+    const bugs = work.counts.find((c) => c.categoryKey === "bugs")!;
+    expect(bugs.openCount).toBe(2);
+    expect(bugs.excluded).toEqual({ ordered: 1, blocked: 1 });
+    expect(bugs.titles.map((t) => t.number)).toEqual([4, 1]);
+    expect(bugs.possiblyDone).toEqual({ count: 1, cards: [4] });
+    expect(bugs.countedAt.toISOString()).toBe("2026-09-25T00:00:00.000Z");
+    const process = work.counts.find((c) => c.categoryKey === "process")!;
+    expect(process.openCount).toBe(1);
+    expect(process.excluded).toEqual({});
+  });
+
+  it("every category and every group is written, at zero too — a row must never vanish (#277)", () => {
+    expect(work.counts.map((c) => c.categoryKey)).toEqual(CREW_WORK_CATEGORIES.map((c) => c.key));
+    expect(work.groups.map((g) => g.groupKey)).toEqual(CREW_PIPELINE_GROUPS.map((g) => g.key));
+  });
+
+  it("the groups file every open card once and sum to the queue — the sweep's own control", () => {
+    const byKey = new Map(work.groups.map((g) => [g.groupKey, g.openCount]));
+    expect(byKey.get("switched")).toBe(5);
+    expect(byKey.get("rung")).toBe(1);
+    expect(byKey.get("debt")).toBe(1);
+    expect(byKey.get("unfiled")).toBe(1);
+    expect(byKey.get("blocked")).toBe(0);
+    const sum = work.groups.reduce((total, g) => total + g.openCount, 0);
+    expect(sum).toBe(rows.filter((r) => r.kind === "issue").length);
   });
 });
 

@@ -158,7 +158,7 @@ export const crewRouter = router({
        this deploy and the founder's ceremony) and throws on anything else. */
     const shiftRuns = await listCrewShiftRuns();
     /* Same degradation, same reason (#277). */
-    const workState = await readCrewWorkState();
+    const storedWorkState = await readCrewWorkState();
     /* Same degradation, same reason (#325) — and it rides this call rather than
        getting its own for `shiftRuns`' reason: the taps are drawn ON the card
        titles this same query carries, so two queries would draw one list from
@@ -174,6 +174,12 @@ export const crewRouter = router({
        and SAYS so. It never throws: a Desk that cannot reach GitHub is a Desk
        that is one cycle behind, which is what it was until today. */
     const live = await liveDeskState(briefing.program.ladder.map((rung) => rung.key));
+    /* THE COUNTS ARE LIVE TOO (#1199): the switches stay the store's (his
+       taps), the numbers beside them come from the reading when there is one,
+       and the sweep's rows are the fallback when GitHub has not answered. */
+    const workState = live.available && storedWorkState.available
+      ? { ...storedWorkState, counts: live.desk.work.counts, groups: live.desk.work.groups }
+      : storedWorkState;
 
     return { briefing, replies, shiftRuns, workState, cardIntents, live };
   }),

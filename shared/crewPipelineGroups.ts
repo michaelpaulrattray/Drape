@@ -189,17 +189,6 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     backgroundWork: false,
   },
   {
-    key: "blocked",
-    label: "Blocked",
-    queueLabel: "blocked",
-    blurb: "Waiting on something the card names.",
-    home: "here",
-    elsewhere: null,
-    /* Waiting by design. When the blocker clears the card is relabelled, and
-       that is the act that makes it takeable. */
-    backgroundWork: false,
-  },
-  {
     key: "parked",
     label: "Parked",
     queueLabel: "parked",
@@ -227,6 +216,34 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     home: "ladder",
     elsewhere: "on the ladder",
     /* Waits for its rung. */
+    backgroundWork: false,
+  },
+  {
+    key: "rung",
+    label: "On a rung",
+    queueLabel: null,
+    blurb: "Placed on a rung of the ladder by its label — it is on the road, whatever else it carries.",
+    home: "ladder",
+    elsewhere: "on a rung",
+    /* ⚠ HIS RULING, 2026-09-25 (#1199): *"they shouldnt be showing [in Not on
+       any road] if they are already on the road"*. A card carrying `rung:N2`
+       and `blocked` used to file as blocked — an orphan — because `blocked`
+       sat above the ladder groups and no group read a rung label at all
+       (#1129, #1121, #1125 on the day). It is matched on the `rung:` prefix
+       rather than a queueLabel, and it ranks after his ordered band and the
+       three named ladder populations so their words (parked, unbuilt design)
+       still win where both apply; its hold shows as a mark on the ladder row. */
+    backgroundWork: false,
+  },
+  {
+    key: "blocked",
+    label: "Blocked",
+    queueLabel: "blocked",
+    blurb: "Waiting on something the card names.",
+    home: "here",
+    elsewhere: null,
+    /* Waiting by design. When the blocker clears the card is relabelled, and
+       that is the act that makes it takeable. */
     backgroundWork: false,
   },
   {
@@ -312,6 +329,8 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
  * counted in the total.
  */
 export const PIPELINE_SWITCHED_KEY = "switched";
+/** The ladder group matched on a `rung:` label rather than a queue label (#1199). */
+export const PIPELINE_RUNG_KEY = "rung";
 
 /*
  * ⚠ `CREW_PIPELINE_VISIBLE_GROUPS` — "every group except the arithmetic" — was
@@ -451,6 +470,13 @@ export function pipelineGroupFor(labels: readonly string[]): string {
      places and make the total larger than the queue. */
   if (labels.some((name) => SWITCH_LABELS.includes(name))) return PIPELINE_SWITCHED_KEY;
   for (const group of CREW_PIPELINE_GROUPS) {
+    /* The rung group is the one matched on a PREFIX (`rung:N2`), so it is
+       asked in its own position in the list — after his ordered band and the
+       named ladder populations, before `blocked` (#1199). */
+    if (group.key === PIPELINE_RUNG_KEY) {
+      if (labels.some((name) => name.startsWith(RUNG_LABEL_PREFIX))) return group.key;
+      continue;
+    }
     if (group.queueLabel !== null && labels.includes(group.queueLabel)) return group.key;
   }
   return labels.length === 0 ? "unfiled" : "other";
