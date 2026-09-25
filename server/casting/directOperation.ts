@@ -48,6 +48,23 @@ export async function beginDirectOperation(input: {
   payload: unknown;
   lockKey?: string;
   /**
+   * THE SENTENCE A BUSY LOCK SAYS, when the generic one is wrong (#1257).
+   *
+   * The default below is written for whoever reads a log — "another operation",
+   * "this Cast" — and it is right for the five roads that take a `model:` or
+   * `board-item:` lock, where a customer meeting it has asked for something
+   * about the whole Cast.
+   *
+   * A per-slot lock is different: the road that takes one ALREADY refuses the
+   * common case in its own words, from the slot's state, a few hundred
+   * milliseconds earlier. Two customers who pressed the same button at slightly
+   * different moments must not be told two different things about one fact, so
+   * the caller hands its own sentence down rather than keeping a second one up
+   * here. It is copy, not request input — never composed from anything a
+   * request carries.
+   */
+  lockBusyMessage?: string;
+  /**
    * ONE FACE, ONE RENDER (Landing C, ruled fable-974).
    *
    * The candidate this ask is about, locked for the life of the operation. A
@@ -100,7 +117,8 @@ export async function beginDirectOperation(input: {
     if (lock.type === "resource_busy") {
       throw new TRPCError({
         code: "CONFLICT",
-        message: "Another operation is already changing this Cast. Wait for it to finish before retrying.",
+        message: input.lockBusyMessage
+          ?? "Another operation is already changing this Cast. Wait for it to finish before retrying.",
       });
     }
   }

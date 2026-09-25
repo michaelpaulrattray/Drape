@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { assertClientRequestId } from "../../shared/clientRequestId";
 
 export const GENERATION_OPERATION_KINDS = [
@@ -459,8 +460,101 @@ export function castingCandidateOperationLockKey(candidateId: number): string {
   return `casting-candidate:${candidateId}`;
 }
 
+/**
+ * ONE SLOT, ONE TRY AGAIN — the key a Cast's single view is locked under (#1257).
+ *
+ * # Why the key needs an angle on the end, and `model:<id>` will not do
+ *
+ * A signed Cast has five view slots and each is asked for again on its own. The
+ * `model:` key would serialise the whole Cast, so a Try again on her close-up
+ * would refuse a Try again on her profile — which is his second report on
+ * #1235, reintroduced from the other side. The unit that may only be bought
+ * once at a time is the SLOT, so the slot is what the key names.
+ *
+ * # Why it cannot be forged, even though a caller composes it
+ *
+ * Unlike `casting-candidate:`, this key needs no database read to build: the
+ * angle is a closed vocabulary and `modelId` is an internal id. The control is
+ * therefore where it already was — `acquireGenerationOperationLock` admits a
+ * key only if it names a resource the CLAIM declared, and it derives the
+ * allowlist from the operation row's own `modelId`. A key naming another
+ * customer's Cast is refused there, exactly as `model:` is.
+ */
+export function castViewSlotOperationLockKey(modelId: number, angle: CastViewAngle): string {
+  if (!Number.isSafeInteger(modelId) || modelId <= 0) throw new TypeError("modelId must be a positive integer");
+  if (!(CAST_VIEW_ANGLES as readonly string[]).includes(angle)) {
+    throw new TypeError("angle must be a known cast view angle");
+  }
+  return `cast-view:${modelId}:${angle}`;
+}
+
+/**
+ * EVERY KEY A CLAIM MAY BE LOCKED UNDER — the door's whole rule, as a function.
+ *
+ * `acquireGenerationOperationLock` admits a key only if it names a resource the
+ * CLAIM declared, and it reads that declaration off the operation row. The rule
+ * lives here rather than inline there for one reason that is not tidiness: the
+ * door needs a database, so an inline rule can only be driven by a suite that
+ * has one — and this repository's CI has none, so the per-slot widening (#1257)
+ * would have shipped with its allowlist arm SKIPPED. A pure function is a rule
+ * the gate can actually run, on the same code the door uses.
+ *
+ * `modelId` is the only thing ownership hangs on for a Cast key, and that is
+ * deliberate: `claimGenerationOperation` proves the model owned and available in
+ * the statement that writes the claim, so a key derived from the row here cannot
+ * name somebody else's Cast.
+ */
+export function allowedOperationLockKeys(claim: {
+  modelId: number | null;
+  originItemId: number | null;
+}): string[] {
+  const keys: string[] = [];
+  if (claim.modelId) {
+    keys.push(modelOperationLockKey(claim.modelId));
+    /*
+      ONE SLOT, ONE TRY AGAIN (#1257) — enumerated, not parsed.
+
+      A per-slot key carries an angle the claim does not record, so the tempting
+      shape is to split the key and check its halves. Enumerating instead keeps
+      the door's decision a membership test over keys THIS function built, so no
+      string from a caller is ever taken apart, and the rule stays readable:
+      ownership hangs entirely on `modelId`, exactly as it does one line above.
+    */
+    for (const angle of CAST_VIEW_ANGLES) keys.push(castViewSlotOperationLockKey(claim.modelId, angle));
+  }
+  if (claim.originItemId) keys.push(boardItemOperationLockKey(claim.originItemId));
+  return keys;
+}
+
+/**
+ * The grammar every lock key must match — DERIVED from `CAST_VIEW_ANGLES`.
+ *
+ * A hand-typed alternation here would be a second spelling of a closed list
+ * (working law 4), and its drift would be the silent kind: an angle added to the
+ * strip would render and charge normally, and its lock alone would be refused
+ * at the validator with "Invalid operation lock key" — a 500 on a paid button,
+ * on the one road nobody would think to re-test.
+ *
+ * ⚠ The angles are interpolated into a regex, so the assertion below is not
+ * decoration: an angle carrying a regex metacharacter would silently widen the
+ * grammar rather than extend it. It refuses at import time because a lock key
+ * validator that accepts more than it says is not a thing to discover later.
+ */
+const CAST_VIEW_ANGLE_PATTERN = (() => {
+  for (const angle of CAST_VIEW_ANGLES) {
+    if (!/^[A-Za-z]+$/.test(angle)) {
+      throw new TypeError(`CAST_VIEW_ANGLES member ${angle} is not safe to interpolate into the lock key grammar`);
+    }
+  }
+  return CAST_VIEW_ANGLES.join("|");
+})();
+
+const OPERATION_LOCK_KEY = new RegExp(
+  `^(?:(?:model|board-item|casting-candidate):[1-9][0-9]*|cast-view:[1-9][0-9]*:(?:${CAST_VIEW_ANGLE_PATTERN}))$`,
+);
+
 export function assertOperationLockKey(lockKey: string): void {
-  if (!/^(model|board-item|casting-candidate):[1-9][0-9]*$/.test(lockKey) || lockKey.length > 96) {
+  if (!OPERATION_LOCK_KEY.test(lockKey) || lockKey.length > 96) {
     throw new TypeError("Invalid operation lock key");
   }
 }

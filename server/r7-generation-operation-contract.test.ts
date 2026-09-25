@@ -1,16 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
+  allowedOperationLockKeys,
   assertCreditConservation,
   assertGenerationOperationKind,
   assertOperationLockKey,
   assertPublicOperationResult,
   boardItemOperationLockKey,
   castingCandidateOperationLockKey,
+  castViewSlotOperationLockKey,
   hashGenerationOperationClaim,
   modelOperationLockKey,
   operationChargeReference,
   stableCanonicalJson,
 } from "./casting/operationContract";
+import { CAST_VIEW_ANGLES } from "../shared/boardTypes";
 import {
   assertClientRequestId,
   createClientRequestId,
@@ -88,6 +91,91 @@ describe("R7-1C operation contract", () => {
        only way to one. */
     expect(() => assertOperationLockKey("casting-candidate:5fa47ee0-9e24-4242-9e65-b1f1f75569c2"))
       .toThrow("Invalid");
+  });
+
+  it("locks ONE VIEW SLOT of a Cast, with the angle vocabulary derived rather than retyped", () => {
+    /*
+      ONE SLOT, ONE TRY AGAIN (#1257).
+
+      A signed Cast has five slots and each is asked for again on its own, so
+      `model:` would serialise the whole Cast and refuse a Try again on her
+      profile while her close-up rendered — his second report on #1235, from the
+      other side. The angle is therefore part of the key.
+    */
+    expect(castViewSlotOperationLockKey(12, "closeUp")).toBe("cast-view:12:closeUp");
+    expect(() => assertOperationLockKey("cast-view:12:closeUp")).not.toThrow();
+
+    /*
+      THE DERIVED ARM, and it is the point of this test rather than a flourish.
+
+      The grammar interpolates `CAST_VIEW_ANGLES`, so every member must both
+      BUILD and VALIDATE. An angle added to the strip that the validator refused
+      would render and charge normally and 500 only on its lock — on the one
+      road nobody would re-test.
+    */
+    expect(CAST_VIEW_ANGLES.length).toBeGreaterThanOrEqual(5);
+    for (const angle of CAST_VIEW_ANGLES) {
+      const key = castViewSlotOperationLockKey(7, angle);
+      expect(key, angle).toBe(`cast-view:7:${angle}`);
+      expect(() => assertOperationLockKey(key), angle).not.toThrow();
+    }
+    /* Every slot of one Cast is a DIFFERENT key — the exclusion is per slot. */
+    expect(new Set(CAST_VIEW_ANGLES.map((angle) => castViewSlotOperationLockKey(7, angle))).size)
+      .toBe(CAST_VIEW_ANGLES.length);
+
+    /* The negative controls: an angle nobody declared, a model id nobody owns,
+       and the public id a customer's request actually carries. */
+    expect(() => assertOperationLockKey("cast-view:12:portrait")).toThrow("Invalid");
+    expect(() => assertOperationLockKey("cast-view:0:closeUp")).toThrow("Invalid");
+    expect(() => assertOperationLockKey("cast-view:12")).toThrow("Invalid");
+    expect(() => assertOperationLockKey("cast-view:12:closeUp:extra")).toThrow("Invalid");
+    expect(() => castViewSlotOperationLockKey(7, "portrait" as never)).toThrow(TypeError);
+    for (const bad of [0, -1, 1.5, Number.NaN]) {
+      expect(() => castViewSlotOperationLockKey(bad, "closeUp"), String(bad)).toThrow(TypeError);
+    }
+  });
+
+  it("admits only keys naming a resource the claim declared — the lock door's whole rule", () => {
+    /*
+      #1257, AND THE REASON THIS ARM IS HERE RATHER THAN IN THE DB SUITE.
+
+      `acquireGenerationOperationLock` reads an operation row, so a suite driving
+      it needs a database — and this repository's CI sets no `TEST_DATABASE_URL`,
+      so every arm in `r7-generation-operations-db.test.ts` SKIPS in the gate.
+      The allowlist is the door's security rule; the rule is therefore a pure
+      function and this is the arm that runs on every push.
+
+      The DB suite keeps its own arms for the parts only a database can prove —
+      that the INSERT is the exclusion, and that the loser's receipt is sealed.
+    */
+    const modelOnly = allowedOperationLockKeys({ modelId: 44, originItemId: null });
+    expect(modelOnly).toContain("model:44");
+    expect(modelOnly).toContain("cast-view:44:closeUp");
+    /* Every slot of the claimed Cast, and nothing about any other Cast. */
+    expect(modelOnly).toHaveLength(1 + CAST_VIEW_ANGLES.length);
+    expect(modelOnly.filter((key) => !key.endsWith(":44") && !key.startsWith("cast-view:44:")))
+      .toEqual([]);
+
+    /* THE FORGERY CONTROLS — a key naming a Cast or an item this claim never
+       declared is simply not in the list, which is what the door refuses on. */
+    expect(modelOnly).not.toContain("model:45");
+    expect(modelOnly).not.toContain("cast-view:45:closeUp");
+    expect(modelOnly).not.toContain("board-item:44");
+
+    const itemOnly = allowedOperationLockKeys({ modelId: null, originItemId: 8 });
+    expect(itemOnly).toEqual(["board-item:8"]);
+    /* A board item is not a Cast, so it unlocks no view slot. */
+    expect(itemOnly.some((key) => key.startsWith("cast-view:"))).toBe(false);
+
+    /* A claim naming nothing can lock nothing — `model.create`'s road, which the
+       wire guard calls out of scope BY CONSTRUCTION rather than by exemption. */
+    expect(allowedOperationLockKeys({ modelId: null, originItemId: null })).toEqual([]);
+
+    /* Every key it offers is one the validator accepts: the door and the grammar
+       cannot disagree about a shape. */
+    for (const key of allowedOperationLockKeys({ modelId: 44, originItemId: 8 })) {
+      expect(() => assertOperationLockKey(key), key).not.toThrow();
+    }
   });
 
   it("derives the only valid charge reference from the server operation id", () => {

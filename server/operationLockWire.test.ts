@@ -96,6 +96,25 @@ function callArguments(source: string, fn: string): Array<{ line: number; body: 
   return found;
 }
 
+/**
+ * The argument text of a call whose opening paren is already located.
+ *
+ * `callArguments` above finds calls by NAME, which cannot see an injected site
+ * (`(dependencies.begin ?? beginDirectOperation)(`) because the name is followed
+ * by a close paren. The injected arms below locate their own paren and hand the
+ * index here, so the brace matching itself is written once.
+ */
+function argumentsAt(source: string, afterOpenParen: number): string {
+  let depth = 1;
+  let index = afterOpenParen;
+  while (index < source.length && depth > 0) {
+    if (source[index] === "(") depth += 1;
+    else if (source[index] === ")") depth -= 1;
+    index += 1;
+  }
+  return source.slice(afterOpenParen, index - 1);
+}
+
 type Site = { file: string; line: number; namesModel: boolean; passesKey: boolean };
 
 async function sitesFor(fn: string, required: string): Promise<Site[]> {
@@ -190,6 +209,52 @@ describe("the resource lock reaches the wire", { timeout: 60_000 }, () => {
     const body = source.slice(first + shape.length, index - 1);
     expect(body).toContain('kind: "castingV2.refine"');
     expect(body).toMatch(/\bcandidateLockPublicId\s*:\s*input\.candidatePublicId\b/);
+  });
+
+  it("the castingV2 view retry claim passes its per-slot lock, and re-proves it", async () => {
+    /*
+      ONE SLOT, ONE TRY AGAIN (#1257).
+
+      Invisible to both scanners above for the SAME reason the refine claim is —
+      the retry entrance calls through `(dependencies.begin ?? …)(`, so the bare
+      `name(` pattern never matches it — and invisible for a second reason on
+      top: the key it passes is `cast-view:`, which no derived model-key rule
+      would think to look for. Matched here in its real shape.
+
+      Deleting either line from `viewRetryService.ts` must redden this arm; the
+      race it closes is the few hundred milliseconds between the entrance's
+      admission READ and its claim, during which the entrance is still fetching
+      her render source and her signed face.
+    */
+    const source = await readFile(
+      path.join(here, "castingV2", "viewRetryService.ts"),
+      "utf8",
+    );
+
+    const claimShape = "(dependencies.begin ?? beginDirectOperation)(";
+    const claimAt = source.indexOf(claimShape);
+    // Positive control: the site exists, and exactly once — a second claim site
+    // in this file must come back here and join the assertion.
+    expect(claimAt).toBeGreaterThan(-1);
+    expect(source.indexOf(claimShape, claimAt + 1)).toBe(-1);
+    const claim = argumentsAt(source, claimAt + claimShape.length);
+    expect(claim).toContain('kind: "castingV2.viewRetry"');
+    expect(claim).toMatch(/\blockKey\s*:\s*slotLockKey\b/);
+    /* The customer's own sentence, not the staff one the five model-key roads
+       share — a race loser and a slow double-presser are told one thing. */
+    expect(claim).toMatch(/\blockBusyMessage\s*:\s*VIEW_RETRY_ALREADY_ASKING_MESSAGE\b/);
+
+    const runShape = "(dependencies.markRunning ?? markGenerationOperationRunning)(";
+    const runAt = source.indexOf(runShape);
+    expect(runAt).toBeGreaterThan(-1);
+    expect(source.indexOf(runShape, runAt + 1)).toBe(-1);
+    expect(argumentsAt(source, runAt + runShape.length))
+      .toMatch(/\brequiredLockKey\s*:\s*slotLockKey\b/);
+
+    /* The key is built ONCE on this road. Two spellings of it would be a lock
+       nobody holds — the claim taking one row and the running transition
+       demanding another. */
+    expect(source.match(/castViewSlotOperationLockKey\(/g)).toHaveLength(1);
   });
 
   it("model.create is out of scope by construction, not by exemption", async () => {
