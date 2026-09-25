@@ -653,15 +653,16 @@ export async function createRoll(
   const briefFidelity = captureCastingBriefFidelityEnabled(input.userId);
 
   /*
-    THE BRIEF BOUND, PER ROAD (#131 slice D, `briefLength.ts`). The entrance
-    admits 4,000 so an authored prompt can come back as the next brief; this
-    line is what keeps every HOUSE-composed roll exactly where it was — every
-    unflagged account (a flagged account's FOLLOW or chip-edited roll composed
-    house too until #154, and now takes the author bound like every other
-    flagged roll; the review of PR #137, finding 2). `authorRoad` is decided
-    above the path, from the same input. Free, before the claim, on both roads.
+    THE BRIEF BOUND (#131 slice D, `briefLength.ts`). The entrance admits 4,000
+    so an authored prompt can come back as the next brief. Free, before the
+    claim.
+
+    ⚠ It took `authorRoad` and chose between two bounds until #1204. The house
+    bound's population emptied when the register flag went to `all` on
+    2026-09-24, so the argument was selecting an arm nothing could reach; the
+    road predicate is still computed above, because the COMPILE still needs it.
   */
-  const tooLong = briefTooLong(input.briefText, authorRoad);
+  const tooLong = briefTooLong(input.briefText);
   if (tooLong) throw new TRPCError({ code: "BAD_REQUEST", message: tooLong });
 
   let compiled: CompiledRollBrief;

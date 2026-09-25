@@ -581,9 +581,11 @@ export const CONCEPT_DESCRIPTION_MAX = 300;
  *
  * 400 is four sentences, not a police report: it is a third of the read that
  * produced his 2026-08-28 ruling, and it stays far under the entrance's own
- * brief cap (`BRIEF_TEXT_MAX`, 2,000 — `shared/briefLength.ts`), so a
- * description alone can still
- * never reach a bound she did not write.
+ * brief cap (`BRIEF_TEXT_MAX_AUTHOR_ROAD`, 4,000 — `shared/briefLength.ts`),
+ * so a description alone can still never reach a bound she did not write. (It
+ * named `BRIEF_TEXT_MAX`, 2,000, until #1204 retired that bound with the road
+ * it belonged to; the sentence was true of both numbers and is kept pointing
+ * at the one that still exists.)
  *
  * The cost if this is wrong is one number and it is reversible: descriptions
  * run to about four sentences instead of three, so eight faces share slightly
