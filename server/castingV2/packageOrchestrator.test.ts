@@ -363,6 +363,33 @@ describe("one regeneration, then named-and-refunded", () => {
   });
 });
 
+/*
+  ⚠ THE BUDGETS ARE PINNED AT THE NUMBERS HIS RULINGS NAME, NOT AT THEIR OWN
+  CONSTANTS — found by sabotage, on this card, one case MISSED.
+
+  Every other arm below expresses its expectation as `VIEW_ARRIVAL_ATTEMPTS`,
+  which reads well and proves the loop honours its budget. It cannot prove the
+  budget is the RIGHT one: dropping the constant from 3 to 2 moved the code and
+  every assertion together and the suite stayed green — the constant compared to
+  itself, which is the exact defect that let "repairs come with revisions"
+  survive a green file for thirteen months, met again in the same commit that
+  removed it.
+
+  So these two arms carry the literals, and they are the only place a number
+  appears twice on purpose. Changing a budget is a product decision — his "up to
+  three times" and D-39/D-40's one regeneration — and it should cost a
+  deliberate edit here, where the ruling is quoted beside it.
+*/
+describe("the attempt budgets are the ones that were ruled", () => {
+  it("asks three times for a view that never arrived (#1208, his yes)", () => {
+    expect(VIEW_ARRIVAL_ATTEMPTS).toBe(3);
+  });
+
+  it("keeps ONE regeneration after a judged rejection (D-39/D-40, untouched)", () => {
+    expect(VIEW_JUDGED_ATTEMPTS).toBe(2);
+  });
+});
+
 describe("generation failures", () => {
   it("does not retry a content refusal — it will refuse again", async () => {
     const generateView = vi.fn(async () => {
