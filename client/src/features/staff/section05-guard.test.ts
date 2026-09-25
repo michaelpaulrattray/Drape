@@ -149,7 +149,8 @@ describe("brief 05 §3 — the shell owns the page, not the page", () => {
 
   it("the two content measures are his, and there is no third", () => {
     expect(FOUNDATION_CSS).toMatch(/\.dp-staff__col\s*\{[^}]*max-width:\s*1240px/);
-    expect(FOUNDATION_CSS).toMatch(/\.dp-staff__col--read\s*\{[^}]*max-width:\s*790px/);
+    /* 790 → 880 on his word, 2026-09-25 ("880"). */
+    expect(FOUNDATION_CSS).toMatch(/\.dp-staff__col--read\s*\{[^}]*max-width:\s*880px/);
     /* Crew is the ONE surface at the reading measure. */
     const readers = staffPages().filter(({ text }) => /measure="read"/.test(code(text)));
     expect(readers.map((r) => r.name)).toEqual(["AdminCrew.tsx"]);

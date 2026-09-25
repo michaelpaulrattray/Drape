@@ -2650,12 +2650,14 @@ a.dp-segmented__seg {
 }
 
 /*
-  Crew reads at a narrower measure — the founder's 790px. It is a briefing you
-  read rather than a grid you scan, and the page is already `max-w-3xl` (768px)
-  today, so this is his nudge to an existing decision rather than a new one.
+  Crew reads at a narrower measure than the grids — his 880px (2026-09-25,
+  his one word on the relay's recommendation: "880"). It was 790 from #395
+  until then: a briefing you read rather than a grid you scan, and the lists
+  on the page (the ladder, since-you-last-looked) wrapped their long titles at
+  790. Still a reading column, not the full admin width, on purpose.
 */
 .dp-staff__col--read {
-  max-width: 790px;
+  max-width: 880px;
 }
 
 /* ---- the staff bar's refresh cluster ---- */

@@ -40,7 +40,7 @@ export function StaffSurface({
   bar,
   /**
    * `work` is the 1240px working column every staff surface uses.
-   * `read` is Crew's 790px — a briefing you read, not a grid you scan.
+   * `read` is Crew's 880px (790 until 2026-09-25) — a briefing you read, not a grid you scan.
    */
   measure = "work",
   breadcrumb,
