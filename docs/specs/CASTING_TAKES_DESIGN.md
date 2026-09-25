@@ -206,6 +206,13 @@ nothing about them presumes cinema.
    taps. The craft rule (visible traits only, baseline plus exception,
    two lines max) lives in the engine's translation, never in the user's
    homework — the disappearing-technology law applied to acting.
+   **WHEN (founder Q, 2026-09-25): minted silently AT SIGN as part of the
+   package — never a step, never a question before the button** (his own
+   candidate-count ruling is the reason). It then simply exists on the
+   casting profile beside her views, badged READ FROM YOUR BRIEF,
+   editable whenever and possibly never; Cinema consumes it as-is, with
+   at most one dismissible "check it" tip on first use. The system's
+   moment is Sign; the user's moment is optional.
 3. **Vocabulary — RULED: keep it as it is.** The earlier two-noun
    recommendation is REVERSED. Words are scoped per surface by design:
    the casting page speaks **candidates** (rolling) and **versions**
