@@ -21,8 +21,14 @@ import {
   pipelineGroupFor,
   rungFromLabels,
 } from "../../shared/crewPipelineGroups";
-import { heldStateFromLabels, type CrewHeldState } from "../../shared/crewNextUpHold";
+import { CREW_HOLD_WORD, heldStateFromLabels, type CrewHeldState } from "../../shared/crewNextUpHold";
 import { rankFromLabels, sortOrderedBand } from "../../shared/crewOrderedBand";
+import { CREW_PIPELINE_GROUPS } from "../../shared/crewPipelineGroups";
+import { exclusionFor, type CrewQueueExclusions } from "../../shared/crewQueueExclusions";
+import { QUEUE_POSSIBLY_DONE_CAP } from "../../shared/crewQueuePossiblyDone";
+import { QUEUE_TITLES_PER_CATEGORY, type CrewQueueTitle } from "../../shared/crewQueueTitles";
+import { CREW_WORK_CATEGORIES } from "../../shared/crewWorkSwitches";
+import type { CrewPipelineGroupView, CrewQueueCountView } from "../db/crewWorkSwitches";
 import type { LiveQueueItem, LiveQueueReading } from "./liveQueue";
 
 export const ORDERED_LABEL = "founder-ordered";
@@ -35,6 +41,13 @@ export type LiveLadderCard = {
   readonly title: string;
   readonly kind: string;
   readonly rung: string | null;
+  /**
+   * The quiet word after the title on the ladder row, or null: a hold's own
+   * plain word (`CREW_HOLD_WORD`) when the card carries one, else "debt" for
+   * a carded cleanup. A rung card that is blocked stays ON the rung (#1199)
+   * and says so here rather than falling off the road.
+   */
+  readonly note: string | null;
 };
 
 export type LiveNextUpItem = {
@@ -76,6 +89,16 @@ export type LiveDesk = {
   readonly nextUp: { readonly readAt: string; readonly items: readonly LiveNextUpItem[] };
   readonly pullRequests: readonly LivePullRequest[];
   readonly recent: readonly LiveRecentRow[];
+  /**
+   * The Background Work panel's numbers, derived from this reading (#1199):
+   * the same rows `crew-count-queue.mts` writes into `crew_queue_counts` at
+   * the end of a shift, computed here every tick through the same shared
+   * rules, so "counted 21 min ago" becomes "counted 12 s ago".
+   */
+  readonly work: {
+    readonly counts: readonly CrewQueueCountView[];
+    readonly groups: readonly CrewPipelineGroupView[];
+  };
   /**
    * Cards GitHub has CLOSED inside the window. The edition's needs-you cards
    * carry a state a shift wrote by hand; a card he answered and the relay
@@ -129,6 +152,14 @@ function knownCards(reading: LiveQueueReading): ReadonlySet<number> {
  * remainder. Same rows `crew-desk-sweep.mts` wrote into
  * `program.ladderCards`, read live.
  */
+export function ladderNoteFor(labels: readonly string[]): string | null {
+  const held = heldStateFromLabels(labels);
+  /* Lower-case, like the ladder's other marks ("parked", "unbuilt design"). */
+  if (held !== null) return CREW_HOLD_WORD[held].toLowerCase();
+  if (labels.includes("debt")) return "debt";
+  return null;
+}
+
 export function liveLadderCards(reading: LiveQueueReading, rungKeys: readonly string[]): LiveLadderCard[] {
   return openIssues(reading)
     .map((item) => ({ item, kind: pipelineGroupFor(item.labels) }))
@@ -138,8 +169,68 @@ export function liveLadderCards(reading: LiveQueueReading, rungKeys: readonly st
       title: item.title,
       kind,
       rung: rungFromLabels(item.labels, rungKeys),
+      note: ladderNoteFor(item.labels),
     }))
     .sort((a, b) => a.issueNumber - b.issueNumber);
+}
+
+/** Newest filed first — the sweep's own order for the titles under a count (#285). */
+function newestFirst(items: readonly LiveQueueItem[]): LiveQueueItem[] {
+  return [...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.number - a.number);
+}
+
+function titlesOf(items: readonly LiveQueueItem[]): CrewQueueTitle[] {
+  return newestFirst(items).slice(0, QUEUE_TITLES_PER_CATEGORY).map((item) => ({ number: item.number, title: item.title }));
+}
+
+/**
+ * THE SWITCH COUNTS AND THE GROUPS, LIVE (#1199) — the sweep's two readings
+ * (`readCategory` and the whole-queue partition in `crewQueueCount.mts`)
+ * computed from one reading rather than written to a table:
+ *
+ *  - a switch count is every open card carrying the category's label, minus
+ *    the ones an exclusion takes out (his ordered band, parked, the holds —
+ *    `exclusionFor`, first match, so a card is subtracted once); the titles
+ *    are the OFFERED population, newest first, five;
+ *  - "possibly fixed" is an offered card whose number a merged PR in the
+ *    window names in its title — the sweep reads a longer window through the
+ *    naming index; this reads the two days the reading holds, and says so;
+ *  - the groups are the whole open queue filed once each through
+ *    `pipelineGroupFor`, every group written even at zero, so the counts sum
+ *    to the queue (the sweep's own control).
+ */
+export function liveWorkCounts(reading: LiveQueueReading): LiveDesk["work"] {
+  const countedAt = new Date(reading.readAt);
+  const issues = openIssues(reading);
+  const mergedTitles = reading.recent.filter((item) => item.kind === "pr" && item.status === "merged").map((item) => item.title);
+  const namedByMerge = (number: number) => mergedTitles.some((title) => cardsNamedIn(title, new Set([number])).length > 0);
+
+  const counts: CrewQueueCountView[] = CREW_WORK_CATEGORIES.map((category) => {
+    const population = issues.filter((item) => item.labels.includes(category.queueLabel));
+    const offered: LiveQueueItem[] = [];
+    const excluded: Record<string, number> = {};
+    for (const item of population) {
+      const reason = exclusionFor(item.labels);
+      if (reason === null) offered.push(item);
+      else excluded[reason] = (excluded[reason] ?? 0) + 1;
+    }
+    const flagged = newestFirst(offered).filter((item) => namedByMerge(item.number)).map((item) => item.number);
+    return {
+      categoryKey: category.key,
+      openCount: offered.length,
+      titles: titlesOf(offered),
+      excluded: excluded as CrewQueueExclusions,
+      possiblyDone: { count: flagged.length, cards: flagged.slice(0, QUEUE_POSSIBLY_DONE_CAP) },
+      countedAt,
+    };
+  });
+
+  const groups: CrewPipelineGroupView[] = CREW_PIPELINE_GROUPS.map((group) => {
+    const filed = issues.filter((item) => pipelineGroupFor(item.labels) === group.key);
+    return { groupKey: group.key, openCount: filed.length, titles: titlesOf(filed), countedAt };
+  });
+
+  return { counts, groups };
 }
 
 /**
@@ -227,6 +318,7 @@ export function deriveLiveDesk(reading: LiveQueueReading, rungKeys: readonly str
     nextUp: { readAt: reading.readAt, items: liveNextUp(reading) },
     pullRequests: livePullRequests(reading),
     recent: liveRecent(reading),
+    work: liveWorkCounts(reading),
     closedCards: reading.recent
       .filter((item) => item.kind === "issue" && item.status !== "open")
       .map((item) => item.number)

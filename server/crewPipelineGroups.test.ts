@@ -85,16 +85,17 @@ describe("the pipeline vocabulary", () => {
     /* `shared/crewWorkSwitches.ts`'s anti-drift design, one level out: a card
        relabelled in GitHub must move group with nobody touching that file. Not
        one label below was invented for this feature — the relay applies
-       `founder-ordered`, and the rest are the queue's own. The three nulls are
+       `founder-ordered`, and the rest are the queue's own. The four nulls are
        the groups defined by something other than one label, and they are named
-       so a fourth cannot appear silently. */
+       so a fifth cannot appear silently. */
     expect(CREW_PIPELINE_GROUPS.map((group) => group.queueLabel)).toEqual([
       null, // switched — any of the switch labels
       "founder-ordered",
-      "blocked",
       "parked",
       "design-unbuilt",
       "roadmap",
+      null, // rung — a `rung:` label, matched on its prefix (#1199)
+      "blocked",
       "debt",
       "lost-and-found",
       "scope-change",
@@ -168,12 +169,12 @@ describe("the pipeline vocabulary", () => {
     ]);
     /* POSITIVE CONTROLS — the filter actually removed something, and the
        doubling his order names cannot come back through this list. */
-    expect(CREW_PIPELINE_ORPHAN_GROUPS.length).toBe(CREW_PIPELINE_GROUPS.length - 5);
-    for (const gone of [PIPELINE_SWITCHED_KEY, "ordered", "roadmap", "parked", "design-unbuilt"]) {
+    expect(CREW_PIPELINE_ORPHAN_GROUPS.length).toBe(CREW_PIPELINE_GROUPS.length - 6);
+    for (const gone of [PIPELINE_SWITCHED_KEY, "ordered", "roadmap", "parked", "design-unbuilt", "rung"]) {
       expect(CREW_PIPELINE_ORPHAN_GROUPS.map((group) => group.key)).not.toContain(gone);
     }
     /* The ladder's population is the other side of the same field. */
-    expect(CREW_LADDER_GROUP_KEYS).toEqual(["parked", "design-unbuilt", "roadmap"]);
+    expect(CREW_LADDER_GROUP_KEYS).toEqual(["parked", "design-unbuilt", "roadmap", "rung"]);
   });
 
   it("a rung label reads against the ladder's own keys, and a typo is unplaced rather than invented (#493)", () => {
@@ -272,6 +273,24 @@ describe("the partition", () => {
        arm below is that promise, driven. */
     expect(exclusionFor(["founder-ordered", "small-fix"])).toBe("ordered");
     expect(exclusionFor(["debt", "small-fix"])).toBe(null);
+  });
+
+  it("⚠ A CARD ON A RUNG IS ON THE ROAD — his ruling 2026-09-25 (#1199), on the three cards that were wrong that day", () => {
+    /* #1129 `blocked` + `rung:N2`, #1121 `blocked` + `rung:N1`, #1125 `debt` +
+       `rung:N3`: all three sat in NOT ON ANY ROAD while carrying a rung. */
+    expect(pipelineGroupFor(["blocked", "rung:N2"])).toBe("rung");
+    expect(pipelineGroupFor(["rung:N1", "blocked"])).toBe("rung");
+    expect(pipelineGroupFor(["debt", "rung:N3"])).toBe("rung");
+    expect(pipelineGroupFor(["rung:N4"])).toBe("rung");
+    /* What still outranks a rung: the switches, his ordered band, and the
+       three named ladder words — a parked card on a rung reads "parked". */
+    expect(pipelineGroupFor(["bug", "rung:N2"])).toBe(PIPELINE_SWITCHED_KEY);
+    expect(pipelineGroupFor(["founder-ordered", "rung:N2"])).toBe("ordered");
+    expect(pipelineGroupFor(["parked", "rung:N2"])).toBe("parked");
+    expect(pipelineGroupFor(["roadmap", "rung:N2"])).toBe("roadmap");
+    /* And a card with no rung still reaches `blocked` — the group moved, it did not leave. */
+    expect(pipelineGroupFor(["blocked"])).toBe("blocked");
+    expect(pipelineGroupFor(["blocked", "debt"])).toBe("blocked");
   });
 
   it("⚠ FIRST MATCH WINS, and his own cards outrank everything they also carry", () => {

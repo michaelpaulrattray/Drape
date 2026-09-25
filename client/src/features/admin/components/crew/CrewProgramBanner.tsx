@@ -176,7 +176,11 @@ export function CrewProgramBanner({
   */
   const ladderItems = ladderCards.items;
   const kindByNumber = new Map(ladderItems.map((item) => [item.issueNumber, item.kind]));
-  const markOf = (card: CrewQueueTitle) => LADDER_KIND_WORD[kindByNumber.get(card.number) ?? ""] ?? null;
+  /* A live row carries its own note (a hold, "debt" — #1199); the kind word
+     is the fallback and is all the edition's snapshot can say. */
+  const noteByNumber = new Map(ladderItems.map((item) => [item.issueNumber, item.note ?? null]));
+  const markOf = (card: CrewQueueTitle) =>
+    noteByNumber.get(card.number) ?? LADDER_KIND_WORD[kindByNumber.get(card.number) ?? ""] ?? null;
   const cardsOn = (rungKey: string | null): CrewQueueTitle[] =>
     ladderItems
       .filter((item) => item.rung === rungKey)

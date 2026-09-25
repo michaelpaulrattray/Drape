@@ -298,6 +298,8 @@ export type CrewLadderCardsSource = {
     readonly title: string;
     readonly kind: string;
     readonly rung: string | null;
+    /** The live desk's quiet word for the row (a hold, "debt"); the edition's list has none. */
+    readonly note?: string | null;
   }[];
 };
 

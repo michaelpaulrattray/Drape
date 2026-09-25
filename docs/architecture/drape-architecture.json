@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "74d0e1518bb8bba0"
+    "sourceFingerprint": "d23a5eafe44f096f"
   },
   "domains": [
     {
@@ -27566,6 +27566,11 @@
     },
     {
       "from": "module:server/crew/liveDesk.ts",
+      "to": "module:server/db/crewWorkSwitches.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
       "to": "module:shared/crewNextUpHold.ts",
       "kind": "imports"
     },
@@ -27577,6 +27582,26 @@
     {
       "from": "module:server/crew/liveDesk.ts",
       "to": "module:shared/crewPipelineGroups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/crewQueueExclusions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/crewQueuePossiblyDone.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/crewQueueTitles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/crewWorkSwitches.ts",
       "kind": "imports"
     },
     {
