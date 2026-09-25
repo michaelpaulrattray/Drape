@@ -21,7 +21,7 @@ import {
   pipelineGroupFor,
   rungFromLabels,
 } from "../../shared/crewPipelineGroups";
-import { CREW_HOLD_WORD, heldStateFromLabels, type CrewHeldState } from "../../shared/crewNextUpHold";
+import { CREW_HOLD_LABELS, CREW_HOLD_WORD, heldStateFromLabels, type CrewHeldState } from "../../shared/crewNextUpHold";
 import { rankFromLabels, sortOrderedBand } from "../../shared/crewOrderedBand";
 import { CREW_PIPELINE_GROUPS } from "../../shared/crewPipelineGroups";
 import { exclusionFor, type CrewQueueExclusions } from "../../shared/crewQueueExclusions";
@@ -106,6 +106,19 @@ export type LiveDesk = {
    * subtracts these before it draws what needs him (#1193).
    */
   readonly closedCards: readonly number[];
+  /**
+   * Open cards still carrying the hold label — the ones genuinely waiting on
+   * somebody. His question, 2026-09-25 (terminal), verbatim: *"do i need to
+   * reply to these?"* — two items still asked him for a word he had already
+   * given in the terminal an hour earlier. A needs-you card names a card he
+   * must answer; the moment the relay records his answer it lifts the hold,
+   * and the card is open but no longer held. `closedCards` could not see
+   * that (the card is not closed — its next slice is being built), so the
+   * page subtracts a needs-you card whose issue is open and NOT here. Derived
+   * from the same label the hold vocabulary reads (`CREW_HOLD_LABELS.blocked`),
+   * never a second spelling of "blocked".
+   */
+  readonly heldCards: readonly number[];
   /**
    * Ladder cards CLOSED inside the window, with the rung their label named —
    * so a rung can say "2 finished" beside "5 waiting" and show them struck
@@ -338,6 +351,10 @@ export function deriveLiveDesk(reading: LiveQueueReading, rungKeys: readonly str
     pullRequests: livePullRequests(reading),
     recent: liveRecent(reading),
     work: liveWorkCounts(reading),
+    heldCards: openIssues(reading)
+      .filter((item) => item.labels.includes(CREW_HOLD_LABELS.blocked))
+      .map((item) => item.number)
+      .sort((a, b) => a - b),
     closedCards: reading.recent
       .filter((item) => item.kind === "issue" && item.status !== "open")
       .map((item) => item.number)

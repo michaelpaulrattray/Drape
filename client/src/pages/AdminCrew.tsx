@@ -121,7 +121,7 @@ import { CrewEyeGallery } from "@/features/admin/components/crew/CrewEyeGallery"
 import { CrewNeedsYou } from "@/features/admin/components/crew/CrewNeedsYou";
 import { CrewPipeline } from "@/features/admin/components/crew/CrewPipeline";
 import { CrewSinceYouLooked } from "@/features/admin/components/crew/CrewSinceYouLooked";
-import { ladderCardsFor, needsYouFor, nextUpFor, problemsFor, queueReadOf } from "@/features/admin/components/crew/crewTypes";
+import { eyeItemsFor, ladderCardsFor, needsYouFor, nextUpFor, problemsFor, queueReadOf } from "@/features/admin/components/crew/crewTypes";
 import { useLastSeen } from "@/features/admin/components/crew/useLastSeen";
 import { CrewProblems } from "@/features/admin/components/crew/CrewProblems";
 import { CrewBackgroundWork } from "@/features/admin/components/crew/CrewBackgroundWork";
@@ -385,7 +385,9 @@ export default function AdminCrew() {
           const needsYou = needsYouFor(live, data.briefing.needsYou);
           const problems = problemsFor(live, data.briefing.problems);
           const nextUp = nextUpFor(live, data.briefing);
-          const eyes = data.briefing.eyeItems.length;
+          /* And a card GitHub has closed stops asking for his eye (his question, 2026-09-25). */
+          const eyeItems = eyeItemsFor(live, data.briefing.eyeItems);
+          const eyes = eyeItems.length;
           const landed = live.available ? landedSince(live.desk.recent, lastSeenAt) : 0;
           const inFlight = live.available ? live.desk.pullRequests.length : 0;
           return (
@@ -435,7 +437,7 @@ export default function AdminCrew() {
               onSend={send}
             />
             <CrewEyeGallery
-              items={data.briefing.eyeItems}
+              items={eyeItems}
               replies={data.replies}
               acknowledgedReplyIds={data.briefing.acknowledgedReplyIds}
               sending={replyMutation.isPending}
