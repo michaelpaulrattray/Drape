@@ -1,7 +1,7 @@
 {
-  "edition": 528,
-  "updatedAt": "2026-09-25T10:17:16.303Z",
-  "shift": "Foreman — #1224: your card labels get a reader, and six of them are wrong",
+  "edition": 529,
+  "updatedAt": "2026-09-25T13:26:21Z",
+  "shift": "Foreman — #1241: one number under each face, and the column is gone",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -160,6 +160,14 @@
         {
           "title": "A view that went wrong now has a way back, and it is LIVE (#1208, #1220). A view that didn't arrive gets Try again · 50 CR — you were refunded when it failed, so asking again costs the same as any view, and the 50 comes back if it fails again. A view we couldn't check now says so and gets Try again · free — that one was charged and you kept it. Views that arrived and passed have no button at all. Your rule, in your words: you pay 50 for each view you keep. Reviewed by hand before it merged, because it moves money.",
           "state": "done"
+        },
+        {
+          "state": "done",
+          "title": "Every face on a sheet carried its number TWICE — \"01 … 01\", bottom-left and bottom-right — and now it carries it once (#1241, your brief). The left slot held a one-word description of the candidate, and since the new casting road went live for everyone that slot has been empty on every roll by design, so all anyone ever saw was the number again. The description is gone from the studio end to end and the column that held it is dropped on both databases — your standing approval, for that one act. On production it had not been written since 2 August: seven values across 411 rows. Two things inside the sweep were RENAMED rather than deleted, because deleting either blind would have cost you something real — the caption under a picture in a cast's room carries HER NAME and your sentence for a sibling whose sheet has expired, and the follow field has carried the face's NUMBER since your own \"following 08\" ruling."
+        },
+        {
+          "state": "done",
+          "title": "One thing that job left behind, on purpose: the sheet's own sentence still ends \"and differ by disposition\" on the old casting road (#1251). It cannot reach you — your #230 ruling already deleted that line on the road every account is on — and it is still true where it does render. Changing it is a dozen test arms and a second rule of yours, so it is carded with three options and a recommendation rather than folded into a cleanup under its name."
         }
       ]
     },
@@ -243,7 +251,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-25T10:17:18.672Z",
+      "readAt": "2026-09-25T13:26:17.706Z",
       "items": [
         {
           "issueNumber": 179,
@@ -274,6 +282,12 @@
           "title": "Should the sheet repeat your own sentence back as the casting category? — the decision half of #1122",
           "kind": "rung",
           "rung": "N2"
+        },
+        {
+          "issueNumber": 1242,
+          "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, badged Drafted for you, free to edit (founder-ordered 2026-09-25)",
+          "kind": "rung",
+          "rung": "N2b"
         },
         {
           "issueNumber": 14,
@@ -8486,23 +8500,7 @@
     218
   ],
   "nextUp": {
-    "readAt": "2026-09-25T10:17:18.671Z",
-    "items": [
-      {
-        "issueNumber": 1224,
-        "title": "Jev reads every card's category — a check with controls first, then a writer for unlabelled cards only; never a rung (his ruling 2026-09-25: wherever Jev genuinely improves the workflow)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1241,
-        "title": "Retire the persona word end to end — every tile reads 01 … 01 because the author road nulls it by design; one index label per tile, the column dropped on his standing word (founder-ordered 2026-09-25)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 1242,
-        "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, badged Drafted for you, free to edit (founder-ordered 2026-09-25)",
-        "urgent": false
-      }
-    ]
+    "readAt": "2026-09-25T13:26:17.705Z",
+    "items": []
   }
 }
