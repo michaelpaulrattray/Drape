@@ -295,3 +295,23 @@ describe("a card with two work labels is drawn and counted ONCE (his question, 2
     expect(byLabel("casting-upkeep")).toContain(1221);
   });
 });
+
+describe("the cards still held on him — his question 2026-09-25, \"do i need to reply to these?\"", () => {
+  it("names the OPEN cards carrying the hold label, never a closed one and never a PR", () => {
+    const desk = deriveLiveDesk(reading([
+      item({ number: 1208, labels: ["founder-ordered", "blocked", "rung:N2"] }),
+      item({ number: 1220, labels: ["bug", "urgent"] }),
+      item({ number: 1210, labels: ["blocked"] }),
+      item({ number: 1211, kind: "pr", labels: ["blocked"] }),
+    ], [
+      item({ number: 1207, status: "closed", closedAt: "2026-09-25T04:55:00Z", labels: ["blocked"] }),
+    ]), RUNGS);
+    expect(desk.heldCards).toEqual([1208, 1210]);
+    expect(desk.closedCards).toEqual([1207]);
+  });
+
+  it("CONTROL — the label it reads is the hold vocabulary's, not a second spelling", () => {
+    const desk = deriveLiveDesk(reading([item({ number: 5, labels: ["BLOCKED", "awaiting-fable"] })]), RUNGS);
+    expect(desk.heldCards).toEqual([]);
+  });
+});

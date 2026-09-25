@@ -15,6 +15,8 @@ import { describe, expect, it } from "vitest";
 import { CREW_CARD_STATES, crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import {
   stepsWithLiveState,
+  eyeItemsFor,
+  needsYouFor,
   milestoneCountLine,
   milestoneProgress,
   heldCount,
@@ -348,5 +350,34 @@ describe("#493 — every open card is drawn in exactly one section", () => {
     expect(onePlaceViolations([nextUpNumbers, ladderNumbers])).toEqual([]);
     /* The floor: both populations are real, or this arm is reading air. */
     expect(nextUpNumbers.length + ladderNumbers.length).toBeGreaterThan(0);
+  });
+});
+
+describe("what still needs him — answered leaves the desk, not only closed (his question, 2026-09-25)", () => {
+  const liveWith = (closedCards: number[], heldCards: number[]) =>
+    ({ available: true, stale: false, why: null, desk: { closedCards, heldCards } }) as unknown as Parameters<typeof needsYouFor>[0];
+  const card = (issueNumber: number | null) => ({ issueNumber, id: `c${issueNumber}` }) as unknown as Parameters<typeof needsYouFor>[1][number];
+
+  it("keeps a card that is open AND held; drops one that is open and no longer held (answered); drops a closed one", () => {
+    const rows = [card(1208), card(1220), card(1207), card(null)];
+    const kept = needsYouFor(liveWith([1207], [1208]), rows).map((c) => c.issueNumber);
+    expect(kept).toEqual([1208, null]);
+  });
+
+  it("with no live read, everything the edition filed stays — the page cannot vouch either way", () => {
+    const rows = [card(1208), card(1220)];
+    const off = { available: false, why: "x" } as unknown as Parameters<typeof needsYouFor>[0];
+    expect(needsYouFor(off, rows).map((c) => c.issueNumber)).toEqual([1208, 1220]);
+  });
+
+  it("an eye item leaves when its card is closed, and stays while it is open", () => {
+    const items = [
+      { id: "sifr", issueNumber: 1207 },
+      { id: "board", issueNumber: 1210 },
+      { id: "loose", issueNumber: null },
+    ] as unknown as Parameters<typeof eyeItemsFor>[1];
+    expect(eyeItemsFor(liveWith([1207], []), items).map((i) => i.id)).toEqual(["board", "loose"]);
+    const off = { available: false, why: "x" } as unknown as Parameters<typeof eyeItemsFor>[0];
+    expect(eyeItemsFor(off, items).map((i) => i.id)).toEqual(["sifr", "board", "loose"]);
   });
 });
