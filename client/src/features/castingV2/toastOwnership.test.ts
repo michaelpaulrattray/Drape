@@ -53,7 +53,7 @@ const ALLOWED: Array<{ match: string; because: string }> = [
   {
     match: "It didn't arrive again.",
     because:
-      "A Try again (#1208 slice 2) that failed a second time. NOTHING on the surface changes — the tile wears the same confession it wore before the press — so without this the press reads as having done nothing at all. It also carries the money, which the room never shows: the 50 came back, or (the truthful third branch) the refund could not be recorded, which is never reported as 'you weren't charged'. The SUCCESS case has no toast on purpose: the picture arriving is the notice.",
+      "A Try again (issue 1208, slice 2) that failed a second time. NOTHING on the surface changes — the tile wears the same confession it wore before the press — so without this the press reads as having done nothing at all. It also carries the money, which the room never shows: the 50 came back, or (the truthful third branch) the refund could not be recorded, which is never reported as 'you weren't charged'. The SUCCESS case has no toast on purpose: the picture arriving is the notice.",
   },
   {
     match: "readableFailure(error, \"That view couldn't be asked for again.\")",

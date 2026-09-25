@@ -155,6 +155,7 @@ describe("which bucket each casting procedure was handed", () => {
       refine: "generation",
       // A retry is a paid render of one slice (#122 shape 1) — the same bucket as the roll it re-renders.
       retry: "generation",
+      retryView: "generation",
       selectVariant: "castingSheet",
       variants: "castingRead",
       roster: "castingRead",
