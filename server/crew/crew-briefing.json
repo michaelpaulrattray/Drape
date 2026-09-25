@@ -1,7 +1,7 @@
 {
-  "edition": 521,
-  "updatedAt": "2026-09-25T02:32:39.650Z",
-  "shift": "Foreman — #203 step (e): the wardrobe/basics path is fully retired",
+  "edition": 522,
+  "updatedAt": "2026-09-25T03:27:26.135Z",
+  "shift": "Foreman — #1208 slice 1 (failed views keep trying) and #1204 (a limit nobody could reach)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -38,8 +38,8 @@
           "state": "done"
         },
         {
-          "title": "THE SWITCH LIST IS ON YOUR DESK — all twenty settings audited and read at the live rows, resolved into thirteen answers: four on, one retired, eight held. Cards 1 to 13 below",
-          "state": "waiting"
+          "title": "THE SWITCH LIST IS ON YOUR DESK — all twenty settings audited and read at the live rows, resolved into thirteen answers: four on, one retired, eight held. You went down the whole list and answered every one (#1132). Cards 1 to 13 below",
+          "state": "done"
         },
         {
           "title": "Two things the audit found and filed on the way: the safety check for one switch is written onto a row that gets deleted (#1133), and the new engine's cost per picture has never been read (#1134). Neither blocks the four widens",
@@ -140,6 +140,14 @@
         {
           "title": "The wardrobe/basics path is now completely gone (#203) — and this was the last piece of it. Back when a cast was bought you could choose whether she was born in an outfit or in plain black basics. That choice was switched off weeks ago and you unset its setting yourself on Wednesday; what went tonight is the machinery underneath it and the setting itself, so there is nothing left that could turn it back on by accident. Nothing about casting changes for you: every roll already behaved this way. ⚠ What we deliberately KEPT is the part worth knowing — the record of which thirteen old rolls were bought on a path stays exactly as it is, because it is the only way to tell a cast made before the new studio from one made after it, and a cast born in basics still reads correctly when you refine her today.",
           "state": "done"
+        },
+        {
+          "title": "A view you paid for that never turned up now gets asked for again, up to three times, before we give up — and the failed tile stops promising a repair we do not have (#1208, your \"yes\"). On your Sifr cast two of five views came back dead, with the tile saying \"repairs come with revisions\". Revisions do not exist and have not for over a year, so that sentence is gone; what replaces it says only what is true. ⚠ The half that still needs you is the free Try again button — there is one question about it on your desk. What did NOT change, deliberately: when the checker looks at a view and decides it is wrong, it still gets exactly one more go, which is your August ruling and this card did not ask to undo it.",
+          "state": "done"
+        },
+        {
+          "title": "And a limit that had stopped applying to anybody was retired (#1204, your \"yes ill let the crew remove it\"). Briefs used to have two length limits, one for each road a cast could take. When you switched the new road on for everyone on Wednesday, the old road's limit could no longer be reached by any account — but it kept running, kept passing its own tests, and kept being described in the code as a live rule. Nothing you do changes; what goes is a second rule nobody could meet and the tests that made it look healthy.",
+          "state": "done"
         }
       ]
     },
@@ -218,7 +226,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-25T02:32:57.078Z",
+      "readAt": "2026-09-25T03:28:30.804Z",
       "items": [
         {
           "issueNumber": 179,
@@ -3184,6 +3192,33 @@
       "state": "answered",
       "filedAt": "2026-09-25",
       "issueNumber": 1187
+    },
+    {
+      "id": "view-retry-balance-1208",
+      "title": "The free Try again: what if you have already spent the refund?",
+      "productImpact": "You said yes to both halves of this. The first half is built and live: a view that never turned up is now quietly asked for again, up to three times, before we give up.\n\nThe second half is the Try again button on a failed tile. The plan is that it costs you nothing to press, and if the view lands we take the 50 credits back — the same 50 we refunded — so you have paid for five views exactly once and never twice.\n\nThere is one case that plan does not cover, and it needs your word before I build it: what should happen if you have already spent that 50 by the time you press Try again?",
+      "workedExample": "Five views, two fail, 100 credits come back. You spend them on a refine. A week later you open the cast, see the two dead tiles, and press Try again. The view lands — and there is nothing to take the 50 from.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Give you the view anyway, free",
+          "consequence": "Nothing to think about and no surprise. It costs us a view now and then, and only ever on views we already failed to deliver."
+        },
+        {
+          "key": "B",
+          "label": "Tell you you would need 50 credits for it",
+          "consequence": "Fair on paper, but then \"free Try again\" is not quite true, and you are being asked to pay for something you already bought once."
+        },
+        {
+          "key": "C",
+          "label": "Only show Try again when you can cover it",
+          "consequence": "Honest, but the button disappears exactly when you are short, which reads as broken."
+        }
+      ],
+      "recommendation": "A — give the view. You only ever reach this screen because we failed to deliver something you paid for, and handing it over is the answer that never makes you think about it. It can only happen on views we already got wrong, and the automatic retries now take most of those away before a tile ever goes dead.",
+      "state": "open",
+      "filedAt": "2026-09-25T03:27:26.134Z",
+      "issueNumber": 1208
     }
   ],
   "eyeItems": [
@@ -8031,6 +8066,20 @@
       "status": "merged",
       "prNumber": 1209,
       "note": "#203's last slice; the two columns and the thirteen old rolls are deliberately kept."
+    },
+    {
+      "id": "view-retries-1208-slice1",
+      "title": "A failed view is asked for again, and the tile stops promising revisions",
+      "status": "merged",
+      "prNumber": 1211,
+      "note": "#1208 slice 1; the free Try again waits on one question on his desk."
+    },
+    {
+      "id": "brief-bound-1204",
+      "title": "The house road's 2,000-character brief limit retires with the road it belonged to",
+      "status": "merged",
+      "prNumber": 1213,
+      "note": "#1204; no behaviour moves — every account was already on the 4,000 bound."
     }
   ],
   "problems": [
@@ -8977,17 +9026,24 @@
     218
   ],
   "nextUp": {
-    "readAt": "2026-09-25T02:32:57.077Z",
+    "readAt": "2026-09-25T03:28:30.803Z",
     "items": [
       {
         "issueNumber": 1208,
         "title": "A paid view that fails has no way back: keep trying, then a free Try again (his question on the Sifr cast, 2026-09-25)",
-        "urgent": true
+        "urgent": true,
+        "held": {
+          "state": "blocked"
+        }
       },
       {
         "issueNumber": 1210,
         "title": "Upload a concept takes a mood board, and a concept + a mood board: three modes, one note — his order and his prompts, 2026-09-25",
-        "urgent": true
+        "urgent": true,
+        "held": {
+          "state": "blocked",
+          "because": "the design — his word in the terminal, 2026-09-25: *\"we are still developing it\"*. The mockups are being settled with him board by board (five boards, private…"
+        }
       },
       {
         "issueNumber": 1204,
