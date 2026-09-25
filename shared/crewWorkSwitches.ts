@@ -88,6 +88,39 @@ export const CREW_WORK_CATEGORIES = [
 
 export type CrewWorkCategoryKey = (typeof CREW_WORK_CATEGORIES)[number]["key"];
 
+/**
+ * THE ONE CATEGORY A CARD IS HOMED IN — his question, 2026-09-25 (terminal),
+ * verbatim: *"why are there so many double-up cards? for example bugs [#1221]
+ * is also under casting upkeep. its inflating the card count"*.
+ *
+ * Until then the live desk listed a card under EVERY category whose label it
+ * carried, so a card filed `bug` + `casting-upkeep` was drawn twice and
+ * counted twice in the "on offer" numbers (measured: 2 of 53 open cards, one
+ * of them the relay's own). The not-on-any-road total was never inflated —
+ * it already homes a card once, by its pipeline group — so this makes the
+ * categories agree with it.
+ *
+ * The home is the FIRST category in `CREW_WORK_CATEGORIES` order whose label
+ * the card carries, so the precedence is the list's own order and not a
+ * second list: a bug is a bug wherever else it lives. `null` for a card with
+ * no work label at all — those are the pipeline groups' business, never a
+ * category's.
+ *
+ * ⚠ **The filing rule this makes cheap: ONE work label per card.** The page
+ * no longer needs it to draw correctly, but a second label still says
+ * something false to a shift reading labels directly, and the stored
+ * fallback counts (`scripts/lib/crewQueueCount.mts`, a GitHub search per
+ * label) cannot express "first match" and would count the card twice while
+ * the live read is unavailable. Zero double-labelled cards is the state to
+ * keep, and `server/crewWorkSwitches.test.ts` drives this deriver both ways.
+ */
+export function homeWorkCategoryFor(labels: readonly string[]): CrewWorkCategoryKey | null {
+  for (const category of CREW_WORK_CATEGORIES) {
+    if (labels.includes(category.queueLabel)) return category.key;
+  }
+  return null;
+}
+
 /** The master switch's key. Off here means nothing runs, whatever the rest say. */
 export const CREW_WORK_MASTER_KEY = "master";
 

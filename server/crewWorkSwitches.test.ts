@@ -21,6 +21,7 @@ import {
   CREW_WORK_SWITCH_KEYS,
   anyBackgroundWorkAllowed,
   backgroundWorkAllowed,
+  homeWorkCategoryFor,
 } from "../shared/crewWorkSwitches";
 
 /** Everything on — the positive control every negative arm is measured against. */
@@ -194,5 +195,28 @@ describe("Small fixes and Casting upkeep are separable, and a casting card reach
     expect(backgroundWorkAllowed(beforeToday, "castingUpkeep")).toBe(false);
     /* POSITIVE CONTROL — that store does turn something on. */
     expect(backgroundWorkAllowed(beforeToday, "bugs")).toBe(true);
+  });
+});
+
+describe("a card is homed in exactly one category (his question, 2026-09-25)", () => {
+  it("a single work label homes the card in that category — every category, positively", () => {
+    for (const category of CREW_WORK_CATEGORIES) {
+      expect(homeWorkCategoryFor(["rung:N2", category.queueLabel, "urgent"])).toBe(category.key);
+    }
+  });
+
+  it("two work labels home the card ONCE, in the first category of the list — a bug is a bug wherever else it lives", () => {
+    /* The two real cases the page had on the day: #1221 bug + casting-upkeep, #1187 bug + small-fix. */
+    expect(homeWorkCategoryFor(["casting-upkeep", "bug"])).toBe("bugs");
+    expect(homeWorkCategoryFor(["small-fix", "bug"])).toBe("bugs");
+    /* And the precedence is the LIST's order, not a second ordering kept here. */
+    const [first, second] = CREW_WORK_CATEGORIES;
+    expect(homeWorkCategoryFor([second.queueLabel, first.queueLabel])).toBe(first.key);
+    expect(homeWorkCategoryFor([second.queueLabel])).toBe(second.key);
+  });
+
+  it("no work label homes the card nowhere — the pipeline groups' business, never a category's", () => {
+    expect(homeWorkCategoryFor([])).toBeNull();
+    expect(homeWorkCategoryFor(["rung:N3", "roadmap", "debt", "founder-ordered"])).toBeNull();
   });
 });
