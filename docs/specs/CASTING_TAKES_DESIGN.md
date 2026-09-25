@@ -189,6 +189,23 @@ nothing about them presumes cinema.
    alone; law 8's ontology). It is what makes a cast directable rather than
    merely consistent-looking, and the film engine's Acting skill consumes it
    directly.
+   **Effortless capture ruled 2026-09-25 (founder challenge: "no way most
+   people will be able to come up with a personality description like
+   this"): the user never writes it — the engine writes it, the user
+   recognizes it.** Four doors, all producing the SAME stored artifact
+   (the two-line camera-visible baseline+exception, beside the Voice
+   line): LEVEL 0, derived at Sign from the roll brief + the chosen look
+   and shown as a read-back ("READ FROM YOUR BRIEF - correct anything
+   wrong") — most users keep it and never knew the field existed;
+   LEVEL 1, personality CARDS picked by recognition (The quiet
+   professional / Sunny and open / Nervous smiler / Old-money arrogance
+   ...), each showing its two-line version; LEVEL 2, say-it-your-way — one
+   plain sentence translated to renderable form and read back (the
+   note-filing pattern); or TWO CHIP QUESTIONS ("how does she carry
+   herself?" + "what breaks it?") assembling baseline+exception from two
+   taps. The craft rule (visible traits only, baseline plus exception,
+   two lines max) lives in the engine's translation, never in the user's
+   homework — the disappearing-technology law applied to acting.
 3. **Vocabulary — RULED: keep it as it is.** The earlier two-noun
    recommendation is REVERSED. Words are scoped per surface by design:
    the casting page speaks **candidates** (rolling) and **versions**
