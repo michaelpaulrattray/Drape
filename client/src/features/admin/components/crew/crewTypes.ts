@@ -316,7 +316,31 @@ export function ladderCardsFor(live: CrewLiveView, briefing: CrewBriefingView): 
 export function needsYouFor(live: CrewLiveView, cards: readonly CrewNeedsYouCard[]): CrewNeedsYouCard[] {
   if (!live.available) return [...cards];
   const closed = new Set(live.desk.closedCards);
-  return cards.filter((card) => card.issueNumber === null || !closed.has(card.issueNumber));
+  const held = new Set(live.desk.heldCards);
+  /*
+    ANSWERED IS NOT ONLY CLOSED — his question, 2026-09-25 (terminal),
+    verbatim: *"do i need to reply to these?"*, of a question he had answered
+    in the terminal an hour before. The relay records an answer on the card
+    and lifts its hold; the card stays open while the crew builds on it. So a
+    needs-you card whose issue is open and no longer held has been answered,
+    and stops asking him. A card the edition filed with no issue number is
+    kept — nothing live can vouch for it either way.
+  */
+  return cards.filter((card) =>
+    card.issueNumber === null || (!closed.has(card.issueNumber) && held.has(card.issueNumber)));
+}
+
+/**
+ * The eye items still worth his eye — his question, 2026-09-25 (terminal),
+ * verbatim: *"do i need to reply to these?"*: the Sifr strips stayed under FOR
+ * YOUR EYES after their card had been closed with his verdict recorded on it.
+ * The page passed the edition's items straight through; a closed card's frames
+ * were never subtracted the way its needs-you card was (#1193). Same rule now.
+ */
+export function eyeItemsFor(live: CrewLiveView, items: readonly CrewEyeItem[]): CrewEyeItem[] {
+  if (!live.available) return [...items];
+  const closed = new Set(live.desk.closedCards);
+  return items.filter((item) => item.issueNumber === null || !closed.has(item.issueNumber));
 }
 
 /**
