@@ -117,7 +117,7 @@ describe("brief 08 — the population is real", () => {
     expect(names).toContain("CrewWorkingNow.tsx");
     expect(names).toContain("CrewBackgroundWork.tsx");
     expect(names).toContain("CrewNextUp.tsx");
-    expect(names).toContain("CrewGeneral.tsx");
+    expect(names).toContain("CrewHappeningNow.tsx");
     expect(names).toContain("AdminCrew.tsx");
     /* ⚠ THE FLOOR. Without it an empty or misdirected read passes every
        absence arm below by having nothing to look at. */
@@ -194,28 +194,38 @@ describe("§1 — a paragraph's order does not move", () => {
      still"*. So THE PROGRAM stays first, what needs HIM comes next, then what
      is happening, what just happened, and what is next. The #437 order this
      replaces put NEXT UP and BACKGROUND WORK above NEEDS YOU. */
+  /* ⚠ AND AGAIN THE SAME DAY (#1201): WORKING NOW, IN FLIGHT and NEXT UP are
+     three blocks of ONE card, in that order, mounted by `CrewHappeningNow`;
+     SINCE YOU LAST LOOKED follows the card; the GENERAL box is gone on his
+     word — *"remove the general card from the crew tab i literally never use
+     it"*. The inner three are read from the card's own file, so the arm
+     still sees them in order. */
   const HIS_ORDER: [string, string][] = [
     ["the program", "<CrewProgramBanner"],
     ["needs you", "<CrewNeedsYou"],
     ["for your eyes", "<CrewEyeGallery"],
     ["working now", "<CrewWorkingNow"],
     ["in flight", "<CrewPipeline"],
-    ["since you last looked", "<CrewSinceYouLooked"],
     ["next up", "<CrewNextUp"],
+    ["since you last looked", "<CrewSinceYouLooked"],
     ["background work", "<CrewBackgroundWork"],
     /* ⚠ `["already dealt with", "<CrewRecentHistory"]` was here and is GONE by
        his own word (#438). The section is not re-ordered — it is deleted, and
        §7 below asserts its absence rather than this list asserting its place. */
     ["problems", "<CrewProblems"],
-    ["general", "<CrewGeneral"],
   ];
+
+  /* The page mounts the shared card; the card mounts the three. Read as one
+     text so the order arm sees the whole reading order. */
+  const HAPPENING_TEXT = read(path.join(HERE, "CrewHappeningNow.tsx"));
+  const MOUNTED_TEXT = PAGE_TEXT.replace("<CrewHappeningNow", code(HAPPENING_TEXT) + "\n<CrewHappeningNow");
 
   /* The card is named in the docblock above rather than in this title: the
      foundation token guard reads `#437` in a STRING as a hex literal (every
      issue number from #100 up is valid hex) and strips comments, which is what
      its own failure message tells you to do. */
   it("the page is mounted in the order he ruled", () => {
-    const body = code(PAGE_TEXT);
+    const body = code(MOUNTED_TEXT);
     const at = HIS_ORDER.map(([, tag]) => {
       const index = body.indexOf(tag);
       /* A section that stops being mounted must REDDEN, never quietly sort to
@@ -266,7 +276,7 @@ describe("§1 — a paragraph's order does not move", () => {
     const head = PAGE_TEXT.slice(0, PAGE_TEXT.indexOf("*/"));
     const from = head.indexOf("His reading order:");
     expect(from, "the reading-order sentence is gone from the docblock").toBeGreaterThan(-1);
-    const stop = head.indexOf("**", head.indexOf("→ general"));
+    const stop = head.indexOf("**", head.indexOf("→ problems"));
     const sentence = head.slice(from, stop > from ? stop : undefined).toLowerCase();
     expect(sentence, "the reading-order sentence has lost its arrows").toContain("→");
 
@@ -279,7 +289,7 @@ describe("§1 — a paragraph's order does not move", () => {
       .toEqual([...prose].sort((a, b) => a - b));
 
     /* And the two statements must be the SAME order, not merely each sorted. */
-    const body = code(PAGE_TEXT);
+    const body = code(MOUNTED_TEXT);
     const mounted = HIS_ORDER.map(([, tag]) => body.indexOf(tag));
     expect(mounted).toEqual([...mounted].sort((a, b) => a - b));
   });
@@ -499,16 +509,23 @@ describe("§7 — history is not a section on this page at all", () => {
     this suite green. The gate catches it either way; the suite should say WHY
     rather than leaving the reason to a type error in another tool.
   */
-  it("no surface mounts the deleted component", () => {
+  /* #438 deleted the history section; #1201 deleted the General box on his
+     word (*"remove the general card from the crew tab i literally never use
+     it"*). Both stay deleted the same way. */
+  const DELETED_COMPONENTS = ["CrewRecentHistory", "CrewGeneral"];
+
+  it("no surface mounts a deleted component", () => {
     for (const file of surfaces()) {
-      expect(code(file.text), `${file.name} mounts it again`).not.toContain(
-        "<CrewRecentHistory",
-      );
+      for (const name of DELETED_COMPONENTS) {
+        expect(code(file.text), `${file.name} mounts ${name} again`).not.toContain(`<${name}`);
+      }
     }
   });
 
-  it("the component file itself is gone from the directory", () => {
-    expect(section().map((f) => f.name)).not.toContain("CrewRecentHistory.tsx");
+  it("the deleted component files are gone from the directory", () => {
+    for (const name of DELETED_COMPONENTS) {
+      expect(section().map((f) => f.name)).not.toContain(`${name}.tsx`);
+    }
   });
 
   /*
@@ -668,13 +685,25 @@ describe("§3 — every section head is the house head", () => {
     discharged, and a fourteenth head built here would be the third in the
     tree.
   */
-  it("every section that draws a head imports TableHead", () => {
-    const heads = surfaces().filter((f) => code(f.text).includes("<TableHead"));
+  it("every section that draws a head imports the house head — TableHead, or SectionHead which wraps it (card 1201)", () => {
+    const heads = surfaces().filter((f) => /<(TableHead|SectionHead)\b/.test(code(f.text)));
     expect(heads.length).toBeGreaterThanOrEqual(9);
     for (const file of heads) {
-      expect(code(file.text), `${file.name} uses TableHead without importing it`)
-        .toMatch(/import\s*\{[^}]*TableHead[^}]*\}\s*from\s*"@\/foundation"/);
+      const body = code(file.text);
+      if (body.includes("<TableHead")) {
+        expect(body, `${file.name} uses TableHead without importing it`)
+          .toMatch(/import\s*\{[^}]*TableHead[^}]*\}\s*from\s*"@\/foundation"/);
+      }
+      if (body.includes("<SectionHead")) {
+        expect(body, `${file.name} uses SectionHead without importing it`)
+          .toMatch(/import\s*\{[^}]*SectionHead[^}]*\}\s*from\s*"\.\/CrewShell"/);
+      }
     }
+    /* SectionHead is TableHead in the card frame and the ladder-head row in
+       the block frame — a wrapper, never a third head. */
+    const shell = code(read(path.join(HERE, "CrewShell.tsx")));
+    expect(shell).toMatch(/import\s*\{[^}]*TableHead[^}]*\}\s*from\s*"@\/foundation"/);
+    expect(shell).toContain("<TableHead eyebrow={eyebrow}>");
   });
 
   /* POSITIVE CONTROL: the hand-rolled eyebrow the section used to carry. */
@@ -1260,153 +1289,52 @@ describe("card 414 — the loading state is skeletons at height, not a sentence"
   read cannot prove a schema refuses anything; `server/crew/crewBriefing.test.ts`
   drives the real parser in both directions. This file's job is the drawing.
 */
-describe("card 492 — the readings are a state strip in the house grammar", () => {
+describe("card 492 → card 1201 — the readings block is GONE, on his word", () => {
+  /*
+    #492 reshaped the readings into a state strip; on 2026-09-25 he said of
+    that strip *"i barely read the overview circled in red it would be better
+    if it would quickly scroll me to the section maybe? like a menu"*, and
+    #1201 replaced it with the section menu (`CrewNav`). The arms that pinned
+    the strip's grammar are retired with it; these pin its absence in the
+    markup AND the sheet, so it cannot come back under its old name or a new
+    one, and the menu that took its place is real.
+  */
   const banner = read(path.join(HERE, "CrewProgramBanner.tsx"));
   const bannerCode = code(banner);
 
-  it("the pill treatment is gone from the readings, in the markup and the sheet", () => {
-    for (const gone of ["dp-crew__chips", "dp-crew__chipcell", "dp-crew__chipsrc"]) {
+  it("the banner reads no chip and draws no state cell, dot or source", () => {
+    expect(bannerCode).not.toMatch(/program\.chips/);
+    expect(bannerCode).not.toMatch(/STATE_DOT|STATE_SPOKEN/);
+    for (const gone of ["dp-crew__state", "dp-crew__statecell", "dp-crew__statelabel", "dp-crew__statedot", "dp-crew__statesrc", "dp-crew__chips", "dp-crew__chipcell", "dp-crew__chipsrc"]) {
       expect(bannerCode, `${gone} is still drawn`).not.toContain(gone);
-      expect(CSS, `${gone} is still styled`).not.toContain(`.${gone}`);
+      expect(CSS, `${gone} is still styled`).not.toMatch(new RegExp(`\\.${gone}(\\s|\\{|--)`));
     }
   });
 
-  it("POSITIVE CONTROL: that arm sees the old shape when it is there", () => {
-    const planted = code(`
-      <div className="dp-crew__chips dp-crew__gap">
-        <div className="dp-crew__chipcell"><span className="dp-crew__chip" /></div>
-      </div>
-    `);
-    expect(planted).toContain("dp-crew__chipcell");
-    expect(".dp-crew__chipsrc { color: var(--faint); }").toContain(".dp-crew__chipsrc");
+  it("POSITIVE CONTROL: the absence matcher sees the old shape when it is there", () => {
+    const planted = code(`<div className="dp-crew__state"><span className="dp-crew__statedot" />{program.chips.map((chip) => chip)}</div>`);
+    expect(planted).toContain("dp-crew__statecell".slice(0, 13));
+    expect(planted).toMatch(/program\.chips/);
+    expect(".dp-crew__state { display: grid; }").toMatch(/\.dp-crew__state(\s|\{|--)/);
   });
 
-  it("the readings draw a cell, a tone dot and the source — and the source survived", () => {
-    expect(bannerCode).toMatch(/program\.chips\.map/);
-    expect(bannerCode).toMatch(/dp-crew__statecell/);
-    expect(bannerCode).toMatch(/dp-crew__statelabel/);
-    /*
-      ⚠ **THE DOT IS ASSERTED AT ITS RENDER CALL, NOT BY ITS NAME, AND THE
-      SABOTAGE DRIVER IS WHY.** A bare `/dp-crew__statedot/` over the file was
-      GREEN with the dot deleted from the markup: `STATE_DOT`'s own values are
-      `"dp-crew__statedot--good"` and `"dp-crew__statedot--warn"`, so the
-      substring survives its only consumer. That is the same class this
-      team caught three times in one shift on the runner guards — an unscoped
-      read of a whole file standing in for a claim about one branch of it.
-    */
-    expect(bannerCode).toMatch(/cn\("dp-crew__statedot", STATE_DOT\[chip\.tone\]/);
-    /* His card's line: the source is the reading and it stays on the page,
-       "never hidden in a tooltip he has to discover". */
-    expect(bannerCode).toMatch(/chip\.source && <p className="dp-crew__statesrc">/);
-  });
-
-  it("the three tones survived the pill, and no fourth was invented", () => {
-    const keysOf = (name: string) => {
-      const at = bannerCode.indexOf(`const ${name}: Record<string`);
-      expect(at, `${name} not found in the banner`).toBeGreaterThan(-1);
-      const body = bannerCode.slice(at, bannerCode.indexOf("};", at));
-      return [...body.matchAll(/^\s*"?([a-z]+)"?:/gm)].map((m) => m[1]).sort();
-    };
-    expect(keysOf("STATE_DOT")).toEqual(["good", "neutral", "warn"]);
-    expect(keysOf("STATE_SPOKEN")).toEqual(keysOf("STATE_DOT"));
-  });
-
-  it("warn says its word, because a dot is the one encoding a reader cannot hear", () => {
-    expect(bannerCode).toMatch(/STATE_SPOKEN\[chip\.tone\]/);
-    expect(bannerCode).toMatch(/className="sr-only"/);
-    /* Only warn. Announcing "good" on every reading is noise, and the resting
-       state of this block is that nothing is wrong. */
-    const at = bannerCode.indexOf("const STATE_SPOKEN");
-    const body = bannerCode.slice(at, bannerCode.indexOf("};", at));
-    expect(body).toMatch(/warn:\s*"Needs attention: "/);
-    expect(body).toMatch(/good:\s*null/);
-    expect(body).toMatch(/neutral:\s*null/);
-  });
-
-  it("the cells are an equal grid, which is what makes the row align", () => {
-    const rule = CSS.match(/\.dp-crew__state\s*\{[^}]*\}/)?.[0] ?? "";
-    expect(rule, ".dp-crew__state has no rule at all").not.toBe("");
-    expect(rule).toMatch(/display:\s*grid/);
-    /*
-      ⚠ **`minmax(0, 1fr)` IS THE WIDTH CAP `.dp-crew__chipcell` USED TO BE**,
-      and the reason that row could leave the cap list above. A bare `1fr`
-      track floors at the content's min-content width, so one long unbroken
-      reading would push its column wider than its neighbours and the equal
-      cells would stop being equal — the ragged edge his frame shows, rebuilt
-      in a grid.
-    */
-    expect(rule).toMatch(/grid-template-columns:\s*repeat\(var\(--dp-statecols/);
-    expect(rule).toContain("minmax(0, 1fr)");
-    /* The column count comes from the data, capped so six readings are two
-       rows of three rather than six slivers. */
-    expect(bannerCode).toMatch(/"--dp-statecols":\s*Math\.min\(program\.chips\.length,\s*3\)/);
-  });
-
-  it("no border, no radius — the pill is not redrawn under a new name", () => {
-    for (const selector of [".dp-crew__state", ".dp-crew__statecell", ".dp-crew__statelabel"]) {
-      const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const rule = CSS.match(new RegExp(`${escaped}\\s*\\{[^}]*\\}`))?.[0] ?? "";
-      expect(rule, `${selector} is missing`).not.toBe("");
-      expect(rule, `${selector} drew a border`).not.toMatch(/border(-(width|style|color))?:/);
+  it("the section menu took its place: sticky, one line, a count only when it is not zero", () => {
+    const nav = code(read(path.join(HERE, "CrewNav.tsx")));
+    expect(nav).toContain('data-testid="crew-nav"');
+    expect(nav).toMatch(/item\.count !== undefined && item\.count > 0 &&/);
+    const rule = CSS.match(/\.dp-crew__nav\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(rule, ".dp-crew__nav has no rule").not.toBe("");
+    expect(rule).toMatch(/position:\s*sticky/);
+    expect(rule).toMatch(/background:\s*var\(--surface\)/);
+    /* And the page mounts it FIRST, above the program, with every section it names present. */
+    const page = code(PAGE_TEXT);
+    expect(page.indexOf("<CrewNav")).toBeLessThan(page.indexOf("<CrewProgramBanner"));
+    for (const id of ["crew-section-program", "crew-section-needs-you", "crew-section-happening", "crew-section-since", "crew-section-next-up", "crew-section-background", "crew-section-problems"]) {
+      expect(page, `the page has no anchor ${id}`).toContain(`id="${id}"`);
+      expect(page, `the menu does not name ${id}`).toContain(`{ id: "${id}"`);
     }
-    /* The dot is the ONE radius in this block, and it is a circle. */
-    const dot = CSS.match(/\.dp-crew__statedot\s*\{[^}]*\}/)?.[0] ?? "";
-    expect(dot).toMatch(/border-radius/);
-  });
-
-  it("POSITIVE CONTROL: the no-border arm rejects a pill wearing the new name", () => {
-    const planted = ".dp-crew__statecell { border: 1px solid var(--borderSoft); }";
-    const rule = planted.match(/\.dp-crew__statecell\s*\{[^}]*\}/)?.[0] ?? "";
-    expect(rule).toMatch(/border(-(width|style|color))?:/);
-  });
-
-  it("the hierarchy is the right way up — the reading outweighs its label", () => {
-    /*
-      His fault 3, and the only one a source read can actually measure: the
-      10px `--faint` sentence was carrying the content while an 11px bordered
-      pill carried the heading. The label is the page's own 8.5px eyebrow now
-      and the source is 12.5px `--secondary`.
-    */
-    const label = CSS.match(/\.dp-crew__statelabel\s*\{[^}]*\}/)?.[0] ?? "";
-    const src = CSS.match(/\.dp-crew__statesrc\s*\{[^}]*\}/)?.[0] ?? "";
-    const sizeOf = (rule: string) => Number(rule.match(/font:[^;]*?([\d.]+)px/)?.[1] ?? "0");
-    expect(sizeOf(label), "the label has no font size").toBeGreaterThan(0);
-    expect(sizeOf(src), "the source has no font size").toBeGreaterThan(0);
-    expect(sizeOf(src)).toBeGreaterThan(sizeOf(label));
-    expect(src).toContain("var(--secondary)");
-    expect(src, "the source is still the faintest thing on the block").not.toContain("var(--faint)");
-  });
-
-  it("the label reuses the page's eyebrow rather than inventing a second one", () => {
-    /* Working law 4 in a stylesheet. `.dp-crew__subhead` is the grammar for
-       *The ladder* and *The rest of the pipeline*; a near-copy under a new
-       name is two sources of truth for one face. */
-    const subhead = CSS.match(/\.dp-crew__subhead\s*\{[^}]*\}/)?.[0] ?? "";
-    const label = CSS.match(/\.dp-crew__statelabel\s*\{[^}]*\}/)?.[0] ?? "";
-    const faceOf = (rule: string) => rule.match(/font:\s*([^;]+);/)?.[1]?.trim() ?? "";
-    expect(faceOf(subhead), "the page's eyebrow is missing").not.toBe("");
-    expect(faceOf(label)).toBe(faceOf(subhead));
-    expect(label).toContain("text-transform: uppercase");
-  });
-
-  it("the strip falls to one column before three sentences can be slivers", () => {
-    /* A cap the drive at 1440 cannot see, pinned for the same reason the
-       Tailwind width caps above are. */
-    const media = CSS.match(/@media \(max-width: 900px\) \{\s*\.dp-crew__state\s*\{[^}]*\}/)?.[0] ?? "";
-    expect(media, "the state strip has no narrow fallback").not.toBe("");
-    expect(media).toMatch(/grid-template-columns:\s*1fr/);
   });
 });
-
-/* ================================================================
-   #493 — THE ONE-PLACE RULE AT THE SURFACES
-   ================================================================
-   The vocabulary test pins WHICH groups are orphans; these pin that the
-   components actually draw off that vocabulary — the render-level doubling
-   his order names cannot come back without one of these reddening. Each
-   presence arm is its own positive control: the string it wants exists in
-   exactly one deliberate place.
-*/
 describe("issue 493 — no card is listed twice", () => {
   it("the pipeline block draws only the orphan groups, and its empty state is his sentence", () => {
     const body = code(read(path.join(HERE, "CrewBackgroundWork.tsx")));

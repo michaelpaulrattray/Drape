@@ -244,5 +244,20 @@ describe("deriveLiveDesk", () => {
       item({ number: 7, status: "closed", closedAt: "2026-09-24T22:00:00Z" }),
     ]), RUNGS);
     expect(desk.closedCards).toEqual([7, 1126]);
+    expect(desk.finishedLadder).toEqual([]);
+  });
+
+  it("names the ladder cards that finished in the window, on their rung, newest first (#1201)", () => {
+    const desk = deriveLiveDesk(reading([], [
+      item({ number: 203, status: "closed", closedAt: "2026-09-24T20:00:00Z", labels: ["roadmap", "rung:N2"], title: "retire the two paths" }),
+      item({ number: 1160, status: "closed", closedAt: "2026-09-24T23:42:00Z", labels: ["rung:N2"], title: "retire the segment pair" }),
+      item({ number: 1126, status: "closed", closedAt: "2026-09-24T23:00:00Z", labels: ["bug"] }),
+      item({ number: 5, status: "closed", closedAt: "2026-09-24T22:00:00Z", labels: ["parked"] }),
+    ]), RUNGS);
+    expect(desk.finishedLadder).toEqual([
+      { issueNumber: 1160, title: "retire the segment pair", rung: "N2", closedAt: "2026-09-24T23:42:00Z" },
+      { issueNumber: 5, title: "Card 5", rung: null, closedAt: "2026-09-24T22:00:00Z" },
+      { issueNumber: 203, title: "retire the two paths", rung: "N2", closedAt: "2026-09-24T20:00:00Z" },
+    ]);
   });
 });

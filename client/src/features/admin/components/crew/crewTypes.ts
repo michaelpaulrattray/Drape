@@ -24,7 +24,7 @@ export type CrewProblem = CrewBriefingView["problems"][number];
 
 /**
  * Anything a reply thread can hang under — a needs-you card or an eye item
- * (#75). Both carry the same id/state/title triple, and `replyFallsToGeneral`
+ * (#75). Both carry the same id/state/title triple, and the General box's reply router (gone with the box, #1201)
  * asks only for id + state, so the General box's fall-through rule covers both
  * populations with one list.
  *
@@ -37,31 +37,6 @@ export type CrewProblem = CrewBriefingView["problems"][number];
  */
 export type CrewThreadHost = CrewBriefingView["threadHosts"][number];
 
-/**
- * Whether a reply renders in the GENERAL box rather than under a needs-you card.
- *
- * The rule is "does a thread render for its card", not "does the briefing
- * mention its card": Needs You shows reply threads under the cards that STILL
- * NEED HIM only, so a reply on an answered/done card (listed in the
- * recent-history block since #292) must fall through here or it renders NOWHERE — the vanishing the
- * design forbids, caught live by the PR #72 gate review. Pure, and tested
- * directly.
- *
- * ⚠ It was named for the journal until #293 removed it; the RULE is unchanged
- * and the box it falls to is the General one now.
- *
- * ⚠ AND IT ASKS `crewCardNeedsHim` RATHER THAN `state === "open"` (#354). A
- * `waiting` card renders on his desk WITH its thread, so a literal here would
- * have sent replies to a card he can see straight past it into the General box
- * — a silent split between two views of one question, which is why the
- * question has one owner now.
- */
-export function replyFallsToGeneral(
-  cardId: string | null,
-  cards: readonly Pick<CrewThreadHost, "id" | "state">[],
-): boolean {
-  return cardId === null || !cards.some((card) => card.id === cardId && crewCardNeedsHim(card.state));
-}
 
 /* ─── #74: the Desk's information design, as derivations over what the
    briefing already says. These are pure and tested directly; none of them adds
@@ -101,6 +76,30 @@ export function milestoneProgress(
 
 /** The count line under the bar — zero-count groups are omitted so the
  *  sentence stays as short as the truth allows. */
+/**
+ * A step that names a card (`#N`) GitHub has since closed reads as DONE,
+ * whatever the edition still says (#1201). The milestone list is the crew's
+ * hand-written notes and it goes stale between editions — on the day he
+ * asked, a step still read "waiting" for a sitting he had finished the
+ * night before. A step naming no card keeps the state the crew wrote.
+ */
+export function stepsWithLiveState<T extends { readonly title: string; readonly state: CrewMilestoneStep["state"] }>(
+  steps: readonly T[],
+  closedCards: readonly number[],
+): T[] {
+  const closed = new Set(closedCards);
+  const token = /(?:^|[^0-9A-Za-z])#0*([1-9][0-9]*)(?![0-9])/g;
+  return steps.map((step) => {
+    if (step.state === "done") return step;
+    let match: RegExpExecArray | null;
+    token.lastIndex = 0;
+    while ((match = token.exec(step.title)) !== null) {
+      if (closed.has(Number(match[1]))) return { ...step, state: "done" as const };
+    }
+    return step;
+  });
+}
+
 export function milestoneCountLine(progress: MilestoneProgress): string {
   const parts: string[] = [];
   if (progress.done > 0) parts.push(`${progress.done} done`);
@@ -232,22 +231,7 @@ export function heldCount(rows: readonly CrewNextUpRow[]): number {
   return rows.filter((row) => row.hold !== null).length;
 }
 
-/** How many notes the General box shows before the fold (#74 item 7 — his
- *  standing Desk rule: last 8, older behind a disclosure). */
-export const GENERAL_FOLD_VISIBLE = 8;
 
-/**
- * The fold over an already-sorted (newest-first) list. Generic because it is
- * applied to the items the box actually draws rather than to raw replies —
- * folding before the list is assembled would hide his words, which the design
- * forbids anywhere on this page.
- */
-export function foldTimeline<T>(sorted: readonly T[], visible = GENERAL_FOLD_VISIBLE): {
-  recent: T[];
-  older: T[];
-} {
-  return { recent: sorted.slice(0, visible), older: sorted.slice(visible) };
-}
 
 /**
  * The live shift row (#272). Inferred like everything else on this page, so a
@@ -333,6 +317,28 @@ export function needsYouFor(live: CrewLiveView, cards: readonly CrewNeedsYouCard
   if (!live.available) return [...cards];
   const closed = new Set(live.desk.closedCards);
   return cards.filter((card) => card.issueNumber === null || !closed.has(card.issueNumber));
+}
+
+/**
+ * PROBLEMS holds only actionable faults — his ruling 2026-09-25 (#1201):
+ * *"only problems which are actual problems and actionable need to go here
+ * otherwise these are not problems??"*. An `info` row (the page drew it as
+ * "Note" — queue-shape narration) is not a problem and is not drawn; a
+ * problem that names a card (`#N`) GitHub has since closed is treated as
+ * resolved live, whatever the edition still says about it.
+ */
+export function problemsFor(live: CrewLiveView, problems: readonly CrewProblem[]): CrewProblem[] {
+  const closed = new Set(live.available ? live.desk.closedCards : []);
+  const namesClosedCard = (text: string) => {
+    const token = /(?:^|[^0-9A-Za-z])#0*([1-9][0-9]*)(?![0-9])/g;
+    let match: RegExpExecArray | null;
+    while ((match = token.exec(text)) !== null) {
+      if (closed.has(Number(match[1]))) return true;
+    }
+    return false;
+  };
+  return problems.filter((problem) =>
+    problem.severity !== "info" && !namesClosedCard(`${problem.title} ${problem.detail}`));
 }
 
 export function nextUpFor(live: CrewLiveView, briefing: CrewBriefingView): CrewNextUpSource {

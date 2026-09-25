@@ -69,10 +69,7 @@ import { crewRouter } from "../routes/crew";
 import { eyeFrameKeys, readCrewBriefing } from "./crewBriefing";
 import { crewCardNeedsHim } from "../../shared/crewCardState";
 import { crewProblemIsOpen } from "../../shared/crewProblemState";
-import {
-  pipelineNotDone,
-  replyFallsToGeneral,
-} from "../../client/src/features/admin/components/crew/crewTypes";
+import { pipelineNotDone } from "../../client/src/features/admin/components/crew/crewTypes";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -276,7 +273,7 @@ describe("the wire carries only the rows the page can draw (#1137, #1138)", () =
     );
   });
 
-  it("⚠ THE GENERAL BOX KEEPS ITS TITLES — every dropped host is still named on the wire (#1138)", async () => {
+  it("⚠ THE WIRE KEEPS EVERY HOST'S TITLE — the #1088 removal contract, kept after the General box left (#1201)", async () => {
     process.env.CREW_TAB_SCOPE = "all";
     const state = await crewRouter.createCaller(contextFor()).getState();
 
@@ -303,7 +300,10 @@ describe("the wire carries only the rows the page can draw (#1137, #1138)", () =
        the General box AND find its title there. */
     const dropped = file.needsYou.find((card) => !crewCardNeedsHim(card.state));
     expect(dropped, "the control above proves there is one").toBeDefined();
-    expect(replyFallsToGeneral(dropped!.id, state.briefing.threadHosts)).toBe(true);
+    /* The General box that read `threadHosts` is gone (#1201); the field stays
+       on the wire for one deploy so an in-flight bundle dereferences nothing
+       missing, and a dropped host is still named there. */
+    expect(crewCardNeedsHim(dropped!.state)).toBe(false);
     expect(hosts.get(dropped!.id)?.title).toBe(dropped!.title);
   });
 

@@ -315,99 +315,11 @@
   color: var(--errorInk);
 }
 
-/* ------------------------------------- state at a glance (§5, #492's shape) */
 
-/*
-  ⚠ **THE PILLS ARE GONE AND THE HIERARCHY IS THE OTHER WAY UP (#492).**
 
-  His words at a frame of this block: *"the top of the programs card with the
-  little status card readings needs a better design honest it looks terribly
-  designed"*. Four faults, and only the first is about the border:
 
-  1. A stroked pill held a 67-character headline, so it wrapped to two lines of
-     11px inside a rounded outline — a tag that had swallowed a paragraph.
-  2. Three pills in a wrapping flex row put two on one line and orphaned the
-     third, each cell as tall as its own paragraph, so nothing aligned.
-  3. The 10px `--faint` sentence UNDER the pill was the actual reading, while
-     the loudest element on the page's first block carried the least of it.
-  4. Nothing else on the page is a stroked pill. The stat readings elsewhere
-     are a quiet strip: small label, the reading beneath, no border.
 
-  So: **equal grid cells** (2 fixes ragged by construction, not by asking a
-  shift to write shorter sentences — cells in a grid row share a height), **no
-  border at all** (1, 4), and the **label demoted to the page's own eyebrow
-  grammar while the source is promoted to a readable 12.5px `--secondary`** (3).
-  The label cap that makes any of it hold is at the SCHEMA, not here —
-  `crewBriefing.ts`, 40 characters, refused by the rite.
 
-  ⚠ **THE LABEL REUSES `.dp-crew__subhead` RATHER THAN A SECOND EYEBROW FACE.**
-  This page already has one — 8.5px mono, uppercase, 0.13em — on *The ladder*
-  and *The rest of the pipeline*. A near-copy of it under a new name is working
-  law 4 with a stylesheet attached, and this directory has been burned by that
-  exact shape before.
-*/
-.dp-crew__state {
-  display: grid;
-  /* Set by the component from the number of readings, capped at three (§ the
-     component's own note). The fallback is the shape the block has today. */
-  grid-template-columns: repeat(var(--dp-statecols, 3), minmax(0, 1fr));
-  gap: var(--s-7) var(--s-9);
-}
-
-.dp-crew__statecell {
-  min-width: 0;
-}
-
-.dp-crew__statelabel {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
-  /* The page's eyebrow, said once: see `.dp-crew__subhead`. */
-  font: 500 8.5px var(--font-mono);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--meta);
-}
-
-/*
-  The tone, 6px, beside the label. `--rule` for neutral rather than nothing:
-  an absent dot would shift the label 12px left of its neighbours and the
-  alignment the grid just bought would be lost on the one cell that is quiet.
-*/
-.dp-crew__statedot {
-  flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: var(--r-pill);
-  background: var(--rule);
-}
-
-.dp-crew__statedot--good {
-  background: var(--ink);
-}
-
-/*
-  ⚠ **THE ONE COLOUR ON THE BANNER, AND IT IS STILL THE HOUSE RED.** §5 named
-  it when it was a pill border: the old `#C0473A` IS `--errorInk`, and the
-  argument — *a warn reading is a problem wearing a smaller badge* — is
-  unchanged by the badge becoming a dot. `--errorInk` rather than `--error`
-  because it was TEXT there and is a 6px mark here: plain `--error` measures
-  3.40:1 on the dark surface, and a 6px mark has less to spare than text does.
-*/
-.dp-crew__statedot--warn {
-  background: var(--errorInk);
-}
-
-/*
-  THE READING. It was 10px `--faint` under a pill; it is the content of this
-  block and now reads like it — the same step down from the mission below that
-  `--secondary` takes from `--ink` everywhere else on this page.
-*/
-.dp-crew__statesrc {
-  margin-top: var(--s-2);
-  font: 400 12.5px/1.55 var(--font-sans);
-  color: var(--secondary);
-}
 
 /*
   Three columns of sentences do not survive a narrow pane, and neither does
@@ -415,8 +327,7 @@
   and the same breakpoint the rest of this page already turns at.
 */
 @media (max-width: 900px) {
-  .dp-crew__state { grid-template-columns: 1fr; }
-}
+  }
 
 /* ------------------------------------------------- the program banner (§6) */
 
@@ -1556,4 +1467,69 @@ a.dp-crew__hold:hover {
 .dp-crew__link:hover,
 .dp-crew__link:focus-visible {
   text-decoration-color: var(--ink);
+}
+
+/* ── ONE CARD FOR WHAT IS HAPPENING (#1201) ─────────────────────────────────
+   Working now, In flight and Next up are blocks of one card; each block's
+   head is the ladder-head row (subhead left, its measured values right). */
+.dp-crew__headmeta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-4);
+}
+
+/* ── THE SECTION MENU (#1201) ────────────────────────────────────────────────
+   Sticky at the top of the reading pane, one line, the page's own quiet mono
+   face; a count is drawn only when it is not zero. */
+.dp-crew__nav {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-6);
+  margin: 0 0 var(--s-4);
+  padding: var(--s-3) 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+}
+.dp-crew__navlink {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  font: 500 8.5px var(--font-mono);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--metaStrong);
+  text-decoration: none;
+}
+.dp-crew__navlink:hover,
+.dp-crew__navlink:focus-visible {
+  color: var(--ink);
+}
+.dp-crew__navcount {
+  font: 400 10.5px var(--font-mono);
+  letter-spacing: normal;
+  color: var(--meta);
+}
+.dp-crew__navcount--fresh {
+  color: var(--ink);
+}
+/* A rung's finished cards: the count in the quiet face, the titles struck. */
+.dp-crew__rungcount--done {
+  color: var(--meta);
+}
+.dp-crew__finished {
+  display: flex;
+  gap: var(--s-3);
+  align-items: baseline;
+  font: 400 12px/1.5 var(--font-sans);
+  color: var(--meta);
+}
+.dp-crew__finished s {
+  text-decoration-color: var(--rule);
+}
+/* Anchors land under the sticky menu, not behind it. */
+[id^="crew-section-"] {
+  scroll-margin-top: 48px;
 }

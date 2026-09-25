@@ -2,13 +2,13 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "bd90a57cb0d4bf1e"
+    "sourceFingerprint": "f766acaa4599bf41"
   },
   "domains": [
     {
       "id": "domain:admin",
       "name": "admin",
-      "moduleCount": 58
+      "moduleCount": 60
     },
     {
       "id": "domain:api",
@@ -410,8 +410,14 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
-      "path": "client/src/features/admin/components/crew/CrewGeneral.tsx",
+      "id": "module:client/src/features/admin/components/crew/CrewHappeningNow.tsx",
+      "path": "client/src/features/admin/components/crew/CrewHappeningNow.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewNav.tsx",
+      "path": "client/src/features/admin/components/crew/CrewNav.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -454,6 +460,12 @@
     {
       "id": "module:client/src/features/admin/components/crew/CrewReplyThread.tsx",
       "path": "client/src/features/admin/components/crew/CrewReplyThread.tsx",
+      "domain": "admin",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/admin/components/crew/CrewShell.tsx",
+      "path": "client/src/features/admin/components/crew/CrewShell.tsx",
       "domain": "admin",
       "lifecycle": "active"
     },
@@ -14090,23 +14102,38 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
-      "to": "module:client/src/features/admin/components/crew/CrewReplyBox.tsx",
+      "from": "module:client/src/features/admin/components/crew/CrewHappeningNow.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
+      "from": "module:client/src/features/admin/components/crew/CrewHappeningNow.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewHappeningNow.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
+      "from": "module:client/src/features/admin/components/crew/CrewHappeningNow.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewHappeningNow.tsx",
+      "to": "module:client/src/features/admin/components/crew/QueueReadStamp.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewHappeningNow.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
-      "to": "module:client/src/foundation/staffDate.ts",
+      "from": "module:client/src/features/admin/components/crew/CrewNav.tsx",
+      "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
     },
     {
@@ -14141,17 +14168,17 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewShell.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
       "to": "module:client/src/features/admin/components/crew/QueueReadStamp.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
-      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -14166,17 +14193,17 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewShell.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
       "to": "module:client/src/features/admin/components/crew/QueueReadStamp.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
-      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {
@@ -14260,6 +14287,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/components/crew/CrewShell.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewShell.tsx",
+      "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/components/crew/CrewSinceYouLooked.tsx",
       "to": "module:client/src/features/admin/components/crew/crewAgo.ts",
       "kind": "imports"
@@ -14311,12 +14348,12 @@
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
-      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "to": "module:client/src/features/admin/components/crew/CrewShell.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
-      "to": "module:client/src/foundation/index.ts",
+      "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "kind": "imports"
     },
     {
@@ -18896,7 +18933,12 @@
     },
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
-      "to": "module:client/src/features/admin/components/crew/CrewGeneral.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewHappeningNow.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminCrew.tsx",
+      "to": "module:client/src/features/admin/components/crew/CrewNav.tsx",
       "kind": "imports"
     },
     {
@@ -18937,11 +18979,6 @@
     {
       "from": "module:client/src/pages/AdminCrew.tsx",
       "to": "module:client/src/features/admin/components/crew/crewTypes.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/AdminCrew.tsx",
-      "to": "module:client/src/features/admin/components/crew/CrewWorkingNow.tsx",
       "kind": "imports"
     },
     {

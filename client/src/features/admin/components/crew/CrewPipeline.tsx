@@ -13,7 +13,7 @@
  * still better than an empty block pretending nothing is open.
  */
 import { cn } from "@/lib/utils";
-import { TableHead } from "@/foundation";
+import { SectionHead, SectionShell } from "./CrewShell";
 import { ago } from "./crewAgo";
 import { pipelineNotDone } from "./crewTypes";
 import type { CrewLivePullRequest, CrewLiveView, CrewPipelineItem, CrewQueueRead } from "./crewTypes";
@@ -73,22 +73,26 @@ function LiveRow({ pr, now }: { pr: CrewLivePullRequest; now: number }) {
 }
 
 export function CrewPipeline({
-  live, snapshot, queueRead, now,
+  live, snapshot, queueRead, now, embedded, first,
 }: {
   live: CrewLiveView;
   snapshot: readonly CrewPipelineItem[];
   queueRead: CrewQueueRead;
   now: number;
+  /** One block of the HAPPENING NOW card rather than a card of its own (#1201). */
+  embedded?: boolean;
+  first?: boolean;
 }) {
   const liveRows = live.available ? live.desk.pullRequests : null;
   const snapshotRows = pipelineNotDone(snapshot);
   const count = liveRows ? liveRows.length : snapshotRows.length;
   return (
-    <section className="dp-crew__card" data-testid="crew-pipeline">
-      <TableHead eyebrow="In flight">
+    <SectionShell embedded={embedded} first={first} testId="crew-pipeline">
+      <SectionHead embedded={embedded} eyebrow="In flight">
         {count > 0 && <span className="dp-crew__meta">{count} open</span>}
-        <QueueReadStamp read={queueRead} now={now} />
-      </TableHead>
+        {/* The shared card stamps its reading once, on its own head. */}
+        {!embedded && <QueueReadStamp read={queueRead} now={now} />}
+      </SectionHead>
       {liveRows ? (
         liveRows.length === 0 ? (
           <div className="dp-crew__well dp-crew__gap">
@@ -108,6 +112,6 @@ export function CrewPipeline({
           {snapshotRows.map((item) => <SnapshotRow key={item.id} item={item} />)}
         </ul>
       )}
-    </section>
+    </SectionShell>
   );
 }
