@@ -47,17 +47,12 @@ Before deploying any new endpoint, verify the following:
 | Credit Deduction | Generation endpoints use `withAtomicCredits` |
 | Audit Logging | Sensitive operations call `logAuditEvent` |
 | Input Validation | All inputs validated with Zod schemas, using `.strict()` so unknown fields are rejected |
-| Billing Alerts | Payment events trigger appropriate Slack alerts |
+| Billing Alerts | Payment events write their audit row (`docs/BILLING_ALERTS.md`) — the row IS the alert since #800; there is no Slack |
 | **Controls actually run** | If you added a protection, something invokes it on the request path, a test proves it *blocks*, and it refuses rather than allows when a dependency is missing |
 
-## Slack Alert Channels
+## Slack Alert Channels — DELETED 2026-09-11 (#800)
 
-| Channel | Purpose | Webhook Env Var |
-|---------|---------|----------------|
-| `#admin-actions` | Admin actions, IP blocks, emergency alerts | `SLACK_ADMIN_ACTIONS_WEBHOOK_URL` |
-| `#audit-log` | Audit log entries, security events | `SLACK_AUDIT_LOG_WEBHOOK_URL` |
-| `#billing-alerts` | Chargebacks, payment failures, cancellations, large purchases | `SLACK_BILLING_ALERTS_WEBHOOK_URL` |
-| `#general` | General notifications, test alerts | `SLACK_WEBHOOK_URL` |
+**There are no Slack channels, no webhooks and no code that could post to one.** The whole `server/slack/` family, `/api/slack/interactions`, the in-memory approval store and the four `SLACK_*_WEBHOOK_URL` variables went in `dad85ae5` on his word (*"retire slack everything runs through moderator and admin at the moment"*). Production never had a webhook, so nothing real was removed. Every alert that table used to route lands on the admin panels: billing events as audit rows (`docs/BILLING_ALERTS.md`), admin actions and security events in the audit log, the login-attack detector as `abuse.global_attack_detected`. This section was a live-voice table until the N1 milestone-close deep review (2026-09-25) read it — the retirement commit corrected the paragraphs above and missed the two tables.
 
 ## Credit Purchase Velocity Limits — DELETED 2026-08-19
 

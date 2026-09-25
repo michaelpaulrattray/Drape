@@ -107,7 +107,7 @@ your words — edit the sentence to change them."*
 **2d. Records.** `register.kind = "author"` on these rolls too, with a new
 `carried: { anchorOf: <candidate>, unlocks: [...], overrides: {...},
 clause: "<the paragraph>" }` so the sheet's prompt record shows the clause
-inside `authoredPrompt` (no hidden prompt, rule 5). `houseBecause` and the
+inside `authoredPrompt` (no hidden prompt, rule 5). ⚠ *`authoredPrompt` and the sheet's "prompt this sheet was painted from" were DROPPED by #534 (2026-09-22) on his word — the sheet shows her words and what changed on the way, never the machine's prompt; the promise here is history (N1 deep review, 2026-09-25).* `houseBecause` and the
 `AUTHOR` record line from §0 survive for rows already written and for any
 future road the author still cannot carry.
 

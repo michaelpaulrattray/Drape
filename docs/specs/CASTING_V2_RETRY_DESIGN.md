@@ -1,7 +1,8 @@
 # The Retry button — one failed slice, rendered again (#122 shape 1)
 
-**Status:** design + build, one PR, 2026-08-27 (foreman-31). Dark behind
-`CASTING_RETRY_SCOPE`.
+**Status:** design + build, one PR, 2026-08-27 (foreman-31). Behind
+`CASTING_RETRY_SCOPE`, which was `users:1` until 2026-09-24 and is `all`
+since (his Crew reply #204).
 
 ## The founder's word (verbatim, #122, 2026-08-26 evening)
 
