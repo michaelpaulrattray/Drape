@@ -1,7 +1,7 @@
 {
-  "edition": 535,
-  "updatedAt": "2026-09-25T21:10:00.000Z",
-  "shift": "Foreman — N2 focus: one slot, one Try again (#1257)",
+  "edition": 536,
+  "updatedAt": "2026-09-25T22:10:00.000Z",
+  "shift": "Foreman — N2 focus: the render reader gets room to answer (#1228)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -178,8 +178,12 @@
           "title": "Try again now looks and behaves like what it is — and one part of it was costing money (#1235, your three reports). Pressing it used to change the button's word to \"Asking…\" and nothing else moved: the picture stayed, the caption stayed, and the other views' buttons all went dead until it finished. Worse, the studio itself did not know a view was being made — so if you left the room and came back, the button was sitting there again as if nothing was happening, and pressing it a second time bought the SAME view twice: two renders, 100 credits, one slot. Now the tile goes into exactly the casting state every other view being made uses, the caption and the button leave while it works, each view is independent so you can ask for three at once, and the room keeps watching so the new picture arrives without a reload. A second press on a view already being made is refused for free — \"That view is already being asked for. Nothing was charged.\" Test drive: Sifr2, press Try again on a view, leave the page and come back."
         },
         {
-          "state": "in-progress",
-          "title": "Pressing Try again twice in the same instant could still buy one view twice, and now it cannot (#1257). Written, checked and waiting on the reviewer. You could already press it twice slowly and be refused — that was fixed on your third report. What was left was the narrow version: two tabs open on the same cast, or a press from an old tab arriving while another is already running. The studio was asking \"is one running?\" and then, before writing down that one was, going off to fetch her signed face out of storage — a few hundred milliseconds where a second press sees the same answer and buys the same picture again. It now claims the slot the way the five other paid buttons in the studio claim theirs: the claim itself is the lock, so there is no gap to slip through. Per VIEW, not per cast — asking for her profile while her close-up renders is something you are meant to be able to do, and a cast-wide lock would have broken it again. And the refusal says the same sentence you would have got pressing slowly, rather than a line written for a log. Nobody has hit this: yours is the only account that has ever cast."
+          "state": "done",
+          "title": "Pressing Try again twice in the same instant could still buy one view twice, and now it cannot (#1257). It is live. You could already press it twice slowly and be refused — that was fixed on your third report. What was left was the narrow version: two tabs open on the same cast, or a press from an old tab arriving while another is already running. The studio was asking \"is one running?\" and then, before writing down that one was, going off to fetch her signed face out of storage — a few hundred milliseconds where a second press sees the same answer and buys the same picture again. It now claims the slot the way the five other paid buttons in the studio claim theirs: the claim itself is the lock, so there is no gap to slip through. Per VIEW, not per cast — asking for her profile while her close-up renders is something you are meant to be able to do, and a cast-wide lock would have broken it again. And the refusal says the same sentence you would have got pressing slowly, rather than a line written for a log. Nobody has hit this: yours is the only account that has ever cast."
+        },
+        {
+          "state": "done",
+          "title": "The checker that confirms a refined picture really contains what you asked for was being cut off mid-sentence — and now it has room to finish (#1228). When you refine a picture we ask a reader to confirm the new version actually has what you asked for. It was only ever given room for a short answer, and a reading that covers eight things needs roughly twice that — so the answer arrived half-written, could not be read at all, and the picture was handed over and charged for with nothing having checked it. Measured on your own Sifr2 close-up through the real reader: eight things asked, three readings, every one of them over the old limit, and at the old limit the answer came back unusable twice out of twice. The room it gets now grows with how much was asked, and it costs nothing extra on the smaller readings — which is most of them. Nobody was caught by this: the records that would have shown it are deleted on a schedule, so it was found by measuring the real thing rather than by a complaint. Six other readers have the same gap and none of them is known to have hit it; they are written down as #1272 rather than changed on a hunch."
         }
       ]
     },
