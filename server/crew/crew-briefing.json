@@ -1,7 +1,7 @@
 {
-  "edition": 531,
-  "updatedAt": "2026-09-25T14:55:00Z",
-  "shift": "Foreman — switched-off buttons now look switched off, everywhere, and it is live",
+  "edition": 532,
+  "updatedAt": "2026-09-25T16:37:40Z",
+  "shift": "Foreman — Try again is a view being made, on every screen that shows it, and a second press cannot be charged twice",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -31,7 +31,7 @@
         },
         {
           "title": "The N1 milestone-close deep review over the whole rung's diff (1,080 commits) — asked for on #1121; it runs in parallel and does not hold N2 up",
-          "state": "in-progress"
+          "state": "done"
         },
         {
           "title": "The wardrobe/basics retirement has started: the ENTRANCE is closed (#203) — no path switch on either page, and no roll is born on one. The setting now governs nothing. The read paths are next",
@@ -172,6 +172,10 @@
         {
           "title": "Switched-off buttons now look switched off (#1237, your word) — and it is live. A button that cannot be pressed was drawn at full brightness with the hand pointer still promising a press, in 43 places, two of them on the billing pages; it was never a decision anyone made, just a rule nobody wrote. One change in the shared rule fixed all 43. Doing it turned up three more of the same fault: fourteen buttons that brightened under the mouse while switched off, four in the Sign, delete, rename and concept windows with no switched-off look at all, and three still showing the “no entry” pointer against your word for a normal one — two of those on this page. The frames are under FOR YOUR EYES and your eye is the last word on how faint it should be.",
           "state": "done"
+        },
+        {
+          "state": "done",
+          "title": "Try again now looks and behaves like what it is — and one part of it was costing money (#1235, your three reports). Pressing it used to change the button's word to \"Asking…\" and nothing else moved: the picture stayed, the caption stayed, and the other views' buttons all went dead until it finished. Worse, the studio itself did not know a view was being made — so if you left the room and came back, the button was sitting there again as if nothing was happening, and pressing it a second time bought the SAME view twice: two renders, 100 credits, one slot. Now the tile goes into exactly the casting state every other view being made uses, the caption and the button leave while it works, each view is independent so you can ask for three at once, and the room keeps watching so the new picture arrives without a reload. A second press on a view already being made is refused for free — \"That view is already being asked for. Nothing was charged.\" Test drive: Sifr2, press Try again on a view, leave the page and come back."
         }
       ]
     },
@@ -255,7 +259,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-25T14:49:18.418Z",
+      "readAt": "2026-09-25T16:39:31.310Z",
       "items": [
         {
           "issueNumber": 179,
@@ -8244,6 +8248,13 @@
       "status": "merged",
       "prNumber": 1254,
       "note": "Merged 817e44da, live on production."
+    },
+    {
+      "id": "try-again-busy-1235",
+      "title": "Try again: the tile shows its own casting state, each view is independent, and a second press cannot buy it twice",
+      "status": "merged",
+      "prNumber": 1259,
+      "note": "Live on production as build 2e2e5a0b (#1235, closed by hand with its receipt)."
     }
   ],
   "problems": [
@@ -8533,7 +8544,7 @@
     219
   ],
   "nextUp": {
-    "readAt": "2026-09-25T14:49:18.417Z",
+    "readAt": "2026-09-25T16:39:31.309Z",
     "items": [
       {
         "issueNumber": 1237,
