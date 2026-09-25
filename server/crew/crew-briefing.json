@@ -1,7 +1,7 @@
 {
-  "edition": 527,
-  "updatedAt": "2026-09-25T09:22:49.782Z",
-  "shift": "Foreman — #1221: a signed cast's views keep her tattoos and her makeup",
+  "edition": 528,
+  "updatedAt": "2026-09-25T10:17:16.303Z",
+  "shift": "Foreman — #1224: your card labels get a reader, and six of them are wrong",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -175,6 +175,11 @@
         "state": "current"
       },
       {
+        "key": "N2b",
+        "title": "Personality and voice — born at Sign, as editable text",
+        "state": "queued"
+      },
+      {
         "key": "N3",
         "title": "The refine era completes — feature panel, loader, studio surfaces",
         "state": "queued"
@@ -238,7 +243,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-25T07:40:32.335Z",
+      "readAt": "2026-09-25T10:17:18.672Z",
       "items": [
         {
           "issueNumber": 179,
@@ -3228,7 +3233,7 @@
         }
       ],
       "recommendation": "ANSWERED BY YOU, 2026-09-25: \"we didnt fail to deliver somthing the api we use did - we are still charged so whats the correct way to handle this? maybe check if the api actually charges us for failed deliveries?\" — checked at the provider (we are NOT charged for a view that never arrived) and settled as your option B: you pay 50 for each view you keep, so Try again is a paid view at 50 when it lands, and if you are short the tile says so with the price on the button. Nothing is owed from you here any more; the build is on #1208 and #1220.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-25T03:27:26.134Z",
       "issueNumber": 1208
     },
@@ -8481,21 +8486,21 @@
     218
   ],
   "nextUp": {
-    "readAt": "2026-09-25T07:40:32.334Z",
+    "readAt": "2026-09-25T10:17:18.671Z",
     "items": [
-      {
-        "issueNumber": 1208,
-        "title": "A paid view that fails has no way back: keep trying, then a free Try again (his question on the Sifr cast, 2026-09-25)",
-        "urgent": true
-      },
       {
         "issueNumber": 1224,
         "title": "Jev reads every card's category — a check with controls first, then a writer for unlabelled cards only; never a rung (his ruling 2026-09-25: wherever Jev genuinely improves the workflow)",
         "urgent": false
       },
       {
-        "issueNumber": 1232,
-        "title": "While a new roll is being paid for, the previous sheet cannot be looked at — the skeleton grid is gated on the dispatch latch, not on which roll is shown (his report 2026-09-25)",
+        "issueNumber": 1241,
+        "title": "Retire the persona word end to end — every tile reads 01 … 01 because the author road nulls it by design; one index label per tile, the column dropped on his standing word (founder-ordered 2026-09-25)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1242,
+        "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, badged Drafted for you, free to edit (founder-ordered 2026-09-25)",
         "urgent": false
       }
     ]
