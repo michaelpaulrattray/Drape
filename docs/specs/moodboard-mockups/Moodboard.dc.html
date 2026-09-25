@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mood boards — the library</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:#f4f4f4;color:#0a0a0a}
+a{color:#0a0a0a}a:hover{color:#000}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; box-sizing: border-box; position: relative; background: #f4f4f4; font-family: Inter, system-ui, sans-serif; color: #0a0a0a; overflow: hidden">
+
+  <div style="position: absolute; inset: 0; padding: 24px 40px; box-sizing: border-box; opacity: 0.35">
+    <div style="height: 430px; background: #fff; border: 1px solid #e1e1e1; border-radius: 16px"></div>
+  </div>
+  <div style="position: absolute; inset: 0; background: rgba(10,10,10,0.42)"></div>
+
+  <div role="dialog" aria-label="Mood boards" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 960px; height: 600px; background: #fff; border-radius: 18px; box-shadow: 0 24px 64px rgba(0,0,0,0.28); padding: 28px 36px; box-sizing: border-box; display: flex; flex-direction: column; gap: 22px">
+
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 48px">
+      <div style="display: flex; align-items: center; gap: 14px; flex-grow: 1">
+        <span style="width: 34px; height: 34px; border-radius: 8px; border: 1px solid transparent" aria-hidden="true"></span>
+        <span style="display: flex; flex-direction: column; gap: 4px">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6b6b">Mood boards</span>
+          <span style="font: 600 24px Inter, system-ui, sans-serif; letter-spacing: -0.01em">Your boards</span>
+        </span>
+      </div>
+      <button type="button" aria-label="Close" style="width: 32px; height: 32px; border: none; background: transparent; cursor: pointer; color: #6b6b6b; font-size: 18px">×</button>
+    </div>
+
+    <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-content: start">
+
+      <a href="Board.dc.html" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit">
+        <span style="display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: repeat(2, 1fr); gap: 3px; height: 150px; border-radius: 12px; overflow: hidden">
+          <span style="grid-row: span 2; background: #8d8d8d"></span><span style="background: #a5a5a5"></span><span style="background: #b8b8b8"></span>
+        </span>
+        <span style="font-size: 14px; font-weight: 600">Cyber-goth street</span>
+        <span style="font-size: 11px; color: #6b6b6b; margin-top: -4px">6 pictures · 1 mo</span>
+      </a>
+
+      <a href="Board.dc.html" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit">
+        <span style="display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: repeat(2, 1fr); gap: 3px; height: 150px; border-radius: 12px; overflow: hidden">
+          <span style="grid-row: span 2; background: #9c9c9c"></span><span style="background: #c4c4c4"></span><span style="background: #adadad"></span>
+        </span>
+        <span style="font-size: 14px; font-weight: 600">Bronze sphinx</span>
+        <span style="font-size: 11px; color: #6b6b6b; margin-top: -4px">4 pictures · 2 mo</span>
+      </a>
+
+      <a href="Board.dc.html" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit">
+        <span style="display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: repeat(2, 1fr); gap: 3px; height: 150px; border-radius: 12px; overflow: hidden">
+          <span style="grid-row: span 2; background: #cfcfcf"></span><span style="background: #dcdcdc"></span><span style="background: #c9c9c9"></span>
+        </span>
+        <span style="font-size: 14px; font-weight: 600">Soft studio, plain tee</span>
+        <span style="font-size: 11px; color: #6b6b6b; margin-top: -4px">3 pictures · 8 mo</span>
+      </a>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div style="height: 150px; border-radius: 12px; background: #e6e6e6; display: flex; align-items: center; justify-content: center">
+          <button type="button" style="height: 40px; padding: 0 18px; border: none; border-radius: 999px; background: #fff; font: 600 13px Inter, system-ui, sans-serif; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.08)">Create</button>
+        </div>
+        <span style="font-size: 14px; font-weight: 600; color: #6b6b6b">New board</span>
+        <span style="font-size: 11px; color: #8a8a8a; margin-top: -4px">Name it, drop pictures in</span>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e6e6e6; padding-top: 18px; height: 40px">
+      <span style="font-size: 12px; color: #6b6b6b">A board is a world, never a person. Use one by typing <span style="font-family: 'JetBrains Mono', monospace; color: #0a0a0a">@</span> in a brief, or on a concept picture.</span>
+      <button type="button" style="height: 40px; padding: 0 20px; border: none; border-radius: 10px; background: #0a0a0a; color: #fff; font: 600 13px Inter, system-ui, sans-serif; cursor: pointer">Done</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

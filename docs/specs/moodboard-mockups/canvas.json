@@ -1,0 +1,20 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Main.dc.html": {"h": 720, "title": "1 · Hero — image icon in the box, Re-imagine moved, card renamed", "w": 1280, "x": 0, "y": 0},
+    "Concept.dc.html": {"h": 720, "title": "2 · Upload a concept — who is this, with a quiet @ line for a board", "w": 1280, "x": 1360, "y": 0},
+    "Moodboard.dc.html": {"h": 720, "title": "3 · Mood boards — the library, Pinterest-style, Create as the last card", "w": 1280, "x": 0, "y": 840},
+    "Board.dc.html": {"h": 720, "title": "3b · One board open — pictures, its world, and Cast from this board", "w": 1280, "x": 1360, "y": 840},
+    "Mention.dc.html": {"h": 420, "title": "4 · The brief box — @ reaches a board", "w": 720, "x": 0, "y": 1680}
+  },
+  "createdOnFiles": {"at": "2026-09-25T02:40:00Z", "v": 1},
+  "designSystems": [],
+  "launch": {"view": "canvas"},
+  "notes": {
+    "t1": {"kind": "title1", "maxW": 2640, "text": "Mood boards: the hero, the concept modal, the library, one board, and @", "w": 240, "x": 0, "y": -300}
+  },
+  "order": ["Main.dc.html", "Concept.dc.html", "Moodboard.dc.html", "Board.dc.html", "Mention.dc.html"],
+  "pages": [],
+  "title": "Mood board on the casting hero"
+}
