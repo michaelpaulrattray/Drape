@@ -39,11 +39,16 @@
  * two live databases. The live declaration — `drizzle/schema.ts` — is asserted
  * clean, and migration 0068 is asserted to hold the DROP.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { readListedSource } from "../testing/listedSource";
+
+/* This suite reads every source file in the product, which is well past
+   vitest's 5s default under parallel load (#741). */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const ROOT = path.resolve(__dirname, "../..");
 
