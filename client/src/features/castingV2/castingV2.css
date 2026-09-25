@@ -1982,6 +1982,36 @@
   color: var(--secondary);
 }
 
+/*
+  TRY AGAIN (#1208 slice 2) — the quietest possible paid button.
+
+  It sits under a tile that has already let someone down, so it is a text
+  affordance rather than a filled control: restrained, monochrome, and small
+  enough that a room of five good views does not read as a room of five
+  buttons. The price rides in the label, which is why there is no separate
+  price chip — one thing to read, in one place.
+*/
+.dpc-slot__again {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 400 11px var(--font-sans);
+  letter-spacing: 0.01em;
+  color: var(--metaStrong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.dpc-slot__again:hover:not(:disabled) { color: var(--ink); }
+
+.dpc-slot__again:disabled {
+  color: var(--meta);
+  cursor: default;
+  text-decoration: none;
+}
+
 /* ---- signed: the state whose absence lost a Cast ----------------------- */
 
 .dpc-card--signed { display: block; position: relative; }

@@ -54,6 +54,7 @@ export const OPERATION_REPLAY_FAMILY_BY_KIND: Readonly<
   // Replay is by operation key returning the retry's own receipt; the slice
   // it re-rendered is read from the roll projection, never re-derived.
   "castingV2.retry": null,
+  "castingV2.viewRetry": null,
 };
 
 export type ReplayKindResolution =

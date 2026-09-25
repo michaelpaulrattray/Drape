@@ -132,6 +132,17 @@ export default function CastingRoom() {
     staleTime: 5 * 60 * 1000,
   }).data?.enabled ?? false;
   const deleteCast = trpc.castingV2.deleteCast.useMutation();
+  /*
+    TRY AGAIN ON ONE VIEW (#1208 slice 2, #1220 slice 2).
+
+    His rule, verbatim: *"you pay 50 for each view you keep."* The price is not
+    decided here and is not a constant in this file — it arrives on the slot
+    (`slot.retry.priceCredits`), from the same server reading that authorizes
+    the spend, so the button and the till can never disagree.
+  */
+  const retryView = trpc.castingV2.retryView.useMutation();
+  /** The angle currently being asked for again. One at a time, by the hand. */
+  const [retryingAngle, setRetryingAngle] = useState<string | null>(null);
   /** The sibling face being looked at, if any. */
   const [viewingSibling, setViewingSibling] = useState<
     // Derived from the projection rather than restated, so a field added
@@ -154,6 +165,49 @@ export default function CastingRoom() {
   }, [config.data, navigate]);
 
   const data = cast.data;
+
+  /**
+   * Ask for one view again.
+   *
+   * The whole affordance: one press, no choice, no second dialog. The server
+   * re-reads whether this view may be asked for at all and what it costs, so a
+   * tile left open in another tab cannot spend against a slot that has since
+   * been filled.
+   */
+  const askAgain = (angle: string, priceCredits: number) => {
+    if (!data || retryingAngle) return;
+    setRetryingAngle(angle);
+    retryView.mutate(
+      { clientRequestId: createClientRequestId(), castId: data.castId, angle: angle as never },
+      {
+        onSuccess: (result) => {
+          setRetryingAngle(null);
+          void utils.castingV2.getCast.invalidate({ castId: data.castId });
+          if (result.outcome === "ready") {
+            toast(priceCredits > 0
+              ? `That view is here. ${priceCredits} credits.`
+              : "That view is here.");
+            return;
+          }
+          /*
+            Truthful about the money even when it went wrong: a refund that did
+            not record is never reported as "you weren't charged" (the refund
+            law this product has had since D-64).
+          */
+          toast(result.refundRecorded
+            ? (result.refundedCredits > 0
+              ? `It didn't arrive again. Your ${result.refundedCredits} credits are back.`
+              : "It didn't arrive again. You weren't charged.")
+            : "It didn't arrive again — and the refund couldn't be recorded. Support can restore it.");
+        },
+        onError: (error) => {
+          setRetryingAngle(null);
+          logRawFailure('castingV2.retryView', error);
+          toast.error(readableFailure(error, "That view couldn't be asked for again."));
+        },
+      },
+    );
+  };
 
   /** Save the inline rename, or abandon it if nothing changed. */
   const saveName = () => {
@@ -619,6 +673,28 @@ export default function CastingRoom() {
                         <span className="dpc-slot__label">{slot.label}</span>
                         {slot.state !== "failed-refunded" && slot.note ? (
                           <span className="dpc-takes__caption">{slot.note}</span>
+                        ) : null}
+                        {/*
+                          ONE BUTTON, TWO PRICES (#1208 slice 2, #1220 slice 2).
+                          His rule: you pay 50 for each view you keep. A view
+                          that failed was refunded, so this costs; a view
+                          nobody checked was charged and kept, so it does not.
+                          The price is on the button either way — never a word
+                          the customer has to interpret, and never two buttons.
+                        */}
+                        {slot.retry ? (
+                          <button
+                            type="button"
+                            className="dpc-slot__again"
+                            disabled={retryingAngle !== null}
+                            onClick={() => askAgain(slot.angle, slot.retry!.priceCredits)}
+                          >
+                            {retryingAngle === slot.angle
+                              ? "Asking…"
+                              : slot.retry.priceCredits > 0
+                                ? `Try again · ${slot.retry.priceCredits} CR`
+                                : "Try again · free"}
+                          </button>
                         ) : null}
                       </article>
                     ))}

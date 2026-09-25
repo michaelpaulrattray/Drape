@@ -1602,7 +1602,8 @@
         "entrances": [
           "server/castingV2/signService.ts",
           "server/castingV2/packageOrchestrator.ts",
-          "server/castingV2/inkViewReferences.ts"
+          "server/castingV2/inkViewReferences.ts",
+          "server/castingV2/viewRetryService.ts"
         ],
         "summary": "Signing renders the package views fresh from the anchor, judges each against the signed face and the wardrobe spec, and refunds slices that fail. Delivered tattoo crops ride into the views with the her-own-picture sentence (never the mannequin's); every slot gets a disposition line, a moved digest refuses rather than paints, and a failure never fails the Sign.",
         "doors": [],
@@ -1613,7 +1614,8 @@
         "notes": [
           "Description-stated ink rides the sign THROUGH THE DESCRIPTION even where the waist-up master cannot show it (founder ruling, fable-1356 §4) — the full-length views show arms and legs; a view that delivers it mints its crop as the document going forward.",
           "The wire is inert by ABSENCE OF INPUT, not fenced by flags: a cast with no delivered crop composes yesterday's prompt byte for byte (the empty-is-not-fenced lesson).",
-          "The wardrobe judge checks the stored line once the Two Paths land — generator and judge share one owner so they cannot drift."
+          "The wardrobe judge checks the stored line once the Two Paths land — generator and judge share one owner so they cannot drift.",
+          "TRY AGAIN ON ONE VIEW (#1208 slice 2, #1220 slice 2, his rule verbatim 2026-09-25: 'you pay 50 for each view you keep'): a delivered Cast's tile offers ONE button whose price is the whole difference between the two roads — a view that FAILED was refunded, so asking again is a paid view at `CAST_PACKAGE_VIEW_PRICE`; a view that arrived UNJUDGED (D-246, `conformanceMethod: unavailable`) was charged and kept, so asking again is free. The offer is read ONCE, by `castSlotRetryOffer` over the projection the room is shown, and the entrance re-reads that same function before it spends — there is no second opinion about what a tile may ask for. The render is `renderViewAttempts`, the Sign's own attempt loop called rather than copied, so a retried view carries her delivered ink crops, her carried feature words and her snapshotted outfit exactly as the Sign's did. Its money is Sign's pattern under an operation of its own (`castingV2.viewRetry`): charged at dispatch, refunded in full when it does not arrive, and the sweep's fork variable is the retried asset's own `provenance.retryOperationId`. Every refusal is free and before the claim (no offer on the slot, no render source, the anchor object gone) and NOTHING is offered while the package is still building, because the Sign still owns every slot. Like the rest of this road its refusals are service-internal and outside the declared door set."
         ]
       },
       {
