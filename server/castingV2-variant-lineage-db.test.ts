@@ -54,6 +54,7 @@ describeWithDatabase("a variant's lineage and its parent's owner (disposable DB)
   let connection: Connection;
   let owner: number;
   let variants: typeof import("./db/castingV2Variants");
+  let castingV2: typeof import("./db/castingV2");
 
   async function newUser(name: string): Promise<number> {
     const [result] = await connection.execute<ResultSetHeader>(
@@ -102,6 +103,7 @@ describeWithDatabase("a variant's lineage and its parent's owner (disposable DB)
     }
     owner = await newUser("Lineage Owner");
     variants = await import("./db/castingV2Variants");
+    castingV2 = await import("./db/castingV2");
   });
 
   afterAll(async () => {
@@ -126,6 +128,35 @@ describeWithDatabase("a variant's lineage and its parent's owner (disposable DB)
     } finally {
       await connection.query("ALTER TABLE casting_candidate_variants ADD COLUMN parentVariantId int");
     }
+  });
+
+  /*
+    THE FACE PANEL'S OWNERSHIP CHECK, AS BEHAVIOUR — #1181 option A.
+
+    `resolveOwnedCandidateId` arrived in this file's own neighbourhood with slice
+    3 and was never driven anywhere: sabotage deleted the owner from its WHERE
+    and the entire suite stayed green but for the atlas fingerprint's reds. The
+    static half of the repair is <server/facePanelOwnership.test.ts>, which
+    proves the LINE on every PR; this proves the BEHAVIOUR, against real SQL,
+    and it is the arm that could not exist until this harness did.
+
+    ⚠ ITS LIMIT IS THE ONE THAT MATTERS AND IT IS NOT HIDDEN: it skips without
+    TEST_DATABASE_URL, so it does not run on the gate. Coverage that reports
+    green by not running is why the static half is not optional.
+  */
+  it("refuses a candidate that belongs to another account (the face panel's ownership check)", async () => {
+    const stranger = await newUser("Ownership Stranger");
+    const theirs = await newFace(stranger);
+    /* POSITIVE CONTROL FIRST: the id is a real, resolvable one for its owner, so
+       a refusal below is about the OWNER and not about a fixture that never
+       existed — an arm that passes because nothing is there is the accept-arm
+       class this repository has been bitten by. */
+    await expect(castingV2.resolveOwnedCandidateId({
+      userId: stranger, candidatePublicId: theirs.candidatePublicId,
+    })).resolves.toBe(theirs.candidateId);
+    await expect(castingV2.resolveOwnedCandidateId({
+      userId: owner, candidatePublicId: theirs.candidatePublicId,
+    })).rejects.toThrow(/candidate not found/i);
   });
 
   it("refuses a parent variant that belongs to another face", async () => {

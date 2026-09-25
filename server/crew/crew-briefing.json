@@ -1,7 +1,7 @@
 {
-  "edition": 518,
-  "updatedAt": "2026-09-24T23:00:40.257Z",
-  "shift": "Foreman — #1177 the deploy that refused for nothing",
+  "edition": 519,
+  "updatedAt": "2026-09-25T00:04:01.609Z",
+  "shift": "Foreman · #1181 the check that proves a cast is yours",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -132,6 +132,10 @@
         {
           "state": "done",
           "title": "And that drive is the only proof there was. We deliberately broke that ownership check to see what would notice, and ran every test we have: nothing failed. It has never had a test, before or after the move — so the running app was the only thing that could tell us the move was sound. That gap is now its own job rather than something quietly fixed inside a tidy-up."
+        },
+        {
+          "title": "And now it has two. The check that proves a cast belongs to you — the one we broke on purpose last night and nothing noticed — is driven from both ends: one arm reads the code on every single change and refuses a statement that has stopped naming the owner, the other builds a throwaway database, puts a stranger's cast in front of your account and proves it comes back empty. We broke it again to check each arm notices. Both do, and the throwaway database was dropped either way",
+          "state": "done"
         }
       ]
     },
@@ -201,16 +205,16 @@
       {
         "label": "Your desk",
         "tone": "neutral",
-        "source": "216 of 216 replies acted on. Nothing is waiting on you right now."
+        "source": "217 of 217 replies acted on. One question waits on you: may the row showing your sentence wrap?"
       },
       {
         "label": "The queue",
         "tone": "neutral",
-        "source": "41 open · 14 untouched for 7 days · 6 carry a hold · none urgent."
+        "source": "47 open · 14 untouched for 7 days · 7 carry a hold · 1 urgent and claimed."
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-24T21:09:19.982Z",
+      "readAt": "2026-09-25T00:04:04.325Z",
       "items": [
         {
           "issueNumber": 179,
@@ -3085,7 +3089,7 @@
         }
       ],
       "recommendation": "A. It does the cleanup you actually asked for and takes no capability off your refine road on a guess. The live half is a real feature, it is only on for you, and it deserves its own look rather than riding out under a cleanup's name — which is your own rule from the switch sitting.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-09-24T03:05:54.605Z",
       "issueNumber": 1160
     },
@@ -3107,9 +3111,36 @@
         }
       ],
       "recommendation": "A — widen it. The table is empty, so the change is instant and risk-free today and gets more expensive every week we wait. It is the only option where a customer's own words are never thrown away, and it needs nothing from her and nothing new on any screen. I have left the card open with a guard that goes red the day the number moves, so nothing anywhere can quietly keep believing the old one.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-25",
       "issueNumber": 1126
+    },
+    {
+      "id": "refine-made-row-1187",
+      "title": "You cannot read back the sentence you paid for. May that row wrap?",
+      "productImpact": "In the refine panel there is one row that shows you the sentence which made the version you are looking at, with a **Use** button beside it. Its whole job is letting you tell one version from another.\n\nThat row is a single line that cuts off with a \"…\", and **it does not get wider on a bigger monitor.** Measured in the running app at three window sizes — 1440, 1920 and 2560 wide — the row is **701 pixels every time**, because that width belongs to the panel and not to the screen. Past roughly 150 characters of your own words the rest cannot be read anywhere: there is no hover tooltip either.\n\nA screen reader DOES get the whole sentence — it sits in the thumbnail's label. A sighted customer does not. That is the wrong way round.\n\nThis is not the 220-character record you widened tonight. That was about what the studio writes DOWN; this is about what the screen SHOWS, and the row would still cut off at 701 pixels if the record held a thousand characters.",
+      "workedExample": "The sentence on the version the panel was showing needed **984 pixels** to draw. The row can hold **701**. So it reads back as:\n\n> make the whole look pinker with softer light on the left side of her face and keep the …\n\nand the rest is gone — including, on this one, which side and what was asked for after it.\n\nThe same three numbers came back at 1440, 1920 and 2560 wide: 701 of 984, every time. I have not measured where the cut lands for a sentence of a given length, and am not going to guess at one.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Add a hover tooltip",
+          "consequence": "One line of code: hover the row and the whole sentence appears. It is not an answer on a tablet or a touch screen, and it is invisible until you happen to hover — so most people would never learn it was there."
+        },
+        {
+          "key": "B",
+          "label": "Let the row wrap, up to three lines",
+          "consequence": "You can read the whole sentence on any screen and on any device. The panel grows by up to two lines, and because this row sits directly above the ask box, the box you are reaching for moves down a little when a sentence is long. It changes a surface you judge, so it comes back to you as before-and-after frames before it goes live."
+        },
+        {
+          "key": "C",
+          "label": "Leave it — the row is a name, not the sentence",
+          "consequence": "Nothing changes and nothing costs anything. The honest cost is that nothing else in the product can show her the whole sentence either, so the answer becomes that she cannot read it back at all."
+        }
+      ],
+      "recommendation": "B, capped at three lines. The row's only job is telling one version from another and a fixed 701 pixels cannot do that for a long ask; a tooltip only helps someone who already knows to hover. If you would rather the ask box never moved, say A and it is a one-line change tonight.",
+      "state": "open",
+      "filedAt": "2026-09-25",
+      "issueNumber": 1187
     }
   ],
   "eyeItems": [
@@ -7919,7 +7950,7 @@
     {
       "id": "segment-store-retire-1160-s3",
       "title": "The settings behind the retired memory are removed, and one live safety check was rescued out of it",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1185,
       "note": "Money/auth diff (the boot-gate file) — opened ready and left for the relay; a shift does not merge it."
     },
@@ -7936,9 +7967,23 @@
       "status": "merged",
       "prNumber": 1189,
       "note": "Merged 42cc0b44. The check asks a second time before it refuses; the concurrency limit the card asked for was measured at the real bucket and declined."
+    },
+    {
+      "id": "face-panel-ownership-1181",
+      "title": "The check that proves a cast is yours now has arms on both sides of it",
+      "status": "merged",
+      "prNumber": 1191,
+      "note": "Merged 1191. One arm reads the code on every change; the other proves the behaviour on a throwaway database."
     }
   ],
   "problems": [
+    {
+      "id": "queue-shape-0925b-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "Queue shape",
+      "detail": "47 open, unchanged: three closed tonight — the segment retirement, the 220-character record and the ownership arms — and three filed. One waits on you: whether the row that shows your own sentence may wrap. 14 have had no comment, close, reopen or commit for 7 days, unchanged. One is urgent and yours — making this page live — and it is claimed and being built right now."
+    },
     {
       "id": "queue-shape-0925a-foreman",
       "severity": "info",
@@ -8863,15 +8908,16 @@
     213,
     214,
     215,
-    216
+    216,
+    217
   ],
   "nextUp": {
-    "readAt": "2026-09-24T21:09:19.981Z",
+    "readAt": "2026-09-25T00:04:04.324Z",
     "items": [
       {
-        "issueNumber": 1160,
-        "title": "N2: RETIRE the segment pair — his ruling, 'Retire both. The paste road is gone; nothing reads these'",
-        "urgent": false
+        "issueNumber": 1193,
+        "title": "Live Desk: the Crew page reads GitHub itself instead of a once-a-shift snapshot (his order 2026-09-25)",
+        "urgent": true
       }
     ]
   }
