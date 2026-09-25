@@ -1,7 +1,7 @@
 {
-  "edition": 530,
-  "updatedAt": "2026-09-25T13:39:09Z",
-  "shift": "Foreman — your word on switched-off buttons is recorded and the card is open",
+  "edition": 531,
+  "updatedAt": "2026-09-25T14:55:00Z",
+  "shift": "Foreman — switched-off buttons now look switched off, everywhere, and it is live",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -168,6 +168,10 @@
         {
           "state": "done",
           "title": "One thing that job left behind, on purpose: the sheet's own sentence still ends \"and differ by disposition\" on the old casting road (#1251). It cannot reach you — your #230 ruling already deleted that line on the road every account is on — and it is still true where it does render. Changing it is a dozen test arms and a second rule of yours, so it is carded with three options and a recommendation rather than folded into a cleanup under its name."
+        },
+        {
+          "title": "Switched-off buttons now look switched off (#1237, your word) — and it is live. A button that cannot be pressed was drawn at full brightness with the hand pointer still promising a press, in 43 places, two of them on the billing pages; it was never a decision anyone made, just a rule nobody wrote. One change in the shared rule fixed all 43. Doing it turned up three more of the same fault: fourteen buttons that brightened under the mouse while switched off, four in the Sign, delete, rename and concept windows with no switched-off look at all, and three still showing the “no entry” pointer against your word for a normal one — two of those on this page. The frames are under FOR YOUR EYES and your eye is the last word on how faint it should be.",
+          "state": "done"
         }
       ]
     },
@@ -251,7 +255,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-25T13:26:17.706Z",
+      "readAt": "2026-09-25T14:49:18.418Z",
       "items": [
         {
           "issueNumber": 179,
@@ -3269,12 +3273,33 @@
           "consequence": "No work. The casting dock already says \"Rolling…\" while it works, but that only covers the places somebody remembered."
         }
       ],
-      "recommendation": "ANSWERED BY YOU, 2026-09-25: \"Give switched-off buttons a quieter look and a normal pointer\" — which is exactly the option this card recommended. Nothing is owed from you here any more: the hold is off #1237 and it is in your ordered queue, so a shift takes it next. One change in the shared button rule and all 43 read honestly, including the two on the billing pages.",
-      "state": "answered",
+      "recommendation": "DONE AND LIVE. You said: “Give switched-off buttons a quieter look and a normal pointer”, and that is exactly what shipped — one change in the shared button rule, so all 43 read honestly, the two on the billing pages included.\n\nThree more things came out of doing it, all small and all the same fault: fourteen buttons still brightened when the mouse passed over them even while switched off; four buttons in the Sign, delete, rename and concept windows had no switched-off look at all; and three places still showed the “no entry” pointer instead of a normal one — two of them on this page.\n\nTHE ONLY THING LEFT IS YOUR EYE. The frames under FOR YOUR EYES show the same five buttons working and switched off, in both themes. If the faded look reads right to you, this closes. If it is too faint or not faint enough, say so and it is one number.",
+      "state": "waiting",
       "filedAt": "2026-09-25T08:30:00.000Z"
     }
   ],
   "eyeItems": [
+    {
+      "id": "switched-off-buttons-1237",
+      "title": "Switched-off buttons: does the faded look read right to you?",
+      "question": "WHAT YOU ARE JUDGING — not whether it works, but whether it looks right. Each frame shows the same five buttons twice: working on top, switched off underneath. The whole product now uses this one look, so whatever you decide here is what every switched-off button in Drape looks like, billing windows included. Two things to weigh: can you still READ a switched-off button, and is it obviously NOT pressable at a glance? If it is too faint, or not faint enough, say so — it is one number and a one-line change. Light and dark are the same five buttons.",
+      "state": "waiting",
+      "filedAt": "2026-09-25T14:55:00.000Z",
+      "issueNumber": 1237,
+      "cardId": "disabled-buttons-1237",
+      "frames": [
+        {
+          "key": "crew-eye/ce13e93b-14f0-49b2-a046-82a1ed961dd7.png",
+          "arm": "light",
+          "caption": "Light. Top row working, bottom row the same five switched off: the black Cast it button, an outlined Open in canvas, a small Delete, a plain Back, and the search glyph."
+        },
+        {
+          "key": "crew-eye/85f0aeec-3dff-417b-bd3f-34732e3d7080.png",
+          "arm": "dark",
+          "caption": "Dark. The same five, working above and switched off below — the filled button goes from near-white to mid-grey, the outline and the labels soften with it."
+        }
+      ]
+    },
     {
       "id": "sheet-card-states-1086-frames",
       "title": "Your unsigned sheets row: a sheet being cast, a sheet that was refused, and a sheet with faces - all four cards in one line",
@@ -8212,6 +8237,13 @@
       "status": "merged",
       "prNumber": 1227,
       "note": "#1220 slice 1; the free Try again on an unchecked view is still open on that card."
+    },
+    {
+      "id": "pr-1254-disabled-buttons-1237",
+      "title": "Switched-off buttons look switched off — one shared rule, 43 places (#1237)",
+      "status": "merged",
+      "prNumber": 1254,
+      "note": "Merged 817e44da, live on production."
     }
   ],
   "problems": [
@@ -8501,7 +8533,16 @@
     219
   ],
   "nextUp": {
-    "readAt": "2026-09-25T13:26:17.705Z",
-    "items": []
+    "readAt": "2026-09-25T14:49:18.417Z",
+    "items": [
+      {
+        "issueNumber": 1237,
+        "title": "A switched-off button looks exactly like one that works — 43 of them, two on the money pages (found while fixing #1232)",
+        "urgent": false,
+        "held": {
+          "state": "blocked"
+        }
+      }
+    ]
   }
 }
