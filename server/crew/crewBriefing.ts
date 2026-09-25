@@ -397,7 +397,10 @@ export const crewBriefingSchema = z.object({
     /** The open cards waiting on the ladder, by rung where the record names one (#493). */
     ladderCards: ladderCardsSchema,
     /** At-a-glance state, capped so the strip stays a glance (#74). */
-    chips: z.array(chipSchema).max(6),
+    /* Nothing draws these since #1201 (his word, 2026-09-25: *"i barely read
+       the overview"*); the section menu took their place. Optional so an
+       edition may stop writing them; a file still carrying them validates. */
+    chips: z.array(chipSchema).max(6).default([]),
   }).strict(),
   needsYou: z.array(needsYouSchema)
     .refine(uniqueBy<z.infer<typeof needsYouSchema>>("card", (card) => card.id), uniqueMessage("needsYou[].id")),
@@ -581,7 +584,7 @@ export function degradedCrewBriefing(): CrewBriefing {
       detail:
         "The team's half of this page could not be read, so everything above is empty. "
         + "Your replies are unaffected — they live in the database and are still being "
-        + "written and read, and the General box below still works. A shift is "
+        + "written and read, and the reply box on every card still works. A shift is "
         + "repairing the file.",
       severity: "urgent",
       state: "open",

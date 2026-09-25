@@ -55,7 +55,7 @@
  */
 import { deriveShiftRunState } from "@shared/crewShiftState";
 import { cn } from "@/lib/utils";
-import { TableHead } from "@/foundation";
+import { SectionHead, SectionShell } from "./CrewShell";
 import type { CrewShiftRunView, CrewShiftRunsView } from "./crewTypes";
 
 /** How a run's kind reads in a sentence. `background` is called out by name. */
@@ -178,7 +178,15 @@ function PastRun({ run, now }: { run: CrewShiftRunView; now: number }) {
   );
 }
 
-export function CrewWorkingNow({ shiftRuns, now }: { shiftRuns: CrewShiftRunsView; now: number }) {
+export function CrewWorkingNow({
+  shiftRuns, now, embedded, first,
+}: {
+  shiftRuns: CrewShiftRunsView;
+  now: number;
+  /** One block of the HAPPENING NOW card rather than a card of its own (#1201). */
+  embedded?: boolean;
+  first?: boolean;
+}) {
   /*
     THE DARK INSTRUMENT SAYS SO. `available: false` means the table is not in
     this database yet — the window between this deploy and the founder's
@@ -188,8 +196,8 @@ export function CrewWorkingNow({ shiftRuns, now }: { shiftRuns: CrewShiftRunsVie
   */
   if (!shiftRuns.available) {
     return (
-      <section className="dp-crew__card">
-        <TableHead eyebrow="Working now" />
+      <SectionShell embedded={embedded} first={first}>
+        <SectionHead embedded={embedded} eyebrow="Working now" />
         <p className="dp-crew__mission dp-crew__body--soft dp-crew__gap">Not live yet.</p>
         <p className="dp-crew__body dp-crew__body--quiet dp-crew__gap--tight">
           The shift row needs its table in this database — one command, and it is yours to run:
@@ -198,7 +206,7 @@ export function CrewWorkingNow({ shiftRuns, now }: { shiftRuns: CrewShiftRunsVie
           railway.cmd run --service MySQL -- npx tsx scripts/ceremony-crew-shift-runs.mts
           --production
         </p>
-      </section>
+      </SectionShell>
     );
   }
 
@@ -211,8 +219,8 @@ export function CrewWorkingNow({ shiftRuns, now }: { shiftRuns: CrewShiftRunsVie
   const past = runs.filter((run) => run.id !== open?.id).slice(0, 3);
 
   return (
-    <section className={cn("dp-crew__card", state === "stalled" && "dp-crew__card--alert")}>
-      <TableHead eyebrow="Working now">
+    <SectionShell embedded={embedded} first={first} className={cn(state === "stalled" && "dp-crew__card--alert")}>
+      <SectionHead embedded={embedded} eyebrow="Working now">
         {state === "running" && (
           /* The one live signal on the page. `aria-hidden` on the dot because
              the state is already said in words below — a screen reader should
@@ -222,7 +230,7 @@ export function CrewWorkingNow({ shiftRuns, now }: { shiftRuns: CrewShiftRunsVie
             live
           </span>
         )}
-      </TableHead>
+      </SectionHead>
 
       {state === null && (
         <p className="dp-crew__mission dp-crew__body--soft dp-crew__gap">Nothing running.</p>
@@ -262,6 +270,6 @@ export function CrewWorkingNow({ shiftRuns, now }: { shiftRuns: CrewShiftRunsVie
           </ul>
         </div>
       )}
-    </section>
+    </SectionShell>
   );
 }

@@ -502,7 +502,11 @@ describe("card 415 §3 — Crew states its freshness exactly once, and still nam
     */
     const crew = code(CREW());
     expect(crew).toMatch(/const now = useNow\(/);
-    expect(crew).toMatch(/<CrewWorkingNow[^>]*now=\{now\}/s);
+    /* Since #1201 the strip is a block of the HAPPENING NOW card: the page
+       hands the ticker to the card, and the card hands it to the strip. */
+    expect(crew).toMatch(/<CrewHappeningNow[^>]*now=\{now\}/s);
+    const happening = code(read("features/admin/components/crew/CrewHappeningNow.tsx"));
+    expect(happening).toMatch(/<CrewWorkingNow[^>]*now=\{now\}/s);
   });
 });
 

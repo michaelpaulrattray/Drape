@@ -106,6 +106,18 @@ export type LiveDesk = {
    * subtracts these before it draws what needs him (#1193).
    */
   readonly closedCards: readonly number[];
+  /**
+   * Ladder cards CLOSED inside the window, with the rung their label named —
+   * so a rung can say "2 finished" beside "5 waiting" and show them struck
+   * through, instead of a count that only ever shrinks (#1201, his question:
+   * *"shouldnt it let me know instead of showing 5 waiting?"*).
+   */
+  readonly finishedLadder: readonly {
+    readonly issueNumber: number;
+    readonly title: string;
+    readonly rung: string | null;
+    readonly closedAt: string;
+  }[];
   readonly counts: {
     readonly openCards: number;
     readonly openPullRequests: number;
@@ -323,6 +335,16 @@ export function deriveLiveDesk(reading: LiveQueueReading, rungKeys: readonly str
       .filter((item) => item.kind === "issue" && item.status !== "open")
       .map((item) => item.number)
       .sort((a, b) => a - b),
+    finishedLadder: reading.recent
+      .filter((item) => item.kind === "issue" && item.status !== "open" && item.closedAt !== null)
+      .filter((item) => CREW_LADDER_GROUP_KEYS.includes(pipelineGroupFor(item.labels)))
+      .map((item) => ({
+        issueNumber: item.number,
+        title: item.title,
+        rung: rungFromLabels(item.labels, rungKeys),
+        closedAt: item.closedAt as string,
+      }))
+      .sort((a, b) => b.closedAt.localeCompare(a.closedAt)),
     counts: {
       openCards: openIssues(reading).length,
       openPullRequests: openPulls(reading).length,

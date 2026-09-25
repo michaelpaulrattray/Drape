@@ -427,7 +427,7 @@ describe("the degraded state", () => {
        actually still standing on a degraded page, and it is what he is told. */
     expect(degraded.problems[0]!.title.toLowerCase()).toContain("failed to load");
     expect(degraded.problems[0]!.detail).toContain("Your replies are unaffected");
-    expect(degraded.problems[0]!.detail).toContain("General box");
+    expect(degraded.problems[0]!.detail).toContain("reply box on every card");
     expect(degraded.problems[0]!.detail).not.toContain("journal");
     expect(degraded.needsYou).toEqual([]);
     expect(degraded.acknowledgedReplyIds).toEqual([]);

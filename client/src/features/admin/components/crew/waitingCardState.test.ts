@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { CREW_CARD_STATES, crewCardNeedsHim } from "../../../../../../shared/crewCardState";
-import { nextUpRows, replyFallsToGeneral } from "./crewTypes";
+import { nextUpRows } from "./crewTypes";
 
 const base = (rel: string) => basename(rel);
 
@@ -86,22 +86,6 @@ describe("the waiting state", () => {
     expect(crewCardNeedsHim("done")).toBe(false);
   });
 
-  it("keeps his reply under the card instead of dropping it in the General box", () => {
-    /*
-      The silent failure a literal would have caused: the card renders on his
-      desk with a thread, and the thread's replies fall past it into General.
-      Two views of one question, disagreeing.
-    */
-    const cards = [
-      { id: "still-his", state: "waiting" },
-      { id: "finished", state: "answered" },
-      { id: "fresh", state: "open" },
-    ] as never;
-    expect(replyFallsToGeneral("still-his", cards)).toBe(false);
-    expect(replyFallsToGeneral("fresh", cards)).toBe(false);
-    expect(replyFallsToGeneral("finished", cards)).toBe(true);
-    expect(replyFallsToGeneral(null, cards)).toBe(true);
-  });
 
   it("still marks its NEXT UP row as blocked on him", () => {
     /*
