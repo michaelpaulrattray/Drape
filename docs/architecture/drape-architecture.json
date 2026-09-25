@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "164b660c68765af7"
+    "sourceFingerprint": "e7303e46d531ae50"
   },
   "domains": [
     {
@@ -13463,6 +13463,10 @@
     {
       "id": "test:server/suitePointerDiscipline.test.ts",
       "path": "server/suitePointerDiscipline.test.ts"
+    },
+    {
+      "id": "test:server/switchedOffButtonDiscipline.test.ts",
+      "path": "server/switchedOffButtonDiscipline.test.ts"
     },
     {
       "id": "test:server/testing/fetchablePort.test.ts",

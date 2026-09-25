@@ -123,7 +123,7 @@
   color: var(--meta);
 }
 
-.dpc-cardmenu__item:hover { background: var(--well); }
+.dpc-cardmenu__item:hover:not(:disabled) { background: var(--well); }
 /*
   THE SAME QUIETER MARK, because this is the same shape (the law-7 class sweep
   behind his reply #73). A row inside a floating panel drawing a 2px accent
@@ -161,7 +161,7 @@
 
 /* Destructive reveals itself on hover, per the foundation button law. */
 .dpc-cardmenu__item--danger { color: var(--metaStrong); }
-.dpc-cardmenu__item--danger:hover { color: var(--errorInk); background: var(--well); }
+.dpc-cardmenu__item--danger:hover:not(:disabled) { color: var(--errorInk); background: var(--well); }
 
 .dpc-cardmenu__rule { display: block; height: 1px; margin: 5px 0; background: var(--rule); }
 
@@ -285,7 +285,7 @@
   color: var(--secondary);
 }
 
-.dpc-confirm__keep:hover { background: var(--well); border-color: var(--lineStrong); }
+.dpc-confirm__keep:hover:not(:disabled) { background: var(--well); border-color: var(--lineStrong); }
 
 /*
   Filled, not outlined. The reference outlines its destructive button, but in
@@ -298,7 +298,7 @@
   color: var(--onError);
 }
 
-.dpc-confirm__go:hover { filter: brightness(0.94); }
+.dpc-confirm__go:hover:not(:disabled) { filter: brightness(0.94); }
 
 /* A confirm that BUYS rather than destroys (#664): the ink every other
    primary wears (`.dp-btn--primary`), because error red over a purchase
@@ -822,7 +822,16 @@ button.dpc-modal__replace:focus-visible {
   cursor: pointer;
 }
 
-.dpc-modal__secondary:hover { border-color: var(--ink); }
+.dpc-modal__secondary:hover:not(:disabled) { border-color: var(--ink); }
+/*
+  SWITCHED OFF (#1237, his word: *"Give switched-off buttons a quieter look
+  and a normal pointer"*). Its own neighbour `.dpc-modal__primary:disabled`
+  has carried this for months; the secondary beside it never got one, so a
+  Cancel that is off while the modal is busy looked exactly like a live one.
+  0.4 and not the shared rule's 0.5 because these two sit in one footer and
+  must fade together — this family answers in its own idiom.
+*/
+.dpc-modal__secondary:disabled { opacity: 0.4; cursor: default; }
 
 /*
   SOLID `--ink`, never accent. Accent means STATE in this product — kept,
@@ -843,7 +852,7 @@ button.dpc-modal__replace:focus-visible {
   transition: opacity var(--t-fast) var(--ease);
 }
 
-.dpc-modal__primary:hover { opacity: 0.86; }
+.dpc-modal__primary:hover:not(:disabled) { opacity: 0.86; }
 .dpc-modal__primary:disabled { opacity: 0.4; cursor: default; }
 
 .dpc-modal__secondary:focus-visible,
@@ -993,7 +1002,9 @@ button.dpc-modal__replace:focus-visible {
   cursor: pointer;
 }
 
-.dpc-renamem__secondary:hover { border-color: var(--ink); }
+.dpc-renamem__secondary:hover:not(:disabled) { border-color: var(--ink); }
+/* Switched off, matching its own primary (#1237). */
+.dpc-renamem__secondary:disabled { opacity: 0.4; cursor: default; }
 
 /*
   Solid `--ink` when ready, never red. Ink is the constructive commit colour;
