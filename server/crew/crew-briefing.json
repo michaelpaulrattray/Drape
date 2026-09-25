@@ -1,7 +1,7 @@
 {
-  "edition": 524,
-  "updatedAt": "2026-09-25T06:25:00.000Z",
-  "shift": "Foreman — #1220: a view you paid for is no longer delivered unchecked",
+  "edition": 525,
+  "updatedAt": "2026-09-25T08:10:00.000Z",
+  "shift": "Foreman — #1208 + #1220: a view that went wrong has a way back",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -156,6 +156,10 @@
         {
           "state": "done",
           "title": "And it was worth checking the other readers while we were in there. Nine places in the studio show a picture to a model and ask it a question. Only the hard questions make it stop and think — driven rather than guessed: a simple \"what is this person wearing\" answered in under four seconds with no thinking at all, while the two-picture comparison used every token it had, every time. So one other reader is in the same family and is now carded (#1228); the seven simple ones measured clear, and that is a floor rather than a clean bill of health."
+        },
+        {
+          "title": "A view that went wrong now has a way back (#1208, #1220). A view that didn't arrive gets Try again · 50 CR — you were refunded when it failed, so asking again costs the same as any view, and the 50 comes back if it fails again. A view we couldn't check now says so and gets Try again · free — that one was charged and you kept it. Views that arrived and passed have no button at all. Your rule, in your words: you pay 50 for each view you keep. Waiting on a review before it ships.",
+          "state": "in-progress"
         }
       ]
     },
@@ -234,7 +238,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-25T06:22:16.395Z",
+      "readAt": "2026-09-25T07:40:32.335Z",
       "items": [
         {
           "issueNumber": 179,
@@ -5880,9 +5884,38 @@
           "caption": "Side profile. Left: a hard shadow thrown on the backdrop behind her head and a hot sheen on the cheek — the on-camera flash we were ordering. Right: open shadows, no shadow on the paper, skin reading as skin."
         }
       ]
+    },
+    {
+      "id": "view-try-again-1208-strip",
+      "title": "The Try again button, on a real strip — is three lines under a good picture too much?",
+      "question": "WHAT YOU ARE JUDGING — not whether it works, but how heavy it looks. On this strip, two views were delivered without us managing to check them and one never arrived. The two we couldn't check now carry three lines each: the name, the sentence \"We didn't get to check this one\", and the button. The one that failed carries its refund line and the button. The three good views carry nothing new. The sentence has to be there — without it a free button appears under one tile and not the others for no reason anyone could see — so if this is too busy the answer is a different shape, not a missing sentence. Light and dark are the same strip. Tell me if it reads right, or if the good tiles have become louder than the broken one.",
+      "state": "waiting",
+      "filedAt": "2026-09-25T08:10:00.000Z",
+      "issueNumber": 1208,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/b863a568-f51a-41b9-af6f-7373d5a31049.png",
+          "arm": "light",
+          "caption": "Left to right: Master, Close-up and Three-quarter (we couldn't check these two — Try again · free), Full front and Side profile (checked and fine — no button), Full back (never arrived — 50 CR BACK, Try again · 50 CR)."
+        },
+        {
+          "key": "crew-eye/790c5548-56bf-4a5c-9927-35c39f097eed.png",
+          "arm": "dark",
+          "caption": "The same strip in dark. Same six tiles, same three buttons."
+        }
+      ]
     }
   ],
   "pipeline": [
+    {
+      "id": "view-try-again-1208",
+      "title": "A view that went wrong has a way back — Try again on the tile",
+      "status": "in-review",
+      "prNumber": 1233,
+      "cardId": null,
+      "note": "One button, two prices — 50 for a refunded view, free for one nobody checked."
+    },
     {
       "id": "crew-wire-projection-1138",
       "title": "Your Crew page stopped downloading the other half-megabyte nobody can see",
@@ -9083,7 +9116,7 @@
     218
   ],
   "nextUp": {
-    "readAt": "2026-09-25T06:22:16.394Z",
+    "readAt": "2026-09-25T07:40:32.334Z",
     "items": [
       {
         "issueNumber": 1208,
@@ -9093,6 +9126,11 @@
       {
         "issueNumber": 1224,
         "title": "Jev reads every card's category — a check with controls first, then a writer for unlabelled cards only; never a rung (his ruling 2026-09-25: wherever Jev genuinely improves the workflow)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1232,
+        "title": "While a new roll is being paid for, the previous sheet cannot be looked at — the skeleton grid is gated on the dispatch latch, not on which roll is shown (his report 2026-09-25)",
         "urgent": false
       }
     ]
