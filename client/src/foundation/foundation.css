@@ -725,6 +725,41 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
     background var(--t-fast) var(--ease);
 }
 
+/*
+  SWITCHED OFF — quieter, and an ordinary pointer (#1237).
+
+  His word, 2026-09-25, verbatim and entire: *"Give switched-off buttons a
+  quieter look and a normal pointer"*.
+
+  ⚠ Until this rule existed the base block said `cursor: pointer` and said
+  NOTHING about the switched-off state, so a button that could not be pressed
+  was identical to one that could — same colour, same brightness, and the hand
+  pointer still promising a press. Measured in the running app across both
+  themes during a dispatch latch: `disabled: true` with `opacity: 1`,
+  `cursor: pointer`, and the same `color` as resting. 43 elements in 22 files
+  wore it, two of them on the money pages.
+
+  **0.5 is not a new number — it is the one the product already chose.** The
+  sole place that ever read honestly was the admin table's footer, which faded
+  its Back/Next to `--muted`; against `--surface` in light, `--metaStrong` at
+  0.5 composites to rgb(196…) where `--muted` sits at 180 — the same reading,
+  reached by a mechanism that works for the ink-filled primary too, which a
+  colour swap cannot do.
+
+  It is OPACITY rather than a colour because the four variants are four
+  different paint jobs (ink fill, outline, bare text, glass) and only a group
+  fade quiets all four with one declaration.
+
+  `pointer-events` is deliberately NOT `none`: several of these carry a `title`
+  explaining why they are off, and killing hover would take the explanation
+  with the promise.
+*/
+.dp-btn:disabled,
+.dp-iconbtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* Primary: ink fill, hover by opacity so it survives theme flip. */
 .dp-btn--primary {
   padding: 9px var(--s-6);
@@ -734,7 +769,7 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   font-weight: 500;
 }
 
-.dp-btn--primary:hover { opacity: 0.86; }
+.dp-btn--primary:hover:not(:disabled) { opacity: 0.86; }
 
 .dp-btn--secondary {
   padding: 8px 13px;
@@ -745,13 +780,13 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   font-weight: 400;
 }
 
-.dp-btn--secondary:hover {
+.dp-btn--secondary:hover:not(:disabled) {
   border-color: var(--ink);
   color: var(--ink);
 }
 
 /* Destructive is a hover state on a secondary button, never a resting red. */
-.dp-btn--secondary.dp-btn--destructive:hover {
+.dp-btn--secondary.dp-btn--destructive:hover:not(:disabled) {
   border-color: var(--error);
   color: var(--errorInk);
 }
@@ -765,7 +800,7 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   gap: 5px;
 }
 
-.dp-btn--quiet:hover { color: var(--ink); }
+.dp-btn--quiet:hover:not(:disabled) { color: var(--ink); }
 
 .dp-btn--small {
   padding: 7px 13px;
@@ -796,7 +831,7 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   transition: background var(--t-fast) var(--ease);
 }
 
-.dp-iconbtn:hover { background: var(--fillStrong); }
+.dp-iconbtn:hover:not(:disabled) { background: var(--fillStrong); }
 
 /*
   THE SHELL'S OWN CONTROL, one step smaller than the surface's (#321 defect d).
@@ -816,7 +851,7 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   height: 28px;
 }
 
-.dp-iconbtn--theme:hover { background: var(--fill); }
+.dp-iconbtn--theme:hover:not(:disabled) { background: var(--fill); }
 
 /* Over media: dark glass only — translucent white measured 2.5:1 (README §6). */
 .dp-btn--onmedia {
@@ -830,7 +865,7 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   font-weight: 500;
 }
 
-.dp-btn--onmedia:hover { background: var(--scrimChipHov); }
+.dp-btn--onmedia:hover:not(:disabled) { background: var(--scrimChipHov); }
 
 /* The one deliberate high-contrast exception: a near-solid white pill. */
 .dp-btn--onmediaPrimary {
@@ -842,7 +877,7 @@ button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
   font-weight: 500;
 }
 
-.dp-btn--onmediaPrimary:hover { opacity: 0.9; }
+.dp-btn--onmediaPrimary:hover:not(:disabled) { opacity: 0.9; }
 
 /* An instruction where a disabled primary would go (README §5). */
 .dp-instruction {
@@ -2176,10 +2211,18 @@ a.dp-segmented__seg {
 
 .dp-table__range { font: 400 10.5px var(--font-mono); color: var(--faint); }
 
-.dp-table__foot .dp-btn[disabled] {
-  color: var(--muted);
-  cursor: not-allowed;
-}
+/*
+  ⚠ THE TABLE FOOTER'S OWN SWITCHED-OFF RULE IS GONE (#1237) AND THAT IS THE
+  POINT, not a casualty. For months this was the ONLY place in the product
+  where a switched-off button read as switched off — `--muted` and a
+  `not-allowed` cursor on Back/Next — and the shared rule now says the same
+  thing for all 43 of them. Two answers to one question is how the shared rule
+  came to be silent in the first place.
+
+  What changed for the footer alone: the pointer. His word is *"a normal
+  pointer"*, and `not-allowed` is a special one; the fade is the reading it
+  already had (`.dp-btn:disabled` above carries the arithmetic).
+*/
 
 /* ------------------------------------------- the table's head and filters */
 

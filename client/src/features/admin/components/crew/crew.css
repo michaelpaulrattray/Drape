@@ -1026,9 +1026,10 @@ a.dp-crew__hold:hover {
   border-color: var(--ink);
 }
 
+/* Switched off: quieter, and an ORDINARY pointer (#1237, his word). */
 .dp-crew__switch:disabled {
   opacity: 0.4;
-  cursor: not-allowed;
+  cursor: default;
 }
 
 .dp-crew__knob {
@@ -1129,7 +1130,7 @@ a.dp-crew__hold:hover {
     border-color var(--t-fast) var(--ease);
 }
 
-.dp-crew__tap:hover {
+.dp-crew__tap:hover:not(:disabled) {
   color: var(--ink);
   border-color: var(--borderSoft);
 }
@@ -1141,7 +1142,7 @@ a.dp-crew__hold:hover {
 
 .dp-crew__tap:disabled {
   opacity: 0.4;
-  cursor: not-allowed;
+  cursor: default;
 }
 
 .dp-crew__taken {
