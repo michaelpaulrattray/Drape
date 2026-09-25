@@ -17,6 +17,7 @@ import { facetOfSubject } from "./refineFacets";
 import {
   aboutFacet,
   advisoryMisses,
+  ceilingFor,
   facetIn,
   confirmVerdict,
   facetsWithUnreliabilityPrior,
@@ -713,5 +714,138 @@ describe("a confirming re-read that never lands cannot deliver an evidenced abse
 
     expect(confirmed.ok).toBe(false);
     expect(confirmed.readings).toBe(1);
+  });
+});
+
+/**
+ * THE CEILING THAT DID NOT FIT (#1228).
+ *
+ * Measured through the real provider on a real production frame before any of
+ * this was written: at eight facts the reply costs 827–965 completion tokens
+ * and the shipped ceiling of 700 truncated it 2 of 2 — the fragment failed
+ * `JSON.parse`, the catch filed it as *"the reader could not be reached"*, and
+ * the render was delivered and CHARGED with nothing having checked it.
+ *
+ * These arms are driven, never live (working law 3): a scripted engine cannot
+ * rescue a broken guard by behaving well.
+ */
+describe("the token ceiling (#1228)", () => {
+  /** A reader that records what it was ASKED, so the ceiling is proven at the wire. */
+  function recordingEngine(reply: Partial<TextResult> & { text: string }) {
+    const requests: Array<{ maxOutputTokens?: number }> = [];
+    const engine: TextEngine = {
+      id: "recording",
+      async complete(request): Promise<TextResult> {
+        requests.push({ maxOutputTokens: request.maxOutputTokens });
+        return {
+          provenance: { provider: "test", model: "recording" } as unknown as TextResult["provenance"],
+          latencyMs: 1,
+          ...reply,
+        };
+      },
+    };
+    return { engine, requests };
+  }
+
+  const factList = (n: number) =>
+    Array.from({ length: n }, (_, index) => ({
+      subject: aboutFacet(index % 2 === 0 ? HAIR_WORN : EYE_COLOUR),
+      asked: `fact number ${index + 1}`,
+    }));
+
+  /** A well-formed verdict for exactly the facts asked, so a good reply still passes. */
+  const fullReply = (n: number) => JSON.stringify({
+    results: Array.from({ length: n }, (_, index) => ({
+      id: index + 1,
+      present: true,
+      saw: `the thing named in fact ${index + 1}`,
+    })),
+  });
+
+  it("derives the ceiling from the number of facts, and sends it AT THE WIRE", async () => {
+    for (const n of [1, 4, 8, 20]) {
+      const { engine, requests } = recordingEngine({ text: fullReply(n) });
+      await verifyRender({ bytes, contentType: "image/png", facts: factList(n), engine });
+      expect(requests[0].maxOutputTokens).toBe(ceilingFor(n));
+    }
+  });
+
+  it("gives an eight-fact reading room for what an eight-fact reading measurably costs", () => {
+    /* 965 tokens was the worst of three live readings at eight facts. A ceiling
+       that does not clear the measurement is the bug this card was filed about. */
+    expect(ceilingFor(8)).toBeGreaterThan(965);
+    /* And the shipped constant must never come back. */
+    expect(ceilingFor(8)).toBeGreaterThan(700);
+  });
+
+  it("keeps a floor for short asks and a cap for pathological ones", () => {
+    expect(ceilingFor(1)).toBe(1_000);
+    expect(ceilingFor(0)).toBe(1_000);
+    expect(ceilingFor(8)).toBe(2_000);
+    expect(ceilingFor(1_000)).toBe(4_000);
+  });
+
+  /*
+    THE ARM THAT ACTUALLY DISTINGUISHES THE FIX.
+
+    An UNPARSEABLE fragment already failed open before this change, so an arm
+    driving one would pass with the guard deleted — it would be measuring the
+    catch, not the guard. The case that separates them is a reply that is cut
+    off but still PARSES: without the `truncated` check it yields a verdict over
+    a SUBSET of the facts, and a binding miss on a fact the reader never
+    actually reached can refuse a paid render. With it, the reading is refused
+    as incomplete and the render is delivered unverified instead.
+  */
+  it("refuses a truncated reply even when it happens to parse", async () => {
+    const partial = JSON.stringify({
+      results: [{ id: 1, present: true, saw: "only the first fact was ever answered" }],
+    });
+    const { engine } = recordingEngine({ text: partial, truncated: true });
+
+    const verdict = await verifyRender({
+      bytes,
+      contentType: "image/png",
+      facts: factList(8),
+      engine,
+    });
+
+    expect(verdict.unavailable).toBe(true);
+    expect(verdict.checks).toHaveLength(0);
+    /* Fail-open is deliberate here and is NOT this card's to move (D-194/D-246). */
+    expect(verdict.ok).toBe(true);
+  });
+
+  it("negative control: the same partial reply WITHOUT the truncation flag is read as before", async () => {
+    const partial = JSON.stringify({
+      results: [{ id: 1, present: true, saw: "only the first fact was ever answered" }],
+    });
+    const { engine } = recordingEngine({ text: partial });
+
+    const verdict = await verifyRender({
+      bytes,
+      contentType: "image/png",
+      facts: factList(8),
+      engine,
+    });
+
+    /* Unchanged behaviour: the rows that came back are read, the rest are not.
+       This is what proves the guard keys on `truncated` and not on shape. */
+    expect(verdict.unavailable).toBeUndefined();
+    expect(verdict.checks).toHaveLength(8);
+    expect(verdict.checks.filter((check) => check.read)).toHaveLength(1);
+  });
+
+  it("a complete reply is untouched by the guard", async () => {
+    const { engine } = recordingEngine({ text: fullReply(4), truncated: false });
+
+    const verdict = await verifyRender({
+      bytes,
+      contentType: "image/png",
+      facts: factList(4),
+      engine,
+    });
+
+    expect(verdict.unavailable).toBeUndefined();
+    expect(verdict.checks.filter((check) => check.read)).toHaveLength(4);
   });
 });
