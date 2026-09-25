@@ -69,15 +69,27 @@ describe("the package's wardrobe sentence", () => {
       expect(spec).toContain("below the frame of the reference photograph");
     });
 
-    it("⚠ stops calling a JACKET an addition — the line may BE one", () => {
+    it("⚠ NEITHER sentence calls a JACKET an addition — her outfit may BE one", () => {
       /*
         The same self-contradiction the roll prompt's "No jackets" had, in the
         one place where the price is a refunded slice: a judge told that a
         jacket fails wherever it appears, handed a Cast whose outfit is a work
         jacket, fails a view for wearing what we asked for.
+
+        ⚠ **THIS ARM USED TO ASSERT THE SHARED SENTENCE STILL SAID IT** — the
+        contrast was the point, and the clause was left standing there on the
+        reasoning that a Cast with no written line has nothing a jacket could
+        contradict. **Read at production on 2026-09-25 (#1207): 5 of 5 signed
+        Casts have no line**, so the branch this arm treated as the safe one is
+        the only branch that has ever run, and the contradiction was live for
+        every Cast whose outfit includes a jacket — while the branch it was
+        fixed on had never once been taken. The shared sentence defers to the
+        reference now, so both are free of it and the contrast is gone.
       */
-      expect(CAST_PACKAGE_WARDROBE_SPEC).toContain("a jacket");
+      expect(CAST_PACKAGE_WARDROBE_SPEC).not.toContain("a jacket");
       expect(castPackageWardrobeSpec(LINE)).not.toContain("a jacket");
+      /* The reader is not inert: it finds the phrase in the text that had it. */
+      expect("plus ADDITIONS — a jacket, jewellery").toContain("a jacket");
       /* And the rest of the addition list survives, which it CAN because the
          door refuses hats, props, logos and printed text in the line. */
       for (const addition of ["jewellery", "a hat", "a bag", "a prop", "printed"]) {

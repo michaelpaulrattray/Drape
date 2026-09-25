@@ -31,6 +31,14 @@ import {
 } from "../../shared/boardTypes";
 import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
+import { CAPTURE_SENTENCES } from "./houseBlock";
+
+/**
+ * THE CAMERA AND LIGHT A SIGNED VIEW IS SHOT UNDER — the master's own, taken
+ * from the road that made it (#1207). See {@link composePackageViewPrompt} for
+ * why this is not `PHOTOREAL_HUMAN_BLOCKS.capture` any more.
+ */
+const PACKAGE_CAPTURE = CAPTURE_SENTENCES.join(" ");
 
 /**
  * PACKAGE v3.1 — the final composition (founder ruling, 2026-08-02). This ends
@@ -137,18 +145,50 @@ export const CASTING_V2_SIGN_PRICE_CREDITS =
  * limits: compare what both images show, and treat additions as failures
  * wherever they appear.
  *
+ * ⚠ **AND IT NAMED A GARMENT UNTIL 2026-09-25 (#1207), WHICH IS THIS
+ * DOCBLOCK'S OWN OPENING LESSON MISSED ONE LEVEL UP.** The header says
+ * *relative to the reference, never an absolute colour* — and the sentence then
+ * said *"the SAME plain unbranded **crew-neck top** the reference photograph
+ * shows"*. A colour was the thing that cost a refund in August; a garment TYPE
+ * is the same mistake with more of the outfit inside it. His report, verbatim:
+ * *"my sifr cast closeup rendered correctly full frontal rendered incorrect she
+ * is wearing pants and shoes these dont match her described outfit at all in
+ * the brief."*
+ *
+ * ⚠ **The product contained its own control and it is why the close-up
+ * survived.** `CLOSE_UP_WARDROBE` describes BY REFERENCE — *"where the collar
+ * IS visible it matches the reference's neckline and colour"* — and names no
+ * garment; that is the one view he reported as correct. This sentence now takes
+ * the same posture, so both are relative and neither can contradict a master.
+ *
+ * ⚠ **Measured before it was changed, and it is not an edge case: 5 of 5
+ * signed Casts in production carry NO stored wardrobe line, all time.** So
+ * `castPackageWardrobeSpec`'s composed-from-a-line road has never once run, and
+ * this constant is not a fallback — it is the only wardrobe sentence the
+ * product has ever sent. That the dead road still costs a parameter on a paid
+ * path is filed, not settled here.
+ *
+ * ⚠ **"a jacket … is a failure" LEFT THE ADDITION LIST IN THE SAME EDIT**, and
+ * the reason was already written down two docblocks below: with an outfit that
+ * may itself BE a jacket, that clause fails the customer's own clothes. It was
+ * filed there as a thing that would go *"the moment an exact line exists"* — but
+ * no line has ever existed, so the contradiction was never conditional and has
+ * been live for every Cast whose outfit includes one. The rest of the list
+ * stays and is now phrased against the reference, which is what makes it able
+ * to keep standing without a stored line behind it.
+ *
  * The trousers and shoes did not simply vanish. They moved into the DIRECTIVE
  * of the three full-length views, which is generation guidance and is never
  * shown to the judge. The garment is still asked for; it just stops being
  * grounds for a refund nobody could have earned.
  */
 export const CAST_PACKAGE_WARDROBE_SPEC =
-  "the SAME plain unbranded crew-neck top the reference photograph shows, in the same colour, "
+  "the SAME outfit the reference photograph shows — the same garments, in the same colours, "
   + "unchanged across every view. "
-  + "The reference is a chest-up photograph, so it shows no trousers and no shoes: anything "
+  + "The reference is a chest-up photograph, so it shows nothing below the waist: anything "
   + "below the frame of the reference CANNOT be compared to it and must not fail this check. "
-  + "Judge only what both images show, plus ADDITIONS — a jacket, jewellery, a hat, a bag, a "
-  + "prop, or any printed text or logo is a failure wherever it appears.";
+  + "Judge only what both images show, plus ADDITIONS — jewellery, a hat, a bag, a prop, or "
+  + "any printed text or logo that the reference does not show is a failure wherever it appears.";
 
 /**
  * THE SAME SENTENCE, WRITTEN FROM A STORED LINE (design §3.3, item 6).
@@ -596,13 +636,74 @@ function wardrobeSpecFor(angle: CastViewAngle, wardrobeLine: string | null): str
  * is a bottom-half document (fable-1476's first-reveal locks, filed and
  * unbuilt). This removes a contradiction; it does not give the engine something
  * to copy.
+ *
+ * # ⚠ THE RESTRAINED DEFAULT WAS THE WHOLE POPULATION, AND IT FOUGHT HER OUTFIT (#1207)
+ *
+ * The paragraph above calls the `null` branch *"every Cast signed to date and
+ * every unpathed roll"* and reasons about it as the honest answer for a Cast
+ * with nothing describing its bottoms. Read at production on 2026-09-25: **5 of
+ * 5 signed Casts, all time, take this branch** — no Cast has ever had a stored
+ * line — so it was never a default, and since #203 made the path column a
+ * constant `null` no future Cast can take the other one either.
+ *
+ * What it sent was *"plain unbranded neutral trousers and plain unbranded
+ * shoes"*, and his Sifr cast met it: *"she is wearing pants and shoes these
+ * dont match her described outfit at all in the brief."* **The trousers were
+ * ours.** The 2026-08-23 repair above removed a contradiction between two of
+ * our own sentences; it left the invention itself standing, because at the time
+ * a stored line looked like the thing that would retire it.
+ *
+ * So the sentence stops naming garments and asks the engine to EXTEND what the
+ * reference already shows. It still has to invent — a chest-up photograph
+ * cannot establish a hem — but it now invents in her outfit's direction instead
+ * of against it, which is the difference between a guess and a contradiction.
+ * The judge is untouched by this: `packageViewExpectation` is assembled from
+ * `spec` alone and never reads a directive, so nothing here can fail a view.
  */
 function belowWaistFor(angle: CastViewAngle, wardrobeLine: string | null): string {
   if (!VIEWS[angle].belowWaist || wardrobeLine !== null) return "";
-  return " Below the waist, plain unbranded neutral trousers and plain unbranded shoes in a "
-    + "tone that sits with the top — no visible hardware, buttons, stitch detailing or logos.";
+  return " Below the waist, CONTINUE THE SAME OUTFIT the reference photograph shows — whatever "
+    + "its lower half and footwear would be, in keeping with the garments, materials and colours "
+    + "visible above the crop. Do not substitute a different style of clothing, and no visible "
+    + "logos or printed text.";
 }
 
+/**
+ * ⚠ **THE LIGHT A SIGNED VIEW IS SHOT UNDER IS THE MASTER'S, NOT THE FLASH
+ * STUDIO'S — 2026-09-25 (#1207).**
+ *
+ * His report, verbatim: *"the side profile has a harsh flash which doesnt match
+ * the master or the closeup."* Read at the wire rather than at the file: this
+ * prompt sent `PHOTOREAL_HUMAN_BLOCKS.capture` whole, and that block's third
+ * sentence is *"LIGHTING: Direct on-camera or slightly off-axis front flash …
+ * No gels, no diffusion."* **The flash was ordered, not hallucinated** — the
+ * same shape as the trousers, and the same shape as the 2026-08-23 defect this
+ * file already documents.
+ *
+ * The card reported the opposite — *"no view directive names the master's
+ * lighting"* — because its grep was run over THIS file, and the sentence
+ * arrives through an import. A prompt is proven at the wire (working law 5);
+ * composing one and reading it is what found this.
+ *
+ * ⚠ **The master disagrees BY CONSTRUCTION, and the product already knew.**
+ * Every roll since the register widened on 2026-09-24 is authored, and
+ * `houseBlock.ts` §5e replaces that sentence with the founder's own
+ * `LIGHTING_LINE` (*"Large soft frontal key … not as a forced flash sheen on
+ * every face"*) — then lists *"front flash"* and *"No gels, no diffusion"* in
+ * `FORBIDDEN_HOUSE_PHRASES`. **The Sign was sending phrases the road that made
+ * its own reference bans.** So the fix is a shared constant, not a new
+ * sentence: nothing here is authored, and the lighting a customer sees is the
+ * one he ratified.
+ *
+ * ⚠ **STATED, because it is a decision and not a free win** (fidelity law): the
+ * four Casts signed before 2026-09-24 have HOUSE-road masters, which really
+ * were flash-lit, and a view of one re-rendered today is lit the new way.
+ * Nothing fails — the judge has no light axis (that is #1207's second half,
+ * carded) — and the alternative is threading each Cast's road through a paid
+ * path so the product can keep reproducing retired blocks forever. **A package
+ * re-rendered today is rendered by today's product**; the declined option is
+ * named here rather than in a report nobody re-reads.
+ */
 export function composePackageViewPrompt(angle: CastViewAngle, wardrobeLine: string | null = null): string {
   const view = VIEWS[angle];
   return [
@@ -611,7 +712,7 @@ export function composePackageViewPrompt(angle: CastViewAngle, wardrobeLine: str
     + "similar-looking person.",
     `${view.directive}${belowWaistFor(angle, wardrobeLine)}`,
     `WARDROBE: ${wardrobeSpecFor(angle, wardrobeLine)}`,
-    PHOTOREAL_HUMAN_BLOCKS.capture,
+    PACKAGE_CAPTURE,
     PHOTOREAL_HUMAN_BLOCKS.realism,
     PHOTOREAL_HUMAN_BLOCKS.identityIntegrity,
     PHOTOREAL_HUMAN_BLOCKS.negatives,

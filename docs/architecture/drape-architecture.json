@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "23ce2d9cd7c60f6e"
+    "sourceFingerprint": "bc64ad6b690777b4"
   },
   "domains": [
     {
@@ -23475,6 +23475,11 @@
     {
       "from": "module:server/castingV2/castViewPackage.ts",
       "to": "module:server/castingV2/cohortPhotorealHuman.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castViewPackage.ts",
+      "to": "module:server/castingV2/houseBlock.ts",
       "kind": "imports"
     },
     {

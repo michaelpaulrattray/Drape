@@ -219,8 +219,15 @@ export function inkPlacementPhrase(input: {
  *
  * `CAST_PACKAGE_WARDROBE_SPEC`'s own self-contradiction — it hard-codes
  * *crew-neck* while naming the reference photograph as the authority — was
- * repaired by item 6's `castPackageWardrobeSpec(line)` and is not this
- * function's to carry.
+ * ⚠ **NOT repaired by item 6's `castPackageWardrobeSpec(line)`, and this
+ * sentence said it was until 2026-09-25 (#1207).** That function only composes
+ * when a Cast HAS a stored line, and production has never held one: **5 of 5
+ * signed Casts, all time, take the hard-coded branch.** So the repair was
+ * declared on a road nobody has ever travelled, while the defect it names ran
+ * on every package the product has shipped — and this paragraph is part of why
+ * nobody looked again. It is repaired now, in the constant itself, which
+ * defers to the reference the way the close-up's sentence always has. Still not
+ * this function's to carry.
  *
  * ⚠ **AND IT ANSWERS `bare | covered | unknown` RATHER THAN A BOOLEAN**, which
  * is ruling 1 in the signature. A `false` that cannot say whether it means *a

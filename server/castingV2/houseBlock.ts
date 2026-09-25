@@ -473,12 +473,32 @@ function framingSentencesFor(lane: HouseLane, fangs = true): readonly string[] {
 
 const framingSentences: readonly string[] = framingSentencesFor("human");
 
-const captureSentences: readonly string[] = [
+/**
+ * ⚠ **EXPORTED FOR THE SIGNED PACKAGE, 2026-09-25 (#1207) — and the export is
+ * the point rather than a convenience.**
+ *
+ * The five signed views are photographs of the person this block already made.
+ * Until now `composePackageViewPrompt` sent `PHOTOREAL_HUMAN_BLOCKS.capture`
+ * whole, so it ordered *"Direct on-camera or slightly off-axis front flash …
+ * No gels, no diffusion"* — **the exact phrases §5e takes OUT, and which
+ * `DROPPED_FROM_BLOCK` below names as the flash studio's.** His report:
+ * *"the side profile has a harsh flash which doesnt match the master or the
+ * closeup."* It did not match because the master was lit by the line below and
+ * the view was lit by the one it replaced.
+ *
+ * Shared rather than re-composed beside the package: two lists of the same
+ * four sentences is working law 4, and the coupling is the invariant we want —
+ * a view is lit the way the master was lit, so the day this changes both move
+ * together. (`derive-only-when-the-question-matches`: both ask *what camera and
+ * light photographed this person*, so the precondition holds.)
+ */
+export const CAPTURE_SENTENCES: readonly string[] = [
   take(PHOTOREAL_HUMAN_BLOCKS.captureSentences, "CAMERA:"),
   take(PHOTOREAL_HUMAN_BLOCKS.captureSentences, "Fine luminance-dominant noise"),
   LIGHTING_LINE,
   COLOUR_LINE,
 ];
+const captureSentences: readonly string[] = CAPTURE_SENTENCES;
 
 /** Every sentence of a lane's block, in order — the suite asserts the author wrote none of them. */
 /** The block minus the style preset — what every preset will share once there is more than one. HUMAN lane's. */
