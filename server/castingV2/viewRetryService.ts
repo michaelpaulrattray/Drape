@@ -74,7 +74,7 @@ import {
 } from "./packageOrchestrator";
 import { carriedFeatureWords, carriedInkCrops } from "./signService";
 import { assertNotFrozen } from "./spendGuards";
-import { castWardrobeLine } from "./wardrobeLine";
+import { castWardrobeLine, castWardrobeSource } from "./wardrobeLine";
 
 const log = createModuleLogger("castingV2/viewRetryService");
 
@@ -232,6 +232,10 @@ export async function retryCastView(
 
   const pronouns = castPronouns(source.technicalSchema);
   const wardrobeLine = castWardrobeLine(source.technicalSchema);
+  /* The line dresses and judges the retried view; the SOURCE is for the ink
+     ride check alone — a `brief` line keeps the ride on the house prior
+     (#1222), so a retry carries her tattoos exactly as the original views did. */
+  const wardrobeSource = castWardrobeSource(source.technicalSchema);
 
   /* ---- the claim ---- */
 
@@ -334,6 +338,7 @@ export async function retryCastView(
             pronouns,
             operationId,
             wardrobeLine,
+            wardrobeSource,
           }),
       source.candidateId === null
         ? Promise.resolve([])

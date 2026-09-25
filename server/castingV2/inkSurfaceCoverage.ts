@@ -400,7 +400,43 @@ export function wardrobeCoversSurface(
   if (resolution === undefined) return HOUSE_COVERAGE[placement];
   if (resolution.kind === "unpathed") return HOUSE_COVERAGE[placement];
   if (resolution.kind === "incoherent") return "unknown";
+  /*
+    ⚠ A `brief`-SOURCED LINE KEEPS THE HOUSE PRIOR, DECLARED RATHER THAN
+    SILENT (#1222). Since #1222 the author road records the outfit the brief
+    itself states, so every fresh stated-outfit cast resolves to a LINE — and
+    reading an arbitrary sentence's coverage is 7a-bis, a reader that does not
+    exist yet. `unknown` would be the honest per-surface answer and the wrong
+    product one: it flips neck and upper-arm asks on every stated-outfit cast
+    from PASS to a coverage_unread refusal, a capability regression riding a
+    card about VIEWS. So the ink gate answers exactly what it answered for
+    these casts yesterday (they were `unpathed` then), the line moves only the
+    five views and their judge, and this arm is the declared approximation the
+    fidelity law requires to be named: it dies the day 7a-bis reads real lines.
+    An EDITED line stays on `coverageOfWardrobeLine` — its `unknown` is the
+    fable-1368 ruling (never SELL a surface you cannot read), and no edit
+    writer exists yet, so nothing moves there either.
+  */
+  if (resolution.source === "brief") return HOUSE_COVERAGE[placement];
   return coverageOfWardrobeLine(resolution.line, placement);
+}
+
+/**
+ * The same question for a caller holding a SIGN SNAPSHOT rather than a branch
+ * resolution — the born-ink ride check (`placementRideCoverage`), which reads
+ * `technicalSchema.wardrobe` back off a signed Cast.
+ *
+ * One rule with `wardrobeCoversSurface` above, restated for the snapshot's
+ * shape: a `brief`-sourced line keeps the house prior (the declared 7a-bis
+ * approximation), anything else reads the line itself. A snapshot with no
+ * source and no line is every Cast signed before the paths, and answers the
+ * house table exactly as it always has.
+ */
+export function coverageOfSnapshotWardrobe(
+  snapshot: { line: string | null; source: string | null },
+  placement: InkPlacement,
+): SurfaceCoverage {
+  if (snapshot.source === "brief") return HOUSE_COVERAGE[placement];
+  return coverageOfWardrobeLine(snapshot.line, placement);
 }
 
 /**

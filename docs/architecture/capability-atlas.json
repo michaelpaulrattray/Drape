@@ -32,7 +32,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2562"
+          "server/castingV2/refineService.ts:2572"
         ]
       },
       {
@@ -65,7 +65,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4834",
+          "server/castingV2/refineService.ts:4844",
           "server/castingV2/rollEngine.ts:94",
           "server/castingV2/rollEngine.ts:106"
         ]
@@ -210,7 +210,7 @@
           "server/castingV2/refineDelta.ts:596",
           "server/castingV2/refineDelta.ts:1586",
           "server/castingV2/refineDelta.ts:1586",
-          "server/castingV2/refineService.ts:2428"
+          "server/castingV2/refineService.ts:2437"
         ]
       },
       {
@@ -241,8 +241,8 @@
           "server/castingV2/refineDelta.ts:569",
           "server/castingV2/refineDelta.ts:1563",
           "server/castingV2/refineDelta.ts:1563",
-          "server/castingV2/refineService.ts:2427",
-          "server/castingV2/refineService.ts:2432"
+          "server/castingV2/refineService.ts:2436",
+          "server/castingV2/refineService.ts:2442"
         ]
       },
       {
@@ -268,7 +268,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2928"
+          "server/castingV2/refineService.ts:2938"
         ]
       },
       {
@@ -278,7 +278,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3631"
+          "server/castingV2/refineService.ts:3641"
         ]
       },
       {
@@ -322,7 +322,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2662"
+          "server/castingV2/refineService.ts:2672"
         ]
       },
       {
@@ -427,7 +427,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4325"
+          "server/castingV2/refineService.ts:4335"
         ]
       },
       {
@@ -450,7 +450,7 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3399"
+          "server/castingV2/refineService.ts:3409"
         ]
       },
       {
@@ -460,7 +460,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3380"
+          "server/castingV2/refineService.ts:3390"
         ]
       },
       {
@@ -470,7 +470,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3475"
+          "server/castingV2/refineService.ts:3485"
         ]
       },
       {
@@ -480,8 +480,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3157",
-          "server/castingV2/refineService.ts:3174"
+          "server/castingV2/refineService.ts:3167",
+          "server/castingV2/refineService.ts:3184"
         ]
       },
       {
@@ -491,7 +491,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4295"
+          "server/castingV2/refineService.ts:4305"
         ]
       },
       {
@@ -501,7 +501,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2971"
+          "server/castingV2/refineService.ts:2981"
         ]
       },
       {
@@ -515,7 +515,7 @@
           "server/castingV2/stageWallBackstop.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1231",
+          "server/castingV2/briefCompiler.ts:1257",
           "server/castingV2/briefRefusalCopy.ts:116"
         ]
       },
@@ -528,7 +528,7 @@
           "server/castingV2/creativeRegisterScope.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1234",
+          "server/castingV2/briefCompiler.ts:1260",
           "server/castingV2/briefRefusalCopy.ts:122"
         ]
       },
@@ -543,7 +543,7 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1160",
+          "server/castingV2/briefCompiler.ts:1186",
           "server/castingV2/briefRefusalCopy.ts:128"
         ]
       },
@@ -555,8 +555,8 @@
           "server/castingV2/briefRefusalCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1085",
-          "server/castingV2/briefCompiler.ts:1515",
+          "server/castingV2/briefCompiler.ts:1099",
+          "server/castingV2/briefCompiler.ts:1556",
           "server/castingV2/briefRefusalCopy.ts:108"
         ]
       },
@@ -572,8 +572,8 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1213",
-          "server/castingV2/briefCompiler.ts:1220",
+          "server/castingV2/briefCompiler.ts:1239",
+          "server/castingV2/briefCompiler.ts:1246",
           "server/castingV2/briefRefusalCopy.ts:110"
         ]
       },
@@ -584,7 +584,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4813"
+          "server/castingV2/refineService.ts:4823"
         ]
       },
       {
@@ -648,7 +648,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2608"
+          "server/castingV2/refineService.ts:2618"
         ]
       },
       {
@@ -719,10 +719,10 @@
           "server/db/referenceReadDemand.test.ts"
         ],
         "sites": [
-          "server/castingV2/castingIntent.ts:1282",
-          "server/castingV2/castingIntent.ts:1318",
-          "server/castingV2/castingIntent.ts:1323",
-          "server/castingV2/castingIntent.ts:1338",
+          "server/castingV2/castingIntent.ts:1344",
+          "server/castingV2/castingIntent.ts:1380",
+          "server/castingV2/castingIntent.ts:1385",
+          "server/castingV2/castingIntent.ts:1400",
           "server/castingV2/openLaneAccept.ts:245",
           "server/castingV2/openLaneKind.ts:162",
           "server/castingV2/openLaneKind.ts:220",
@@ -744,7 +744,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2534"
+          "server/castingV2/refineService.ts:2544"
         ]
       },
       {

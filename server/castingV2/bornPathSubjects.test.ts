@@ -204,6 +204,11 @@ describe("the recipe says the outfit only when the photograph disagrees with it"
     const line = "a rough hide wrap draped across one shoulder, bare feet";
     expect(said(recipeWith({ kind: "line", line, source: "born", path: "wardrobe" })))
       .not.toContain(line);
+    /* And the BRIEF's own line (#1222) is silent here for the same reason —
+       the master photograph is wearing it. Only an EDIT is said, because only
+       an edit asks for something the picture does not show. */
+    expect(said(recipeWith({ kind: "line", line, source: "brief", path: null })))
+      .not.toContain(line);
   });
 
   it("⚠ says nothing for UNPATHED or INCOHERENT — which is every render in production", () => {

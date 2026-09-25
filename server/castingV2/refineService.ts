@@ -2396,14 +2396,23 @@ async function refineCandidateCounted(
       # ⚠ NEVER FOR `unpathed`, and that is the whole reason `wardrobeNow` is
       # read here rather than the reason being read off the wall
 
-      Every roll in both worlds is `unpathed` today, and an unpathed cast's
-      upper-chest refusal is the product's ORDINARY behaviour under the house
-      crew tee — not this feature's demand signal. Counting those would flood
-      the table with a fact nobody is deciding anything from, and it would do it
-      immediately and for everybody. So the row is written only when the branch
-      resolves to a real path, from the same `wardrobeNow` the gate itself was
-      asked with: two resolutions in one request are two answers waiting to
-      disagree, and here they would disagree about whether a row exists.
+      An unpathed cast's upper-chest refusal is the product's ORDINARY
+      behaviour under the house crew tee — not this feature's demand signal.
+      Counting those would flood the table with a fact nobody is deciding
+      anything from, and it would do it immediately and for everybody. So the
+      row is written only when the branch resolves to a real path, from the
+      same `wardrobeNow` the gate itself was asked with: two resolutions in one
+      request are two answers waiting to disagree, and here they would disagree
+      about whether a row exists.
+
+      ⚠ A `brief`-SOURCED LINE IS NOT COUNTED EITHER — #1222, and it is the
+      same flood one door over. Since #1222 every stated-outfit roll resolves
+      to a LINE on a null path, and its coverage is the HOUSE PRIOR (the
+      declared 7a-bis approximation in `wardrobeCoversSurface`), so a refusal
+      against it says "covered" from our prior and not from her outfit — a
+      demand row would count our own guess as her clothes. The `source` guard
+      below is what `kind === "line"` alone stopped meaning the day fresh
+      rolls started carrying lines.
 
       `incoherent` is not counted either, and that is deliberate rather than an
       oversight: it carries a path and no line, so the surface it refused was
@@ -2427,6 +2436,7 @@ async function refineCandidateCounted(
       (parsed.refusal.reason === "gate_ink_uncarried"
         || parsed.refusal.reason === "gate_ink_coverage_unread")
       && wardrobeNow.kind === "line"
+      && wardrobeNow.source !== "brief"
     ) {
       await (dependencies.countInkCoverageDemand ?? recordInkFormDemand)({
         kind: parsed.refusal.reason === "gate_ink_uncarried"

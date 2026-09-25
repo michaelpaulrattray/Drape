@@ -12,6 +12,7 @@ import { INK_PLACEMENTS } from "../../shared/inkPlacementVocabulary";
 
 import {
   bareSurfaces,
+  coverageOfSnapshotWardrobe,
   coverageOfWardrobeLine,
   wardrobeCoversSurface,
 } from "./inkSurfaceCoverage";
@@ -172,6 +173,40 @@ describe("what this cast's wardrobe leaves showing", () => {
     /* And it is `bare` rather than merely equal — an arm comparing two `unknown`s
        would pass while the whole point was lost. */
     expect(coverageOfWardrobeLine(retiredMaleForm, "upperChest")).toBe("bare");
+  });
+
+  it("⚠ a BRIEF-sourced line keeps the house prior — the declared 7a-bis approximation (#1222)", () => {
+    /*
+      Since #1222 every stated-outfit roll resolves to a LINE, and reading an
+      arbitrary sentence's coverage is a reader that does not exist (7a-bis).
+      `unknown` would flip neck and upper-arm asks on every stated-outfit cast
+      from PASS to refusal — a capability regression riding a card about
+      VIEWS — so the ink gate answers exactly what these casts got yesterday,
+      when they were `unpathed`. The line moves the five views and their judge,
+      and nothing else. This arm dies the day 7a-bis reads real lines.
+    */
+    const briefLine = {
+      kind: "line",
+      line: "a white, body-conscious dress with industrial straps and buckles",
+      source: "brief",
+      path: null,
+    } as const;
+    expect(wardrobeCoversSurface(briefLine, "neck")).toBe("bare");
+    expect(wardrobeCoversSurface(briefLine, "upperArm")).toBe("bare");
+    expect(wardrobeCoversSurface(briefLine, "upperChest")).toBe("covered");
+    /* CONTROL — the SAME sentence from any other source still answers
+       `unknown`, so this arm is about the source and not about the words. */
+    expect(wardrobeCoversSurface(
+      { kind: "line", line: briefLine.line, source: "edited", path: null },
+      "neck",
+    )).toBe("unknown");
+
+    /* And the snapshot reader — the born-ink ride check's door — agrees,
+       so a stated-outfit Cast carries her tattoos into the views exactly as
+       the day before the line existed. */
+    expect(coverageOfSnapshotWardrobe({ line: briefLine.line, source: "brief" }, "neck")).toBe("bare");
+    expect(coverageOfSnapshotWardrobe({ line: briefLine.line, source: null }, "neck")).toBe("unknown");
+    expect(coverageOfSnapshotWardrobe({ line: null, source: null }, "neck")).toBe("bare");
   });
 
   it("⚠ `incoherent` is unknown and not covered", () => {

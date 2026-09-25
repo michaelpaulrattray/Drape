@@ -38,7 +38,7 @@ import { spokenError } from "../_core/spokenError";
 import { randomUUID } from "node:crypto";
 
 import { recordRefund } from "../casting/atomicCredits";
-import { castWardrobeLine, currentWardrobeLine, editedWardrobeLine } from "./wardrobeLine";
+import { castWardrobeLine, castWardrobeSource, currentWardrobeLine, editedWardrobeLine } from "./wardrobeLine";
 import { readStoredDelta } from "./refineLegacy";
 import { rollComposedOnAuthorRoad } from "./rollProjection";
 import { withUniqueCastPublicId } from "../casting/castPublicId";
@@ -574,6 +574,7 @@ export async function signCandidate(
       outfit its record does not name.
     */
     wardrobeLine: castWardrobeLine(documents.technicalSchema),
+    wardrobeSource: castWardrobeSource(documents.technicalSchema),
     identityRevisionId: cast.identityRevisionId,
     identityText: documents.identityText,
     chargedCredits: price,
@@ -684,6 +685,12 @@ export async function carriedInkCrops(
      * question that has a correct absent answer.
      */
     wardrobeLine?: string | null;
+    /**
+     * The snapshot's `source` (#1222): a `brief`-sourced line must NOT move
+     * this check — see `placementRideCoverage`. Absent is *not brief*, which
+     * is every snapshot written before the line existed.
+     */
+    wardrobeSource?: string | null;
   },
 ): Promise<{ crops: readonly CarriedInkCrop[]; dispositions: readonly InkCropDisposition[] }> {
   const worn = readDeliveredInk(input.anchorDeltas);
@@ -744,7 +751,7 @@ export async function carriedInkCrops(
       and an outfit nobody has read are both `does not ride`, and only one of
       them is a fact about her clothes.
     */
-    const coverage = placementRideCoverage(placed.placement, input.wardrobeLine);
+    const coverage = placementRideCoverage(placed.placement, input.wardrobeLine, input.wardrobeSource);
     if (coverage !== "bare") {
       dispositions.push({
         slot,
@@ -968,6 +975,8 @@ async function completeSignPackage(
     pronouns: CastPronouns;
     /** The snapshotted outfit — `null` for every Cast signed before the paths. */
     wardrobeLine: string | null;
+    /** Its `source` — `brief` keeps the ink ride on the house prior (#1222). */
+    wardrobeSource: string | null;
     identityRevisionId: string;
     identityText: string;
     chargedCredits: number;
@@ -992,6 +1001,7 @@ async function completeSignPackage(
       pronouns: input.pronouns,
       operationId: input.operationId,
       wardrobeLine: input.wardrobeLine,
+      wardrobeSource: input.wardrobeSource,
     });
     const featureWords = await carriedFeatureWords(dependencies, {
       userId: input.userId,

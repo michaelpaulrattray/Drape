@@ -107,6 +107,7 @@ import {
   isBodyAnchorRegion,
   type BodyAnchorRegion,
 } from "../../shared/bodyAnchorRegions";
+import { WARDROBE_LINE_MAX_LENGTH } from "../../shared/castingPaths";
 import { mentionsWornClothing } from "./statedWardrobe";
 import { WARDROBE_PICK_REFUSED, wardrobePickDoor } from "./wardrobeDoor";
 import { createModuleLogger } from "../logging/logger";
@@ -514,6 +515,28 @@ export type CastingIntent = {
    * door is one act and it is #1123's**, not a tidy-up.
    */
   wardrobe: string | null;
+  /**
+   * THE OUTFIT THE BRIEF ITSELF STATES — the author road's born wardrobe line
+   * (#1222), and the OPPOSITE contract to {@link wardrobe} above.
+   *
+   * The pick may contain words the customer never typed; that is its declared
+   * exception, and it retires with #1123. This field is source-contained
+   * exactly as `statedHair` and `statedSkin` are: every content token must
+   * appear in her own sentence (`parseStatedWardrobeLine`), so the product
+   * contributes nothing to it. `null` is the ordinary state and means the
+   * brief described no worn clothing — the views then keep the
+   * continue-the-reference sentence (#1215), which is the honest fallback
+   * rather than the whole population.
+   *
+   * What reads it: the compiler writes it to `casting_rolls.wardrobeLine` on
+   * the author road; Sign snapshots it into `technicalSchema.wardrobe` with
+   * `source: "brief"`; the five views and their judge compose from that
+   * snapshot (`castPackageWardrobeSpec`). It never enters the eight roll
+   * prompts — on the author road the brief itself reaches the engine verbatim,
+   * so the outfit is already in the request and restating it would be the
+   * "WARDROBE — <line>" double-statement the #132 review refused.
+   */
+  statedWardrobe: string | null;
 };
 
 /** The same shape an  entry uses, and reviewed the same way. */
@@ -763,6 +786,7 @@ const wireSchema = z.object({
   statedInk: z.unknown().nullable().optional(),
   poolTendencies: z.unknown().nullable().optional(),
   wardrobe: z.unknown().nullable().optional(),
+  statedWardrobe: z.unknown().nullable().optional(),
   /*
     `.nullable()` matters as much as `.optional()` here, and the difference
     cost a founder 160 credits. Models return `null` and `undefined`
@@ -1215,6 +1239,44 @@ export function parseWardrobePick(raw: unknown): string | null {
 }
 
 /**
+ * THE OUTFIT THE BRIEF ITSELF STATES, under full source containment (#1222).
+ *
+ * Not `wardrobePickDoor`, deliberately. The door prices an ENGINE INVENTION —
+ * its classes (props, headwear, its 180-character cap) exist because the pick
+ * may contain words the customer never typed, and refusing an invention costs
+ * her nothing. This field is her own sentence, and the brief-fidelity law says
+ * her words are not rationed on the way in — so the only checks here are the
+ * ones every stated field carries:
+ *
+ *  - **containment** (`tokensComeFromBrief`): every content token must appear
+ *    in her own sentence, so a reply that "improves" her outfit is dropped
+ *    whole rather than repaired — the closed-SOURCE rule (D-89). This is the
+ *    real control; the extraction prompt is a tendency, this is the wall.
+ *  - **brand scrub**: the product's standing answer to that class, keeping the
+ *    sentence ("a Nike hoodie" → "a hoodie") — the same treatment `role` and
+ *    `characterNotes` get on the same road.
+ *  - **digits**: the same refusal `statedSkin` and the pick door both carry —
+ *    a number in an image prompt is an invitation to render text.
+ *  - **whole or nothing**: a reply longer than the column
+ *    (`WARDROBE_LINE_MAX_LENGTH`) is dropped, never truncated. A cut outfit is
+ *    a DIFFERENT outfit — the views judge against this line, and a line that
+ *    lost its footwear mid-word would fail her own boots as additions.
+ *
+ * Every drop is `null`, and `null` is today's shipped behaviour exactly: the
+ * roll records no line and the views keep the continue-the-reference sentence.
+ */
+export function parseStatedWardrobeLine(raw: unknown, briefText: string): string | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (trimmed.length === 0 || trimmed.length > WARDROBE_LINE_MAX_LENGTH) return null;
+  const scrubbed = scrubBrands(trimmed);
+  if (scrubbed === null || scrubbed.trim().length === 0) return null;
+  if (/[0-9]/.test(scrubbed)) return null;
+  if (!tokensComeFromBrief(scrubbed, briefText)) return null;
+  return scrubbed.trim();
+}
+
+/**
  * Closed vocabularies both, so a bad reply degrades to "no tendency".
  *
  * This is the narrowest possible channel for a stage that influences weights:
@@ -1375,6 +1437,9 @@ export function parseCastingIntent(
         what stands in containment's place; see `parseWardrobePick`.
       */
       wardrobe: parseWardrobePick(wire.wardrobe),
+      /* Source-contained, unlike the pick above — see the field's own docblock
+         and `parseStatedWardrobeLine`. */
+      statedWardrobe: parseStatedWardrobeLine(wire.statedWardrobe, briefText),
     },
   };
 }

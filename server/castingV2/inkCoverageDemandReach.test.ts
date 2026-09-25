@@ -137,6 +137,23 @@ describe("the two counted refusals, and where they can actually come from", () =
       .toEqual(["coverage_unread", "coverage_unread"]);
   });
 
+  it("⚠ a BRIEF-sourced line answers the HOUSE PRIOR — the ink gate does not move with #1222", () => {
+    /*
+      The SAME unread sentence that fails closed on a born line, from the
+      brief's own source: the gate answers exactly what a stated-outfit cast
+      got the day before the line existed (it was `unpathed` then). `unknown`
+      here would flip every neck and upper-arm ask on every stated-outfit cast
+      from pass to refusal — a capability regression riding a card about
+      views. The declared approximation lives in `wardrobeCoversSurface`; it
+      dies the day 7a-bis reads real lines.
+    */
+    const brief: WardrobeResolution = { kind: "line", line: UNREAD, source: "brief", path: null };
+    /* The neck passes, as it always has for these casts… */
+    expect(classifyInkPlacement(ASK.neck, "ink", true, brief).kind).toBe("in_frame");
+    /* …and the chest refuses as COVERED (the prior), never as unread. */
+    expect(classifyInkPlacement(ASK.chest, "ink", true, brief).kind).toBe("not_carried");
+  });
+
   it("⚠ THE CORRECTION — a BASICS cast can reach NEITHER counted refusal, and now for a better reason", () => {
     /*
       The arm this file exists for, rewritten on the day the routing moved. Every

@@ -96,23 +96,60 @@ describe("condition (v) — the edited line wins", () => {
   });
 });
 
-describe("the unpathed roll — every roll in production as this lands", () => {
+describe("the unpathed roll — no path and no line", () => {
   it("is `unpathed`, which is a state and not a failure", () => {
     expect(currentWardrobeLine(UNPATHED)).toEqual<WardrobeResolution>({ kind: "unpathed" });
   });
+});
 
-  it("⚠ stays `unpathed` even if a line somehow got written without a path", () => {
+describe("⚠ the brief's own line — a fresh roll's only shape since #1222", () => {
+  /*
+    THE ARM THAT STOOD HERE ASSERTED THE OPPOSITE, and it was the defect's own
+    pin: "stays `unpathed` even if a line somehow got written without a path".
+    That was right while line-without-path could only mean a torn write — the
+    pathed roads stamped both columns in one insert. #203 made the path column
+    a constant null and #1222 made the author road record the brief's stated
+    outfit on exactly that shape, so the old arm's "half-written row" is now
+    every line the product writes, and discarding it is why his Sifr views
+    could never read the dress. The resolution now reports it as a line whose
+    source is the BRIEF, and Sign snapshots that answer.
+  */
+  it("resolves a pathless born line as the brief's own sentence", () => {
+    expect(currentWardrobeLine({ rollPath: null, rollLine: "a white, body-conscious dress with industrial straps, buckles and a worn graphic on the chest" }))
+      .toEqual<WardrobeResolution>({
+        kind: "line",
+        line: "a white, body-conscious dress with industrial straps, buckles and a worn graphic on the chest",
+        source: "brief",
+        path: null,
+      });
+  });
+
+  it("⚠ an EDIT still beats it — condition (v) never depended on the path column", () => {
     /*
-      The more helpful answer — "there is a line, use it" — is the wrong one.
-      It would make a half-written row indistinguishable from a whole one at
-      every reader downstream, and the readers downstream paint and judge paid
-      frames. A line nobody chose a path for is not something to dress a render
-      in.
+      A Cast signed after a wardrobe edit judged against its born line is
+      refunded slices; that argument is about the edit and the snapshot, not
+      about which world wrote the born line.
     */
-    expect(currentWardrobeLine({ rollPath: null, rollLine: "a grey tee" }))
-      .toEqual<WardrobeResolution>({ kind: "unpathed" });
-    expect(currentWardrobeLine({ rollPath: null, rollLine: null, editedLine: "a grey tee" }))
-      .toEqual<WardrobeResolution>({ kind: "unpathed" });
+    expect(currentWardrobeLine({ rollPath: null, rollLine: "a white dress", editedLine: "a cream linen shirt" }))
+      .toEqual<WardrobeResolution>({
+        kind: "line",
+        line: "a cream linen shirt",
+        source: "edited",
+        path: null,
+      });
+    /* And an edit on a roll with NO born line at all still speaks. */
+    expect(currentWardrobeLine({ rollPath: null, rollLine: null, editedLine: "a cream linen shirt" }))
+      .toEqual<WardrobeResolution>({
+        kind: "line",
+        line: "a cream linen shirt",
+        source: "edited",
+        path: null,
+      });
+  });
+
+  it("a pathed line still reads `born` — the two worlds stay tellable apart", () => {
+    const resolved = currentWardrobeLine({ rollPath: "wardrobe", rollLine: "a red apron" });
+    expect(resolved.kind === "line" && resolved.source).toBe("born");
   });
 });
 

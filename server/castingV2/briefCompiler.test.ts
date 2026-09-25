@@ -59,6 +59,7 @@ const BASE_INTENT: CastingIntent = {
   statedInk: null,
   poolTendencies: NO_TENDENCIES,
   wardrobe: null,
+  statedWardrobe: null,
   characterNotes: null,
   sex: null,
   ageBand: null,
@@ -137,6 +138,13 @@ describe("the precedence fix", () => {
         an echo field's.
       */
       "statedSkin",
+      /*
+        #1222: the outfit the brief ITSELF states, source-contained — the
+        author road's born wardrobe record. Null here, since the fixture's
+        volunteered pick is on the OTHER key and its own poison arm lives in
+        `statedWardrobeLine.test.ts`.
+      */
+      "statedWardrobe",
       "variationAxis",
       /*
         ⚠ `wardrobe` IS ON THIS LIST NOW, and it was the poison fixture's own

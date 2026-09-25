@@ -311,6 +311,54 @@ const WARDROBE_BLOCK = `ONE MORE KEY, in the same JSON object and nowhere else:
   to its plain studio clothes.`;
 
 /**
+ * THE STATED-WARDROBE BLOCK — asked on the author road (#1222).
+ *
+ * ⚠ **This is the OPPOSITE contract to `WARDROBE_BLOCK` above, and the two are
+ * deliberately separate keys.** The pick block is a costume designer: it fills
+ * the field *even when the brief says nothing about clothes*, and its whole
+ * licence is that inventing an outfit was the Wardrobe path's case (b). This
+ * block is a COPYIST: it may only repeat the outfit the brief itself states,
+ * in the brief's own words, and `null` is the ordinary answer. Folding the two
+ * into one key would leave one prompt asking for extraction while its parser
+ * still tolerated invention — the exact drift `parseStatedWardrobeLine`'s
+ * containment exists to make impossible. The pick and its door retire with
+ * #1123; this key is what the product reads.
+ *
+ * # Why it exists — his Sifr dress became overalls and boots (#1222)
+ *
+ * On the author road the brief reaches the image engine verbatim, so the EIGHT
+ * candidates wear what the brief says — but nothing RECORDED it, so at Sign
+ * the five views were composed against a chest-up reference and a null line,
+ * and the engine continued a harness top into trousers. The record is the fix:
+ * her own outfit sentence, written to `casting_rolls.wardrobeLine`, snapshotted
+ * into `technicalSchema.wardrobe` at Sign, composed into the three full-length
+ * views and judged on the same sentence (`castPackageWardrobeSpec`).
+ *
+ * # The worked example is the instruction (the picker court's own finding)
+ *
+ * *"Where the old example survived, the old answer survived."* So the example
+ * here is an extraction, not a completion — the barista example above completes
+ * an apron into jeans and shoes, and reusing it would teach this key to invent
+ * the bottom half, which is precisely the guess #1222 retires.
+ */
+const STATED_WARDROBE_BLOCK = `ONE MORE KEY, in the same JSON object and nowhere else:
+
+  "statedWardrobe": string | null
+
+- "statedWardrobe": THE OUTFIT THE BRIEF ITSELF DESCRIBES, IF IT DESCRIBES ONE.
+  This is extraction, not costume design. Copy the worn clothing the brief
+  states, in the brief's own words, as one phrase: "She wears a white,
+  body-conscious dress that mixes qipao structure with industrial straps" gives
+  "a white, body-conscious dress that mixes qipao structure with industrial
+  straps". Keep every garment the brief names — top, bottoms, footwear — and
+  add nothing it does not state: no fabric, colour, cut or garment of your own.
+  Never complete a partial outfit.
+  null when the brief does not describe worn clothing. Most briefs do not, and
+  null is the correct answer for them — never dress the cast yourself.
+  Clothing only: accessories (glasses, jewellery), tattoos, props and held
+  objects are not wardrobe and do not belong here.`;
+
+/**
  * THE INK BLOCK — asked only inside `CASTING_BORN_INK_SCOPE` (7b(a), gating
  * endorsed fable-1412 (a)).
  *
@@ -515,7 +563,13 @@ export const SUBJECT_INSTRUCTION = `- "cohort": WHAT KIND OF SUBJECT the brief a
  * than shipping a prompt nobody chose.
  */
 export function interpreterSystemPrompt(
-  options?: { wardrobe?: boolean; ink?: boolean; fidelity?: boolean; author?: boolean },
+  options?: {
+    wardrobe?: boolean;
+    ink?: boolean;
+    fidelity?: boolean;
+    author?: boolean;
+    statedWardrobe?: boolean;
+  },
 ): string {
   let base = SYSTEM_PROMPT;
   if (options?.fidelity === true) {
@@ -548,6 +602,9 @@ export function interpreterSystemPrompt(
   if (options?.fidelity === true) blocks.push(SKIN_LANE_BLOCK);
   if (options?.wardrobe === true) blocks.push(WARDROBE_BLOCK);
   if (options?.ink === true) blocks.push(BORN_INK_BLOCK);
+  /* LAST, so every existing option combination keeps its exact bytes as a
+     prefix — the fixed-order rule above, applied to the newest block. */
+  if (options?.statedWardrobe === true) blocks.push(STATED_WARDROBE_BLOCK);
   return blocks.length === 0 ? base : [base, ...blocks].join("\n");
 }
 
@@ -1189,6 +1246,16 @@ export async function interpretBrief(input: {
    * is cast, and the two refusals the ruling keeps come back by name.
    */
   author?: boolean;
+  /**
+   * READ THE OUTFIT THE BRIEF ITSELF STATES — the author road's record of what
+   * this cast is born wearing (#1222).
+   *
+   * Absent means no, and no means the bytes on the wire are byte-identical to
+   * today's. On, `STATED_WARDROBE_BLOCK` is appended (last, so every other
+   * combination keeps its prefix) and the reply's `statedWardrobe` key is
+   * parsed under full source containment — see `parseStatedWardrobeLine`.
+   */
+  statedWardrobe?: boolean;
 }): Promise<InterpretOutcome> {
   const notesMax = input.fidelity === true ? NOTES_MAX_FIDELITY : NOTES_MAX;
   const textEngine = input.engine ?? interpreterEngine();
@@ -1207,6 +1274,7 @@ export async function interpretBrief(input: {
         ink: input.ink === true,
         fidelity: input.fidelity === true,
         author: input.author === true,
+        statedWardrobe: input.statedWardrobe === true,
       }),
       user: input.briefText,
       json: true,
