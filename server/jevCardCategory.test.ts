@@ -12,6 +12,7 @@ import {
 import {
   CARD_CATEGORY_QUESTION_ID,
   NO_CATEGORY,
+  assertCriteriaCover,
   bodyNamesItsOwnCategory,
   buildCardCategoryRequest,
   buildCardState,
@@ -143,19 +144,28 @@ describe("the category question, asserted at the wire", () => {
     }
   });
 
-  it("refuses to build a question if a category has no criterion", () => {
-    /* The sabotage this card asked for, driven rather than described: with the
-       list and the criteria keyed separately, the failure mode is a category
-       nobody wrote a criterion for — which would be INVISIBLE as a category
-       Jev simply never chooses. It throws instead. */
-    const criteria = categoryCriteria();
+  it("refuses a category that has no criterion — DRIVEN, not inferred", () => {
+    /* ⚠ This arm replaced one that deleted a key from a COPY and then asserted
+       the real builder was unaffected. It never executed the refusal, and the
+       sabotage run proved it: neutering the guard left the suite green at 19.
+       Working law 3 — a backstop needs a test the model cannot rescue, so the
+       guard is a pure function and this drives it with the data that trips it. */
+    expect(() => assertCriteriaCover(["bugs", "security"], ["bugs"])).toThrow(
+      /category "security" has no criterion/,
+    );
+  });
+
+  it("refuses a leftover criterion that names no live category", () => {
+    expect(() => assertCriteriaCover(["bugs"], ["bugs", "ghosts"])).toThrow(
+      /criterion "ghosts" names no live category/,
+    );
+  });
+
+  it("passes the real tree — the positive control that makes the two refusals evidence", () => {
+    /* Without this, a guard that threw on everything would satisfy both arms
+       above while breaking the product. */
+    expect(() => categoryCriteria()).not.toThrow();
     const firstKey = CREW_WORK_CATEGORIES[0]!.key;
-    delete criteria[firstKey];
-    expect(Object.keys(criteria)).not.toContain(firstKey);
-    expect(() =>
-      buildSystemOneRequest({}, { q: { type: "choice", instructions: "x", criteria } }),
-    ).not.toThrow();
-    /* …and the real builder, which reads the live list, must still name it. */
     expect(Object.keys(categoryQuestion()[CARD_CATEGORY_QUESTION_ID]!.criteria)).toContain(firstKey);
   });
 

@@ -208,6 +208,17 @@ async function runControls(): Promise<{ threshold: number; passed: boolean }> {
   console.log(`  lowest confidence on a CORRECT control : ${lowestRight.toFixed(2)}`);
   console.log(`  highest confidence on a WRONG control  : ${highestWrong > 0 ? highestWrong.toFixed(2) : "none wrong"}`);
   console.log(`  THRESHOLD the controls justify         : ${threshold.toFixed(2)}`);
+  if (highestWrong === 0) {
+    /* ⚠ The honest reading of a clean control sweep, and it is easy to get
+       backwards. With NOTHING wrong, the controls have not located the point
+       where this reader starts being unreliable — they have only shown it was
+       right everywhere they looked. "Lowest correct" is therefore a FLOOR, not
+       a calibration, and a number printed without this sentence beside it reads
+       as the opposite. A usable threshold comes from the live read's own
+       agreement bands, where there are disagreements to learn from. */
+    console.log("  ⚠ no control was WRONG, so the controls did not find where this reader fails.");
+    console.log("    The figure above is a FLOOR, not a calibration — read the live bands before acting on it.");
+  }
   const passed = positiveHits === positives.length && negativeHits === negatives.length;
   console.log(
     `  VERDICT: ${passed ? "controls PASS" : "controls INCOMPLETE — every miss above is read at its fixture before any verdict counts"}\n`,

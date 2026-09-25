@@ -60,21 +60,46 @@ const CRITERIA_BY_KEY: Record<CrewWorkCategoryKey, string> = {
   castingUpkeep: "Maintenance of the casting studio road specifically — prompts, rolls, candidates, signing, the casting sheet — inside behaviour that already exists, rather than a new casting capability.",
 };
 
-/** The option set put to Jev: every live category, plus an explicit way out. */
-export function categoryCriteria(): Record<string, string> {
-  const criteria: Record<string, string> = {};
-  for (const category of CREW_WORK_CATEGORIES) {
-    const text = CRITERIA_BY_KEY[category.key];
-    /* Refuses rather than skipping. A category silently absent from the option
-       list cannot be chosen, and would read as "Jev never files anything there"
-       — a finding about the categories that is really a hole in the reader. */
-    if (!text) throw new Error(`jevCardCategory: category "${category.key}" has no criterion`);
-    criteria[category.key] = text;
+/**
+ * THE COVERAGE GUARD, AS ITS OWN FUNCTION SO IT CAN BE DRIVEN DIRECTLY.
+ *
+ * ⚠ **It was originally a pair of loops inside `categoryCriteria`, and the
+ * sabotage run caught that** (working law 3: a backstop needs a test the model
+ * cannot rescue). Every category has a criterion at the real tree, so the throw
+ * branch never executes on the happy path — neutering it changed nothing any
+ * arm could see, and the suite stayed green at 19 while the guard was gone.
+ * A guard reachable only through data that never occurs is not a guard.
+ *
+ * Both directions matter and they fail differently. A category with no
+ * criterion is dropped from the option list, so Jev **cannot choose it** — and
+ * that reads as "the reader never files anything there", a finding about the
+ * categories that is really a hole in the reader. A criterion naming no live
+ * category is a leftover that quietly offers Jev an answer the desk cannot
+ * home.
+ */
+export function assertCriteriaCover(
+  categoryKeys: readonly string[],
+  criterionKeys: readonly string[],
+): void {
+  for (const key of categoryKeys) {
+    if (!criterionKeys.includes(key)) {
+      throw new Error(`jevCardCategory: category "${key}" has no criterion`);
+    }
   }
-  for (const key of Object.keys(CRITERIA_BY_KEY)) {
-    if (!CREW_WORK_CATEGORIES.some((category) => category.key === key)) {
+  for (const key of criterionKeys) {
+    if (!categoryKeys.includes(key)) {
       throw new Error(`jevCardCategory: criterion "${key}" names no live category`);
     }
+  }
+}
+
+/** The option set put to Jev: every live category, plus an explicit way out. */
+export function categoryCriteria(): Record<string, string> {
+  const categoryKeys = CREW_WORK_CATEGORIES.map((category) => category.key);
+  assertCriteriaCover(categoryKeys, Object.keys(CRITERIA_BY_KEY));
+  const criteria: Record<string, string> = {};
+  for (const key of categoryKeys) {
+    criteria[key] = CRITERIA_BY_KEY[key as CrewWorkCategoryKey];
   }
   criteria[NO_CATEGORY] = "None of the above describes this card.";
   return criteria;
