@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "eeba6518952ee9d1"
+    "sourceFingerprint": "9cbbaa1ef7a70510"
   },
   "domains": [
     {
@@ -38,7 +38,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 45
+      "moduleCount": 46
     },
     {
       "id": "domain:client-shared",
@@ -1468,6 +1468,12 @@
     {
       "id": "module:client/src/features/castingV2/retryFace.ts",
       "path": "client/src/features/castingV2/retryFace.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/rollOnScreen.ts",
+      "path": "client/src/features/castingV2/rollOnScreen.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -10401,6 +10407,10 @@
     {
       "id": "test:client/src/features/castingV2/retryFace.test.ts",
       "path": "client/src/features/castingV2/retryFace.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/rollOnScreen.test.ts",
+      "path": "client/src/features/castingV2/rollOnScreen.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/rollRail.test.ts",
@@ -19374,6 +19384,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/retentionCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/rollOnScreen.ts",
       "kind": "imports"
     },
     {
