@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ded3d766ebb1b1c9"
+    "sourceFingerprint": "ec3a4ea8bc6ae3f7"
   },
   "domains": [
     {
@@ -12683,6 +12683,10 @@
     {
       "id": "test:server/interactionLatency.test.ts",
       "path": "server/interactionLatency.test.ts"
+    },
+    {
+      "id": "test:server/jevCardCategory.test.ts",
+      "path": "server/jevCardCategory.test.ts"
     },
     {
       "id": "test:server/klaviyo.test.ts",
