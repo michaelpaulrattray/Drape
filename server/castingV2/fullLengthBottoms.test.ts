@@ -51,6 +51,8 @@ const FULL_LENGTH = ["frontFull", "backFull"] as const;
 const HIDE = "a rough animal-hide wrap draped over one shoulder, a plain hide loincloth, bare feet";
 /** The exact clause, so a reworded copy of it cannot slip past this file. */
 const BOTTOMS = "plain unbranded neutral trousers and plain unbranded shoes";
+/** What a full-length view is told instead, since #1207. */
+const CONTINUE = "CONTINUE THE SAME OUTFIT the reference photograph shows";
 
 describe("a full-length view is not told two different things about the bottoms", () => {
   it("⚠ WITH A LINE the trousers clause is GONE and the outfit is stated", () => {
@@ -65,17 +67,37 @@ describe("a full-length view is not told two different things about the bottoms"
     }
   });
 
-  it("⚠ WITH NO LINE it is intact, character for character — every existing Cast", () => {
+  it("⚠ WITH NO LINE it names no garment either — the population is ALL of them (#1207)", () => {
     /*
-      The additive half, and the one that matters most for the money: every Cast
-      signed to date and every unpathed roll composes exactly as it did. Their
-      reference is chest-up and nothing else names their bottoms, so our own
-      restrained default is the honest answer rather than a contradiction.
+      ⚠ **THIS ARM ASSERTED THE OPPOSITE UNTIL 2026-09-25, AND ITS REASONING IS
+      WHY THE DEFECT LASTED.** It read *"WITH NO LINE it is intact, character
+      for character — every existing Cast"*, and called the trousers clause
+      *"our own restrained default … the honest answer rather than a
+      contradiction"*. Two things were wrong with that, and only the second was
+      visible from inside this file.
+
+      **One: it was not a default, it was the whole product.** Read at
+      production the day this changed, **5 of 5 signed Casts carry no stored
+      line, all time** — so `castPackageWardrobeSpec`'s composed road has never
+      run once, and this branch is not the fallback it is described as. Since
+      #203 made the roll's path column a constant `null`, no future Cast can
+      take the other branch either.
+
+      **Two: a chest-up reference cannot establish her hem, but it does
+      establish her OUTFIT** — and naming trousers and shoes overrides it rather
+      than extending it. His Sifr cast, verbatim: *"she is wearing pants and
+      shoes these dont match her described outfit at all in the brief."* The
+      engine was obeying us, exactly as it was for the loincloth in 2026-08-23.
+
+      So the clause stays (dropping it would stop asking about the legs at all,
+      which `castViewPackage.test.ts` guards) and it now points at the reference.
     */
     for (const angle of FULL_LENGTH) {
       const prompt = composePackageViewPrompt(angle, null);
-      expect(prompt, angle).toContain(BOTTOMS);
-      expect(prompt, angle).toContain("no visible hardware, buttons, stitch detailing or logos");
+      expect(prompt, angle).not.toContain(BOTTOMS);
+      expect(prompt, angle).not.toMatch(/\btrousers\b/i);
+      expect(prompt, angle).not.toMatch(/\bshoes\b/i);
+      expect(prompt, angle).toContain(CONTINUE);
     }
   });
 
@@ -109,11 +131,29 @@ describe("a full-length view is not told two different things about the bottoms"
     }
   });
 
-  it("CONTROL — the reader can see the clause at all", () => {
-    /* Four of the five arms above are absences, and an absence passes on
-       nothing. This is the same reader finding the same string where it is
-       supposed to be. */
-    expect(composePackageViewPrompt("frontFull", null)).toContain(BOTTOMS);
-    expect(composePackageViewPrompt("backFull", null)).toContain(BOTTOMS);
+  it("CONTROL — both readers can see what they are looking for", () => {
+    /*
+      Every arm in this file is now an absence, and an absence passes on
+      nothing. Two positives, because two different readers do the work.
+
+      ⚠ **This control's positive USED TO BE the trousers clause itself, found
+      in the real prompt — and that is exactly why it had to move (#1207).** The
+      string is gone from the product now, so a control still asserting it would
+      be red for the right reason and useless either way. What made it a control
+      was never the particular sentence: it was the same reader running over the
+      same function's REAL output. That property is what is kept here.
+    */
+    expect(composePackageViewPrompt("frontFull", null)).toContain(CONTINUE);
+    expect(composePackageViewPrompt("backFull", null)).toContain(CONTINUE);
+
+    /*
+      And the absence readers driven over the one text they exist to catch, so a
+      mangled constant or a regex that can never match cannot make the four
+      absence arms above pass vacuously — which is the way this file would fail
+      silently rather than loudly.
+    */
+    expect(`Below the waist, ${BOTTOMS}.`).toContain(BOTTOMS);
+    expect(/\btrousers\b/i.test(BOTTOMS), "the trousers reader is inert").toBe(true);
+    expect(/\bshoes\b/i.test(BOTTOMS), "the shoes reader is inert").toBe(true);
   });
 });

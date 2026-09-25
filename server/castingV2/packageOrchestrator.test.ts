@@ -238,15 +238,24 @@ describe("the Cast's wardrobe line, at the wire", () => {
     }
   });
 
-  it("⚠ CONTROL — with no line the wire is exactly what it was", async () => {
-    /* Every Cast signed to date. The two are compared rather than each being
-       inspected, so "unchanged" is a measurement and not an opinion. */
+  it("⚠ CONTROL — with no line the wire carries the SHARED sentence, not the line's", async () => {
+    /*
+      Every Cast signed to date — and, measured at production on 2026-09-25,
+      that is 5 of 5: no Cast has ever carried a stored line, so this arm is the
+      only one of the pair that describes a real package.
+
+      ⚠ **It asserted `"the SAME plain unbranded crew-neck top"` until #1207**,
+      because that is what the shared sentence said. The claim here is about
+      WHICH sentence reaches the wire, never about the garment it named, so the
+      arm stands and its literal moves: the sentence now defers to the reference
+      instead of naming a top his customer never asked for.
+    */
     const seen = recording();
     await buildCastPackage(deps({ identityEngine: seen.identityEngine, judge: seen.judge }), input);
     for (const entry of seen.prompts) {
       expect(entry.prompt, entry.angle).not.toContain(LINE);
       if (entry.angle !== "closeUp") {
-        expect(entry.prompt, entry.angle).toContain("the SAME plain unbranded crew-neck top");
+        expect(entry.prompt, entry.angle).toContain("the SAME outfit the reference photograph shows");
       }
     }
     for (const call of seen.judged) {

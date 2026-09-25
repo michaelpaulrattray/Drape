@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { CANONICAL_VIEW_ANGLES } from "../../shared/boardTypes";
 import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
+import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
+import { CAPTURE_SENTENCES, DROPPED_FROM_BLOCK, LIGHTING_LINE } from "./houseBlock";
 import {
   CASTING_V2_SIGN_PRICE_CREDITS,
   CAST_PACKAGE_VIEWS,
@@ -199,6 +201,18 @@ describe("the canonical view package", () => {
     }
     expect(wardrobe).toContain("same");
     expect(wardrobe).toContain("reference");
+    /*
+      ⚠ **AND NO ABSOLUTE GARMENT EITHER (#1207)** — the same lesson one level
+      up, and the arm above it did not catch it for thirteen months. This
+      sentence said *"the SAME plain unbranded CREW-NECK TOP"*, so a Cast whose
+      brief dressed her in anything else was described to the engine as wearing
+      something she is not. A colour was a refund in August; a garment type is
+      his Sifr cast: *"she is wearing pants and shoes these dont match her
+      described outfit at all in the brief."*
+    */
+    for (const garment of ["crew-neck", "t-shirt", "shirt", "top,", "trousers", "shoes"]) {
+      expect(wardrobe, `names the garment "${garment}"`).not.toContain(garment);
+    }
   });
 
   it("keeps the sixth slot a walk, which is what the product calls it", () => {
@@ -236,10 +250,20 @@ describe("the wardrobe axis only judges what the reference can establish", () =>
     expect(wardrobe).not.toContain("plain unbranded shoes");
     // Additions remain a failure wherever they appear — that is the half of
     // this axis that IS answerable from a chest-up reference.
-    expect(wardrobe).toMatch(/jacket|jewellery|logo/);
+    expect(wardrobe).toMatch(/jewellery|logo/);
+    /*
+      ⚠ **AND "a jacket" LEFT THAT LIST ON 2026-09-25 (#1207), deliberately.**
+      With no stored line — which production measured as 5 of 5 signed Casts,
+      all time — a jacket may BE the outfit the reference shows, and the clause
+      then fails the customer's own clothes. The exclusion is phrased against
+      the reference now, so it still catches a real addition without owning a
+      list of garments nobody may wear.
+    */
+    expect(wardrobe, "names a garment that may be her own outfit").not.toContain("a jacket");
+    expect(wardrobe).toContain("the reference does not show");
   });
 
-  it("still tells the GENERATOR what to put on her legs — when nothing else does", () => {
+  it("still tells the GENERATOR about her legs — but to CONTINUE the outfit, never to replace it", () => {
     /*
       The instruction moved rather than vanished. `spec.wardrobe` is read by the
       judge AND the generator (`composePackageViewPrompt`), so scoping it for
@@ -257,15 +281,110 @@ describe("the wardrobe axis only judges what the reference can establish", () =>
       This arm's claim is unchanged — the generator is still told — and the thing
       it reads had to move with the instruction, because a constant is no longer
       where the answer is. `fullLengthBottoms.test.ts` holds the other direction.
+
+      ⚠ **AND ON 2026-09-25 (#1207) THE INSTRUCTION CHANGED SIDES.** It still
+      exists — this arm's claim is untouched, and dropping it would be the
+      "quietly stopped asking" defect the paragraph above warns about. What
+      changed is WHAT it asks for: the clause named *"plain unbranded neutral
+      trousers and plain unbranded shoes"*, which is a garment the customer
+      never chose, and his Sifr cast wore it over her own outfit. It now asks
+      the engine to continue what the reference already shows.
     */
     for (const angle of ["frontFull", "sideFull", "backFull"] as const) {
       const prompt = composePackageViewPrompt(angle, null);
       expect(prompt, angle).toContain("Below the waist");
-      expect(prompt, angle).toContain("trousers");
+      expect(prompt, angle).toContain("CONTINUE THE SAME OUTFIT");
+      /* The literal his report names, so this cannot pass by paraphrase. */
+      expect(prompt, angle).not.toMatch(/\btrousers\b/i);
+      expect(prompt, angle).not.toMatch(/\bshoes\b/i);
     }
     // And never on a view that does not reach the waist.
     for (const angle of ["closeUp", "threeQuarter", "sideClose"] as const) {
       expect(composePackageViewPrompt(angle, null), angle).not.toContain("Below the waist");
     }
+  });
+});
+
+/**
+ * ⚠ **THE LIGHT A SIGNED VIEW IS SHOT UNDER — #1207, and nothing pinned it
+ * before.** His report, verbatim: *"the side profile has a harsh flash which
+ * doesnt match the master or the closeup."*
+ *
+ * The flash was ORDERED, not hallucinated: `composePackageViewPrompt` sent
+ * `PHOTOREAL_HUMAN_BLOCKS.capture` whole, whose third sentence is *"LIGHTING:
+ * Direct on-camera or slightly off-axis front flash … No gels, no diffusion"* —
+ * while every master since 2026-09-24 is rendered by the author road, which
+ * §5e replaces that sentence in and then lists those very phrases in
+ * `DROPPED_FROM_BLOCK`. **The Sign was sending phrases the road that made its
+ * own reference forbids**, and no arm anywhere could see it.
+ */
+describe("a signed view is lit the way its master was lit", () => {
+  /* The paragraph the two roads must agree on, isolated rather than searched
+     for: the whole prompt also carries realism and negatives, which is a
+     different question and is why this reads one block. */
+  const captureOf = (prompt: string) =>
+    prompt.split("\n").find((line) => line.startsWith("CAMERA:")) ?? "";
+
+  it("carries the founder's own LIGHTING line, and never the flash studio's", () => {
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const capture = captureOf(composePackageViewPrompt(angle, null));
+      expect(capture, `${angle} has no capture paragraph`).not.toBe("");
+      expect(capture, angle).toContain(LIGHTING_LINE);
+      expect(capture, angle).not.toContain("front flash");
+      expect(capture, angle).not.toContain("No gels, no diffusion");
+    }
+  });
+
+  it("⚠ sends the SAME capture the author road sends — so the two cannot drift", () => {
+    /*
+      The invariant, not a coincidence of wording: a view is a photograph of the
+      person the house block already made, so the day that block's camera or
+      light changes, the package's must move with it. Derived from the author
+      road's own constant rather than retyped beside it (working law 4).
+    */
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      expect(captureOf(composePackageViewPrompt(angle, null)), angle)
+        .toBe(CAPTURE_SENTENCES.join(" "));
+    }
+  });
+
+  it("⚠ carries none of the §5e sentences the author road DROPPED", () => {
+    /*
+      Derived from `DROPPED_FROM_BLOCK`, and deliberately only the §5e CAPTURE
+      entries — that list also holds framing, expression and negative drops, and
+      a signed view legitimately keeps the cohort's directive and negatives
+      ("Arms relaxed at the sides", "NO open mouth"). Taking the whole list
+      would be deriving from a set that answers a different question, which is
+      a silent behaviour change wearing a refactor's clothes.
+    */
+    const captureDrops = DROPPED_FROM_BLOCK.filter(
+      (entry) => entry.from.includes("§5e") && !entry.from.startsWith("BACKGROUND"),
+    );
+    expect(captureDrops.length, "the §5e capture drops vanished from the source list")
+      .toBeGreaterThanOrEqual(6);
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const capture = captureOf(composePackageViewPrompt(angle, null));
+      for (const { phrase, from } of captureDrops) {
+        expect(capture, `${angle} still carries "${phrase}" (${from})`).not.toContain(phrase);
+      }
+    }
+  });
+
+  it("CONTROL — the reader can see a capture paragraph, and would catch the flash if it came back", () => {
+    /*
+      Three of the arms above are absences. This is the same reader finding a
+      real sentence in the real output, plus the flash reader driven over the
+      text it exists to catch — so a mangled phrase or a `captureOf` that
+      returns nothing cannot make the absences pass on nothing.
+    */
+    const capture = captureOf(composePackageViewPrompt("sideClose", null));
+    expect(capture).toContain("CAMERA: Medium-format sensor");
+    expect(capture.length).toBeGreaterThan(200);
+    /* The exact sentence this defect was, taken from the cohort block that
+       still holds it, proving the absence arms above are readable claims. */
+    const theFlashSentence = PHOTOREAL_HUMAN_BLOCKS.captureSentences
+      .find((sentence) => sentence.startsWith("LIGHTING:"));
+    expect(theFlashSentence, "the cohort's flash sentence has moved").toContain("front flash");
+    expect(`CAMERA: x ${theFlashSentence}`).toContain("front flash");
   });
 });
