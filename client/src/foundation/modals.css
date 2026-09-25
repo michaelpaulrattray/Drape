@@ -161,7 +161,7 @@
 
 /* Destructive reveals itself on hover, per the foundation button law. */
 .dpc-cardmenu__item--danger { color: var(--metaStrong); }
-.dpc-cardmenu__item--danger:hover { color: var(--errorInk); background: var(--well); }
+.dpc-cardmenu__item--danger:hover:not(:disabled) { color: var(--errorInk); background: var(--well); }
 
 .dpc-cardmenu__rule { display: block; height: 1px; margin: 5px 0; background: var(--rule); }
 

@@ -135,6 +135,26 @@ const ALL_RULES = clientStylesheets().flatMap((file) =>
   rulesIn(readListedSource(file) ?? "", path.relative(ROOT, file)),
 );
 
+/** Every class named by a switched-off selector anywhere in the client. */
+const SWITCHABLE = new Set(
+  ALL_RULES.flatMap((r) => r.selectors.filter((s) => SWITCHED_OFF.test(s)).flatMap(classesIn)),
+);
+
+/**
+ * ⚠ **A MODIFIER INHERITS ITS BASE'S SWITCHED-OFF STATE, and missing that cost
+ * this suite its second sabotage.** The shared rule is written on `.dp-btn`,
+ * while every hover rule in the family is written on a MODIFIER — `--primary`,
+ * `--secondary`, `--quiet`, `--onmedia`. Asking only whether the modifier
+ * itself appears in a switched-off selector left all six of them outside the
+ * population, so un-guarding the primary button's hover — the single most-used
+ * button in the product — changed nothing anywhere.
+ *
+ * BEM makes the answer readable off the name: the base of `.dp-btn--primary` is
+ * `.dp-btn`, and a button wearing the modifier always wears the base too.
+ */
+const canBeSwitchedOff = (cls: string): boolean =>
+  SWITCHABLE.has(cls) || SWITCHABLE.has(cls.split("--")[0]);
+
 describe("the reader can fail (working law 2)", () => {
   it("POSITIVE — it finds an unguarded hover and a hand pointer in a fixture", () => {
     const fixture = rulesIn(
@@ -183,31 +203,91 @@ describe("the shared button rules answer the question (#1237)", () => {
 
 describe("nothing re-brightens a switched-off control under the pointer (#1237)", () => {
   it("every hover rule on a class that can be switched off is guarded", () => {
-    const canBeSwitchedOff = new Set(
-      ALL_RULES.filter((r) => r.selectors.some((s) => SWITCHED_OFF.test(s))).flatMap((r) =>
-        r.selectors.filter((s) => SWITCHED_OFF.test(s)).flatMap(classesIn),
-      ),
-    );
-    /* A class that states its OWN switched-off hover has answered the question
-       its own way; the entry card resets border and background there rather
-       than suppressing the hover. Derived from the stylesheet, never a name. */
+    /*
+      TWO WAYS A HOVER RULE HAS ALREADY ANSWERED, both read off the stylesheet
+      and neither a filename:
+
+      1. Its class states its OWN switched-off hover — the concept entry card
+         resets border and background in `[disabled]:hover` rather than
+         suppressing the hover, and that rule outranks the modifier's on
+         specificity.
+      2. The MODIFIER IS the switched-off state. The rail's and lobby menu's
+         unbuilt stubs, and the entry card's inert variant, are not `:disabled`
+         at all — they are a modifier that declares a quiet cursor, worn by a
+         `<span aria-disabled>`. Their hover rules exist precisely TO neutralise
+         the base's, so flagging them inverts the finding.
+    */
     const answersInItsOwnHover = new Set(
       ALL_RULES.flatMap((r) => r.selectors)
         .filter((s) => s.includes(":hover") && SWITCHED_OFF.test(s))
         .flatMap(classesIn),
     );
+    /* ⚠ The RESTING rule only, and the exclusion is load-bearing: `.dp-iconbtn`
+       declares `cursor: default` in its own `:disabled` rule, so counting any
+       non-hover selector would have exempted the icon button, his Desk's tap
+       and the confirm dialog's Keep from the arm that is about them. Three
+       sabotage cases went from caught to missed on that one clause. */
+    const isItselfTheOffState = new Set(
+      ALL_RULES.filter((r) => {
+        const cursor = declaration(r.body, "cursor");
+        return cursor !== null && cursor !== "pointer";
+      }).flatMap((r) =>
+        r.selectors
+          .filter((s) => !s.includes(":hover") && !SWITCHED_OFF.test(s))
+          .flatMap(classesIn),
+      ),
+    );
+    const alreadyAnswered = (cls: string): boolean =>
+      answersInItsOwnHover.has(cls) ||
+      answersInItsOwnHover.has(cls.split("--")[0]) ||
+      isItselfTheOffState.has(cls);
 
     const unguarded = ALL_RULES.flatMap((r) =>
       r.selectors
         .filter((s) => s.includes(":hover") && !s.includes(":not(:disabled)") && !SWITCHED_OFF.test(s))
-        .filter((s) =>
-          classesIn(s).some((c) => canBeSwitchedOff.has(c) && !answersInItsOwnHover.has(c)),
-        )
+        .filter((s) => classesIn(s).some((c) => canBeSwitchedOff(c) && !alreadyAnswered(c)))
         .map((s) => `${r.file}  ${s}`),
     );
 
-    expect(canBeSwitchedOff.size).toBeGreaterThan(10);
+    expect(SWITCHABLE.size).toBeGreaterThan(10);
     expect(unguarded, "a switched-off control still lights up on hover").toEqual([]);
+  });
+});
+
+describe("a switched-off rule that fades must also drop the hand (#1237)", () => {
+  /*
+    The narrow shape of the same defect, and the one a fix is most likely to
+    leave behind: a class DOES get a switched-off rule, it fades, and the rule
+    says nothing about the pointer — so the base rule's `cursor: pointer`
+    survives and the button still promises a press while looking off. The
+    cross-reading arm above cannot see it, because that class now HAS an answer;
+    it just is not the whole answer.
+  */
+  it("every hand-pointer class with a switched-off rule resets the cursor in it", () => {
+    const handAtRest = new Set(
+      ALL_RULES.filter((r) => declaration(r.body, "cursor") === "pointer").flatMap((r) =>
+        r.selectors.filter((s) => !s.includes(":hover")).flatMap(classesIn),
+      ),
+    );
+    const resetsTheCursor = new Set(
+      ALL_RULES.filter((r) => {
+        const cursor = declaration(r.body, "cursor");
+        return cursor !== null && cursor !== "pointer";
+      }).flatMap((r) => r.selectors.filter((s) => SWITCHED_OFF.test(s)).flatMap(classesIn)),
+    );
+    const stillPromising = [
+      ...new Set(
+        ALL_RULES.flatMap((r) =>
+          r.selectors
+            .filter((s) => SWITCHED_OFF.test(s))
+            .flatMap(classesIn)
+            .filter((c) => handAtRest.has(c) && !resetsTheCursor.has(c))
+            .map((c) => `${r.file}  ${c}`),
+        ),
+      ),
+    ];
+    expect(handAtRest.size).toBeGreaterThan(20);
+    expect(stillPromising, "it fades but the pointer still says press me").toEqual([]);
   });
 });
 
