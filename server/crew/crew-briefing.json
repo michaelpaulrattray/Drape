@@ -1,7 +1,7 @@
 {
-  "edition": 536,
-  "updatedAt": "2026-09-25T22:10:00.000Z",
-  "shift": "Foreman — N2 focus: the render reader gets room to answer (#1228)",
+  "edition": 537,
+  "updatedAt": "2026-09-25T23:20:00.000Z",
+  "shift": "Foreman — N2 focus: two readers stopped blaming your photograph for our own limit (#1272)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -184,6 +184,10 @@
         {
           "state": "done",
           "title": "The checker that confirms a refined picture really contains what you asked for was being cut off mid-sentence — and now it has room to finish (#1228). When you refine a picture we ask a reader to confirm the new version actually has what you asked for. It was only ever given room for a short answer, and a reading that covers eight things needs roughly twice that — so the answer arrived half-written, could not be read at all, and the picture was handed over and charged for with nothing having checked it. Measured on your own Sifr2 close-up through the real reader: eight things asked, three readings, every one of them over the old limit, and at the old limit the answer came back unusable twice out of twice. The room it gets now grows with how much was asked, and it costs nothing extra on the smaller readings — which is most of them. Nobody was caught by this: the records that would have shown it are deleted on a schedule, so it was found by measuring the real thing rather than by a complaint. Six other readers have the same gap and none of them is known to have hit it; they are written down as #1272 rather than changed on a hunch."
+        },
+        {
+          "state": "done",
+          "title": "Two of the studio's readers could blame your photograph for our own limit, and now they cannot (#1272). When you attach a picture to copy a hair colour or a makeup look from, we ask a reader to describe what is in it. If that description ran past the room we had given it, the answer arrived half-written and unreadable, and you were told “We couldn't read that picture — try another one” — about a picture that was never the problem. You would have swapped it and it would have failed again. Both readers now say the thing that is true: “I couldn't read that picture just now — try again in a moment.” Those words were already in the studio; nothing new was written for you to read. Six more readers had the same gap and were quietly filing half an answer as a fact about your cast — the worst of them could record that it had SEEN something in a picture when its answer had in fact been cut off before it could say so. Nobody is known to have been caught by any of it: it was found by measuring rather than by a complaint, and the records that would have shown it are deleted on a schedule. Two things worth knowing about how it went. Checking the list on the card found THREE more readers than the card named — including one of the two above, the closest twin of the worst one — because those files discuss the problem in their own notes, and a search for the word had read a note as a fix. And the ninth reader sits on the paid refine road: it is carded as #1275 rather than changed inside a cleanup, because fixing it means choosing which sentence you see after you have spent credits, and that is your call rather than ours."
         }
       ]
     },
@@ -8286,6 +8290,13 @@
       "status": "merged",
       "prNumber": 1261,
       "note": "Live on production as build 6f43e1b3. The card waits on his eye over the court frames."
+    },
+    {
+      "id": "truncated-readers-1272",
+      "title": "Nine readers now say when the model's reply was cut off — two of them stopped blaming her photograph for our token ceiling (#1272)",
+      "status": "merged",
+      "prNumber": 1276,
+      "note": "Live on production as build 84abd902; remainder #1275."
     }
   ],
   "problems": [
