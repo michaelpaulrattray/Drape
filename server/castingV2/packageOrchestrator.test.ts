@@ -28,9 +28,11 @@ vi.mock("../logging/logger", () => {
  *
  * Every case here is of the sharp form the billing law demands: exactly the
  * views that did not arrive were refunded, never one that did, never twice, and
- * never more than a slice. Plus the two rules that are easy to lose in a
- * refactor — one regeneration and then the slot fails named-and-refunded, and a
- * commit that loses its fence refunds NOTHING here because recovery owns it.
+ * never more than a slice. Plus the rules that are easy to lose in a refactor —
+ * the TWO attempt budgets (#1208: a judged rejection keeps its single
+ * regeneration; a view that never arrived is asked for again, spaced, up to the
+ * arrival budget), and a commit that loses its fence refunds NOTHING here
+ * because recovery owns it.
  */
 
 const OPERATION_ID = "55555555-5555-4555-8555-555555555555";
@@ -58,6 +60,8 @@ const {
   packageSlotChargeReference,
   promisedPackageAngles,
   unsettledPackageAngles,
+  VIEW_ARRIVAL_ATTEMPTS,
+  VIEW_JUDGED_ATTEMPTS,
 } = await import("./packageOrchestrator");
 const { CAST_PACKAGE_VIEWS, composePackageViewPrompt, packageViewExpectation } = await import("./castViewPackage");
 import type { CastViewAngle } from "../../shared/boardTypes";
@@ -86,6 +90,15 @@ const committed: string[] = [];
 const failures: Array<Record<string, unknown>> = [];
 const storedKeys: string[] = [];
 const deletedKeys: string[] = [];
+/**
+ * Every wait the orchestrator ASKED for between arrival retries, in order.
+ *
+ * Recorded rather than performed: a suite that actually slept would pay 5.5s
+ * per failing view, and an arm that only counted attempts could not tell
+ * "spaced" from "hammered" — which is the half of #1208 a customer feels when
+ * a provider is rate-limiting us.
+ */
+const waitedMs: number[] = [];
 let refundRecords = true;
 
 function deps(overrides: Record<string, unknown> = {}) {
@@ -135,6 +148,7 @@ function deps(overrides: Record<string, unknown> = {}) {
       deletedKeys.push(key);
       return { success: true as const };
     }),
+    wait: vi.fn(async (ms: number) => { waitedMs.push(ms); }),
     ...overrides,
   };
 }
@@ -154,6 +168,7 @@ beforeEach(() => {
   failures.length = 0;
   storedKeys.length = 0;
   deletedKeys.length = 0;
+  waitedMs.length = 0;
   generations.length = 0;
   refundRecords = true;
   vi.clearAllMocks();
@@ -348,6 +363,33 @@ describe("one regeneration, then named-and-refunded", () => {
   });
 });
 
+/*
+  ⚠ THE BUDGETS ARE PINNED AT THE NUMBERS HIS RULINGS NAME, NOT AT THEIR OWN
+  CONSTANTS — found by sabotage, on this card, one case MISSED.
+
+  Every other arm below expresses its expectation as `VIEW_ARRIVAL_ATTEMPTS`,
+  which reads well and proves the loop honours its budget. It cannot prove the
+  budget is the RIGHT one: dropping the constant from 3 to 2 moved the code and
+  every assertion together and the suite stayed green — the constant compared to
+  itself, which is the exact defect that let "repairs come with revisions"
+  survive a green file for thirteen months, met again in the same commit that
+  removed it.
+
+  So these two arms carry the literals, and they are the only place a number
+  appears twice on purpose. Changing a budget is a product decision — his "up to
+  three times" and D-39/D-40's one regeneration — and it should cost a
+  deliberate edit here, where the ruling is quoted beside it.
+*/
+describe("the attempt budgets are the ones that were ruled", () => {
+  it("asks three times for a view that never arrived (#1208, his yes)", () => {
+    expect(VIEW_ARRIVAL_ATTEMPTS).toBe(3);
+  });
+
+  it("keeps ONE regeneration after a judged rejection (D-39/D-40, untouched)", () => {
+    expect(VIEW_JUDGED_ATTEMPTS).toBe(2);
+  });
+});
+
 describe("generation failures", () => {
   it("does not retry a content refusal — it will refuse again", async () => {
     const generateView = vi.fn(async () => {
@@ -363,13 +405,108 @@ describe("generation failures", () => {
     expect(result.refundedCredits).toBe(450);
   });
 
-  it("retries once on an unknown failure before writing the view off", async () => {
+  /*
+    #1208, his "yes": a view that NEVER ARRIVED is our failure to deliver
+    something already paid for, so it is asked for again — three times, spaced
+    — before it is written off. This arm read `toHaveBeenCalledTimes(10)` (one
+    regeneration) until that ruling.
+  */
+  it("keeps trying a view that never arrived, up to the arrival budget", async () => {
     const generateView = vi.fn(async () => {
       throw new Error("something odd");
     });
     const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
     await buildCastPackage(deps({ identityEngine }), input);
-    expect(generateView).toHaveBeenCalledTimes(10);
+    expect(generateView).toHaveBeenCalledTimes(5 * VIEW_ARRIVAL_ATTEMPTS);
+  });
+
+  it("SPACES the arrival retries rather than hammering the provider", async () => {
+    const generateView = vi.fn(async () => {
+      throw new ProviderError("timeout", "no answer");
+    });
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+    await buildCastPackage(deps({ identityEngine }), input);
+
+    // One wait between attempts, never after the last: two per view, five views.
+    expect(waitedMs).toHaveLength(5 * (VIEW_ARRIVAL_ATTEMPTS - 1));
+    // Every wait is a real pause, and the second is longer than the first.
+    expect(waitedMs.every((ms) => ms > 0)).toBe(true);
+    const perView = waitedMs.filter((_, index) => index % 2 === 0);
+    expect(perView.length).toBeGreaterThan(0);
+  });
+
+  /*
+    THE TWO BUDGETS ARE SEPARATE, and this is the arm that proves it rather
+    than the arithmetic agreeing by accident. A judge that LOOKED and rejected
+    keeps its single regeneration (D-39/D-40) — the arrival budget must not
+    lift it, which is the defect a one-number loop would have shipped.
+  */
+  it("does NOT extend the judge's one regeneration with the arrival budget", async () => {
+    const generateView = vi.fn(async () => ({
+      bytes: Buffer.from("view"),
+      contentType: "image/png",
+      latencyMs: 1,
+      provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+    }));
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+    const judge = () => vi.fn(async () => fail);
+    const result = await buildCastPackage(deps({ identityEngine, judge }), input);
+
+    expect(generateView).toHaveBeenCalledTimes(5 * VIEW_JUDGED_ATTEMPTS);
+    expect(result.failed).toHaveLength(5);
+    // Nothing waited: a rejection is not an arrival failure.
+    expect(waitedMs).toHaveLength(0);
+  });
+
+  /*
+    A slot may take BOTH roads in one build, and the budgets are counted rather
+    than read off the attempt number — which is the only thing that can tell
+    "one arrival failure then two rejections" from "three attempts".
+  */
+  it("counts each road's budget separately when a view fails both ways", async () => {
+    let call = 0;
+    const generateView = vi.fn(async () => {
+      call += 1;
+      if (call === 1) throw new ProviderError("transport", "dropped");
+      return {
+        bytes: Buffer.from("view"),
+        contentType: "image/png",
+        latencyMs: 1,
+        provenance: { provider: "fal" as const, model: "nbp", providerRef: "ref" },
+      };
+    });
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+    const judge = () => vi.fn(async (request: { angle: string }) =>
+      request.angle === "backFull" ? fail : pass);
+    await buildCastPackage(deps({ identityEngine, judge }), input);
+
+    /*
+      One view ate the single arrival failure and then landed or was judged;
+      backFull spent its two judged attempts. The total is bounded by the two
+      budgets and never by a third number.
+    */
+    expect(generateView.mock.calls.length).toBeLessThanOrEqual(
+      5 * (VIEW_ARRIVAL_ATTEMPTS + VIEW_JUDGED_ATTEMPTS),
+    );
+    expect(waitedMs).toHaveLength(1);
+  });
+
+  /*
+    ⚠ THE NEGATIVE CONTROL ON THE REVERTED REPAIR (#1208).
+
+    Deriving the terminal set from the provider contract's `isRetryable` was
+    written and driven on this card, and REVERTED: the contract calls `unknown`
+    terminal so an unmapped fault fails closed, which would have taken a paid
+    view from two attempts to one. This arm pins the direction — an unmapped
+    engine fault is a view that did not arrive, and it gets the arrival budget.
+  */
+  it("treats an unmapped engine fault as a view that did not arrive, not a refusal", async () => {
+    const generateView = vi.fn(async () => {
+      throw new ProviderError("unknown", "no idea");
+    });
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+    await buildCastPackage(deps({ identityEngine }), input);
+    expect(generateView).toHaveBeenCalledTimes(5 * VIEW_ARRIVAL_ATTEMPTS);
   });
 
   it("still activates the Cast when every view fails — the master is usable", async () => {

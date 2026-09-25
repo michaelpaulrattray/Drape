@@ -26,9 +26,31 @@
  *    broken checker still took a customer's money for a picture that may have
  *    been perfect — and the frame was deleted on the way out, so nobody could
  *    ever tell which it had been.
- * 2. **One regeneration, then the slot fails named-and-refunded.** Ported from
- *    the legacy back-view gate (D-39/D-40): a second attempt is worth its cost,
- *    a third is a slot machine.
+ * 2. **TWO BUDGETS, BECAUSE "WE DECIDED IT WAS WRONG" AND "IT NEVER CAME" ARE
+ *    NOT THE SAME EVENT** (founder, 2026-09-25, on his Sifr cast, #1208).
+ *    Asked whether a failed view should keep retrying or offer a button, his
+ *    answer was *"yes"* to both, in this order — and the first half is here.
+ *
+ *    - A view the judge LOOKED AT AND REJECTED keeps its one regeneration, on
+ *      the legacy back-view gate's own reasoning (D-39/D-40): a second attempt
+ *      is worth its cost, a third is a slot machine.
+ *    - A view that NEVER ARRIVED — the engine errored, the read timed out, the
+ *      connection dropped — is not a slot machine and never was. It is our
+ *      failure to deliver something already paid for, and it is retried up to
+ *      {@link VIEW_ARRIVAL_ATTEMPTS} times, spaced.
+ *
+ *    ⚠ **WHICH FAILURES COUNT AS "NEVER ARRIVED" IS THIS ROAD'S OWN QUESTION,
+ *    AND IT IS NOT `isRetryable`'S.** The obvious repair — derive the terminal
+ *    set from the provider contract instead of naming two classes here — was
+ *    written and driven inside #1208 and then REVERTED, because the contract
+ *    answers a different question. `isRetryable` asks *will the transport
+ *    succeed if tried again*, and it makes `unknown` terminal on purpose so an
+ *    unmapped fault fails closed rather than spinning. This loop asks *did the
+ *    customer's paid view arrive*, and an unmapped engine fault is the
+ *    commonest way one does not. Deriving would have taken a view failing with
+ *    `unknown` from two attempts to ONE — a narrowing folded into the card that
+ *    ordered the opposite. The existing arm caught it; the divergence between
+ *    the two sets is filed as its own card rather than settled in passing.
  * 3. **A lost commit deletes its object.** If the fence refuses — the sweep got
  *    here first — nothing will ever reference those bytes, and the cleanup
  *    worker only deletes keys a row handed it. Best-effort delete now, or it is
@@ -75,6 +97,49 @@ const log = createModuleLogger("castingV2/packageOrchestrator");
 const PACKAGE_KEY_PREFIX = "casting-v2/casts";
 
 /**
+ * HOW MANY TIMES A VIEW THAT NEVER ARRIVED IS ASKED FOR AGAIN (#1208).
+ *
+ * Counts ARRIVAL FAILURES, not attempts in general: three of these and the slot
+ * fails named-and-refunded. It is the number the customer is owed a true
+ * sentence about, so nothing may restate it as a word — see
+ * {@link VIEW_ARRIVAL_ATTEMPTS} usage at the only place that counts.
+ */
+export const VIEW_ARRIVAL_ATTEMPTS = 3;
+
+/**
+ * Generations that reached a VERDICT. Unchanged, and deliberately so: one
+ * generation, one regeneration, then the judge's rejection stands.
+ */
+export const VIEW_JUDGED_ATTEMPTS = 2;
+
+/**
+ * The loop's hard bound, DERIVED from the two budgets rather than typed beside
+ * them.
+ *
+ * The worst honest sequence alternates roads — arrival, rejection, arrival,
+ * rejection, arrival — so the exact bound is the sum, and writing it as a third
+ * number is the mirror this file just finished removing from the class check
+ * above. A bound that cannot disagree with its budgets also cannot spin.
+ */
+const VIEW_MAX_ATTEMPTS = VIEW_ARRIVAL_ATTEMPTS + VIEW_JUDGED_ATTEMPTS;
+
+/**
+ * The spacing between one arrival failure and the next attempt.
+ *
+ * Short on purpose. The adapter has already exhausted its own transport
+ * retries by the time a `ProviderError` reaches this loop, so this is the
+ * outer, slower breath — long enough for a provider blip or a rate-limit
+ * window to pass, negligible against a 2K render (measured in tens of
+ * seconds). The package's operation holds a renewing heartbeat while this
+ * runs, so the added wait cannot hand a live Sign to the recovery sweep.
+ *
+ * Indexed by how many arrival failures have happened, so the second wait is
+ * longer than the first; the list is read with its last value repeated rather
+ * than indexed off the end.
+ */
+const VIEW_ARRIVAL_BACKOFF_MS: readonly number[] = [1_500, 4_000];
+
+/**
  * The per-view refund reference.
  *
  * `mintPackage`'s `<chargeRef>:slot:<angle>` shape, derived through the shared
@@ -114,6 +179,14 @@ export type PackageOrchestratorDependencies = {
   refund?: typeof recordRefund;
   activate?: typeof activateSignedCast;
   deleteObject?: typeof storageDelete;
+  /**
+   * The wait between arrival retries (#1208).
+   *
+   * Injected so a test can PROVE the spacing happened — recording the requested
+   * milliseconds — without a suite that actually sleeps for them. A test that
+   * only asserts the attempt count cannot tell "spaced" from "hammered".
+   */
+  wait?: (ms: number) => Promise<void>;
 };
 
 type PackageSlotOutcome =
@@ -426,8 +499,20 @@ async function buildOneView(
   */
   const verdicts: ViewConformanceVerdict[] = [];
 
-  // One generation, one regeneration. Then the slot fails named-and-refunded.
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
+  /*
+    TWO BUDGETS ON TWO ROADS (#1208, his "yes") — see this file's header, §2.
+
+    Counted rather than inferred from the attempt number, because a slot can
+    take both roads in one build: an arrival failure followed by a rejection
+    has used one of each, and an attempt number cannot say which.
+  */
+  let arrivalFailures = 0;
+  let judgedAttempts = 0;
+  const wait = dependencies.wait ?? ((ms: number) => new Promise<void>((resolve) => {
+    setTimeout(resolve, ms).unref?.();
+  }));
+
+  for (let attempt = 1; attempt <= VIEW_MAX_ATTEMPTS; attempt += 1) {
     let stored: { key: string; url: string } | null = null;
     try {
       /*
@@ -531,6 +616,9 @@ async function buildOneView(
         wardrobeLine: input.wardrobeLine ?? null,
       });
       verdicts.push(verdict);
+      // A picture came back and the judge answered about it: this attempt
+      // spent from the JUDGED budget, whichever way the answer went.
+      judgedAttempts += 1;
 
       if (verdict.unjudged) {
         /*
@@ -560,6 +648,12 @@ async function buildOneView(
           { operationId: input.operationId, angle, attempt, failedAxes, method: verdict.method },
           "[packageOrchestrator] view failed conformance",
         );
+        /*
+          The judge LOOKED and said no. One regeneration, then its answer
+          stands — a third draw against the same judgement is the slot machine
+          D-39/D-40 named, and #1208 deliberately left this half alone.
+        */
+        if (judgedAttempts >= VIEW_JUDGED_ATTEMPTS) break;
         continue;
       }
 
@@ -634,8 +728,27 @@ async function buildOneView(
         second attempt (§H.5) — retrying burns the customer's time to reach the
         same answer. Transport and rate limits were already retried inside the
         adapter.
+
+        ⚠ **THIS IS NOT `isRetryable`, AND THE DIFFERENCE IS DELIBERATE — SEE
+        THE HEADER, §2.** Deriving it from the provider contract was written,
+        driven, and REVERTED inside #1208: the contract calls `unknown` terminal
+        so an unmapped fault fails closed, and this road's own arm caught the
+        consequence — a paid view failing with an unmapped engine error would
+        have dropped from two attempts to one, which is the opposite of what
+        this card was ordered to do.
       */
       if (failureClass === "content_policy" || failureClass === "capability") break;
+      /*
+        The view never arrived. Keep trying, spaced — this is our failure to
+        deliver something already paid for, not a draw against a judgement.
+      */
+      arrivalFailures += 1;
+      if (arrivalFailures >= VIEW_ARRIVAL_ATTEMPTS) break;
+      await wait(
+        VIEW_ARRIVAL_BACKOFF_MS[
+          Math.min(arrivalFailures - 1, VIEW_ARRIVAL_BACKOFF_MS.length - 1)
+        ] ?? 0,
+      );
     }
   }
 
