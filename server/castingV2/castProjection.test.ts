@@ -438,6 +438,100 @@ describe("the signed Cast projection", () => {
   });
 });
 
+/**
+ * A VIEW BEING ASKED FOR AGAIN IS A VIEW BEING MADE (#1235).
+ *
+ * The projection is where a tile in flight becomes server truth per slot, and
+ * these arms are about the two things that follow from it and nothing else: the
+ * tile says it is working, and it offers NOTHING while it is. The second half is the money
+ * half — the offer this projection withholds is the same function the entrance
+ * authorizes the spend with, so a slot that still offered would be a second
+ * paid render on one view, which is what his third report bought twice.
+ */
+describe("a view being asked for again (#1235)", () => {
+  const backFull = (projection: ReturnType<typeof projectSignedCast>) =>
+    projection.slots.find((slot) => slot.angle === "backFull")!;
+
+  it("marks the slot building, says why, and offers nothing", () => {
+    const assets = ledger(anchor(), failed("backFull"));
+
+    const atRest = backFull(projectSignedCast({ model: model(), assets, lineage }));
+    // The control: without a running retry this is a confession WITH an offer.
+    expect(atRest.state).toBe("failed-refunded");
+    expect(atRest.retry).toEqual({ priceCredits: 50 });
+    expect(atRest.retrying).toBeUndefined();
+
+    const asking = backFull(projectSignedCast({
+      model: model(),
+      assets,
+      lineage,
+      retryingAngles: ["backFull"],
+    }));
+    expect(asking.state).toBe("building");
+    expect(asking.retrying).toBe(true);
+    expect(asking.retry).toBeUndefined();
+    // The caption belongs to a slot at rest; this one is being worked on.
+    expect(asking.note).toBeNull();
+  });
+
+  it("keeps the picture she already has while the new one renders", () => {
+    /*
+      An UNJUDGED view: delivered, charged, kept, and nobody looked at it. Its
+      Try again is free, and its picture is hers until a new one lands — the
+      retry never writes a failure marker over it (#1233), so the url stays and
+      the room draws the working state over the top of it.
+    */
+    const unjudged = asset({
+      viewType: "backFull",
+      provenance: { conformanceMethod: "unavailable" },
+    });
+    const assets = ledger(anchor(), unjudged);
+
+    const atRest = backFull(projectSignedCast({ model: model(), assets, lineage }));
+    expect(atRest.retry).toEqual({ priceCredits: 0 });
+    expect(atRest.unjudged).toBe(true);
+
+    const asking = backFull(projectSignedCast({
+      model: model(),
+      assets,
+      lineage,
+      retryingAngles: ["backFull"],
+    }));
+    expect(asking.state).toBe("building");
+    expect(asking.url).toBe(unjudged.storageUrl);
+    expect(asking.retry).toBeUndefined();
+  });
+
+  it("touches only the angle that is being asked for", () => {
+    const projection = projectSignedCast({
+      model: model(),
+      assets: ledger(anchor(), failed("backFull"), failed("threeQuarter")),
+      lineage,
+      retryingAngles: ["backFull"],
+    });
+    const other = projection.slots.find((slot) => slot.angle === "threeQuarter")!;
+
+    /*
+      HIS SECOND REPORT, ASSERTED HERE RATHER THAN IN THE PAGE: asking for one
+      view must leave the others exactly as they were, offer included. The old
+      room held one angle in one string and disabled every button from it.
+    */
+    expect(other.state).toBe("failed-refunded");
+    expect(other.retry).toEqual({ priceCredits: 50 });
+    expect(other.retrying).toBeUndefined();
+  });
+
+  it("is absent when nobody is asking", () => {
+    const projection = projectSignedCast({
+      model: model(),
+      assets: ledger(anchor(), failed("backFull")),
+      lineage,
+      retryingAngles: [],
+    });
+    expect(projection.slots.every((slot) => slot.retrying === undefined)).toBe(true);
+  });
+});
+
 /*
   ⚠ AT THE SENTENCE, NOT AT THE SYMBOL (#1208).
 

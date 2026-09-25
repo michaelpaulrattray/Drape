@@ -66,6 +66,19 @@ export type CastSlotProjection = {
    */
   unjudged?: true;
   /**
+   * TRUE while a Try again on this view is actually running (#1235).
+   *
+   * It rides WITH `state: "building"` rather than instead of it: the tile is
+   * being made, which is a thing the room already knows how to draw, and this
+   * says only WHY — so the picture the customer still has is kept visible
+   * underneath a Sign-time stand-in and covered while her new one renders.
+   *
+   * Derived from the operation rows, never from a client's word, which is the
+   * whole of #1235: the room, a second tab and a reload all read the same fact,
+   * and the offer below is absent for exactly as long as it is true.
+   */
+  retrying?: true;
+  /**
    * What asking for this view again would cost, or absent when there is
    * nothing to ask for.
    *
@@ -380,9 +393,20 @@ export function projectSignedCast(input: {
    * asset can be missing, but the promise cannot.
    */
   promisedAngles?: readonly CastViewAngle[];
+  /**
+   * The views of this Cast with a Try again in flight right now
+   * (`listRunningViewRetryAngles`).
+   *
+   * BUSY IS SERVER TRUTH PER SLOT (#1235, D-161). Absent means "nobody asked",
+   * which is the honest reading for every caller that does not spend money; the
+   * entrance that does spend passes it, and the refusal it produces is derived
+   * from the same state the room was shown rather than from a second opinion.
+   */
+  retryingAngles?: readonly CastViewAngle[];
 }): SignedCastProjection {
   const evidence = slotEvidence(input.assets);
   const building = input.model.status === "provisioning";
+  const retrying = new Set(input.retryingAngles ?? []);
   const anchor = evidence.get("frontClose")?.anchor ?? null;
 
   /*
@@ -533,6 +557,29 @@ export function projectSignedCast(input: {
       underneath it would be a second writer on a view the Sign may yet commit
       or refund.
     */
+    /*
+      A VIEW BEING ASKED FOR AGAIN IS A VIEW BEING MADE (#1235).
+
+      Applied BEFORE the offer pass below, on purpose and not by accident of
+      order: the offer is then derived from the state the room is actually
+      shown, so "a retry is running" and "nothing to ask for" are ONE reading
+      rather than two rules that could disagree. `castSlotRetryOffer` already
+      answers null for anything that is not `ready` or `failed-refunded`, so
+      the refusal comes out of the existing authority rather than a new branch
+      inside it.
+
+      HER PICTURE IS NOT REMOVED. An unjudged view she is looking at stays on
+      the slot — it is hers until the new one lands, and the retry never writes
+      a failure marker over it (#1233). What changes is that the tile says it is
+      working and offers nothing, which is what a second press was charging for.
+
+      The note goes, because the caption belongs to a slot at rest: "We didn't
+      get to check this one" beside a tile that is being checked again right now
+      is a sentence about a moment that has passed.
+    */
+    .map((slot) => (retrying.has(slot.angle)
+      ? { ...slot, state: "building" as const, note: null, retrying: true as const }
+      : slot))
     .map((slot) => {
       if (building) return slot;
       const retry = castSlotRetryOffer(slot, CAST_PACKAGE_VIEW_PRICE);
