@@ -473,17 +473,51 @@ async function openViewAudit(
   return audit.success ? audit.generationId ?? null : null;
 }
 
-async function buildOneView(
+/**
+ * WHERE A RENDERED VIEW GOES — the one thing the Sign and a Try again do
+ * differently, handed in rather than branched on (#1208 slice 2).
+ *
+ * Returning `null` means the landing lost its fence: the bytes are real and
+ * nobody will ever reference them, which is a different fact from a failure
+ * and gets its own outcome.
+ */
+type ViewLanding<T> = (landed: {
+  stored: { key: string; url: string };
+  verdict: ViewConformanceVerdict;
+  provenance: { engine: string; provider: string; providerRef?: string };
+}) => Promise<T | null>;
+
+/**
+ * GENERATE, STORE, JUDGE — the attempt loop, and it is the WHOLE fidelity
+ * contract of a package view.
+ *
+ * Extracted from `buildOneView` when the Try again road arrived (#1208 slice
+ * 2), and extracted rather than copied for the reason working law 4 exists: a
+ * second loop composing the same prompt would be a parallel copy of the thing
+ * that decides what a customer's view looks like, and it would drift — a
+ * retried view quietly missing her tattoos, her carried feature words or her
+ * outfit, which is precisely the ceiling-capping the fidelity law forbids.
+ * **A view asked for again is composed and judged by this function or it is
+ * not the same view.**
+ *
+ * The landing is a callback INSIDE the try on purpose. It is where the commit
+ * used to sit, so a throw out of it still lands in this loop's catch and still
+ * counts as an arrival failure — the Sign's behaviour across this extraction
+ * is unchanged, which is what its own suite is the control for.
+ */
+export async function renderViewAttempts<T>(
   dependencies: PackageOrchestratorDependencies,
   input: BuildPackageInput,
   angle: CastViewAngle,
-  auditId: number | null,
-): Promise<PackageSlotOutcome> {
-  const view = castPackageView(angle);
+  land: ViewLanding<T>,
+): Promise<
+  | { status: "landed"; value: T; verdicts: ViewConformanceVerdict[] }
+  | { status: "fenced"; verdicts: ViewConformanceVerdict[] }
+  | { status: "failed"; reason: string; verdicts: ViewConformanceVerdict[] }
+> {
   const engine = (dependencies.identityEngine ?? castingIdentityEngine)();
   const judge = (dependencies.judge ?? castingViewConformanceJudge)();
   const store = dependencies.storeImage ?? defaultStoreImage;
-  const commit = dependencies.commitSlot ?? commitPackageSlotAsset;
   const drop = dependencies.deleteObject ?? storageDelete;
 
   let lastReason = "The view could not be generated";
@@ -657,64 +691,31 @@ async function buildOneView(
         continue;
       }
 
-      const assetId = await commit({
-        userId: input.userId,
-        operationId: input.operationId,
-        modelId: input.modelId,
-        angle,
-        storageKey: stored.key,
-        storageUrl: stored.url,
-        identityRevisionId: input.identityRevisionId,
-        identityText: input.identityText,
-        pointsCost: CAST_PACKAGE_VIEW_PRICE,
+      const value = await land({
+        stored,
+        verdict,
         provenance: {
-          source: "castingV2.sign",
           engine: image.provenance.model,
           provider: image.provenance.provider,
           ...(image.provenance.providerRef ? { providerRef: image.provenance.providerRef } : {}),
-          conformance: verdict.axes,
-          conformanceMethod: verdict.method,
         },
       });
 
-      if (assetId === null) {
+      if (value === null) {
         /*
-          The fence refused: this Sign is no longer `running`, so the recovery
-          sweep has taken over and will settle this slot. Nothing will ever
-          reference these bytes.
+          The fence refused: this operation is no longer `running`, so the
+          recovery sweep has taken over and will settle this slot. Nothing will
+          ever reference these bytes.
         */
         await drop(stored.key).catch(() => undefined);
-        if (auditId) {
-          await updateGeneration(auditId, {
-            status: "failed",
-            errorMessage: "fenced",
-            completedAt: new Date(),
-          }).catch(() => undefined);
-        }
         log.warn(
           { operationId: input.operationId, angle },
           "[packageOrchestrator] slot commit lost its fence — recovery owns this view",
         );
-        return {
-          angle,
-          status: "failed",
-          reason: "This view was settled by recovery",
-          // Deliberately zero: the sweep refunds this slice under the same
-          // reference, and counting it here would double it on the receipt.
-          refundedCredits: 0,
-          refundUnrecorded: false,
-          fenced: true,
-        };
+        return { status: "fenced", verdicts };
       }
 
-      if (auditId) {
-        await updateGeneration(auditId, {
-          status: "completed",
-          resultUrl: stored.url,
-          completedAt: new Date(),
-        }).catch(() => undefined);
-      }
-      return { angle, status: "committed", assetId };
+      return { status: "landed", value, verdicts };
     } catch (error) {
       if (stored) await drop(stored.key).catch(() => undefined);
       const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
@@ -752,9 +753,82 @@ async function buildOneView(
     }
   }
 
+  return { status: "failed", reason: lastReason, verdicts };
+}
+
+/**
+ * Build one view for a SIGN: render it, then commit it under the Sign's own
+ * fence and settle its slice when it never comes.
+ *
+ * Everything about what the picture IS lives in `renderViewAttempts`; this is
+ * the Sign's half — its audit row, its fence, its per-slot refund.
+ */
+async function buildOneView(
+  dependencies: PackageOrchestratorDependencies,
+  input: BuildPackageInput,
+  angle: CastViewAngle,
+  auditId: number | null,
+): Promise<PackageSlotOutcome> {
+  const view = castPackageView(angle);
+  const commit = dependencies.commitSlot ?? commitPackageSlotAsset;
+
+  const rendered = await renderViewAttempts(dependencies, input, angle, async (landed) => {
+    const assetId = await commit({
+      userId: input.userId,
+      operationId: input.operationId,
+      modelId: input.modelId,
+      angle,
+      storageKey: landed.stored.key,
+      storageUrl: landed.stored.url,
+      identityRevisionId: input.identityRevisionId,
+      identityText: input.identityText,
+      pointsCost: CAST_PACKAGE_VIEW_PRICE,
+      provenance: {
+        source: "castingV2.sign",
+        ...landed.provenance,
+        conformance: landed.verdict.axes,
+        conformanceMethod: landed.verdict.method,
+      },
+    });
+    // The url travels with the id because the audit row wants it and the
+    // landing is the only place that still holds the stored object.
+    return assetId === null ? null : { assetId, url: landed.stored.url };
+  });
+
+  if (rendered.status === "fenced") {
+    if (auditId) {
+      await updateGeneration(auditId, {
+        status: "failed",
+        errorMessage: "fenced",
+        completedAt: new Date(),
+      }).catch(() => undefined);
+    }
+    return {
+      angle,
+      status: "failed",
+      reason: "This view was settled by recovery",
+      // Deliberately zero: the sweep refunds this slice under the same
+      // reference, and counting it here would double it on the receipt.
+      refundedCredits: 0,
+      refundUnrecorded: false,
+      fenced: true,
+    };
+  }
+
+  if (rendered.status === "landed") {
+    if (auditId) {
+      await updateGeneration(auditId, {
+        status: "completed",
+        resultUrl: rendered.value.url,
+        completedAt: new Date(),
+      }).catch(() => undefined);
+    }
+    return { angle, status: "committed", assetId: rendered.value.assetId };
+  }
+
   return failView(dependencies, input, angle, {
-    reason: lastReason,
-    verdicts,
+    reason: rendered.reason,
+    verdicts: rendered.verdicts,
     auditId,
     label: view.label,
   });

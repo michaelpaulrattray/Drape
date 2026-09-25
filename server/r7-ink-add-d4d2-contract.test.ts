@@ -56,6 +56,7 @@ describe("R7-7D D4D2 recovery, feature fences, and privacy contract", () => {
       // aware of — evidence attaches to a Cast, and there is no Cast yet.
       ["castingV2.refine", "not_applicable"],
       ["castingV2.retry", "not_applicable"],
+      ["castingV2.viewRetry", "not_applicable"],
     ]);
     expect(FEATURE_BLIND_OPERATION_MESSAGE).toContain("tattoo evidence");
     expect(FEATURE_BLIND_OPERATION_MESSAGE).toContain("unavailable");

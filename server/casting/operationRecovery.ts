@@ -1,6 +1,10 @@
 import { ROLL_RECOVERY_SENTENCE, recoverCastingV2RollOperation } from "../castingV2/rollRecovery";
 import { recoverCastingV2RefineOperation } from "../castingV2/refineRecovery";
 import { RETRY_SUPPORT_REVIEW_SENTENCE, recoverCastingV2RetryOperation } from "../castingV2/retryRecovery";
+import {
+  VIEW_RETRY_SUPPORT_REVIEW_SENTENCE,
+  recoverCastingV2ViewRetryOperation,
+} from "../castingV2/viewRetryRecovery";
 import { recoverCastingV2SignOperation } from "../castingV2/signRecovery";
 import { and, asc, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import {
@@ -100,6 +104,8 @@ const PUBLIC_RESULT_RECOVERY_BY_KIND: Readonly<
   "castingV2.refine": "not_reconstructable",
   /* A retry is one slice of a sheet the roll projection already knows how to show. */
   "castingV2.retry": "not_reconstructable",
+  /* Same: the Cast's room reads her own asset rows and shows the view. */
+  "castingV2.viewRetry": "not_reconstructable",
 };
 
 type StaleRecoveryStrategy =
@@ -108,6 +114,7 @@ type StaleRecoveryStrategy =
   | "castingv2_sign"
   | "castingv2_refine"
   | "castingv2_retry"
+  | "castingv2_view_retry"
   | "ink_evidence"
   | "evidence_fork"
   | "evidence_mint";
@@ -170,6 +177,14 @@ const STALE_RECOVERY_BY_KIND: Readonly<
     slice is refunded under the retry's own reference.
   */
   "castingV2.retry": "castingv2_retry",
+  /*
+    Bespoke, and its fork variable is the retried asset's own operation stamp:
+    a picture under this operation means the customer has the view and the
+    credits bought it; no picture means nothing was delivered and the charge
+    goes back. A FREE try again never charged, so its ledger is empty and it
+    closes free — read, never assumed.
+  */
+  "castingV2.viewRetry": "castingv2_view_retry",
 };
 
 const LANDING_RECOVERY_BY_KIND: Readonly<
@@ -209,6 +224,7 @@ const LANDING_RECOVERY_BY_KIND: Readonly<
   "castingV2.sign": null,
   "castingV2.refine": null,
   "castingV2.retry": null,
+  "castingV2.viewRetry": null,
 };
 
 function assertNever(value: never): never {
@@ -983,6 +999,31 @@ export async function adjudicateStaleGenerationOperation(
         operationId: operation.id,
         // The live road (#867) parks with the same words — one sentence, two writers.
         publicMessage: RETRY_SUPPORT_REVIEW_SENTENCE(operation.id),
+        chargedCredits: recovered.chargedCredits,
+        refundedCredits: recovered.refundedCredits,
+      });
+      return "recovery_required";
+    }
+  }
+  if (operation.kind === "castingV2.viewRetry") {
+    /*
+      ONE VIEW, ASKED FOR AGAIN (#1208 slice 2). The adjudicator reads the
+      ledger and the Cast's asset rows; a free try again has no charge and
+      closes free, a paid one that landed nothing gets its 50 back.
+    */
+    const recovered = await recoverCastingV2ViewRetryOperation({
+      ...operation,
+      // Narrowed by the gate above; the row's column type is a bare string.
+      status: operation.status === "claimed" ? "claimed" : "running",
+    });
+    if (recovered.type === "durable_success") return "durable_success";
+    if (recovered.type === "paid_failure") return "paid_failure";
+    if (recovered.type === "free_failure") return "free_failure";
+    if (recovered.type === "recovery_required") {
+      await markGenerationOperationRecoveryRequired({
+        userId: operation.userId,
+        operationId: operation.id,
+        publicMessage: VIEW_RETRY_SUPPORT_REVIEW_SENTENCE(operation.id),
         chargedCredits: recovered.chargedCredits,
         refundedCredits: recovered.refundedCredits,
       });

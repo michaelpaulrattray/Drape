@@ -59,6 +59,16 @@ export const GENERATION_OPERATION_KINDS = [
     through that lock because no roll points at this operation.
   */
   "castingV2.retry",
+  /*
+    Try again (#1208 slice 2): ONE view of a signed Cast rendered again, under
+    an operation of its own — so its charge and its refund carry references
+    that can never collide with the Sign's (the slot's original refund is keyed
+    on the SIGN's operation). Sign's money pattern rather than the roll's: one
+    view, one unit, the whole price back when it does not arrive. The Cast is
+    bound at the claim, before any money moves, so the adjudicator can always
+    ask the only question it has — did a picture land under this operation?
+  */
+  "castingV2.viewRetry",
 ] as const;
 
 export type GenerationOperationKind = typeof GENERATION_OPERATION_KINDS[number];

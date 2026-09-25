@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "8533660b0211b211"
+    "sourceFingerprint": "eeba6518952ee9d1"
   },
   "domains": [
     {
@@ -33,7 +33,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 178
+      "moduleCount": 180
     },
     {
       "id": "domain:castingV2",
@@ -48,7 +48,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 63
+      "moduleCount": 64
     },
     {
       "id": "domain:evidence",
@@ -4526,6 +4526,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/viewRetryRecovery.ts",
+      "path": "server/castingV2/viewRetryRecovery.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/viewRetryService.ts",
+      "path": "server/castingV2/viewRetryService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/wardrobeCards.ts",
       "path": "server/castingV2/wardrobeCards.ts",
       "domain": "casting-v2",
@@ -4720,6 +4732,12 @@
     {
       "id": "module:server/db/castingV2Variants.ts",
       "path": "server/db/castingV2Variants.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2ViewRetry.ts",
+      "path": "server/db/castingV2ViewRetry.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -7264,6 +7282,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.retryView",
+      "namespace": "castingV2",
+      "name": "retryView",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.roster",
       "namespace": "castingV2",
       "name": "roster",
@@ -9477,6 +9505,11 @@
     {
       "id": "operation:castingV2.sign",
       "kind": "castingV2.sign",
+      "contract": "server/casting/operationContract.ts"
+    },
+    {
+      "id": "operation:castingV2.viewRetry",
+      "kind": "castingV2.viewRetry",
       "contract": "server/casting/operationContract.ts"
     },
     {
@@ -12208,6 +12241,18 @@
     {
       "id": "test:server/castingV2/viewFeatureWords.test.ts",
       "path": "server/castingV2/viewFeatureWords.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/viewRetryOffer.test.ts",
+      "path": "server/castingV2/viewRetryOffer.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/viewRetryRecovery.test.ts",
+      "path": "server/castingV2/viewRetryRecovery.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/viewRetryService.test.ts",
+      "path": "server/castingV2/viewRetryService.test.ts"
     },
     {
       "id": "test:server/castingV2/viewVocabulary.test.ts",
@@ -22373,6 +22418,11 @@
     },
     {
       "from": "module:server/casting/operationRecovery.ts",
+      "to": "module:server/castingV2/viewRetryRecovery.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/operationRecovery.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -27537,6 +27587,126 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/viewRetryRecovery.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryRecovery.ts",
+      "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryRecovery.ts",
+      "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryRecovery.ts",
+      "to": "module:server/db/castingV2ViewRetry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryRecovery.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryRecovery.ts",
+      "to": "module:server/db/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryRecovery.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/casting/directOperation.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/castingV2/castProjection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/castingV2/castViewPackage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/castingV2/packageOrchestrator.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/castingV2/signService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/castingV2/spendGuards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/castingV2/wardrobeLine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/db/castingV2ViewRetry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/db/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/wardrobeDoor.ts",
       "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
@@ -28159,6 +28329,26 @@
     {
       "from": "module:server/db/castingV2Variants.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ViewRetry.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ViewRetry.ts",
+      "to": "module:server/casting/identity/anchorSelector.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ViewRetry.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ViewRetry.ts",
+      "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
     {
@@ -30493,6 +30683,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/viewRetryService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2.ts",
       "kind": "imports"
     },
@@ -30559,6 +30754,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
     {
