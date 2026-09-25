@@ -67,7 +67,7 @@
  * guess.
  */
 import { inkPlacementEntry, type InkPlacement } from "../../shared/inkPlacementVocabulary";
-import { coverageOfWardrobeLine, type SurfaceCoverage } from "./inkSurfaceCoverage";
+import { coverageOfSnapshotWardrobe, type SurfaceCoverage } from "./inkSurfaceCoverage";
 import { INK_NOT_ON_CLOTHING, inkDeliveredCarrySentence } from "./inkRealism";
 import type { CastPronouns } from "./castPronouns";
 import { imageHalfClause } from "./sidePhrasing";
@@ -246,8 +246,20 @@ export function placementRideCoverage(
    * exactly — the compatibility contract, not a default.
    */
   wardrobeLine: string | null | undefined,
+  /**
+   * The snapshot's `source` (#1222). A `brief`-sourced line dresses and judges
+   * the five views and deliberately does NOT move this check — the declared
+   * 7a-bis approximation, reasoned once in `coverageOfSnapshotWardrobe` — so a
+   * Cast whose brief stated her outfit carries her tattoos into the views
+   * exactly as it did the day before the line existed. Absent means *not
+   * brief*, which is every snapshot written before #1222.
+   */
+  wardrobeSource?: string | null,
 ): SurfaceCoverage {
-  return coverageOfWardrobeLine(wardrobeLine, placement);
+  return coverageOfSnapshotWardrobe(
+    { line: wardrobeLine ?? null, source: wardrobeSource ?? null },
+    placement,
+  );
 }
 
 /**

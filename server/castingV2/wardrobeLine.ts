@@ -49,19 +49,30 @@
 import type { CastingPath } from "../../shared/castingPaths";
 
 /**
- * Where the answer came from. `edited` beats `born` — that IS condition (v).
+ * Where the answer came from. `edited` beats the other two — that IS condition
+ * (v). `brief` is the author road's born line (#1222): the outfit the
+ * customer's own brief stated, recorded on a roll that has no path because the
+ * paths are retired (#203) — readable from the columns as *line without path*,
+ * which since #1222 is the only shape a fresh roll's line can take.
+ *
+ * Exported with #1222 because the ink readers branch on it: a `brief` line
+ * DRESSES AND JUDGES the five views and deliberately does NOT move ink
+ * coverage — see `wardrobeCoversSurface`'s brief arm for the declared reason.
  */
-type WardrobeLineSource = "edited" | "born";
+export type WardrobeLineSource = "edited" | "born" | "brief";
 
 /**
- * ⚠ THREE CASES, AND THE THIRD IS THE ONE THE DESIGN IMPLIES WITHOUT NAMING.
+ * ⚠ THREE CASES, AND WHICH ROWS TAKE EACH MOVED WITH #1222.
  *
- * `line`       this person is wearing a known, complete outfit.
- * `unpathed`   the roll predates the paths, or was cast with the flag off.
- *              **This is not an error and never becomes one**: `NULL` on those
- *              columns means *cast before the paths existed*, and a reader's
- *              correct response is to behave exactly as the product does today.
- *              It is the state of all 206 production rolls as this lands.
+ * `line`       this person is wearing a known outfit. `path` is non-null only
+ *              on the thirteen historical pathed rolls (`source: "born"`); a
+ *              fresh roll's line is the brief's own stated outfit on a null
+ *              path (`source: "brief"`), and an edit beats either
+ *              (`source: "edited"`).
+ * `unpathed`   no path AND no line: the roll predates the paths, was cast
+ *              before #1222, or its brief named no outfit. **This is not an
+ *              error and never becomes one** — a reader's correct response is
+ *              to behave exactly as the product always has.
  * `incoherent` the roll IS on a path and carries no line.
  *
  * The third case cannot be produced by the write path — a path and a line are
@@ -78,7 +89,7 @@ type WardrobeLineSource = "edited" | "born";
  * defaulted is a corner with no test, and this campaign has paid for that one.
  */
 export type WardrobeResolution =
-  | { kind: "line"; line: string; source: WardrobeLineSource; path: CastingPath }
+  | { kind: "line"; line: string; source: WardrobeLineSource; path: CastingPath | null }
   | { kind: "unpathed" }
   | { kind: "incoherent"; path: CastingPath };
 
@@ -127,22 +138,33 @@ export function currentWardrobeLine(branch: WardrobeBranch): WardrobeResolution 
   const born = stated(branch.rollLine);
   const edited = stated(branch.editedLine);
 
-  if (path === null) {
-    /*
-      ⚠ AND A LINE WITHOUT A PATH IS STILL UNPATHED, deliberately.
+  /*
+    ⚠ A LINE WITHOUT A PATH WAS `unpathed` UNTIL #1222, AND THE REASONING
+    INVERTED WITH THE WRITER.
 
-      It cannot happen — the two columns are written together — but if it ever
-      did, the honest reading is that nobody chose a path for this roll, and a
-      line nobody chose a path for is not something to dress a paid render in.
-      Falling through to "use the line anyway" would be the more helpful answer
-      and the wrong one: it would make a half-written row indistinguishable
-      from a whole one at every reader downstream.
-    */
-    return { kind: "unpathed" };
-  }
+    The arm that stood here said a line nobody chose a path for is a
+    half-written row, because in the two-paths world the columns were stamped
+    together and line-without-path could only mean a torn write. #203 retired
+    the paths — the path column is a constant `null` on every fresh roll — and
+    #1222 made the author road record the brief's own stated outfit on exactly
+    that shape. So line-without-path is now the ONLY form a fresh roll's line
+    can take, and discarding it would throw away every line the product writes:
+    the `unpathed` arm was the reason his Sifr views could never have read the
+    dress even once the column held it.
 
+    The order is condition (v)'s: an EDIT is what she is wearing now and beats
+    what she was born in, on any path shape — a Cast signed after a wardrobe
+    edit judged against its born line is refunded slices, and that argument
+    never depended on the path column.
+  */
   if (edited !== null) return { kind: "line", line: edited, source: "edited", path };
-  if (born !== null) return { kind: "line", line: born, source: "born", path };
+  if (born !== null) {
+    /* `brief` vs `born` is readable from the columns: only the retired paths
+       ever stamped a path beside their line, so a pathed line is the old
+       world's and a pathless one is the brief's own sentence (#1222). */
+    return { kind: "line", line: born, source: path === null ? "brief" : "born", path };
+  }
+  if (path === null) return { kind: "unpathed" };
   return { kind: "incoherent", path };
 }
 
@@ -199,6 +221,24 @@ export function castWardrobeLine(technicalSchema: unknown): string | null {
   const wardrobe = (technicalSchema as { wardrobe?: unknown }).wardrobe;
   if (!wardrobe || typeof wardrobe !== "object") return null;
   return stated((wardrobe as { line?: unknown }).line as string | null | undefined);
+}
+
+/**
+ * WHERE A SIGNED CAST'S LINE CAME FROM — the snapshot's other half (#1222).
+ *
+ * The ink readers need it: a `brief`-sourced line dresses and judges the five
+ * views and deliberately does NOT move ink coverage (see
+ * `coverageOfSnapshotWardrobe`), so a reader holding only the string cannot
+ * make that call. `null` for anything unrecognised, the same safe direction as
+ * `castWardrobeLine` above — an old snapshot with a line and no source reads
+ * as a non-brief line, which keeps the pre-#1222 semantics for pre-#1222 rows.
+ */
+export function castWardrobeSource(technicalSchema: unknown): WardrobeLineSource | null {
+  if (!technicalSchema || typeof technicalSchema !== "object") return null;
+  const wardrobe = (technicalSchema as { wardrobe?: unknown }).wardrobe;
+  if (!wardrobe || typeof wardrobe !== "object") return null;
+  const source = (wardrobe as { source?: unknown }).source;
+  return source === "edited" || source === "born" || source === "brief" ? source : null;
 }
 
 /**

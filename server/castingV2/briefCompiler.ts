@@ -243,10 +243,16 @@ export type CompiledRollBrief = {
    * that column's docblock says INTERNAL and never projected, and a durable
    * fact read out of an internal blob is the shape §3.2 refuses by name.
    *
-   * ⚠ **`null` on every roll this product can now compose — #203 slice 2 step
-   * (e).** The born road that could make it anything else is gone (there is no
-   * path to be born on), so the only non-null answer left is a FOLLOW's, which
-   * is its parent's stored sentence carried verbatim and never re-resolved.
+   * ⚠ **This paragraph read "`null` on every roll this product can now
+   * compose" from #203 slice 2 step (e) until #1222, and the author road is
+   * why it stopped being true.** On that road — every account since the switch
+   * sitting — this is the outfit the BRIEF ITSELF STATES, in her own words,
+   * extracted under full containment (`parseStatedWardrobeLine`), or `null`
+   * when the brief names none. It is a RECORD, never a prompt input there: the
+   * brief reaches the engine verbatim, and this is what Sign snapshots so the
+   * five views stop guessing her lower half (his Sifr dress became overalls
+   * and boots). On the house road the only non-null answer is still a
+   * FOLLOW's — its parent's stored sentence carried verbatim.
    */
   wardrobeLine: string | null;
   /**
@@ -541,6 +547,14 @@ function fallbackIntent(briefText: string): CastingIntent {
       costs a Wardrobe roll its engine-chosen outfit and nothing else.
     */
     wardrobe: null,
+    /*
+      And no stated outfit, for the honest reason the other stated fields give:
+      the interpreter never ran, so nothing was extracted. On the author road
+      the raw sentence still reaches the image engine, so the PICTURE keeps her
+      outfit — only the record is lost, and a null record composes the views
+      exactly as every roll before #1222 did.
+    */
+    statedWardrobe: null,
   };
 }
 
@@ -1123,6 +1137,18 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     ink: input.readInk === true,
     fidelity: input.briefFidelity === true,
     author: authorRoad,
+    /*
+      THE STATED OUTFIT IS READ ON THE AUTHOR ROAD (#1222) — the record of what
+      this cast is born wearing, extracted from her own sentence under full
+      containment (`parseStatedWardrobeLine`) and written to the roll below. It
+      never enters the eight prompts: the brief itself reaches the engine
+      verbatim on this road, so the outfit is already in the request. What was
+      missing was the RECORD, which is what Sign snapshots and the five views
+      and their judge compose from — his Sifr dress became overalls and boots
+      because the view prompt was continuing a chest-up reference with no line
+      behind it.
+    */
+    statedWardrobe: authorRoad,
   });
 
   /*
@@ -1498,10 +1524,25 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
        interpreter was not asked. */
     statedInk: intent.statedInk,
     /*
-      The line the eight prompts above were composed from, returned so the
-      caller writes it rather than resolving it a second time.
+      WHAT THIS ROLL RECORDS AS ITS BORN OUTFIT (#1222).
+
+      On the author road it is the outfit the BRIEF ITSELF STATES, in her own
+      words — extracted by the reader above under full containment
+      (`parseStatedWardrobeLine`), so a brief that names no outfit records
+      `null` and the views keep the continue-the-reference sentence (#1215) as
+      the honest fallback. It is deliberately NOT composed into the eight
+      prompts: the brief reaches the engine verbatim on this road, and
+      restating the outfit is the "WARDROBE — <line>" double-statement the
+      #132 review refused. The record exists for Sign, which snapshots it into
+      `technicalSchema.wardrobe` with `source: "brief"`, and for the five
+      views and their judge, which compose from that snapshot.
+
+      On the house road it is what it has always been — the line the eight
+      prompts above were composed from (a follow's inherited sentence, or
+      null), returned so the caller writes it rather than resolving it a
+      second time.
     */
-    wardrobeLine: sheet.wardrobeLine,
+    wardrobeLine: authorRoad ? intent.statedWardrobe : sheet.wardrobeLine,
   };
 };
 

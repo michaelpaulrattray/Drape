@@ -14395,6 +14395,27 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
     expect(counted, "an unpathed refusal is the product's ordinary behaviour").toEqual([]);
   });
 
+  it("⚠ A BRIEF-SOURCED LINE refuses like the house prior and is counted NOWHERE (#1222)", async () => {
+    /*
+      Since #1222 a stated-outfit roll carries its brief's own line on a null
+      path. Two claims in one arm, both against the real service: the ink gate
+      answers the HOUSE PRIOR for it (chest covered → `gate_ink_uncarried`, the
+      refusal these casts got yesterday as `unpathed`, never `coverage_unread`),
+      and the refusal writes NO demand row — the coverage came from our prior,
+      not from her outfit, so a row would count our own guess as her clothes.
+      Both halves die together the day 7a-bis reads real lines.
+    */
+    rollPath = null;
+    rollWardrobeLine = "a white, body-conscious dress with industrial straps and buckles";
+    const shut = await doorShut(refineCandidate(
+      { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
+      { ...input, instruction: "give her a small swallow tattoo on her upper chest" },
+    ));
+
+    expect(shut.reason).toBe("gate_ink_uncarried");
+    expect(counted, "a prior-derived refusal is not a demand about her outfit").toEqual([]);
+  });
+
   it("⚠ A ROLL THAT CLAIMS A PATH AND CANNOT SAY WHAT IT WEARS is not counted either", async () => {
     /*
       `incoherent` — a path with no line. It refuses (the gate reads it as

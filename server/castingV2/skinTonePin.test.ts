@@ -38,6 +38,7 @@ const BASE: CastingIntent = {
   statedInk: null,
   poolTendencies: NO_TENDENCIES,
   wardrobe: null,
+  statedWardrobe: null,
   characterNotes: null,
   sex: "male",
   ageBand: "40s",

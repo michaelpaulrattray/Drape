@@ -523,12 +523,22 @@ export async function createRoll(
     anchor and the chip edits are carried as words. Two things below hang on
     it: the brief bound and the PATH. On the author road the engine dresses the
     cast from the prompt (ruling rule 11 — the switch is retired), so no path
-    is born, no wardrobe pick is asked, and no line is recorded that the
-    authored prompt would only discard; a sheet that drew "WARDROBE — <line>"
+    is born and no wardrobe pick is asked; a sheet that drew "WARDROBE — <line>"
     over an outfit the engine was never told about was the review's finding —
     and on a FOLLOW that means the parent's pair is NOT inherited either
     (`inheritWardrobe: false`, below), because an authored follow is dressed by
     the engine exactly as an authored first roll is.
+
+    ⚠ A LINE IS RECORDED AGAIN SINCE #1222, AND IT IS STILL NEVER A PROMPT
+    INPUT ON THIS ROAD. This comment read "no line is recorded that the
+    authored prompt would only discard", and the discard half is still exactly
+    true — the compiler returns the outfit the BRIEF ITSELF STATES (her own
+    words, contained), the row records it, and the eight prompts never restate
+    it because the brief reaches the engine verbatim. What the record buys is
+    the OTHER end of the product: Sign snapshots it, and the five views and
+    their judge compose from the snapshot instead of guessing her lower half
+    (his Sifr dress became overalls and boots). A follow still re-derives from
+    its own brief rather than inheriting.
   */
   const creativeRegister = captureCastingCreativeRegisterEnabled(input.userId);
   const authorRoad = creativeRegister;
@@ -690,7 +700,9 @@ export async function createRoll(
         On a FOLLOW the sentence is the parent's, verbatim and including its
         null, because that is what the transaction is about to write.
       */
-      /* On the author road the house prompts are discarded and the row inherits nothing, so the compiler is handed no sentence. */
+      /* On the author road the house prompts are discarded and the row inherits
+         nothing, so the compiler is handed no sentence — its line, since #1222,
+         is the brief's own stated outfit, derived inside the compile. */
       inheritedWardrobe: inheritedWardrobe && !authorRoad
         ? { line: inheritedWardrobe.wardrobeLine }
         : undefined,
