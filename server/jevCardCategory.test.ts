@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  CREW_LADDER_GROUP_KEYS,
-  CREW_PIPELINE_GROUPS,
-  pipelineGroupFor,
-} from "../shared/crewPipelineGroups";
+import { CREW_PIPELINE_GROUPS, pipelineGroupFor } from "../shared/crewPipelineGroups";
 import { CREW_WORK_CATEGORIES, homeWorkCategoryFor } from "../shared/crewWorkSwitches";
 import {
   JEV_ENDPOINT,
@@ -16,6 +12,7 @@ import {
 } from "../scripts/lib/jev.mts";
 import {
   CARD_CATEGORY_QUESTION_ID,
+  CARD_CATEGORY_TRIAGE_GROUPS,
   CARD_CATEGORY_WRITE_THRESHOLD,
   NO_CATEGORY,
   assertApplyThreshold,
@@ -459,58 +456,103 @@ describe("the comment a filed card gets", () => {
 });
 
 /**
- * THE LADDER REFUSAL — the arm that stopped stage 2's first apply run.
+ * THE TRIAGE-ONLY REFUSAL — the arms that stopped stage 2's first apply run,
+ * and then its first REVIEW.
  *
- * ⚠ **Its two specimens are real and confident.** #14 (the reference selector)
- * and #30 (the auto-discovery scan) are unbuilt product features carrying
- * `roadmap` and `rung:N3`, and Jev read both as `process` at 0.92 — above any
- * gate the correct readings beside them would survive. The refusal is
- * therefore structural and not a number.
+ * ⚠ **Both specimens are real and both were confident.** #14 and #30 are
+ * unbuilt product features on `rung:N3` that Jev read as `process` at 0.92 —
+ * above any gate the correct readings beside them would survive. And #1196 is
+ * `debt`, read at 0.94, which the ladder guard let through and the relay's
+ * review caught on the PR: filing it homed a card the desk was holding for him
+ * under a switch a shift may take.
  *
- * The population is DERIVED from `CREW_LADDER_GROUP_KEYS`, so a fifth ladder
- * group added there is refused here with no edit — and the arm below holds
- * that promise by walking the real list rather than a copy of it.
+ * So the population is the two groups the desk itself calls untriaged, and the
+ * `debt` arm below is the finding's pin — **it was a positive control in the
+ * first version of this file, asserting the exact behaviour that was wrong.**
  */
-describe("the writer never files a card the ladder draws", () => {
+describe("the writer files only what the desk calls untriaged", () => {
   const CONFIDENT = { choice: "process", confidence: 0.99 };
 
-  it("refuses every group homed on the ladder, walking the real list", () => {
-    for (const key of CREW_LADDER_GROUP_KEYS) {
-      const group = CREW_PIPELINE_GROUPS.find((candidate) => candidate.key === key)!;
-      /* The rung group has no `queueLabel` — it is matched on the prefix. */
+  it("refuses every group that is not a triage group, walking the real list", () => {
+    for (const group of CREW_PIPELINE_GROUPS) {
+      if (CARD_CATEGORY_TRIAGE_GROUPS.includes(group.key)) continue;
+      /* `switched` is the group a work label produces, so it is unreachable
+         here by construction — `already filed` answers first. The rung group
+         has no `queueLabel`; it is matched on the prefix. */
+      if (group.key === "switched") continue;
       const labels = group.queueLabel !== null ? [group.queueLabel] : ["rung:N3"];
-      expect(pipelineGroupFor(labels), `${key} must still be a ladder card`).toBe(key);
-      expect(decideCardFiling({ ...CONFIDENT, labels }), `${key} must be left alone`).toMatchObject({
+      expect(pipelineGroupFor(labels), `${group.key} must still be its own group`).toBe(group.key);
+      expect(decideCardFiling({ ...CONFIDENT, labels }), `${group.key} must be left alone`).toMatchObject({
         act: "skip",
-        reason: "on a road",
+        reason: "homed elsewhere",
       });
     }
   });
 
-  it("refuses #14 and #30 as they actually stand, at the confidence Jev actually gave them", () => {
+  it("refuses #14, #30 and #1196 as they actually stood, at the confidence Jev actually gave them", () => {
     /* The measured specimens, not invented ones. */
     expect(decideCardFiling({ labels: ["debt", "roadmap", "rung:N3"], choice: "process", confidence: 0.92 })).toMatchObject(
-      { act: "skip", reason: "on a road" },
+      { act: "skip", reason: "homed elsewhere" },
     );
     expect(
       decideCardFiling({ labels: ["design-unbuilt", "roadmap", "rung:N3"], choice: "process", confidence: 0.92 }),
-    ).toMatchObject({ act: "skip", reason: "on a road" });
+    ).toMatchObject({ act: "skip", reason: "homed elsewhere" });
+    /* ⚠ #1196 — `debt` alone. This was a POSITIVE control here until the
+       relay's review, asserting that it files. It is the finding. */
+    expect(pipelineGroupFor(["debt"])).toBe("debt");
+    expect(decideCardFiling({ labels: ["debt"], choice: "process", confidence: 0.94 })).toMatchObject({
+      act: "skip",
+      reason: "homed elsewhere",
+    });
   });
 
-  it("still files an ordinary card — the positive control that makes the refusal evidence", () => {
-    /* `debt` is homed `here`, not on the ladder: it is ordinary work. Without
-       this arm a refusal that swallowed everything would pass the one above. */
-    expect(pipelineGroupFor(["debt"])).toBe("debt");
-    expect(decideCardFiling({ labels: ["debt"], choice: "process", confidence: 0.93 })).toMatchObject({
+  it("names the section his desk draws the card under, so the reason is readable", () => {
+    const decision = decideCardFiling({ labels: ["debt"], choice: "process", confidence: 0.94 });
+    expect((decision as { detail: string }).detail).toContain("Debt");
+  });
+
+  it("STILL FILES both triage groups — the positive control that makes the refusal evidence", () => {
+    /* Without this a refusal that swallowed everything would pass the arms
+       above, which is the shape a deny-list-turned-allow-list most easily
+       takes. `unfiled` is no labels at all; `other` is labels the panel does
+       not name. */
+    expect(pipelineGroupFor([])).toBe("unfiled");
+    expect(decideCardFiling({ labels: [], choice: "process", confidence: 0.93 })).toMatchObject({
       act: "file",
       queueLabel: "seat:retro",
     });
-    expect(decideCardFiling({ labels: [], choice: "process", confidence: 0.93 }).act).toBe("file");
+    expect(pipelineGroupFor(["needs-design"])).toBe("other");
+    expect(decideCardFiling({ labels: ["needs-design"], choice: "bugs", confidence: 0.93 })).toMatchObject({
+      act: "file",
+      queueLabel: "bug",
+    });
   });
 
-  it("checks the road BEFORE the reading, so a low confidence cannot disguise the reason", () => {
-    const decision = decideCardFiling({ labels: ["roadmap"], choice: NO_CATEGORY, confidence: 0.01 });
-    expect(decision).toMatchObject({ act: "skip", reason: "on a road" });
+  it("keeps every triage group a real group key, which is the one drift a named list can take", () => {
+    const keys = CREW_PIPELINE_GROUPS.map((group) => group.key);
+    for (const key of CARD_CATEGORY_TRIAGE_GROUPS) {
+      expect(keys, `"${key}" must name a live pipeline group`).toContain(key);
+    }
+    expect(CARD_CATEGORY_TRIAGE_GROUPS.length).toBeGreaterThan(0);
+  });
+
+  it("does NOT derive the list from backgroundWork, because that flag answers another question", () => {
+    /* ⚠ The pin on the reason the list is named rather than derived: the flag
+       is TRUE on `debt` and `toolbelt`, the two groups this refusal most needs.
+       If that ever stops being so, this arm reddens and the derivation becomes
+       available — which is the honest way to hold the decision open. */
+    const backgroundWorkKeys = CREW_PIPELINE_GROUPS.filter((group) => group.backgroundWork).map((group) => group.key);
+    expect(backgroundWorkKeys).toContain("debt");
+    expect(backgroundWorkKeys).toContain("toolbelt");
+    expect(CARD_CATEGORY_TRIAGE_GROUPS).not.toContain("debt");
+    expect(CARD_CATEGORY_TRIAGE_GROUPS).not.toContain("toolbelt");
+  });
+
+  it("checks the home BEFORE the reading, so a low confidence cannot disguise the reason", () => {
+    expect(decideCardFiling({ labels: ["roadmap"], choice: NO_CATEGORY, confidence: 0.01 })).toMatchObject({
+      act: "skip",
+      reason: "homed elsewhere",
+    });
   });
 
   it("still puts 'already filed' first, because that is the reversibility promise", () => {

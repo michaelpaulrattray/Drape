@@ -38,7 +38,7 @@
  * the check measures and reports how many do rather than claiming it cannot
  * happen.
  */
-import { CREW_LADDER_GROUP_KEYS, pipelineGroupFor } from "../../shared/crewPipelineGroups.js";
+import { CREW_PIPELINE_GROUPS, pipelineGroupFor } from "../../shared/crewPipelineGroups.js";
 import { CREW_WORK_CATEGORIES, type CrewWorkCategoryKey } from "../../shared/crewWorkSwitches.js";
 import { buildSystemOneRequest, type JevChoiceQuestion } from "./jev.mjs";
 
@@ -219,7 +219,7 @@ export const CARD_CATEGORY_WRITE_THRESHOLD = 0.85;
 
 export type FilingSkipReason =
   | "already filed"
-  | "on a road"
+  | "homed elsewhere"
   | "no category fits"
   | "below threshold"
   | "not a live category";
@@ -229,40 +229,54 @@ export type FilingDecision =
   | { readonly act: "skip"; readonly reason: FilingSkipReason; readonly detail: string };
 
 /**
- * ⚠ **A CARD THE LADDER DRAWS IS NEVER FILED BY A MACHINE, AND THIS WAS
- * MEASURED RATHER THAN REASONED — it is the finding that stopped stage 2's
- * first apply run (2026-09-25).**
+ * ⚠ **THE WRITER FILES ONLY WHAT THE DESK ITSELF CALLS UNTRIAGED. EVERY OTHER
+ * GROUP IS SOMEBODY'S, AND THIS LIST GOT THERE IN TWO STEPS — BOTH MEASURED,
+ * AND THE SECOND ONE IS A REVIEW FINDING ON THE PR THAT BUILT IT.**
  *
- * At a 0.85 gate the writer's first live population was six cards, and two of
- * them were **#14** (the Pinterest-style reference selector) and **#30** (the
- * auto-discovery scan) — both `roadmap`, both `rung:N3`, both UNBUILT PRODUCT
- * FEATURES. Jev read each as `process` at **0.92**, which is confident and
- * wrong, and no threshold separates them from the correct readings beside them
- * (#1125 at 0.98, #1196 at 0.93). **The gate alone was never going to catch
- * this.**
+ * **Step one — the ladder.** At a 0.85 gate the writer's first live population
+ * was six cards, and two were **#14** (the Pinterest-style reference selector)
+ * and **#30** (the auto-discovery scan) — unbuilt product features on
+ * `rung:N3`. Jev read both as `process` at **0.92**, confident and wrong, with
+ * correct readings at 0.92–0.98 beside them. **No threshold separates those.**
+ * It is barely even a mis-read: both bodies are mostly prose ABOUT the team's
+ * own filing (*"it fell through the flag-derived register"*, *"naming it here
+ * is the point"*), so the text reads as process work while what the card asks
+ * for is a feature build.
  *
- * It is not really a mis-read either. Both cards' bodies are mostly prose
- * ABOUT the team's own filing — *"it fell through the flag-derived register"*,
- * *"naming it here is the point"* — so the text genuinely reads as process
- * work, while what the card ASKS FOR is a feature build.
+ * **Step two — everything else his desk homes.** The ladder guard stopped one
+ * group short, and the first apply run walked straight into the gap: **#1196
+ * is `debt`**, the writer filed it `seat:retro` at 0.94, and the group's own
+ * blurb reads *"Carded cleanup — it needs your word because the scope varies."*
+ * `scope-change` (*"yours to rule on"*) and `blocked` (*"waiting on something
+ * the card names"*) sit the same way; `lost-and-found` is a catalogue and
+ * `patrol` is a clock, and a work label would make either into a queue item.
  *
- * And the consequence is structural, read at `pipelineGroupFor`: **a switch
- * label is matched BEFORE every ladder group**, so giving one of these cards a
- * work label takes it off his ladder and files it under *On offer above* — a
- * machine quietly moving an N3 design card into the population a background
- * shift may take. That is the milestone gate exactly (*"the team NEVER selects
- * the next feature"*), and it is the card's own rule: **never a rung or a
- * road.**
+ * **Why the consequence is structural rather than cosmetic**, read at
+ * `pipelineGroupFor`: **a switch label is matched BEFORE every other group.**
+ * So filing any of these takes the card out of the section that was holding it
+ * for him and files it under *On offer above* — a machine moving work into the
+ * population a background shift may take. That is the milestone gate (*"the
+ * team NEVER selects the next feature"*) and the card's own rule: **never a
+ * rung or a road.**
  *
- * So the refusal is derived from `CREW_LADDER_GROUP_KEYS` rather than from a
- * list of labels written here — `parked`, `design-unbuilt`, `roadmap` and
- * `rung:*` today, and whatever is homed on the ladder tomorrow, with no edit.
+ * ⚠ **AND THE TEMPTING DERIVATION IS THE ONE TRAP THIS MODULE HAS ALREADY
+ * FALLEN INTO ONCE.** `CrewPipelineGroup` carries a `backgroundWork` flag that
+ * looks made for this, and it is not: it answers *"could a shift work this if
+ * only a switch reached it"*, which is **`true` on `debt` and `toolbelt`** —
+ * the two groups this list most needs to refuse. Its own field and its own
+ * blurb disagree about `debt` in the same object. Deriving from it would be
+ * working law 4 applied where its precondition fails, exactly as reusing the
+ * switch `blurb`s as Jev's criteria would have been (see the header). **So the
+ * list is NAMED, with its reason, and an arm holds every entry to being a real
+ * group key** — which catches a rename, the only drift a named list can take.
  *
- * ⚠ **It narrows the card's stated population and that is declared, not
- * quiet.** #1224 says *"cards that arrive with no work label (the Unfiled row;
- * 0 today)"* — two different populations in one sentence, since the Unfiled
- * row is cards with no labels AT ALL. This takes the stricter reading.
+ * ⚠ **It narrows the card's stated population, declared rather than quiet.**
+ * #1224 says *"cards that arrive with no work label (the Unfiled row; 0
+ * today)"* — two different populations in one sentence, since the Unfiled row
+ * is cards with no labels at all. This lands on the parenthetical: the Unfiled
+ * row, plus `other`, whose blurb is *"worth a look, they may want a category"*.
  */
+export const CARD_CATEGORY_TRIAGE_GROUPS: readonly string[] = ["unfiled", "other"];
 
 /**
  * Should this card be filed, and under which label?
@@ -289,13 +303,18 @@ export function decideCardFiling(input: {
   if (home) {
     return { act: "skip", reason: "already filed", detail: `carries ${home.queueLabel}` };
   }
-  /* A card the ladder draws is left alone — see the block above this function.
+  /* Only the two triage groups are filed — see the block above this function.
      `pipelineGroupFor` answers `switched` first for any card carrying a work
      label, so this reading is only ever reached once we know there is none,
-     which is exactly when it says what the ladder would draw. */
+     which is exactly when it says which section of his desk draws the card. */
   const group = pipelineGroupFor(input.labels);
-  if (CREW_LADDER_GROUP_KEYS.includes(group)) {
-    return { act: "skip", reason: "on a road", detail: `the ladder draws it (${group})` };
+  if (!CARD_CATEGORY_TRIAGE_GROUPS.includes(group)) {
+    const drawn = CREW_PIPELINE_GROUPS.find((candidate) => candidate.key === group);
+    return {
+      act: "skip",
+      reason: "homed elsewhere",
+      detail: `his desk draws it under "${drawn?.label ?? group}"`,
+    };
   }
   if (input.choice === NO_CATEGORY) {
     return { act: "skip", reason: "no category fits", detail: "the reader declined" };
