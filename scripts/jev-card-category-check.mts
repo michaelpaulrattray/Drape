@@ -6,9 +6,15 @@
  * `--json <p>`  also write the full per-card record to a file for the report.
  *
  * It calls `gh` (read-only) and Jev (text only). It never labels, comments on,
- * closes or edits anything, and there is no flag that makes it. Stage 2 — a
- * writer for cards that arrive with no work label — is a separate entrypoint
- * and is gated on the controls below having run and been read.
+ * closes or edits anything, and there is no flag that makes it — that is still
+ * true of THIS script and is the reason it can be run at any time.
+ *
+ * ⚠ **Stage 2 now exists: `scripts/jev-card-category-file.mts`.** It is a
+ * separate entrypoint on purpose, so the check can never grow a write flag by
+ * accident, and it was gated on the controls below having run and been read.
+ * They have (2026-09-25), and the gate it writes at came from the LIVE read
+ * rather than from the floor this script prints — see
+ * `CARD_CATEGORY_WRITE_THRESHOLD`, which carries the measurement.
  *
  * ⚠ **THE CONTROLS RUN FIRST AND THEIR RESULT IS PRINTED ABOVE THE LIVE READ**
  * (working law 2). A live agreement figure with no controls beside it is the
