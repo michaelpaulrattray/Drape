@@ -1,7 +1,7 @@
 {
-  "edition": 529,
-  "updatedAt": "2026-09-25T13:26:21Z",
-  "shift": "Foreman — #1241: one number under each face, and the column is gone",
+  "edition": 530,
+  "updatedAt": "2026-09-25T13:39:09Z",
+  "shift": "Foreman — your word on switched-off buttons is recorded and the card is open",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3269,8 +3269,8 @@
           "consequence": "No work. The casting dock already says \"Rolling…\" while it works, but that only covers the places somebody remembered."
         }
       ],
-      "recommendation": "A. It is one change, it matches what the product already does by hand, and it is the only option that reaches the two money windows.",
-      "state": "open",
+      "recommendation": "ANSWERED BY YOU, 2026-09-25: \"Give switched-off buttons a quieter look and a normal pointer\" — which is exactly the option this card recommended. Nothing is owed from you here any more: the hold is off #1237 and it is in your ordered queue, so a shift takes it next. One change in the shared button rule and all 43 read honestly, including the two on the billing pages.",
+      "state": "answered",
       "filedAt": "2026-09-25T08:30:00.000Z"
     }
   ],
@@ -8497,7 +8497,8 @@
     215,
     216,
     217,
-    218
+    218,
+    219
   ],
   "nextUp": {
     "readAt": "2026-09-25T13:26:17.705Z",
