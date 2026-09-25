@@ -51,6 +51,47 @@ describe("R7-1D direct operation adapter", () => {
     expect(db.acquireGenerationOperationLock).not.toHaveBeenCalled();
   });
 
+  it("a busy lock says the caller's sentence when it has one, and the staff one otherwise", async () => {
+    /*
+      #1257. Five roads take a `model:`/`board-item:` lock and share the staff
+      sentence below — right for them, because a customer meeting it asked for
+      something about the whole Cast. The per-slot road is different: it already
+      refuses the common case in its own words, from the slot's state, a few
+      hundred milliseconds earlier, so the race loser must hear the same thing.
+
+      BOTH directions are asserted. Testing only the override would pass just as
+      well if the default had been deleted, and four live roads depend on it.
+    */
+    db.claimGenerationOperation.mockResolvedValue({
+      type: "claimed",
+      operationId: OPERATION_ID,
+      payloadHash: "hash",
+    });
+    db.acquireGenerationOperationLock.mockResolvedValue({
+      type: "resource_busy",
+      operationId: OPERATION_ID,
+      lockKey: "cast-view:7:closeUp",
+      ownerOperationId: "22222222-2222-4222-8222-222222222222",
+    });
+
+    const claim = {
+      userId: 1,
+      clientRequestId: OPERATION_ID,
+      kind: "castingV2.viewRetry" as const,
+      modelId: 7,
+      payload: { castId: "KI-A", angle: "closeUp" },
+      lockKey: "cast-view:7:closeUp",
+    };
+
+    await expect(beginDirectOperation({ ...claim, lockBusyMessage: "That view is already being asked for. Nothing was charged." }))
+      .rejects.toThrow("That view is already being asked for. Nothing was charged.");
+    await expect(beginDirectOperation(claim))
+      .rejects.toThrow("Another operation is already changing this Cast. Wait for it to finish before retrying.");
+
+    /* A refusal, not a silent pass: the caller never reaches its money. */
+    await expect(beginDirectOperation(claim)).rejects.toBeInstanceOf(TRPCError);
+  });
+
   it("seals a claimed receipt for recovery when its free-failure finalization is uncertain", async () => {
     db.finalizeClaimedGenerationOperationFailure.mockRejectedValue(new Error("response lost"));
     db.getGenerationOperationOutcome.mockResolvedValue({

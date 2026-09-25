@@ -344,6 +344,58 @@ describeWithDatabase("R7 durable generation-operation foundation (disposable DB)
     })).rejects.toThrow("does not match a resource in the trusted claim");
   });
 
+  it("admits a per-slot cast-view key for the CLAIMED model, and refuses one naming another", async () => {
+    /*
+      ONE SLOT, ONE TRY AGAIN (#1257).
+
+      The per-slot key carries an angle the operation row does not record, so the
+      door enumerates every angle this model could be locked under rather than
+      taking the caller's string apart. Ownership therefore hangs on `modelId`
+      exactly as it does for `model:` — and this arm is the proof, in both
+      directions.
+    */
+    const first = await claim(randomUUID());
+    if (first.type !== "claimed") throw new Error("claim failed");
+    await expect(operations.acquireGenerationOperationLock({
+      userId,
+      operationId: first.operationId,
+      kind: "casting.iterate",
+      lockKey: "cast-view:44:closeUp",
+    })).resolves.toMatchObject({ type: "acquired", operationId: first.operationId });
+
+    /* A DIFFERENT slot of the SAME Cast is a different row, so it acquires —
+       his second report on #1235, guarded from the other side. */
+    const sibling = await claim(randomUUID());
+    if (sibling.type !== "claimed") throw new Error("claim failed");
+    await expect(operations.acquireGenerationOperationLock({
+      userId,
+      operationId: sibling.operationId,
+      kind: "casting.iterate",
+      lockKey: "cast-view:44:frontFull",
+    })).resolves.toMatchObject({ type: "acquired", operationId: sibling.operationId });
+
+    /* The SAME slot, while the first holds it, is refused — and the loser's
+       receipt is sealed rather than left claimed. */
+    const rival = await claim(randomUUID());
+    if (rival.type !== "claimed") throw new Error("claim failed");
+    await expect(operations.acquireGenerationOperationLock({
+      userId,
+      operationId: rival.operationId,
+      kind: "casting.iterate",
+      lockKey: "cast-view:44:closeUp",
+    })).resolves.toMatchObject({ type: "resource_busy", ownerOperationId: first.operationId });
+
+    /* The forgery control: a key naming a Cast this claim never declared. */
+    const forger = await claim(randomUUID());
+    if (forger.type !== "claimed") throw new Error("claim failed");
+    await expect(operations.acquireGenerationOperationLock({
+      userId,
+      operationId: forger.operationId,
+      kind: "casting.iterate",
+      lockKey: "cast-view:45:closeUp",
+    })).rejects.toThrow("does not match a resource in the trusted claim");
+  });
+
   it("heartbeats only the owned running receipt and renews its lock", async () => {
     const claimed = await claim(randomUUID());
     if (claimed.type !== "claimed") throw new Error("claim failed");

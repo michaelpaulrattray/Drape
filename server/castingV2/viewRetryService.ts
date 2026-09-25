@@ -49,7 +49,11 @@ import {
   completeDirectOperationSuccess,
   failClaimedDirectOperation,
 } from "../casting/directOperation";
-import { castViewRetryClaimPayload, operationChargeReference } from "../casting/operationContract";
+import {
+  castViewRetryClaimPayload,
+  castViewSlotOperationLockKey,
+  operationChargeReference,
+} from "../casting/operationContract";
 import { deductCredits } from "../db/credits";
 import {
   commitRetriedViewAsset,
@@ -239,6 +243,11 @@ export async function retryCastView(
 
   /* ---- the claim ---- */
 
+  /* THE ONE PLACE THIS KEY IS BUILT on this road — the claim locks it and the
+     running transition re-proves it, so a second spelling of the same key would
+     be a lock nobody holds. */
+  const slotLockKey = castViewSlotOperationLockKey(read.modelId, input.angle);
+
   const gate = await (dependencies.begin ?? beginDirectOperation)({
     userId: input.userId,
     clientRequestId: input.clientRequestId,
@@ -246,6 +255,25 @@ export async function retryCastView(
     /* Bound at the claim, BEFORE any money moves, so the sweep can always ask
        whether a picture landed for this Cast. */
     modelId: read.modelId,
+    /*
+      ONE SLOT, ONE TRY AGAIN — the mutual exclusion, at the wire (#1257).
+
+      The admission read above is the FIRST answer to "is one already running",
+      and it is the one a customer normally meets. It is a read, so it leaves a
+      window: between it and this claim the entrance also reads her render
+      source and fetches her signed face out of storage — realistically a few
+      hundred milliseconds, not a few. Two presses landing inside that window
+      both pass the read and both buy the view.
+
+      `generation_operation_locks.lockKey` is a primary key, so the INSERT is
+      the exclusion and there is no window at all. Per SLOT rather than per
+      Cast, because asking for her profile while her close-up renders is a
+      thing the product does on purpose.
+    */
+    lockKey: slotLockKey,
+    /* The same sentence the admission refusal gives, so the customer who loses
+       the race and the customer who pressed twice slowly are told one thing. */
+    lockBusyMessage: VIEW_RETRY_ALREADY_ASKING_MESSAGE,
     /* THE ONE PLACE THIS SHAPE IS WRITTEN — the busy read hashes the same
        builder to recognise this very claim as running (#1235). A literal here
        would be a mirror of it, and its drift would reopen the double charge
@@ -266,6 +294,10 @@ export async function retryCastView(
       plannedCredits: price,
       phase: "generating",
       heartbeat: true,
+      /* Re-proved at the transition, the way every other lock-taking road does
+         it: the money moves on the next statement, so "do we still hold the
+         slot" is asked once more immediately before it. */
+      requiredLockKey: slotLockKey,
     });
   } catch (error) {
     return completeDirectOperationFailure({

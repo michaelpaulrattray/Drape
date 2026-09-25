@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b6ea4b17a3eccd31"
+    "sourceFingerprint": "d4bb8cbcf4b8e823"
   },
   "domains": [
     {
@@ -22409,6 +22409,11 @@
     {
       "from": "module:server/casting/modelReadProjections.ts",
       "to": "module:server/db/models.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/operationContract.ts",
+      "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
     {
