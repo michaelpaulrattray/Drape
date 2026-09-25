@@ -526,6 +526,34 @@ export async function readHairColourFromReference(
       maxOutputTokens: 800,
       ...(input.signal ? { signal: input.signal } : {}),
     });
+    /*
+      A REPLY CUT OFF AT THE CEILING IS OURS TOO, AND TOOK HER SENTENCE (#1272).
+
+      The transport hands `truncated` to every caller and this reader dropped it,
+      so a fragment fell to the parse failure below and she was told *"try
+      another one"* — about a photograph that was never the problem. That is the
+      exact harm the branch under this one is written to prevent, in its own
+      words: she changes the picture, it fails again, and we blame her twice.
+      A token ceiling is ours by definition, so it takes the ours road.
+
+      No new sentence is invented here: it is this module's own transport wording,
+      and the rule it applies is this module's own rule. (#1220 fixed the EMPTY
+      reply in the transport; a PARTIAL reply is not empty, so it never reached
+      that arm.)
+    */
+    if (reply.truncated) {
+      log.warn(
+        { ceiling: 800 },
+        "[hairColourFromReference] the reader was cut off at the token ceiling — ours, not her picture",
+      );
+      return {
+        ok: false,
+        refusal: {
+          code: "unreadable",
+          message: "I couldn't read that picture just now — try again in a moment. Nothing was charged.",
+        },
+      };
+    }
     raw = reply.text ?? "";
   } catch (error) {
     /*

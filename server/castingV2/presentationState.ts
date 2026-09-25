@@ -148,6 +148,28 @@ export async function capturePresentation(input: {
       maxOutputTokens: 200,
       signal: input.signal,
     });
+    /*
+      A REPLY CUT OFF AT THE CEILING PINS NOTHING (#1272).
+
+      The transport hands `truncated` to every caller and this reader dropped it.
+      A fragment that still PARSES is the case that matters: it yields a SUBSET
+      of the captions, and every facet the reader never reached would be filed as
+      "no pin" — indistinguishable from a base this reader honestly could not
+      describe. A partial reading is not a cheaper reading; it is a different
+      one, and pins are read as ALREADY TRUE by every later render.
+
+      No pin is the same outcome the catch below produces, so nothing downstream
+      changes. What changes is that the log names our ceiling instead of nothing
+      at all. (#1220 fixed the EMPTY reply in the transport; a PARTIAL reply is
+      not empty, so it never reached that arm.)
+    */
+    if (reply.truncated) {
+      log.warn(
+        { ceiling: 200 },
+        "[presentationState] the reader was cut off at the token ceiling — no pin",
+      );
+      return {};
+    }
     const parsed = JSON.parse(
       reply.text.trim().replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, ""),
     );

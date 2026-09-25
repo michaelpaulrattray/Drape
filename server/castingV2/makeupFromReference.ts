@@ -333,6 +333,33 @@ export async function readMakeupFromReference(
       maxOutputTokens: 600,
       ...(input.signal ? { signal: input.signal } : {}),
     });
+    /*
+      A REPLY CUT OFF AT THE CEILING IS OURS TOO, AND TOOK HER SENTENCE (#1272).
+
+      Clause for clause the same finding as `hairColourFromReference`, on the
+      same shape, and this module was NOT on #1272's original list — its only
+      mention of `truncated` was the prose in the branch below, which reads as a
+      handled signal to anything counting the word rather than opening the file.
+
+      The transport hands `truncated` to every caller and this reader dropped it,
+      so a fragment fell to the parse failure below and she was told *"try
+      another one"* about a photograph that was never the problem — the exact
+      harm the branch under this one names. A token ceiling is ours by
+      definition, so it takes the ours road, in this module's own words.
+    */
+    if (reply.truncated) {
+      log.warn(
+        { ceiling: 600 },
+        "[makeupFromReference] the reader was cut off at the token ceiling — ours, not her picture",
+      );
+      return {
+        ok: false,
+        refusal: {
+          code: "unreadable",
+          message: "I couldn't read that picture just now — try again in a moment. Nothing was charged.",
+        },
+      };
+    }
     raw = reply.text ?? "";
   } catch (error) {
     /*

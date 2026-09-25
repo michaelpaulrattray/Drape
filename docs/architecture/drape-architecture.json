@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b51258a582801669"
+    "sourceFingerprint": "926038479b376265"
   },
   "domains": [
     {
@@ -12229,6 +12229,10 @@
     {
       "id": "test:server/castingV2/thumbnails.test.ts",
       "path": "server/castingV2/thumbnails.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/truncatedReplyReaders.test.ts",
+      "path": "server/castingV2/truncatedReplyReaders.test.ts"
     },
     {
       "id": "test:server/castingV2/truncation.test.ts",
