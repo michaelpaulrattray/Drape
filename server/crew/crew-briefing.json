@@ -1,7 +1,7 @@
 {
-  "edition": 519,
-  "updatedAt": "2026-09-25T00:04:01.609Z",
-  "shift": "Foreman · #1181 the check that proves a cast is yours",
+  "edition": 520,
+  "updatedAt": "2026-09-25T00:53:30.796Z",
+  "shift": "Foreman - #1134 what a picture costs the house",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -214,7 +214,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-25T00:04:04.325Z",
+      "readAt": "2026-09-25T00:54:12.102Z",
       "items": [
         {
           "issueNumber": 179,
@@ -243,6 +243,12 @@
         {
           "issueNumber": 1123,
           "title": "N2: the brief reader is still asked for four fields the author road discards — a court, because trimming the ask can move the facts we keep",
+          "kind": "roadmap",
+          "rung": "N2"
+        },
+        {
+          "issueNumber": 1134,
+          "title": "N2: the roll engine's two unread numbers — what a 2.5 picture costs the house, and a matched refusal rate",
           "kind": "roadmap",
           "rung": "N2"
         },
@@ -349,6 +355,12 @@
           "rung": null
         },
         {
+          "issueNumber": 1146,
+          "title": "pinningAvailable is a one-deploy skew field sixteen deploy-cycles old — the legacy sibling of #1088's class",
+          "kind": "parked",
+          "rung": null
+        },
+        {
           "issueNumber": 1161,
           "title": "PROPOSAL (his permission, not an order): should a customer be able to change what a cast is WEARING? — option B, a garment edit on the paid road",
           "kind": "parked",
@@ -358,6 +370,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "roll-engine-price-1134",
+      "title": "The engine you picked costs us about a third of the old one. Should everyone be on it?",
+      "productImpact": "In the switch sitting you held the roll engine on your account until two numbers were read. Both are read now. Neither of them cost anything.\n\nWhat a roll costs us. About twelve cents for a whole sheet of eight on the new engine. On the old engine it was somewhere between thirty and sixty-six cents for the same sheet. So the engine you picked by eye is also the cheaper one, by a wide margin.\n\nHow often it says no. We compared the two engines only on briefs that have been rolled on both, which nobody had done before. The old engine refused about one picture in six. The new one refused about one in four. That sounds worse, but there is not enough of it yet to call it real, and nearly all of it sits on one brief - your android one - which refuses on every engine we have tried it on.\n\nOne thing we found on the way. The studio had been recording the cost of every new-engine picture as if it were an old-engine picture, which made it look about six times more expensive than it is. That is fixed tonight and it was only ever a reporting error - nobody was charged anything.\n\nWorth knowing before you answer: four accounts exist and yours is still the only one that has ever cast, so turning this on changes nothing at all until somebody else arrives.",
+      "workedExample": "Roll your android brief again and you will see the refusals - it is the one brief that reliably trips the filter, on every engine. Your other four briefs come back eight out of eight on both engines.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Turn it on for everyone",
+          "consequence": "Every account rolls on the engine you already chose, and each roll costs us about a third of what it did. One setting change, no build."
+        },
+        {
+          "key": "B",
+          "label": "Leave it on your account for now",
+          "consequence": "Nothing changes. The refusal number gets firmer on its own as more of your briefs get rolled on both engines."
+        },
+        {
+          "key": "C",
+          "label": "Wait until the refusal number is solid",
+          "consequence": "We would roll the same few briefs on both engines a few more times to settle it. That spends credits on your account and takes a sitting."
+        }
+      ],
+      "recommendation": "Recommend A - turn it on for everyone. You chose this engine by eye twice, and the price reading says it costs us about a third of the old one. The refusal reading is the only thing pointing the other way and it is not firm enough to hold a decision against your own eyes. And since nobody but you has ever cast, turning it on today is free of consequence.",
+      "state": "open",
+      "filedAt": "2026-09-25T00:53:30.796Z",
+      "issueNumber": 1134
+    },
     {
       "id": "switch-00-how-to-read",
       "title": "THE SWITCH LIST — twenty settings, thirteen answers",
@@ -7974,9 +8013,23 @@
       "status": "merged",
       "prNumber": 1191,
       "note": "Merged 1191. One arm reads the code on every change; the other proves the behaviour on a throwaway database."
+    },
+    {
+      "id": "roll-engine-price-1134",
+      "title": "A roll's cost is recorded against the engine that actually painted it",
+      "status": "in-review",
+      "prNumber": 1198,
+      "note": "The two numbers behind your roll-engine hold, and the reporting fix reading them found."
     }
   ],
   "problems": [
+    {
+      "id": "queue-shape-0925c-foreman",
+      "severity": "info",
+      "state": "open",
+      "title": "Queue shape",
+      "detail": "47 open, and tonight filed one and answered none away: the price reading turned up a second question about the OLD engine's cost, which now has its own card. Two wait on you - whether the row showing your own sentence may wrap, and the roll-engine question above. 14 have had no comment, close, reopen or commit for 7 days, unchanged, and the oldest of them are design cards waiting on a rung rather than rotting work. One is urgent and yours, making this page live, and it is claimed and being built."
+    },
     {
       "id": "queue-shape-0925b-foreman",
       "severity": "info",
@@ -8912,11 +8965,11 @@
     217
   ],
   "nextUp": {
-    "readAt": "2026-09-25T00:04:04.324Z",
+    "readAt": "2026-09-25T00:54:12.101Z",
     "items": [
       {
-        "issueNumber": 1193,
-        "title": "Live Desk: the Crew page reads GitHub itself instead of a once-a-shift snapshot (his order 2026-09-25)",
+        "issueNumber": 1199,
+        "title": "Live Desk 2: the switch counts and Not-on-any-road read GitHub live, and a card on a rung is on the road (his word 2026-09-25)",
         "urgent": true
       }
     ]
