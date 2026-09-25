@@ -15,6 +15,11 @@ import {
 } from "@/features/castingV2/components/CandidateViewer";
 import { CardMenu } from "@/foundation";
 import { DestructiveConfirm } from "@/foundation";
+import {
+  castRoomIsWorking,
+  slotIsBeingAsked,
+  slotShowsWorking,
+} from "@/features/castingV2/roomBusy";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
@@ -141,8 +146,19 @@ export default function CastingRoom() {
     the spend, so the button and the till can never disagree.
   */
   const retryView = trpc.castingV2.retryView.useMutation();
-  /** The angle currently being asked for again. One at a time, by the hand. */
-  const [retryingAngle, setRetryingAngle] = useState<string | null>(null);
+  /**
+   * The angles WE have just pressed — the optimistic first frame, nothing more
+   * (#1235).
+   *
+   * ⚠ **IT WAS ONE STRING AND THAT WAS THE SECOND BUG HE REPORTED.** Every
+   * button read `disabled={retryingAngle !== null}`, so asking for one view
+   * locked the other two — a client convenience with no rule behind it: each
+   * Try again is its own operation, fences on its own, and renders through the
+   * Sign's own view queue, which already runs views in parallel. A set makes
+   * each tile independent; the server decides busy either way, and this only
+   * makes the press visible before the next read lands.
+   */
+  const [asking, setAsking] = useState<ReadonlySet<string>>(() => new Set());
   /** The sibling face being looked at, if any. */
   const [viewingSibling, setViewingSibling] = useState<
     // Derived from the projection rather than restated, so a field added
@@ -153,10 +169,18 @@ export default function CastingRoom() {
     { castId },
     {
       enabled: Boolean(castId) && config.data?.enabled === true,
-      // The poll stops itself. A room whose package is terminal has nothing
-      // left to learn, and a permanent 2.5s heartbeat on a finished Cast is a
-      // cost with no reader.
-      refetchInterval: (query) => (query.state.data?.status === "building" ? POLL_MS : false),
+      /*
+        The poll stops itself. A room whose package is terminal has nothing left
+        to learn, and a permanent 2.5s heartbeat on a finished Cast is a cost
+        with no reader.
+
+        ⚠ **IT READS THE SLOTS AS WELL AS THE CAST, AND THAT IS #1235's THIRD
+        HALF.** A Try again never puts the Cast back into `building`, so a room
+        watching only the Cast's status learned nothing while a view rendered:
+        the new picture arrived on a manual reload, which is exactly what *"it
+        looks like it stopped generating"* looked like from the outside.
+      */
+      refetchInterval: (query) => (castRoomIsWorking(query.state.data) ? POLL_MS : false),
     },
   );
 
@@ -165,6 +189,13 @@ export default function CastingRoom() {
   }, [config.data, navigate]);
 
   const data = cast.data;
+
+  /** Let this tile go once its own answer is in — the others are untouched. */
+  const release = (angle: string) => setAsking((current) => {
+    const next = new Set(current);
+    next.delete(angle);
+    return next;
+  });
 
   /**
    * Ask for one view again.
@@ -175,13 +206,17 @@ export default function CastingRoom() {
    * been filled.
    */
   const askAgain = (angle: string) => {
-    if (!data || retryingAngle) return;
-    setRetryingAngle(angle);
+    /* Per ANGLE, never per room: a second press on THIS tile is the only thing
+       to hold off, and the server refuses it anyway from the slot's own state
+       (#1235). Pressing a different view while this one renders is a thing the
+       product can do and now does. */
+    if (!data || asking.has(angle)) return;
+    setAsking((current) => new Set(current).add(angle));
     retryView.mutate(
       { clientRequestId: createClientRequestId(), castId: data.castId, angle: angle as never },
       {
         onSuccess: (result) => {
-          setRetryingAngle(null);
+          release(angle);
           void utils.castingV2.getCast.invalidate({ castId: data.castId });
           /*
             NO TOAST ON SUCCESS — D-110's question, answered honestly: the
@@ -202,7 +237,7 @@ export default function CastingRoom() {
             : "It didn't arrive again — and the refund couldn't be recorded. Support can restore it.");
         },
         onError: (error) => {
-          setRetryingAngle(null);
+          release(angle);
           logRawFailure('castingV2.retryView', error);
           toast.error(readableFailure(error, "That view couldn't be asked for again."));
         },
@@ -639,25 +674,42 @@ export default function CastingRoom() {
                         <span className="dpc-slot__label">Master</span>
                       </article>
                     ) : null}
-                    {data.slots.map((slot) => (
+                    {data.slots.map((slot) => {
+                      /*
+                        A VIEW BEING ASKED FOR AGAIN IS A VIEW BEING MADE
+                        (#1235). Both readings come from `roomBusy`, once, and
+                        the tile then answers the way it does for any view the
+                        Sign is still working on — no verb, no second
+                        vocabulary, nothing new to learn.
+
+                        `beingAsked` also takes the CAPTION and the BUTTON away:
+                        the server has already dropped both by the time it
+                        answers, and this makes the press visible in the same
+                        frame the finger leaves it.
+                      */
+                      const beingAsked = slotIsBeingAsked(slot, asking);
+                      const working = slotShowsWorking(slot, asking);
+                      return (
                       <article className="dpc-strip__item" key={slot.angle}>
                         <button
                           type="button"
                           className="dpc-strip__frame dpc-media"
-                          disabled={!slot.url}
-                          aria-label={slot.url ? `View ${slot.label} larger` : undefined}
+                          disabled={!slot.url || working}
+                          aria-label={slot.url && !working ? `View ${slot.label} larger` : undefined}
                           onClick={() =>
-                            slot.url ? setViewingImage({ url: slot.url, label: slot.label }) : undefined
+                            slot.url && !working
+                              ? setViewingImage({ url: slot.url, label: slot.label })
+                              : undefined
                           }
                         >
                           {slot.url ? <img src={slot.url} alt={slot.label} /> : null}
-                          {slot.state === "building" && !slot.url ? (
+                          {working ? (
                             <Skeleton
                               style={{ position: "absolute", inset: 0, borderRadius: 9 }}
                               label=""
                             />
                           ) : null}
-                          {slot.state === "failed-refunded" ? (
+                          {slot.state === "failed-refunded" && !beingAsked ? (
                             <div className="dpc-slot__confession">
                               <p>{slot.note}</p>
                               {typeof slot.refundedCredits === "number" && slot.refundedCredits > 0 ? (
@@ -667,7 +719,7 @@ export default function CastingRoom() {
                           ) : null}
                         </button>
                         <span className="dpc-slot__label">{slot.label}</span>
-                        {slot.state !== "failed-refunded" && slot.note ? (
+                        {!beingAsked && slot.state !== "failed-refunded" && slot.note ? (
                           <span className="dpc-takes__caption">{slot.note}</span>
                         ) : null}
                         {/*
@@ -677,23 +729,28 @@ export default function CastingRoom() {
                           nobody checked was charged and kept, so it does not.
                           The price is on the button either way — never a word
                           the customer has to interpret, and never two buttons.
+
+                          ⚠ **AND IT LEAVES WHILE THE VIEW IS BEING MADE**
+                          rather than sitting there disabled with a verb on it
+                          (#1235). A tile that is working has nothing to offer:
+                          the server withholds the offer for as long as the
+                          operation runs, so a press that came back to a
+                          reloaded page cannot buy the same view twice.
                         */}
-                        {slot.retry ? (
+                        {slot.retry && !beingAsked ? (
                           <button
                             type="button"
                             className="dpc-slot__again"
-                            disabled={retryingAngle !== null}
                             onClick={() => askAgain(slot.angle)}
                           >
-                            {retryingAngle === slot.angle
-                              ? "Asking…"
-                              : slot.retry.priceCredits > 0
-                                ? `Try again · ${slot.retry.priceCredits} CR`
-                                : "Try again · free"}
+                            {slot.retry.priceCredits > 0
+                              ? `Try again · ${slot.retry.priceCredits} CR`
+                              : "Try again · free"}
                           </button>
                         ) : null}
                       </article>
-                    ))}
+                      );
+                    })}
                   </div>
                 </section>
               </div>
