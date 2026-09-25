@@ -40,11 +40,28 @@
  * clean, and migration 0068 is asserted to hold the DROP.
  */
 import { describe, expect, it } from "vitest";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
+import { readListedSource } from "../testing/listedSource";
+
 const ROOT = path.resolve(__dirname, "../..");
-const read = (file: string) => readFileSync(path.resolve(ROOT, file), "utf8");
+
+/**
+ * A NAMED file, which is not allowed to be missing.
+ *
+ * Everything here goes through `readListedSource` (#223): this tree carries
+ * hundreds of untracked disposables under `scripts/`, and a file can leave
+ * between a listing and its read — an ENOENT out of a `.filter()` refuses the
+ * deploy rite on a clean tree. For a name this suite chose, though, absence is
+ * the finding rather than a skip, so the null is turned back into a failure
+ * here and tolerated only on the walk below.
+ */
+function read(file: string): string {
+  const text = readListedSource(path.resolve(ROOT, file));
+  if (text === null) throw new Error(`${file} is not there, and this suite names it`);
+  return text;
+}
 
 /**
  * The token, case-insensitive on purpose: the sweep also retired
@@ -122,7 +139,11 @@ function productFiles(): string[] {
     for (const entry of readdirSync(path.resolve(ROOT, dir))) {
       if (skip.has(entry)) continue;
       const rel = `${dir}/${entry}`;
-      if (statSync(path.resolve(ROOT, rel)).isDirectory()) walk(rel);
+      /* An entry can be gone before it is even CLASSIFIED — the shape #223's
+         first fix missed, because the surviving ENOENT said `stat`, not `open`. */
+      const stats = statSync(path.resolve(ROOT, rel), { throwIfNoEntry: false });
+      if (!stats) continue;
+      if (stats.isDirectory()) walk(rel);
       else if (/\.(ts|tsx|css)$/.test(entry)) out.push(rel);
     }
   };
@@ -175,7 +196,11 @@ describe("the candidate disposition is retired end to end (#1241)", () => {
     /* The walk is proven to have walked: a floor well under the real count, and
        a control token that certainly exists in many places. */
     expect(files.length).toBeGreaterThan(800);
-    const withControl = files.filter((file) => /candidate/i.test(read(file)));
+    /* A LISTED entry may have left since the walk, so the null is skipped rather
+       than thrown (#223) — the floors above and below are what stop a reader
+       that has gone quiet from passing vacuously. */
+    const listed = (file: string) => readListedSource(path.resolve(ROOT, file));
+    const withControl = files.filter((file) => /candidate/i.test(listed(file) ?? ""));
     expect(withControl.length).toBeGreaterThan(50);
 
     /* THIS FILE IS THE ONE EXEMPTION, and it is exempt by PATH rather than by a
@@ -183,7 +208,7 @@ describe("the candidate disposition is retired end to end (#1241)", () => {
        what it forbids. Asserting the walk actually reached it is what stops the
        exemption from being a hole — a second offender cannot hide behind it. */
     expect(files).toContain(SELF);
-    const offenders = files.filter((file) => file !== SELF && TOKEN.test(read(file)));
+    const offenders = files.filter((file) => file !== SELF && TOKEN.test(listed(file) ?? ""));
     expect(offenders).toEqual([]);
   });
 
