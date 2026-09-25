@@ -1,7 +1,7 @@
 {
-  "edition": 523,
-  "updatedAt": "2026-09-25T04:48:31.636Z",
-  "shift": "Foreman — #1207: a signed cast's views wear her outfit and her master's light",
+  "edition": 524,
+  "updatedAt": "2026-09-25T06:25:00.000Z",
+  "shift": "Foreman — #1220: a view you paid for is no longer delivered unchecked",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -148,6 +148,14 @@
         {
           "title": "And a limit that had stopped applying to anybody was retired (#1204, your \"yes ill let the crew remove it\"). Briefs used to have two length limits, one for each road a cast could take. When you switched the new road on for everyone on Wednesday, the old road's limit could no longer be reached by any account — but it kept running, kept passing its own tests, and kept being described in the code as a live rule. Nothing you do changes; what goes is a second rule nobody could meet and the tests that made it look healthy.",
           "state": "done"
+        },
+        {
+          "state": "done",
+          "title": "The checker that looks at every view you pay for had stopped answering, and the views went out anyway (#1220). Three of your signed views — two on Sifr2, one on Sifr, all today — were handed over and charged 50 credits each with nobody having looked at them, and one of those was the close-up you told us was wrong. The checker was never unreachable: it thinks before it answers, and it was using up all the room it had to think, so it never got as far as writing an answer down. It now answers without thinking out loud, and it gets longer to reply. Measured on your own two frames: it answered in 23 and 36 seconds where before it answered not at all — and it fails your close-up, so with this in place that view would have been sent back and re-done instead of sold to you."
+        },
+        {
+          "state": "done",
+          "title": "And it was worth checking the other readers while we were in there. Nine places in the studio show a picture to a model and ask it a question. Only the hard questions make it stop and think — driven rather than guessed: a simple \"what is this person wearing\" answered in under four seconds with no thinking at all, while the two-picture comparison used every token it had, every time. So one other reader is in the same family and is now carded (#1228); the seven simple ones measured clear, and that is a floor rather than a clean bill of health."
         }
       ]
     },
@@ -226,7 +234,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-25T04:47:43.727Z",
+      "readAt": "2026-09-25T06:22:16.395Z",
       "items": [
         {
           "issueNumber": 179,
@@ -361,12 +369,6 @@
           "rung": null
         },
         {
-          "issueNumber": 1064,
-          "title": "Toolbelt: Jev (TypeSafe AI) — a fast calibrated yes/no/choice model on text; we have a key; the fit rule and the held candidates",
-          "kind": "parked",
-          "rung": null
-        },
-        {
           "issueNumber": 1146,
           "title": "pinningAvailable is a one-deploy skew field sixteen deploy-cycles old — the legacy sibling of #1088's class",
           "kind": "parked",
@@ -376,6 +378,12 @@
           "issueNumber": 1161,
           "title": "PROPOSAL (his permission, not an order): should a customer be able to change what a cast is WEARING? — option B, a garment edit on the paid road",
           "kind": "parked",
+          "rung": null
+        },
+        {
+          "issueNumber": 1210,
+          "title": "Upload a concept takes a mood board, and a concept + a mood board: three modes, one note — his order and his prompts, 2026-09-25",
+          "kind": "roadmap",
           "rung": null
         }
       ]
@@ -3215,8 +3223,8 @@
           "consequence": "Honest, but the button disappears exactly when you are short, which reads as broken."
         }
       ],
-      "recommendation": "A — give the view. You only ever reach this screen because we failed to deliver something you paid for, and handing it over is the answer that never makes you think about it. It can only happen on views we already got wrong, and the automatic retries now take most of those away before a tile ever goes dead.",
-      "state": "open",
+      "recommendation": "ANSWERED BY YOU, 2026-09-25: \"we didnt fail to deliver somthing the api we use did - we are still charged so whats the correct way to handle this? maybe check if the api actually charges us for failed deliveries?\" — checked at the provider (we are NOT charged for a view that never arrived) and settled as your option B: you pay 50 for each view you keep, so Try again is a paid view at 50 when it lands, and if you are short the tile says so with the price on the button. Nothing is owed from you here any more; the build is on #1208 and #1220.",
+      "state": "answered",
       "filedAt": "2026-09-25T03:27:26.134Z",
       "issueNumber": 1208
     }
@@ -8115,9 +8123,23 @@
       "status": "merged",
       "prNumber": 1219,
       "note": "#1207 follow-up; the reviewer caught it, one word, nothing moves."
+    },
+    {
+      "id": "judge-answers-1220",
+      "title": "A view you paid for is no longer handed over unchecked because the checker ran out of room",
+      "status": "merged",
+      "prNumber": 1227,
+      "note": "#1220 slice 1; the free Try again on an unchecked view is still open on that card."
     }
   ],
   "problems": [
+    {
+      "id": "scripts-typecheck-red-1231",
+      "severity": "warning",
+      "state": "open",
+      "title": "One of the crew's own checks is broken, and it has been for four nights",
+      "detail": "Nothing you can see is affected — this is our tooling, not the product. One of the two checks a shift runs before it closes has been failing on a clean tree because six scratch files left behind by earlier shifts have errors in them. It matters because a check that is already red is a check a shift learns to ignore, which is how real breakage gets missed. It has been written up in four shift reports and nobody acted, so it is now a card the tidying round can take: #1231."
+    },
     {
       "id": "queue-shape-0925c-foreman",
       "severity": "info",
@@ -9061,24 +9083,17 @@
     218
   ],
   "nextUp": {
-    "readAt": "2026-09-25T04:47:43.726Z",
+    "readAt": "2026-09-25T06:22:16.394Z",
     "items": [
       {
         "issueNumber": 1208,
         "title": "A paid view that fails has no way back: keep trying, then a free Try again (his question on the Sifr cast, 2026-09-25)",
-        "urgent": true,
-        "held": {
-          "state": "blocked"
-        }
+        "urgent": true
       },
       {
-        "issueNumber": 1210,
-        "title": "Upload a concept takes a mood board, and a concept + a mood board: three modes, one note — his order and his prompts, 2026-09-25",
-        "urgent": true,
-        "held": {
-          "state": "blocked",
-          "because": "the design — his word in the terminal, 2026-09-25: *\"we are still developing it\"*. The mockups are being settled with him board by board (five boards, private…"
-        }
+        "issueNumber": 1224,
+        "title": "Jev reads every card's category — a check with controls first, then a writer for unlabelled cards only; never a rung (his ruling 2026-09-25: wherever Jev genuinely improves the workflow)",
+        "urgent": false
       }
     ]
   }
