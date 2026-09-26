@@ -1,7 +1,7 @@
 {
-  "edition": 544,
-  "updatedAt": "2026-09-26T11:52:33.961Z",
-  "shift": "Foreman — a refine reply cut off at our own limit stops blaming your sentence, and the ghost audit's own premise had flipped under it",
+  "edition": 545,
+  "updatedAt": "2026-09-26T12:05:02.375Z",
+  "shift": "Foreman — your hold on the Sign-view engine is read and carded; the court re-runs on Sunburst",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -220,6 +220,10 @@
         {
           "state": "done",
           "title": "Two things on the refine road and the ghost audit. When you type a refine instruction, the studio reads it with a model, and that reading has a length limit of ours. If the reply got cut off at OUR limit, you were told \"try naming what you want changed\" — advice about a sentence that was never the problem, on a road you have paid for. It now says what it says when anything else of ours fails: try again in a moment, nothing was charged (#1275). And the audit of the old casting lane (#180) was re-read, because its own central sentence stopped being true the day after it was written — see the question on your desk."
+        },
+        {
+          "state": "done",
+          "title": "You held the picture-quality change and named the engine you actually want (#1373 → #1394). The five pictures a signed cast gets have always been made by Nano Banana, and \"best setting\" on that engine could only mean its 4K tier — which is what was built and put in front of you. Your answer was that Nano Banana is not the engine for these at all, so the question is no longer which tier: it is whether they move to GPT Image 2.5 Sunburst. The court re-runs on your terms — same cast, same views, the old picture beside the new one, price and time beside each — and you judge the frames. Nothing ships until you do."
         }
       ]
     },
@@ -474,7 +478,7 @@
         }
       ],
       "recommendation": "A — ship it. It is what you asked for, the wait is half a minute on something you do rarely, and 30 cents a picture is not a number that decides anything. But look at the two frames first: if the difference is not visible to you, none of the rest is worth paying for.",
-      "state": "waiting",
+      "state": "answered",
       "filedAt": "2026-09-26T10:31:55.549Z",
       "issueNumber": 1373
     },
@@ -3366,7 +3370,7 @@
       "id": "sign-view-tier-1373-crop",
       "title": "The same face out of each picture, side by side — is the detail worth half a minute?",
       "question": "WHAT YOU ARE JUDGING — one question: is the picture on the right better enough to be worth waiting half a minute longer for, every time you sign a cast? This is the same region of his face cut out of each picture, with the LEFT one blown up to the same size so you are comparing like with like. Left is the setting we have today. Right is the setting your word asks for. Look at the hair at the edges, the beard, the skin. Two words is enough — yes it is worth it, or no it is not.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-09-26T10:31:55.549Z",
       "issueNumber": 1373,
       "cardId": "sign-view-quality-1373",
@@ -3382,7 +3386,7 @@
       "id": "sign-view-tier-1373-pair",
       "title": "The whole picture at both settings — same cast, same view",
       "question": "CONTEXT for the close-up above, not a separate judgement. Left is today's setting, right is the new one. They are two separate draws rather than one picture at two settings, which is why the framing is slightly different — the engine drew twice. What IS controlled: same cast, same view, same instructions, same few minutes.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-09-26T10:31:55.549Z",
       "issueNumber": 1373,
       "cardId": "sign-view-quality-1373",
@@ -8778,7 +8782,10 @@
     221,
     222,
     223,
-    224
+    224,
+    225,
+    226,
+    227
   ],
   "nextUp": {
     "readAt": "2026-09-26T11:55:29.813Z",
