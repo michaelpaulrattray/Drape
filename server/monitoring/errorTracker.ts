@@ -167,7 +167,14 @@ export function buildTrackerOptions(): {
   environment: string;
   release: string | undefined;
   tracesSampleRate: number;
-  sendDefaultPii: boolean;
+  dataCollection: {
+    userInfo: boolean;
+    cookies: boolean;
+    httpHeaders: boolean;
+    urlQueryParams: boolean;
+    httpBodies: never[];
+    stackFrameVariables: boolean;
+  };
   sendClientReports: boolean;
   integrations: (defaults: { name: string }[]) => { name: string }[];
   beforeBreadcrumb: (breadcrumb: IncomingBreadcrumb) => ScrubbedBreadcrumb | null;
@@ -179,10 +186,47 @@ export function buildTrackerOptions(): {
     release: deployedCommitSha() ?? undefined,
     /* Errors, not tracing — see the header. */
     tracesSampleRate: 0,
-    /* The SDK's own switch for "attach the request's IP, cookies, headers and
-       the user's email". Off, and the projection would drop them anyway; two
-       independent reasons for one outcome is the point. */
-    sendDefaultPii: false,
+    /*
+      ⚠ THIS WAS `sendDefaultPii: false` UNTIL #509 PART 1b, AND THAT OPTION IS
+      READ BY NOTHING IN v11 — read at the installed SDK, not assumed. It appears
+      NOWHERE in `@sentry/core`, `@sentry/node` or `@sentry/browser` at 11.0.0,
+      and `options.d.ts` carries **0** declarations of it; `dataCollection`
+      replaced it, and ITS defaults are all permissive (`userInfo: true`,
+      `cookies: true`, `httpHeaders: { request: true, response: true }`,
+      `urlQueryParams: true`, `stackFrameVariables: true`).
+
+      So the comment that used to sit here — "the SDK's own switch for attach the
+      request's IP, cookies, headers and the user's email … two independent
+      reasons for one outcome" — described a control that did not exist, and
+      `server/errorTracker.test.ts` had a GREEN arm asserting its value. That is
+      invariant 7 (a control that is not invoked does not exist) with working law
+      2's failure beside it: the arm agreed with a constant in this file rather
+      than with the SDK.
+
+      ⚠ **NOTHING LEAKED, AND THAT IS THE PROJECTION EARNING ITS KEEP.** The
+      scrub REBUILDS each event from an allowlist, so cookies, headers,
+      `user.email` and frame `vars` were never in the outgoing bytes whatever the
+      SDK collected — invariant 8's "by construction, not by callers remembering".
+      What was actually lost was the SECOND of the two reasons. Both are real
+      again below, and the browser half sets the same option for the same reason.
+    */
+    dataCollection: {
+      /* `user.*` filled from instrumentation; the id is set deliberately in
+         `captureServerError`. */
+      userInfo: false,
+      /* Every cookie on the request, including `app_session_id`. */
+      cookies: false,
+      /* Request and response headers — `Authorization` and `Cookie` among them. */
+      httpHeaders: false,
+      /* A query string is where ids, tokens and signatures travel. */
+      urlQueryParams: false,
+      /* Request and response BODIES. On this product's roll path an incoming
+         body is the customer's brief. */
+      httpBodies: [],
+      /* Every local in scope at the throw — on the roll path, the composed
+         prompt itself. The projection's own note on the absent `vars` field. */
+      stackFrameVariables: false,
+    },
     /*
       ⚠ RELEASE HEALTH IS OFF, AND IT IS OFF BECAUSE OF A READING RATHER THAN A
       PREFERENCE. Driving the real SDK through a fake transport and reading the

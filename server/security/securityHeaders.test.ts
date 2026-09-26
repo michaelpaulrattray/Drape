@@ -47,6 +47,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Request, Response, NextFunction } from "express";
 
+/* The two PURE halves of the CSP, imported statically on purpose: they take the
+   regime and the DSN as arguments, so unlike the middleware they do not read the
+   module-load environment and need no `vi.resetModules()` dance. The arms that
+   assert the SHIPPED header still go through `loadHeaders`. */
+import { buildConnectSrc, sentryIngestOrigin } from "./securityHeaders";
+
 /** The bucket origin the arms use — a real shape, never the machine's own. */
 const BUCKET = "https://pub-0123456789abcdef.r2.dev";
 
@@ -60,11 +66,21 @@ const BUCKET = "https://pub-0123456789abcdef.r2.dev";
  * `res`, which makes it moot — and the reset stays, because the next arm added
  * to this file will not know that.
  */
-async function loadHeaders(env: { readonly nodeEnv: string; readonly r2?: string }) {
+async function loadHeaders(env: {
+  readonly nodeEnv: string;
+  readonly r2?: string;
+  readonly sentryDsn?: string;
+}) {
   vi.resetModules();
   vi.clearAllMocks();
   vi.stubEnv("NODE_ENV", env.nodeEnv);
   vi.stubEnv("R2_PUBLIC_URL", env.r2 ?? "");
+  /* ⚠ DEFAULTED EXPLICITLY, for the reason this file's header gives about
+     `R2_PUBLIC_URL` (#509 part 1b). `vitest.setup.ts` loads `.env`, so a machine
+     with a real `VITE_SENTRY_DSN` in it would measure a DIFFERENT `connect-src`
+     from CI, which has no `.env` — the same suite silently asserting two
+     different policies depending on where it runs. Every arm states its own. */
+  vi.stubEnv("VITE_SENTRY_DSN", env.sentryDsn ?? "");
   const module = await import("./securityHeaders");
   return module;
 }
@@ -261,4 +277,69 @@ describe("the headers that do not depend on the regime", () => {
       });
     });
   }
+});
+
+/**
+ * THE ERROR TRACKER'S INGEST HOST (#509 part 1b).
+ *
+ * The browser SDK posts its envelopes to the origin inside `VITE_SENTRY_DSN`. If
+ * `connect-src` does not name that origin the browser blocks every send, and the
+ * only evidence is a CSP violation in a console nobody is reading — an error
+ * tracker that reports nothing while every other reading says it is wired.
+ *
+ * ⚠ **Both halves of the pair are driven, and the SECOND is the one that matters
+ * more**: the host appears when a DSN is set, and NOTHING is added when it is
+ * absent or unparseable. A policy that widens on a typo is worse than one that
+ * blocks, because the typo also stops the reporter from starting — so the
+ * widening would buy an attacker a destination and buy the product nothing.
+ */
+describe("connect-src carries the tracker's ingest origin, derived from the DSN", () => {
+  const DSN = "https://publickey@o4507.ingest.de.sentry.io/4507";
+  const INGEST = "https://o4507.ingest.de.sentry.io";
+
+  it("derives the origin, and only the origin, from a real DSN", () => {
+    expect(sentryIngestOrigin(DSN)).toBe(INGEST);
+    /* The public key and the project path must not reach a CSP directive. */
+    expect(sentryIngestOrigin(DSN)).not.toContain("publickey");
+    expect(sentryIngestOrigin(DSN)).not.toContain("4507/");
+  });
+
+  it("⚠ answers null for absent, blank, unparseable and non-https values", () => {
+    expect(sentryIngestOrigin(undefined)).toBeNull();
+    expect(sentryIngestOrigin("")).toBeNull();
+    expect(sentryIngestOrigin("   ")).toBeNull();
+    expect(sentryIngestOrigin("not a url at all")).toBeNull();
+    expect(sentryIngestOrigin("o4507.ingest.de.sentry.io/4507")).toBeNull();
+    expect(sentryIngestOrigin("http://o4507.ingest.de.sentry.io/4507")).toBeNull();
+    expect(sentryIngestOrigin("javascript:alert(1)")).toBeNull();
+    expect(sentryIngestOrigin("data:text/html,x")).toBeNull();
+  });
+
+  it("builds the directive with the host in production, and adds nothing without a DSN", () => {
+    expect(buildConnectSrc(false, DSN)).toBe(`connect-src 'self' https://api.stripe.com ${INGEST}`);
+    expect(buildConnectSrc(false, undefined)).toBe("connect-src 'self' https://api.stripe.com");
+    expect(buildConnectSrc(false, "nonsense")).toBe("connect-src 'self' https://api.stripe.com");
+  });
+
+  it("keeps the dev WebSocket allowance beside it, and only in dev", () => {
+    expect(buildConnectSrc(true, DSN)).toBe(
+      `connect-src 'self' https://api.stripe.com ${INGEST} ws://localhost:* ws://127.0.0.1:*`,
+    );
+    expect(buildConnectSrc(false, DSN)).not.toContain("ws://");
+  });
+
+  it("⚠ reaches the SHIPPED header, not only the helper", async () => {
+    const { securityHeaders } = await loadHeaders({ ...PRODUCTION, sentryDsn: DSN });
+    const { headers } = headersFrom(securityHeaders);
+    const connect = /connect-src [^;]*/.exec(headers["Content-Security-Policy"]!)?.[0] ?? "";
+    expect(connect).toContain(INGEST);
+    expect(connect).toContain("'self'");
+    expect(connect).toContain("https://api.stripe.com");
+  });
+
+  it("⚠ and the shipped header names no Sentry host when no DSN is set", async () => {
+    const { securityHeaders } = await loadHeaders(PRODUCTION);
+    const { headers } = headersFrom(securityHeaders);
+    expect(headers["Content-Security-Policy"]).not.toContain("sentry.io");
+  });
 });

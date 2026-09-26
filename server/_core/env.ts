@@ -104,6 +104,13 @@ const OPTIONAL_VARS: Record<string, string> = {
      `server/monitoring/errorTracker.ts` carries why that is the honest state and
      not a degraded one. */
   SENTRY_DSN: "uncaught server errors are logged locally and reported nowhere",
+  /* #509 part 1b, the BROWSER half, and a separate key on purpose: a DSN baked
+     into a bundle is public, so it is a different Sentry project from the
+     server's with its own rate limit. Absent means the SDK is never fetched at
+     all — `client/src/monitoring/errorReporter.ts` carries why that is the
+     honest state rather than a degraded one, and it is what decides the CSP
+     `connect-src` entry in `server/security/securityHeaders.ts`. */
+  VITE_SENTRY_DSN: "uncaught errors in the customer's browser are reported nowhere",
 };
 
 /**
