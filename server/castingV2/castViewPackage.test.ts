@@ -7,9 +7,17 @@ import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
 import {
   PHOTOREAL_HUMAN_BLOCKS,
   photorealHumanConstant,
-  referenceRealism,
 } from "./cohortPhotorealHuman";
-import { CAPTURE_SENTENCES, DROPPED_FROM_BLOCK, LIGHTING_LINE } from "./houseBlock";
+import {
+  AUTHORITY_LINE,
+  CAPTURE_SENTENCES,
+  DROPPED_FROM_BLOCK,
+  EXPRESSION_LINE,
+  HOUSE_BLOCK,
+  HOUSE_PHOTOGRAPH_PARAGRAPHS,
+  LIGHTING_LINE,
+  NEGATIVE_LINES,
+} from "./houseBlock";
 import {
   CASTING_V2_SIGN_PRICE_CREDITS,
   CAST_PACKAGE_VIEWS,
@@ -169,7 +177,13 @@ describe("the canonical view package", () => {
     const prompt = composePackageViewPrompt("frontFull");
     // The authority paragraph claims precedence over everything above it, so
     // anything appended after it would silently outrank the guarantee.
-    expect(prompt.trimEnd().endsWith("it always wins.")).toBe(true);
+    //
+    // Keyed on the ROLL's own authority line since #1240 rather than on the
+    // retired cohort's closing words: this arm used to assert the literal
+    // "it always wins.", which is a sentence the view no longer sends. Derived,
+    // it keeps holding the property (the guarantee is last) through the next
+    // rewording as well.
+    expect(prompt.trimEnd().endsWith(AUTHORITY_LINE)).toBe(true);
   });
 
   it("holds every full view to one wardrobe, and lets the close-up be honest", () => {
@@ -485,25 +499,59 @@ describe("a signed view's realism block reads the reference, not a description",
     }
   });
 
-  it("⚠ keeps EVERY photographic sentence — the subtraction takes the doors and nothing else", () => {
+  it("⚠ still carries a WHOLE realism paragraph — the over-subtraction arm, re-pointed (#1240)", () => {
     /*
-      The over-subtraction arm, and the reason this is a filter rather than a
-      second array. Without it, a view could pass every absence above by
-      sending no realism block at all.
+      Without an arm of this shape a view passes every absence above by sending
+      no realism at all. Its SUBJECT moved with the block: the view is no longer
+      the legacy realism minus its doors, it is the ROLL's own three sentences,
+      so those are what must all be there.
     */
-    const kept = PHOTOREAL_HUMAN_BLOCKS.realismSentencesAll
-      .filter((sentence) => !declined.includes(sentence));
-    expect(kept.length, "the kept set collapsed").toBeGreaterThanOrEqual(13);
+    const roll = PHOTOREAL_HUMAN_BLOCKS.realismSentences;
+    expect(roll.length, "the roll's realism collapsed — this arm would pass on nothing").toBe(3);
     for (const angle of CAST_PACKAGE_VIEWS) {
       const prompt = composePackageViewPrompt(angle, null);
-      for (const sentence of kept) {
+      for (const sentence of roll) {
         expect(prompt, `${angle} dropped "${sentence.slice(0, 50)}…"`).toContain(sentence);
       }
+      expect(prompt, angle).toContain("REALISM:");
     }
-    /* Named explicitly because his ruling names them as the keeps. */
-    const one = composePackageViewPrompt("closeUp", null);
-    for (const headline of ["REALISM:", "EYES:", "CATCHLIGHTS:", "SCLERA:", "PUPILS:", "LASHES:", "LIPS:", "BROWS:"]) {
-      expect(one, `the close-up lost ${headline}`).toContain(headline);
+  });
+
+  it("⚠ the legacy CRAFT sentences left too — and the view is no poorer than a roll, which is the whole claim", () => {
+    /*
+      THE ONE DEPARTURE THAT IS A QUESTION RATHER THAN AN ANSWER, pinned here so
+      a later seat reads a decision and not a hole.
+
+      The eye, lash, lip, brow and vellus craft leaves the view with the legacy
+      block. That is only defensible because the ROLL does not carry it either —
+      which is what the third loop below actually measures, rather than asserting
+      it in a comment. A close-up is exactly where it would show, so the card's
+      court puts both blocks in front of his eye (law 9); if it comes back as a
+      VIEW-ONLY addendum, THIS is the arm that changes, and the doors must not
+      ride back in with it.
+    */
+    const craft = PHOTOREAL_HUMAN_BLOCKS.realismSentencesAll
+      .filter((sentence) => !PHOTOREAL_HUMAN_BLOCKS.realismSentences.includes(sentence))
+      .filter((sentence) => !declined.includes(sentence));
+    expect(craft.length, "the craft set collapsed — this arm would pass on nothing")
+      .toBeGreaterThanOrEqual(10);
+
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const prompt = composePackageViewPrompt(angle, null);
+      for (const sentence of craft) {
+        expect(prompt, `${angle} still carries craft "${sentence.slice(0, 50)}…"`)
+          .not.toContain(sentence);
+      }
+    }
+    /* CONTROL — every one is still real prose where it lives, so the absences are readable claims. */
+    const cohort = photorealHumanConstant(null);
+    for (const sentence of craft) {
+      expect(cohort, `the cohort lost craft "${sentence.slice(0, 50)}…"`).toContain(sentence);
+    }
+    /* THE EQUALITY THIS CARD CLAIMS: the roll road does not send them either. */
+    for (const sentence of craft) {
+      expect(HOUSE_BLOCK, `the roll block carries craft "${sentence.slice(0, 50)}…"`)
+        .not.toContain(sentence);
     }
   });
 
@@ -520,6 +568,182 @@ describe("a signed view's realism block reads the reference, not a description",
         PHOTOREAL_HUMAN_BLOCKS.realismSentencesAll,
         `"${sentence.slice(0, 50)}…" is declined but is no longer in the roll block`,
       ).toContain(sentence);
+    }
+  });
+});
+
+/**
+ * ⚠ **ONE BLOCK, TWO ROADS — founder ruling, 2026-09-26 (#1240).**
+ *
+ * His question, verbatim: *"why cant the realism block be the same as when
+ * casting a sheet?"* — and his *"yes"* to the shape. A signed view now sends
+ * its own lines and then EXACTLY the roll's own house paragraphs, taken from
+ * the same constants rather than copied.
+ *
+ * **The drift arm is the one that matters here**, and it is #1215's shape: the
+ * view's block is asserted EQUAL to the house block's own paragraphs, derived,
+ * so the two cannot be edited apart. Every defect this road has had — #1207's
+ * trousers, #1207's flash, #1221's ink — was one sentence drifting between two
+ * copies of one rule, and an arm that re-typed those sentences here would be
+ * the same mistake wearing a guard's clothes.
+ */
+describe("a signed view is photographed under the roll's own house block", () => {
+  const paragraphs = HOUSE_PHOTOGRAPH_PARAGRAPHS;
+
+  it("⚠ sends the house block's own paragraphs, in its order, on every view — the drift arm", () => {
+    expect(paragraphs.length, "the shared paragraphs collapsed — this arm would pass on nothing")
+      .toBe(5);
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const lines = composePackageViewPrompt(angle, null).split("\n");
+      /* The tail of the prompt IS the block, paragraph for paragraph. */
+      expect(lines.slice(-paragraphs.length), angle).toEqual([...paragraphs]);
+    }
+  });
+
+  it("⚠ CONTROL — those paragraphs really are the ROLL's, sentence by sentence", () => {
+    /*
+      The equality above is only worth anything if the constant it reads is the
+      one a roll is rendered from. A shared constant nothing rolls with would
+      satisfy every arm here and still be a second copy.
+    */
+    for (const sentence of [...CAPTURE_SENTENCES, ...NEGATIVE_LINES, AUTHORITY_LINE]) {
+      expect(HOUSE_BLOCK, `the roll block lost "${sentence.slice(0, 50)}…"`).toContain(sentence);
+    }
+    for (const paragraph of paragraphs) {
+      expect(HOUSE_BLOCK, `the roll block lost a whole paragraph: "${paragraph.slice(0, 50)}…"`)
+        .toContain(paragraph);
+    }
+  });
+
+  it("⚠ does NOT take the block's FRAMING paragraph — the one thing a view supplies itself", () => {
+    /*
+      The reason `HOUSE_PHOTOGRAPH_PARAGRAPHS` exists at all rather than the
+      view reading `HOUSE_BLOCK`. Each view carries its own angle directive, and
+      the roll's crop and posture sentences would fight it — a close-up told to
+      frame mid-torso is the defect this prevents.
+    */
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const prompt = composePackageViewPrompt(angle, null);
+      expect(prompt, angle).not.toContain("CROP: The subject's ENTIRE HAIR SILHOUETTE");
+      expect(prompt, angle).not.toContain("BACKGROUND:");
+    }
+    /* CONTROL — a roll DOES carry them, so the absences above are readable. */
+    expect(HOUSE_BLOCK).toContain("CROP: The subject's ENTIRE HAIR SILHOUETTE");
+    expect(HOUSE_BLOCK).toContain("BACKGROUND:");
+  });
+
+  it("⚠ the legacy cohort's three blocks left the view road entirely", () => {
+    /*
+      Read as whole blocks rather than as sampled sentences: the card's subject
+      is that these PARAGRAPHS are gone, and a sentence-level arm would pass on
+      a block that kept nine of its fourteen.
+    */
+    const legacy: ReadonlyArray<readonly [string, string]> = [
+      ["identityIntegrity", PHOTOREAL_HUMAN_BLOCKS.identityIntegrity],
+      ["negatives", PHOTOREAL_HUMAN_BLOCKS.negatives],
+      ["authority", PHOTOREAL_HUMAN_BLOCKS.authority],
+    ];
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const prompt = composePackageViewPrompt(angle, null);
+      for (const [name, paragraph] of legacy) {
+        expect(prompt, `${angle} still carries the cohort's ${name}`).not.toContain(paragraph);
+      }
+    }
+    /* CONTROL — all three are still real prose in the cohort constant, where the roll's own history keeps them. */
+    const cohort = photorealHumanConstant(null);
+    for (const [name, paragraph] of legacy) {
+      expect(cohort, `the cohort lost its ${name} — the absences above stop being claims`)
+        .toContain(paragraph);
+    }
+  });
+
+  it("⚠ the sharpest sentence of the six is gone: a view no longer derives her colouring from a heritage", () => {
+    /*
+      Named literally as well as derived, because this is the one the card leads
+      on. On a view the condition "when the description does not state them" is
+      ALWAYS true, so it fired every time and told the engine to work her eye
+      and hair colour out from a heritage instead of copying the reference.
+    */
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const prompt = composePackageViewPrompt(angle, null);
+      expect(prompt, angle).not.toContain("When the description does not state them");
+      expect(prompt, angle).not.toContain("HERITAGE IS BONE");
+      expect(prompt, angle).not.toContain("follow plausibly from their heritage and age");
+      /* And the authority paragraph no longer overrides a description that is not there. */
+      expect(prompt, angle).not.toContain("override the character description entirely");
+      expect(prompt, angle).not.toContain("ignore that implication");
+    }
+  });
+
+  it("⚠ LETTERS ARE UNBANNED on a view — his ruling — and the marks a studio frame bans are kept", () => {
+    /*
+      His words, 2026-09-26: *"what do other big SaaS operators do? do they ban
+      these? if not unban it"* — they do not; the big generators sell text
+      rendering and ban brand marks. A script or lettering tattoo is text on her
+      skin, and the old line forbade it on every view.
+
+      The two halves are asserted TOGETHER on purpose: an unban that also lost
+      the logo and watermark bans would pass a one-sided arm and be a different,
+      worse change.
+    */
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const prompt = composePackageViewPrompt(angle, null);
+      expect(prompt, `${angle} still bans letters`)
+        .not.toContain("NO text, letters, numbers, words, logos, captions, labels, watermarks or signage");
+      expect(prompt, angle).toContain("NO logos, watermarks, captions or signage anywhere in the frame.");
+      expect(prompt, angle).toContain("NO props, furniture, environment, location or scene");
+    }
+    /* CONTROL — the banned form is real prose the cohort still holds, and the author road dropped it by name. */
+    expect(photorealHumanConstant(null))
+      .toContain("NO text, letters, numbers, words, logos, captions, labels, watermarks or signage");
+    expect(DROPPED_FROM_BLOCK.map((entry) => entry.phrase)).toContain("letters, numbers");
+  });
+
+  it("⚠ NO expression rule rides on a view, and that is a DECISION rather than an oversight", () => {
+    /*
+      STATED OUT LOUD (fidelity law), because it is the one thing this shape
+      costs. The roll carries expression in its FRAMING paragraph
+      (`EXPRESSION_LINE`), which a view replaces with its own angle directive —
+      and four of the five directives name neither a mouth nor a gaze.
+
+      Defensible on this card's own principle: a view has a reference photograph
+      showing the expression where a roll has only words. The alternative —
+      re-typing a gaze-free expression sentence — was DECLINED, because
+      `EXPRESSION_LINE` opens with "Eyes into the lens" and a back view cannot
+      obey it, and an authored sentence is exactly what his ruling takes off
+      this road. It is a named question for the court's frames.
+
+      This arm exists so the absence is a RECORD. A shift that puts an
+      expression rule back reddens it and has to come here and read why.
+    */
+    expect(EXPRESSION_LINE, "the roll's expression line moved — re-read this decision")
+      .toContain("Eyes into the lens");
+    expect(HOUSE_BLOCK, "CONTROL — the roll does carry it").toContain(EXPRESSION_LINE);
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const prompt = composePackageViewPrompt(angle, null);
+      expect(prompt, angle).not.toContain(EXPRESSION_LINE);
+      expect(prompt, `${angle} grew an expression negative — say why, here`)
+        .not.toContain("NO open mouth, no showing teeth");
+    }
+  });
+
+  it("keeps the view's own lines, above the block and in order", () => {
+    /*
+      The other half of the drift arm: the shared block must not swallow the
+      lines that are the VIEW's, nor reorder them. Pinned by text, because these
+      are the view's own prose and have no constant to derive from.
+    */
+    for (const angle of CAST_PACKAGE_VIEWS) {
+      const prompt = composePackageViewPrompt(angle, null);
+      const identity = prompt.indexOf("Keep this exact person unchanged:");
+      const document = prompt.indexOf("THE REFERENCE PHOTOGRAPH IS THE DESCRIPTION:");
+      const wardrobe = prompt.indexOf("WARDROBE:");
+      const block = prompt.indexOf(paragraphs[0]);
+      expect(identity, angle).toBe(0);
+      expect(document, angle).toBeGreaterThan(identity);
+      expect(wardrobe, angle).toBeGreaterThan(document);
+      expect(block, `${angle} put the house block above the view's own lines`)
+        .toBeGreaterThan(wardrobe);
     }
   });
 });
@@ -553,9 +777,11 @@ describe("the roll road's realism block is byte-identical", () => {
 
   it("CONTROL — the hash reader can tell two blocks apart", () => {
     /* Without this, a `sha` that returned a constant would pass both arms
-       above forever. */
-    expect(sha(PHOTOREAL_HUMAN_BLOCKS.realism)).not.toBe(sha(referenceRealism()));
-    expect(referenceRealism().length).toBeLessThan(PHOTOREAL_HUMAN_BLOCKS.realism.length);
+       above forever. It read the retired `referenceRealism()` until #1240; the
+       view's own composed prompt is the same control and is a live road. */
+    const view = composePackageViewPrompt("closeUp", null);
+    expect(sha(PHOTOREAL_HUMAN_BLOCKS.realism)).not.toBe(sha(view));
+    expect(sha(view)).not.toBe(sha(photorealHumanConstant(null)));
   });
 });
 
