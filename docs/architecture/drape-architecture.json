@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b0d99921d68cda71"
+    "sourceFingerprint": "1de0918cfe8dd520"
   },
   "domains": [
     {
@@ -13253,6 +13253,10 @@
     {
       "id": "test:server/reset-look.test.ts",
       "path": "server/reset-look.test.ts"
+    },
+    {
+      "id": "test:server/reviewTriageTriggers.test.ts",
+      "path": "server/reviewTriageTriggers.test.ts"
     },
     {
       "id": "test:server/reviewerCharter.test.ts",
