@@ -65,7 +65,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4844",
+          "server/castingV2/refineService.ts:4876",
           "server/castingV2/rollEngine.ts:94",
           "server/castingV2/rollEngine.ts:106"
         ]
@@ -585,7 +585,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4823"
+          "server/castingV2/refineService.ts:4855"
         ]
       },
       {
@@ -721,10 +721,10 @@
           "server/db/referenceReadDemand.test.ts"
         ],
         "sites": [
-          "server/castingV2/castingIntent.ts:1344",
-          "server/castingV2/castingIntent.ts:1380",
-          "server/castingV2/castingIntent.ts:1385",
-          "server/castingV2/castingIntent.ts:1400",
+          "server/castingV2/castingIntent.ts:1372",
+          "server/castingV2/castingIntent.ts:1408",
+          "server/castingV2/castingIntent.ts:1413",
+          "server/castingV2/castingIntent.ts:1428",
           "server/castingV2/openLaneAccept.ts:245",
           "server/castingV2/openLaneKind.ts:162",
           "server/castingV2/openLaneKind.ts:220",
