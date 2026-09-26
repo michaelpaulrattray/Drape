@@ -32,7 +32,7 @@ import {
   type PrReading,
   type Rollup,
   MONEY_DECLARATION_PATH,
-  REVIEW_SIZE_DECLARATION_PATH,
+  CUSTOMER_SURFACE_DECLARATION_PATH,
   REVIEWER_WORKFLOW_PATH,
   checkStateOf,
   decideMergeAction,
@@ -41,12 +41,10 @@ import {
   classifyPrMergeReceipt,
   classifyRemoteBranchDeletion,
   extractJobNames,
-  changedCodeLines,
-  exceedsReviewSizeLine,
   extractMoneyPattern,
   extractMoneySymbols,
-  extractReviewNonCodePattern,
-  extractReviewSizeLine,
+  extractCustomerSurfaceExemptPattern,
+  extractCustomerSurfacePattern,
   MONEY_SYMBOL_ROOTS,
   moneySymbolHits,
   refuseDirtyWorktree,
@@ -58,6 +56,7 @@ import {
   sharesFiles,
   supplyChainStateOf,
   touchesMoney,
+  touchesCustomerSurface,
   touchesReviewerWorkflow,
 } from "../scripts/lib/prMergeOrder.mts";
 import { gitTreeReader, readProtectedRefs } from "../scripts/lib/pushPaths.mts";
@@ -160,7 +159,7 @@ describe("the money rule is read out of the one file that declares it", () => {
 
 // ---------------------------------------------------------------------------
 describe("the money rule's second half — a changed line naming the credit API (#987)", () => {
-  const file = (filename: string, patch: string | null) => ({ filename, patch, additions: 0, deletions: 0 });
+  const file = (filename: string, patch: string | null) => ({ filename, patch });
 
   it("extracts the symbols from the real .github/money-surfaces.sh, and refuses when they move", () => {
     expect(SYMBOLS).toMatch(/recordRefund/);
@@ -1251,84 +1250,121 @@ describe("the check classification reads a Socket skip as `skipped`, never as a 
 });
 
 /**
- * THE SIZE OBLIGATION HAS A SECOND READER (#1194).
+ * WHAT A CUSTOMER SEES IS READ TWICE — #1328, and #1194 is why there are two.
  *
  * The money rule and the reviewer-workflow rule were always asked twice — once
  * by triage and once by the merge tool, on the stated ground that *a label
- * someone removed cannot un-owe a money diff*. **The size rule was asked once**,
- * and a PR that never got a triage run was announced to nobody: no label, no
- * comment, and `review=declined` — the same word this tool prints for a diff that
- * genuinely earned no look.
+ * someone removed cannot un-owe a money diff*. **Triage's third limb was asked
+ * once**, and a PR that never got a triage run was announced to nobody: no
+ * label, no comment, and `review=declined` — the same word this tool prints for a
+ * diff that genuinely earned no look.
  *
  * ⚠ **Measured on PR #1191, and the artifact is a run list rather than a
  * reading.** Opened as a draft at 23:34:51Z, marked ready at 23:35:10Z, and no
  * `Fable Review` run was created for either event: main had moved at 23:24Z, so
  * the PR was born DIRTY, and a CONFLICTING PR gets no `pull_request` run for any
- * event (#566). 288 changed lines, against a line of 50.
+ * event (#566).
+ *
+ * ⚠ **THE LIMB WAS SIZE AND THE FOUNDER DROPPED IT — his word, 2026-09-26:
+ * "drop it".** Shown the day's tally (22 seat PRs reviewed, 0 code defects
+ * found) he removed the line-count trigger outright rather than raising it. What
+ * replaced it is the obligation none of the four mechanical checks can
+ * discharge: a diff touching a surface a CUSTOMER sees owes the relay's eye on
+ * the rendered frames, both themes (working law 6; law 9's *his eyes are king*).
  *
  * ⚠ **It changes what is REPORTED, not what merges**, and the arms say so: an
- * ordinary large diff with no verdict still merges on the gate alone.
+ * ordinary customer-visible diff with no verdict still merges on the gate alone.
  */
-describe("the size rule is read twice — #1194", () => {
-  const declaration = readFileSync(join(__dirname, "..", REVIEW_SIZE_DECLARATION_PATH), "utf8");
-  const LINE = extractReviewSizeLine(declaration);
-  const NON_CODE = extractReviewNonCodePattern(declaration);
-  const changed = (filename: string, additions: number, deletions = 0) => ({
-    filename,
-    patch: null,
-    additions,
-    deletions,
-  });
+describe("what a customer sees is read twice — #1328", () => {
+  const declaration = readFileSync(join(__dirname, "..", CUSTOMER_SURFACE_DECLARATION_PATH), "utf8");
+  const PATHS = extractCustomerSurfacePattern(declaration);
+  const EXEMPT = extractCustomerSurfaceExemptPattern(declaration);
+  const owed = (...files: string[]) => touchesCustomerSurface(files, PATHS, EXEMPT);
 
-  it("⚠ CONTROL — the real declaration parses, and both halves are real", () => {
-    expect(LINE).toBe(50);
-    expect(NON_CODE).toMatch(/docs\//);
-    expect(() => new RegExp(NON_CODE)).not.toThrow();
+  it("⚠ CONTROL — the real declaration parses, and both halves are real regexes", () => {
+    expect(PATHS).toBe("^client/src/");
+    expect(EXEMPT).toMatch(/features\/admin\//);
+    expect(() => new RegExp(PATHS)).not.toThrow();
+    expect(() => new RegExp(EXEMPT)).not.toThrow();
   });
 
   it("REFUSES a declaration whose lines have moved rather than guessing a default", () => {
-    /* A guessed line is the silent failure this reader exists to close: a zero
-       would make every diff owe a review and a huge one would make none. */
-    expect(() => extractReviewSizeLine(`REVIEW_NON_CODE='^docs/'\n`)).toThrow(/REVIEW_SIZE_LINE=/);
-    expect(() => extractReviewNonCodePattern(`REVIEW_SIZE_LINE='50'\n`)).toThrow(/REVIEW_NON_CODE=/);
-    expect(() => extractReviewSizeLine(`REVIEW_SIZE_LINE='0'\n`)).toThrow(/positive integer/);
+    /* A guessed pattern is the silent failure this reader exists to close: one
+       that matched nothing would make every customer diff read as ordinary, and
+       one that lost the exemption would disagree with triage about the same
+       diff. */
+    expect(() => extractCustomerSurfacePattern(`CUSTOMER_SURFACE_EXEMPT='x'\n`)).toThrow(
+      /CUSTOMER_SURFACE_PATHS=/,
+    );
+    expect(() => extractCustomerSurfaceExemptPattern(`CUSTOMER_SURFACE_PATHS='^client/src/'\n`)).toThrow(
+      /CUSTOMER_SURFACE_EXEMPT=/,
+    );
   });
 
-  it("counts added AND deleted lines, which is what the workflow's awk sums", () => {
-    expect(changedCodeLines([changed("server/a.ts", 30, 25)], NON_CODE)).toBe(55);
+  it("⚠ POSITIVE — a page, a component, a store and a design token each earn a look", () => {
+    /* Real paths at this tree, not invented ones: the four shapes a customer-
+       visible change actually takes. */
+    expect(owed("client/src/pages/CastingV2.tsx")).toBe(true);
+    expect(owed("client/src/features/casting/components/CastProfilePanel.tsx")).toBe(true);
+    expect(owed("client/src/features/boards/stores/useCanvasLayers.ts")).toBe(true);
+    expect(owed("client/src/foundation/tokens.css")).toBe(true);
   });
 
-  it("⚠ does not count the generated Atlas maps, or nearly every diff would earn a look", () => {
-    /* Every commit touching a scanned path carries `docs/architecture/*.json`,
-       and the two maps are thousands of lines. Counting them is the same as
-       having no line at all. */
-    const patches = [
-      changed("docs/architecture/drape-architecture.json", 4000, 3000),
-      changed("docs/architecture/capability-atlas.json", 900, 800),
-      changed("docs/ARCHITECTURE.md", 40, 0),
-      changed(".agents/mailbox/foreman-1.md", 200, 0),
-      changed("output/receipt.txt", 100, 0),
-      changed("server/a.ts", 3, 1),
-    ];
-    expect(changedCodeLines(patches, NON_CODE)).toBe(4);
-    expect(exceedsReviewSizeLine(patches, NON_CODE, LINE)).toBe(false);
+  it("⚠ the Desk PAGE is not inside his exemption, and that is measured rather than assumed", () => {
+    /* His exemption names `client/src/features/admin/`. The page components that
+       MOUNT those panels live in `client/src/pages/` — `AdminCrew.tsx`,
+       `AdminAuditLogs.tsx` and six more, read at `git ls-files` — so an
+       admin-page diff earns a look it probably did not need.
+       ⚠ That is the LOUD direction (one extra reading) rather than the silent
+       one (a real surface passing unseen), so it ships as his list says and is
+       named here instead of being widened without his word. */
+    expect(owed("client/src/pages/AdminCrew.tsx")).toBe(true);
   });
 
-  it("⚠ #1191's shape earns a look on size alone, which is what nobody was told", () => {
-    const patches = [changed("scripts/lib/thing.mts", 200, 88)];
-    expect(changedCodeLines(patches, NON_CODE)).toBe(288);
-    expect(exceedsReviewSizeLine(patches, NON_CODE, LINE)).toBe(true);
+  it("⚠ NEGATIVE — the staff panels are not a customer surface (his own exemption)", () => {
+    expect(owed("client/src/features/admin/AuditLogTable.tsx")).toBe(false);
+    expect(owed("client/src/features/admin/BlockedIPsTab.tsx")).toBe(false);
   });
 
-  it("the line is an AT-OR-OVER test, the same as the workflow's `-lt` refusal", () => {
-    /* Triage declines below the line (`[ "$LINES" -lt 50 ]`), so exactly 50
-       earns one. An off-by-one here would be a second rule wearing the first's
-       name. */
-    expect(exceedsReviewSizeLine([changed("server/a.ts", LINE - 1)], NON_CODE, LINE)).toBe(false);
-    expect(exceedsReviewSizeLine([changed("server/a.ts", LINE)], NON_CODE, LINE)).toBe(true);
+  it("⚠ NEGATIVE — the client's own test files are not a customer surface", () => {
+    /* All 104 client test files at this tree are `.test.ts`; these two are real. */
+    expect(owed("client/src/foundation/focusRing.test.ts")).toBe(false);
+    expect(owed("client/src/components/appChrome.test.ts")).toBe(false);
   });
 
-  it("⚠ NEGATIVE CONTROL — a docs-only diff of any size still earns nothing", () => {
-    expect(exceedsReviewSizeLine([changed("docs/specs/BIG.md", 9000)], NON_CODE, LINE)).toBe(false);
+  it("⚠ NEGATIVE CONTROL — a server, docs, workflow or crew-script diff earns nothing here", () => {
+    /* Including the big ones: the retired rule would have flagged every one of
+       these on size, and that is exactly what he dropped. */
+    expect(owed("server/castingV2/rollService.ts")).toBe(false);
+    expect(owed("docs/specs/BIG.md")).toBe(false);
+    expect(owed(".github/workflows/gate.yml")).toBe(false);
+    expect(owed("scripts/lib/prMergeOrder.mts")).toBe(false);
+    expect(owed("docs/architecture/drape-architecture.json")).toBe(false);
+    /* And a client file OUTSIDE `src/` — the prefix is `client/src/`, not
+       `client/`, so `client/index.html` and the configs are not this limb's. */
+    expect(owed("client/index.html")).toBe(false);
+  });
+
+  it("ONE surviving file is enough — a diff is not excused by its exempt neighbours", () => {
+    expect(
+      owed(
+        "client/src/features/admin/AuditLogTable.tsx",
+        "client/src/foundation/focusRing.test.ts",
+        "client/src/pages/CastingV2.tsx",
+      ),
+    ).toBe(true);
+    /* And a diff of nothing but exempt files stays exempt — the mirror arm, so
+       the one above is not passing because the reader says yes to everything. */
+    expect(
+      owed("client/src/features/admin/AuditLogTable.tsx", "client/src/foundation/focusRing.test.ts"),
+    ).toBe(false);
+  });
+
+  it("⚠ the exemption is applied INSIDE the prefix, never as a standalone allowlist", () => {
+    /* A reader that tested the exemption first, or tested only the exemption,
+       would let every non-client file read as a surface. `server/a.test.ts`
+       matches the exemption and must still be a no for the other reason. */
+    expect(owed("server/a.test.ts")).toBe(false);
+    expect(owed("docs/features/admin/notes.md")).toBe(false);
   });
 });

@@ -101,6 +101,46 @@ scenario. If the diff touches billing, credits, auth, or session code, say
 so in your first line. If you find nothing, say what you checked and pass it
 cleanly — do not invent findings.
 
+## When a review is owed at all (`review.yml`'s triage — his ruling, 2026-09-26)
+
+**A diff's SIZE decides nothing.** Asked *"why must ever PR have a review a
+fable review on PR's seems like a waste of credits doesnt it?"*, shown the day's
+tally — 22 seat PRs reviewed, 0 code defects found, 2 prose claims corrected,
+22 of 22 instruments red under the relay's hand — and then *"i think opus 5 is
+comfrotable on more than 250 lines of code dont you?"*, the founder ruled on
+removing the size trigger outright rather than raising it: **"drop it"** (#1328).
+There is no `≥50 changed code lines` rule and no line count anywhere in the
+review rules. Four reasons remain, and triage says which one on the PR:
+
+1. **Money / auth** — both halves of `.github/money-surfaces.sh`. **HELD** for
+   the verdict; the reading is CLAUDE.md in full, not this file.
+2. **A change to the review's own rules** (`.github/workflows/review.yml`).
+   **HELD** for the verdict.
+3. **A customer-visible diff** — `.github/customer-surfaces.sh`: anything under
+   `client/src/`, outside the client's own `*.test.ts` files and outside the
+   staff panels in `client/src/features/admin/`. NOT held; it merges on the gate
+   alone if the verdict has not landed.
+4. **`needs-fable` added by hand** — anyone can escalate, and that road is the
+   answer for a diff whose customer impact the path cannot see (a server-side
+   copy change, a prompt that alters what a picture looks like).
+
+Everything else merges on the four mechanical checks plus the seat's own control
+and sabotage tallies in the PR body.
+
+### What a customer-visible review actually owes — and it is not more code reading
+
+⚠ **The obligation on limb 3 is THE EYE ON THE RENDERED FRAMES, BOTH THEMES.**
+It is the only limb that survived the size rule's removal, and the reason is
+that it is the one thing none of the four mechanical checks can do: **working
+law 6** (no visual change ships without being looked at in the running app
+first) and **law 9** (his eyes are king — a reader's prose is a pointer to look,
+never the fact). A pass that only read the diff has not discharged it.
+
+⚠ **And the path is a PROXY, which the comment says out loud.** A `client/src/`
+diff that moves no pixel earns a look it did not need — that costs one reading.
+A server-side change a customer reads earns none — that is the failure
+direction, and limb 4 is its remedy.
+
 ## Enforcement invariants (CLAUDE.md "Enforcement invariants" — rules kept, measurement histories cut)
 
 The access grid says *what*; these say *where*. Every defect found in July
