@@ -345,10 +345,20 @@ describe("which roads to a commit fire `commit-msg` (#1430, measured)", () => {
 /* ── the header is the subject, not decoration ─────────────────────────────── */
 
 describe("the hook is installed and says what it was measured to do", () => {
-  it("this clone arms it — `core.hooksPath` is `.githooks`", () => {
-    const read = runHook("git", ["config", "--get", "core.hooksPath"], { cwd: ROOT });
-    expect(read.status, "git could not read the config").toBe(0);
-    expect(read.stdout.trim()).toBe(".githooks");
+  it("the deploy rite REFUSES a clone that has not armed `core.hooksPath=.githooks`", () => {
+    /*
+      ⚠ NOT "this clone arms it". `core.hooksPath` is LOCAL config: a fresh
+      clone has the hook file and not the setting, and the gate's own checkout is
+      exactly such a clone — the first shape of this arm read the config of
+      whatever clone ran the suite and went RED on the gate (run 36277402941)
+      over a fact that is true of the founder's machine and of no CI runner.
+      What the REPOSITORY guarantees is that nothing deploys from an unarmed
+      clone, and that lives in the rite; `prePushGate.test.ts` reads the same
+      sentence for the same reason.
+    */
+    const rite = readFileSync(join(ROOT, "scripts/deploy-rite.mts"), "utf8");
+    expect(rite).toContain("core.hooksPath");
+    expect(rite).toMatch(/REFUSED: core\.hooksPath is .* not \.githooks/);
   });
 
   it("EVERY hook in the directory is committed EXECUTABLE, this one included", () => {
