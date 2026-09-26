@@ -55,6 +55,23 @@
  * QUEUE** — the same trap #504 names for the NEXT UP read that parks the team.
  * `gh()` returns `null` on any failure and `null` is never read as "no cards".
  *
+ * # ⚠ IT READ ONE BAND UNTIL #1258, AND THAT IS #541'S OWN DEFECT ONE BAND OVER
+ *
+ * This gate asked `gh issue list --label founder-ordered` and nothing else, so
+ * **a card that is URGENT but not `founder-ordered` was invisible to it.** Put
+ * `awaiting-fable` on one and it froze precisely the way his five ordered cards
+ * froze: the hold renders on his page, every shift correctly steps over it, and
+ * nothing anywhere writes the marker. The live instance was **#1222** — his own
+ * eye on the Sifr dress, `bug` + `urgent` + `rung:N2`, judgment-class — and it
+ * was escalated BY HAND on 2026-09-26 because this file could not do it.
+ *
+ * It reads the whole open queue once now and `deriveBands` cuts both bands out
+ * of it, his first and then urgent, concatenated in the order
+ * `queue-standing-exceptions.mts` already prints them. **That is one query
+ * fewer, not one more** — #774's finding: two narrow reads each believe
+ * whatever they get back, while one whole-queue read carries the witness that
+ * says whether an empty band is a fact.
+ *
  * # ⚠ ONE HOLD ON HIS PAGE IS INVISIBLE HERE, AND IT IS NAMED RATHER THAN LEFT
  *
  * `resolveHold`'s **`you`** — *Waiting on you* — is derived from HIS OWN DESK
@@ -114,7 +131,9 @@ import { resolve } from "node:path";
 
 import { heldStatesFromLabels } from "../shared/crewNextUpHold.js";
 
+import { OPEN_QUEUE_LIMIT } from "./lib/nextUpItems.mts";
 import { compareOrderedBand, rankFromLabels } from "./lib/orderedBand.mts";
+import { deriveBands, type Row as BandRow } from "./lib/standingExceptions.mts";
 
 type Json = Record<string, any>;
 
@@ -124,8 +143,15 @@ const KNOWN_FLAGS = new Set(["--state", "--queue", "--record", "--today"]);
  * The `gh --limit`, stated ONCE and reused as its own floor guard: a limit and
  * the number a reader compares against are the same fact, and two copies of one
  * fact is how a list silently starts capping (working law 4).
+ *
+ * ⚠ **AND IT IS NO LONGER TYPED HERE EITHER (#1258).** This read is now the
+ * whole open queue, which is the population `OPEN_QUEUE_LIMIT` already caps for
+ * the standing-exceptions view and the desk sweep. Two numbers capping one
+ * population is the drift #774's own review finding names: they would let one
+ * shift-steering view print bands as facts at a row count another calls
+ * unreadable.
  */
-const QUEUE_LIMIT = 200;
+const QUEUE_LIMIT = OPEN_QUEUE_LIMIT;
 
 /* ─── arguments, refused rather than ignored ───
    Both crew writers REFUSE a flag they do not know, for the reason #288
@@ -242,10 +268,28 @@ function gh(args: string[]): unknown | null {
 }
 
 /**
- * The founder-ordered queue, from `gh` or from a fixture.
+ * THE WHOLE OPEN QUEUE, from `gh` or from a fixture — and it used to be the
+ * founder-ordered band alone, which is the whole of #1258.
+ *
+ * ⚠ **A card that is URGENT but not `founder-ordered` was invisible here.** Put
+ * `awaiting-fable` on one and it froze exactly the way his five ordered cards
+ * froze in September: the hold rendered on his page, every shift correctly
+ * stepped over it, and nothing anywhere ever wrote the marker. #1222 was the
+ * live instance — `bug` + `urgent` + `rung:N2`, judgment-class, escalated BY
+ * HAND on 2026-09-26 because this gate could not see it.
+ *
+ * ⚠ **THE REPAIR REMOVES A QUERY RATHER THAN ADDING ONE, and that is #774's
+ * finding one band over.** Two narrow reads — one per label — each believe
+ * whatever they get back, and an empty answer to a narrow question is
+ * indistinguishable from a broken one. One whole-queue read carries its own
+ * witness: `deriveBands` cuts both bands out of it and cross-examines an empty
+ * band against the queue it was cut from. So there is no second query here to
+ * be separately unreadable; there is one read, and an unreadable or
+ * unbelievable one answers NONE.
  *
  * `--queue` exists so the suite can drive every branch without a network, a
  * token or a live queue — the same reason `patrol-clocks.mts` takes `--dir`.
+ * Its rows are now the whole open queue rather than one band.
  */
 function readQueue(): Json[] | null {
   const fixture = flags.get("--queue");
@@ -259,7 +303,6 @@ function readQueue(): Json[] | null {
   }
   const rows = gh([
     "issue", "list",
-    "--label", "founder-ordered",
     "--state", "open",
     "--limit", String(QUEUE_LIMIT),
     "--json", "number,title,labels,createdAt",
@@ -273,7 +316,7 @@ function none(why: string): never {
 }
 
 const rows = readQueue();
-if (rows === null) none("the founder-ordered queue could not be read — no escalation is ever made on a queue nobody could see");
+if (rows === null) none("the open queue could not be read — no escalation is ever made on a queue nobody could see");
 if (rows.length >= QUEUE_LIMIT) none(`${QUEUE_LIMIT} rows came back, which is the --limit — that is a floor, not a list`);
 
 /**
@@ -302,29 +345,62 @@ if (rows.length >= QUEUE_LIMIT) none(`${QUEUE_LIMIT} rows came back, which is th
  * five" running backwards, which is the one direction this gate must not have.
  */
 if (rows.some((row) => !Number.isInteger(Number(row?.number)))) {
-  none("a row in the founder-ordered queue has no usable issue number — a queue that cannot be read row by row is an unreadable queue");
+  none("a row in the open queue has no usable issue number — a queue that cannot be read row by row is an unreadable queue");
 }
 
-const items = rows
-  .map((row) => {
-    const labels = Array.isArray(row.labels)
-      ? row.labels.map((label: Json) => String(label?.name ?? ""))
-      : [];
-    return {
-      issueNumber: Number(row.number),
-      title: String(row.title ?? ""),
-      urgent: labels.includes("urgent"),
-      rank: rankFromLabels(labels),
-      /* ⚠ Handed through RAW: `filedKey` owns what a missing date means, and
-         two consumers normalising it differently is what finding 1 of PR
-         #722's review caught — `"undefined"` sorts last, `""` sorts first. */
-      createdAt: row.createdAt,
-      held: heldStatesFromLabels(labels),
-    };
-  })
-  .sort(compareOrderedBand);
+/**
+ * ⚠ **BOTH BANDS, CUT OUT OF THE ONE READ BY THE MODULE THAT ALREADY OWNS THE
+ * CUT (#1258).** `deriveBands` is `queue-standing-exceptions.mts`'s own reader —
+ * the same two labels, the same cross-examination of an empty band against the
+ * queue it came from. Re-filtering here would be a second copy of one question,
+ * and the first anyone would know is the two views disagreeing about what is at
+ * the top of his queue.
+ *
+ * It THROWS on an empty band it cannot believe. This gate fails toward NOT
+ * spending, so the throw becomes NONE rather than a fallback to the band it
+ * could read — believing half a reading is how #774's incident happened.
+ */
+let bands: { ordered: readonly BandRow[]; urgent: readonly BandRow[] };
+try {
+  bands = deriveBands(rows as unknown as BandRow[]);
+} catch (error) {
+  none(`the bands could not be believed — ${error instanceof Error ? error.message : String(error)}`);
+}
 
-if (items.length === 0) none("NEXT UP is empty — nothing is ordered");
+function toItem(row: Json) {
+  const labels = Array.isArray(row.labels)
+    ? row.labels.map((label: Json) => String(label?.name ?? ""))
+    : [];
+  return {
+    issueNumber: Number(row.number),
+    title: String(row.title ?? ""),
+    urgent: labels.includes("urgent"),
+    rank: rankFromLabels(labels),
+    /* ⚠ Handed through RAW: `filedKey` owns what a missing date means, and
+       two consumers normalising it differently is what finding 1 of PR
+       #722's review caught — `"undefined"` sorts last, `""` sorts first. */
+    createdAt: row.createdAt,
+    held: heldStatesFromLabels(labels),
+  };
+}
+
+/**
+ * ⚠ **HIS BAND FIRST, THEN URGENT — CONCATENATED, NEVER MERGED**, which is the
+ * order `queue-standing-exceptions.mts` already prints and #471's rule:
+ * `urgent` means *this cannot wait*, `founder-ordered` means *he chose the
+ * order*, and the two are not one list. A card carrying both belongs to his
+ * band, where `compareOrderedBand` already floats it to the top — so it is
+ * removed from the urgent tail rather than appearing twice.
+ */
+const orderedItems = bands.ordered.map((row) => toItem(row as unknown as Json)).sort(compareOrderedBand);
+const inOrderedBand = new Set(orderedItems.map((item) => item.issueNumber));
+const urgentItems = bands.urgent
+  .map((row) => toItem(row as unknown as Json))
+  .filter((item) => !inOrderedBand.has(item.issueNumber))
+  .sort(compareOrderedBand);
+const items = [...orderedItems, ...urgentItems];
+
+if (items.length === 0) none("neither band holds a card — nothing is ordered and nothing is urgent");
 
 /**
  * ⚠ **WHICH ROW IS "THE TOP" — the card says *"the top TAKEABLE card in NEXT UP
@@ -350,7 +426,7 @@ if (items.length === 0) none("NEXT UP is empty — nothing is ordered");
 const firstTakeable = items.find(
   (item) => !item.held.includes("blocked") && !item.held.includes("sitting"),
 );
-if (firstTakeable === undefined) none(`every one of the ${items.length} ordered card(s) is blocked or needs a sitting — a Fable shift cannot clear those either`);
+if (firstTakeable === undefined) none(`every one of the ${items.length} ordered or urgent card(s) is blocked or needs a sitting — a Fable shift cannot clear those either`);
 if (!firstTakeable.held.includes("fable")) {
   none(`the next card is #${firstTakeable.issueNumber}, which an Opus shift can take — Fable is not needed`);
 }

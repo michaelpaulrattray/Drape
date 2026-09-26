@@ -137,11 +137,17 @@ export const QUEUE_EXCLUSION_REASONS = [
     /**
      * ⚠ **THE `blocked` DEFECT AGAIN, ONE LABEL OVER (#999).** `#541`'s rule
      * makes this label mean *a design decision, or a change to what he judges*,
-     * and the standing orders bar an Opus shift from both. Nothing launches a
-     * Fable session for a BACKGROUND card — `next-up-escalation.mts` reads
-     * NEXT UP only — so a switch-reached card carrying it is not on offer to
-     * the nights as they run. Counting it kept `check-park.ps1` from parking on
-     * nights where it was the only card left.
+     * and the standing orders bar an Opus shift from both. Counting it kept
+     * `check-park.ps1` from parking on nights where it was the only card left.
+     *
+     * ⚠ **THIS BLOCK SAID *"nothing launches a Fable session for a BACKGROUND
+     * card — `next-up-escalation.mts` reads NEXT UP only"* UNTIL #1258, AND
+     * THAT SENTENCE IS NOW HALF TRUE.** The gate reads his ordered band AND the
+     * urgent band, so a background card carrying `urgent` + `awaiting-fable`
+     * IS escalated now. #1222 is the specimen: `bug` + `urgent` + `rung:N2`,
+     * judgment-class, frozen because the gate read one band. A background card
+     * that is merely switch-reached is still not on offer — it takes his
+     * `urgent` to reach the gate.
      *
      * After `blocked`, so a card carrying both reads as blocked: a Fable
      * session could not take it either while the thing it waits on stands.
