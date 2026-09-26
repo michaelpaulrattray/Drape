@@ -21,6 +21,7 @@ import {
 import {
   CASTING_V2_SIGN_PRICE_CREDITS,
   CAST_PACKAGE_VIEWS,
+  CAST_PACKAGE_WARDROBE_SPEC,
   CAST_PACKAGE_VIEW_PRICE,
   castPackageView,
   composePackageViewPrompt,
@@ -884,6 +885,24 @@ describe("#1278 part 1 — a signed view is dressed by the cast's own brief", ()
       }
       expect(undescribed, `${angle} carries no DESCRIPTION label`).not.toMatch(/^DESCRIPTION: /m);
     }
+    /*
+      ⚠ AND THE LOOP ABOVE CANNOT POLICE THOSE BYTES, WHICH THE SABOTAGE PROVED.
+      It reads the sentences from the same constant it is checking, so editing the
+      constant moves both sides together and the arm stays green — a tautology
+      wearing a guard's clothes (deriving from a copy is not deriving). Changing
+      "none is needed" to "none is required" in the cohort file survived it.
+
+      So the bytes are pinned by HASH. This is the one place a frozen value is the
+      right tool rather than the drift this file warns about: the claim is
+      specifically THESE BYTES MUST NOT MOVE, because every Cast with no brief on
+      record renders from them and #1278 must not touch a single one. The digest is
+      origin/main's — proven byte-identical at the wire before it was recorded.
+    */
+    const undescribedRule = PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences.join(" ");
+    expect(
+      createHash("sha256").update(undescribedRule, "utf8").digest("hex"),
+      "the undescribed reference rule changed — a Cast with no brief would render differently",
+    ).toBe("dfebf3b9ab72701fdf88137af88f04aa7e87401d743441cf7f160d180ccfda43");
   });
 
   it("an absent, empty or whitespace brief is the same fact as no brief", () => {
@@ -955,13 +974,25 @@ describe("#1278 part 1 — a signed view is dressed by the cast's own brief", ()
       graphic on the chest", which a chest-up reference may not resolve. The product
       was calling her outfit an addition and refusing the slice.
     */
+    /*
+      ⚠ THE SKIP CONDITION IS STRUCTURAL, AND AN EARLIER DRAFT'S WAS NOT — the
+      sabotage caught it. That draft skipped an angle when the described and
+      undescribed sentences were EQUAL, meaning "this is the close-up, which keeps
+      its own". Remove the narrowing and every angle becomes equal, so every angle
+      is skipped and the arm passes with nothing checked. A guard whose skip
+      condition is satisfied BY THE DEFECT reads its own failure as "not
+      applicable". The population is now named by the shared constant, and counted,
+      so it has a floor.
+    */
+    let narrowed = 0;
     for (const angle of CAST_VIEW_ANGLES) {
-      const undescribed = packageViewExpectation(angle, null, null).wardrobe;
+      if (packageViewExpectation(angle, null, null).wardrobe !== CAST_PACKAGE_WARDROBE_SPEC) continue;
       const described = packageViewExpectation(angle, null, SIFR).wardrobe;
-      if (undescribed === described) continue; /* the close-up keeps its own sentence */
       expect(described, angle).toContain("does not show AND the description does not name");
       expect(described, angle).toContain("a failure wherever they appear");
+      narrowed += 1;
     }
+    expect(narrowed, "the shared wardrobe sentence must cover several views").toBeGreaterThanOrEqual(4);
   });
 
   it("⚠ the judge narrows WITH the generator and never apart from it", () => {
