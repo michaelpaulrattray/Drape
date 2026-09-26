@@ -11388,6 +11388,10 @@
       "path": "server/castingV2/briefCompiler.test.ts"
     },
     {
+      "id": "test:server/castingV2/briefDressesJudge.test.ts",
+      "path": "server/castingV2/briefDressesJudge.test.ts"
+    },
+    {
       "id": "test:server/castingV2/briefFactsRole.test.ts",
       "path": "server/castingV2/briefFactsRole.test.ts"
     },
