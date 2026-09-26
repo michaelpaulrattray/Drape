@@ -55,7 +55,14 @@ async function clippingSelectors(): Promise<string[]> {
   const found: string[] = [];
   for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     const body = match[2];
-    if (!/text-overflow:\s*ellipsis/.test(body)) continue;
+    /*
+      ⚠ ANCHORED ON THE WHOLE VALUE. Unanchored, `text-overflow: ellipsis-x`
+      reads as a clipping rule — which a sabotage run caught: mangling the
+      property's VALUE across the whole stylesheet left this suite green,
+      because the substring still matched. Wrong in the safe direction, and
+      still a reader saying it read something it did not.
+    */
+    if (!/text-overflow:\s*ellipsis\s*;/.test(body)) continue;
     const selector = match[1].trim().split("\n").pop()?.trim();
     if (selector) found.push(selector);
   }
