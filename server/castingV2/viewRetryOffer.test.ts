@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { Model, ModelAsset } from "../../drizzle/schema";
+import { VIEW_RETRY_WORDS } from "../../client/src/features/castingV2/viewRetryRow";
 import {
-  UNJUDGED_SLOT_NOTE,
   castSlotRetryOffer,
   projectSignedCast,
 } from "./castProjection";
@@ -141,7 +141,10 @@ describe("what a tile offers, and what it costs", () => {
   it("a view that failed was refunded, so asking again is a PAID view", () => {
     const slots = slotsOf([anchor(), asset(), failed("backFull")]);
     expect(slots.get("backFull")?.state).toBe("failed-refunded");
-    expect(slots.get("backFull")?.retry).toEqual({ priceCredits: CAST_PACKAGE_VIEW_PRICE });
+    expect(slots.get("backFull")?.retry).toEqual({
+      priceCredits: CAST_PACKAGE_VIEW_PRICE,
+      reason: "refunded",
+    });
   });
 
   it("a view nobody checked was charged and kept, so asking again is FREE — and it says why", () => {
@@ -149,12 +152,15 @@ describe("what a tile offers, and what it costs", () => {
     const slot = slots.get("closeUp");
     expect(slot?.state).toBe("ready");
     expect(slot?.unjudged).toBe(true);
-    expect(slot?.retry).toEqual({ priceCredits: 0 });
+    expect(slot?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
     /*
-      The sentence is not decoration: a free button under one tile and not the
-      others, with nothing said, is a control nobody has a basis for pressing.
+      The word is not decoration: a free link under one tile and not the others,
+      with nothing said, is a control nobody has a basis for pressing. It used to
+      be a SENTENCE here (`UNJUDGED_SLOT_NOTE`, *"We didn't get to check this
+      one"*) and it is one word on the row since his ruling of 2026-09-26 — so
+      the note is null and the reason carries the fact.
     */
-    expect(slot?.note).toBe(UNJUDGED_SLOT_NOTE);
+    expect(slot?.note).toBeNull();
   });
 
   it("a view that arrived and WAS checked offers nothing at all", () => {
@@ -174,7 +180,19 @@ describe("what a tile offers, and what it costs", () => {
     const slot = slots.get("frontClose");
     expect(slot?.standIn).toBe(true);
     expect(slot?.refundedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
-    expect(slot?.retry).toEqual({ priceCredits: CAST_PACKAGE_VIEW_PRICE });
+    expect(slot?.retry).toEqual({
+      priceCredits: CAST_PACKAGE_VIEW_PRICE,
+      reason: "refunded",
+    });
+    /*
+      ⚠ AND ITS SENTENCE IS GONE WITH THE OTHER ONE (#1347). This slot said
+      *"The face you signed, standing in — the close-up didn't arrive; refunded"*
+      until 2026-09-26; under his *"one muted line, nothing else"* it says
+      `Refunded` like the empty tile, and the fact that the picture is her Master
+      rather than her Portrait is no longer stated. Asserted rather than left
+      implicit, because it is the one thing this change actually costs.
+    */
+    expect(slot?.note).toBeNull();
   });
 
   it("a stand-in with NOTHING refunded is a Cast that never bought that view — no offer", () => {
@@ -201,7 +219,7 @@ describe("what a tile offers, and what it costs", () => {
       reason: the SAME rows, terminal, do offer.
     */
     const terminal = slotsOf([anchor(), unjudged("closeUp")]);
-    expect(terminal.get("closeUp")?.retry).toEqual({ priceCredits: 0 });
+    expect(terminal.get("closeUp")?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
   });
 
   it("the rule is a pure reading of the slot, and it refuses every other state", () => {
@@ -217,10 +235,52 @@ describe("what a tile offers, and what it costs", () => {
     expect(castSlotRetryOffer(
       { state: "failed-refunded", refundedCredits: null },
       price,
-    )).toEqual({ priceCredits: price });
+    )).toEqual({ priceCredits: price, reason: "refunded" });
     expect(castSlotRetryOffer(
       { state: "ready", unjudged: true, refundedCredits: null },
       price,
-    )).toEqual({ priceCredits: 0 });
+    )).toEqual({ priceCredits: 0, reason: "unchecked" });
+  });
+
+  /*
+    THE PAIR HIS ROW RESTS ON (#1347), and it is asserted rather than assumed.
+
+    His line is a word and a link that appear together or not at all. The offer
+    carries both, so the shapes that would break it are structurally impossible
+    — but "structurally impossible" is a claim about a type, and a branch added
+    later can still return a price with a reason that has no word behind it.
+    These two arms hold the population from BOTH ends over every slot shape the
+    projection can produce, so a third road cannot ship half-drawn.
+  */
+  it("every offer carries a reason, and every reason is one the row has a word for", () => {
+    const shapes: Array<[string, ReturnType<typeof slotsOf>]> = [
+      ["failed", slotsOf([anchor(), asset(), failed("backFull")])],
+      ["unjudged", slotsOf([anchor(), unjudged("closeUp")])],
+      ["stand-in refunded", slotsOf([anchor(), failed("frontClose")])],
+      ["all good", slotsOf([anchor(), asset()])],
+      ["building", slotsOf([anchor(), unjudged("closeUp")], { status: "provisioning" })],
+    ];
+    let offers = 0;
+    for (const [name, slots] of shapes) {
+      for (const slot of slots.values()) {
+        if (!slot.retry) continue;
+        offers += 1;
+        expect(
+          VIEW_RETRY_WORDS[slot.retry.reason],
+          `${name}/${slot.angle}: reason "${slot.retry.reason}" has no word on the row`,
+        ).toBeTruthy();
+      }
+    }
+    /* The floor, so a reader that found no offer at all cannot pass silently. */
+    expect(offers).toBeGreaterThanOrEqual(3);
+  });
+
+  it("the row has no word the server cannot ask for — the map is not wider than the union", () => {
+    /*
+      The other direction, and the one working law 4 is about: a word sitting in
+      the client's map with no reason producing it is a sentence nobody can ever
+      read, and it would make the arm above pass forever.
+    */
+    expect(Object.keys(VIEW_RETRY_WORDS).sort()).toEqual(["refunded", "unchecked"]);
   });
 });

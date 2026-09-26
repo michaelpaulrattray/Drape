@@ -36,9 +36,17 @@ export type CastSlotProjection = {
   state: CastSlotState;
   url: string | null;
   /**
-   * The sentence the room shows in place of, or beneath, the picture. Written
-   * server-side so every surface confesses the same way, and so no client can
-   * invent a friendlier version of a refund.
+   * The sentence the room shows IN PLACE OF the picture. Written server-side so
+   * every surface confesses the same way, and so no client can invent a
+   * friendlier version of a refund.
+   *
+   * ⚠ **"or beneath" left this sentence 2026-09-26 (his Desk reply 224).** Two
+   * constants used to reach the room as a caption UNDER a tile that had a
+   * picture in it; his ruling replaced both with the row's one muted word, so
+   * the only non-null value left is the empty tile's confession. A note on a
+   * slot that HAS a picture would now be drawn nowhere — which is the whole
+   * point of his rule, and is why a future sentence for a delivered view is a
+   * design decision rather than a field that is already waiting for it.
    */
   note: string | null;
   /** What actually went back, when something did. Never a promise. */
@@ -101,13 +109,37 @@ export type CastSlotProjection = {
  * and kept, so asking again is free (his ruling on #1220: *"go with the free
  * try again"*).
  *
- * `priceCredits` is the whole difference. There is ONE button on the tile with
- * one price on it — never two buttons and never a word the customer has to
- * interpret, which is what "free" would be beside a price somewhere else.
+ * `priceCredits` is the whole difference between the two roads.
+ *
+ * ⚠ **AND IT IS NO LONGER ON THE BUTTON — his ruling, 2026-09-26 (Desk reply
+ * 224), verbatim: *"No credit count in the row."*** This docblock used to end
+ * *"ONE button on the tile with one price on it"*, which was his own earlier
+ * rule (#1208) and is superseded: he looked at the real strip and the row had
+ * become louder than the broken picture above it. The price is still the thing
+ * the entrance charges and it is still read here — what changed is that the
+ * customer is no longer shown it in that line.
  */
 export type CastSlotRetry = {
-  /** 0 is a real price and says so on the button. */
+  /** 0 is a real price. The entrance charges it; the row does not say it. */
   priceCredits: number;
+  /**
+   * WHY THIS VIEW MAY BE ASKED FOR AGAIN — a road word, one per branch below,
+   * and the only thing the row's muted word is derived from.
+   *
+   * ⚠ **It rides INSIDE the offer rather than beside it, and that is the whole
+   * reason it is here.** His row is *"Unchecked · Try again"* / *"Refunded ·
+   * Try again"* — a word and a link that appear together or not at all. A
+   * second top-level field answering "what happened to this view" would be a
+   * parallel reading of the three branches {@link castSlotRetryOffer} already
+   * walks (working law 4), and it could drift into a word with no button under
+   * it, or a button with no word. Carried on the offer, the pair is structural:
+   * there is no shape in which one exists without the other.
+   *
+   * A road word, never the copy: the client owns *"Unchecked"* and
+   * *"Refunded"* (`client/src/features/castingV2/viewRetryRow.ts`), the same
+   * split the refine's stage words take.
+   */
+  reason: "unchecked" | "refunded";
 };
 
 export type CastCapability = "full" | "calibrated" | "unsupported";
@@ -209,36 +241,34 @@ export type SignedCastProjection = {
 export const FAILED_SLOT_CONFESSION = "This view didn't arrive — refunded";
 
 /**
- * THE VIEW NOBODY CHECKED, SAID OUT LOUD (#1220 slice 2).
+ * ⚠ **THE TWO SENTENCES THAT USED TO SIT HERE ARE GONE — his ruling,
+ * 2026-09-26 (Desk reply 224), on the real strip, verbatim: *"Too heavy — the
+ * good tiles have become louder than the broken one… one muted line under the
+ * name, nothing else."***
  *
- * Every view is checked against the face she signed before it is delivered.
- * When that check cannot answer, D-246 delivers the picture anyway rather than
- * charging nothing for something that may be perfect — and until now the room
- * said nothing at all, so a view that was never looked at was indistinguishable
- * from one that passed.
+ * They were `UNJUDGED_SLOT_NOTE` (*"We didn't get to check this one"*, #1220
+ * slice 2) and `ANCHOR_STANDIN_NOTE` (*"The face you signed, standing in — the
+ * close-up didn't arrive; refunded"*). Both were captions under a tile that
+ * also carried a Try again, so a view the customer was NOT unhappy with wore
+ * three lines while the empty one wore two. His replacement is one muted line
+ * carrying a single word and the link: *"Unchecked · Try again"*, *"Refunded ·
+ * Try again"*.
  *
- * ⚠ **THE SENTENCE IS WHY THE BUTTON EXISTS, AND WITHOUT IT THE BUTTON IS THE
- * MACHINE SHOWING THROUGH.** A free Try again sitting under one tile and not
- * the others, with nothing said, is a control the customer has no basis for
- * pressing — the disappearing-technology law's second question, failed. It
- * names what happened in her words and never how: no model, no verdict, no
- * axis.
+ * **What the removal costs, named rather than discovered later.** The unjudged
+ * sentence existed to give the free button a BASIS — the
+ * disappearing-technology law's second question — and *"Unchecked"* is the same
+ * fact in one word, so nothing is lost there. The stand-in sentence also said
+ * *this picture is the face you signed, not the close-up you bought*, and that
+ * IS a fact the word drops: a legacy Cast (v2/v3, the only eras that bought a
+ * `frontClose`) whose portrait failed now shows her Master twice, once labelled
+ * Portrait, with *"Refunded · Try again"* under it. It reads honestly — the
+ * money came back and the fix is offered — and it no longer says which picture
+ * she is looking at. Raised on #1347 rather than decided quietly; a third word
+ * is the repair if his eye wants that fact back.
+ *
+ * `note` survives for exactly one case, which he kept by name: the empty
+ * tile's {@link FAILED_SLOT_CONFESSION}.
  */
-export const UNJUDGED_SLOT_NOTE = "We didn't get to check this one";
-
-/**
- * The signed face standing in for a close-up that never came.
- *
- * Its own sentence rather than the confession above, because the slot is not
- * empty: the customer is looking at the exact face they signed. What they are
- * owed an explanation for is the refund, not the picture.
- *
- * It names the FRAMING rather than the resolution (package v2). The stand-in
- * now differs from what was bought in both, and "shown at the resolution you
- * signed" was true about the smaller half while quietly omitting that the
- * close-up crop is missing entirely.
- */
-export const ANCHOR_STANDIN_NOTE = "The face you signed, standing in — the close-up didn't arrive; refunded";
 
 /**
  * ZERO OF N — said once, at the top of the room, not five times in a strip.
@@ -302,12 +332,22 @@ export function castSlotRetryOffer(
   slot: Pick<CastSlotProjection, "state" | "standIn" | "unjudged" | "refundedCredits">,
   viewPrice: number,
 ): CastSlotRetry | null {
-  if (slot.state === "failed-refunded") return { priceCredits: viewPrice };
-  if (slot.state !== "ready") return null;
-  if (slot.standIn === true) {
-    return slot.refundedCredits === null ? null : { priceCredits: viewPrice };
+  if (slot.state === "failed-refunded") {
+    return { priceCredits: viewPrice, reason: "refunded" };
   }
-  if (slot.unjudged === true) return { priceCredits: 0 };
+  if (slot.state !== "ready") return null;
+  /*
+    THE STAND-IN IS A REFUNDED VIEW WEARING A PICTURE, so it says the same word
+    as the empty tile. Its own close-up never arrived and the money went back —
+    the only difference is that the signed face fills the hole rather than a
+    confession, which is a fact about the PICTURE and not about what happened.
+  */
+  if (slot.standIn === true) {
+    return slot.refundedCredits === null
+      ? null
+      : { priceCredits: viewPrice, reason: "refunded" };
+  }
+  if (slot.unjudged === true) return { priceCredits: 0, reason: "unchecked" };
   return null;
 }
 
@@ -473,9 +513,10 @@ export function projectSignedCast(input: {
         state: "ready",
         url: entry.landed.storageUrl,
         /* Nobody looked at this one — the room needs the fact, not only the
-           log (D-246, #1220). It is what makes its Try again free, and the
-           sentence is what makes that button pressable on a basis. */
-        note: wasDeliveredUnjudged(entry.landed) ? UNJUDGED_SLOT_NOTE : null,
+           log (D-246, #1220). It is what makes its Try again free, and since
+           2026-09-26 the fact reaches the customer as the row's one word rather
+           than as a sentence: `unjudged` below is what the word is read from. */
+        note: null,
         refundedCredits: null,
         ...(wasDeliveredUnjudged(entry.landed) ? { unjudged: true as const } : {}),
       };
@@ -485,7 +526,8 @@ export function projectSignedCast(input: {
       The headshot always has something to show — the anchor fills it, which is
       also what keeps the snapshot authority's "a package has a displayed
       headshot" invariant true through any provider failure. So it confesses to
-      the refund rather than to an absence.
+      the refund rather than to an absence — since 2026-09-26 in the row's one
+      word (`Refunded`), which `refundedCredits` here is what earns.
     */
     if (angle === "frontClose" && anchor && entry.failure) {
       return {
@@ -493,7 +535,7 @@ export function projectSignedCast(input: {
         label,
         state: "ready",
         url: anchor.storageUrl,
-        note: ANCHOR_STANDIN_NOTE,
+        note: null,
         refundedCredits: entry.failure.refunded,
         standIn: true,
       };
