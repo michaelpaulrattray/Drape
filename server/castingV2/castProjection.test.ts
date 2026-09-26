@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { Model, ModelAsset } from "../../drizzle/schema";
 import {
-  ANCHOR_STANDIN_NOTE,
   FAILED_SLOT_CONFESSION,
   projectSignedCast,
   TOTAL_LOSS_CONFESSION,
@@ -225,12 +224,18 @@ describe("the signed Cast projection", () => {
       lineage,
     });
     const slot = projection.slots.find((entry) => entry.angle === "frontClose");
-    // The customer is looking at the exact face they signed, so the confession
-    // is about the refund rather than about an absence.
+    // The customer is looking at the exact face they signed, so what she is owed
+    // an explanation for is the refund rather than an absence.
     expect(slot?.state).toBe("ready");
     expect(slot?.url).toBe("https://cdn.example/anchor.png");
-    expect(slot?.note).toBe(ANCHOR_STANDIN_NOTE);
     expect(slot?.refundedCredits).toBe(50);
+    /*
+      ⚠ IT SAYS SO IN THE ROW'S ONE WORD NOW, NOT IN A SENTENCE UNDER THE TILE
+      (#1347, his Desk reply 224). `ANCHOR_STANDIN_NOTE` is gone; the refund is
+      what earns `reason: "refunded"`, and the room draws `Refunded · Try again`.
+    */
+    expect(slot?.note).toBeNull();
+    expect(slot?.retry).toEqual({ priceCredits: 50, reason: "refunded" });
   });
 
   it("opens the room on the signed master while the package is still building", () => {
@@ -458,7 +463,7 @@ describe("a view being asked for again (#1235)", () => {
     const atRest = backFull(projectSignedCast({ model: model(), assets, lineage }));
     // The control: without a running retry this is a confession WITH an offer.
     expect(atRest.state).toBe("failed-refunded");
-    expect(atRest.retry).toEqual({ priceCredits: 50 });
+    expect(atRest.retry).toEqual({ priceCredits: 50, reason: "refunded" });
     expect(atRest.retrying).toBeUndefined();
 
     const asking = backFull(projectSignedCast({
@@ -488,7 +493,7 @@ describe("a view being asked for again (#1235)", () => {
     const assets = ledger(anchor(), unjudged);
 
     const atRest = backFull(projectSignedCast({ model: model(), assets, lineage }));
-    expect(atRest.retry).toEqual({ priceCredits: 0 });
+    expect(atRest.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
     expect(atRest.unjudged).toBe(true);
 
     const asking = backFull(projectSignedCast({
@@ -517,7 +522,7 @@ describe("a view being asked for again (#1235)", () => {
       room held one angle in one string and disabled every button from it.
     */
     expect(other.state).toBe("failed-refunded");
-    expect(other.retry).toEqual({ priceCredits: 50 });
+    expect(other.retry).toEqual({ priceCredits: 50, reason: "refunded" });
     expect(other.retrying).toBeUndefined();
   });
 
@@ -555,10 +560,16 @@ describe("the failure copy promises nothing that does not exist (#1208)", () => 
     "in a future",
   ];
 
+  /*
+    ⚠ `ANCHOR_STANDIN_NOTE` LEFT THIS POPULATION BY BEING DELETED (#1347), not by
+    being excused — the population is every customer-facing failure sentence the
+    projection still holds, and it is now two. Recorded because a suite that
+    quietly loses a subject reads as coverage it no longer has
+    (`directory-population-loses-promoted-subject`).
+  */
   for (const [name, sentence] of Object.entries({
     FAILED_SLOT_CONFESSION,
     TOTAL_LOSS_CONFESSION,
-    ANCHOR_STANDIN_NOTE,
   })) {
     it(`${name} names no unbuilt repair path`, () => {
       for (const promise of UNBUILT_PROMISES) {
