@@ -131,8 +131,23 @@ export type CrewPipelineGroup = {
   /**
    * ⚠ **WOULD A SHIFT BE ABLE TO WORK THIS CARD, IF ONLY A SWITCH REACHED IT?**
    * (#893.) `true` means the group holds ordinary background work; `false`
-   * means its cards are waiting on something by design — his word, his order,
-   * a rung, or a blocker the card names.
+   * means its cards are waiting on something by design — his order, a rung, a
+   * ruling of his about the WORK, or a blocker the card names.
+   *
+   * ⚠ **THAT `false` LIST SAID "his word" UNTIL #1248, AND THAT ONE PHRASE IS
+   * WHAT MADE THIS FIELD READ AS CONTRADICTING THE BLURB BESIDE IT.** Every
+   * group drawn in *Not on any road* needs his word before a card there gets a
+   * switch label — the section says so in its own sentence — so "his word" is
+   * true of the `true` groups as well and cannot be a `false` criterion. What
+   * separates them is narrower and is the only question this field answers:
+   * **once a card here HAS a switch label, is the work ordinary?** `debt` and
+   * `toolbelt` are yes; `scope-change` is no, because the ruling IS the work.
+   *
+   * ⚠ **AND THE ANSWER IS NOW DRAWN ON HIS PAGE FROM THIS FIELD, once, rather
+   * than restated in prose beside it** (`backgroundWorkSentence`). That is the
+   * repair #1248 asked for: `debt`'s blurb said *"it needs your word because
+   * the scope varies"* four lines from `backgroundWork: true`, and one of the
+   * two had to stop being an independent claim.
    *
    * **Every group here except `switched` is unreached by every switch, by
    * construction** — `pipelineGroupFor` files a card carrying any switch label
@@ -250,7 +265,13 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
     key: "debt",
     label: "Debt",
     queueLabel: "debt",
-    blurb: "Carded cleanup — it needs your word because the scope varies.",
+    /* ⚠ **IT READ *"Carded cleanup — it needs your word because the scope
+       varies"* UNTIL #1248, four lines from `backgroundWork: true`, whose own
+       docblock defined `true` as ordinary background work.** The blurb says what
+       the group HOLDS now; whether a shift could work it is the field's answer
+       and is drawn from the field. Neither half was deleted — the scope really
+       does vary, and that is why these cards arrive without a label. */
+    blurb: "Carded cleanup, and the scope varies from card to card.",
     home: "here",
     elsewhere: null,
     /* ⚠ THE SPECIMEN. #804 — a billing defect out of a PR review — sat here
@@ -388,6 +409,62 @@ export const CREW_LADDER_GROUP_KEYS: readonly string[] =
  */
 export const CREW_UNREACHABLE_GROUP_KEYS: readonly string[] =
   CREW_PIPELINE_GROUPS.filter((group) => group.backgroundWork).map((group) => group.key);
+
+/**
+ * ⚠ **THE ONE SENTENCE THAT SAYS WHETHER A GROUP HOLDS ORDINARY WORK, DRAWN
+ * FROM `backgroundWork` AND NOWHERE ELSE (#1248).**
+ *
+ * The defect it closes: `debt` carried `backgroundWork: true` and a blurb that
+ * said *"it needs your word because the scope varies"*, in the same object, four
+ * lines apart. One said the founder's word was required; the other, by its own
+ * field docblock, said ordinary background work. `CREW_UNREACHABLE_GROUP_KEYS`
+ * derives from the field and `crew-count-queue.mts` prints that reading at every
+ * shift start — so the number a shift is told about untakeable work rested on a
+ * flag contradicted by the words beside it.
+ *
+ * Two claims about one fact always drift (working law 4). So the blurbs stopped
+ * making this claim and his page draws it here: **the field is the answer, and
+ * the page renders the field.**
+ *
+ * `null` for a group the pipeline block does not draw — the sentence is about
+ * the *Not on any road* rows, and a group homed elsewhere already has a section
+ * of its own saying what it waits for.
+ */
+export function backgroundWorkSentence(group: CrewPipelineGroup): string | null {
+  if (group.home !== "here") return null;
+  return group.backgroundWork
+    ? "Real work — it only wants a switch label from you."
+    : "Not ordinary background work: it waits by design.";
+}
+
+/**
+ * THE CLAIM A `backgroundWork: true` BLURB MAY NOT MAKE, and it is one
+ * direction only.
+ *
+ * ⚠ **A group whose work is ordinary must not also say in prose that his word
+ * decides it** — that is the exact pair #1248 measured. The reverse is fine: a
+ * `false` group may say whatever it likes, because "it waits by design" is
+ * precisely what its blurb is there to explain.
+ *
+ * ⚠ **Its limit, stated rather than hidden: it reads the spellings this page
+ * actually uses, so a new wording is invisible to it.** That is why the arm in
+ * `server/crewPipelineGroups.test.ts` ALSO pins every `true` group's blurb
+ * character for character — a phrase reader and a pin fail differently, and the
+ * pin is what catches a wording nobody thought of. The positive control is the
+ * exact string `debt` carried: it must read as a claim.
+ */
+export const FOUNDER_WORD_CLAIMS: readonly string[] = [
+  "needs your word",
+  "yours to rule",
+  "your own ruling",
+  "this one is yours",
+  "without your word",
+];
+
+export function blurbClaimsHisWord(blurb: string): boolean {
+  const haystack = blurb.toLowerCase();
+  return FOUNDER_WORD_CLAIMS.some((claim) => haystack.includes(claim));
+}
 
 /**
  * THE RUNG LABEL — `rung:N3` places a card under ladder rung N3 (#493).

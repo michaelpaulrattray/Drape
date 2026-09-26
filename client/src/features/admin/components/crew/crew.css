@@ -1080,6 +1080,14 @@ a.dp-crew__hold:hover {
   color: var(--meta);
 }
 
+/* ⚠ #1248 — whether a group holds ordinary work is drawn from `backgroundWork`,
+   never restated in the blurb beside it. It sits in the same line at the same
+   size and only carries a little more weight, because it is the answer the
+   shift's own counter reads and he should be able to see it. */
+.dp-crew__stance {
+  color: var(--metaStrong);
+}
+
 .dp-crew__titles {
   margin-top: var(--s-2);
   margin-left: 2px;
