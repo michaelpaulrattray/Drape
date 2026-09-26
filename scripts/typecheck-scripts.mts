@@ -157,9 +157,41 @@ function main(): void {
   rmSync(derivedPath, { force: true });
 }
 
-/* Importable for its guard (`server/scriptsTypecheckPopulation.test.ts`), which
-   drives `untrackedScriptFiles` against real temporary repositories — so the
-   rule is proven at git rather than at a comment. */
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
-  main();
+/*
+  AM I THE THING THAT WAS RUN? — ASKED OF THE PLATFORM, NOT OF ARGV (#668).
+
+  This module is both a library and a command: `server/scriptsTypecheckPopulation.test.ts`
+  imports `untrackedScriptFiles` to drive it against real temporary repositories,
+  and `check:scripts` runs the file. The first shape of this line hand-rolled the
+  question by comparing `process.argv[1]` to `import.meta.filename` — the eighth
+  spelling of an idiom this repository spent a card removing, and the way it goes
+  wrong is GREEN: on Windows `import.meta.url` is `file:///C:/…` while
+  `process.argv[1]` is a backslashed path, so the comparison never matches, the
+  command prints nothing and exits 0, and a silent no-op is indistinguishable
+  from a clean run.
+
+  `import.meta.main` needs no argv and no path to spell wrong. There is
+  deliberately no shared helper — a helper leaves a hop to get wrong.
+*/
+
+/*
+  ⚠ AND AN OLD RUNTIME MAKES IT `undefined`, WHICH IS FALSY IN BOTH DIRECTIONS.
+
+  Before Node v24.2 every converted command block becomes a no-op that exits 0 —
+  the same green silence, arriving through the runtime instead of the path
+  spelling. That matters more here than almost anywhere: this file IS a check, so
+  a no-op means `pnpm check` reports the scripts tree clean having typechecked
+  nothing. Refused out loud instead.
+
+  A THROW rather than `process.exit`, because a vitest suite imports this module
+  and `process.exit(1)` inside a worker kills the run.
+*/
+if (typeof import.meta.main === "undefined") {
+  throw new Error(
+    "REFUSED — this Node does not support `import.meta.main` (needs >= 24.2, this is "
+      + `${process.version}). Without it this check would exit 0 having typechecked `
+      + "nothing, and a clean scripts tree looks exactly like one nobody read.",
+  );
 }
+
+if (import.meta.main) main();

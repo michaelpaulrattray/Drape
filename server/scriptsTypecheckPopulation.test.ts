@@ -3,8 +3,16 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { untrackedScriptFiles } from "../scripts/typecheck-scripts.mjs";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/* This suite spawns real `git` processes — `init`, `add`, `commit` and the
+   runner's own `ls-files`, in two throwaway repositories — so it is in #548's
+   population and declares that class's timeout rather than running inside
+   vitest's 5s default, which goes red under load on somebody's machine and not
+   in CI. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 /**
  * THE SCRIPTS TYPECHECK'S POPULATION IS WHAT THE REPOSITORY HAS (#1231).
