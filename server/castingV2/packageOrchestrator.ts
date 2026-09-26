@@ -49,8 +49,22 @@
  *    customer's paid view arrive*, and an unmapped engine fault is the
  *    commonest way one does not. Deriving would have taken a view failing with
  *    `unknown` from two attempts to ONE — a narrowing folded into the card that
- *    ordered the opposite. The existing arm caught it; the divergence between
- *    the two sets is filed as its own card rather than settled in passing.
+ *    ordered the opposite. The existing arm caught it.
+ *
+ *    ✅ **AND THE QUESTION IS WRITTEN DOWN NOW RATHER THAN RESTATED HERE
+ *    (#1212, 2026-09-26).** It lives as `mayStillArrive` in
+ *    `providers/types.ts`, beside `isRetryable` and `refusesAfterRender`,
+ *    because the three of them read the SAME union and mean different things —
+ *    and a hand-written list of class names on a paid road is how the third one
+ *    drifts from the other two without a single test going red. Every class on
+ *    the terminal list earns its place by its OWN declaration already saying a
+ *    second attempt reaches the identical answer; the six that read like
+ *    candidates and are deliberately left retrying are named there too, with
+ *    why. ⚠ **Nothing a customer meets on THIS road changes**: the terminal
+ *    set adds `cannot_say`, which this road cannot raise — the only raiser is
+ *    `refineService.ts`'s `RepaintCannotSayError`, on the repaint road, and it
+ *    is not a `ProviderError`. The value is the derivation and its arms, not a
+ *    wait saved here.
  * 3. **A lost commit deletes its object.** If the fence refuses — the sweep got
  *    here first — nothing will ever reference those bytes, and the cleanup
  *    worker only deletes keys a row handed it. Best-effort delete now, or it is
@@ -70,7 +84,12 @@ import {
 } from "../db/castingV2Sign";
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete, storagePut } from "../storage";
-import { ProviderError, type IdentityEngine, type ReferenceImage } from "../providers/types";
+import {
+  ProviderError,
+  mayStillArrive,
+  type IdentityEngine,
+  type ReferenceImage,
+} from "../providers/types";
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import {
   CAST_PACKAGE_VIEWS,
@@ -725,20 +744,41 @@ export async function renderViewAttempts<T>(
         "[packageOrchestrator] view generation failed",
       );
       /*
-        A content refusal or a capability refusal will refuse identically on a
-        second attempt (§H.5) — retrying burns the customer's time to reach the
-        same answer. Transport and rate limits were already retried inside the
-        adapter.
+        IS ASKING AGAIN THE WAY TO GET HER THE VIEW SHE PAID FOR?
 
-        ⚠ **THIS IS NOT `isRetryable`, AND THE DIFFERENCE IS DELIBERATE — SEE
-        THE HEADER, §2.** Deriving it from the provider contract was written,
-        driven, and REVERTED inside #1208: the contract calls `unknown` terminal
-        so an unmapped fault fails closed, and this road's own arm caught the
-        consequence — a paid view failing with an unmapped engine error would
-        have dropped from two attempts to one, which is the opposite of what
-        this card was ordered to do.
+        ⚠ **THE LOOP NO LONGER ANSWERS THAT ITSELF (#1212).** It named two
+        classes by hand, which made this road the third place in the product
+        holding an opinion about the same union — and a hand-written list on a
+        paid road drifts silently from the classes it was written against.
+        `mayStillArrive` is that question, declared beside the other two in
+        `providers/types.ts` where the classes are.
+
+        ⚠ **IT IS STILL NOT `isRetryable`, AND THAT IS THE WHOLE POINT — SEE
+        THE HEADER, §2.** Deriving from the transport's contract was written,
+        driven and REVERTED inside #1208: it calls `unknown` terminal so an
+        unmapped fault fails closed, and this road's own arm caught the
+        consequence — a paid view failing on an unmapped engine error would
+        have dropped from two attempts to one, the opposite of what that card
+        ordered. The new predicate keeps `unknown` retrying and says why.
+
+        ⚠ **NOTHING A CUSTOMER MEETS ON THIS ROAD CHANGES, AND THE FIRST
+        DRAFT OF THIS PARAGRAPH SAID OTHERWISE.** It claimed `cannot_say`
+        going terminal turned fifteen calls into five. **Read at the bytes,
+        this road cannot raise `cannot_say` at all**: the only raiser in the
+        product is `refineService.ts`'s `RepaintCannotSayError`, on the repaint
+        road, and it extends `Error` rather than `ProviderError` — so it could
+        not reach the `instanceof ProviderError` branch above even if a view
+        somehow threw it. It is on the terminal set because the CONTRACT's own
+        declaration justifies it, not because a wait was saved here.
+
+        So what this change is worth is the derivation and its arms, not a
+        behaviour win: the loop stops holding a private opinion about a union
+        that already has a contract module, and the six classes that read like
+        candidates for the terminal set are named and pinned instead of being
+        rediscovered by whoever reads these two string comparisons next.
+        Transport and rate limits were already retried inside the adapter.
       */
-      if (failureClass === "content_policy" || failureClass === "capability") break;
+      if (!mayStillArrive(failureClass)) break;
       /*
         The view never arrived. Keep trying, spaced — this is our failure to
         deliver something already paid for, not a draw against a judgement.

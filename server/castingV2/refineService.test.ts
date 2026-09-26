@@ -4420,6 +4420,81 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   });
 
   /**
+   * ⚠ WHAT SHE PAYS FOR IS THE EDITED FRAME, NOT THE ONE SHE STARTED WITH
+   * (#1179, measured by sabotage).
+   *
+   * The paste road returns `bytes: harvested.bytes` — the compositor's own
+   * output — and `base.bytes` is the untouched master sitting two lines away in
+   * the same object. Swapping one for the other is a one-word edit that
+   * delivers the picture she began with and charges her for an edit: she taps
+   * Refine, waits, and gets her own frame back with a new version number on it.
+   *
+   * Driven before this arm existed: the swap left `refineService`,
+   * `refineDelta`, `refineReask` and `inkApplied` — 680 tests — entirely green.
+   *
+   * Asserted on the bytes handed to STORAGE, which is the wire for this claim
+   * (invariant 5): the frame a customer opens is the object that was written,
+   * not a variable near it. The harvest returns bytes that match neither the
+   * master nor the engine, so the arm separates three outcomes rather than two —
+   * `base.bytes` and `painted.bytes` are both wrong and both are named.
+   */
+  it("⚠ DELIVERS THE HARVEST on the paste road — never the untouched master", async () => {
+    const HARVESTED = Buffer.from("harvested-composite");
+    const stored: Buffer[] = [];
+    await refineCandidate({
+      ...hairDown,
+      repaintEnabled: () => false,
+      /* Distinguishable from BOTH the master and the engine's own frame, so a
+         pass cannot mean "the fixture happened to agree". */
+      harvest: async () => ({
+        bytes: HARVESTED,
+        contentType: "image/png",
+        outcome: "composited" as const,
+        evidence: composite,
+      }),
+      storeImage: async (ask: { key: string; bytes: Buffer; contentType: string }) => {
+        stored.push(ask.bytes);
+        return { key: ask.key, url: `https://cdn.example/${ask.key}` };
+      },
+    } as never, { ...input, instruction: "wear her hair down" });
+
+    /* Positive control: the road was travelled and something really was
+       written. An empty capture would satisfy every "not the master" assertion
+       below by writing nothing at all. */
+    expect(stored.length, "nothing was written — the paste road was not travelled").toBeGreaterThan(0);
+    expect(journal, "the old road was not taken").toContain("generate");
+
+    expect(stored[0], "the frame she paid for is not the composited one").toEqual(HARVESTED);
+    expect(stored[0], "she was handed back the picture she started with").not.toEqual(TINY_MASTER_PNG);
+    expect(stored[0], "the raw engine frame was delivered — the paste never landed")
+      .not.toEqual(Buffer.from("refined"));
+  });
+
+  it("CONTROL — with the passthrough harvest the delivered frame IS the engine's", async () => {
+    /*
+      The arm above says the bytes are the harvest's. On its own that could be
+      true because the delivery ignores the harvest and the fixture coincided,
+      so this one moves the harvest's answer and shows the delivery follows it:
+      the passthrough hands back the engine's frame and the engine's frame is
+      what is written. One reader, two different answers, both tracked.
+    */
+    const stored: Buffer[] = [];
+    await refineCandidate({
+      ...hairDown,
+      repaintEnabled: () => false,
+      harvest: unmasked,
+      storeImage: async (ask: { key: string; bytes: Buffer; contentType: string }) => {
+        stored.push(ask.bytes);
+        return { key: ask.key, url: `https://cdn.example/${ask.key}` };
+      },
+    } as never, { ...input, instruction: "wear her hair down" });
+
+    expect(stored.length).toBeGreaterThan(0);
+    expect(stored[0]).toEqual(Buffer.from("refined"));
+    expect(stored[0]).not.toEqual(TINY_MASTER_PNG);
+  });
+
+  /**
    * A PROMOTED KIND IS ADMITTED ONLY WHERE IT WAS MEASURED (fable-525 §3c).
    *
    * Horns was promoted on 2026-08-14 off four courts, every one of them run on
@@ -8931,6 +9006,9 @@ describe("a render files in the library only the facets its own reading earned",
   /** Earned = filed and unmarked. Disputed rides the same list marked. */
   const earnedSlots = () => (mintAsks[0]?.slots ?? [])
     .filter((slot) => !slot.disputed).map((slot) => slot.slot);
+  /** The other half of the same list — a facet this render's reading DISPUTES. */
+  const disputedSlots = () => (mintAsks[0]?.slots ?? [])
+    .filter((slot) => slot.disputed).map((slot) => slot.slot);
   const readerSays = (present: boolean, saw: string) => ({
     id: "verifier",
     complete: async () => ({
@@ -9030,6 +9108,124 @@ describe("a render files in the library only the facets its own reading earned",
     );
     expect(mintAsks).toHaveLength(1);
     expect(earnedSlots(), "the ask's own facet is filed").toContain("skin");
+  });
+
+  /*
+    ---- ⚠ A FACET NOBODY READ IS NEITHER KEPT NOR HELD AGAINST HER (#1179) ----
+
+    `readChecks` is `facet !== null && check.read && writtenFacets.has(facet)`,
+    and the `check.read` half had no driven arm: deleting it left
+    `refineService`, `refineDelta`, `refineReask` and `inkApplied` — 680 tests —
+    green (measured by sabotage before this arm existed).
+
+    # What the customer loses when it goes
+
+    `read` is false when the reader answered an affirmative and named nothing it
+    saw — an evidence-free yes, which `renderVerification` deliberately records
+    as *not a reading* rather than as a pass. `verified` is false for the same
+    row by construction. So without the `check.read` half that row enters
+    `readChecks` as a FAILED check, its facet joins `missedFacets`, and the
+    reference library is told this render DISPUTES a feature she paid for and
+    that nobody actually looked at. A disputed row cannot be the newest version
+    of its crop, so the next render carries the older one — her freckles stop
+    moving forward on a reader's shrug.
+
+    # The fixture locates its own target rather than counting question numbers
+
+    The reader is handed the numbered recipe, so the unread row is chosen by
+    matching the QUESTION TEXT. An index would silently point at a different
+    facet the day the recipe grows a line, and the arm would then pass by asking
+    about something else — which is the same class as a sabotage landing on the
+    wrong line. The arm asserts the fixture found its target before it asserts
+    anything about the outcome.
+  */
+  const readerNamesNothingFor = (question: RegExp) => {
+    const rows: Array<{ id: number; text: string; withheld: boolean }> = [];
+    return {
+      engine: {
+        id: "verifier",
+        complete: async (ask: { user: string }) => {
+          rows.length = 0;
+          for (const line of ask.user.split("\n")) {
+            const numbered = /^\s*(\d+)\.\s*(.+)$/.exec(line);
+            if (!numbered) continue;
+            rows.push({ id: Number(numbered[1]), text: numbered[2], withheld: question.test(numbered[2]) });
+          }
+          return {
+            text: JSON.stringify({
+              results: rows.map((row) => (row.withheld
+                /* Present, and NOTHING it saw. The evidence rule makes this
+                   UNREAD — the door the hair-up false pass came through. */
+                ? { id: row.id, present: true }
+                : { id: row.id, present: true, saw: "clearly present in the frame" })),
+            }),
+            truncated: false,
+            latencyMs: 1,
+          };
+        },
+      } as never,
+      rows,
+    };
+  };
+
+  it("⚠ KEEPS NOTHING AND DISPUTES NOTHING when the reader named nothing it saw", async () => {
+    /*
+      The predecessor step is what makes this fixture possible rather than
+      decoration: *"give her freckles"* alone produces exactly ONE question, so
+      withholding its evidence makes EVERY answer evidence-free, which
+      `renderVerification` reports as `unavailable` and which empties
+      `readChecks` for a completely different reason than the one under test.
+      The arm would then have passed with `check.read` deleted. Driven: with one
+      question the first shape of this arm failed at `mintAsks`, and the log said
+      *"every affirmative named nothing it saw"*.
+    */
+    withEarlierHairStep();
+    const reader = readerNamesNothingFor(/freckle/i);
+    const result = await refineCandidate(
+      { ...freckles, verifier: reader.engine },
+      { ...input, instruction: "give her freckles" },
+    );
+
+    /* Positive controls, first, because every assertion below is an ABSENCE and
+       an absence proves nothing about a fixture that never fired. */
+    expect(result.kind, "the render never happened").toBe("rendered");
+    expect(
+      reader.rows.map((row) => `${row.text}${row.withheld ? " [no evidence]" : ""}`),
+      "the reader was handed the wrong questions, or the fixture withheld nothing",
+    ).toEqual(["HAIR WORN: down", "MARKS: freckles [no evidence]"]);
+    /* And the state under test was really reached: the parser recorded the
+       withheld answer as UNREAD rather than as a pass. Without this the arm
+       could pass on a fixture whose evidence-free yes was quietly counted. */
+    expect(
+      logged.some((line) => line.message.includes("answers with no evidence — recorded as unread")),
+      "the evidence-free answer was not recorded as unread — the fixture missed its target",
+    ).toBe(true);
+    expect(
+      logged.some((line) => line.message.includes("every affirmative named nothing it saw")),
+      "the whole reading went 'unavailable', which empties readChecks for a "
+      + "different reason than the one under test",
+    ).toBe(false);
+
+    expect(earnedSlots(), "a facet nobody read banked pixels").not.toContain("skin");
+    expect(disputedSlots(), "a facet nobody read was filed as this render's dispute")
+      .not.toContain("skin");
+  });
+
+  it("CONTROL — the same reader, WITH its evidence, keeps the pixels", async () => {
+    /*
+      One character of difference in the fixture — the `saw` it withholds above —
+      and the outcome flips. Without this the arm above would be satisfied by any
+      change that stopped the library being told anything at all.
+    */
+    withEarlierHairStep();
+    const reader = readerNamesNothingFor(/never-matches-anything/);
+    await refineCandidate(
+      { ...freckles, verifier: reader.engine },
+      { ...input, instruction: "give her freckles" },
+    );
+
+    expect(reader.rows.filter((row) => row.withheld)).toEqual([]);
+    expect(earnedSlots(), "the facet its reading found is filed").toContain("skin");
   });
 
   /*
