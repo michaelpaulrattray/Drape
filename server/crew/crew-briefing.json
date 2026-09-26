@@ -1,7 +1,7 @@
 {
-  "edition": 548,
-  "updatedAt": "2026-09-26T17:10:56.778Z",
-  "shift": "Foreman — when a page breaks in someone's browser, we can start finding out (two keys from you)",
+  "edition": 549,
+  "updatedAt": "2026-09-26T18:25:38.859Z",
+  "shift": "Foreman — what people do in the product is recorded, and your two keys became three",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -311,7 +311,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-26T16:58:56.450Z",
+      "readAt": "2026-09-26T18:25:10.643Z",
       "items": [
         {
           "issueNumber": 1129,
@@ -448,22 +448,27 @@
       "issueNumber": 1419,
       "state": "open",
       "filedAt": "2026-09-26",
-      "title": "Two keys to paste, and Drape starts telling us when a page breaks for someone",
-      "productImpact": "Right now, when something goes wrong for someone using Drape, nobody finds out. If a page breaks in a customer's browser she sees the error screen, and we never hear about it unless she tells us.\n\nThe code that reports those crashes to you is built and tested — the server half went live on 26 September, the browser half is in review now. It is switched off, and it stays off until you paste two keys.",
-      "workedExample": "You already have a Sentry account. It needs two projects, because the server and the browser are separate: a Node one, and a Browser one. Their two keys go on Railway as SENTRY_DSN and VITE_SENTRY_DSN. That is the whole job — about five minutes, free at our size, and the next deploy switches it on.\n\nWhat you would then see: a page that breaks shows up in Sentry within seconds, saying which page, which account, and what went wrong. What never travels: her words, her brief, her pictures, or the recipe behind her cast. That is built into the code rather than promised — if any of those is ever attached to a report, the whole report is refused rather than trimmed.\n\nNobody sees anything different in the app either way.",
+      "title": "Three keys to paste: Drape starts telling us when a page breaks, and what people actually do",
+      "productImpact": "Two things are true today and neither is good.\n\nWhen something goes wrong for someone using Drape, nobody finds out. If a page breaks in a customer's browser she sees the error screen, and we never hear about it unless she tells us.\n\nAnd nothing records what people DO. We cannot answer 'how many people cast anything this week' or 'how often did a roll not arrive'. Before Drape opens to real users, those are the two questions worth being able to ask.\n\nThe code for all three is built and tested. It is switched off, and it stays off until you paste three keys.",
+      "workedExample": "This was two keys yesterday. The third is the same kind of job and the same five minutes, so it is on this card rather than a new one — you answer once.\n\nTwo are Sentry (you have the account): a Node project and a Browser project, whose keys go on Railway as SENTRY_DSN and VITE_SENTRY_DSN. The third is PostHog, which you may not have yet — free to start, a couple of minutes — and its key goes on as POSTHOG_API_KEY.\n\nWhat you would then see: a page that breaks shows up in Sentry within seconds, saying which page, which account, and what went wrong. And a simple picture of what is happening — rolls started, rolls delivered, rolls that did not arrive, refines, Signs — with the credits that moved beside each.\n\nWhat never travels, in any of the three: her words, her brief, her pictures, her email, or the recipe behind her cast. That is built in rather than promised — the crash reporter refuses a whole report if one is ever attached, and the event stream cannot send free text of any kind, only numbers and words from a list we wrote down.\n\nTwo small things: the browser key only takes effect on a build made AFTER it is set, so paste it before the next deploy. And if you would rather PostHog kept our data in Europe there is a second variable for that — left alone it uses the US.",
       "options": [
         {
           "key": "A",
-          "label": "Paste both keys",
-          "consequence": "A broken page reaches you within seconds instead of never. Nothing else changes and no customer sees anything different."
+          "label": "Paste all three keys",
+          "consequence": "A broken page reaches you within seconds instead of never, and you can finally see how the studio is being used. Nothing else changes and no customer sees anything different."
         },
         {
           "key": "B",
+          "label": "The two Sentry ones only",
+          "consequence": "Crashes reach you; what people do still goes unrecorded. The event stream stays dark and honest about it."
+        },
+        {
+          "key": "C",
           "label": "Not yet",
-          "consequence": "Nothing breaks and nothing pretends. With no keys nothing is sent, and no screen can show you a '0 errors today' that only means nobody switched it on. This card closes."
+          "consequence": "Nothing breaks and nothing pretends. With no keys nothing is sent, and no screen can show you a '0 errors today' or '12 rolls today' that only means nobody switched it on. This card closes."
         }
       ],
-      "recommendation": "Paste both keys. It costs nothing on the free tier at our size and takes about five minutes. Until it is done, the first thing we will learn about a broken page is a customer telling us — and that is the one thing this whole job exists to stop."
+      "recommendation": "Paste all three. Every one is free at our size — PostHog allows a million events a month and we would send about four hundred and sixty, read at the real rows tonight — and it takes about five minutes. Until it is done, the first thing we learn about a broken page is a customer telling us, and we cannot answer a single question about how the studio is being used."
     },
     {
       "id": "old-lane-delete-1398",
@@ -6163,6 +6168,13 @@
   ],
   "pipeline": [
     {
+      "id": "product-events-509",
+      "title": "What people do in the product is recorded, from the one seam that already knows (#509 part 2)",
+      "status": "in-review",
+      "prNumber": 1423,
+      "note": "Money/auth diff — held for the hand review."
+    },
+    {
       "id": "judge-frame-1408",
       "title": "The view checker reads a bounded copy, so a big picture can be checked at all (#1408)",
       "status": "merged",
@@ -8855,7 +8867,7 @@
     227
   ],
   "nextUp": {
-    "readAt": "2026-09-26T16:58:56.450Z",
+    "readAt": "2026-09-26T18:25:10.643Z",
     "items": [
       {
         "issueNumber": 1278,
