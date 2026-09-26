@@ -36,6 +36,7 @@ import {
   CREW_UNREACHABLE_GROUP_KEYS,
   PIPELINE_GROUP_KEY_PREFIX,
   PIPELINE_SWITCHED_KEY,
+  backgroundWorkSentence,
   onePlaceViolations,
   pipelineGroupFor,
   pipelineGroupRowKey,
@@ -79,6 +80,41 @@ const REAL_SHAPES: ReadonlyArray<{ readonly why: string; readonly labels: readon
   { why: "casting upkeep on a debt card — #242's real shape", labels: ["debt", "casting-upkeep"] },
   { why: "a patrol that is casting upkeep — #129's real shape", labels: ["patrol", "casting-upkeep"] },
 ];
+
+/**
+ * THE CLAIM A `backgroundWork: true` BLURB MAY NOT MAKE (#1248), AND IT LIVES
+ * HERE RATHER THAN BESIDE THE BLURBS.
+ *
+ * ⚠ It was written in `shared/crewPipelineGroups.ts` first and the
+ * cleanup-dispositions door refused it: a `shared/` export whose only importer
+ * is a test lands on the uncalled-export sweep's reading list as `unread`. The
+ * refusal is right, and the alternative — a KEEP row on the deletion door for a
+ * symbol nothing in the product calls — would have been the quieter wrong
+ * answer. These phrases are not product data; they are what a CHECKER looks for.
+ *
+ * ⚠ **One direction only.** A group whose work is ORDINARY must not also say in
+ * prose that his word decides it — that is the exact pair this card measured.
+ * The reverse is fine: a `false` group may say whatever it likes, because
+ * "it waits by design" is precisely what its blurb is there to explain.
+ *
+ * ⚠ **Its limit, stated rather than hidden:** it reads the spellings this page
+ * actually uses, so a new wording is invisible to it. That is why the arm below
+ * ALSO pins every `true` group's blurb character for character — a phrase reader
+ * and a pin fail differently, and the pin is what catches a wording nobody
+ * thought of.
+ */
+const FOUNDER_WORD_CLAIMS: readonly string[] = [
+  "needs your word",
+  "yours to rule",
+  "your own ruling",
+  "this one is yours",
+  "without your word",
+];
+
+function blurbClaimsHisWord(blurb: string): boolean {
+  const haystack = blurb.toLowerCase();
+  return FOUNDER_WORD_CLAIMS.some((claim) => haystack.includes(claim));
+}
 
 describe("the pipeline vocabulary", () => {
   it("⚠ CONTROL — every group is defined by a label that already exists, or by nothing", () => {
@@ -348,6 +384,80 @@ describe("the partition", () => {
     /* And the moment somebody gives it a category it leaves the list — which is
        the whole remedy, and it must not need a code change. */
     expect(CREW_UNREACHABLE_GROUP_KEYS).not.toContain(pipelineGroupFor(["debt", "bug"]));
+  });
+
+  /* ── #1248: ONE ANSWER PER GROUP, NEVER TWO ──────────────────────────────
+     `debt` carried `backgroundWork: true` and a blurb reading *"Carded cleanup
+     — it needs your word because the scope varies"*, four lines apart in the
+     same object. One said his word was required; the other, by the field's own
+     docblock, said ordinary background work. `CREW_UNREACHABLE_GROUP_KEYS`
+     derives from the field and `crew-count-queue.mts` prints that reading at
+     every shift start, so a number a shift is told rested on a flag the words
+     beside it contradicted. The blurbs stopped making the claim; his page draws
+     it from the field. */
+
+  it("⚠ #1248 — a group that holds ORDINARY work never also claims his word decides it", () => {
+    for (const group of CREW_PIPELINE_GROUPS) {
+      if (!group.backgroundWork) continue;
+      expect(
+        blurbClaimsHisWord(group.blurb),
+        `"${group.key}" holds ordinary background work, so its blurb must not say his word decides it: "${group.blurb}"`,
+      ).toBe(false);
+    }
+    /* POSITIVE CONTROL — the exact string `debt` carried must read as a claim,
+       or this arm is a checker that cannot fail (working law 2). */
+    expect(blurbClaimsHisWord("Carded cleanup — it needs your word because the scope varies.")).toBe(true);
+    /* NEGATIVE CONTROL — a `false` group may say it, and one does. A reader that
+       forbade the phrase everywhere would be measuring something else. */
+    const scope = CREW_PIPELINE_GROUPS.find((group) => group.key === "scope-change")!;
+    expect(scope.backgroundWork).toBe(false);
+    expect(blurbClaimsHisWord(scope.blurb)).toBe(true);
+  });
+
+  it("⚠ #1248 — every `true` group's blurb is PINNED, because a phrase reader cannot see a new wording", () => {
+    /* The phrase list above reads the spellings this page uses today; a claim
+       worded some new way is invisible to it. The pin is the second reader, and
+       the two fail differently: change any of these and the arm reddens whatever
+       words were chosen. */
+    const pinned: Record<string, string> = {
+      debt: "Carded cleanup, and the scope varies from card to card.",
+      toolbelt: "The team's own tools — nothing a customer sees.",
+      other: "Labelled, but with nothing this panel names — worth a look, they may want a category.",
+      unfiled: "No label at all — nobody can find these, and they want triaging.",
+    };
+    const ordinary = CREW_PIPELINE_GROUPS.filter((group) => group.backgroundWork).map((group) => group.key);
+    expect([...ordinary].sort()).toEqual(Object.keys(pinned).sort());
+    for (const group of CREW_PIPELINE_GROUPS) {
+      if (!group.backgroundWork) continue;
+      expect(group.blurb, `${group.key}'s blurb`).toBe(pinned[group.key]);
+    }
+  });
+
+  it("⚠ #1248 — the stance sentence comes from `backgroundWork` and from nothing else", () => {
+    const ordinary = backgroundWorkSentence(CREW_PIPELINE_GROUPS.find((g) => g.key === "debt")!);
+    const waiting = backgroundWorkSentence(CREW_PIPELINE_GROUPS.find((g) => g.key === "blocked")!);
+    expect(ordinary).toContain("Real work");
+    expect(waiting).toContain("waits by design");
+    expect(ordinary).not.toBe(waiting);
+
+    /* Every drawn group gets one, and it agrees with the field on all of them —
+       the whole population, so a fifteenth group homed `here` cannot arrive
+       without an answer. */
+    for (const group of CREW_PIPELINE_ORPHAN_GROUPS) {
+      expect(backgroundWorkSentence(group), `${group.key}`).toBe(group.backgroundWork ? ordinary : waiting);
+    }
+    /* And it is the DRAWN rows only: a group homed elsewhere has its own section
+       saying what it waits for, so a second sentence here would be the doubling
+       #493 removed. */
+    for (const group of CREW_PIPELINE_GROUPS) {
+      if (group.home === "here") continue;
+      expect(backgroundWorkSentence(group), `${group.key} is drawn elsewhere`).toBeNull();
+    }
+  });
+
+  it("⚠ #1248 — the claim list is not empty, so the reader cannot pass by having nothing to look for", () => {
+    expect(FOUNDER_WORD_CLAIMS.length).toBeGreaterThan(0);
+    expect(blurbClaimsHisWord("Carded cleanup, and the scope varies from card to card.")).toBe(false);
   });
 
   it("no label at all is its own answer, and is not `other`", () => {

@@ -124,9 +124,21 @@
  * correct trade against either of them taking a paid slot.
  */
 
+/**
+ * The variable that overrides the ceiling, as a NAME rather than a literal
+ * inside the reader.
+ *
+ * ⚠ It is exported because the deploy rite's push gate governs the settings this
+ * module reads at boot (#1174) and derives that population from here — a name
+ * typed twice is the second list working law 4 is about, and the consequence is
+ * specific: a governed setting the gate cannot see. `CASTING_ROLL_ENGINE_MODEL`
+ * was exactly that, set to `sunburst` on production and invisible to the gate.
+ */
+export const FAL_ACCOUNT_CEILING_ENV = "FAL_ACCOUNT_CEILING";
+
 /** The provider's own ceiling, quoted from its 429 and overridable if it moves. */
 export function falAccountCeiling(): number {
-  const raw = Number(process.env.FAL_ACCOUNT_CEILING ?? "20");
+  const raw = Number(process.env[FAL_ACCOUNT_CEILING_ENV] ?? "20");
   return Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 20;
 }
 
