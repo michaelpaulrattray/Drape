@@ -1381,8 +1381,9 @@ describe("what a customer sees is read twice — #1328", () => {
 
   it("⚠ the exemption is applied INSIDE the prefix, never as a standalone allowlist", () => {
     /* A reader that tested the exemption first, or tested only the exemption,
-       would let every non-client file read as a surface. `server/a.test.ts`
-       matches the exemption and must still be a no for the other reason. */
+       would let every non-client file read as a surface. A server file whose
+       name ends in .test.ts matches the exemption and must still be a no for
+       the other reason (the fixture below is not a real suite, on purpose). */
     expect(owed("server/a.test.ts")).toBe(false);
     expect(owed("docs/features/admin/notes.md")).toBe(false);
   });
