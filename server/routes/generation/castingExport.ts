@@ -34,6 +34,7 @@ import {
   completeDirectOperationFailure,
   completeDirectOperationSuccess,
   failClaimedDirectOperation,
+  recordDirectOperationDelivered,
 } from "../../casting/directOperation";
 import { bootstrapModelSnapshot } from "../../casting/snapshotBootstrap";
 import { captureSnapshotReadMode } from "../../casting/snapshotReadScope";
@@ -644,8 +645,9 @@ export const castingExportRouter = router({
         requiredLockKey: lockKey,
         phase: "finalizing",
       });
+      let restored: WholeCastRestoreResult;
       try {
-        return (await commitWholeCastRestore({
+        restored = (await commitWholeCastRestore({
           userId: ctx.user.id,
           modelId: input.modelId,
           operationId: gate.operationId,
@@ -667,6 +669,26 @@ export const castingExportRouter = router({
           refundedCredits: 0,
         });
       }
+      /*
+        THE TERMINAL EVENT (#1429). This road claims an operation — so it emits
+        `generation started` — and settles success inside
+        `commitWholeCastRestore`'s transaction through
+        `finalizeRunningGenerationOperationSuccessIn`, which is not a capturing
+        completer. Both of its failure roads DO record, so before this a restore
+        that worked was invisible and a restore that broke was not.
+
+        After the commit, never inside the `try`: a rolled-back transaction
+        settled nothing. Free by construction — that finalizer refuses an
+        operation whose `plannedCredits` is not zero and writes both money
+        columns as literal zeros.
+      */
+      recordDirectOperationDelivered({
+        userId: ctx.user.id,
+        operationId: gate.operationId,
+        chargedCredits: 0,
+        refundedCredits: 0,
+      });
+      return restored;
     }),
 
   /** D-53 "Use this version": copy-forward append on the ledger — zero

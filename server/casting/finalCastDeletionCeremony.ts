@@ -20,6 +20,7 @@ import {
   beginDirectOperation,
   completeDirectOperationFailure,
   failClaimedDirectOperation,
+  recordDirectOperationDelivered,
 } from "./directOperation";
 import { modelOperationLockKey } from "./operationContract";
 import {
@@ -103,6 +104,28 @@ export async function runFinalCastDeletionCeremony(input: {
       modelId: input.modelId,
       operationId: gate.operationId,
       audit: input.audit,
+    });
+    /*
+      THE TERMINAL EVENT (#1429). The ceremony claims an operation, so it emits
+      `generation started`; the authority it wraps seals the receipt with an
+      INLINE `update(generationOperations)` rather than a named finalizer, which
+      is why no reader looking for `finalize*GenerationOperationSuccess*` could
+      see this road at all. Its failure paths record; its success did not, and
+      permanent Cast deletion is live for every account
+      (`ENABLE_FINAL_MODEL_DELETE`).
+
+      Inside the `try` on purpose — the two statements below can throw and the
+      catch is theirs. The recorder is synchronous and cannot throw, so it adds
+      no way for an analytics fault to be read as a settlement fault; moving it
+      below the block would instead put it after a `throw` that belongs to the
+      summary, where a deletion that DID settle would go unrecorded. Free by
+      construction: that statement writes both money columns as literal zeros.
+    */
+    recordDirectOperationDelivered({
+      userId: input.userId,
+      operationId: gate.operationId,
+      chargedCredits: 0,
+      refundedCredits: 0,
     });
     const counts = summarizeFinalCastDeletion(result);
     if (!counts) throw new Error("Deletion completed without a valid public summary");

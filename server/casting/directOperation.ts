@@ -446,3 +446,139 @@ export async function completeDirectOperationFailure(input: {
   });
   throw error;
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   THE TERMINAL EVENT FOR A SETTLEMENT MADE SOMEWHERE ELSE (#1429)
+
+   The four completers above are the road most operations take, and each sends
+   its terminal event. **They are not the only road.** Some operations settle
+   terminally by calling a finalizer directly — because the settlement is
+   detached from the request (Sign's package), or because it must be
+   transaction-scoped so the receipt becomes visible with the product mutation
+   it describes (`finalizeClaimedGenerationOperationSuccessIn`,
+   `finalizeRunningGenerationOperationSuccessIn`), or because the receipt is
+   written inline as part of a larger authority (the Cast deletion ceremony).
+   Every one of those emitted `generation started` at the claim and then nothing.
+
+   **So the reading on the dashboard was: a successful Sign is a generation that
+   started and never ended** — on the most expensive operation in the product,
+   450 credits — while Sign's two FAILURE paths recorded correctly. Starts
+   permanently exceed deliveries plus failures, and the failure rate reads as
+   100% of everything recorded for that action. Same shape on the live road as
+   #1425 fixed for the recovery sweep, on the ordinary every-time path rather
+   than the mid-deploy one.
+
+   # WHY THESE TWO ARE RECORDERS AND NOT COMPLETERS
+
+   A completer OWNS the settlement: it finalizes, handles a receipt write that
+   threw, and marks recovery. These sites already do all of that themselves,
+   correctly, in ways a completer cannot express — inside a transaction, or
+   after a detached build whose failure hands the operation to the sweep. So
+   what is missing is only the RECORD, and a recorder is what fits: it makes no
+   database call, decides nothing, and returns nothing.
+
+   # WHY THE EVENT IS READ OFF THE SETTLEMENT AND NOT RE-READ FROM THE ROW
+
+   #1425 read the receipt back, and the reason it gave was specific:
+   `StaleOperationDecision` folds a partial delivery into `durable_success`, so
+   the sweep's own verdict genuinely could not tell six-of-eight from
+   eight-of-eight. **No information is lost here, and that is provable at the
+   finalizers rather than assumed:**
+
+     · `finalizeGenerationOperationSuccess` updates `WHERE status = 'running'`
+       and THROWS when it did not affect exactly one row. So if it returned, the
+       row now holds exactly the `terminalStatus`, `chargedCredits` and
+       `refundedCredits` it was handed. The caller's values are not a claim
+       about the row — they ARE the row.
+     · `finalizeClaimedGenerationOperationSuccessIn` and
+       `finalizeRunningGenerationOperationSuccessIn` write
+       `chargedCredits: 0, refundedCredits: 0` LITERALLY, and the second refuses
+       a paid operation outright (`plannedCredits !== 0` throws). Zero on those
+       roads is a structural fact, not an optimistic default.
+     · The deletion ceremony's inline receipt sets both to `0` in the same
+       statement.
+
+   A read-back would add a query that can fail on a detached path, and a window
+   in which another writer could move the row — making the event LESS faithful
+   to the settlement it describes, not more.
+
+   # WHY PLACEMENT IS SAFE WHEREVER THE CALL SITE READS BEST
+
+   `directOperation.ts`'s own rule is that a capture sits after the receipt and
+   outside the block that guards it, because a capture inside a `try` lets an
+   analytics fault be read as a settlement fault — marking an operation
+   `recovery_required` and costing a customer their retry. **Both functions
+   below are SYNCHRONOUS and cannot throw**: `captureProductEvent` swallows its
+   own faults, and these add no statement that can. The hazard is removed by
+   construction rather than by where the line is written, so each call site puts
+   it where the settlement is unambiguously done — which on an in-transaction
+   settlement means after the transaction COMMITTED, since a rolled-back
+   transaction settled nothing.
+
+   # EXACTLY ONCE, AND IT IS STRUCTURAL
+
+   Every finalizer these sites call is gated on the pre-terminal status and
+   throws when it affects no row, so two settlements of one operation are
+   impossible and the loser never reaches its recorder. And the sweep cannot
+   double-count what the live road recorded: the adjudicator's door admits
+   `claimed`, `running` and a fenced Sign only (`operationRecovery.ts`), so a
+   row this road settled to `succeeded` / `partial` / `failed` returns
+   `"skipped"` above every settlement site. **A fenced Sign is the one exception
+   that door makes and it is not a counterexample** — a fence is written instead
+   of a success receipt, so the live road never recorded that operation at all
+   and the sweep's event is its only one.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Record the terminal delivery of an operation this process just settled
+ * successfully through a finalizer rather than through
+ * `completeDirectOperationSuccess`.
+ *
+ * Call it AFTER the settlement has definitely landed — after the finalizer
+ * returned, and for a transaction-scoped finalizer after the transaction
+ * committed. Synchronous, and it cannot throw.
+ *
+ * `chargedCredits` / `refundedCredits` are what the settlement wrote to the
+ * receipt; a free road passes zeros because its finalizer writes zeros.
+ */
+export function recordDirectOperationDelivered(input: {
+  userId: number;
+  operationId: string;
+  chargedCredits: number;
+  refundedCredits: number;
+  /** `partial` when some of what was asked for did not arrive — the roll's and
+   *  Sign's own vocabulary, and the distinction a degrading engine shows up in. */
+  terminalStatus?: "partial" | "succeeded";
+}): void {
+  captureProductEvent("generation delivered", input.userId, {
+    action: takeAction(input.operationId),
+    outcome: input.terminalStatus === "partial" ? "partial" : "complete",
+    creditsCharged: input.chargedCredits,
+    creditsRefunded: input.refundedCredits,
+  });
+}
+
+/**
+ * Record the terminal failure of an operation this process just settled as
+ * failed through a finalizer rather than through `completeDirectOperationFailure`
+ * or `failClaimedDirectOperation`.
+ *
+ * The same placement rule and the same guarantees as its delivery twin. The
+ * error's MESSAGE is deliberately not a parameter: it is the one property on
+ * this path that can quote a provider quoting a customer's brief, and the
+ * catalogue's header names it as the specimen.
+ */
+export function recordDirectOperationFailed(input: {
+  userId: number;
+  operationId: string;
+  errorCode: string;
+  chargedCredits: number;
+  refundedCredits: number;
+}): void {
+  captureProductEvent("generation failed", input.userId, {
+    action: takeAction(input.operationId),
+    errorCode: productErrorCode(input.errorCode),
+    creditsCharged: input.chargedCredits,
+    creditsRefunded: input.refundedCredits,
+  });
+}

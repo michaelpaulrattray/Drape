@@ -11320,6 +11320,10 @@
       "path": "server/casting/iterationFraming.test.ts"
     },
     {
+      "id": "test:server/casting/liveTerminalEvents.test.ts",
+      "path": "server/casting/liveTerminalEvents.test.ts"
+    },
+    {
       "id": "test:server/casting/mintPackage.test.ts",
       "path": "server/casting/mintPackage.test.ts"
     },
@@ -20985,6 +20989,11 @@
     {
       "from": "module:server/casting/evidence/evidenceFork.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/evidence/evidenceFork.ts",
+      "to": "module:server/casting/directOperation.ts",
       "kind": "imports"
     },
     {

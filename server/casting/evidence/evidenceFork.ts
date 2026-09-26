@@ -39,6 +39,10 @@ import {
   getGenerationOperationOutcome,
   markClaimedGenerationOperationRecoveryRequired,
 } from "../../db/generationOperations";
+import {
+  recordDirectOperationDelivered,
+  recordDirectOperationFailed,
+} from "../directOperation";
 import { createModuleLogger } from "../../logging/logger";
 import { EVIDENCE_CANDIDATE_GENERATION_TYPE } from "./evidenceCandidateContract";
 import { modelOperationLockKey } from "../operationContract";
@@ -895,12 +899,33 @@ export async function forkEvidenceAwareCast(
         contentHash: planned.source.contentHash,
       });
     }
-    return await withTransaction((tx) => commitEvidenceForkIn(tx, {
+    const committed = await withTransaction((tx) => commitEvidenceForkIn(tx, {
       ...input,
       prepared: prepared!,
       publicCopies,
       generateId,
     }));
+    /*
+      THE TERMINAL EVENT (#1429), and this road was silent on BOTH sides. The
+      claim in `boardOps.ts` emits `generation started`; the commit settles
+      success in its own transaction through
+      `finalizeClaimedGenerationOperationSuccessIn`, and the catch below settles
+      failure by calling `finalizeClaimedGenerationOperationFailure` directly —
+      neither is a capturing completer, so a fork recorded nothing whichever way
+      it went. That makes it the only road where the terminal event has to be
+      added twice, and the failure half is the reason the reader for this card
+      had to look at failure finalizers as well as success ones.
+
+      After the transaction committed, never inside it. Free by construction —
+      that finalizer writes both money columns as literal zeros.
+    */
+    recordDirectOperationDelivered({
+      userId: input.userId,
+      operationId: input.operationId,
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+    return committed;
   } catch (error) {
     // A transport error can arrive after MySQL committed the copy, placement,
     // and success receipt. Adjudicate the durable receipt before doing any
@@ -932,6 +957,32 @@ export async function forkEvidenceAwareCast(
         operationId: input.operationId,
         errorCode: "FORK_COPY_FAILED",
         publicMessage: "The Cast could not be copied. Nothing was charged.",
+      });
+      /*
+        THE FAILURE HALF OF #1429, and it is recorded ONLY when the line above
+        RETURNED — which is exactly "this call settled the failure". The
+        fall-through below, where the finalizer threw and the row reads
+        `replay_failure`, is deliberately silent: that row was made terminal by
+        somebody else, and since #1425 the recovery sweep records its own
+        terminals. An event over a settlement this call did not make would be
+        worse than the gap it closes.
+
+        ⚠ `PRECONDITION_FAILED` RATHER THAN THE ROW'S OWN CODE, AND THE CHOICE
+        IS DELIBERATE. `FORK_COPY_FAILED` is a receipt code, not one of tRPC's
+        twenty-one, so `productErrorCode` would turn it into `UNRECOGNISED` — a
+        named unknown that answers nothing about a fork that failed.
+        `PRECONDITION_FAILED` is the code the customer actually receives:
+        `boardOps` maps every `EvidenceForkError` to it. #1425's rule ("the row's
+        own code, which is the one the customer's receipt carries") holds where
+        the row's code IS in the vocabulary; here it is not, and the customer's
+        code is the one true fact available.
+      */
+      recordDirectOperationFailed({
+        userId: input.userId,
+        operationId: input.operationId,
+        errorCode: "PRECONDITION_FAILED",
+        chargedCredits: 0,
+        refundedCredits: 0,
       });
     } catch (receiptError) {
       const existing = await getGenerationOperationOutcome(
