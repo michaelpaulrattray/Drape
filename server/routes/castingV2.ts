@@ -110,7 +110,7 @@ import { captureCastingRetryEnabled } from "../castingV2/castingV2Scope";
 import { signCandidate } from "../castingV2/signService";
 import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "../castingV2/refineLimits";
 import {
-  readAskReference, readAskScope, readRegeneratedFrom, referencesOf, refineCandidate,
+  readAskReference, readAskScope, readRefineStep, readRegeneratedFrom, referencesOf, refineCandidate,
 } from "../castingV2/refineService";
 import { pendingStage } from "../castingV2/pendingStage";
 import {
@@ -1675,25 +1675,47 @@ export const castingV2Router = router({
           */
           waitedMs: Math.max(0, now.getTime() - variant.createdAt.getTime()),
           /*
-            THE ONLY PROGRESS THERE IS (D-169) — AND WHO HOLDS THE ROW.
+            WHO HOLDS THE ROW (D-169, fable-467).
 
-            Two real states, so the wait can say "in line" and then "being
-            drawn" and be telling the truth. Everything after dispatch is
-            silence until the picture lands, which is why there is no
-            percentage and never will be.
+            ⚠ **THIS BLOCK USED TO END *"everything after dispatch is silence
+            until the picture lands, which is why there is no percentage and
+            never will be"*, AND THE FIRST HALF WAS A FACT ABOUT THE ROAD
+            RATHER THAN A LAW — the road was silent because nobody had asked it
+            to speak.** It speaks now (#55, `step` below); what has not moved an
+            inch is the second half. There is still no percentage here, no
+            clock, and no estimate — the four stages are events the pipeline
+            genuinely passes, not a scale between two of them.
 
-            `settling` is not a third point on that line, it is a different
+            `settling` is not a point on that road at all, it is a different
             question answered: the owning operation's lease has passed, so no
-            worker is on this row and the recovery sweep is refunding it
-            (fable-467). Said here rather than left to the client, because the
-            lease is server truth and a browser guessing at it from
-            `startedAt` would be a second implementation of the sweep's rule.
+            worker is on this row and the recovery sweep is refunding it. Said
+            here rather than left to the client, because the lease is server
+            truth and a browser guessing at it from `startedAt` would be a
+            second implementation of the sweep's rule.
           */
           stage: pendingStage({
             status: variant.status,
             leaseExpiresAt: variant.leaseExpiresAt,
             now,
           }),
+          /*
+            AND WHERE THE ROAD HAS GOT TO — his honest loader's whole input
+            (#55, ruled 2026-09-26: *"i just adjusted thew ripple. its perfect
+            now file it"*).
+
+            `preparing` · `rendering` · `reading` · `storing`, written onto the
+            row by `refineService` at the four lines those stages actually
+            begin. NULL is a real answer and is passed through as one: it means
+            the road has announced nothing about this row — it predates the
+            announcement, or it is being claimed this instant — and the loader
+            draws no bar and no word over it rather than placing it somewhere
+            plausible.
+
+            Derived from the row's INTERNAL record and never the record itself:
+            `internalPrompt` does not cross this boundary, exactly as
+            `regenerating` above does not (invariant 8).
+          */
+          step: readRefineStep(variant.internalPrompt),
         })),
         /*
           THE OUTCOMES THAT REACHED NOBODY — explicit projection, three fields

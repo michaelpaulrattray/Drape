@@ -69,9 +69,11 @@ import {
   markVariantDispatched,
   recordVariantDispatch,
   recordVariantOutcome,
+  recordVariantStep,
   selectVariant,
   VariantOwnershipError,
 } from "../db/castingV2Variants";
+import { isRefineStep, type RefineStep } from "../../shared/refineSteps";
 import { getBriefForOwnedCandidate, getOwnedCandidateWithSelectedFace } from "../db/castingV2";
 import { readBriefFacts } from "./rollProjection";
 import { createModuleLogger } from "../logging/logger";
@@ -839,6 +841,14 @@ export type RefineServiceDependencies = {
   inkWordsEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
   recordDispatch?: typeof recordVariantDispatch;
+  /**
+   * Announces where the road has got to, so the picture's loader can say it
+   * (#55, `shared/refineSteps.ts`). Injectable so a suite can read the ORDER the
+   * four stages are announced in without a database — which is the only thing
+   * about them worth asserting, and the thing a mirror of the pipeline would
+   * get wrong.
+   */
+  recordStep?: typeof recordVariantStep;
   /**
    * Brings each reference to the master's geometry before dispatch.
    *
@@ -5971,8 +5981,49 @@ async function refineCandidateCounted(
           LANDING HAS BEEN SEALED; the success finalizer sits after the catch,
           see #873 below ---- */
 
+  /**
+   * SAY WHERE WE HAVE GOT TO — the only progress this pipeline has (#55).
+   *
+   * Four calls below, one per real stage transition, each at the line the stage
+   * actually begins. The picture's loader draws what it finds and nothing else:
+   * no clock, no interpolation, no percentage — *"No invented percentages,
+   * ever"* (fable-020, re-ruled 2026-09-26).
+   *
+   * ⚠ **FENCED, AND THE FENCE IS THE POINT.** Every one of these sits inside
+   * the compensated try below, where an escaping rejection refunds the charge
+   * and fails the render. A dropped connection while announcing *painting* must
+   * cost the wait its word and nothing else — the customer keeps the picture
+   * she is paying for, and the loader falls back to saying nothing about a
+   * stage it cannot confirm. This is the same fence the open-lane demand rows
+   * already carry (#873), for the same reason and on the same road.
+   */
+  const announce = async (step: RefineStep) => {
+    try {
+      await (dependencies.recordStep ?? recordVariantStep)({
+        userId: input.userId,
+        variantId: variant.id,
+        step,
+      });
+    } catch (error) {
+      log.warn(
+        { err: String(error).slice(0, 120), operationId, variant: variant.publicId, step },
+        "[refineService] could not announce the stage — the render stands, the loader says less",
+      );
+    }
+  };
+
   let delivered: RefineResult;
   try {
+    /*
+      THE FIRST STAGE, ANNOUNCED BEFORE THE ROW SAYS IT IS OUT.
+
+      Ordered ahead of `markVariantDispatched` deliberately: between those two
+      statements the row is readable, and a row that says *dispatched* with no
+      step is a row the loader draws nothing over. One statement's worth of
+      "sending" is better than one statement's worth of silence, and the other
+      order would give the silence.
+    */
+    await announce("preparing");
     await markVariantDispatched({ userId: input.userId, variantId: variant.id });
     /*
       THE RECEIPT, AT THE FIRST MOMENT IT IS TRUE (Landing C).
@@ -7347,6 +7398,16 @@ async function refineCandidateCounted(
     */
     const renderOnce = async () => {
       /*
+        SECOND STAGE: the picture is about to go to the engine (#55).
+
+        Above the road split on purpose — both roads paint, and a stage word
+        that depended on which compositor was running would be naming the
+        machinery rather than what is happening to her picture. It re-fires on
+        the free re-render below, which is the honest reading: that render
+        really is starting again.
+      */
+      await announce("rendering");
+      /*
         THE SWAP, and it is a whole road rather than a step inside this one.
         Everything below — the harvest, the carried-segment assembly, the seam —
         is the old compositor's machinery, and D-241 retires it rather than
@@ -7922,6 +7983,13 @@ async function refineCandidateCounted(
     const attemptRender = async () => {
       const rendered = await renderOnce();
       /*
+        THIRD STAGE: the frame is back and is being read (#55) — the fault
+        detector first, then the verification net below it. Announced after the
+        render resolves rather than before the check, because the thing that
+        just changed is that there IS a picture to look at.
+      */
+      await announce("reading");
+      /*
         The landing smoke alarm stays exactly where it was (D-93). Damage is a
         different question from compliance and it is not worth a retry: a seamed
         or duplicated frame is a provider failure, and the refund is the answer.
@@ -8179,6 +8247,12 @@ async function refineCandidateCounted(
       the failure it guards against cannot roll it back; the landing deletes the
       manifest as its last act.
     */
+    /*
+      FOURTH AND LAST STAGE: it passed, and the bytes are going to storage
+      (#55). Everything from here to the landing is ours rather than a
+      provider's, so this is the one stage whose length the product controls.
+    */
+    await announce("storing");
     const cleanupBatchId = randomUUID();
     const extension = image.contentType.includes("jpeg") ? "jpg" : "png";
     const destinationKey = `${VARIANT_KEY_PREFIX}/${randomUUID()}.${extension}`;
@@ -10518,6 +10592,26 @@ export function readRegeneratedFrom(internalPrompt: unknown): string | null {
   if (!internalPrompt || typeof internalPrompt !== "object") return null;
   const value = (internalPrompt as { regeneratedFrom?: unknown }).regeneratedFrom;
   return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+/**
+ * HOW FAR THE ROAD HAS ANNOUNCED ITSELF — off the row's own record, or null
+ * (#55, his loader).
+ *
+ * Read here for the same reason as `readRegeneratedFrom` above: the column is
+ * INTERNAL and never crosses the boundary, only the answer does (invariant 8).
+ *
+ * **NULL IS A REAL ANSWER AND IT IS NOT A STAGE.** It means nothing has been
+ * announced about this row — it was claimed by a build that predates the
+ * announcement, or it is being claimed right now — and the surface draws no bar
+ * and no word over it rather than placing it somewhere plausible. *A stage that
+ * does not fire is not shown*, which is the whole of his rule; a default here
+ * would be the invented progress the card refuses.
+ */
+export function readRefineStep(internalPrompt: unknown): RefineStep | null {
+  if (!internalPrompt || typeof internalPrompt !== "object") return null;
+  const value = (internalPrompt as { step?: unknown }).step;
+  return isRefineStep(value) ? value : null;
 }
 
 /**

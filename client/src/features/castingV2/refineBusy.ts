@@ -31,6 +31,7 @@
  *
  * The picture goes on narrating a settling row; only the CONTROLS come back.
  */
+import type { RefineStep } from "@shared/refineSteps";
 
 /** The stages the server reports for a row that has not landed. */
 export type PendingStage = "queued" | "dispatched" | "settling";
@@ -38,8 +39,13 @@ export type PendingStage = "queued" | "dispatched" | "settling";
 /**
  * Rows from `castingV2.variants` — the query is keyed on the candidate being
  * viewed, so this list is already about the face on screen and nothing else.
+ *
+ * `step` is where the ROAD has got to (#55), announced by `refineService` at
+ * the four lines those stages actually begin. Null is a real answer and means
+ * nothing has been announced about this row; it is carried as null rather than
+ * defaulted, because the surface draws nothing over a stage that did not fire.
  */
-export type PendingRow = { stage?: PendingStage | null };
+export type PendingRow = { stage?: PendingStage | null; step?: RefineStep | null };
 
 export function refineBusy(input: {
   /** The face the viewer is open on. */
@@ -105,6 +111,14 @@ export type RefineWait = {
   /** The sentence this face is waiting on. */
   instruction: string;
   stage: PendingStage;
+  /**
+   * Where the road has got to, or null when it has announced nothing (#55).
+   *
+   * Never invented here. The local head of the wait — the seconds before the
+   * server has a row — carries null, because at that moment the only honest
+   * thing known is that a request is out.
+   */
+  step: RefineStep | null;
   /** Other rows out for this face — "and 2 more". */
   extra: number;
 };
@@ -128,6 +142,7 @@ export function refineWait(input: {
     return {
       instruction: live.instruction,
       stage: live.stage ?? "queued",
+      step: live.step ?? null,
       extra: input.pending.length - 1,
     };
   }
@@ -135,15 +150,24 @@ export function refineWait(input: {
     && inFlightCandidate(input.mutation) === input.viewerCandidateId;
   const instruction = input.mutation.variables?.instruction;
   if (ours && instruction) {
-    /* Not in the list yet, so every row there is one of the others. */
-    return { instruction, stage: "queued", extra: input.pending.length };
+    /*
+      Not in the list yet, so every row there is one of the others — and the
+      road has said nothing about ours, because it has not yet heard of it.
+      `step: null` is that fact, said rather than papered over.
+    */
+    return { instruction, stage: "queued", step: null, extra: input.pending.length };
   }
   /* Nothing live and nothing out: a settling row still narrates, because the
      picture goes on describing a row the sweep is refunding even though the
      controls have come back. */
   const settling = input.pending.at(-1);
   return settling
-    ? { instruction: settling.instruction, stage: settling.stage ?? "queued", extra: input.pending.length - 1 }
+    ? {
+      instruction: settling.instruction,
+      stage: settling.stage ?? "queued",
+      step: settling.step ?? null,
+      extra: input.pending.length - 1,
+    }
     : null;
 }
 

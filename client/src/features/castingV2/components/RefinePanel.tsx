@@ -164,13 +164,33 @@ export type RefineReask = {
   MOVED 2 min → 5 min, 2026-08-16 (founder: *"yes make it honest"*).
 
   At two minutes this note fired inside the ORDINARY case: the census reads the
-  median edit at 204 s dev / 209 s prod, so "taking longer than usual" was the
-  usual, printed under a viewer line that said "usually a minute or two". Both
-  halves were wrong in opposite directions and they shared a screen.
+  median paid edit at 204 s in dev (n=56) and 209 s in production (n=4) —
+  `docs/specs/EDIT_LATENCY_READING_2026-08-16.md` — so "taking longer than
+  usual" was the usual, printed under a viewer line that said "usually a minute
+  or two". Both halves were wrong in opposite directions and they shared a
+  screen.
+
+  (The denominators and the document moved here from `CandidateViewer.tsx` on
+  2026-09-26, when the viewer's sentence was deleted on his word. The figure is
+  what justifies the five minutes below, so it belongs beside the number it
+  justifies rather than beside the copy that no longer exists.)
 
   Five minutes is past the p90 of the measured distribution, so the note now
-  means what it says. Its PAIR is `TYPICAL_WAIT` in `CandidateViewer.tsx`; they
-  moved in one commit and are re-measured together whenever the speed changes.
+  means what it says.
+
+  ⚠ IT NO LONGER HAS A PAIR, AND THAT IS THE REPAIR RATHER THAN A LOSS (#55,
+  2026-09-26). This block read "its PAIR is `TYPICAL_WAIT` in
+  `CandidateViewer.tsx`; they moved in one commit" — two sentences on one screen
+  about one wait, kept in step by a rule nobody enforced except by remembering.
+  The founder removed the viewer's half outright while drawing the loader
+  (*"dont put the excpected time either"*), so the picture now promises no
+  duration at all and there is nothing left for this to disagree with.
+
+  THIS IS NOT AN EXPECTED TIME, WHICH IS WHY IT SURVIVED HIS RULING. It says a
+  wait has become unusual and names the outcome; it never says how long one
+  takes. The reading above is still what justifies the number and is still
+  re-measured here when the speed changes — this constant is now the only place
+  in the product that holds it.
 */
 const LONG_WAIT_MS = 5 * 60 * 1000;
 
