@@ -303,8 +303,14 @@ export function errorTrackerStatus(): Readonly<TrackerState> {
   return { ...state };
 }
 
-/** Test seam only: forget everything this module remembers between arms. */
-export function __resetErrorTrackerForTests(): void {
+/**
+ * Test seam only: forget everything this module remembers between arms. Named
+ * the way this repository's other five such seams are named, because
+ * `scripts/check-cleanup-dispositions.mts` reads that convention off the NAME —
+ * an export with no production importer is `unread` until a row dispositions it,
+ * and it caught this one on its first preflight.
+ */
+export function resetErrorTrackerForTests(): void {
   sentry = null;
   starting = null;
   state.configured = false;
@@ -313,9 +319,11 @@ export function __resetErrorTrackerForTests(): void {
   state.sent = 0;
 }
 
-/** Test seam only: drive the scrub gate exactly as the SDK would. */
-export function __gateForTests(event: IncomingEvent): IncomingEvent | null {
-  return gate(event);
-}
+/* ⚠ THERE IS NO `gateForTests` SEAM, AND ITS ABSENCE IS THE POINT. One was
+   written here and deleted the same hour: the arm that wanted it should drive
+   `buildTrackerOptions().beforeSend`, which is the function the SDK is actually
+   handed, and a seam beside it would have let the suite pass while the wire
+   carried something else (invariant 5). The sweep asking why the export had no
+   production caller is what prompted the re-read. */
 
 export { bootLine as errorTrackerBootLine };

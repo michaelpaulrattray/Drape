@@ -30,8 +30,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
-  __gateForTests,
-  __resetErrorTrackerForTests,
+  resetErrorTrackerForTests,
   bootLineFor,
   buildTrackerOptions,
   captureServerError,
@@ -48,7 +47,7 @@ beforeEach(() => {
   saved = {};
   for (const key of ENV_KEYS) saved[key] = process.env[key];
   for (const key of ENV_KEYS) delete process.env[key];
-  __resetErrorTrackerForTests();
+  resetErrorTrackerForTests();
 });
 
 afterEach(() => {
@@ -56,7 +55,7 @@ afterEach(() => {
     if (saved[key] === undefined) delete process.env[key];
     else process.env[key] = saved[key];
   }
-  __resetErrorTrackerForTests();
+  resetErrorTrackerForTests();
 });
 
 describe("no key means no tracker, and the boot line says so", () => {
@@ -187,10 +186,16 @@ describe("the options handed to the SDK — asserted on the object, not beside i
 });
 
 describe("a refusal is counted and named, and never quotes the value", () => {
+  /* Driven through `beforeSend` — the object the SDK is handed — rather than
+     through a seam beside it. A seam here would let this arm pass while the wire
+     carried something else, which is invariant 5's whole content; the first
+     shape of this suite had one and the uncalled-export sweep is what asked why
+     it existed. */
   it("counts refusals and sends separately", () => {
-    expect(__gateForTests({ extra: { technicalSchema: {} } })).toBeNull();
-    expect(__gateForTests({ extra: { masterPrompt: "x" } })).toBeNull();
-    expect(__gateForTests({ level: "error" })).not.toBeNull();
+    const { beforeSend } = buildTrackerOptions();
+    expect(beforeSend({ extra: { technicalSchema: {} } })).toBeNull();
+    expect(beforeSend({ extra: { masterPrompt: "x" } })).toBeNull();
+    expect(beforeSend({ level: "error" })).not.toBeNull();
     expect(errorTrackerStatus().refused).toBe(2);
     expect(errorTrackerStatus().sent).toBe(1);
   });
