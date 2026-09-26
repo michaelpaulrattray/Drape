@@ -68,6 +68,7 @@ import {
   buildAreaIndex,
   citedOpenCards,
   cutSeatBatches,
+  ORDERED_BAND_LABEL,
   orderedBandForSeats,
   readIndependence,
   seatPopulation,
@@ -78,6 +79,7 @@ import {
   type SeatTakeableCard,
 } from "./lib/seatBatches.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
+import { findCardCollisions } from "../shared/crewShiftState.js";
 import { jevSpendUsd } from "./lib/jev.mjs";
 import {
   CREW_WORK_CATEGORIES,
@@ -93,17 +95,15 @@ const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
     "cards",
     "open-prs",
     "switches",
+    "shift-runs",
     "comments",
     "atlas",
-    "repo",
   ],
   boolean: ["no-jev", "quiet"],
 });
 
 /** Twenty seconds, `cardClaimWarning`'s own number for a `gh` read. */
 const GH_READ_TIMEOUT_MS = 20_000;
-/** How many cards' comments one pass will read. A cap, not a truncation: past it the cut refuses. */
-const COMMENT_READ_CAP = 60;
 
 function refuse(message: string): never {
   console.error(`cut-seat-batches: REFUSING — ${message}`);
@@ -174,11 +174,46 @@ function readOpenCards(): SeatCandidateCard[] {
     }));
 }
 
-/* ── HIS SWITCHES ──────────────────────────────────────────────────────────── */
+/* ── HIS SWITCHES, AND WHO IS ALREADY SITTING ON A CARD ────────────────────── */
 
-async function readSwitches(): Promise<CrewWorkSwitchState> {
-  const fixture = ARGS.value("switches");
-  if (fixture) return readJsonFile<CrewWorkSwitchState>(fixture, "the switch fixture");
+/** One open row of `crew_shift_runs`, shaped for `findCardCollisions`. */
+type OpenShiftRun = { readonly cardRef: string | null; readonly shift: string };
+
+/**
+ * ONE DATABASE READ, TWO FACTS, AND THE SECOND ONE CLOSES A REAL HOLE.
+ *
+ * The switches are his panel. The open shift ROWS are the other half, and the
+ * review of 2026-09-26 is the reason they are here: the board reads open pull
+ * requests and card comments, and **pass N+1 can cut before seat N's `CLAIMED —`
+ * comment has landed** — a seat claims within its first minute, but a pass cuts
+ * in seconds. A row, by contrast, is written by `crew-shift-start.mts` BEFORE a
+ * line of code (#272's whole argument) and `findCardCollisions` is the reader
+ * that script already uses for exactly this question, so a card named by an open
+ * row is not on offer here either.
+ *
+ * ⚠ **WHERE THE CLAIM IS WRITTEN, said plainly because nothing in this file
+ * writes one.** Two artifacts, in this order, both by the SEAT and neither by
+ * the runner: (1) its shift row, opened with `--shift <its own id> --card '#N'`,
+ * which `crew-shift-start.mts` REFUSES when an open row already names that card
+ * (#608) — that refusal is the mechanical lock, not a convention; (2) its
+ * `CLAIMED — <seat>, <UTC>` comment, which the standing orders and the seat brief
+ * put before any build and which the board reads for twelve hours. The runner's
+ * brief tells the seat to do both before it builds, and the row's own refusal is
+ * what makes the first one stick.
+ *
+ * `--shift-runs <file.json>` feeds a fixture instead of the database, which is
+ * what makes the arm drivable without one.
+ */
+async function readWorld(): Promise<{ switches: CrewWorkSwitchState; openRuns: OpenShiftRun[] }> {
+  const switchFixture = ARGS.value("switches");
+  const runsFixture = ARGS.value("shift-runs");
+  const fixedRuns = runsFixture ? readJsonFile<OpenShiftRun[]>(runsFixture, "the shift-run fixture") : null;
+  if (switchFixture) {
+    return {
+      switches: readJsonFile<CrewWorkSwitchState>(switchFixture, "the switch fixture"),
+      openRuns: fixedRuns ?? [],
+    };
+  }
   try {
     await import("dotenv/config");
     const { openDatabase, resolveDatabaseUrl } = await import("./lib/dbConnection.mts");
@@ -187,19 +222,33 @@ async function readSwitches(): Promise<CrewWorkSwitchState> {
     const conn = await openDatabase(url);
     try {
       const [present] = await conn.query<any[]>("SHOW TABLES LIKE 'crew_work_switches'");
-      if (present.length !== 1) {
-        /* His bar, verbatim from `crew-shift-start.mts`: an absent table reads OFF. */
-        return {};
-      }
+      /* His bar, verbatim from `crew-shift-start.mts`: an absent table reads OFF.
+         With no switches nothing is on offer, so the rows need not be read. */
+      if (present.length !== 1) return { switches: {}, openRuns: fixedRuns ?? [] };
       const [rows] = await conn.query<any[]>("SELECT switchKey, enabled FROM `crew_work_switches`");
       const switches: Record<string, boolean> = {};
       for (const row of rows) switches[String(row.switchKey)] = Boolean(row.enabled);
-      return switches;
+
+      let openRuns: OpenShiftRun[] = fixedRuns ?? [];
+      if (fixedRuns === null) {
+        const [runTable] = await conn.query<any[]>("SHOW TABLES LIKE 'crew_shift_runs'");
+        if (runTable.length !== 1) {
+          refuse("`crew_shift_runs` does not exist in this world, so a seat already sitting on a card cannot be seen");
+        }
+        const [runRows] = await conn.query<any[]>(
+          "SELECT shift, cardRef FROM `crew_shift_runs` WHERE endedAt IS NULL",
+        );
+        openRuns = runRows.map((row) => ({
+          shift: String(row.shift),
+          cardRef: row.cardRef === null || row.cardRef === undefined ? null : String(row.cardRef),
+        }));
+      }
+      return { switches, openRuns };
     } finally {
       await conn.end();
     }
   } catch (error) {
-    refuse(`his switches could not be read (${error instanceof Error ? error.message : String(error)}) — reads OFF`);
+    refuse(`the crew tables could not be read (${error instanceof Error ? error.message : String(error)}) — reads OFF`);
   }
 }
 
@@ -237,15 +286,36 @@ if (board.partial) {
   refuse(`the board was not fully read, so a card somebody is on could read as free: ${board.unreadable.join("; ")}`);
 }
 
-const switches = await readSwitches();
+const world = await readWorld();
+const switches = world.switches;
 
 /* The population the independence reading has to look at: every card carrying a
    switch label or his own. Far fewer than the queue, and it is the same set the
    batches are cut from. */
-const ORDERED_LABEL = "founder-ordered";
+/* Derived, never retyped: the library reads it out of the queue's own
+   vocabulary and this CLI asks the library (review of 2026-09-26). */
+const ORDERED_LABEL = ORDERED_BAND_LABEL;
 const SWITCH_LABELS: readonly string[] = CREW_WORK_CATEGORIES.map((category) => category.queueLabel);
-const candidates = cards.filter((card) =>
+const inBand = cards.filter((card) =>
   card.labels.includes(ORDERED_LABEL) || card.labels.some((label) => SWITCH_LABELS.includes(label)));
+
+/*
+  A CARD AN OPEN SHIFT ROW ALREADY NAMES IS NOT ON OFFER — the cross-pass half
+  (review of 2026-09-26). `findCardCollisions` is the reader `crew-shift-start.mts`
+  uses for this question, and it normalises `#608` / `608` / `#0608` to one card,
+  so a seat that wrote its row with a bare number still collides.
+*/
+const sittingOn: SeatSkippedCard[] = [];
+const candidates = inBand.filter((card) => {
+  const collisions = findCardCollisions(world.openRuns, `#${card.number}`);
+  if (collisions.length === 0) return true;
+  sittingOn.push({
+    number: card.number,
+    title: card.title,
+    why: `a seat is sitting on it right now (${collisions.map((run) => run.shift).join(", ")})`,
+  });
+  return false;
+});
 const openCardNumbers = cards.map((card) => card.number);
 
 /* ── THE INDEPENDENCE READING, MECHANICAL FIRST, JEV ONLY WHERE SILENT ─────── */
@@ -291,6 +361,7 @@ const ordered = orderedBandForSeats({
   cards: candidates,
   board,
   areaIndex,
+  switches,
   independenceOf: (card) => resolvedIndependence.get(card.number) ?? { kind: "unclear", cites: [] },
 });
 
@@ -311,6 +382,19 @@ if (jev !== null) {
   const filled: SeatTakeableCard[] = [];
   for (const card of takeable) {
     if (card.area !== null) {
+      filled.push(card);
+      continue;
+    }
+    /* ⚠ THE SHORT-CIRCUIT, at the call site as well as inside the asker (review
+       of 2026-09-26): the dependency loop above stopped on the first failure and
+       this one did not, so an unreachable Jev cost one timeout per arealess card.
+       Both gates now exist and either alone is enough.
+
+       ⚠ AND IT IS A `continue`, NOT A `break`. The first shape of this repair
+       was a break, which left every remaining card out of `filled` — a
+       tie-breaker that DROPS cards when it cannot be consulted, which is far
+       worse than the wedge it was fixing. */
+    if (jev.failure() !== null) {
       filled.push(card);
       continue;
     }
@@ -337,7 +421,7 @@ const out = {
   seatCount: plan.seatCount,
   focusCard: ordered.focus === null ? null : { number: ordered.focus.number, title: ordered.focus.title, area: ordered.focus.area },
   batches: plan.batches,
-  skipped: [...background.skipped, ...ordered.held, ...plan.held],
+  skipped: [...background.skipped, ...ordered.held, ...plan.held, ...sittingOn],
   jev: {
     asked: jev !== null,
     readings,

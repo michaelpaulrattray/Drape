@@ -139,7 +139,19 @@ export function parseSystemOneReply(payload: unknown, expectedIds: readonly stri
 export async function askJev(
   state: unknown,
   questions: Readonly<Record<string, JevChoiceQuestion>>,
-  options: { readonly apiKey?: string; readonly fetchImpl?: typeof fetch } = {},
+  options: {
+    readonly apiKey?: string;
+    readonly fetchImpl?: typeof fetch;
+    /**
+     * ⚠ **A CEILING ON ONE CALL, because without one a hung reply is a hung
+     * CALLER** (#1281's review, 2026-09-26). Node's fetch has no default request
+     * timeout worth the name — undici waits ~300 s on headers — so a caller that
+     * asks about forty cards in a loop can sit for hours before it does anything
+     * else. It is OPTIONAL and unset by default, so every caller written before
+     * this behaves exactly as it did; a caller in a loop passes one.
+     */
+    readonly timeoutMs?: number;
+  } = {},
 ): Promise<JevReply> {
   const apiKey = options.apiKey ?? process.env.TYPESAFE_API_KEY;
   if (!apiKey) throw new Error("jev: TYPESAFE_API_KEY is not set — this reader refuses rather than guessing");
@@ -149,6 +161,9 @@ export async function askJev(
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify(request),
+    ...(typeof options.timeoutMs === "number" && options.timeoutMs > 0
+      ? { signal: AbortSignal.timeout(options.timeoutMs) }
+      : {}),
   });
   if (!response.ok) {
     const detail = await response.text().catch(() => "");

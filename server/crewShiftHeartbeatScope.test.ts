@@ -61,9 +61,15 @@ describe("the heartbeat's own row", () => {
     expect(update).not.toMatch(/LIMIT/i);
   });
 
-  it("asks the SAME resolver the close asks, rather than a second one", () => {
-    /* Working law 4, on the very pair of scripts that already drifted once. */
-    expect(stripComments(SOURCE)).toContain("resolveCloseTarget");
+  it("CALLS the same resolver the close calls, rather than importing it", () => {
+    /* ⚠ `toContain("resolveCloseTarget")` was satisfied by the IMPORT LINE alone
+       (review of 2026-09-26): the symbol could be imported and never called and
+       this arm stayed green. An import is not a call site — the repository has a
+       whole paragraph in CLAUDE.md about that mistake. */
+    const code = stripComments(SOURCE);
+    expect(/const verdict = resolveCloseTarget\(\{/.test(code), "the heartbeat must CALL the resolver").toBe(true);
+    expect(/openRuns: openRows\.map\(/.test(code), "and hand it every open run, not one").toBe(true);
+    expect(/shift: named/.test(code), "and the shift id it was given").toBe(true);
   });
 
   it("POSITIVE CONTROL — the old statement reddens every arm above", () => {

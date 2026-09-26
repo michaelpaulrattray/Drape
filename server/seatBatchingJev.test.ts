@@ -29,6 +29,30 @@ const answer = (choice: string, confidence: number) => ({ choice, confidence, pr
 
 const DOMAINS = ["boards", "casting", "billing"];
 
+describe("the gate is a NUMBER, pinned", () => {
+  it("is 0.85, and every arm below would pass at 0.50 without this one", () => {
+    /* ⚠ Every other arm here is written as `GATE ± 0.01`, so the gate could be
+       set to 0.50 and the suite would stay green while the reader started acting
+       on readings it has never been shown to be right at (review of 2026-09-26).
+       The figure is borrowed from the category reader's live calibration and the
+       module's docblock says so; this arm is the one place it is a fact. */
+    expect(SEAT_BATCHING_CONFIDENCE_GATE).toBe(0.85);
+  });
+
+  it("refuses the reading the controls measured wrong, at the confidence they measured it", () => {
+    /* The one MISS the live controls produced: a garment card read as `studio` at
+       0.50. It must not be used, and this arm names the real number rather than
+       an offset from the gate. */
+    expect(areaVerdict(answer("studio", 0.5), DOMAINS).area).toBeNull();
+    /* And the readings they got RIGHT below the gate are also refused — the
+       stated trade, so a future run that lowers the gate breaks this arm and has
+       to argue for it. */
+    expect(areaVerdict(answer("casting", 0.74), DOMAINS).area).toBeNull();
+    expect(areaVerdict(answer("billing", 0.95), DOMAINS).area).toBe("billing");
+    expect(dependencyVerdict(answer(DEPENDENCY_NO, 0.86)).kind).toBe("independent");
+  });
+});
+
 describe("what goes on the wire", () => {
   it("carries the title, the body and the cited cards — and no label", () => {
     const state = buildSeatCardState({
@@ -113,6 +137,35 @@ describe("when Jev cannot be reached", () => {
     expect(await asker.area(card)).toBeNull();
     expect(asker.failure()).toContain("ENOTFOUND");
     expect(asker.readings).toEqual([]);
+  });
+
+  it("does not wedge on a reply that never comes — the ask carries a timeout", async () => {
+    /* ⚠ The wedge the review measured: `askJev` passed no signal to `fetch`, and
+       undici waits ~300 s on headers, so a loop over forty arealess cards was
+       nearly three hours before a seat launched. Driven with a fetch that never
+       resolves unless it is aborted, and a 50 ms ceiling, so the arm fails by
+       TIMING OUT if the signal is ever dropped again. */
+    const hanging: typeof fetch = ((_url: unknown, init?: { signal?: AbortSignal }) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new Error("The operation was aborted due to timeout")));
+      })) as unknown as typeof fetch;
+
+    const asker = jevSeatAsk({
+      domains: DOMAINS,
+      apiKey: "test-key-not-a-real-one",
+      fetchImpl: hanging,
+      timeoutMs: 50,
+    });
+    const started = Date.now();
+    expect(await asker.dependency(card)).toBeNull();
+    expect(asker.failure()).toMatch(/abort/i);
+    expect(Date.now() - started).toBeLessThan(2_000);
+
+    /* AND THE SECOND ASK COSTS NOTHING: one failure ends the asking, so a pass
+       pays one timeout rather than one per card. */
+    const beforeSecond = Date.now();
+    expect(await asker.area(card)).toBeNull();
+    expect(Date.now() - beforeSecond).toBeLessThan(40);
   });
 
   it("reads a real reply and records it for the digest", async () => {

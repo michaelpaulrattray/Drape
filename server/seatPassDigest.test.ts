@@ -7,7 +7,14 @@
  * artifacts (`crewCardBuildState`), so the fixtures here are pull requests and
  * comments rather than seat reports.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+/* This suite imports `cardBuildState.mts`, which reaches `gh` through
+   `execFileSync` — so it is in `childProcessTestTimeouts`' derived population
+   and declares the class's timeout (#548). */
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 import { passCardOutcome, renderPassDigest } from "../scripts/lib/seatPassDigest.mts";
 import { buildBoard, factsFromRows } from "../scripts/lib/cardBuildState.mts";

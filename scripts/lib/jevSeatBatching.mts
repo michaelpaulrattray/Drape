@@ -106,6 +106,18 @@ export const NO_AREA = "none of these";
  */
 export const SEAT_BATCHING_CONFIDENCE_GATE = 0.85;
 
+/**
+ * ⚠ **THE CEILING ON ONE ASK, AND THE REASON IT IS SHORT.** A tie-breaker may
+ * cost a pass a few seconds and must never cost it an hour: the review of
+ * 2026-09-26 measured the shape — the area loop asking about forty arealess
+ * cards, each waiting out undici's ~300 s header timeout, is nearly three hours
+ * before a single seat launches. Twenty seconds is well past a live call (the
+ * controls' twelve asks took about a second each) and short enough that the
+ * worst case is one wasted breath per card. And the FIRST failure stops the
+ * asking entirely (`failure` below), so the worst case is one timeout per pass.
+ */
+export const JEV_ASK_TIMEOUT_MS = 20_000;
+
 /** How much of a card body goes on the wire — the category reader's own cap. */
 export const SEAT_CARD_BODY_CHAR_CAP = 6000;
 
@@ -263,7 +275,8 @@ export function jevSeatAsk(options: {
   readonly gate?: number;
   readonly apiKey?: string;
   readonly fetchImpl?: typeof fetch;
-} ): JevSeatAsk {
+  readonly timeoutMs?: number;
+}): JevSeatAsk {
   const readings: JevSeatReading[] = [];
   let failure: string | null = null;
   let inputTokens = 0;
@@ -274,10 +287,17 @@ export function jevSeatAsk(options: {
     questions: Record<string, JevChoiceQuestion>,
     id: string,
   ): Promise<JevChoiceAnswer | null> => {
+    /* ⚠ ONE FAILURE ENDS THE ASKING. Without this every card in a loop pays the
+       same timeout, and a caller that forgets to check `failure()` pays it forty
+       times — which is exactly the wedge the review measured. The gate is here,
+       in the asker, rather than only at the call sites, because a control that
+       depends on every caller remembering is not a control. */
+    if (failure !== null) return null;
     try {
       const reply = await askJev(buildSeatCardState(card), questions, {
         apiKey: options.apiKey,
         fetchImpl: options.fetchImpl,
+        timeoutMs: options.timeoutMs ?? JEV_ASK_TIMEOUT_MS,
       });
       inputTokens += reply.usage.input_tokens;
       return reply.answers[id] ?? null;

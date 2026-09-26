@@ -104,6 +104,7 @@ import { exclusionFor, QUEUE_EXCLUSION_REASONS } from "../../shared/crewQueueExc
 import {
   backgroundWorkAllowed,
   CREW_WORK_CATEGORIES,
+  CREW_WORK_MASTER_KEY,
   homeWorkCategoryFor,
   type CrewWorkSwitchState,
 } from "../../shared/crewWorkSwitches.js";
@@ -475,8 +476,15 @@ export function readIndependence(input: {
 
 /** The `parked` label, taken from the exclusion vocabulary rather than retyped. */
 const PARKED_LABEL = QUEUE_EXCLUSION_REASONS.find((reason) => reason.key === "parked")!.queueLabel;
-/** His own label on a card he asked for by name, from the same vocabulary. */
-const ORDERED_LABEL = QUEUE_EXCLUSION_REASONS.find((reason) => reason.key === "ordered")!.queueLabel;
+/**
+ * His own label on a card he asked for by name, from the queue's own vocabulary.
+ *
+ * ⚠ **EXPORTED because the CLI needs it too and typed it again** (review of
+ * 2026-09-26): `cut-seat-batches.mts` had `const ORDERED_LABEL = "founder-ordered"`
+ * beside a library that derives it, which is working law 4 inside one feature.
+ */
+export const ORDERED_BAND_LABEL: string = QUEUE_EXCLUSION_REASONS.find((reason) => reason.key === "ordered")!.queueLabel;
+const ORDERED_LABEL = ORDERED_BAND_LABEL;
 
 /** What `orderedBandForSeats` answers. */
 export interface OrderedBandForSeats {
@@ -505,6 +513,7 @@ export function orderedBandForSeats(input: {
   readonly cards: readonly SeatCandidateCard[];
   readonly board: SeatBuildBoard;
   readonly areaIndex: SeatAreaIndex;
+  readonly switches: CrewWorkSwitchState;
   readonly independenceOf: (card: SeatCandidateCard) => IndependenceReading;
 }): OrderedBandForSeats {
   const held: SeatSkippedCard[] = [];
@@ -517,6 +526,29 @@ export function orderedBandForSeats(input: {
       createdAt: card.createdAt,
       issueNumber: card.number,
     }));
+
+  /*
+    ⚠ HIS MASTER SWITCH STOPS EVERY SEAT, INCLUDING THIS LANE (review of
+    2026-09-26). Until this arm existed only `seatPopulation` asked about the
+    switches, so a pass with background work switched OFF still cut seats loaded
+    with his ordered cards — and the fail-closed `{}` an unreadable switch table
+    produces read the same way. The switch is his answer to "should the crew be
+    working by itself right now", and that question does not change because the
+    card is one he named.
+
+    It reads the MASTER alone, keyed on the shared constant: a category switch
+    says which BAND of background work may run, and an ordered card is in no
+    band. Absent ⇒ false, so an unreadable table stops the seats.
+  */
+  if (!(input.switches[CREW_WORK_MASTER_KEY] ?? false)) {
+    return {
+      focus: null,
+      offered: [],
+      held: input.cards
+        .filter((card) => card.labels.includes(ORDERED_LABEL))
+        .map((card) => ({ number: card.number, title: card.title, why: "your background-work switch is off, so no seat runs" })),
+    };
+  }
 
   /* Takeable first, in his order, so "the top card" means the top card a shift
      could actually start — the focus lane's own rule. */
@@ -576,7 +608,15 @@ export function orderedBandForSeats(input: {
       note("no area named, so it cannot be proven to sit clear of the focus card — held");
       continue;
     }
-    if (focus.area !== null && area === focus.area) {
+    if (focus.area === null) {
+      /* ⚠ The clause above argues exactly this and the first shape of this file
+         then let it through (review of 2026-09-26): an UNKNOWN area cannot be
+         proven to differ from anything, and that is as true of the focus card's
+         as of the candidate's. */
+      note(`the focus card #${focus.number} names no area, so nothing can be proven to sit clear of it — held`);
+      continue;
+    }
+    if (area === focus.area) {
       note(`same area as the focus card (${area}) — held`);
       continue;
     }
@@ -624,6 +664,16 @@ function compareWithinBatch(a: SeatTakeableCard, b: SeatTakeableCard): number {
  * top is where he changes them, and a library default would be a second home
  * for a founder number (working law 4).
  *
+ * ⚠ **AND IT IS CAPPED A THIRD TIME, BY HOW MANY NON-EMPTY BATCHES CAN EXIST
+ * (review of 2026-09-26).** The arithmetic alone sizes the pass before the cards
+ * are grouped, and a domain group is never split — so six casting cards at
+ * `batchSize 2` sized THREE seats and filled one: `[6, 0, 0]`, and the runner
+ * launched two Opus sessions with nothing to do. The ceiling is the number of
+ * buckets that can be filled at all: one per area group, plus one per card that
+ * names no area (those CAN be split), plus one per ordered card. Empty buckets
+ * are then dropped and the seats renumbered, so `seatCount` is what was really
+ * cut and `server/seatBatches.test.ts` holds it to never being empty.
+ *
  * Area groups are placed largest first into the batch holding the fewest cards,
  * and a card naming no area goes to the smallest batch, which is the card's own
  * instruction. Deterministic throughout: equal sizes break by area name, so the
@@ -647,9 +697,7 @@ export function cutSeatBatches(input: {
   const total = cards.length + ordered.length;
   if (total === 0) return { seatCount: 0, batches: [], cardCount: 0, held: [] };
 
-  const seatCount = Math.min(Math.ceil(total / batchSize), maxSeats);
-  const buckets: SeatTakeableCard[][] = Array.from({ length: seatCount }, () => []);
-
+  /* The groups FIRST, because how many batches can be non-empty depends on them. */
   const grouped = new Map<string, SeatTakeableCard[]>();
   const arealess: SeatTakeableCard[] = [];
   for (const card of cards) {
@@ -661,6 +709,11 @@ export function cutSeatBatches(input: {
     group.push(card);
     grouped.set(card.area, group);
   }
+  /* One bucket per area group (never split), one per arealess card (splittable),
+     one per ordered card. Past this every extra bucket is provably empty. */
+  const fillable = grouped.size + arealess.length + ordered.length;
+  const seatCount = Math.max(1, Math.min(Math.ceil(total / batchSize), maxSeats, fillable));
+  const buckets: SeatTakeableCard[][] = Array.from({ length: seatCount }, () => []);
 
   const smallest = (): SeatTakeableCard[] => {
     let best = 0;
@@ -703,11 +756,20 @@ export function cutSeatBatches(input: {
     chosen.bucket.push(card);
   }
 
-  const batches: SeatBatch[] = buckets.map((bucket, index) => ({
-    seat: index + 1,
-    areas: [...new Set(bucket.map((card) => card.area).filter((area): area is string => area !== null))].sort(),
-    cards: [...bucket].sort(compareWithinBatch),
-  }));
+  /* ⚠ EMPTY BUCKETS ARE DROPPED AND THE SEATS RENUMBERED. The cap above makes
+     one unlikely; dropping them is what makes "a seat is never launched with
+     nothing" true rather than probable. */
+  const batches: SeatBatch[] = buckets
+    .filter((bucket) => bucket.length > 0)
+    .map((bucket, index) => ({
+      seat: index + 1,
+      areas: [...new Set(bucket.map((card) => card.area).filter((area): area is string => area !== null))].sort(),
+      cards: [...bucket].sort(compareWithinBatch),
+    }));
 
-  return { seatCount, batches, cardCount: total, held };
+  /* ⚠ `cardCount` IS WHAT WAS HANDED OUT, not what was considered (review of
+     2026-09-26): it read `total`, which includes every ordered card the area
+     rule then held, so the runner printed `cards 3` for a pass that handed 2. */
+  const cardCount = batches.reduce((sum, batch) => sum + batch.cards.length, 0);
+  return { seatCount: batches.length, batches, cardCount, held };
 }

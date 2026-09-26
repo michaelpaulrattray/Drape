@@ -15,7 +15,6 @@
  * runs, and a throw here would lose the one record of it.
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
@@ -34,11 +33,13 @@ import {
 } from "../shared/crewCardBuildState.js";
 
 const ARGS = parseStrictArgsOrRefuse(process.argv.slice(2), {
-  value: ["plan", "out", "started", "open-prs", "comments", "seat-failures", "repo"],
+  /* ⚠ NO `--repo`, AND NO REPOSITORY NAME ANYWHERE (review of 2026-09-26). Both
+     reads go through `readCardComments` / `readOpenPullRequests`, which use `gh`'s
+     own `{owner}/{repo}` placeholders — so they cannot name another repository's
+     comments beside this one's cards, and a hardcoded owner cannot go stale. */
+  value: ["plan", "out", "started", "open-prs", "comments", "seat-failures"],
   boolean: ["quiet"],
 });
-
-const GH_READ_TIMEOUT_MS = 20_000;
 
 type PlanFile = {
   readonly cutAt?: string;

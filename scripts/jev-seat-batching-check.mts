@@ -199,7 +199,7 @@ const AREA_CONTROLS: ReadonlyArray<{ expect: string; why: string; card: SeatCard
   },
 ];
 
-async function main() {
+async function main(): Promise<number> {
   console.log("CONTROLS for the seat-batching tie-breaker (#1281)");
   console.log(`  gate: ${SEAT_BATCHING_CONFIDENCE_GATE}   domains offered: ${DOMAINS.length}\n`);
 
@@ -242,9 +242,16 @@ async function main() {
     console.log("    nothing, because the cutter then does what it would have done without Jev at all.");
   }
   console.log(`\n  VERDICT: ${misses === 0 ? "the reader can say yes and no on this product's own cases" : `${misses} miss(es) to read`}`);
+  return misses;
 }
 
-await main();
+/* ⚠ THE EXIT CODE CARRIES THE VERDICT (review of 2026-09-26). It exited 0 with
+   misses on the board, so nothing that RUNS this — a preflight, a shift, anything
+   that checks the reader before trusting it — could tell a clean run from a dirty
+   one. Working law 2 is that controls run before verdicts count, and a control
+   whose result only a human reader can see is not one. */
+const misses = await main();
+if (misses > 0) process.exit(1);
 
 /*
   AND THE LAST STATEMENT ENDS THE PROCESS (`server/scriptExitDiscipline.test.ts`).

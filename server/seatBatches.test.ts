@@ -17,9 +17,16 @@
  * Every arm drives the pure functions directly, so nothing here needs GitHub, a
  * database or Jev (working law 3).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { readFileSync } from "node:fs";
+
+/* This suite imports `cardBuildState.mts`, which reaches `gh` through
+   `execFileSync` — so it is in `childProcessTestTimeouts`' derived population
+   and declares the class's timeout (#548). */
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 import {
   areaOfLabel,
@@ -285,6 +292,48 @@ describe("how a pass cuts its batches", () => {
     expect(JSON.stringify(once.batches)).toBe(JSON.stringify(twice.batches));
   });
 
+  it("NEVER launches an empty seat — the reviewer's own two cases", () => {
+    /* Driven on the PR: 6 casting cards, max 4, batch 2 gave seatCount 3 and
+       sizes [6, 0, 0]; 8 casting + 2 boards gave [8, 2, 0, 0]. Two Opus sessions
+       with nothing to do, every pass. */
+    const sixCasting = takeables(Array.from({ length: 6 }, (_, i) => [i + 1, "casting"] as [number, string]));
+    const one = cutSeatBatches({ cards: sixCasting, maxSeats: 4, batchSize: 2 });
+    expect(one.seatCount).toBe(1);
+    expect(one.batches.map((b) => b.cards.length)).toEqual([6]);
+
+    const mixed = takeables([
+      ...Array.from({ length: 8 }, (_, i) => [i + 1, "casting"] as [number, string]),
+      [20, "boards"], [21, "boards"],
+    ]);
+    const two = cutSeatBatches({ cards: mixed, maxSeats: 4, batchSize: 2 });
+    expect(two.seatCount).toBe(2);
+    expect(two.batches.map((b) => b.cards.length).sort((a, b) => b - a)).toEqual([8, 2]);
+
+    /* And the general property, over every shape and every seat count. */
+    for (const maxSeats of [1, 2, 3, 4]) {
+      for (const batchSize of [1, 2, 5]) {
+        const plan = cutSeatBatches({ cards: mixed, maxSeats, batchSize });
+        expect(plan.batches.every((b) => b.cards.length > 0), `max ${maxSeats} batch ${batchSize}`).toBe(true);
+        expect(plan.seatCount).toBe(plan.batches.length);
+        expect(plan.batches.map((b) => b.seat)).toEqual(plan.batches.map((_, i) => i + 1));
+      }
+    }
+  });
+
+  it("counts the cards it HANDED OUT, never the ones it held", () => {
+    /* The runner prints this number. It read `total`, which includes an ordered
+       card the area rule then held: `cards 3` for a pass that handed 2. */
+    const plan = cutSeatBatches({
+      cards: takeables([[1, "boards"], [2, "boards"]]),
+      ordered: [{ ...card(101, ["founder-ordered"]), area: "boards" }],
+      maxSeats: 1,
+      batchSize: 5,
+    });
+    expect(plan.held.map((h) => h.number)).toEqual([101]);
+    expect(plan.cardCount).toBe(2);
+    expect(plan.cardCount).toBe(plan.batches.reduce((n, b) => n + b.cards.length, 0));
+  });
+
   it("refuses a nonsense seat count rather than inventing one", () => {
     expect(() => cutSeatBatches({ cards: takeables([[1, "a"]]), maxSeats: 0, batchSize: 5 })).toThrow(/positive/);
     expect(() => cutSeatBatches({ cards: takeables([[1, "a"]]), maxSeats: 4, batchSize: 0 })).toThrow(/positive/);
@@ -327,7 +376,7 @@ describe("the independence reading", () => {
 
 describe("his ordered band, split between the lanes", () => {
   const band = (cards: SeatCandidateCard[], independence: (c: SeatCandidateCard) => ReturnType<typeof readIndependence>) =>
-    orderedBandForSeats({ cards, board: CLEAN_BOARD, areaIndex: INDEX, independenceOf: independence });
+    orderedBandForSeats({ cards, board: CLEAN_BOARD, areaIndex: INDEX, switches: ALL_ON, independenceOf: independence });
 
   const ordered = (number: number, body: string, labels: string[] = []) =>
     card(number, ["founder-ordered", ...labels], { body });
@@ -386,6 +435,18 @@ describe("his ordered band, split between the lanes", () => {
     expect(result.held.find((h) => h.number === 101)!.why).toContain("same area");
   });
 
+  it("offers NOTHING when the FOCUS card's own area is unknown", () => {
+    /* The reviewer drove this: focus arealess, candidate casting, and it was
+       offered — while the file's own reason argued the other way. */
+    const result = band(
+      [ordered(100, "Make the studio nicer."), ordered(101, "Change server/casting/queue.ts.")],
+      () => ({ kind: "independent" }),
+    );
+    expect(result.focus!.area).toBeNull();
+    expect(result.offered).toEqual([]);
+    expect(result.held.find((h) => h.number === 101)!.why).toContain("names no area");
+  });
+
   it("never offers an ordered card whose area is unknown", () => {
     const result = band(
       [ordered(100, "Change server/casting/queue.ts."), ordered(101, "Make it nicer.")],
@@ -401,6 +462,22 @@ describe("his ordered band, split between the lanes", () => {
       () => ({ kind: "independent" }),
     );
     expect(result.offered).toEqual([]);
+  });
+
+  it("HIS MASTER SWITCH STOPS THE ORDERED LANE TOO, and an unreadable {} stops it", () => {
+    for (const switches of [{ ...ALL_ON, master: false }, {}]) {
+      const result = orderedBandForSeats({
+        cards: [ordered(100, "server/casting/queue.ts"), ordered(101, "client/src/features/boards/Canvas.tsx")],
+        board: CLEAN_BOARD,
+        areaIndex: INDEX,
+        switches,
+        independenceOf: () => ({ kind: "independent" }),
+      });
+      expect(result.focus, JSON.stringify(switches)).toBeNull();
+      expect(result.offered, JSON.stringify(switches)).toEqual([]);
+      expect(result.held.map((h) => h.number).sort()).toEqual([100, 101]);
+      expect(result.held[0]!.why).toContain("switch is off");
+    }
   });
 
   it("names no focus card when every ordered card is held", () => {
@@ -440,25 +517,54 @@ describe("his ordered band, split between the lanes", () => {
 describe("the cut derives rather than mirrors", () => {
   const source = readFileSync("scripts/lib/seatBatches.mts", "utf8");
 
-  it("reads every takeability rule from a shared owner", () => {
-    for (const owner of [
-      "homeWorkCategoryFor",
-      "backgroundWorkAllowed",
-      "exclusionFor",
-      "SeatBuildBoard",
-      "RUNG_LABEL_PREFIX",
-      "sortOrderedBand",
-      "heldStateFromLabels",
-    ]) {
-      expect(source, `${owner} is the owner and must be imported, not re-implemented`).toContain(owner);
+  it("CALLS every takeability rule's owner — an import is not a call site", () => {
+    /* The first shape of this arm searched for the NAME, which an import line
+       satisfies on its own: a symbol could be imported and never used and the
+       arm stayed green (review of 2026-09-26). Each pattern is the use itself. */
+    const checks: ReadonlyArray<readonly [string, RegExp]> = [
+      ["homeWorkCategoryFor", /homeWorkCategoryFor\(card\.labels\)/],
+      ["backgroundWorkAllowed", /backgroundWorkAllowed\(input\.switches, category\)/],
+      ["exclusionFor", /exclusionFor\(card\.labels\)/],
+      ["the build board", /input\.board\.holdsOffOffer\(/],
+      ["RUNG_LABEL_PREFIX", /startsWith\(RUNG_LABEL_PREFIX\)/],
+      ["sortOrderedBand", /sortOrderedBand\(band\)/],
+      ["heldStateFromLabels", /heldStateFromLabels\(card\.labels\)/],
+      ["CREW_HOLD_WORD", /CREW_HOLD_WORD\[hold\]/],
+      ["the master switch", /input\.switches\[CREW_WORK_MASTER_KEY\]/],
+    ];
+    for (const [owner, call] of checks) {
+      expect(call.test(source), `${owner} must be CALLED here, not merely imported`).toBe(true);
     }
   });
 
-  it("names no work label, hold label or domain of its own", () => {
-    /* A literal here is a second list of something `shared/` already declares.
-       `urgent` is the one exception and it is a SORT key, not a population rule. */
-    for (const literal of ['"bug"', '"small-fix"', '"casting-upkeep"', '"blocked"', '"awaiting-fable"', '"casting"']) {
-      expect(source, `${literal} must come from the shared vocabulary`).not.toContain(literal);
+  it("names no work label, hold label or domain of its own — IN EVERY FILE OF THE FEATURE", () => {
+    /* ⚠ The first shape read the LIBRARY only, and the CLI carried
+       `const ORDERED_LABEL = "founder-ordered"` the whole time (review of
+       2026-09-26). An arm that reads one file of a feature is an arm about that
+       file, not about the rule. Comments are stripped: these labels are
+       discussed in prose on purpose, and a rule about CODE must not become a
+       rule about documentation. */
+    const files = [
+      "scripts/lib/seatBatches.mts",
+      "scripts/cut-seat-batches.mts",
+      "scripts/lib/seatPassDigest.mts",
+      "scripts/seat-pass-digest.mts",
+      "scripts/lib/jevSeatBatching.mts",
+    ];
+    const literals = ['"bug"', '"small-fix"', '"casting-upkeep"', '"founder-ordered"', '"blocked"', '"awaiting-fable"', '"parked"', '"casting"', '"boards"'];
+    for (const file of files) {
+      const code = readFileSync(file, "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/^\s*\/\/.*$/gm, "")
+        /* A LOOKUP BY KEY into the shared vocabulary is a derivation, not a typed
+           label: `QUEUE_EXCLUSION_REASONS.find((r) => r.key === "parked")` reads
+           the label OUT of the owner, and `parked` being both the key and the
+           label is a coincidence of that vocabulary. The label itself is never
+           written; only the identifier used to look it up is. */
+        .replace(/\.key === "[a-zA-Z]+"/g, "");
+      for (const literal of literals) {
+        expect(code.includes(literal), `${file} names ${literal}; it must come from the shared vocabulary`).toBe(false);
+      }
     }
   });
 });
