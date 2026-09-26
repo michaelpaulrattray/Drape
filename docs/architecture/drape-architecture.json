@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "97d64cf45bf9a125"
+    "sourceFingerprint": "7555776eb2024e86"
   },
   "domains": [
     {
@@ -12921,6 +12921,10 @@
     {
       "id": "test:server/providers/falImagesAnchored.test.ts",
       "path": "server/providers/falImagesAnchored.test.ts"
+    },
+    {
+      "id": "test:server/providers/falMaskedEditWire.test.ts",
+      "path": "server/providers/falMaskedEditWire.test.ts"
     },
     {
       "id": "test:server/providers/providerContract.test.ts",

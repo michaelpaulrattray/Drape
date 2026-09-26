@@ -413,12 +413,17 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
   CASTING_ROLL_ENGINE_SCOPE: {
     position: "users:1",
     why:
-      "the roll engine on his account — a GPT Image 2.5 model instead of GPT Image 2 (#1079, #1084); "
-      + "CASTING_ROLL_ENGINE_MODEL says which and is not a scope flag (a value, so a model switch is a "
-      + "variable change). His eye on court #1068 (2026-09-22): Flare first (\"honestly flare gave good "
+      "⚠ SINCE #1340 THIS FLAG SELECTS AN EXCEPTION, NOT THE ROAD. Every roll renders on GPT Image 2.5 "
+      + "Sunburst by default (his word, 2026-09-26: \"anywhere we currently use gpt image 2.0 will be 2.5 "
+      + "sunburst by default now ... switching all engines is a now job\"), so this names the accounts that "
+      + "roll on CASTING_ROLL_ENGINE_MODEL instead — which is how a court puts somebody on `flare`. "
+      + "Before it, his account rolled on Sunburst and EVERY OTHER ACCOUNT rolled on GPT Image 2; that gap "
+      + "is what the default closed. It stays users:1 because with the model already `sunburst` the scope "
+      + "branch and the default branch now name the same engine, so the position is inert rather than "
+      + "wrong — unsetting it is tidying, is his to run with the deploy, and changes no customer's bytes. "
+      + "Origin (#1079, #1084): his eye on court #1068 (2026-09-22), Flare first (\"honestly flare gave good "
       + "results\"), then after three real rolls — 4 of 8 refused on roll 276 — \"flare is producing bad "
-      + "results - switch over to sunburst\". users:1 on that word; wider on his eye and not before, with "
-      + "the chosen model's fal price and refusal rate read first",
+      + "results - switch over to sunburst\"",
   },
   CASTING_RETRY_SCOPE: {
     position: "all",
@@ -588,7 +593,10 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "SCOPE nor STAGE. His own word put it there (court #1068, 2026-09-22: \"flare is "
       + "producing bad results - switch over to sunburst\"), so the setting deciding which "
       + "model every roll of his renders on stood outside the one check that compares our "
-      + "record to reality",
+      + "record to reality. ⚠ SINCE #1340 IT NO LONGER DECIDES WHAT EVERYONE ELSE GETS: the "
+      + "default is Sunburst for every account, and this value only answers for the accounts "
+      + "CASTING_ROLL_ENGINE_SCOPE names. At `sunburst` it therefore agrees with the default "
+      + "and moves nobody's bytes; its remaining job is putting a scoped account on `flare`",
   },
 };
 

@@ -24,6 +24,8 @@ import {
   FAL_GPT_IMAGE_2_EDIT,
   FAL_GPT_IMAGE_25_FLARE,
   FAL_GPT_IMAGE_25_FLARE_EDIT,
+  FAL_GPT_IMAGE_25_SUNBURST,
+  FAL_GPT_IMAGE_25_SUNBURST_EDIT,
 } from "./falImages";
 import { createOpenRouterCreativeEngine } from "./openrouterImages";
 import { QUEUE_BASE } from "./falTransport";
@@ -76,20 +78,24 @@ describe("the anchored render at the wire", () => {
       references: [anchor],
     });
     expect(captured).toHaveLength(1);
-    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_2_EDIT}`);
+    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST_EDIT}`);
+    /* Named explicitly: the failure this arm guards is not "a wrong URL", it is
+       the DEFAULT falling back to the retired engine (#1340). */
+    expect(captured[0]?.url).not.toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_2_EDIT}`);
     expect(captured[0]?.body.image_urls).toEqual([`data:image/png;base64,${PIXEL.toString("base64")}`]);
     expect(captured[0]?.body.image_size).toEqual({ width: 1024, height: 1536 });
-    expect(result.provenance.model).toBe(FAL_GPT_IMAGE_2_EDIT);
+    expect(result.provenance.model).toBe(FAL_GPT_IMAGE_25_SUNBURST_EDIT);
   });
 
-  it("no references: the base endpoint and NO image_urls key — the unanchored wire is byte-identical to before", async () => {
+  it("no references: the base endpoint and NO image_urls key — and the default endpoint is SUNBURST (#1340)", async () => {
     const { captured } = stubFalTransport();
     const engine = createFalCreativeEngine({ apiKey: "test-key", pollIntervalMs: 1 });
     const result = await engine.generateCandidate({ prompt: "a plain roll", size: "1024x1536", quality: "medium" });
     expect(captured).toHaveLength(1);
-    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_2}`);
+    expect(captured[0]?.url).toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_25_SUNBURST}`);
+    expect(captured[0]?.url).not.toBe(`${QUEUE_BASE}/${FAL_GPT_IMAGE_2}`);
     expect(Object.keys(captured[0]?.body ?? {})).not.toContain("image_urls");
-    expect(result.provenance.model).toBe(FAL_GPT_IMAGE_2);
+    expect(result.provenance.model).toBe(FAL_GPT_IMAGE_25_SUNBURST);
   });
 
   it("A FLARE ROLL'S ANCHORED RENDER LEAVES FOR FLARE'S OWN EDIT DOOR (#1079) — read at the outgoing URL, not at the map", async () => {
