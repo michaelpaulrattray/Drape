@@ -43,6 +43,8 @@ vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
  */
 
 const SCRIPT = resolve("scripts/next-up-escalation.mts");
+/** tsx by its file, for the hostile-PATH arm: `npx` would need `sh`, which that PATH withholds. */
+const TSX_CLI = resolve("node_modules/tsx/dist/cli.mjs");
 const SWEEP = resolve("scripts/crew-desk-sweep.mts");
 
 type Row = { number: number; title: string; createdAt: string; labels: { name: string }[] };
@@ -614,14 +616,20 @@ describe("a card somebody is already building is not takeable (#1094)", () => {
       card(391, ["founder-ordered"], "his ladder ruling"),
       card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
     ]);
+    /* ⚠ node ITSELF by its absolute path, and tsx by its file — never `npx`.
+       `npx` spawns `sh` to run the bin, and `sh` lives in `/bin`, which this PATH
+       deliberately does not carry; on the runner that was `spawn sh ENOENT` and an
+       empty stdout (run 36219309593), a red that was about the arm's own plumbing
+       and not about `gh`. `process.execPath` needs no PATH lookup at all, and tsx
+       starts its child from the same path, so nothing here consults the shell. */
     const proc = runHook(
-      "npx",
-      ["tsx", SCRIPT, "--queue", queue,
+      process.execPath,
+      [TSX_CLI, SCRIPT, "--queue", queue,
         ...board("no-gh", {
           prs: [{ number: 1401, title: "chore: the ladder ruling", body: "for card #391" }],
         }),
         "--state", statePath("no-gh"), "--today", "2026-09-26"],
-      { shell: process.platform === "win32", env },
+      { env },
     );
     const last = proc.stdout.split(/\r?\n/).filter((line) => line.trim().length > 0).pop() ?? "";
     /* The full verdict, not merely "it did not crash": the built row is skipped
@@ -641,11 +649,11 @@ describe("a card somebody is already building is not takeable (#1094)", () => {
       Without this run every arm here would pass against the defect.
     */
     const oneHalf = runHook(
-      "npx",
-      ["tsx", SCRIPT, "--queue", queue,
+      process.execPath,
+      [TSX_CLI, SCRIPT, "--queue", queue,
         "--comments", join(dir, "no-gh-comments.json"),
         "--state", statePath("no-gh-one-half"), "--today", "2026-09-26"],
-      { shell: process.platform === "win32", env },
+      { env },
     );
     const oneHalfLast = oneHalf.stdout.split(/\r?\n/).filter((line) => line.trim().length > 0).pop() ?? "";
     expect(oneHalfLast, oneHalf.stderr).not.toContain("board could not be read");
