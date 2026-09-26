@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 180
+      "moduleCount": 181
     },
     {
       "id": "domain:castingV2",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 63
+      "moduleCount": 64
     },
     {
       "id": "domain:staff",
@@ -4561,6 +4561,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/viewThumbnailMint.ts",
+      "path": "server/castingV2/viewThumbnailMint.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/wardrobeCards.ts",
       "path": "server/castingV2/wardrobeCards.ts",
       "domain": "casting-v2",
@@ -6093,6 +6099,12 @@
     {
       "id": "module:shared/spokenError.ts",
       "path": "shared/spokenError.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/viewThumbnails.ts",
+      "path": "shared/viewThumbnails.ts",
       "domain": "shared",
       "lifecycle": "active"
     }
@@ -13582,6 +13594,10 @@
       "path": "server/storageManifestReceipt.test.ts"
     },
     {
+      "id": "test:server/storageThumbnailSweep.test.ts",
+      "path": "server/storageThumbnailSweep.test.ts"
+    },
+    {
       "id": "test:server/stripe/annualInvoiceGrant.test.ts",
       "path": "server/stripe/annualInvoiceGrant.test.ts"
     },
@@ -13676,6 +13692,14 @@
     {
       "id": "test:server/uptimeAnchor.test.ts",
       "path": "server/uptimeAnchor.test.ts"
+    },
+    {
+      "id": "test:server/viewThumbnailWiring.test.ts",
+      "path": "server/viewThumbnailWiring.test.ts"
+    },
+    {
+      "id": "test:server/viewThumbnails.test.ts",
+      "path": "server/viewThumbnails.test.ts"
     },
     {
       "id": "test:server/viteCacheDirPerTree.test.ts",
@@ -15863,6 +15887,11 @@
     {
       "from": "module:client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
       "to": "module:shared/refundCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
+      "to": "module:shared/viewThumbnails.ts",
       "kind": "imports"
     },
     {
@@ -25267,6 +25296,11 @@
     },
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/viewThumbnailMint.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/db/castingV2Sign.ts",
       "kind": "imports"
     },
@@ -27672,6 +27706,11 @@
     },
     {
       "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/viewThumbnailMint.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/wardrobeLine.ts",
       "kind": "imports"
     },
@@ -27978,6 +28017,21 @@
     {
       "from": "module:server/castingV2/viewRetryService.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewThumbnailMint.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewThumbnailMint.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewThumbnailMint.ts",
+      "to": "module:shared/viewThumbnails.ts",
       "kind": "imports"
     },
     {
@@ -32663,6 +32717,11 @@
     {
       "from": "module:server/storage.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/storage.ts",
+      "to": "module:shared/viewThumbnails.ts",
       "kind": "imports"
     },
     {

@@ -16,6 +16,10 @@ import {
 import { createHash } from "node:crypto";
 import { ENV } from "./_core/env";
 import { createModuleLogger } from "./logging/logger";
+import {
+  isViewThumbnailBearingKey,
+  withViewThumbnailSuffix,
+} from "../shared/viewThumbnails";
 const log = createModuleLogger("storage");
 
 type StorageConfig = {
@@ -197,6 +201,27 @@ export async function storageGet(
 export async function storageCopyExact(input: {
   sourceKey: string;
   destinationKey: string;
+  /*
+    THE VERIFIED BYTES, OFFERED ONCE (#1389).
+
+    This function already reads the destination back in full to prove the copy
+    is exact, and then throws those bytes away. A caller that wants to make
+    something FROM them — the anchor's small copy is the only one today — would
+    otherwise have to read the object a third time, and an anchor is the same
+    19 MB the whole card is about.
+
+    ⚠ **It is offered rather than returned, on purpose.** Returning the buffer
+    would hand every caller a copy of a customer's picture to hold for as long
+    as it liked; a callback scopes it to the one that asked. And it is called
+    only AFTER verification, so nothing can be built from bytes this function is
+    about to reject.
+
+    ⚠ **It cannot fail the copy.** Its rejection is caught and logged: the copy
+    has already succeeded and been proven exact by the time it runs, and undoing
+    a verified copy because a convenience failed would be the tail wagging the
+    dog.
+  */
+  onVerifiedBytes?: (bytes: Buffer) => Promise<void>;
 }): Promise<{
   key: string;
   url: string;
@@ -236,6 +261,15 @@ export async function storageCopyExact(input: {
   ) {
     throw new Error("Storage copy verification failed");
   }
+  if (input.onVerifiedBytes) {
+    await input.onVerifiedBytes(destination.bytes).catch((err: unknown) => {
+      // Classification only — never the key, which names a customer's object.
+      log.warn(
+        { errorName: err instanceof Error ? err.name : "unknown" },
+        "A reader of a verified copy's bytes failed; the copy itself stands",
+      );
+    });
+  }
   return {
     key: destinationKey,
     url: buildPublicUrl(config.publicUrl, destinationKey),
@@ -250,6 +284,43 @@ export async function storageDelete(
 ): Promise<{ success: true } | { success: false; errorCode: string; retryable: boolean }> {
   const config = getStorageConfig();
   const key = normalizeKey(relKey);
+
+  /*
+    THE SMALL COPY DIES WITH ITS PICTURE (#1389).
+
+    A signed view's thumbnail is a DERIVED key rather than a recorded one, so
+    nothing in the database would ever point a cleanup at it — and an object no
+    record names is exactly the litter this product's deletion road exists to
+    prevent. Sweeping it HERE, at the one exported deletion primitive, covers
+    every one of its call sites (the cleanup worker, the mint's own rollback,
+    permanent Cast deletion) with nothing for any of them to remember.
+
+    ⚠ **Narrow on purpose, and it must stay narrow.** `isViewThumbnailBearingKey`
+    is false for everything that is not a signed view, so a garment, an avatar
+    or an evidence crop issues no second request — a blanket rule would double
+    the request count of the cleanup worker's bulk sweeps for a derivative that
+    does not exist. It is also false for a derivative itself, so this cannot
+    recurse.
+
+    ⚠ **Its outcome is deliberately NOT part of this function's result.** The
+    callers count deletions and retry the retryable; a missing thumbnail (every
+    view signed before #1389 shipped) is the normal case, not a failure, and
+    letting it reach that arithmetic would make a correct sweep look broken.
+  */
+  if (isViewThumbnailBearingKey(key)) {
+    await getClient(config)
+      .send(new DeleteObjectCommand({
+        Bucket: config.bucket,
+        Key: withViewThumbnailSuffix(key),
+      }))
+      .catch((err: any) => {
+        // Classification only — never the key, which names a customer's object.
+        log.warn(
+          { stage: "thumbnail", errorName: typeof err?.name === "string" ? err.name : "unknown" },
+          "Could not sweep a view thumbnail; its picture is being deleted regardless",
+        );
+      });
+  }
 
   try {
     await getClient(config).send(

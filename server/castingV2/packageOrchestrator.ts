@@ -98,6 +98,7 @@ import {
 } from "../db/castingV2Sign";
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete, storagePut } from "../storage";
+import { mintViewThumbnail } from "./viewThumbnailMint";
 import {
   ProviderError,
   mayStillArrive,
@@ -337,11 +338,27 @@ async function defaultStoreImage(input: {
   // all that stands between a public-bucket Cast view and anyone who guesses
   // it. (The repo-wide guard rejects the weak API by name in any storage
   // writer, so this comment names it by description.)
-  return storagePut(
+  const stored = await storagePut(
     `${PACKAGE_KEY_PREFIX}/${input.operationId}/views/${randomUUID()}.${extension}`,
     input.bytes,
     input.contentType,
   );
+  /*
+    THE SMALL COPY, BESIDE THE PICTURE (#1389).
+
+    This is the ONE place a signed view's bytes reach storage, which is why the
+    thumbnail is minted here and not at the twenty-odd sites that insert a
+    `model_assets` row. It is awaited rather than floated: the view it belongs
+    to has just spent 40-120 seconds rendering, a shrink costs a fraction of
+    that, and an awaited call cannot outlive the request that owns its bytes.
+
+    ⚠ **It cannot fail this function.** `mintViewThumbnail` swallows its own
+    errors by construction and returns nothing to branch on — a thumbnail is a
+    convenience built from a picture that already exists, and a customer who
+    paid for the view gets it whatever the bucket says about the small copy.
+  */
+  await mintViewThumbnail(stored.key, input.bytes);
+  return stored;
 }
 
 /**

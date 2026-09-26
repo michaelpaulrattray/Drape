@@ -19,10 +19,56 @@ import {
   type CanonicalViewAngle,
   type MintTier,
 } from '@shared/boardTypes';
+import { withViewThumbnailSuffix } from '@shared/viewThumbnails';
 
 // ============ Types ============
 
 export type ViewType = CanonicalViewAngle;
+
+// ============ ThumbnailImage ============
+
+/**
+ * The strip's picture — the SMALL copy, with the full one as its fallback (#1389).
+ *
+ * This tile is 72x90 CSS pixels and used to be handed the full-size stored file:
+ * 5.8 MB each, and 19.0 MB each once #1373's 4K tier lands, so a signed cast's
+ * strip alone was ~30 MB and would have become ~95 MB. It now asks for the
+ * small copy the server mints beside every view.
+ *
+ * ⚠ **THE FALLBACK IS THE WHOLE DESIGN, NOT A SAFETY NET.** The small copy is a
+ * DERIVED key rather than a recorded one, so nothing in the response says
+ * whether it exists — and for every cast signed before this shipped it does
+ * not. Asking and falling back is what makes those casts keep working with no
+ * backfill, no migration and no column; the cost is one 404 per tile, once,
+ * against the 19 MB it is avoiding.
+ *
+ * ⚠ **`key` on the element below is load-bearing.** A tile's URL changes when a
+ * view is refreshed, and `useState` initialised from a prop does not re-read it
+ * — so a tile that had fallen back to the full picture would stay fallen back
+ * for a brand-new object that has a perfectly good small copy, forever.
+ * Remounting on the URL is what resets the question.
+ */
+function ThumbnailImage({
+  fullSrc,
+  className,
+  style,
+}: {
+  fullSrc: string;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const [src, setSrc] = useState(() => withViewThumbnailSuffix(fullSrc));
+  return (
+    <img
+      src={src}
+      alt=""
+      className={className}
+      style={style}
+      decoding="async"
+      onError={() => setSrc(fullSrc)}
+    />
+  );
+}
 
 // ============ ViewThumbnail ============
 
@@ -88,9 +134,9 @@ function ViewThumbnail({
         title={stateLabel}
         className="absolute inset-0 block h-full w-full"
       >
-        <img
-          src={src}
-          alt=""
+        <ThumbnailImage
+          key={src}
+          fullSrc={src}
           className="h-full w-full object-cover transition-opacity duration-200"
           style={{ opacity: isRefreshing ? 0.42 : isStale ? 0.58 : 1 }}
         />
