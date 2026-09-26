@@ -58,13 +58,27 @@
  *    and a hand-written list of class names on a paid road is how the third one
  *    drifts from the other two without a single test going red. Every class on
  *    the terminal list earns its place by its OWN declaration already saying a
- *    second attempt reaches the identical answer; the six that read like
+ *    second attempt reaches the identical answer; the ones that read like
  *    candidates and are deliberately left retrying are named there too, with
- *    why. ⚠ **Nothing a customer meets on THIS road changes**: the terminal
- *    set adds `cannot_say`, which this road cannot raise — the only raiser is
- *    `refineService.ts`'s `RepaintCannotSayError`, on the repaint road, and it
- *    is not a `ProviderError`. The value is the derivation and its arms, not a
- *    wait saved here.
+ *    why. ⚠ **Nothing a customer meets on THIS road changed with that card**:
+ *    the terminal set added `cannot_say`, which this road cannot raise — the
+ *    only raiser is `refineService.ts`'s `RepaintCannotSayError`, on the repaint
+ *    road, and it is not a `ProviderError`. The value was the derivation and its
+ *    arms, not a wait saved here.
+ *
+ *    ✅ **#1301 THEN TOOK THREE OF THE SIX CANDIDATES #1212 FILED, AND ONE OF
+ *    THEM IS A REAL WAIT REMOVED FROM A PAID SIGN.** `provider_account`,
+ *    `composite_fault` and `removal_not_delivered` are terminal for arrival now;
+ *    `render_fault` and `facts_missing` stay on the budget because a redraw from
+ *    a stochastic engine is genuinely a different draw, and `segment_store` is
+ *    HELD with its reason at the set. **Only `provider_account` is reachable
+ *    here** — `falTransport.ts` maps 401/403 to it and `generateView` goes
+ *    through that transport — so an exhausted balance costs **five** calls
+ *    across a Sign rather than fifteen with backoff, to reach an answer the
+ *    first one gave in full. ⚠ **It is a WAIT change and not a money change:**
+ *    a slice that never landed refunds either way, which is why #1212 could
+ *    file it but not take it, and the arm below asserts the 450 alongside the
+ *    call count.
  * 3. **A lost commit deletes its object.** If the fence refuses — the sweep got
  *    here first — nothing will ever reference those bytes, and the cleanup
  *    worker only deletes keys a row handed it. Best-effort delete now, or it is
@@ -794,12 +808,23 @@ export async function renderViewAttempts<T>(
         somehow threw it. It is on the terminal set because the CONTRACT's own
         declaration justifies it, not because a wait was saved here.
 
-        So what this change is worth is the derivation and its arms, not a
-        behaviour win: the loop stops holding a private opinion about a union
+        So what THAT change was worth is the derivation and its arms, not a
+        behaviour win: the loop stopped holding a private opinion about a union
         that already has a contract module, and the six classes that read like
-        candidates for the terminal set are named and pinned instead of being
-        rediscovered by whoever reads these two string comparisons next.
+        candidates for the terminal set were named and pinned instead of being
+        rediscovered by whoever reads two string comparisons next.
         Transport and rate limits were already retried inside the adapter.
+
+        ⚠ **AND #1301 CASHED THREE OF THOSE SIX, WHICH IS WHERE THE WAIT
+        ACTUALLY LEAVES THIS LOOP.** `provider_account` is terminal now, and it
+        is the one of them this road can raise: `falTransport.ts` maps 401/403 to
+        it, so an exhausted balance breaks here on the FIRST call instead of on
+        the third, five times across a Sign instead of fifteen with 1.5 s and 4 s
+        between each. Her money is unchanged — the slice below refunds whether
+        the loop gave up once or three times — so what she stops doing is
+        waiting. `composite_fault` and `removal_not_delivered` joined it on the
+        contract's own terms and are unreachable here; `segment_store` is held
+        and `providers/types.ts` says why.
       */
       if (!mayStillArrive(failureClass)) break;
       /*

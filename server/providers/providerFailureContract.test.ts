@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { readdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 import {
   REFUSES_AFTER_RENDER,
@@ -11,6 +13,51 @@ import {
   refusesAfterRender,
   type ProviderFailureClass,
 } from "./types";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+import { readListedSource } from "../testing/listedSource";
+
+/* This file sweeps the `server/` tree to measure which failure classes anything
+   actually raises, so it declares the contended ceiling at FILE level (#741) —
+   a number typed onto one `it(…)` is not inherited by its neighbour. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+
+/**
+ * WHICH PRODUCTION MODULES RAISE THIS FAILURE CLASS — measured, never listed.
+ *
+ * `new ProviderError("<class>"` is the only way a class enters the taxonomy at
+ * runtime, so the raiser set is a grep over the declaration site rather than an
+ * opinion. Tests are excluded because a suite throwing a class to drive a road
+ * is not the product raising it; `providers/types.ts` is excluded because it
+ * DECLARES the union and the sets, which every class appears in by definition.
+ *
+ * The read goes through `readListedSource`: this walk lists directories other
+ * suites plant and unlink files in, and a file that vanishes between the listing
+ * and the read is #223's ENOENT rather than a finding (`server/testing/listedSource.ts`).
+ */
+async function raisersOf(failureClass: ProviderFailureClass): Promise<string[]> {
+  const serverRoot = path.resolve(import.meta.dirname, "..");
+  const needle = `ProviderError("${failureClass}"`;
+  const found: string[] = [];
+  const walk = (dir: string): void => {
+    for (const child of readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, child.name);
+      if (child.isDirectory()) {
+        if (child.name === "node_modules") continue;
+        walk(full);
+        continue;
+      }
+      if (!child.name.endsWith(".ts")) continue;
+      if (child.name.includes(".test.")) continue;
+      if (full === path.join(serverRoot, "providers", "types.ts")) continue;
+      const source = readListedSource(full);
+      if (source === null) continue;
+      if (source.includes(needle)) found.push(path.relative(serverRoot, full).replace(/\\/g, "/"));
+    }
+  };
+  walk(serverRoot);
+  return found.sort();
+}
 
 /**
  * WHO MAY TAKE THE MONEY BACK — pinned, because the founder decides this list.
@@ -102,15 +149,24 @@ describe("the post-render refund contract", () => {
  * about the same event cannot be seen by reading either.
  */
 describe("the did-it-arrive contract", () => {
-  it("is exactly these three, and every one of them is terminal in its own words", () => {
+  it("is exactly these six, and every one of them is terminal in its own words", () => {
     expect([...VIEW_ARRIVAL_TERMINAL].sort()).toEqual([
       /* "the recipe will have the same nothing to say a second later" - and it
          refuses BEFORE the provider is contacted, so nothing was ever arriving. */
       "cannot_say",
       /* The request asks the same impossible thing a second time. */
       "capability",
+      /* "the same inputs produce the same cut" (#1301). */
+      "composite_fault",
       /* "Never retried - it will refuse again." */
       "content_policy",
+      /* "every candidate after it will fail the same way, and no user action can
+         fix it" (#1301) - and the only one of that card's three that is
+         reachable on the paid view road, so the only measured win. */
+      "provider_account",
+      /* "asking the same engine the same question is not a different request"
+         (#1301). */
+      "removal_not_delivered",
     ]);
   });
 
@@ -140,20 +196,39 @@ describe("the did-it-arrive contract", () => {
   /*
     ⚠ AND THE CLASSES DELIBERATELY LEFT RETRYING, pinned so that adding one is a
     visible act rather than a quiet narrowing of a road the customer paid for.
-    Two because a redraw from a stochastic engine is genuinely a different draw;
-    four because narrowing them is a money decision, carded rather than taken.
+
+    This arm listed SIX until #1301 decided three of them. Two are left because
+    a redraw from a stochastic engine is genuinely a different draw and she has
+    already paid for a frame she does not have; the third is HELD, and its reason
+    is the look #1301 asked for rather than a deferral — `segment_store`'s own
+    declaration qualifies itself with "in the same second" and this loop waits
+    1.5 s then 4 s, so a transient blip is the case its words do not cover, and
+    nothing in the product raises the class at all (the arm below measures that
+    rather than asserting it).
   */
-  it("leaves every candidate class retrying until somebody decides otherwise", () => {
-    for (const failure of [
-      "render_fault",
-      "facts_missing",
-      "provider_account",
-      "composite_fault",
-      "segment_store",
-      "removal_not_delivered",
-    ] as const) {
+  it("leaves the stochastic pair and the held class retrying", () => {
+    for (const failure of ["render_fault", "facts_missing", "segment_store"] as const) {
       expect(mayStillArrive(failure), failure).toBe(true);
     }
+  });
+
+  /*
+    ⚠ THE HELD CLASS'S REASON, MEASURED RATHER THAN QUOTED. `segment_store` stays
+    on the arrival budget partly because nothing raises it, and that is a fact
+    about the tree which will stop being true the day somebody wires it. When it
+    does, this arm goes red and the hold gets re-read with a real road behind it
+    — which is the whole point of measuring it here instead of writing the
+    sentence into a docblock and leaving it to rot.
+  */
+  it("nothing in the product raises segment_store — so the hold has no road to judge", async () => {
+    const raised = await raisersOf("segment_store");
+    expect(
+      raised,
+      "segment_store now has a raiser: re-read the hold in VIEW_ARRIVAL_TERMINAL's docblock (#1301)",
+    ).toEqual([]);
+    /* POSITIVE CONTROL: the same reader finds the raisers of a class that HAS
+       them, so an empty answer above is a finding and not a broken search. */
+    expect((await raisersOf("render_fault")).length).toBeGreaterThan(0);
   });
 
   /*

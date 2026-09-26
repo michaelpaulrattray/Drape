@@ -274,6 +274,29 @@ export function refusesAfterRender(failure: ProviderFailureClass): boolean {
  *   happen to raise a class today is a set that is wrong the day a second road
  *   raises it, which is the shape this whole file exists to avoid.
  *
+ * ⚠ **AND THREE MORE JOINED THEM — #1301, 2026-09-26, the decision #1212 filed
+ * rather than took.** Each was already carrying the qualifying sentence in its
+ * own declaration above, unconditionally, and none of them changes what the
+ * customer is charged: a view that does not land refunds its slice either way
+ * (`buildOneView`'s per-slot settlement), so what this narrows is the WAIT and
+ * the house's render bill, never her money.
+ *
+ * - `provider_account` — *"every candidate after it will fail the same way, and
+ *   no user action can fix it."* ⚠ **THE ONLY ONE OF THE THREE THAT IS
+ *   REACHABLE ON THIS ROAD, AND THE ONLY MEASURED WIN.** `falTransport.ts`
+ *   maps 401/403 to it, and `generateView` goes through that transport, so an
+ *   exhausted balance is exactly what the class was split out of `capability`
+ *   for: it surfaced as 403 on candidate after candidate while the sheet said
+ *   *"didn't arrive"*. A Sign is five views at three attempts, so the customer
+ *   was waiting through **fifteen** guaranteed-403 calls with backoff to reach
+ *   an answer the first one had given in full; it is **five** now.
+ * - `composite_fault` — *"the same inputs produce the same cut."* Raised only
+ *   by `maskedRefine.ts`, on the refine road; the view road renders, stores and
+ *   judges and never composites, so nothing here changes today.
+ * - `removal_not_delivered` — *"asking the same engine the same question is not
+ *   a different request."* Raised only by `refineService.ts`. Same: a contract
+ *   statement, not a behaviour change on this road.
+ *
  * ## What is deliberately NOT on it, which is the more important half
  *
  * **Because a redraw is genuinely a different draw.** `render_fault` and
@@ -281,24 +304,35 @@ export function refusesAfterRender(failure: ProviderFailureClass): boolean {
  * stochastic engine — the same prompt can land a clean frame next time, and
  * the customer has already paid for a frame she does not have. Their
  * docblocks call them non-retryable **at the provider layer**, which is the
- * transport's question, not this one.
+ * transport's question, not this one. #1301 recommended leaving both and they
+ * are left.
  *
- * **Because narrowing a paid road is a money decision, not a tidy-up.**
- * `provider_account`, `composite_fault`, `segment_store` and
- * `removal_not_delivered` each carry a docblock sentence that reads like a
- * qualification for this list — *"every candidate after it will fail the same
- * way"*, *"the same inputs produce the same cut"*, *"a second attempt in the
- * same second reaches the same database"*, *"asking the same engine the same
- * question is not a different request"*. Putting them here would drop each from
- * two attempts to one on a road the customer has paid for. Every one of those
- * is a real candidate and none of them is mine to decide in a card about
- * writing the taxonomy down; they are filed together, with
- * `provider_account` named as the strongest.
+ * ⚠ **`segment_store` IS THE FOURTH CANDIDATE #1301 NAMED AND IT IS HELD, with
+ * the look it asked for done rather than deferred.** Its declaration qualifies
+ * itself — *"a second attempt **in the same second** reaches the same
+ * database"* — and this loop does not retry in the same second: it waits 1.5 s,
+ * then 4 s, so a transient store blip is exactly the case its own sentence does
+ * not cover. Whether that class is ever transient cannot be answered, because
+ * **nothing in the product raises it**: `git grep` finds `"segment_store"` only
+ * in this file's union and in `REFUSES_AFTER_RENDER`. So it would be a contract
+ * about a road nobody walks, resting on a clause its own words exclude —
+ * whereas `cannot_say` above has a real raiser elsewhere in the product. Held
+ * on the safe side, which on a paid road is the extra attempt.
  *
  * **`unknown`, for the reason this whole docblock exists.**
  */
 export const VIEW_ARRIVAL_TERMINAL: ReadonlySet<ProviderFailureClass> =
-  new Set<ProviderFailureClass>(["content_policy", "capability", "cannot_say"]);
+  new Set<ProviderFailureClass>([
+    "content_policy",
+    "capability",
+    "cannot_say",
+    /* #1301, and only the first of these three is reachable on the paid road
+       today — the docblock above says which and why that is not a reason to
+       leave the others off a contract. */
+    "provider_account",
+    "composite_fault",
+    "removal_not_delivered",
+  ]);
 
 /**
  * Is another attempt worth the customer's time on a view she has already paid
