@@ -631,8 +631,12 @@ async function main(): Promise<number> {
     let lost = 0;
     let gained = 0;
     let collateral = 0;
+    /* Widened once: the four arms' `dropped` tuples have different literal
+       element types, so `ARMS[arm].dropped` narrows `.includes`'s parameter to
+       `never` across the union. */
+    const dropped: readonly string[] = ARMS[arm].dropped;
     for (const spec of KEPT_FIELDS) {
-      const byConstruction = ARMS[arm].dropped.includes(spec.field);
+      const byConstruction = dropped.includes(spec.field);
       for (const id of ids) {
         const anywhere = armNames.flatMap((other) => valuesOf(other, id, spec.field));
         if (!anywhere.some((value) => value !== "")) continue;
@@ -655,7 +659,7 @@ async function main(): Promise<number> {
       say(
         `  ${arm.padEnd(8)} COLLATERAL ${collateral} · lost ${lost}, gained ${gained} `
         + `(against the full arm's modal answer, ${ids.length} briefs x ${KEPT_FIELDS.length} fields; `
-        + `${ARMS[arm].dropped.filter((f) => KEPT_FIELDS.some((s2) => s2.field === f)).length} of those fields this arm removed)`,
+        + `${dropped.filter((f) => KEPT_FIELDS.some((s2) => s2.field === f)).length} of those fields this arm removed)`,
       );
     }
   }
