@@ -8382,9 +8382,9 @@
     {
       "id": "view-dressed-by-brief-1278",
       "title": "A signed view is dressed by your cast's own brief, not by a list of bans (#1278 part 1)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1339,
-      "note": "Held for the reviewer: it changes what the view checker refuses, so it changes refunds."
+      "note": "Merged 2026-09-26 with the relay's verdict; the two test arms the review owed were added by the relay. Part 2 of #1278 is next."
     }
   ],
   "problems": [
