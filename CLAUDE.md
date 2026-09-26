@@ -612,7 +612,7 @@ the live service on every push.
 | `CASTING_CONCEPT_UPLOAD_SCOPE` | upload a concept — a picture in, a description of the being out |
 | `CASTING_REFINE_DISPATCH_SCOPE` | whether the paid half of a refine stops holding the request |
 | `CASTING_RETRY_SCOPE` | the Retry button on a failed tile |
-| `CASTING_ROLL_ENGINE_SCOPE` | which accounts roll on an EXCEPTION to the default engine — `CASTING_ROLL_ENGINE_MODEL` (`flare` / `sunburst`) says which. Since #1340 every roll renders on GPT Image 2.5 Sunburst by default, so this no longer decides the road |
+| `CASTING_ROLL_ENGINE_SCOPE` | which accounts roll on an EXCEPTION to the default engine — `CASTING_ROLL_ENGINE_MODEL` (`flare` / `sunburst`) says which |
 | `CASTING_TWO_PATHS_SCOPE` | the Wardrobe / Basics path choice — ✅ RETIRED OUTRIGHT (#203 step (e)); the flag is gone from the code and the columns are kept |
 | `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` | keeping the frame from a refused render, and the words of a refused roll, for diagnosis |
 | `R7_SNAPSHOT_READ_SCOPE` | the R7-7B snapshot reader rollout |
