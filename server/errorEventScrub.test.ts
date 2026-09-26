@@ -16,17 +16,24 @@ import { describe, expect, it } from "vitest";
 
 import {
   ALLOWED_TAG_KEYS,
+  BREADCRUMB_CAP,
+  BREADCRUMB_CATEGORIES,
   FREE_TEXT_CAP,
   REDACTED,
   REFUSING_KEYS,
   findRefusingKey,
   project,
+  projectBreadcrumb,
+  scrubBreadcrumb,
   redactFreeText,
   scrubErrorEvent,
   type IncomingEvent,
 } from "../shared/errorEventScrub";
 
 const R2_ORIGIN = "https://pub-abc123.r2.dev";
+
+/** The thing that must never be on the wire, in the words a customer types. */
+const HER_SENTENCE = "a 28-year-old with close-cropped hair and freckles across her nose";
 
 /**
  * A real error event's shape, as `@sentry/node` builds one: the throw of a
@@ -189,7 +196,6 @@ describe("the projection — an allowlist, so an unnamed field cannot travel", (
      rule of its own, because the projection names what travels. */
   const kitchenSink: IncomingEvent = {
     ...castingErrorEvent(),
-    breadcrumbs: [{ category: "console", message: "her sentence, typed in the brief box" }],
     extra: { anything: "at all" },
     modules: { express: "4.21.2" },
     server_name: "railway-container-7f",
@@ -203,8 +209,14 @@ describe("the projection — an allowlist, so an unnamed field cannot travel", (
     const verdict = scrubErrorEvent(kitchenSink, R2_ORIGIN);
     if (verdict.verdict !== "send") throw new Error("the kitchen-sink event refused");
     const wire = JSON.stringify(verdict.event);
+    /* ⚠ `breadcrumbs` USED TO BE ON THIS LIST AND CAME OFF IT WITH #1405. It
+       is a NAMED field now, so an assertion that the word is absent here would
+       still pass — every crumb in this fixture's neighbourhood is a dropped
+       category — while its stated reason ("it is not named") had become false.
+       An arm passing for a reason its title denies is the shape this file's
+       own floor arms exist about, so the trail is proven in its own describe
+       below rather than by a word that happens not to appear. */
     for (const gone of [
-      "breadcrumbs",
       "extra",
       "modules",
       "server_name",
@@ -212,7 +224,6 @@ describe("the projection — an allowlist, so an unnamed field cannot travel", (
       "fingerprint",
       "debug_meta",
       "threads",
-      "her sentence",
       "the whole body",
     ]) {
       expect(wire).not.toContain(gone);
@@ -293,6 +304,278 @@ describe("the projection — an allowlist, so an unnamed field cannot travel", (
     const verdict = scrubErrorEvent({ tags });
     if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
     expect(Object.keys(verdict.event.tags ?? {}).sort()).toEqual([...ALLOWED_TAG_KEYS].sort());
+  });
+});
+
+describe("the breadcrumb trail — allowed by CATEGORY, and the list has a floor", () => {
+  /*
+    ⚠ SAME SHAPE AND SAME REASON AS THE REFUSING LIST'S FLOOR AT THE TOP OF THIS
+    FILE. Arms derived from `BREADCRUMB_CATEGORIES` cover anything ADDED to it,
+    which is the half a hand-written list cannot do — but delete a category and
+    its derived arm deletes itself with it, and a case list every arm clears
+    reads as 100% caught. So the categories that must travel and the ones that
+    must NEVER travel are both named here by hand, and either direction reddens.
+  */
+  it("keeps the trail a reader needs — which page to which page, and which request", () => {
+    for (const category of ["navigation", "http", "xhr", "fetch"]) {
+      expect(BREADCRUMB_CATEGORIES).toContain(category);
+    }
+  });
+
+  it("never keeps a category that carries a customer's own words", () => {
+    /* `console` because this product's client calls `console.error("[API Query
+       Error]", error)` on every failed query; `ui.*` because the crumb records
+       the clicked or typed element's TEXT and the brief box is a text field. */
+    for (const category of ["console", "ui.click", "ui.input", "ui.keypress"]) {
+      expect(BREADCRUMB_CATEGORIES).not.toContain(category);
+    }
+  });
+
+  /* THE DERIVED HALF: every category the constant names must actually survive
+     the projection. A category added to the list with no projection rule — so
+     that it is kept as an empty husk, or not kept at all — reddens here. */
+  for (const category of BREADCRUMB_CATEGORIES) {
+    it(`projects a \`${category}\` crumb rather than dropping it`, () => {
+      const kept = projectBreadcrumb({ category, timestamp: 1_790_000_000 }, R2_ORIGIN);
+      expect(kept).not.toBeNull();
+      expect(kept?.category).toBe(category);
+    });
+  }
+
+  it("drops a console crumb — the shape this product's client makes on EVERY failed query", () => {
+    const verdict = scrubErrorEvent(
+      {
+        ...castingErrorEvent(),
+        breadcrumbs: [
+          {
+            category: "console",
+            level: "error",
+            message: `[API Query Error] the author refused: ${HER_SENTENCE}`,
+            data: { arguments: ["[API Query Error]", HER_SENTENCE], logger: "console" },
+          },
+        ],
+      },
+      R2_ORIGIN,
+    );
+    if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+    expect(verdict.event.breadcrumbs).toBeUndefined();
+    expect(JSON.stringify(verdict.event)).not.toContain(HER_SENTENCE);
+  });
+
+  it("drops a ui.click crumb — the text it records IS what she typed in the brief box", () => {
+    const verdict = scrubErrorEvent(
+      {
+        breadcrumbs: [
+          {
+            category: "ui.click",
+            message: `button#roll[aria-label="Roll"] < form#brief > textarea: ${HER_SENTENCE}`,
+          },
+        ],
+      },
+      R2_ORIGIN,
+    );
+    if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+    expect(verdict.event.breadcrumbs).toBeUndefined();
+    expect(JSON.stringify(verdict.event)).not.toContain(HER_SENTENCE);
+  });
+
+  it("keeps a navigation crumb, with the query string and the fragment gone from both pages", () => {
+    const verdict = scrubErrorEvent(
+      {
+        breadcrumbs: [
+          {
+            category: "navigation",
+            timestamp: 1_790_000_001,
+            data: { from: "/casting?brief=her%20words", to: "/casting/roll/222#slice-3" },
+          },
+        ],
+      },
+      R2_ORIGIN,
+    );
+    if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+    expect(verdict.event.breadcrumbs).toEqual([
+      {
+        category: "navigation",
+        timestamp: 1_790_000_001,
+        data: { from: "/casting", to: "/casting/roll/222" },
+      },
+    ]);
+  });
+
+  it("keeps a request crumb as method, status and PATH — and nothing else it arrived with", () => {
+    /* `toEqual` on the whole crumb is the assertion that matters: `message`,
+       `type`, `level`, `event_id` and two unnamed `data` keys are all in the
+       input, and none of them may be in the output. A `not.toContain` per
+       leak would pass on a projection that invented a fourth field. */
+    const verdict = scrubErrorEvent(
+      {
+        breadcrumbs: [
+          {
+            category: "fetch",
+            type: "http",
+            level: "error",
+            event_id: "e1",
+            message: "should not travel",
+            data: {
+              method: "POST",
+              url: "https://klieglabs.com/api/trpc/castingV2.createRoll?batch=1&input=%7B%22brief%22%3A%22her+words%22%7D",
+              status_code: 500,
+              request_body_size: 812,
+              __span: "abc123",
+            },
+          },
+        ],
+      },
+      R2_ORIGIN,
+    );
+    if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+    expect(verdict.event.breadcrumbs).toEqual([
+      {
+        category: "fetch",
+        data: {
+          method: "POST",
+          url: "https://klieglabs.com/api/trpc/castingV2.createRoll",
+          status_code: 500,
+        },
+      },
+    ]);
+  });
+
+  it("redacts a picture's URL inside a crumb's URL, the same as anywhere else", () => {
+    const kept = projectBreadcrumb(
+      { category: "xhr", data: { method: "GET", url: `${R2_ORIGIN}/casting/9f2b-4c.png` } },
+      R2_ORIGIN,
+    );
+    expect(kept?.data?.url).not.toContain("9f2b-4c.png");
+    expect(kept?.data?.url).toBe(REDACTED);
+  });
+
+  it("drops a category nobody has named — including one a future SDK invents", () => {
+    for (const category of ["sentry.transaction", "query", "ui.swipe", "a.category.from.2028"]) {
+      expect(projectBreadcrumb({ category, message: HER_SENTENCE }, R2_ORIGIN)).toBeNull();
+    }
+  });
+
+  it("caps the trail at the crumbs NEAREST the throw", () => {
+    const breadcrumbs = Array.from({ length: BREADCRUMB_CAP + 40 }, (_unused, index) => ({
+      category: "navigation",
+      data: { to: `/page-${index}` },
+    }));
+    const verdict = scrubErrorEvent({ breadcrumbs }, R2_ORIGIN);
+    if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+    const kept = verdict.event.breadcrumbs ?? [];
+    expect(kept).toHaveLength(BREADCRUMB_CAP);
+    expect(kept[kept.length - 1]?.data?.to).toBe(`/page-${BREADCRUMB_CAP + 39}`);
+  });
+
+  it("caps on the KEPT crumbs, so a wall of console lines cannot squeeze the trail out", () => {
+    /*
+      THE FILTER-THEN-CAP ARM, and the fixture is built to be the one that can
+      actually tell the two orderings apart. The realistic shape is what it
+      looks like: she moves to the casting page, a hundred failed queries log
+      themselves, she moves again, then it throws — so the three crumbs worth
+      having are SPREAD THROUGH the wall rather than sitting at the end of it.
+
+      ⚠ The first version of this arm put all three at the end and SURVIVED the
+      sabotage that caps before filtering: the last thirty raw crumbs happened
+      to contain all three, so both orderings gave the same answer and the arm
+      was decorative. Caught by the sabotage driver, not by reading it.
+    */
+    const wall = (n: number) =>
+      Array.from({ length: n }, () => ({ category: "console", message: HER_SENTENCE }));
+    const breadcrumbs: IncomingEvent[] = [
+      { category: "navigation", data: { to: "/casting" } },
+      ...wall(50),
+      { category: "fetch", data: { method: "POST", status_code: 500 } },
+      ...wall(50),
+      { category: "navigation", data: { to: "/casting/roll/222" } },
+    ];
+
+    const verdict = scrubErrorEvent({ breadcrumbs }, R2_ORIGIN);
+    if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+    expect(verdict.event.breadcrumbs).toHaveLength(3);
+    expect(verdict.event.breadcrumbs?.map((crumb) => crumb.category)).toEqual([
+      "navigation",
+      "fetch",
+      "navigation",
+    ]);
+    expect(JSON.stringify(verdict.event)).not.toContain(HER_SENTENCE);
+  });
+
+  it("still refuses the WHOLE event when a crumb reaching it unprojected carries a refusing key", () => {
+    /* The event gate's own road: a crumb attached straight to an event rather
+       than retained through the hook is read as it arrived, so a mis-wiring
+       inside it drops everything, same as anywhere else in the graph. */
+    const verdict = scrubErrorEvent({
+      breadcrumbs: [{ category: "fetch", data: { method: "POST", brief: HER_SENTENCE } }],
+    });
+    expect(verdict.verdict).toBe("refuse");
+    if (verdict.verdict === "refuse") expect(verdict.key).toBe("brief");
+  });
+
+  describe("the retention verdict — where a mis-wired crumb is caught in time", () => {
+    /*
+      ⚠ THIS BLOCK EXISTS BECAUSE THE ENVELOPE FOUND WHAT THE ARM ABOVE HIDES.
+      Driven against the real SDK (#1405's wire drive), a `brief` inside a kept
+      crumb produced a perfectly clean event and NO refusal: retention runs
+      first, so the projection had already trimmed the key away and the event
+      gate had nothing left to find. The data never travelled — and the loud
+      message the refusal exists to send was silently lost, which is the
+      behaviour it exists instead of. The arm above passes on its own road and
+      says nothing about this one.
+    */
+    it("refuses a kept crumb carrying a recipe field, and names the key and the path", () => {
+      const verdict = scrubBreadcrumb(
+        { category: "fetch", data: { method: "POST", brief: HER_SENTENCE } },
+        R2_ORIGIN,
+      );
+      expect(verdict.verdict).toBe("refuse");
+      if (verdict.verdict !== "refuse") return;
+      expect(verdict.key).toBe("brief");
+      expect(verdict.path).toBe("breadcrumb.data.brief");
+      expect(JSON.stringify(verdict)).not.toContain(HER_SENTENCE);
+    });
+
+    it("DROPS rather than refuses a category that was never going to travel", () => {
+      /* The stated decision, and the arm that pins it: the console channel is
+         closed on its category before its data is read, so a refusal there
+         would report a leak that was never possible — on the one category this
+         product's client writes on every failed query. */
+      const verdict = scrubBreadcrumb(
+        { category: "console", message: "x", data: { brief: HER_SENTENCE } },
+        R2_ORIGIN,
+      );
+      expect(verdict.verdict).toBe("drop");
+    });
+
+    it("keeps an ordinary crumb, and the kept crumb is the projected one", () => {
+      const verdict = scrubBreadcrumb(
+        { category: "navigation", message: "should not travel", data: { to: "/casting?x=1" } },
+        R2_ORIGIN,
+      );
+      expect(verdict).toEqual({
+        verdict: "keep",
+        breadcrumb: { category: "navigation", data: { to: "/casting" } },
+      });
+    });
+  });
+
+  it("ignores a crumb that is not a crumb rather than throwing", () => {
+    for (const hostile of [null, undefined, "navigation", 42, [], {}, { category: 7 }]) {
+      expect(projectBreadcrumb(hostile, R2_ORIGIN)).toBeNull();
+    }
+    const verdict = scrubErrorEvent({ breadcrumbs: "not an array" }, R2_ORIGIN);
+    if (verdict.verdict !== "send") throw new Error("refused for the wrong reason");
+    expect(verdict.event.breadcrumbs).toBeUndefined();
+  });
+
+  it("keeps a crumb whose data is missing or the wrong type, carrying the category alone", () => {
+    expect(projectBreadcrumb({ category: "navigation" }, R2_ORIGIN)).toEqual({
+      category: "navigation",
+    });
+    expect(projectBreadcrumb({ category: "navigation", data: "gone" }, R2_ORIGIN)).toEqual({
+      category: "navigation",
+    });
   });
 });
 
