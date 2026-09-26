@@ -129,11 +129,52 @@ export const ALLOWED_TAG_KEYS: readonly string[] = [
 const ALLOWED_TAG_KEY_SET = new Set(ALLOWED_TAG_KEYS);
 
 /**
+ * THE BREADCRUMB CATEGORIES THAT MAY TRAVEL — the trail of what she was doing
+ * before it broke, allowed by CATEGORY because prose cannot be allowed at all
+ * (#1405).
+ *
+ * ⚠ **THE TWO THAT ARE ABSENT ARE THE REASON THIS IS A LIST AND NOT A
+ * BOOLEAN.** `console` carries whatever was logged, and this product's client
+ * calls `console.error("[API Query Error]", error)` on **every** failed query,
+ * so the server's own words come back through it; `ui.click` carries the TEXT
+ * of the element clicked, and the brief box is a text field. Neither has a
+ * field name anywhere near the sentence, so the key scan above — which is what
+ * makes this module safe to run at all — cannot see either of them.
+ *
+ * Every other category is absent too, and absent BY DEFAULT rather than by
+ * being listed: a category a future SDK adds is dropped on the day it appears,
+ * with nobody having to predict its name. That is the same rule the projection
+ * follows and the same reason (invariant 8).
+ */
+export const BREADCRUMB_CATEGORIES: readonly string[] = [
+  /* Which page to which page — `data.from` and `data.to`, both paths. */
+  "navigation",
+  /* A request and how it went — `data.method`, `data.url`, `data.status_code`.
+     Three names for one thing: `http` is the server SDK's, `xhr` and `fetch`
+     are the browser's, and which one arrives is the SDK's business. */
+  "http",
+  "xhr",
+  "fetch",
+];
+
+const BREADCRUMB_CATEGORY_SET = new Set(BREADCRUMB_CATEGORIES);
+
+/**
+ * How many crumbs travel. Sentry's own default buffer is 100, and the trail
+ * that answers *"what was she doing"* is the tail of it — so this keeps the
+ * LAST N, for the same reason `STACK_FRAME_CAP` keeps the innermost frames.
+ */
+export const BREADCRUMB_CAP = 30;
+
+/**
  * The structural shape of an incoming event. Deliberately NOT Sentry's own
  * type: this module is the contract, and typing it against the SDK would make
  * an SDK upgrade able to widen what travels without anybody editing this file.
  */
 export type IncomingEvent = Record<string, unknown>;
+
+/** Likewise for one breadcrumb, which arrives on its own through `beforeBreadcrumb`. */
+export type IncomingBreadcrumb = Record<string, unknown>;
 
 /** A stack frame, after projection. Note what is absent: `vars`. */
 export interface ScrubbedFrame {
@@ -151,6 +192,19 @@ export interface ScrubbedException {
   mechanism?: { type?: string; handled?: boolean };
 }
 
+/**
+ * One crumb of the trail, after projection. Note what is absent, because the
+ * absences are the whole control: **no `message`** (console's sentence lives
+ * there, and no kept category needs it — the SDK puts a navigation's pages and
+ * a request's method, URL and status in `data`), no `type`, no `level`, no
+ * `event_id`, and no `data` key that this module did not name.
+ */
+export interface ScrubbedBreadcrumb {
+  category: string;
+  timestamp?: number;
+  data?: { from?: string; to?: string; method?: string; url?: string; status_code?: number };
+}
+
 /** Everything that may leave, and nothing else. */
 export interface ScrubbedEvent {
   event_id?: string;
@@ -166,11 +220,22 @@ export interface ScrubbedEvent {
   user?: { id: string };
   tags?: Record<string, string>;
   request?: { method?: string; url?: string };
+  breadcrumbs?: ScrubbedBreadcrumb[];
   contexts?: { trace?: { trace_id?: string; span_id?: string } };
 }
 
 export type ScrubVerdict =
   | { verdict: "send"; event: ScrubbedEvent }
+  | { verdict: "refuse"; key: string; path: string };
+
+/**
+ * The same three answers for one crumb. `drop` and `refuse` both mean it does
+ * not travel; they are separate because only one of them is a MESSAGE — see
+ * `scrubBreadcrumb`.
+ */
+export type BreadcrumbVerdict =
+  | { verdict: "keep"; breadcrumb: ScrubbedBreadcrumb }
+  | { verdict: "drop" }
   | { verdict: "refuse"; key: string; path: string };
 
 /**
@@ -245,6 +310,76 @@ function asFiniteNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
+/**
+ * A URL cut to its path. A query string is where ids, tokens and signatures
+ * travel; a fragment is where a browser keeps state. Both go, and what is left
+ * still goes through the redaction, because the path alone can name a picture
+ * under the image bucket.
+ *
+ * ONE implementation with TWO consumers — `request.url` and a breadcrumb's —
+ * because the same rule written out twice is exactly the drift working law 4 is
+ * about, and the second copy is the one that would quietly keep a query string.
+ */
+function urlPathOnly(raw: string, imageOrigin?: string): string {
+  const cut = raw.split(/[?#]/, 1)[0] ?? raw;
+  return redactFreeText(cut, imageOrigin);
+}
+
+/**
+ * Project one breadcrumb, or drop it. `null` means it does not travel, which is
+ * the answer for every category not named in `BREADCRUMB_CATEGORIES` — including
+ * every one a future SDK version invents.
+ *
+ * ⚠ **`message` IS NOT READ AT ALL, AND THAT IS THE CONTROL.** It is where a
+ * console line's formatted arguments and a clicked element's text arrive, it is
+ * free prose the key scan cannot see into, and no kept category needs it: the
+ * SDK puts a navigation's two pages and a request's method, URL and status in
+ * `data`. Dropping the whole field is a smaller promise to keep than redacting
+ * it would be.
+ */
+export function projectBreadcrumb(
+  raw: unknown,
+  imageOrigin?: string,
+): ScrubbedBreadcrumb | null {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const crumb = raw as Record<string, unknown>;
+
+  const category = crumb.category;
+  if (typeof category !== "string" || !BREADCRUMB_CATEGORY_SET.has(category)) return null;
+
+  const out: ScrubbedBreadcrumb = { category };
+  const timestamp = asFiniteNumber(crumb.timestamp);
+  if (timestamp !== undefined) out.timestamp = timestamp;
+
+  const rawData = crumb.data;
+  if (rawData === null || typeof rawData !== "object" || Array.isArray(rawData)) return out;
+  const data = rawData as Record<string, unknown>;
+  const projected: NonNullable<ScrubbedBreadcrumb["data"]> = {};
+
+  if (category === "navigation") {
+    /* Which page to which page — the only thing this category is kept for, so
+       a blanket method/status projection would keep the crumb and throw away
+       the fact it exists to carry. */
+    if (typeof data.from === "string" && data.from.length > 0) {
+      projected.from = urlPathOnly(data.from, imageOrigin);
+    }
+    if (typeof data.to === "string" && data.to.length > 0) {
+      projected.to = urlPathOnly(data.to, imageOrigin);
+    }
+  } else {
+    const method = asFreeText(data.method, imageOrigin);
+    if (method) projected.method = method;
+    if (typeof data.url === "string" && data.url.length > 0) {
+      projected.url = urlPathOnly(data.url, imageOrigin);
+    }
+    const status = asFiniteNumber(data.status_code);
+    if (status !== undefined) projected.status_code = status;
+  }
+
+  if (Object.keys(projected).length > 0) out.data = projected;
+  return out;
+}
+
 function projectFrame(raw: unknown, imageOrigin?: string): ScrubbedFrame | null {
   if (raw === null || typeof raw !== "object") return null;
   const frame = raw as Record<string, unknown>;
@@ -304,15 +439,18 @@ function projectException(raw: unknown, imageOrigin?: string): ScrubbedException
  * named in this function — that is the point, and it is why a new SDK field is
  * absent by default rather than present by default.
  *
- * ⚠ **`breadcrumbs` ARE DROPPED, AND IT IS THE ONE DELIBERATE LOSS OF VALUE
- * HERE.** Sentry's default breadcrumbs carry console arguments and clicked
- * element text; this product's own client calls
- * `console.error("[API Query Error]", error)` on every failed query and the
- * brief box is a text field, so both shapes can hold a customer's sentence with
- * no forbidden key anywhere near it. An allowlist by category (navigation and
- * http, URLs reduced to a path) is a real improvement and a SECOND decision,
- * carded rather than folded in here — because a widening of what leaves the
- * building should be its own diff with its own arms.
+ * ⚠ **`breadcrumbs` TRAVEL BY CATEGORY (#1405), AND THE CATEGORY LIST IS THE
+ * WHOLE CONTROL.** They were dropped entirely by #509 part 1 — the conservative
+ * first position, and it cost real diagnostic power: an error report that says
+ * *"something broke in the casting studio"* where it could have said *"she
+ * pressed Roll, the sheet call 500'd, then it broke"*. What made dropping them
+ * right was that two of Sentry's default categories carry a customer's own
+ * words with no field name near them (`console`, because this product's client
+ * logs every failed query; `ui.click`, because it records the clicked element's
+ * TEXT and the brief box is a text field). So the widening is by category and
+ * not by switch: `BREADCRUMB_CATEGORIES` names what may travel, `message` is
+ * never read on any of them, and `data` is projected per category to the few
+ * named fields. A category this module has not heard of does not travel.
  */
 export function project(event: IncomingEvent, imageOrigin?: string): ScrubbedEvent {
   const out: ScrubbedEvent = {};
@@ -382,10 +520,31 @@ export function project(event: IncomingEvent, imageOrigin?: string): ScrubbedEve
     const projectedRequest: { method?: string; url?: string } = {};
     if (typeof raw.method === "string") projectedRequest.method = raw.method;
     if (typeof raw.url === "string" && raw.url.length > 0) {
-      const cut = raw.url.split("?")[0] ?? raw.url;
-      projectedRequest.url = redactFreeText(cut, imageOrigin);
+      projectedRequest.url = urlPathOnly(raw.url, imageOrigin);
     }
     if (Object.keys(projectedRequest).length > 0) out.request = projectedRequest;
+  }
+
+  /*
+    THE TRAIL. Projected HERE as well as in the SDK's own `beforeBreadcrumb`
+    hook, and the two answer different questions: that hook governs what the
+    SDK's buffer RETAINS, so a customer's sentence never sits in this process's
+    memory waiting for a crash; this governs what LEAVES, so a crumb reaching
+    the event by any other road — an integration attaching one directly, a
+    `captureEvent` carrying its own — meets the same allowlist. Only the second
+    one is structural (invariant 8), which is why it exists even though the
+    first one already ran.
+
+    Filtered THEN capped, in that order: a hundred console crumbs ahead of five
+    navigation ones would otherwise cap to nothing and lose the whole trail.
+  */
+  const breadcrumbs = event.breadcrumbs;
+  if (Array.isArray(breadcrumbs)) {
+    const projected = breadcrumbs
+      .map((crumb) => projectBreadcrumb(crumb, imageOrigin))
+      .filter((crumb): crumb is ScrubbedBreadcrumb => crumb !== null)
+      .slice(-BREADCRUMB_CAP);
+    if (projected.length > 0) out.breadcrumbs = projected;
   }
 
   const contexts = event.contexts;
@@ -401,6 +560,42 @@ export function project(event: IncomingEvent, imageOrigin?: string): ScrubbedEve
   }
 
   return out;
+}
+
+/**
+ * THE ONE FUNCTION THE RETENTION HOOK CALLS, and the reason it returns a
+ * VERDICT rather than a crumb-or-null.
+ *
+ * ⚠ **THE ENVELOPE FOUND THIS AND A UNIT ARM COULD NOT HAVE** (#1405, driven
+ * against the real SDK through a fake transport). `beforeBreadcrumb` runs long
+ * before `beforeSend`, so once the trail is projected at retention there is no
+ * `brief` left in the event for `findRefusingKey` to find — and a recipe field
+ * wired into a crumb went from *refused loudly* to **quietly trimmed**, which
+ * is the exact behaviour the refusal exists instead of. The data never left
+ * either way; what was lost was the MESSAGE, and this module's own docblock is
+ * where the promise to send one is written down.
+ *
+ * So the check runs HERE, at retention, and the caller logs and counts it.
+ *
+ * ⚠ **It runs only on a crumb whose category would have been KEPT, and that is
+ * a decision rather than an oversight.** A dropped category cannot carry
+ * anything anywhere — the channel is closed on the category alone, before its
+ * data is read — so a refusal there would be a report about a leak that was
+ * never possible, on `console`, which this product's client writes on every
+ * failed query. A kept category is the only road a crumb's data can travel,
+ * so it is the only road where a mis-wiring means something.
+ */
+export function scrubBreadcrumb(
+  breadcrumb: IncomingBreadcrumb,
+  imageOrigin?: string,
+): BreadcrumbVerdict {
+  const projected = projectBreadcrumb(breadcrumb, imageOrigin);
+  if (projected === null) return { verdict: "drop" };
+
+  const refusing = findRefusingKey(breadcrumb, "breadcrumb");
+  if (refusing) return { verdict: "refuse", key: refusing.key, path: refusing.path };
+
+  return { verdict: "keep", breadcrumb: projected };
 }
 
 /**

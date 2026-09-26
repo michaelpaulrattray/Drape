@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 181
+      "moduleCount": 182
     },
     {
       "id": "domain:castingV2",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 45
+      "moduleCount": 46
     },
     {
       "id": "domain:wardrobe",
@@ -3973,6 +3973,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/judgeFrame.ts",
+      "path": "server/castingV2/judgeFrame.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/keptFaceScan.ts",
       "path": "server/castingV2/keptFaceScan.ts",
       "domain": "casting-v2",
@@ -5589,6 +5595,12 @@
     {
       "id": "module:server/testing/contendedTestTimeout.ts",
       "path": "server/testing/contendedTestTimeout.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/errorMessageInterpolations.ts",
+      "path": "server/testing/errorMessageInterpolations.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -11873,6 +11885,10 @@
       "path": "server/castingV2/judgeAnswers.test.ts"
     },
     {
+      "id": "test:server/castingV2/judgeFrame.test.ts",
+      "path": "server/castingV2/judgeFrame.test.ts"
+    },
+    {
       "id": "test:server/castingV2/keptFaceScan.test.ts",
       "path": "server/castingV2/keptFaceScan.test.ts"
     },
@@ -12747,6 +12763,10 @@
     {
       "id": "test:server/errorEventScrub.test.ts",
       "path": "server/errorEventScrub.test.ts"
+    },
+    {
+      "id": "test:server/errorMessageInterpolation.test.ts",
+      "path": "server/errorMessageInterpolation.test.ts"
     },
     {
       "id": "test:server/errorTracker.test.ts",
@@ -25015,6 +25035,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/judgeFrame.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/judgeFrame.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/keptFaceScan.ts",
       "to": "module:server/castingV2/facePanel.ts",
       "kind": "imports"
@@ -27916,6 +27946,11 @@
     },
     {
       "from": "module:server/castingV2/viewConformance.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewConformance.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -28017,6 +28052,11 @@
     {
       "from": "module:server/castingV2/viewRetryService.ts",
       "to": "module:server/castingV2/spendGuards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/castingV2/viewConformance.ts",
       "kind": "imports"
     },
     {
@@ -32902,6 +32942,16 @@
     {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/stripe/subscriptionPeriods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/testing/errorMessageInterpolations.ts",
+      "to": "module:server/testing/listedSource.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/testing/errorMessageInterpolations.ts",
+      "to": "module:shared/errorEventScrub.ts",
       "kind": "imports"
     },
     {

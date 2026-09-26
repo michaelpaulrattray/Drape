@@ -77,6 +77,7 @@ import {
   type PackageOrchestratorDependencies,
 } from "./packageOrchestrator";
 import { carriedFeatureWords, carriedInkCrops } from "./signService";
+import { conformanceProvenance } from "./viewConformance";
 import { assertNotFrozen } from "./spendGuards";
 import { castWardrobeLine, castWardrobeSource } from "./wardrobeLine";
 
@@ -400,11 +401,12 @@ export async function retryCastView(
         description: source.briefText,
       },
       input.angle,
-      async (landed: {
-        stored: { key: string; url: string };
-        verdict: { axes: unknown; method: string };
-        provenance: { engine: string; provider: string; providerRef?: string };
-      }) => {
+      /* The landing's shape is INFERRED from `renderViewAttempts`'s own
+         `ViewLanding`, never re-declared here. It used to be spelled out
+         locally with `verdict: { axes: unknown; ... }` — a weaker copy of the
+         real type, which is working law 4's shape and is exactly why a third
+         conformance field could be added to one writer and missed here. */
+      async (landed) => {
         const assetId = await commit({
           userId: input.userId,
           operationId,
@@ -421,8 +423,7 @@ export async function retryCastView(
                the same statement, so a landed view can never look unpaid. */
             retryOperationId: operationId,
             ...landed.provenance,
-            conformance: landed.verdict.axes,
-            conformanceMethod: landed.verdict.method,
+            ...conformanceProvenance(landed.verdict),
           },
         });
         return assetId === null ? null : { assetId, url: landed.stored.url };

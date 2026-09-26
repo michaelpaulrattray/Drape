@@ -1478,3 +1478,9 @@
   verdict: KEEP
   why: "same footing (13a). The Math.random reading that judges CODE rather than raw source, because the raw substring test was about to indict two comments that PRAISE the rule (hairReferenceCutter.ts, keptFaceScan.ts: \"randomUUID, never Math.random\") — the typo-gate-owned-a-real-word class pointed at a guard"
   argued: "#1401"
+
+- symbol: errorMessageLeaks
+  file: server/testing/errorMessageInterpolations.ts
+  verdict: KEEP
+  why: "server/testing/ is test infrastructure by directory (the readListedSource precedent, 13a), so a production-importer reading of it is zero by construction and says nothing. It is the walk server/errorMessageInterpolation.test.ts derives its population from: every template literal in an error or log context across the tracked production source, refused when an interpolated EXPRESSION names a key on the scrub's own REFUSING_KEYS. It closes the remainder shared/errorEventScrub.ts states in its own docblock — the key scan refuses field NAMES and cannot read prose, so `throw new Error(`refused: ${brief}`)` travels. Deleting it returns that hole to being documented rather than guarded, and takes the walk's floor counts with it, which are what tell a clean tree from a reader that stopped parsing"
+  argued: "#1406"

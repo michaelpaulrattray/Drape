@@ -786,18 +786,27 @@ describe("the ALWAYS-RUN set — guards whose subject is the tree (#1037)", () =
     return { tests, modules };
   }
 
-  it("POSITIVE CONTROL — the real tree holds the three known derivers, found by their call and not their name", () => {
+  it("POSITIVE CONTROL — the real tree holds the four known derivers, found by their call and not their name", () => {
     // The card named TWO. The third — suitePointers (#647) — was found by this
     // reading the hour the set was written, which is the whole argument for a
-    // derived arm over a hand-kept list.
+    // derived arm over a hand-kept list. The fourth —
+    // errorMessageInterpolations (#1406) — arrived the same way: a new guard
+    // was written, this arm reddened, and the set gained a member nobody had
+    // to remember. That is the mechanism working, not a maintenance cost.
     const { modules } = realTree();
     const found = populationDerivers(modules);
     expect(found.map((d) => d.module).sort()).toEqual([
       "server/testing/childProcessSuites.ts",
+      "server/testing/errorMessageInterpolations.ts",
       "server/testing/sourceSweepSuites.ts",
       "server/testing/suitePointers.ts",
     ]);
-    expect(found.flatMap((d) => d.exports).sort()).toEqual(["childProcessSuites", "sourceSweepSuites", "suitePointers"]);
+    expect(found.flatMap((d) => d.exports).sort()).toEqual([
+      "childProcessSuites",
+      "errorMessageLeaks",
+      "sourceSweepSuites",
+      "suitePointers",
+    ]);
   });
 
   it("⚠ THE SET IS EXACTLY THE DERIVED-POPULATION GUARDS OF THE REAL TREE — both directions", () => {

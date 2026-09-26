@@ -131,8 +131,43 @@ describe("the options handed to the SDK — asserted on the object, not beside i
     expect(options.sendDefaultPii).toBe(false);
   });
 
-  it("retains no breadcrumb at all", () => {
-    expect(buildTrackerOptions().beforeBreadcrumb()).toBeNull();
+  /* THE RETENTION HOOK IS THE ALLOWLIST (#1405). It read `() => null` until
+     that card — nothing retained at all — and these arms are what tell the two
+     positions apart: the widening is real only if a navigation crumb survives,
+     and it is safe only if the two prose-carrying categories do not. */
+  it("retains a navigation crumb and drops the two that carry her words", () => {
+    const { beforeBreadcrumb } = buildTrackerOptions();
+    expect(beforeBreadcrumb({ category: "console", message: "her sentence, logged" })).toBeNull();
+    expect(beforeBreadcrumb({ category: "ui.click", message: "her sentence, typed" })).toBeNull();
+    expect(beforeBreadcrumb({ category: "sentry.transaction" })).toBeNull();
+    expect(
+      beforeBreadcrumb({
+        category: "navigation",
+        message: "should not travel",
+        data: { from: "/casting", to: "/boards" },
+      }),
+    ).toEqual({ category: "navigation", data: { from: "/casting", to: "/boards" } });
+  });
+
+  it("cuts a query string off a retained crumb's URL at the hook, not only at the send", () => {
+    const kept = buildTrackerOptions().beforeBreadcrumb({
+      category: "http",
+      data: { method: "POST", url: "https://klieglabs.com/api/trpc?input=%7B%7D", status_code: 500 },
+    });
+    expect(kept).toEqual({
+      category: "http",
+      data: { method: "POST", url: "https://klieglabs.com/api/trpc", status_code: 500 },
+    });
+  });
+
+  it("redacts a picture's URL in a crumb using the bucket origin the server is actually on", () => {
+    process.env.R2_PUBLIC_URL = "https://pub-xyz.r2.dev/";
+    const kept = buildTrackerOptions().beforeBreadcrumb({
+      category: "xhr",
+      data: { method: "GET", url: "https://pub-xyz.r2.dev/cast/9f.png", status_code: 404 },
+    });
+    expect(JSON.stringify(kept)).not.toContain("9f.png");
+    expect(kept?.data?.status_code).toBe(404);
   });
 
   /* The envelope channels. Both arms exist because the wire drive found the
@@ -199,6 +234,32 @@ describe("a refusal is counted and named, and never quotes the value", () => {
     expect(errorTrackerStatus().refused).toBe(2);
     expect(errorTrackerStatus().sent).toBe(1);
   });
+
+  /*
+    ⚠ THE CRUMB'S OWN REFUSAL, AND THE ENVELOPE IS WHY IT EXISTS (#1405).
+    Retention runs long before the event gate, so a recipe field wired into a
+    crumb is projected away and the event arrives clean — the drive against the
+    real SDK showed exactly that, a refusing key producing a spotless event and
+    no refusal at all. The data never left; the MESSAGE did, and the message is
+    what the refusal is for. Its own counter, because a refused crumb and a
+    refused report do not cost the same thing.
+  */
+  it("refuses a kept crumb carrying a recipe field, on its own counter", () => {
+    const { beforeBreadcrumb } = buildTrackerOptions();
+    expect(
+      beforeBreadcrumb({ category: "fetch", data: { method: "POST", brief: "her words" } }),
+    ).toBeNull();
+    expect(errorTrackerStatus().refusedBreadcrumbs).toBe(1);
+    expect(errorTrackerStatus().refused).toBe(0);
+  });
+
+  it("does not count a dropped category as a refusal — nothing was ever going to travel", () => {
+    const { beforeBreadcrumb } = buildTrackerOptions();
+    expect(
+      beforeBreadcrumb({ category: "console", message: "x", data: { brief: "her words" } }),
+    ).toBeNull();
+    expect(errorTrackerStatus().refusedBreadcrumbs).toBe(0);
+  });
 });
 
 describe("the status is a reading nobody can write through", () => {
@@ -213,6 +274,12 @@ describe("the status is a reading nobody can write through", () => {
 
   it("answers `configured: false` when there is no key — the reading a surface must ask before it draws a number", async () => {
     await initErrorTracker();
-    expect(errorTrackerStatus()).toEqual({ configured: false, ready: false, refused: 0, sent: 0 });
+    expect(errorTrackerStatus()).toEqual({
+      configured: false,
+      ready: false,
+      refused: 0,
+      refusedBreadcrumbs: 0,
+      sent: 0,
+    });
   });
 });
