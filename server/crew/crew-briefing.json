@@ -1,7 +1,7 @@
 {
-  "edition": 546,
-  "updatedAt": "2026-09-26T13:55:37.018Z",
-  "shift": "Foreman — a server crash now reaches somebody, and our own scrub decides what leaves",
+  "edition": 547,
+  "updatedAt": "2026-09-26T15:19:36.730Z",
+  "shift": "Foreman — the checker can now read a big picture, which is what your quality change was waiting on",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -224,6 +224,10 @@
         {
           "state": "done",
           "title": "You held the picture-quality change and named the engine you actually want (#1373 → #1394). The five pictures a signed cast gets have always been made by Nano Banana, and \"best setting\" on that engine could only mean its 4K tier — which is what was built and put in front of you. Your answer was that Nano Banana is not the engine for these at all, so the question is no longer which tier: it is whether they move to GPT Image 2.5 Sunburst. The court re-runs on your terms — same cast, same views, the old picture beside the new one, price and time beside each — and you judge the frames. Nothing ships until you do."
+        },
+        {
+          "state": "in-progress",
+          "title": "The checker that looks at every view you pay for could not read a BIG picture — and that is what your picture-quality change was really waiting on (#1408). Every signed view is checked against the face you signed before you are charged for it, and the check works by sending the checker two photographs: her signed face and the new view. It was sending them at full size, about 12 megabytes for the pair. When the picture gets bigger that stops working — the court you asked for last night could get NO reading at all on any of the 4K pictures or any of the Sunburst ones, and one of today's took 149 seconds against a 75-second limit. When the checker cannot answer we hand the picture over anyway and charge for it, with nobody having looked, so moving your views to a better picture would have meant every view arriving unchecked. The checker now looks at a bounded copy: the largest size the checker itself can actually use, saved in a format about a quarter of the weight. A 4K view reaches it at 3 megabytes instead of 53, and it answered in 8.5 seconds. ⚠ What we did NOT do is shrink the picture to the size an older version of the checker used — the obvious move, and it would have thrown away a third of the detail, when her tattoos, piercings, freckles and makeup are exactly what the check looks at. And we proved it still works rather than assuming: shown a DIFFERENT woman's face it still says no, and shown her own it still says yes and names her freckles, her ear piercings and her tattoo sleeve. ⚠ One correction, made rather than left to be found: the first version of this report blamed three views of yours from Thursday on this problem. They were not — they were the three already fixed on Thursday, and every view since has carried a real verdict. This job is groundwork for the quality change, not a leak being plugged. Nothing you receive changes: your picture is stored and delivered before the check happens, so only the copy the checker looks at is affected."
         }
       ]
     },
@@ -6131,6 +6135,13 @@
   ],
   "pipeline": [
     {
+      "id": "judge-frame-1408",
+      "title": "The view checker reads a bounded copy, so a big picture can be checked at all (#1408)",
+      "status": "in-review",
+      "prNumber": 1412,
+      "note": "PR #1412 — gate green, flagged for the relay because it touches the value a free Try again depends on."
+    },
+    {
       "id": "refine-ceiling-sentence-1275",
       "title": "A refine reply cut off at our ceiling stops blaming her sentence (#1275)",
       "status": "merged",
@@ -8494,6 +8505,13 @@
     }
   ],
   "problems": [
+    {
+      "id": "judge-angle-axis-unstable-1414",
+      "severity": "warning",
+      "state": "open",
+      "title": "The checker disagrees with itself about whether a view is at the right angle (#1414)",
+      "detail": "Asked about the same view three times, with everything identical, the checker said the angle was wrong, then right, then wrong. Whether she is the same person and whether she is wearing the right clothes were steady both ways — it is the angle question alone. It matters because a view whose angle fails is taken away and refunded: on a coin-flip answer a correct side profile can be thrown out, and a wrong one kept. Found while proving tonight's change did not break the checker. Nothing is being changed on a hunch — the card starts by measuring how often it happens."
+    },
     {
       "id": "gh-graphql-burst-1399",
       "severity": "warning",
