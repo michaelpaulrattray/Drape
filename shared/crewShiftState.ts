@@ -356,6 +356,16 @@ function describeRun(run: OpenRunForClose): string {
  *
  * `--id` does not come here: it reads a row by id whether open or closed, which
  * is the dead-row recovery road, and the caller refuses an already-closed one.
+ *
+ * ⚠ **THE HEARTBEAT ASKS THE SAME QUESTION AND NOW ASKS IT HERE (#1281).**
+ * `crew-shift-start.mts --note` stamped the NEWEST open run — this card's defect
+ * with the other sign — and with several seats in one pass that lands every
+ * seat's check-in on the last row opened, so his Working-now table calls the
+ * other seats stalled while they work. It is the same population and the same
+ * question ("which of the open runs is mine"), so it is the same resolver; a
+ * second one would be the drift working law 4 is about, on the very pair of
+ * scripts that already drifted once. The name says *Close* because that is
+ * where it was first needed, and nothing in it is about closing.
  */
 export function resolveCloseTarget(input: {
   readonly openRuns: readonly OpenRunForClose[];
