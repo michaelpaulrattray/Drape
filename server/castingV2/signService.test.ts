@@ -91,6 +91,8 @@ let copyThrows = false;
 let manifestThrows = false;
 const cleanupBatches: string[] = [];
 const receipts: Array<Record<string, unknown>> = [];
+/** What #1429's recorder was handed, in order — the terminal product event. */
+const terminalEvents: Array<Record<string, unknown>> = [];
 
 class TestSignPersistenceError extends Error {
   readonly code: string;
@@ -222,6 +224,17 @@ vi.mock("../casting/directOperation", () => ({
     journal.push("seal:claimed-failure");
     receipts.push({ kind: "claimed-failure", ...input });
     throw input.error;
+  }),
+  /*
+    THE TERMINAL PRODUCT EVENT (#1429). It goes in the JOURNAL rather than in a
+    private array of its own because the journal is this file's own ordering
+    instrument, and the fact worth proving is an ORDER: the event must come after
+    `seal:success` and must not exist at all when the seal did not happen. A
+    separate array could only ever say "an event was recorded".
+  */
+  recordDirectOperationDelivered: vi.fn((input: Record<string, unknown>) => {
+    journal.push("event:delivered");
+    terminalEvents.push(input);
   }),
 }));
 
@@ -356,6 +369,7 @@ beforeEach(() => {
   ledger.charges.length = 0;
   ledger.refunds.length = 0;
   receipts.length = 0;
+  terminalEvents.length = 0;
   cleanupBatches.length = 0;
   boundaryInputs.length = 0;
   copiedFrom.length = 0;
@@ -404,6 +418,7 @@ describe("the Sign ceremony's order", () => {
       "package",
       "bind",
       "seal:success",
+      "event:delivered",
     ]);
   });
 
@@ -1105,5 +1120,115 @@ describe("the Full casting spec when the face carries no compiled prompt", () =>
     );
 
     expect(boundaryInputs.at(-1)!.masterPrompt).toBe("the composed casting instruction");
+  });
+});
+
+/**
+ * THE TERMINAL PRODUCT EVENT FOR A SUCCESSFUL SIGN (#1429, #509 part 2).
+ *
+ * The defect these arms exist for: `signService.ts` held no `captureProductEvent`
+ * call at all. `beginDirectOperation` emits `generation started` at the claim,
+ * both of Sign's failure roads go through capturing completers — and success
+ * settled with `finalizeGenerationOperationSuccess` directly, inside the
+ * DETACHED `completeSignPackage`. So **a Cast he signed successfully was a
+ * generation that started and never ended**, on the most expensive operation in
+ * the product, and the recorded failure rate for the `sign` action was 100% of
+ * everything the strip could see.
+ *
+ * These arms drive the real `signCandidate` through the harness above, which is
+ * the point: the event has to arrive from the same detached callback that seals,
+ * after the seal, and NOT when the seal never happened. An arm calling the
+ * recorder directly would prove a payload and skip all three.
+ */
+describe("a signed Cast records its terminal event (#1429)", () => {
+  it("sends exactly one delivery, after the seal, with the money the receipt carries", async () => {
+    await signCandidate(
+      { schedulePackage: awaitPackage, buildPackage: packageReturning({}) },
+      input,
+    );
+
+    expect(terminalEvents).toHaveLength(1);
+    expect(terminalEvents[0]).toEqual({
+      userId: 1,
+      operationId: OPERATION_ID,
+      chargedCredits: 450,
+      refundedCredits: 0,
+      terminalStatus: "succeeded",
+    });
+    /* AFTER the seal. The whole reason the payload is held in a variable and
+       sent below the `try` is that a seal which threw must send nothing. */
+    expect(journal.indexOf("seal:success")).toBeLessThan(journal.indexOf("event:delivered"));
+  });
+
+  it("calls a Sign that lost views a PARTIAL, and says how much went back", async () => {
+    /* The distinction the strip needs to see a view engine getting worse: four
+       of five committed is not the same fact as five of five, and the receipt
+       says so — `terminalStatus: "partial"` plus the refund. */
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({ committed: 3, failed: 2, refundedCredits: 100 }),
+      },
+      input,
+    );
+
+    expect(receipts.at(-1)).toMatchObject({ kind: "success", terminalStatus: "partial" });
+    expect(terminalEvents).toEqual([{
+      userId: 1,
+      operationId: OPERATION_ID,
+      chargedCredits: 450,
+      refundedCredits: 100,
+      terminalStatus: "partial",
+    }]);
+  });
+
+  it("records NOTHING when the seal threw and the sweep owns the operation", async () => {
+    /* `completeSignPackage`'s catch hands a half-sealed Sign to the recovery
+       sweep, which sends its own terminal event (#1425). An event from here as
+       well would be two terminals for one operation — the exact duplication the
+       held-payload shape prevents. */
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: vi.fn(async () => {
+          throw new Error("the package could not be built");
+        }),
+      },
+      input,
+    );
+
+    expect(journal).not.toContain("seal:success");
+    expect(terminalEvents).toEqual([]);
+  });
+
+  it("records NOTHING when an unrecorded refund parks the operation for a human", async () => {
+    /* A park is not a terminal — the operation has not ended, it is waiting for
+       support, and it will end later. #1425 made the same call for the same
+       reason, and this is the road that reaches it on the live side. */
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({ committed: 4, failed: 1, refundUnrecorded: true }),
+      },
+      input,
+    );
+
+    expect(receipts.at(-1)).toMatchObject({ kind: "recovery" });
+    expect(journal).not.toContain("seal:success");
+    expect(terminalEvents).toEqual([]);
+  });
+
+  it("records NOTHING when the charge was refused, because nothing started running", async () => {
+    chargeSucceeds = false;
+
+    await expect(
+      signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
+    ).rejects.toThrow();
+
+    /* The failure road records its own terminal through
+       `completeDirectOperationFailure`, which this file mocks — so the absence
+       here is the absence of a DOUBLE, not of any event at all. */
+    expect(receipts.at(-1)).toMatchObject({ kind: "failure" });
+    expect(terminalEvents).toEqual([]);
   });
 });

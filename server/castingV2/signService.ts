@@ -46,6 +46,7 @@ import {
   beginDirectOperation,
   completeDirectOperationFailure,
   failClaimedDirectOperation,
+  recordDirectOperationDelivered,
 } from "../casting/directOperation";
 import { operationChargeReference } from "../casting/operationContract";
 import { mintRevisionId } from "../casting/identity/anchorSelector";
@@ -1019,6 +1020,18 @@ async function completeSignPackage(
     chargedCredits: number;
   },
 ): Promise<void> {
+  /*
+    THE TERMINAL EVENT FOR A SUCCESSFUL SIGN (#1429), held here so it is sent
+    only once the seal has definitely landed and only OUTSIDE the catch that
+    hands a half-sealed Sign to the recovery sweep.
+
+    A Sign that reaches the sweep must not have recorded a delivery on the way
+    past: the sweep settles it and sends its own terminal event (#1425), and two
+    events for one operation would be worse than the silence being fixed here.
+    Declaring the payload outside the `try` and sending it after is what makes
+    "the seal returned" the only condition under which anything is recorded.
+  */
+  let deliveredEvent: Parameters<typeof recordDirectOperationDelivered>[0] | null = null;
   try {
     const anchorBytes = await (dependencies.readBytes ?? storageReadBytes)(input.anchorStorageKey);
     /*
@@ -1096,6 +1109,7 @@ async function completeSignPackage(
       );
     });
 
+    const terminalStatus = result.failed.length > 0 ? "partial" as const : "succeeded" as const;
     await finalizeGenerationOperationSuccess({
       userId: input.userId,
       operationId: input.operationId,
@@ -1106,8 +1120,19 @@ async function completeSignPackage(
       },
       chargedCredits: input.chargedCredits,
       refundedCredits: result.refundedCredits,
-      terminalStatus: result.failed.length > 0 ? "partial" : "succeeded",
+      terminalStatus,
     });
+    /* The finalizer returned, so its `WHERE status = 'running'` matched exactly
+       one row and these three values ARE the receipt (it throws otherwise). A
+       Sign that delivered four of five views is a `partial`, and that is the
+       distinction the strip needs to see a view engine getting worse. */
+    deliveredEvent = {
+      userId: input.userId,
+      operationId: input.operationId,
+      chargedCredits: input.chargedCredits,
+      refundedCredits: result.refundedCredits,
+      terminalStatus,
+    };
   } catch (error) {
     /*
       The sweep owns it from here. Sealing is the only thing that can have
@@ -1120,6 +1145,7 @@ async function completeSignPackage(
       "[signService] the package could not be sealed — leaving it for the recovery sweep",
     );
   }
+  if (deliveredEvent) recordDirectOperationDelivered(deliveredEvent);
 }
 
 /**

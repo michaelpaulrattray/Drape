@@ -3,6 +3,7 @@ import { TRPCError, type TRPC_ERROR_CODE_KEY } from "@trpc/server";
 import {
   beginDirectOperation,
   failClaimedDirectOperation,
+  recordDirectOperationDelivered,
   type DirectOperationGate,
 } from "../directOperation";
 import { modelOperationLockKey } from "../operationContract";
@@ -283,6 +284,25 @@ export async function stageOwnedReferencePlate(
       prepared,
       image,
     });
+    /*
+      THE TERMINAL EVENT (#1429). The claim above emits `generation started`;
+      the attach settles the receipt inside its own transaction through
+      `finalizeClaimedGenerationOperationSuccessIn`, which is not a capturing
+      completer, so a stored reference plate was a generation that never ended.
+      This road is LIVE on production — `R7_EVIDENCE_INGEST_SCOPE` stands at
+      `users:1` with the private adapter configured, which is the only account
+      that has ever cast.
+
+      After the attach returned, so the transaction has committed; a rolled-back
+      one settled nothing. Free by construction — that finalizer writes both
+      money columns as literal zeros.
+    */
+    recordDirectOperationDelivered({
+      userId: input.userId,
+      operationId: gate.operationId,
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
     return ownerResponse(dependencies.delivery, input.userId, result);
   } catch (error) {
     return operationFailure(error);
@@ -349,12 +369,21 @@ export async function discardOwnedReferencePlate(input: {
       resumeClaimedEvidence: true,
     });
     if (gate.type === "replay") return discardReplay(gate.result, input.plateId);
-    return await discardReferencePlateOperation({
+    const discarded = await discardReferencePlateOperation({
       userId: input.userId,
       modelId: plate.modelId,
       plateId: input.plateId,
       operationId: gate.operationId,
     });
+    /* Its sibling above, same shape and same reasoning: a discard settles
+       terminally in a transaction and recorded nothing. (#1429) */
+    recordDirectOperationDelivered({
+      userId: input.userId,
+      operationId: gate.operationId,
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+    return discarded;
   } catch (error) {
     return operationFailure(error);
   }
