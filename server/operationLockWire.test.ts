@@ -26,6 +26,41 @@ import { describe, expect, it } from "vitest";
  * moment it exists — the shape `scriptWorldGuard.test.ts` and
  * `scriptExitDiscipline.test.ts` already use.
  *
+ * ⚠ **AND THAT PROPERTY HELD FOR 11 OF 25 CLAIM SITES UNTIL #1268.** The
+ * derived arms found call sites by NAME (`\bbeginDirectOperation\s*\(`), and
+ * this repository's house style for a testable service reaches the same
+ * function through an injected dependency, where the name is followed by a
+ * CLOSE paren and never matched. Measured on the tree at `0ba7f9e4`:
+ *
+ *     beginDirectOperation          25 sites — bare 11, injected 8, aliased 6
+ *     markGenerationOperationRunning 20 sites — bare 10, injected 10, aliased 0
+ *
+ * The three shapes are read here, so the population is 25 and 20 rather than
+ * 11 and 10. The defect question was asked before the widening and the answer
+ * was clean — no invisible site claiming a `modelId` was missing its key — so
+ * this closes a PROSPECTIVE hole: the day one of the fourteen newly-visible
+ * paid sites loses its lock, an arm goes red instead of nothing happening.
+ *
+ * The shapes, in the spellings the tree actually uses:
+ *
+ *     beginDirectOperation({…})                              bare
+ *     (dependencies.begin ?? beginDirectOperation)({…})      injected
+ *     const begin = input.begin ?? beginDirectOperation      aliased
+ *     …later… begin({…})
+ *
+ * ⚠ **A SHAPE CENSUS ARM SITS BESIDE THE RULE** (`every claim shape is still
+ * being read`), because a widened reader that silently stops matching one
+ * shape looks exactly like a tree that stopped using it — and the whole
+ * population would go quiet with every assertion green.
+ *
+ * ⚠ **THE TWO HAND-WRITTEN ARMS BELOW ARE NOT MADE REDUNDANT BY THIS AND ARE
+ * DELIBERATELY KEPT.** #1268 suggested they could be deleted once the scanner
+ * saw injected sites; read at the code they cannot be. The refine and view
+ * retry claims name no `modelId` at all — they lock a CANDIDATE and a SLOT —
+ * so the model-key rule still cannot see them whatever shape it reads, and
+ * their arms additionally pin things no derived rule knows to ask for
+ * (`candidateLockPublicId`, `lockBusyMessage`, one spelling of the slot key).
+ *
  * # The rule, and why `model.create` is not an exemption
  *
  * A call that names a `modelId` is claiming a Cast, and a claimed Cast is
@@ -47,13 +82,29 @@ const DECLARATIONS = new Set([
 ]);
 
 /** Paid paths whose absence would mean the scanner stopped looking rather than
- *  the tree going quiet — a sweep must prove it was sweeping. */
-const MUST_BE_IN_SCOPE = [
-  "server/routes/generation/castingExport.ts",     // mint
-  "server/routes/generation/castingRefinement.ts", // refine
-  "server/routes/generation/castingImaging.ts",    // headshot
-  "server/routes/boardOps.ts",                     // canvas
-];
+ *  the tree going quiet — a sweep must prove it was sweeping.
+ *
+ *  Each list names a BARE site, an INJECTED site and an ALIASED site where the
+ *  tree has one, so a reader that loses a shape cannot pass by finding the
+ *  other two. (`markGenerationOperationRunning` has no aliased site on this
+ *  tree; the shape census arm below carries that half instead.) */
+const MUST_BE_IN_SCOPE: Record<string, string[]> = {
+  beginDirectOperation: [
+    "server/routes/generation/castingExport.ts",            // mint      — bare
+    "server/routes/generation/castingRefinement.ts",        // refine    — bare
+    "server/routes/generation/castingImaging.ts",           // headshot  — bare
+    "server/routes/boardOps.ts",                            // canvas    — bare
+    "server/casting/evidence/inkCandidateAcceptance.ts",    //           — injected
+    "server/casting/evidence/evidenceOperations.ts",        //           — aliased
+  ],
+  markGenerationOperationRunning: [
+    "server/routes/generation/castingExport.ts",            // mint      — bare
+    "server/routes/generation/castingRefinement.ts",        // refine    — bare
+    "server/routes/generation/castingImaging.ts",           // headshot  — bare
+    "server/routes/boardOps.ts",                            // canvas    — bare
+    "server/casting/evidence/inkCandidateAcceptance.ts",    //           — injected
+  ],
+};
 
 async function productionFiles(dir: string, out: string[] = []): Promise<string[]> {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -72,37 +123,12 @@ async function productionFiles(dir: string, out: string[] = []): Promise<string[
   return out;
 }
 
-/** The argument text of every call to `fn`, by brace matching rather than by a
- *  line regex — these calls span dozens of lines. */
-function callArguments(source: string, fn: string): Array<{ line: number; body: string }> {
-  const found: Array<{ line: number; body: string }> = [];
-  const pattern = new RegExp(`\\b${fn}\\s*\\(`, "g");
-  for (let match = pattern.exec(source); match; match = pattern.exec(source)) {
-    let depth = 0;
-    let index = match[0].length + match.index - 1;
-    while (index < source.length) {
-      if (source[index] === "(") depth += 1;
-      else if (source[index] === ")") {
-        depth -= 1;
-        if (depth === 0) break;
-      }
-      index += 1;
-    }
-    found.push({
-      line: source.slice(0, match.index).split("\n").length,
-      body: source.slice(match.index + match[0].length, index),
-    });
-  }
-  return found;
-}
-
 /**
  * The argument text of a call whose opening paren is already located.
  *
- * `callArguments` above finds calls by NAME, which cannot see an injected site
- * (`(dependencies.begin ?? beginDirectOperation)(`) because the name is followed
- * by a close paren. The injected arms below locate their own paren and hand the
- * index here, so the brace matching itself is written once.
+ * Every shape below locates its own paren and hands the index here, so the
+ * brace matching — these calls span dozens of lines, which is why a line regex
+ * cannot do this job — is written exactly once.
  */
 function argumentsAt(source: string, afterOpenParen: number): string {
   let depth = 1;
@@ -115,7 +141,54 @@ function argumentsAt(source: string, afterOpenParen: number): string {
   return source.slice(afterOpenParen, index - 1);
 }
 
-type Site = { file: string; line: number; namesModel: boolean; passesKey: boolean };
+type Shape = "bare" | "injected" | "aliased";
+
+/**
+ * Every call to `fn` in one file, in all three shapes the tree reaches it by.
+ *
+ * `bare`      `fn({…})`
+ * `injected`  `(dependencies.fn ?? fn)({…})` — the name is followed by a CLOSE
+ *             paren, which is why matching `fn\s*\(` alone saw none of these.
+ * `aliased`   `const begin = input.begin ?? fn` and then `begin({…})`. Each
+ *             binding owns only the calls between itself and the next binding
+ *             of the same name, so a file that re-declares the alias per
+ *             function (`evidenceOperations.ts` declares it three times) counts
+ *             three call sites and not six.
+ */
+function callArguments(source: string, fn: string): Array<{ line: number; shape: Shape; body: string }> {
+  const found: Array<{ line: number; shape: Shape; body: string }> = [];
+  const at = (index: number) => source.slice(0, index).split("\n").length;
+
+  for (const match of source.matchAll(new RegExp(String.raw`\b${fn}\s*\(`, "g"))) {
+    const index = match.index;
+    found.push({ line: at(index), shape: "bare", body: argumentsAt(source, index + match[0].length) });
+  }
+
+  for (const match of source.matchAll(
+    new RegExp(String.raw`\(\s*[A-Za-z_$][\w$.]*\s*\?\?\s*${fn}\s*\)\s*\(`, "g"),
+  )) {
+    const index = match.index;
+    found.push({ line: at(index), shape: "injected", body: argumentsAt(source, index + match[0].length) });
+  }
+
+  for (const binding of source.matchAll(
+    new RegExp(String.raw`(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*[A-Za-z_$][\w$.]*\s*\?\?\s*${fn}\b`, "g"),
+  )) {
+    const alias = binding[1];
+    const rebound = [...source.matchAll(new RegExp(String.raw`(?:const|let)\s+${alias}\s*=`, "g"))]
+      .map((other) => other.index)
+      .find((index) => index > binding.index) ?? source.length;
+    for (const call of source.matchAll(new RegExp(String.raw`(?<![\w$.])${alias}\s*\(`, "g"))) {
+      const index = call.index;
+      if (index < binding.index || index >= rebound) continue;
+      found.push({ line: at(index), shape: "aliased", body: argumentsAt(source, index + call[0].length) });
+    }
+  }
+
+  return found;
+}
+
+type Site = { file: string; line: number; shape: Shape; namesModel: boolean; passesKey: boolean };
 
 async function sitesFor(fn: string, required: string): Promise<Site[]> {
   const sites: Site[] = [];
@@ -124,10 +197,11 @@ async function sitesFor(fn: string, required: string): Promise<Site[]> {
     if (DECLARATIONS.has(file)) continue;
     const source = await readFile(absolute, "utf8");
     if (!source.includes(fn)) continue;
-    for (const { line, body } of callArguments(source, fn)) {
+    for (const { line, shape, body } of callArguments(source, fn)) {
       sites.push({
         file,
         line,
+        shape,
         namesModel: /\bmodelId\s*:/.test(body),
         passesKey: new RegExp(`\\b${required}\\b`).test(body),
       });
@@ -144,15 +218,17 @@ describe("the resource lock reaches the wire", { timeout: 60_000 }, () => {
     const claiming = sites.filter((site) => site.namesModel);
 
     // Positive control: the scan is looking at the paid paths, so a green here
-    // cannot mean the walker quietly returned nothing.
-    expect(claiming.length).toBeGreaterThanOrEqual(8);
-    for (const file of MUST_BE_IN_SCOPE) {
+    // cannot mean the walker quietly returned nothing. The floor is 16 because
+    // 18 claim a model on this tree and the three shapes are all represented
+    // in the list below.
+    expect(claiming.length).toBeGreaterThanOrEqual(16);
+    for (const file of MUST_BE_IN_SCOPE.beginDirectOperation) {
       expect(claiming.map((site) => site.file)).toContain(file);
     }
 
     const unlocked = claiming
       .filter((site) => !site.passesKey)
-      .map((site) => `${site.file}:${site.line}`);
+      .map((site) => `${site.file}:${site.line} [${site.shape}]`);
     expect(unlocked).toEqual([]);
   });
 
@@ -160,15 +236,59 @@ describe("the resource lock reaches the wire", { timeout: 60_000 }, () => {
     const sites = await sitesFor("markGenerationOperationRunning", "requiredLockKey");
     const claiming = sites.filter((site) => site.namesModel);
 
-    expect(claiming.length).toBeGreaterThanOrEqual(8);
-    for (const file of MUST_BE_IN_SCOPE) {
+    expect(claiming.length).toBeGreaterThanOrEqual(12);
+    for (const file of MUST_BE_IN_SCOPE.markGenerationOperationRunning) {
       expect(claiming.map((site) => site.file)).toContain(file);
     }
 
     const unproved = claiming
       .filter((site) => !site.passesKey)
-      .map((site) => `${site.file}:${site.line}`);
+      .map((site) => `${site.file}:${site.line} [${site.shape}]`);
     expect(unproved).toEqual([]);
+  });
+
+  it("every claim shape is still being read", async () => {
+    /*
+      THE WIDENING'S OWN CONTROL (#1268).
+
+      The two rules above are `expect(unlocked).toEqual([])` — an assertion
+      that passes most loudly when the population is EMPTY. So a reader that
+      silently stops matching the injected or the aliased shape looks exactly
+      like a tree that stopped using it: fourteen paid sites leave scope and
+      every assertion stays green.
+
+      This arm holds the shapes themselves. It is a floor, not a fixed count —
+      a new injected claim site must not have to come back here — and it is
+      derived from the same reader, so it cannot drift from what the rules see.
+    */
+    const begin = await sitesFor("beginDirectOperation", "lockKey");
+    const run = await sitesFor("markGenerationOperationRunning", "requiredLockKey");
+    const census = (sites: Site[]) => ({
+      bare: sites.filter((site) => site.shape === "bare").length,
+      injected: sites.filter((site) => site.shape === "injected").length,
+      aliased: sites.filter((site) => site.shape === "aliased").length,
+    });
+
+    // Measured on the tree at 0ba7f9e4: begin 25 (11/8/6), run 20 (10/10/0).
+    const beginShapes = census(begin);
+    expect(beginShapes.bare).toBeGreaterThanOrEqual(9);
+    expect(beginShapes.injected).toBeGreaterThanOrEqual(6);
+    expect(beginShapes.aliased).toBeGreaterThanOrEqual(4);
+
+    const runShapes = census(run);
+    expect(runShapes.bare).toBeGreaterThanOrEqual(8);
+    expect(runShapes.injected).toBeGreaterThanOrEqual(8);
+
+    /* An aliased site is counted ONCE per call, not once per preceding binding.
+       `evidenceOperations.ts` re-declares `begin` in each of its three
+       functions; the first shape of this reader paired every binding with every
+       later call and reported six sites where there are three — which is how
+       #1268's own sweep came to file the population as 28 rather than 25. */
+    const aliasedInEvidenceOperations = begin.filter(
+      (site) => site.file === "server/casting/evidence/evidenceOperations.ts",
+    );
+    expect(aliasedInEvidenceOperations.map((site) => site.line)).toHaveLength(3);
+    expect(new Set(aliasedInEvidenceOperations.map((site) => site.line)).size).toBe(3);
   });
 
   it("the castingV2 refine claim passes its candidate lock", async () => {

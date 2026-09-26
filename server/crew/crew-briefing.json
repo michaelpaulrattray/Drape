@@ -1,7 +1,7 @@
 {
-  "edition": 537,
-  "updatedAt": "2026-09-25T23:20:00.000Z",
-  "shift": "Foreman — N2 focus: two readers stopped blaming your photograph for our own limit (#1272)",
+  "edition": 539,
+  "updatedAt": "2026-09-26T00:36:00.000Z",
+  "shift": "Foreman — your two answers acted on: the buttons closed, the Sifr dress card closed on the trousers fix, and the sheet-as-reference shape recorded as your choice (#1278)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -188,6 +188,22 @@
         {
           "state": "done",
           "title": "Two of the studio's readers could blame your photograph for our own limit, and now they cannot (#1272). When you attach a picture to copy a hair colour or a makeup look from, we ask a reader to describe what is in it. If that description ran past the room we had given it, the answer arrived half-written and unreadable, and you were told “We couldn't read that picture — try another one” — about a picture that was never the problem. You would have swapped it and it would have failed again. Both readers now say the thing that is true: “I couldn't read that picture just now — try again in a moment.” Those words were already in the studio; nothing new was written for you to read. Six more readers had the same gap and were quietly filing half an answer as a fact about your cast — the worst of them could record that it had SEEN something in a picture when its answer had in fact been cut off before it could say so. Nobody is known to have been caught by any of it: it was found by measuring rather than by a complaint, and the records that would have shown it are deleted on a schedule. Two things worth knowing about how it went. Checking the list on the card found THREE more readers than the card named — including one of the two above, the closest twin of the worst one — because those files discuss the problem in their own notes, and a search for the word had read a note as a fix. And the ninth reader sits on the paid refine road: it is carded as #1275 rather than changed inside a cleanup, because fixing it means choosing which sentence you see after you have spent credits, and that is your call rather than ours."
+        },
+        {
+          "state": "done",
+          "title": "The crew's own map of the studio had a hole in it, and the hole was Re-imagine — the button that rewrites your brief in your own words, which has been on for every account since you turned it on. It was not on the map at all: no description of what it does, no list of what it can refuse, nothing. The check that is supposed to catch exactly this stayed green for three weeks, and now we know why. The map could always prove that everything it MENTIONED was real. Nothing ever asked whether it had mentioned everything. That is now checked both ways: the map is compared against the list of every way a customer can reach the studio — 28 of them — and a way in that no part of the map describes is a hard failure that stops the build. Two were missing, not one: Re-imagine, and Upload a concept. Both are written up properly now, from the code rather than from memory. Nothing you can see changed — this is the crew reading its own product accurately, which is what stops the next feature shipping invisible to the people maintaining it. (#1203)"
+        },
+        {
+          "state": "done",
+          "title": "And the unchecked-view worry is settled at the rows. Yesterday three of your signed views arrived with nobody having checked them — the checker had run out of room to answer — and you were charged for them. That was fixed the same day; what was left was counting whether it still happens. It does not. Every view made since the fix carries a real verdict from a named checker, and across this product's entire history that fault has occurred exactly three times: the three you hit. The honest caveat is that only five views have been made since, because only one person casts here — so if it ever comes back the record will say so in the same place, and reopening is one line. (#1220)"
+        },
+        {
+          "state": "done",
+          "title": "And you answered the switched-off buttons yourself while this shift was running — one word, \"good\". So that is closed: a button that is switched off now looks switched off, in all 43 places, including the two on the money pages. Nothing is waiting on you on that one any more. (#1237)"
+        },
+        {
+          "state": "done",
+          "title": "You answered the Sifr dress frames too, and your split is done exactly as you wrote it. The fault that card was about — her brief says a white dress and the signed full-length view put her in overall trousers and boots — is fixed, and all four takes now wear the dress, so that card is closed. The two things you said are still wrong are not that card: the dress comes back a plain, modest version of what your brief describes, and the hem and the shoes change from take to take. Both are the next card (#1278), and your own words on how to fix the second one are now written on it: one picture of four angles made in a single go, cut into the four slots, instead of four separate pictures that each invent the bottom half. That was the open question on that card and you have answered it. It still gets put in front of your eyes before it replaces anything, and the price of the one big picture will be named beside the quality. (#1222 closed, #1278)"
         }
       ]
     },
@@ -271,7 +287,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-09-25T21:01:39.480Z",
+      "readAt": "2026-09-26T00:32:51.297Z",
       "items": [
         {
           "issueNumber": 179,
@@ -3290,7 +3306,7 @@
         }
       ],
       "recommendation": "DONE AND LIVE. You said: “Give switched-off buttons a quieter look and a normal pointer”, and that is exactly what shipped — one change in the shared button rule, so all 43 read honestly, the two on the billing pages included.\n\nThree more things came out of doing it, all small and all the same fault: fourteen buttons still brightened when the mouse passed over them even while switched off; four buttons in the Sign, delete, rename and concept windows had no switched-off look at all; and three places still showed the “no entry” pointer instead of a normal one — two of them on this page.\n\nTHE ONLY THING LEFT IS YOUR EYE. The frames under FOR YOUR EYES show the same five buttons working and switched off, in both themes. If the faded look reads right to you, this closes. If it is too faint or not faint enough, say so and it is one number.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-09-25T08:30:00.000Z"
     }
   ],
@@ -3299,7 +3315,7 @@
       "id": "sifr-wardrobe-line-1222",
       "title": "Sifr's full front, dressed by her own brief - four takes on your master",
       "question": "WHAT YOU ARE JUDGING - last time the full front put her in overall pants and black boots. The fix: the studio now reads the outfit straight out of your brief, keeps it word for word, and every full-length view is built and checked against that sentence - a view that swaps her dress for trousers now fails instead of being delivered. These four takes are her full front rendered that new way, against your own Sifr master. Look at whether the lower half is the dress your brief describes, on all four. The hem length and the shoes differ take to take because your brief deliberately leaves them open. Two words is enough - right, or what it still misses. Your word closes #1222.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-09-25T18:09:38.000Z",
       "issueNumber": 1222,
       "cardId": null,
@@ -3315,7 +3331,7 @@
       "id": "switched-off-buttons-1237",
       "title": "Switched-off buttons: does the faded look read right to you?",
       "question": "WHAT YOU ARE JUDGING — not whether it works, but whether it looks right. Each frame shows the same five buttons twice: working on top, switched off underneath. The whole product now uses this one look, so whatever you decide here is what every switched-off button in Drape looks like, billing windows included. Two things to weigh: can you still READ a switched-off button, and is it obviously NOT pressable at a glance? If it is too faint, or not faint enough, say so — it is one number and a one-line change. Light and dark are the same five buttons.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-09-25T14:55:00.000Z",
       "issueNumber": 1237,
       "cardId": "disabled-buttons-1237",
@@ -8297,6 +8313,13 @@
       "status": "merged",
       "prNumber": 1276,
       "note": "Live on production as build 84abd902; remainder #1275."
+    },
+    {
+      "id": "entrance-coverage-1203",
+      "title": "Every way into the studio is on the crew's map now — and a new one that is not stops the build (#1203)",
+      "status": "merged",
+      "prNumber": 1279,
+      "note": "Live on production as build 0ba7f9e4."
     }
   ],
   "problems": [
@@ -8583,18 +8606,22 @@
     216,
     217,
     218,
-    219
+    219,
+    220,
+    221
   ],
   "nextUp": {
-    "readAt": "2026-09-25T21:01:39.478Z",
+    "readAt": "2026-09-26T00:32:51.296Z",
     "items": [
       {
-        "issueNumber": 1237,
-        "title": "A switched-off button looks exactly like one that works — 43 of them, two on the money pages (found while fixing #1232)",
-        "urgent": false,
-        "held": {
-          "state": "blocked"
-        }
+        "issueNumber": 1278,
+        "title": "A signed view is dressed by an extraction and a prohibition list, never by the brief — the full-length views come back modest, generic and inconsistent; the brief dresses the view and the full-length views render as one sheet (his eye 2026-09-26)",
+        "urgent": true
+      },
+      {
+        "issueNumber": 1240,
+        "title": "A signed view sends the roll's own house sentences — one block, two roads; the legacy cohort realism/negatives/authority leave the view road (his word 2026-09-26; absorbs #1216)",
+        "urgent": false
       }
     ]
   }
