@@ -2202,6 +2202,13 @@ export default function CastingSheet() {
   const notice = sheetNotice({
     fellBack: roll.data?.fellBack === true,
     statedWardrobe: roll.data?.statedWardrobe === true,
+    /*
+      WHICH ROAD THIS ROLL COMPOSED ON (#1262) — the stated-outfit rung is the
+      house road's sentence, and on the author road it contradicted the faces
+      directly above it. Read off the same viewed roll as the other two facts,
+      so walking the history rail still describes the sheet you are looking at.
+    */
+    authorRoad: roll.data?.authorRoad === true,
     expiryNotice,
   });
 
@@ -2389,10 +2396,10 @@ export default function CastingSheet() {
           THE SHEET'S ONE QUIET LINE.
 
           Three things can want this space — a lost interpretation, a stated
-          outfit the sheet did not render, an expiry two days out — and they
-          are all true at once often enough that stacking them was never an
-          option. The precedence lives in `sheetNotice`, next to the reasoning,
-          rather than as three conditionals here that drift apart.
+          outfit a HOUSE-road sheet did not render (#1262), an expiry two days
+          out — and they are all true at once often enough that stacking them
+          was never an option. The precedence lives in `sheetNotice`, next to
+          the reasoning, rather than as three conditionals here that drift apart.
         */}
         {notice ? <p className="dpc-expiry-note">{notice}</p> : null}
 
