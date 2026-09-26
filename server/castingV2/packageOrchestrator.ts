@@ -123,7 +123,7 @@ import {
   type CarriedFeatureWords,
 } from "./viewFeatureWords";
 import { castingIdentityEngine, castingViewConformanceJudge } from "./signEngine";
-import type { ViewConformanceJudge, ViewConformanceVerdict } from "./viewConformance";
+import { conformanceProvenance, type ViewConformanceJudge, type ViewConformanceVerdict } from "./viewConformance";
 
 const log = createModuleLogger("castingV2/packageOrchestrator");
 
@@ -891,8 +891,7 @@ async function buildOneView(
       provenance: {
         source: "castingV2.sign",
         ...landed.provenance,
-        conformance: landed.verdict.axes,
-        conformanceMethod: landed.verdict.method,
+        ...conformanceProvenance(landed.verdict),
       },
     });
     // The url travels with the id because the audit row wants it and the

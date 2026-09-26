@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 181
+      "moduleCount": 182
     },
     {
       "id": "domain:castingV2",
@@ -3969,6 +3969,12 @@
     {
       "id": "module:server/castingV2/invisibleRemoval.ts",
       "path": "server/castingV2/invisibleRemoval.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/judgeFrame.ts",
+      "path": "server/castingV2/judgeFrame.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -11871,6 +11877,10 @@
     {
       "id": "test:server/castingV2/judgeAnswers.test.ts",
       "path": "server/castingV2/judgeAnswers.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/judgeFrame.test.ts",
+      "path": "server/castingV2/judgeFrame.test.ts"
     },
     {
       "id": "test:server/castingV2/keptFaceScan.test.ts",
@@ -25015,6 +25025,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/judgeFrame.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/judgeFrame.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/keptFaceScan.ts",
       "to": "module:server/castingV2/facePanel.ts",
       "kind": "imports"
@@ -27916,6 +27936,11 @@
     },
     {
       "from": "module:server/castingV2/viewConformance.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewConformance.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -28017,6 +28042,11 @@
     {
       "from": "module:server/castingV2/viewRetryService.ts",
       "to": "module:server/castingV2/spendGuards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/castingV2/viewConformance.ts",
       "kind": "imports"
     },
     {

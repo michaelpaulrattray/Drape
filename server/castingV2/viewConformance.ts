@@ -33,6 +33,7 @@ import type { CastViewAngle } from "../../shared/boardTypes";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ReferenceImage, type TextEngine } from "../providers/types";
 import { packageViewExpectation } from "./castViewPackage";
+import { boundForJudge, type JudgedFrame } from "./judgeFrame";
 
 const log = createModuleLogger("castingV2/viewConformance");
 
@@ -79,6 +80,19 @@ export type ViewConformanceVerdict = {
    * slot the customer paid for, and the second is the one that needs an alarm.
    */
   unjudged?: boolean;
+  /**
+   * THE FRAMES THE JUDGE ACTUALLY READ — anchor first, then the candidate.
+   *
+   * #1408: the pair used to go out at full resolution as PNG, 12–13 MB of
+   * base64, and above ~8–9 MB no answer came back inside the deadline — so 3 of
+   * 27 production views were delivered unchecked and charged. They are bounded
+   * now (`judgeFrame.ts`), and a row that records a verdict should be able to
+   * say what was in front of the reader when it gave one.
+   *
+   * Absent on the fail-closed defaults that never reached a frame — a forced
+   * failure, and any `unjudged` raised before the post.
+   */
+  frames?: readonly JudgedFrame[];
 };
 
 type ViewConformanceInput = {
@@ -185,13 +199,21 @@ const JUDGE_SYSTEM = [
 ].join(" ");
 
 /** Fail-closed on every axis, with one honest reason. */
-function unjudged(method: string, reason: string): ViewConformanceVerdict {
+function unjudged(
+  method: string,
+  reason: string,
+  frames?: readonly JudgedFrame[],
+): ViewConformanceVerdict {
   const axis: AxisVerdict = { pass: false, note: reason };
   return {
     pass: false,
     method,
     unjudged: true,
     axes: { identity: { ...axis }, angle: { ...axis }, wardrobe: { ...axis } },
+    /* The frames ride the fail-closed verdicts too, and they are worth most
+       there: an `unavailable` row that names what was posted is the difference
+       between "the judge timed out" and "the judge timed out on 13 MB". */
+    ...(frames ? { frames } : {}),
   };
 }
 
@@ -231,6 +253,25 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
       input.wardrobeLine ?? null,
       input.description ?? null,
     );
+
+    /*
+      THE PAIR IS BOUNDED BEFORE IT IS POSTED (#1408), and this is the only
+      place it can be: both roads into this judge — a Sign's five views and a
+      Try again — reach it through this one function, so a bound here cannot be
+      forgotten by a caller and cannot drift between the two.
+
+      Full reasoning, the measurements and what it deliberately does not change
+      are in `judgeFrame.ts`. The one sentence that belongs here: the frames
+      posted to the reader are NOT the frames delivered to the customer —
+      `packageOrchestrator` stores the provider's own bytes before it calls this
+      and delivers those.
+    */
+    const [anchor, candidate] = await Promise.all([
+      boundForJudge(input.anchor),
+      boundForJudge(input.candidate),
+    ]);
+    const frames: readonly JudgedFrame[] = [anchor.record, candidate.record];
+
     let text: string;
     try {
       const reply = await config.engine.complete({
@@ -241,7 +282,7 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
           `Framing: ${expectation.framing}`,
           `Wardrobe: ${expectation.wardrobe}`,
         ].join("\n"),
-        images: [input.anchor, input.candidate],
+        images: [anchor.image, candidate.image],
         json: true,
         temperature: 0,
         /*
@@ -301,7 +342,7 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
       if (error instanceof ProviderError && error.retryable) throw error;
       if (error instanceof ProviderError && error.failureClass === "content_policy") {
         // A refusal is a failure, never a pass (D-92).
-        return unjudged("refused", "the conformance judge refused to answer");
+        return unjudged("refused", "the conformance judge refused to answer", frames);
       }
       if (error instanceof ProviderError && error.failureClass === "provider_account") {
         /*
@@ -322,10 +363,10 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
           { angle: input.angle, engine: config.engine.id },
           "[viewConformance] JUDGING ACCOUNT UNUSABLE — our key or balance is refusing work, not the customer's Cast",
         );
-        return unjudged("account", "our judging account is out of funds");
+        return unjudged("account", "our judging account is out of funds", frames);
       }
       log.error({ angle: input.angle, err: error }, "[viewConformance] judge call failed — failing closed");
-      return unjudged("unavailable", "the conformance judge could not be reached");
+      return unjudged("unavailable", "the conformance judge could not be reached", frames);
     }
 
     const parsed = verdictSchema.safeParse(readJson(text));
@@ -334,7 +375,7 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
         { angle: input.angle },
         "[viewConformance] judge reply did not parse — failing closed",
       );
-      return unjudged("unparsed", "the conformance judge's answer could not be read");
+      return unjudged("unparsed", "the conformance judge's answer could not be read", frames);
     }
 
     /*
@@ -355,7 +396,36 @@ export function createViewConformanceJudge(config: ViewConformanceJudgeConfig): 
       pass: CONFORMANCE_AXES.every((axis) => axes[axis].pass),
       method: `judge:${config.engine.id}`,
       axes,
+      frames,
     };
+  };
+}
+
+/**
+ * WHAT A LANDED VIEW'S ROW RECORDS ABOUT ITS CHECK — one projection, read by
+ * both roads that land a view.
+ *
+ * There are two writers (`packageOrchestrator`'s Sign and `viewRetryService`'s
+ * Try again) and they were spelling the same two fields out separately. Adding
+ * a third to both by hand is working law 4's exact shape — a second list
+ * shadowing a source of truth always drifts from it — so the shape is derived
+ * here instead, where the verdict is made.
+ *
+ * ⚠ **`conformanceMethod`'s VALUE is a contract and does not move.**
+ * `castProjection.wasDeliveredUnjudged` matches it for equality against
+ * `"unavailable"`, which is what makes a Try again free on an unchecked view
+ * (#1220) and what keeps that view's price at zero (D-246). The new field sits
+ * beside it rather than inside it for that reason alone.
+ */
+export function conformanceProvenance(verdict: ViewConformanceVerdict): {
+  conformance: Record<ConformanceAxis, AxisVerdict>;
+  conformanceMethod: string;
+  conformanceFrames?: readonly JudgedFrame[];
+} {
+  return {
+    conformance: verdict.axes,
+    conformanceMethod: verdict.method,
+    ...(verdict.frames ? { conformanceFrames: verdict.frames } : {}),
   };
 }
 
