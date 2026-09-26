@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "527acc1aee33dee8"
+    "sourceFingerprint": "b06275d2a5a7387f"
   },
   "domains": [
     {
@@ -10301,6 +10301,10 @@
     {
       "id": "test:client/src/features/castingV2/chosenFrame.test.ts",
       "path": "client/src/features/castingV2/chosenFrame.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/clippedProse.test.ts",
+      "path": "client/src/features/castingV2/clippedProse.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/conceptUpload.test.ts",

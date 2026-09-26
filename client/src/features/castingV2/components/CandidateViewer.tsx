@@ -731,7 +731,24 @@ export function CandidateViewer({
                       readable over a photograph that is no longer softened. */}
                   <span className="dpc-viewer__falloff" aria-hidden="true" />
                   <span className="dpc-viewer__wait" role="status">
-                    <span className="dpc-viewer__waitSaid">{wait.instruction}</span>
+                    {/*
+                      THE SAME DEFECT AS #1187 AND THE SAME ONE-LINE ANSWER —
+                      his ruling there (*"Add a hover tooltip"*) read across by
+                      working law 7, which asks for the class rather than the
+                      instance.
+
+                      This is HER OWN ASK, `nowrap` + ellipsis at `max-width:
+                      24ch` — a harder clip than the made row's 701px, on the
+                      screen she is watching while the render she paid for runs.
+                      Nothing else on the page carries the sentence at that
+                      moment, so without this it cannot be read back at all.
+
+                      Same stated price: a hover affordance does nothing on a
+                      touch surface.
+                    */}
+                    <span className="dpc-viewer__waitSaid" title={wait.instruction}>
+                      {wait.instruction}
+                    </span>
                     <span className="dpc-viewer__waitMeta">
                       <span>{STAGE_WORDS[wait.stage]}</span>
                       <span className="dpc-viewer__waitTypical">
