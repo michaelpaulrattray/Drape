@@ -13650,6 +13650,10 @@
       "path": "server/uptimeAnchor.test.ts"
     },
     {
+      "id": "test:server/viteCacheDirPerTree.test.ts",
+      "path": "server/viteCacheDirPerTree.test.ts"
+    },
+    {
       "id": "test:server/viteDevFsAllow.test.ts",
       "path": "server/viteDevFsAllow.test.ts"
     },
