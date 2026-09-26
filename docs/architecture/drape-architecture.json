@@ -11578,6 +11578,10 @@
       "path": "server/castingV2/facePanel.test.ts"
     },
     {
+      "id": "test:server/castingV2/facePanelTextOnlyRow.test.ts",
+      "path": "server/castingV2/facePanelTextOnlyRow.test.ts"
+    },
+    {
       "id": "test:server/castingV2/faceScan.test.ts",
       "path": "server/castingV2/faceScan.test.ts"
     },
