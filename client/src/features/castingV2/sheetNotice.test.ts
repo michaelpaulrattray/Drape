@@ -8,11 +8,22 @@ import {
   sheetNotice,
 } from "./sheetNotice";
 
+/*
+  The live road is the AUTHOR road — every production account has been on it
+  since 2026-09-24 — so the shared fixture is an author-road sheet with nothing
+  to say. Every arm below that expects the studio-tee sentence therefore has to
+  say `authorRoad: false` out loud, which is the point: that sentence belongs to
+  the house road and the reader should not have to go and find that out (#1262).
+*/
 const quiet = {
   fellBack: false,
   statedWardrobe: false,
+  authorRoad: true,
   expiryNotice: null,
 } as const;
+
+/** A HOUSE-road sheet whose brief named an outfit — the rung's live cell. */
+const houseStated = { ...quiet, statedWardrobe: true, authorRoad: false } as const;
 
 describe("the sheet says one thing at a time", () => {
   it("says nothing when there is nothing to say", () => {
@@ -27,25 +38,21 @@ describe("the sheet says one thing at a time", () => {
   it("never stacks — the loudest wins outright", () => {
     expect(
       sheetNotice({
-        ...quiet,
+        ...houseStated,
         fellBack: true,
-        statedWardrobe: true,
         expiryNotice: "This sheet expires today — keep what's worth holding.",
       }),
     ).toBe(FELL_BACK_NOTICE);
   });
 
   it("puts the lost brief above the kept tee", () => {
-    expect(sheetNotice({ ...quiet, fellBack: true, statedWardrobe: true })).toBe(
-      FELL_BACK_NOTICE,
-    );
+    expect(sheetNotice({ ...houseStated, fellBack: true })).toBe(FELL_BACK_NOTICE);
   });
 
   it("puts the kept tee above the expiry, which is about the future", () => {
     expect(
       sheetNotice({
-        ...quiet,
-        statedWardrobe: true,
+        ...houseStated,
         expiryNotice: "This sheet expires tomorrow — keep what's worth holding.",
       }),
     ).toBe(STATED_WARDROBE_NOTICE);
@@ -93,7 +100,7 @@ describe("what the lines actually say", () => {
   is not a guard.
 */
 describe("the stated-outfit line is one sentence again, and it is the live one", () => {
-  const stated = { ...quiet, statedWardrobe: true };
+  const stated = houseStated;
 
   /* THE POSITIVE CONTROL. Everything below is an absence; this is the presence
      it is an absence against. */
@@ -121,6 +128,54 @@ describe("the stated-outfit line is one sentence again, and it is the live one",
   /* The top of the precedence is untouched by the retirement. */
   it("still loses to a lost interpretation", () => {
     expect(sheetNotice({ ...stated, fellBack: true })).toBe(FELL_BACK_NOTICE);
+  });
+});
+
+/*
+  ⚠ **THE STATED-OUTFIT RUNG IS THE HOUSE ROAD'S, AND ONLY THE HOUSE ROAD'S**
+  (#1262). On the author road the brief reaches the engine verbatim, so the
+  eight come back WEARING what she named — the sentence told her the opposite of
+  what her own sheet showed.
+
+  Written the way this module's other absence block demands: **every absence arm
+  is preceded by the positive control that proves the subject still exists.** A
+  `sheetNotice` that returned `null` for everything would satisfy every
+  `toBeNull()` here on its own.
+*/
+describe("the studio-tee sentence never speaks over a sheet that wore the outfit", () => {
+  const expiry = "This sheet expires today — keep what's worth holding.";
+
+  /* THE POSITIVE CONTROL. Same facts, other road — the sentence is still there. */
+  it("still says it on the house road, where it is true", () => {
+    expect(sheetNotice(houseStated)).toBe(STATED_WARDROBE_NOTICE);
+  });
+
+  it("says nothing at all on an author-road sheet whose brief named an outfit", () => {
+    expect(sheetNotice({ ...quiet, statedWardrobe: true })).toBeNull();
+  });
+
+  /*
+    ⚠ AND IT YIELDS THE SLOT RATHER THAN BLOCKING IT. The rung used to sit above
+    expiry; a fix that merely blanked the string would have left a stated-outfit
+    author-road sheet silent about an expiry it was two days from, which is a
+    second defect wearing the first one's fix.
+  */
+  it("hands the slot down to the expiry line instead of swallowing it", () => {
+    expect(sheetNotice({ ...quiet, statedWardrobe: true, expiryNotice: expiry })).toBe(expiry);
+  });
+
+  /* The top of the precedence is untouched by the road. */
+  it("still loses to a lost interpretation on either road", () => {
+    expect(sheetNotice({ ...quiet, statedWardrobe: true, fellBack: true })).toBe(FELL_BACK_NOTICE);
+    expect(sheetNotice({ ...houseStated, fellBack: true })).toBe(FELL_BACK_NOTICE);
+  });
+
+  /*
+    The road alone is not a reason to say anything. An author-road sheet that
+    never named an outfit is quiet for the reason it always was.
+  */
+  it("is not itself a line — an author-road sheet with nothing to say says nothing", () => {
+    expect(sheetNotice(quiet)).toBeNull();
   });
 });
 
@@ -152,5 +207,18 @@ describe("the Basics sentence and the path input are gone from the module", () =
     const source = await readFile(SOURCE, "utf8");
     const type = source.slice(source.indexOf("export type SheetNoticeInput"));
     expect(type.slice(0, type.indexOf("};"))).not.toContain("wardrobePath");
+  });
+
+  /*
+    ⚠ AND IT DOES ASK WHICH ROAD (#1262). The behaviour arms above would all
+    still pass if the field were dropped from the TYPE and the caller stopped
+    sending it, because `authorRoad: undefined` is falsy and every one of them
+    that expects silence passes `true` explicitly — this arm is what says the
+    question is declared rather than inferred from an absent property.
+  */
+  it("asks its caller which road the roll composed on", async () => {
+    const source = await readFile(SOURCE, "utf8");
+    const type = source.slice(source.indexOf("export type SheetNoticeInput"));
+    expect(type.slice(0, type.indexOf("};"))).toContain("authorRoad: boolean");
   });
 });
