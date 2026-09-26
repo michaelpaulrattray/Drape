@@ -654,6 +654,10 @@ describe("the SECOND mirror — the collected roots, against vitest.config.ts it
 describe("the check list itself", () => {
   it("runs in the gate's own order (a parallel job — the bundle budget — sits after the serial checks it cannot precede)", () => {
     expect(PREFLIGHT_CHECKS.map((c) => c.id)).toEqual([
+      /* First, as the gate runs it, and it costs a second on any diff that does
+         not touch the briefing — the script reads one `git diff` and leaves
+         (#1330). */
+      "eye-frames",
       "typecheck",
       "architecture",
       "capability",

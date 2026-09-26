@@ -12710,6 +12710,10 @@
       "path": "server/exportViews.test.ts"
     },
     {
+      "id": "test:server/eyeFrameGate.test.ts",
+      "path": "server/eyeFrameGate.test.ts"
+    },
+    {
       "id": "test:server/eyeFramePresence.test.ts",
       "path": "server/eyeFramePresence.test.ts"
     },

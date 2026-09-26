@@ -251,6 +251,35 @@ jobs:
           PR: ${{ needs.resolve.outputs.pr }}
         run: npx tsx scripts/check-closing-keyword.mts --pr "$PR"
 
+      # ⚠ AN EDITION'S EYE FRAMES MUST BE IN THE BUCKET HIS BROWSER ASKS (#1330).
+      #
+      # `scripts/lib/eyeFramePresence.mts` has judged this since #320 and had
+      # ONE caller — the deploy rite — while editions moved to the PR road at
+      # #1249. Editions 536 through 541 all shipped that way and not one of them
+      # met the check; the only thing that would have said so is the founder
+      # opening his page and finding broken-image glyphs, which is what happened
+      # twice BEFORE the guard existed. A guard that stopped being reachable
+      # leaves no failing test and no error (CLAUDE.md's path-three death).
+      #
+      # It runs BEFORE the expensive checks for the closing-keyword step's
+      # reason: the repair is a re-upload plus an edit, and learning that at 40
+      # seconds rather than 8 minutes is the whole point.
+      #
+      # `--base-ref` makes it a BRIEFING-touching check rather than an every-PR
+      # one: main may already name a frame somebody removed, and reddening a PR
+      # that neither touched it nor can fix it is the wrong bill. The script
+      # fails toward CHECKING when it cannot read the diff, and it needs no
+      # secret — `crew-eye/` objects are in the public bucket, and the bucket's
+      # identity is confirmed against production's own CSP header rather than
+      # read from an ambient .env (which names DEV and would pass the one case
+      # this exists to catch).
+      - name: Eye frames present in the production bucket (#1330)
+        env:
+          BASE: ${{ needs.resolve.outputs.base }}
+        run: |
+          git fetch origin "$BASE"
+          npx tsx scripts/check-eye-frames.mts --base-ref "origin/$BASE"
+
       - name: Typecheck (pnpm check)
         run: pnpm check
 
