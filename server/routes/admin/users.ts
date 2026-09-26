@@ -390,6 +390,18 @@ export const usersRouter = router({
     }),
 
   // Adjust user credits
+  //
+  // ⚠ `.strict()` (#1360, the Warden's W5-B). This is the largest single money
+  // authority in the product, and its schema silently DROPPED anything it did
+  // not declare — the 2026-08-23 sweep closed the customer's side of the money
+  // (the public five, the billing five) and never reached staff's. The one
+  // caller, `AdminUserManagement.tsx`, sends exactly these three keys and was
+  // read before this was tightened.
+  //
+  // ⚠ And it changes the REMOVAL CONTRACT for this input: a field is removed
+  // only after clients have stopped sending it for one full deploy, never in
+  // the commit that stops sending it. Until now an unknown key cost nothing;
+  // now it is a BAD_REQUEST on a money surface mid-deploy.
   adjustCredits: adminProcedure
     .input(z.object({
       userId: z.number(),
@@ -397,7 +409,7 @@ export const usersRouter = router({
       // `.trim()` before `.min(1)` (#816's money row): a one-space reason used to move credits
       // against a blank on every log this handler writes. The cap is the shared constant.
       reason: z.string().trim().min(1).max(CREDIT_ADJUST_REASON_MAX_LENGTH),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       const { adjustUserCredits, getUserById } = await import("../../db");
       
