@@ -36,7 +36,24 @@ export function CrewHappeningNow({
       </TableHead>
       <CrewWorkingNow shiftRuns={shiftRuns} now={now} embedded first />
       <CrewPipeline live={live} snapshot={pipelineSnapshot} queueRead={queueRead} now={now} embedded />
-      <CrewNextUp nextUp={nextUp} queueRead={queueRead} now={now} cards={cards} embedded />
+      {/* ⚠ #1345 — NEXT UP now carries the same build phrase the other lists do,
+          and the facts come from the `live` view this card already holds rather
+          than from two new props threaded down through `AdminCrew`. Read HERE
+          because this is where `live` already is; the shape of the read is the
+          one `AdminCrew` uses for Background Work, and both defer to
+          `shared/crewCardBuildState.ts` for the judgement itself, which is what
+          keeps them one answer rather than two. Empty when GitHub has not
+          answered at all — the same window every other live list falls back in,
+          and an absent read cannot invent a builder. */}
+      <CrewNextUp
+        nextUp={nextUp}
+        queueRead={queueRead}
+        now={now}
+        cards={cards}
+        builds={live.available ? live.desk.builds.items : []}
+        buildsWhy={live.available ? live.desk.builds.commentsWhy : null}
+        embedded
+      />
     </section>
   );
 }

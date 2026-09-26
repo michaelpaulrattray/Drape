@@ -32,6 +32,7 @@
  * §8's bar; the position, the hold word, the reason under the title and the
  * closing paragraph are untouched.
  */
+import type { CrewCardBuildView } from "@shared/crewCardBuildState";
 import { cn } from "@/lib/utils";
 import { SectionHead, SectionShell } from "./CrewShell";
 import { heldCount, nextUpRows } from "./crewTypes";
@@ -43,6 +44,8 @@ export function CrewNextUp({
   queueRead,
   now,
   cards,
+  builds = [],
+  buildsWhy = null,
   embedded,
   first,
 }: {
@@ -51,11 +54,15 @@ export function CrewNextUp({
   queueRead: CrewQueueRead;
   now: number;
   cards: readonly CrewNeedsYouCard[];
+  /** #1345 — what is already happening to each row, the other lists' own phrase. */
+  builds?: readonly CrewCardBuildView[];
+  /** Set when the claims and refusals could not be read, so a row may look free. */
+  buildsWhy?: string | null;
   /** One block of the HAPPENING NOW card rather than a card of its own (#1201). */
   embedded?: boolean;
   first?: boolean;
 }) {
-  const rows = nextUpRows(nextUp, cards);
+  const rows = nextUpRows(nextUp, cards, builds);
   const held = heldCount(rows);
 
   return (
@@ -89,6 +96,21 @@ export function CrewNextUp({
                     a sentence, and a sentence competing with the chip for the
                     end of the line is what makes a row wrap to three lines. */}
                 {row.hold?.because && <span className="dp-crew__rowwhy">{row.hold.because}</span>}
+                {/* ⚠ AND THE BUILD PHRASE RIDES THERE TOO, for that same
+                    measured reason (#1345). The card asked for it "at the end of
+                    each row", and the end of the row is already the hold chip,
+                    the urgent chip and the number — this component's own comment
+                    above records what a fourth thing there does. Under the title
+                    it reads as one short line about the row, which is what it is.
+                    Rendered and looked at in both themes before this shipped. */}
+                {row.build && (
+                  <span
+                    data-testid={`crew-next-up-build-${row.issueNumber}`}
+                    className="dp-crew__rowwhy"
+                  >
+                    {row.build}
+                  </span>
+                )}
               </span>
               {row.hold && (row.hold.kind === "you" && row.holdingCardId !== null ? (
                 /* THE CHIP IS THE CROSS-REFERENCE (#493 move 3): "Waiting on
@@ -116,6 +138,19 @@ export function CrewNextUp({
             </li>
           ))}
         </ol>
+      )}
+
+      {/* ⚠ AN UNREAD ANSWER IS NOT A QUIET LIST — the same sentence Background
+          Work carries, and it matters MORE here because this is the list he reads
+          first. A row being built shows a phrase and a row nobody is on shows
+          nothing, so when the read fails the two are the same picture. Pull
+          requests always ride the queue; only the claims and refusals can go
+          missing, so the sentence says which half is thin. */}
+      {buildsWhy !== null && (
+        <p className="dp-crew__foot">
+          Claims and refusals could not be read just now, so a row may look free while a shift is
+          on it. Pull requests are still counted.
+        </p>
       )}
 
       <p className="dp-crew__foot">

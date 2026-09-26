@@ -14406,6 +14406,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/components/crew/CrewNextUp.tsx",
+      "to": "module:shared/crewCardBuildState.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/admin/components/crew/CrewPipeline.tsx",
       "to": "module:client/src/features/admin/components/crew/crewAgo.ts",
       "kind": "imports"
@@ -14548,6 +14553,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "to": "module:server/routers.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "to": "module:shared/crewCardBuildState.ts",
       "kind": "imports"
     },
     {
