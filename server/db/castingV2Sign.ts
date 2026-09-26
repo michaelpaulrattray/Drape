@@ -56,6 +56,7 @@ import {
 } from "../../drizzle/schema";
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { identityStampFor } from "../casting/identity/anchorSelector";
+import { ANCHOR_RESOLUTION, SIGNED_VIEW_RESOLUTION } from "../castingV2/castViewPackage";
 import { CASTING_SESSION_IDLE_MS } from "./castingV2";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 
@@ -441,7 +442,7 @@ export async function signCandidateIntoCast(
       .values({
         modelId,
         viewType: "frontClose",
-        resolution: "1K",
+        resolution: ANCHOR_RESOLUTION,
         storageUrl: input.anchor.storageUrl,
         storageKey: input.anchor.storageKey,
         pointsCost: 0,
@@ -619,8 +620,8 @@ export async function commitPackageSlotAsset(input: {
         .values({
           modelId: input.modelId,
           viewType: input.angle,
-          // §H.10: signed package views are 2K.
-          resolution: "2K",
+          // The tier the ask declared, recorded as asked (#1373).
+          resolution: SIGNED_VIEW_RESOLUTION,
           storageUrl: input.storageUrl,
           storageKey: input.storageKey,
           pointsCost: input.pointsCost,
@@ -692,7 +693,7 @@ export async function recordPackageSlotFailure(input: {
       await tx.insert(modelAssets).values({
         modelId: input.modelId,
         viewType: input.angle,
-        resolution: "2K",
+        resolution: SIGNED_VIEW_RESOLUTION,
         storageUrl: "",
         storageKey: null,
         pointsCost: 0,
@@ -749,7 +750,7 @@ export async function recordRecoveredSlotFailure(input: {
   await db.insert(modelAssets).values({
     modelId: input.modelId,
     viewType: input.angle,
-    resolution: "2K",
+    resolution: SIGNED_VIEW_RESOLUTION,
     storageUrl: "",
     storageKey: null,
     pointsCost: 0,

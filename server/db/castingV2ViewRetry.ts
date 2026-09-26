@@ -37,6 +37,7 @@ import {
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { identityStampFor } from "../casting/identity/anchorSelector";
 import { castViewRetrySubjectHash } from "../casting/operationContract";
+import { ANCHOR_RESOLUTION, SIGNED_VIEW_RESOLUTION } from "../castingV2/castViewPackage";
 import { getDb, withTransaction } from "./connection";
 
 /** A positive integer id, or a throw — the same assertion `castingV2Sign` makes
@@ -153,7 +154,7 @@ export async function readCastViewRenderSource(
     .where(and(
       eq(modelAssets.modelId, model.id),
       eq(modelAssets.viewType, "frontClose"),
-      eq(modelAssets.resolution, "1K"),
+      eq(modelAssets.resolution, ANCHOR_RESOLUTION),
     ))
     .orderBy(modelAssets.id);
   const anchor = anchorRows.find((row) => {
@@ -310,8 +311,8 @@ export async function commitRetriedViewAsset(input: {
         .values({
           modelId: input.modelId,
           viewType: input.angle,
-          // §H.10: signed package views are 2K, whoever asked for them.
-          resolution: "2K",
+          // The same tier a Sign's own views ask for, whoever asked (#1373).
+          resolution: SIGNED_VIEW_RESOLUTION,
           storageUrl: input.storageUrl,
           storageKey: input.storageKey,
           pointsCost: input.pointsCost,

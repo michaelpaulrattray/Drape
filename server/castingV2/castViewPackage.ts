@@ -1,12 +1,14 @@
 /**
  * The canonical view package a Sign buys (plan §H.4/§H.10, §I `viewPackageProfile`).
  *
- * Five slots, all rendered at 2K by the identity engine, all held against the
- * signed anchor. This module owns three things and deliberately nothing else:
+ * Five slots, all rendered at the identity engine's top tier
+ * (`SIGNED_VIEW_RESOLUTION`, his word 2026-09-26), all held against the signed
+ * anchor. This module owns four things and deliberately nothing else:
  *
  *   1. **The SPEC** — what each slot promises the customer, in plain words.
  *   2. **The directive** — what the generator is told, composed FROM the spec.
  *   3. **The price** — derived from the number of views actually promised.
+ *   4. **The tier** — the one declaration the ask and every row write read.
  *
  * The direction of that second arrow is the whole point, and it is D-92's
  * ruling in code: **view conformance is judged against the SPEC, never against
@@ -30,6 +32,7 @@ import {
   type CastViewAngle,
 } from "../../shared/boardTypes";
 import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
+import type { IdentityEditRequest } from "../providers/types";
 import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
 import { HOUSE_PHOTOGRAPH_PARAGRAPHS } from "./houseBlock";
 
@@ -141,6 +144,74 @@ export const CASTING_V2_SIGN_PROMOTION_PRICE = CASTING_V2_SIGN_COSTS.promotion;
  */
 export const CASTING_V2_SIGN_PRICE_CREDITS =
   CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length;
+
+/**
+ * THE TIER EVERY SIGNED VIEW IS ASKED FOR — his word, 2026-09-26, verbatim:
+ * *"when generating the views on sign it must use high/max quality"* (#1373).
+ *
+ * The identity engine these views render on (Nano Banana Pro edit) has no
+ * `quality` word; its tiers are `1K | 2K | 4K`, so "high/max" on this engine IS
+ * the top tier. It was `2K`, in seven separate copies of the literal.
+ *
+ * **The house price moves with it and is stated rather than discovered**
+ * (disappearing-technology law, clause 3): `NANO_BANANA_PRO_USD_PER_IMAGE` is
+ * $0.15 at 1K and 2K and **$0.30 at 4K**, so a Sign costs the house
+ * 5 × $0.30 = $1.50 where it cost $0.75, and a Try again $0.30 where it cost
+ * $0.15. The ledger needs no edit to follow: `falQueue.ts` reads the price out
+ * of the request's own `resolution`. **The customer's 50 credits a view are
+ * untouched** — re-pricing is his word on a separate line.
+ *
+ * WHY IT IS ONE CONSTANT AND NOT A LITERAL PER SITE. Five places state this
+ * fact: the ask itself, and the four row writes that record what was asked
+ * (`castingV2Sign.ts` × 3, `castingV2ViewRetry.ts`). **A Try again must ask for
+ * exactly the frame its siblings got**, and a row that records a tier nobody
+ * asked for is a record that lies. `CANDIDATE_RENDER` is the precedent.
+ *
+ * ⚠ **WHAT DELIBERATELY DOES *NOT* READ THIS, AND THE CARD ASKED FOR THE
+ * OPPOSITE.** `committedPackageAngles` and `unsettledPackageAngles` used to test
+ * `asset.resolution === "2K"`, and #1373 asked for them to move here. They must
+ * not. Their own docblock says what that test is for: *"The 1K anchor is
+ * excluded by the same `2K` test the settlement uses. It is the face she already
+ * had; it is not a view the package delivered."* The question is **"is this a
+ * delivered view or the free anchor"**, never **"is this today's tier"** — and
+ * `unsettledPackageAngles` is recovery's REFUND list. Pointed at a constant that
+ * now says `4K`, every view already on disk at 2K reads as unsettled: measured
+ * the day this landed, **27 delivered views with bytes on production and 35 on
+ * dev**, all of them 2K, all of them refundable. So those two ask
+ * `!== ANCHOR_RESOLUTION` instead, which is the sentence their docblock already
+ * wrote, and which returned that same 27 and 35 unchanged.
+ */
+export const SIGNED_VIEW_RESOLUTION: IdentityEditRequest["resolution"] = "4K";
+
+/**
+ * The tier the FREE anchor is held at — the face she already had.
+ *
+ * Declared beside its sibling because the delivered-view test is *"not the
+ * anchor"*, and a test written that way needs the anchor's tier by name rather
+ * than as a bare `"1K"` a later tier change would strand.
+ *
+ * ⚠ **A PROVENANCE READING WAS TRIED FIRST AND THE ROWS REFUSED IT.**
+ * `characterSheetPack.ts` rules that anchor and Portrait are told apart by the
+ * `identityRole` stamp, not by tier, *"telling them apart by resolution would be
+ * reading a coincidence"* — so the stamp was the obvious reading here too, and
+ * it is **wrong on this question**. Counted over the real rows: **158 legacy 1K
+ * rows on dev and 14 on production are stamped `display` or carry no stamp at
+ * all**, so `identityRole !== "anchor"` counts 193 delivered views on dev where
+ * there are 35, and 41 on production where there are 27. The sheet's ruling
+ * holds for the question the sheet asks (*which of these two `frontClose` rows
+ * is the anchor*, where both are 1K and tier says nothing); it does not hold for
+ * this one. Both readings were driven before either was written.
+ *
+ * ✅ **AND THE PRODUCT HAD ALREADY WRITTEN THE RIGHT TEST ONCE, WHICH IS WHY
+ * THIS IS NOT AN INVENTION.** `castProjection.ts` has always told a delivered
+ * view from the anchor with `asset.resolution === "1K"` and an `else` — the
+ * anchor's tier, not the view's — so it is the one of the three readers that
+ * needed no correction and would have survived #1373 untouched. The two in
+ * `packageOrchestrator.ts` asked the same question the other way round and only
+ * agreed with it for as long as a view happened to be 2K. All three read this
+ * constant now.
+ */
+export const ANCHOR_RESOLUTION: IdentityEditRequest["resolution"] = "1K";
 
 /**
  * The wardrobe the whole package is in — **relative to the reference, never an

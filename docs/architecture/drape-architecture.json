@@ -12234,6 +12234,10 @@
       "path": "server/castingV2/signService.test.ts"
     },
     {
+      "id": "test:server/castingV2/signedViewResolution.test.ts",
+      "path": "server/castingV2/signedViewResolution.test.ts"
+    },
+    {
       "id": "test:server/castingV2/skinTonePin.test.ts",
       "path": "server/castingV2/skinTonePin.test.ts"
     },
@@ -23795,6 +23799,11 @@
     },
     {
       "from": "module:server/castingV2/castViewPackage.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castViewPackage.ts",
       "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
@@ -28585,6 +28594,11 @@
     },
     {
       "from": "module:server/db/castingV2Sign.ts",
+      "to": "module:server/castingV2/castViewPackage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Sign.ts",
       "to": "module:server/db/castingV2.ts",
       "kind": "imports"
     },
@@ -28631,6 +28645,11 @@
     {
       "from": "module:server/db/castingV2ViewRetry.ts",
       "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ViewRetry.ts",
+      "to": "module:server/castingV2/castViewPackage.ts",
       "kind": "imports"
     },
     {

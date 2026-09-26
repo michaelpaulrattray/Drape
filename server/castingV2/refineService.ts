@@ -7439,7 +7439,8 @@ async function refineCandidateCounted(
           prompt,
           /* ONE reference, forever: the sharp original. */
           references: [{ bytes: base.bytes, contentType: base.contentType }],
-          // 1K: a candidate's own resolution. The 2K tier belongs to signed views.
+          // 1K: a candidate's own resolution. The higher tier belongs to signed
+          // views, and which tier that is, is theirs to declare (#1373).
           resolution: "1K",
         });
       const harvested = await (dependencies.harvest ?? harvestRefinement)({

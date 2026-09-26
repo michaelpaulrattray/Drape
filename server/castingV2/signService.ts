@@ -166,7 +166,7 @@ export type SignServiceDependencies = PackageOrchestratorDependencies & {
    *
    * Production hands it to the event loop and returns, because §F's room "opens
    * immediately on the signed master" and views stream in — making the customer
-   * stare at a spinner for five 2K generations would be a different product.
+   * stare at a spinner for five full-tier generations would be a different product.
    * That detachment is not fire-and-forget: the operation is still `running`
    * under its heartbeat and lease, so a process that dies here is exactly the
    * case the Sign adjudicator exists for.

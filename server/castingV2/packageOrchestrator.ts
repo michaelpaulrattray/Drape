@@ -106,9 +106,11 @@ import {
 } from "../providers/types";
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import {
+  ANCHOR_RESOLUTION,
   CAST_PACKAGE_VIEWS,
   CAST_PACKAGE_VIEW_PRICE,
   CASTING_V2_SIGN_PROMOTION_PRICE,
+  SIGNED_VIEW_RESOLUTION,
   castPackageView,
   composePackageViewPrompt,
 } from "./castViewPackage";
@@ -680,8 +682,8 @@ export async function renderViewAttempts<T>(
           .filter((part) => part !== "")
           .join("\n"),
         references,
-        // §H.10: signed package views are 2K.
-        resolution: "2K",
+        // His word, 2026-09-26: the views render at the engine's top tier.
+        resolution: SIGNED_VIEW_RESOLUTION,
         viewAngle: angle,
       });
 
@@ -1104,8 +1106,17 @@ export async function promisedPackageAngles(input: {
  * is retained when the candidate CAS is set AND at least one view committed,
  * and both halves are recomputable from durable rows alone (D-103).
  *
- * The 1K anchor is excluded by the same `2K` test the settlement uses. It is
- * the face she already had; it is not a view the package delivered.
+ * The anchor is excluded by the same test the settlement uses — it is the face
+ * she already had; it is not a view the package delivered.
+ *
+ * ⚠ **THAT TEST ASKS `!== ANCHOR_RESOLUTION`, AND IT USED TO ASK `=== "2K"`.**
+ * The two agreed for as long as a view was 2K, and #1373 pulled them apart by
+ * moving the ask to 4K. The sentence above was always the intent; the literal
+ * was a coincidence standing in for it. **Keying this on the tier the ask
+ * declares would refund pictures already delivered** — measured the day it
+ * changed, 27 delivered 2K views with bytes on production and 35 on dev — so it
+ * reads the ANCHOR's tier, which is the thing being excluded, and every
+ * delivered view counts whatever tier it arrived at.
  */
 export async function committedPackageAngles(input: {
   userId: number;
@@ -1115,7 +1126,7 @@ export async function committedPackageAngles(input: {
   const assets = await listCastAssets(input.userId, input.modelId);
   const landed = new Set<string>();
   for (const asset of assets) {
-    if (asset.storageUrl && asset.resolution === "2K") landed.add(asset.viewType);
+    if (asset.storageUrl && asset.resolution !== ANCHOR_RESOLUTION) landed.add(asset.viewType);
   }
   return (input.promised ?? CAST_PACKAGE_VIEWS).filter((angle) => landed.has(angle));
 }
@@ -1131,10 +1142,11 @@ export async function unsettledPackageAngles(input: {
   for (const asset of assets) {
     const status = asset.status as { state?: string } | null;
     // A filled row is a landed view; a failure marker is a written-off one. The
-    // 1K anchor is filled `frontClose`, so a headshot whose 2K re-render never
+    // anchor is filled `frontClose`, so a headshot whose view re-render never
     // happened still counts as unsettled only if no marker was written for it —
-    // which is exactly the case recovery must refund.
-    if (asset.storageUrl && asset.resolution === "2K") settled.add(asset.viewType);
+    // which is exactly the case recovery must refund. The tier the ASK declares
+    // is never the test here: see `committedPackageAngles` above.
+    if (asset.storageUrl && asset.resolution !== ANCHOR_RESOLUTION) settled.add(asset.viewType);
     if (status?.state === "failed") settled.add(asset.viewType);
   }
   return (input.promised ?? CAST_PACKAGE_VIEWS).filter((angle) => !settled.has(angle));
