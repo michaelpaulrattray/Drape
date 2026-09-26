@@ -64,9 +64,13 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { readListedSource } from "./testing/listedSource";
-import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
-vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+/* This suite sweeps the source tree AND spawns `git ls-files`, so it is in both
+   #548 populations. The child-process floor is the one declared, because
+   `declaresTheFloor` accepts either and the stricter population is the one that
+   names this file. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const REPO = join(__dirname, "..");
 
