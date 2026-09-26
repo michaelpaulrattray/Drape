@@ -88,7 +88,7 @@
           "server/castingV2/conceptDescribeCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1253",
+          "server/castingV2/conceptDescribe.ts:1271",
           "server/castingV2/conceptDescribeCopy.ts:79"
         ]
       },
@@ -102,7 +102,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1198",
+          "server/castingV2/conceptDescribe.ts:1199",
           "server/castingV2/conceptDescribeCopy.ts:114"
         ]
       },
@@ -154,6 +154,7 @@
           "server/castingV2/makeupFromReference.test.ts",
           "server/castingV2/openLaneAccept.test.ts",
           "server/castingV2/openLaneKind.test.ts",
+          "server/castingV2/readerFrameBound.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/referenceAttachService.test.ts",
           "server/castingV2/referenceClassGate.test.ts",
@@ -166,8 +167,8 @@
           "server/db/referenceReadDemand.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1245",
-          "server/castingV2/conceptDescribe.ts:1282",
+          "server/castingV2/conceptDescribe.ts:1263",
+          "server/castingV2/conceptDescribe.ts:1300",
           "server/castingV2/conceptDescribeCopy.ts:113"
         ]
       },
@@ -711,6 +712,7 @@
           "server/castingV2/makeupFromReference.test.ts",
           "server/castingV2/openLaneAccept.test.ts",
           "server/castingV2/openLaneKind.test.ts",
+          "server/castingV2/readerFrameBound.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/referenceAttachService.test.ts",
           "server/castingV2/referenceClassGate.test.ts",

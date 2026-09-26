@@ -53,6 +53,7 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import { catalogueSlots, isAskable } from "./referenceSlotCatalogue";
+import { boundForJudge } from "./judgeFrame";
 import { interpreterEngine } from "./interpreter";
 import { INK_IS_NOT_THIS_SLOT } from "./slotWordShape";
 import type { TextEngine } from "../providers/types";
@@ -262,11 +263,23 @@ async function ask(
     return blank;
   }
   try {
+    /*
+      THE FRAME IS BOUNDED BEFORE IT IS POSTED (#1413), and this is the place
+      rather than each arm: all four arms above reach the transport through this
+      one function, so a bound here cannot be forgotten by a fifth.
+
+      Measured on this tree's own frames: a `closeUp` goes 10.29 MB to 2.80 MB
+      and the `backFull` at 3008x1408 is ALREADY over the reader's edge today.
+      Why 2576 and why JPEG q95 4:4:4 are in `judgeFrame.ts`; the one sentence
+      that belongs here is that the reader is `anthropic/claude-sonnet-5` — the
+      same model that constant was chosen for.
+    */
+    const frame = await boundForJudge({ bytes: input.bytes, contentType: input.contentType });
     const reply = await engine.complete({
       about: "describe",
       system: RULES,
       user,
-      images: [{ bytes: input.bytes, contentType: input.contentType }],
+      images: [frame.image],
       json: true,
       temperature: 0,
       /* ROOM FOR THE TRANSPORT'S OWN PREAMBLE, measured rather than guessed.

@@ -36,6 +36,7 @@ import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import { scrubBrands } from "./brandScrub";
 import { HAIR_ARRANGEMENT_IDS } from "./hairArrangement";
+import { boundForJudge, JUDGE_FRAME_LONG_EDGE } from "./judgeFrame";
 import { interpreterEngine } from "./interpreter";
 import { facetHeading, type Facet } from "./refineFacets";
 import { INK_IS_NOT_THIS_SLOT } from "./slotWordShape";
@@ -239,7 +240,11 @@ export async function captionRealization(input: {
         `Describe this person's ${heading.toLowerCase()}.${extraAsk(input.facet)}`,
         ...(input.asked ? [`The edit asked for: ${input.asked}`] : []),
       ].join("\n"),
-      images: [{ bytes: input.bytes, contentType: input.contentType }],
+      /* Bounded before it is posted (#1413) — this read is always the whole
+         frame, so it is always the bound's side of `boundedForReader`'s one
+         threshold, and it goes through that function anyway so the module has
+         one author for the ordering rather than two. */
+      images: [await boundedForReader({ bytes: input.bytes, contentType: input.contentType })],
       json: true,
       temperature: 0.1,
       maxOutputTokens: 300,
@@ -331,7 +336,44 @@ export async function captionRealization(input: {
  * the cross four times out of four. The hair crops in the same run are 463–823 px
  * and have never lost a detail.
  */
-const LEGIBLE_LONG_EDGE = 512;
+export const LEGIBLE_LONG_EDGE = 512;
+
+/**
+ * THE TWO DIRECTIONS, AS ONE PIPELINE AND ONE THRESHOLD (#1413).
+ *
+ * This module is the only reader in the sweep that also goes the OTHER way: a
+ * crop too small to read is deliberately ENLARGED to {@link LEGIBLE_LONG_EDGE}
+ * (`describedCloser`), where every other reader only ever has too much picture.
+ * #1413 warns that two independent pipelines here would let a crop be enlarged
+ * past the bound. They cannot be two, so they are one, and the threshold that
+ * divides them is this module's own measured number rather than a second one:
+ *
+ *   **under 512 — the enlargement road owns it. 512 and up — the bound does.**
+ *
+ * ⚠ **AND THE SKIP BELOW 512 IS A MEASUREMENT, NOT A CONVENIENCE.** Driven on
+ * this tree's frames (`_1413-bite-disposable.mts`): a 27x74 PNG cut is 5 KB and
+ * `boundForJudge` re-encodes it to a 2 KB JPEG, because the JPEG is smaller and
+ * the byte-keeping arm therefore does not fire. **That buys three kilobytes and
+ * spends it on the one read in this product whose legibility is measured** — at
+ * 27 px the reader missed a cross charm 4/4, and JPEG's 8x8 blocks are a third
+ * of that crop's width. A cut at 463x700 is 507 KB and bounds to 83 KB, which
+ * is worth having; a cut at 2000x2400 is 10.44 MB and bounds to 1.48 MB, which
+ * is the payload case this card is about. So the skip costs the sweep nothing
+ * it wanted and protects the reading the enlargement exists to produce.
+ *
+ * The consequence is that `describedCloser`'s output — long edge exactly 512 —
+ * is under the bound by arithmetic rather than by a second call, and
+ * `realizationCaption.test.ts` holds the two constants in that order so a later
+ * move of either cannot quietly invert it.
+ */
+async function boundedForReader(image: { bytes: Buffer; contentType: string }) {
+  const meta = await sharp(image.bytes).metadata().catch(() => null);
+  const longEdge = Math.max(meta?.width ?? 0, meta?.height ?? 0);
+  /* Unreadable bytes go to the bound, which fails open on them by design —
+     never to the skip, which would be this module deciding it knew better. */
+  if (longEdge > 0 && longEdge < LEGIBLE_LONG_EDGE) return image;
+  return (await boundForJudge(image)).image;
+}
 
 /** One ask, one picture. `visible: false` is the reader's only way to decline. */
 async function askAboutSlot(input: {
@@ -396,7 +438,7 @@ async function askAboutSlot(input: {
         "",
         'Reply with JSON: {"caption": "...", "visible": true|false} and nothing else.',
       ].join("\n"),
-      images: [{ bytes: input.bytes, contentType: input.contentType }],
+      images: [await boundedForReader({ bytes: input.bytes, contentType: input.contentType })],
       json: true,
       temperature: 0.1,
       maxOutputTokens: 300,

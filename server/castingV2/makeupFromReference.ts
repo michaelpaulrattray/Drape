@@ -63,6 +63,7 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
+import { boundForJudge } from "./judgeFrame";
 import { interpreterEngine } from "./interpreter";
 import { scrubBrands } from "./brandScrub";
 import { readReferenceClass, referenceClassAskLines } from "./referenceClassGate";
@@ -324,7 +325,11 @@ export async function readMakeupFromReference(
       about: "describe",
       system: "You describe cosmetics. You never describe people.",
       user: ASK,
-      images: [{ bytes: input.bytes, contentType: input.contentType }],
+      /* Her own photograph, bounded before it is posted (#1413) — the door caps
+         these at 8 MB and their pixels at nothing, so an unbounded phone photo
+         reaches the reader whole. The measurements are in `judgeFrame.ts`; this
+         bounds our copy on the way to the reader and never her attachment. */
+      images: [(await boundForJudge({ bytes: input.bytes, contentType: input.contentType })).image],
       json: true,
       temperature: 0,
       /* faceDescribe's measured ceiling for a small JSON object on this

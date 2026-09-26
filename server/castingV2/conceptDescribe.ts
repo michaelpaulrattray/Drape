@@ -436,6 +436,7 @@
  * now: {@link CONCEPT_READER_MODEL}.
  */
 import { createModuleLogger } from "../logging/logger";
+import { boundForJudge } from "./judgeFrame";
 import { interpreterTextQueue } from "./interpreter";
 import {
   createOpenRouterTextEngine,
@@ -1197,6 +1198,23 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
   const engine = input.engine === undefined ? conceptReaderEngine() : input.engine;
   if (!engine) return { ok: false, reason: "no_transport", attempts: 0 };
 
+  /*
+    HER OWN PICTURE IS BOUNDED ONCE, BEFORE EITHER READ (#1413).
+
+    Outside the closure rather than inside it, and that is the load-bearing
+    half: the re-ask posts the SAME picture a second time, so bounding at the
+    post would encode it twice and — worse — could hand the two reads different
+    bytes if anything about the encode ever became non-deterministic. The re-ask
+    exists to correct WORDS, and a re-ask that also changed the picture would not
+    be the same question asked again.
+
+    This is the sweep's largest unbounded input: `describeConcept` is handed the
+    customer's upload straight off the route (`castingV2.ts`, after the door),
+    and that door caps bytes at 8 MB and pixels at nothing. Measured at
+    4000x6000 — a 24-megapixel phone photograph — 3.16 MB becomes 1.37 MB.
+  */
+  const frame = (await boundForJudge({ bytes: input.bytes, contentType: input.contentType })).image;
+
   /**
    * One read. Either an outcome the customer gets, or an ask to go again —
    * naming the fault where there IS one, and `null` where no usable answer
@@ -1222,7 +1240,7 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
         user: previous
           ? `${ASK} ${reAsk(previous)} Reply with JSON in the same shape as before: {"description": "..."}.`
           : ASK,
-        images: [{ bytes: input.bytes, contentType: input.contentType }],
+        images: [frame],
         json: true,
         temperature: 0,
         /* The describer's own preamble is spent before the object — the face
