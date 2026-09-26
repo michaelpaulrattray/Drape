@@ -31164,6 +31164,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/bugReports.ts",
+      "to": "module:shared/bugReportVocabulary.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/_core/spokenError.ts",
       "kind": "imports"
