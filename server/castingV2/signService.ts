@@ -69,6 +69,7 @@ import {
 import { createHash } from "node:crypto";
 import { createModuleLogger } from "../logging/logger";
 import { storageCopyExact, storageReadBytes } from "../storage";
+import { mintViewThumbnail } from "./viewThumbnailMint";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import type { BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
 import { readOpenKindProperties } from "../db/castingV2OpenKindProperties";
@@ -451,6 +452,20 @@ export async function signCandidate(
     const copied = await (dependencies.copyImage ?? storageCopyExact)({
       sourceKey: imageKey,
       destinationKey,
+      /*
+        THE HEADSHOT'S SMALL COPY (#1389).
+
+        The cast's FIRST strip tile is this object, not a rendered view — and it
+        is the tile a customer looks at most. It is minted from the bytes the
+        copy has already read back and proven exact, so this costs no extra read
+        of a 19 MB object on a paid path.
+
+        ⚠ **It cannot fail the Sign.** `mintViewThumbnail` swallows its own
+        errors, and `storageCopyExact` catches this callback's rejection on top
+        of that — two layers, because everything from here down is compensable
+        and a thumbnail is not worth compensating a signed Cast for.
+      */
+      onVerifiedBytes: (bytes) => mintViewThumbnail(destinationKey, bytes),
     });
     if (copied.key !== destinationKey) throw new SignPersistenceError("commit_conflict");
     anchorStorageKey = copied.key;

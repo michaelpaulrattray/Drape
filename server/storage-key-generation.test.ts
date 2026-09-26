@@ -32,6 +32,27 @@ describe("storage object keys use cryptographic randomness", () => {
 
     expect(writers.map(({ relative }) => relative).sort()).toEqual([
       "casting/aiService.ts",
+      /*
+        THE SIGNED-VIEW WRITER, VISIBLE HERE FOR THE FIRST TIME (#1389).
+
+        ⚠ **It did not arrive; it was always a writer and this guard could not
+        see it.** The population above is `\bawait\s+storagePut\(`, and this
+        file wrote `return storagePut(...)` — one call syntax away from being
+        counted. It came into view because #1389 needed the stored key in order
+        to mint a thumbnail beside it, which turned the `return` into an
+        `await`; nothing about the write itself changed, and its key has been a
+        `randomUUID()` the whole time.
+
+        ⚠ **SEVEN MORE ARE STILL INVISIBLE FOR THE SAME REASON** —
+        `hairReferenceCutter`, `inkDeliveryMint`, `inkReferenceMint`,
+        `keptFaceScan`, `referenceAttachService`, `referenceMint` and
+        `refineService` all reach `storagePut` and all generate their own keys.
+        Measured 2026-09-26; filed rather than fixed here, because widening the
+        population needs a rule for what counts as a key GENERATOR versus a key
+        passer, and inventing that taxonomy inside a thumbnail card is how a
+        second feature ships under the first one's name.
+      */
+      "castingV2/packageOrchestrator.ts",
       // Casting V2 candidate landing (M4). Candidate images sit at public
       // bucket URLs, so a guessable key is the only thing between a
       // customer's sheet and anyone who guesses it — this writer is exactly
