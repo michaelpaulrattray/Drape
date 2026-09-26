@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "6c3e73b7475f17e1"
+    "sourceFingerprint": "97d64cf45bf9a125"
   },
   "domains": [
     {
@@ -12891,6 +12891,10 @@
       "path": "server/productionBaseUrl.test.ts"
     },
     {
+      "id": "test:server/productionBootSettings.test.ts",
+      "path": "server/productionBootSettings.test.ts"
+    },
+    {
       "id": "test:server/productionFlagPositions.test.ts",
       "path": "server/productionFlagPositions.test.ts"
     },
@@ -13273,6 +13277,10 @@
     {
       "id": "test:server/reset-look.test.ts",
       "path": "server/reset-look.test.ts"
+    },
+    {
+      "id": "test:server/reviewTriageTriggers.test.ts",
+      "path": "server/reviewTriageTriggers.test.ts"
     },
     {
       "id": "test:server/reviewerCharter.test.ts",

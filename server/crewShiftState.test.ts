@@ -22,6 +22,8 @@ import {
   findCardCollisions,
   looksLive,
   deriveShiftRunState,
+  resolveCloseTarget,
+  type OpenRunForClose,
 } from "../shared/crewShiftState";
 
 const NOW = Date.UTC(2026, 7, 30, 6, 0, 0);
@@ -200,5 +202,136 @@ describe("findCardCollisions", () => {
     const hits = findCardCollisions([run(3, "#535"), run(2, "#601"), run(1, "#535")], "#535");
 
     expect(hits.map((h) => h.id)).toEqual([3, 1]);
+  });
+});
+
+/**
+ * WHOSE ROW A BARE CLOSE CLOSES (#1234), DRIVEN WITHOUT A DATABASE.
+ *
+ * The incident, at the rows: #360 (`foreman-20260925-1649`) open from 06:50Z, a
+ * second seat's #361 (`foreman-20260925-1745`) opened at 07:45Z, and at 07:55Z
+ * the first shift's bare close stamped **#361** — `ORDER BY id DESC LIMIT 1` —
+ * with the first shift's note, while that seat was mid-shift on a
+ * `founder-ordered` card and its worktree held an unpushed commit.
+ *
+ * ⚠ **No time-based guard can catch this and that is why the default went.**
+ * `looksLive` refuses a row that checked in within the last couple of minutes; a
+ * live seat that is simply building looks exactly like a dead one. So the arms
+ * here are about the CHOICE, and the one that carries the weight is the refusal:
+ * a resolver that always picked something would pass every happy arm.
+ */
+describe("resolveCloseTarget — #1234", () => {
+  const run = (id: number, shift: string, seat = "foreman"): OpenRunForClose => ({
+    id,
+    shift,
+    seat,
+    intent: `what ${shift} is doing`,
+  });
+
+  /** The two rows as they actually stood on 2026-09-25. */
+  const THE_INCIDENT = [run(361, "foreman-20260925-1745"), run(360, "foreman-20260925-1649")];
+
+  it("REFUSES a bare close while two seats are open, and names both", () => {
+    const verdict = resolveCloseTarget({ openRuns: THE_INCIDENT, shift: null });
+
+    expect(verdict.kind).toBe("refuse");
+    if (verdict.kind !== "refuse") return;
+    expect(verdict.why).toContain("#360");
+    expect(verdict.why).toContain("#361");
+    expect(verdict.why).toContain("--shift");
+  });
+
+  it("closes the row the caller NAMES, never the newest", () => {
+    /* The whole repair in one arm: the shift that made the mistake would have
+       closed #360, its own, and #361 would have stayed open. */
+    const verdict = resolveCloseTarget({ openRuns: THE_INCIDENT, shift: "foreman-20260925-1649" });
+
+    expect(verdict.kind).toBe("one");
+    if (verdict.kind !== "one") return;
+    expect(verdict.run.id).toBe(360);
+    expect(verdict.how).toBe("the shift id");
+  });
+
+  it("⚠ POSITIVE CONTROL — a single-seat night still closes with no flags at all", () => {
+    /* A resolver that refused whenever it was unsure would pass every arm above
+       and cost every ordinary night an extra flag. */
+    const verdict = resolveCloseTarget({ openRuns: [run(360, "foreman-20260925-1649")], shift: null });
+
+    expect(verdict.kind).toBe("one");
+    if (verdict.kind !== "one") return;
+    expect(verdict.run.id).toBe(360);
+    expect(verdict.how).toBe("the only open run");
+  });
+
+  it("refuses a shift id that has no OPEN row, and shows what is open instead", () => {
+    /* The shape a shift meets when its own row was already closed by somebody
+       else — the other side of this very incident. Silently falling back to the
+       only open row would close a stranger's. */
+    const verdict = resolveCloseTarget({ openRuns: THE_INCIDENT, shift: "foreman-20260925-0000" });
+
+    expect(verdict.kind).toBe("refuse");
+    if (verdict.kind !== "refuse") return;
+    expect(verdict.why).toContain("no OPEN run");
+    expect(verdict.why).toContain("#360");
+    expect(verdict.why).toContain("--id");
+  });
+
+  it("⚠ a named shift that matches nothing REFUSES even when exactly one row is open", () => {
+    /*
+      ⚠ **THE ARM THE SABOTAGE RUN ASKED FOR.** The first shape of this suite
+      only ever met a non-matching `--shift` with TWO rows open, so a fall-back
+      reading *"nothing matched, but there is only one open row, so that must be
+      it"* passed green — and that fall-back is this very incident: the shift's
+      own row had been closed by somebody else, and the only row left open
+      belongs to a stranger.
+    */
+    const verdict = resolveCloseTarget({
+      openRuns: [run(361, "foreman-20260925-1745", "retro")],
+      shift: "foreman-20260925-1649",
+    });
+
+    expect(verdict.kind).toBe("refuse");
+    if (verdict.kind !== "refuse") return;
+    expect(verdict.why).toContain("no OPEN run");
+    expect(verdict.why).toContain("#361");
+  });
+
+  it("refuses when nothing is open, and says that is itself the finding", () => {
+    const verdict = resolveCloseTarget({ openRuns: [], shift: null });
+
+    expect(verdict.kind).toBe("refuse");
+    if (verdict.kind !== "refuse") return;
+    expect(verdict.why).toContain("no open run");
+  });
+
+  it("a named shift with nothing open at all says so rather than listing an empty set", () => {
+    const verdict = resolveCloseTarget({ openRuns: [], shift: "foreman-20260925-1649" });
+
+    expect(verdict.kind).toBe("refuse");
+    if (verdict.kind !== "refuse") return;
+    expect(verdict.why).toContain("Nothing is open at all");
+  });
+
+  it("refuses when two open rows share one shift id, rather than taking either", () => {
+    /* It should not happen, and `--shift` would silently pick one if it did.
+       A guess is a guess whichever flag produced it. */
+    const verdict = resolveCloseTarget({
+      openRuns: [run(361, "foreman-20260925-1649", "retro"), run(360, "foreman-20260925-1649")],
+      shift: "foreman-20260925-1649",
+    });
+
+    expect(verdict.kind).toBe("refuse");
+    if (verdict.kind !== "refuse") return;
+    expect(verdict.why).toContain("does not pick one");
+  });
+
+  it("treats blank and whitespace --shift as not named, never as a shift called nothing", () => {
+    for (const blank of ["", "   "]) {
+      const verdict = resolveCloseTarget({ openRuns: [run(360, "foreman-20260925-1649")], shift: blank });
+      expect(verdict.kind, JSON.stringify(blank)).toBe("one");
+    }
+    /* And with two open, a blank still refuses rather than matching neither and
+       falling through to a guess. */
+    expect(resolveCloseTarget({ openRuns: THE_INCIDENT, shift: "  " }).kind).toBe("refuse");
   });
 });

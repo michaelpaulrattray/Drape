@@ -88,6 +88,7 @@ import { useState } from "react";
 import {
   CREW_PIPELINE_GROUPS,
   CREW_PIPELINE_ORPHAN_GROUPS,
+  backgroundWorkSentence,
 } from "@shared/crewPipelineGroups";
 import {
   indexIntentsByCard,
@@ -522,7 +523,14 @@ function PipelineGroups({
                     make "nothing there" and "not shown" identical. */}
                 <span className="dp-crew__count"> ({row ? row.openCount : "—"})</span>
               </p>
-              <p className="dp-crew__blurb">{group.blurb}</p>
+              {/* ⚠ #1248 — the blurb says what the group HOLDS; whether the
+                  work is ordinary is `backgroundWork`'s answer and is drawn
+                  from it. `debt` used to make both claims in prose, and they
+                  disagreed. Two claims about one fact always drift. */}
+              <p className="dp-crew__blurb" data-testid={`crew-group-blurb-${group.key}`}>
+                {group.blurb}{" "}
+                <span className="dp-crew__stance">{backgroundWorkSentence(group)}</span>
+              </p>
               {titles.shown.length > 0 && (
                 <ul className="dp-crew__titles">
                   <CardTitles
