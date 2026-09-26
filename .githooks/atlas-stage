@@ -32,6 +32,17 @@
 # (`fingerprint()` in the generator reads it beside every source file). Editing
 # it alone is exactly the commit that goes stale.
 #
+# ⚠ SINCE #1307 THE FINGERPRINT IS NO LONGER A COMMITTED BYTE — it is written to
+# a gitignored sidecar, because a hash every branch moves made every pair of open
+# PRs conflict on one line. Two consequences for this hook, and neither changes
+# what it does. (1) The map now differs only when the ARCHITECTURE differs, so
+# most commits regenerate and stage nothing — the nine seconds still buy the one
+# commit in several that does. (2) annotations.yaml stays on the filter on its own
+# merit: `annotationFindings()` reads it, so a path that leaves the tree adds or
+# removes a finding in the committed map. The derivation in
+# `server/atlasCommitHook.test.ts` is unchanged — it reads what `fingerprint()`
+# reads, and `fingerprint()` still reads this file.
+#
 # A generator that FAILS refuses the commit, the same rule and for the same
 # reason as the merge path: a map that could not be built must never be
 # committed as though it were fresh (enforcement invariant 7 — a control that

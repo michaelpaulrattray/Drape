@@ -11,9 +11,24 @@
  *
  * Determinism is a hard requirement (§P.6): arrays are stable-sorted by id and
  * nothing carries a timestamp, so two runs on an unchanged tree are
- * byte-identical. `sourceFingerprint` hashes the tracked source inputs rather
- * than the commit, because embedding a SHA would create an impossible
- * commit-then-regenerate loop.
+ * byte-identical.
+ *
+ * ⚠ AND THE SOURCE FINGERPRINT IS NO LONGER ONE OF THE BYTES THE BRANCH CARRIES
+ * (#1307, 2026-09-26). It hashes the tracked source inputs, so EVERY branch
+ * moves it — which made the one line in `meta` a guaranteed conflict between any
+ * two open PRs, and a conflicting PR fires no gate run at all. Measured over the
+ * sixteen seat branches of 2026-09-26: **120 of 120 pairs conflicted on this
+ * file, and with the line removed from all three sides, 0 of 120 did** — 44 of
+ * those pairs still both changed the map, and their real content merged clean.
+ * So the hash moves to a gitignored sidecar ({@link SOURCE_FINGERPRINT_FILE})
+ * and the committed map differs only when the ARCHITECTURE differs.
+ *
+ * Nothing was ever deciding anything on it: the freshness check regenerates the
+ * whole document and compares CONTENT, which is why it could go without a
+ * replacement. `fingerprint()` stays because it is still the honest answer to
+ * *"which tree is my local explorer built from"*, and because
+ * `server/atlasCommitHook.test.ts` derives the commit hook's warn population
+ * from the paths its body reads.
  *
  * v1 scope is deliberately capped (§P.1) to what Casting V2 implementation and
  * the M14 retirement actually consume. Extensions land with the milestone that
@@ -32,6 +47,15 @@ const OUT_DIR = process.env.ATLAS_OUT_DIR
 
 export const SCHEMA_VERSION = "1.0.0";
 export const GENERATOR_VERSION = "1.0.0";
+
+/**
+ * Where the source fingerprint lives now: beside the maps, gitignored, one line
+ * (#1307). It is a local reading — *is my `index.html` built from this tree?* —
+ * and never a committed byte, because a value every branch changes is a conflict
+ * every pair of branches inherits. `.gitignore` names it, and
+ * `server/atlasMergeDriver.test.ts` refuses a tracked one.
+ */
+export const SOURCE_FINGERPRINT_FILE = "source-fingerprint.txt";
 
 /* ------------------------------------------------------------------ types */
 
@@ -1775,11 +1799,14 @@ export function buildAtlas(options: { freshProject?: boolean } = {}) {
     ...shapeCopyFindings(project, sourceFiles),
   ].sort((a, b) => a.id.localeCompare(b.id));
 
+  /* ⚠ NO SOURCE FINGERPRINT IN HERE — see the header (#1307). The document is
+     the architecture and nothing else; `writeAtlas` puts the tree hash in the
+     gitignored sidecar beside it. The schema's `additionalProperties: false` on
+     `meta` is what stops it coming back by accident. */
   return {
     meta: {
       schemaVersion: SCHEMA_VERSION,
       generatorVersion: GENERATOR_VERSION,
-      sourceFingerprint: fingerprint(),
     },
     domains,
     modules,
@@ -1823,7 +1850,7 @@ input{width:100%;box-sizing:border-box;padding:10px 16px;background:transparent;
 </style>
 <header>
   <h1>Drape Atlas</h1>
-  <div style="color:var(--muted)">Generated from source · fingerprint <code>${atlas.meta.sourceFingerprint}</code> · schema ${atlas.meta.schemaVersion}</div>
+  <div style="color:var(--muted)">Generated from source · schema ${atlas.meta.schemaVersion} · generator ${atlas.meta.generatorVersion} · tree hash in <code>source-fingerprint.txt</code></div>
 </header>
 <main id="app"></main>
 <script>
@@ -1877,12 +1904,14 @@ export const SCHEMA = {
   properties: {
     meta: {
       type: "object",
-      required: ["schemaVersion", "generatorVersion", "sourceFingerprint"],
+      /* `sourceFingerprint` was required here until #1307 and is now REFUSED:
+         `additionalProperties: false` turns a re-added hash into a schema error
+         on the next check, rather than a line every branch fights over. */
+      required: ["schemaVersion", "generatorVersion"],
       additionalProperties: false,
       properties: {
         schemaVersion: { type: "string" },
         generatorVersion: { type: "string" },
-        sourceFingerprint: { type: "string", pattern: "^[0-9a-f]{16}$" },
       },
     },
     domains: { type: "array", items: { type: "object", required: ["id", "name"] } },
@@ -1952,6 +1981,11 @@ export function writeAtlas(outDir: string) {
     "utf8",
   );
   fs.writeFileSync(path.join(outDir, "index.html"), renderExplorer(atlas), "utf8");
+  /* The tree hash, beside the maps and gitignored (#1307). Written here rather
+     than into the document so that two branches which changed different corners
+     of the architecture can be merged by anything — GitHub included, which runs
+     no merge driver of ours. */
+  fs.writeFileSync(path.join(outDir, SOURCE_FINGERPRINT_FILE), `${fingerprint()}\n`, "utf8");
   return atlas;
 }
 
@@ -2027,4 +2061,10 @@ if (invokedDirectly) {
       `(${errors} error, ${warnings} warn)`,
   );
   console.log(`[atlas] written to ${path.relative(process.cwd(), OUT_DIR)}`);
+  /* Named out loud because it is the reading the committed map no longer carries
+     (#1307): a local, gitignored answer to "which tree is this built from". */
+  console.log(
+    `[atlas] source fingerprint ${fs.readFileSync(path.join(OUT_DIR, SOURCE_FINGERPRINT_FILE), "utf8").trim()}`
+      + ` (${SOURCE_FINGERPRINT_FILE}, gitignored — never committed)`,
+  );
 }
