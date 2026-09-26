@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { checkRateLimit, getClientIp, rateLimitError } from "../security/rateLimit";
 import { createBugReport } from "../db";
 import { createModuleLogger } from "../logging/logger";
+import { captureProductEvent } from "../monitoring/productEvents";
 
 const log = createModuleLogger("routes/bugReports");
 
@@ -47,6 +48,22 @@ export const bugReportsRouter = router({
       // at a webhook production never had (#800).
 
       log.info({ bugReportId, userId: ctx.user.id, category: input.category }, "Bug report submitted");
+
+      /*
+        THE PRODUCT EDGE (#509 part 2) — after the row exists, never before: an
+        event for a report that failed to store would be a count of nothing.
+
+        ⚠ `input.description` is NOT here and cannot be put here. It is the whole
+        content of the report and it is a customer's own prose, which the
+        metadata-only boundary keeps out of a third party exactly as it keeps it
+        away from staff. The catalogue declares `category` alone for this event
+        and has no property shape that would accept free text, so this is closed
+        by construction rather than by remembering (invariant 8).
+
+        The read path for what she actually SAID is unchanged and is the admin
+        inbox (#255) — this only says that a report arrived, and which kind.
+      */
+      captureProductEvent("bug report sent", ctx.user.id, { category: input.category });
 
       return { success: true, id: bugReportId };
     }),

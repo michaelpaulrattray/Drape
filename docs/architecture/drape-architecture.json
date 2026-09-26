@@ -11004,6 +11004,10 @@
       "path": "server/briefingConformance.test.ts"
     },
     {
+      "id": "test:server/bugReportEventStream.test.ts",
+      "path": "server/bugReportEventStream.test.ts"
+    },
+    {
       "id": "test:server/bugReportInbox.test.ts",
       "path": "server/bugReportInbox.test.ts"
     },
@@ -13020,6 +13024,10 @@
       "path": "server/moduleResolution.test.ts"
     },
     {
+      "id": "test:server/moneyEventCatalogue.test.ts",
+      "path": "server/moneyEventCatalogue.test.ts"
+    },
+    {
       "id": "test:server/moneySurfaceClassifier.test.ts",
       "path": "server/moneySurfaceClassifier.test.ts"
     },
@@ -13750,6 +13758,10 @@
     {
       "id": "test:server/stripe/environmentTag.test.ts",
       "path": "server/stripe/environmentTag.test.ts"
+    },
+    {
+      "id": "test:server/stripe/moneyEventStream.test.ts",
+      "path": "server/stripe/moneyEventStream.test.ts"
     },
     {
       "id": "test:server/stripe/planChangeSettlement.test.ts",
@@ -31143,6 +31155,11 @@
     },
     {
       "from": "module:server/routes/bugReports.ts",
+      "to": "module:server/monitoring/productEvents.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/bugReports.ts",
       "to": "module:server/security/rateLimit.ts",
       "kind": "imports"
     },
@@ -33103,6 +33120,11 @@
     },
     {
       "from": "module:server/stripe/webhooks.ts",
+      "to": "module:server/monitoring/productEvents.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/stripe/environmentTag.ts",
       "kind": "imports"
     },
@@ -33129,6 +33151,11 @@
     {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/stripe/subscriptionPeriods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
+      "to": "module:shared/productEventCatalogue.ts",
       "kind": "imports"
     },
     {
@@ -33449,6 +33476,11 @@
     {
       "from": "module:shared/inkReleasedPlacements.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/productEventCatalogue.ts",
+      "to": "module:shared/bugReportVocabulary.ts",
       "kind": "imports"
     },
     {

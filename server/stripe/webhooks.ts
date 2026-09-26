@@ -43,6 +43,8 @@ import {
   getVoidPlanChangeSettlementInvoiceIdsForUser,
 } from "../db";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
+import { captureProductEvent } from "../monitoring/productEvents";
+import { MONEY_EVENT_FOR_STRIPE_TYPE } from "../../shared/productEventCatalogue";
 import { createModuleLogger } from "../logging/logger";
 import { checkEventEnvironment } from "./environmentTag";
 import { deploymentTag } from "../_core/env";
@@ -80,6 +82,17 @@ export interface WebhookResult {
    * fulfilment. The refusal is loud in the log, not in the status code.
    */
   refused?: true;
+  /**
+   * Credits this event actually granted, when it granted any (#509 part 2).
+   *
+   * Reported by `handleInvoicePaymentSucceeded` alone, from the single statement
+   * in this file that grants a period's allowance. It is READ by the product
+   * event stream at the dispatcher tail and by nothing else; it changes no money
+   * decision. Its ABSENCE means *"this delivery granted nothing"*, which is the
+   * truth of a proration-only invoice — and it is why the event is named
+   * `payment made` rather than the card's *"credits bought"*.
+   */
+  creditsGranted?: number;
 }
 
 /**
@@ -208,6 +221,7 @@ export async function handleStripeWebhook(
        A handler that FAILED releases it, so Stripe's redelivery does the work
        — the behaviour the old shape had by never recording until success. */
     if (!result.success) await releaseWebhookEventClaim(event.id);
+    else await recordMoneyEvent(event, result);
 
     return result;
   } catch (error) {
@@ -267,6 +281,116 @@ async function releaseWebhookEventClaim(eventId: string): Promise<void> {
       '[Webhook] FAILED to release the claim on a failed event — a redelivery will be skipped as a duplicate',
     );
   }
+}
+
+/**
+ * THE MONEY EDGE REACHES SOMEBODY — one statement, at the one place that knows
+ * both WHICH money thing happened and WHETHER it landed (#509 part 2).
+ *
+ * ⚠ **IT NEVER THROWS, AND THAT IS THE MOST IMPORTANT LINE IN THIS FUNCTION.**
+ * It is called from inside `handleStripeWebhook`'s `try`, whose `catch` releases
+ * the claim and returns `success: false`. So an analytics failure that escaped
+ * here would turn a **settled payment into a redelivery** — the handler's work
+ * already done, its claim handed back, Stripe sending it again. That is the one
+ * way a measurement path could cost real money, so the whole body sits in a
+ * `catch` and `captureProductEvent` is independently incapable of throwing
+ * (`server/monitoring/productEvents.ts` — its entire body is one `try`). Two
+ * independent guarantees, because this one is not worth having once.
+ *
+ * ⚠ **IT IS CALLED ONLY ON SUCCESS, AND THAT IS WHAT MAKES IT EXACTLY-ONCE.**
+ * The replay claim admits one delivery of an event id at a time and is RELEASED
+ * when a handler fails, so a failed delivery is redelivered and tried again. An
+ * event captured inside a handler — before something later in that handler
+ * failed — would be counted once per attempt. Captured here, after the last
+ * thing that can fail, a Stripe event id yields at most one product event for
+ * the life of the row.
+ *
+ * A `refused` result (a foreign environment's event) is not a product event:
+ * nothing was fulfilled. It cannot actually reach here — that road returns
+ * before the switch — and is checked anyway, because the day it moves this
+ * should not start recording another world's money.
+ */
+async function recordMoneyEvent(event: Stripe.Event, result: WebhookResult): Promise<void> {
+  try {
+    if (result.refused) return;
+
+    const name = MONEY_EVENT_FOR_STRIPE_TYPE[event.type];
+    /* An unmapped type means the switch above handled something the catalogue
+       has no word for. `server/moneyEventCatalogue.test.ts` makes that a red
+       build rather than a silent gap, so this is the belt to that braces. */
+    if (!name) return;
+
+    const userId = await accountForStripeEvent(event);
+    if (userId === undefined) {
+      /* No invented `distinctId`. An unidentified dispute is the real case —
+         `handleDisputeCreated` files its audit row with `identified: false` for
+         exactly this — and one fake person collecting every unmatched money
+         event would poison the only question this stream exists to answer. */
+      log.warn(
+        { eventId: event.id, eventType: event.type },
+        '[Webhook] money event NOT recorded — no account could be read off the payload',
+      );
+      return;
+    }
+
+    captureProductEvent(
+      name,
+      userId,
+      result.creditsGranted === undefined ? {} : { creditsGranted: result.creditsGranted },
+    );
+  } catch (err) {
+    log.warn({ err, eventId: event.id }, '[Webhook] the product event stream threw while recording a money edge');
+  }
+}
+
+/**
+ * WHOSE ACCOUNT THIS EVENT IS ABOUT — read off the payload Stripe already sent,
+ * and never guessed.
+ *
+ * ⚠ **NO STRIPE API CALL, DELIBERATELY.** Every field read here is present on
+ * the delivered object: `metadata.userId` on a checkout session, the refund's
+ * own metadata key, and `customer` on a subscription, an invoice and a dispute
+ * alike. Reaching out to Stripe to label an analytics event would put a network
+ * dependency on the money path for a dashboard, which is the wrong trade at any
+ * volume.
+ *
+ * It mirrors no decision — the handlers' own resolution is unchanged and
+ * untouched. What it reads is where STRIPE puts a customer, which is a fact
+ * about the payload shape rather than about this product's logic.
+ */
+async function accountForStripeEvent(event: Stripe.Event): Promise<number | undefined> {
+  /* Through `unknown`: Stripe's union of ~77 resource types does not overlap an
+     index signature, and TypeScript is right to say so. Every field read below is
+     then checked for its own shape rather than trusted. */
+  const object = event.data.object as unknown as Record<string, unknown>;
+
+  /* Two roads carry OUR OWN id in metadata, so they need no lookup at all. */
+  const metadata = (object.metadata ?? {}) as Record<string, string | undefined>;
+  const direct =
+    event.type === "checkout.session.completed"
+      ? metadata.userId
+      : event.type === "refund.failed"
+        ? metadata[REFUND_METADATA_USER_KEY]
+        : undefined;
+
+  if (direct !== undefined) {
+    const parsed = Number(direct);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+  }
+
+  /* Everything else names a Stripe customer, expanded or not. */
+  const customer = object.customer;
+  const customerId =
+    typeof customer === "string"
+      ? customer
+      : typeof (customer as { id?: unknown } | null)?.id === "string"
+        ? ((customer as { id: string }).id)
+        : undefined;
+
+  if (!customerId) return undefined;
+
+  const userWithCredits = await getUserByStripeCustomerId(customerId);
+  return userWithCredits?.id;
 }
 
 /**
@@ -800,7 +924,16 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
   log.info(
     `[Webhook] Refreshed credits for user ${userId}: ${grantCredits} (${grantMonths} month${grantMonths === 1 ? "" : "s"} bought) + rollover = ${result.newBalance}`,
   );
-  return { success: true, message: `Refreshed credits for user ${userId}` };
+  /* `creditsGranted` is the grant this delivery actually made, reported for the
+     product event stream (#509 part 2). It is the GRANT, not the new balance:
+     `result.newBalance` includes rollover the customer already had, and an event
+     reading "1,400 credits bought" when 600 were bought would be worse than no
+     number. Nothing in this file reads it. */
+  return {
+    success: true,
+    message: `Refreshed credits for user ${userId}`,
+    creditsGranted: grantCredits,
+  };
 }
 
 /**
