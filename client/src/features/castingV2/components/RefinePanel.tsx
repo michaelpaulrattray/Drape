@@ -679,7 +679,30 @@ export function RefinePanel({
               />
             </span>
           ))}
-          <span className="dpc-refine__madeText">{selectedRequest}</span>
+          {/*
+            HER WHOLE SENTENCE ON HOVER — his word, 2026-09-25 (Crew reply #218
+            on `refine-made-row-1187`), verbatim and entire: *"Add a hover
+            tooltip"*.
+
+            The row is `nowrap` + `text-overflow: ellipsis` inside a panel that
+            is a fixed 701px at 1440, 1920 and 2560 alike — measured, not
+            reasoned — so past roughly 150 characters she cannot read back the
+            sentence she typed and paid to render. The version rail's thumbnail
+            `aria-label` already carries the whole thing, so a screen reader had
+            what a sighted customer did not.
+
+            (A) was chosen over wrapping the row to three lines, and the row
+            keeps its single line, so the ask box directly below it does not
+            move — which was (B)'s cost.
+
+            ⚠ **ITS KNOWN PRICE, STATED RATHER THAN IMPLIED**: `title` is a
+            hover affordance, so on a touch surface the sentence is still
+            unreadable. The card named that before he picked it, so it is a
+            stated tradeoff and not a defect to re-file.
+          */}
+          <span className="dpc-refine__madeText" title={selectedRequest}>
+            {selectedRequest}
+          </span>
           <button
             type="button"
             className="dpc-refine__madeUse"
@@ -954,7 +977,25 @@ export function RefinePanel({
               and it says outright that nothing has changed. */}
           <p className="dpc-refine__readCaption">{READ_CAPTION}</p>
           <div className="dpc-refine__made">
-            <span className="dpc-refine__madeText">{offer.sentence}</span>
+            {/*
+              ⚠ THE SECOND CALL SITE, AND ITS TOOLTIP IS BELT-AND-BRACES RATHER
+              THAN THE FIX — said plainly because the difference is invisible
+              from here.
+
+              Measured in the running app: this row is NOT clipped.
+              `.dpc-refine__readResult .dpc-refine__madeText` overrides the
+              class to `white-space: normal; overflow: visible; text-overflow:
+              clip`, so the sentence wraps and is fully on screen, and the
+              tooltip repeats what she can already read.
+
+              It carries one anyway because the rule this panel now holds is
+              "her sentence is always recoverable on hover" — one rule, no
+              exemption to remember — and because the day that override is
+              touched this row starts clipping with nothing behind it.
+            */}
+            <span className="dpc-refine__madeText" title={offer.sentence}>
+              {offer.sentence}
+            </span>
             <button
               type="button"
               className="dpc-refine__madeUse"
