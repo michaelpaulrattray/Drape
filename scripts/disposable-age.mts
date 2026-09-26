@@ -98,7 +98,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * empty: a reader whose null result is indistinguishable from success is the
  * shape that produced this card in the first place.
  */
-const gitIn = (root: string) => (...args: string[]): string =>
+export const gitIn = (root: string) => (...args: string[]): string =>
   execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
 
 /**
@@ -257,7 +257,7 @@ export const internalCitationLines = (
 /** Every issue this repository has, by number, with the date it closed. */
 const ISSUE_LIMIT = 2000;
 
-const readIssues = (root: string): Map<number, { state: string; closedAt: Date | null }> => {
+export const readIssues = (root: string): Map<number, { state: string; closedAt: Date | null }> => {
   const raw = execFileSync(
     process.platform === "win32" ? "gh.exe" : "gh",
     ["issue", "list", "--state", "all", "--limit", String(ISSUE_LIMIT), "--json", "number,state,closedAt"],
@@ -297,7 +297,7 @@ const readIssues = (root: string): Map<number, { state: string; closedAt: Date |
  * same edition is named by several writers.
  */
 const editionDates = new Map<number, Date | null>();
-const editionDate = (git: (...a: string[]) => string, n: number): Date | null => {
+export const editionDate = (git: (...a: string[]) => string, n: number): Date | null => {
   const cached = editionDates.get(n);
   if (cached !== undefined) return cached;
   let at: Date | null = null;

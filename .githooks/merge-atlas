@@ -8,6 +8,18 @@
 # the MERGED tree — and the stall it caused (#78/#79/#86, two rite refusals)
 # is the repeat this driver retires.
 #
+# ⚠ "ANY TWO BRANCHES" WAS LITERAL UNTIL #1307 AND IS NOT ANY MORE, WHICH MAKES
+# THIS DRIVER RARER AND NOT REDUNDANT. The map carried `meta.sourceFingerprint`,
+# a hash of every scanned file, so no two branches could agree on it: measured on
+# the sixteen seat branches of 2026-09-26, 120 of 120 pairs conflicted here, and
+# with that line gone 0 of 120 did — though 44 pairs still both CHANGED the map.
+# Those 44 are this driver's population now. Git's text merge of two independent
+# map edits usually lands on the same bytes a regeneration would, and where it
+# cannot — a count on one line that both sides move — it either conflicts (this
+# driver, then a regeneration on the merged tree) or merges to something the
+# freshness check calls stale. Both are honest answers; a silent wrong map is the
+# one thing neither road produces.
+#
 # WHAT IT DOES NOT DO: regenerate here. A merge driver runs while git's merge
 # is still in memory; the working tree does not yet hold the merged sources,
 # so a generator run from this process would read the wrong tree. Instead it
