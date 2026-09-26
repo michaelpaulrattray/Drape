@@ -78,13 +78,17 @@ import {
   type PrReading,
   type Rollup,
   MONEY_DECLARATION_PATH,
+  REVIEW_SIZE_DECLARATION_PATH,
   REVIEWER_WORKFLOW_PATH,
   checkStateOf,
   decideMergeAction,
   describeAction,
   extractJobNames,
+  exceedsReviewSizeLine,
   extractMoneyPattern,
   extractMoneySymbols,
+  extractReviewNonCodePattern,
+  extractReviewSizeLine,
   type FilePatch,
   orderByOpened,
   classifyMergeOutcome,
@@ -249,6 +253,23 @@ try {
   fail((error as Error).message);
 }
 
+// ---- the SIZE rule, from the ONE file that declares it (#1194) -------------
+// Triage labels a diff past this line `needs-fable`; until now nothing else
+// asked, so a PR that never got a triage run (born CONFLICTING — #566) printed
+// `review=declined`, the same word as a diff that genuinely earned no look.
+const reviewSizeDeclarationPath = join(REPO_ROOT, ".github", "review-size.sh");
+if (!existsSync(reviewSizeDeclarationPath))
+  fail(`${REVIEW_SIZE_DECLARATION_PATH} is missing — cannot read the size rule`);
+let reviewSizeLine: number;
+let reviewNonCode: string;
+try {
+  const declaration = readFileSync(reviewSizeDeclarationPath, "utf8");
+  reviewSizeLine = extractReviewSizeLine(declaration);
+  reviewNonCode = extractReviewNonCodePattern(declaration);
+} catch (error) {
+  fail((error as Error).message);
+}
+
 // ---- the refs this tool may never push, DERIVED from the hook -------------
 let PROTECTED_REFS: string[];
 try {
@@ -396,18 +417,25 @@ function readPrFiles(number: number): FilePatch[] {
     "--paginate",
     `repos/:owner/:repo/pulls/${number}/files`,
     "--jq",
-    ".[] | [.filename, (.patch // null)] | @json",
+    ".[] | [.filename, (.patch // null), .additions, .deletions] | @json",
   ]);
   const files: FilePatch[] = out
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter((l) => l !== "")
     .map((l) => {
-      const [filename, patch] = JSON.parse(l) as [unknown, unknown];
+      const [filename, patch, additions, deletions] = JSON.parse(l) as [unknown, unknown, unknown, unknown];
       if (typeof filename !== "string" || filename === "" || (patch !== null && typeof patch !== "string")) {
         fail(`#${number}: a changed-file row did not parse as [filename, patch]: ${l.slice(0, 120)}`);
       }
-      return { filename, patch };
+      /* ⚠ The counts are REFUSED rather than defaulted to zero (#1194): a row
+         whose numbers did not parse would make a large diff read as small, which
+         is the silent permissive direction — exactly what the size reader exists
+         to close. */
+      if (!Number.isSafeInteger(additions) || !Number.isSafeInteger(deletions)) {
+        fail(`#${number}: ${filename} came back with no line counts — the size reading would be wrong, not missing`);
+      }
+      return { filename, patch, additions: additions as number, deletions: deletions as number };
     });
   // Fail CLOSED. A pull request always changes at least one file, so an empty
   // list means the reading broke, and an empty list is exactly what makes both
@@ -463,11 +491,16 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
   // label; the money rule is read here as well, from the one file, so a label
   // someone removed cannot un-owe a money diff; and a change to the review's
   // own rules is always read (#165's obligation, now a person's).
+  // ⚠ #1194 added the SIZE half. It changes what is REPORTED, not what merges:
+  // an ordinary large diff with no verdict still merges on the gate alone, but
+  // it now reads `no-verdict` — which is true — instead of `declined`, which
+  // claims triage decided something it never saw.
   const reviewOwed =
     view.labels.some((l) => l.name === "needs-fable") ||
     touchesMoney(files, moneyPattern) ||
     moneySymbolHits(patches, moneySymbols).length > 0 ||
-    touchesReviewerWorkflow(files);
+    touchesReviewerWorkflow(files) ||
+    exceedsReviewSizeLine(patches, reviewNonCode!, reviewSizeLine!);
   // Stale verdicts count toward the acknowledgement pin (a word said for a
   // verdict that existed), never toward the merge.
   const verdictCount = tally.verdicts.length + tally.stale.length;

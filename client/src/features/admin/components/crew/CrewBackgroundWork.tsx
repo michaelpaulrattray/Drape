@@ -88,11 +88,13 @@ import { useState } from "react";
 import {
   CREW_PIPELINE_GROUPS,
   CREW_PIPELINE_ORPHAN_GROUPS,
+  backgroundWorkSentence,
 } from "@shared/crewPipelineGroups";
 import {
   indexIntentsByCard,
   type CrewCardIntentView,
 } from "@shared/crewCardIntents";
+import { indexCardBuilds, type CrewCardBuildView } from "@shared/crewCardBuildState";
 import { queueExclusionSentence } from "@shared/crewQueueExclusions";
 import { NO_POSSIBLY_DONE, possiblyDoneSentence } from "@shared/crewQueuePossiblyDone";
 import { queueTitlesView } from "@shared/crewQueueTitles";
@@ -145,6 +147,7 @@ function Switch({
 
 export function CrewBackgroundWork({
   workState, cardIntents, now, onToggle, onIntent, pending, intentPendingCard,
+  builds = [], buildsWhy = null,
 }: {
   workState: CrewWorkStateView;
   cardIntents: CrewCardIntentsView;
@@ -154,6 +157,14 @@ export function CrewBackgroundWork({
   pending: boolean;
   /** Which card's tap is mid-flight, so only that button dims (#325). */
   intentPendingCard: number | null;
+  /**
+   * WHAT IS ALREADY HAPPENING TO EACH CARD (#1094) — derived on the server from
+   * the open pull requests and the cards' own claim and refusal comments. A
+   * card nobody is on carries no entry, so a quiet row means quiet.
+   */
+  builds?: readonly CrewCardBuildView[];
+  /** Why the claims and refusals could not be read, when they could not be. */
+  buildsWhy?: string | null;
 }) {
   /* Which switch is mid-flight, so only that row dims rather than the panel. */
   const [flying, setFlying] = useState<string | null>(null);
@@ -168,6 +179,7 @@ export function CrewBackgroundWork({
   */
   const intentsByCard = indexIntentsByCard(cardIntents.intents);
   const intentsLive = cardIntents.available;
+  const buildsByCard = indexCardBuilds(builds);
 
   /*
     THE DARK PANEL SAYS SO. `available: false` means the tables are not in this
@@ -308,8 +320,20 @@ export function CrewBackgroundWork({
                          WHICH two, and this panel's whole reason (#285) is that
                          titles turn *trust the number* into *see what you are
                          authorising*. The mark is #493's own extension point,
-                         so it costs no new surface. */
-                      mark={(card) => (flagged.has(card.number) ? "possibly fixed" : null)}
+                         so it costs no new surface.
+
+                         ⚠ AND SINCE #1094 THE SAME SLOT SAYS WHETHER SOMEBODY
+                         IS ALREADY ON IT, WHICH OUTRANKS *possibly fixed* —
+                         his order, 2026-09-26: *"work on 1094 and 1307 next so
+                         the desk shows whats built"*. He was being offered
+                         #1231, #1217, #1258, #1248 and #1288 as tonight's work
+                         while every one had a pull request in the queue or a
+                         refusal written on it. ONE phrase, never two: what is
+                         happening to the card NOW beats what may have happened
+                         to it, and a row with both facts would be the badge
+                         wall his card forbids. */
+                      mark={(card) => buildsByCard.get(card.number)
+                        ?? (flagged.has(card.number) ? "possibly fixed" : null)}
                     />
                     {/* The tail, never a scroll — and never drawn without a head
                         above it to be the tail OF (`queueTitlesView`). */}
@@ -338,12 +362,26 @@ export function CrewBackgroundWork({
         </p>
       )}
 
+      {/* ⚠ AN UNREAD ANSWER IS NOT A QUIET BOARD (#1094). A card being built
+          shows a phrase and a card nobody is on shows nothing, so the two are
+          the same picture when the read failed — and this is the one row where
+          the silent direction costs him a duplicate. The pull requests are
+          always read (they ride the queue); only the claims and refusals can go
+          missing, and the sentence says which half is thin. */}
+      {buildsWhy !== null && (
+        <p className="dp-crew__foot">
+          Claims and refusals could not be read just now, so a row may look free
+          while a shift is on it. Pull requests are still counted.
+        </p>
+      )}
+
       <PipelineGroups
         workState={workState}
         now={now}
         intentsByCard={intentsByCard}
         onIntent={intentsLive ? onIntent : null}
         intentPendingCard={intentPendingCard}
+        buildsByCard={buildsByCard}
       />
     </section>
   );
@@ -382,13 +420,15 @@ export function CrewBackgroundWork({
  * card says "and nothing else", and the sentence IS the real answer.
  */
 function PipelineGroups({
-  workState, now, intentsByCard, onIntent, intentPendingCard,
+  workState, now, intentsByCard, onIntent, intentPendingCard, buildsByCard,
 }: {
   workState: CrewWorkStateView;
   now: number;
   intentsByCard: ReadonlyMap<number, CrewCardIntentView>;
   onIntent: ((issueNumber: number, intent: "close" | null) => void) | null;
   intentPendingCard: number | null;
+  /** #1094 — the same phrase the switch rows carry. These rows had no mark at all before. */
+  buildsByCard: ReadonlyMap<number, string>;
 }) {
   const byKey = new Map(workState.groups.map((row) => [row.groupKey, row]));
 
@@ -483,7 +523,14 @@ function PipelineGroups({
                     make "nothing there" and "not shown" identical. */}
                 <span className="dp-crew__count"> ({row ? row.openCount : "—"})</span>
               </p>
-              <p className="dp-crew__blurb">{group.blurb}</p>
+              {/* ⚠ #1248 — the blurb says what the group HOLDS; whether the
+                  work is ordinary is `backgroundWork`'s answer and is drawn
+                  from it. `debt` used to make both claims in prose, and they
+                  disagreed. Two claims about one fact always drift. */}
+              <p className="dp-crew__blurb" data-testid={`crew-group-blurb-${group.key}`}>
+                {group.blurb}{" "}
+                <span className="dp-crew__stance">{backgroundWorkSentence(group)}</span>
+              </p>
               {titles.shown.length > 0 && (
                 <ul className="dp-crew__titles">
                   <CardTitles
@@ -491,6 +538,7 @@ function PipelineGroups({
                     intents={intentsByCard}
                     onIntent={onIntent}
                     pendingCard={intentPendingCard}
+                    mark={(card) => buildsByCard.get(card.number) ?? null}
                   />
                   {titles.moreCount > 0 && (
                     <li className="dp-crew__blurb">+{titles.moreCount} more</li>

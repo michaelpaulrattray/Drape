@@ -1,0 +1,312 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { describe, expect, it } from "vitest";
+
+import { NUMERIC_ENV_VARS } from "./_core/env";
+import { CASTING_ROLL_ENGINE_MODEL_ENV } from "./castingV2/castingV2Scope";
+import { FAL_ACCOUNT_CEILING_ENV, FAL_ALLOWANCES } from "./castingV2/falBudget";
+import { RITE_DISK_READS } from "../scripts/lib/dirtyTreeGuard.mts";
+import {
+  BOOT_DECLARATION_PATHS,
+  BOOT_GOVERNED_FLOOR,
+  BOOT_GOVERNED_ENV_NAMES,
+  bootOwnerOf,
+  bootSettingClaims,
+  falEnvNames,
+  foldBootClaims,
+  numericEnvNames,
+  rollEngineModelEnvName,
+} from "../scripts/lib/governedBootSettings.mts";
+import {
+  PRODUCTION_FLAG_POSITIONS,
+  comparePositions,
+  isGovernedName,
+} from "../scripts/lib/productionFlagPositions.mts";
+
+/**
+ * THE PUSH GATE CAN SEE A SETTING WHOSE NAME LACKS `SCOPE` OR `STAGE` (#1174).
+ *
+ * The hole, and it was live: `GOVERNED_NAME` was a name pattern, so every other
+ * setting the product reads at boot was invisible to the gate **in both
+ * directions** — it could not say one was set when the record said nothing about
+ * it, and it could not say the record was wrong about one.
+ *
+ * ⚠ **Measured at the live service 2026-09-26: `CASTING_ROLL_ENGINE_MODEL` is
+ * SET to `sunburst`** — it decides which image model every roll on his account
+ * renders on, his own word chose it, and the gate could not see it.
+ *
+ * # THE SECOND READER IS A TEXT SCAN, AND IT IS THE POINT OF THIS FILE
+ *
+ * `governedBootSettings.mts` IMPORTS the three declarations, which is right:
+ * a hand-typed second list is what produced the card. But a reader that imports
+ * cannot notice a declaration that has quietly stopped being read at boot, and
+ * an import that resolves is not proof the name is still in the file a human
+ * would open. So the arms below re-read those same three files as TEXT and
+ * refuse if the two readings disagree — different resolver, neither inheriting
+ * the other's blind spot, which is the shape `productionFlagPositions.test.ts`
+ * already uses for the flag population.
+ */
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const read = (rel: string) => readFileSync(path.join(repoRoot, rel), "utf8");
+
+/**
+ * ⚠ **THE IMPORT IS THE SECOND READER, AND IT IS THE RIGHT WAY ROUND — the
+ * deploy rite's own suite settled it.**
+ *
+ * The module scanned first and imported first in two different drafts. The
+ * import version was REFUSED by `server/dirtyTreeGuard.test.ts`: it derives the
+ * rite's static import graph, and `server/_core/env.ts` brought **41 server
+ * modules** into the graph of a script that pushes to production, each of which
+ * would then have had to become a `RITE_DISK_READS` entry.
+ *
+ * So the module scans and this suite imports. **A suite can afford the import; a
+ * deploy script cannot** — and the two readers still do not share a resolver,
+ * which is the property working law 4 actually wants.
+ */
+const IMPORTED_NAMES = [
+  ...Object.keys(NUMERIC_ENV_VARS),
+  ...FAL_ALLOWANCES.map((allowance) => allowance.env),
+  FAL_ACCOUNT_CEILING_ENV,
+  CASTING_ROLL_ENGINE_MODEL_ENV,
+].sort();
+
+describe("the boot-governed population", () => {
+  it("⚠ CONTROL — the imported declarations are real, and each one's specimen", () => {
+    /* POSITIVE CONTROLS FIRST. Every comparison below is vacuously true over an
+       empty population, which is exactly how an enumeration guard goes green
+       while enumerating nothing. */
+    expect(IMPORTED_NAMES).toContain("DAILY_GENERATION_LIMIT");
+    expect(IMPORTED_NAMES).toContain("FAL_CONCURRENCY");
+    expect(IMPORTED_NAMES).toContain("FAL_ACCOUNT_CEILING");
+    expect(IMPORTED_NAMES).toContain("CASTING_ROLL_ENGINE_MODEL");
+    expect(Object.keys(NUMERIC_ENV_VARS).length).toBeGreaterThanOrEqual(5);
+    expect(FAL_ALLOWANCES.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("⚠ the rite's TEXT SCAN and the IMPORTED declarations agree, name for name", () => {
+    /* The whole point of the split. A declaration renamed, moved or reshaped
+       makes these two disagree, and the scan is the one on the deploy path. */
+    expect([...BOOT_GOVERNED_ENV_NAMES]).toEqual(IMPORTED_NAMES);
+  });
+
+  it("⚠ the rite does not IMPORT the server to ask this — the graph is why", () => {
+    /* `server/dirtyTreeGuard.test.ts` derives the rite's static import graph and
+       refused the import version: `server/_core/env.ts` brings 41 server modules
+       into a script that pushes to production. The three files are READ, and
+       they are named so the rite's disk-read list can quote them. */
+    const source = read("scripts/lib/governedBootSettings.mts");
+    expect(source).not.toMatch(/from "\.\.\/\.\.\/server\//);
+    expect([...BOOT_DECLARATION_PATHS]).toEqual([
+      "server/_core/env.ts",
+      "server/castingV2/falBudget.ts",
+      "server/castingV2/castingV2Scope.ts",
+    ]);
+  });
+
+  it("every name says where it is read at boot", () => {
+    for (const name of BOOT_GOVERNED_ENV_NAMES) {
+      expect(bootOwnerOf(name), `${name} is governed and nothing says why`).toBeTruthy();
+    }
+    /* And a name that is NOT governed has no owner — or the reader would answer
+       for anything it was handed. */
+    expect(bootOwnerOf("DATABASE_URL")).toBeNull();
+    expect(bootOwnerOf("CASTING_V2_SCOPE")).toBeNull();
+  });
+
+  it("⚠ no credential can arrive here, which is what makes printing the value safe", () => {
+    /* The rite's flag block prints the VALUE of every name on the position
+       table, so the allowlist's whole safety argument is that its names are
+       known-harmless (`never-filter-a-secret-listing`: a redaction rule fails
+       OPEN). A derived population must therefore be held to that too. */
+    for (const name of BOOT_GOVERNED_ENV_NAMES) {
+      expect(name, "a secret-shaped name must never become governed").not.toMatch(
+        /KEY|SECRET|TOKEN|PASSWORD|URL|ENDPOINT|CLIENT_ID/,
+      );
+    }
+  });
+
+  it("⚠ REFUSES a short collection rather than returning one — driven, because it cannot occur", () => {
+    /*
+      ⚠ **THE SABOTAGE RUN BOUGHT THIS ARM AND ITS SIBLING BELOW.** Both
+      refusals are unreachable at the real tree — the population is complete and
+      no name is claimed twice — so neutering either one changed nothing any arm
+      could see and the suite stayed green at 27 with the guard gone. A guard
+      reachable only through data that never occurs is not a guard (working law
+      3), so the fold is its own function and is driven with data that does.
+
+      What a short list would cost: the settings it dropped stop being governed
+      and the gate still reports a clean block — a green over nothing.
+    */
+    const short = bootSettingClaims().slice(0, 3);
+    expect(() => foldBootClaims(short)).toThrow(/under the floor of/);
+    /* POSITIVE CONTROL — the same fold passes the real claims, so the refusal is
+       about the SIZE and not about the function refusing everything. */
+    expect(foldBootClaims(bootSettingClaims()).length).toBe(BOOT_GOVERNED_ENV_NAMES.length);
+    /* And a low floor lets the short list through, which pins that the number is
+       what decides it rather than some other property of the slice. */
+    expect(foldBootClaims(short, 3)).toHaveLength(3);
+  });
+
+  it("⚠ REFUSES one variable claimed by two boot owners — driven, because it cannot occur", () => {
+    /* `NUMERIC_ENV_VARS`'s own docblock refuses this by hand today ("the fal
+       allowances are deliberately not here, two owners for one variable would be
+       worse than the defect this table fixes"). This is that rule mechanised,
+       and it matters because the boot behaviour would be ambiguous — which
+       reader wins? — and no single position could describe it. */
+    const doubled = [
+      ...bootSettingClaims(),
+      { name: "FAL_CONCURRENCY", from: "NUMERIC_ENV_VARS" },
+    ];
+    expect(() => foldBootClaims(doubled)).toThrow(/two boot owners/);
+    /* And the message names BOTH owners, or a reader cannot find the second one. */
+    try {
+      foldBootClaims(doubled);
+    } catch (error) {
+      expect((error as Error).message).toContain("FAL_ALLOWANCES");
+      expect((error as Error).message).toContain("NUMERIC_ENV_VARS");
+    }
+  });
+
+  it("⚠ REFUSES a scan that finds nothing rather than returning an empty list — driven", () => {
+    /*
+      ⚠ **THE SABOTAGE RUN BOUGHT THIS ARM.** Every extractor's empty branch is
+      unreachable at the real tree — the declarations are all there — so
+      neutering one changed nothing any arm could see. A guard reachable only
+      through data that never occurs is not a guard (working law 3), which is
+      why the extractors take their SOURCE rather than reading the file
+      themselves.
+
+      What an empty scan would cost: the settings it dropped stop being governed
+      and the gate still reports a clean block — a green over nothing.
+    */
+    expect(() => numericEnvNames(`export const NUMERIC_ENV_VARS = {\n} as const;\n`))
+      .toThrow(/came back with no names/);
+    expect(() => numericEnvNames(`const SOMETHING_ELSE = {};\n`))
+      .toThrow(/not declared the way this reader reads it/);
+    expect(() => falEnvNames(`export const FAL_ALLOWANCES: readonly FalAllowance[] = [\n];\n`))
+      .toThrow(/came back with no rows/);
+    expect(() => rollEngineModelEnvName(`// the constant was renamed\n`))
+      .toThrow(/not a declared constant/);
+
+    /* POSITIVE CONTROLS — the same readers answer on the real sources, so the
+       refusals above are about EMPTINESS and not about refusing everything. */
+    const repoFile = (rel: string) => read(rel);
+    expect(numericEnvNames(repoFile(BOOT_DECLARATION_PATHS[0])).length).toBeGreaterThan(3);
+    expect(falEnvNames(repoFile(BOOT_DECLARATION_PATHS[1])).length).toBeGreaterThan(3);
+    expect(rollEngineModelEnvName(repoFile(BOOT_DECLARATION_PATHS[2]))).toBe("CASTING_ROLL_ENGINE_MODEL");
+  });
+
+  it("⚠ every file this scan reads is on the rite's DISK-READ list", () => {
+    /*
+      The rite turns these bytes into a refusal about production, so a dirty one
+      on the desk must block the deploy — that is what `RITE_DISK_READS` is for.
+
+      ⚠ **Nothing else could catch this.** `server/dirtyTreeGuard.test.ts`
+      derives the rite's static IMPORT graph, and a text read is not an import,
+      so a row deleted here would leave that suite perfectly green. The
+      population is the module's own exported list, so a fourth declaration
+      cannot arrive without a row.
+    */
+    const covered = new Set(RITE_DISK_READS.map((entry) => entry.path));
+    for (const declaration of BOOT_DECLARATION_PATHS) {
+      expect(covered, `${declaration} is read by the rite and is not on RITE_DISK_READS`).toContain(declaration);
+    }
+    expect(BOOT_DECLARATION_PATHS.length).toBeGreaterThan(0);
+  });
+
+  it("the floor is real and the population clears it", () => {
+    expect(BOOT_GOVERNED_FLOOR).toBeGreaterThan(5);
+    expect(BOOT_GOVERNED_ENV_NAMES.length).toBeGreaterThanOrEqual(BOOT_GOVERNED_FLOOR);
+    /* No duplicates — two boot owners for one variable is a state no position
+       can describe, and the collector refuses it. */
+    expect(new Set(BOOT_GOVERNED_ENV_NAMES).size).toBe(BOOT_GOVERNED_ENV_NAMES.length);
+  });
+});
+
+describe("the gate can now see them", () => {
+  it("⚠ CASTING_ROLL_ENGINE_MODEL is governed — the live specimen", () => {
+    expect(isGovernedName("CASTING_ROLL_ENGINE_MODEL")).toBe(true);
+    /* Its sibling was only ever governed because the NAME happened to carry
+       SCOPE, which is the accident this card is about. */
+    expect(isGovernedName("CASTING_ROLL_ENGINE_SCOPE")).toBe(true);
+  });
+
+  it("⚠ NEGATIVE CONTROL — it did NOT become 'govern every variable'", () => {
+    /* The card is emphatic: the service holds 67 variables and most are
+       credentials. A gate that had to carry `DATABASE_URL` would be a worse
+       thing than the gap. */
+    for (const name of ["DATABASE_URL", "JWT_SECRET", "GEMINI_API_KEY", "R2_SECRET_ACCESS_KEY", "FAL_KEY"]) {
+      expect(isGovernedName(name), `${name} must never be governed`).toBe(false);
+    }
+    /* And the two deliberately-out settings, each with its own reason in the
+       module: PORT catches its own empty string before the server listens, and
+       LOG_LEVEL changes what is written rather than what is done. */
+    expect(isGovernedName("PORT")).toBe(false);
+    expect(isGovernedName("LOG_LEVEL")).toBe(false);
+  });
+
+  it("says nothing about a concurrency-shaped name the code does not declare", () => {
+    /* The narrowness, driven from the other end: the population is what the
+       product READS at boot, never everything that looks like a setting. A
+       variable somebody invents on the service is not governed by resemblance,
+       and its value is never printed. */
+    const verdict = comparePositions([{ name: "SOME_NEW_CONCURRENCY", value: "9" }]);
+    expect(verdict.mismatches.some((line) => line.includes("SOME_NEW_CONCURRENCY"))).toBe(false);
+    expect(verdict.block.some((line) => line.includes("SOME_NEW_CONCURRENCY"))).toBe(false);
+
+    /* And every governed name really does have a row, which is the property that
+       makes "absent from the table" unreachable for this population rather than
+       merely unlikely. */
+    for (const governed of BOOT_GOVERNED_ENV_NAMES) {
+      expect(governed in PRODUCTION_FLAG_POSITIONS, `${governed} has no row`).toBe(true);
+    }
+  });
+
+  it("reports a boot setting standing somewhere other than the record says", () => {
+    const verdict = comparePositions([{ name: "FAL_CONCURRENCY", value: "12" }]);
+    const line = verdict.mismatches.find((entry) => entry.startsWith("FAL_CONCURRENCY"));
+    expect(line, "a fal allowance moved on the service and the gate said nothing").toBeTruthy();
+    expect(line).toContain("`12`");
+    expect(line).toContain("`off`");
+  });
+
+  it("⚠ the model's recorded position is the one READ at the service, not a default", () => {
+    /* It is `sunburst` because that is what production holds — measured
+       2026-09-26 with an allowlist by exact name. A row carrying a guessed
+       position is a row that agrees with nothing. */
+    expect(PRODUCTION_FLAG_POSITIONS.CASTING_ROLL_ENGINE_MODEL!.position).toBe("sunburst");
+    const agrees = comparePositions([{ name: "CASTING_ROLL_ENGINE_MODEL", value: "sunburst" }]);
+    expect(agrees.mismatches.some((line) => line.startsWith("CASTING_ROLL_ENGINE_MODEL"))).toBe(false);
+    const flipped = comparePositions([{ name: "CASTING_ROLL_ENGINE_MODEL", value: "flare" }]);
+    expect(flipped.mismatches.some((line) => line.startsWith("CASTING_ROLL_ENGINE_MODEL"))).toBe(true);
+  });
+
+  it("⚠ an unset boot setting is verified rather than skipped — that is the whole point of the rows", () => {
+    /* "They are all unset today" is the argument FOR them: it is exactly the
+       fact four documents got wrong about INK_PLATE_CONCURRENCY, where a live
+       boot line reading `ink plates 1` was equally true of set-to-1 and of
+       unset-defaulting-to-1. */
+    const unsetToday = BOOT_GOVERNED_ENV_NAMES.filter(
+      (name) => PRODUCTION_FLAG_POSITIONS[name]!.position === "off",
+    );
+    expect(unsetToday.length).toBeGreaterThan(5);
+    /* A service holding NONE of them agrees with the record, and the block still
+       prints a line for each — a verified `<unset>` rather than a silence. */
+    const clean = comparePositions([{ name: "CASTING_V2_SCOPE", value: "all" }]);
+    for (const name of unsetToday) {
+      expect(clean.mismatches.some((line) => line.startsWith(`${name}:`))).toBe(false);
+      expect(clean.block.some((line) => line.includes(`${name}=<unset>`))).toBe(true);
+    }
+  });
+
+  it("every boot row carries a reason thick enough to be one", () => {
+    for (const name of BOOT_GOVERNED_ENV_NAMES) {
+      const row = PRODUCTION_FLAG_POSITIONS[name]!;
+      expect(row.why.length, `${name}'s reason is too thin`).toBeGreaterThan(40);
+      expect(row.why, `${name} must say where it is read at boot`).toMatch(/boot/i);
+    }
+  });
+});

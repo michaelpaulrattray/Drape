@@ -65,6 +65,16 @@ vi.mock("../crew/liveQueue", () => ({
   })),
 }));
 
+/* AND SO IS THE CARD-COMMENT READER (#1094) — the other GitHub allowance. It
+   rides the same procedure, so an unfaked one would put a unit suite on the
+   network; `server/crew/cardActivity.test.ts` drives the reader itself.
+   Answering `available: false` here is deliberate: the derived arm below must
+   pass with the claims and refusals MISSING, which is what the page degrades
+   to. */
+vi.mock("../crew/cardActivity", () => ({
+  readCardActivity: vi.fn(async () => ({ available: false, why: "faked: not read" })),
+}));
+
 import { crewRouter } from "../routes/crew";
 import { eyeFrameKeys, readCrewBriefing } from "./crewBriefing";
 import { crewCardNeedsHim } from "../../shared/crewCardState";
