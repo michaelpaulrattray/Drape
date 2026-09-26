@@ -28,6 +28,7 @@ import {
   launchDirectoryOf,
   launchDirectoryState,
   listenersOutsideEveryTree,
+  normaliseTreePath,
   portsOfTree,
   rootsStartedAfter,
   pidsNamed,
@@ -617,17 +618,24 @@ describe("⚠ a removed worktree leaves a shell, and a shell is still gone", () 
     isEmpty: (path: string) => empty.includes(path),
   });
 
+  /**
+   * `git worktree list --porcelain`'s answer, as the decision needs it: the set
+   * of registered tree paths, normalised the way the reader normalises them.
+   * An EMPTY set is its own fixture and means "git could not be read".
+   */
+  const registered = (paths: string[]) => new Set(paths.map(normaliseTreePath));
+
   it("⚠ THE MEASURED SHAPE — the directory survives and holds nothing", () => {
     /* The arm #783 needed and did not have. Under its shipped predicate
        (`!existsSync`) this reads as live: the name resolves, so nothing is
        said, and the one fact that makes the process safe to kill is never
        printed. */
-    expect(launchDirectoryState(TREE, disk([TREE], [TREE]))).toBe("shell");
+    expect(launchDirectoryState(TREE, disk([TREE], [TREE]), registered([LIVE]))).toBe("shell");
     expect(launchDirectoryIsGone("shell")).toBe(true);
   });
 
   it("the plainly deleted directory is gone too", () => {
-    expect(launchDirectoryState(TREE, disk([]))).toBe("missing");
+    expect(launchDirectoryState(TREE, disk([]), registered([LIVE]))).toBe("missing");
     expect(launchDirectoryIsGone("missing")).toBe(true);
   });
 
@@ -642,12 +650,12 @@ describe("⚠ a removed worktree leaves a shell, and a shell is still gone", () 
 
       Emptiness excludes it: a tree being reinstalled still holds its sources.
     */
-    expect(launchDirectoryState(LIVE, disk([LIVE]))).toBe("live");
+    expect(launchDirectoryState(LIVE, disk([LIVE]), registered([LIVE]))).toBe("live");
     expect(launchDirectoryIsGone("live")).toBe(false);
   });
 
   it("CONTROL — an ordinary live tree is live", () => {
-    expect(launchDirectoryState(LIVE, disk([LIVE, `${LIVE}/node_modules`]))).toBe("live");
+    expect(launchDirectoryState(LIVE, disk([LIVE, `${LIVE}/node_modules`]), registered([LIVE]))).toBe("live");
   });
 
   it("⚠ a directory that cannot be READ is live, not gone", () => {
@@ -657,13 +665,99 @@ describe("⚠ a removed worktree leaves a shell, and a shell is still gone", () 
       mistakes do not cost the same: an unreported leftover costs a port, and a
       wrongly-reported one costs somebody's work.
     */
-    expect(launchDirectoryState(LIVE, disk([LIVE]))).toBe("live");
+    expect(launchDirectoryState(LIVE, disk([LIVE]), registered([LIVE]))).toBe("live");
+  });
+
+  /**
+   * The specimen from Janitor patrol #10, 2026-09-27 (#1435): root 30196,
+   * launched from `drape-shift-seat-2-20260926-190521`, running for THIRTEEN
+   * HOURS after its worktree was removed underneath it.
+   *
+   * ⚠ `isEmpty` cannot fire on it, and the reason is the point: the dev server
+   * still running out of that directory KEPT WRITING INTO IT — its own two log
+   * files and Vite's dep cache, fourteen files in all. So the directory is not
+   * empty, the state read `live`, and three consecutive shifts read
+   * `(no port — between restarts)` over a process whose every restart died on
+   * `ERR_MODULE_NOT_FOUND … server\_core\index.ts`.
+   *
+   * **The process the verdict is about is what defeats the test the verdict
+   * depends on.** Every arm in this block is written so it FAILS against the
+   * two-argument reader as it stood before this fix.
+   */
+  describe("⚠ a removed worktree that is still being written into is gone too (#1435)", () => {
+    const ORPHAN = "C:/Users/Admin/drape-shift-seat-2-20260926-190521";
+
+    it("⚠ THE MEASURED SHAPE — the directory exists, holds files, and git does not list it", () => {
+      /* Under the shipped reader this is `live`: it exists and it is not empty,
+         and there the question stopped. `git worktree list` is the fact that
+         settles it, and it had been available all along. */
+      expect(launchDirectoryState(ORPHAN, disk([ORPHAN]), registered([LIVE]))).toBe("unregistered");
+      expect(launchDirectoryIsGone("unregistered")).toBe(true);
+    });
+
+    it("⚠ CONTROL — the MAIN tree is registered, so an ordinary `pnpm dev` is untouched", () => {
+      /*
+        The direction that must never fail, and the expensive one: the main tree
+        is the FIRST row of `git worktree list --porcelain`, so it is in the set
+        and a full, live, registered tree stays `live`. A reader that forgot this
+        would print "safe to kill" over the founder's own server.
+      */
+      expect(launchDirectoryState(LIVE, disk([LIVE]), registered([LIVE, ORPHAN]))).toBe("live");
+      expect(launchDirectoryIsGone("live")).toBe(false);
+    });
+
+    it("⚠ CONTROL — a REGISTERED shift worktree is live, however new it is", () => {
+      const WORKING = "C:/Users/Admin/drape-shift-seat-1-20260927-074029";
+      expect(launchDirectoryState(WORKING, disk([WORKING]), registered([LIVE, WORKING]))).toBe("live");
+    });
+
+    it("⚠ CONTROL — an EMPTY registration set means git could not be read, never that nothing is registered", () => {
+      /*
+        The asymmetry this whole decision is built on, one door along: with no
+        worktree list every tree would read `unregistered` and the tool would
+        offer to kill all of them. An empty set therefore turns the limb OFF,
+        and `dev-servers.mts` says out loud that it did.
+      */
+      expect(launchDirectoryState(ORPHAN, disk([ORPHAN]), registered([]))).toBe("live");
+    });
+
+    it("⚠ the two sides spell the same path differently, and the mismatch fails toward killing", () => {
+      /*
+        Measured on this machine: `git worktree list --porcelain` prints
+        `C:/Users/Admin/Drape` and a process command line carries
+        `C:\Users\Admin\Drape`. Compared raw, the main tree is absent from its
+        own registration set and every tree on the machine reads as abandoned —
+        which is the one outcome this file's doctrine forbids. Windows paths are
+        case-insensitive too, and a trailing separator is stripped last.
+      */
+      const BACKSLASHED = "C:\\Users\\Admin\\Drape";
+      expect(launchDirectoryState(BACKSLASHED, disk([BACKSLASHED]), registered([LIVE]))).toBe("live");
+
+      const SHOUTED = "C:/USERS/ADMIN/DRAPE";
+      expect(launchDirectoryState(SHOUTED, disk([SHOUTED]), registered([LIVE]))).toBe("live");
+
+      const TRAILING = "C:/Users/Admin/Drape/";
+      expect(launchDirectoryState(TRAILING, disk([TRAILING]), registered([LIVE]))).toBe("live");
+
+      /* And the normaliser is not a one-way door: an unregistered path stays
+         unregistered however it is spelled, so the arm above cannot be passing
+         by making everything match. */
+      expect(launchDirectoryState("C:\\Users\\Admin\\drape-gone", disk(["C:\\Users\\Admin\\drape-gone"]), registered([LIVE])))
+        .toBe("unregistered");
+    });
+
+    it("an emptied leftover still reads `shell`, because the cheaper fact is asked first", () => {
+      /* `isEmpty` stays: it is right whenever it fires, and the wording differs
+         (an empty shell versus a directory still being written into), so the
+         caller needs the two states apart rather than merged. */
+      expect(launchDirectoryState(ORPHAN, disk([ORPHAN], [ORPHAN]), registered([LIVE]))).toBe("shell");
+    });
   });
 
   it("CONTROL — a tree whose launch directory could not be read says nothing", () => {
     /* Not knowing where it came from is not evidence that it is abandoned, and
        a reader that treated it as such would kill on ignorance. */
-    expect(launchDirectoryState(null, disk([]))).toBe("unknown");
+    expect(launchDirectoryState(null, disk([]), registered([LIVE]))).toBe("unknown");
     expect(launchDirectoryIsGone("unknown")).toBe(false);
   });
 });

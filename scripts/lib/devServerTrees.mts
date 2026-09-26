@@ -415,8 +415,35 @@ export function portsOfTree(
  * an arm can hold it. Three states rather than a boolean so the caller can WORD
  * its line without re-deriving the anatomy of the decision (PR #785 review,
  * finding 2 — working law 4 in miniature).
+ *
+ * ⚠ **AND `isEmpty` COULD NOT FIRE ON THE SPECIMEN IT WAS WRITTEN FOR, BECAUSE
+ * THE PROCESS THE VERDICT IS ABOUT IS WHAT KEEPS ITS OWN LEFTOVER DIRECTORY
+ * FROM BEING EMPTY** (#1435, Janitor patrol #10, 2026-09-27). Measured: root
+ * 30196, launched from `drape-shift-seat-2-20260926-190521`, ran for **13 hours**
+ * after its worktree was removed underneath it and printed
+ * `(no port — between restarts)` on three consecutive shifts' readings. Its own
+ * log inside that directory said `ERR_MODULE_NOT_FOUND … server\_core\index.ts`
+ * on every restart — it could never serve again. The leftover directory held 14
+ * files: the dev server's **own two log files** and Vite's dep cache, all of
+ * them written by the process after the removal. So `isEmpty` was false, the
+ * state read `live`, and the one sentence that makes a tree safe to kill was
+ * never printed. Three shifts read the reassuring line and correctly declined
+ * to act on it.
+ *
+ * **The fourth state is the repair, and it is a STRONGER reader rather than a
+ * looser one: `git worktree list` is the authority on whether a directory is a
+ * live worktree.** A dev server launched from a path git does not register is
+ * nobody's live work however much is still being written into it — which is the
+ * fact `isEmpty` was reaching for, read where it is actually decided.
+ *
+ * ⚠ **It fails toward LIVE, twice over, because that is the asymmetry this
+ * whole decision is built on.** An EMPTY registration set means the caller could
+ * not read git, never that nothing is registered, so it yields `live` and the
+ * caller says it could not read them. And the MAIN tree is the first row of
+ * `git worktree list --porcelain`, so an ordinary `pnpm dev` is registered and
+ * unaffected — that is the arm to keep, not the interesting one.
  */
-export type LaunchDirectoryState = "unknown" | "live" | "missing" | "shell";
+export type LaunchDirectoryState = "unknown" | "live" | "missing" | "shell" | "unregistered";
 
 /** A file system, as this decision needs to ask about one. */
 export type DirectoryReader = {
@@ -425,18 +452,39 @@ export type DirectoryReader = {
   isEmpty(path: string): boolean;
 };
 
+/**
+ * One tree path as both sides of the comparison must spell it.
+ *
+ * ⚠ The two sides genuinely disagree on this machine and the mismatch would
+ * fail toward calling everything unregistered: `git worktree list --porcelain`
+ * prints `C:/Users/Admin/Drape` and a process command line carries
+ * `C:\Users\Admin\Drape`. Windows paths are also case-insensitive. A trailing
+ * separator is stripped last, because a junction path that keeps one behaves
+ * differently on this machine (memory `worktree-node-modules-junction`).
+ */
+export function normaliseTreePath(path: string): string {
+  return path.trim().split("\\").join("/").replace(/\/+$/, "").toLowerCase();
+}
+
 export function launchDirectoryState(
   launchedFrom: string | null,
   disk: DirectoryReader,
+  registeredWorktrees: ReadonlySet<string>,
 ): LaunchDirectoryState {
   if (launchedFrom === null) return "unknown";
   if (!disk.exists(launchedFrom)) return "missing";
-  return disk.isEmpty(launchedFrom) ? "shell" : "live";
+  if (disk.isEmpty(launchedFrom)) return "shell";
+  /* An empty set is "git could not be read", never "nothing is registered" —
+     see the header. The parameter is REQUIRED rather than optional so the
+     compiler names every call site if a second one is ever added; an optional
+     third argument is how this limb would go quietly missing. */
+  if (registeredWorktrees.size === 0) return "live";
+  return registeredWorktrees.has(normaliseTreePath(launchedFrom)) ? "live" : "unregistered";
 }
 
-/** The two states that mean nobody's live work. */
+/** The three states that mean nobody's live work. */
 export function launchDirectoryIsGone(state: LaunchDirectoryState): boolean {
-  return state === "missing" || state === "shell";
+  return state === "missing" || state === "shell" || state === "unregistered";
 }
 
 /**
