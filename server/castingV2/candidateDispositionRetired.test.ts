@@ -93,7 +93,7 @@ const SELF = "server/castingV2/candidateDispositionRetired.test.ts";
  *   the other records in its docblock that it used to null it and why that half
  *   went — exactly as `SELF` quotes the migration it forbids. Neither carries
  *   live SQL for it any more.
- * - the other four carry LIVE SQL and are the card's brief. Three of them share
+ * - the other four carry LIVE SQL and are **#1364**'s brief. Three of them share
  *   one blocker: the fixture TAG (`WHERE personaLine = ?`, how a dev fixture is
  *   found a second time instead of duplicated) has no home now the column is
  *   gone, and choosing its replacement is a design call. The fourth reads the
