@@ -118,8 +118,15 @@ review rules. Four reasons remain, and triage says which one on the PR:
    **HELD** for the verdict.
 3. **A customer-visible diff** — `.github/customer-surfaces.sh`: anything under
    `client/src/`, outside the client's own `*.test.ts` files and outside the
-   staff panels in `client/src/features/admin/`. NOT held; it merges on the gate
-   alone if the verdict has not landed.
+   **staff surfaces** — `features/admin/`, `features/moderator/`, and the
+   `pages/Admin…` / `pages/Moderator…` pages. NOT held; it merges on the gate
+   alone if the verdict has not landed. ⚠ The staff half covers the PAGES as well
+   as the directories on his ruling, *"keep it with you"* (2026-09-26), said on
+   the relay's sentence that a staff-page diff merges on the gate; the first shape
+   of #1328 exempted `features/admin/` alone and made every Desk change cost a
+   reading. **A new staff page goes on that line** — the prefixes are the same
+   proxy as the directories, and a staff page named outside the
+   `Admin…`/`Moderator…` convention earns a customer review until it is added.
 4. **`needs-fable` added by hand** — anyone can escalate, and that road is the
    answer for a diff whose customer impact the path cannot see (a server-side
    copy change, a prompt that alters what a picture looks like).

@@ -358,8 +358,10 @@ work is either one of its shifts or must behave like one. The binding pieces:
   the trigger outright instead of moving the number: **"drop it"**. A line count
   decides nothing about a review in this repository. ⚠ **What replaced it is the
   one obligation none of the four mechanical checks can discharge**: a diff under
-  `client/src/` (outside the client's own `*.test.ts` and outside the staff
-  panels in `client/src/features/admin/`) earns `needs-fable`, and the comment
+  `client/src/` (outside the client's own `*.test.ts` and outside the STAFF
+  SURFACES — `features/admin/`, `features/moderator/`, and the `pages/Admin…` and
+  `pages/Moderator…` pages, which is his *"keep it with you"* on the relay's
+  sentence that a staff diff merges on the gate) earns `needs-fable`, and the comment
   names the obligation as **the relay's eye on the rendered frames, both
   themes** — working law 6, and law 9's *his eyes are king*. It is a PROXY on a
   path and says so; the hand `needs-fable` road is the remedy for a

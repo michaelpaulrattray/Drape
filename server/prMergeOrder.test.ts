@@ -1310,15 +1310,34 @@ describe("what a customer sees is read twice — #1328", () => {
     expect(owed("client/src/foundation/tokens.css")).toBe(true);
   });
 
-  it("⚠ the Desk PAGE is not inside his exemption, and that is measured rather than assumed", () => {
-    /* His exemption names `client/src/features/admin/`. The page components that
-       MOUNT those panels live in `client/src/pages/` — `AdminCrew.tsx`,
-       `AdminAuditLogs.tsx` and six more, read at `git ls-files` — so an
-       admin-page diff earns a look it probably did not need.
-       ⚠ That is the LOUD direction (one extra reading) rather than the silent
-       one (a real surface passing unseen), so it ships as his list says and is
-       named here instead of being widened without his word. */
-    expect(owed("client/src/pages/AdminCrew.tsx")).toBe(true);
+  /**
+   * ⚠ THE STAFF PAGES ARE EXEMPT ON HIS WORD, AND THE THREE ARMS HE ASKED FOR
+   * ARE HERE TOGETHER.
+   *
+   * #1328 first shipped with `^client/src/features/admin/` alone — the directory
+   * his ruling named — and filed the fact that the admin PAGES live in
+   * `client/src/pages/` as a loud default: one unnecessary reading rather than a
+   * missed surface. On the relay's sentence that staff pages merge on the gate he
+   * said **"keep it with you"**, so the exemption was widened rather than
+   * carried. `AdminCrew.tsx` is the Desk itself and the arm below is the one that
+   * would have failed before the widening.
+   */
+  it("⚠ the Desk PAGE and the moderator page are exempt — his 'keep it with you'", () => {
+    expect(owed("client/src/pages/AdminCrew.tsx")).toBe(false);
+    expect(owed("client/src/pages/AdminOverview.tsx")).toBe(false);
+    expect(owed("client/src/pages/ModeratorDashboard.tsx")).toBe(false);
+    expect(owed("client/src/features/moderator/AuditLogsTab.tsx")).toBe(false);
+  });
+
+  it("⚠ and a CUSTOMER page in the same directory still earns the frames", () => {
+    /* The mirror of the arm above, and the reason the exemption is a NAME prefix
+       rather than the whole `pages/` directory. Read at `git ls-files
+       client/src/pages`: nine of the eighteen pages are staff (`Admin…` ×8,
+       `Moderator…` ×1) and the other nine are all customer surfaces. */
+    expect(owed("client/src/pages/CastingSheet.tsx")).toBe(true);
+    expect(owed("client/src/pages/AppLobby.tsx")).toBe(true);
+    expect(owed("client/src/pages/DrapeStudio.tsx")).toBe(true);
+    expect(owed("client/src/pages/Login.tsx")).toBe(true);
   });
 
   it("⚠ NEGATIVE — the staff panels are not a customer surface (his own exemption)", () => {

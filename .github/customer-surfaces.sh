@@ -66,10 +66,38 @@ CUSTOMER_SURFACE_PATHS='^client/src/'
 
 # ── WHAT IS INSIDE THAT PREFIX AND STILL NOT A SURFACE ───────────────────────
 #
-# Two things, both named in his ruling: the client's own test files, and the
-# staff panels under `client/src/features/admin/` — the Desk at `/admin/crew`
-# and the admin surfaces, which he reads as the operator rather than sees as the
-# customer.
+# Two kinds of thing: the client's own test files, and THE STAFF SURFACES — the
+# admin panels and pages, the Desk at `/admin/crew`, and the moderator panel and
+# its page. He reads those as the operator; he does not see them as the customer.
+#
+# ⚠ THE STAFF HALF WAS NARROWER THAN THIS FOR ONE ROUND AND HE WIDENED IT — his
+# word on the relay's sentence that STAFF PAGES MERGE ON THE GATE: **"keep it
+# with you"**. #1328 first shipped to review with `^client/src/features/admin/`
+# alone, because that is the directory his ruling named, and the reading that the
+# admin PAGES sit outside it was filed as a loud default — one unnecessary
+# reading rather than a missed surface. He did not want it carried: a diff to a
+# staff page merges on the gate, and the exemption says so here instead of
+# costing a reading every time the Desk changes.
+#
+# ⚠ THE PAGE PREFIXES ARE THE SAME PROXY AS THE DIRECTORIES, and they are
+# prefixes on a NAME rather than on a directory because that is where the staff
+# pages actually live. Measured at this tree with `git ls-files client/src/pages`:
+# `^client/src/pages/Admin` covers eight — `AdminAuditLogs`, `AdminBugReports`,
+# `AdminChangeRequests`, `AdminCrew` (the Desk itself), `AdminFoundation`,
+# `AdminInviteCodes`, `AdminOverview`, `AdminUserManagement` — and
+# `^client/src/pages/Moderator` covers one, `ModeratorDashboard`. The other nine
+# pages in that directory are every one of them a customer surface (`AppLobby`,
+# `CastingRoom`, `CastingSheet`, `CastingV2`, `DrapeStudio`, `Home`, `Login`,
+# `NotFound`, `VerifyEmail`), and none of them matches either prefix.
+#
+# ⚠ SO A NEW STAFF PAGE GOES ON THIS LINE, and that is the one thing a reader of
+# this file has to remember. A staff page named outside the `Admin…`/`Moderator…`
+# convention — `StaffTools.tsx`, `CrewDesk.tsx` — earns a customer review until
+# its prefix is added here. That failure direction is the loud one on purpose: a
+# broader rule (`^client/src/pages/` minus a customer allowlist, say) would
+# exempt a brand-new CUSTOMER page by default, which is the silent one and the
+# only failure this limb genuinely cannot afford. An arm refuses the whole
+# `pages/` directory for exactly that reason.
 #
 # ⚠ IT IS `\.test\.ts$` AND NOT `\.test\.tsx?$`, AND THAT IS THE CONSERVATIVE
 # DIRECTION ON PURPOSE. Measured at this tree: all 104 test files under
@@ -78,19 +106,4 @@ CUSTOMER_SURFACE_PATHS='^client/src/'
 # — while one that is too narrow fails LOUDLY, as a review owed on a file that
 # did not need one. So the exemption matches what the tree has; a `.test.tsx`
 # arriving one day costs one unnecessary reading and a one-word edit here.
-#
-# ⚠ TWO THINGS ARE NOT EXEMPT THAT A READER MIGHT EXPECT TO BE, AND BOTH ARE HIS
-# LIST RATHER THAN AN OMISSION — the ruling names `client/src/features/admin/`
-# and nothing else.
-#
-#   - `client/src/features/moderator/` — the moderator panel.
-#   - **The admin PAGES**, which is the one worth knowing: the page components
-#     that mount those panels live in `client/src/pages/`, not in the feature
-#     directory. Read at `git ls-files`: `AdminCrew.tsx` (the Desk itself),
-#     `AdminAuditLogs.tsx`, `AdminBugReports.tsx`, `AdminChangeRequests.tsx`,
-#     `AdminFoundation.tsx` and more.
-#
-# Each therefore earns a look it may not need. That is the LOUD direction — one
-# extra reading — and widening the exemption to cover it would be the silent one,
-# so it stays as he wrote it until he says otherwise.
-CUSTOMER_SURFACE_EXEMPT='\.test\.ts$|^client/src/features/admin/'
+CUSTOMER_SURFACE_EXEMPT='\.test\.ts$|^client/src/features/admin/|^client/src/features/moderator/|^client/src/pages/Admin|^client/src/pages/Moderator'

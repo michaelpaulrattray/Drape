@@ -119,6 +119,43 @@ describe("the customer-surface rule is declared once and read twice", () => {
     expect(() => new RegExp(exempt)).not.toThrow();
   });
 
+  /**
+   * ⚠ THE STAFF EXEMPTION, PINNED ON THE WORKFLOW'S SIDE TOO — his "keep it with
+   * you".
+   *
+   * `prMergeOrder.test.ts` DRIVES the tool's reader against these bytes. Triage's
+   * reader is a shell pipeline that vitest cannot execute, so what is held here is
+   * the DECLARATION it sources: every alternative the widening added, by name. A
+   * prefix quietly deleted would make triage and the tool agree with each other
+   * and both disagree with his ruling, which no behaviour arm on one reader can
+   * see.
+   *
+   * The shell itself is driven out of band, in a scratch git repository per case,
+   * with the verdict read out of a real `$GITHUB_OUTPUT` — the tallies are on the
+   * PR, because a driver that needs `sh`, `git init` and a bare remote is not a
+   * unit test.
+   */
+  it("⚠ the declaration exempts the staff PAGES as well as the staff directories", () => {
+    const exempt = extractCustomerSurfaceExemptPattern(customerDeclaration);
+    for (const alternative of [
+      "^client/src/features/admin/",
+      "^client/src/features/moderator/",
+      "^client/src/pages/Admin",
+      "^client/src/pages/Moderator",
+    ]) {
+      expect(
+        exempt,
+        `the exemption dropped ${alternative} — his ruling was "keep it with you", staff diffs merge on the gate`,
+      ).toContain(alternative);
+    }
+    /* ⚠ And the page halves are NAME prefixes, never the whole directory: an
+       exemption of `^client/src/pages/` would exempt every customer page there
+       is, which is the one silent failure this limb cannot afford. */
+    expect(exempt, "the exemption swallowed the whole pages directory").not.toMatch(
+      /\^client\/src\/pages\/(\||$)/,
+    );
+  });
+
   it("review.yml sources it and keeps no copy of either half", () => {
     expect(reviewYml, "review.yml must source the customer-surface declaration").toContain(
       ". ./.github/customer-surfaces.sh",
