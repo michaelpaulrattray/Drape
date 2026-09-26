@@ -8,6 +8,8 @@ import {
   BOOT_GOVERNED_FLOOR,
   BOOT_GOVERNED_ENV_NAMES,
   bootOwnerOf,
+  bootSettingClaims,
+  foldBootClaims,
 } from "../scripts/lib/governedBootSettings.mts";
 import {
   PRODUCTION_FLAG_POSITIONS,
@@ -104,6 +106,48 @@ describe("the boot-governed population", () => {
       expect(name, "a secret-shaped name must never become governed").not.toMatch(
         /KEY|SECRET|TOKEN|PASSWORD|URL|ENDPOINT|CLIENT_ID/,
       );
+    }
+  });
+
+  it("⚠ REFUSES a short collection rather than returning one — driven, because it cannot occur", () => {
+    /*
+      ⚠ **THE SABOTAGE RUN BOUGHT THIS ARM AND ITS SIBLING BELOW.** Both
+      refusals are unreachable at the real tree — the population is complete and
+      no name is claimed twice — so neutering either one changed nothing any arm
+      could see and the suite stayed green at 27 with the guard gone. A guard
+      reachable only through data that never occurs is not a guard (working law
+      3), so the fold is its own function and is driven with data that does.
+
+      What a short list would cost: the settings it dropped stop being governed
+      and the gate still reports a clean block — a green over nothing.
+    */
+    const short = bootSettingClaims().slice(0, 3);
+    expect(() => foldBootClaims(short)).toThrow(/under the floor of/);
+    /* POSITIVE CONTROL — the same fold passes the real claims, so the refusal is
+       about the SIZE and not about the function refusing everything. */
+    expect(foldBootClaims(bootSettingClaims()).length).toBe(BOOT_GOVERNED_ENV_NAMES.length);
+    /* And a low floor lets the short list through, which pins that the number is
+       what decides it rather than some other property of the slice. */
+    expect(foldBootClaims(short, 3)).toHaveLength(3);
+  });
+
+  it("⚠ REFUSES one variable claimed by two boot owners — driven, because it cannot occur", () => {
+    /* `NUMERIC_ENV_VARS`'s own docblock refuses this by hand today ("the fal
+       allowances are deliberately not here, two owners for one variable would be
+       worse than the defect this table fixes"). This is that rule mechanised,
+       and it matters because the boot behaviour would be ambiguous — which
+       reader wins? — and no single position could describe it. */
+    const doubled = [
+      ...bootSettingClaims(),
+      { name: "FAL_CONCURRENCY", from: "NUMERIC_ENV_VARS" },
+    ];
+    expect(() => foldBootClaims(doubled)).toThrow(/two boot owners/);
+    /* And the message names BOTH owners, or a reader cannot find the second one. */
+    try {
+      foldBootClaims(doubled);
+    } catch (error) {
+      expect((error as Error).message).toContain("FAL_ALLOWANCES");
+      expect((error as Error).message).toContain("NUMERIC_ENV_VARS");
     }
   });
 

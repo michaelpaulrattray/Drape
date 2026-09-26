@@ -84,22 +84,37 @@ import { FAL_ACCOUNT_CEILING_ENV, FAL_ALLOWANCES } from "../../server/castingV2/
  */
 export const BOOT_GOVERNED_FLOOR = 10;
 
-function collect(): string[] {
-  const named: Array<{ name: string; from: string }> = [
-    ...Object.keys(NUMERIC_ENV_VARS).map((name) => ({ name, from: "NUMERIC_ENV_VARS" })),
-    ...FAL_ALLOWANCES.map((allowance) => ({ name: allowance.env, from: "FAL_ALLOWANCES" })),
-    { name: FAL_ACCOUNT_CEILING_ENV, from: "falAccountCeiling" },
-    { name: CASTING_ROLL_ENGINE_MODEL_ENV, from: "the roll engine model gate" },
-  ];
+/** One declared name and the declaration it came from. */
+export type BootSettingClaim = { readonly name: string; readonly from: string };
 
+/**
+ * FOLD THE CLAIMS INTO A POPULATION, OR REFUSE — AND IT IS ITS OWN FUNCTION SO
+ * IT CAN BE DRIVEN DIRECTLY.
+ *
+ * ⚠ **The sabotage run is why this is not three lines inside `collect()`**
+ * (working law 3). Both refusals below are unreachable at the real tree: the
+ * population is complete and no name is claimed twice, so neutering either one
+ * changed nothing any arm could see and the suite stayed green at 27 with the
+ * guard gone. A guard reachable only through data that never occurs is not a
+ * guard — the same finding `jevCardCategory.mts`'s coverage guard records.
+ *
+ * The two failures are different and both are quiet:
+ *
+ *   a SHORT list   the settings it dropped stop being governed and the gate
+ *                  still reports a clean block — a green over nothing.
+ *   a name claimed the boot behaviour is ambiguous (which reader wins?) and no
+ *   TWICE          single position can describe it. `NUMERIC_ENV_VARS`'s own
+ *                  docblock refuses this by hand today ("the fal allowances are
+ *                  deliberately not here"); this is that rule, mechanised.
+ */
+export function foldBootClaims(
+  claims: readonly BootSettingClaim[],
+  floor: number = BOOT_GOVERNED_FLOOR,
+): string[] {
   const seen = new Map<string, string>();
-  for (const entry of named) {
+  for (const entry of claims) {
     const first = seen.get(entry.name);
     if (first !== undefined) {
-      /* Two owners for one variable is the defect `NUMERIC_ENV_VARS`'s own
-         docblock refuses by hand ("the fal allowances are deliberately not
-         here"). If it ever happens, the boot behaviour is ambiguous and a
-         position table cannot describe it. */
       throw new Error(
         `governedBootSettings: ${entry.name} is declared by both ${first} and ${entry.from} — `
         + "one variable, two boot owners, and no position can describe that",
@@ -109,14 +124,24 @@ function collect(): string[] {
   }
 
   const names = [...seen.keys()].sort();
-  if (names.length < BOOT_GOVERNED_FLOOR) {
+  if (names.length < floor) {
     throw new Error(
       `governedBootSettings: only ${names.length} boot settings were collected, under the floor of `
-      + `${BOOT_GOVERNED_FLOOR}. A short list here reads as a clean gate over ungoverned settings — `
+      + `${floor}. A short list here reads as a clean gate over ungoverned settings — `
       + "one of NUMERIC_ENV_VARS, FAL_ALLOWANCES or the roll engine model gate has moved",
     );
   }
   return names;
+}
+
+/** The claims the three declarations actually make, at this tree. */
+export function bootSettingClaims(): BootSettingClaim[] {
+  return [
+    ...Object.keys(NUMERIC_ENV_VARS).map((name) => ({ name, from: "NUMERIC_ENV_VARS" })),
+    ...FAL_ALLOWANCES.map((allowance) => ({ name: allowance.env, from: "FAL_ALLOWANCES" })),
+    { name: FAL_ACCOUNT_CEILING_ENV, from: "falAccountCeiling" },
+    { name: CASTING_ROLL_ENGINE_MODEL_ENV, from: "the roll engine model gate" },
+  ];
 }
 
 /**
@@ -125,7 +150,7 @@ function collect(): string[] {
  * ⚠ It is computed at import time on purpose: a collector that throws must do so
  * where the rite cannot proceed past it, not lazily inside one comparison.
  */
-export const BOOT_GOVERNED_ENV_NAMES: readonly string[] = collect();
+export const BOOT_GOVERNED_ENV_NAMES: readonly string[] = foldBootClaims(bootSettingClaims());
 
 /** Where each one is read at boot — for a message that says why it is governed. */
 export function bootOwnerOf(name: string): string | null {
