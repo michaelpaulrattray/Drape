@@ -48,6 +48,7 @@ import {
   arrangementWording,
   isConstrainedArrangement,
 } from "./hairArrangement";
+import { boundForJudge } from "./judgeFrame";
 import { interpreterEngine } from "./interpreter";
 import {
   captionWording,
@@ -136,13 +137,17 @@ export async function capturePresentation(input: {
   const engine = input.engine ?? interpreterEngine();
   if (!engine) return {};
   try {
+    /* The master is bounded before it is posted (#1413) — `judgeFrame.ts` holds
+       the measurements and the reason. This reader runs the same model the
+       constant was chosen for. */
+    const frame = await boundForJudge({ bytes: input.bytes, contentType: input.contentType });
     const reply = await engine.complete({
       about: "caption",
       system: SYSTEM_PROMPT,
       user: PRESENTATION
         .map((entry) => `${entry.id}: ${entry.ask}\n${entry.vocabulary.guidance}`)
         .join("\n\n"),
-      images: [{ bytes: input.bytes, contentType: input.contentType }],
+      images: [frame.image],
       json: true,
       temperature: 0,
       maxOutputTokens: 200,

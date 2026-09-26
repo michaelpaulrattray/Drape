@@ -63,6 +63,7 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
+import { boundForJudge } from "./judgeFrame";
 import { interpreterEngine } from "./interpreter";
 
 const log = createModuleLogger("castingV2/referenceMediumDoor");
@@ -164,7 +165,19 @@ export async function readReferenceMedium(input: MediumReadInput): Promise<Refer
       about: "describe",
       system: "You identify what kind of image you are looking at. You never describe people.",
       user: ASK,
-      images: [{ bytes: input.bytes, contentType: input.contentType }],
+      /*
+        Her own photograph, bounded before it is posted (#1413) — the door caps
+        these at 8 MB and their pixels at nothing.
+
+        ⚠ AND THIS READER'S AXIS IS THE ONE MOST WORTH MEASURING UNDER A
+        RE-ENCODE, because *photograph or drawing* is partly a question about
+        texture, and a JPEG is a texture change. Its false-positive court was
+        barred at ZERO — a real photograph read as a drawing turns a customer
+        away from the crop she asked for — so #1413's court re-ran that bar on
+        the bounded road rather than assuming a quality setting could not reach
+        it. The record is on the card.
+      */
+      images: [(await boundForJudge({ bytes: input.bytes, contentType: input.contentType })).image],
       json: true,
       temperature: 0,
       /* One word inside a small object. Generous enough that a model which

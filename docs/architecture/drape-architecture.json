@@ -12021,6 +12021,10 @@
       "path": "server/castingV2/readPurpose.test.ts"
     },
     {
+      "id": "test:server/castingV2/readerFrameBound.test.ts",
+      "path": "server/castingV2/readerFrameBound.test.ts"
+    },
+    {
       "id": "test:server/castingV2/readerOutageRefusal.test.ts",
       "path": "server/castingV2/readerOutageRefusal.test.ts"
     },
@@ -24015,6 +24019,11 @@
     },
     {
       "from": "module:server/castingV2/conceptDescribe.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/conceptDescribe.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -24096,6 +24105,11 @@
     {
       "from": "module:server/castingV2/faceDescribe.ts",
       "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceDescribe.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
       "kind": "imports"
     },
     {
@@ -24371,6 +24385,11 @@
     {
       "from": "module:server/castingV2/hairColourFromReference.ts",
       "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/hairColourFromReference.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
       "kind": "imports"
     },
     {
@@ -25095,6 +25114,11 @@
     },
     {
       "from": "module:server/castingV2/makeupFromReference.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/makeupFromReference.ts",
       "to": "module:server/castingV2/makeupSlots.ts",
       "kind": "imports"
     },
@@ -25430,6 +25454,11 @@
     },
     {
       "from": "module:server/castingV2/presentationState.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/presentationState.ts",
       "to": "module:server/castingV2/realizationCaption.ts",
       "kind": "imports"
     },
@@ -25551,6 +25580,11 @@
     {
       "from": "module:server/castingV2/realizationCaption.ts",
       "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/realizationCaption.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
       "kind": "imports"
     },
     {
@@ -25786,6 +25820,11 @@
     {
       "from": "module:server/castingV2/referenceMediumDoor.ts",
       "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMediumDoor.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
       "kind": "imports"
     },
     {
@@ -27051,6 +27090,11 @@
     {
       "from": "module:server/castingV2/renderVerification.ts",
       "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/renderVerification.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
       "kind": "imports"
     },
     {

@@ -48,6 +48,7 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
+import { boundForJudge } from "./judgeFrame";
 import { interpreterEngine } from "./interpreter";
 import { facetHeading, facetOfSubject, type Facet } from "./refineFacets";
 import { isOpenSlot } from "./referenceSlots";
@@ -760,11 +761,15 @@ async function readOnce(input: {
     `${index + 1}. ${subjectHeading(fact.subject)}: ${fact.asked}`);
 
   try {
+    /* The render is bounded before it is posted (#1413) — the measurements and
+       the reason are in `judgeFrame.ts`. Here rather than at `verifyRender`
+       because this is the only post, and a retry reaches it again. */
+    const frame = await boundForJudge(input.image);
     const reply = await engine.complete({
       about: "verify",
       system: input.system,
       user: lines.join("\n"),
-      images: [input.image],
+      images: [frame.image],
       json: true,
       temperature: 0,
       maxOutputTokens: ceilingFor(input.facts.length),

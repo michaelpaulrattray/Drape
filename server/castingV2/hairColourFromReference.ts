@@ -122,6 +122,7 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
+import { boundForJudge } from "./judgeFrame";
 import { interpreterEngine } from "./interpreter";
 import { scrubBrands } from "./brandScrub";
 import { freeSubjectMaxLength } from "./refineDelta";
@@ -516,7 +517,19 @@ export async function readHairColourFromReference(
       about: "describe",
       system: "You describe hair. You never describe people.",
       user: ASK,
-      images: [{ bytes: input.bytes, contentType: input.contentType }],
+      /*
+        HER OWN PHOTOGRAPH IS BOUNDED BEFORE IT IS POSTED (#1413), and this
+        reader is one of the four in the sweep where the bytes are a picture a
+        CUSTOMER chose rather than one we rendered. The upload door caps those at
+        8 MB (`INK_DESIGN_MAX_BYTES`) and caps their PIXELS at nothing at all, so
+        a 24-megapixel phone photograph arrives whole: measured at 4000x6000,
+        3.16 MB of JPEG becomes a 1.37 MB post here.
+
+        It bounds OUR COPY on the way to the reader and nothing else — the
+        attachment she uploaded is already stored, and what is kept, shown or
+        cut from later is untouched by this.
+      */
+      images: [(await boundForJudge({ bytes: input.bytes, contentType: input.contentType })).image],
       json: true,
       temperature: 0,
       /* `faceDescribe`'s measured ceiling for a small JSON object on this
