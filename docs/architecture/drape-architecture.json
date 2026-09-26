@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "ad1a0bbfea08efd5"
+    "sourceFingerprint": "b9f79adb35af1e5d"
   },
   "domains": [
     {
@@ -12861,6 +12861,10 @@
     {
       "id": "test:server/productionBaseUrl.test.ts",
       "path": "server/productionBaseUrl.test.ts"
+    },
+    {
+      "id": "test:server/productionBootSettings.test.ts",
+      "path": "server/productionBootSettings.test.ts"
     },
     {
       "id": "test:server/productionFlagPositions.test.ts",
