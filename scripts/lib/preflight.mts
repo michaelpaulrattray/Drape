@@ -205,6 +205,19 @@ export const PREFLIGHT_CHECKS: readonly PreflightCheck[] = [
     gateRun: "npx tsx scripts/bundle-budget.mts",
   },
   {
+    id: "after-paint-budget",
+    label: "After-paint budget (build the client, judge what else a customer fetches)",
+    command: ["npx", "tsx", "scripts/after-paint-budget.mts"],
+    // ADOPTED on the first-paint budget's reasoning, and it is the same job in
+    // the gate (#1421). It builds once more — the chunk GRAPH is not on disk, so
+    // there is nothing to reuse — for ~9 s, and the red it catches is a whole
+    // library bound as a namespace inside a chunk a customer fetches: 109.0 kB
+    // driven, while first paint moved three bytes and the gate stayed green.
+    // Learning that here costs nine seconds; learning it from the gate costs a
+    // seven-minute round trip, and learning it from neither is what happened.
+    gateRun: "npx tsx scripts/after-paint-budget.mts",
+  },
+  {
     id: "script-guards",
     label: "Script guards (exit + connection discipline)",
     command: [

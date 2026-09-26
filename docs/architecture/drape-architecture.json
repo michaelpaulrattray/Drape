@@ -10826,6 +10826,10 @@
       "path": "server/adminUserSearch.test.ts"
     },
     {
+      "id": "test:server/afterPaintBudget.test.ts",
+      "path": "server/afterPaintBudget.test.ts"
+    },
+    {
       "id": "test:server/announcements.test.ts",
       "path": "server/announcements.test.ts"
     },

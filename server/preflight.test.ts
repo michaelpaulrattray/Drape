@@ -662,6 +662,9 @@ describe("the check list itself", () => {
       "architecture",
       "capability",
       "bundle-budget",
+      /* Beside the first paint's, in the same gate job and for the same reason:
+         one build each, and neither number can stand in for the other (#1421). */
+      "after-paint-budget",
       "script-guards",
     ]);
   });
@@ -671,6 +674,13 @@ describe("the check list itself", () => {
     expect(budget?.command).toEqual(["npx", "tsx", "scripts/bundle-budget.mts"]);
     expect(budget?.gateRun).toBe("npx tsx scripts/bundle-budget.mts");
     expect(EXCUSED_GATE_STEPS.some((e) => e.gateRun.includes("bundle-budget"))).toBe(false);
+  });
+
+  it("the after-paint budget is ADOPTED too — the second reading of the same job (#1421)", () => {
+    const after = PREFLIGHT_CHECKS.find((c) => c.id === "after-paint-budget");
+    expect(after?.command).toEqual(["npx", "tsx", "scripts/after-paint-budget.mts"]);
+    expect(after?.gateRun).toBe("npx tsx scripts/after-paint-budget.mts");
+    expect(EXCUSED_GATE_STEPS.some((e) => e.gateRun.includes("after-paint-budget"))).toBe(false);
   });
 
   it("the vitest-running check uses the node entry, so no check can reach cmd.exe's limit", () => {

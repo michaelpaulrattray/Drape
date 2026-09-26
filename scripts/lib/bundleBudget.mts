@@ -43,8 +43,21 @@
  * was asked to measure, landing the right way round). That number is ALLOWED
  * to grow — a staff page gaining
  * a chart adds to it and costs a customer nothing — and a budget over it would
- * redden the gate for exactly the split #832 made. CSS is reported beside the
- * verdict and not budgeted either: the card's number is JS, and adding CSS to
+ * redden the gate for exactly the split #832 made.
+ *
+ * ⚠ **HALF OF THAT SENTENCE STOPPED BEING TRUE ON 2026-09-26 AND IT IS WORTH
+ * THE CORRECTION RATHER THAN A REWRITE (#1421).** *A staff page gaining a chart
+ * costs a customer nothing* holds and is why the staff chunks are outside every
+ * budget. **A CUSTOMER'S lazy chunk gaining a library costs them the whole
+ * library**, and nothing measured that: #1418's error-tracker chunk carried
+ * Session Replay and a feedback widget — **109.0 kB, driven — while the number
+ * this module judges moved THREE BYTES.** `afterPaintBudget.mts` beside this
+ * file is the second budget, over the chunks a customer can fetch after paint,
+ * and the two are deliberately two numbers: folding them together would have
+ * cost the first download its own line, which is what the card said and what
+ * #1265 had already measured the price of.
+ *
+ * CSS is reported beside the verdict and not budgeted either: the card's number is JS, and adding CSS to
  * it would make the reading incomparable with every ledger row before it.
  *
  * # The reader is `bundleFold.mts`'s, never a second gzip
