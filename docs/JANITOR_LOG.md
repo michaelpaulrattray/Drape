@@ -34,7 +34,14 @@ none of them has deletion authority on its own.
 
 ⚠ **EVERY ROW HERE WAS WRITTEN BY THE TOOL, NEVER BY HAND**, by
 `npx tsx scripts/janitor-backup-retention.mts --delete-expired`. It is the only
-record of what a deletion destroyed, so the run that writes a row COMMITS it.
+record of what a deletion destroyed, so **the run writes the row and the shift
+commits it in that same shift** — the run says so on its last line.
+
+⚠ This sentence read *"the run that writes a row COMMITS it"* until 2026-09-27
+(#1436). The run has never committed anything, and teaching it to make commits in
+the shared main tree is an authority somebody has to grant rather than a gap to
+close quietly, so the claim was corrected to what the code does. A run's own
+closing line is `receipt: N row(s) written into docs/JANITOR_LOG.md — COMMIT IT`.
 
 His word, 2026-09-26 (terminal), verbatim and entire: **_"1294) delete them
 itself"_** — asked whether the team may act on the retention check's `expired`

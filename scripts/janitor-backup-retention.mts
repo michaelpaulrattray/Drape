@@ -24,13 +24,21 @@
  *    only copy — the 31 R2 orphans are the worked example — a `too-recent` one is
  *    inside the 7-day floor, and `redundant` is deliberately outside the road his
  *    word named even though it is the stronger proof (the library says why).
- *  - **From the tip of `main`, clean** ({@link deletionRefusal}). The relay's
- *    review of PR #1293 measured two of these sixteen items reading differently
- *    from two trees, so a verdict carries the tree it was read from or it is not
- *    actionable.
+ *  - **From a tree whose HEAD is `origin/main`'s tip** ({@link deletionRefusal}).
+ *    The relay's review of PR #1293 measured two of these sixteen items reading
+ *    differently from two trees, so a verdict carries the tree it was read from or
+ *    it is not actionable. ⚠ It said *"clean"* until #1436 and also counted every
+ *    UNTRACKED file, which made the arm unrunnable in the only tree the pile
+ *    lives beside while protecting no verdict.
  *  - **With a receipt in `docs/JANITOR_LOG.md`** ({@link insertDeletionRows}),
  *    written as a table row under a fixed marker — never a `## Run` heading,
  *    which `scripts/patrol-clocks.mts` would read as the Janitor having patrolled.
+ *    ⚠ **The run WRITES the row and the shift COMMITS it.** The table's header
+ *    said the run commits it; it never has, and #1436 corrected the header rather
+ *    than teaching this script to make commits — a script that commits in the
+ *    shared main tree is an authority somebody has to grant, not a fix. The row
+ *    is written for what actually went, after it went, and `server/backupRetention.test.ts`
+ *    drives a real deletion end to end to prove the row lands.
  *
  * There is no `--from <file>`: the verdicts are computed in the same process run
  * that acts on them, so there is no listing artifact that can go stale.
@@ -155,17 +163,19 @@ function worktreePaths(repo: string): Set<string> {
  * asked about. A read that fails throws here and is reported as a refusal — it is
  * never allowed to return an empty string, which the refusal would then have to
  * recognise as a non-answer.
+ *
+ * ⚠ **IT READ `git status --porcelain` AS A THIRD FACT UNTIL #1436, AND WITHOUT
+ * `-uno`, SO EVERY UNTRACKED FILE COUNTED.** That made the deletion arm
+ * unrunnable in the one tree the backups live beside — 681 dirty paths, 680 of
+ * them untracked — for a fact no verdict reads. The library's `TreeFreshness`
+ * carries why the two shas are the whole precondition.
  */
 function readFreshness(repo: string): TreeFreshness {
   const git = gitIn(repo);
   const headSha = git("rev-parse", "HEAD").trim();
   const remote = git("ls-remote", "origin", "refs/heads/main").trim();
   const remoteMainSha = remote.split(/\s+/)[0] ?? "";
-  const dirtyPaths = git("status", "--porcelain")
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
-  return { headSha, remoteMainSha, dirtyPaths };
+  return { headSha, remoteMainSha };
 }
 
 /** Read one zip's entries. jszip rather than a hand-rolled central directory parser (the fidelity law). */
@@ -277,10 +287,10 @@ function deleteExpiredItems(args: Args, verdicts: readonly BackupVerdict[], now:
   const refusal = deletionRefusal(freshness);
   if (refusal) {
     console.error(`  REFUSING — ${refusal}`);
-    console.error("  Run it from a clean checkout of main at the tip. The listing above still stands as a reading.");
+    console.error("  Run it from a checkout whose HEAD is origin/main's tip. The listing above still stands as a reading.");
     return 2;
   }
-  console.log(`  tree proven: ${freshness.headSha.slice(0, 8)} is origin/main's tip and the tree is clean`);
+  console.log(`  tree proven: HEAD ${freshness.headSha.slice(0, 8)} is origin/main's tip, so every verdict was read from history the remote has`);
 
   if (doomed.length === 0) {
     console.log("  nothing is expired — nothing to delete");

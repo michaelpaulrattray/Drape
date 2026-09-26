@@ -456,14 +456,29 @@ export function itemsToDelete(verdicts: readonly BackupVerdict[]): readonly Back
   return verdicts.filter((v) => DELETABLE_DISPOSITIONS.has(v.disposition));
 }
 
-/** What the runner must prove about the tree it read the verdicts from. */
+/**
+ * What the runner must prove about the tree it read the verdicts from.
+ *
+ * ⚠ **IT HELD A THIRD FIELD UNTIL #1436 — `dirtyPaths`, FROM `git status
+ * --porcelain` — AND THE PRECONDITION IT MADE WAS UNMEETABLE IN THE ONLY TREE
+ * THE BACKUPS LIVE BESIDE.** The arm landed on 2026-09-26 and had never run:
+ * measured in the main tree, 681 dirty paths, **680 of them untracked** — 644 the
+ * Janitor's own disposable pile, 524 of which are permanent by name — and the
+ * 681st `.claude/settings.json`, which is on the never-stage list. So neither
+ * sweeping nor committing could ever satisfy it.
+ *
+ * **And it was not protecting any verdict.** A row's disposition comes from
+ * exactly three places ({@link classifyEntry}) and not one of them reads the
+ * working tree: `recoverableAt` searches COMMITTED history, `anchorClosedAt`
+ * reads the briefing's history, and the floor is arithmetic on dates. An
+ * untracked scratch file cannot move a verdict; the two sha checks below are the
+ * whole of what makes a reading actionable.
+ */
 export type TreeFreshness = {
   /** `git rev-parse HEAD` in the tree the listing was read from. */
   readonly headSha: string;
   /** The remote's `refs/heads/main`, read with `git ls-remote` — a read, so no ref is written. */
   readonly remoteMainSha: string;
-  /** `git status --porcelain` lines; a dirty tree is not the tree it claims to be. */
-  readonly dirtyPaths: readonly string[];
 };
 
 const FULL_SHA = /^[0-9a-f]{40}$/;
@@ -480,9 +495,20 @@ const FULL_SHA = /^[0-9a-f]{40}$/;
  * ⚠ **AND A STALE LISTING CANNOT BE ACTED ON, BY CONSTRUCTION RATHER THAN BY
  * THIS FUNCTION.** The runner computes the verdicts in the same process run that
  * deletes; there is no `--from <file>`, so there is no artifact to go stale. What
- * this adds is the other half: the TREE those verdicts were computed from is the
- * tip of `main` and clean, which is the only thing that makes a verdict
+ * this adds is the other half: the TREE those verdicts were computed from carries
+ * the same history as the remote, which is the only thing that makes a verdict
  * comparable to the one the founder was shown.
+ *
+ * ⚠ **WHAT IT PROVES IS NARROWER THAN "A CLEAN TREE AT MAIN", AND SAYING SO IS
+ * THE POINT (#1436).** It proves this tree's HEAD commit is the one the remote
+ * calls `main` — so `commitHolding`'s history walk and `editionDate`'s briefing
+ * walk are answering from a history somebody else can fetch. It does NOT prove
+ * the tree has no other local refs: `commitHolding` walks `git log --all`, so an
+ * abandoned local branch could still make bytes read "recoverable" at a commit
+ * nobody will fetch. **That hazard is real and this gate does not close it** —
+ * it was not closed by the working-tree test it replaces either, which is why
+ * the swap loses nothing. Closing it means narrowing the walk, which would move
+ * verdicts and is its own card.
  */
 export function deletionRefusal(freshness: TreeFreshness): string | null {
   const head = freshness.headSha.trim().toLowerCase();
@@ -494,10 +520,7 @@ export function deletionRefusal(freshness: TreeFreshness): string | null {
     return `the remote's refs/heads/main did not read as a commit sha (${JSON.stringify(freshness.remoteMainSha)}) — a failed read is not agreement`;
   }
   if (head !== remote) {
-    return `the tree is at ${head.slice(0, 8)} and origin/main is at ${remote.slice(0, 8)} — a verdict is only as good as the tree it was read from (PR #1293's review: the same 16 items read differently from two trees)`;
-  }
-  if (freshness.dirtyPaths.length > 0) {
-    return `the tree has ${freshness.dirtyPaths.length} uncommitted path(s), first ${JSON.stringify(freshness.dirtyPaths[0])} — a dirty tree is not the tree it claims to be`;
+    return `the tree is at ${head.slice(0, 8)} and origin/main is at ${remote.slice(0, 8)} — every verdict is read from COMMITTED history, so it is only actionable from a tree whose history the remote has (PR #1293's review: the same 16 items read differently from two trees)`;
   }
   return null;
 }
