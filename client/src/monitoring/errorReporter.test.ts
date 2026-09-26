@@ -26,6 +26,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   PRELOAD_BUFFER_CAP,
+  afterFirstContentfulPaint,
   SUPPRESSED_MESSAGE_SUBSTRINGS,
   clientErrorReporterState,
   clientSentryDsn,
@@ -310,5 +311,161 @@ describe("installGlobalErrorCapture's uninstaller actually uninstalls", () => {
     uninstall();
     target.fireError(new Error("one listener now"));
     expect(clientErrorReporterState().buffered).toBe(3);
+  });
+});
+
+/**
+ * ⚠ THE SCHEDULER'S OWN ARMS, AND THEY EXIST BECAUSE THE FIRST VERSION WAS
+ * MEASURED WRONG (#509 part 1b).
+ *
+ * `afterFirstPaint` was a bare `requestIdleCallback`, on the reasoning that idle
+ * means painted. On the production build, against the browser's own
+ * `PerformancePaintTiming`, the SDK chunk was fetched at **575 ms** and
+ * `first-contentful-paint` landed at **2372 ms** — the transport was competing
+ * with the very API calls the customer was waiting on. The reasoning was wrong,
+ * the number found it, and these arms hold the repair.
+ *
+ * Each road is driven with a fake window carrying only that road's capability,
+ * because the roads exist precisely for browsers that lack the others.
+ */
+describe("afterFirstContentfulPaint — the paint comes first, then idle", () => {
+  const idleWindow = (extra: Record<string, unknown> = {}) => {
+    const timeouts: { fn: () => void; ms: number }[] = [];
+    const idles: (() => void)[] = [];
+    return {
+      timeouts,
+      idles,
+      win: {
+        requestIdleCallback: (cb: () => void) => idles.push(cb),
+        setTimeout: (fn: () => void, ms: number) => timeouts.push({ fn, ms }),
+        ...extra,
+      } as never,
+    };
+  };
+
+  const paintEntries = (names: string[]) => ({
+    performance: { getEntriesByType: () => names.map((name) => ({ name })) },
+  });
+
+  it("goes straight to idle when the contentful paint has already happened", () => {
+    const task = vi.fn();
+    const { idles, timeouts, win } = idleWindow(paintEntries(["first-paint", "first-contentful-paint"]));
+
+    afterFirstContentfulPaint(task, win);
+
+    expect(idles).toHaveLength(1);
+    expect(timeouts).toHaveLength(0);
+    idles[0]!();
+    expect(task).toHaveBeenCalledTimes(1);
+  });
+
+  it("⚠ does NOT go on `first-paint` alone — that is the reading that was 1.8 s early", () => {
+    const task = vi.fn();
+    const { idles, win } = idleWindow(paintEntries(["first-paint"]));
+    afterFirstContentfulPaint(task, win);
+    expect(idles).toHaveLength(0);
+    expect(task).not.toHaveBeenCalled();
+  });
+
+  it("waits for the observer's paint entry, then idles — and never before it", () => {
+    const task = vi.fn();
+    let notify: ((list: { getEntries: () => { name: string }[] }) => void) | null = null;
+    const disconnect = vi.fn();
+    const observe = vi.fn();
+    const { idles, win } = idleWindow({
+      ...paintEntries([]),
+      PerformanceObserver: class {
+        constructor(cb: (list: { getEntries: () => { name: string }[] }) => void) { notify = cb; }
+        observe = observe;
+        disconnect = disconnect;
+      },
+    });
+
+    afterFirstContentfulPaint(task, win);
+    expect(observe).toHaveBeenCalledWith({ type: "paint", buffered: true });
+    expect(idles).toHaveLength(0);
+
+    /* A paint that is not the contentful one must not release it. */
+    notify!({ getEntries: () => [{ name: "first-paint" }] });
+    expect(idles).toHaveLength(0);
+
+    notify!({ getEntries: () => [{ name: "first-contentful-paint" }] });
+    expect(disconnect).toHaveBeenCalled();
+    expect(idles).toHaveLength(1);
+    idles[0]!();
+    expect(task).toHaveBeenCalledTimes(1);
+  });
+
+  it("⚠ gives up waiting on a page that never paints — a background tab must still report", () => {
+    const task = vi.fn();
+    const disconnect = vi.fn();
+    const { idles, timeouts, win } = idleWindow({
+      ...paintEntries([]),
+      PerformanceObserver: class {
+        constructor(_cb: unknown) {}
+        observe = vi.fn();
+        disconnect = disconnect;
+      },
+    });
+
+    afterFirstContentfulPaint(task, win, 5000);
+    expect(timeouts[0]?.ms).toBe(5000);
+    timeouts[0]!.fn();
+    expect(disconnect).toHaveBeenCalled();
+    idles[0]!();
+    expect(task).toHaveBeenCalledTimes(1);
+  });
+
+  it("⚠ fires ONCE even when the paint and the give-up timer both arrive", () => {
+    const task = vi.fn();
+    let notify: ((list: { getEntries: () => { name: string }[] }) => void) | null = null;
+    const { idles, timeouts, win } = idleWindow({
+      ...paintEntries([]),
+      PerformanceObserver: class {
+        constructor(cb: (list: { getEntries: () => { name: string }[] }) => void) { notify = cb; }
+        observe = vi.fn();
+        disconnect = vi.fn();
+      },
+    });
+
+    afterFirstContentfulPaint(task, win);
+    notify!({ getEntries: () => [{ name: "first-contentful-paint" }] });
+    timeouts[0]!.fn();
+
+    expect(idles).toHaveLength(1);
+  });
+
+  it("falls back to a timeout where there is no PerformanceObserver at all", () => {
+    const task = vi.fn();
+    const { idles, timeouts, win } = idleWindow(paintEntries([]));
+    afterFirstContentfulPaint(task, win, 5000);
+    expect(timeouts).toHaveLength(1);
+    expect(timeouts[0]?.ms).toBe(5000);
+    timeouts[0]!.fn();
+    idles[0]!();
+    expect(task).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses setTimeout where there is no requestIdleCallback either (Safari)", () => {
+    const task = vi.fn();
+    const timeouts: { fn: () => void; ms: number }[] = [];
+    const win = {
+      ...paintEntries(["first-contentful-paint"]),
+      setTimeout: (fn: () => void, ms: number) => timeouts.push({ fn, ms }),
+    } as never;
+
+    afterFirstContentfulPaint(task, win);
+    expect(timeouts).toHaveLength(1);
+    timeouts[0]!.fn();
+    expect(task).toHaveBeenCalledTimes(1);
+  });
+
+  it("survives a window whose performance API throws", () => {
+    const task = vi.fn();
+    const { timeouts, win } = idleWindow({
+      performance: { getEntriesByType: () => { throw new Error("no such entry type"); } },
+    });
+    expect(() => afterFirstContentfulPaint(task, win, 5000)).not.toThrow();
+    expect(timeouts).toHaveLength(1);
   });
 });

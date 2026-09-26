@@ -286,6 +286,94 @@ export function startClientErrorReporting(
   });
 }
 
+/** The minimum surface `afterFirstContentfulPaint` needs of a window. */
+export interface PaintSchedulerWindow {
+  performance?: { getEntriesByType?: (type: string) => { name: string }[] };
+  PerformanceObserver?: new (callback: (list: { getEntries: () => { name: string }[] }) => void) => {
+    observe: (options: { type: string; buffered: boolean }) => void;
+    disconnect: () => void;
+  };
+  requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => void;
+  setTimeout: (callback: () => void, ms: number) => unknown;
+}
+
+/**
+ * ⚠ RUN THIS ONCE THE CUSTOMER CAN SEE SOMETHING — AND `requestIdleCallback`
+ * ALONE IS NOT THAT, WHICH WAS MEASURED RATHER THAN REASONED.
+ *
+ * The first version of this was a bare `requestIdleCallback`, on the reasoning
+ * that idle means the paint has happened. Driven on the PRODUCTION build against
+ * the browser's own `PerformancePaintTiming`: **the SDK chunk was fetched at
+ * 575 ms and `first-contentful-paint` was at 2372 ms** — 1.8 seconds EARLIER
+ * than the claim. The app's first contentful paint waits on its own API calls,
+ * and the main thread is idle during that wait, so idle arrives long before
+ * anything is on screen. A 31 kB download competing with the calls the customer
+ * is actually waiting for is exactly what this whole module exists to avoid.
+ *
+ * So the paint is waited for FIRST, and idle only after it. Three roads, in
+ * order, because each next one is for a browser or a state the last cannot
+ * handle:
+ *
+ *   1. the paint has ALREADY happened (a re-entry, a slow bundle) — go now;
+ *   2. `PerformanceObserver` with `buffered: true`, which reports a paint that
+ *      landed between this call and the observation;
+ *   3. a plain timeout, for a page that never paints at all — a background tab
+ *      throttles paints indefinitely, and a reporter that waits forever there is
+ *      a reporter that is off.
+ *
+ * Firing twice would be harmless (the tracker's start is idempotent) and it is
+ * still guarded, because "harmless today" is how a second fetch appears later.
+ */
+export function afterFirstContentfulPaint(
+  task: () => void,
+  win: PaintSchedulerWindow,
+  paintTimeoutMs = 5000,
+): void {
+  let fired = false;
+  const runWhenIdle = (): void => {
+    if (fired) return;
+    fired = true;
+    if (typeof win.requestIdleCallback === "function") win.requestIdleCallback(task, { timeout: 3000 });
+    else win.setTimeout(task, 0);
+  };
+
+  const alreadyPainted = (): boolean => {
+    try {
+      return (win.performance?.getEntriesByType?.("paint") ?? []).some(
+        (entry) => entry.name === "first-contentful-paint",
+      );
+    } catch {
+      return false;
+    }
+  };
+
+  if (alreadyPainted()) {
+    runWhenIdle();
+    return;
+  }
+
+  if (typeof win.PerformanceObserver === "function") {
+    try {
+      const observer = new win.PerformanceObserver((list) => {
+        if (list.getEntries().some((entry) => entry.name === "first-contentful-paint")) {
+          observer.disconnect();
+          runWhenIdle();
+        }
+      });
+      observer.observe({ type: "paint", buffered: true });
+      win.setTimeout(() => {
+        observer.disconnect();
+        runWhenIdle();
+      }, paintTimeoutMs);
+      return;
+    } catch {
+      /* An engine without the `paint` entry type throws at `observe`. */
+    }
+  }
+
+  win.setTimeout(runWhenIdle, paintTimeoutMs);
+}
+
 /**
  * What a surface must ask before it draws a number, and what the arms read.
  * `configured: false` is the answer that forbids "no errors today".

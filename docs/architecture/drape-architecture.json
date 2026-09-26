@@ -10342,6 +10342,10 @@
       "path": "client/src/components/appChrome.test.ts"
     },
     {
+      "id": "test:client/src/components/errorBoundaryReports.test.ts",
+      "path": "client/src/components/errorBoundaryReports.test.ts"
+    },
+    {
       "id": "test:client/src/components/signOutWording.test.ts",
       "path": "client/src/components/signOutWording.test.ts"
     },

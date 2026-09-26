@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import {
+  afterFirstContentfulPaint,
   isSuppressedErrorMessage,
   startClientErrorReporting,
 } from "@/monitoring/errorReporter";
@@ -35,27 +36,16 @@ window.onerror = function (msg, ...rest) {
   return _origOnError?.call(this, msg, ...rest) ?? false;
 };
 
-/**
- * AFTER FIRST PAINT, AND THAT IS THE WHOLE REQUIREMENT (#509 part 1b).
- *
- * `requestIdleCallback` is idle by definition, so the paint has happened. Where it
- * does not exist (Safari), `requestAnimationFrame` fires BEFORE a paint and a
- * `setTimeout` scheduled from inside it therefore runs after one — which is the
- * only reason for the nesting. The bare `setTimeout` is the last resort for a
- * non-browser host.
- */
-const afterFirstPaint = (task: () => void): void => {
-  const idle = (window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => void })
-    .requestIdleCallback;
-  if (typeof idle === 'function') idle(task, { timeout: 3000 });
-  else if (typeof window.requestAnimationFrame === 'function') {
-    window.requestAnimationFrame(() => window.setTimeout(task, 0));
-  } else window.setTimeout(task, 0);
-};
-
-// Remember an uncaught error from here on; fetch the transport once the page has
-// painted. With no VITE_SENTRY_DSN this does nothing at all and says so.
-startClientErrorReporting(window, afterFirstPaint, () => import('./monitoring/errorTracker'));
+// Remember an uncaught error from here on; fetch the transport once the customer
+// can actually see something. `afterFirstContentfulPaint` waits for the browser's
+// own paint entry before going idle — measured, because a bare idle callback fired
+// 1.8 s BEFORE this app's first contentful paint, while it waits on its own API.
+// With no VITE_SENTRY_DSN this does nothing at all, and says so at boot.
+startClientErrorReporting(
+  window,
+  (task) => afterFirstContentfulPaint(task, window),
+  () => import('./monitoring/errorTracker'),
+);
 
 const queryClient = new QueryClient();
 
