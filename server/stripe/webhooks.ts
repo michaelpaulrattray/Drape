@@ -47,6 +47,11 @@ import { createModuleLogger } from "../logging/logger";
 import { checkEventEnvironment } from "./environmentTag";
 import { deploymentTag } from "../_core/env";
 import { getDb } from "../db/connection";
+/* The reader is GENERIC — `ER_DUP_ENTRY` / errno 1062 up the short cause chain —
+   and its name records where it was first needed rather than what it knows. A
+   second copy of six lines here is the mirror this repository keeps paying for
+   (working law 4), so it is imported. */
+import { isDuplicateCreditReferenceError } from "../db/credits";
 import { eq } from "drizzle-orm";
 const log = createModuleLogger("stripe/webhooks");
 
@@ -114,23 +119,47 @@ export async function handleStripeWebhook(
     return { success: true, refused: true, message: environment.reason };
   }
 
-  // Idempotency check: skip if already processed
-  try {
-    const db = await getDb();
-    if (!db) throw new Error('Database not available');
-    const [existing] = await db
-      .select({ id: stripeWebhookEvents.id })
-      .from(stripeWebhookEvents)
-      .where(eq(stripeWebhookEvents.eventId, event.id))
-      .limit(1);
+  /*
+    THE REPLAY GUARD — A CLAIM, NOT A LOOK (#1361).
 
-    if (existing) {
-      log.info({ eventId: event.id }, '[Webhook] Duplicate event, skipping');
-      return { success: true, message: `Event ${event.id} already processed` };
-    }
-  } catch (idempotencyErr) {
-    // If idempotency check fails, proceed anyway (fail open)
-    log.warn({ err: idempotencyErr }, '[Webhook] Idempotency check failed, proceeding');
+    It was a SELECT before the handler and an INSERT after it, and that shape had
+    three properties its own comment admitted to: it FAILED OPEN ("proceed anyway
+    (fail open)"), it was CHECK-THEN-ACT, so two concurrent deliveries of one
+    event could both pass, and the recording after the handler swallowed its own
+    failure, so a handler that succeeded while its bookkeeping insert failed was
+    replayable.
+
+    The claim closes all three at once and needs no new machinery: the unique
+    index on `stripeWebhookEvents.eventId` already arbitrates. Insert FIRST — a
+    duplicate-key error IS "already processed", decided by the database at the
+    only moment two deliveries can be ordered — and anything else REFUSES, so
+    Stripe redelivers rather than this handler paying a second time in the dark.
+    It is the shape the credit ledger two modules over has always had.
+
+    ⚠ WHY IT IS SAFE TO CLAIM BEFORE THE WORK. A claim that outlived a FAILED
+    handler would be worse than the old guard: the retry would read as a
+    duplicate and the effect would never land. So a handler that fails RELEASES
+    it, and Stripe's redelivery does the work — which is exactly what happened
+    before, where nothing was recorded until success.
+  */
+  const claim = await claimWebhookEvent(event.id, event.type);
+
+  if (claim === "already-processed") {
+    log.info({ eventId: event.id }, '[Webhook] Duplicate event, skipping');
+    return { success: true, message: `Event ${event.id} already processed` };
+  }
+
+  if (claim === "unreachable") {
+    /* FAIL CLOSED. The 400 this becomes is a redelivery, and a redelivery is
+       cheap; the alternative is paying an unknown number of times during
+       exactly the database blip a retry storm arrives in. The file already
+       chose this for the unreadable-period case — "Refusing so the failure is
+       visible". */
+    log.error({ eventId: event.id, eventType: event.type }, '[Webhook] REFUSED — the replay guard could not be reached');
+    return {
+      success: false,
+      message: `Refusing ${event.id}: the replay guard could not be reached, so a replay cannot be ruled out`,
+    };
   }
 
   try {
@@ -175,32 +204,68 @@ export async function handleStripeWebhook(
         return { success: true, message: `Unhandled event type: ${event.type}` };
     }
 
-    // Record successfully processed event for idempotency
-    if (result.success) {
-      await recordProcessedEvent(event.id, event.type);
-    }
+    /* The claim above IS the record, so nothing is written here on success.
+       A handler that FAILED releases it, so Stripe's redelivery does the work
+       — the behaviour the old shape had by never recording until success. */
+    if (!result.success) await releaseWebhookEventClaim(event.id);
 
     return result;
   } catch (error) {
     log.error({ err: error }, `[Webhook] Error processing ${event.type}:`);
+    await releaseWebhookEventClaim(event.id);
     return { success: false, message: `Error processing ${event.type}`, error: String(error) };
   }
 }
 
+/** What the claim says about an event: mine to process, already done, or unknown. */
+type WebhookClaim = "claimed" | "already-processed" | "unreachable";
+
 /**
- * Record a processed webhook event for idempotency.
- * Called after successful processing of each handler.
+ * Claim this event, so exactly one delivery of it does the work.
+ *
+ * The INSERT is the claim and the unique index on `eventId` is the arbiter —
+ * there is no prior SELECT to race against, which is what closed the
+ * check-then-act window rather than narrowing it. `onDuplicateKeyUpdate` is
+ * deliberately NOT used: it would turn the one signal this function exists to
+ * read into a silent no-op.
+ *
+ * ⚠ THE THIRD ANSWER IS THE POINT. A database that cannot be reached is
+ * `unreachable`, never `claimed` — invariant 7's second clause, that a control
+ * must refuse rather than allow when a dependency is missing.
  */
-async function recordProcessedEvent(eventId: string, eventType: string): Promise<void> {
+async function claimWebhookEvent(eventId: string, eventType: string): Promise<WebhookClaim> {
   try {
     const db = await getDb();
     if (!db) throw new Error('Database not available');
-    await db.insert(stripeWebhookEvents).values({
-      eventId,
-      eventType,
-    }).onDuplicateKeyUpdate({ set: { eventId } }); // No-op on duplicate
+    await db.insert(stripeWebhookEvents).values({ eventId, eventType });
+    return "claimed";
   } catch (err) {
-    log.warn({ err, eventId }, '[Webhook] Failed to record processed event');
+    if (isDuplicateCreditReferenceError(err)) return "already-processed";
+    log.warn({ err, eventId }, '[Webhook] The replay guard could not be reached');
+    return "unreachable";
+  }
+}
+
+/**
+ * Give the claim back, so a redelivery of a FAILED event can do the work.
+ *
+ * ⚠ ITS FAILURE IS THE ONE HOLE THIS SHAPE HAS, AND IT IS LOGGED AT `error`
+ * RATHER THAN SWALLOWED: a release that does not land leaves the event looking
+ * processed, and Stripe's redelivery would then be skipped. It cannot be
+ * retried here — the same database is the thing that just failed — so what is
+ * owed is the loud line naming the event, and the row is a plain
+ * `DELETE … WHERE eventId = …` anybody can undo by hand.
+ */
+async function releaseWebhookEventClaim(eventId: string): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) throw new Error('Database not available');
+    await db.delete(stripeWebhookEvents).where(eq(stripeWebhookEvents.eventId, eventId));
+  } catch (err) {
+    log.error(
+      { err, eventId },
+      '[Webhook] FAILED to release the claim on a failed event — a redelivery will be skipped as a duplicate',
+    );
   }
 }
 

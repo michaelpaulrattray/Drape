@@ -34,25 +34,32 @@ vi.mock("../auditLog", async (importOriginal) => {
 // redelivery arm must be able to see that a FAILED event was NOT marked
 // processed, or it drives a road production cannot take.
 const processedEventInserts = vi.hoisted(() => [] as Array<{ eventId: string; eventType: string }>);
+// ⚠ THE GUARD IS A CLAIM SINCE #1361, AND THIS DOUBLE MOVED WITH IT. It used
+// to model a SELECT plus an insert-after-success; the product now inserts
+// FIRST and lets the unique index arbitrate, releasing the row when the handler
+// fails. `processedEventInserts` therefore still answers the question every arm
+// below asks — *was this event left recorded?* — and the redelivery arms read
+// exactly as they did: a failed event is not recorded, because its claim was
+// given back.
 vi.mock("../db/connection", () => ({
   getDb: vi.fn().mockImplementation(async () => ({
-    // The idempotency pre-check reads what was recorded (PR #791 review
-    // finding 2): an arm that records an event and redelivers it meets the
-    // duplicate guard, as production would. The handler's `where` is keyed on
-    // the event id alone, so the newest recording answers it.
-    select: () => ({
-      from: () => ({
-        where: () => ({
-          limit: async () => (processedEventInserts.length > 0 ? [processedEventInserts[processedEventInserts.length - 1]] : []),
-        }),
-      }),
-    }),
     insert: () => ({
-      values: (row: { eventId: string; eventType: string }) => ({
-        onDuplicateKeyUpdate: async () => {
-          processedEventInserts.push(row);
-        },
-      }),
+      values: async (row: { eventId: string; eventType: string }) => {
+        if (processedEventInserts.some((seen) => seen.eventId === row.eventId)) {
+          /* What MySQL raises when the unique index on `eventId` refuses a
+             second row — the signal the product reads as "already processed". */
+          throw Object.assign(new Error("Duplicate entry"), { code: "ER_DUP_ENTRY", errno: 1062 });
+        }
+        processedEventInserts.push(row);
+      },
+    }),
+    delete: () => ({
+      /* The release. The double cannot read a drizzle condition, and every arm
+         here delivers ONE event at a time, so the row it drops is the claim just
+         made — which is what the product's `WHERE eventId = …` does. */
+      where: async () => {
+        processedEventInserts.pop();
+      },
     }),
   })),
 }));

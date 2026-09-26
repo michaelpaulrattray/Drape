@@ -32743,6 +32743,11 @@
     },
     {
       "from": "module:server/stripe/webhooks.ts",
+      "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/db/index.ts",
       "kind": "imports"
     },

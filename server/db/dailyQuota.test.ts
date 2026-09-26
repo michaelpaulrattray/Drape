@@ -141,6 +141,14 @@ describe("enforceDailyQuota — the refusal, driven", () => {
    * It is the same family as the Stripe webhook gate's fail-open, found the
    * same day: both are "the control could not read its own state, so it stood
    * aside", and both were undocumented.
+   *
+   * ⚠ **THE WEBHOOK HALF IS CLOSED (#1361, 2026-09-26) AND THIS ONE IS NOW THE
+   * FAMILY'S REMAINING INSTANCE.** That guard refuses when it cannot reach its
+   * own table, and Stripe redelivers. The direction question here is still
+   * open on its own read — the two are not the same decision, because a
+   * redelivered webhook costs nothing and a refused generation is a customer
+   * stopped — but a reader arriving from that sentence should know it no
+   * longer describes both.
    */
   it("⚠ with NO DATABASE the count is zero and the quota ALLOWS — fail-open, pinned", async () => {
     noDatabase = true;

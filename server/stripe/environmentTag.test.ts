@@ -42,16 +42,15 @@ vi.mock("../db", () => ({
   creditReferrerOnPaidAction: vi.fn().mockResolvedValue(true),
 }));
 
+/* ⚠ The replay guard is a CLAIM since #1361: the product inserts FIRST, lets
+   the unique index on `eventId` arbitrate, and RELEASES the row when the
+   handler fails. A double still shaped for the old select-then-record road is
+   INERT rather than red — it answers every call and models nothing — so it is
+   shaped like the guard here. */
 vi.mock("../db/connection", () => ({
   getDb: vi.fn().mockResolvedValue({
-    select: vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({ limit: vi.fn().mockResolvedValue([]) }),
-      }),
-    }),
-    insert: vi.fn().mockReturnValue({
-      values: vi.fn().mockReturnValue({ onDuplicateKeyUpdate: vi.fn().mockResolvedValue(undefined) }),
-    }),
+    insert: vi.fn().mockReturnValue({ values: vi.fn().mockResolvedValue(undefined) }),
+    delete: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
   }),
 }));
 
