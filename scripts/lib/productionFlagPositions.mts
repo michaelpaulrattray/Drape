@@ -82,6 +82,17 @@
  * a position is a decision or an accident.
  */
 
+import { BOOT_GOVERNED_ENV_NAMES } from "./governedBootSettings.mts";
+
+/**
+ * Absent from the service means off — every scope paragraph says so.
+ *
+ * ⚠ It is declared ABOVE the table rather than below it since #1174, because the
+ * boot-setting rows use it as their position: eleven of the twelve are unset, and
+ * a row reading `<unset>` verified on every push is the point of them.
+ */
+export const UNSET = "off";
+
 export type FlagPosition = {
   /** What the service is expected to hold. `off` means the variable is unset. */
   readonly position: string;
@@ -466,13 +477,120 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: "ink.add.front_upper_torso.v1",
     why:
       "WHICH recipe the composer runs. Inert while R7_EVIDENCE_COMPOSER_SCOPE is "
-      + "off — the one row here that is not a scope, and it is on the table because "
-      + "the service holds it",
+      + "off — it was the one row here that was not a scope, and it is on the table "
+      + "because the service holds it. Since #1174 it has company: the settings the "
+      + "product refuses to BOOT over are governed too",
+  },
+
+  /* ── THE BOOT SETTINGS (#1174) ──────────────────────────────────────────────
+     Not scopes, and governed because the product READS THEM AT BOOT in a way
+     that changes behaviour — `assertNumericEnv()`, `assertFalBudget()` and the
+     roll engine's model gate each refuse to start over one of them. The
+     population is DERIVED (`scripts/lib/governedBootSettings.mts`); these rows
+     are the POSITIONS, which only the service can tell us.
+
+     ⚠ EVERY POSITION BELOW WAS READ AT THE LIVE SERVICE ON 2026-09-26 with an
+     allowlist by exact name, not reasoned from a default. Eleven of the twelve
+     are `<unset>` — and "they are all unset today" is the argument FOR the rows
+     rather than against them: it is exactly the fact four documents got wrong
+     about `INK_PLATE_CONCURRENCY`, and a row reading `<unset>` verified on every
+     push is what would have stopped them. The twelfth is the one that proves the
+     gap was live. */
+
+  DAILY_GENERATION_LIMIT: {
+    position: UNSET,
+    why:
+      "the per-day generation cap, read by assertNumericEnv() at boot. Unset on the "
+      + "service (read 2026-09-26), so the product runs on its declared default of 50. "
+      + "A BLANK value here refused every generation at zero used, telling the customer "
+      + "\"Daily generation limit reached (NaN per day)\" — which is why it fails at boot now",
+  },
+  GEMINI_IMAGE_CONCURRENCY: {
+    position: UNSET,
+    why:
+      "how many image calls the Gemini queue may hold in flight, read by "
+      + "assertNumericEnv() at boot. Unset on the service (read 2026-09-26) — the "
+      + "declared default. A NaN concurrency admits nothing and the queue holds every "
+      + "call forever",
+  },
+  GEMINI_TEXT_CONCURRENCY: {
+    position: UNSET,
+    why:
+      "the text half of the same queue, read by assertNumericEnv() at boot. Unset on "
+      + "the service (read 2026-09-26) — the declared default, and a NaN here is the "
+      + "same silent outage as its image sibling",
+  },
+  GEMINI_MAX_QUEUE_DEPTH: {
+    position: UNSET,
+    why:
+      "how deep that queue may go before it refuses, read by assertNumericEnv() at "
+      + "boot. Unset on the service (read 2026-09-26) — the declared default. A NaN "
+      + "depth makes the overflow test meaningless rather than loud",
+  },
+  ROLL_IMAGE_MAX_QUEUE_DEPTH: {
+    position: UNSET,
+    why:
+      "how much roll work may queue before creation answers a real TOO_MANY_REQUESTS, "
+      + "read by assertNumericEnv() at boot. Unset on the service (read 2026-09-26) — "
+      + "the declared default of 64",
+  },
+  SIGN_VIEW_MAX_QUEUE_DEPTH: {
+    position: UNSET,
+    why:
+      "the same for sign views, read by assertNumericEnv() at boot. Unset on the "
+      + "service (read 2026-09-26) — the declared default of 24",
+  },
+  ROLL_IMAGE_CONCURRENCY: {
+    position: UNSET,
+    why:
+      "the roll road's share of the fal account's concurrency, read by assertFalBudget() "
+      + "at boot, which REFUSES to start if the four allowances pass the provider's "
+      + "ceiling. Unset on the service (read 2026-09-26) — the declared 8. ⚠ Four "
+      + "documents said a sibling of this one was SET, and the live boot line is equally "
+      + "true of set-to-8 and unset-defaulting-to-8",
+  },
+  SIGN_VIEW_CONCURRENCY: {
+    position: UNSET,
+    why:
+      "the sign road's share, read by assertFalBudget() at boot. Unset on the service "
+      + "(read 2026-09-26) — the declared 3",
+  },
+  REFINE_EDIT_CONCURRENCY: {
+    position: UNSET,
+    why:
+      "the refine road's share, read by assertFalBudget() at boot. Unset on the service "
+      + "(read 2026-09-26) — the declared 3",
+  },
+  FAL_CONCURRENCY: {
+    position: UNSET,
+    why:
+      "the segmenter's courtesy share, read by assertFalBudget() at boot. Unset on the "
+      + "service (read 2026-09-26) — the declared 5, which is load-bearing rather than "
+      + "spare: it was 6 until the plate mint took one and #1158 slice 4d deliberately "
+      + "did not hand it back",
+  },
+  FAL_ACCOUNT_CEILING: {
+    position: UNSET,
+    why:
+      "the provider's own concurrent-request ceiling, quoted from its 429 and read by "
+      + "assertFalBudget() at boot. Unset on the service (read 2026-09-26) — the quoted "
+      + "20. Raising it here would let the four allowances sum past what the provider "
+      + "actually allows, and a refused read is a feature the customer is silently told "
+      + "she does not have",
+  },
+  CASTING_ROLL_ENGINE_MODEL: {
+    position: "sunburst",
+    why:
+      "⚠ THE SPECIMEN FOR THIS WHOLE BLOCK, AND IT WAS LIVE. Which GPT Image 2.5 model "
+      + "CASTING_ROLL_ENGINE_SCOPE's users roll on — a boot refusal if the scope names "
+      + "anyone and this is unset or unknown. Read at the service 2026-09-26: SET to "
+      + "`sunburst`, and the push gate could not see it, because the name carries neither "
+      + "SCOPE nor STAGE. His own word put it there (court #1068, 2026-09-22: \"flare is "
+      + "producing bad results - switch over to sunburst\"), so the setting deciding which "
+      + "model every roll of his renders on stood outside the one check that compares our "
+      + "record to reality",
   },
 };
-
-/** Absent from the service means off — every scope paragraph says so. */
-export const UNSET = "off";
 
 export type FlagReading = { readonly name: string; readonly value: string };
 
@@ -498,6 +616,22 @@ export function parseVariableLines(raw: string): FlagReading[] {
 
 /** Anything the service could be holding that this table ought to govern. */
 const GOVERNED_NAME = /^[A-Z0-9_]*(SCOPE|STAGE)[A-Z0-9_]*$/;
+
+/**
+ * ⚠ **THE NAME PATTERN ALONE WAS THE WHOLE OF #1174, AND IT WAS BLIND TO A LIVE
+ * PRODUCTION SETTING.** `CASTING_ROLL_ENGINE_MODEL` is set to `sunburst` on the
+ * service — his own word chose it — and it decides which image model every roll
+ * on his account renders on. It contains neither SCOPE nor STAGE, so the gate
+ * could not see it in either direction: not that it was set, and not that this
+ * table said nothing about it.
+ *
+ * The rest of the population is DERIVED from the three declarations the product
+ * refuses to boot over (`scripts/lib/governedBootSettings.mts`) rather than typed
+ * here, because a hand-typed second list is what produced the card.
+ */
+export function isGovernedName(name: string): boolean {
+  return GOVERNED_NAME.test(name) || BOOT_GOVERNED_ENV_NAMES.includes(name);
+}
 
 export type PositionVerdict = {
   /** One line per governed flag, in table order, for the receipt. */
@@ -532,7 +666,7 @@ export function comparePositions(readings: readonly FlagReading[]): PositionVerd
      an unrecognised variable is exactly the one whose value must not be shown. */
   for (const reading of readings) {
     if (reading.name in PRODUCTION_FLAG_POSITIONS) continue;
-    if (!GOVERNED_NAME.test(reading.name)) continue;
+    if (!isGovernedName(reading.name)) continue;
     mismatches.push(
       `${reading.name}: set on the service and absent from this table — a flag that exists and is not on the list is how the list stops being the list (value deliberately not printed)`,
     );
