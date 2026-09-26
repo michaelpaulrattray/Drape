@@ -298,3 +298,5 @@ export async function storageListKeys(): Promise<string[]> {
   } while (continuationToken);
   return keys;
 }
+
+// probe #1307 (acceptance test, throwaway branch — never merged to main)
