@@ -87,6 +87,8 @@ import {
   CREW_HOLD_MARKER,
   planDeskHoldLabels,
 } from "../shared/crewNextUpHold.js";
+import { buildBoard, readCardComments } from "./lib/cardBuildState.mts";
+import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
 import {
   type OrderedIssue,
   OPEN_QUEUE_LIMIT,
@@ -367,6 +369,47 @@ if (ordered === null) {
     instead of held to it by a sentence. That sentence is what failed (#718).
   */
   const items = planNextUpItems({ ordered: ordered as OrderedIssue[], appliedReasons: applied });
+  /*
+    ⚠ WHO IS ALREADY BUILDING WHICH OF THESE (#1094 piece 2) — REPORTED, NEVER
+    WRITTEN INTO THE BRIEFING.
+
+    This sweep is the one queue reader whose output is a stored artifact, and
+    "somebody has a pull request open on #1231" is the most perishable fact on the
+    board: it is true for an hour. `server/crew/liveDesk.ts` derives the same
+    phrases from GitHub every 30 s and his page draws THOSE (#1193), so writing a
+    copy here would be a second list that is stale before he reads it — working
+    law 4, and the staleness argument `next-up-escalation.mts`' own header makes
+    about reading the briefing.
+
+    What the sweep owes is its OPERATOR: the person running it is about to look at
+    NEXT UP and decide something, and the line below tells them which rows are not
+    on offer. Same reader, same judgement, same words as his page.
+  */
+  const prs = readOpenPullRequests();
+  const comments = readCardComments();
+  const board = buildBoard({
+    openPullRequests: prs === null ? { unreadable: "`gh pr list` could not be read" } : prs,
+    comments: comments === null
+      ? { unreadable: "`gh api .../issues/comments` could not be read" }
+      : comments,
+    nowMs: Date.now(),
+  });
+  const onIt = items
+    .map((item) => ({ number: item.issueNumber, phrase: board.phraseFor(item.issueNumber) }))
+    .filter((row): row is { number: number; phrase: string } => row.phrase !== null);
+  if (board.partial) {
+    skipped.push(
+      `NEXT UP: nobody checked which rows are already being built — ${board.unreadable.join("; ")}.`
+      + " That is an unread board, not a clean one.",
+    );
+  } else if (onIt.length === 0) {
+    changes.push(`NEXT UP: no row is already being built or claimed (${prs === null ? 0 : prs.length} open PR(s) read)`);
+  } else {
+    changes.push(
+      `NEXT UP: ${onIt.length} row(s) already have somebody on them — `
+      + onIt.map((row) => `#${row.number} ${row.phrase}`).join("; "),
+    );
+  }
   const before = JSON.stringify(briefing.nextUp?.items ?? null);
   briefing.nextUp = { readAt: new Date().toISOString(), items };
   if (JSON.stringify(items) !== before) {

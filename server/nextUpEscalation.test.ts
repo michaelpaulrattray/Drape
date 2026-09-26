@@ -207,7 +207,9 @@ describe("the escalation verdict", () => {
     const result = run("--queue", queue, "--state", statePath("all-held"), "--today", "2026-09-05");
 
     expect(result.last).toMatch(/^NONE: /);
-    expect(result.last).toContain("blocked or needs a sitting");
+    /* #1094 piece 2 added "or is already being built" to the same sentence — the
+       three skips are one list now, and the reason names all three. */
+    expect(result.last).toContain("blocked, needs a sitting, or is already being built");
     expect(result.status).toBe(1);
   });
 
@@ -386,6 +388,158 @@ describe("the URGENT band is read too — #1258, #541's defect one band over", (
     expect(source).toContain("deriveBands");
     expect(source, "the gate must not ask gh for one band any more")
       .not.toMatch(/"--label",\s*"founder-ordered"/);
+  });
+});
+
+/**
+ * ⚠ **BUILT IS BUILT — #1094 piece 2, and it answers the #541 rule-3 question
+ * this gate was held on for four days.**
+ *
+ * His order, 2026-09-26 (terminal), verbatim: *"work on 1094 and 1307 next so the
+ * desk shows whats built"*. A card with an open pull request or a live claim is
+ * not on offer, so this gate must not buy a Fable session for one.
+ *
+ * ⚠ **AND IT MUST SKIP THE ROW RATHER THAN ANSWER `NONE`**, which is the arm that
+ * matters most here: the card's own held comment worked out that a gate which
+ * stood down on "this one has a pull request" would freeze **every
+ * `awaiting-fable` card behind it** — the #586 consequence, reached by a new road,
+ * measured on 2026-09-06 when #535 was never escalated. The third arm below is
+ * that one, and it fails if the skip ever becomes a refusal.
+ */
+describe("a card somebody is already building is not takeable (#1094)", () => {
+  const prFile = (name: string, rows: unknown[]): string => {
+    const path = join(dir, `${name}-prs.json`);
+    writeFileSync(path, JSON.stringify(rows), "utf8");
+    return path;
+  };
+  const commentFile = (name: string, rows: unknown[]): string => {
+    const path = join(dir, `${name}-comments.json`);
+    writeFileSync(path, JSON.stringify(rows), "utf8");
+    return path;
+  };
+  /** A comment row exactly as `gh api repos/{owner}/{repo}/issues/comments` returns one. */
+  const claim = (card: number, at: string, seat = "seat-desk-9") => ({
+    issue_url: `https://api.github.com/repos/michaelpaulrattray/Drape/issues/${card}`,
+    user: { login: "michaelpaulrattray" },
+    created_at: at,
+    body: `CLAIMED — ${seat}, ${at}\n`,
+  });
+
+  it("does NOT escalate onto a Fable card that already has an open pull request", () => {
+    const queue = queueFile("built-fable", [
+      card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
+    ]);
+    const prs = prFile("built-fable", [
+      { number: 1400, title: "feat: deploy on merge (#508)", body: "for card #508", headRefName: "team/x-508" },
+    ]);
+    const result = run(
+      "--queue", queue, "--open-prs", prs, "--state", statePath("built-fable"), "--today", "2026-09-26",
+    );
+    expect(result.last).toMatch(/^NONE: /);
+    expect(result.last).toContain("already being built");
+    expect(result.status).toBe(1);
+  });
+
+  it("does NOT escalate onto a Fable card a seat CLAIMED in the last twelve hours", () => {
+    /* The artifact that existed at the moment #1094's measured duplicate happened:
+       a claim comment, eighty-five seconds before the second pull request. */
+    const queue = queueFile("claimed-fable", [
+      card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
+    ]);
+    const comments = commentFile("claimed-fable", [claim(508, new Date().toISOString())]);
+    const result = run(
+      "--queue", queue, "--comments", comments, "--state", statePath("claimed-fable"), "--today", "2026-09-26",
+    );
+    expect(result.last).toMatch(/^NONE: /);
+    expect(result.status).toBe(1);
+  });
+
+  it("⚠ SKIPS the built row and escalates the Fable card BEHIND it — never `NONE` (the #586 shape)", () => {
+    /* #391 is takeable and blocks escalation today; give it a pull request and it
+       is not takeable, so #508 — the next Fable card in his order — is reached.
+       A gate that answered NONE here would freeze every Fable card behind #391,
+       which is exactly what happened on 2026-09-06. */
+    const queue = queueFile("skip-built", [
+      card(391, ["founder-ordered"], "his ladder ruling"),
+      card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
+    ]);
+    const prs = prFile("skip-built", [
+      { number: 1401, title: "chore: the ladder ruling", body: "for card #391", headRefName: "team/ladder-391" },
+    ]);
+    const result = run(
+      "--queue", queue, "--open-prs", prs, "--state", statePath("skip-built"), "--today", "2026-09-26",
+    );
+    expect(result.last).toMatch(/^ESCALATE #508 /);
+    expect(result.status).toBe(0);
+
+    /* THE CONTROL: without the pull request the same queue answers NONE, because
+       #391 is genuinely takeable. Without this arm the one above proves only that
+       the script runs. */
+    const control = run(
+      "--queue", queue, "--state", statePath("skip-built-control"), "--today", "2026-09-26",
+    );
+    expect(control.last).toMatch(/^NONE: /);
+    expect(control.last).toContain("#391");
+  });
+
+  it("a built card is never named in the BUNDLE either", () => {
+    const queue = queueFile("bundle-built", [
+      card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
+      card(530, ["founder-ordered"], "the sphinx-cat tail court"),
+      card(539, ["founder-ordered"], "MAX heat"),
+    ]);
+    const prs = prFile("bundle-built", [
+      { number: 1402, title: "court: the sphinx-cat tail (#530)", body: "for card #530" },
+    ]);
+    const result = run(
+      "--queue", queue, "--open-prs", prs, "--state", statePath("bundle-built"), "--today", "2026-09-26",
+    );
+    expect(result.last).toMatch(/^ESCALATE #508 /);
+    expect(result.last).toContain("bundle=#539");
+    expect(result.last).not.toContain("#530");
+  });
+
+  it("⚠ an UNREADABLE board answers NONE — this gate's own law, and the one caller that fails that way", () => {
+    /* Every other consumer of the board prints the reason and offers the card
+       anyway; this one spends a Fable session, so it stands down. Driven with a
+       fixture path that cannot be read, which is what a broken `gh` looks like to
+       the reader. */
+    const queue = queueFile("unread-board", [
+      card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
+    ]);
+    const result = run(
+      "--queue", queue,
+      "--open-prs", join(dir, "does-not-exist.json"),
+      "--state", statePath("unread-board"), "--today", "2026-09-26",
+    );
+    expect(result.last).toMatch(/^NONE: /);
+    expect(result.last).toContain("board could not be read");
+    expect(result.status).toBe(1);
+
+    /* THE CONTROL: the same queue with a readable, empty board escalates. */
+    const control = run(
+      "--queue", queue, "--open-prs", prFile("unread-control", []),
+      "--state", statePath("unread-control"), "--today", "2026-09-26",
+    );
+    expect(control.last).toMatch(/^ESCALATE #508 /);
+  });
+
+  it("a claim older than twelve hours is not live, and the card is offered again", () => {
+    const queue = queueFile("stale-claim", [
+      card(508, ["founder-ordered", "awaiting-fable"], "deploy on merge"),
+    ]);
+    const old = new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString();
+    const comments = commentFile("stale-claim", [claim(508, old)]);
+    const result = run(
+      "--queue", queue, "--comments", comments, "--state", statePath("stale-claim"), "--today", "2026-09-26",
+    );
+    expect(result.last).toMatch(/^ESCALATE #508 /);
+  });
+
+  it("⚠ consults the ONE shared reader rather than its own grep", () => {
+    const source = readFileSync(SCRIPT, "utf8");
+    expect(source).toContain('from "./lib/cardBuildState.mts"');
+    expect(source).toContain("board.holdsOffOffer(");
   });
 });
 

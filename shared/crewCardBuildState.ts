@@ -65,6 +65,11 @@
  * rather than on a shape imagined here.
  */
 import { cardNumberToken, type CardPullRequestWhere } from "./crewShiftState";
+import {
+  handVerdictFreshness,
+  isHandVerdict,
+  type HandVerdictFreshness,
+} from "./handVerdict";
 
 /** Twelve hours — the standing orders' own window for a live claim. */
 export const CREW_CLAIM_LIVE_MS = 12 * 60 * 60 * 1000;
@@ -74,8 +79,12 @@ export type CrewCardBuildState =
   | {
     readonly kind: "pull-request";
     readonly pullRequest: number;
-    /** `gate` — in the gate; `review` — held for the relay's hand verdict; `draft` — not finished. */
-    readonly stage: "gate" | "review" | "draft";
+    /**
+     * `gate` — in the gate; `review` — held for the relay's hand verdict;
+     * `passed` — the verdict is on the current head and it is queued to merge;
+     * `draft` — not finished.
+     */
+    readonly stage: "gate" | "review" | "passed" | "draft";
   }
   | { readonly kind: "claimed"; readonly seat: string | null; readonly at: string }
   | { readonly kind: "refused"; readonly at: string };
@@ -95,6 +104,22 @@ export interface CrewBuildPullRequest {
   readonly headRefName?: string | null;
   readonly draft?: boolean;
   readonly labels?: readonly string[];
+  /**
+   * WHETHER THE RELAY'S VERDICT IS ON THIS PULL REQUEST'S CURRENT HEAD.
+   *
+   * ⚠ **IT IS DATA HERE, NOT A READING — AND THE READER IS `shared/handVerdict.ts`.**
+   * His desk asked for it on 2026-09-26: a pull request that has already been
+   * reviewed and is merely queued to merge was reading *"waiting on review"*, so
+   * the two states a person actually cares about looked identical. A verdict is a
+   * COMMENT (`**Fable review — by hand`, by the founder's account) rather than a
+   * label, so it is the caller — the one holding the comment listing — that
+   * establishes this, through `handVerdictFreshness`.
+   *
+   * Absent means *nobody looked*, and it reads exactly as it did before this
+   * field existed: the review label decides, and `gate` otherwise. A missing
+   * field cannot invent a pass.
+   */
+  readonly handVerdict?: HandVerdictFreshness;
 }
 
 /** A PR carrying either waits for the relay's hand verdict before it can merge. */
@@ -127,8 +152,18 @@ export function pullRequestBuildsCard(
   return where;
 }
 
-function prStage(pr: CrewBuildPullRequest): "gate" | "review" | "draft" {
+/**
+ * ⚠ **THE ORDER IS THE DESIGN.** A draft is first because an unfinished pull
+ * request is unfinished whatever else is true of it. A FRESH VERDICT then
+ * outranks the review label, and that is the whole of the 2026-09-26 desk
+ * correction: the label says *somebody owes this a look*, the verdict says
+ * *somebody looked*, and a label nobody removed after a verdict was making a
+ * reviewed pull request read as still waiting. A STALE verdict is not a verdict
+ * for this purpose — the head moved under it — so it falls through to the label.
+ */
+function prStage(pr: CrewBuildPullRequest): "gate" | "review" | "passed" | "draft" {
   if (pr.draft === true) return "draft";
+  if (pr.handVerdict === "fresh") return "passed";
   if ((pr.labels ?? []).some((label) => CREW_REVIEW_PR_LABELS.includes(label))) return "review";
   return "gate";
 }
@@ -141,12 +176,30 @@ export interface CrewCardComment {
   readonly card: number;
   readonly body: string;
   readonly createdAt: string;
+  /**
+   * The commenter's GitHub login, when the caller has it, and the OWNER's — the
+   * one account whose comments can be a verdict. Both absent means this reader
+   * simply never reports a verdict, which is how it behaved before the field
+   * existed.
+   */
+  readonly authorLogin?: string | null;
+  readonly ownerLogin?: string | null;
 }
 
+/**
+ * ⚠ **THREE OF THESE ARE ABOUT A CARD AND THE FOURTH IS ABOUT A PULL REQUEST.**
+ * GitHub gives issues and pull requests ONE number sequence, and its comment
+ * listing gives both through the same `issue_url`, so `card` is whatever number
+ * the comment hangs on. A `verdict` therefore names a PULL REQUEST, never a
+ * card, and `crewCardBuildState` below is explicit about ignoring it — a
+ * judgement that swept it in with the rest would read *"a verdict is the newest
+ * thing on this card"* and answer nothing at all.
+ */
 export type CrewCardCommentFact =
   | { readonly kind: "claim"; readonly card: number; readonly seat: string | null; readonly at: string }
   | { readonly kind: "release"; readonly card: number; readonly at: string }
-  | { readonly kind: "refusal"; readonly card: number; readonly at: string };
+  | { readonly kind: "refusal"; readonly card: number; readonly at: string }
+  | { readonly kind: "verdict"; readonly card: number; readonly at: string };
 
 /*
   Anchored at the start of the body, through at most a little markdown
@@ -165,6 +218,20 @@ const REFUSAL_RE = new RegExp(`${LEAD}(?:NOT BUILT|NOT TAKEN)\\b`, "i");
 export function crewCardCommentFact(comment: CrewCardComment): CrewCardCommentFact | null {
   const { card, body, createdAt } = comment;
   if (!Number.isSafeInteger(card) || card <= 0 || typeof body !== "string" || createdAt === "") return null;
+  /* ⚠ THE VERDICT IS READ FIRST AND IT IS AUTHOR-GATED. `isHandVerdict` is the
+     merge tool's own test (`shared/handVerdict.ts`, re-exported by
+     `scripts/lib/reviewRounds.mts`), and the author check is the same floor
+     `classifyComment` applies: a comment by any other account is not a verdict
+     whatever it says. A caller that cannot supply the two logins reports no
+     verdict at all rather than believing a body. */
+  if (isHandVerdict(body)) {
+    const author = comment.authorLogin;
+    const owner = comment.ownerLogin;
+    if (typeof author === "string" && typeof owner === "string" && owner !== "" && author === owner) {
+      return { kind: "verdict", card, at: createdAt };
+    }
+    return null;
+  }
   const refused = REFUSAL_RE.test(body);
   if (refused) return { kind: "refusal", card, at: createdAt };
   if (RELEASE_RE.test(body)) return { kind: "release", card, at: createdAt };
@@ -174,6 +241,26 @@ export function crewCardCommentFact(comment: CrewCardComment): CrewCardCommentFa
     return { kind: "claim", card, seat: seat === "" ? null : seat.slice(0, 60), at: createdAt };
   }
   return null;
+}
+
+/**
+ * HAS THIS PULL REQUEST BEEN REVIEWED? — the one place the two facts are put
+ * together, so the Desk and the queue readers cannot answer it differently.
+ *
+ * The verdict comes from the comment listing (a `verdict` fact, author-gated);
+ * the clock comes from the pull request's own `updatedAt`. `shared/handVerdict.ts`
+ * owns what the two mean together, including why that clock is the bound a
+ * caller which cannot afford a per-pull-request commit read must use.
+ */
+export function handVerdictForPullRequest(input: {
+  readonly pullRequest: number;
+  readonly updatedAt: string | null | undefined;
+  readonly facts: readonly CrewCardCommentFact[];
+}): HandVerdictFreshness {
+  const newest = input.facts
+    .filter((fact) => fact.kind === "verdict" && fact.card === input.pullRequest)
+    .sort((a, b) => b.at.localeCompare(a.at))[0];
+  return handVerdictFreshness({ verdictAt: newest?.at ?? null, activityAt: input.updatedAt });
 }
 
 /**
@@ -207,7 +294,11 @@ export function crewCardBuildState(input: {
     return { kind: "pull-request", pullRequest: pr.number, stage: prStage(pr) };
   }
   const mine = facts
-    .filter((fact) => fact.card === card)
+    /* ⚠ A `verdict` NAMES A PULL REQUEST, NOT A CARD, so it is filtered out
+       here rather than sorted with the rest — see the vocabulary's own note.
+       Its consumer is `prStage` above, through the caller that dates it. */
+    .filter((fact): fact is Exclude<CrewCardCommentFact, { kind: "verdict" }> =>
+      fact.card === card && fact.kind !== "verdict")
     .sort((a, b) => b.at.localeCompare(a.at));
   const latest = mine[0];
   if (latest === undefined) return null;
@@ -216,6 +307,41 @@ export function crewCardBuildState(input: {
   const atMs = Date.parse(latest.at);
   if (!Number.isFinite(atMs) || nowMs - atMs > CREW_CLAIM_LIVE_MS) return null;
   return { kind: "claimed", seat: latest.seat, at: latest.at };
+}
+
+/**
+ * IS THIS CARD STILL ON OFFER? — the ONE owner of that verdict (#1094 piece 2).
+ *
+ * His order, 2026-09-26 (terminal), verbatim: *"work on 1094 and 1307 next so
+ * the desk shows whats built"*, and the re-scope it settled: **a card that has
+ * an open PR, a recorded refusal, or a live claim is not on offer.** The Desk
+ * only had to SAY the state; the five queue readers have to ACT on it, and the
+ * predicate they act on lives here beside the judgement rather than being
+ * re-decided in each of them (working law 4 — five copies of "which states mean
+ * hands off" is exactly the second list that drifts).
+ *
+ * ⚠ **TWO OF THE THREE STATES WITHHOLD, AND THE THIRD ONE DELIBERATELY DOES
+ * NOT.** An open pull request and a live claim are somebody's hands on the work
+ * *right now* — offering the card spends a session rebuilding it, which is the
+ * whole cost #1083 and this card measured. A REFUSAL is not that: it is a
+ * shift's JUDGEMENT that the card's premise is wrong against the code (the
+ * builder-seat rule of 2026-09-26 — *"a card whose premise is wrong against the
+ * code is refused with file:line on the card, not built"*), and a judgement is
+ * a thing the next reader may legitimately overturn. Withholding on it would
+ * let one shift's refusal retire a card of his silently, with no label, no
+ * ruling and nothing on his desk — and #1337 is open precisely because a
+ * refusal has no permanent home yet. So a refused card is ANNOTATED with its
+ * phrase and still offered: the next shift reads *"not built — the reason is on
+ * the card"*, opens the card, and decides.
+ *
+ * That is also the direction #1083 ruled: never silently withhold work a shift
+ * could do. What changed under his order is that an open PR and a live claim
+ * stopped being warnings and became facts — *built is built* — and those two
+ * are the only ones.
+ */
+export function buildStateHoldsOffOffer(state: CrewCardBuildState | null): boolean {
+  if (state === null) return false;
+  return state.kind === "pull-request" || state.kind === "claimed";
 }
 
 /** "3 h ago" — whole hours, and the first one says so in words. */
@@ -235,11 +361,19 @@ function sinceWord(at: string, nowMs: number): string {
 export function crewCardBuildPhrase(state: CrewCardBuildState, nowMs: number): string {
   switch (state.kind) {
     case "pull-request":
-      return state.stage === "draft"
-        ? `being written — PR #${state.pullRequest}`
-        : state.stage === "review"
-          ? `waiting on review — PR #${state.pullRequest}`
-          : `being built — PR #${state.pullRequest}`;
+      switch (state.stage) {
+        case "draft":
+          return `being written — PR #${state.pullRequest}`;
+        /* His words for this row are "passed" and "merging" (the #1094 re-scope's
+           own `PR #n passed — merging`); the shape stays the family's, with the
+           pull request last, so eight rows read down the page as one thing. */
+        case "passed":
+          return `passed and merging — PR #${state.pullRequest}`;
+        case "review":
+          return `waiting on review — PR #${state.pullRequest}`;
+        case "gate":
+          return `being built — PR #${state.pullRequest}`;
+      }
     case "refused":
       return "not built — the reason is on the card";
     case "claimed": {

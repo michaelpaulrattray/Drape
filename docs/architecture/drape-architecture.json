@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "97d64cf45bf9a125"
+    "sourceFingerprint": "fd73dd76ebf5b970"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 61
+      "moduleCount": 62
     },
     {
       "id": "domain:staff",
@@ -5942,6 +5942,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/handVerdict.ts",
+      "path": "shared/handVerdict.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/inkCutRoute.ts",
       "path": "shared/inkCutRoute.ts",
       "domain": "shared",
@@ -10895,6 +10901,10 @@
       "path": "server/card391LadderFold.test.ts"
     },
     {
+      "id": "test:server/cardBuildBoard.test.ts",
+      "path": "server/cardBuildBoard.test.ts"
+    },
+    {
       "id": "test:server/cardLabelProvenance.test.ts",
       "path": "server/cardLabelProvenance.test.ts"
     },
@@ -12941,6 +12951,10 @@
     {
       "id": "test:server/queueOrdinalDiscipline.test.ts",
       "path": "server/queueOrdinalDiscipline.test.ts"
+    },
+    {
+      "id": "test:server/queueReaderBuildState.test.ts",
+      "path": "server/queueReaderBuildState.test.ts"
     },
     {
       "id": "test:server/queueRot.test.ts",
@@ -27930,6 +27944,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/handVerdict.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/crew/liveQueue.ts",
       "to": "module:shared/crewNextUpHold.ts",
       "kind": "imports"
@@ -32877,6 +32896,11 @@
     {
       "from": "module:shared/crewCardBuildState.ts",
       "to": "module:shared/crewShiftState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewCardBuildState.ts",
+      "to": "module:shared/handVerdict.ts",
       "kind": "imports"
     },
     {

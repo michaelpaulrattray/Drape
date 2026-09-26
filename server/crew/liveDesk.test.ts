@@ -396,6 +396,98 @@ describe("what is already happening to each card — his order 2026-09-26, \"so 
     expect(desk.builds.commentsWhy).not.toBeNull();
   });
 
+  /**
+   * ⚠ **HIS DESK CORRECTION, 2026-09-26: A PULL REQUEST HE HAS ALREADY REVIEWED
+   * READ AS *WAITING ON REVIEW*, beside one nobody had looked at.** The verdict is
+   * a comment by his own account (`**Fable review — by hand`), which arrives in
+   * the same listing the claims do; `shared/handVerdict.ts` holds the freshness
+   * rule and the three real measurements it was chosen on.
+   */
+  it("a reviewed pull request reads as passed and merging, on BOTH surfaces", () => {
+    const reviewed = {
+      ...reading([
+        item({ number: 1248, labels: ["seat:retro"] }),
+        item({
+          number: 1326, kind: "pr",
+          title: "The desk says one thing about a debt card, not two (#1248)",
+          body: "For card #1248.",
+          labels: ["needs-fable"],
+          updatedAt: "2026-09-26T02:01:51Z",
+        }),
+      ]),
+      readAt: "2026-09-26T02:30:00Z",
+    };
+    const withVerdict = [{ kind: "verdict" as const, card: 1326, at: "2026-09-26T02:01:51Z" }];
+    const desk = deriveLiveDesk(reviewed, RUNGS, { facts: withVerdict, why: null });
+    expect(desk.builds.items).toEqual([
+      { issueNumber: 1248, phrase: "passed and merging — PR #1326" },
+    ]);
+    /* In flight draws its own word from the same fact. */
+    expect(desk.pullRequests.map((pr) => [pr.number, pr.state])).toEqual([[1326, "passed"]]);
+
+    /* ⚠ THE CONTROL: the same reading with NO verdict comment keeps the label's
+       answer on both surfaces. Without it, both assertions above would pass
+       against a reader that had simply stopped reading the label. */
+    const unread = deriveLiveDesk(reviewed, RUNGS, { facts: [], why: null });
+    expect(unread.builds.items).toEqual([
+      { issueNumber: 1248, phrase: "waiting on review — PR #1326" },
+    ]);
+    expect(unread.pullRequests.map((pr) => pr.state)).toEqual(["held"]);
+  });
+
+  it("⚠ a verdict with something AFTER it does not pass the pull request", () => {
+    /* A push moves `updatedAt`, and so does a label change or a later comment, so
+       this under-claims rather than over-claims. */
+    const pushedAfter = {
+      ...reading([
+        item({ number: 1248, labels: ["seat:retro"] }),
+        item({
+          number: 1326, kind: "pr", title: "…(#1248)", body: "For card #1248.",
+          labels: ["needs-fable"], updatedAt: "2026-09-26T02:20:00Z",
+        }),
+      ]),
+      readAt: "2026-09-26T02:30:00Z",
+    };
+    const desk = deriveLiveDesk(pushedAfter, RUNGS, {
+      facts: [{ kind: "verdict", card: 1326, at: "2026-09-26T02:01:51Z" }],
+      why: null,
+    });
+    expect(desk.builds.items).toEqual([
+      { issueNumber: 1248, phrase: "waiting on review — PR #1326" },
+    ]);
+  });
+
+  /**
+   * ⚠ **AND THE NUMBERS UNDER HIS SWITCHES SUBTRACT IT (#1094 piece 2).** The
+   * panel that offered him five already-built cards is the Background Work panel,
+   * and its count is the sentence he acts on.
+   */
+  it("the switch counts subtract a card that is already being built, and say so", () => {
+    const rows = [
+      item({ number: 1231, labels: ["seat:janitor"] }),
+      item({ number: 1232, labels: ["seat:janitor"] }),
+      item({
+        number: 1316, kind: "pr",
+        title: "build(typecheck): the population",
+        body: "Opened for card #1231.",
+      }),
+    ];
+    const desk = deriveLiveDesk({ ...reading(rows), readAt: "2026-09-26T02:30:00Z" }, RUNGS, { facts: [], why: null });
+    const housekeeping = desk.work.counts.find((row) => row.categoryKey === "housekeeping");
+    expect(housekeeping?.openCount).toBe(1);
+    expect(housekeeping?.excluded).toEqual({ building: 1 });
+
+    /* THE CONTROL: without the pull request both cards are on offer. */
+    const clean = deriveLiveDesk(
+      { ...reading(rows.filter((row) => row.kind !== "pr")), readAt: "2026-09-26T02:30:00Z" },
+      RUNGS,
+      { facts: [], why: null },
+    );
+    const cleanRow = clean.work.counts.find((row) => row.categoryKey === "housekeeping");
+    expect(cleanRow?.openCount).toBe(2);
+    expect(cleanRow?.excluded).toEqual({});
+  });
+
   it("a MERGED pull request is not an open one — a landed card is not still being built", () => {
     const desk = deriveLiveDesk({
       ...reading(

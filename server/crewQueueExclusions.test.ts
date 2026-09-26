@@ -44,7 +44,12 @@ describe("the exclusion vocabulary", () => {
        quietly, so the repair is to state the new list here with its reasoning
        — never to loosen the assertion to a length or a `toContain`. */
     expect(QUEUE_EXCLUSION_REASONS.map((reason) => reason.queueLabel))
-      .toEqual(["founder-ordered", "parked", "blocked", "awaiting-fable", "needs-sitting"]);
+      .toEqual([null, "founder-ordered", "parked", "blocked", "awaiting-fable", "needs-sitting"]);
+    /* ⚠ AND IT WENT RED A THIRD TIME FOR #1094, WHICH ADDED THE FIRST ROW — the
+       `null` is the point of it. `building` is the one reason that is NOT a
+       label: nobody labels a card "somebody is building this", and the fact is an
+       open pull request or a `CLAIMED —` comment, read by
+       `shared/crewCardBuildState.ts`. His order of 2026-09-26 is on the row. */
     /* ⚠ AND IT WENT RED AGAIN FOR #999, WHICH ADDED THE LAST TWO. Neither is new:
        both are `shared/crewNextUpHold.ts`'s hold labels, which the relay and the
        desk sweep already apply. `#841` carried `awaiting-fable` under a switch
@@ -55,7 +60,12 @@ describe("the exclusion vocabulary", () => {
     /* The drift this arm closes: `blocked` was typed here while the hold
        vocabulary grew two more labels, and nothing noticed that a held card
        was still being offered. A fourth hold label added there reddens this. */
-    const excluded = QUEUE_EXCLUSION_REASONS.map((reason) => reason.queueLabel as string);
+    const excluded = QUEUE_EXCLUSION_REASONS
+      /* The label-less row (#1094's `building`) cannot carry a hold label and is
+         not what this arm is about — it is dropped rather than compared, so a
+         `null` in the list cannot make a missing hold label look present. */
+      .map((reason) => reason.queueLabel)
+      .filter((label): label is string => label !== null);
     for (const label of Object.values(CREW_HOLD_LABELS)) {
       expect(excluded, `hold label \`${label}\` has no exclusion row`).toContain(label);
     }
