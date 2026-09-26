@@ -263,12 +263,19 @@ export type FilingDecision =
  * FALLEN INTO ONCE.** `CrewPipelineGroup` carries a `backgroundWork` flag that
  * looks made for this, and it is not: it answers *"could a shift work this if
  * only a switch reached it"*, which is **`true` on `debt` and `toolbelt`** —
- * the two groups this list most needs to refuse. Its own field and its own
- * blurb disagree about `debt` in the same object. Deriving from it would be
+ * the two groups this list most needs to refuse. Deriving from it would be
  * working law 4 applied where its precondition fails, exactly as reusing the
  * switch `blurb`s as Jev's criteria would have been (see the header). **So the
  * list is NAMED, with its reason, and an arm holds every entry to being a real
  * group key** — which catches a rename, the only drift a named list can take.
+ *
+ * ⚠ **THIS PARAGRAPH ALSO SAID *"its own field and its own blurb disagree about
+ * `debt` in the same object"* — TRUE WHEN WRITTEN, CLOSED BY #1248.** The blurb
+ * no longer claims his word decides the work; his page draws that from the field
+ * (`backgroundWorkSentence`). **The refusal above is unchanged and still right**,
+ * and that is the point worth keeping: the contradiction was never the reason —
+ * the reason is that `backgroundWork` answers a different question from *"may a
+ * machine move this card under a switch"*, and it still does.
  *
  * ⚠ **It narrows the card's stated population, declared rather than quiet.**
  * #1224 says *"cards that arrive with no work label (the Unfiled row; 0
