@@ -24,6 +24,9 @@
  *    `userId` inside the transaction that inserts, and every id written into
  *    the row is taken from a row just proved rather than from a number a
  *    caller passed.
+ *
+ * @invariant1 module-wide — every statement here carries the owner, or is
+ *   listed with its reason in `server/ownerScopedModules.test.ts` (#1312).
  * 2. **MINTED ONCE is the database's rule, not this file's.** There is no
  *    read-then-insert here and deliberately no update: the insert runs and a
  *    duplicate on `uq_casting_ink_delivery_crops_delivery` comes back as
