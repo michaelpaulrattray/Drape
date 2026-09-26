@@ -287,8 +287,28 @@ describe("the price reading — where money is SET (#1359)", () => {
    */
   it("the client's own price copy is a money diff, and the symbol scope stays server-only", () => {
     expect(pathRe.test("client/src/features/casting/constants.ts")).toBe(true);
-    expect(gateYml).toContain('git diff -G"$MONEY_SYMBOLS" --name-only "origin/$BASE"...HEAD -- server shared');
-    expect(reviewYml).toContain('git diff -G"$MONEY_SYMBOLS" --name-only "origin/$BASE"...HEAD -- server shared');
+
+    /*
+      ⚠ READ AS A PATHSPEC, NOT AS A SUBSTRING — THE FIRST SHAPE OF THIS ARM WAS
+      `toContain(… -- server shared)` AND ITS OWN SABOTAGE WALKED THROUGH IT.
+      Appending ` client` to the pathspec leaves the asserted string perfectly
+      contained, so the widening this arm exists to refuse passed it green
+      (4 of 5 caught, and this was the miss). So the pathspec is EXTRACTED and
+      compared whole.
+    */
+    for (const [name, yml] of [
+      ["gate.yml", gateYml],
+      ["review.yml", reviewYml],
+    ] as const) {
+      const m = /git diff -G"\$MONEY_SYMBOLS"[^\n]*? -- ([^|\n]+?)\s*(?:\|\||\)|$)/.exec(yml);
+      if (!m) throw new Error(`${name} has no 'git diff -G"$MONEY_SYMBOLS" ... -- <pathspec>' line`);
+      expect(
+        m[1]!.trim().split(/\s+/),
+        `${name}'s symbol reading must stay scoped to server+shared — a client scope matches every `
+          + "client file mentioning a primitive as a substring, which is #958's rejected widening. "
+          + "The client's price files are on the PATH list by name instead.",
+      ).toEqual(["server", "shared"]);
+    }
   });
 
   /**
