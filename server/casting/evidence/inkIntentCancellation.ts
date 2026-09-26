@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import {
   beginDirectOperation,
   completeDirectOperationFailure,
+  recordDirectOperationDelivered,
   requireDirectOperationRecovery,
   type DirectOperationGate,
 } from "../directOperation";
@@ -136,12 +137,31 @@ export async function cancelInkAddIntent(
       phase: "cleaning",
       heartbeat: false,
     });
-    return await (dependencies.commit ?? commitCancelInkAddIntent)({
+    const cancelled = await (dependencies.commit ?? commitCancelInkAddIntent)({
       userId: input.userId,
       modelId: subject.modelId,
       intentId: input.intentId,
       operationId: gate.operationId,
     });
+    /*
+      The commit's transaction has returned, so the
+      `finalizeRunningGenerationOperationSuccessIn` inside it has landed and this
+      operation is terminally succeeded. Zeros are structural on this road twice
+      over: that finalizer writes them literally AND refuses a paid operation
+      outright (`generationOperations.ts:1729`), and a cancellation's own result
+      contract asserts `chargedCredits === 0` before it is returned.
+
+      ⚠ It is a DELIVERY and not a failure. A cancellation the customer asked
+      for and got is the product doing what it was told; recording it as a
+      failure would put her own decision into the refusal rate.
+    */
+    recordDirectOperationDelivered({
+      userId: input.userId,
+      operationId: gate.operationId,
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+    return cancelled;
   } catch (error) {
     const terminal = await getOutcome(claim).catch(() => null);
     if (terminal?.type === "replay_success") {
@@ -286,7 +306,7 @@ export async function cancelInkProjectionCandidate(
       phase: "cleaning",
       heartbeat: false,
     });
-    return await (
+    const cancelled = await (
       dependencies.commit ?? commitCancelInkProjectionCandidate
     )({
       userId: input.userId,
@@ -294,6 +314,15 @@ export async function cancelInkProjectionCandidate(
       candidateId: input.candidateId,
       operationId: gate.operationId,
     });
+    /* The transaction committed — see the sibling road above for why the zeros
+       are structural and why a cancellation is a delivery. */
+    recordDirectOperationDelivered({
+      userId: input.userId,
+      operationId: gate.operationId,
+      chargedCredits: 0,
+      refundedCredits: 0,
+    });
+    return cancelled;
   } catch (error) {
     const terminal = await getOutcome(claim).catch(() => null);
     if (terminal?.type === "replay_success") {

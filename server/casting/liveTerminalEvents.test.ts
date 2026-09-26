@@ -20,6 +20,12 @@
  *    out of the tree, and each one's module must reach a capturing completer or
  *    a recorder. A road added tomorrow that forgets its terminal reddens here,
  *    which a list of six file names could never do (working law 4).
+ *    ⚠ **The reader that answers "does it reach one" now has controls, and it
+ *    needed them (#1432).** It matched a settler's name with a trailing `(`,
+ *    which is blind to the dependency-injection idiom every evidence module
+ *    uses — so a module that records everything was written onto the debt list
+ *    below, and from there into a card as work that did not exist. See
+ *    `callsASettler`.
  * 3. **The call ORDER at each site, from the source.** A recorder placed before
  *    its settlement would send an event for a settlement that never happened,
  *    and no unit arm over these six functions could see that without faking
@@ -28,6 +34,14 @@
  *    in `server/castingV2/signService.test.ts`, which already has the harness.
  *
  * ⚠ The `sign` road is DRIVEN there and deliberately not duplicated here.
+ *
+ * # THE DEBT LIST IS EMPTY AS OF #1432, AND THE MECHANISM STAYS
+ *
+ * Four modules shipped dark behind `R7_EVIDENCE_COMPOSER_SCOPE` on the reading
+ * that a closed door emits no `generation started` either. The list's job was to
+ * make that decision survive the door OPENING, and it did: the work landed
+ * before the scope moved. Three of the four were genuinely dark and record now;
+ * the fourth was a reader defect, described above.
  */
 import { readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -267,41 +281,65 @@ describe("the payloads pass the real catalogue, not only the mock", () => {
 
 /** Modules that route a terminal through a completer which already captures. */
 const CAPTURING_COMPLETERS = [
-  "completeDirectOperationSuccess(",
-  "completeClaimedDirectOperationSuccess(",
+  "completeDirectOperationSuccess",
+  "completeClaimedDirectOperationSuccess",
 ];
 /** The recorders this card added, for a settlement made some other way. */
-const RECORDERS = ["recordDirectOperationDelivered(", "recordDirectOperationFailed("];
+const RECORDERS = ["recordDirectOperationDelivered", "recordDirectOperationFailed"];
 
 /**
- * ⚠ THE ENUMERATED REMAINDER, AND IT ONLY SHRINKS.
+ * Does this module CALL one of the settlers above?
  *
- * Seven roads claim an operation and settle success without recording, and all
- * seven sit behind `R7_EVIDENCE_COMPOSER_SCOPE`, which stands at **`off`** on
- * production (`scripts/lib/productionFlagPositions.mts`) — `requireInkCapability`
- * in `server/routes/evidence.ts` refuses every one of them for every account.
+ * ⚠ THIS WAS `source.includes("completeDirectOperationSuccess(")` UNTIL #1432,
+ * AND THE TRAILING `(` MADE IT BLIND TO THE HOUSE STYLE OF THE VERY FAMILY IT
+ * WAS READING. Every evidence module injects its settler for its tests:
  *
- * **A closed door emits no `generation started` either, so there is no gap on
- * his strip today**: that is the whole reason they are here rather than fixed in
- * the same commit as the six live roads, and it is a reading rather than a
- * preference. Two of them are also PAID (`INK_ADD_PRICE_CREDITS`) and carry
- * their own charge/refund bookkeeping, so their money has to be read before an
- * event can quote it — which is work on machinery `PROGRAM.md` has PARKED.
+ *     await (dependencies.completeSuccess ?? completeDirectOperationSuccess)({
  *
- * This list is what makes that decision survive the door opening: a flip of that
- * scope with these still on it is a silent hole, and the card named below is the
- * one that empties the list.
+ * — the name, a `)`, then the `(`. So `inkCandidateGeneration.ts` read as
+ * recording NOTHING while it routes both of its claim sites' success through
+ * `completeDirectOperationSuccess` and both failures through
+ * `completeDirectOperationFailure` (lines 839/860 and 1126/1150), money and all.
+ * It was written onto the debt list, and from there into #1432's own table as
+ * *"PAID — its money has to be read before an event can quote it"*, which was
+ * work that did not exist.
+ *
+ * **A reader may be wrong toward noise as well as toward silence, and only one
+ * of those two errors gets written into a document as a fact.** This one did,
+ * within a day. Both controls are driven below.
+ *
+ * Its stated limit, unchanged by the widening: this reads SOURCE, so a docblock
+ * that quotes a settler's name with a paren counts as a call. The per-site order
+ * arms are what read what actually happens where.
  */
-const DARK_BEHIND_A_CLOSED_DOOR: Record<string, string> = {
-  "server/casting/evidence/inkAddIntent.ts":
-    "evidence_intent_begin — free; R7_EVIDENCE_COMPOSER_SCOPE=off. See #1432",
-  "server/casting/evidence/inkCandidateGeneration.ts":
-    "evidence_candidate_generate ×2 — PAID (INK_ADD_PRICE_CREDITS); scope off. See #1432",
-  "server/casting/evidence/inkCandidateAcceptance.ts":
-    "evidence_candidate_accept — free; scope off. See #1432",
-  "server/casting/evidence/inkIntentCancellation.ts":
-    "evidence_candidate_cancel ×2 — free; scope off. See #1432",
-};
+function callsASettler(source: string): boolean {
+  return [...CAPTURING_COMPLETERS, ...RECORDERS].some(
+    (name) => new RegExp(`\\b${name}\\s*\\)?\\s*\\(`).test(source),
+  );
+}
+
+/**
+ * ⚠ THE ENUMERATED REMAINDER, AND IT IS EMPTY — CLOSED BY #1432.
+ *
+ * It held four modules behind `R7_EVIDENCE_COMPOSER_SCOPE` (`off` on
+ * production), on the reading that a closed door emits no `generation started`
+ * either, so there was no gap on his strip and no wrong number he could read.
+ * **The list's own job was to make that decision survive the door opening**, and
+ * it did exactly that: the card it named was worked before the scope moved.
+ *
+ * What #1432 found on the way is the part worth keeping. **One of the four was
+ * never dark at all** — `inkCandidateGeneration.ts`, the PAID pair, routes both
+ * its successes and both its failures through the capturing completers. It was
+ * on this list because the reader could not see a settler called through a
+ * dependency default; see `callsASettler` above, whose controls now pin both
+ * directions. The other three were real and are recorded now.
+ *
+ * **The mechanism stays with nothing in it.** An empty debt list is the state a
+ * debt list is supposed to reach, and keeping it means the next road that must
+ * ship dark has somewhere to be declared rather than a reason to be argued for.
+ * A line added here is a founder-visible act and says which door it is behind.
+ */
+const DARK_BEHIND_A_CLOSED_DOOR: Record<string, string> = {};
 
 /** Every module under `server/` that claims a generation operation. */
 function modulesThatClaimAnOperation(): string[] {
@@ -330,6 +368,51 @@ function modulesThatClaimAnOperation(): string[] {
   return [...found].sort();
 }
 
+describe("the settler reader, controlled in both directions (#1432)", () => {
+  /* Law 2: a reader whose verdict goes into a debt list — and from there into a
+     card — gets a negative and a positive control before its findings count.
+     This one had neither, and it put a module on that list that never belonged
+     there. */
+
+  it("sees a settler called through a dependency default — the house style", () => {
+    expect(callsASettler(
+      "await (dependencies.completeSuccess ?? completeDirectOperationSuccess)({",
+    )).toBe(true);
+    expect(callsASettler("  recordDirectOperationDelivered({")).toBe(true);
+  });
+
+  it("does NOT see an import, a type reference or an unrelated module as a call", () => {
+    expect(callsASettler("import { completeDirectOperationSuccess } from \"../directOperation\";"))
+      .toBe(false);
+    expect(callsASettler("  completeSuccess?: typeof completeDirectOperationSuccess;"))
+      .toBe(false);
+    expect(callsASettler("  begin?: BeginOperation; markRunning?: typeof markRunning;"))
+      .toBe(false);
+    /* The near-miss that matters: a longer name that merely ENDS with a settler's
+       is not that settler. */
+    expect(callsASettler("await notCompleteDirectOperationSuccess({")).toBe(false);
+  });
+
+  it("reads the real paid ink road as settling, which the old reader could not", () => {
+    const source = readListedSource(
+      resolve(ROOT, "server/casting/evidence/inkCandidateGeneration.ts"),
+    );
+    expect(source, "the paid ink road is gone — this control cannot be taken").not.toBeNull();
+    expect(callsASettler(source!)).toBe(true);
+    /*
+      AND THE OLD READER'S VERDICT, PINNED SO THE FINDING CANNOT QUIETLY REVERT.
+
+      `source.includes("completeDirectOperationSuccess(")` — the reader as it
+      stood — is FALSE of this file, because every call goes through the
+      dependency default. That single character is what put a module that
+      records everything onto a list of modules that record nothing.
+    */
+    expect(source!.includes("completeDirectOperationSuccess(")).toBe(false);
+    expect(source!.includes("(dependencies.completeSuccess ?? completeDirectOperationSuccess)({"))
+      .toBe(true);
+  });
+});
+
 describe("every road that starts a generation records its terminal", () => {
   it("the population is read from the tree and is not empty", () => {
     const modules = modulesThatClaimAnOperation();
@@ -347,7 +430,7 @@ describe("every road that starts a generation records its terminal", () => {
     for (const module of modulesThatClaimAnOperation()) {
       const source = readListedSource(resolve(ROOT, module));
       if (source === null) continue;
-      const settles = [...CAPTURING_COMPLETERS, ...RECORDERS].some((n) => source.includes(n));
+      const settles = callsASettler(source);
       /*
         `castingExport.ts` and `boardOps.ts` each hold several claims and settle
         some of them in ANOTHER module — `wholeCastRestore.ts`, `evidenceFork.ts`
@@ -371,7 +454,7 @@ describe("every road that starts a generation records its terminal", () => {
       const source = readListedSource(resolve(ROOT, module));
       expect(source, `${module} is gone — delete its debt line`).not.toBeNull();
       expect(
-        [...CAPTURING_COMPLETERS, ...RECORDERS].some((n) => source!.includes(n)),
+        callsASettler(source!),
         `${module} now records its terminal — delete its debt line`,
       ).toBe(false);
       expect(reason, `${module}'s debt line must say why it is still dark`).toMatch(/scope off|#\d+/);
@@ -454,5 +537,54 @@ describe("each live road records AFTER its settlement, read at the bytes", () =>
       source.indexOf("} catch (receiptError) {"),
     );
     expect(failureBlock).toContain("recordDirectOperationFailed(");
+  });
+
+  /* ── the four ink-composer roads #1432 recorded ────────────────────────────
+     Every one settles inside a `commit…` whose transaction holds a
+     `finalize…SuccessIn`, so "after the settlement" means after that commit
+     RETURNED — a rolled-back transaction settled nothing. Each arm reads the
+     await of the commit below the claim and the recorder below the await, which
+     is the one ordering a unit arm over these functions could not see without
+     faking each one's whole world. */
+
+  it("the ink intent records after its commit returned, above the shape check", () => {
+    const source = read("server/casting/evidence/inkAddIntent.ts");
+    const block = source.slice(source.indexOf('kind: "evidence_intent_begin"'));
+    expect(block.indexOf("dependencies.commit ?? commitBeginInkAnywhereIntent"))
+      .toBeLessThan(block.indexOf("recordDirectOperationDelivered("));
+    /* Above `closedAnywhereIntentResult`, which can throw: the settlement
+       happened, and a result this process cannot read back does not un-happen
+       it. That ordering is deliberate and is the one a later edit would flip. */
+    expect(block.indexOf("recordDirectOperationDelivered("))
+      .toBeLessThan(block.lastIndexOf("return closedAnywhereIntentResult("));
+  });
+
+  it("the candidate acceptance records once, below both commit branches", () => {
+    const source = read("server/casting/evidence/inkCandidateAcceptance.ts");
+    const block = source.slice(source.indexOf("const accepted = prepared.kind ==="));
+    expect(block.indexOf("commitInkProjectionCandidateAcceptance"))
+      .toBeLessThan(block.indexOf("recordDirectOperationDelivered("));
+    expect(block.indexOf("dependencies.commit ?? commitInkCandidateAcceptance"))
+      .toBeLessThan(block.indexOf("recordDirectOperationDelivered("));
+    /* ONE recorder for two settlements. Two copies is the shape that lets a
+       third branch arrive tomorrow with no record at all. */
+    expect(source.match(/recordDirectOperationDelivered\(/g)).toHaveLength(1);
+  });
+
+  it("both cancellation roads record after their own commit returned", () => {
+    const source = read("server/casting/evidence/inkIntentCancellation.ts");
+    const intent = source.slice(source.indexOf('kind: "evidence_candidate_cancel" as const'));
+    const intentBlock = intent.slice(0, intent.indexOf("export async function cancelInkProjectionCandidate"));
+    expect(intentBlock.indexOf("dependencies.commit ?? commitCancelInkAddIntent"))
+      .toBeLessThan(intentBlock.indexOf("recordDirectOperationDelivered("));
+
+    const projection = source.slice(source.indexOf("export async function cancelInkProjectionCandidate"));
+    expect(projection.indexOf("dependencies.commit ?? commitCancelInkProjectionCandidate"))
+      .toBeLessThan(projection.indexOf("recordDirectOperationDelivered("));
+
+    /* A cancellation is a DELIVERY, not a failure: the customer asked for it and
+       got it, and recording it as a failure would put her own decision into the
+       refusal rate. So neither road may reach for the failure recorder. */
+    expect(source).not.toContain("recordDirectOperationFailed(");
   });
 });

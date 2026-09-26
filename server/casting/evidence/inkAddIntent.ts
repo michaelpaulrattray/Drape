@@ -13,6 +13,7 @@ import {
 import {
   beginDirectOperation,
   failClaimedDirectOperation,
+  recordDirectOperationDelivered,
   type DirectOperationGate,
 } from "../directOperation";
 import {
@@ -414,6 +415,25 @@ export async function beginInkAnywhereIntent(
       intentId: (dependencies.generateId ?? randomUUID)(),
       anatomy: plan.anatomy,
       normalizedDescriptor: plan.normalizedDescriptor,
+    });
+    /*
+      The commit's transaction has returned, so `finalizeClaimedGenerationOperationSuccessIn`
+      inside it has landed and the operation is terminally succeeded — this is
+      the moment the recorder's contract names. It sits ABOVE the shape check
+      below on purpose: the settlement is what happened, and a result this
+      process then fails to read back does not un-happen it.
+
+      Zero on both numbers is structural rather than optimistic: that finalizer
+      writes `chargedCredits: 0, refundedCredits: 0` literally
+      (`generationOperations.ts:1537`), and planning an intent spends nothing —
+      `INK_ADD_PRICE_CREDITS` is charged by the CANDIDATE road, one operation
+      later, and this event says so with a number rather than by omission.
+    */
+    recordDirectOperationDelivered({
+      userId: input.userId,
+      operationId: gate.operationId,
+      chargedCredits: 0,
+      refundedCredits: 0,
     });
     return closedAnywhereIntentResult(result, plan);
   } catch (error) {
