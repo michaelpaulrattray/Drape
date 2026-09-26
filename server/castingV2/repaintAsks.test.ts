@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { scopedAskIsUnsayable, repaintAsksFor, repaintCannotRemove, type EditProse } from "./repaintAsks";
+import { FREE_SUBJECT_KEYS, isPluralSubject, SUBJECT_NOUNS } from "./refineSubjects";
+import { facetOfSubject } from "./refineFacets";
+import type { RefineDelta } from "./refineDelta";
 import { assembleRecipe } from "./recipeAssembler";
 import type { CastPronouns } from "./castPronouns";
 
@@ -1358,5 +1361,168 @@ describe("a distributed open kind is carried by its two per-side crops", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.asks.map((ask) => ask.slot)).toEqual(["open:wings", "hair"]);
+  });
+});
+
+/**
+ * COMPOSE-COMPLETENESS ON THE REPAINT ROAD — #1303's step 1, driven.
+ *
+ * # The question this answers, and why it was open
+ *
+ * The paid refine composes an edit prompt three times on one request, and the
+ * PRE-CLAIM door checks the first of them (`missingFromPrompt` over
+ * `composeRenderPrompt`'s preview). On the repaint road — which is every real
+ * customer, `CASTING_REPAINT_SCOPE=all` — the string that actually renders is
+ * built later and elsewhere, by {@link repaintAsksFor} from `editDelta`. So
+ * #1303 asked the only question that decides whether that matters: **does this
+ * builder have a completeness property of its own, or could a filed fact go
+ * missing here with the refund door none the wiser?**
+ *
+ * # It has one, and it is STRICTER than the paste road's
+ *
+ * `missingFromPrompt` looks for each filed value as a SUBSTRING of a composed
+ * prompt and refuses the claim when one is absent. This builder cannot reach
+ * that state: every facet a step writes either lands words in a slot, is spoken
+ * as a presentation clause, is spoken as a vacate — or the whole function
+ * returns `ok: false` with a NAMED reason and nothing is charged. There is no
+ * third way out. The `continue`s in its loops are all cases where the facet was
+ * already said somewhere else, never a facet going quiet.
+ *
+ * # Why the population is DERIVED and not a pair
+ *
+ * The card asked for two facets. Two facets prove two facets. Sixty hand-picked
+ * arms in this file prove sixty shapes and say nothing about the thirty-first
+ * subject somebody adds next year — which is exactly how a silent drop gets in:
+ * not by breaking a case a test names, but by being added beside one. So the
+ * sweep walks `FREE_SUBJECT_KEYS` itself and the guaranteed lane's own fields,
+ * and grows when the vocabulary does.
+ *
+ * Measured the day it was written: 30 free subjects — **28 said, 2 refused by
+ * name** (an accessory with no kind and an ink ask with no placement, both of
+ * which this caller deliberately cannot supply), **0 vanished** — plus five of
+ * the six guaranteed axes said and `makeup` refusing `notASlot`, which is the
+ * decided absence the arm above already owns. **16 of those 30 subjects are
+ * named by no other arm in this file**, which is the population's whole value.
+ *
+ * ⚠ # EVERY PROBE CARRIES A COMPANION FACT, AND THE FIRST VERSION DID NOT
+ *
+ * A one-facet delta cannot see the defect this arm exists for. Drop the facet
+ * and the step is empty, so `nothingAsked` fires — a NAMED refusal — and a
+ * silent drop arrives wearing an honest refusal's clothes. Driven: a sabotage
+ * skipping `cheekbones` in the written loop left all 70 tests green, this sweep
+ * among them.
+ *
+ * So each probe delta carries a second fact that always lands, on a different
+ * facet. Now the step is never empty: a dropped probe facet leaves the
+ * companion asked, the call returns `ok: true`, and the sweep sees the fact
+ * vanish. **`nothingAsked` must therefore never appear in the reasons at all**,
+ * and that is asserted — it would mean the companion itself went missing, which
+ * is the same defect one facet over.
+ */
+describe("nothing a step writes can go quiet — it is said, or it is refused by name (#1303)", () => {
+  /* The phrase is unmistakable and carries the subject's own noun, so a slot
+     lookup that needs to recognise an object still can. */
+  function probePhraseFor(subject: (typeof FREE_SUBJECT_KEYS)[number]): string {
+    return `${SUBJECT_NOUNS[subject]?.[0] ?? "thing"} filed by the sweep`;
+  }
+
+  /* A SECOND FACT THAT ALWAYS LANDS, so no probe can empty its own step and let
+     `nothingAsked` stand in for a drop. Eye colour reaches two slots on every
+     cast; a subject that IS eye colour gets hair colour instead, because a
+     companion sharing the probe's facet would be no companion at all. */
+  function companionFor(subject: (typeof FREE_SUBJECT_KEYS)[number]): RefineDelta {
+    return facetOfSubject(subject) === "eye.colour"
+      ? { hairColour: "copper" }
+      : { eyeColour: "green" };
+  }
+
+  it("every free subject in the vocabulary is accounted for, and none of them vanishes", () => {
+    /* A FLOOR ON THE POPULATION FIRST. An emptied vocabulary would make the
+       sweep below pass by having nothing to sweep — the one way a derived arm
+       lies while looking more thorough than a list. */
+    expect(FREE_SUBJECT_KEYS.length, "the free-subject vocabulary")
+      .toBeGreaterThanOrEqual(25);
+
+    const said: string[] = [];
+    const refused: Array<[string, string]> = [];
+    const vanished: string[] = [];
+
+    for (const subject of FREE_SUBJECT_KEYS) {
+      const phrase = probePhraseFor(subject);
+      const delta: RefineDelta = {
+        ...companionFor(subject),
+        free: { [subject]: isPluralSubject(subject) ? [phrase] : phrase },
+      };
+      const result = repaintAsksFor({ pronouns: her, delta, prose });
+      if (!result.ok) {
+        /* A refusal is only an acceptable outcome if it SAYS something, and if
+           what it says is about THIS ask. `nothingAsked` would mean the
+           companion fact vanished — the same defect, one facet over. */
+        expect(result.reason, `${subject} refused with no reason`).toBeTruthy();
+        expect(result.reason, `${subject} emptied a step that carries a companion fact`)
+          .not.toBe("nothingAsked");
+        refused.push([subject, result.reason]);
+        continue;
+      }
+      const inAsks = result.asks.some((ask) => (ask.words ?? "").includes(phrase));
+      const inPresentation = (result.presentation ?? []).some((one) => one.words.includes(phrase));
+      if (inAsks || inPresentation) said.push(subject);
+      else vanished.push(`${subject} (facet ${facetOfSubject(subject)})`);
+    }
+
+    /* THE WHOLE CLAIM, in one line: a filed fact never disappears. */
+    expect(vanished, "filed facts that reached neither the asks nor a refusal").toEqual([]);
+
+    /* AND THE OTHER HALF, without which the line above passes on a builder that
+       refuses absolutely everything — which would also never lose a fact, and
+       would also be useless. */
+    expect(said.length, `subjects that reached the painter's words (refused: ${
+      refused.map(([subject, reason]) => `${subject}=${reason}`).join(", ")})`)
+      .toBeGreaterThanOrEqual(20);
+  });
+
+  it("and the guaranteed lane's own fields, which are written as delta keys rather than subjects", () => {
+    const axes: Array<[string, RefineDelta, string]> = [
+      ["eyeColour", { eyeColour: "green" }, "green"],
+      ["eyeShape", { eyeShape: "almond" }, "almond"],
+      ["hairStyle", { hairStyle: "mullet" }, "mullet"],
+      ["hairColour", { hairColour: "copper" }, "copper"],
+      ["hairTexture", { hairTexture: "wavy" }, "wavy"],
+      /* Makeup is the decided absence, and it refuses — the arm in "what it
+         refuses rather than paints" owns that fact and names its reason. It is
+         here so this sweep's population is the whole lane rather than the part
+         that behaves. */
+      ["makeup", { makeup: "a red lip" }, "a red lip"],
+    ];
+    for (const [name, delta, needle] of axes) {
+      const result = repaintAsksFor({ pronouns: her, delta, prose });
+      if (!result.ok) {
+        expect(result.reason, `${name} refused with no reason`).toBeTruthy();
+        continue;
+      }
+      expect(
+        result.asks.some((ask) => (ask.words ?? "").includes(needle)),
+        `${name} came back ok and its words reached no ask`,
+      ).toBe(true);
+    }
+  });
+
+  it("TWO facets filed in one step both survive into the asks — the card's own ask", () => {
+    /* Deliberately two facets on DIFFERENT slots. The arm above ("one slot ONE
+       ask") proves two facets of ONE slot merge; this proves two facets of two
+       slots both arrive, which is the shape a dropped fact would hide in. */
+    const result = repaintAsksFor({
+      pronouns: her,
+      delta: { hairColour: "copper", free: { marks: ["a scar on her cheek"] } },
+      prose,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["hair", "skin"]);
+    expect(result.asks.find((ask) => ask.slot === "hair")?.words)
+      .toContain("copper");
+    expect(result.asks.find((ask) => ask.slot === "skin")?.words)
+      .toBe("a scar on her cheek");
   });
 });
