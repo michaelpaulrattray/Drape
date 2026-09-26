@@ -34,11 +34,9 @@ import {
   CREW_PIPELINE_GROUPS,
   CREW_PIPELINE_ORPHAN_GROUPS,
   CREW_UNREACHABLE_GROUP_KEYS,
-  FOUNDER_WORD_CLAIMS,
   PIPELINE_GROUP_KEY_PREFIX,
   PIPELINE_SWITCHED_KEY,
   backgroundWorkSentence,
-  blurbClaimsHisWord,
   onePlaceViolations,
   pipelineGroupFor,
   pipelineGroupRowKey,
@@ -82,6 +80,41 @@ const REAL_SHAPES: ReadonlyArray<{ readonly why: string; readonly labels: readon
   { why: "casting upkeep on a debt card — #242's real shape", labels: ["debt", "casting-upkeep"] },
   { why: "a patrol that is casting upkeep — #129's real shape", labels: ["patrol", "casting-upkeep"] },
 ];
+
+/**
+ * THE CLAIM A `backgroundWork: true` BLURB MAY NOT MAKE (#1248), AND IT LIVES
+ * HERE RATHER THAN BESIDE THE BLURBS.
+ *
+ * ⚠ It was written in `shared/crewPipelineGroups.ts` first and the
+ * cleanup-dispositions door refused it: a `shared/` export whose only importer
+ * is a test lands on the uncalled-export sweep's reading list as `unread`. The
+ * refusal is right, and the alternative — a KEEP row on the deletion door for a
+ * symbol nothing in the product calls — would have been the quieter wrong
+ * answer. These phrases are not product data; they are what a CHECKER looks for.
+ *
+ * ⚠ **One direction only.** A group whose work is ORDINARY must not also say in
+ * prose that his word decides it — that is the exact pair this card measured.
+ * The reverse is fine: a `false` group may say whatever it likes, because
+ * "it waits by design" is precisely what its blurb is there to explain.
+ *
+ * ⚠ **Its limit, stated rather than hidden:** it reads the spellings this page
+ * actually uses, so a new wording is invisible to it. That is why the arm below
+ * ALSO pins every `true` group's blurb character for character — a phrase reader
+ * and a pin fail differently, and the pin is what catches a wording nobody
+ * thought of.
+ */
+const FOUNDER_WORD_CLAIMS: readonly string[] = [
+  "needs your word",
+  "yours to rule",
+  "your own ruling",
+  "this one is yours",
+  "without your word",
+];
+
+function blurbClaimsHisWord(blurb: string): boolean {
+  const haystack = blurb.toLowerCase();
+  return FOUNDER_WORD_CLAIMS.some((claim) => haystack.includes(claim));
+}
 
 describe("the pipeline vocabulary", () => {
   it("⚠ CONTROL — every group is defined by a label that already exists, or by nothing", () => {

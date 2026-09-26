@@ -438,33 +438,20 @@ export function backgroundWorkSentence(group: CrewPipelineGroup): string | null 
 }
 
 /**
- * THE CLAIM A `backgroundWork: true` BLURB MAY NOT MAKE, and it is one
- * direction only.
+ * ⚠ **THE RULE THAT A `backgroundWork: true` BLURB MAY NOT ALSO CLAIM HIS WORD
+ * DECIDES THE WORK IS A GUARD, AND IT LIVES IN THE SUITE — `server/
+ * crewPipelineGroups.test.ts` (#1194's neighbour, #1248).**
  *
- * ⚠ **A group whose work is ordinary must not also say in prose that his word
- * decides it** — that is the exact pair #1248 measured. The reverse is fine: a
- * `false` group may say whatever it likes, because "it waits by design" is
- * precisely what its blurb is there to explain.
+ * It was written here first, as an exported predicate and a list of phrases, and
+ * the cleanup-dispositions door refused it: a `shared/` export whose only
+ * importer is a test lands on the uncalled-export sweep's reading list as
+ * `unread`. That refusal is right. The phrases are not product data — no screen
+ * renders them and no decision reads them — they are what a CHECKER looks for,
+ * so they belong to the checker.
  *
- * ⚠ **Its limit, stated rather than hidden: it reads the spellings this page
- * actually uses, so a new wording is invisible to it.** That is why the arm in
- * `server/crewPipelineGroups.test.ts` ALSO pins every `true` group's blurb
- * character for character — a phrase reader and a pin fail differently, and the
- * pin is what catches a wording nobody thought of. The positive control is the
- * exact string `debt` carried: it must read as a claim.
+ * What stays here is the fact the guard is about: the blurb says what the group
+ * HOLDS, and `backgroundWorkSentence` says whether the work is ordinary.
  */
-export const FOUNDER_WORD_CLAIMS: readonly string[] = [
-  "needs your word",
-  "yours to rule",
-  "your own ruling",
-  "this one is yours",
-  "without your word",
-];
-
-export function blurbClaimsHisWord(blurb: string): boolean {
-  const haystack = blurb.toLowerCase();
-  return FOUNDER_WORD_CLAIMS.some((claim) => haystack.includes(claim));
-}
 
 /**
  * THE RUNG LABEL — `rung:N3` places a card under ladder rung N3 (#493).
