@@ -14,6 +14,21 @@
  * what it is doing to his product right now, and it sits second only to the
  * briefing itself.
  *
+ * # ⚠ EVERY OPEN RUN IS DRAWN, AND THE SINGULAR WAS THE DEFECT (#1358)
+ *
+ * This read `runs.find((run) => run.endedAt === null)` — ONE open run, the
+ * newest — and every other open row fell into "Recent shifts" beneath, listed
+ * among the finished. That was right for as long as one shift ran at a time. The
+ * runner now launches up to four builder seats in a pass (#1281), and on the
+ * first evening it did he asked, verbatim: *"i still only see 1 shift running?"*
+ * — with four rows open, four heartbeats inside the window, and his page
+ * vouching for one of them.
+ *
+ * So the section is a LIST: one block per open run, each deriving its own state
+ * and carrying its own no-check-in reading, newest first. A seat that cannot be
+ * seen is the one thing this surface exists to prevent, so nothing here caps the
+ * list or picks a winner among them.
+ *
  * # THREE STATES, AND THE THIRD IS THE ONE THAT MATTERS
  *
  * - **Working now** — a run with a live heartbeat.
@@ -210,57 +225,63 @@ export function CrewWorkingNow({
     );
   }
 
-  const runs = shiftRuns.runs;
-  /* The open run, if there is one. Only one can be "current"; the reader orders
-     newest first, so this is the newest unstamped row. */
-  const open = runs.find((run) => run.endedAt === null);
-  const state = open ? deriveShiftRunState(open, now) : null;
-  /* Everything else, whether it closed or was superseded. */
-  const past = runs.filter((run) => run.id !== open?.id).slice(0, 3);
+  /* EVERY open run, newest first, and the last three finished ones — both
+     separated by the reader, which is where the split belongs (#1358). */
+  const open = shiftRuns.open;
+  const past = shiftRuns.past;
+  const states = open.map((run) => deriveShiftRunState(run, now));
+  const liveCount = states.filter((state) => state === "running").length;
+  const anyStalled = states.some((state) => state === "stalled");
 
   return (
-    <SectionShell embedded={embedded} first={first} className={cn(state === "stalled" && "dp-crew__card--alert")}>
+    <SectionShell embedded={embedded} first={first} className={cn(anyStalled && "dp-crew__card--alert")}>
       <SectionHead embedded={embedded} eyebrow="Working now">
-        {state === "running" && (
+        {liveCount > 0 && (
           /* The one live signal on the page. `aria-hidden` on the dot because
              the state is already said in words below — a screen reader should
-             not hear a decoration. */
+             not hear a decoration.
+
+             The COUNT appears only when there is more than one, and it is there
+             because with four seats running "live" alone answers a different
+             question than the one he asked (#1358): he wants to know how many. */
           <span className="dp-crew__live">
             <span aria-hidden className="dp-crew__dot" />
-            live
+            {liveCount > 1 ? `${liveCount} live` : "live"}
           </span>
         )}
       </SectionHead>
 
-      {state === null && (
+      {open.length === 0 && (
         <p className="dp-crew__mission dp-crew__body--soft dp-crew__gap">Nothing running.</p>
       )}
 
-      {state === "running" && open && (
-        <div className="dp-crew__gap">
-          <RunBody run={open} now={now} />
+      {open.map((run, index) => (
+        <div
+          key={run.id}
+          /* A hairline between seats — the card's own divider, so a list of four
+             reads as four things rather than one paragraph. Never above the
+             first. */
+          className={index === 0 ? "dp-crew__gap" : "dp-crew__rule dp-crew__rule--tight"}
+        >
+          {states[index] === "stalled" && (
+            /*
+              ⚠ THE WORDS ARE A READING, NOT A VERDICT (#295). What is known is
+              the timestamp; what is NOT known is whether the process is alive.
+              Both possibilities are named, in that order, and neither is ranked —
+              the founder is the one with the terminal.
+            */
+            <p className="dp-crew__alert">
+              No check-in since {clockTime(run.heartbeatAt)}
+              {" "}({ago(run.heartbeatAt, now)}), and it has not stamped itself finished.
+              {" "}
+              <span className="dp-crew__body--soft">
+                It may be inside a long step, or it may have died — this page cannot tell which.
+              </span>
+            </p>
+          )}
+          <RunBody run={run} now={now} />
         </div>
-      )}
-
-      {state === "stalled" && open && (
-        <div className="dp-crew__gap">
-          {/*
-            ⚠ THE WORDS ARE A READING, NOT A VERDICT (#295). What is known is
-            the timestamp; what is NOT known is whether the process is alive.
-            Both possibilities are named, in that order, and neither is ranked —
-            the founder is the one with the terminal.
-          */}
-          <p className="dp-crew__alert">
-            No check-in since {clockTime(open.heartbeatAt)}
-            {" "}({ago(open.heartbeatAt, now)}), and it has not stamped itself finished.
-            {" "}
-            <span className="dp-crew__body--soft">
-              It may be inside a long step, or it may have died — this page cannot tell which.
-            </span>
-          </p>
-          <RunBody run={open} now={now} />
-        </div>
-      )}
+      ))}
 
       {past.length > 0 && (
         <div className="dp-crew__rule dp-crew__rule--tight">

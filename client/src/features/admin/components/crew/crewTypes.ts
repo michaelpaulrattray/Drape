@@ -267,7 +267,9 @@ export function heldCount(rows: readonly CrewNextUpRow[]): number {
  * that silently never renders.
  */
 export type CrewShiftRunsView = CrewState["shiftRuns"];
-export type CrewShiftRunView = CrewShiftRunsView["runs"][number];
+/* The two lists carry the same row shape, and it is taken from `open` because
+   that is the one the page cannot do without (#1358). */
+export type CrewShiftRunView = CrewShiftRunsView["open"][number];
 
 /**
  * His background-work switches and the counts beside them (#277). Inferred, so
