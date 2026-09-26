@@ -502,8 +502,15 @@ jobs:
   # and `scripts/bundle-budget.mts` refuses when the JS a customer fetches
   # before first paint (every module script and modulepreload the built
   # index.html names — one file today, `assets/index-<hash>.js`) exceeds the
-  # budget declared ONCE in `scripts/lib/bundleBudget.mts`: 480 kB on 452.4 kB
-  # measured, ~6% headroom. Level-9 gzip, the ledger's own reader
+  # budget declared ONCE in `scripts/lib/bundleBudget.mts`.
+  #
+  # ⚠ THE NUMBER IS NOT RESTATED HERE, and it used to be (#1265). This comment
+  # read "480 kB on 452.4 kB measured, ~6% headroom" for a week after a split
+  # halved the subject to 260 kB, so a shift reading the gate to learn the line
+  # read a number the code had stopped holding — working law 4 in prose. The
+  # declaration is the one place it lives; open that file.
+  #
+  # Level-9 gzip, the ledger's own reader
   # (`bundleFold.mts`), so this number and `pnpm machinist:bundle`'s are one
   # number; Vite's build report gzips at its default level and says 12 kB more
   # for the same file. The gate did not build the client at all before this
@@ -515,8 +522,10 @@ jobs:
   # it would add ~30 s to the serial run #1034 just cut. Beside it the cost is
   # a second runner's install (~40 s) plus the build, all under `gate-checks`'
   # own ~400 s, so the wall-clock does not move. Built with no `.env`, so the
-  # runner reads 452.3 kB where a local build reads 452.4 kB (the `VITE_*`
-  # literals) — a tenth of a kilobyte, not a regression.
+  # runner read 452.3 kB where a local build read 452.4 kB (the `VITE_*`
+  # literals, measured 19 Sep) — a tenth of a kilobyte, not a regression. That
+  # delta is a property of the two build shapes, not of the tree, and the
+  # headroom the budget carries is two orders larger than it.
   #
   # ⚠ READ BY THE MERGE TOOL BY NAME, for `static-shapes`' reason above:
   # `scripts/pr-merge-in-order.mts` stops on a red `bundle-budget`, refuses a
@@ -525,7 +534,11 @@ jobs:
   # `main`. `pnpm preflight` runs the same script before the first push, so a
   # customer surface pulling a staff page eager is red on the shift's own box
   # at ten seconds. Driven before it merged: an eager `AdminOverview` import
-  # read 555.9 kB and exit 1; the tree as it stands read 452.4 kB and exit 0.
+  # read 555.9 kB and exit 1; the tree as it stood read 452.4 kB and exit 0.
+  # Re-driven 26 Sep at `0ba7f9e4` when the budget was re-read (#1265): the
+  # same sabotage read 376.3 kB, and at the OLD line it exited 0 — the guard
+  # waved through the one regression it exists to catch. 260.3 kB and exit 0
+  # on the tree as it stands.
   bundle-budget:
     name: bundle-budget
     needs: resolve
