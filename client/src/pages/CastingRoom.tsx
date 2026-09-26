@@ -300,9 +300,28 @@ export default function CastingRoom() {
     click away, in the strip and the viewer, which is where someone goes when
     detail is what they came for.
   */
+  /*
+    ⚠ **CHOSEN BY ANGLE, AND IT USED TO ALSO REQUIRE A PICTURE (#1372).**
+
+    His report, 2026-09-26, verbatim: *"another small fix - the view cards now
+    show when they are in a generating state but on the hero views they dont
+    show as generating if they are empty"*.
+
+    The `&& slot.url` here was the whole defect. A slot with no picture YET —
+    queued, dispatched, or re-asked with Try again — was dropped to `null`
+    before the hero ever saw it, so the cell could only ever draw a label on a
+    disabled box. The strip's tile for the SAME view was drawing its working
+    state two sections down (#1235). One view, two surfaces, two different
+    stories about whether anything is happening.
+
+    `!slot.standIn` STAYS, and it is a different question with a different
+    answer: a stand-in is a placeholder standing where a real view is not, and
+    the hero's two companions are the package's own best two. That rule is
+    unchanged — what changed is that "not made YET" stopped being treated as
+    "not there".
+  */
   const companions = ["threeQuarter", "sideClose"].map(
-    (angle) =>
-      data?.slots.find((slot) => slot.angle === angle && slot.url && !slot.standIn) ?? null,
+    (angle) => data?.slots.find((slot) => slot.angle === angle && !slot.standIn) ?? null,
   );
 
   /*
@@ -496,26 +515,66 @@ export default function CastingRoom() {
                       <span className="dpc-master__tag">MASTER</span>
                     </button>
                     <div className="dpc-master__side">
-                      {companions.map((slot, index) => (
+                      {companions.map((slot, index) => {
+                        /*
+                          THE SAME READING THE STRIP'S TILE MAKES, from the same
+                          two helpers (working law 4). A second rule here — "no
+                          url and the cast is building" — would have been a
+                          parallel copy of `slotShowsWorking`, and it would have
+                          drifted the first time a third state was added: the
+                          tile already knows that a view being RE-ASKED is a view
+                          being made (#1235), which no local rule would have
+                          known.
+                        */
+                        const working = slot ? slotShowsWorking(slot, asking) : false;
+                        const openable = Boolean(slot?.url) && !working;
+                        return (
                         <button
                           type="button"
                           className="dpc-master__cell"
                           key={slot?.angle ?? `companion-${index}`}
-                          disabled={!slot?.url}
-                          aria-label={slot?.url ? `View ${slot.label} larger` : undefined}
+                          disabled={!openable}
+                          aria-label={openable ? `View ${slot!.label} larger` : undefined}
                           onClick={() =>
-                            slot?.url ? setViewingImage({ url: slot.url, label: slot.label }) : undefined
+                            openable ? setViewingImage({ url: slot!.url as string, label: slot!.label }) : undefined
                           }
                         >
-                          {slot?.url ? (
-                            <img src={slot.url} alt={slot.label} />
-                          ) : (
+                          {/*
+                            A LANDED PICTURE STAYS UNDER THE WORKING STATE rather
+                            than being swapped for it, exactly as the tile does
+                            it: a Try again on a view that already has a picture
+                            keeps showing the picture it is replacing, so the
+                            cell never goes blank mid-press.
+                          */}
+                          {slot?.url ? <img src={slot.url} alt={slot.label} /> : null}
+                          {working ? (
+                            /*
+                              THE CELL'S OWN GEOMETRY, not the skeleton's.
+                              `.dp-skeleton` carries `border-radius: var(--r-ctl)`
+                              and a 1px border, which suits the strip's tile — a
+                              standalone card, which is why the tile overrides the
+                              radius to its own 9. The hero's two cells butt
+                              against the Master and each other and are square,
+                              so the default drew a rounded, bordered card inside
+                              a square box, with its curved bottom corners plainly
+                              visible against the cell below (seen in both themes
+                              before this line existed). The outer corner is
+                              clipped by the side column, as it is for a landed
+                              picture.
+                            */
+                            <Skeleton
+                              style={{ position: "absolute", inset: 0, borderRadius: 0, border: "none" }}
+                              label=""
+                            />
+                          ) : null}
+                          {!slot?.url && !working ? (
                             <span className="dpc-master__empty">
                               {slot ? slot.label : COMPANION_LABELS[index]}
                             </span>
-                          )}
+                          ) : null}
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                   <div className="dpc-master__foot">
