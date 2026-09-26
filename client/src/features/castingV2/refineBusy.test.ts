@@ -204,19 +204,19 @@ describe("the wait the picture shows", () => {
 
   it("narrates from the click, before the server has a row for it", () => {
     expect(refineWait({ viewerCandidateId: HER, mutation: out, pending: [] }))
-      .toEqual({ instruction: "give her horns", stage: "queued", extra: 0 });
+      .toEqual({ instruction: "give her horns", stage: "queued", step: null, extra: 0 });
   });
 
   it("hands over to the row the moment it exists, without a flicker of nothing", () => {
     expect(refineWait({ viewerCandidateId: HER, mutation: out, pending: [row()] }))
-      .toEqual({ instruction: "dangly cross earrings", stage: "dispatched", extra: 0 });
+      .toEqual({ instruction: "dangly cross earrings", stage: "dispatched", step: null, extra: 0 });
   });
 
   it("keeps narrating from the row when the click is long gone (D-161)", () => {
     /* The panel was closed and reopened; the mutation is a memory, the render
        is not. This is the arm that must never be traded for immediacy. */
     expect(refineWait({ viewerCandidateId: HER, mutation: idle, pending: [row()] }))
-      .toEqual({ instruction: "dangly cross earrings", stage: "dispatched", extra: 0 });
+      .toEqual({ instruction: "dangly cross earrings", stage: "dispatched", step: null, extra: 0 });
   });
 
   it("says nothing about ANOTHER cast's click", () => {
@@ -229,7 +229,7 @@ describe("the wait the picture shows", () => {
       mutation: idle,
       pending: [row({ stage: "settling", instruction: "the dead one" }), row()],
     });
-    expect(wait).toEqual({ instruction: "dangly cross earrings", stage: "dispatched", extra: 1 });
+    expect(wait).toEqual({ instruction: "dangly cross earrings", stage: "dispatched", step: null, extra: 1 });
   });
 
   it("still describes a settling row, because the controls come back before the picture does", () => {
@@ -237,11 +237,32 @@ describe("the wait the picture shows", () => {
       viewerCandidateId: HER,
       mutation: idle,
       pending: [row({ stage: "settling" })],
-    })).toEqual({ instruction: "dangly cross earrings", stage: "settling", extra: 0 });
+    })).toEqual({ instruction: "dangly cross earrings", stage: "settling", step: null, extra: 0 });
   });
 
   it("says nothing when nothing is out", () => {
     expect(refineWait({ viewerCandidateId: HER, mutation: idle, pending: [] })).toBe(null);
+  });
+
+  /*
+    AND IT CARRIES WHERE THE ROAD SAYS IT IS, WITHOUT INVENTING ONE (#55).
+
+    Two arms, and the second is the one that matters: the local head of the wait
+    — the seconds between her press and the server's first row — must say `null`
+    rather than the first stage, because at that moment nothing has been
+    announced. A default here would put a bar on screen for a render the server
+    has not heard of.
+  */
+  it("carries the row's announced step through to the picture", () => {
+    expect(refineWait({
+      viewerCandidateId: HER,
+      mutation: idle,
+      pending: [row({ step: "reading" })],
+    })).toEqual({ instruction: "dangly cross earrings", stage: "dispatched", step: "reading", extra: 0 });
+  });
+
+  it("claims no step for a wait the server has not heard of yet", () => {
+    expect(refineWait({ viewerCandidateId: HER, mutation: out, pending: [] })?.step).toBe(null);
   });
 });
 
