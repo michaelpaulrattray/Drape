@@ -1,8 +1,7 @@
 {
   "meta": {
     "schemaVersion": "1.0.0",
-    "generatorVersion": "1.0.0",
-    "sourceFingerprint": "7555776eb2024e86"
+    "generatorVersion": "1.0.0"
   },
   "domains": [
     {
@@ -10791,6 +10790,10 @@
       "path": "server/auth.me.test.ts"
     },
     {
+      "id": "test:server/backupRetention.test.ts",
+      "path": "server/backupRetention.test.ts"
+    },
+    {
       "id": "test:server/batch0-authority.test.ts",
       "path": "server/batch0-authority.test.ts"
     },
@@ -13381,6 +13384,10 @@
     {
       "id": "test:server/scriptWorldGuard.test.ts",
       "path": "server/scriptWorldGuard.test.ts"
+    },
+    {
+      "id": "test:server/scriptsTypecheckPopulation.test.ts",
+      "path": "server/scriptsTypecheckPopulation.test.ts"
     },
     {
       "id": "test:server/security/adminSecurity.test.ts",
