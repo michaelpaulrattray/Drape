@@ -64,8 +64,7 @@ describe("the exclusion vocabulary", () => {
       /* The label-less row (#1094's `building`) cannot carry a hold label and is
          not what this arm is about — it is dropped rather than compared, so a
          `null` in the list cannot make a missing hold label look present. */
-      .map((reason) => reason.queueLabel)
-      .filter((label): label is string => label !== null);
+      .flatMap((reason) => (reason.queueLabel === null ? [] : [reason.queueLabel]));
     for (const label of Object.values(CREW_HOLD_LABELS)) {
       expect(excluded, `hold label \`${label}\` has no exclusion row`).toContain(label);
     }

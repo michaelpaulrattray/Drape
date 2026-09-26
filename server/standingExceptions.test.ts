@@ -340,6 +340,7 @@ describe("deriveBands - an empty band is cross-examined against the queue it was
     const code = report({
       readOpenQueue: () => [],
       readOpenPullRequests: () => [],
+      readCardComments: () => [],
       now: NOW,
       log: (l) => out.push(l),
       error: (l) => errs.push(l),
@@ -471,6 +472,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
     const code = report({
       readOpenQueue: () => [his],
       readOpenPullRequests: () => { throw new Error("gh: command not found"); },
+      readCardComments: () => [],
       now: NOW,
       log: (l) => out.push(l),
       error: (l) => errs.push(l),
@@ -490,6 +492,7 @@ describe("is somebody already building it (#1094) — this view offered a card a
     report({
       readOpenQueue: () => [his],
       readOpenPullRequests: () => [pr()],
+      readCardComments: () => [],
       now: NOW,
       log: (l) => out.push(l),
       error: () => {},
