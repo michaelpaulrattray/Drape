@@ -21,14 +21,37 @@
  * shape this project has been bitten by repeatedly: a number that cannot be
  * wrong, because nothing ever asked whether the instrument could fail.
  *
+ * ⚠ **AND SINCE #1273 A DISAGREEMENT IS PRINTED WITH HOW ITS LABEL GOT THERE.**
+ * A bare disagreement line is what the six silent relabels of 2026-09-25 were
+ * acted on: on #1220 the reader disagreed with a relabel a shift had made 2h55m
+ * earlier and explained on the card, and the report gave no hint of it. The
+ * disagreements now come in two bands — a label a person CHOSE over another one
+ * (hold, read the card) and a label that filled a blank (look) — read off the
+ * card's own timeline, and the relabel road is printed as two commands with the
+ * receipt already written, so recording a move is cheaper than not.
+ *
  * Spend: text only, and stated at the end of every run from the tokens the API
  * reports rather than from a list price. A whole queue is a fraction of a cent.
+ * The timeline reads added by #1273 are `gh api`, free, and only for the cards
+ * that disagree.
  */
 import "dotenv/config";
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 
-import { homeWorkCategoryFor, type CrewWorkCategoryKey } from "../shared/crewWorkSwitches.js";
+import {
+  CREW_WORK_CATEGORIES,
+  homeWorkCategoryFor,
+  type CrewWorkCategoryKey,
+} from "../shared/crewWorkSwitches.js";
+import {
+  counselOnDisagreement,
+  mapGithubTimeline,
+  readLabelArrival,
+  relabelReceipt,
+  type CardTimelineEvent,
+} from "./lib/cardLabelProvenance.mjs";
 import { askJev, jevSpendUsd } from "./lib/jev.mjs";
 import {
   CARD_CATEGORY_QUESTION_ID,
@@ -60,6 +83,22 @@ async function readCard(
   inputTokensSpent += reply.usage.input_tokens;
   const answer = reply.answers[CARD_CATEGORY_QUESTION_ID]!;
   return { read: answer.choice, confidence: answer.confidence, probabilities: { ...answer.probabilities } };
+}
+
+/**
+ * A card's timeline, read only for the cards that disagree (#1273).
+ *
+ * `--paginate` because a long-running card's timeline runs past one page — the
+ * real #1220 read at 322 KB — and a truncated read makes a label's arrival
+ * look `unknown`, which is the one verdict this reader must not invent.
+ */
+function readCardTimeline(number: number): CardTimelineEvent[] {
+  const raw = execFileSync(
+    "gh",
+    ["api", "--paginate", `repos/:owner/:repo/issues/${number}/timeline?per_page=100`],
+    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+  );
+  return mapGithubTimeline(JSON.parse(raw) as unknown[]);
 }
 
 /** A small pool: the queue is ~50 cards and the API answers in ~300 ms. */
@@ -287,12 +326,81 @@ async function runLive(threshold: number, jsonPath: string | null): Promise<void
   console.log("    so that much of the agreement figure could be the card telling the reader the answer.\n");
 
   if (disagree.length > 0) {
+    /* ⚠ #1273 — EVERY DISAGREEMENT NOW CARRIES HOW ITS LABEL GOT THERE.
+       A bare line here is what the six silent relabels of 2026-09-25 were
+       acted on: a true reading of a stale title, printed as if the label were
+       the only thing that could be wrong. The timeline read is `gh api`, free
+       and read-only, and only for the cards that disagree. */
+    const workLabels = CREW_WORK_CATEGORIES.map((category) => category.queueLabel);
+    const counselled = [...disagree]
+      .sort((a, b) => b.confidence - a.confidence)
+      .map((row) => {
+        const home = CREW_WORK_CATEGORIES.find((category) => category.key === row.actual)!;
+        const arrival = readLabelArrival({
+          events: readCardTimeline(row.number),
+          workLabels,
+          label: home.queueLabel,
+        });
+        return { row, home, arrival, counsel: counselOnDisagreement(arrival) };
+      });
+
+    const hold = counselled.filter((entry) => entry.counsel.verdict === "hold");
+    const look = counselled.filter((entry) => entry.counsel.verdict === "look");
+
     console.log("  EVERY DISAGREEMENT — each read at the card (is Jev wrong, or was the label?)\n");
-    for (const row of [...disagree].sort((a, b) => b.confidence - a.confidence)) {
+
+    if (hold.length > 0) {
       console.log(
-        `    #${row.number}  labelled ${String(row.actual).padEnd(14)} reads ${row.read.padEnd(14)} conf ${row.confidence.toFixed(2)}`,
+        `  ⚠ A PERSON ALREADY CHOSE THIS LABEL — ${hold.length}. Read the card before you touch it.\n`,
       );
-      console.log(`       ${row.title.slice(0, 110)}`);
+      for (const entry of hold) {
+        console.log(
+          `    #${entry.row.number}  labelled ${entry.home.queueLabel.padEnd(14)} reads ${entry.row.read.padEnd(14)} conf ${entry.row.confidence.toFixed(2)}`,
+        );
+        console.log(`       ${entry.row.title.slice(0, 110)}`);
+        console.log(`       HOLD: ${entry.counsel.why}`);
+        if (entry.arrival.nearestComment) {
+          console.log(`       its reason, first line: ${entry.arrival.nearestComment.excerpt}`);
+        }
+      }
+      console.log("");
+    }
+
+    if (look.length > 0) {
+      console.log(`  NOBODY HAS RULED ON THIS LABEL — ${look.length}. The reading stands on its own.\n`);
+      for (const entry of look) {
+        console.log(
+          `    #${entry.row.number}  labelled ${entry.home.queueLabel.padEnd(14)} reads ${entry.row.read.padEnd(14)} conf ${entry.row.confidence.toFixed(2)}`,
+        );
+        console.log(`       ${entry.row.title.slice(0, 110)}`);
+        console.log(`       ${entry.counsel.why}`);
+      }
+      console.log("");
+    }
+
+    /* ⚠ THE RECEIPT IS PART OF THE ROAD, NOT ADVICE BESIDE IT. Recommendation
+       A on #1273 asks a pass that moves a human's label to say so in one line.
+       Printing the comment command next to the label command makes recording
+       the move the cheaper road rather than the diligent one. */
+    console.log("  IF YOU MOVE ONE, MOVE IT WITH ITS REASON — both commands, in this order\n");
+    for (const entry of counselled) {
+      const target = CREW_WORK_CATEGORIES.find((category) => category.key === entry.row.read);
+      if (!target) continue;
+      console.log(
+        `    #${entry.row.number}: gh issue edit ${entry.row.number} --remove-label ${entry.home.queueLabel} --add-label ${target.queueLabel}`,
+      );
+      const receiptPath = `${tmpdir()}/relabel-${entry.row.number}.md`;
+      writeFileSync(
+        receiptPath,
+        relabelReceipt({
+          from: entry.home.queueLabel,
+          to: target.queueLabel,
+          confidence: entry.row.confidence,
+          arrival: entry.arrival,
+        }),
+        "utf8",
+      );
+      console.log(`               gh issue comment ${entry.row.number} -F ${receiptPath}`);
     }
     console.log("");
   }

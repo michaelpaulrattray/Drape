@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "034f9902aa402eed"
+    "sourceFingerprint": "ad1a0bbfea08efd5"
   },
   "domains": [
     {
@@ -10877,6 +10877,10 @@
     {
       "id": "test:server/card391LadderFold.test.ts",
       "path": "server/card391LadderFold.test.ts"
+    },
+    {
+      "id": "test:server/cardLabelProvenance.test.ts",
+      "path": "server/cardLabelProvenance.test.ts"
     },
     {
       "id": "test:server/castModelModal.test.ts",
