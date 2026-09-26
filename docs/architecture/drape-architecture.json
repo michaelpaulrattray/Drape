@@ -12894,6 +12894,10 @@
       "path": "server/orderedBandOrder.test.ts"
     },
     {
+      "id": "test:server/ownerScopedModules.test.ts",
+      "path": "server/ownerScopedModules.test.ts"
+    },
+    {
       "id": "test:server/pathB-completion.test.ts",
       "path": "server/pathB-completion.test.ts"
     },

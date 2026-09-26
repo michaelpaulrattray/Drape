@@ -10,6 +10,9 @@
  * re-anchor a client-supplied id to an owned parent, it happens inside the
  * same statement or the same locked transaction.
  *
+ * @invariant1 module-wide — every statement here carries the owner, or is
+ *   listed with its reason in `server/ownerScopedModules.test.ts` (#1312).
+ *
  * The state machine lives in §F. Its mechanical expression here is that every
  * transition is a CAS — `UPDATE … WHERE status = <expected>` — and callers
  * read `affectedRows` to learn whether they won. Nothing in this module does

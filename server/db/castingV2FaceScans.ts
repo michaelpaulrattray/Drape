@@ -12,6 +12,9 @@
  *    Never a SELECT to check and then a write keyed on an id: `userId` is in
  *    every WHERE here, so one account's face cannot be served to another even
  *    if a caller passes the wrong candidate.
+ *
+ * @invariant1 module-wide — every statement here carries the owner, or is
+ *   listed with its reason in `server/ownerScopedModules.test.ts` (#1312).
  * 2. **Only a CLEAN scan is written**, and this file cannot see whether a scan
  *    is clean — the caller decides that, and the caller is the only one who
  *    knows what `failed` held. What this file guarantees is the other half: an

@@ -15,6 +15,9 @@
  *    rather than from anything a caller passed. A design filed against a
  *    stranger's Cast would be a picture we keep, and eventually paint, on
  *    somebody else's work.
+ *
+ * @invariant1 module-wide — every statement here carries the owner, or is
+ *   listed with its reason in `server/ownerScopedModules.test.ts` (#1312).
  * 2. **The cap is counted under a lock, not near one.** The candidate row is
  *    selected `FOR UPDATE`, so two uploads racing on the same Cast queue behind
  *    each other rather than both reading seven and both writing. A cap that can
