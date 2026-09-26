@@ -13378,6 +13378,10 @@
       "path": "server/scriptWorldGuard.test.ts"
     },
     {
+      "id": "test:server/scriptsTypecheckPopulation.test.ts",
+      "path": "server/scriptsTypecheckPopulation.test.ts"
+    },
+    {
       "id": "test:server/security/adminSecurity.test.ts",
       "path": "server/security/adminSecurity.test.ts"
     },
