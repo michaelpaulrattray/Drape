@@ -115,8 +115,21 @@ const MEASURED_ROW = "Lips";
  * purpose: a check that read the label alone would pass on the day the ask box
  * started saying "what to change about lips", which is the ruling being obeyed
  * on one surface and lost on the other.
+ *
+ * ⚠ **THIS WAS `MEASURED_SPOKEN = "her lips"` UNTIL #1297, AND THE POSSESSIVE
+ * CANNOT BE A CONSTANT — IT BELONGS TO THE CAST.** The founder's v#156 frame is
+ * a woman; the subject this driver now finds for itself is a man, so the product
+ * correctly said *"What to change about his lips"* and THREE separate checks
+ * called it a defect. What replaced it is not another constant: the scoped label
+ * is matched against this CLOSED SET, and the possessive it used is then carried
+ * to the ask box's opening and to the typed sentence, which must agree with it.
+ * One cast, one voice, on every surface — the ruling as a rule rather than as a
+ * transcript of one face.
+ *
+ * The set is closed deliberately. An open `(\w+)` would accept *"What to change
+ * about the lips"* and report the possessive intact.
  */
-const MEASURED_SPOKEN = "her lips";
+const SPOKEN_POSSESSIVES = ["his", "her", "their"] as const;
 
 /**
  * THE FIXTURE'S THREE POPULATIONS, named rather than counted (shift 79).
@@ -129,11 +142,15 @@ const MEASURED_SPOKEN = "her lips";
  *   DESCRIBED  what the scan read off this frame; carries NO `from`, by design
  *   PAIR       one row in her words, one rectangle per instance (fable-378 (c))
  *
- * `Her earrings` joined LIBRARY in shift 80, when earring detection armed and
- * the row came back onto the panel. It had been recorded ABSENT below the pair
- * check for four shifts — the check that could not fire in either direction.
+ * ⚠ **`LIBRARY_ROWS` IS GONE (#1297) AND `DESCRIBED_ROWS` IS ON NOTICE.** The
+ * first named `Lips, Hair, Glasses, Earrings` — the v#156 frame's four edits —
+ * and reported *"missing or wordless: Lips, Glasses"* about a cast who has
+ * simply never had her lips or her glasses edited. The library population is
+ * read off the panel's own provenance line now, where it always was.
+ * `DESCRIBED_ROWS` is the same shape and survives only because this subject
+ * happens to have a Build and a Skin row too; it is a fixture property wearing a
+ * rule's clothes, and the next subject that lacks one will say so.
  */
-const LIBRARY_ROWS = ["Lips", "Hair", "Glasses", "Earrings"] as const;
 const DESCRIBED_ROWS = ["Build", "Skin"] as const;
 const PAIR_ROWS = ["Eyes", "Brows", "Ears"] as const;
 
@@ -430,6 +447,27 @@ class MeasuredRowMissing extends Error {
 /** The healthy thumbnail photographs, kept so the control has something to differ from. */
 const liveThumbs: Record<string, Buffer | null> = {};
 
+/**
+ * WHICH ROW THE BLOCKED-STENCIL CONTROL PHOTOGRAPHS — chosen from the panel, not
+ * named here (#1297).
+ *
+ * ⚠ **The control used `MEASURED_ROW` and that is why it read 0.00.** Blocking
+ * the image proxy can only change a row whose cutout is ITS OWN PICTURE, fetched
+ * as bytes; a scan-born row is a WINDOW on the frame the viewer is already
+ * showing, so refusing the proxy leaves it pixel-identical. On the founder's
+ * v#156 frame her lips were the one minted crop, so naming that row happened to
+ * pick a minted one; on the subject this driver finds, Lips is windowed and the
+ * minted rows are her hair and her earrings. **The control was measuring a row
+ * it could not possibly move** — a negative control that cannot fire in the
+ * direction it exists to prove, which is this repository's most-repeated defect
+ * (invariant 7, working law 2).
+ *
+ * It is set from the minted set the panel itself reports, in the first theme
+ * walked, and the second theme must agree: which crops were minted is a property
+ * of the cast, not of the palette.
+ */
+let mintedRowForControl: string | null = null;
+
 for (const theme of THEMES) {
   const { browser, page } = await openDrivenPage({ base: BASE, token, width: 1440, height: 1000 });
   const refused: string[] = [];
@@ -561,14 +599,46 @@ for (const theme of THEMES) {
       is what this photograph shows, and only the first has a `from`.
     */
     const named = (name: string) => panel.rows.find((row: any) => row.name === name);
-    const missingLibrary = LIBRARY_ROWS
-      .filter((name) => !(named(name)?.words !== "" && named(name)?.from === "from an edit"));
+    /*
+      RE-ANCHORED (#1297). The rule it now states: EVERY ROW THE PANEL SAYS WAS
+      BORN OF AN EDIT CARRIES THE WORDS THAT EDIT PUT THERE.
+
+      What overruled the old one: it named FOUR ROWS — `Lips, Hair, Glasses,
+      Earrings` — and they are properties of the founder's retired v#156 frame,
+      not of the product. Driven on the subject the driver now finds for itself
+      (user 28601, 53 library rows), it reported *"missing or wordless: Lips,
+      Glasses"* about a cast who has simply never had her lips or her glasses
+      edited. A check that names a feature the subject may not have is asserting
+      the fixture, and it fails on a healthy product.
+
+      ⚠ **The missing half of the old sentence — *reaches the panel* — is not
+      dropped, it is somebody else's** and always was: a library row with no
+      rectangle is taken OFF the panel by fable-414's box rule, and *"every row
+      on the panel has a place on the photograph"* below is the check that owns
+      that. Asserting it here as well would be two checks answering one question
+      and neither of them able to say which.
+
+      The discriminator is the panel's own provenance line, unchanged: a LIBRARY
+      row is something she asked for or arrived with and carries a `from`. So the
+      population is derived from the panel and the rule is the one that can still
+      fail — a library-born row rendered WORDLESS, which is the edit's own
+      sentence lost between the mint and the page.
+    */
+    const libraryBorn = panel.rows.filter((row: any) => row.from === "from an edit");
+    const wordlessLibrary = libraryBorn.filter((row: any) => row.words === "");
     check(
-      missingLibrary.length === 0,
+      libraryBorn.length > 0 && wordlessLibrary.length === 0,
       `${theme}: every library row with a place on the photograph reaches the panel, carrying its own words`,
-      missingLibrary.length === 0
-        ? LIBRARY_ROWS.map((name) => `${name}: "${named(name)!.words}" (${named(name)!.from})`).join(" | ")
-        : `missing or wordless: ${missingLibrary.join(", ")}`,
+      libraryBorn.length === 0
+        /* The floor, and it is a real verdict rather than a pass: a subject with
+           no library row at all cannot exercise this rule, and `facePanelSubject`
+           refuses such a subject upstream — so reaching here means something
+           moved between the query and the render. */
+        ? `NO row on this panel claims an edit — ${panel.rows.length} rows, none with a "from"`
+        : wordlessLibrary.length === 0
+          ? `${libraryBorn.length} of ${panel.rows.length} rows came from an edit, each with words: `
+            + libraryBorn.slice(0, 4).map((r: any) => `${r.name}: "${r.words.slice(0, 40)}"`).join(" | ")
+          : `wordless despite claiming an edit: ${wordlessLibrary.map((r: any) => r.name).join(", ")}`,
     );
     /*
       RE-ANCHORED (shift 79). The rule it now states: A DESCRIPTION IS NOT A
@@ -642,16 +712,45 @@ for (const theme of THEMES) {
        subject moved between the two. */
     const drawn = await page.evaluate(READ_REGIONS) as any;
     const boxNames = (drawn?.boxes ?? []).map((region: any) => region.tag);
+    /*
+      RE-ANCHORED (#1297). The rule it now states: THE ROW HAS ONE RECTANGLE PER
+      SIDE THAT WAS ACTUALLY FOUND, AND NEVER ONE FOR A SIDE THAT WAS NOT.
+
+      What overruled the old one: it asserted `parts === 1`, `Left earring`
+      present and `Right earring` ABSENT — which is not a rule about earrings, it
+      is a description of the founder's v#156 frame, where she wears one hoop and
+      her other ear is behind her hair. **The subject the driver now finds wears
+      TWO** (`one row, 2 part(s) · boxes: Right earring, Left earring`), so the
+      old assertion called a correct panel broken.
+
+      ⚠ **The rule it was reaching for survives intact and is the interesting
+      one**: presence-only arming files the side it can see and never guesses at
+      the side it cannot, so a bare-or-covered ear yields no rectangle. Stated as
+      a correspondence rather than a count, it says that about ONE earring, TWO
+      earrings and NONE alike — and it still fails the day a side is invented.
+
+      The two-ear case is not a weaker test than the one-ear case, which is worth
+      saying because it looks like one: a guessed side would show up here as a
+      rectangle whose side the row's own words never mention.
+    */
+    const earringBoxes = boxNames.filter((name: string) => /earring/i.test(name));
+    const earringSides = earringBoxes
+      .map((name: string) => (/left/i.test(name) ? "left" : /right/i.test(name) ? "right" : ""))
+      .filter((side: string) => side !== "");
+    const unspokenSide = earringRows.length === 1
+      ? earringSides.filter((side: string) => !new RegExp(`\\b${side}\\b`, "i").test(earringRows[0].words))
+      : [];
     check(
       earringRows.length === 1
-        && earringRows[0].parts === 1
-        && boxNames.includes("Left earring")
-        && !boxNames.includes("Right earring"),
+        && earringSides.length === earringBoxes.length
+        && earringRows[0].parts === earringBoxes.length
+        && unspokenSide.length === 0,
       `${theme}: the ear that wears one is found, and the ear behind her hair is not guessed at`,
       earringRows.length !== 1
         ? `${earringRows.length} rows named "Earrings"`
         : `one row, ${earringRows[0].parts} part(s), words "${earringRows[0].words}" (${earringRows[0].from})`
-          + ` · boxes: ${boxNames.filter((name: string) => name.includes("earring")).join(", ") || "none"}`,
+          + ` · boxes: ${earringBoxes.join(", ") || "none"}`
+          + (unspokenSide.length > 0 ? ` · ⚠ a side nobody said she wears: ${unspokenSide.join(", ")}` : ""),
     );
 
     /* ---- the thumbnail, and the negative control ---- */
@@ -684,13 +783,45 @@ for (const theme of THEMES) {
     );
     const minted = withThumb.filter((row: any) => row.cuts.every((cut: any) => !cut.windowed));
     const windowed = withThumb.filter((row: any) => row.cuts.every((cut: any) => cut.windowed && cut.cutWidth !== ""));
+    /*
+      RE-ANCHORED (#1297). The rule it now states: EVERY ROW WITH A PICTURE IS
+      EITHER ITS OWN CROP OR A WINDOW ON THE FRAME — the two kinds PARTITION the
+      panel, and neither is empty.
+
+      What overruled the old one: `minted.length === 1 && minted[0].name ===
+      MEASURED_ROW`. On the v#156 frame her lips were the only region a paid mint
+      had ever cropped, so "exactly one, and it is Lips" read as a rule. It is a
+      fact about how much editing that one cast had had. The subject the driver
+      finds has TWO minted crops (`its own picture: Hair, Earrings`) and the
+      assertion called them a defect.
+
+      ⚠ **What the old check was really protecting is kept exactly, because it is
+      the part with teeth**: a scan-born row that published no window would draw
+      the entire frame shrunk into a 34px tile — a face in a stamp. So the
+      partition is asserted in both directions (nothing is both, nothing is
+      neither) and every windowed row must carry a real `--dpc-cut-w`.
+
+      **Both kinds must be present or this proves nothing**, and that is an arm
+      rather than an assumption: a panel of only windows would satisfy a
+      one-sided rule while saying nothing about mints, and vice versa.
+    */
+    const bothKinds = withThumb.filter((row: any) =>
+      row.cuts.some((cut: any) => cut.windowed) && row.cuts.some((cut: any) => !cut.windowed));
     check(
-      minted.length === 1 && minted[0].name === MEASURED_ROW
-        && windowed.length === withThumb.length - 1,
+      minted.length > 0 && windowed.length > 0
+        && bothKinds.length === 0
+        && minted.length + windowed.length === withThumb.length,
       `${theme}: the minted crop is its own picture; every scanned one is a window on the frame`,
       `its own picture: ${minted.map((r: any) => r.name).join(", ") || "none"}`
       + ` · windowed: ${windowed.length} of ${withThumb.length}`
-      + ` · e.g. ${windowed[0]?.name} --dpc-cut-w=${windowed[0]?.cuts[0]?.cutWidth}`,
+      + (windowed[0] ? ` · e.g. ${windowed[0].name} --dpc-cut-w=${windowed[0].cuts[0]?.cutWidth}` : "")
+      + (bothKinds.length > 0
+        ? ` · ⚠ neither one thing nor the other: ${bothKinds.map((r: any) => r.name).join(", ")}`
+        : "")
+      + (minted.length + windowed.length !== withThumb.length
+        ? ` · ⚠ ${withThumb.length - minted.length - windowed.length} row(s) in neither kind`
+        + ` — a window with no --dpc-cut-w draws the whole frame in a 34px tile`
+        : ""),
     );
     /*
       THE PAIR RULE'S OTHER HALF, and the one the founder actually read: a
@@ -722,11 +853,26 @@ for (const theme of THEMES) {
       reached" instead of failing loudly. A control that cannot arm does not
       exist (invariant 7).
     */
-    liveThumbs[theme] = await thumbShotOf(page, MEASURED_ROW);
+    /*
+      RE-ANCHORED (#1297): it photographs a MINTED row — one whose crop is its
+      own picture — because that is the only kind the control below can move.
+      The choice is the panel's own `minted` set, read a few lines above, and it
+      must not change between themes.
+    */
+    const mintedHere = minted[0]?.name ?? null;
+    if (mintedRowForControl === null) mintedRowForControl = mintedHere;
+    check(
+      mintedHere !== null && mintedHere === mintedRowForControl,
+      `${theme}: the row the blocked-stencil control will photograph is the same one in both themes`,
+      mintedHere === null
+        ? "no row on this panel has a minted crop — the control below has nothing it could move"
+        : `${mintedHere} (of ${minted.length} minted), first theme chose ${mintedRowForControl}`,
+    );
+    liveThumbs[theme] = mintedHere === null ? null : await thumbShotOf(page, mintedHere);
     check(
       liveThumbs[theme] !== null,
-      `${theme}: ${MEASURED_ROW}' cutout has a box worth photographing`,
-      liveThumbs[theme] ? `${liveThumbs[theme]!.length} bytes` : `no tile on a row named "${MEASURED_ROW}"`,
+      `${theme}: ${mintedHere ?? "the minted row"}' cutout has a box worth photographing`,
+      liveThumbs[theme] ? `${liveThumbs[theme]!.length} bytes` : `no tile on a row named "${mintedHere}"`,
     );
 
     /* ---- the picture's regions ---- */
@@ -1087,17 +1233,67 @@ for (const theme of THEMES) {
         childWords: children.map((child) => child.querySelector(".dpc-face__words")?.textContent ?? ""),
       };
     })()`) as any;
+    /*
+      RE-ANCHORED (#1297), BOTH HALVES, AND THE RULE NOW ADMITS AGREEMENT.
+
+      What overruled the old ones: they asserted `left …icy blue` and `right
+      …brown` against the parent line, and `icy blue` / `brown` against the two
+      children — the founder's own live specimen from production v#185. **That is
+      a fact about one cast's eyes.** The subject the driver finds has eyes that
+      AGREE (both children read the same hazel-brown sentence), so there was no
+      disagreement to attribute and the assertion called a correct panel broken.
+
+      ⚠ **The rule the specimen was standing in for is the one that matters and
+      it is stated directly now** (fable-459 §2): a diverged pair is the only
+      shape where nesting changes the WORDS rather than the arrangement. So —
+
+        sides DISAGREE  the parent attributes both, by side, and claims neither
+        sides AGREE     the parent says that one thing, unattributed
+
+      Both arms are live on every subject: whichever one this cast exercises is
+      asserted, and the other is recorded as not-applicable in the saw line
+      rather than silently skipped. The check still fails on the case it was
+      written for — a parent that says "hazel-brown" over two different irises,
+      or one that says "left … right …" over two identical ones.
+
+      ⚠ **And it refuses rather than passing when it cannot read the pair at
+      all** — an unexpanded row hands back `null`, and the old check would have
+      read that as "no icy blue" and failed for the wrong reason.
+    */
+    const childWords: string[] = diverged?.childWords ?? [];
+    const parentWords: string = (diverged?.parentWords ?? "").trim();
+    const sidesDisagree = childWords.length === 2
+      && childWords[0]!.trim() !== "" && childWords[1]!.trim() !== ""
+      && childWords[0]!.trim() !== childWords[1]!.trim();
+    /* Attribution is the product's own side vocabulary, the same `Left `/`Right `
+       prefix the expanded-names check above asserts the children are named by. */
+    const attributesBothSides = /\bleft\b/i.test(parentWords) && /\bright\b/i.test(parentWords);
     check(
-      /left .*icy blue/i.test(diverged?.parentWords ?? "") && /right .*brown/i.test(diverged?.parentWords ?? ""),
+      diverged !== null && childWords.length === 2 && parentWords !== ""
+        && (sidesDisagree ? attributesBothSides : !attributesBothSides),
       `${theme}: a pair whose sides disagree says so, attributed, and claims neither`,
-      `parent reads "${diverged?.parentWords}"`,
+      diverged === null
+        ? "the Eyes row could not be read at all — REFUSING rather than reporting an absence as a pass"
+        : `sides ${sidesDisagree ? "DISAGREE" : "agree"} · parent reads "${parentWords.slice(0, 90)}"`
+          + ` · it ${attributesBothSides ? "names both sides" : "names neither side"}`,
     );
+    /*
+      AND THE SECOND HALF, which is what makes the first one safe: a parent may
+      only claim what its children actually say. Where the sides disagree, each
+      child's own sentence must appear under the parent's attribution of that
+      side; where they agree, the parent's sentence is theirs.
+    */
+    const childrenCarryTheirOwn = childWords.length === 2
+      && childWords.every((words) => words.trim() !== "")
+      && (sidesDisagree
+        ? childWords[0]!.trim() !== childWords[1]!.trim()
+        : parentWords.includes(childWords[0]!.trim()) || childWords[0]!.trim().includes(parentWords));
     check(
-      diverged?.childWords?.length === 2
-        && /icy blue/i.test(diverged.childWords[0] ?? "")
-        && /brown/i.test(diverged.childWords[1] ?? ""),
+      childrenCarryTheirOwn,
       `${theme}: and each side says its own`,
-      `children read "${(diverged?.childWords ?? []).join('" · "')}"`,
+      childWords.length !== 2
+        ? `${childWords.length} child row(s) — a pair has two`
+        : `children read "${childWords.map((w) => w.slice(0, 60)).join('" · "')}"`,
     );
     await shot(page, ".dpc-face", `panel-open-${theme}.png`);
 
@@ -1234,9 +1430,32 @@ for (const theme of THEMES) {
       feature, because a screen reader arriving at this box mid-page has no
       rectangle to look at.
     */
+    /*
+      RE-ANCHORED (#1297), AND THE OLD TITLE WAS AS WRONG AS THE OLD STRING.
+
+      It asserted `"Change something about them…"` — the ask box's placeholder,
+      reused verbatim — under the title *"asks in the same words as the ask box
+      below"*. **The founder replaced it**, and his reasoning reverses the rule
+      rather than merely moving the string: `FaceRegions.tsx:61-70` records
+      fable-1270 §1, *"the founder's own words for what this field should now
+      show … It REPLACES the ask box's 'Change something about them…' … the two
+      doors still do not disagree, because this one is now a HINT over an EMPTY
+      box and the other is a hint over an UNSCOPED one."*
+
+      ⚠ So the repair is NOT to compare the two placeholders — that would have
+      re-asserted the sameness he deliberately ended, and it was the first thing
+      this shift reached for. They are two different fields with two different
+      jobs and they are allowed to say different things.
+
+      **It stays a literal on purpose, which is the one place a literal is
+      right**: this is shipped COPY, the founder owns the words, and the copy
+      audit in that file reads every classified string back out of this saw line
+      — a check comparing two DOM values would leave his ruling with nothing
+      behind it anywhere.
+    */
     check(
-      opened.fieldPlaceholder === "Change something about them…",
-      `${theme}: the scoped box asks in the same words as the ask box below`,
+      opened.fieldPlaceholder === "Describe your edit…",
+      `${theme}: the scoped box shows the founder's own hint over an empty field (fable-1270 §1)`,
       `placeholder "${opened.fieldPlaceholder}"`,
     );
     /*
@@ -1251,10 +1470,42 @@ for (const theme of THEMES) {
       sending a bare one — both sides would move together and the ruling would
       leave no mark anywhere.
     */
+    /*
+      RE-ANCHORED (#1297), AND IT IS THE FIRST OF THREE THAT NOW STATE ONE RULE.
+
+      What overruled the old one: it compared the label to `What to change about
+      her lips` — and `MEASURED_SPOKEN` was `"her lips"` because the founder's
+      v#156 frame is a woman. **The subject the driver finds is a man**, so the
+      product said `"What to change about his lips"`, which is correct, and three
+      separate checks called it a defect (this one, the ask-box opening, and the
+      typed sentence).
+
+      ⚠ **The possessive is a property of the CAST, so it cannot be a constant —
+      but it must not be read off the same surface it is checking either**, or
+      the check passes on whatever the label happens to say. So the shape is
+      asserted here — a possessive from the product's own closed set, then the
+      row's own feature name — and the possessive it finds is carried to the two
+      surfaces below, which must AGREE with it.
+
+      That is fable-450/451's actual content: the founder took the possessive off
+      every LABEL (*"just 'Left eye'"*) and kept it everywhere the product speaks
+      a SENTENCE. One cast, one voice, on every surface. A bare
+      `"What to change about lips"` fails here; a label that says `his` while the
+      ask box says `her` fails below; and neither could be caught by comparing a
+      surface with itself.
+    */
+    const labelShape = new RegExp(
+      `^What to change about (${SPOKEN_POSSESSIVES.join("|")}) ${MEASURED_ROW.toLowerCase()}$`,
+    );
+    const spokenMatch = labelShape.exec(String(opened.fieldLabel ?? ""));
+    const spokenPossessive = spokenMatch?.[1] ?? null;
     check(
-      opened.fieldLabel === `What to change about ${MEASURED_SPOKEN}`,
+      spokenMatch !== null,
       `${theme}: and its label names the feature it is scoped to, in the words the product speaks`,
-      `aria-label "${opened.fieldLabel}" · the row's own label is "${MEASURED_ROW}"`,
+      `aria-label "${opened.fieldLabel}" · the row's own label is "${MEASURED_ROW}"`
+      + ` · ${spokenPossessive === null
+        ? `it is not "What to change about <${SPOKEN_POSSESSIVES.join("|")}> ${MEASURED_ROW.toLowerCase()}"`
+        : `the cast is spoken of as "${spokenPossessive}", and the two surfaces below must agree`}`,
     );
     const askBox = await page.evaluate(`(() => {
       const form = document.querySelector(".dpc-regions__ask");
@@ -1305,10 +1556,26 @@ for (const theme of THEMES) {
       const field = document.querySelector(".dpc-refine__ask input, .dpc-refine__ask textarea");
       return field ? field.value : null;
     })()`) as any;
+    /*
+      RE-ANCHORED (#1297) — the SECOND surface, and it agrees with the first or
+      the product is speaking about this cast in two voices.
+
+      The opening was `"her lips — "`, the fixture's possessive. It is now built
+      from the possessive the scoped label just used, so the two doors to one
+      edit cannot drift apart: a server that started sending `his` on one surface
+      and `her` on the other is exactly what this now catches, and neither
+      hard-coding nor reading this surface against itself could.
+    */
+    const expectedOpening = spokenPossessive === null
+      ? null
+      : `${spokenPossessive} ${MEASURED_ROW.toLowerCase()} — `;
     check(
-      asked === "her lips — ",
+      expectedOpening !== null && asked === expectedOpening,
       `${theme}: tapping the row writes the same opening into the ask box below`,
-      `ask box holds "${asked}"`,
+      `ask box holds "${asked}"`
+      + (expectedOpening === null
+        ? " · the scoped label named no possessive, so there is nothing to agree WITH — that failure is above"
+        : ` · the scoped label spoke of this cast as "${spokenPossessive}", so the opening must too`),
     );
     await shot(page, ".dpc-refine", `refine-${theme}.png`);
 
@@ -1328,8 +1595,18 @@ for (const theme of THEMES) {
       const field = document.querySelector(".dpc-refine__field");
       return { value: field ? field.value : null, focused: document.activeElement === field };
     })()`) as any;
+    /*
+      RE-ANCHORED (#1297) — the THIRD surface. Same repair, and the property
+      under test is untouched: the caret survives a whole sentence.
+
+      ⚠ **The possessive here was doing a second job and it still is.** This arm
+      reads the WHOLE field back, opening included, so a viewer that re-took
+      focus and ate the opening is caught by the same assertion that catches a
+      dropped keystroke. Asserting only the typed tail would pass on a field that
+      had silently lost `his lips — ` on the first re-render.
+    */
     check(
-      finished.value === `her lips — ${typed}` && finished.focused,
+      expectedOpening !== null && finished.value === `${expectedOpening}${typed}` && finished.focused,
       `${theme}: a whole sentence can be typed without the viewer taking the caret back`,
       `field holds "${finished.value}" and still has focus: ${finished.focused}`,
     );
@@ -1392,7 +1669,13 @@ for (const theme of THEMES) {
       controlSettled === null ? "the working line never cleared" : `settled after ${(controlSettled / 1000).toFixed(1)}s`,
     );
     await new Promise((resolve) => setTimeout(resolve, 600));
-    const control = await thumbShotOf(page, MEASURED_ROW);
+    /* THE MINTED ROW THE LIVE SHOT TOOK, never `MEASURED_ROW` (#1297) — the
+       reasoning is on `mintedRowForControl`, and the short version is that a
+       windowed row is pixel-identical with the proxy refused, so the control was
+       reading 0.00 about a row it could never have moved. */
+    const control = mintedRowForControl === null
+      ? null
+      : await thumbShotOf(page, mintedRowForControl);
     check(blocked > 0, "control: the stencil really was blocked", `${blocked} proxy requests aborted`);
     if (control && liveThumbs.dark) {
       await writeFile(path.join(OUT, "thumb-control-blocked.png"), control);
@@ -1401,7 +1684,8 @@ for (const theme of THEMES) {
       check(
         delta > 1,
         "the cutout paints something a blocked stencil does not",
-        `mean absolute difference ${delta.toFixed(2)} between the live thumbnail and the same box with its stencil refused`,
+        `mean absolute difference ${delta.toFixed(2)} between the live thumbnail and the same box with its stencil refused`
+        + ` · the row is ${mintedRowForControl}, whose crop is its own picture — the one kind a refused proxy can move`,
       );
     } else {
       check(false, "the cutout paints something a blocked stencil does not", "never reached — no control shot");
