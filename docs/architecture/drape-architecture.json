@@ -10938,6 +10938,10 @@
       "path": "server/cardLabelProvenance.test.ts"
     },
     {
+      "id": "test:server/cardWaitsOnHisEye.test.ts",
+      "path": "server/cardWaitsOnHisEye.test.ts"
+    },
+    {
       "id": "test:server/castModelModal.test.ts",
       "path": "server/castModelModal.test.ts"
     },

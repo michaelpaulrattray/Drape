@@ -184,7 +184,12 @@ describe("a shift that never checked in is caught at its close", () => {
        a reader that looks afterwards sees every run as disciplined. It is
        asserted on BOTH branches, because the `--id` road is exactly the one a
        shift uses to close a DEAD run, where the question matters most. */
-    expect(source.match(/SELECT id, shift, seat, intent, startedAt, heartbeatAt, endedAt/g))
+    /* ⚠ The pattern tolerates COLUMNS BEING ADDED and refuses `heartbeatAt`
+       being dropped, which is the fact it is about. It was the exact column
+       list until #1349 added `cardRef` to both reads, and it reddened on a
+       change that did nothing to the heartbeat — a guard that fires on its
+       neighbours teaches a shift to edit the guard. */
+    expect(source.match(/SELECT id, shift, seat, [^`]*heartbeatAt, endedAt/g))
       .toHaveLength(2);
 
     /* (b) the verdict comes from the shared owner, not a second copy of the
@@ -210,11 +215,8 @@ describe("a shift that never checked in is caught at its close", () => {
        left the other matching — the doctored copy passed the arm it was built
        to fail, which is a control that cannot say no wearing a control's
        clothes. */
-    const noSelect = source.replace(
-      /SELECT id, shift, seat, intent, startedAt, heartbeatAt, endedAt/g,
-      "SELECT id, shift, seat, intent, startedAt, endedAt",
-    );
-    expect(noSelect).not.toMatch(/SELECT id, shift, seat, intent, startedAt, heartbeatAt, endedAt/);
+    const noSelect = source.replace(/, heartbeatAt, endedAt/g, ", endedAt");
+    expect(noSelect).not.toMatch(/SELECT id, shift, seat, [^`]*heartbeatAt, endedAt/);
 
     const noVerdict = source.replace(/hasEverCheckedIn\(/g, "alwaysTrue(");
     expect(noVerdict).not.toMatch(/hasEverCheckedIn\(/);
