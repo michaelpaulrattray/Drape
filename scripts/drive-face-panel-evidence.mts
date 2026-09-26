@@ -65,13 +65,37 @@
  * makes a real regression and an overruled rule indistinguishable forever
  * (fable-431 §4).
  *
- * Requires `CASTING_REFERENCE_LIBRARY_SCOPE=users:1` AND
- * `CASTING_FACE_SCAN_SCOPE=users:1` on the running server. With the library flag
- * off the endpoint answers `enabled: false`, the panel does not render, and this
- * driver fails rather than passing quietly — which is the correct verdict for a
- * run that proved nothing. With the SCAN flag off the panel is one library row,
- * every re-anchored check below fails loudly, and that too is correct: this
- * driver grades the product the founder is actually looking at.
+ * Requires `CASTING_REFERENCE_LIBRARY_SCOPE` and `CASTING_FACE_SCAN_SCOPE` to
+ * cover THE SUBJECT IT FINDS — not `users:1`, which is what this line said until
+ * #1297 and is a different account from the one the query returns. The refusal
+ * below names the exact lines to add. With the library flag off the endpoint
+ * answers `enabled: false`, the panel does not render, and this driver fails
+ * rather than passing quietly — the correct verdict for a run that proved
+ * nothing. With the SCAN flag off the panel is one library row, every count
+ * below fails loudly, and that too is correct: this driver grades the product
+ * the founder is actually looking at.
+ *
+ * # ⚠ THE FIRST RUN AGAINST A FRESH SERVER PROCESS IS NOT A CLEAN READING
+ *
+ * Measured 2026-09-26 (#1297), same tree, same subject, one `pnpm dev` restart
+ * between them:
+ *
+ *   COLD — first driver run of a fresh server process   83 ok · 14 FAIL
+ *   WARM — second run, same process                    107 ok ·  0 FAIL
+ *
+ * The cold DARK walk sees the panel's **library-only** shape — 14 rows and 3
+ * regions — while the warm one sees the scanned shape, 9 rows and 13 regions.
+ * `casting_face_scans` holds the stored scan throughout (`n = 1`, read at the
+ * rows), so the stored answer exists and the first walk does not have it; and
+ * the settle signal clears anyway, reporting *"her face is finished being read"*
+ * over a panel that has not been read yet.
+ *
+ * ⚠ **So a cold run's failures are NOT findings about the panel's rules** —
+ * they are fourteen ways of saying the scan has not landed, and two of them are
+ * re-anchored checks correctly reporting a degraded panel. **Run it twice and
+ * read the second.** The defect itself is filed rather than worked around here:
+ * this driver must not learn to tolerate a panel that is missing its regions,
+ * because that is exactly the failure it exists to catch.
  */
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
