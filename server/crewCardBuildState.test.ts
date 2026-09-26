@@ -94,10 +94,15 @@ const REFUSAL_BODY = "**NOT BUILT — the card's measurement is wrong against th
   + " prescription that follows from it would have been a capability change. Read at the bytes"
   + " by seat-janitor, 2026-09-26.**\n";
 const RELEASE_BODY = "RELEASED — seat-desk-2 (the card's premise held but the tree had moved)\n";
-/** This card's own third comment — it DISCUSSES claiming at length and is not a claim. */
-const PROSE_BODY = "⚠ One thing worth noticing for whoever does take it: the shift's claim comment"
-  + " at 00:12 was visible to the relay and the relay opened its PR anyway — so a reader that only"
-  + " looks at PRs and branches would have to look at COMMENTS to see this one.\n";
+/**
+ * ⚠ THE ANCHOR'S OWN CONTROL, AND IT IS NOT A SOFT ONE. This card's fifth
+ * comment QUOTES a claim inside a paragraph of prose, dash and seat and all —
+ * which is the ordinary way a shift reports a collision. Un-anchor the parser
+ * and this comment files a claim on #1094 that nobody made.
+ */
+const PROSE_BODY = "⚠ One thing worth noticing for whoever does take it: the shift posted"
+  + " CLAIMED — foreman-20260923-0955, 00:12 and the relay opened its PR anyway — so a reader"
+  + " that only looks at PRs and branches would have to look at COMMENTS to see this one.\n";
 
 describe("what a comment on a card says", () => {
   it("a claim names its seat", () => {
