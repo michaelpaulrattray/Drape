@@ -394,6 +394,10 @@ export async function retryCastView(
         pronouns,
         featureWords,
         wardrobeLine,
+        /* The SAME words the original five views were composed from (#1278 part
+           1). Without this a Try again renders a different prompt from the slot
+           it replaces, which is the half that outlives its keyed sibling. */
+        description: source.briefText,
       },
       input.angle,
       async (landed: {

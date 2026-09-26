@@ -46,6 +46,35 @@ import { HOUSE_PHOTOGRAPH_PARAGRAPHS } from "./houseBlock";
 const REFERENCE_IS_THE_DOCUMENT = PHOTOREAL_HUMAN_BLOCKS.referenceDocumentSentences.join(" ");
 
 /**
+ * THE SAME RULE WHEN THE CAST'S BRIEF IS ON RECORD — #1278 part 1.
+ *
+ * Both forms come from the cohort constant by name, for the reason the one above
+ * does: a second copy of the prose is the drift working law 4 is about. Which of
+ * the two a view sends is decided in one place (`referenceRuleFor`), because the
+ * choice and the description have to move together — sending the undescribed
+ * opener beside a description is a prompt that denies its own next line.
+ */
+const REFERENCE_WITH_DESCRIPTION = PHOTOREAL_HUMAN_BLOCKS.referenceDescribedSentences.join(" ");
+
+/**
+ * THE CAST'S OWN WORDS, NORMALISED — the one door the description comes through.
+ *
+ * `null` for absent, empty or whitespace, so every road agrees on what "no
+ * description" means. A legacy cast has no source roll at all (read at the rows
+ * 2026-09-26: 2 of 6 minted casts carry one), and a blank brief must compose the
+ * same bytes as a missing one rather than emitting an empty `DESCRIPTION:` label.
+ */
+export function viewDescriptionOf(text: string | null | undefined): string | null {
+  const trimmed = (text ?? "").trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+/** Which reference rule this view sends — undescribed, or described. */
+function referenceRuleFor(description: string | null): string {
+  return description === null ? REFERENCE_IS_THE_DOCUMENT : REFERENCE_WITH_DESCRIPTION;
+}
+
+/**
  * PACKAGE v3.1 — the final composition (founder ruling, 2026-08-02). This ends
  * the package saga.
  *
@@ -194,6 +223,51 @@ export const CAST_PACKAGE_WARDROBE_SPEC =
   + "below the frame of the reference CANNOT be compared to it and must not fail this check. "
   + "Judge only what both images show, plus ADDITIONS — jewellery, a hat, a bag, a prop, or "
   + "any printed text or logo that the reference does not show is a failure wherever it appears.";
+
+/**
+ * THE SAME SENTENCE WITH THE CAST'S BRIEF ON RECORD — #1278 part 1.
+ *
+ * His two faults, verbatim (2026-09-26): *"The dress is a plain modest version of
+ * what the brief describes, and the hem and shoes differ every take."*
+ *
+ * # What this sentence was doing to his dress
+ *
+ * The constant above is an honest answer to knowing nothing about the outfit but
+ * what a chest-up photograph shows, and three of its clauses only make sense
+ * under that ignorance: the outfit is whatever the reference shows, below the
+ * waist is unjudgeable, and any printed text or logo is an ADDITION and a
+ * failure. Read against his own brief — *"a white, body-conscious dress that
+ * mixes qipao structure with industrial straps, buckles, and a worn graphic on
+ * the chest, leaving the exact cut, hardware, and weathering open"* — two of
+ * those are actively wrong: **the worn graphic on her chest is the outfit, and
+ * this sentence calls it a failure**, and the cut and weathering the brief
+ * deliberately leaves open are exactly what nothing then establishes.
+ *
+ * # The narrowing
+ *
+ * An addition fails when the reference does not show it **and** the description
+ * does not name it. Every noun is kept. Below the frame stops being unjudgeable
+ * and becomes the description's to govern, which is what makes the three
+ * full-length views answerable for the first time without inventing an adjective
+ * of our own to judge against (the *"plain"* that cost a customer 50 credits —
+ * see the docblock above).
+ *
+ * ⚠ **THIS IS THE JUDGE'S SENTENCE AS WELL AS THE GENERATOR'S** — one function,
+ * one call each, which is what stops the two being told two outfits. So the
+ * narrowing changes what is REFUSED and therefore what is REFUNDED: strictly
+ * fewer refusals, because every clause here either stays or widens. Named rather
+ * than discovered later, since a slice refused is a slice refunded.
+ */
+export const CAST_PACKAGE_WARDROBE_SPEC_DESCRIBED =
+  "the SAME outfit the reference photograph shows and the DESCRIPTION names — one outfit, "
+  + "unchanged across every view. "
+  + "Inside the frame of the reference, the reference is the record. Below its frame the "
+  + "description governs: the cut, length, hardware, footwear and weathering it names are this "
+  + "outfit's own wherever they appear, and where it leaves them open any reading in keeping with "
+  + "the garments, materials and colours above the crop is correct. "
+  + "Judge the clothing against both records together. ADDITIONS — jewellery, a hat, a bag, a "
+  + "prop, or printed text or a logo that the reference does not show AND the description does "
+  + "not name — are a failure wherever they appear.";
 
 /**
  * THE SAME SENTENCE, WRITTEN FROM A STORED LINE (design §3.3, item 6).
@@ -606,10 +680,26 @@ export function castPackageLabel(
  * correct on every path, including a Basics Cast with no collar at all. Only
  * the shared sentence, the one that names an outfit, has anything to replace.
  */
-function wardrobeSpecFor(angle: CastViewAngle, wardrobeLine: string | null): string {
+function wardrobeSpecFor(
+  angle: CastViewAngle,
+  wardrobeLine: string | null,
+  description: string | null = null,
+): string {
   const base = VIEWS[angle].spec.wardrobe;
-  if (wardrobeLine === null || base !== CAST_PACKAGE_WARDROBE_SPEC) return base;
-  return castPackageWardrobeSpec(wardrobeLine);
+  /*
+    The close-up keeps its own sentence on both roads — at that crop the garment
+    is barely in frame, which is the whole reason it has one (see
+    `CLOSE_UP_WARDROBE`). Only the shared sentence has a described form.
+  */
+  if (base !== CAST_PACKAGE_WARDROBE_SPEC) return base;
+  if (wardrobeLine !== null) return castPackageWardrobeSpec(wardrobeLine);
+  /*
+    #1278 part 1. The stored-line road is FIRST because a line is the stronger
+    record when one exists — though none ever has: read at the rows 2026-09-26,
+    0 of 6 minted casts carry `technicalSchema.wardrobe.line`, all time, the two
+    signed the day before included.
+  */
+  return description === null ? base : CAST_PACKAGE_WARDROBE_SPEC_DESCRIBED;
 }
 
 /**
@@ -681,8 +771,34 @@ function wardrobeSpecFor(angle: CastViewAngle, wardrobeLine: string | null): str
  * The judge is untouched by this: `packageViewExpectation` is assembled from
  * `spec` alone and never reads a directive, so nothing here can fail a view.
  */
-function belowWaistFor(angle: CastViewAngle, wardrobeLine: string | null): string {
+function belowWaistFor(
+  angle: CastViewAngle,
+  wardrobeLine: string | null,
+  description: string | null = null,
+): string {
   if (!VIEWS[angle].belowWaist || wardrobeLine !== null) return "";
+  /*
+    #1278 part 1 — the hem-and-shoes half of his report.
+
+    The undescribed clause below asks for "whatever its lower half and footwear
+    WOULD BE", which is the honest question to ask of a chest-up photograph and is
+    also an open invitation: nothing constrains the answer, so it lands differently
+    on every independent render. With the brief on record the description answers
+    it — his own words name the dress, and where they leave the hem open they at
+    least name the register it has to sit in.
+
+    ⚠ This does NOT make the three full-length views agree with EACH OTHER. They
+    are still three independent renders of an open question, and identical-across-
+    views is what part 2's one-sheet-then-cut shape is for. What this fixes is the
+    answer being unanchored; what it cannot fix is its being asked three times.
+  */
+  if (description !== null) {
+    return " Below the waist, CONTINUE THE SAME OUTFIT — the lower half, length, hardware and "
+      + "footwear the DESCRIPTION names, and where it leaves them open, a reading in keeping with "
+      + "the garments, materials and colours visible above the crop. Do not substitute a different "
+      + "style of clothing, and no logos or printed text that neither the reference nor the "
+      + "description shows.";
+  }
   return " Below the waist, CONTINUE THE SAME OUTFIT the reference photograph shows — whatever "
     + "its lower half and footwear would be, in keeping with the garments, materials and colours "
     + "visible above the crop. Do not substitute a different style of clothing, and no visible "
@@ -807,15 +923,30 @@ function belowWaistFor(angle: CastViewAngle, wardrobeLine: string | null): strin
  * this one: the repair here makes the PICTURE the document, which is the road
  * his ruling names, and it holds whether or not the words ever ride.
  */
-export function composePackageViewPrompt(angle: CastViewAngle, wardrobeLine: string | null = null): string {
+export function composePackageViewPrompt(
+  angle: CastViewAngle,
+  wardrobeLine: string | null = null,
+  description: string | null = null,
+): string {
   const view = VIEWS[angle];
+  const brief = viewDescriptionOf(description);
   return [
     "Keep this exact person unchanged: the same face, bone structure, skin, hair, facial hair and build "
     + "as the reference photograph. This is the same individual in a different photograph, never a "
     + "similar-looking person.",
-    REFERENCE_IS_THE_DOCUMENT,
-    `${view.directive}${belowWaistFor(angle, wardrobeLine)}`,
-    `WARDROBE: ${wardrobeSpecFor(angle, wardrobeLine)}`,
+    referenceRuleFor(brief),
+    /*
+      #1278 part 1 — the cast's own words, and the position is load-bearing in two
+      directions. It sits AFTER the identity sentence and the reference rule, so
+      the reference's primacy is established before the description is read; and
+      BEFORE the house paragraphs, so `AUTHORITY_LINE`'s *"the description says WHO
+      to cast"* has a referent at last. Since #1240 brought that paragraph onto
+      this road it has been resolving to nothing, leaving *"where the description
+      is silent, this block governs: plain studio frame"* as its only live branch.
+    */
+    ...(brief === null ? [] : [`DESCRIPTION: ${brief}`]),
+    `${view.directive}${belowWaistFor(angle, wardrobeLine, brief)}`,
+    `WARDROBE: ${wardrobeSpecFor(angle, wardrobeLine, brief)}`,
     ...HOUSE_PHOTOGRAPH_PARAGRAPHS,
   ].join("\n");
 }
@@ -831,12 +962,22 @@ export function composePackageViewPrompt(angle: CastViewAngle, wardrobeLine: str
 export function packageViewExpectation(
   angle: CastViewAngle,
   wardrobeLine: string | null = null,
+  description: string | null = null,
 ): CastPackageViewSpec {
   const { spec } = VIEWS[angle];
   /*
     The SAME answer the generator was given, through the same function. Two
     call sites composing the sentence separately is how a judge comes to fail a
     view for wearing what the prompt asked for.
+
+    ⚠ #1278 part 1 takes `description` for exactly that reason and for no other.
+    The generator's wardrobe sentence narrows when a brief is on record, so a
+    judge that did not know about the brief would keep failing the graphic on her
+    chest that the prompt just told the engine to paint — the same defect this
+    function's own comment describes, arriving through a new door.
   */
-  return { framing: spec.framing, wardrobe: wardrobeSpecFor(angle, wardrobeLine) };
+  return {
+    framing: spec.framing,
+    wardrobe: wardrobeSpecFor(angle, wardrobeLine, viewDescriptionOf(description)),
+  };
 }

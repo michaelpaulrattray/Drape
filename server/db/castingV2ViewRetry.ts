@@ -29,6 +29,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import {
   castingCandidateVariants,
   castingCandidates,
+  castingRolls,
   generationOperations,
   modelAssets,
   models,
@@ -77,6 +78,17 @@ export type CastViewRenderSource = {
    */
   technicalSchema: unknown;
   /**
+   * WHAT SHE WAS CAST AS — the brief text of the roll she came from (#1278
+   * part 1), read through the Cast's own `sourceRollId` in the statement below.
+   *
+   * A retried view has to send the SAME description the original five were
+   * composed from, or a Try again silently renders a different prompt from the
+   * slot it replaces — the unkeyed-half class. `null` for a Cast with no source
+   * roll (read at the rows 2026-09-26: 4 of 6 minted casts), whose views then
+   * compose exactly what they composed before this existed.
+   */
+  briefText: string | null;
+  /**
    * The candidate whose delivered ink crops the views carry. Null for a Cast
    * whose source row is gone; her views then compose exactly what a Cast with
    * no crops composes.
@@ -110,6 +122,7 @@ export async function readCastViewRenderSource(
       id: models.id,
       technicalSchema: models.technicalSchema,
       sourceCandidateId: models.sourceCandidateId,
+      sourceRollId: models.sourceRollId,
     })
     .from(models)
     .where(and(
@@ -159,12 +172,34 @@ export async function readCastViewRenderSource(
     return null;
   }
 
+  /*
+    WHAT SHE WAS CAST AS (#1278 part 1) — her roll's brief text, owner-scoped in
+    the statement that reads it AND re-anchored to this Cast's own pointer, so a
+    `sourceRollId` that has been re-used resolves to nothing rather than to
+    another customer's words (invariants 1 and 2, the same shape as the branch
+    join below). `null` for a Cast with no source roll, which composes exactly
+    what it composed before this field existed.
+  */
+  let briefText: string | null = null;
+  if (model.sourceRollId) {
+    const [roll] = await db
+      .select({ briefText: castingRolls.briefText })
+      .from(castingRolls)
+      .where(and(
+        eq(castingRolls.id, model.sourceRollId),
+        eq(castingRolls.userId, userId),
+      ))
+      .limit(1);
+    briefText = roll?.briefText ?? null;
+  }
+
   const base: CastViewRenderSource = {
     modelId: model.id,
     anchorStorageKey: anchor.storageKey,
     identityRevisionId: stamp.identityRevisionId,
     identityText: stamp.identityText,
     technicalSchema: model.technicalSchema,
+    briefText,
     candidateId: null,
     candidatePublicId: null,
     selectedVariantId: null,
