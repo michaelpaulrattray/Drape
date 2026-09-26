@@ -43,11 +43,21 @@
  *
  * Later in the shift, to prove it is still alive and to record the branch:
  *
- *   … scripts/crew-shift-start.mts --note 'branch cut, building the reader' --branch feat/272-live-shift-row
+ *   … scripts/crew-shift-start.mts --note 'branch cut, building the reader' \
+ *       --shift foreman-118 --branch feat/272-live-shift-row
  *
- * `--note` UPDATES the newest open run rather than opening a second one. That
- * is the heartbeat, and it is deliberately manual: a heartbeat process would be
- * a new persistent process, which `PROGRAM.md` makes a founder-announced act.
+ * `--note` UPDATES an open run rather than opening a second one. That is the
+ * heartbeat, and it is deliberately manual: a heartbeat process would be a new
+ * persistent process, which `PROGRAM.md` makes a founder-announced act.
+ *
+ * ⚠ **`--shift <id>` names YOUR row, and this sentence read *"the newest open
+ * run"* until #1281.** That default is #1234's defect — a bare close stamping
+ * somebody else's row — one script over, and it becomes load-bearing the moment
+ * a pass launches several seats at once: every seat's heartbeat would land on
+ * the last row opened, and his Working-now table would call every other seat
+ * stalled. With nothing named it still stamps the one open run, so a
+ * single-seat night is unchanged, and it REFUSES rather than guessing when more
+ * than one is open.
  *
  * # TWO READINGS OF "IS SOMEBODY ALREADY ON THIS CARD", AND THEY DIFFER IN KIND
  *
@@ -70,6 +80,7 @@ import {
   CREW_SHIFT_SEATS,
   CREW_SHIFT_WORK_KINDS,
   findCardCollisions,
+  resolveCloseTarget,
   type CrewShiftSeat,
   type CrewShiftWorkKind,
 } from "../shared/crewShiftState.js";
@@ -169,26 +180,53 @@ try {
 
   if (noteMode !== null) {
     /*
-      THE HEARTBEAT. Updates the newest OPEN run — `endedAt IS NULL` — and
-      touches nothing else. Scoped by a subquery on the same table rather than
-      by an id the caller passes, because a shift that has to remember its own
-      row id will eventually stamp somebody else's (invariant 1's shape: put
-      the scope in the statement that writes).
+      THE HEARTBEAT — YOUR OWN ROW, NAMED BY `--shift`.
+
+      ⚠ **IT USED TO STAMP THE NEWEST OPEN RUN, WHICH IS #1234's DEFECT ONE
+      SCRIPT OVER (#1281, law 7: fix the class, not the instance).** That card
+      removed the guess from the CLOSE and left it here, in a comment arguing
+      for it — *"a shift that has to remember its own row id will eventually
+      stamp somebody else's"* — which was true while exactly one seat ran and is
+      the wrong direction the moment two do. With N seats in one pass, every
+      seat's heartbeat lands on the LAST row opened: seats 1…N-1 stop checking
+      in, `heartbeatAt` goes quiet, and his Working-now table calls a working
+      seat stalled while the newest row collects everybody's notes. Nothing
+      anywhere would say so.
+
+      The decision is `resolveCloseTarget` — the SAME resolver the close uses,
+      because it is the same question ("which of the open runs is mine") over
+      the same population. A second resolver here would be the drift working
+      law 4 is about, on the pair of scripts that already drifted once.
+
+      ⚠ The chosen id goes INTO the writing statement together with
+      `endedAt IS NULL` and, when it was named, the shift id (invariant 1: put
+      the scope in the statement that writes, not in a SELECT before it).
     */
     const branch = arg("branch");
+    const named = arg("shift");
+    const [openRows] = await conn.query<any[]>(
+      `SELECT id, shift, seat, intent, branch FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC`,
+    );
+    const verdict = resolveCloseTarget({
+      openRuns: openRows.map((row) => ({
+        id: Number(row.id),
+        shift: String(row.shift),
+        seat: String(row.seat),
+        intent: String(row.intent),
+      })),
+      shift: named,
+    });
+    if (verdict.kind === "refuse") {
+      refuse(`${verdict.why}\n  (this is the heartbeat — open a run first, or name yours with --shift <id>.)`);
+    }
+    const target = openRows.find((row) => Number(row.id) === verdict.run.id)!;
     if (DRY_RUN) {
       /* The SAME row this would write to, resolved the same way — a dry run
          that reports against a different row than the write would touch is
          worse than none (#288). */
-      const [candidates] = await conn.query<any[]>(
-        `SELECT id, shift, seat, intent, branch FROM \`${TABLE}\` WHERE endedAt IS NULL ORDER BY id DESC LIMIT 1`,
-      );
-      if (candidates.length !== 1) {
-        refuse("there is no open run to note against. Open one first (without --note).");
-      }
-      const target = candidates[0];
       console.log(
-        `DRY RUN — nothing written. The heartbeat would set, on run #${target.id} (${target.shift}):`
+        `DRY RUN — nothing written. The heartbeat would set, on run #${target.id} (${target.shift}),`
+        + ` chosen by ${verdict.how}:`
         + `\n  heartbeatAt now`
         + `\n  intent      ${noteMode.slice(0, 500)}`
         + `\n  branch      ${branch ?? `(unchanged — ${target.branch ?? "none"})`}`
@@ -202,15 +240,18 @@ try {
           SET heartbeatAt = UTC_TIMESTAMP(),
               intent = ?,
               branch = COALESCE(?, branch)
-        WHERE endedAt IS NULL
-        ORDER BY id DESC
-        LIMIT 1`,
-      [noteMode.slice(0, 500), branch],
+        WHERE id = ?
+          AND endedAt IS NULL
+          AND (? IS NULL OR shift = ?)`,
+      [noteMode.slice(0, 500), branch, verdict.run.id, named, named],
     );
     if (result.affectedRows !== 1) {
-      refuse("there is no open run to note against. Open one first (without --note).");
+      refuse(
+        `run #${verdict.run.id} was not stamped — it closed between the read and the write, or its shift id changed.`
+        + " Nothing was written; re-run the heartbeat.",
+      );
     }
-    console.log(`NOTED — the open run now reads: ${noteMode}`);
+    console.log(`NOTED — run #${verdict.run.id} (${verdict.run.shift}), chosen by ${verdict.how}: ${noteMode}`);
     if (branch) console.log(`branch: ${branch}`);
   } else {
     const shift = arg("shift");

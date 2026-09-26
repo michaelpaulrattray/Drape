@@ -12538,6 +12538,10 @@
       "path": "server/crewShiftCardClaim.test.ts"
     },
     {
+      "id": "test:server/crewShiftHeartbeatScope.test.ts",
+      "path": "server/crewShiftHeartbeatScope.test.ts"
+    },
+    {
       "id": "test:server/crewShiftState.test.ts",
       "path": "server/crewShiftState.test.ts"
     },
@@ -13380,6 +13384,18 @@
     {
       "id": "test:server/scriptsTypecheckPopulation.test.ts",
       "path": "server/scriptsTypecheckPopulation.test.ts"
+    },
+    {
+      "id": "test:server/seatBatches.test.ts",
+      "path": "server/seatBatches.test.ts"
+    },
+    {
+      "id": "test:server/seatBatchingJev.test.ts",
+      "path": "server/seatBatchingJev.test.ts"
+    },
+    {
+      "id": "test:server/seatPassDigest.test.ts",
+      "path": "server/seatPassDigest.test.ts"
     },
     {
       "id": "test:server/security/adminSecurity.test.ts",

@@ -51,6 +51,16 @@ export interface OpenPullRequest extends PullRequestMergeability {
   readonly url?: string;
   readonly isDraft?: boolean;
   readonly headRefName?: string;
+  /**
+   * The labels, as `gh pr list --json labels` gives them (#1281). Added so the
+   * seat-batch cutter and the pass digest can ask whether a pull request is
+   * held for the relay's hand verdict (`CREW_REVIEW_PR_LABELS`) without a
+   * SECOND reader of the open pull requests — one more `--json` field costs
+   * nothing and a second reader of the same list is working law 4 in miniature.
+   * Absent from a fixture written before this existed, which is why it is
+   * optional rather than required.
+   */
+  readonly labels?: readonly { readonly name?: string }[];
 }
 
 /**
@@ -91,7 +101,7 @@ export function readOpenPullRequests(
     /* `gh` with no shell — it is an .exe, and the shell form emits DEP0190. */
     const out = execFileSync(
       "gh",
-      ["pr", "list", "--state", "open", "--limit", "100", "--json", "number,title,body,url,isDraft,headRefName,mergeable,mergeStateStatus"],
+      ["pr", "list", "--state", "open", "--limit", "100", "--json", "number,title,body,url,isDraft,headRefName,labels,mergeable,mergeStateStatus"],
       {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
