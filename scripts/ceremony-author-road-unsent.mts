@@ -15,12 +15,57 @@
  * Indian "relatives"; that consumer is gated in code, these are not.
  *
  * For every candidate (and variant, if any exist by then) whose roll's
- * `compiledBrief.register.kind = 'author'`:
- *   - set `internalPrompt.resolved.unsent = true`
- *   - null the stored `personaLine` (dice fiction under tiles), candidates only
+ * `compiledBrief.register.kind = 'author'`: set
+ * `internalPrompt.resolved.unsent = true`.
  *
  * After this the mark is the single source and the register-kind gates in code
  * become belt-over-braces.
+ *
+ * # ⚠ IT ALSO NULLED `personaLine` UNTIL 2026-09-26, AND THAT COLUMN NO LONGER
+ * # EXISTS — THE CEREMONY COULD NOT RUN AT ALL
+ *
+ * `#1241` (`3100bb7a`) retired the candidate disposition end to end and
+ * migration `0068` DROPPED `casting_candidates.personaLine`. This file kept
+ * naming it in a `SELECT` and an `UPDATE`, so **every invocation on either world
+ * died on `Unknown column 'personaLine' in 'field list'` before marking
+ * anything** — found by running it (#179, run #383).
+ *
+ * The half is not merely unrunnable, it is MOOT: a dropped column holds no
+ * fiction to null, which is a stronger outcome than the one this ceremony was
+ * asking for. Only the `unsent` half remains, and that was always the substance.
+ *
+ * ⚠ **The class is worth more than the instance.** #1241 swept `server/`,
+ * `shared/` and `client/` and did not sweep `scripts/`. Raw SQL is a string, so
+ * `pnpm check`, `tsconfig.scripts.json` and the gate are all green over a query
+ * that cannot execute — nothing fails until somebody runs it against a
+ * database, and nothing in CI does. The other tracked scripts still carrying
+ * this dead column are enumerated on the card.
+ *
+ * # ITS POPULATION IS EMPTY ON BOTH WORLDS AND CANNOT REGROW (measured 2026-09-26)
+ *
+ * Read at the rows with the readability door proven able to say yes first
+ * (law 2 — the door answers null for a marked record AND for a row with no
+ * record, so a bare zero does not say which):
+ *
+ * | | dev | production |
+ * |---|---|---|
+ * | author-road rolls | 14 | 86 |
+ * | their candidates | 1 | 404 |
+ * | carrying a `resolved` record | 1 | 404 |
+ * | of those, marked `unsent: true` | **1 of 1** | **404 of 404** |
+ * | still readable as fact | **0** | **0** |
+ * | rolls predating the mark (PR #178) | 10 | 3 |
+ * | …of those still holding candidates | **0** | **0** |
+ *
+ * So the 96 legacy rows this ceremony was written for are GONE rather than
+ * fixed: every roll older than the compile-time mark has had its candidates
+ * expire and be swept, and every surviving row was written after the compiler
+ * learned to mark. Since PR #178 marks at write time, **no new unmarked row can
+ * appear** — the population is closed, not merely empty today.
+ *
+ * It is kept rather than deleted, like the other 37 ceremonies here: a ceremony
+ * is the record of what was done to the data, and one that crashes is a trap
+ * for whoever reads that record next.
  *
  * # Derive, never mirror (law 4)
  *
@@ -79,7 +124,7 @@ try {
     console.log("ALREADY APPLIED — no author-road rolls in this world, nothing to mark");
   } else {
     const [candidates] = await world.connection.query<any[]>(
-      "SELECT id, publicId, personaLine, internalPrompt FROM casting_candidates WHERE rollId IN (?)",
+      "SELECT id, publicId, internalPrompt FROM casting_candidates WHERE rollId IN (?)",
       [authorRollIds],
     );
     const [variants] = await world.connection.query<any[]>(
@@ -91,27 +136,22 @@ try {
     );
 
     const unreadCandidates = candidates.filter((row) => recordStillReadable(row.internalPrompt));
-    const personaRows = candidates.filter((row) => row.personaLine !== null);
     const unreadVariants = variants.filter((row) => recordStillReadable(row.internalPrompt));
     console.log(
-      `candidates on author rolls: ${candidates.length} · records still readable: ${unreadCandidates.length} · personaLine set: ${personaRows.length}`,
+      `candidates on author rolls: ${candidates.length} · records still readable: ${unreadCandidates.length}`,
     );
     console.log(
       `variants on author rolls: ${variants.length} · records still readable: ${unreadVariants.length}`,
     );
 
-    if (unreadCandidates.length === 0 && personaRows.length === 0 && unreadVariants.length === 0) {
-      console.log("ALREADY APPLIED — every author-road record refuses through readResolvedIdentity and no personaLine remains");
+    if (unreadCandidates.length === 0 && unreadVariants.length === 0) {
+      console.log("ALREADY APPLIED — every author-road record refuses through readResolvedIdentity");
     } else {
-      const dirtyCandidateIds = new Set<number>([
-        ...unreadCandidates.map((row) => row.id as number),
-        ...personaRows.map((row) => row.id as number),
-      ]);
+      const dirtyCandidateIds = new Set<number>(unreadCandidates.map((row) => row.id as number));
       for (const id of dirtyCandidateIds) {
         await world.connection.query(
           `UPDATE casting_candidates
-              SET internalPrompt = JSON_SET(internalPrompt, '$.resolved.unsent', CAST('true' AS JSON)),
-                  personaLine = NULL
+              SET internalPrompt = JSON_SET(internalPrompt, '$.resolved.unsent', CAST('true' AS JSON))
             WHERE id = ?`,
           [id],
         );
@@ -134,7 +174,7 @@ try {
        candidate may still carry a persona caption. */
     console.log("read back from the live tables:");
     const [candidatesAfter] = await world.connection.query<any[]>(
-      "SELECT id, publicId, personaLine, internalPrompt FROM casting_candidates WHERE rollId IN (?)",
+      "SELECT id, publicId, internalPrompt FROM casting_candidates WHERE rollId IN (?)",
       [authorRollIds],
     );
     const [variantsAfter] = await world.connection.query<any[]>(
@@ -154,15 +194,8 @@ try {
         + `(first: ${stillReadable[0].publicId}) — stop and investigate; do not run production`,
       );
     }
-    const stillCaptioned = candidatesAfter.filter((row) => row.personaLine !== null);
-    if (stillCaptioned.length > 0) {
-      throw new Error(
-        `${stillCaptioned.length} author-road candidate(s) still carry a personaLine after the apply `
-        + `(first: ${stillCaptioned[0].publicId})`,
-      );
-    }
     console.log(
-      `  readResolvedIdentity refuses all ${candidatesAfter.length} candidate + ${variantsAfter.length} variant record(s); no personaLine remains`,
+      `  readResolvedIdentity refuses all ${candidatesAfter.length} candidate + ${variantsAfter.length} variant record(s)`,
     );
   }
 } catch (error) {
