@@ -518,6 +518,50 @@ describe("generation failures", () => {
     expect(generateView).toHaveBeenCalledTimes(5 * VIEW_ARRIVAL_ATTEMPTS);
   });
 
+  /*
+    ⚠ THE ONLY CLASS #1212 MOVED - AND IT IS UNREACHABLE ON THIS ROAD, WHICH
+    IS SAID HERE RATHER THAN LEFT FOR A READER TO DISCOVER.
+
+    Nothing in the view road raises `cannot_say`: the only raiser in the product
+    is `refineService.ts`'s `RepaintCannotSayError`, on the repaint road, and it
+    extends `Error` rather than `ProviderError`, so it could not even reach the
+    `instanceof ProviderError` branch. **No customer wait is saved by this
+    change.** The first draft of this suite and its PR said fifteen calls became
+    five; that was wrong and the reviewer caught it at the bytes.
+
+    The arm stays because it is the ONLY way to prove the loop now asks the
+    contract instead of naming its own classes: `content_policy` and
+    `capability` were already terminal, so they cannot tell the two
+    implementations apart. Throwing a class the road cannot raise is a
+    deliberate synthetic - it measures the WIRING, and the wiring is what this
+    card was about.
+  */
+  it("asks the terminal set, not two class names - driven on a class only the set knows", async () => {
+    const generateView = vi.fn(async () => {
+      throw new ProviderError("cannot_say", "no slot for that");
+    });
+    const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+    await buildCastPackage(deps({ identityEngine }), input);
+    expect(generateView).toHaveBeenCalledTimes(5);
+  });
+
+  /*
+    AND THE CLASSES DELIBERATELY LEFT ON THE ARRIVAL BUDGET, driven at the road
+    rather than only asserted at the set. A redraw from a stochastic engine is a
+    different draw, and she has already paid for a frame she does not have -
+    narrowing these is a money decision and it is carded, not taken here.
+  */
+  it("still spends the arrival budget on a class that might come back clean", async () => {
+    for (const failure of ["render_fault", "provider_account"] as const) {
+      const generateView = vi.fn(async () => {
+        throw new ProviderError(failure, failure);
+      });
+      const identityEngine = () => ({ id: "e", editWithReferences: vi.fn(), generateView });
+      await buildCastPackage(deps({ identityEngine }), input);
+      expect(generateView, failure).toHaveBeenCalledTimes(5 * VIEW_ARRIVAL_ATTEMPTS);
+    }
+  });
+
   it("still activates the Cast when every view fails — the master is usable", async () => {
     const identityEngine = () => ({
       id: "e",
