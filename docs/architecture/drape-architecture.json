@@ -12582,6 +12582,10 @@
       "path": "server/crewReplyAcknowledgement.test.ts"
     },
     {
+      "id": "test:server/crewSeatVisibility.test.ts",
+      "path": "server/crewSeatVisibility.test.ts"
+    },
+    {
       "id": "test:server/crewShiftArguments.test.ts",
       "path": "server/crewShiftArguments.test.ts"
     },

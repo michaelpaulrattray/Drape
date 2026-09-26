@@ -38,25 +38,28 @@
  * meaningful answers are "nothing running" and "not migrated yet", and they are
  * different sentences.
  */
-import { desc } from "drizzle-orm";
+import { desc, isNotNull, isNull } from "drizzle-orm";
 
 import { crewShiftRuns } from "../../drizzle/schema";
 import { getDb } from "./connection";
 
 /**
- * How many recent runs the page receives.
+ * How many FINISHED runs the page receives.
  *
- * #272 asks for the running one "plus the last three shifts", so FOUR is the
- * number that fills that page in the case that matters — a live run on top and
- * three behind it.
+ * #272 asks for the running one "plus the last three shifts", so three is his
+ * own number for the past and it has not moved.
  *
- * When nothing is running the fourth row is fetched and **not drawn**:
- * `CrewWorkingNow` slices the past list to three either way, because "the last
- * three shifts" is his ask and a list that quietly grows by one when the team
- * goes idle is a worse surface than a constant one. One wasted row on an
- * unindexed-by-nothing four-row read is not worth a second query shape.
+ * ⚠ **THE OPEN RUNS ARE NOT CAPPED, AND THAT IS THE WHOLE OF #1358.** This
+ * file held one `CREW_SHIFT_RUN_LIMIT = 4` over a single newest-first query,
+ * chosen when exactly one shift ran at a time: the running row on top and three
+ * behind it. The runner now launches up to four builder seats in one pass
+ * (#1281), so on the first evening it did, **four rows were open and a fifth
+ * would not have reached the page at all** — a seat working on his product,
+ * invisible, with nothing anywhere saying a row had been dropped. A cap on the
+ * open list can only ever hide a working seat, so there is none: the open list
+ * is every open row, and the ceiling on it is the team's own size.
  */
-const CREW_SHIFT_RUN_LIMIT = 4;
+const CREW_SHIFT_PAST_LIMIT = 3;
 
 /**
  * One run as the page sees it.
@@ -89,10 +92,22 @@ type CrewShiftRunView = {
  * and mean opposite things to somebody deciding whether the team is idle or the
  * instrument is dark. `crewReplies`' own design calls that class out: a
  * configuration fault wearing the clothes of a fact.
+ *
+ * ⚠ **TWO LISTS, BECAUSE ONE FLAT LIST IS WHAT PRODUCED #1358.** The page used
+ * to receive four rows newest-first and work out which one was current itself —
+ * `runs.find((run) => run.endedAt === null)`, singular, and every other open row
+ * fell through into "Recent shifts" as though it had finished. The split belongs
+ * on this side: the two statements below already separate them, so handing the
+ * page one list makes it re-derive a fact this file measured, and there is only
+ * one way to get that wrong.
+ *
+ * `past` is the last three FINISHED runs and never an open one; `open` is every
+ * open row, newest first, uncapped.
  */
 export type CrewShiftRuns = {
   readonly available: boolean;
-  readonly runs: readonly CrewShiftRunView[];
+  readonly open: readonly CrewShiftRunView[];
+  readonly past: readonly CrewShiftRunView[];
 };
 
 /** MySQL's "table doesn't exist". The ONLY failure this reader rescues. */
@@ -116,44 +131,72 @@ function isMissingTable(error: unknown): boolean {
 }
 
 /**
- * The newest runs, newest first.
+ * The open runs and the last three finished ones, newest first.
  *
  * Ordered by `id` rather than `startedAt`: two runs can share a second, and a
  * tie in the ORDER BY would let the page draw a finished shift above the one
  * that is running. `id` is the insertion order and cannot tie.
+ *
+ * # TWO STATEMENTS, AND THE ORDER OF THEM IS THE ONLY RACE THERE IS
+ *
+ * One statement cannot say *every open row plus exactly three closed ones*:
+ * MySQL 8 refuses a `LIMIT` inside an `IN` subquery, and a single newest-first
+ * page is precisely the shape that hid four seats (#1358). So the open rows and
+ * the past rows are read separately, and they are read in THAT order on purpose.
+ *
+ * A run that closes between the two — a 30-second poll window — comes back in
+ * BOTH, and is kept in `open`: it is drawn one poll longer as working with its
+ * last check-in beside it, which is a stale reading that corrects itself. Read
+ * the other way round it would land in NEITHER and vanish from his page for a
+ * poll, and a shift that disappears is the failure this surface exists to
+ * prevent. The dedupe below is what makes the choice hold rather than showing
+ * one run twice.
  */
 export async function listCrewShiftRuns(): Promise<CrewShiftRuns> {
   const db = await getDb();
   /* No database at all is a configuration fault, not an absent table — but it
      is also not something to take the whole Crew tab down for, since the
      briefing renders from a file and his replies would have failed first. */
-  if (!db) return { available: false, runs: [] };
+  if (!db) return { available: false, open: [], past: [] };
+
+  /* One projection, named once, for both statements — invariant 8 with a single
+     place to add a column to rather than two that can disagree. */
+  const columns = {
+    id: crewShiftRuns.id,
+    shift: crewShiftRuns.shift,
+    seat: crewShiftRuns.seat,
+    workKind: crewShiftRuns.workKind,
+    cardRef: crewShiftRuns.cardRef,
+    cardTitle: crewShiftRuns.cardTitle,
+    intent: crewShiftRuns.intent,
+    branch: crewShiftRuns.branch,
+    startedAt: crewShiftRuns.startedAt,
+    heartbeatAt: crewShiftRuns.heartbeatAt,
+    endedAt: crewShiftRuns.endedAt,
+    outcome: crewShiftRuns.outcome,
+    outcomeNote: crewShiftRuns.outcomeNote,
+    prNumber: crewShiftRuns.prNumber,
+  };
 
   try {
-    const rows = await db
-      .select({
-        id: crewShiftRuns.id,
-        shift: crewShiftRuns.shift,
-        seat: crewShiftRuns.seat,
-        workKind: crewShiftRuns.workKind,
-        cardRef: crewShiftRuns.cardRef,
-        cardTitle: crewShiftRuns.cardTitle,
-        intent: crewShiftRuns.intent,
-        branch: crewShiftRuns.branch,
-        startedAt: crewShiftRuns.startedAt,
-        heartbeatAt: crewShiftRuns.heartbeatAt,
-        endedAt: crewShiftRuns.endedAt,
-        outcome: crewShiftRuns.outcome,
-        outcomeNote: crewShiftRuns.outcomeNote,
-        prNumber: crewShiftRuns.prNumber,
-      })
+    /* Every open row. No `LIMIT` — see `CREW_SHIFT_PAST_LIMIT`'s docblock. */
+    const open = await db
+      .select(columns)
       .from(crewShiftRuns)
-      .orderBy(desc(crewShiftRuns.id))
-      .limit(CREW_SHIFT_RUN_LIMIT);
+      .where(isNull(crewShiftRuns.endedAt))
+      .orderBy(desc(crewShiftRuns.id));
 
-    return { available: true, runs: rows };
+    const past = await db
+      .select(columns)
+      .from(crewShiftRuns)
+      .where(isNotNull(crewShiftRuns.endedAt))
+      .orderBy(desc(crewShiftRuns.id))
+      .limit(CREW_SHIFT_PAST_LIMIT);
+
+    const openIds = new Set(open.map((run) => run.id));
+    return { available: true, open, past: past.filter((run) => !openIds.has(run.id)) };
   } catch (cause) {
-    if (isMissingTable(cause)) return { available: false, runs: [] };
+    if (isMissingTable(cause)) return { available: false, open: [], past: [] };
     throw cause;
   }
 }
