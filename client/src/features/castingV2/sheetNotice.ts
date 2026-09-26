@@ -15,7 +15,8 @@
  *      stated facts were lost before a single face was cast, and they paid for
  *      it. Nothing else on the page competes with that.
  *   2. **The wardrobe was kept.** One stated instruction was deliberately not
- *      followed. It is about this sheet, and it is news exactly once.
+ *      followed. It is about this sheet, and it is news exactly once. ⚠ Only
+ *      on the HOUSE road — the author road wears what she named (#1262).
  *   3. **It expires soon.** True, worth saying, and about the sheet's future
  *      rather than its content — so it yields to anything about the faces.
  *
@@ -30,6 +31,15 @@ export type SheetNoticeInput = {
   fellBack: boolean;
   /** The viewed roll's brief stated clothing. */
   statedWardrobe: boolean;
+  /**
+   * DID THIS ROLL COMPOSE ON THE AUTHOR ROAD — `RollProjection.authorRoad`.
+   *
+   * It decides whether the stated-outfit rung may speak at all: on the author
+   * road the brief reaches the engine verbatim, so a stated outfit is WORN by
+   * the eight, and the studio-tee sentence would contradict the picture above
+   * it. See the rung's own paragraph on `sheetNotice`.
+   */
+  authorRoad: boolean;
   /** The retention line, already composed — see `retentionCopy.ts`. */
   expiryNotice: string | null;
 };
@@ -85,9 +95,32 @@ export const STATED_WARDROBE_NOTICE =
  * than news that her sword was dropped. It is left that way for the reason it
  * always was: the cell has no measured population, and a sentence invented for
  * a case nobody has met is a claim the copy audit cannot classify.
+ *
+ * ⚠ **AND THE STATED-OUTFIT RUNG IS SILENT ON THE AUTHOR ROAD — #1262,
+ * 2026-09-26. THE SENTENCE WAS TRUE OF A ROAD NOBODY IS ON ANY MORE.**
+ *
+ * It was written as a companion to the HOUSE road, where the eight really were
+ * composed into the studio tee whatever the brief said. On the author road the
+ * brief reaches the engine verbatim (`briefCompiler.ts` — the stated outfit is
+ * deliberately NOT restated into the eight prompts *because it is already in
+ * the request*), so the eight come back WEARING what she named, and #1222
+ * records that outfit on the roll for Sign and the five views. Every account
+ * has been on the author road since the switch sitting of 2026-09-24, so from
+ * that day the sentence told every stated-outfit customer the opposite of what
+ * her own sheet showed her.
+ *
+ * **Nothing replaces it, and that is the decision rather than an omission.**
+ * The picture already answers the question the sentence was written to answer —
+ * the same reasoning his #230 ruling gave for deleting the differ-by clause
+ * (*"The sheet already proves whether the faces are different"*). A sentence
+ * saying *your outfit was kept* would be narrating what the customer can see.
+ *
+ * The house branch is KEPT rather than deleted: the sentence is still true
+ * there, and a road with no accounts on it is not a reason to lose the only
+ * copy of a rule that still governs it (#1204).
  */
 export function sheetNotice(input: SheetNoticeInput): string | null {
   if (input.fellBack) return FELL_BACK_NOTICE;
-  if (input.statedWardrobe) return STATED_WARDROBE_NOTICE;
+  if (input.statedWardrobe && !input.authorRoad) return STATED_WARDROBE_NOTICE;
   return input.expiryNotice;
 }
