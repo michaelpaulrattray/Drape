@@ -285,20 +285,40 @@ describe("⚠ the quiet wrapper — the property that it cannot cost a shift its
  * a comment, in the very file whose docblock names that class.
  */
 describe("⚠ the roads the review found", () => {
+  /**
+   * ⚠ **THE READING IS IN TWO HALVES SINCE #1399, AND THE SECOND HALF IS A HOLE
+   * THIS GUARD OPENED BY BEING PASSED.** The counts now go over REST first
+   * (GitHub's burst limiter refused every GraphQL call for hours a day with the
+   * quota 99% unused), so `REAL_GH` is a TRANSPORT wrapping the reader that
+   * carries the timeout — which is now named `RAW_GH`. Asserting the timeout
+   * alone would pass on a transport fed by some OTHER, untimed exec, and a hang
+   * is precisely the road no arm above can see. So both halves are read: the
+   * timeout on the reader, and the reader being what the transport spends.
+   */
   it("the real `gh` reader carries a timeout — a hang is the road the catch cannot rescue", () => {
     const source = readFileSync(
       join(__dirname, "..", "scripts", "lib", "crewQueueCount.mts"),
       "utf8",
     );
-    expect(source).toMatch(/const REAL_GH[\s\S]{0,400}?timeout: QUEUE_GH_TIMEOUT_MS/);
+    expect(source).toMatch(/const RAW_GH[\s\S]{0,400}?timeout: QUEUE_GH_TIMEOUT_MS/);
+    /* Both of the transport's roads — REST and the GraphQL fallback — go through
+       the `exec` it is handed, so this one link carries the timeout to both. */
+    expect(source).toMatch(/const REAL_GH[^\n]*makeGhTransport\(\{\s*exec:\s*RAW_GH\s*\}\)/);
     /* Generous on purpose: the whole reading is a handful of `gh` calls, so
        this may only ever fire on a genuine hang, never on a slow day. */
     expect(QUEUE_GH_TIMEOUT_MS).toBeGreaterThanOrEqual(60_000);
   });
 
   it("⚠ NEGATIVE CONTROL — the same reading fails on a reader with no timeout", () => {
-    const doctored = 'const REAL_GH: QueueGhReader = (args) => execFileSync("gh", [...args], { encoding: "utf8" });';
-    expect(doctored).not.toMatch(/const REAL_GH[\s\S]{0,400}?timeout: QUEUE_GH_TIMEOUT_MS/);
+    const doctored = 'const RAW_GH: QueueGhReader = (args) => execFileSync("gh", [...args], { encoding: "utf8" });';
+    expect(doctored).not.toMatch(/const RAW_GH[\s\S]{0,400}?timeout: QUEUE_GH_TIMEOUT_MS/);
+  });
+
+  it("⚠ NEGATIVE CONTROL — and it fails on a transport fed by an UNTIMED exec (#1399)", () => {
+    /* The road the transport opened: a timeout sitting on a reader nothing
+       spends is a control with a live reputation. */
+    const doctored = 'const REAL_GH: QueueGhReader = makeGhTransport({ exec: SOME_OTHER_GH }).run;';
+    expect(doctored).not.toMatch(/const REAL_GH[^\n]*makeGhTransport\(\{\s*exec:\s*RAW_GH\s*\}\)/);
   });
 
   it("a failing `gh` routes its warning through the sink, not past it", async () => {
