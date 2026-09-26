@@ -1,7 +1,7 @@
 {
-  "edition": 542,
-  "updatedAt": "2026-09-26T08:09:38.827Z",
-  "shift": "Foreman — the ceremony you approved could not run, and the reason was hiding in our own tooling",
+  "edition": 543,
+  "updatedAt": "2026-09-26T10:31:55.548Z",
+  "shift": "Foreman — your signed casts render at the engine's best setting, and the card's own fix would have refunded pictures you already have",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -419,6 +419,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "sign-view-quality-1373",
+      "title": "Your casts' pictures are now at the best setting — is the extra half-minute worth it?",
+      "productImpact": "You said the views on Sign must use high/max quality. That is built and waiting to go live.\n\nEvery picture on a signed cast now has four times the detail — the same person, the same pose, four times as many pixels across her.\n\nIt is not free, and you should see the price before it ships. I rendered the same view at both settings, twice each, so these are measured and not guessed:\n\n· each picture takes about 43 seconds instead of about 28\n· signing a cast takes about a minute and a half instead of about a minute\n· it costs us 30 cents a picture instead of 15 — a signed cast is $1.50 of our money, not 75 cents\n· YOUR price does not change: still 50 credits a view\n\nTwo pictures are in your gallery below. I am not the judge of whether it looks better — you are.\n\nOne honest caveat: the engine draws fresh each time, so the two frames are not the same picture at two settings, they are two draws. The pixel counts and the times are facts; the look is yours.\n\nOne side effect worth knowing, and I have filed it rather than fixing it inside your order: a cast's five pictures go from about 30 MB to about 95 MB, and the little thumbnail row loads the full-size file for each one. So the cast page will be slower to open until we store a small copy for the thumbnails. That is card 1389 and it is its own job.",
+      "workedExample": "You sign a cast this afternoon. Today you wait about a minute and get five pictures at 1696 by 2528. After this you wait about a minute and a half and get five at 3392 by 5056. Same cast, same credits, half a minute longer, twice the detail.",
+      "options": [
+        {
+          "key": "A",
+          "label": "Ship it — the detail is worth the wait",
+          "consequence": "Nothing more to do. Every cast you sign from then on is at the best setting."
+        },
+        {
+          "key": "B",
+          "label": "Not worth it — put it back",
+          "consequence": "One line changes back and nothing else moves. Everything built here still stands."
+        },
+        {
+          "key": "C",
+          "label": "Worth it, but the slow page is not acceptable — hold until the small copy is built",
+          "consequence": "Card 1389 goes first, then this ships behind it. A few days rather than tonight."
+        }
+      ],
+      "recommendation": "A — ship it. It is what you asked for, the wait is half a minute on something you do rarely, and 30 cents a picture is not a number that decides anything. But look at the two frames first: if the difference is not visible to you, none of the rest is worth paying for.",
+      "state": "waiting",
+      "filedAt": "2026-09-26T10:31:55.549Z",
+      "issueNumber": 1373
+    },
     {
       "id": "view-house-block-1240",
       "title": "Your signed views now use the same rules as your master — one look needed",
@@ -3304,6 +3331,38 @@
   ],
   "eyeItems": [
     {
+      "id": "sign-view-tier-1373-crop",
+      "title": "The same face out of each picture, side by side — is the detail worth half a minute?",
+      "question": "WHAT YOU ARE JUDGING — one question: is the picture on the right better enough to be worth waiting half a minute longer for, every time you sign a cast? This is the same region of his face cut out of each picture, with the LEFT one blown up to the same size so you are comparing like with like. Left is the setting we have today. Right is the setting your word asks for. Look at the hair at the edges, the beard, the skin. Two words is enough — yes it is worth it, or no it is not.",
+      "state": "waiting",
+      "filedAt": "2026-09-26T10:31:55.549Z",
+      "issueNumber": 1373,
+      "cardId": "sign-view-quality-1373",
+      "frames": [
+        {
+          "key": "crew-eye/ced89ec2-1c0f-4ccc-905b-d8ab839b2e72.png",
+          "arm": "the same face region out of each",
+          "caption": "LEFT: today's setting, enlarged to match. RIGHT: the new setting, at its own size. Enlarged with hard pixels on purpose — a smooth enlargement would invent detail that is not in the file and flatter the left one."
+        }
+      ]
+    },
+    {
+      "id": "sign-view-tier-1373-pair",
+      "title": "The whole picture at both settings — same cast, same view",
+      "question": "CONTEXT for the close-up above, not a separate judgement. Left is today's setting, right is the new one. They are two separate draws rather than one picture at two settings, which is why the framing is slightly different — the engine drew twice. What IS controlled: same cast, same view, same instructions, same few minutes.",
+      "state": "waiting",
+      "filedAt": "2026-09-26T10:31:55.549Z",
+      "issueNumber": 1373,
+      "cardId": "sign-view-quality-1373",
+      "frames": [
+        {
+          "key": "crew-eye/2eda609b-efa3-4f8f-9a81-e9edea9022d9.png",
+          "arm": "both settings, whole frame",
+          "caption": "LEFT: 1696 x 2528, 5.8 MB, 28 seconds. RIGHT: 3392 x 5056, 19.0 MB, 43 seconds. A dev test cast, never one of yours."
+        }
+      ]
+    },
+    {
       "id": "view-house-block-1240-frames",
       "title": "Sifr2's close-up, eight takes: four under the new rules, four under the old",
       "question": "WHAT YOU ARE JUDGING — one question only: do the NEW close-ups lose any face detail against the OLD ones? Look at skin texture, freckles, lashes, the eyes. Everything else about the two strips is identical: your own Sifr2 master, the same crop, the same engine, rendered in the same few minutes. The only difference is the instructions. The old set had about twenty extra lines of close-up craft in it, and a close-up is where that would show if it mattered — which is the whole reason these are close-ups. Two words is enough. If detail IS lost, those lines come back as an addition for views only. If not, nothing moves. Either way this is already live and does not get undone.",
@@ -6035,6 +6094,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "sign-view-tier-1373",
+      "title": "Signed views render at the engine's best setting (#1373)",
+      "status": "in-review",
+      "prNumber": 1387,
+      "note": "Measured, not estimated: 43.0s vs 28.5s, $0.30 vs $0.15. Sabotage 8/8."
+    },
     {
       "id": "ceremony-179-persona",
       "title": "The #179 ceremony could not run — it selected a column #1241 dropped (#179)",
