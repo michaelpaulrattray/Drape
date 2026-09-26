@@ -548,7 +548,24 @@ export default function CastingRoom() {
                           */}
                           {slot?.url ? <img src={slot.url} alt={slot.label} /> : null}
                           {working ? (
-                            <Skeleton style={{ position: "absolute", inset: 0 }} label="" />
+                            /*
+                              THE CELL'S OWN GEOMETRY, not the skeleton's.
+                              `.dp-skeleton` carries `border-radius: var(--r-ctl)`
+                              and a 1px border, which suits the strip's tile — a
+                              standalone card, which is why the tile overrides the
+                              radius to its own 9. The hero's two cells butt
+                              against the Master and each other and are square,
+                              so the default drew a rounded, bordered card inside
+                              a square box, with its curved bottom corners plainly
+                              visible against the cell below (seen in both themes
+                              before this line existed). The outer corner is
+                              clipped by the side column, as it is for a landed
+                              picture.
+                            */
+                            <Skeleton
+                              style={{ position: "absolute", inset: 0, borderRadius: 0, border: "none" }}
+                              label=""
+                            />
                           ) : null}
                           {!slot?.url && !working ? (
                             <span className="dpc-master__empty">
