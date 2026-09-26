@@ -149,8 +149,10 @@ export type PrReading = {
   /**
    * THE BUNDLE BUDGET on this head — gate.yml's `bundle-budget` job (#1035),
    * which builds the client and refuses when the JS a customer downloads
-   * before first paint exceeds the budget declared in
-   * `scripts/lib/bundleBudget.mts`.
+   * exceeds either of the two budgets it holds: before first paint
+   * (`scripts/lib/bundleBudget.mts`) and after it
+   * (`scripts/lib/afterPaintBudget.mts`, #1421 — two numbers, one job, because
+   * an unregistered second check would block nobody here).
    *
    * Read here for `staticShapes`' reason, which is `supplyChain`'s reason: a
    * job the merge road does not read is a decoration on this repository,
@@ -674,16 +676,19 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
   //     head (#1035). After semgrep so a diff failing several is told about
   //     them in the gate's own order.
   if (pr.bundleBudget === "running") {
-    return { kind: "wait", reason: "bundle-budget (the first download's size) is running" };
+    return { kind: "wait", reason: "bundle-budget (what a customer downloads) is running" };
   }
   if (pr.bundleBudget === "red") {
     return {
       kind: "stop",
       reason:
-        "bundle-budget FAILED — the JS a customer downloads before first paint is over the " +
-        "budget in scripts/lib/bundleBudget.mts. This tool never merges past a red gate job — " +
-        "read the run's verdict line, find what went eager (`pnpm machinist:bundle` names the " +
-        "owners), push. `npx tsx scripts/bundle-budget.mts` reads the same bytes locally.",
+        "bundle-budget FAILED — the JS a customer downloads is over one of the two budgets that " +
+        "job holds: before first paint (scripts/lib/bundleBudget.mts) or after it " +
+        "(scripts/lib/afterPaintBudget.mts, #1421). This tool never merges past a red gate job — " +
+        "read the run's verdict line, which names which budget and by how much, find what went " +
+        "eager or what got bound as a whole namespace (`pnpm machinist:bundle` names the owners), " +
+        "push. `npx tsx scripts/bundle-budget.mts` and `npx tsx scripts/after-paint-budget.mts` " +
+        "read the same bytes locally.",
     };
   }
   // 3.5 Socket's supply-chain verdict, immediately after the gate and for the

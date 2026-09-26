@@ -603,3 +603,31 @@ jobs:
 
       - name: Bundle budget (build the client, judge the first download)
         run: npx tsx scripts/bundle-budget.mts
+
+      # THE SECOND BUDGET, IN THIS JOB AND NEVER FOLDED INTO THE FIRST (#1421).
+      # Nothing measured a chunk fetched AFTER paint until this step. The
+      # specimen: #1418's lazy error-tracker chunk carried Session Replay and a
+      # feedback widget for a product that runs neither, because
+      # `const mod = await import("@sentry/browser")` binds the whole namespace
+      # and cannot be tree-shaken. Driven on one tree, 26 Sep: the customer's
+      # after-paint JS went 243.4 -> 352.4 kB, **first paint moved three bytes**,
+      # and the step above exited 0 on both readings. One number cannot answer
+      # both questions, which is why this is a second budget and not a wider one.
+      #
+      # ⚠ THE NUMBER IS NOT RESTATED HERE, for the reason the step above gives.
+      # It lives once, in `scripts/lib/afterPaintBudget.mts`.
+      #
+      # It builds the client a SECOND time (~9 s locally) rather than reading
+      # `dist/`: the chunk graph — which chunk dynamically imports which — is a
+      # rollup declaration the CLI throws away, and scraping it back out of the
+      # emitted `__vite__mapDeps` calls is the shape this repository has paid for
+      # four times. Proven the same build: both roads emitted
+      # `assets/index--Eb8aq0n.js`, the same content hash, at 260.6 kB.
+      #
+      # In the SAME job on purpose: a new job would be a new check, and an
+      # unregistered check on `main` blocks nobody (#460 — the merging account is
+      # an admin and `enforce_admins` is off), so the refusal would have been a
+      # badge. Here it reddens `bundle-budget`, which the merge tool already
+      # stops on by name.
+      - name: After-paint budget (build the client, judge what else a customer fetches)
+        run: npx tsx scripts/after-paint-budget.mts

@@ -199,7 +199,9 @@ main:            required checks [gate-checks, founder-gate] · strict false
                  no required_pull_request_reviews
                  (Socket Security: Pull Request Alerts added 2026-09-10, #35 option A, PR #761;
                   static-shapes added 2026-09-19, #1034 — the semgrep job of its own;
-                  bundle-budget added 2026-09-19, #1035 — the first-download budget job)
+                  bundle-budget added 2026-09-19, #1035 — the first-download budget job, and
+                  from 2026-09-26 the after-paint one too, #1421: two budgets, one check, because
+                  a second check nobody registered would bind nobody here)
 local-migration: required checks [gate-checks, founder-gate] · strict false
                  enforce_admins FALSE · allow_force_pushes false · allow_deletions false
                  no required_pull_request_reviews
