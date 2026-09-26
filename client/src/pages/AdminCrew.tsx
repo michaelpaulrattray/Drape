@@ -473,6 +473,11 @@ export default function AdminCrew() {
               onIntent={markCard}
               pending={workSwitchMutation.isPending}
               intentPendingCard={intentPending}
+              /* #1094 — what is already happening to each card he is being
+                 offered. Empty when GitHub has not answered at all, which is
+                 the same window in which every other live list falls back. */
+              builds={live.available ? live.desk.builds.items : []}
+              buildsWhy={live.available ? live.desk.builds.commentsWhy : null}
             />
             {/* Actionable faults only, retired live when their card closes (#1201). */}
             <div id="crew-section-problems" />

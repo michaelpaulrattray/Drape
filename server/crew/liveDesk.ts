@@ -21,6 +21,12 @@ import {
   pipelineGroupFor,
   rungFromLabels,
 } from "../../shared/crewPipelineGroups";
+import {
+  crewCardBuildViews,
+  type CrewBuildPullRequest,
+  type CrewCardBuildView,
+  type CrewCardCommentFact,
+} from "../../shared/crewCardBuildState";
 import { CREW_HOLD_LABELS, CREW_HOLD_WORD, heldStateFromLabels, type CrewHeldState } from "../../shared/crewNextUpHold";
 import { rankFromLabels, sortOrderedBand } from "../../shared/crewOrderedBand";
 import { CREW_PIPELINE_GROUPS } from "../../shared/crewPipelineGroups";
@@ -131,6 +137,21 @@ export type LiveDesk = {
     readonly rung: string | null;
     readonly closedAt: string;
   }[];
+  /**
+   * WHAT IS ALREADY HAPPENING TO EACH CARD (#1094) — his order, 2026-09-26:
+   * *"work on 1094 and 1307 next so the desk shows whats built"*. One short
+   * phrase per open card that somebody is building, has claimed, or has refused;
+   * a card nobody is on has no entry at all, which is how the rows stay quiet.
+   */
+  readonly builds: {
+    readonly items: readonly CrewCardBuildView[];
+    /**
+     * `null` when the claim-and-refusal read answered; its reason otherwise —
+     * the panel says so, because a missing phrase and an unread comment look
+     * identical on a row and only one of them means nobody is on it.
+     */
+    readonly commentsWhy: string | null;
+  };
   readonly counts: {
     readonly openCards: number;
     readonly openPullRequests: number;
@@ -343,9 +364,47 @@ export function liveRecent(reading: LiveQueueReading): LiveRecentRow[] {
     .sort((a, b) => b.at.localeCompare(a.at));
 }
 
-export function deriveLiveDesk(reading: LiveQueueReading, rungKeys: readonly string[]): LiveDesk {
+/**
+ * THE BUILD PHRASES (#1094) — every open card, against the open pull requests
+ * this reading holds and whatever claims and refusals the comment reader
+ * managed to see.
+ *
+ * ⚠ **THE PULL REQUESTS COME FROM THE READING AND CARRY NO HEAD REF.** GitHub's
+ * search API does not return one, so `pullRequestBuildsCard`'s branch limb is
+ * empty here and its title and `card #N` limbs do the work. A shift's `gh pr
+ * list` fills all three. That is a difference in what each caller can SEE, and
+ * `shared/crewCardBuildState.ts`'s header says so rather than leaving it to be
+ * discovered.
+ */
+export function liveCardBuilds(
+  reading: LiveQueueReading,
+  facts: readonly CrewCardCommentFact[],
+): CrewCardBuildView[] {
+  const pulls: CrewBuildPullRequest[] = openPulls(reading).map((item) => ({
+    number: item.number,
+    title: item.title,
+    body: item.body,
+    draft: item.draft,
+    labels: item.labels,
+  }));
+  const nowMs = Date.parse(reading.readAt);
+  return crewCardBuildViews({
+    cards: openIssues(reading).map((item) => item.number),
+    openPullRequests: pulls,
+    facts,
+    nowMs: Number.isFinite(nowMs) ? nowMs : Date.now(),
+  });
+}
+
+export function deriveLiveDesk(
+  reading: LiveQueueReading,
+  rungKeys: readonly string[],
+  activity: { readonly facts: readonly CrewCardCommentFact[]; readonly why: string | null }
+    = { facts: [], why: "the card comments have not been read" },
+): LiveDesk {
   return {
     readAt: reading.readAt,
+    builds: { items: liveCardBuilds(reading, activity.facts), commentsWhy: activity.why },
     ladderCards: { readAt: reading.readAt, items: liveLadderCards(reading, rungKeys) },
     nextUp: { readAt: reading.readAt, items: liveNextUp(reading) },
     pullRequests: livePullRequests(reading),

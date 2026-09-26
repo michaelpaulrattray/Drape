@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "1b0a4157604919ed"
+    "sourceFingerprint": "dad671113938b904"
   },
   "domains": [
     {
@@ -123,7 +123,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 60
+      "moduleCount": 61
     },
     {
       "id": "domain:staff",
@@ -148,7 +148,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 43
+      "moduleCount": 44
     },
     {
       "id": "domain:wardrobe",
@@ -4574,6 +4574,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/crew/cardActivity.ts",
+      "path": "server/crew/cardActivity.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/crew/crewBriefing.ts",
       "path": "server/crew/crewBriefing.ts",
       "domain": "unassigned",
@@ -5818,6 +5824,12 @@
     {
       "id": "module:shared/const.ts",
       "path": "shared/const.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewCardBuildState.ts",
+      "path": "shared/crewCardBuildState.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12419,6 +12431,10 @@
       "path": "server/creditsSQL.test.ts"
     },
     {
+      "id": "test:server/crew/cardActivity.test.ts",
+      "path": "server/crew/cardActivity.test.ts"
+    },
+    {
       "id": "test:server/crew/crewBriefing.test.ts",
       "path": "server/crew/crewBriefing.test.ts"
     },
@@ -12441,6 +12457,10 @@
     {
       "id": "test:server/crewBriefingFieldReaders.test.ts",
       "path": "server/crewBriefingFieldReaders.test.ts"
+    },
+    {
+      "id": "test:server/crewCardBuildState.test.ts",
+      "path": "server/crewCardBuildState.test.ts"
     },
     {
       "id": "test:server/crewCardIntents.test.ts",
@@ -12645,6 +12665,10 @@
     {
       "id": "test:server/facePanelOwnership.test.ts",
       "path": "server/facePanelOwnership.test.ts"
+    },
+    {
+      "id": "test:server/facePanelSubject.test.ts",
+      "path": "server/facePanelSubject.test.ts"
     },
     {
       "id": "test:server/faceScanWire.test.ts",
@@ -12865,6 +12889,10 @@
     {
       "id": "test:server/productionBaseUrl.test.ts",
       "path": "server/productionBaseUrl.test.ts"
+    },
+    {
+      "id": "test:server/productionBootSettings.test.ts",
+      "path": "server/productionBootSettings.test.ts"
     },
     {
       "id": "test:server/productionFlagPositions.test.ts",
@@ -14094,6 +14122,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/CrewBackgroundWork.tsx",
+      "to": "module:shared/crewCardBuildState.ts",
       "kind": "imports"
     },
     {
@@ -23558,6 +23591,11 @@
     },
     {
       "from": "module:server/castingV2/castingIntent.ts",
+      "to": "module:shared/briefLength.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingIntent.ts",
       "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
@@ -27807,6 +27845,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/crew/cardActivity.ts",
+      "to": "module:server/crew/liveQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/cardActivity.ts",
+      "to": "module:shared/crewCardBuildState.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/crew/crewBriefing.ts",
       "to": "module:shared/crewCardState.ts",
       "kind": "imports"
@@ -27839,6 +27887,11 @@
     {
       "from": "module:server/crew/liveDesk.ts",
       "to": "module:server/db/crewWorkSwitches.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/crewCardBuildState.ts",
       "kind": "imports"
     },
     {
@@ -30923,6 +30976,11 @@
     },
     {
       "from": "module:server/routes/crew.ts",
+      "to": "module:server/crew/cardActivity.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
       "to": "module:server/crew/crewBriefing.ts",
       "kind": "imports"
     },
@@ -32817,6 +32875,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:shared/crewCardBuildState.ts",
+      "to": "module:shared/crewShiftState.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:shared/crewCardResolution.ts",
       "to": "module:shared/crewCardState.ts",
       "kind": "imports"
@@ -34633,10 +34696,10 @@
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:1127",
+      "id": "finding:redeclared-shape:server/castingV2/cohortPhotorealHuman.ts:1126",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/cohortPhotorealHuman.ts:1127",
+      "subject": "server/castingV2/cohortPhotorealHuman.ts:1126",
       "message": "Names 6 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

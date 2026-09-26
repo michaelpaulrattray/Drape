@@ -28,6 +28,7 @@ import { z } from "zod";
 import { adminProcedure, router } from "../_core/trpc";
 import { crewBriefingForPage, readCrewBriefing } from "../crew/crewBriefing";
 import { captureCrewTabEnabled } from "../crew/crewTabScope";
+import { readCardActivity } from "../crew/cardActivity";
 import { deriveLiveDesk, type LiveDeskState } from "../crew/liveDesk";
 import { readLiveQueue } from "../crew/liveQueue";
 import { readCrewCardIntents, setCrewCardIntent } from "../db/crewCardIntents";
@@ -111,14 +112,26 @@ const cardIntentInput = z.object({
   intent: z.enum(CREW_CARD_INTENT_KEYS as unknown as [string, ...string[]]).nullable(),
 }).strict();
 
+/**
+ * ⚠ **THE TWO READS ARE AWAITED SIDE BY SIDE AND NEITHER CAN SINK THE OTHER
+ * (#1094).** The queue is the page's live half; the card comments are the
+ * claims and refusals that tell him what is already being built. They spend
+ * DIFFERENT GitHub allowances (search, 10 a minute; core, 60 an hour — read at
+ * the wire) and they fail independently, so an unread comment listing costs
+ * some phrases and nothing else, and an unread queue still lets the page fall
+ * back to the edition. Collapsing them into one `available` would have made a
+ * supplementary sentence able to blank his whole Desk.
+ */
 async function liveDeskState(rungKeys: readonly string[]): Promise<LiveDeskState> {
-  const queue = await readLiveQueue();
+  const [queue, activity] = await Promise.all([readLiveQueue(), readCardActivity()]);
   if (!queue.available) return { available: false, why: queue.why };
   return {
     available: true,
     stale: queue.stale,
     why: queue.stale ? queue.why : null,
-    desk: deriveLiveDesk(queue, rungKeys),
+    desk: deriveLiveDesk(queue, rungKeys, activity.available
+      ? { facts: activity.facts, why: activity.stale ? activity.why : null }
+      : { facts: [], why: activity.why }),
   };
 }
 
