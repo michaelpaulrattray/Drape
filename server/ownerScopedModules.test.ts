@@ -58,18 +58,20 @@
  * The four are NOT listed below. A floor is asserted instead, because a walker
  * that quietly found nothing and a tree with nothing to find look identical.
  */
-import { execFileSync } from "node:child_process";
-import { join } from "node:path";
+import { readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
 import { readListedSource } from "./testing/listedSource";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
-/* This suite sweeps the source tree AND spawns `git ls-files`, so it is in both
-   #548 populations. The child-process floor is the one declared, because
-   `declaresTheFloor` accepts either and the stricter population is the one that
-   names this file. */
+/* This suite sweeps the source tree (#548's listed-source population). It used
+   to spawn `git ls-files` for the listing and the hook-driver guard refused a
+   suite reading a child process outside `runHook` (gate red on PR #1382); the
+   listing is a filesystem walk now, so there is no child process at all. The
+   child-process floor stays declared because `declaresTheFloor` accepts either
+   population and the stricter one is the one that names this file. */
 vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const REPO = join(__dirname, "..");
@@ -213,13 +215,21 @@ function whereClauses(source: string): string[] {
   return clauses;
 }
 
-/** Tracked files under `server/`, listed once for every arm below. */
+/** Source files under `server/`, walked once for every arm below (no child process). */
 function trackedServerSources(): string[] {
-  const listed = execFileSync("git", ["ls-files", "server"], { cwd: REPO, encoding: "utf8" })
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.endsWith(".ts") && !line.endsWith(".test.ts"));
-  if (listed.length === 0) throw new Error("git ls-files returned no server sources — the reader is blind, not the tree empty.");
+  const listed: string[] = [];
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir)) {
+      if (entry === "node_modules" || entry === "dist") continue;
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (entry.endsWith(".ts") && !entry.endsWith(".test.ts")) {
+        listed.push(relative(REPO, full).split("\\").join("/"));
+      }
+    }
+  };
+  walk(join(REPO, "server"));
+  if (listed.length === 0) throw new Error("the walk found no server sources — the reader is blind, not the tree empty.");
   return listed;
 }
 
