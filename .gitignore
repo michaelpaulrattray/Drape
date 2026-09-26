@@ -6,6 +6,12 @@ __manus__/
 **/node_modules
 .pnpm-store/
 
+# Vite's and vitest's per-tree caches (#1327). They live OUTSIDE node_modules
+# on purpose: a worktree's node_modules is a junction to the main tree's, so a
+# cache under it is shared between every seat and the seats invalidate each
+# other's. `**/node_modules` above therefore does not cover this one.
+.vite/
+
 # Build outputs
 dist/
 build/

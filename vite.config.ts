@@ -65,6 +65,29 @@ export default defineConfig({
     },
   },
   envDir: path.resolve(import.meta.dirname),
+  /**
+   * PER-TREE, AND DELIBERATELY NOT UNDER `node_modules` (#1327).
+   *
+   * Vite derives `cacheDir` from the nearest `package.json` above `root`.
+   * `root` is `<tree>/client`, which has no `package.json` and no
+   * `node_modules`, so the default lands on `<tree>/node_modules/.vite` — and
+   * in a git worktree `<tree>/node_modules` is a JUNCTION to the main tree's,
+   * so every worktree's dev server shared ONE optimizer cache. Two builder
+   * seats running at once therefore invalidated each other: the second server
+   * printed `Re-optimizing dependencies because vite config has changed` and
+   * the first seat's page went blank with `504 Outdated Optimize Dep`.
+   *
+   * ⚠ `node_modules/.vite` DOES NOT FIX IT, which is what #1327's own card
+   * proposed. `path.resolve(import.meta.dirname, "node_modules/.vite")` is the
+   * value Vite already computes, and it realpaths straight back through the
+   * junction to the main tree — measured, not assumed. The cache has to leave
+   * `node_modules` entirely to be per-tree, which is why this is `.vite` at the
+   * tree root (gitignored) rather than a tidier-looking path inside.
+   *
+   * Vitest needs the same thing said again in `vitest.config.ts`: that config
+   * is standalone and does not read this file, so this line does not reach it.
+   */
+  cacheDir: path.resolve(import.meta.dirname, ".vite"),
   root: path.resolve(import.meta.dirname, "client"),
   publicDir: path.resolve(import.meta.dirname, "client", "public"),
   build: {
