@@ -146,6 +146,52 @@ describe("the casting room is built to the drawing", () => {
     expect(room).toContain("!slot.standIn");
   });
 
+  it("shows an empty companion being MADE, the way the strip's tile does", async () => {
+    /*
+      His report, 2026-09-26, verbatim: *"another small fix - the view cards now
+      show when they are in a generating state but on the hero views they dont
+      show as generating if they are empty"* (#1372).
+
+      The defect was one clause in the selector above: `&& slot.url` dropped a
+      slot with no picture YET — queued, dispatched, or re-asked with Try again
+      — to `null` before the hero ever saw it, so the cell could only draw a
+      label on a disabled box while the strip's tile for the SAME view drew its
+      working state. One view, two surfaces, two different stories.
+
+      ⚠ **PINNED AS ONE READING, NOT AS A SECOND RULE.** The fix is that the
+      cell asks `slotShowsWorking` — the tile's own helper — rather than
+      deriving "no url and the cast is building" locally. A local rule would be
+      the parallel copy working law 4 warns about, and it would already be
+      wrong: the tile knows a view being RE-ASKED is a view being made (#1235),
+      which nothing local would have known. So this arm asserts the HELPER is
+      called in the hero, which a re-derived copy cannot satisfy.
+    */
+    const room = await readFile(ROOM, "utf8");
+
+    /* The selector no longer demands a picture. */
+    expect(room).not.toContain("slot.angle === angle && slot.url && !slot.standIn");
+    expect(room).toContain("slot.angle === angle && !slot.standIn");
+
+    /*
+      The hero reads the tile's helper. `slotShowsWorking` is CALLED at least
+      twice — once in the strip's tile, once in the hero's cell — or one of the
+      two surfaces is deriving its own answer again. Counted as calls rather
+      than as mentions, so the import line cannot stand in for a call site.
+    */
+    expect(room.split("slotShowsWorking(slot, asking)").length - 1).toBeGreaterThanOrEqual(2);
+
+    /*
+      And the working state is DRAWN in the cell, over whatever picture is
+      there: a Try again on a view that already landed keeps showing the
+      picture it is replacing rather than going blank mid-press.
+    */
+    const cell = room.slice(room.indexOf("companions.map("), room.indexOf("dpc-master__foot"));
+    expect(cell).toContain("slotShowsWorking(slot, asking)");
+    expect(cell).toContain("<Skeleton");
+    /* The label is the LAST resort, not the only one. */
+    expect(cell).toContain("!slot?.url && !working");
+  });
+
   it("names the package v3.1 slots, and no retired one", async () => {
     const pkg = await readFile(
       new URL("../../../../server/castingV2/castViewPackage.ts", import.meta.url),
