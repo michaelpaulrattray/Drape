@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 46
+      "moduleCount": 48
     },
     {
       "id": "domain:wardrobe",
@@ -2541,6 +2541,18 @@
     {
       "id": "module:client/src/main.tsx",
       "path": "client/src/main.tsx",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/monitoring/errorReporter.ts",
+      "path": "client/src/monitoring/errorReporter.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/monitoring/errorTracker.ts",
+      "path": "client/src/monitoring/errorTracker.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -9321,6 +9333,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:VITE_SENTRY_DSN",
+      "name": "VITE_SENTRY_DSN",
+      "valueRecorded": false
+    },
+    {
       "id": "env:VITE_STRIPE_PUBLISHABLE_KEY",
       "name": "VITE_STRIPE_PUBLISHABLE_KEY",
       "valueRecorded": false
@@ -10325,6 +10342,10 @@
       "path": "client/src/components/appChrome.test.ts"
     },
     {
+      "id": "test:client/src/components/errorBoundaryReports.test.ts",
+      "path": "client/src/components/errorBoundaryReports.test.ts"
+    },
+    {
       "id": "test:client/src/components/signOutWording.test.ts",
       "path": "client/src/components/signOutWording.test.ts"
     },
@@ -10731,6 +10752,14 @@
     {
       "id": "test:client/src/lib/staffPage.test.ts",
       "path": "client/src/lib/staffPage.test.ts"
+    },
+    {
+      "id": "test:client/src/monitoring/errorReporter.test.ts",
+      "path": "client/src/monitoring/errorReporter.test.ts"
+    },
+    {
+      "id": "test:client/src/monitoring/errorTracker.test.ts",
+      "path": "client/src/monitoring/errorTracker.test.ts"
     },
     {
       "id": "test:client/src/staffPagesLazy.test.ts",
@@ -12777,6 +12806,10 @@
       "path": "server/errorTracker.test.ts"
     },
     {
+      "id": "test:server/errorTrackerOptionsDeclared.test.ts",
+      "path": "server/errorTrackerOptionsDeclared.test.ts"
+    },
+    {
       "id": "test:server/export.test.ts",
       "path": "server/export.test.ts"
     },
@@ -14060,6 +14093,11 @@
     {
       "from": "module:client/src/components/ErrorBoundary.tsx",
       "to": "module:client/src/lib/utils.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/ErrorBoundary.tsx",
+      "to": "module:client/src/monitoring/errorReporter.ts",
       "kind": "imports"
     },
     {
@@ -19164,7 +19202,32 @@
     },
     {
       "from": "module:client/src/main.tsx",
+      "to": "module:client/src/monitoring/errorReporter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/main.tsx",
+      "to": "module:client/src/monitoring/errorTracker.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/main.tsx",
       "to": "module:shared/const.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/monitoring/errorTracker.ts",
+      "to": "module:client/src/monitoring/errorReporter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/monitoring/errorTracker.ts",
+      "to": "module:shared/const.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/monitoring/errorTracker.ts",
+      "to": "module:shared/errorEventScrub.ts",
       "kind": "imports"
     },
     {

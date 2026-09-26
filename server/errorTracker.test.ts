@@ -125,10 +125,36 @@ describe("the options handed to the SDK — asserted on the object, not beside i
     expect(options.release).toBe("abc1234");
   });
 
-  it("traces nothing and sends no default PII", () => {
-    const options = buildTrackerOptions();
-    expect(options.tracesSampleRate).toBe(0);
-    expect(options.sendDefaultPii).toBe(false);
+  it("traces nothing", () => {
+    expect(buildTrackerOptions().tracesSampleRate).toBe(0);
+  });
+
+  /*
+    ⚠ THIS ARM READ `expect(options.sendDefaultPii).toBe(false)` AND WAS GREEN
+    OVER AN OPTION THE SDK DOES NOT HAVE (#509 part 1b). `sendDefaultPii` was
+    removed in v11 — 0 declarations in `@sentry/core`'s `options.d.ts`, absent
+    from the implementation of all three packages — so the assertion agreed with
+    a constant in `errorTracker.ts` rather than with anything the SDK reads. Its
+    replacement is `dataCollection`, and every key here is one the projection
+    would drop at the wire anyway: switching it off means it is never COLLECTED,
+    which is the second of two independent reasons the module's docblock claims.
+
+    `server/errorTrackerOptionsDeclared.test.ts` is the guard that makes a repeat
+    of the original mistake impossible rather than merely unlikely: it holds every
+    option BOTH halves send against the installed SDK's own type declarations.
+  */
+  it("collects none of the four categories the boundary forbids, nor frame locals", () => {
+    const { dataCollection } = buildTrackerOptions();
+    expect(dataCollection.userInfo).toBe(false);
+    expect(dataCollection.cookies).toBe(false);
+    expect(dataCollection.httpHeaders).toBe(false);
+    expect(dataCollection.urlQueryParams).toBe(false);
+    expect(dataCollection.httpBodies).toEqual([]);
+    expect(dataCollection.stackFrameVariables).toBe(false);
+  });
+
+  it("⚠ sends no option the SDK stopped reading — `sendDefaultPii` is gone for good", () => {
+    expect(buildTrackerOptions()).not.toHaveProperty("sendDefaultPii");
   });
 
   /* THE RETENTION HOOK IS THE ALLOWLIST (#1405). It read `() => null` until

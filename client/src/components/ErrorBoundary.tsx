@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { reportClientError } from "@/monitoring/errorReporter";
 import { AlertTriangle, RotateCcw, RefreshCw, Home } from "lucide-react";
 import { Component, ReactNode } from "react";
 
@@ -28,6 +29,22 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    /*
+     * ⚠ A BOUNDARY-CAUGHT RENDER CRASH REACHES NO GLOBAL HANDLER, WHICH IS WHY
+     * THIS LINE IS THE MOST VALUABLE ONE IN #509's BROWSER HALF.
+     *
+     * React reports an error it could NOT hand to a boundary through
+     * `window.onerror`; one a boundary DOES catch goes to `onCaughtError`, whose
+     * default is a console line. This component wraps the whole app, so until
+     * now every render crash in this product — React #310 among them, which has
+     * happened here — was written to a console nobody was reading and reached
+     * nobody at all.
+     *
+     * `errorInfo.componentStack` is deliberately NOT passed: the scrub's
+     * projection has no field for it, so it could not travel, and giving it one
+     * is a widening with its own diff (filed beside the source-map card).
+     */
+    reportClientError(error, { kind: 'render', route: window.location.pathname });
   }
 
   handleRetry = (): void => {

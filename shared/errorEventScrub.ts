@@ -489,8 +489,11 @@ export function project(event: IncomingEvent, imageOrigin?: string): ScrubbedEve
   }
 
   /* The id and NOTHING else. `email`, `username` and `ip_address` are the
-     fields Sentry fills by default when `sendDefaultPii` is on, and the
-     boundary this module exists for is the reason it is off. */
+     fields Sentry fills from instrumentation, which `dataCollection.userInfo`
+     switches off on both halves — and this projection is the reason that
+     switch is a second line of defence rather than the only one. (It named
+     `sendDefaultPii` until #509 part 1b; that option is read by nothing in
+     v11 and the two callers' own docblocks carry the finding.) */
   const user = event.user;
   if (user !== null && typeof user === "object") {
     const id = (user as Record<string, unknown>).id;

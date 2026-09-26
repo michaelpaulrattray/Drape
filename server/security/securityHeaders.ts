@@ -44,10 +44,53 @@ const scriptSrc = isDev
   ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com"
   : `script-src 'self' '${THEME_BOOT_SCRIPT_HASH}' https://js.stripe.com`;
 
-// In dev: allow WebSocket connections for Vite HMR
-const connectSrc = isDev
-  ? "connect-src 'self' https://api.stripe.com ws://localhost:* ws://127.0.0.1:*"
-  : "connect-src 'self' https://api.stripe.com";
+/**
+ * THE ERROR TRACKER'S INGEST HOST, DERIVED FROM THE DSN ITSELF (#509 part 1b).
+ *
+ * The browser SDK posts its envelopes to the origin inside `VITE_SENTRY_DSN`
+ * (`https://<key>@o123.ingest.de.sentry.io/456` → `https://o123.ingest.de.sentry.io`),
+ * and with no `connect-src` entry for it the browser blocks every send — an
+ * error tracker that reports nothing, with the only evidence a CSP violation in
+ * a console nobody is reading.
+ *
+ * ⚠ **DERIVED, NEVER HARD-CODED, AND THE REASON IS NOT TIDINESS.** A Sentry DSN
+ * names an organisation- and region-specific host; writing one in here would be
+ * a second declaration of the same fact (working law 4) that goes wrong silently
+ * the day the founder's project moves region — the CSP would keep allowing a
+ * host nothing posts to, and block the one that matters.
+ *
+ * ⚠ **WITH NO DSN IT ADDS NOTHING, AND A MALFORMED ONE ALSO ADDS NOTHING.** The
+ * policy must not widen on a typo: `new URL()` throwing is the only honest
+ * answer to a value nobody can parse, and the reporter will not have started
+ * either, because it reads the same variable.
+ */
+export function sentryIngestOrigin(dsn: string | undefined): string | null {
+  const raw = (dsn ?? "").trim();
+  if (raw.length === 0) return null;
+  try {
+    const { origin, protocol } = new URL(raw);
+    /* `https:` only. A DSN is attacker-visible in the bundle, and a `data:` or
+       `javascript:` value must never reach a CSP directive. */
+    return protocol === "https:" ? origin : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * `connect-src`, built where a test can read it (invariant 5). The middleware
+ * below captures the result once at module load, so this is the only shape in
+ * which the two regimes and the DSN can actually be driven.
+ */
+export function buildConnectSrc(dev: boolean, sentryDsn: string | undefined): string {
+  const hosts = ["'self'", "https://api.stripe.com"];
+  const ingest = sentryIngestOrigin(sentryDsn);
+  if (ingest) hosts.push(ingest);
+  if (dev) hosts.push("ws://localhost:*", "ws://127.0.0.1:*");
+  return `connect-src ${hosts.join(" ")}`;
+}
+
+const connectSrc = buildConnectSrc(isDev, process.env.VITE_SENTRY_DSN);
 
 const CSP_DIRECTIVES = [
   "default-src 'self'",
