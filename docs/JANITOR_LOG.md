@@ -11,6 +11,12 @@ founder 2026-08-26, *"do it"*). What lives here and nowhere else:
    from. Deletions inside the repository go by MANIFEST (the shape is
    `docs/specs/CASTING_V2_LITTER_PURGE_MANIFEST.md`): a keep is a citation,
    never a judgement of value; the 7-day rule keeps anything recent.
+   **Backups the sweeps WROTE have their own rule since #1143 —
+   `docs/JANITOR_BACKUP_RETENTION.md`, applied by
+   `npx tsx scripts/janitor-backup-retention.mts`.** It reports and never
+   deletes: a backup expires when what it protects is provably recoverable
+   elsewhere, which is a check rather than a date, and a founder act is what
+   removes anything.
 2. **The dead-code readings** — knip's counts per run are in
    `docs/JANITOR_KNIP.md`'s table; this file records what was DONE with
    them (cards filed, ceilings found, attempted-and-reverted deletions).

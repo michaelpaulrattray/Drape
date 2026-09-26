@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "b80390712724eb59"
+    "sourceFingerprint": "44f03891823b50ae"
   },
   "domains": [
     {
@@ -10773,6 +10773,10 @@
     {
       "id": "test:server/auth.me.test.ts",
       "path": "server/auth.me.test.ts"
+    },
+    {
+      "id": "test:server/backupRetention.test.ts",
+      "path": "server/backupRetention.test.ts"
     },
     {
       "id": "test:server/batch0-authority.test.ts",
