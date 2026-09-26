@@ -46,7 +46,7 @@ _Called as:_ `castingV2.refine`
 |---|---|---|---|---|---|
 | `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1207 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1224 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `busy` | service-refusal |  | server/castingV2/refineService.ts:4844<br>server/castingV2/rollEngine.ts:94<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `busy` | service-refusal |  | server/castingV2/refineService.ts:4876<br>server/castingV2/rollEngine.ts:94<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4335 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1213 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `version_missing` | service-refusal |  | server/castingV2/refineService.ts:2544 | 1 test(s) | _documented-unreachable or gap — see findings_ |
@@ -82,7 +82,7 @@ _Called as:_ `castingV2.refine`
 | `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:588<br>server/castingV2/refineDelta.ts:588<br>(+3) | 3 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:596<br>server/castingV2/refineDelta.ts:596<br>(+3) | 3 test(s) | ink.words.chest.basics |
 | `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1294<br>server/castingV2/refineService.ts:1332 | 2 test(s) | guard.scope.unknown |
-| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4823 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4855 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.
 - gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.
