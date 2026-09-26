@@ -80,6 +80,41 @@ const TOKEN = /personaline/i;
 const SELF = "server/castingV2/candidateDispositionRetired.test.ts";
 
 /**
+ * ⚠ THE NAMED REMAINDER — tracked scripts that still write the retired column,
+ * found when `.mts` joined the walk above (#179). Each is REAL debt with a
+ * card, not an excuse: their SQL cannot execute against the live schema.
+ *
+ * They are exempt BY PATH, like `SELF`, and the test below asserts the walk
+ * REACHED each one — an exemption that cannot be proven to have been visited is
+ * a hole rather than a debt. **This list only shrinks.** Adding to it is a
+ * founder-visible act; a SIXTH offender reddens instead.
+ *
+ * - the two CEREMONIES name it as their own subject — one dropped the column,
+ *   the other records in its docblock that it used to null it and why that half
+ *   went — exactly as `SELF` quotes the migration it forbids. Neither carries
+ *   live SQL for it any more.
+ * - the other four carry LIVE SQL and are the card's brief. Three of them share
+ *   one blocker: the fixture TAG (`WHERE personaLine = ?`, how a dev fixture is
+ *   found a second time instead of duplicated) has no home now the column is
+ *   gone, and choosing its replacement is a design call. The fourth reads the
+ *   column to assert which tile the viewer is showing, which #1241 replaced with
+ *   an index label.
+ *
+ * ⚠ **The hand sweep that produced this list got it WRONG and the derived walk
+ * corrected it** — `scripts/_roll216-slice-prompt-disposable.mts` was assumed
+ * untracked from its `_…-disposable` name and is committed like 40 others. It
+ * was fixed rather than excused. A list is a floor; the walk is the population.
+ */
+const KNOWN_DEBT: readonly string[] = [
+  "scripts/ceremony-author-road-unsent.mts",
+  "scripts/ceremony-drop-candidate-persona-line.mts",
+  "scripts/drive-use-chip-evidence.mts",
+  "scripts/lib/censusFixture.mts",
+  "scripts/lib/censusStateFixtures.mts",
+  "scripts/lib/outsider.mts",
+];
+
+/**
  * ⚠ THE CLASS PREFIX IS ASSEMBLED, NOT WRITTEN — do not "tidy" these back into
  * one literal.
  *
@@ -149,7 +184,15 @@ function productFiles(): string[] {
       const stats = statSync(path.resolve(ROOT, rel), { throwIfNoEntry: false });
       if (!stats) continue;
       if (stats.isDirectory()) walk(rel);
-      else if (/\.(ts|tsx|css)$/.test(entry)) out.push(rel);
+      /* ⚠ `.mts` WAS MISSING UNTIL 2026-09-26 AND IT MADE THE `scripts` ROOT
+         DECORATIVE (#179, run #383). Every file under `scripts/` is `.mts` —
+         504 of them against 11 `.ts` — so this walk named the root and read 2%
+         of it, and FIVE tracked scripts kept SQL naming the dropped column. The
+         two floors below could not notice: `server` + `client/src` + `shared`
+         clear 800 files and 50 controls on their own. A declared root that
+         contributes nothing is the shape to look for, which is why the walk now
+         proves this one reached a real number. */
+      else if (/\.(ts|tsx|mts|css)$/.test(entry)) out.push(rel);
     }
   };
   for (const root of ["server", "client/src", "shared", "scripts"]) walk(root);
@@ -213,7 +256,25 @@ describe("the candidate disposition is retired end to end (#1241)", () => {
        what it forbids. Asserting the walk actually reached it is what stops the
        exemption from being a hole — a second offender cannot hide behind it. */
     expect(files).toContain(SELF);
-    const offenders = files.filter((file) => file !== SELF && TOKEN.test(listed(file) ?? ""));
+
+    /* THE `scripts` ROOT CONTRIBUTED A REAL NUMBER — the floor that was missing.
+       It read 11 of 515 files before `.mts` joined the walk, and the two floors
+       above are cleared by the other three roots alone, so nothing said a word.
+       A generous floor, because the point is to catch a root going SILENT. */
+    const scriptFiles = files.filter((file) => file.startsWith("scripts/"));
+    expect(scriptFiles.length, "the scripts root has gone quiet — is the extension filter still right?")
+      .toBeGreaterThan(300);
+    expect(scriptFiles.some((file) => file.startsWith("scripts/lib/"))).toBe(true);
+
+    /* Every exemption must have been VISITED, or it is hiding a file rather
+       than excusing one (the `SELF` clause's own reasoning, applied to debt). */
+    for (const file of KNOWN_DEBT) {
+      expect(files, `${file} is exempt but the walk never reached it — re-point KNOWN_DEBT`)
+        .toContain(file);
+    }
+
+    const exempt = new Set<string>([SELF, ...KNOWN_DEBT]);
+    const offenders = files.filter((file) => !exempt.has(file) && TOKEN.test(listed(file) ?? ""));
     expect(offenders).toEqual([]);
   });
 
