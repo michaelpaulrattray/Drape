@@ -31,6 +31,7 @@ import {
   CASTING_VARIANT_OUTCOMES,
   type CastingCandidateVariant,
 } from "../../drizzle/schema";
+import { isRefineStep, type RefineStep } from "../../shared/refineSteps";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 
 function assertPositiveId(value: number, name: string): void {
@@ -360,6 +361,50 @@ export async function recordVariantDispatch(input: {
        by an ordinary edit carries no object at all to set into. */
     .set({
       internalPrompt: sql`JSON_SET(COALESCE(${castingCandidateVariants.internalPrompt}, JSON_OBJECT()), '$.repaint', CAST(${JSON.stringify(input.repaint ?? null)} AS JSON))`,
+    })
+    .where(and(
+      eq(castingCandidateVariants.id, input.variantId),
+      eq(castingCandidateVariants.userId, input.userId),
+      inArray(castingCandidateVariants.status, ["queued", "dispatched"]),
+    ));
+  return affectedRows(result) === 1;
+}
+
+/**
+ * WHERE THE ROAD HAS GOT TO — the one honest progress this pipeline has (#55).
+ *
+ * The refine road calls this at each of the four real stage transitions
+ * (`shared/refineSteps.ts`), and the picture's loader draws what it finds. It
+ * is the same one-key `JSON_SET` as `recordVariantDispatch` above, for the same
+ * reasons — read-then-write would be two statements about a row a landing may
+ * be moving underneath them, and `JSON_MERGE_PATCH` would let a null delete a
+ * key rather than record it.
+ *
+ * SCOPED TO A ROW THAT HAS NOT LANDED, with the owner in the same statement
+ * (invariant 1). A landed variant's `internalPrompt` is its whole record, and a
+ * stray progress write must never be able to touch one.
+ *
+ * ⚠ **THIS IS A TELEMETRY WRITE AND IT MAY NEVER COST A PICTURE.** It returns
+ * false rather than throwing on a row it did not match, and every call site
+ * fences a rejection: a dropped connection while announcing "painting" must not
+ * escape into the refine's compensated try, where it would refund a render that
+ * was about to arrive. The customer's money is not what this row is for.
+ */
+export async function recordVariantStep(input: {
+  userId: number;
+  variantId: number;
+  step: RefineStep;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  /* A closed vocabulary checked on the way IN as well as on the way out: the
+     column is json, so an unknown word here would be a word the reader silently
+     drops and nobody ever sees written. */
+  if (!isRefineStep(input.step)) throw new TypeError(`step must be a refine step, not ${String(input.step)}`);
+  const db = await requireDb();
+  const result = await db
+    .update(castingCandidateVariants)
+    .set({
+      internalPrompt: sql`JSON_SET(COALESCE(${castingCandidateVariants.internalPrompt}, JSON_OBJECT()), '$.step', ${input.step})`,
     })
     .where(and(
       eq(castingCandidateVariants.id, input.variantId),

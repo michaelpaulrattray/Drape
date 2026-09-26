@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { decodeFrame } from "../frameDecodes";
+import { refineProgress } from "../refineProgress";
+import type { RefineStep } from "@shared/refineSteps";
 import { createPortal } from "react-dom";
 import { Download, X } from "lucide-react";
 
@@ -82,10 +84,10 @@ export type ViewerFrame = {
  * these words)` — it is the input, not decoration, and softening it says the
  * only true thing there is to say while nothing else is known.
  *
- * `stage` is the row's own state, never a guess. There is no percentage here
- * and there is no elapsed counter: between dispatch and landing the client
- * receives nothing at all, so anything that appeared to measure would be
- * measuring nothing.
+ * `stage` is the row's own state, never a guess, and `step` is where the ROAD
+ * has announced itself to be (#55). There is no percentage here and there is no
+ * elapsed counter: the four stages are events the pipeline genuinely passes,
+ * and nothing between them is measured, interpolated or guessed at.
  */
 export type ViewerWait = {
   /** Their words, verbatim — the record's own text (D-172). */
@@ -100,6 +102,15 @@ export type ViewerWait = {
    * that died — is what held the founder in a locked sheet for five minutes.
    */
   stage: "queued" | "dispatched" | "settling";
+  /**
+   * WHERE THE ROAD HAS GOT TO — `preparing` · `rendering` · `reading` ·
+   * `storing`, or null when it has announced nothing about this row (#55).
+   *
+   * Optional on the type and never defaulted in the component: a caller that
+   * does not know is a caller whose row gets no bar and no word, which is the
+   * honest reading and is his rule — *a stage that does not fire is not shown*.
+   */
+  step?: RefineStep | null;
   /** How many are running, when more than one is (the picture narrates none). */
   extra?: number;
 };
@@ -135,12 +146,22 @@ export type ViewerCompare = {
  */
 const COMPARE_HOLD_MS = 150;
 
-/** The states, in words a person uses. */
-const STAGE_WORDS: Record<ViewerWait["stage"], string> = {
-  queued: "in line",
-  dispatched: "being drawn",
-  settling: "this one didn't make it",
-};
+/**
+ * THE ONE STATE THAT IS NOT A STAGE, in words a person uses.
+ *
+ * ⚠ **THIS WAS A THREE-ENTRY MAP — `in line` / `being drawn` / this — AND ITS
+ * FIRST TWO ENTRIES ARE GONE ON HIS WORD (#55, 2026-09-26).** They were the
+ * whole vocabulary a wait had while the road announced nothing; the road
+ * announces four real stages now, and `refineProgress` names them, so two
+ * general words standing in for four specific ones would be the product
+ * knowing something the person cannot see.
+ *
+ * `settling` stays here and never moves into that list, because it is not a
+ * point along the road at all: the operation's lease has passed, nobody holds
+ * the row, and the recovery sweep is refunding it (fable-467). It gets no bar
+ * and no stage word for exactly that reason.
+ */
+const SETTLING_WORD = "this one didn't make it";
 
 /**
  * What is true INSTEAD of the typical wait, once nobody is rendering.
@@ -154,42 +175,28 @@ const STAGE_WORDS: Record<ViewerWait["stage"], string> = {
 const SETTLING_NOTE = "your credits come back on their own";
 
 /**
- * How long a refine usually takes — MEASURED, and a copy constant on purpose.
+ * ⚠ THE EXPECTED-TIME LINE LIVED HERE AND HE TOOK IT OFF THE PICTURE (#55,
+ * 2026-09-26, verbatim while drawing the loader: *"make the bar one line not 4
+ * different line dont put the excpected time either and place the
+ * painting/state under the loading bar"*; the filed spec says it flatly —
+ * **No expected-time line anywhere.**).
  *
- * RE-MEASURED 2026-08-08, and the previous line had stopped being true. Last 80
- * successful paid refines on production:
+ * What stood here was `TYPICAL_WAIT = "usually three to four minutes"`, and it
+ * was honest: founder-ruled on 2026-08-16 (*"yes make it honest"*) off the call
+ * census reading the median paid edit at 204 s in dev (n=56) and 209 s in
+ * production (n=4) — `docs/specs/EDIT_LATENCY_READING_2026-08-16.md`. It had
+ * gone stale twice before that (half a minute → a minute or two → three to
+ * four minutes), which is the argument he has now settled the other way: a
+ * surface that promises a duration is a surface somebody has to keep
+ * re-measuring, and the four real stages say more while promising nothing.
  *
- *   p25 31s · median 39s · p75 111s · p90 159s · max 328s
- *   THE LAST TWENTY ALONE: median 151s
- *
- * Two populations, and the recent one is four times slower — the masked path is
- * live and spends several segmentation calls per render. The old line ("usually
- * about half a minute") was measured at median 31s on 2026-08-05 and was true
- * then; it is a lie on the current build, and a walk step delivered honestly in
- * 327.8s while the product promised half a minute.
- *
- * "A minute or two" covered both populations without promising either, and was
- * founder-approved via voice check on 2026-08-08.
- *
- * RE-MEASURED AND MOVED AGAIN, 2026-08-16 — founder: *"yes make it honest."*
- * The call census now reads the median paid edit at **204 s in dev (n=56) and
- * 209 s in production (n=4)**, off the rows themselves rather than a sample
- * (`docs/specs/EDIT_LATENCY_READING_2026-08-16.md`). So "a minute or two" was
- * under by a factor of two, and the customer met the panel's *"taking longer
- * than usual"* note while still inside the ordinary case — two sentences on one
- * screen disagreeing about the same wait.
- *
- * THIS LINE AND `LONG_WAIT_MS` IN `RefinePanel.tsx` ARE ONE PAIR. They moved in
- * one commit and are **re-measured and re-tuned together whenever the speed
- * changes** — the promise made to the founder when he ruled on the wording.
- *
- * It stays a constant rather than a query because a number that moves on its
- * own is a number nobody has checked; re-measuring and editing this line is a
- * deliberate act. **The latency itself is a named program item** — the honest
- * answer is to make it faster, not to widen the sentence again, and the cut
- * list that will shorten it is in that same document.
+ * **The measurement did not go with the sentence.** `LONG_WAIT_MS` in
+ * `RefinePanel.tsx` still stands at five minutes BECAUSE of that reading, and
+ * its docblock carries it — so the number that matters is still dated, still
+ * sourced, and still re-measured when the speed changes. What is gone is the
+ * second copy of it on the photograph, and with it the pair that could
+ * disagree with itself.
  */
-const TYPICAL_WAIT = "usually three to four minutes";
 
 /**
  * THE PICTURE CHANGES WHEN THE NEW ONE CAN BE PAINTED (fable-501 §a).
@@ -442,6 +449,15 @@ export function CandidateViewer({
     The timer is the whole of the gesture: a click is a press that ended before
     it, and it must leave the picture exactly as it found it.
   */
+  /*
+    WHAT THE BAR AND THE WORD SAY — derived, in one place, from the row (#55).
+
+    Null is the answer whenever nothing honest can be shown: a settling row, or
+    a row the road has announced nothing about. The component draws neither
+    element in that case rather than drawing an empty one, so there is no bar
+    at zero implying a render that has not started.
+  */
+  const progress = wait ? refineProgress({ stage: wait.stage, step: wait.step ?? null }) : null;
   const [comparing, setComparing] = useState(false);
   const holdRef = useRef<number | null>(null);
   const releaseCompare = () => {
@@ -749,17 +765,55 @@ export function CandidateViewer({
                     <span className="dpc-viewer__waitSaid" title={wait.instruction}>
                       {wait.instruction}
                     </span>
-                    <span className="dpc-viewer__waitMeta">
-                      <span>{STAGE_WORDS[wait.stage]}</span>
-                      <span className="dpc-viewer__waitTypical">
-                        {wait.stage === "settling" ? SETTLING_NOTE : TYPICAL_WAIT}
-                      </span>
-                      {wait.extra ? (
-                        <span className="dpc-viewer__waitTypical">
-                          {`and ${wait.extra} more running`}
+                    {/*
+                      ONE BAR, ONE LINE, AND THE STAGE WORD UNDER IT (#55, his
+                      own shape: *"make the bar one line not 4 different line …
+                      and place the painting/state under the loading bar"*).
+
+                      The fill is set from the row, inline, because it is DATA —
+                      the position of a real event among four. It is deliberately
+                      not a keyframe: an animation that grows a width over time
+                      IS a progress bar whoever wrote it, and it would be
+                      measuring a wait nobody is measuring. `aria-hidden` because
+                      the word underneath says the same thing in words, and a
+                      reported figure would be the number this card exists to
+                      refuse.
+                    */}
+                    {progress ? (
+                      <>
+                        <span className="dpc-viewer__bar" aria-hidden="true">
+                          <span
+                            className="dpc-viewer__barFill"
+                            style={{ width: `${progress.fraction * 100}%` }}
+                          />
                         </span>
-                      ) : null}
-                    </span>
+                        <span className="dpc-viewer__step">{progress.word}</span>
+                      </>
+                    ) : null}
+                    {/*
+                      AND THE META ROW IS NOW ONLY FOR WHAT IS NOT A STAGE.
+
+                      A settling row says what happened and where the money went
+                      — it has no bar and no stage word, because nobody is
+                      rendering it. A second render out on the same face is a
+                      true fact about work in flight and is kept; it is the one
+                      thing here that is neither progress nor a promise.
+                    */}
+                    {wait.stage === "settling" || wait.extra ? (
+                      <span className="dpc-viewer__waitMeta">
+                        {wait.stage === "settling" ? (
+                          <>
+                            <span>{SETTLING_WORD}</span>
+                            <span className="dpc-viewer__waitTypical">{SETTLING_NOTE}</span>
+                          </>
+                        ) : null}
+                        {wait.extra ? (
+                          <span className={wait.stage === "settling" ? "dpc-viewer__waitTypical" : undefined}>
+                            {`and ${wait.extra} more running`}
+                          </span>
+                        ) : null}
+                      </span>
+                    ) : null}
                   </span>
                 </>
               ) : null}

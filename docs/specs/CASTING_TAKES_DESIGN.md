@@ -189,6 +189,47 @@ nothing about them presumes cinema.
    alone; law 8's ontology). It is what makes a cast directable rather than
    merely consistent-looking, and the film engine's Acting skill consumes it
    directly.
+   **Effortless capture ruled 2026-09-25 (founder challenge: "no way most
+   people will be able to come up with a personality description like
+   this"): the user never writes it — the engine writes it, the user
+   recognizes it.** Four doors, all producing the SAME stored artifact
+   (the two-line camera-visible baseline+exception, beside the Voice
+   line): LEVEL 0, derived at Sign from the roll brief + the chosen look
+   and shown as a read-back ("READ FROM YOUR BRIEF - correct anything
+   wrong") — most users keep it and never knew the field existed;
+   LEVEL 1, personality CARDS picked by recognition (The quiet
+   professional / Sunny and open / Nervous smiler / Old-money arrogance
+   ...), each showing its two-line version; LEVEL 2, say-it-your-way — one
+   plain sentence translated to renderable form and read back (the
+   note-filing pattern); or TWO CHIP QUESTIONS ("how does she carry
+   herself?" + "what breaks it?") assembling baseline+exception from two
+   taps. The craft rule (visible traits only, baseline plus exception,
+   two lines max) lives in the engine's translation, never in the user's
+   homework — the disappearing-technology law applied to acting.
+   **WHEN (founder Q, 2026-09-25): minted silently AT SIGN as part of the
+   package — never a step, never a question before the button** (his own
+   candidate-count ruling is the reason). It then simply exists on the
+   casting profile beside her views, badged READ FROM YOUR BRIEF,
+   editable whenever and possibly never; Cinema consumes it as-is, with
+   at most one dismissible "check it" tip on first use. The system's
+   moment is Sign; the user's moment is optional.
+   **SOURCE (founder Q, 2026-09-25): words first, picture as backup.**
+   The derivation is a cheap text call over text the system already
+   holds — the roll brief, the refine history (each correction is the
+   user saying who she is), and the compiled sheet's descriptors. A
+   VISION pass over the signed look runs only when the words are thin,
+   reusing the pipeline's existing readers — and per law 9 a reader
+   PROPOSES, never rules, which is why the result wears its badge and
+   waits for a human glance.
+   **AMENDED same day (founder catch: 8 candidates share one brief — same
+   personality?): candidates have no personality, CASTS do (minted at
+   Sign, and one is signed) — and the SIGNED PICTURE always contributes
+   the differentiating layer, not only when words are thin.** The brief
+   is the ROLE; the chosen candidate is her particular read of it (the
+   smirk, the level stare, the heavy stillness that made the user pick
+   her over her siblings). Two siblings signed from one roll derive two
+   different lines because the pictures differ. The brief supplies the
+   register; the picture personalizes; law 9's rank unchanged.
 3. **Vocabulary — RULED: keep it as it is.** The earlier two-noun
    recommendation is REVERSED. Words are scoped per surface by design:
    the casting page speaks **candidates** (rolling) and **versions**
