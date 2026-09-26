@@ -295,8 +295,10 @@ describe("what the priority view PRINTS about its own order", () => {
       urgent: [],
       now: NOW,
       /* A board read and clean — these arms are about ORDER, not #1094's
-         open-PR annotation, and the reading is required rather than optional. */
+         open-PR annotation, and the reading is required rather than optional.
+         Both halves of it: the claims read landed and found nothing either. */
       openPullRequests: [],
+      cardComments: [],
     }).join("\n");
 
   it("names the rule it obeys, in the words his page uses", () => {

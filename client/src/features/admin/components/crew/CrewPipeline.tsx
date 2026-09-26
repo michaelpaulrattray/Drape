@@ -31,6 +31,9 @@ const STATUS_LABEL: Record<string, string> = {
 const PR_STATE_LABEL: Record<CrewLivePullRequest["state"], string> = {
   draft: "Still being written",
   held: "Waiting for review",
+  /* His desk correction, 2026-09-26: a pull request the relay has already read
+     was drawn as *Waiting for review* beside one nobody had looked at. */
+  passed: "Reviewed — merging",
   gate: "In the gate",
 };
 

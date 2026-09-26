@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 62
+      "moduleCount": 63
     },
     {
       "id": "domain:staff",
@@ -5947,6 +5947,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/handVerdict.ts",
+      "path": "shared/handVerdict.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/inkCutRoute.ts",
       "path": "shared/inkCutRoute.ts",
       "domain": "shared",
@@ -10914,6 +10920,10 @@
       "path": "server/card391LadderFold.test.ts"
     },
     {
+      "id": "test:server/cardBuildBoard.test.ts",
+      "path": "server/cardBuildBoard.test.ts"
+    },
+    {
       "id": "test:server/cardLabelProvenance.test.ts",
       "path": "server/cardLabelProvenance.test.ts"
     },
@@ -12970,6 +12980,10 @@
       "path": "server/queueOrdinalDiscipline.test.ts"
     },
     {
+      "id": "test:server/queueReaderBuildState.test.ts",
+      "path": "server/queueReaderBuildState.test.ts"
+    },
+    {
       "id": "test:server/queueRot.test.ts",
       "path": "server/queueRot.test.ts"
     },
@@ -13444,6 +13458,10 @@
     {
       "id": "test:server/serverResilience.test.ts",
       "path": "server/serverResilience.test.ts"
+    },
+    {
+      "id": "test:server/serverTestsTypecheckProject.test.ts",
+      "path": "server/serverTestsTypecheckProject.test.ts"
     },
     {
       "id": "test:server/session-reset.test.ts",
@@ -27986,6 +28004,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/handVerdict.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/crew/liveQueue.ts",
       "to": "module:shared/crewNextUpHold.ts",
       "kind": "imports"
@@ -32938,6 +32961,11 @@
     {
       "from": "module:shared/crewCardBuildState.ts",
       "to": "module:shared/crewShiftState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewCardBuildState.ts",
+      "to": "module:shared/handVerdict.ts",
       "kind": "imports"
     },
     {
