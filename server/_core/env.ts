@@ -111,6 +111,23 @@ const OPTIONAL_VARS: Record<string, string> = {
      honest state rather than a degraded one, and it is what decides the CSP
      `connect-src` entry in `server/security/securityHeaders.ts`. */
   VITE_SENTRY_DSN: "uncaught errors in the customer's browser are reported nowhere",
+  /* #509 part 2, the product event stream. Absent means nothing records what
+     people do — the SDK is never imported and no client is constructed — and
+     the boot line says so rather than implying something is watching.
+     `server/monitoring/productEvents.ts` carries why that is the honest state
+     rather than a degraded one. It is a SERVER key: nothing about this stream
+     runs in the customer's browser, so there is no `VITE_` twin, no bundle
+     weight and no `connect-src` entry — see that file's header. */
+  POSTHOG_API_KEY: "what people do in the product is recorded nowhere",
+  /* ⚠ `POSTHOG_HOST` is deliberately NOT on this list. Every entry here earns a
+     boot WARNING when it is absent, and that is right for a key whose absence
+     switches a capability off; it is wrong for one that only moves where a
+     switched-off capability would have pointed. Absent, the stream posts to
+     PostHog Cloud US — `server/monitoring/productEvents.ts` declares that
+     default beside the read, which is the one place a reader looks. A second
+     category of optional variable was written here and deleted in the same
+     sitting: one member, no consumer, and a list nothing iterates is the dead
+     control this repository has paid for four times. */
 };
 
 /**

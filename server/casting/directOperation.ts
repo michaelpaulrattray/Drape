@@ -18,8 +18,69 @@ import type {
 } from "./operationContract";
 import { createModuleLogger } from "../logging/logger";
 import { spokenError } from "../_core/spokenError";
+import { captureProductEvent } from "../monitoring/productEvents";
+import { productErrorCode, productNoun, UNNAMED_ACTION } from "../../shared/productEventCatalogue";
 
 const log = createModuleLogger("casting/directOperation");
+
+/* ────────────────────────────────────────────────────────────────────────────
+   THE PRODUCT EVENT STREAM'S ONE SEAM (#509 part 2).
+
+   The founder's card names its events one by one — *"roll started / delivered /
+   refused, refine, sign …"* — and every one of them is this file's lifecycle
+   with a different `kind`. So the stream is DERIVED here rather than mirrored by
+   a `capture()` hand-placed in each service, which is working law 4: a second
+   list beside the operations table would drift from it, and an event somebody
+   forgot to add would look exactly like an action nobody performed.
+
+   ⚠ NOTHING BELOW MAY CHANGE WHAT THIS FILE DOES. Every capture is
+   fire-and-forget, cannot throw (the transport swallows its own faults), and
+   sits AFTER the receipt it describes — so an analytics fault can never cost a
+   customer a refund, and an event is never sent for a receipt that failed to
+   write. Read the order at each call site: the finalizer first, the capture
+   after it returned.
+
+   # WHY THE ACTION IS REMEMBERED HERE, AND WHAT THAT COSTS
+
+   The completion functions take `operationId` and money and no `kind` — 99 call
+   sites across the four of them, so threading the kind down would be a 99-file
+   diff through the money path for one string. The kind IS known at the claim,
+   a few lines up, so it is remembered here and taken at the terminal.
+
+   ⚠ **ITS LIMIT, STATED RATHER THAN DISCOVERED LATER: this memory is in this
+   PROCESS.** An operation claimed before a deploy and finalized after it, or
+   finalized by the recovery sweep in another process, has no entry — and its
+   terminal event reports `action: "unnamed action"`, which is a NAMED unknown
+   and never a wrong noun. That is the same tradeoff the login-attack detector's
+   counter carries and is written down for the same reason. The map is capped so
+   an operation that never terminates cannot grow it without bound; the oldest
+   entry goes first, which on this product's volumes is an entry from an
+   operation that has already been abandoned.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/** Enough for every operation in flight many times over; one entry is ~40 bytes. */
+const MAX_REMEMBERED_ACTIONS = 512;
+const actionByOperation = new Map<string, string>();
+
+function rememberAction(operationId: string, kind: GenerationOperationKind): void {
+  if (actionByOperation.size >= MAX_REMEMBERED_ACTIONS) {
+    /* A `Map` iterates in insertion order, so this is the oldest. */
+    const oldest = actionByOperation.keys().next().value;
+    if (oldest !== undefined) actionByOperation.delete(oldest);
+  }
+  actionByOperation.set(operationId, productNoun(kind));
+}
+
+function takeAction(operationId: string): string {
+  const action = actionByOperation.get(operationId);
+  actionByOperation.delete(operationId);
+  return action ?? UNNAMED_ACTION;
+}
+
+/** Test seam only: forget the remembered actions between arms. */
+export function resetDirectOperationActionsForTests(): void {
+  actionByOperation.clear();
+}
 
 const PUBLIC_TRPC_CODES = new Set<TRPC_ERROR_CODE_KEY>([
   "BAD_REQUEST", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND",
@@ -146,6 +207,14 @@ export async function beginDirectOperation(input: {
       });
     }
   }
+  /* The operation is claimed, locked and about to run: this is the moment the
+     customer's action began. A REPLAY returns above and never reaches here, so
+     a retried request id does not count twice — which is the whole reason this
+     sits at the bottom of the function rather than at the top. */
+  rememberAction(claim.operationId, input.kind);
+  captureProductEvent("generation started", input.userId, {
+    action: productNoun(input.kind),
+  });
   return { type: "execute", operationId: claim.operationId };
 }
 
@@ -182,6 +251,25 @@ export async function failClaimedDirectOperation(input: {
     }
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: publicMessage });
   }
+  /*
+    AFTER the receipt, and OUTSIDE the block that guards it. The first draft of
+    this put the capture inside the `try`: had it ever thrown, the catch would
+    have read a SUCCESSFUL receipt as a failed one and marked the operation
+    `recovery_required` — an analytics line costing a customer their retry. The
+    transport cannot throw, and the structure does not depend on that being true.
+
+    It failed before it started spending, so the money is zero rather than
+    absent: "failed with nothing charged" is the truth, where an absent number
+    would read as unknown. `error.message` is deliberately NOT sent — it is the
+    one property on this path that can quote a provider quoting her brief, and
+    the catalogue's header names it as the specimen.
+  */
+  captureProductEvent("generation failed", input.userId, {
+    action: takeAction(input.operationId),
+    errorCode: productErrorCode(error.code),
+    creditsCharged: 0,
+    creditsRefunded: 0,
+  });
   throw error;
 }
 
@@ -213,6 +301,24 @@ export async function completeClaimedDirectOperationSuccess(input: {
     }
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: publicMessage });
   }
+  /*
+    A FREE PRE-START ANSWER IS STILL A DELIVERY, AND IT IS RECORDED AS ONE WITH
+    ZERO ON IT.
+
+    This function's own docblock says what it is: a clarification question
+    answered *"without claiming that an image was generated or any credits
+    moved."* The temptation is to send nothing at all — and that would leave a
+    `generation started` with no terminal, so starts would permanently exceed
+    deliveries plus failures and nobody reading the dashboard would know why.
+    `creditsCharged: 0` is what separates a free answer from a paid picture, in
+    one filter, on a number that cannot be misread.
+  */
+  captureProductEvent("generation delivered", input.userId, {
+    action: takeAction(input.operationId),
+    outcome: "complete",
+    creditsCharged: 0,
+    creditsRefunded: 0,
+  });
 }
 
 async function markRecoveryAfterReceiptFailure(input: {
@@ -273,9 +379,28 @@ export async function completeDirectOperationSuccess(input: {
     await finalizeGenerationOperationSuccess(input);
   } catch (error) {
     const existing = await terminalOutcomeAfterWriteError(input.userId, input.operationId);
+    /* A receipt that already existed is a REPLAY — the delivery was recorded
+       when it first happened, and counting it again would inflate exactly the
+       number the founder would read first. */
     if (existing?.type === "replay_success") return;
     await markRecoveryAfterReceiptFailure({ ...input, cause: error });
   }
+  /*
+    THE DELIVERY, AND THE ONE PROPERTY THAT MAKES IT WORTH READING.
+
+    `partial` is this file's own vocabulary — *"a roll that delivered some of its
+    eight is a `partial`, not a success with a footnote"* — and carrying it
+    through is the difference between a dashboard that can see an engine getting
+    worse and one that reports eight-for-eight and six-for-eight identically.
+    `creditsRefunded` says HOW much did not arrive, in the only unit that is
+    reconciled against the ledger.
+  */
+  captureProductEvent("generation delivered", input.userId, {
+    action: takeAction(input.operationId),
+    outcome: input.terminalStatus === "partial" ? "partial" : "complete",
+    creditsCharged: input.chargedCredits,
+    creditsRefunded: input.refundedCredits,
+  });
 }
 
 export async function completeDirectOperationFailure(input: {
@@ -299,6 +424,7 @@ export async function completeDirectOperationFailure(input: {
     });
   } catch (receiptError) {
     const existing = await terminalOutcomeAfterWriteError(input.userId, input.operationId);
+    /* Already recorded when it first failed — see the replay note above. */
     if (existing?.type === "replay_failure") throw error;
     await markRecoveryAfterReceiptFailure({
       userId: input.userId,
@@ -308,5 +434,15 @@ export async function completeDirectOperationFailure(input: {
       cause: receiptError,
     });
   }
+  /* The money BOTH ways, because a failure that refunded everything and one
+     that refunded nothing are different facts about the product and the second
+     is the one worth a card. `error.message` stays behind — the catalogue's
+     header says why, and this is the path it was written about. */
+  captureProductEvent("generation failed", input.userId, {
+    action: takeAction(input.operationId),
+    errorCode: productErrorCode(error.code),
+    creditsCharged: input.chargedCredits,
+    creditsRefunded: input.refundedCredits,
+  });
   throw error;
 }

@@ -34,6 +34,7 @@ import {
   flushErrorTracker,
   initErrorTracker,
 } from "../monitoring/errorTracker";
+import { initProductEvents, shutdownProductEvents } from "../monitoring/productEvents";
 const log = createModuleLogger("server");
 
 
@@ -130,6 +131,23 @@ function registerShutdownHandlers(): void {
       // Health monitor cleanup is best-effort
     }
 
+    /*
+      DRAIN THE EVENT BUFFER BEFORE THE PROCESS GOES (#509 part 2).
+
+      `captureProductEvent` buffers — twenty events or five seconds, whichever
+      comes first — so a deploy landing mid-batch would otherwise lose up to
+      five seconds of them. This product deploys on every merge to `main` while
+      the founder is casting, which is the one state where those seconds are
+      exactly the interesting ones.
+
+      It is FIRST in the shutdown, before the HTTP server stops accepting: the
+      buffer is already in memory and the drain is one request, so paying it
+      here costs a connection nothing, where paying it after the DB pool closes
+      would race the force-exit timer. Best-effort like every other step, and
+      it cannot throw.
+    */
+    await shutdownProductEvents(1500);
+
     // Stop accepting new connections
     if (httpServer) {
       httpServer.close(() => {
@@ -183,6 +201,21 @@ async function startServer() {
     initialising inside the boot sequence where it can be read.
   */
   console.info(await initErrorTracker());
+  /*
+    THE PRODUCT EVENT STREAM, AND THE BOOT LINE THAT SAYS WHETHER THERE IS ONE
+    (#509 part 2).
+
+    Before this, nothing recorded what people DO: a roll, a refine and a Sign
+    each left a receipt row and nothing that answers "how many people cast
+    anything this week, and how often did it not arrive?"
+    `server/monitoring/productEvents.ts` carries why the import is conditional
+    (85–102 ms, measured) and why an absent key means no stream rather than a
+    quiet one.
+
+    Beside the tracker and for the same reasons: it reads `validateEnv`'s world,
+    and a measurement is never a reason to refuse traffic.
+  */
+  console.info(await initProductEvents());
   // C5B is the first private-adapter-capable build. Refuse traffic until the
   // cleanup backend column and exact tuple index from migration 0012 exist.
   await assertPrivateEvidenceCleanupSchema();
