@@ -41,7 +41,9 @@ const REPO = join(__dirname, "..");
 const sourceOf = (relative: string) => readFileSync(join(REPO, relative), "utf8");
 
 const CLOSE_SPEC = {
-  value: ["outcome", "note", "pr", "id"],
+  /* `shift` names the caller's OWN row (#1234) — a bare close used to take the
+     newest open run, which is another seat's the moment two overlap. */
+  value: ["outcome", "note", "pr", "id", "shift"],
   boolean: ["dry-run", "force"],
 } as const;
 
@@ -349,7 +351,9 @@ describe("the driven vocabulary is the scripts' own", () => {
   });
 
   it("`known` prints a vocabulary an operator can copy", () => {
-    expect(known(CLOSE_SPEC)).toBe("--outcome <value>, --note <value>, --pr <value>, --id <value>, --dry-run, --force");
+    expect(known(CLOSE_SPEC)).toBe(
+      "--outcome <value>, --note <value>, --pr <value>, --id <value>, --shift <value>, --dry-run, --force",
+    );
   });
 });
 
