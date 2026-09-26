@@ -49,7 +49,8 @@ export type CheckResult = { ok: boolean; problems: string[] };
  * The generator writes LF. Git, with `core.autocrlf` on Windows, hands the
  * working copy back with CRLF — so a raw `!==` here reported the committed
  * Atlas STALE while its own `sourceFingerprint` and the source's were
- * IDENTICAL, and `git diff` was empty. A verdict of "stale" that the diff it
+ * IDENTICAL (the map carried one then; #1307 moved it to a gitignored sidecar),
+ * and `git diff` was empty. A verdict of "stale" that the diff it
  * tells you to review cannot show is a checker teaching people to ignore it,
  * on the one gate the currency law just gave teeth.
  *
@@ -201,9 +202,17 @@ export function checkArchitecture(
     const fresh = `${JSON.stringify(atlas, null, 2)}\n`;
     if (!sameContent(committed, fresh)) {
       const committedAtlas = JSON.parse(committed);
+      /* ⚠ THE TWO FINGERPRINTS THIS LINE USED TO QUOTE ARE GONE, AND THE MESSAGE
+         IS BETTER FOR IT (#1307). The committed map no longer carries a source
+         hash — every branch moved it, so every pair of open PRs conflicted on
+         that one line — and this step never read it to decide anything: the
+         verdict has always been a CONTENT comparison of the whole document
+         against a fresh build. A pair of hashes told a reader only THAT the two
+         differed; the findings delta below tells them WHAT differs, which is the
+         thing you can act on. The tree's own hash, when it is wanted, is in the
+         gitignored `docs/architecture/source-fingerprint.txt`. */
       problems.push(
-        "docs/architecture/drape-architecture.json is stale — run pnpm architecture:generate and review the diff " +
-          `(committed fingerprint ${committedAtlas?.meta?.sourceFingerprint}, source ${atlas.meta.sourceFingerprint})`,
+        "docs/architecture/drape-architecture.json is stale — run pnpm architecture:generate and review the diff",
       );
 
       // Say *what* changed, so a stale file is cheap to act on.
