@@ -325,16 +325,25 @@ describe("the URGENT band is read too — #1258, #541's defect one band over", (
   });
 
   it("a card carrying BOTH labels is counted once, in his band", () => {
-    /* It is in both bands by construction. Counted twice it would appear in its
-       own bundle — the judgment card offered as a candidate alongside itself. */
+    /*
+      ⚠ **THE FIRST SHAPE OF THIS ARM WAS INERT AND THE SABOTAGE RUN SAID SO.**
+      It asserted `bundle=none` over a fixture whose only duplicate was the
+      JUDGMENT card — and the judgment card's second copy carries the same
+      `awaiting-fable` hold, so it was filtered out of the bundle either way and
+      the arm passed with the de-duplication deleted.
+
+      A duplicate only shows where it can be COUNTED: a takeable card in both
+      bands, behind the judgment card, is named twice in the bundle without it.
+    */
     const queue = queueFile("both-labels", [
-      card(541, ["founder-ordered", "urgent", "awaiting-fable"], "ordered and urgent"),
-      card(1240, ["seat:retro"], "not in either band"),
+      card(700, ["founder-ordered", "urgent", "awaiting-fable"], "the judgment card, ordered and urgent"),
+      card(800, ["founder-ordered", "urgent"], "takeable, and in both bands"),
     ]);
     const result = run("--queue", queue, "--state", statePath("both-labels"), "--today", "2026-09-26");
 
-    expect(result.last).toMatch(/^ESCALATE #541 /);
-    expect(result.last).toContain("bundle=none");
+    expect(result.last).toMatch(/^ESCALATE #700 /);
+    expect(result.last).toContain("bundle=#800");
+    expect(result.last, "a card in both bands must be named once").not.toContain("#800,#800");
   });
 
   it("answers NONE when neither band holds a card, rather than reading the rest of the queue", () => {
