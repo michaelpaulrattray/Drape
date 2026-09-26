@@ -34,6 +34,38 @@
  * Left behind, and worth knowing without opening that document: the
  * bare-face/undergarment rules, retired as presentation by the
  * wardrobe-baseline ruling — V2 presentation views are clothed.
+ *
+ * ---
+ *
+ * ⚠ **WHAT THIS FILE COMPOSES IS NOT WHAT A ROLL SENDS TODAY, AND NOTHING
+ * ELSE IN HERE SAYS SO (#1217).** Everything above describes the HOUSE road,
+ * and the house road is the `off` position of a flag that is now `all`:
+ * `CASTING_CREATIVE_REGISTER_SCOPE` widened to every account on 2026-09-24
+ * (his Crew reply #201, verbatim and entire: *"Yes"*;
+ * `scripts/lib/productionFlagPositions.mts:300`). On the author road
+ * `briefCompiler.ts:1420` replaces every candidate's `prompt` with the one
+ * authored sentence, so **the constant is composed eight times per roll and
+ * delivered to no engine.**
+ *
+ * It is still LIVE code, and that is the reason it is documented rather than
+ * deleted — it is the road the product falls back to if that flag ever moves,
+ * and retiring it is a rung decision, not a housekeeping one.
+ *
+ * **What this paragraph is for:** a shift reading this file to learn what the
+ * product sends is reading the wrong answer, and the cost of that is the whole
+ * of #1217. The road that is actually running is `houseBlock.ts` plus the
+ * author's sentence. `PHOTOREAL_HUMAN_BLOCKS` is a separate matter and is
+ * genuinely live — the signed-VIEW road consumes it (`castViewPackage.ts`).
+ *
+ * ⚠ **The card that produced this paragraph asked for a DELETION and was
+ * refused four times**, each time at the bytes: the search it quotes excludes
+ * this very file, which is the only one holding a call site. `photorealHumanConstant` is called unconditionally at
+ * `composeCandidatePrompt`'s `return`, which `briefCompiler.ts:1070` calls per
+ * candidate inside `resolveSheet`, which `briefCompiler.ts:1336` awaits above
+ * the register decision. **The caller never went away; the author road discards
+ * the result.** That is #1204's class one step on: an instrument counting
+ * importers cannot see a road whose call site stayed while its *condition*
+ * stopped being satisfiable.
  */
 import {
   DEFAULT_HAIR_COLOURS,
@@ -881,6 +913,13 @@ export function cohortConstantBlocks(wardrobeLine: string | null): readonly stri
  * — the parallel-list shape this file's own list docblock was written about,
  * where `SKIN_AND_FEATURES` sat unguarded because a hand-kept second array had
  * forgotten it.
+ *
+ * ⚠ **NO ENGINE RECEIVES THIS STRING TODAY (#1217).** It is composed on every
+ * roll and thrown away on every roll — see the module docblock's last
+ * paragraph for why, and for why it is kept rather than deleted. Its wardrobe
+ * and negatives sentences in particular read as live product and are not: the
+ * asserted grey tee and the `No jackets, no accessories` clause are the house
+ * road's, not the author road's.
  */
 export function photorealHumanConstant(wardrobeLine: string | null): string {
   return cohortConstantBlocks(wardrobeLine).join("\n");
@@ -2754,6 +2793,16 @@ function coveringFor(statedText: string): string {
  * language model's output could still misbehave (two capped free-text fields),
  * the rules it might contradict are stated after it and claim precedence over
  * it explicitly.
+ *
+ * ⚠ **CALLED ON EVERY ROLL; ITS RESULT REACHES NO ENGINE (#1217).**
+ * `briefCompiler.ts:1070` calls this per candidate inside `resolveSheet`, which
+ * `briefCompiler.ts:1336` calls unconditionally, above the register decision —
+ * and `briefCompiler.ts:1420` then overwrites every `prompt` with the authored
+ * sentence, because `CASTING_CREATIVE_REGISTER_SCOPE` is `all`. The module
+ * docblock's last paragraph carries the whole reading. The one caller whose
+ * output IS delivered is `deterministicBriefCompiler`
+ * (`briefCompiler.ts:1562`), which has no production caller — it is the
+ * no-interpreter test seam.
  */
 export function composeCandidatePrompt(input: {
   /** The user's own sentence — the reliable place to ask "did they say hair?". */
@@ -2767,9 +2816,16 @@ export function composeCandidatePrompt(input: {
   /**
    * WHAT THIS SHEET IS WEARING — the roll's born line (design §3.3).
    *
-   * `null` or absent is every roll the product has cast so far and every roll
-   * outside `CASTING_TWO_PATHS_SCOPE`: the constant composes exactly as it
-   * always has, character for character.
+   * `null` or absent is every roll the product has cast so far, and now every
+   * roll there can ever be: the constant composes exactly as it always has,
+   * character for character. ⚠ **This said "every roll outside
+   * `CASTING_TWO_PATHS_SCOPE`" until 2026-09-26, and that flag was DELETED
+   * outright on 2026-09-25** (#203 slice 2 step (e) — `interpreter.ts:226`
+   * records it), so there is no longer any roll that can be inside it. The
+   * sentence gets stronger rather than staler, exactly as the same correction
+   * at this file's `wardrobeLine` docblock (line ~197) already says. A non-null
+   * line now reaches here only from a FOLLOW carrying its parent's stored
+   * sentence.
    *
    * It is the ROLL's line rather than a branch's, and that is not a shortcut —
    * no branch exists when a sheet is cast, so `currentWardrobeLine`'s edited
