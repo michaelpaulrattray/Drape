@@ -12584,6 +12584,10 @@
       "path": "server/closingKeyword.test.ts"
     },
     {
+      "id": "test:server/commitMsgHook.test.ts",
+      "path": "server/commitMsgHook.test.ts"
+    },
+    {
       "id": "test:server/contactAddresses.test.ts",
       "path": "server/contactAddresses.test.ts"
     },

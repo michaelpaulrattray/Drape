@@ -1,0 +1,132 @@
+#!/bin/sh
+#
+# A CLOSING KEYWORD IN A COMMIT MESSAGE, REFUSED WHILE THE COMMIT DOES NOT YET
+# EXIST (#1430, Retro run 5's R13).
+#
+# ────────────────────────────────────────────────────────────────────────────
+# WHY THIS HOOK AND NOT ANOTHER SENTENCE
+#
+# #376's rule — never `Closes #N` / `Fixes #N` / `Resolves #N`, because GitHub
+# closes the card on merge before the receipt exists — is written down in THREE
+# places: the card, `PROGRAM.md`'s own clause, and the night-shift standing
+# orders. It was breached SIX times in eight days by shifts that had all three
+# on stdin, which made it the most-hit gate rejection of that window.
+#
+# `.githooks/pre-commit`'s own header already answered this, for two other
+# repeats, and its sentence is the one to keep: **a sentence did not hold; a
+# sentence will not hold.**
+#
+# ────────────────────────────────────────────────────────────────────────────
+# THE DEFECT WAS *WHERE* THE READER SAT, NOT THAT IT WAS MISSING
+#
+#   reader                          reads                       repair cost
+#   ──────────────────────────────  ─────────────────────────   ───────────────
+#   this hook                       the message being written   FREE — no commit
+#   gate: check-closing-keyword     PR title + body             one edit
+#   merge tool: refuseAccidentalClose   title + body + COMMITS  A NEW BRANCH
+#
+# So a keyword living ONLY in a commit message passed the gate GREEN and was
+# caught solely by the last reader, at the one moment the repair is most
+# expensive — a pushed commit message cannot be fixed without a force push, and
+# that is on the ask list. The measured instance cost FOUR pull requests for one
+# word (#1347: the gate reddened on the body, the body was fixed, the merge tool
+# still refused on a commit message, the branch had to be rebuilt as #1355, and
+# closing #1353 collided with a hand review already posted on its head).
+#
+# Nothing here moves or loosens the gate's body check: six cheap reds are six
+# one-minute repairs, which is that step working as designed.
+#
+# ────────────────────────────────────────────────────────────────────────────
+# WHICH ROADS FIRE IT — MEASURED, NOT REASONED (git 2.55.0.windows.5, one
+# scratch repository per road). The measurement LIVES in
+# server/commitMsgHook.test.ts rather than in this comment: every row below is an
+# arm there, and that suite holds this table equal to what it drives, so a git
+# upgrade that changes a verdict reddens instead of leaving a stale sentence in a
+# header whose whole authority is "measured".
+#
+#   road                              pre-commit   commit-msg
+#   ────────────────────────────────  ──────────   ──────────
+#   git commit                        FIRED        FIRED
+#   git commit --amend                FIRED        FIRED
+#   git merge (a real merge commit)   skipped      FIRED
+#   git revert                        skipped      skipped
+#   git cherry-pick                   skipped      skipped
+#   git rebase (a replayed commit)    skipped      skipped
+#   git commit --no-verify            skipped      skipped
+#
+# ⚠ THE THREE SKIPPED ROADS ARE THE SAME THREE `CLAUDE.md`'s #606 PARAGRAPH
+# MEASURED FOR `pre-commit`, AND HERE THEY MATTER LESS — FOR A REASON, NOT BY
+# LUCK. All three REPLAY a message that already exists: a revert's generated
+# subject is `Revert "<the original subject>"`, and a cherry-pick and a replayed
+# rebase commit carry the original verbatim. That original was itself authored
+# through `git commit`, where this hook DID run, so a clean history stays clean
+# through all three.
+#
+# ⚠ THE ONE AUTHORING ROAD IT DOES NOT COVER, SAID PLAINLY: a revert or
+# cherry-pick whose message a hand EDITS. The words are new and no hook sees
+# them. That is exactly why `refuseAccidentalClose` stays in the merge tool —
+# this hook makes the common case free, it does not replace the backstop.
+#
+# ────────────────────────────────────────────────────────────────────────────
+# ONE READER, NOT A SECOND COPY OF THE PATTERN
+#
+# `scripts/lib/closingKeyword.mts` stays the only place the keywords and the
+# reference forms are written down — a regex in this shell script would be
+# working law 4 with a merge queue attached. `check-closing-keyword.mts` already
+# takes `--file <path>`, and `commit-msg` is handed the message file as `$1`, so
+# this is a call rather than a reimplementation.
+#
+# It REFUSES when it cannot read (the checker's own contract), which is the right
+# direction here: a commit whose message was never checked is the state this hook
+# exists to prevent.
+#
+# `core.hooksPath=.githooks` already arms it for every clone, and the deploy rite
+# refuses to run without that, so this needs no new per-clone configuration.
+#
+# Driven both ways by `server/commitMsgHook.test.ts` against real temporary
+# repositories, on the real offending text from #1347.
+# ────────────────────────────────────────────────────────────────────────────
+
+# The checker is resolved relative to THIS FILE, not to `git rev-parse
+# --show-toplevel`, for the same reason ARM 1 of `pre-commit` sources its guard
+# from `$(dirname "$0")`: the hook's tooling ships beside the hook. It also means
+# a scratch repository can point `core.hooksPath` here and get the real check.
+HOOK_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+TOOL_ROOT=$(CDPATH= cd -- "$HOOK_DIR/.." && pwd)
+
+# git hands the message path relative to the repository being committed, so it is
+# made absolute BEFORE anything changes directory.
+case "$1" in
+  /* | [A-Za-z]:[/\\]*) MSG_FILE="$1" ;;
+  *) MSG_FILE="$(pwd)/$1" ;;
+esac
+
+# A tree without the checker (a scratch clone, a worktree mid-surgery) is not a
+# commit to refuse — say so out loud rather than blocking every commit on a
+# missing file, and rather than passing silently, which would read as a check.
+if [ ! -f "$TOOL_ROOT/scripts/check-closing-keyword.mts" ]; then
+  echo "commit-msg: scripts/check-closing-keyword.mts is not beside this hook —"
+  echo "            the closing-keyword check was SKIPPED, not passed."
+  exit 0
+fi
+
+# Run from the tool root so `npx` resolves `tsx` in the repository that owns the
+# checker, whatever directory the commit was made from.
+if (CDPATH= cd -- "$TOOL_ROOT" && npx tsx scripts/check-closing-keyword.mts --file "$MSG_FILE"); then
+  exit 0
+fi
+
+cat <<'GUIDANCE'
+
+commit-msg REFUSED this commit (#376, #1430).
+
+A closing keyword before a card number closes the card on merge, before the
+receipt that proves the work shipped exists. Write `Card: #N` instead — the
+relay closes the card once it has actually shipped.
+
+Nothing has been committed, so this costs one edit to the message. The same word
+reaching a pushed commit costs a new branch: a commit message cannot be repaired
+without a force push, and the merge tool reads commit messages too.
+GUIDANCE
+
+exit 1
