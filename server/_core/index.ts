@@ -29,6 +29,11 @@ import {
   evidenceComposerSchemaRequired,
 } from "../casting/evidence/evidenceComposerScope";
 import { createModuleLogger } from "../logging/logger";
+import {
+  captureServerError,
+  flushErrorTracker,
+  initErrorTracker,
+} from "../monitoring/errorTracker";
 const log = createModuleLogger("server");
 
 
@@ -63,13 +68,19 @@ async function alertCriticalError(label: string, error: unknown): Promise<void> 
 
 process.on("uncaughtException", async (error: Error) => {
   log.fatal({ err: error }, "Uncaught exception");
+  /* The stack leaves the building before the process does — the audit row says
+     a crash happened, this says WHERE (#509). Both are best-effort and neither
+     may delay the exit past the timeout below. */
+  await captureServerError(error, { kind: "uncaughtException" });
   await alertCriticalError("Uncaught Exception", error);
+  await flushErrorTracker(1500);
   // Give the audit write a moment to land, then exit
   setTimeout(() => process.exit(1), 2000);
 });
 
 process.on("unhandledRejection", async (reason: unknown) => {
   log.fatal({ err: reason }, "Unhandled promise rejection");
+  await captureServerError(reason, { kind: "unhandledRejection" });
   await alertCriticalError("Unhandled Rejection", reason);
   // Don't exit for rejections — log and continue
 });
@@ -157,6 +168,21 @@ function registerShutdownHandlers(): void {
 async function startServer() {
   // Fail fast if critical env vars are missing (see server/_core/env.ts)
   validateEnv();
+  /*
+    THE ERROR TRACKER, AND THE BOOT LINE THAT SAYS WHETHER THERE IS ONE (#509).
+
+    Before this, a customer's crash reached nobody: one `log.fatal` into a
+    container log and one audit row saying a crash happened, with no stack and
+    no route. `server/monitoring/errorTracker.ts` carries why the import is
+    conditional (593 ms, measured) and why an absent key means no tracker rather
+    than a quiet one.
+
+    Here rather than at module load because it reads `validateEnv`'s world and
+    because a tracker is not a reason to refuse traffic: errors-only capture
+    needs no instrumentation hook ahead of `express`, so nothing is lost by
+    initialising inside the boot sequence where it can be read.
+  */
+  console.info(await initErrorTracker());
   // C5B is the first private-adapter-capable build. Refuse traffic until the
   // cleanup backend column and exact tuple index from migration 0012 exist.
   await assertPrivateEvidenceCleanupSchema();
@@ -279,6 +305,23 @@ async function startServer() {
           { correlationId: cid, trpcType: type, path: path ?? "unknown", code: error.code, ...(error.code === "INTERNAL_SERVER_ERROR" ? { cause: error.cause } : {}) },
           `tRPC ${severity}: ${error.message}`
         );
+        /*
+          ONLY `INTERNAL_SERVER_ERROR` IS REPORTED, AND THAT IS THE WHOLE RULE
+          (#509). Every other code is the API working: a `FORBIDDEN` is the
+          approval gate, a `TOO_MANY_REQUESTS` is a rate limit doing its job, a
+          `BAD_REQUEST` is `.strict()` refusing an unknown field. Sending those
+          would fill the tracker with correct behaviour and make the one row that
+          matters unfindable — the same reason this log line has always split
+          ERROR from WARN on exactly this code.
+        */
+        if (error.code === "INTERNAL_SERVER_ERROR") {
+          void captureServerError(error.cause ?? error, {
+            kind: "trpc",
+            route: path ?? "unknown",
+            trpcType: type,
+            trpcCode: error.code,
+          });
+        }
       },
     })
   );

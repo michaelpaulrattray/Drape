@@ -92,7 +92,7 @@
     {
       "id": "domain:platform",
       "name": "platform",
-      "moduleCount": 16
+      "moduleCount": 17
     },
     {
       "id": "domain:profile",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 64
+      "moduleCount": 65
     },
     {
       "id": "domain:staff",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 44
+      "moduleCount": 45
     },
     {
       "id": "domain:wardrobe",
@@ -5083,6 +5083,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/monitoring/errorTracker.ts",
+      "path": "server/monitoring/errorTracker.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/monitoring/healthMonitor.ts",
       "path": "server/monitoring/healthMonitor.ts",
       "domain": "platform",
@@ -5617,6 +5623,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/testing/storageKeyExpressions.ts",
+      "path": "server/testing/storageKeyExpressions.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/testing/suiteClocks.ts",
       "path": "server/testing/suiteClocks.ts",
       "domain": "unassigned",
@@ -5931,6 +5943,12 @@
     {
       "id": "module:shared/crewWorkSwitches.ts",
       "path": "shared/crewWorkSwitches.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/errorEventScrub.ts",
+      "path": "shared/errorEventScrub.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -9258,6 +9276,11 @@
     {
       "id": "env:RESEND_API_KEY",
       "name": "RESEND_API_KEY",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:SENTRY_DSN",
+      "name": "SENTRY_DSN",
       "valueRecorded": false
     },
     {
@@ -12722,6 +12745,14 @@
       "path": "server/disposableAge.test.ts"
     },
     {
+      "id": "test:server/errorEventScrub.test.ts",
+      "path": "server/errorEventScrub.test.ts"
+    },
+    {
+      "id": "test:server/errorTracker.test.ts",
+      "path": "server/errorTracker.test.ts"
+    },
+    {
       "id": "test:server/export.test.ts",
       "path": "server/export.test.ts"
     },
@@ -12784,6 +12815,10 @@
     {
       "id": "test:server/gateTriggers.test.ts",
       "path": "server/gateTriggers.test.ts"
+    },
+    {
+      "id": "test:server/ghQueueTransport.test.ts",
+      "path": "server/ghQueueTransport.test.ts"
     },
     {
       "id": "test:server/health.test.ts",
@@ -20242,6 +20277,11 @@
     {
       "from": "module:server/_core/index.ts",
       "to": "module:server/logging/requestContextMiddleware.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/monitoring/errorTracker.ts",
       "kind": "imports"
     },
     {
@@ -29997,6 +30037,21 @@
     {
       "from": "module:server/logging/requestContextMiddleware.ts",
       "to": "module:server/security/correlationId.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/errorTracker.ts",
+      "to": "module:server/_core/env.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/errorTracker.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/errorTracker.ts",
+      "to": "module:shared/errorEventScrub.ts",
       "kind": "imports"
     },
     {

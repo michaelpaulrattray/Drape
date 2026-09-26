@@ -164,6 +164,7 @@ import { heldStatesFromLabels } from "../shared/crewNextUpHold.js";
 
 import { buildBoard, readCardComments } from "./lib/cardBuildState.mts";
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
+import { type GhExec, makeGhTransport } from "./lib/ghQueueTransport.mts";
 import { OPEN_QUEUE_LIMIT } from "./lib/nextUpItems.mts";
 import { compareOrderedBand, rankFromLabels } from "./lib/orderedBand.mts";
 import { deriveBands, type Row as BandRow } from "./lib/standingExceptions.mts";
@@ -291,9 +292,24 @@ if (record !== undefined) {
 /* ─── the queue ─── */
 
 /** `gh` with no shell — it is an .exe, and the shell form emits DEP0190. */
+const RAW_GH: GhExec = (args) =>
+  execFileSync("gh", [...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+
+/**
+ * ⚠ **THE QUEUE READ GOES OVER REST FIRST (#1399), AND THIS IS THE GATE WHERE IT
+ * MATTERS MOST.** GitHub's burst limiter refused every GraphQL call for hours a
+ * day with the quota 99% unused, and the shape that stayed refused longest is the
+ * queue LIST read — the one read this file makes. An unreadable queue answers
+ * NONE here, which is correct and costs an escalation; but the same unreadable
+ * queue read as EMPTY is one of the two conditions that PARKS THE TEAM on the
+ * short road (#504). The transport falls back to GraphQL and throws when both
+ * roads are down, so `readQueue` still answers `null` rather than `[]`.
+ */
+const TRANSPORT = makeGhTransport({ exec: RAW_GH });
+
 function gh(args: string[]): unknown | null {
   try {
-    const out = execFileSync("gh", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    const out = TRANSPORT.run(args);
     return JSON.parse(out);
   } catch {
     return null;

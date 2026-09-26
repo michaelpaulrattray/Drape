@@ -655,6 +655,7 @@ the live service on every push.
 - `VITE_STRIPE_PUBLISHABLE_KEY` — client-side Stripe
 - `OWNER_OPEN_ID`, `OWNER_NAME` — bootstrap owner/admin account
 - `KLAVIYO_PRIVATE_KEY` — marketing email flows
+- `SENTRY_DSN` — the server error tracker (#509 part 1). **Absent means there is no tracker at all**: `@sentry/node` is never imported (593 ms, measured) and the boot line says errors are reported nowhere rather than implying one is watching. What may leave the building is `shared/errorEventScrub.ts`'s allowlist, and a `masterPrompt`, `brief`, `prompt`, `preferences`, `technicalSchema`, `resultUrl`, `imageKey` or `passwordHash` key anywhere in an event **refuses the whole event** — the metadata-only boundary applies to a third party exactly as it applies to staff. `server/monitoring/errorTracker.ts` enumerates the envelope channels that do NOT pass that gate and closes or declares each one
 - `PORT` (default 3000), `LOG_LEVEL`, `DAILY_GENERATION_LIMIT`, `GEMINI_TEXT_CONCURRENCY`, `GEMINI_IMAGE_CONCURRENCY`, `GEMINI_MAX_QUEUE_DEPTH`
 
 ### Windows notes

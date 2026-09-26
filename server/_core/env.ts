@@ -99,6 +99,11 @@ const OPTIONAL_VARS: Record<string, string> = {
   GOOGLE_CLIENT_ID: "Google OAuth login is unavailable",
   GOOGLE_CLIENT_SECRET: "Google OAuth login is unavailable",
   VITE_STRIPE_PUBLISHABLE_KEY: "client-side Stripe checkout is unavailable",
+  /* #509. Absent means there is no error tracker at all — the SDK is never even
+     imported — and the boot line says so rather than implying one is watching.
+     `server/monitoring/errorTracker.ts` carries why that is the honest state and
+     not a degraded one. */
+  SENTRY_DSN: "uncaught server errors are logged locally and reported nowhere",
 };
 
 /**

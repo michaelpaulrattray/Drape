@@ -1250,6 +1250,12 @@
   why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
   argued: 6c/13a
 
+- symbol: resetErrorTrackerForTests
+  file: server/monitoring/errorTracker.ts
+  verdict: KEEP
+  why: a seam whose own NAME says test-only; the sweep cannot see a convention and a human can
+  argued: 6c/13a
+
 - symbol: replyIsAcknowledged
   file: server/crew/crewBriefing.ts
   verdict: KEEP
@@ -1454,3 +1460,21 @@
   verdict: TAKEN
   why: "the store's retire-a-facet write, orphaned with segmentPrune. Held to slice 3 with its module ⚠ TAKEN in slice 3 with its module's write paths."
   argued: "#1160"
+
+- symbol: keyExpressionsIn
+  file: server/testing/storageKeyExpressions.ts
+  verdict: KEEP
+  why: "server/testing/ is test infrastructure by directory (the readListedSource precedent, 13a), so a production-importer reading of it is zero by construction and says nothing. It is the reader server/storage-key-generation.test.ts derives its population from — every key EXPRESSION a module mints, judged where it is made rather than where a key passer hands it on (#1401): the old population was one call syntax and saw 8 of the 15 storagePut callers, and 9 of the 23 minting files never call storagePut at all. Deleting it returns the guard to a population that could not see the module minting a cast's signed views"
+  argued: "#1401"
+
+- symbol: carriesRandomness
+  file: server/testing/storageKeyExpressions.ts
+  verdict: KEEP
+  why: "same footing (server/testing/ is test infrastructure by directory, 13a). The judgement over that population: an expression carries crypto.randomUUID() inline or through a binding in its own file, which is what keeps the five correct ${suffix} keys in routes/wardrobe.ts and wardrobe/outfitDecomposition.ts out of the exception list, where five correct writers would have made the list stop being read"
+  argued: "#1401"
+
+- symbol: usesMathRandom
+  file: server/testing/storageKeyExpressions.ts
+  verdict: KEEP
+  why: "same footing (13a). The Math.random reading that judges CODE rather than raw source, because the raw substring test was about to indict two comments that PRAISE the rule (hairReferenceCutter.ts, keptFaceScan.ts: \"randomUUID, never Math.random\") — the typo-gate-owned-a-real-word class pointed at a guard"
+  argued: "#1401"

@@ -79,6 +79,7 @@ import {
   type CardBuildBoard,
 } from "./cardBuildState.mts";
 import { judgementIsBlind, mergedPullRequestArgs, SEARCH_RESULT_CEILING } from "./crewNamingWindow.mts";
+import { makeGhTransport } from "./ghQueueTransport.mts";
 
 /**
  * THE CONNECTION THIS FUNCTION IS HANDED, described by what it USES and
@@ -132,13 +133,30 @@ export type QueueGhReader = (args: readonly string[], options?: { readonly maxBu
  */
 export const QUEUE_GH_TIMEOUT_MS = 120_000;
 
-const REAL_GH: QueueGhReader = (args, options) =>
+const RAW_GH: QueueGhReader = (args, options) =>
   execFileSync("gh", [...args], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     timeout: QUEUE_GH_TIMEOUT_MS,
     ...(options?.maxBuffer === undefined ? {} : { maxBuffer: options.maxBuffer }),
   });
+
+/**
+ * ⚠ **THE PER-LABEL COUNTS GO OVER REST FIRST (#1399).** GitHub's SECONDARY
+ * (burst) limiter refused every GraphQL call for hours a day for four days
+ * running with the GraphQL quota 99% unused, answering with the PRIMARY
+ * limiter's sentence — and the shape that stayed refused after the single-object
+ * reads recovered is the queue LIST read, which is what every count below is.
+ * A refused count draws `(–) · not counted yet` on his switch panel.
+ *
+ * ⚠ It is a TRANSPORT, so nothing this file believes moves: `countOpen` keeps its
+ * own 500-row floor refusal and its own #725 zero cross-examination, and both
+ * still see the same populations. A read that neither road can answer still
+ * THROWS, which is the `catch` that returns `null` two frames down. The oldest-
+ * card read carries a `--search`, which REST cannot answer faithfully, so it
+ * passes through untranslated and says so by taking the GraphQL road.
+ */
+const REAL_GH: QueueGhReader = makeGhTransport({ exec: RAW_GH }).run;
 
 const TABLE = "crew_queue_counts";
 const TITLES_COLUMN = "titles";

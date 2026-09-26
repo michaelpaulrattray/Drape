@@ -88,6 +88,7 @@ import {
   planDeskHoldLabels,
 } from "../shared/crewNextUpHold.js";
 import { buildBoard, readCardComments } from "./lib/cardBuildState.mts";
+import { type GhExec, makeGhTransport } from "./lib/ghQueueTransport.mts";
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
 import {
   type OrderedIssue,
@@ -154,9 +155,24 @@ function ghWrite(args: string[]): boolean {
 }
 
 /** `gh` with no shell — it is an .exe, and the shell form emits DEP0190. */
+const RAW_GH: GhExec = (args) =>
+  execFileSync("gh", [...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+
+/**
+ * ⚠ **THE QUEUE READS GO OVER REST FIRST (#1399).** GitHub's SECONDARY (burst)
+ * limiter refused every GraphQL call for hours a day for four days running with
+ * the GraphQL quota 99% unused — and it answers with the PRIMARY limiter's
+ * sentence, which is why it read as an exhausted quota. The one shape that stayed
+ * refused after the others recovered is the queue LIST read, which is both of
+ * this file's own. `makeGhTransport` translates exactly that shape and passes
+ * everything else through; the failure semantics below do not move, because a
+ * transport that could not answer still throws.
+ */
+const TRANSPORT = makeGhTransport({ exec: RAW_GH });
+
 function gh(args: string[]): unknown | null {
   try {
-    const out = execFileSync("gh", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    const out = TRANSPORT.run(args);
     return JSON.parse(out);
   } catch (cause) {
     console.error(`[warn] gh ${args.slice(0, 3).join(" ")} failed: ${(cause as Error).message}`);

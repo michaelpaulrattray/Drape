@@ -116,6 +116,7 @@ import {
   reviewPresence,
   tallyRounds,
 } from "./lib/reviewRounds.mts";
+import { isRateLimitRefusal } from "./lib/ghQueueTransport.mts";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REVIEW_WORKFLOW_FILE = "review.yml";
@@ -125,8 +126,43 @@ function fail(message: string): never {
   process.exit(1);
 }
 
+/**
+ * ⚠ A RATE-LIMIT REFUSAL IS A FINDING, NOT A CRASH (#1399).
+ *
+ * This tool's own contract is that *the finding is the exit code*: 2 means
+ * STOPPED on something needing a person. A burst-limited `gh` was neither — it
+ * threw out of `readPr` and the process died on exit 1, which reads as a broken
+ * tool. Measured on 2026-09-26: GitHub's SECONDARY limiter refused every GraphQL
+ * call for hours a day with the GraphQL quota **99% unused** (48 of 5,000 points
+ * spent), and it answers with the PRIMARY limiter's sentence — so four shifts
+ * read it as an exhausted quota and waited days.
+ *
+ * ⚠ **THIS TOOL DELIBERATELY DOES NOT MOVE TO REST** (the card's own second
+ * condition: *"fall back, do not switch blindly"*). The founder's re-measurement
+ * forty minutes later found `gh pr view`, `gh pr checks` and `gh issue view` all
+ * WORKING again while only the queue LIST read stayed refused — so the shapes
+ * this file reads are not the refused ones, and re-mapping `mergeStateStatus` and
+ * `statusCheckRollup` onto REST would trade a measured-transient failure for an
+ * unmeasured field-mapping risk on the one tool that MERGES. The list shape moves
+ * (`scripts/lib/ghQueueTransport.mts`); this one gets an honest exit code.
+ */
 function gh(args: string[]): string {
-  return execFileSync("gh", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  try {
+    return execFileSync("gh", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  } catch (cause) {
+    const error = cause as { message?: string; stderr?: string };
+    const text = `${error.message ?? ""}\n${error.stderr ?? ""}`;
+    if (!isRateLimitRefusal(text)) throw cause;
+    console.error(
+      `pr-merge-in-order: STOPPED — GitHub refused \`gh ${args.slice(0, 3).join(" ")}\` on a RATE LIMIT.\n`
+      + "  This is very likely the SECONDARY (burst) limiter, which answers with the primary limiter's\n"
+      + "  words — so it is probably NOT an exhausted quota. Read the real figures before waiting:\n"
+      + "    gh api rate_limit --jq .resources\n"
+      + "  A burst clears in minutes; re-run this command then. Nothing has been merged past a red gate\n"
+      + "  and no verdict has been assumed. REST (`gh api …`) is on a different budget and is unaffected.",
+    );
+    process.exit(2);
+  }
 }
 
 function api<T>(path: string): T {
