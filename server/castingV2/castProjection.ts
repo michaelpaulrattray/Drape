@@ -19,7 +19,12 @@ import type { Model, ModelAsset } from "../../drizzle/schema";
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { storagePublicUrl } from "../storage";
 import type { CastLineage } from "../db/castingV2Sign";
-import { CAST_PACKAGE_VIEW_PRICE, CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
+import {
+  ANCHOR_RESOLUTION,
+  CAST_PACKAGE_VIEW_PRICE,
+  CAST_PACKAGE_VIEWS,
+  castPackageLabel,
+} from "./castViewPackage";
 import { castPronouns, type CastPronouns } from "./castPronouns";
 
 /**
@@ -389,7 +394,7 @@ function slotEvidence(assets: readonly ModelAsset[]): Map<CastViewAngle, SlotEvi
     if (failure) {
       if (!entry.failure) entry.failure = failure;
     } else if (asset.storageUrl) {
-      const isAnchor = asset.resolution === "1K";
+      const isAnchor = asset.resolution === ANCHOR_RESOLUTION;
       if (isAnchor) {
         if (!entry.anchor) entry.anchor = asset;
       } else if (!entry.landed) {
