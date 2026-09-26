@@ -295,9 +295,40 @@ function composeSpans(
 
     ⚠ **AND THAT SENTENCE IS GONE AS OF #1251 (2026-09-26), SO THIS EXCLUSION
     NOW GUARDS A COLLISION THAT CANNOT HAPPEN.** It is kept exactly as it was,
-    on purpose: dropping it would start naming an axis the live author road has
-    not named since 2026-09-24, which is a copy change nobody asked for on the
-    road every account is on. It is carded rather than decided here.
+    on purpose. What that purpose IS was an open question for one night, and it
+    has been measured rather than argued (#1288).
+
+    ⚠ **THE EXCLUSION IS WHAT KEEPS THIS CLAUSE ALIVE ON A FOUR-AXIS BRIEF, AND
+    THAT IS NOW ITS REASON.** The collapse rule two paragraphs up caps the
+    enumeration at three; a brief that pins only sex and age leaves FOUR axes
+    open, and dropping the varying axis is the only thing bringing the list back
+    under the cap. So removing the exclusion does not add a word — it deletes
+    the whole sentence.
+
+    Driven over every roll in the dev database with the three options the sheet
+    actually passes (`CastingSheet.tsx`: `terse={rolls.length > 1}`,
+    `followLabel`, `authorRoad`), running this same function before and after
+    the removal: **87 rolls, 14 render the clause at all, and dropping the
+    exclusion changes 9 of them — all 9 by LOSING it.** Not one gains a word.
+    *"…a goth woman — a woman in her mid 30s. Heritage, build and look were left
+    to the roll."* becomes *"…a goth woman — a woman in her mid 30s."*, and that
+    pair was photographed in the running app in both themes rather than read off
+    a test.
+
+    ⚠ **The first measurement of this passed `authorRoad` alone and said the
+    opposite** — 96 rows, 50 losses and 3 gains — because `terse` drops the
+    clause outright on every roll after a session's first, and the follow tail
+    pushes the sentence past the two-line budget, which makes `composeEcho` fall
+    back to terse by itself. **The frames caught it**: the page showed a follow
+    tail where the probe had shown a latitude clause. A reading of this function
+    that does not pass all three options is measuring a sentence the product
+    never composes.
+
+    So the choice is a real one about copy and it belongs to the founder, not to
+    a sweep: keep the clause alive by declining to name the axis the roll is
+    varying anyway, or obey the three-axis cap literally and let the clause go
+    quiet on a four-axis brief. Until he says, the behaviour does not move, and
+    the arms below pin the half that would silently disappear.
   */
   /*
     A locked look cannot also be the thing the eight differ by.

@@ -414,6 +414,66 @@ describe("a locked look cannot also be what the eight differ by", () => {
   });
 });
 
+/*
+  ⚠ **WHAT THE EXCLUSION ACTUALLY BUYS, PINNED BEFORE ANYONE REMOVES IT (#1288).**
+
+  Its written reason expired with #1251 — it existed to stop *"presence was left
+  to the roll"* colliding with *"the eight differ by disposition"*, and the
+  second sentence no longer renders anywhere. The obvious repair is to delete
+  the exclusion, and #1288 was filed recommending exactly that.
+
+  Measured instead, by running `composeEcho` over every roll in the dev database
+  with the three options `CastingSheet.tsx` actually passes — `terse`,
+  `followLabel`, `authorRoad` — before and after the removal: **87 rolls, 14
+  render the clause at all, 9 change, and all 9 change by LOSING it.** Not one
+  gains a word. The exclusion is load-bearing for a reason nobody wrote down: a
+  brief pinning only sex and age leaves FOUR axes open, and the collapse rule
+  names at most three, so dropping the varying axis is the only thing keeping
+  the list under the cap.
+
+  The first arm is that four-axis case. Delete `&& axis !== axisTwin` and it
+  goes red with an EMPTY clause rather than a longer one, which is the finding a
+  reader of the comment alone would not have. The copy decision — clause alive
+  with one true axis unnamed, or clause gone per the cap — is the founder's, and
+  the behaviour does not move until he takes it.
+*/
+describe("the open-axis exclusion is what keeps the clause under the three-axis cap", () => {
+  const fourOpen = ["heritage", "build", "energy", "look"];
+
+  it("names three axes on a four-axis brief rather than falling silent", () => {
+    const spans = composeEcho(
+      facts({
+        role: "fitness creator",
+        locks: { sex: "female", ageBand: "30s" },
+        open: fourOpen,
+        variationAxis: "disposition",
+      }),
+    );
+    // The live shape, read off dev roll 05bcaa8a on 2026-09-26.
+    expect(echoText(spans)).toBe(
+      "Everyone on this sheet is cast as a fitness creator — a woman in her 30s. "
+        + "Heritage, build and look were left to the roll.",
+    );
+    // And the axis it declines to name is the one the roll is varying anyway.
+    expect(echoText(spans)).not.toContain("presence");
+  });
+
+  it("names all three when only three axes are open, exclusion or not", () => {
+    // The other side of the cap: here the exclusion COSTS a true axis, which is
+    // the half #1288 is about and the half his eye has to settle.
+    const spans = composeEcho(
+      facts({
+        role: "fitness creator",
+        locks: { sex: "female", ageBand: "30s", build: "athletic" },
+        open: ["heritage", "energy", "look"],
+        variationAxis: "disposition",
+      }),
+    );
+    expect(echoText(spans)).toContain("Heritage and look were left to the roll.");
+    expect(echoText(spans)).not.toContain("presence");
+  });
+});
+
 describe("no clause may open the sentence with a comma", () => {
   /*
     Founder report: "An East Asian model with long pastel pink hair" echoed as
