@@ -2,7 +2,7 @@
   "meta": {
     "schemaVersion": "1.0.0",
     "generatorVersion": "1.0.0",
-    "sourceFingerprint": "0b8981fc6ef4d2c9"
+    "sourceFingerprint": "e6d3b639c70aea04"
   },
   "domains": [
     {
@@ -23550,6 +23550,11 @@
     {
       "from": "module:server/castingV2/castingIntent.ts",
       "to": "module:shared/bodyAnchorRegions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castingIntent.ts",
+      "to": "module:shared/briefLength.ts",
       "kind": "imports"
     },
     {
