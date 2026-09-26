@@ -80,38 +80,53 @@ const TOKEN = /personaline/i;
 const SELF = "server/castingV2/candidateDispositionRetired.test.ts";
 
 /**
- * ⚠ THE NAMED REMAINDER — tracked scripts that still write the retired column,
- * found when `.mts` joined the walk above (#179). Each is REAL debt with a
- * card, not an excuse: their SQL cannot execute against the live schema.
+ * ✅ THE NAMED REMAINDER IS EMPTY — #1367, 2026-09-26, and the list only ever
+ * shrinks.
  *
- * They are exempt BY PATH, like `SELF`, and the test below asserts the walk
- * REACHED each one — an exemption that cannot be proven to have been visited is
- * a hole rather than a debt. **This list only shrinks.** Adding to it is a
- * founder-visible act; a SIXTH offender reddens instead.
+ * It held SIX tracked scripts when `.mts` joined the walk above (#179): four
+ * carrying live SQL that could not execute against the schema (#1364) and two
+ * ceremonies naming the column in prose. All six are dealt with:
  *
- * - the two CEREMONIES name it as their own subject — one dropped the column,
- *   the other records in its docblock that it used to null it and why that half
- *   went — exactly as `SELF` quotes the migration it forbids. Neither carries
- *   live SQL for it any more.
- * - the other four carry LIVE SQL and are **#1364**'s brief. Three of them share
- *   one blocker: the fixture TAG (`WHERE personaLine = ?`, how a dev fixture is
- *   found a second time instead of duplicated) has no home now the column is
- *   gone, and choosing its replacement is a design call. The fourth reads the
- *   column to assert which tile the viewer is showing, which #1241 replaced with
- *   an index label.
+ * - the three fixture libraries had the column as a fixture TAG — how a dev
+ *   fixture is found a second time instead of duplicated. The tag moved to
+ *   `generation_operations.clientRequestId`, which the fixture already writes and
+ *   was spending on a `randomUUID()` nothing read back, and whose
+ *   `UNIQUE(userId, clientRequestId)` is what a fixture tag MEANS. No migration.
+ * - `scripts/lib/outsider.mts` was not tagging at all — it COPIED the donor's
+ *   value on clone, and nothing ever looked the outsider up by it. Simply gone.
+ * - `scripts/drive-use-chip-evidence.mts` read it as the caption that proves the
+ *   right person is open. It asserts her `imageKey` instead, which is minted per
+ *   candidate and cannot be shared — stronger than the caption it lost, because a
+ *   disposition line came off the DONOR and every clone of one donor shared it.
+ * - `scripts/ceremony-author-road-unsent.mts` named it only in a history
+ *   paragraph, which now records the fact without spelling the word.
  *
- * ⚠ **The hand sweep that produced this list got it WRONG and the derived walk
- * corrected it** — `scripts/_roll216-slice-prompt-disposable.mts` was assumed
- * untracked from its `_…-disposable` name and is committed like 40 others. It
- * was fixed rather than excused. A list is a floor; the walk is the population.
+ * ⚠ **ONE FILE CANNOT LOSE THE NAME AND IT IS NOT DEBT: the ceremony that
+ * DROPPED the column.** It runs `SHOW COLUMNS … LIKE` and the `DROP` itself, so
+ * the name is its subject exactly as it is `SELF`'s — which is why it moves to
+ * {@link THE_COLUMN_IS_THEIR_SUBJECT} rather than staying on a list of things
+ * still to fix. **Nothing is exempt as debt any more, and a new offender reddens.**
+ *
+ * ⚠ **The hand sweep that produced the original list got it WRONG and the
+ * derived walk corrected it** — `scripts/_roll216-slice-prompt-disposable.mts` was
+ * assumed untracked from its `_…-disposable` name and is committed like 40
+ * others. It was fixed rather than excused. A list is a floor; the walk is the
+ * population.
  */
-const KNOWN_DEBT: readonly string[] = [
-  "scripts/ceremony-author-road-unsent.mts",
+const KNOWN_DEBT: readonly string[] = [];
+
+/**
+ * The files whose SUBJECT is the retired name, so they necessarily write it.
+ *
+ * Not an exemption of convenience and not a debt: `SELF` quotes his brief and the
+ * migration, and the drop ceremony runs `SHOW COLUMNS … LIKE` plus the `DROP`.
+ * Neither can stop naming it without stopping being what it is. Both are exempt
+ * BY PATH, and the arm below asserts the walk REACHED each — an exemption that
+ * cannot be proven visited is a hole rather than a reason.
+ */
+const THE_COLUMN_IS_THEIR_SUBJECT: readonly string[] = [
+  SELF,
   "scripts/ceremony-drop-candidate-persona-line.mts",
-  "scripts/drive-use-chip-evidence.mts",
-  "scripts/lib/censusFixture.mts",
-  "scripts/lib/censusStateFixtures.mts",
-  "scripts/lib/outsider.mts",
 ];
 
 /**
@@ -266,14 +281,20 @@ describe("the candidate disposition is retired end to end (#1241)", () => {
       .toBeGreaterThan(300);
     expect(scriptFiles.some((file) => file.startsWith("scripts/lib/"))).toBe(true);
 
+    /* ✅ NOTHING IS EXEMPT AS DEBT (#1367). The list only shrinks, so this
+       asserts the floor it reached rather than trusting a comment about it: a
+       re-added entry is a founder-visible act and fails here first. */
+    expect(KNOWN_DEBT, "the named remainder is empty — an entry added back is a decision, not a fix")
+      .toEqual([]);
+
     /* Every exemption must have been VISITED, or it is hiding a file rather
-       than excusing one (the `SELF` clause's own reasoning, applied to debt). */
-    for (const file of KNOWN_DEBT) {
-      expect(files, `${file} is exempt but the walk never reached it — re-point KNOWN_DEBT`)
+       than excusing one (the `SELF` clause's own reasoning). */
+    for (const file of [...THE_COLUMN_IS_THEIR_SUBJECT, ...KNOWN_DEBT]) {
+      expect(files, `${file} is exempt but the walk never reached it — re-point the list`)
         .toContain(file);
     }
 
-    const exempt = new Set<string>([SELF, ...KNOWN_DEBT]);
+    const exempt = new Set<string>([...THE_COLUMN_IS_THEIR_SUBJECT, ...KNOWN_DEBT]);
     const offenders = files.filter((file) => !exempt.has(file) && TOKEN.test(listed(file) ?? ""));
     expect(offenders).toEqual([]);
   });

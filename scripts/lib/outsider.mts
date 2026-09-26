@@ -158,7 +158,7 @@ export async function ensureOutsider(input: { donorOpenId?: string } = {}): Prom
         A fixture that is not shaped like a real account measures itself.
       */
       const [donors] = await conn.execute(
-        `SELECT c.imageKey, c.thumbKey, c.personaLine, c.internalPrompt, c.provider,
+        `SELECT c.imageKey, c.thumbKey, c.internalPrompt, c.provider,
                 c.providerModel, r.briefText
            FROM casting_candidates c
            JOIN casting_rolls r ON r.id = c.rollId
@@ -169,7 +169,7 @@ export async function ensureOutsider(input: { donorOpenId?: string } = {}): Prom
         [donorOpenId],
       );
       const donor = (donors as Array<{
-        imageKey: string; thumbKey: string | null; personaLine: string | null;
+        imageKey: string; thumbKey: string | null;
         internalPrompt: unknown; provider: string | null; providerModel: string | null;
         briefText: string;
       }>)[0];
@@ -207,10 +207,15 @@ export async function ensureOutsider(input: { donorOpenId?: string } = {}): Prom
         await conn.execute(
           `INSERT INTO casting_candidates
              (publicId, rollId, sessionId, userId, position, status, pointsCost, imageKey, thumbKey,
-              personaLine, internalPrompt, provider, providerModel)
-           VALUES (?, ?, ?, ?, 1, 'ready', 0, ?, ?, ?, ?, ?, ?)`,
+              internalPrompt, provider, providerModel)
+           VALUES (?, ?, ?, ?, 1, 'ready', 0, ?, ?, ?, ?, ?)`,
+          /* The clone used to copy the donor's retired disposition line across as
+             well. Migration `0068` dropped that column (#1241), so BOTH halves of
+             the copy — the read and the write — died on `Unknown column`, and this
+             clone is a pure copy rather than a tagged one: nothing ever looked the
+             outsider up by it. It is simply gone. */
           [
-            candidatePublicId, rollId, sessionId, id, donor.imageKey, donor.thumbKey, donor.personaLine,
+            candidatePublicId, rollId, sessionId, id, donor.imageKey, donor.thumbKey,
             typeof donor.internalPrompt === "string" ? donor.internalPrompt : JSON.stringify(donor.internalPrompt),
             donor.provider, donor.providerModel,
           ],

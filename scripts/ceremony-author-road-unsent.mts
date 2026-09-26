@@ -21,14 +21,19 @@
  * After this the mark is the single source and the register-kind gates in code
  * become belt-over-braces.
  *
- * # ⚠ IT ALSO NULLED `personaLine` UNTIL 2026-09-26, AND THAT COLUMN NO LONGER
- * # EXISTS — THE CEREMONY COULD NOT RUN AT ALL
+ * # ⚠ IT ALSO NULLED THE CANDIDATE DISPOSITION UNTIL 2026-09-26, AND THAT
+ * # COLUMN NO LONGER EXISTS — THE CEREMONY COULD NOT RUN AT ALL
  *
  * `#1241` (`3100bb7a`) retired the candidate disposition end to end and
- * migration `0068` DROPPED `casting_candidates.personaLine`. This file kept
- * naming it in a `SELECT` and an `UPDATE`, so **every invocation on either world
- * died on `Unknown column 'personaLine' in 'field list'` before marking
+ * migration `0068` DROPPED its column from `casting_candidates`. This file kept
+ * naming that column in a `SELECT` and an `UPDATE`, so **every invocation on
+ * either world died on `Unknown column … in 'field list'` before marking
  * anything** — found by running it (#179, run #383).
+ *
+ * The name is deliberately not written out here. `server/castingV2/candidateDispositionRetired.test.ts`
+ * is the one file allowed to say it, and a history paragraph that spells it out
+ * would keep this ceremony on an exemption list forever for the sake of a word
+ * (#1367). `git log` and migration `0068` hold the spelling.
  *
  * The half is not merely unrunnable, it is MOOT: a dropped column holds no
  * fiction to null, which is a stronger outcome than the one this ceremony was
