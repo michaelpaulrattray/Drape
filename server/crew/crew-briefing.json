@@ -1,7 +1,7 @@
 {
-  "edition": 552,
-  "updatedAt": "2026-09-26T22:42:08.772Z",
-  "shift": "Janitor — patrol #10: the machine tidied, a dead dev server three shifts had left running finally explained, and five findings filed",
+  "edition": 553,
+  "updatedAt": "2026-09-26T23:31:44.907Z",
+  "shift": "Relay — the engine court's thirteen frames reach his Desk, his Sunburst-high word and 'Delete it' recorded, the three keys live",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -446,7 +446,7 @@
     {
       "id": "sentry-keys-1419",
       "issueNumber": 1419,
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-09-26",
       "title": "Three keys to paste, and one small choice about your admin page",
       "productImpact": "Two things are true today and neither is good.\n\nWhen something goes wrong for someone using Drape, nobody finds out. If a page breaks in a customer's browser she sees the error screen, and we never hear about it unless she tells us.\n\nAnd nothing records what people DO. We cannot answer 'how many people cast anything this week' or 'how often did a roll not arrive'. Before Drape opens to real users, those are the two questions worth being able to ask.\n\nThe code for all three is built and tested. It is switched off, and it stays off until you paste three keys.",
@@ -478,7 +478,7 @@
     {
       "id": "old-lane-delete-1398",
       "issueNumber": 1398,
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-09-26",
       "title": "The old casting lane is switched off for everyone — do we delete it?",
       "productImpact": "Until two days ago Drape had two ways of casting a sheet. The old one wrote eight separate descriptions, one per face, out of its own house vocabulary. The new one sends your own words straight to the engine.\n\nOn 24 September you switched everyone to the new one. Nothing has cast the old way since.\n\nBut the old way is still in the product. Every time anyone rolls a sheet it still builds its eight descriptions — and then throws all eight away, because the new road has already written the real one. Nobody sees it and nobody can reach it.",
@@ -6169,6 +6169,104 @@
           "caption": "The same strip in dark. Same six tiles, same three buttons."
         }
       ]
+    },
+    {
+      "id": "sign-engine-court-1394-arms",
+      "title": "Four engines drew the same person — you chose Sunburst high; do the frames agree with you?",
+      "question": "WHAT YOU ARE JUDGING — is it still her. Each sheet shows the anchor picture you signed on the left, then the same view drawn by four settings: today's engine at 2K, today's engine at 4K, Sunburst at high, and Sunburst at max. You have already chosen Sunburst high on the numbers (best at keeping face, angle and outfit, same price as today, about forty seconds slower). This is your eye closing it: look at the face detail sheets first, then the three-quarter view, which every engine struggles with. Say 'confirmed' or name the frame that changes your mind.",
+      "state": "open",
+      "filedAt": "2026-09-26T23:31:44.907Z",
+      "issueNumber": 1394,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/2c2c8ef5-ab32-428b-b9d3-605b58ecf24b.jpg",
+          "arm": "close-up, all four",
+          "caption": "Jericho close-up — the anchor, then today 2K, today 4K, Sunburst high, Sunburst max."
+        },
+        {
+          "key": "crew-eye/e2263ac8-11d7-4859-a068-858fb95d6787.jpg",
+          "arm": "close-up, face detail",
+          "caption": "Jericho — the same region of her face out of each picture, matched to one scale so you compare like with like."
+        },
+        {
+          "key": "crew-eye/8d06febb-5947-4fb2-b521-6d473fef9558.jpg",
+          "arm": "close-up, all four",
+          "caption": "Caveman close-up — the anchor, then the same four settings."
+        },
+        {
+          "key": "crew-eye/645030cb-7d9c-4c17-bcd6-2f58230c8fd2.jpg",
+          "arm": "close-up, face detail",
+          "caption": "Caveman — face detail out of each, matched scale."
+        },
+        {
+          "key": "crew-eye/61c25ca0-fbce-4132-b015-09eba03877c3.jpg",
+          "arm": "three-quarter",
+          "caption": "Jericho three-quarter — the angle every engine found hardest; this is where they separate."
+        },
+        {
+          "key": "crew-eye/c72834b7-5b04-4023-bd00-d732a218ab02.jpg",
+          "arm": "front, full length",
+          "caption": "Jericho front full-length — all four settings; look at whether the outfit and body survive the way the face does."
+        }
+      ]
+    },
+    {
+      "id": "sign-engine-court-1394-chain",
+      "title": "Five edits in a row on the same picture — does she survive the chain better at high or at max?",
+      "question": "WHAT YOU ARE JUDGING — drift. Your question was whether max reduces degradation more than high when a picture is edited again and again. Each sheet starts with the anchor and then shows five successive edits, each made on the previous result. The numbers say identity held on both tiers and max bought nothing for three and a half times the price. Look at the fifth frame on each: is it still her, and is either tier visibly cleaner? A word is enough.",
+      "state": "open",
+      "filedAt": "2026-09-26T23:31:44.907Z",
+      "issueNumber": 1394,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/ed133071-89be-4daa-be1e-0828870d3d46.jpg",
+          "arm": "chain at high",
+          "caption": "The anchor, then five successive Sunburst edits at high."
+        },
+        {
+          "key": "crew-eye/70d2e0fb-84cb-42b4-bfc8-7e2557484b95.jpg",
+          "arm": "chain at max",
+          "caption": "The anchor, then five successive Sunburst edits at max."
+        },
+        {
+          "key": "crew-eye/f0def0bc-ea04-4e68-875f-a1eb38394de7.jpg",
+          "arm": "endpoints",
+          "caption": "The anchor beside the fifth edit on each tier — the two endpoints side by side."
+        },
+        {
+          "key": "crew-eye/7136b0f0-5861-4457-bd99-b7ea3bdf17f6.jpg",
+          "arm": "chain at max, third cast",
+          "caption": "The same chain at max on the third cast."
+        }
+      ]
+    },
+    {
+      "id": "sheet-cut-1278-part2",
+      "title": "One character sheet cut into four views, beside four views drawn one at a time — which keeps her outfit the same?",
+      "question": "WHAT YOU ARE JUDGING — consistency across the views, which is the full-length views bug you raised: the front and the back coming back in different bottoms. TOP ROW on each sheet: one Sunburst render of a four-view character sheet (front, left profile, right profile, back), cut into four. BOTTOM ROW: the same four views drawn as four separate renders. The sheet is one call instead of four and each view has about a third of the pixels; identity read 11 of 16 on the sheet. Tell me whether the top row's outfit consistency is worth the smaller pictures, or whether the bottom row wins.",
+      "state": "open",
+      "filedAt": "2026-09-26T23:31:44.907Z",
+      "issueNumber": 1278,
+      "cardId": null,
+      "frames": [
+        {
+          "key": "crew-eye/c4bb9cc2-dc15-4022-8231-ba66309176e0.jpg",
+          "arm": "sheet vs singles, high",
+          "caption": "Jericho at high — one sheet cut four ways (top) beside four renders made one by one (bottom)."
+        },
+        {
+          "key": "crew-eye/e4ed69d0-f16a-4084-b546-73d0ee9d3a88.jpg",
+          "arm": "sheet vs singles, max",
+          "caption": "Jericho at max — the same comparison."
+        },
+        {
+          "key": "crew-eye/a94d2eeb-a11c-4cd4-a0d3-ad9d59daa1ae.jpg",
+          "arm": "sheet vs singles, high",
+          "caption": "The caveman at high — the same comparison on a second cast."
+        }
+      ]
     }
   ],
   "pipeline": [
@@ -8834,7 +8932,9 @@
     224,
     225,
     226,
-    227
+    227,
+    228,
+    229
   ],
   "nextUp": {
     "readAt": "2026-09-26T22:38:19.051Z",
