@@ -88,7 +88,7 @@ export const REDACTED = "[redacted]";
  * `masterPrompt`, `technicalSchema` and `preferences` are CLAUDE.md's named
  * field group — *"Together they are the complete recipe for reproducing the
  * cast … treat it the way you would treat a password"*. The rest are the
- * customer's own words (`prompt`, `brief`, `personaLine`), where her pictures
+ * customer's own words (`prompt`, `brief`), where her pictures
  * live (`resultUrl`, `imageKey`) and a credential (`passwordHash`, the field
  * that once reached `auth.me`).
  */
@@ -98,7 +98,6 @@ export const REFUSING_KEYS: readonly string[] = [
   "preferences",
   "prompt",
   "brief",
-  "personaLine",
   "resultUrl",
   "imageKey",
   "passwordHash",
