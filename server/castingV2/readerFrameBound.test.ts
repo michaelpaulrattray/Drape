@@ -45,8 +45,9 @@ import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
 import sharp from "sharp";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { readListedSource } from "../testing/listedSource";
 import { JUDGE_FRAME_LONG_EDGE } from "./judgeFrame";
 import { LEGIBLE_LONG_EDGE, captionRealization, captionSlot } from "./realizationCaption";
@@ -59,9 +60,16 @@ import { readHairColourFromReference } from "./hairColourFromReference";
 import { readMakeupFromReference } from "./makeupFromReference";
 import { readReferenceMedium } from "./referenceMediumDoor";
 
-/* A tree-walking suite declares this at file level — three suites' worth of
-   red were paid for learning that (PR #1250). */
-const CONTENDED_TEST_TIMEOUT_MS = 60_000;
+/*
+  A TREE-WALKING SUITE DECLARES THE CLASS TIMEOUT ONCE, AT FILE LEVEL (#741).
+
+  From the SHARED constant and never a local copy of the number — the first cut
+  of this file declared its own `const` at 60_000, which is the second author
+  working law 4 is about, and `contendedTestTimeouts.test.ts` reddened on it by
+  name in preflight. Per-arm is the road that leaks: a number typed onto one
+  `it` is not inherited by the arm somebody writes beside it tomorrow.
+*/
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 
@@ -125,7 +133,7 @@ describe("the population — derived from the tree, so a TENTH post cannot arriv
     */
     expect(SOURCES.length).toBeGreaterThan(50);
     expect(POSTING.length).toBeGreaterThanOrEqual(12);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("every posting module either bounds its frame or is a named park", () => {
     const parked = new Set(PARKED_R7_POSTS.map((entry) => entry.file));
@@ -142,7 +150,7 @@ describe("the population — derived from the tree, so a TENTH post cannot arriv
       .filter((entry) => !entry.source.includes('from "./judgeFrame"'))
       .map((entry) => entry.file);
     expect(unbounded).toEqual([]);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("a name on the park list that no longer posts is REFUSED, so the list cannot rot", () => {
     /*
@@ -154,7 +162,7 @@ describe("the population — derived from the tree, so a TENTH post cannot arriv
     const posting = new Set(POSTING.map((entry) => entry.file));
     const stale = PARKED_R7_POSTS.filter((entry) => !posting.has(entry.file)).map((entry) => entry.file);
     expect(stale).toEqual([]);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("every park carries a reason naming the ruling that parks it", () => {
     for (const entry of PARKED_R7_POSTS) {
@@ -220,14 +228,14 @@ describe("the nine live posts, driven at the wire", () => {
        on `posted`. The answer proves the road was walked. */
     expect(answered.build).toBe("slight");
     await expectBounded(posted);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("presentationState bounds the master", async () => {
     const frame = await oversizedFrame();
     const { engine, posted } = recordingEngine('{"hairWorn":"loose"}');
     await capturePresentation({ ...frame, engine });
     await expectBounded(posted);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("renderVerification bounds the render", async () => {
     const frame = await oversizedFrame();
@@ -245,21 +253,21 @@ describe("the nine live posts, driven at the wire", () => {
       }],
     });
     await expectBounded(posted);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("realizationCaption bounds the whole frame it reads a facet against", async () => {
     const frame = await oversizedFrame();
     const { engine, posted } = recordingEngine('{"caption":"a short bob","matches":true}');
     await captionRealization({ facet: "hair" as never, ...frame, engine });
     await expectBounded(posted);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("captionSlot bounds a cut that is over the edge", async () => {
     const frame = await oversizedFrame();
     const { engine, posted } = recordingEngine('{"caption":"a gold hoop","visible":true}');
     await captionSlot({ noun: "left earring", view: "cut", ...frame, engine });
     await expectBounded(posted);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("conceptDescribe bounds her uploaded picture ONCE, and the re-ask posts the same bytes", async () => {
     const frame = await oversizedFrame(4000, 6000);
@@ -294,21 +302,21 @@ describe("the nine live posts, driven at the wire", () => {
       The single encode is a cost, and the comment at the call site owns it.
     */
     expect(posted[0]?.bytes.equals(posted[1]!.bytes)).toBe(true);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("hairColourFromReference bounds her photograph", async () => {
     const frame = await oversizedFrame(4000, 6000);
     const { engine, posted } = recordingEngine('{"sections":[{"tone":"copper","where":"at the ends"}]}');
     await readHairColourFromReference({ ...frame, engine });
     await expectBounded(posted);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("makeupFromReference bounds her photograph", async () => {
     const frame = await oversizedFrame(4000, 6000);
     const { engine, posted } = recordingEngine('{"surfaces":["a soft brown on the lids"]}');
     await readMakeupFromReference({ ...frame, engine });
     await expectBounded(posted);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("referenceMediumDoor bounds her photograph", async () => {
     const frame = await oversizedFrame(4000, 6000);
@@ -318,7 +326,7 @@ describe("the nine live posts, driven at the wire", () => {
        `unreadable` — which is the value this door returns on every failure. */
     expect(medium).toBe("photograph");
     await expectBounded(posted);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 });
 
 describe("realizationCaption's two directions are ONE pipeline on ONE threshold", () => {
@@ -347,7 +355,7 @@ describe("realizationCaption's two directions are ONE pipeline on ONE threshold"
     expect(posted.length).toBeGreaterThan(0);
     expect(posted[0]?.contentType).toBe("image/png");
     expect(posted[0]?.bytes.equals(bytes)).toBe(true);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("a cut AT the legible edge is bounded — the threshold has no gap", async () => {
     const bytes = await sharp({
@@ -356,5 +364,5 @@ describe("realizationCaption's two directions are ONE pipeline on ONE threshold"
     const { engine, posted } = recordingEngine('{"caption":"a gold hoop","visible":true}');
     await captionSlot({ noun: "left earring", view: "cut", bytes, contentType: "image/png", engine });
     expect(posted[0]?.contentType).toBe("image/jpeg");
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 });
