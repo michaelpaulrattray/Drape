@@ -55,7 +55,7 @@ import { fileURLToPath } from "node:url";
 
 import { readIfPresent } from "./listedEntry.mts";
 import { CORPUS, UNREACHABLE_DOORS, KNOWN_DEBTS, type CorpusRow, type CorpusState } from "../capability-atlas-corpus.mts";
-import { ROADS, LAWS, type Road } from "../capability-atlas-roads.mts";
+import { ROADS, LAWS, UNMAPPED_ENTRANCES, type Road } from "../capability-atlas-roads.mts";
 import { CANNOT_SAY_COPY, cannotSaySentence, type CannotSayReason } from "../../server/castingV2/cannotSayCopy";
 import { CONCEPT_DESCRIBE_COPY } from "../../server/castingV2/conceptDescribeCopy";
 import { ROLL_REFUSAL_COPY } from "../../server/castingV2/briefRefusalCopy";
@@ -92,6 +92,13 @@ export type StaticAtlas = {
   flags: string[];
   subjects: string[];
   corpus: Array<Pick<CorpusRow, "id" | "ask" | "scope" | "subject" | "verb" | "state" | "expect" | "why">>;
+  /**
+   * EVERY CALLABLE PROCEDURE THE CASTING ENTRANCE EXPOSES (#1203) — recorded in
+   * the committed census so the population itself is diffable. A procedure
+   * appearing here is a road's to account for; one DISAPPEARING is a retirement
+   * that should be visible in review rather than inferred from a shrinking map.
+   */
+  procedures: string[];
   /** The roads map — hand-written prose, machine-validated citations. */
   roads: readonly Road[];
   laws: ReadonlyArray<{ law: string; where: string }>;
@@ -109,6 +116,9 @@ export type Finding = {
     | "duplicate-door-id"         // two declared sources claiming one id — see #192
     | "stale-unreachable-doc"     // a drive PRODUCED an id documented as unreachable
     | "road-cites-unknown-door"   // the roads map names a door the source does not declare
+    | "road-cites-unknown-procedure" // a road names a procedure the entrance does not expose
+    | "unmapped-entrance"         // a procedure the entrance exposes that no road names — see #1203
+    | "stale-unmapped-entrance"   // an UNMAPPED_ENTRANCES line whose procedure is now mapped, or gone
     | "belief-mismatch"           // observed ≠ expect
     | "route-changed"             // observed ≠ the committed observation
     | "drive-error"               // the service threw something that was not a refusal
@@ -306,6 +316,132 @@ export function declaredConceptRefusals(): string[] {
  */
 export function declaredRollRefusals(): string[] {
   return Object.keys(ROLL_REFUSAL_COPY).sort().map((id) => `roll.${id}`);
+}
+
+/**
+ * THE CASTING ENTRANCE — the one namespace this census is about. Its
+ * sub-routers (`castingV2.ink`, `.reference`, `.concept`) are part of it.
+ */
+export const CASTING_ENTRANCE = "castingV2";
+
+/** The architecture Atlas — where the entrance's own population is read from. */
+const ARCHITECTURE_JSON = path.join(repoRoot, "docs", "architecture", "drape-architecture.json");
+
+/**
+ * EVERY PROCEDURE A CUSTOMER CAN CALL ON THE CASTING ENTRANCE (#1203).
+ *
+ * # Why this is read from the architecture Atlas and not re-extracted here
+ *
+ * The ids are produced by `proceduresFrom`/`collectProcedures` in
+ * `scripts/generate-architecture.mts` — a ts-morph walk over the real router
+ * declarations, and the ONLY reader in this repository that has been fixed for
+ * the two shapes a naive one gets wrong: an inline nested router collapsing into
+ * a single fake procedure, and a sub-router's namespace (`castingV2.ink.remove`
+ * is not `castingV2.remove`). A second extractor here would be working law 4's
+ * mirror, and a regex one would be the four-collector class again — a shape
+ * standing in for a declaration, reporting a complete list either way.
+ *
+ * ⚠ **SO THIS READS A DERIVED ARTIFACT, AND THE HONEST STATEMENT OF THAT
+ * DEPENDENCY IS: A STALE ARCHITECTURE ATLAS CANNOT MAKE THIS LIST SHORT
+ * WITHOUT REDDENING SOMETHING ELSE FIRST.** `.githooks/atlas-stage` regenerates
+ * and stages both maps on any commit touching a path they are built from
+ * (`server/routes/` among them), `pnpm architecture:check` proves freshness
+ * inside `pnpm test` and inside the deploy rite, and a new procedure therefore
+ * arrives in that file in the same commit that declares it. A shift that
+ * bypasses the hook (revert, cherry-pick, replayed rebase — #606) meets
+ * `.githooks/pre-push` ARM 2 before the branch leaves the machine.
+ *
+ * `server/capabilityAtlas.test.ts` keeps this honest the other way too: a
+ * SECOND reader walks `server/routes/castingV2.ts` itself and the two lists must
+ * agree, so neither inherits the other's blind spot.
+ *
+ * REFUSES rather than returning a short list — a census that shrugged at an
+ * empty population would report total coverage of nothing. `atlasPath` exists
+ * so those two refusals can be DRIVEN rather than reasoned about: the real tree
+ * can never produce either, and a refusal nothing can fire is invariant 7.
+ */
+export function declaredCastingProcedures(atlasPath: string = ARCHITECTURE_JSON): string[] {
+  if (!fs.existsSync(atlasPath)) {
+    throw new Error(
+      `the entrance population is read from ${rel(atlasPath)} and it is not on disk — run \`pnpm architecture:generate\``,
+    );
+  }
+  const atlas = JSON.parse(fs.readFileSync(atlasPath, "utf8")) as {
+    routes?: Array<{ id?: unknown; namespace?: unknown }>;
+  };
+  const ids = new Set<string>();
+  for (const route of atlas.routes ?? []) {
+    const namespace = typeof route.namespace === "string" ? route.namespace : "";
+    if (namespace !== CASTING_ENTRANCE && !namespace.startsWith(`${CASTING_ENTRANCE}.`)) continue;
+    const id = typeof route.id === "string" ? route.id : "";
+    /* The Atlas keys a procedure `route:<callable id>`; the callable id is what a
+       road names and what a client calls, so the prefix comes off here rather
+       than being carried into the map. */
+    if (id.startsWith("route:")) ids.add(id.slice("route:".length));
+  }
+  if (ids.size === 0) {
+    throw new Error(
+      `no \`${CASTING_ENTRANCE}\` procedure found in ${rel(atlasPath)} — re-point this reader at the entrance rather than letting it report an empty population`,
+    );
+  }
+  return [...ids].sort();
+}
+
+/**
+ * THE ENTRANCE-COVERAGE CONTRACT — held in BOTH directions (#1203).
+ *
+ * Pure, and over its three inputs rather than over the tree, for the reason
+ * `proceduresFrom` states about itself: a checker driven only on the tree it
+ * already runs on cannot show its own blind spots, and the arms that matter here
+ * are the ones no real tree can produce — a road citing a procedure that does
+ * not exist, and a procedure no road names.
+ */
+export function entranceCoverageFindings(input: {
+  procedures: readonly string[];
+  roads: readonly Road[];
+  unmapped: Readonly<Record<string, string>>;
+}): Finding[] {
+  const findings: Finding[] = [];
+  const exposed = new Set(input.procedures);
+  const mapped = new Map<string, string[]>();
+  for (const road of input.roads) {
+    for (const procedure of road.procedures) {
+      if (!exposed.has(procedure)) {
+        findings.push({
+          id: `road-procedure:${road.id}:${procedure}`, severity: "error", kind: "road-cites-unknown-procedure", subject: procedure,
+          message: `road "${road.id}" names procedure "${procedure}", which the ${CASTING_ENTRANCE} entrance does not expose`,
+        });
+        continue;
+      }
+      mapped.set(procedure, [...(mapped.get(procedure) ?? []), road.id]);
+    }
+  }
+  for (const procedure of input.procedures) {
+    if (mapped.has(procedure)) continue;
+    const reason = input.unmapped[procedure];
+    if (reason) continue;
+    findings.push({
+      id: `unmapped-entrance:${procedure}`, severity: "error", kind: "unmapped-entrance", subject: procedure,
+      message: `"${procedure}" is an entrance no road describes — give it a road, or an UNMAPPED_ENTRANCES reason, in this same commit`,
+    });
+  }
+  for (const procedure of Object.keys(input.unmapped)) {
+    const roads = mapped.get(procedure);
+    if (roads) {
+      findings.push({
+        id: `stale-unmapped:${procedure}`, severity: "error", kind: "stale-unmapped-entrance", subject: procedure,
+        message: `UNMAPPED_ENTRANCES still excuses "${procedure}", which road "${roads[0]}" now describes — delete the line`,
+      });
+      continue;
+    }
+    if (!exposed.has(procedure)) {
+      findings.push({
+        id: `stale-unmapped:${procedure}`, severity: "error", kind: "stale-unmapped-entrance", subject: procedure,
+        message: `UNMAPPED_ENTRANCES excuses "${procedure}", which the ${CASTING_ENTRANCE} entrance no longer exposes — delete the line`,
+      });
+    }
+  }
+  return findings;
 }
 
 /** The scope flags, read off their own `_SCOPE_ENV` constants. */
@@ -856,9 +992,13 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
     }
   }
 
+  const procedures = declaredCastingProcedures();
+  findings.push(...entranceCoverageFindings({ procedures, roads: ROADS, unmapped: UNMAPPED_ENTRANCES }));
+
   return {
     declared,
     flags: declaredFlags(),
+    procedures,
     subjects: [...FREE_SUBJECT_KEYS].sort(),
     corpus: corpus.map(({ id, ask, scope, subject, verb, state, expect, why }) => ({ id, ask, scope, subject, verb, state, expect, why })),
     roads: ROADS,
@@ -1150,6 +1290,8 @@ export function renderCapabilityPage(atlas: CapabilityAtlas): string {
     lines.push("");
     lines.push(`_Entrances:_ ${road.entrances.map((e) => `\`${e}\``).join(" · ")}  ·  _Flags:_ ${road.flags.map((f) => `\`${f}\``).join(" · ") || "—"}`);
     lines.push("");
+    lines.push(`_Called as:_ ${road.procedures.map((q) => `\`${q}\``).join(" · ") || "—"}`);
+    lines.push("");
     if (road.doors.length > 0) {
       lines.push("| door | kind | charge | where it lives | pinned | reached by |");
       lines.push("|---|---|---|---|---|---|");
@@ -1164,6 +1306,19 @@ export function renderCapabilityPage(atlas: CapabilityAtlas): string {
     for (const note of road.notes) lines.push(`- ${note}`);
     lines.push("");
   }
+  /* ── the entrance's own population, and who accounts for each of it (#1203) ── */
+  const roadsOf = (procedure: string) => atlas.static.roads.filter((r) => r.procedures.includes(procedure)).map((r) => r.id);
+  lines.push(`## Every way in — the ${atlas.static.procedures.length} procedures the casting entrance exposes`);
+  lines.push("");
+  lines.push("Derived from the architecture Atlas's own extractor. A procedure with no road is an error finding, not a blank cell — the map is held to what EXISTS, not only to what it cites (#1203).");
+  lines.push("");
+  lines.push("| called as | on which road |");
+  lines.push("|---|---|");
+  for (const procedure of atlas.static.procedures) {
+    const roads = roadsOf(procedure);
+    lines.push(`| \`${procedure}\` | ${roads.join(", ") || "**none — see findings**"} |`);
+  }
+  lines.push("");
   lines.push("## The laws that hold on every road");
   lines.push("");
   for (const law of atlas.static.laws) lines.push(`- **${law.law}** _(${law.where})_`);

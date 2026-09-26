@@ -15,11 +15,12 @@ import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  buildStaticAtlas, declaredConceptRefusals, declaredInterpreterRefusals, declaredRollRefusals, declaredServiceRefusals, drivenFindings,
-  duplicateDoorFindings, listFiles, outcomeId,
+  buildStaticAtlas, declaredCastingProcedures, declaredConceptRefusals, declaredInterpreterRefusals, declaredRollRefusals, declaredServiceRefusals, drivenFindings,
+  duplicateDoorFindings, entranceCoverageFindings, listFiles, outcomeId,
   pinCandidates, pinningTests, reachesDoors, readCommittedAtlas, reasonOfNote, renderCapabilityPage, committedPageIsFresh, lfOnly,
-  CAPABILITY_MD, type Finding,
+  CAPABILITY_MD, CASTING_ENTRANCE, type Finding,
 } from "../scripts/lib/capabilityAtlas.mts";
+import { ROADS, UNMAPPED_ENTRANCES, type Road } from "../scripts/capability-atlas-roads.mts";
 import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
 import { cannotSaySentence } from "./castingV2/cannotSayCopy";
 import { CONCEPT_DESCRIBE_COPY } from "./castingV2/conceptDescribeCopy";
@@ -700,5 +701,234 @@ describe("the committed census is fresh", () => {
        target. A census without that row (what a recomputing check holds) does
        not reproduce the page, which is precisely the false refusal. */
     expect(committedPageIsFresh(committed, staticAtlas, page)).toBe(false);
+  });
+});
+
+
+/*
+  ══════════════════════════════════════════════════════════════════════════════
+  THE ENTRANCE-COVERAGE CONTRACT (#1203) — the map held to what EXISTS, not only
+  to what it cites.
+
+  Re-imagine went live for every account and was absent from this census
+  entirely — no road, no door, no corpus row, no debt line — and
+  `pnpm capability:check` was GREEN for three weeks. Nothing was broken: every
+  citation the map made was still true. The map was validated FORWARD only, its
+  entrances are FILES, and `castingV2.reimagine` lives inside a file road 1
+  already names. A forward-only check over a hand-written population reports a
+  complete list whether or not it is one.
+
+  So the arms below are mostly about the BACKWARD direction, and the ones that
+  matter are the negative controls: the real tree can never produce an unmapped
+  entrance while this contract holds, which is exactly why a contract with no
+  drivable failure would be invariant 7 wearing a green tick.
+  ══════════════════════════════════════════════════════════════════════════════
+*/
+describe("every way into the casting studio is on the map", () => {
+  const road = (over: Partial<Road>): Road => ({
+    id: "fixture", title: "fixture", entrances: [], summary: "", doors: [], procedures: [], flags: [], notes: [],
+    ...over,
+  });
+
+  it("POSITIVE CONTROL — the real population names the specimens, including the nested ones", () => {
+    const procedures = declaredCastingProcedures();
+    /* #1203's own subject, and the reason this block exists. */
+    expect(procedures).toContain("castingV2.reimagine");
+    /* The second entrance the contract found unmapped the same hour. */
+    expect(procedures).toContain("castingV2.concept.describe");
+    /*
+      THE SUB-ROUTER SPECIMEN. `ink.remove` is declared inside `inkRouter` and
+      mounted as `ink:`, so its callable id carries the namespace segment. A
+      reader that flattened it would emit `castingV2.remove` — a procedure no
+      client can call — and then a road naming the real id would read as citing
+      something that does not exist. Both directions are asserted, because only
+      the second one fails loudly.
+    */
+    expect(procedures).toContain("castingV2.ink.remove");
+    expect(procedures).not.toContain("castingV2.remove");
+    expect(procedures).toContain("castingV2.reference.attach");
+    /* A floor rather than an exact count: a new procedure is a normal act, and
+       an arm that has to be edited for one teaches shifts to edit arms. */
+    expect(procedures.length).toBeGreaterThanOrEqual(20);
+  });
+
+  it("⚠ THE SECOND READER — the route file's own text agrees with the Atlas's AST walk", () => {
+    /*
+      The population is read out of `docs/architecture/drape-architecture.json`,
+      which is DERIVED. That is the right source (it is the one procedure
+      extractor in this repository fixed for inline nested routers and
+      sub-router namespaces) and it is still a derived artifact, so this arm
+      reads the same fact a completely different way — line-and-indent over the
+      router source — and holds the two equal. Neither inherits the other's
+      blind spot; `server/architectureAtlas.test.ts` uses the same shape for the
+      same reason.
+
+      It is deliberately naive and deliberately NOT tolerant. If the route file
+      adopts a style this cannot parse, the counts disagree and a human looks —
+      which is the correct direction for a cross-check to fail in.
+    */
+    const source = readFileSync(join(import.meta.dirname, "routes", "castingV2.ts"), "utf8");
+    const lines = source.split("\n");
+    const BUILDER = /^ {2}([A-Za-z][A-Za-z0-9]*):\s*(?:protectedProcedure|publicProcedure|onboardingProcedure|adminProcedure|moderatorProcedure)\b/;
+    const ROUTER_OPEN = /^(?:export\s+)?const\s+([A-Za-z][A-Za-z0-9]*)\s*=\s*router\(\{/;
+    const MOUNT = /^ {2}([A-Za-z][A-Za-z0-9]*):\s*([A-Za-z][A-Za-z0-9]*Router),\s*$/;
+
+    /* variable name -> the procedure keys declared directly inside it */
+    const byVariable = new Map<string, string[]>();
+    /* variable name -> the key it is mounted under on the root */
+    const mountedAs = new Map<string, string>();
+    let current: string | null = null;
+    for (const line of lines) {
+      const opened = ROUTER_OPEN.exec(line);
+      if (opened) { current = opened[1]!; byVariable.set(current, []); continue; }
+      if (line === "});") { current = null; continue; }
+      if (!current) continue;
+      const mount = MOUNT.exec(line);
+      if (mount) { mountedAs.set(mount[2]!, mount[1]!); continue; }
+      const builder = BUILDER.exec(line);
+      if (builder) byVariable.get(current)!.push(builder[1]!);
+    }
+
+    expect(byVariable.has("castingV2Router"), "the root router must be found — otherwise this arm proves nothing").toBe(true);
+    expect(mountedAs.size, "the sub-routers must be found, or their procedures lose their namespace").toBeGreaterThan(0);
+
+    const secondReading: string[] = [];
+    for (const [variable, keys] of byVariable) {
+      if (variable === "castingV2Router") {
+        for (const key of keys) secondReading.push(`${CASTING_ENTRANCE}.${key}`);
+        continue;
+      }
+      const mount = mountedAs.get(variable);
+      expect(mount, `${variable} declares procedures and is mounted nowhere — the reading would drop them`).toBeDefined();
+      for (const key of keys) secondReading.push(`${CASTING_ENTRANCE}.${mount}.${key}`);
+    }
+
+    expect(secondReading.length, "a second reader that found almost nothing would agree with a broken first one").toBeGreaterThanOrEqual(20);
+    expect(secondReading.sort()).toEqual(declaredCastingProcedures());
+  });
+
+  it("THE CONTRACT, at this tree — every entrance is on a road, and no excuse is stale", () => {
+    expect(
+      entranceCoverageFindings({ procedures: declaredCastingProcedures(), roads: ROADS, unmapped: UNMAPPED_ENTRANCES }),
+      "add the road, or the UNMAPPED_ENTRANCES reason, in the same commit as the entrance",
+    ).toEqual([]);
+  });
+
+  it("NEGATIVE CONTROL — an entrance no road names is an ERROR, and a written reason settles it", () => {
+    const procedures = ["castingV2.alpha", "castingV2.beta"];
+    const roads = [road({ id: "one", procedures: ["castingV2.alpha"] })];
+
+    const bare = entranceCoverageFindings({ procedures, roads, unmapped: {} });
+    expect(bare).toHaveLength(1);
+    expect(bare[0]!.kind).toBe("unmapped-entrance");
+    expect(bare[0]!.severity).toBe("error");
+    expect(bare[0]!.subject).toBe("castingV2.beta");
+
+    const excused = entranceCoverageFindings({
+      procedures, roads, unmapped: { "castingV2.beta": "half-built; nothing has measured what it does" },
+    });
+    expect(excused, "an honest 'not yet mapped, because X' is the escape valve, and it must work").toEqual([]);
+  });
+
+  it("NEGATIVE CONTROL — a road citing a procedure the entrance does not expose is an ERROR", () => {
+    const findings = entranceCoverageFindings({
+      procedures: ["castingV2.alpha"],
+      roads: [road({ id: "one", procedures: ["castingV2.alpha", "castingV2.ghost"] })],
+      unmapped: {},
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.kind).toBe("road-cites-unknown-procedure");
+    expect(findings[0]!.severity).toBe("error");
+    expect(findings[0]!.subject).toBe("castingV2.ghost");
+  });
+
+  it("NEGATIVE CONTROL — the remainder only SHRINKS: a line that is now mapped, or now gone, is an ERROR", () => {
+    /* Taken by a road since the excuse was written. */
+    const taken = entranceCoverageFindings({
+      procedures: ["castingV2.alpha"],
+      roads: [road({ id: "one", procedures: ["castingV2.alpha"] })],
+      unmapped: { "castingV2.alpha": "the excuse that outlived its reason" },
+    });
+    expect(taken).toHaveLength(1);
+    expect(taken[0]!.kind).toBe("stale-unmapped-entrance");
+    expect(taken[0]!.message).toContain("now describes");
+
+    /* Retired out of the entrance while its excuse stayed behind. */
+    const retired = entranceCoverageFindings({
+      procedures: ["castingV2.alpha"],
+      roads: [road({ id: "one", procedures: ["castingV2.alpha"] })],
+      unmapped: { "castingV2.retired": "waiting on a fixture" },
+    });
+    expect(retired).toHaveLength(1);
+    expect(retired[0]!.kind).toBe("stale-unmapped-entrance");
+    expect(retired[0]!.message).toContain("no longer exposes");
+  });
+
+  it("⚠ ONE PROCEDURE ON TWO ROADS IS NOT A FINDING — `castingV2.refine` is one entrance at three depths", () => {
+    expect(
+      entranceCoverageFindings({
+        procedures: ["castingV2.refine"],
+        roads: [road({ id: "money", procedures: ["castingV2.refine"] }), road({ id: "reading", procedures: ["castingV2.refine"] })],
+        unmapped: {},
+      }),
+    ).toEqual([]);
+    /* And the real map relies on it, so the allowance is not hypothetical. */
+    expect(ROADS.filter((r) => r.procedures.includes("castingV2.refine")).length).toBeGreaterThan(1);
+  });
+
+  it("REFUSES rather than reporting an empty population — both roads, driven", () => {
+    const dir = mkdtempSync(join(tmpdir(), "capability-entrance-"));
+    try {
+      const absent = join(dir, "not-there.json");
+      expect(() => declaredCastingProcedures(absent)).toThrow(/not on disk/);
+
+      /*
+        THE ONE THAT MATTERS: a well-formed Atlas naming no casting procedure.
+        Returning `[]` there would make every road's coverage vacuously true and
+        the whole contract green over nothing — the blind-guard shape this
+        repository has been bitten by, and the reason the four static collectors
+        were made to throw.
+      */
+      const empty = join(dir, "empty.json");
+      writeFileSync(empty, JSON.stringify({ routes: [{ id: "route:billing.getPlans", namespace: "billing" }] }));
+      expect(() => declaredCastingProcedures(empty)).toThrow(/re-point this reader/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("the two roads #1203 added are on the map, named, and flagged as the code gates them", () => {
+    /*
+      Named specimens on purpose. The contract above proves every entrance has
+      SOME road; it cannot notice a road being quietly emptied of the prose that
+      made it worth having, and these two are the ones the card was about.
+    */
+    const reimagine = ROADS.find((r) => r.id === "reimagine");
+    expect(reimagine, "#1203's subject").toBeDefined();
+    expect(reimagine!.procedures).toEqual(["castingV2.reimagine"]);
+    /* Both halves of the scope chain: `captureCastingCreativeRegisterEnabled`
+       ANDs the casting parent inside itself, so a road naming only the child
+       would under-report what gates it. */
+    expect(reimagine!.flags).toContain("CASTING_CREATIVE_REGISTER_SCOPE");
+    expect(reimagine!.flags).toContain("CASTING_V2_SCOPE");
+    /* It declares no door, so the honest note is the whole of what it says
+       about its exits — an empty `doors` with no note would be the silent gap. */
+    expect(reimagine!.doors).toEqual([]);
+    expect(reimagine!.doorsNote, "a road with no declared door owes a written reason").toBeTruthy();
+
+    const concept = ROADS.find((r) => r.id === "concept-upload");
+    expect(concept, "the entrance whose doors reached the map before its road did").toBeDefined();
+    expect(concept!.procedures).toEqual(["castingV2.concept.describe"]);
+    /* Its six doors were declared with #192; the road must cite the real ones,
+       and `buildStaticAtlas` already refuses an unknown id — this holds the
+       COUNT, so a road losing five of six is not a silent narrowing. */
+    expect(concept!.doors.sort()).toEqual(declaredConceptRefusals());
+    expect(concept!.flags).toContain("CASTING_CONCEPT_UPLOAD_SCOPE");
+  });
+
+  it("the committed census records the population, so a procedure LEAVING shows up in review", () => {
+    const committed = readCommittedAtlas();
+    expect(committed, "regenerate the census").not.toBeNull();
+    expect(committed!.static.procedures).toEqual(declaredCastingProcedures());
   });
 });

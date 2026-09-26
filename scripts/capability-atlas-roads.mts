@@ -13,9 +13,25 @@
  *   - every door id here must exist in the DECLARED set (extracted from
  *     source); an unknown id is an error finding, not a typo that ships;
  *   - every flag here must exist in the declared flag set, same rule;
+ *   - every PROCEDURE here must be one `castingV2` exposes, and — the direction
+ *     that was missing until #1203 — every procedure it exposes must be named
+ *     by some road or carry a reason in `UNMAPPED_ENTRANCES`;
  *   - the RENDER joins each door to its extracted file:line sites, its pinning
  *     tests and the corpus rows that reach it — none of that is written here,
  *     all of it is derived, so the per-door facts cannot drift from the code.
+ *
+ * ⚠ **THE MAP WAS VALIDATED FORWARD AND NEVER BACKWARD, AND THAT IS HOW THE
+ * BIGGEST THING N1 SHIPPED STAYED OFF IT FOR THREE WEEKS (#1203).** Every
+ * citation above was held to the source, so nothing this file SAID could be
+ * false — and nothing asked whether the file was COMPLETE. Re-imagine
+ * (`castingV2.reimagine`, live for every account since 2026-09-24) had no road,
+ * no door, no corpus row and no debt line, and `pnpm capability:check` was
+ * green throughout, because the roads' ENTRANCES are FILES and `reimagine`
+ * lives inside a file road 1 already names. A forward-only check on a
+ * hand-written population reports a complete list either way — the four-collector
+ * class in `CLAUDE.md`, pointed at prose instead of a regex. The `procedures`
+ * field below is the population, derived; `UNMAPPED_ENTRANCES` is the enumerated
+ * remainder, and it only shrinks.
  *
  * What IS hand-written is the connective prose (`summary`, `notes`) and the
  * grouping — reviewed like any prose, kept short, and never the only source
@@ -39,6 +55,20 @@ export type Road = {
   summary: string;
   /** Declared door ids this road can answer with — validated against source. */
   doors: string[];
+  /**
+   * THE CALLABLE PROCEDURES A CUSTOMER REACHES THIS ROAD THROUGH — validated
+   * both ways against the entrance's own declared set (#1203).
+   *
+   * Forward: a procedure named here that `castingV2` does not expose is an
+   * error. Backward — the half that was missing and let Re-imagine ship
+   * unmapped — every procedure the entrance DOES expose must be named by some
+   * road, or carry its reason in {@link UNMAPPED_ENTRANCES}.
+   *
+   * A procedure may appear on more than one road: `castingV2.refine` is one
+   * entrance read at three depths, and pretending otherwise would force a
+   * false choice about which road owns it.
+   */
+  procedures: string[];
   /** For roads whose doors are outside the censused entrance: the honest note. */
   doorsNote?: string;
   /** Scope flags gating this road — validated against the declared flag set. */
@@ -49,6 +79,27 @@ export type Road = {
 export const ROADS: readonly Road[] = [
   {
     id: "life-of-a-cast",
+    procedures: [
+      "castingV2.config",
+      "castingV2.createSession",
+      "castingV2.openSessions",
+      "castingV2.getSession",
+      "castingV2.abandonSession",
+      "castingV2.createRoll",
+      "castingV2.getRoll",
+      "castingV2.follow",
+      "castingV2.retry",
+      "castingV2.cancel",
+      "castingV2.keep",
+      "castingV2.discard",
+      "castingV2.undo",
+      "castingV2.selectVariant",
+      "castingV2.variants",
+      "castingV2.roster",
+      "castingV2.getCast",
+      "castingV2.renameCast",
+      "castingV2.deleteCast",
+    ],
     title: "The life of a cast — roll, sheet, refine, sign",
     entrances: ["server/routes/castingV2.ts"],
     summary:
@@ -76,6 +127,9 @@ export const ROADS: readonly Road[] = [
   },
   {
     id: "refine-money",
+    procedures: [
+      "castingV2.refine",
+    ],
     title: "Refine's money model — free before the claim, refunded after it",
     entrances: ["server/castingV2/refineService.ts"],
     summary:
@@ -95,6 +149,9 @@ export const ROADS: readonly Road[] = [
   },
   {
     id: "refine-reading",
+    procedures: [
+      "castingV2.refine",
+    ],
     title: "Refine's reading — the interpreter, its walls, and its gates",
     entrances: ["server/castingV2/refineInterpreter.ts", "server/castingV2/refineDelta.ts"],
     summary:
@@ -120,6 +177,9 @@ export const ROADS: readonly Road[] = [
   },
   {
     id: "refine-ink",
+    procedures: [
+      "castingV2.refine",
+    ],
     title: "The ink lanes — add, transform, remove, and the crop that carries",
     entrances: ["server/castingV2/inkPriorAsk.ts", "server/castingV2/inkDeliveryMint.ts", "server/castingV2/refineService.ts"],
     summary:
@@ -141,6 +201,10 @@ export const ROADS: readonly Road[] = [
   },
   {
     id: "sign-views",
+    procedures: [
+      "castingV2.sign",
+      "castingV2.retryView",
+    ],
     title: "Sign — five views, the identity lock, and what rides into them",
     entrances: ["server/castingV2/signService.ts", "server/castingV2/packageOrchestrator.ts", "server/castingV2/inkViewReferences.ts", "server/castingV2/viewRetryService.ts"],
     summary:
@@ -163,6 +227,9 @@ export const ROADS: readonly Road[] = [
   },
   {
     id: "ink-studio",
+    procedures: [
+      "castingV2.ink.remove",
+    ],
     title: "The ink studio — uploads, cuts, and the region road",
     entrances: ["server/castingV2/inkUploadService.ts", "server/castingV2/inkUploadDoor.ts", "server/castingV2/inkReferenceCutter.ts"],
     summary:
@@ -183,6 +250,9 @@ export const ROADS: readonly Road[] = [
   },
   {
     id: "references",
+    procedures: [
+      "castingV2.reference.attach",
+    ],
     title: "References — attach a picture, take a feature",
     entrances: ["server/castingV2/referenceAttachDoor.ts", "server/castingV2/hairReferenceTake.ts", "server/castingV2/inkReferenceTake.ts"],
     summary:
@@ -199,6 +269,10 @@ export const ROADS: readonly Road[] = [
   },
   {
     id: "panel-scan",
+    procedures: [
+      "castingV2.facePanel",
+      "castingV2.faceScan",
+    ],
     title: "The panel and the scan — what a cast shows about itself",
     entrances: ["server/castingV2/facePanel.ts", "server/castingV2/faceScanService.ts"],
     summary:
@@ -213,7 +287,91 @@ export const ROADS: readonly Road[] = [
       "Discovery mints nothing into a recipe — the panel shows crops the founder's eyes judge; a crop becomes a carry only through the roads built for that.",
     ],
   },
+  {
+    id: "reimagine",
+    title: "Re-imagine — one press turns her own words into a new idea, in her own box",
+    entrances: ["server/routes/castingV2.ts", "server/castingV2/reimagine.ts"],
+    procedures: ["castingV2.reimagine"],
+    summary:
+      "Wherever there is a brief box, one press sends the words IN the box through the author and writes the result "
+      + "back INTO the box — visible, editable, undoable; casting then uses whatever is in the box, so there is no "
+      + "hidden mode a sheet could lie about. Sex, age and species are LOCKED when typed and nothing else is; "
+      + "lighting, camera, framing, backdrop and scene are banned in the instruction. One press is at most two text "
+      + "calls — a draft, then one re-ask naming the refusal — and a second refusal or a failed call answers "
+      + "`nothing`, leaving the box exactly as she typed it. Nothing is charged, nothing is stored, nothing renders.",
+    doors: [],
+    doorsNote:
+      "THIS ROAD DECLARES NO DOOR, AND THAT IS ITS SHAPE RATHER THAN A GAP (#1203). Its three exits are none of the "
+      + "four declared shapes the census reads: outside the register scope it answers `NOT_FOUND` "
+      + "(`captureCastingCreativeRegisterEnabled` in `server/routes/castingV2.ts`) — a DARK door, not a refusal, "
+      + "because a code saying 'not yet' advertises a capability; the ceiling is `RATE_LIMITS.reimagine` "
+      + "(`server/security/rateLimit.ts`); and every other outcome is the free answer `{ kind: \"nothing\" }` — no "
+      + "text engine configured, the author's SECOND draft refused too, or the call threw (both of the last two "
+      + "inside `reimagineBrief`, `server/castingV2/reimagine.ts`). The customer reads ONE sentence for all three "
+      + "(`Nothing to offer this time — your words stand.`, `client/src/features/castingV2/components/Reimagine.tsx`) "
+      + "and that is deliberate: an outage and a refusal ask her for the same next act. ⚠ AND NO CORPUS ROW CAN "
+      + "REACH THIS ENTRANCE — the corpus drives `refineCandidate` and nothing else, so #1203's own instruction to "
+      + "add 'a corpus row per door' is not something this harness can do; a reimagine corpus needs its own driver, "
+      + "and that is the map's next growth ring here.",
+    flags: ["CASTING_V2_SCOPE", "CASTING_CREATIVE_REGISTER_SCOPE"],
+    notes: [
+      "IT REPLACED THE IMAGINATION METER ENTIRELY (#535, his 'build it', Crew replies #145/#146, 2026-09-06): there is no level, no mode and no setting between the box and the picture except Style, so the #252 lie — a sheet reading 'Max' over words nobody authored — has nothing left to fall out of. The design is `docs/specs/REIMAGINE_DESIGN_2026-09-06.md` §3.",
+      "A NEW IDEA, NOT A POLISH, and the locked trio is the whole of what survives verbatim (his decisions 3–4). An earlier reading had every named feature and material surviving; his own rolled courts overturned it at the frames (244 vs 245, '10x better'; 243 vs 246, 'much better') — named colours and materials are PIECES the author may reinvent, and the qualities paragraph beat the keep-every-piece paragraph both times.",
+      "THE BOX IS THE FIDELITY CONTROL. `droppedFactIn` is retired for this road on purpose: the result lands in the customer's own box where she reads, edits and undoes it before she spends, so her reading is the check that a fact-survival guard used to be.",
+      "AN EDITING INSTRUCTION IN THE BOX ('make her young', '50s') is applied by the SAME press and returns one clean brief (decision 11) — never appended to the sentence, never handled on the way to the engine.",
+      "The reader is `about: \"author\"` on the engine, so a census pricing authored prose counts these presses with the roll's author calls rather than missing them.",
+    ],
+  },
+  {
+    id: "concept-upload",
+    title: "Upload a concept — a picture in, a description of the person out",
+    entrances: ["server/routes/castingV2.ts", "server/castingV2/conceptDescribe.ts"],
+    procedures: ["castingV2.concept.describe"],
+    summary:
+      "A picture of a person is read ONCE, inline, and dropped; what comes back is WORDS, which land in her own brief "
+      + "box where she reads and edits them before she spends anything. There is no row, no table, no storage write "
+      + "and no purge path — which is what makes this road smaller than the attach door beside it rather than a "
+      + "variant of it, and why no stranger's photograph ends up at a permanently public URL. Reached from the start "
+      + "page, before any cast exists.",
+    doors: [
+      "concept.no_being", "concept.not_about_the_person", "concept.not_a_casting_note",
+      "concept.ran_long", "concept.unreadable", "concept.no_transport",
+    ],
+    doorsNote:
+      "⚠ THIS ROAD'S DOORS REACHED THE MAP BEFORE THE ROAD DID — the six were declared with #192 and every one of them "
+      + "is documented-unreachable (the corpus sends sentences, not pictures), while the ENTRANCE they belong to had no "
+      + "road until #1203. That is the forward/backward asymmetry in one specimen: the map could prove every door it "
+      + "named was real and could not notice it had never named the road. The FLAG and the two byte doors above the "
+      + "six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared "
+      + "`referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences "
+      + "reused rather than restated.",
+    flags: ["CASTING_V2_SCOPE", "CASTING_CREATIVE_REGISTER_SCOPE", "CASTING_CONCEPT_UPLOAD_SCOPE"],
+    notes: [
+      "His own order, 2026-08-28 (#185): 'if you have a model already or concept or image you can upload it the image analyzer will analyze and describe it to the authour and cast it with the description ... that way its easy for someone to upload an image and get a prompt to create someone similar without having to type it all out.' Production holds `CASTING_CONCEPT_UPLOAD_SCOPE` at `all` since 2026-09-24 on his Crew reply #202 ('yes, turn it on').",
+      "THE FORMAT IS WHAT THE BYTES ARE, never what the payload claimed — the ink door's rule reused. It matters twice here: the picture rides to the describer as a `data:<mime>;base64,` URI, so a JPEG announced as a PNG is a malformed request to the vendor rather than a bad row in our database.",
+      "EVERY REFUSAL IS A DIFFERENT SENTENCE ON PURPOSE: 'there is nobody in this picture' and 'the reader did not answer' ask her to do different things, and telling her the wrong one sends her looking for a better photograph of a problem that was ours. They live in `CONCEPT_DESCRIBE_COPY` — exhaustive over the union by type — because composed inline they were invisible to the census: three of this entrance's five refusals could not be seen at all (#192).",
+      "`concept.no_being` is the twin of the roll road's `not_a_being`, and it reached the map FIRST while its sibling stayed invisible — the pair is the reason both entrances' copy tables are now the declared source rather than a grep.",
+    ],
+  },
 ];
+
+/**
+ * PROCEDURES NO ROAD ACCOUNTS FOR — the enumerated remainder, and it only
+ * shrinks (`UNREACHABLE_DOORS`' rule, pointed at entrances instead of doors).
+ *
+ * A `castingV2` procedure that no road names is an ERROR unless its id is a key
+ * here with a written reason. A key that a road HAS since taken, or that the
+ * entrance no longer exposes, is also an error — so the line has to be deleted
+ * rather than left to read as a standing excuse.
+ *
+ * ⚠ IT IS EMPTY TODAY AND THAT IS THE POINT, not a reason to delete it. #1203
+ * found TWO unmapped entrances (`castingV2.reimagine` and
+ * `castingV2.concept.describe`) and both earned real roads, because the code to
+ * describe them was there to be read. The next one may not be — a half-built
+ * entrance, or one whose behaviour nobody has measured — and an honest "not yet
+ * mapped, because X" beats either an invented road or a silent hole.
+ */
+export const UNMAPPED_ENTRANCES: Readonly<Record<string, string>> = {};
 
 /**
  * THE LAWS — invariants that hold across every road. Each cites where it is
@@ -227,4 +385,5 @@ export const LAWS: ReadonlyArray<{ law: string; where: string }> = [
   { law: "Source containment: a free value must appear in the customer's own sentence; engine-picked exceptions are declared, labelled, and doored.", where: "refineDelta.ts (D-172); Two Paths design §4.1" },
   { law: "Derive, never mirror: one owner per fact (the wardrobe line, the served-placements lists, the refusal registry); second lists are defects.", where: "CLAUDE.md working law 4; wardrobeLine.ts (item 5)" },
   { law: "Every door has a name, a site, a pin and a reach — or a written reason; the census refuses the gap.", where: "capabilityAtlas.mts coverage contract (fable-1357)" },
+  { law: "Every entrance a customer can call is on some road, or carries a written reason — the map is held to what EXISTS, not only to what it cites.", where: "capability-atlas-roads.mts `procedures` / UNMAPPED_ENTRANCES (#1203)" },
 ];
