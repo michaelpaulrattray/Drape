@@ -205,9 +205,10 @@ export type SessionProjection = {
  * If the sentence and the sheet ever disagree, it is because the validator
  * would also have disagreed, which is the only honest failure mode available.
  *
- * `open` is the other half of the law and the half the pill row could not show:
- * a field that is null is not unknown, it is deliberately varying, and the user
- * could not see that or pin it.
+ * ⚠ It used to project `open` too — *a field that is null is not unknown, it is
+ * deliberately varying* — for the echo clause the founder retired at #1288. The
+ * fact is still true of the lock contract; what is gone is the surface that said
+ * it out loud.
  *
  * Invariant 8: an explicit projection of named fields. The compiled brief is
  * written by a compiler that is an LLM behind a seam, so nothing crosses this
@@ -233,10 +234,23 @@ export type BriefFacts = {
     energy?: string;
     look?: string;
   };
-  /** Fields the roll deliberately varied. Named, up to three; else collapsed. */
-  open: string[];
-  /** Which axis the eight differ along, when the compiler recorded one. */
-  variationAxis: "look" | "disposition" | null;
+  /*
+    ⚠ **`open` AND `variationAxis` WERE HERE AND LEFT WITH THEIR ONE READER
+    (#1288, 2026-09-26).**
+
+    `open` listed the axes the roll varied and `variationAxis` said which one the
+    eight differed along. Both existed for the echo's "… were left to the roll"
+    clause, which the founder retired outright: *"i honestly dont think it's
+    neccesary that line is really just giving you a rundown of the casting sheet
+    you already can see your prompt."* Nothing else in the product ever read
+    either — `grep -rn "facts.open"` returns nothing, and `refineService` takes
+    `statedAccessories` alone — so a projection that kept computing and shipping
+    them would be this repository's most-paid-for shape: a producer outliving its
+    only consumer (#1204, #1217).
+
+    The COMPILER's `intent.variationAxis` is untouched and still decides how the
+    house road resolves the eight; what is gone is the display projection of it.
+  */
   /**
    * Worn things the brief named, in the user's own words.
    *
@@ -257,9 +271,6 @@ const FACT_VOCABULARIES: Record<string, readonly string[]> = {
   energy: ENERGY_KEYS,
   look: LOOK_KEYS,
 };
-
-/** Everything the echo can name as varying, in the order it reads best. */
-const OPEN_AXES = ["sex", "ageBand", "heritage", "build", "energy", "look"] as const;
 
 export function readBriefFacts(
   lockContract: unknown,
@@ -285,11 +296,7 @@ export function readBriefFacts(
     if (heritages.length > 0) locks.heritage = heritages.slice(0, 2);
   }
 
-  const open = OPEN_AXES.filter((axis) => !(axis in locks));
-
   const intent = (compiledBrief as { intent?: Record<string, unknown> } | null)?.intent;
-  const axis = intent?.variationAxis;
-  const variationAxis = axis === "look" || axis === "disposition" ? axis : null;
 
   /*
     Free text, so it is bounded and stripped rather than enum-checked — the
@@ -343,7 +350,7 @@ export function readBriefFacts(
         .slice(0, 3)
     : [];
 
-  return { role, locks, open, variationAxis, statedAccessories };
+  return { role, locks, statedAccessories };
 }
 
 /**

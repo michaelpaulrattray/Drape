@@ -2539,15 +2539,17 @@ export default function CastingSheet() {
           The brief echo, in place of the row of pills the founder called
           tokenized. One sentence, the pinned facts adjustable in place.
 
-          `terse` on the second and later rolls of a session: a returning user
-          has already read which axes are free, and the pins are what they are
-          checking.
+          ⚠ **`terse={rolls.length > 1}` WAS PASSED HERE AND IS GONE (#1288).**
+          It meant "a returning user has already read which axes are free", and
+          the only thing it suppressed was the "… were left to the roll" clause,
+          which he retired outright. The prop had no other effect in the grammar,
+          so keeping it would have been the sheet computing a boolean nothing
+          spends.
         */}
         {roll.data ? (
           <BriefEcho
             facts={roll.data.facts}
             followLabel={followLabel}
-            terse={rolls.length > 1}
             /*
               THIS sheet's road, read off the sheet's own register rather than
               the config (#230): `authorRoad` is the register's validated
